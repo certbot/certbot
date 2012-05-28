@@ -1,0 +1,80 @@
+message chocolatemessage {
+	required int32 chocolateversion = 1;
+	/* required string session? */
+
+	message SigningRequest {
+	     required int64 timestamp = 2;
+	     required string nonce = 3;
+	     required string csr = 4;
+	     required string sig = 5;
+	     optional string clientpuzzle = 6;
+                      /* server can specify difficulty? */
+        }
+
+        enum FailureReason {
+             UnsupportedVersion = 0;
+	     AbandonedRequest = 1;
+             ServerOutage = 2;
+             ServerGone = 3;
+	     StaleRequest = 4;
+	     BadSignature = 5;
+	     BadCSR = 6;
+	     BadRequest = 7;
+	     /* Unauthenticated = ?; */
+	     NeedClientPuzzle = 8;
+	     CannotIssueThatName = 9;
+	     UnsafeKey = 10;
+	     ChallengeFailed = 11;
+	     ChallengeTimeout = 12;
+        }
+
+	message Failure {
+	     required FailureReason cause = 1;
+	     optional string URI = 2;
+	     /* reference to which SigningRequest this relates to? */
+	}
+
+	message Proceed {
+	     /* possibly URI should be replaced with session ID? */
+	     required string timestamp = 1;
+	     required string URI = 2;
+             optional int32 polldelay = 3;
+        }
+
+	enum ChallengeType {
+	     DomainValidate = 0;
+	     EmailValidate = 1;
+	     Payment = 2;
+	}
+
+	message Challenge {
+	     required ChallengeType type = 1;
+	     required int32 challengeid = 2;
+	     optional string name = 3;
+	     optional string data = 4;
+	     optional string URI = 5;
+	     optional bool succeeded = 6;
+		      /* from server: true if server ACK success,
+			              false if server NAK success,
+			              omit if server doesn't know if client
+					has attempted yet.
+
+			 from client: true if claiming to be done,
+				      false if unable,
+				      omit if client hasn't attempted yet. */
+	}
+
+	message Success {
+	     required string certificate = 1; /* Repeated string certificate? */
+	}
+
+	optional SigningRequest request = 2;
+	optional Failure failure = 3;
+	optional Proceed proceed = 4;
+	repeated Challenge challenge = 5;
+        repeated Challenge completedchallenge = 6;
+	optional Success success = 7;
+
+	optional bool debug = 8;   /* Causes server to return text instead of
+  				      message! */
+}

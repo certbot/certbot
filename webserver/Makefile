@@ -1,0 +1,8 @@
+deploy: chocolate_protocol_pb2.py chocolate.py
+	scp chocolate_protocol.proto chocolate.py ${CHOCOLATESERVER}: && ssh ${CHOCOLATESERVER} protoc chocolate_protocol.proto --python_out=.
+
+chocolate_protocol_pb2.py: chocolate_protocol.proto
+	protoc chocolate_protocol.proto --python_out=.
+
+clean:
+	rm -f chocolate_protocol_pb2.pyc
