@@ -31,8 +31,11 @@ class index:
         else:
             if m.chocolateversion != 1:
                 r.failure.cause = r.UnsupportedVersion
-        if m.debug: return "SAW MESSAGE: %s\n" % str(r)
-        else: return r.SerializeToString()
+        if m.debug:
+            web.header("Content-type", "text/plain")
+            return "SAW MESSAGE: %s\n" % str(r)
+        else:
+            return r.SerializeToString()
 
 if __name__ == "__main__":
     app = web.application(urls, globals())
