@@ -4,10 +4,11 @@ message chocolatemessage {
 
 	message SigningRequest {
 	     required int64 timestamp = 2;
-	     required string nonce = 3;
-	     required string csr = 4;
-	     required string sig = 5;
-	     optional string clientpuzzle = 6;
+	     required string recipient = 3;
+	     required string nonce = 4;
+	     required string csr = 5;
+	     required string sig = 6;
+	     optional string clientpuzzle = 7;
                       /* server can specify difficulty? */
         }
 
