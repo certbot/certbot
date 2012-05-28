@@ -18,7 +18,7 @@ class index:
         return "Hello, world!  This server only accepts POST requests."
 
     def POST(self):
-        web.header("Content-type", "text/html")
+        web.header("Content-type", "application/x-protobuf")
         web.setcookie("chocolate", hmac("foo", "bar"),
                        secure=True) # , httponly=True)
         m = chocolatemessage()
