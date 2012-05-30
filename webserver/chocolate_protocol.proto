@@ -24,9 +24,10 @@ message chocolatemessage {
 	     /* Unauthenticated = ?; */
 	     NeedClientPuzzle = 8;
 	     CannotIssueThatName = 9;
-	     UnsafeKey = 10;
-	     ChallengeFailed = 11;
-	     ChallengeTimeout = 12;
+	     ExistingCertificate = 10;
+	     UnsafeKey = 11;
+	     ChallengeFailed = 12;
+	     ChallengeTimeout = 13;
         }
 
 	message Failure {
