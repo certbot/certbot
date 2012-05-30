@@ -1,6 +1,6 @@
 message chocolatemessage {
 	required int32 chocolateversion = 1;
-	/* required string session? */
+	required string session = 2;
 
 	message SigningRequest {
 	     required int64 timestamp = 2;
@@ -36,10 +36,8 @@ message chocolatemessage {
 	}
 
 	message Proceed {
-	     /* possibly URI should be replaced with session ID? */
 	     required string timestamp = 1;
-	     required string URI = 2;
-             optional int32 polldelay = 3;
+             optional int32 polldelay = 2;
         }
 
 	enum ChallengeType {
@@ -69,13 +67,13 @@ message chocolatemessage {
 	     required string certificate = 1; /* Repeated string certificate? */
 	}
 
-	optional SigningRequest request = 2;
-	optional Failure failure = 3;
-	optional Proceed proceed = 4;
-	repeated Challenge challenge = 5;
-        repeated Challenge completedchallenge = 6;
-	optional Success success = 7;
+	optional SigningRequest request = 3;
+	optional Failure failure = 4;
+	optional Proceed proceed = 5;
+	repeated Challenge challenge = 6;
+        repeated Challenge completedchallenge = 7;
+	optional Success success = 8;
 
-	optional bool debug = 8;   /* Causes server to return text instead of
+	optional bool debug = 9;   /* Causes server to return text instead of
   				      message! */
 }
