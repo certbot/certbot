@@ -21,7 +21,6 @@ message chocolatemessage {
 	     BadSignature = 5;
 	     BadCSR = 6;
 	     BadRequest = 7;
-	     /* Unauthenticated = ?; */
 	     NeedClientPuzzle = 8;
 	     CannotIssueThatName = 9;
 	     ExistingCertificate = 10;
@@ -32,8 +31,8 @@ message chocolatemessage {
 
 	message Failure {
 	     required FailureReason cause = 1;
-	     optional string URI = 2;
-	     /* reference to which SigningRequest this relates to? */
+	     optional string URI = 2;  /* for more human-readable information */
+             optional string affectedrequest = 3; /* nonce of the SigningRequest that provoked this failure */
 	}
 
 	message Proceed {
@@ -68,8 +67,16 @@ message chocolatemessage {
 	     required string certificate = 1; /* Repeated string certificate? */
 	}
 
-	optional SigningRequest request = 3;
-	optional Failure failure = 4;
+	repeated SigningRequest request = 3; /* TODO or should there just be one request and the request
+						should use subject alternate names for every name that
+						we want to have signed?  There could still be multiple
+						challenges in response -- one or more challenges per
+						name. */
+	optional Failure failure = 4;  /* TODO need to think about where there can be multiple failures
+                                          reported at once, and whether all failures are completely fatal
+                                          to the protocol, requiring it to be restarted from the beginning,
+					  or whether you could have some CSRs fail and others still
+					  succeed. */
 	optional Proceed proceed = 5;
 	repeated Challenge challenge = 6;
         repeated Challenge completedchallenge = 7;
