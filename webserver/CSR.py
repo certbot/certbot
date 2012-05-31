@@ -2,6 +2,10 @@
 
 # use OpenSSL to provide CSR-related operations
 
+import subprocess, tempfile
+# we will use tempfile.NamedTemporaryFile() to get tempfiles
+# to pass to OpenSSL subprocesses.
+
 def parse(csr):
     """Is this CSR syntactically valid?"""
     return True
