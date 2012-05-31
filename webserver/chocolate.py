@@ -116,7 +116,7 @@ class index:
             r.failure.cause = r.BadCSR
             r.failure.affectedrequest = nonce
             return
-        # if CSR.verify(pubkey(csr), sig) != hmac("chocolate-request-ca-example.com", /%s/%s/%s/%s" % (timestamp, recipient, nonce, csr))):
+        # if CSR.verify(pubkey(csr), sig) != hmac("chocolate-request-ca-example.com", /%d/%s/%s/%s" % (timestamp, recipient, nonce, csr))):
         #     self.killsession()
         #     r.failure.cause = BadSignature
         #     r.failure.affectedrequest = nonce
