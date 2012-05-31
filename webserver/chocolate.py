@@ -6,6 +6,8 @@ from Crypto import Random
 from chocolate_protocol_pb2 import chocolatemessage
 from google.protobuf.message import DecodeError
 
+MaximumSessionAge = 100   # seconds, to demonstrate timeout
+
 def hmac(k, m):
     return HMAC.new(k, m, SHA256).hexdigest()
 
@@ -30,10 +32,15 @@ class sessionstore(object):
             raise KeyError
 
     def kill(self, session):
-        self.f[session]["live"] = False
+        temp = self.f[session]
+        temp["live"] = False
+        self.f[session] = temp
 
     def destroy(self, session):
         del self.f[session]
+
+    def age(self, session):
+        return int(time.time()) - self.f[session]["created"] 
 
 class index:
     def GET(self):
@@ -67,12 +74,14 @@ class index:
                 r.failure.cause = r.StaleRequest
             elif not self.sessions.live(session):
                 r.failure.cause = r.StaleRequest
+            elif self.sessions.age(session) > MaximumSessionAge:
+                self.sessions.kill(session)
+                r.failure.cause = r.StaleRequest
         if m.debug:
             web.header("Content-type", "text/plain")
             return "SAW MESSAGE: %s\n" % str(r)
         else:
             return r.SerializeToString()
-            
 
 if __name__ == "__main__":
     app = web.application(urls, globals())
