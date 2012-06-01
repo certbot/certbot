@@ -140,7 +140,10 @@ class index:
         if not CSR.csr_goodkey(csr):
             self.die(r, r.UnsafeKey, nonce)
             return
-        # TODO: check goodness of cn field
+        if not CSR.can_sign(CSR.cn(csr)):
+            self.die(r, r.CannotIssueThatName, nonce)
+            return
+        # TODO: check goodness of subjectAltName fields!
         self.sessions.make_request(self.session, (nonce, CSR.cn(csr), csr))
         r.proceed.timestamp = int(time.time())
         r.proceed.polldelay = 10
