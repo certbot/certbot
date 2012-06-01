@@ -2,7 +2,7 @@
 
 from chocolate_protocol_pb2 import chocolatemessage
 from Crypto.Hash import SHA256
-import urllib2, os, sys, time, CSR
+import urllib2, os, sys, time, random, CSR
 
 def sha256(m):
     return SHA256.new(m).hexdigest()
@@ -27,7 +27,7 @@ def init(m):
 
 def make_request(m):
     m.request.add()
-    m.request[0].nonce = "blah"
+    m.request[0].nonce = "".join([random.choice("abcdefghijklmnopqrstuvwxyz") for i in xrange(20)])
     m.request[0].recipient = "ca.example.com"
     m.request[0].timestamp = int(time.time())
     m.request[0].csr = "FOO"
