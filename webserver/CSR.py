@@ -79,6 +79,9 @@ def can_sign(name):
 
 def verify(key, data):
     """What string was validly signed by this public key? (or None)"""
+    # Note: Only relatively short strings will work, so we normally
+    # sign a hash of the signed data rather than signing the signed
+    # data directly.
     with tempfile.NamedTemporaryFile() as tmp:
         tmp.write(key)
         tmp.flush()
@@ -99,4 +102,7 @@ def sign(key, data):
 
 def issue(csr):
     """Issue the certificate requested by this CSR and return it!"""
+    # TODO: a real CA should severely restrict the content of the cert, not
+    # just grant what's asked for.  (For example, the CA shouldn't trust
+    # all the data in the subject field if it hasn't been validated.)
     return "-----BEGIN CERTIFICATE-----\nThanks for the shrubbery!\n-----END CERTIFICATE-----"
