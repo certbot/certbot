@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 
 from chocolate_protocol_pb2 import chocolatemessage
-import urllib2, os, sys, time
+from Crypto.Hash import SHA256
+import urllib2, os, sys, time, CSR
+
+def sha256(m):
+    return SHA256.new(m).hexdigest()
 
 try:
     upstream = "https://%s/chocolate.py" % os.environ["CHOCOLATESERVER"]
@@ -17,6 +21,10 @@ def do(m):
 def decode(m):
     return str(chocolatemessage.FromString(m))
 
+def init(m):
+    m.chocolateversion = 1
+    m.session = ""
+
 def make_request(m):
     m.request.add()
     m.request[0].nonce = "blah"
@@ -24,6 +32,9 @@ def make_request(m):
     m.request[0].timestamp = int(time.time())
     m.request[0].csr = "FOO"
     m.request[0].sig = "BAR"
+
+def sign(k, m, i=0):
+    m.request[i].sig = CSR.sign(k, sha256("(%d) (%s) (%s) (%s)" % (m.request[i].timestamp, m.request[i].recipient, m.request[i].nonce, m.request[i].csr)))
 
 m = chocolatemessage()
 
