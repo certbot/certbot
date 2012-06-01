@@ -18,7 +18,7 @@ def modulusbits(key):
     out, err = subprocess.Popen(["openssl", "rsa", "-pubin", "-text", "-noout"],shell=False,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE).communicate(key)
     if out and not err:
         try:
-            size = re.search("Public-Key: \(([0-9]+) bit\)", out).groups()[0]
+            size = re.search("(Public-Key|Modulus):? \(([0-9]+) bit\)", out).groups()[-1]
         except:
             return None
         return int(size)
