@@ -7,7 +7,7 @@ message chocolatemessage {
 	     required string recipient = 3;
 	     required string nonce = 4;
 	     required string csr = 5;
-	     required string sig = 6;
+	     required bytes sig = 6;
 	     optional string clientpuzzle = 7;
                       /* server can specify difficulty? */
         }
@@ -36,7 +36,7 @@ message chocolatemessage {
 	}
 
 	message Proceed {
-	     required string timestamp = 1;
+	     required int64 timestamp = 1;
              optional int32 polldelay = 2;
         }
 
