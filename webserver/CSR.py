@@ -24,14 +24,19 @@ def modulusbits(key):
         return int(size)
     return None
 
-def goodkey(csr):
-    """Does this CSR's public key comply with our CA policy?"""
-    if not parse(csr): return False
-    bits = modulusbits(pubkey(csr))
+def goodkey(key):
+    """Does this public key comply with our CA policy?"""
+    bits = modulusbits(key)
     if bits and bits >= 2000:
         return True
     else:
         return False
+
+def csr_goodkey(csr):
+    """Does this CSR's embedded public key comply with our CA policy?"""
+    if not parse(csr): return False
+    key = pubkey(csr)
+    return goodkey(key)
 
 def pubkey(csr):
     """Get the public key from this CSR."""
@@ -40,9 +45,22 @@ def pubkey(csr):
         return out
     return None
 
+def subject(csr):
+    """Get the X.509 subject from this CSR."""
+    out, err = subprocess.Popen(["openssl", "req", "-subject", "-noout"],shell=False,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE).communicate(csr)
+    if out and not err:
+        return out
+    return None
+
 def cn(csr):
-    """Get the common name from this CSR."""
-    return ""
+    """Get the common name from this CSR.  Requires there be exactly one."""
+    cns = []
+    s = subject(csr)
+    if s:
+       cns = [x for x in s.rstrip().split("/") if x[:3] == "CN="]
+    if len(cns) == 1:
+       return cns[0].split("=")[1]
+    return None
 
 def san(csr):
     """Get the subjectAltNames from this CSR."""
