@@ -9,12 +9,31 @@ from google.protobuf.message import DecodeError
 
 MaximumSessionAge = 100   # seconds, to demonstrate timeout
 
-def hmac(k, m):
-    return HMAC.new(k, m, SHA256).hexdigest()
-
 urls = (
      '.*', 'index'
 )
+
+def sha256(m):
+    return SHA256.new(m).hexdigest()
+
+def hmac(k, m):
+    return HMAC.new(k, m, SHA256).hexdigest()
+
+def safe(what, s):
+    """Is string s within the allowed-character policy for this field?"""
+    if not isinstance(s, basestring):
+        return False
+    base64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+    csr_ok = base64 + " =-"
+    if what == "nonce":
+        return s.isalnum()
+    elif what == "recipient":
+        return all(c.isalnum() or c in "-." for c in s)
+    elif what == "csr":
+       return all(all(c in csr_ok for c in line) for line in s.split("\n"))
+       # Note that this implies CSRs must have LF for end-of-line, not CRLF
+    else:
+       return False
 
 class sessionstore(object):
     def __init__(self, f="/tmp/chocolate-sessions.shelve"):
@@ -77,6 +96,12 @@ class index:
                 self.killsession()
                 r.failure.cause = r.StaleRequest
 
+    def die(self, r, reason, nonce=None, uri=None):
+        self.killsession()
+        r.failure.cause = reason
+        if nonce: r.failure.affectedrequest = nonce
+        if uri: r.failure.URI = uri
+
     def handleclientfailure(self, m, r):
         if r.failure.IsInitialized(): return
         if m.failure.IsInitialized():
@@ -88,9 +113,7 @@ class index:
         if r.failure.IsInitialized(): return
         if not m.request: return
         if self.sessions.request_made(self.session):
-            self.killsession()
-            r.failure.cause = r.BadRequest
-            r.failure.uri = "https://ca.example.com/failures/request"
+            self.die(r, r.BadRequest, uri="https://ca.example.com/failures/request")
             return
         # TODO: currently only examine the first request
         # TODO: check client puzzle
@@ -99,34 +122,28 @@ class index:
         nonce = m.request[0].nonce
         csr = m.request[0].csr
         sig = m.request[0].sig
+        if not all([safe("recipient", recipient), safe("nonce", nonce), safe("csr", csr)]):
+            self.die(r, r.BadRequest, nonce, "https://ca.example.com/failures/illegalcharacter")
+            return
         if timestamp > time.time() or time.time() - timestamp > 100:
-            self.killsession()
-            r.failure.cause = r.BadRequest
-            r.failure.affectedrequest = nonce
-            r.failure.uri = "https://ca.example.com/failures/time"
+            self.die(r, r.BadRequest, nonce, "https://ca.example.com/failures/time")
             return
         if recipient != "ca.example.com":
-            self.killsession()
-            r.failure.cause = r.BadRequest
-            r.failure.affectedrequest = nonce
-            r.failure.uri = "https://ca.example.com/failures/recipient"
+            self.die(r, r.BadRequest, nonce, "https://ca.example.com/failures/recipient")
             return
         if not CSR.parse(csr):
-            self.killsession()
-            r.failure.cause = r.BadCSR
-            r.failure.affectedrequest = nonce
+            self.die(r, r.BadCSR, nonce)
             return
-        # if CSR.verify(pubkey(csr), sig) != hmac("chocolate-request-ca-example.com", /%d/%s/%s/%s" % (timestamp, recipient, nonce, csr))):
-        #     self.killsession()
-        #     r.failure.cause = BadSignature
-        #     r.failure.affectedrequest = nonce
-        #     self.killsession()
-        #     return
-        if not CSR.goodkey(csr):
-            self.killsession()
-            r.failure.cause = r.UnsafeKey
-            r.failure.affectedrequest = nonce
+        if CSR.verify(CSR.pubkey(csr), sig) != sha256("(%d) (%s) (%s) (%s)" % (timestamp, recipient, nonce, csr)):
+            self.die(r, r.BadSignature, nonce)
             return
+        if not CSR.csr_goodkey(csr):
+            self.die(r, r.UnsafeKey, nonce)
+            return
+        # TODO: check goodness of cn field
+        self.sessions.make_request(self.session, (nonce, CSR.cn(csr), csr))
+        r.proceed.timestamp = int(time.time())
+        r.proceed.polldelay = 10
 
     def POST(self):
         web.header("Content-type", "application/x-protobuf")
@@ -143,6 +160,7 @@ class index:
         else:
             if m.chocolateversion != 1:
                 r.failure.cause = r.UnsupportedVersion
+
         self.handlesession(m, r)
 
         self.handleclientfailure(m, r)
