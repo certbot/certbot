@@ -75,6 +75,7 @@ def can_sign(name):
     if "." not in name: return False
     # Examples of names that are forbidden by policy due to a blacklist.
     if name in ["google.com", "www.google.com"]: return False
+    return True
 
 def verify(key, data):
     """What string was validly signed by this public key? (or None)"""
