@@ -23,6 +23,9 @@ def safe(what, s):
     """Is string s within the allowed-character policy for this field?"""
     if not isinstance(s, basestring):
         return False
+    if len(s) == 0:
+        # No validated string should be empty.
+        return False
     base64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
     csr_ok = base64 + " =-"
     if what == "nonce":
@@ -68,13 +71,14 @@ class session(object):
         return sessions.llen(self.id + ":requests") > 0
 
     def add_request(self, nonce, cn, csr):
-        if sessions.hget(self.id + ":req:" + nonce):
+        if sessions.hget(self.id + ":req:" + nonce, "cn") is not None:
             # duplicate nonce
             return False
         # TODO: is it safe to use the client-supplied nonce for naming the request?
         sessions.hset(self.id + ":req:" + nonce, "cn", cn)
         sessions.hset(self.id + ":req:" + nonce, "csr", csr)
         sessions.rpush(self.id + ":requests", nonce)
+        return True
 
 class index(object):
     def GET(self):
@@ -120,38 +124,39 @@ class index(object):
             # beginning.)
             self.die(r, r.BadRequest, uri="https://ca.example.com/failures/priorrequest")
             return
-        # TODO: currently only examine the first request, but this should be a loop.
         # TODO: check client puzzle
-        timestamp = m.request[0].timestamp
-        recipient = m.request[0].recipient
-        nonce = m.request[0].nonce
-        csr = m.request[0].csr
-        sig = m.request[0].sig
-        if not all([safe("recipient", recipient), safe("nonce", nonce), safe("csr", csr)]):
-            self.die(r, r.BadRequest, nonce, "https://ca.example.com/failures/illegalcharacter")
-            return
-        if timestamp > time.time() or time.time() - timestamp > 100:
-            self.die(r, r.BadRequest, nonce, "https://ca.example.com/failures/time")
-            return
-        if recipient != "ca.example.com":
-            self.die(r, r.BadRequest, nonce, "https://ca.example.com/failures/recipient")
-            return
-        if not CSR.parse(csr):
-            self.die(r, r.BadCSR, nonce)
-            return
-        if CSR.verify(CSR.pubkey(csr), sig) != sha256("(%d) (%s) (%s) (%s)" % (timestamp, recipient, nonce, csr)):
-            self.die(r, r.BadSignature, nonce)
-            return
-        if not CSR.csr_goodkey(csr):
-            self.die(r, r.UnsafeKey, nonce)
-            return
-        if not CSR.can_sign(CSR.cn(csr)):
-            self.die(r, r.CannotIssueThatName, nonce)
-            return
-        # TODO: check goodness of subjectAltName fields!
-        if not self.session.add_request(nonce, CSR.cn(csr), csr):
-            self.die(r, r.BadRequest, nonce, "https://ca.example.com/failures/duplicatenonce")
-            return
+        for i in xrange(len(m.request)):
+            timestamp = m.request[i].timestamp
+            recipient = m.request[i].recipient
+            nonce = m.request[i].nonce
+            csr = m.request[i].csr
+            sig = m.request[i].sig
+            if not all([safe("recipient", recipient), safe("nonce", nonce), safe("csr", csr)]):
+                self.die(r, r.BadRequest, nonce, "https://ca.example.com/failures/illegalcharacter")
+                return
+            if timestamp > time.time() or time.time() - timestamp > 100:
+                self.die(r, r.BadRequest, nonce, "https://ca.example.com/failures/time")
+                return
+            if recipient != "ca.example.com":
+                self.die(r, r.BadRequest, nonce, "https://ca.example.com/failures/recipient")
+                return
+            if not CSR.parse(csr):
+                self.die(r, r.BadCSR, nonce)
+                return
+            if CSR.verify(CSR.pubkey(csr), sig) != sha256("(%d) (%s) (%s) (%s)" % (timestamp, recipient, nonce, csr)):
+                self.die(r, r.BadSignature, nonce)
+                return
+            if not CSR.csr_goodkey(csr):
+                self.die(r, r.UnsafeKey, nonce)
+                return
+            if not CSR.can_sign(CSR.cn(csr)):
+                self.die(r, r.CannotIssueThatName, nonce)
+                return
+            # TODO: check goodness of subjectAltName fields!
+            if not self.session.add_request(nonce, CSR.cn(csr), csr):
+                self.die(r, r.BadRequest, nonce, "https://ca.example.com/failures/duplicatenonce")
+                return
+        # Phew!
         r.proceed.timestamp = int(time.time())
         r.proceed.polldelay = 10
 
