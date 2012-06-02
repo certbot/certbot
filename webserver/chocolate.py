@@ -68,10 +68,12 @@ class session(object):
         return sessions.llen(self.id + ":requests") > 0
 
     def add_request(self, nonce, cn, csr):
-        # TODO: check for duplicate nonce!
+        if sessions.hget(self.id + ":req:" + nonce):
+            # duplicate nonce
+            return False
         # TODO: is it safe to use the client-supplied nonce for naming the request?
-        sessions.hset(self.id + "req:" + nonce, "cn", cn)
-        sessions.hset(self.id + "req:" + nonce, "csr", csr)
+        sessions.hset(self.id + ":req:" + nonce, "cn", cn)
+        sessions.hset(self.id + ":req:" + nonce, "csr", csr)
         sessions.rpush(self.id + ":requests", nonce)
 
 class index(object):
@@ -116,7 +118,7 @@ class index(object):
             # Can't make new signing requests if there have already been requests in
             # this session.  (All signing requests should occur together at the
             # beginning.)
-            self.die(r, r.BadRequest, uri="https://ca.example.com/failures/request")
+            self.die(r, r.BadRequest, uri="https://ca.example.com/failures/priorrequest")
             return
         # TODO: currently only examine the first request, but this should be a loop.
         # TODO: check client puzzle
@@ -147,7 +149,9 @@ class index(object):
             self.die(r, r.CannotIssueThatName, nonce)
             return
         # TODO: check goodness of subjectAltName fields!
-        self.session.add_request(nonce, CSR.cn(csr), csr)
+        if not self.session.add_request(nonce, CSR.cn(csr), csr):
+            self.die(r, r.BadRequest, nonce, "https://ca.example.com/failures/duplicatenonce")
+            return
         r.proceed.timestamp = int(time.time())
         r.proceed.polldelay = 10
 
