@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import web, shelve, time
+import web, redis, time
 import CSR
 from Crypto.Hash import SHA256, HMAC
 from Crypto import Random 
@@ -35,69 +35,70 @@ def safe(what, s):
     else:
        return False
 
-class sessionstore(object):
-    def __init__(self, f="/tmp/chocolate-sessions.shelve"):
-        self.f = shelve.open(f, "c")
+sessions = redis.Redis()
 
-    def exists(self, session):
-        return session in self.f
+class session(object):
+    def __init__(self, sessionid):
+        self.id = sessionid
 
-    def live(self, session):
-        return session in self.f and self.f[session]["live"]
+    def exists(self):
+        return self.id in sessions
 
-    def create(self, session, timestamp):
-        if session not in self.f:
-            self.f[session] = {"created": timestamp, "live": True}
+    def live(self):
+        return self.id in sessions and sessions.hget(self.id, "live") == "True"
+
+    def create(self, timestamp=int(time.time())):
+        if not self.exists():
+            sessions.hset(self.id, "created", timestamp)
+            sessions.hset(self.id, "live", True)
         else:
             raise KeyError
 
-    def kill(self, session):
-        temp = self.f[session]
-        temp["live"] = False
-        self.f[session] = temp
+    def kill(self):
+        sessions.hset(self.id, "live", False)
 
-    def destroy(self, session):
-        del self.f[session]
+    def destroy(self):
+        sessions.delete(self.id)
 
-    def age(self, session):
-        return int(time.time()) - self.f[session]["created"] 
+    def age(self):
+        return int(time.time()) - int(sessions.hget(self.id, "created"))
 
-    def make_request(self, session, request):
-        self.f["request"] = request
+    def request_made(self):
+        """Has there already been any signing request made in this session?"""
+        return sessions.llen(self.id + ":requests") > 0
 
-    def get_request(self, session):
-        return self.f["request"]
+    def add_request(self, nonce, cn, csr):
+        # TODO: check for duplicate nonce!
+        # TODO: is it safe to use the client-supplied nonce for naming the request?
+        sessions.hset(self.id + "req:" + nonce, "cn", cn)
+        sessions.hset(self.id + "req:" + nonce, "csr", csr)
+        sessions.rpush(self.id + ":requests", nonce)
 
-    def request_made(self, session):
-        return "request" in self.f[session]
-
-class index:
+class index(object):
     def GET(self):
         web.header("Content-type", "text/html")
         return "Hello, world!  This server only accepts POST requests."
-
-    def killsession(self):
-        self.sessions.kill(self.session)
 
     def handlesession(self, m, r):
         if m.session == "":
             # New session
             r.session = SHA256.new(Random.get_random_bytes(32)).hexdigest()
-            self.session = r.session.encode("UTF8")
-            self.sessions.create(self.session, int(time.time()))
+            self.session = session(r.session)
+            if not self.session.exists():
+                self.session.create()
+            else:
+                raise ValueError, "new random session already existed!"
         elif m.session and not r.failure.IsInitialized():
-            self.session = m.session.encode("UTF8")
-            r.session = self.session
-            if not self.sessions.exists(self.session):
+            self.session = session(m.session)
+            r.session = m.session
+            if not (self.session.exists() and self.session.live()):
+                # Don't need to, or can't, kill nonexistent/already dead session
                 r.failure.cause = r.StaleRequest
-            elif not self.sessions.live(self.session):
-                r.failure.cause = r.StaleRequest
-            elif self.sessions.age(self.session) > MaximumSessionAge:
-                self.killsession()
-                r.failure.cause = r.StaleRequest
+            elif self.session.age() > MaximumSessionAge:
+                self.die(r, r.StaleRequest)
 
     def die(self, r, reason, nonce=None, uri=None):
-        self.killsession()
+        self.session.kill()
         r.failure.cause = reason
         if nonce: r.failure.affectedrequest = nonce
         if uri: r.failure.URI = uri
@@ -106,16 +107,18 @@ class index:
         if r.failure.IsInitialized(): return
         if m.failure.IsInitialized():
             # Received failure message from client!
-            self.killsession()
-            r.failure.cause = r.AbandonedRequest
+            self.die(r, r.AbandonedRequest)
 
     def handlesigningrequest(self, m, r):
         if r.failure.IsInitialized(): return
         if not m.request: return
-        if self.sessions.request_made(self.session):
+        if self.session.request_made():
+            # Can't make new signing requests if there have already been requests in
+            # this session.  (All signing requests should occur together at the
+            # beginning.)
             self.die(r, r.BadRequest, uri="https://ca.example.com/failures/request")
             return
-        # TODO: currently only examine the first request
+        # TODO: currently only examine the first request, but this should be a loop.
         # TODO: check client puzzle
         timestamp = m.request[0].timestamp
         recipient = m.request[0].recipient
@@ -144,7 +147,7 @@ class index:
             self.die(r, r.CannotIssueThatName, nonce)
             return
         # TODO: check goodness of subjectAltName fields!
-        self.sessions.make_request(self.session, (nonce, CSR.cn(csr), csr))
+        self.session.add_request(nonce, CSR.cn(csr), csr)
         r.proceed.timestamp = int(time.time())
         r.proceed.polldelay = 10
 
@@ -152,7 +155,6 @@ class index:
         web.header("Content-type", "application/x-protobuf")
 #        web.setcookie("chocolate", hmac("foo", "bar"),
 #                       secure=True) # , httponly=True)
-        self.sessions = sessionstore()
         m = chocolatemessage()
         r = chocolatemessage()
         r.chocolateversion = 1
