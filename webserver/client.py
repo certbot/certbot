@@ -26,14 +26,14 @@ def init(m):
     m.session = ""
 
 def make_request(m):
-    m.request.nonce = "".join([random.choice("abcdefghijklmnopqrstuvwxyz") for i in xrange(20)])
+    # m.request.nonce = "".join([random.choice("abcdefghijklmnopqrstuvwxyz") for i in xrange(20)])
     m.request.recipient = "ca.example.com"
     m.request.timestamp = int(time.time())
     m.request.csr = "FOO"
     m.request.sig = "BAR"
 
 def sign(k, m):
-    m.request.sig = CSR.sign(k, sha256("(%d) (%s) (%s) (%s)" % (m.request.timestamp, m.request.recipient, m.request.nonce, m.request.csr)))
+    m.request.sig = CSR.sign(k, sha256("(%d) (%s) (%s)" % (m.request.timestamp, m.request.recipient, m.request.csr)))
 
 m = chocolatemessage()
 
