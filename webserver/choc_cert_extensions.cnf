@@ -1,0 +1,16 @@
+#
+# OpenSSL configuration file.
+#
+
+# Extra OBJECT IDENTIFIER info:
+oid_section				= new_oids
+
+[ new_oids ]
+choc=1.3.3.7
+ 
+
+[ v3_ca ]
+basicConstraints			= CA:TRUE
+subjectKeyIdentifier			= hash
+authorityKeyIdentifier			= keyid:always,issuer:always
+1.3.3.7=DER:C15B2E9D8F49A16C57A66F9E07C18C0B524183C427dae3a76c9c5945ff91c27d28eec5a4cc8e2e42a274f7de42d079bfe413171e

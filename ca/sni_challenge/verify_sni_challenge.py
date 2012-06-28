@@ -12,10 +12,10 @@ def check(one, two, three, four, five):
 def byteToHex(byteStr):
     return ''.join(["%02X" % ord(x) for x in byteStr]).strip()
 
-def check_challenge_value(ext_value, sharedSecret):
+def check_challenge_value(ext_value, r):
     s = ext_value[0:S_SIZE]
     mac = ext_value[S_SIZE:]
-    expected_mac = hmac.new(sharedSecret, str(s), hashlib.sha256).digest()
+    expected_mac = hmac.new(r, str(s), hashlib.sha256).digest()
 
     #print "s: ", byteToHex(s)
     #print "mac: ", byteToHex(mac)
@@ -27,8 +27,8 @@ def check_challenge_value(ext_value, sharedSecret):
         return True
     return False 
 
-def verify_challenge(address, sharedSecret, encryptedValue):
-    sni_name = byteToHex(encryptedValue[0]) + ".com"
+def verify_challenge(address, r, nonce):
+    sni_name = nonce + ".chocolate"
 
     context = M2Crypto.SSL.Context()
     context.set_allow_unknown_ca(True)
@@ -49,23 +49,25 @@ def verify_challenge(address, sharedSecret, encryptedValue):
 
         if sni_support.get_nid(ext.x509_ext) == 0:
 
-            valid = check_challenge_value(sni_support.get_unknown_value(ext.x509_ext), sharedSecret)
+            valid = check_challenge_value(sni_support.get_unknown_value(ext.x509_ext), r)
             if valid:
                 return True, "Challenge completed successfully"
             else:
                 return False, "Certificate extension does not check out"
 
+    return False, "Chocolate extension not included in certificate"
 
 def main():
     #Testing the example sni_challenge
     from Crypto.PublicKey import RSA
 
-    testkey = RSA.importKey(open("/home/james/Documents/apache_choc/testing.key").read())
+    nonce = "nonce"
+    testkey = RSA.importKey(open("testing.key").read())
 
     #the second parameter is ignored
     #https://www.dlitz.net/software/pycrypto/api/current/
     encryptedValue = testkey.encrypt('0x12345678', 0)
-    valid, response = verify_challenge("127.0.0.1", '0x12345678', encryptedValue)
+    valid, response = verify_challenge("127.0.0.1", '0x12345678', nonce)
     print response
 
 if __name__ == "__main__":

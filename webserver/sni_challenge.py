@@ -10,34 +10,41 @@ from shutil import move
 from os import remove, close
 
 CHOC_DIR = "/home/james/Documents/apache_choc/"
+#CHOC_KEY = "../ca/sni_challenge/testing.key"
 CHOC_KEY = CHOC_DIR + "testing.key"
 SERVER_BASE = "/etc/apache2/"
 CHOC_CERT = CHOC_DIR + "choc.crt"
 CSR = CHOC_DIR + "choc.csr"
-CHOC_CERT_CONF = CHOC_DIR + "choc_cert_extensions.cnf"
+CHOC_CERT_CONF = "choc_cert_extensions.cnf"
 APACHE_CHALLENGE_CONF = CHOC_DIR + "choc_sni_cert_challenge.conf"
 S_SIZE = 20
 
 def findApacheConfigFile():
-    return CHOC_DIR + "demo_apache.conf"
+    #return CHOC_DIR + "demo_apache.conf"
+    #This needs to be fixed to account for multiple httpd.conf files
     try:
-        p = subprocess.check_output(['find', '/', '-name', '"httpd.conf"'], stderr=open("/dev/null"))
+        p = subprocess.check_output(["sudo", "find", "/", "-name", "httpd.conf"], stderr=open("/dev/null"))
+	p = p[:len(p)-1]
+	print "Apache Config: ", p
+	return p
     except subprocess.CalledProcessError, e:
-        print "Not found"
+        print "httpd.conf not found"
+	print "Please include .... in the conf file"
+        return None
 
-def modifyApacheConfig(mainConfig, nonce, servername, ip_addr):
+def modifyApacheConfig(mainConfig, nonce, ip_addr):
     configText = "<IfModule mod_ssl.c> \n \
 <VirtualHost " + ip_addr + ":443> \n \
-Servername " + nonce + "-choc." + servername + " \n \
+Servername " + nonce + ".chocolate \n \
 UseCanonicalName on \n \
 \n \
 LimitRequestBody 1048576 \n \
 \n \
-Include options-ssl.conf \n \
+Include " + CHOC_DIR + "options-ssl.conf \n \
 SSLCertificateFile " + CHOC_CERT + " \n \
 SSLCertificateKeyFile " + CHOC_KEY + " \n \
 \n \
-DocumentRoot " + CHOC_DIR + "virtual_server/ \n \
+DocumentRoot " + CHOC_DIR + "challenge_page/ \n \
 </VirtualHost> \n \
 </IfModule>"
 
@@ -49,14 +56,18 @@ DocumentRoot " + CHOC_DIR + "virtual_server/ \n \
 # Need to add NameVirtualHost IP_ADDR
 def checkForApacheConfInclude(mainConfig):
     searchStr = "Include " + APACHE_CHALLENGE_CONF
-    conf = open(mainConfig, 'r+')
+    #conf = open(mainConfig, 'r+')
+    conf = open(mainConfig, 'r')
     flag = False
     for line in conf:
         if line.startswith(searchStr):
             flag = True
             break
     if not flag:
-        conf.write(searchStr)
+        #conf.write(searchStr)
+	process = subprocess.Popen(["echo", "\n" + searchStr], stdout=subprocess.PIPE)
+        subprocess.check_output(["sudo", "tee", "-a", mainConfig], stdin=process.stdout)
+	process.stdout.close()
 
     conf.close();
         
@@ -69,12 +80,12 @@ def createChallengeCert(ext):
 
 def generateExtension(challengeValue):
     rsaPrivKey = RSA.importKey(open(CHOC_KEY).read())
-    sharedSecret = rsaPrivKey.decrypt(challengeValue)
-    print sharedSecret
+    r = rsaPrivKey.decrypt(challengeValue)
+    print r
 
     s = Random.get_random_bytes(S_SIZE)
     #s = "0xDEADBEEF"
-    extHMAC = hmac.new(sharedSecret, str(s), hashlib.sha256)
+    extHMAC = hmac.new(r, str(s), hashlib.sha256)
     return byteToHex(s) + extHMAC.hexdigest()
 
 def byteToHex(byteStr):
@@ -95,24 +106,25 @@ def updateCertConf(value):
     move(CHOC_CERT_CONF + ".tmp", CHOC_CERT_CONF)
 
 def apache_restart():
-    subprocess.call(["/etc/init.d/apache2", "reload"])
+    subprocess.call(["sudo", "/etc/init.d/apache2", "reload"])
 
 #main call
-def perform_sni_cert_challenge(encryptedValue):
+def perform_sni_cert_challenge(encryptedValue, nonce):
     ext = generateExtension(encryptedValue)
     createChallengeCert(ext)
     
     #Need to decide the form of nonce
-    modifyApacheConfig(findApacheConfigFile(), "Nonce", "choc_sni_challenge.com", "127.0.0.1")
-    #apache_restart()
+    modifyApacheConfig(findApacheConfigFile(), nonce, "127.0.0.1")
+    apache_restart()
 
 def main():
+
     testkey = RSA.importKey(open(CHOC_KEY).read())
 
     #the second parameter is ignored
     #https://www.dlitz.net/software/pycrypto/api/current/
     encryptedValue = testkey.encrypt('0x12345678', 0)
-    perform_sni_cert_challenge(encryptedValue)
+    perform_sni_cert_challenge(encryptedValue, "nonce")
 
 if __name__ == "__main__":
     main()
