@@ -67,16 +67,13 @@ message chocolatemessage {
 	     required string certificate = 1; /* Repeated string certificate? */
 	}
 
-	repeated SigningRequest request = 3; /* TODO or should there just be one request and the request
-						should use subject alternate names for every name that
-						we want to have signed?  There could still be multiple
+	optional SigningRequest request = 3; /* There should just be one request and the request
+						must use subject alternate names for every name that
+						we want to have signed.  There could still be multiple
 						challenges in response -- one or more challenges per
 						name. */
-	optional Failure failure = 4;  /* TODO need to think about where there can be multiple failures
-                                          reported at once, and whether all failures are completely fatal
-                                          to the protocol, requiring it to be restarted from the beginning,
-					  or whether you could have some CSRs fail and others still
-					  succeed. */
+	optional Failure failure = 4;  /* Each failure is completely fatal to the protocol, requiring it
+                                          to be restarted from the beginning. */
 	optional Proceed proceed = 5;
 	repeated Challenge challenge = 6;
         repeated Challenge completedchallenge = 7;
