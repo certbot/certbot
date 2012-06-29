@@ -12,3 +12,8 @@ chocolate.py - server-side, requires web.py (python-webpy),
 client.py - experimental tool for making requests and parsing replies
 
 chocolate_protocol.proto - protocol definition; needs protobuf-compiler
+
+sni_challenge - Assumes Apache server with name based virtual hosts is running (for intended address).
+	Call perform_sni_cert_challenge(address, r, nonce) to do the whole challenge.
+	Example code is given in main method
+	Right now requires full path specification of CSR/KEY in the Global Variables (how should this be specified?)
