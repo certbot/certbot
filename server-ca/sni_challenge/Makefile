@@ -1,7 +1,7 @@
 CFLAGS+=-fpic -I/usr/include/python2.7
 LDFLAGS+=
 
-targets=_sni_support.so sni_support_wrap.c sni_support.py
+targets=_sni_support.so sni_support_wrap.c sni_support.py sni_support.o sni_support_wrap.o
 
 all: _sni_support.so
 
