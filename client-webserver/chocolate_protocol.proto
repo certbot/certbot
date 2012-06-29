@@ -5,10 +5,10 @@ message chocolatemessage {
 	message SigningRequest {
 	     required int64 timestamp = 2;
 	     required string recipient = 3;
-	     required string nonce = 4;
-	     required string csr = 5;
-	     required bytes sig = 6;
-	     optional string clientpuzzle = 7;
+//	     required string nonce = 4;
+	     required string csr = 4;
+	     required bytes sig = 5;
+	     optional string clientpuzzle = 6;
                       /* server can specify difficulty? */
         }
 
@@ -32,7 +32,7 @@ message chocolatemessage {
 	message Failure {
 	     required FailureReason cause = 1;
 	     optional string URI = 2;  /* for more human-readable information */
-             optional string affectedrequest = 3; /* nonce of the SigningRequest that provoked this failure */
+//             optional string affectedrequest = 3; /* nonce of the SigningRequest that provoked this failure */
 	}
 
 	message Proceed {
@@ -41,16 +41,17 @@ message chocolatemessage {
         }
 
 	enum ChallengeType {
-	     DomainValidate = 0;
-	     EmailValidate = 1;
-	     Payment = 2;
+	     DomainValidateSNI = 0;
+	     DomainValidateTLSExt = 1;
+	     EmailValidate = 2;
+	     Payment = 3;
 	}
 
 	message Challenge {
 	     required ChallengeType type = 1;
 	     required int32 challengeid = 2;
 	     optional string name = 3;
-	     optional string data = 4;
+	     repeated bytes data = 4;
 	     optional string URI = 5;
 	     optional bool succeeded = 6;
 		      /* from server: true if server ACK success,
