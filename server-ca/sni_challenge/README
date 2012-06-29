@@ -1,4 +1,3 @@
-Open make.sh and change second command to point to your include/pythonX.X implementation.
-Run make.sh
+Run Make
 
-Run: make a call to verify_challenge(address, r, nonce).  Nonce and r must match up to original challenge values.  Example code is given in main().
+To verify challenge: make a call to verify_challenge(address, r, nonce).  Nonce and r must match up to original challenge values.  Example code is given in main().
