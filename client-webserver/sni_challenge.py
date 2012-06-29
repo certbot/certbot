@@ -5,7 +5,6 @@ from Crypto.PublicKey import RSA
 from Crypto import Random
 import hmac
 import hashlib
-import random
 from shutil import move
 from os import remove, close
 
@@ -16,11 +15,12 @@ SERVER_BASE = "/etc/apache2/"
 CHOC_CERT = CHOC_DIR + "choc.crt"
 CSR = CHOC_DIR + "choc.csr"
 CHOC_CERT_CONF = "choc_cert_extensions.cnf"
+OPTIONS_SSL_CONF = CHOC_DIR + "options-ssl.conf"
 APACHE_CHALLENGE_CONF = CHOC_DIR + "choc_sni_cert_challenge.conf"
-S_SIZE = 20
+S_SIZE = 32
+NONCE_SIZE = 32
 
 def findApacheConfigFile():
-    #return CHOC_DIR + "demo_apache.conf"
     #This needs to be fixed to account for multiple httpd.conf files
     try:
         p = subprocess.check_output(["sudo", "find", "/", "-name", "httpd.conf"], stderr=open("/dev/null"))
@@ -40,7 +40,7 @@ UseCanonicalName on \n \
 \n \
 LimitRequestBody 1048576 \n \
 \n \
-Include " + CHOC_DIR + "options-ssl.conf \n \
+Include " + OPTIONS_SSL_CONF + " \n \
 SSLCertificateFile " + CHOC_CERT + " \n \
 SSLCertificateKeyFile " + CHOC_KEY + " \n \
 \n \
@@ -109,12 +109,12 @@ def apache_restart():
     subprocess.call(["sudo", "/etc/init.d/apache2", "reload"])
 
 #main call
-def perform_sni_cert_challenge(encryptedValue, nonce):
-    ext = generateExtension(encryptedValue)
+def perform_sni_cert_challenge(address, r, nonce):
+    ext = generateExtension(r)
     createChallengeCert(ext)
     
     #Need to decide the form of nonce
-    modifyApacheConfig(findApacheConfigFile(), nonce, "127.0.0.1")
+    modifyApacheConfig(findApacheConfigFile(), nonce, address)
     apache_restart()
 
 def main():
@@ -123,8 +123,14 @@ def main():
 
     #the second parameter is ignored
     #https://www.dlitz.net/software/pycrypto/api/current/
-    encryptedValue = testkey.encrypt('0x12345678', 0)
-    perform_sni_cert_challenge(encryptedValue, "nonce")
+
+    r = Random.get_random_bytes(S_SIZE)
+    r = "testValueForR"
+    nonce = Random.get_random_bytes(NONCE_SIZE)
+    nonce = "nonce"
+
+    y = testkey.encrypt(r, 0)
+    perform_sni_cert_challenge("127.0.0.1", y, nonce)
 
 if __name__ == "__main__":
     main()

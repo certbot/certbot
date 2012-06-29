@@ -1,9 +1,11 @@
 import M2Crypto
+from Crypto import Random
 import sni_support
 import hmac
 import hashlib
 
-S_SIZE = 20
+S_SIZE = 32
+NONCE_SIZE = 32
 
 def check(one, two, three, four, five):
     print "done"
@@ -61,13 +63,16 @@ def main():
     #Testing the example sni_challenge
     from Crypto.PublicKey import RSA
 
+    nonce = Random.get_random_bytes(NONCE_SIZE)
     nonce = "nonce"
     testkey = RSA.importKey(open("testing.key").read())
 
     #the second parameter is ignored
     #https://www.dlitz.net/software/pycrypto/api/current/
-    encryptedValue = testkey.encrypt('0x12345678', 0)
-    valid, response = verify_challenge("127.0.0.1", '0x12345678', nonce)
+    r = Random.get_random_bytes(NONCE_SIZE)
+    r = "testValueForR"
+    encryptedValue = testkey.encrypt(r, 0)
+    valid, response = verify_challenge("127.0.0.1", r, nonce)
     print response
 
 if __name__ == "__main__":
