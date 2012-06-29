@@ -1,3 +1,5 @@
 Run Make
 
-To verify challenge: make a call to verify_challenge(address, r, nonce).  Nonce and r must match up to original challenge values.  Example code is given in main().
+Verify Challenge: make a call to verify_challenge(address, r, nonce)  
+   	  	  Nonce and r must match up to original challenge values.  
+		  Example code is given in main().
