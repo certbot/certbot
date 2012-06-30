@@ -7,10 +7,11 @@ from Crypto import Random
 from chocolate_protocol_pb2 import chocolatemessage
 from google.protobuf.message import DecodeError
 
-MaximumSessionAge = 100   # seconds, to demonstrate timeout
+MaximumSessionAge = 100   # seconds, to demonstrate session timeout
+MaximumChallengeAge = 600 # to demonstrate challenge timeout
 
 urls = (
-     '.*', 'index'
+     '.*', 'session'
 )
 
 def sha256(m):
@@ -28,21 +29,23 @@ def safe(what, s):
         return False
     base64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
     csr_ok = base64 + " =-"
-    if what == "nonce":
-        return s.isalnum()
-    elif what == "recipient":
+#    if what == "nonce":
+#        return s.isalnum()
+    if what == "recipient" or what == "hostname":
         return all(c.isalnum() or c in "-." for c in s)
     elif what == "csr":
        return all(all(c in csr_ok for c in line) for line in s.split("\n"))
        # Note that this implies CSRs must have LF for end-of-line, not CRLF
+    elif what == "session":
+       return len(s) == 64 and all(c in "0123456789abcdef" for c in s)
     else:
        return False
 
 sessions = redis.Redis()
 
 class session(object):
-    def __init__(self, sessionid):
-        self.id = sessionid
+    def __init__(self):
+        self.id = None
 
     def exists(self):
         return self.id in sessions
@@ -58,7 +61,11 @@ class session(object):
             raise KeyError
 
     def kill(self):
-        sessions.hset(self.id, "live", False)
+        # It is now possible to get here via die() even if there is no session
+        # ID, because we can die() on the initial request before a session ID
+        # has been allocated!
+        if self.id:
+            sessions.hset(self.id, "live", False)
 
     def destroy(self):
         sessions.delete(self.id)
@@ -67,46 +74,123 @@ class session(object):
         return int(time.time()) - int(sessions.hget(self.id, "created"))
 
     def request_made(self):
-        """Has there already been any signing request made in this session?"""
-        return sessions.llen(self.id + ":requests") > 0
+        """Has there already been a signing request made in this session?"""
+        return sessions.hget(self.id, "state") is not None
 
-    def add_request(self, nonce, cn, csr):
-        if sessions.hget(self.id + ":req:" + nonce, "cn") is not None:
-            # duplicate nonce
-            return False
-        # TODO: is it safe to use the client-supplied nonce for naming the request?
-        sessions.hset(self.id + ":req:" + nonce, "cn", cn)
-        sessions.hset(self.id + ":req:" + nonce, "csr", csr)
-        sessions.rpush(self.id + ":requests", nonce)
+    def add_request(self, cn, csr):
+        # TODO: structure, how to get cn/san list
+        # TODO: locking/flag when all names added
+        sessions.hset(self.id, "csr", csr)
+        sessions.lpush(self.id + ":names", cn)
+        sessions.hset(self.id, "state", 1)
+        sessions.lpush("pending-requests", self.id)
         return True
 
-class index(object):
-    def GET(self):
-        web.header("Content-type", "text/html")
-        return "Hello, world!  This server only accepts POST requests."
+    def get_challenge(self, cn):
+        return sessions.hget(self.id + ":req:" + cn, "challenge")
+
+    def get_challenge_age(self, cn):
+        t = sessions.hget(self.id + ":req:" + cn, "challtime")
+        if t:
+            return int(time.time()) - int(t)
+        else:
+            return None
+
+    def make_challenge(self):
+        challid = SHA256.new(Random.get_random_bytes(32)).hexdigest()
+        value = SHA256.new(Random.get_random_bytes(32)).hexdigest()
+        sessions.hset(self.id + ":req", "id", challid)
+        sessions.hset(self.id + ":req", "challtime", int(time.time()))
+        sessions.hset(self.id + ":req", "challenge", value)
+        return (challid, value)
 
     def handlesession(self, m, r):
+        if r.failure.IsInitialized(): return
         if m.session == "":
             # New session
             r.session = SHA256.new(Random.get_random_bytes(32)).hexdigest()
-            self.session = session(r.session)
-            if not self.session.exists():
-                self.session.create()
+            self.id = r.session
+            if not self.exists():
+                self.create()
+                self.handlenewsession(m, r)
             else:
                 raise ValueError, "new random session already existed!"
         elif m.session and not r.failure.IsInitialized():
-            self.session = session(m.session)
+            if not safe("session", m.session):
+                # Note that self.id is still uninitialized here.
+                self.die(r, r.BadRequest, uri="https://ca.example.com/failures/illegalsession")
+                return
+            self.id = m.session
             r.session = m.session
-            if not (self.session.exists() and self.session.live()):
+            if not (self.exists() and self.live()):
                 # Don't need to, or can't, kill nonexistent/already dead session
                 r.failure.cause = r.StaleRequest
-            elif self.session.age() > MaximumSessionAge:
+            elif self.age() > MaximumSessionAge:
                 self.die(r, r.StaleRequest)
+            else:
+                self.handleexistingsession(m, r)
 
-    def die(self, r, reason, nonce=None, uri=None):
-        self.session.kill()
+    def handlenewsession(self, m, r):
+        if r.failure.IsInitialized(): return
+        if not m.request.IsInitialized():
+            # It is mandatory to make a signing request at the outset of a session.
+            self.die(r, r.BadRequest, uri="https://ca.example.com/failures/missingrequest")
+            return
+        if self.request_made():
+            # Can't make new signing requests if there have already been requests in
+            # this session.  (All signing requests should occur together at the
+            # beginning.)
+            self.die(r, r.BadRequest, uri="https://ca.example.com/failures/priorrequest")
+            return
+        # Process the request.
+        # TODO: check client puzzle before processing request
+        timestamp = m.request.timestamp
+        recipient = m.request.recipient
+        csr = m.request.csr
+        sig = m.request.sig
+        if not all([safe("recipient", recipient), safe("csr", csr)]):
+            self.die(r, r.BadRequest, uri="https://ca.example.com/failures/illegalcharacter")
+            return
+        if timestamp > time.time() or time.time() - timestamp > 100:
+            self.die(r, r.BadRequest, uri="https://ca.example.com/failures/time")
+            return
+        if recipient != "ca.example.com":
+            self.die(r, r.BadRequest, uri="https://ca.example.com/failures/recipient")
+            return
+        if not CSR.parse(csr):
+            self.die(r, r.BadCSR)
+            return
+        if CSR.verify(CSR.pubkey(csr), sig) != sha256("(%d) (%s) (%s)" % (timestamp, recipient, csr)):
+            self.die(r, r.BadSignature)
+            return
+        if not CSR.csr_goodkey(csr):
+            self.die(r, r.UnsafeKey)
+            return
+        # if not safe("hostname", CSR.cn(csr)) or not CSR.can_sign(CSR.cn(csr)):
+        #    self.die(r, r.CannotIssueThatName)
+        #    return
+        for san in CSR.subject_names(csr):  # includes CN as well as SANs
+            if not safe("hostname", san) or not CSR.can_sign(san):
+                self.die(r, r.CannotIssueThatName)
+                return
+        # if not self.session.add_request(nonce, CSR.cn(csr), csr):
+        #    self.die(r, r.BadRequest, nonce, "https://ca.example.com/failures/duplicatenonce")
+        #    return
+        # Phew!
+        r.proceed.timestamp = int(time.time())
+        r.proceed.polldelay = 10
+
+    def handleexistingsession(self, m, r):
+        if m.request.IsInitialized():
+            self.die(r, r.BadRequest, uri="https://ca.example.com/failures/requestinexistingsession")
+            return
+        # TODO: implement things related to status of challenges and cert issuance
+        pass
+
+    def die(self, r, reason, uri=None):
+        self.kill()
         r.failure.cause = reason
-        if nonce: r.failure.affectedrequest = nonce
+#        if nonce: r.failure.affectedrequest = nonce
         if uri: r.failure.URI = uri
 
     def handleclientfailure(self, m, r):
@@ -115,53 +199,21 @@ class index(object):
             # Received failure message from client!
             self.die(r, r.AbandonedRequest)
 
-    def handlesigningrequest(self, m, r):
+    def send_challenge(self, m, r):
         if r.failure.IsInitialized(): return
-        if not m.request: return
-        if self.session.request_made():
-            # Can't make new signing requests if there have already been requests in
-            # this session.  (All signing requests should occur together at the
-            # beginning.)
-            self.die(r, r.BadRequest, uri="https://ca.example.com/failures/priorrequest")
-            return
-        # TODO: check client puzzle
-        for i in xrange(len(m.request)):
-            timestamp = m.request[i].timestamp
-            recipient = m.request[i].recipient
-            nonce = m.request[i].nonce
-            csr = m.request[i].csr
-            sig = m.request[i].sig
-            if not all([safe("recipient", recipient), safe("nonce", nonce), safe("csr", csr)]):
-                self.die(r, r.BadRequest, nonce, "https://ca.example.com/failures/illegalcharacter")
-                return
-            if timestamp > time.time() or time.time() - timestamp > 100:
-                self.die(r, r.BadRequest, nonce, "https://ca.example.com/failures/time")
-                return
-            if recipient != "ca.example.com":
-                self.die(r, r.BadRequest, nonce, "https://ca.example.com/failures/recipient")
-                return
-            if not CSR.parse(csr):
-                self.die(r, r.BadCSR, nonce)
-                return
-            if CSR.verify(CSR.pubkey(csr), sig) != sha256("(%d) (%s) (%s) (%s)" % (timestamp, recipient, nonce, csr)):
-                self.die(r, r.BadSignature, nonce)
-                return
-            if not CSR.csr_goodkey(csr):
-                self.die(r, r.UnsafeKey, nonce)
-                return
-            if not CSR.can_sign(CSR.cn(csr)):
-                self.die(r, r.CannotIssueThatName, nonce)
-                return
-            # TODO: check goodness of subjectAltName fields!
-            if not self.session.add_request(nonce, CSR.cn(csr), csr):
-                self.die(r, r.BadRequest, nonce, "https://ca.example.com/failures/duplicatenonce")
-                return
-        # Phew!
-        r.proceed.timestamp = int(time.time())
-        r.proceed.polldelay = 10
-
+        requests = self.get_requests()
+        if not requests: return
+        for request in requests:
+            if self.get_challenge(m, r, request):
+                # TODO: check whether the challenge succeeded
+                if self.get_challenge_age() > MaximumChallengeAge:
+                    self.die(r, r.ChallengeTimeOut)
+                    return
+            else:
+                challid, challenge = self.make_challenge(request)
+        
     def POST(self):
-        web.header("Content-type", "application/x-protobuf")
+        web.header("Content-type", "application/x-protobuf+chocolate")
 #        web.setcookie("chocolate", hmac("foo", "bar"),
 #                       secure=True) # , httponly=True)
         m = chocolatemessage()
@@ -175,18 +227,20 @@ class index(object):
             if m.chocolateversion != 1:
                 r.failure.cause = r.UnsupportedVersion
 
-        self.handlesession(m, r)
-
         self.handleclientfailure(m, r)
 
-        self.handlesigningrequest(m, r)
+        self.handlesession(m, r)
 
         # Send reply
         if m.debug:
             web.header("Content-type", "text/plain")
-            return "SAW MESSAGE: %s\n" % str(r)
+            return "SAW MESSAGE: %s\nRESPONSE: %s\n" % (str(m), str(r))
         else:
             return r.SerializeToString()
+
+    def GET(self):
+        web.header("Content-type", "text/html")
+        return "Hello, world!  This server only accepts POST requests."
 
 if __name__ == "__main__":
     app = web.application(urls, globals())
