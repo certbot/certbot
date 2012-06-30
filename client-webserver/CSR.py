@@ -2,7 +2,7 @@
 
 # use OpenSSL to provide CSR-related operations
 
-import subprocess, tempfile, re
+import subprocess, tempfile, re, pkcs10
 # we can use tempfile.NamedTemporaryFile() to get tempfiles
 # to pass to OpenSSL subprocesses.
 
@@ -62,9 +62,9 @@ def cn(csr):
        return cns[0].split("=")[1]
     return None
 
-def san(csr):
-    """Get the subjectAltNames from this CSR."""
-    return []
+def subject_names(csr):
+    """Get the cn and subjectAltNames from this CSR."""
+    return pkcs10.subject_names(csr)
 
 def can_sign(name):
     """Does this CA's policy forbid signing this name via Chocolate DV?"""
