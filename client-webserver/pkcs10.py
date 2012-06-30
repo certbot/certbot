@@ -72,20 +72,12 @@ def load_certificate_request(csr):
 
     return nss.CertificateRequest(substrate)
 
-if __name__ == '__main__':
-    nss.nss_init_nodb()
-
-    # Read PEM request from stdin and print out its components
-
-    csrlines = sys.stdin.readlines()
-    # csrlines = fp.readlines()
-    # fp.close()
-    csr = ''.join(csrlines)
+def subject_names(csr):
+    if not nss.nss_is_initialized():
+        nss.nss_init_nodb()
 
     csr = load_certificate_request(csr)
 
-    # print csr
-
     sans = get_subjectaltname(csr)
     if not sans: sans = [] 
-    print [x.split("=")[1] for x in [f for f in str(get_subject(csr)).split(",") if f[:3] == "CN="]] + list(sans)
+    return [x.split("=")[1] for x in [f for f in str(get_subject(csr)).split(",") if f[:3] == "CN="]] + list(sans)
