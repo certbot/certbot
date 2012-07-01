@@ -48,8 +48,8 @@ message chocolatemessage {
 	}
 
 	message Challenge {
-	     required ChallengeType type = 1;
-	     required int32 challengeid = 2;
+	     required int32 challengeid = 1;
+	     required ChallengeType type = 2;
 	     optional string name = 3;
 	     repeated bytes data = 4;
 	     optional string URI = 5;
