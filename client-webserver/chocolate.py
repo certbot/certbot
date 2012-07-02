@@ -101,6 +101,10 @@ class session(object):
         """Has there already been a signing request made in this session?"""
         return sessions.hget(self.id, "state") is not None
 
+    def cert(self):
+        """Return the issued certificate."""
+        return sessions.hget(self.id, "cert")
+
     def add_request(self, csr, names):
         sessions.hset(self.id, "csr", csr)
         for name in names: sessions.lpush(self.id + ":names", name)
@@ -112,6 +116,14 @@ class session(object):
         n = int(sessions.hget(self.id, "challenges"))
         for i in xrange(n):
             yield r.hgetall("session:%d" % i)
+
+    def send_cert(self, m, r):
+        """Initialize response to return issued cert to client."""
+        if self.cert():
+            r.success.certificate = self.cert()
+        else:
+            self.die(r, r.BadRequest, uri="https://ca.example.com/failures/internalerror")
+        return
 
     def handlesession(self, m, r):
         if r.failure.IsInitialized(): return
@@ -135,6 +147,11 @@ class session(object):
                 # Don't need to, or can't, kill nonexistent/already dead session
                 r.failure.cause = r.StaleRequest
             elif self.age() > MaximumSessionAge:
+                # TODO: Sessions in state "done" should probably not be killed by timeout
+                # because they have already resulted in issuance of a cert and no further
+                # issuance can occur.  At least, their timeout should probably be extended
+                # to 48 hours or something.  Currently, a session can die by timeout in
+                # any state.
                 self.die(r, r.StaleRequest)
             else:
                 self.handleexistingsession(m, r)
@@ -214,8 +231,10 @@ class session(object):
         if state == "testchallenge":
             self.send_challenges(m, r)
             return
-        # If we're in done, tell the client to come back later.
-        pass
+        # If we're in done, tell the client about the successfully issued cert.
+        if state == "done":
+            self.send_cert(m, r)
+            return
         # Unknown session status.
         self.die(r, r.BadRequest, uri="https://ca.example.com/failures/internalerror")
         return

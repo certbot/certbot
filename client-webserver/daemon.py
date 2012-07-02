@@ -65,6 +65,8 @@ def testchallenge(session):
     # conditions are
 
 def issue(session):
+    # TODO: actually issue the cert
+    r.hset(session, "cert", "----ISSUED CERT GOES HERE----")
     if False:   # once issuing cert succeeded
         r.hset(session, "state", "done")
         r.lpush("pending-done", session)

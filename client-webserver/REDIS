@@ -19,6 +19,7 @@ hash:  sessionid, "created" → int
        sessionid, "csr" → str
        sessionid, "state" → str
        sessionid, "challenges → int
+       sessionid, "cert" → str
 
 list: session:names → str
 
