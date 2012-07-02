@@ -66,20 +66,23 @@ def testchallenge(session):
 
 def issue(session):
     if False:   # once issuing cert succeeded
-        sessions.hset(session, "state", "done")
-        sessions.lpush("pending-done", session)
+        r.hset(session, "state", "done")
+        r.lpush("pending-done", session)
     else:       # should not be reached in deployed version
-        sessions.lpush("pending-issue", session)
+        r.lpush("pending-issue", session)
 
 while True:
     session = r.rpop("pending-makechallenge")
     if session:
         makechallenge(session)
+        session = None
     else: session = r.rpop("pending-testchallenge")
     if session:
         testchallenge(session)
+        session = None
     else: session = r.rpop("pending-issue")
     if session:
         issue(session)
+        session = None
     else: time.sleep(2)
     # This daemon doesn't currently act on pending-done sessions.
