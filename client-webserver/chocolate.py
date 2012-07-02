@@ -113,14 +113,6 @@ class session(object):
         for i in xrange(n):
             yield r.hgetall("session:%d" % i)
 
-    def make_challenge(self):
-        challid = random()
-        value = random()
-        sessions.hset(self.id + ":req", "id", challid)
-        sessions.hset(self.id + ":req", "challtime", int(time.time()))
-        sessions.hset(self.id + ":req", "challenge", value)
-        return (challid, value)
-
     def handlesession(self, m, r):
         if r.failure.IsInitialized(): return
         if m.session == "":
