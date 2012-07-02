@@ -48,12 +48,11 @@ message chocolatemessage {
 	}
 
 	message Challenge {
-	     required int32 challengeid = 1;
-	     required ChallengeType type = 2;
-	     optional string name = 3;
-	     repeated bytes data = 4;
-	     optional string URI = 5;
-	     optional bool succeeded = 6;
+	     required ChallengeType type = 1;
+	     optional string name = 2;
+	     repeated bytes data = 3;
+	     optional string URI = 4;
+	     optional bool succeeded = 5;
 		      /* from server: true if server ACK success,
 			              false if server NAK success,
 			              omit if server doesn't know if client
