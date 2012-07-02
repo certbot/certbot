@@ -176,6 +176,9 @@ class session(object):
             self.die(r, r.UnsafeKey)
             return
         names = CSR.subject_names(csr)
+        if len(names) == 0:
+            self.die(r, r.BadCSR)
+            return
         for san in names:  # includes CN as well as SANs
             if not safe("hostname", san) or not CSR.can_sign(san):
                 # TODO: Is there a problem including client-supplied data in the URL?
