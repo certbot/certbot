@@ -20,6 +20,10 @@ def sha256(m):
 def hmac(k, m):
     return HMAC.new(k, m, SHA256).hexdigest()
 
+def random():
+    """Return 64 hex digits representing a new 32-byte random number."""
+    return sha256(Random.get_random_bytes(32))
+
 def safe(what, s):
     """Is string s within the allowed-character policy for this field?"""
     if not isinstance(s, basestring):
@@ -53,10 +57,28 @@ class session(object):
     def live(self):
         return self.id in sessions and sessions.hget(self.id, "live") == "True"
 
+    def state(self):
+        # Should be:
+        # * None for a session where the signing request has not
+        #   yet been received;
+        # * "makechallenge" where the CA is still coming up with challenges,
+        # * "testchallenge" where the challenges have been issued,
+        # * "issue" where the CA is in the process of issuing the cert,
+        # * "done" where the cert has been issued.
+        #
+        # Note that this is independent of "live", which specifies whether
+        # further actions involving this session are permitted.  When
+        # sessions die, they currently keep their last state, but the
+        # client can't cause their state to advance further.  For example,
+        # if a session times out while waiting for the client to complete
+        # a challenge, we have state="testchallenge", but live="False".
+        return sessions.hget(self.id, "state")
+
     def create(self, timestamp=int(time.time())):
         if not self.exists():
             sessions.hset(self.id, "created", timestamp)
             sessions.hset(self.id, "live", True)
+            sessions.lpush("active-requests", self.id)
         else:
             raise KeyError
 
@@ -66,8 +88,10 @@ class session(object):
         # has been allocated!
         if self.id:
             sessions.hset(self.id, "live", False)
+            sessions.lrem("active-requests", self.id)
 
     def destroy(self):
+        sessions.lrem("active-requests", self.id)
         sessions.delete(self.id)
 
     def age(self):
@@ -77,28 +101,21 @@ class session(object):
         """Has there already been a signing request made in this session?"""
         return sessions.hget(self.id, "state") is not None
 
-    def add_request(self, cn, csr):
-        # TODO: structure, how to get cn/san list
-        # TODO: locking/flag when all names added
+    def add_request(self, csr, names):
         sessions.hset(self.id, "csr", csr)
-        sessions.lpush(self.id + ":names", cn)
-        sessions.hset(self.id, "state", 1)
-        sessions.lpush("pending-requests", self.id)
+        for name in names: sessions.lpush(self.id + ":names", name)
+        sessions.hset(self.id, "state", "makechallenge")
+        sessions.lpush("pending-makechallenge", self.id)
         return True
 
-    def get_challenge(self, cn):
-        return sessions.hget(self.id + ":req:" + cn, "challenge")
-
-    def get_challenge_age(self, cn):
-        t = sessions.hget(self.id + ":req:" + cn, "challtime")
-        if t:
-            return int(time.time()) - int(t)
-        else:
-            return None
+    def challenges(self):
+        n = int(sessions.hget(self.id, "challenges"))
+        for i in xrange(n):
+            yield r.hgetall("session:%d" % i)
 
     def make_challenge(self):
-        challid = SHA256.new(Random.get_random_bytes(32)).hexdigest()
-        value = SHA256.new(Random.get_random_bytes(32)).hexdigest()
+        challid = random()
+        value = random()
         sessions.hset(self.id + ":req", "id", challid)
         sessions.hset(self.id + ":req", "challtime", int(time.time()))
         sessions.hset(self.id + ":req", "challenge", value)
@@ -108,7 +125,7 @@ class session(object):
         if r.failure.IsInitialized(): return
         if m.session == "":
             # New session
-            r.session = SHA256.new(Random.get_random_bytes(32)).hexdigest()
+            r.session = random()
             self.id = r.session
             if not self.exists():
                 self.create()
@@ -166,17 +183,18 @@ class session(object):
         if not CSR.csr_goodkey(csr):
             self.die(r, r.UnsafeKey)
             return
-        # if not safe("hostname", CSR.cn(csr)) or not CSR.can_sign(CSR.cn(csr)):
-        #    self.die(r, r.CannotIssueThatName)
-        #    return
-        for san in CSR.subject_names(csr):  # includes CN as well as SANs
+        names = CSR.subject_names(csr)
+        for san in names:  # includes CN as well as SANs
             if not safe("hostname", san) or not CSR.can_sign(san):
-                self.die(r, r.CannotIssueThatName)
+                # TODO: Is there a problem including client-supplied data in the URL?
+                self.die(r, r.CannotIssueThatName, uri="https://ca.example.com/failures/name?%s" % san)
                 return
-        # if not self.session.add_request(nonce, CSR.cn(csr), csr):
-        #    self.die(r, r.BadRequest, nonce, "https://ca.example.com/failures/duplicatenonce")
-        #    return
         # Phew!
+        self.add_request(csr, names)
+        # This version is relying on an external daemon process to create
+        # the challenges.  If we want to create them ourselves, we have to
+        # do what the daemon does, and then return the challenges instead
+        # of returning proceed.
         r.proceed.timestamp = int(time.time())
         r.proceed.polldelay = 10
 
@@ -184,13 +202,33 @@ class session(object):
         if m.request.IsInitialized():
             self.die(r, r.BadRequest, uri="https://ca.example.com/failures/requestinexistingsession")
             return
-        # TODO: implement things related to status of challenges and cert issuance
+        # The caller has verified that this session exists and is live.
+        # If we have no state, something is crazy (maybe a race from two
+        # instances of the client?).
+        state = self.state()
+        if state is None:
+            self.die(r, r.BadRequest, uri="https://ca.example.com/failures/uninitializedsession")
+            return
+        # If we're in makechallenge or issue, tell the client to come back later.
+        if state == "makechallenge" or state == "issue":
+            r.proceed.timestamp = int(time.time())
+            r.proceed.polldelay = 10
+        return
+        # If we're in testchallenge, tell the client about the challenges and their
+        # current status.
+        if state == "testchallenge":
+            self.send_challenges(m, r)
+            return
+        # If we're in done, tell the client to come back later.
         pass
+        # Unknown session status.
+        self.die(r, r.BadRequest, uri="https://ca.example.com/failures/internalerror")
+        return
+        # TODO: Process challenge-related messages from the client.
 
     def die(self, r, reason, uri=None):
         self.kill()
         r.failure.cause = reason
-#        if nonce: r.failure.affectedrequest = nonce
         if uri: r.failure.URI = uri
 
     def handleclientfailure(self, m, r):
@@ -199,19 +237,18 @@ class session(object):
             # Received failure message from client!
             self.die(r, r.AbandonedRequest)
 
-    def send_challenge(self, m, r):
+    def send_challenges(self, m, r):
         if r.failure.IsInitialized(): return
-        requests = self.get_requests()
-        if not requests: return
-        for request in requests:
-            if self.get_challenge(m, r, request):
-                # TODO: check whether the challenge succeeded
-                if self.get_challenge_age() > MaximumChallengeAge:
-                    self.die(r, r.ChallengeTimeOut)
-                    return
-            else:
-                challid, challenge = self.make_challenge(request)
-        
+        # TODO: This needs a more sophisticated notion of success/failure,
+        # and also of the possibility of multiple data strings.
+        for c in self.challenges():
+            chall = r.challenges.add()
+            chall.type = int(c["type"])
+            chall.name = c["name"]
+            chall.satisfied = c["satisfied"]
+            chall.succeeded = c["succeeded"]
+            chall.data.append(c["data"])
+      
     def POST(self):
         web.header("Content-type", "application/x-protobuf+chocolate")
 #        web.setcookie("chocolate", hmac("foo", "bar"),
