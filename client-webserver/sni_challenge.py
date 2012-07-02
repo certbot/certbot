@@ -58,12 +58,7 @@ def checkForApacheConfInclude(mainConfig):
     searchStr = "Include " + APACHE_CHALLENGE_CONF
     #conf = open(mainConfig, 'r+')
     conf = open(mainConfig, 'r')
-    flag = False
-    for line in conf:
-        if line.startswith(searchStr):
-            flag = True
-            break
-    if not flag:
+    if not any(line.startswith(searchStr) for line in conf):
         #conf.write(searchStr)
 	process = subprocess.Popen(["echo", "\n" + searchStr], stdout=subprocess.PIPE)
         subprocess.check_output(["sudo", "tee", "-a", mainConfig], stdin=process.stdout)
