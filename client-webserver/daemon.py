@@ -78,7 +78,7 @@ while True:
     else: session = r.rpop("pending-testchallenge")
     if session:
         testchallenge(session)
-    else: session = r.rpop("pending-issue"):
+    else: session = r.rpop("pending-issue")
     if session:
         issue(session)
     else: time.sleep(2)
