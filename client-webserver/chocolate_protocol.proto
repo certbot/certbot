@@ -1,15 +1,14 @@
 message chocolatemessage {
-	required int32 chocolateversion = 1;
-	required string session = 2;
+
+        /* Definitions of message data types. */
 
 	message SigningRequest {
 	     required int64 timestamp = 2;
 	     required string recipient = 3;
-//	     required string nonce = 4;
-	     required string csr = 4;
+	     required string csr = 4;    /* Use only \n for EOL, not \r\n. */
 	     required bytes sig = 5;
 	     optional string clientpuzzle = 6;
-                      /* server can specify difficulty? */
+                      /* server can specify difficulty somehow? */
         }
 
         enum FailureReason {
@@ -50,7 +49,12 @@ message chocolatemessage {
 	message Challenge {
 	     required ChallengeType type = 1;
 	     optional string name = 2;
-	     repeated bytes data = 3;
+	     repeated bytes data = 3;  /* Each challenge type must define
+                                          a particular number of data fields
+                                          to be used, their order, and their
+                                          semantics.  Changing these details
+                                          requires creating a NEW challenge
+                                          type. */
 	     optional string URI = 4;
 	     optional bool succeeded = 5;
 		      /* from server: true if server ACK success,
@@ -64,21 +68,46 @@ message chocolatemessage {
 	}
 
 	message Success {
-	     required string certificate = 1; /* Repeated string certificate? */
+	     required string certificate = 1;
 	}
 
+
+        /* Beginning of protocol fields. */
+
+        /* Sent by CLIENT and SERVER to identify the protocol version. */
+	required int32 chocolateversion = 1;
+
+        /* Sent by CLIENT and SERVER to identify the session.  Set to
+           empty string by client at beginning of new session. */
+	required string session = 2;          /* 64 hex digits chosen by the server */
+
+        /* Sent by CLIENT at beginning of session */
 	optional SigningRequest request = 3; /* There should just be one request and the request
 						must use subject alternate names for every name that
 						we want to have signed.  There could still be multiple
 						challenges in response -- one or more challenges per
 						name. */
+
+        /* Sent by CLIENT or SERVER to abandon a session */
 	optional Failure failure = 4;  /* Each failure is completely fatal to the protocol, requiring it
                                           to be restarted from the beginning. */
+
+        /* Sent by SERVER to request the client to check back later */
 	optional Proceed proceed = 5;
+
+        /* Sent by SERVER to announce challenges or update the client
+           on whether the server believes the client has successfully
+           completed them */
 	repeated Challenge challenge = 6;
+
+        /* Sent by CLIENT to announce that the client believes it has
+           successfully completed a challenge */
         repeated Challenge completedchallenge = 7;
+
+        /* Sent by SERVER to issue the requested certificate */
 	optional Success success = 8;
 
+        /* For debugging; should be removed in final protocol. */
 	optional bool debug = 9;   /* Causes server to return text instead of
   				      message! */
 }
