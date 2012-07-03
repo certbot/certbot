@@ -1,5 +1,5 @@
-deploy: chocolate_protocol_pb2.py chocolate.py CSR.py
-	scp chocolate_protocol.proto chocolate.py CSR.py ${CHOCOLATESERVER}: && ssh ${CHOCOLATESERVER} protoc chocolate_protocol.proto --python_out=.
+deploy: chocolate_protocol_pb2.py chocolate.py CSR.py pkcs10.py
+	scp chocolate_protocol.proto chocolate.py CSR.py pkcs10.py ${CHOCOLATESERVER}: && ssh ${CHOCOLATESERVER} protoc chocolate_protocol.proto --python_out=.
 
 chocolate_protocol_pb2.py: chocolate_protocol.proto
 	protoc chocolate_protocol.proto --python_out=.
