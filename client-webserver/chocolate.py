@@ -158,7 +158,10 @@ class session(object):
                 # because they have already resulted in issuance of a cert and no further
                 # issuance can occur.  At least, their timeout should probably be extended
                 # to 48 hours or something.  Currently, a session can die by timeout in
-                # any state.
+                # any state.  In general, the allowed age of a session that's further
+                # along in the process should be longer.  This is particular true when
+                # we're testing challenges because the amount of time required for this
+                # may not be under the client's control at all.
                 self.die(r, r.StaleRequest)
             else:
                 self.handleexistingsession(m, r)
