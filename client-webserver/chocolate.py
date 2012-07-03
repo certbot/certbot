@@ -143,6 +143,7 @@ class session(object):
             else:
                 raise ValueError, "new random session already existed!"
         elif m.session and not r.failure.IsInitialized():
+            r.session = ""
             if not safe("session", m.session):
                 # Note that self.id is still uninitialized here.
                 self.die(r, r.BadRequest, uri="https://ca.example.com/failures/illegalsession")
