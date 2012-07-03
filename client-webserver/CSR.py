@@ -100,6 +100,16 @@ def sign(key, data):
         return out
     return None
 
+def encrypt(key, data):
+    """Encrypt this data with this public key."""
+    with tempfile.NamedTemporaryFile() as tmp:
+        tmp.write(key)
+        tmp.flush()
+        out, err = subprocess.Popen(["openssl", "rsautl", "-pubin", "-inkey", tmp.name, "-encrypt"],shell=False,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE).communicate(data)
+    if out and not err:
+        return out
+    return None
+
 def issue(csr):
     """Issue the certificate requested by this CSR and return it!"""
     # TODO: a real CA should severely restrict the content of the cert, not
