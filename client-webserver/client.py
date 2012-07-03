@@ -19,7 +19,7 @@ def do(m):
     return u.read()
 
 def decode(m):
-    return str(chocolatemessage.FromString(m))
+    return (chocolatemessage.FromString(m))
 
 def init(m):
     m.chocolateversion = 1
@@ -35,5 +35,5 @@ def make_request(m):
 def sign(k, m):
     m.request.sig = CSR.sign(k, sha256("(%d) (%s) (%s)" % (m.request.timestamp, m.request.recipient, m.request.csr)))
 
-m = chocolatemessage()
+k=chocolatemessage(); m=chocolatemessage(); init(k); init(m); make_request(m); m.request.csr = open("req.pem").read(); sign(open("key.pem").read(), m); r=decode(do(m)); print (r); k.session = r.session; print decode(do(k))
 
