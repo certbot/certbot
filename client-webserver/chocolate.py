@@ -127,6 +127,12 @@ class session(object):
 
     def handlesession(self, m, r):
         if r.failure.IsInitialized(): return
+        # TODO: perhaps some code belongs here to enforce rules about which
+        # combinations of protocol messages can occur together.  I think the
+        # rules are: Client must send either nothing (polling for updates)
+        # or exactly one of request, failure, or completedchallenge.  Client
+        # may not send proceed, challenge, or success.  If the rules are
+        # violated, we should self.die(r, r.BadRequest) and return.
         if m.session == "":
             # New session
             r.session = random()
@@ -281,6 +287,16 @@ class session(object):
         self.handleclientfailure(m, r)
 
         self.handlesession(m, r)
+
+        # TODO: perhaps some code belongs here to enforce rules about which
+        # combinations of protocol messages can occur together in the reply.
+        # I think the rules are: server must send exactly one of failure,
+        # proceed, challenge, or success; server may not send request or
+        # completedchallenge [although we know it never attempts to].
+        # If, for some reason, the server is trying to send more than one
+        # of these messages, or no message at all, that's an error and the
+        # response should be cleared and we should self.die(r, r.BadRequest)
+        # or similar.
 
         # Send reply
         if m.debug:
