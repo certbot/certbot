@@ -1,5 +1,31 @@
 #!/usr/bin/env python
 
+# This daemon runs on the CA side to look for requests in
+# the database that are waiting for actions to be taken:
+# generating challenges, testing whether challenges have
+# been met, and issuing certs when the challenges have been
+# met.  The daemon does not communicate with the client at
+# all; it just notes changes to request state in the database,
+# which the server will inform the client about when the
+# client subsequently checks in.
+
+# The queue mechanism with pending-* is supposed to control
+# concurrency issues properly, but this needs verification
+# to ensure that there are no possible race conditions.
+# Generally, the server is not supposed to change sessions
+# very much once they have been added to a queue, except
+# for marking them no longer live if the server realizes
+# that something bad has happened to them.  There may be
+# some exceptions, and they should all be analyzed for
+# possible races.
+
+# TODO: The daemon should probably check for timeouts before
+# advancing sessions' state.  Currently timeouts can only
+# happen if something other than the daemon notices them,
+# which currently can only happen when the client checks in.
+# If the client never checks in, the daemon can keep advancing
+# the request's state, which may not be the right behavior.
+
 import redis, time
 r = redis.Redis()
 
@@ -21,6 +47,17 @@ def random_raw():
     return SHA256.new(Random.get_random_bytes(32)).digest()
 
 def makechallenge(session):
+    if r.hget(session, "live") != "True":
+        # This session has died due to some other reason, like an
+        # illegal request or timeout, since it entered makechallenge
+        # state.  Consequently, we're not allowed to advance its
+        # state any further, and it should be removed from the
+        # pending-requests queue and not pushed into any other queue.
+        # We don't have to remove it from pending-makechallenge
+        # because the caller has already done so.
+        r.lrem("pending-requests", session)
+        return
+
     # Currently only makes challenges of type 0 (DomainValidateSNI)
     # This challenge type has three internal data parameters:
     #     dvsni:nonce,  dvsni:r,  dvsni:ext
@@ -48,6 +85,16 @@ def makechallenge(session):
         r.lpush("pending-makechallenge", session)
 
 def testchallenge(session):
+    if r.hget(session, "live") != "True":
+        # This session has died due to some other reason, like an
+        # illegal request or timeout, since it entered testchallenge
+        # state.  Consequently, we're not allowed to advance its
+        # state any further, and it should be removed from the
+        # pending-requests queue and not pushed into any other queue.
+        # We don't have to remove it from pending-testchallenge
+        # because the caller has already done so.
+        r.lrem("pending-requests", session)
+        return
     # Note that we can push this back into the original queue.
     # TODO: need to add a way to make sure we don't test the same
     # session too often.
@@ -65,6 +112,26 @@ def testchallenge(session):
     # conditions are
 
 def issue(session):
+    if r.hget(session, "live") != "True":
+        # This session has died due to some other reason, like an
+        # illegal request or timeout, since it entered testchallenge
+        # state.  Consequently, we're not allowed to advance its
+        # state any further, and it should be removed from the
+        # pending-requests queue and not pushed into any other queue.
+        # We don't have to remove it from pending-testchallenge
+        # because the caller has already done so.
+        #
+        # Having a session in pending-issue die is a very weird case
+        # that probably suggests that timeouts are set incorrectly
+        # or that the client is misbehaving very badly.  This means
+        # that a request passed all of its challenges but the
+        # session nonetheless died for some reason unrelated to failing
+        # challenges before the cert could be issued.  Normally, this
+        # should never happen.
+        r.lrem("pending-requests", session)
+        return
+    # Note that we can push this back into the original queue.
+    # TODO: need to add a way to make sure we don't test the same
     # TODO: actually issue the cert
     r.hset(session, "cert", "----ISSUED CERT GOES HERE----")
     if False:   # once issuing cert succeeded
