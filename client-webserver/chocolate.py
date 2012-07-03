@@ -116,7 +116,7 @@ class session(object):
     def challenges(self):
         n = int(sessions.hget(self.id, "challenges"))
         for i in xrange(n):
-            yield r.hgetall("session:%d" % i)
+            yield sessions.hgetall("%s:%d" % (self.id, i))
 
     def send_cert(self, m, r):
         """Initialize response to return issued cert to client."""
@@ -236,7 +236,7 @@ class session(object):
         if state == "makechallenge" or state == "issue":
             r.proceed.timestamp = int(time.time())
             r.proceed.polldelay = 10
-        return
+            return
         # If we're in testchallenge, tell the client about the challenges and their
         # current status.
         if state == "testchallenge":
@@ -267,13 +267,19 @@ class session(object):
         # TODO: This needs a more sophisticated notion of success/failure,
         # and also of the possibility of multiple data strings.
         for c in self.challenges():
-            chall = r.challenges.add()
+            # Currently, we can only handle challenge type 0 (dvsni)
+            # TODO: unify names "succeeded" vs. "satisfied"?
+            if int(c["type"]) != 0:
+                self.die(r, r.BadRequest, uri="https://ca.example.com/failures/internalerror")
+                return
+            chall = r.challenge.add()
             chall.type = int(c["type"])
             chall.name = c["name"]
-            chall.satisfied = c["satisfied"]
-            chall.succeeded = c["succeeded"]
-            chall.data.append(c["data"])
-      
+            chall.succeeded = (c["satisfied"] == "True")   # TODO: this contradicts comment in protocol about meaning of "succeeded"
+            chall.data.append(c["dvsni:r"])
+            chall.data.append(c["dvsni:nonce"])
+            chall.data.append(c["dvsni:ext"])
+
     def POST(self):
         web.header("Content-type", "application/x-protobuf+chocolate")
 #        web.setcookie("chocolate", hmac("foo", "bar"),
