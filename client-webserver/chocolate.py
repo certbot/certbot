@@ -74,7 +74,8 @@ class session(object):
         # a challenge, we have state="testchallenge", but live="False".
         return sessions.hget(self.id, "state")
 
-    def create(self, timestamp=int(time.time())):
+    def create(self, timestamp=None):
+        if timestamp is None: timestamp = int(time.time())
         if not self.exists():
             sessions.hset(self.id, "created", timestamp)
             sessions.hset(self.id, "live", True)
