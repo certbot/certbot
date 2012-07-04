@@ -6,8 +6,8 @@ Set CHOCOLATESERVER environment variable for "make deploy" and client.py!
 
 
 chocolate.py - server-side, requires web.py (python-webpy),
-        PyCrypto (python-crypto), redis, python-redis, python-protobuf,
-        python-nss
+        PyCrypto (python-crypto) 2.3 (not 2.1!!), redis, python-redis,
+        python-protobuf, python-nss
 	probably wants to run under a web server like lighttpd with fastcgi
 
 client.py - experimental tool for making requests and parsing replies
