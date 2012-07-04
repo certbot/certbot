@@ -3,7 +3,8 @@
 import web, redis, time
 import CSR
 from Crypto.Hash import SHA256, HMAC
-from Crypto import Random 
+from Crypto.PublicKey import RSA
+from Crypto import Random
 from chocolate_protocol_pb2 import chocolatemessage
 from google.protobuf.message import DecodeError
 
@@ -101,6 +102,10 @@ class session(object):
     def request_made(self):
         """Has there already been a signing request made in this session?"""
         return sessions.hget(self.id, "state") is not None
+
+    def pubkey(self):
+        """Return the PEM-formatted subject public key from the CSR."""
+        return CSR.pubkey(sessions.hget(self.id, "csr"))
 
     def cert(self):
         """Return the issued certificate."""
@@ -276,8 +281,12 @@ class session(object):
             chall.type = int(c["type"])
             chall.name = c["name"]
             chall.succeeded = (c["satisfied"] == "True")   # TODO: this contradicts comment in protocol about meaning of "succeeded"
-            chall.data.append(c["dvsni:r"])
+            # Calculate y
+            dvsni_r = c["dvsni:r"]
+            y = RSA.importKey(self.pubkey()).encrypt(dvsni_r, None)[0]
+            # In dvsni, we send nonce, y, ext
             chall.data.append(c["dvsni:nonce"])
+            chall.data.append(y)
             chall.data.append(c["dvsni:ext"])
 
     def POST(self):
