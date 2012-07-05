@@ -26,7 +26,7 @@
 # If the client never checks in, the daemon can keep advancing
 # the request's state, which may not be the right behavior.
 
-import redis, time
+import redis, time, CSR
 r = redis.Redis()
 
 from Crypto.Hash import SHA256, HMAC
@@ -132,8 +132,10 @@ def issue(session):
         return
     # Note that we can push this back into the original queue.
     # TODO: need to add a way to make sure we don't test the same
-    # TODO: actually issue the cert
-    r.hset(session, "cert", "----ISSUED CERT GOES HERE----")
+    # TODO: actually make this call issue the cert
+    csr = r.hget(session, "csr")
+    cert = CSR.issue(csr)
+    r.hset(session, "cert", cert)
     if False:   # once issuing cert succeeded
         r.hset(session, "state", "done")
         r.lpush("pending-done", session)
