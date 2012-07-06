@@ -3,6 +3,7 @@ from Crypto import Random
 import sni_support
 import hmac
 import hashlib
+import binascii
 
 S_SIZE = 32
 NONCE_SIZE = 32
@@ -15,6 +16,13 @@ def byteToHex(byteStr):
     return ''.join(["%02X" % ord(x) for x in byteStr]).strip()
 
 def check_challenge_value(ext_value, r):
+    """
+    Checks that a challenge response actually passes the challenge
+
+    ext_value:      string returned by client-webserver's X.509 cert
+                    chocolate extension
+    r:              secret random key (binary string) chosen by server-CA
+    """
     s = ext_value[0:S_SIZE]
     mac = ext_value[S_SIZE:]
     expected_mac = hmac.new(r, str(s), hashlib.sha256).digest()
@@ -30,6 +38,17 @@ def check_challenge_value(ext_value, r):
     return False 
 
 def verify_challenge(address, r, nonce):
+    """
+    Verifies an SNI challenge at address (assumes port 443)
+
+    address:    string host (e.g. "127.0.0.1")
+    r:          secret random key (binary string)
+    nonce:      ascii string of nonce (e.g. "66f58cfb...")
+
+    returns (result, reason)
+    result:     True/False for passed/failed verification
+    reason:     Human-readable string describing reason for result
+    """
     sni_name = nonce + ".chocolate"
 
     context = M2Crypto.SSL.Context()
@@ -72,7 +91,7 @@ def main():
     r = Random.get_random_bytes(NONCE_SIZE)
     r = "testValueForR"
     encryptedValue = testkey.encrypt(r, 0)
-    valid, response = verify_challenge("127.0.0.1", r, nonce)
+    valid, response = verify_challenge("127.0.0.1", r, binascii.hexlify(nonce))
     print response
 
 if __name__ == "__main__":
