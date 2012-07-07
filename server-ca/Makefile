@@ -3,6 +3,7 @@ deploy: chocolate_protocol_pb2.py chocolate.py CSR.py pkcs10.py daemon.py
 
 chocolate_protocol_pb2.py: chocolate_protocol.proto
 	protoc chocolate_protocol.proto --python_out=.
+	cp -p chocolate_protocol_pb2.py ../client-webserver/
 
 clean:
 	rm -f *.pyc
