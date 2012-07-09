@@ -84,15 +84,16 @@ def main():
 
     nonce = Random.get_random_bytes(NONCE_SIZE)
     nonce = "nonce"
-    testkey = RSA.importKey(open("testing.key").read())
-
-    #the second parameter is ignored
-    #https://www.dlitz.net/software/pycrypto/api/current/
+    nonce2 = "nonce2"
+  
     r = Random.get_random_bytes(NONCE_SIZE)
     r = "testValueForR"
-    encryptedValue = testkey.encrypt(r, 0)
-    valid, response = verify_challenge("127.0.0.1", r, binascii.hexlify(nonce))
-    print response
+    r2 = "testValueForR2"
 
+    #valid, response = verify_challenge("127.0.0.1", r, binascii.hexlify(nonce))
+    valid, response = verify_challenge("127.0.0.1", r, nonce)
+    print response
+    valid, response = verify_challenge("localhost", r2, nonce2)
+    print response
 if __name__ == "__main__":
     main()
