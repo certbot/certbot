@@ -106,8 +106,4 @@ message chocolatemessage {
 
         /* Sent by SERVER to issue the requested certificate */
 	optional Success success = 8;
-
-        /* For debugging; should be removed in final protocol. */
-	optional bool debug = 9;   /* Causes server to return text instead of
-  				      message! */
 }

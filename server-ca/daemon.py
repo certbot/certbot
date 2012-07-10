@@ -12,12 +12,12 @@
 # The queue mechanism with pending-* is supposed to control
 # concurrency issues properly, but this needs verification
 # to ensure that there are no possible race conditions.
-# Generally, the server is not supposed to change sessions
-# very much once they have been added to a queue, except
-# for marking them no longer live if the server realizes
-# that something bad has happened to them.  There may be
-# some exceptions, and they should all be analyzed for
-# possible races.
+# Generally, the server process (as distinct from the daemon)
+# is not supposed to change sessions at all once they have
+# been added to a queue, except for marking them no longer
+# live if the server realizes that something bad has happened
+# to them.  There may be some exceptions, and they should all
+# be analyzed for possible races.
 
 # TODO: The daemon should probably check for timeouts before
 # advancing sessions' state.  Currently timeouts can only
@@ -102,14 +102,47 @@ def testchallenge(session):
     # that it has completed the challenges.  Information about
     # the client's reporting could be stored in the database.
     # Then the CA doesn't need to poll prematurely.
-    if False:  # if challenges all succeed
+    all_satisfied = True
+    for i, name in enumerate(r.lrange("%s:names" % session, 0, -1)):
+        challenge = "%s:%d" % (session, i)
+        challtime = r.hget(challenge, "challtime")
+        challtype = r.hget(challenge, "type")
+        name = r.hget(challenge, "name")
+        satisfied = r.hget(challenge, "satisfied") == "True"
+        failed = r.hget(challenge, "failed") == "True"
+        # TODO: check whether this challenge is too old
+        if not satisfied and not failed:
+            if challtype == 0:  # DomainValidateSNI
+                dvsni_nonce = r.hget(challenge, "dvsni:nonce")
+                dvsni_r = r.hget(challenge, "dvsni:r")
+                dvsni_ext = r.hget(challenge, "dvsni:ext")
+                if verify_challenge(name, dvsni_r, dvsni_nonce)[0]:
+                    r.hset(challenge, "satisfied", True)
+                else: 
+                    all_satisfied = False
+                # TODO: distinguish permanent and temporarily failures
+                # can cause a permanent failure under some conditions, causing
+                # the session to become dead.  TODO: need to articulate what
+                # those conditions are
+            else:
+                # Don't know how to handle this challenge type
+                all_satisfied = False
+        elif not satisfied:
+             all_satisfied = False
+    if all_satisfied:
+        # Challenges all succeeded, so we should prepare to issue
+        # the requested cert.
+        # TODO: double-check that there were > 0 challenges,
+        # so that we don't somehow mistakenly issue a cert in
+        # response to an empty list of challenges (even though
+        # the daemon that put this session on the queue should
+        # also have implicitly guaranteed this).
         r.hset(session, "state", "issue")
         r.lpush("pending-issue", session)
     else:
+        # Some challenges are not verified.
+        # Put this session back on the stack to try to verify again.
         r.lpush("pending-testchallenge", session)
-    # can also cause a failure under some conditions, causing the
-    # session to become dead.  TODO: need to articulate what those
-    # conditions are
 
 def issue(session):
     if r.hget(session, "live") != "True":
@@ -130,9 +163,6 @@ def issue(session):
         # should never happen.
         r.lrem("pending-requests", session)
         return
-    # Note that we can push this back into the original queue.
-    # TODO: need to add a way to make sure we don't test the same
-    # TODO: actually make this call issue the cert
     csr = r.hget(session, "csr")
     cert = CSR.issue(csr)
     r.hset(session, "cert", cert)
