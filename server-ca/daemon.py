@@ -29,6 +29,7 @@
 import redis, time, CSR
 r = redis.Redis()
 
+from sni_challenge.verify import verify_challenge
 from Crypto.Hash import SHA256, HMAC
 from Crypto import Random
 
@@ -116,7 +117,8 @@ def testchallenge(session):
                 dvsni_nonce = r.hget(challenge, "dvsni:nonce")
                 dvsni_r = r.hget(challenge, "dvsni:r")
                 dvsni_ext = r.hget(challenge, "dvsni:ext")
-                if verify_challenge(name, dvsni_r, dvsni_nonce)[0]:
+                result, reason = verify_challenge(name, dvsni_r, dvsni_nonce)
+                if result:
                     r.hset(challenge, "satisfied", True)
                 else: 
                     all_satisfied = False
