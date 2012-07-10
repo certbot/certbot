@@ -30,8 +30,6 @@ def check_challenge_value(ext_value, r):
     #print "s: ", byteToHex(s)
     #print "mac: ", byteToHex(mac)
     #print "expected_mac: ", byteToHex(expected_mac)
-    #print type(mac)
-    #print type(expected_mac)
 
     if mac == expected_mac:
         return True
@@ -89,6 +87,9 @@ def main():
     r = Random.get_random_bytes(NONCE_SIZE)
     r = "testValueForR"
     r2 = "testValueForR2"
+
+    nonce = binascii.hexlify(nonce)
+    nonce2 = binascii.hexlify(nonce2)
 
     #valid, response = verify_challenge("127.0.0.1", r, binascii.hexlify(nonce))
     valid, response = verify_challenge("127.0.0.1", r, nonce)

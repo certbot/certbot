@@ -7,6 +7,7 @@ import hmac
 import hashlib
 from shutil import move
 from os import remove, close
+import binascii
 
 CHOC_DIR = "/home/james/Documents/apache_choc/"
 CHOC_CERT_CONF = "choc_cert_extensions.cnf"
@@ -20,7 +21,7 @@ NONCE_SIZE = 32
 #        self.address = ip_addrs
 
 def getChocCertFile(nonce):
-    return CHOC_DIR + byteToHex(nonce) + ".crt"
+    return CHOC_DIR + nonce + ".crt"
 
 def findApacheConfigFile():
     #This needs to be fixed to account for multiple httpd.conf files
@@ -35,10 +36,10 @@ def findApacheConfigFile():
         return None
 
 def getConfigText(nonce, ip_addr, key):
-    configText = "<IfModule mod_ssl.c> \n \
-<VirtualHost " + ip_addr + ":443> \n \
+    configText = "<VirtualHost " + ip_addr + ":443> \n \
 Servername " + nonce + ".chocolate \n \
 UseCanonicalName on \n \
+SSLStrictSNIVHostCheck on \n \
 \n \
 LimitRequestBody 1048576 \n \
 \n \
@@ -47,15 +48,15 @@ SSLCertificateFile " + getChocCertFile(nonce) + " \n \
 SSLCertificateKeyFile " + key + " \n \
 \n \
 DocumentRoot " + CHOC_DIR + "challenge_page/ \n \
-</VirtualHost> \n \
-</IfModule> \n"
+</VirtualHost> \n\n "
 
     return configText
 
 def modifyApacheConfig(mainConfig, listSNITuple):
-    configText = ""
+    configText = "<IfModule mod_ssl.c> \n"
     for tup in listSNITuple:
         configText += getConfigText(tup[2], tup[0], tup[5])
+    configText += "</IfModule> \n"
 
     checkForApacheConfInclude(mainConfig)
     newConf = open(APACHE_CHALLENGE_CONF, 'w')
@@ -151,6 +152,9 @@ def main():
     #https://www.dlitz.net/software/pycrypto/api/current/
     y = testkey.encrypt(r, 0)
     y2 = testkey2.encrypt(r2, 0)
+
+    nonce = binascii.hexlify(nonce)
+    nonce2 = binascii.hexlify(nonce2)
 
     perform_sni_cert_challenge([("127.0.0.1", y, nonce, "1.3.3.7", csr, key), ("localhost",y2, nonce2, "1.3.3.7", csr2, key2)])
 
