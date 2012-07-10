@@ -16,10 +16,6 @@ APACHE_CHALLENGE_CONF = CHOC_DIR + "choc_sni_cert_challenge.conf"
 S_SIZE = 32
 NONCE_SIZE = 32
 
-#class sni_challenge(object):
-#    def __init__(self, ip_addrs, y, nonce):
-#        self.address = ip_addrs
-
 def getChocCertFile(nonce):
     return CHOC_DIR + nonce + ".crt"
 
@@ -52,10 +48,10 @@ DocumentRoot " + CHOC_DIR + "challenge_page/ \n \
 
     return configText
 
-def modifyApacheConfig(mainConfig, listSNITuple):
+def modifyApacheConfig(mainConfig, listSNITuple, key):
     configText = "<IfModule mod_ssl.c> \n"
     for tup in listSNITuple:
-        configText += getConfigText(tup[2], tup[0], tup[5])
+        configText += getConfigText(tup[2], tup[0], key)
     configText += "</IfModule> \n"
 
     checkForApacheConfInclude(mainConfig)
@@ -108,12 +104,16 @@ def updateCertConf(oid, value):
     """
     confOld = open(CHOC_CERT_CONF)
     confNew = open(CHOC_CERT_CONF + ".tmp", 'w')
-
+    flag = False
     for line in confOld:
         if "=critical, DER:" in line:
             confNew.write(oid + "=critical, DER:" + value + "\n")
+            flag = True
         else:
             confNew.write(line)
+    if flag is False:
+        print "Error: Could not find extension in CHOC_CERT_CONF"
+        exit()
     confNew.close()
     confOld.close()
     remove(CHOC_CERT_CONF)
@@ -124,23 +124,20 @@ def apache_restart():
 
 #main call
 # address, y, nonce, ext, CSR, KEY
-def perform_sni_cert_challenge(listSNITuple):
+def perform_sni_cert_challenge(listSNITuple, csr, key):
     for tup in listSNITuple:
-        ext = generateExtension(tup[5], tup[1])
-        createChallengeCert(tup[3], ext, tup[2], tup[4], tup[5])
+        ext = generateExtension(key, tup[1])
+        createChallengeCert(tup[3], ext, tup[2], csr, key)
     
-    modifyApacheConfig(findApacheConfigFile(), listSNITuple)
+    modifyApacheConfig(findApacheConfigFile(), listSNITuple, key)
     apache_restart()
 
 def main():
     key = CHOC_DIR + "testing.key"
-    key2 = CHOC_DIR + "testing2.key"
     csr = CHOC_DIR + "choc.csr"
-    csr2 = CHOC_DIR + "choc2.csr"
 
     testkey = RSA.importKey(open(key).read())
-    testkey2 = RSA.importKey(open(key2).read())
-
+    
     r = Random.get_random_bytes(S_SIZE)
     r = "testValueForR"
     nonce = Random.get_random_bytes(NONCE_SIZE)
@@ -151,12 +148,12 @@ def main():
     #the second parameter is ignored
     #https://www.dlitz.net/software/pycrypto/api/current/
     y = testkey.encrypt(r, 0)
-    y2 = testkey2.encrypt(r2, 0)
+    y2 = testkey.encrypt(r2, 0)
 
     nonce = binascii.hexlify(nonce)
     nonce2 = binascii.hexlify(nonce2)
 
-    perform_sni_cert_challenge([("127.0.0.1", y, nonce, "1.3.3.7", csr, key), ("localhost",y2, nonce2, "1.3.3.7", csr2, key2)])
+    perform_sni_cert_challenge([("127.0.0.1", y, nonce, "1.3.3.7"), ("localhost",y2, nonce2, "1.3.3.7")], csr, key)
 
 if __name__ == "__main__":
     main()
