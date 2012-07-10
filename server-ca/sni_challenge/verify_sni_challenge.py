@@ -53,6 +53,10 @@ def verify_challenge(address, r, nonce):
     context.set_allow_unknown_ca(True)
     context.set_verify(M2Crypto.SSL.verify_none, 4)
 
+    #Consider placing try/catch block around wrong host exception
+    #or fix M2Crypto to handle SANs appropriately
+    postConnectionCheck = None
+
     conn = M2Crypto.SSL.Connection(context)
     sni_support.set_sni_ext(conn.ssl, sni_name)
     conn.connect((address, 443))
