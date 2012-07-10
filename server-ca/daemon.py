@@ -12,12 +12,12 @@
 # The queue mechanism with pending-* is supposed to control
 # concurrency issues properly, but this needs verification
 # to ensure that there are no possible race conditions.
-# Generally, the server is not supposed to change sessions
-# very much once they have been added to a queue, except
-# for marking them no longer live if the server realizes
-# that something bad has happened to them.  There may be
-# some exceptions, and they should all be analyzed for
-# possible races.
+# Generally, the server process (as distinct from the daemon)
+# is not supposed to change sessions at all once they have
+# been added to a queue, except for marking them no longer
+# live if the server realizes that something bad has happened
+# to them.  There may be some exceptions, and they should all
+# be analyzed for possible races.
 
 # TODO: The daemon should probably check for timeouts before
 # advancing sessions' state.  Currently timeouts can only
