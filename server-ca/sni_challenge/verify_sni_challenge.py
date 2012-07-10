@@ -59,7 +59,10 @@ def verify_challenge(address, r, nonce):
 
     conn = M2Crypto.SSL.Connection(context)
     sni_support.set_sni_ext(conn.ssl, sni_name)
-    conn.connect((address, 443))
+    try:
+        conn.connect((address, 443))
+    except:
+        return False, "Connection to SSL Server failed"
 
     cert_chain = conn.get_peer_cert_chain()
     
@@ -95,7 +98,6 @@ def main():
     nonce = binascii.hexlify(nonce)
     nonce2 = binascii.hexlify(nonce2)
 
-    #valid, response = verify_challenge("127.0.0.1", r, binascii.hexlify(nonce))
     valid, response = verify_challenge("127.0.0.1", r, nonce)
     print response
     valid, response = verify_challenge("localhost", r2, nonce2)
