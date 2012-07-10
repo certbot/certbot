@@ -55,7 +55,7 @@ def verify_challenge(address, r, nonce):
 
     #Consider placing try/catch block around wrong host exception
     #or fix M2Crypto to handle SANs appropriately
-    postConnectionCheck = None
+    M2Crypto.SSL.Connection.postConnectionCheck = None
 
     conn = M2Crypto.SSL.Connection(context)
     sni_support.set_sni_ext(conn.ssl, sni_name)
