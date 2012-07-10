@@ -335,11 +335,7 @@ class session(object):
         # or similar.
 
         # Send reply
-        if m.debug:
-            web.header("Content-type", "text/plain")
-            return "SAW MESSAGE: %s\nRESPONSE: %s\n" % (str(m), str(r))
-        else:
-            return r.SerializeToString()
+        return r.SerializeToString()
 
     def GET(self):
         web.header("Content-type", "text/html")
