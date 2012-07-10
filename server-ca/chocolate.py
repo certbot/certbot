@@ -133,12 +133,29 @@ class session(object):
 
     def handlesession(self, m, r):
         if r.failure.IsInitialized(): return
-        # TODO: perhaps some code belongs here to enforce rules about which
-        # combinations of protocol messages can occur together.  I think the
-        # rules are: Client must send either nothing (polling for updates)
-        # or exactly one of request, failure, or completedchallenge.  Client
-        # may not send proceed, challenge, or success.  If the rules are
-        # violated, we should self.die(r, r.BadRequest) and return.
+        # Note that m.challenge and m.completedchallenge present
+        # as lists, which are True if they are nonempty.  By
+        # contrast, m.proceed, m.success, m.request, and m.failure
+        # are always True but have an .IsInitialized() property
+        # indicating whether they are actually present in m as
+        # messages from the client.
+        #
+        # Check for some ways in which the message from the client
+        # can be inappropriate.
+        if m.challenge or m.proceed.IsInitialized() or m.success.IsInitialized():
+            self.die(r, r.BadRequest, uri="https://ca.example.com/failures/invalidfromclient")
+            return
+        distinct_messages = 0
+        if m.request.IsInitialized(): distinct_messages += 1
+        if m.failure.IsInitialized(): distinct_messages += 1
+        if m.completedchallenge: distinct_messages += 1
+        if distinct_messages > 1:
+            self.die(r, r.BadRequest, uri="https://ca.example.com/failures/mixedmessages")
+            return
+        # The rule that a new session must contain a request is enforced
+        # by handlenewsession.  The rule that an existing session must
+        # not contain a request is enforced by handleexistingsession.
+        # TODO: check that there are no bad cases that slip through.
         if m.session == "":
             # New session
             r.session = random()
@@ -269,8 +286,7 @@ class session(object):
 
     def send_challenges(self, m, r):
         if r.failure.IsInitialized(): return
-        # TODO: This needs a more sophisticated notion of success/failure,
-        # and also of the possibility of multiple data strings.
+        # TODO: This needs a more sophisticated notion of success/failure.
         for c in self.challenges():
             # Currently, we can only handle challenge type 0 (dvsni)
             # TODO: unify names "succeeded" vs. "satisfied"?
