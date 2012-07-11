@@ -1,0 +1,3 @@
+[submodule "m3crypto"]
+	path = m3crypto
+	url = git@github.com:research/m3crypto.git
