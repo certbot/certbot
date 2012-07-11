@@ -115,4 +115,14 @@ def issue(csr):
     # TODO: a real CA should severely restrict the content of the cert, not
     # just grant what's asked for.  (For example, the CA shouldn't trust
     # all the data in the subject field if it hasn't been validated.)
-    return "-----BEGIN CERTIFICATE-----\nThanks for the shrubbery!\n-----END CERTIFICATE-----"
+    # Therefore, we should construct a new CSR from scratch using the
+    # parsed-out data from the input CSR, and then pass that to OpenSSL.
+    cert = None
+    with tempfile.NamedTemporaryFile() as csr_tmp:
+        csr_tmp.write(csr)
+        csr_tmp.flush()
+        with tempfile.NamedTemporaryFile() as cert_tmp:
+            ret = subprocess.Popen(["./CA.sh", "-chocolate", csr_tmp.name, cert_tmp.name],shell=False,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE).wait()
+            if ret == 0:
+                cert = cert_tmp.read()
+    return cert

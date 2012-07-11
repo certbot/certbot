@@ -30,8 +30,6 @@ def check_challenge_value(ext_value, r):
     #print "s: ", byteToHex(s)
     #print "mac: ", byteToHex(mac)
     #print "expected_mac: ", byteToHex(expected_mac)
-    #print type(mac)
-    #print type(expected_mac)
 
     if mac == expected_mac:
         return True
@@ -55,9 +53,16 @@ def verify_challenge(address, r, nonce):
     context.set_allow_unknown_ca(True)
     context.set_verify(M2Crypto.SSL.verify_none, 4)
 
+    #Consider placing try/catch block around wrong host exception
+    #or fix M2Crypto to handle SANs appropriately
+    M2Crypto.SSL.Connection.postConnectionCheck = None
+
     conn = M2Crypto.SSL.Connection(context)
     sni_support.set_sni_ext(conn.ssl, sni_name)
-    conn.connect((address, 443))
+    try:
+        conn.connect((address, 443))
+    except:
+        return False, "Connection to SSL Server failed"
 
     cert_chain = conn.get_peer_cert_chain()
     
@@ -84,15 +89,18 @@ def main():
 
     nonce = Random.get_random_bytes(NONCE_SIZE)
     nonce = "nonce"
-    testkey = RSA.importKey(open("testing.key").read())
-
-    #the second parameter is ignored
-    #https://www.dlitz.net/software/pycrypto/api/current/
+    nonce2 = "nonce2"
+  
     r = Random.get_random_bytes(NONCE_SIZE)
     r = "testValueForR"
-    encryptedValue = testkey.encrypt(r, 0)
-    valid, response = verify_challenge("127.0.0.1", r, binascii.hexlify(nonce))
-    print response
+    r2 = "testValueForR2"
 
+    nonce = binascii.hexlify(nonce)
+    nonce2 = binascii.hexlify(nonce2)
+
+    valid, response = verify_challenge("127.0.0.1", r, nonce)
+    print response
+    valid, response = verify_challenge("localhost", r2, nonce2)
+    print response
 if __name__ == "__main__":
     main()

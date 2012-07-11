@@ -12,4 +12,4 @@ _sni_support.so: sni_support_wrap.o sni_support.o
 	$(CC) -shared $^ -o $@
 
 clean:
-	rm -f $(targets)
+	rm -f $(targets) *.pyc

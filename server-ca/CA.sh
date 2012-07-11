@@ -1,5 +1,10 @@
 #!/bin/sh
-#
+
+# A fully automated robo-CA does have to have credentials stored somewhere
+# that it can use to issue certs on its own initiative!  Though ideally
+# the actual signing key would be in an HSM, not a text file.
+export PASSWORD=dang
+
 # CA - wrapper around ca to make it easier to use ... basically ca requires
 #      some setup stuff to be done before you can use it and this makes
 #      things easier between now and when Eric is convinced to fix it :-)
@@ -157,6 +162,11 @@ case $1 in
     RET=$?
     cat newcert.pem
     echo "Signed certificate is in newcert.pem"
+    ;;
+-chocolate)
+    /bin/echo -e "y\ny\ny\n" | $CA -passin env:PASSWORD -policy policy_anything -out "$3" -infiles "$2"
+    RET=$?
+    exit $RET
     ;;
 -signCA)
     $CA -policy policy_anything -out newcert.pem -extensions v3_ca -infiles newreq.pem
