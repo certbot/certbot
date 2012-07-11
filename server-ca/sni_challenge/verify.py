@@ -72,7 +72,8 @@ def verify_challenge(address, r, nonce):
 
     for i in range(0,cert_chain[0].get_ext_count()):
         ext = cert_chain[0].get_ext_at(i)
-
+        
+        # TODO: Pull out OID instead of nid
         if sni_support.get_nid(ext.x509_ext) == 0:
 
             valid = check_challenge_value(sni_support.get_unknown_value(ext.x509_ext), r)
