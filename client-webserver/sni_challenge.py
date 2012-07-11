@@ -9,7 +9,7 @@ from shutil import move
 from os import remove, close
 import binascii
 
-CHOC_DIR = "../sample-files/"
+CHOC_DIR = "/home/ubuntu/chocolate/client-webserver/"
 CHOC_CERT_CONF = "choc_cert_extensions.cnf"
 OPTIONS_SSL_CONF = CHOC_DIR + "options-ssl.conf"
 APACHE_CHALLENGE_CONF = CHOC_DIR + "choc_sni_cert_challenge.conf"
@@ -133,8 +133,8 @@ def perform_sni_cert_challenge(listSNITuple, csr, key):
     apache_restart()
 
 def main():
-    key = CHOC_DIR + "test.key"
-    csr = CHOC_DIR + "choc.csr"
+    key = CHOC_DIR + "key.pem"
+    csr = CHOC_DIR + "req.pem"
 
     testkey = M2Crypto.RSA.load_key(key)
     
@@ -153,7 +153,7 @@ def main():
     nonce = binascii.hexlify(nonce)
     nonce2 = binascii.hexlify(nonce2)
 
-    perform_sni_cert_challenge([("127.0.0.1", y, nonce, "1.3.3.7"), ("localhost",y2, nonce2, "1.3.3.7")], csr, key)
+    perform_sni_cert_challenge([("example.com", y, nonce, "1.3.3.7"), ("www.example.com",y2, nonce2, "1.3.3.7")], csr, key)
 
 if __name__ == "__main__":
     main()
