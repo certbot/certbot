@@ -2,7 +2,8 @@
 
 import web, redis, time
 import CSR
-from Crypto.Hash import SHA256, HMAC
+import hashlib
+import hmac
 from Crypto.PublicKey import RSA
 from Crypto import Random
 from chocolate_protocol_pb2 import chocolatemessage
@@ -16,10 +17,10 @@ urls = (
 )
 
 def sha256(m):
-    return SHA256.new(m).hexdigest()
+    return hashlib.sha256(m).hexdigest()
 
 def hmac(k, m):
-    return HMAC.new(k, m, SHA256).hexdigest()
+    return hmac.new(k, m, hashlib.sha256).hexdigest()
 
 def random():
     """Return 64 hex digits representing a new 32-byte random number."""
