@@ -112,13 +112,14 @@ def testchallenge(session):
     for i, name in enumerate(r.lrange("%s:names" % session, 0, -1)):
         challenge = "%s:%d" % (session, i)
         if debug: print "testing challenge", challenge
-        challtime = r.hget(challenge, "challtime")
-        challtype = r.hget(challenge, "type")
+        challtime = int(r.hget(challenge, "challtime"))
+        challtype = int(r.hget(challenge, "type"))
         name = r.hget(challenge, "name")
         satisfied = r.hget(challenge, "satisfied") == "True"
         failed = r.hget(challenge, "failed") == "True"
         # TODO: check whether this challenge is too old
         if not satisfied and not failed:
+            if debug: print "challenge", challenge, "is not satisfied and not failed"
             if challtype == 0:  # DomainValidateSNI
                 if debug: print "\tbeginning dvsni test"
                 dvsni_nonce = r.hget(challenge, "dvsni:nonce")
@@ -139,6 +140,7 @@ def testchallenge(session):
                 # Don't know how to handle this challenge type
                 all_satisfied = False
         elif not satisfied:
+             if debug: print "\tchallenge was not attempted"
              all_satisfied = False
     if all_satisfied:
         # Challenges all succeeded, so we should prepare to issue
