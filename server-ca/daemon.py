@@ -26,12 +26,14 @@
 # If the client never checks in, the daemon can keep advancing
 # the request's state, which may not be the right behavior.
 
-import redis, time, CSR
+import redis, time, CSR, sys
 r = redis.Redis()
 
 from sni_challenge.verify import verify_challenge
 from Crypto.Hash import SHA256, HMAC
 from Crypto import Random
+
+debug = "debug" in sys.argv
 
 def sha256(m):
     return SHA256.new(m).hexdigest()
@@ -56,6 +58,7 @@ def makechallenge(session):
         # pending-requests queue and not pushed into any other queue.
         # We don't have to remove it from pending-makechallenge
         # because the caller has already done so.
+        if debug: print "removing expired session", session
         r.lrem("pending-requests", session)
         return
 
@@ -79,6 +82,7 @@ def makechallenge(session):
         r.hset(challenge, "dvsni:ext", "1.3.3.7")
         # Keep accurate count of how many challenges exist in this session.
         r.hincrby(session, "challenges", 1)
+        if debug: print "created new challenge", challenge
     if True:  # challenges have been created
         r.hset(session, "state", "testchallenge")
         r.lpush("pending-testchallenge", session)
@@ -94,6 +98,7 @@ def testchallenge(session):
         # pending-requests queue and not pushed into any other queue.
         # We don't have to remove it from pending-testchallenge
         # because the caller has already done so.
+        if debug: print "removing expired session", session
         r.lrem("pending-requests", session)
         return
     # Note that we can push this back into the original queue.
@@ -106,6 +111,7 @@ def testchallenge(session):
     all_satisfied = True
     for i, name in enumerate(r.lrange("%s:names" % session, 0, -1)):
         challenge = "%s:%d" % (session, i)
+        if debug: print "testing challenge", challenge
         challtime = r.hget(challenge, "challtime")
         challtype = r.hget(challenge, "type")
         name = r.hget(challenge, "name")
@@ -114,13 +120,16 @@ def testchallenge(session):
         # TODO: check whether this challenge is too old
         if not satisfied and not failed:
             if challtype == 0:  # DomainValidateSNI
+                if debug: print "\tbeginning dvsni test"
                 dvsni_nonce = r.hget(challenge, "dvsni:nonce")
                 dvsni_r = r.hget(challenge, "dvsni:r")
                 dvsni_ext = r.hget(challenge, "dvsni:ext")
                 result, reason = verify_challenge(name, dvsni_r, dvsni_nonce)
                 if result:
+                    if debug: print "\tsucceeded"
                     r.hset(challenge, "satisfied", True)
                 else: 
+                    if debug: print "\tfailed"
                     all_satisfied = False
                 # TODO: distinguish permanent and temporarily failures
                 # can cause a permanent failure under some conditions, causing
@@ -139,6 +148,7 @@ def testchallenge(session):
         # response to an empty list of challenges (even though
         # the daemon that put this session on the queue should
         # also have implicitly guaranteed this).
+        print "\tall satisfied, going to issue", session
         r.hset(session, "state", "issue")
         r.lpush("pending-issue", session)
     else:
@@ -163,28 +173,34 @@ def issue(session):
         # session nonetheless died for some reason unrelated to failing
         # challenges before the cert could be issued.  Normally, this
         # should never happen.
+        if debug: print "removing expired session", session
         r.lrem("pending-requests", session)
         return
     csr = r.hget(session, "csr")
     cert = CSR.issue(csr)
     r.hset(session, "cert", cert)
-    if False:   # once issuing cert succeeded
+    if cert:   # once issuing cert succeeded
+        if debug: print "issued for", session
         r.hset(session, "state", "done")
         r.lpush("pending-done", session)
     else:       # should not be reached in deployed version
+        if debug: print "issuing for", session, "failed"
         r.lpush("pending-issue", session)
 
 while True:
     session = r.rpop("pending-makechallenge")
     if session:
+        if debug: print "going to makechallenge for", session
         makechallenge(session)
         session = None
     else: session = r.rpop("pending-testchallenge")
     if session:
+        if debug: print "going to testchallenge for", session
         testchallenge(session)
         session = None
     else: session = r.rpop("pending-issue")
     if session:
+        if debug: print "going to issue for", session
         issue(session)
         session = None
     else: time.sleep(2)
