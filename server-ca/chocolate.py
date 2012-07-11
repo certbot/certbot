@@ -340,7 +340,7 @@ class session(object):
 
     def GET(self):
         web.header("Content-type", "text/html")
-        return "Hello, world!  This server only accepts POST requests."
+        return "Hello, world!  This server only accepts POST requests.\r\n"
 
 if __name__ == "__main__":
     app = web.application(urls, globals())
