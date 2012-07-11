@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import subprocess
-from Crypto.PublicKey import RSA
+import M2Crypto
 from Crypto import Random
 import hmac
 import hashlib
@@ -9,7 +9,7 @@ from shutil import move
 from os import remove, close
 import binascii
 
-CHOC_DIR = "/home/james/Documents/apache_choc/"
+CHOC_DIR = "../sample-files/"
 CHOC_CERT_CONF = "choc_cert_extensions.cnf"
 OPTIONS_SSL_CONF = CHOC_DIR + "options-ssl.conf"
 APACHE_CHALLENGE_CONF = CHOC_DIR + "choc_sni_cert_challenge.conf"
@@ -80,8 +80,8 @@ def createChallengeCert(oid, ext, nonce, csr, key):
     
 
 def generateExtension(key, y):
-    rsaPrivKey = RSA.importKey(open(key).read())
-    r = rsaPrivKey.decrypt(y)
+    rsaPrivKey = M2Crypto.RSA.load_key(key)
+    r = rsaPrivKey.private_decrypt(y, M2Crypto.RSA.pkcs1_oaep_padding)
     #print r
 
     s = Random.get_random_bytes(S_SIZE)
@@ -133,10 +133,10 @@ def perform_sni_cert_challenge(listSNITuple, csr, key):
     apache_restart()
 
 def main():
-    key = CHOC_DIR + "testing.key"
+    key = CHOC_DIR + "test.key"
     csr = CHOC_DIR + "choc.csr"
 
-    testkey = RSA.importKey(open(key).read())
+    testkey = M2Crypto.RSA.load_key(key)
     
     r = Random.get_random_bytes(S_SIZE)
     r = "testValueForR"
@@ -147,8 +147,8 @@ def main():
 
     #the second parameter is ignored
     #https://www.dlitz.net/software/pycrypto/api/current/
-    y = testkey.encrypt(r, 0)
-    y2 = testkey.encrypt(r2, 0)
+    y = testkey.public_encrypt(r, M2Crypto.RSA.pkcs1_oaep_padding)
+    y2 = testkey.public_encrypt(r2, M2Crypto.RSA.pkcs1_oaep_padding)
 
     nonce = binascii.hexlify(nonce)
     nonce2 = binascii.hexlify(nonce2)
