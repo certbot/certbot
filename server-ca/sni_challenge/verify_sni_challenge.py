@@ -98,9 +98,9 @@ def main():
     nonce = binascii.hexlify(nonce)
     nonce2 = binascii.hexlify(nonce2)
 
-    valid, response = verify_challenge("127.0.0.1", r, nonce)
+    valid, response = verify_challenge("example.com", r, "33947bb5dd81f17f67305cb90aa5b8b5e95442e8ed4e78567092a63d04eb3db4")
     print response
-    valid, response = verify_challenge("localhost", r2, nonce2)
+    valid, response = verify_challenge("www.example.com", r2, "no123809214unce2")
     print response
 if __name__ == "__main__":
     main()
