@@ -35,31 +35,62 @@ def csr_goodkey(csr):
     return goodkey(key)
 
 def pubkey(csr):
-    """Get the public key from this CSR."""
-    out, err = subprocess.Popen(["openssl", "req", "-pubkey", "-noout"],shell=False,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE).communicate(csr)
-    if out and not err:
-        return out
-    return None
+    """
+    Get the public key from this Certificate Signing Request.
+
+    @type csr: string
+    @param csr: PEM-encoded string of the CSR.
+    
+    @return: a string of the PEM-encoded public key
+    """
+    req = M2Crypto.X509.load_request_string(csr)
+    return req.get_pubkey().as_pem(None)
 
 def subject(csr):
-    """Get the X.509 subject from this CSR."""
-    out, err = subprocess.Popen(["openssl", "req", "-subject", "-noout"],shell=False,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE).communicate(csr)
-    if out and not err:
-        return out
-    return None
+    """
+    Get the X.509 subject from this CSR.
+    
+    @type csr: string
+    @param csr: PEM-encoded string of the CSR.
+    
+    @return: a string of the subject
+    """
+    req = M2Crypto.X509.load_request_string(csr)
+    return req.get_subject().as_text()
 
 def cn(csr):
-    """Get the common name from this CSR.  Requires there be exactly one."""
-    cns = []
-    s = subject(csr)
-    if s:
-       cns = [x for x in s.rstrip().split("/") if x[:3] == "CN="]
-    if len(cns) == 1:
-       return cns[0].split("=")[1]
-    return None
+    """
+    Get the common name from this CSR.  Requires there be exactly one CN
+    (of type ASN1_string)
+
+    @type csr: str
+    @param csr: PEM-encoded string of the CSR.
+
+    @return: string of the first 
+    """
+
+    req = M2Crypto.X509.load_request_string(csr)
+    
+    # Get an array of CNs
+    cns = req.get_subject().get_entries_by_nid(M2Crypto.X509.X509_Name.nid['CN'])
+
+    # If it's not 1, we've got problems (throw error?)
+    if len(cns) != 1:
+        return None    
+
+    return cns[0].get_data().as_text()
 
 def subject_names(csr):
-    """Get the cn and subjectAltNames from this CSR."""
+    """
+    Get the cn and subjectAltNames from this CSR.
+
+    @type csr: str
+    @param csr: PEM-encoded string of the CSR
+
+    @return: array of strings of subject (CN) and subject
+    alternative names (x509 extension)
+    """
+    
     return pkcs10.subject_names(csr)
 
 def can_sign(name):
