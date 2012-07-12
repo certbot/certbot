@@ -2,6 +2,7 @@
 
 from chocolate_protocol_pb2 import chocolatemessage
 from Crypto.Hash import SHA256
+import M2Crypto
 import urllib2, os, sys, time, random, CSR
 
 def sha256(m):
@@ -52,5 +53,13 @@ while r.proceed.IsInitialized():
    r = decode(do(k))
    print r
 
-for chall in r.challenges:
+sni_todo = []
+for chall in r.challenge:
     print chall
+    if chall.type == r.DomainValidateSNI:
+       key = M2Crypto.RSA.load_key_string(open("key.pem").read())
+       dvsni_nonce, dvsni_y, dvsni_ext = chall.data
+       dvsni_r = key.private_decrypt(dvsni_y, M2Crypto.RSA.pkcs1_oaep_padding)
+    sni_todo.append( (chall.name, dvsni_nonce, dvsni_r) )
+
+print sni_todo
