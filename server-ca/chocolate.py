@@ -211,8 +211,11 @@ class session(object):
         if not all([safe("recipient", recipient), safe("csr", csr)]):
             self.die(r, r.BadRequest, uri="https://ca.example.com/failures/illegalcharacter")
             return
-        if timestamp > time.time() or time.time() - timestamp > 100:
-            self.die(r, r.BadRequest, uri="https://ca.example.com/failures/time")
+        if timestamp - time.time() > 5:
+            self.die(r, r.BadRequest, uri="https://ca.example.com/failures/future")
+            return
+        if time.time() - timestamp > 100:
+            self.die(r, r.BadRequest, uri="https://ca.example.com/failures/past")
             return
         if recipient != "ca.example.com":
             self.die(r, r.BadRequest, uri="https://ca.example.com/failures/recipient")
