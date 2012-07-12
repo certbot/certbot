@@ -51,3 +51,6 @@ while r.proceed.IsInitialized():
    k.session = r.session
    r = decode(do(k))
    print r
+
+for chall in r.challenges:
+    print chall
