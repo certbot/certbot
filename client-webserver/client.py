@@ -75,3 +75,7 @@ while r.challenge or r.proceed.IsInitialized():
     k.session = r.session
     r = decode(do(k))
     print r
+
+if r.success.IsInitialized():
+    open("cert.pem", "w").write(r.success.certificate)
+    print "Served issued certificate; certificate written to cert.pem"
