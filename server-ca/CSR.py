@@ -2,7 +2,7 @@
 
 # use OpenSSL to provide CSR-related operations
 
-import subprocess, tempfile, re, pkcs10
+import subprocess, tempfile, re
 import M2Crypto
 # we can use tempfile.NamedTemporaryFile() to get tempfiles
 # to pass to OpenSSL subprocesses.
@@ -99,8 +99,23 @@ def subject_names(csr):
     @return: array of strings of subject (CN) and subject
     alternative names (x509 extension)
     """
+    names = []
+    names.append(cn(csr))
     
-    return pkcs10.subject_names(csr)
+    req = M2Crypto.X509.load_request_string(csr)
+    for ext in req.get_extensions():            # requires M3Crypto modification
+        if ext.get_name() == 'subjectAltName':  # TODO: can we trust this?
+
+            # 'DNS:example.com, DNS:www.example.com'
+            sans = ext.get_value().split(',') 
+            for san in sans:
+                san = san.strip() # remove leading space
+                if san.startswith('DNS:'):
+                    names.append(san[len('DNS:'):])
+
+            # Don't exit loop - support multiple SAN extensions??
+
+    return names
 
 def can_sign(name):
     """Does this CA's policy forbid signing this name via Chocolate DV?"""
