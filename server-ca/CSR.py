@@ -8,11 +8,20 @@ import M2Crypto
 # to pass to OpenSSL subprocesses.
 
 def parse(csr):
-    """Is this CSR syntactically valid?"""
-    out, err = subprocess.Popen(["openssl", "req", "-noout"],shell=False,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE).communicate(csr)
-    if not err:
-       return True
-    return False
+    """
+    Is this CSR syntactically valid? (TODO: remove)
+
+    @type csr: str
+    @param csr: PEM-encoded string of the CSR.
+
+    @return: True if M2Crypto can parse the csr,
+    False if there is an error parsing it.
+    """
+    try:
+        req = M2Crypto.X509.load_request_string(csr)
+        return True
+    except Exception:
+        return False
 
 def modulusbits(key):
     """How many bits are in the modulus of this key?"""
