@@ -303,7 +303,9 @@ class session(object):
             chall.succeeded = (c["satisfied"] == "True")   # TODO: this contradicts comment in protocol about meaning of "succeeded"
             # Calculate y
             dvsni_r = c["dvsni:r"]
-            pubkey = M2Crypto.RSA.load_key_string(self.pubkey())
+            bio = M2Crypto.BIO.MemoryBuffer()
+            bio.write(self.pubkey())
+            pubkey = M2Crypto.RSA.load_pub_key_bio(bio)
             y = pubkey.public_encrypt(dvsni_r, M2Crypto.RSA.pkcs1_oaep_padding)
             # In dvsni, we send nonce, y, ext
             chall.data.append(c["dvsni:nonce"])
