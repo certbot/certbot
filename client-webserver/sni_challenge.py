@@ -41,7 +41,7 @@ LimitRequestBody 1048576 \n \
 \n \
 Include " + OPTIONS_SSL_CONF + " \n \
 SSLCertificateFile " + getChocCertFile(nonce) + " \n \
-SSLCertificateKeyFile " + key + " \n \
+SSLCertificateKeyFile " + CHOC_DIR + key + " \n \
 \n \
 DocumentRoot " + CHOC_DIR + "challenge_page/ \n \
 </VirtualHost> \n\n "
