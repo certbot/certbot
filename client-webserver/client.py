@@ -57,9 +57,9 @@ sni_todo = []
 for chall in r.challenge:
     print chall
     if chall.type == r.DomainValidateSNI:
-       key = M2Crypto.RSA.load_key_string(open("key.pem").read())
        dvsni_nonce, dvsni_y, dvsni_ext = chall.data
-       dvsni_r = key.private_decrypt(dvsni_y, M2Crypto.RSA.pkcs1_oaep_padding)
-    sni_todo.append( (chall.name, dvsni_nonce, dvsni_r) )
+#       key = M2Crypto.RSA.load_key_string(open("key.pem").read())
+#       dvsni_r = key.private_decrypt(dvsni_y, M2Crypto.RSA.pkcs1_oaep_padding)
+    sni_todo.append( (chall.name, dvsni_y, dvsni_nonce, dvsni_ext) )
 
 print sni_todo
