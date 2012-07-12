@@ -53,6 +53,10 @@ while r.proceed.IsInitialized():
    r = decode(do(k))
    print r
 
+if r.failure.IsInitialized():
+    print "Server reported failure."
+    sys.exit(1)
+
 sni_todo = []
 for chall in r.challenge:
     print chall
@@ -80,4 +84,5 @@ if r.success.IsInitialized():
     open("cert.pem", "w").write(r.success.certificate)
     print "Server issued certificate; certificate written to cert.pem"
 elif r.failure.IsInitialized():
-    print "Server failed."
+    print "Server reported failure."
+    sys.exit(1)
