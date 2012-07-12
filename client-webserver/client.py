@@ -45,6 +45,7 @@ sign(open("key.pem").read(), m)
 r=decode(do(m))
 print r
 while r.proceed.IsInitialized():
+   if r.proceed.polldelay > 60: r.proceed.polldelay = 60
    print "waiting", r.proceed.polldelay
    time.sleep(r.proceed.polldelay)
    k.session = r.session
