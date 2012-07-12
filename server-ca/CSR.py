@@ -3,6 +3,7 @@
 # use OpenSSL to provide CSR-related operations
 
 import subprocess, tempfile, re, pkcs10
+import M2Crypto
 # we can use tempfile.NamedTemporaryFile() to get tempfiles
 # to pass to OpenSSL subprocesses.
 
@@ -15,14 +16,9 @@ def parse(csr):
 
 def modulusbits(key):
     """How many bits are in the modulus of this key?"""
-    out, err = subprocess.Popen(["openssl", "rsa", "-pubin", "-text", "-noout"],shell=False,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE).communicate(key)
-    if out and not err:
-        try:
-            size = re.search("(Public-Key|Modulus):? \(([0-9]+) bit\)", out).groups()[-1]
-        except:
-            return None
-        return int(size)
-    return None
+    bio = M2Crypto.BIO.MemoryBuffer(key)
+    pubkey = M2Crypto.RSA.load_pub_key_bio(bio)
+    return len(pubkey)
 
 def goodkey(key):
     """Does this public key comply with our CA policy?"""
