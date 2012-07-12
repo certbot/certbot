@@ -3,7 +3,7 @@
 from chocolate_protocol_pb2 import chocolatemessage
 from Crypto.Hash import SHA256
 import M2Crypto
-import urllib2, os, sys, time, random, CSR
+import urllib2, os, sys, time, random, CSR, sys
 
 def sha256(m):
     return SHA256.new(m).hexdigest()
