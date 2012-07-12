@@ -78,4 +78,6 @@ while r.challenge or r.proceed.IsInitialized():
 
 if r.success.IsInitialized():
     open("cert.pem", "w").write(r.success.certificate)
-    print "Served issued certificate; certificate written to cert.pem"
+    print "Server issued certificate; certificate written to cert.pem"
+elif r.failure.IsInitialized():
+    print "Server failed."
