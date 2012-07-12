@@ -26,7 +26,7 @@
 # If the client never checks in, the daemon can keep advancing
 # the request's state, which may not be the right behavior.
 
-import redis, time, CSR, sys
+import redis, time, CSR, sys, signal
 r = redis.Redis()
 
 from sni_challenge.verify import verify_challenge
@@ -34,6 +34,14 @@ from Crypto.Hash import SHA256, HMAC
 from Crypto import Random
 
 debug = "debug" in sys.argv
+clean_shutdown = False
+
+def signal_handler(a, b):
+    global clean_shutdown
+    clean_shutdown = True
+
+signal.signal(signal.SIGTERM, signal_handler)
+signal.signal(signal.SIGINT, signal_handler)
 
 def sha256(m):
     return SHA256.new(m).hexdigest()
@@ -190,6 +198,7 @@ def issue(session):
         r.lpush("pending-issue", session)
 
 while True:
+    if clean_shutdown: break
     session = r.rpop("pending-makechallenge")
     if session:
         if debug: print "going to makechallenge for", session

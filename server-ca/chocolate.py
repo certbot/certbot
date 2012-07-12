@@ -4,7 +4,7 @@ import web, redis, time
 import CSR
 import hashlib
 import hmac
-from Crypto.PublicKey import RSA
+import M2Crypto
 from Crypto import Random
 from chocolate_protocol_pb2 import chocolatemessage
 from google.protobuf.message import DecodeError
@@ -211,8 +211,11 @@ class session(object):
         if not all([safe("recipient", recipient), safe("csr", csr)]):
             self.die(r, r.BadRequest, uri="https://ca.example.com/failures/illegalcharacter")
             return
-        if timestamp > time.time() or time.time() - timestamp > 100:
-            self.die(r, r.BadRequest, uri="https://ca.example.com/failures/time")
+        if timestamp - time.time() > 5:
+            self.die(r, r.BadRequest, uri="https://ca.example.com/failures/future")
+            return
+        if time.time() - timestamp > 100:
+            self.die(r, r.BadRequest, uri="https://ca.example.com/failures/past")
             return
         if recipient != "ca.example.com":
             self.die(r, r.BadRequest, uri="https://ca.example.com/failures/recipient")
@@ -300,7 +303,9 @@ class session(object):
             chall.succeeded = (c["satisfied"] == "True")   # TODO: this contradicts comment in protocol about meaning of "succeeded"
             # Calculate y
             dvsni_r = c["dvsni:r"]
-            pubkey = M2Crypto.RSA.load_key_string(self.pubkey())
+            bio = M2Crypto.BIO.MemoryBuffer()
+            bio.write(self.pubkey())
+            pubkey = M2Crypto.RSA.load_pub_key_bio(bio)
             y = pubkey.public_encrypt(dvsni_r, M2Crypto.RSA.pkcs1_oaep_padding)
             # In dvsni, we send nonce, y, ext
             chall.data.append(c["dvsni:nonce"])
