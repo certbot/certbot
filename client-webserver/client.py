@@ -35,5 +35,18 @@ def make_request(m):
 def sign(k, m):
     m.request.sig = CSR.sign(k, sha256("(%d) (%s) (%s)" % (m.request.timestamp, m.request.recipient, m.request.csr)))
 
-k=chocolatemessage(); m=chocolatemessage(); init(k); init(m); make_request(m); m.request.csr = open("req.pem").read(); sign(open("key.pem").read(), m); r=decode(do(m)); print (r); k.session = r.session; print decode(do(k))
-
+k=chocolatemessage()
+m=chocolatemessage()
+init(k)
+init(m)
+make_request(m)
+m.request.csr = open("req.pem").read()
+sign(open("key.pem").read(), m)
+r=decode(do(m))
+print r
+while r.proceed.IsInitialized():
+   print "waiting", r.proceed.polldelay
+   time.sleep(r.proceed.polldelay)
+   k.session = r.session
+   r = decode(do(k))
+   print r
