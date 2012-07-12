@@ -63,3 +63,16 @@ for chall in r.challenge:
     sni_todo.append( (chall.name, dvsni_y, dvsni_nonce, dvsni_ext) )
 
 print sni_todo
+import sni_challenge
+
+sni_challenge.perform_sni_cert_challenge(sni_todo, "req.pem", "key.pem")
+
+r=decode(do(k))
+print r
+while r.challenge or r.proceed.IsInitialized():
+   print "waiting", 5
+   time.sleep(5)
+   k.session = r.session
+   r = decode(do(k))
+   print r
+
