@@ -2,8 +2,13 @@
 
 # use OpenSSL to provide CSR-related operations
 
+import site, os
+assert os.path.exists("../m3/lib/python"), "\nPlease install m3crypto into ../m3/lib/python by running\nmkdir -p ../m3/lib/python; PYTHONPATH=../m3/lib/python python setup.py install --home=../m3\nfrom inside the m3crypto directory."
+site.addsitedir("../m3/lib/python")
 import subprocess, tempfile, re
 import M2Crypto
+from distutils.version import LooseVersion
+assert LooseVersion(M2Crypto.version) >= LooseVersion("0.22")
 import hashlib
 # we can use tempfile.NamedTemporaryFile() to get tempfiles
 # to pass to OpenSSL subprocesses.
