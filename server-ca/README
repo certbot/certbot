@@ -1,12 +1,17 @@
 In this directory is a reference CA implementation of the Chocolate protocol,
 DV and signing mechanism.
 
-Set CHOCOLATESERVER environment variable for "make deploy"!
+Instead of using "make deploy", we're currently using git pull to deploy this.
+This requires restarting lighttpd on the server and ensuring that Redis and
+a copy of daemon.py are running there.  If the .proto definition has
+changed, it also needs to be recompiled on both the server and the client.
+
 
 
 chocolate.py - server-side, requires web.py (python-webpy),
         PyCrypto (python-crypto) 2.3 (not 2.1!!), redis, python-redis,
-        python-protobuf, python-nss
+        python-protobuf, "M3Crypto" (from our own tree) (hence also
+	build-essential, python-dev, and swig)
 	probably wants to run under a web server like lighttpd with fastcgi
 
 
