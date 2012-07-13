@@ -223,7 +223,8 @@ class session(object):
         if not CSR.parse(csr):
             self.die(r, r.BadCSR)
             return
-        if CSR.verify(CSR.pubkey(csr), sig) != sha256("(%d) (%s) (%s)" % (timestamp, recipient, csr)):
+        digest_data = "(%d) (%s) (%s)" % (timestamp, recipient, csr)
+        if CSR.verify(CSR.pubkey(csr), digest_data, sig) == False:
             self.die(r, r.BadSignature)
             return
         if not CSR.csr_goodkey(csr):
