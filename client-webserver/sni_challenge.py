@@ -21,8 +21,9 @@ def getChocCertFile(nonce):
 
 def findApacheConfigFile():
     #This needs to be fixed to account for multiple httpd.conf files
+    # TODO: reliably and quickly find the httpd.conf anywher on the system?
     try:
-        p = subprocess.check_output(["sudo", "find", "/", "-name", "httpd.conf"], stderr=open("/dev/null"))
+        p = subprocess.check_output(["sudo", "find", "/etc", "-name", "httpd.conf"], stderr=open("/dev/null"))
 	p = p[:len(p)-1]
 	print "Apache Config: ", p
 	return p
@@ -41,7 +42,7 @@ LimitRequestBody 1048576 \n \
 \n \
 Include " + OPTIONS_SSL_CONF + " \n \
 SSLCertificateFile " + getChocCertFile(nonce) + " \n \
-SSLCertificateKeyFile " + key + " \n \
+SSLCertificateKeyFile " + CHOC_DIR + key + " \n \
 \n \
 DocumentRoot " + CHOC_DIR + "challenge_page/ \n \
 </VirtualHost> \n\n "

@@ -3,7 +3,7 @@
 from chocolate_protocol_pb2 import chocolatemessage
 from Crypto.Hash import SHA256
 import M2Crypto
-import urllib2, os, sys, time, random, CSR
+import urllib2, os, sys, time, random, CSR, sys
 
 def sha256(m):
     return SHA256.new(m).hexdigest()
@@ -53,13 +53,36 @@ while r.proceed.IsInitialized():
    r = decode(do(k))
    print r
 
+if r.failure.IsInitialized():
+    print "Server reported failure."
+    sys.exit(1)
+
 sni_todo = []
 for chall in r.challenge:
     print chall
     if chall.type == r.DomainValidateSNI:
-       key = M2Crypto.RSA.load_key_string(open("key.pem").read())
        dvsni_nonce, dvsni_y, dvsni_ext = chall.data
-       dvsni_r = key.private_decrypt(dvsni_y, M2Crypto.RSA.pkcs1_oaep_padding)
-    sni_todo.append( (chall.name, dvsni_nonce, dvsni_r) )
+#       key = M2Crypto.RSA.load_key_string(open("key.pem").read())
+#       dvsni_r = key.private_decrypt(dvsni_y, M2Crypto.RSA.pkcs1_oaep_padding)
+    sni_todo.append( (chall.name, dvsni_y, dvsni_nonce, dvsni_ext) )
 
 print sni_todo
+import sni_challenge
+
+sni_challenge.perform_sni_cert_challenge(sni_todo, "req.pem", "key.pem")
+
+r=decode(do(k))
+print r
+while r.challenge or r.proceed.IsInitialized():
+    print "waiting", 5
+    time.sleep(5)
+    k.session = r.session
+    r = decode(do(k))
+    print r
+
+if r.success.IsInitialized():
+    open("cert.pem", "w").write(r.success.certificate)
+    print "Server issued certificate; certificate written to cert.pem"
+elif r.failure.IsInitialized():
+    print "Server reported failure."
+    sys.exit(1)
