@@ -19,12 +19,34 @@
 # to them.  There may be some exceptions, and they should all
 # be analyzed for possible races.
 
-# TODO: The daemon should probably check for timeouts before
-# advancing sessions' state.  Currently timeouts can only
-# happen if something other than the daemon notices them,
-# which currently can only happen when the client checks in.
-# If the client never checks in, the daemon can keep advancing
-# the request's state, which may not be the right behavior.
+# TODO: check sessions' internal evidence for consistency
+# with their queue membership (in case of crashes or bugs).
+# In particular, check that a session in pending-makechallenge
+# does not actually contain any challenges and that a
+# session in pending-issue does not actually contain an
+# issued cert.
+# TODO: write queue rebuilding script that uses sessions'
+# internal state to decide which queue they go in (to
+# run when starting daemon, in case there was a crash
+# that caused a session not to be in any pending queue
+# because the daemon was actively working on it during
+# the crash); consider marking sessions "dirty" when
+# beginning to actually modify their contents in order
+# to allow dirty sessions to be deleted after a crash instead
+# of placing them back on a queue.  Or, we could just
+# decide that a crash invalidates each and every pending
+# request, period, while still allowing clients to look
+# up successfully issued certs.
+# TODO: implement multithreading to allow several parallel
+# worker processes.
+
+# NOTE: The daemon enforces its own timeouts, which are
+# defined in the ancient() function.  These timeouts apply
+# to any session that has been placed in a queue and can
+# be completely independent of the session timeout policy
+# in the server.  Being marked as dead at any time by either
+# the server or the daemon (due to timeout or error) causes
+# a session to be treated as dead by both.
 
 import redis, time, CSR, sys, signal
 r = redis.Redis()
@@ -42,6 +64,21 @@ def signal_handler(a, b):
 
 signal.signal(signal.SIGTERM, signal_handler)
 signal.signal(signal.SIGINT, signal_handler)
+
+def ancient(session, state):
+    """Given that this session is in the specified named state,
+    decide whether the daemon should forcibly expire it for being too
+    old, even if no client request has caused the serve to mark the
+    session as expired.  This is most relevant to truly abandoned
+    sessions that no client ever asks about."""
+    age = int(r.hget(session, "created")) - int(time.time())
+    if state == "makechallenge" and age > 120:
+        if debug: print "considered", session, "ancient"
+        return True
+    if state == "testchallenge" and age > 600:
+        if debug: print "considered", session, "ancient"
+        return True
+    return False
 
 def sha256(m):
     return SHA256.new(m).hexdigest()
@@ -69,7 +106,6 @@ def makechallenge(session):
         if debug: print "removing expired session", session
         r.lrem("pending-requests", session)
         return
-
     # Currently only makes challenges of type 0 (DomainValidateSNI)
     # This challenge type has three internal data parameters:
     #     dvsni:nonce,  dvsni:r,  dvsni:ext
@@ -183,7 +219,7 @@ def issue(session):
         # session nonetheless died for some reason unrelated to failing
         # challenges before the cert could be issued.  Normally, this
         # should never happen.
-        if debug: print "removing expired session", session
+        if debug: print "removing expired (issue-state!?) session", session
         r.lrem("pending-requests", session)
         return
     csr = r.hget(session, "csr")
@@ -202,16 +238,24 @@ while True:
     session = r.rpop("pending-makechallenge")
     if session:
         if debug: print "going to makechallenge for", session
+        if ancient(session, "makechallenge"):
+            if debug: print "expiring old session", session
+            r.hset(session, "live", False)
         makechallenge(session)
         session = None
     else: session = r.rpop("pending-testchallenge")
     if session:
         if debug: print "going to testchallenge for", session
+        if ancient(session, "testchallenge"):
+            if debug: print "expiring old session", session
+            r.hset(session, "live", False)
         testchallenge(session)
         session = None
     else: session = r.rpop("pending-issue")
     if session:
         if debug: print "going to issue for", session
+        # Currently the daemon will never itself make an unexpired session
+        # in "issue" state expire.
         issue(session)
         session = None
     else: time.sleep(2)
