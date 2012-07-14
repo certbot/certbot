@@ -4,7 +4,7 @@ import web, redis, time
 import CSR
 import hashlib
 import hmac
-import M2Crypto
+from CSR import M2Crypto
 from Crypto import Random
 from chocolate_protocol_pb2 import chocolatemessage
 from google.protobuf.message import DecodeError
