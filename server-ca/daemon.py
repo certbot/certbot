@@ -38,7 +38,19 @@
 # request, period, while still allowing clients to look
 # up successfully issued certs.
 # TODO: implement multithreading to allow several parallel
-# worker processes.
+# worker processes.  But note:
+
+#       The ca command is effectively a single user command: no locking
+#       is done on the various files and attempts to run more than one
+#       ca command on the same database can have unpredictable results.
+#
+#                             -- ca(1SSL)
+
+# So we need to implement our own locking mechanism.  This
+# can be done easily in Redis with "setnx":
+#            http://redis.io/commands/setnx
+# However apparently the proper recovery after crashes can
+# be complicated.
 
 # NOTE: The daemon enforces its own timeouts, which are
 # defined in the ancient() function.  These timeouts apply

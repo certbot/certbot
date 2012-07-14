@@ -208,6 +208,11 @@ def encrypt(key, data):
 def issue(csr, subjects):
     """Issue a certificate requested by CSR, specifying the subject names
     indicated in subjects, and return the certificate."""
+    # TODO: The caller should have to acquire a lock in the database to
+    #       prevent two certs from being issued at exactly the same time,
+    #       because openssl ca doesn't handle this case safely.  There
+    #       is a longer comment in daemon.py describing how to implement
+    #       this lock with Redis setnx.
     if not subjects:
         return None
     csr = str(csr)
