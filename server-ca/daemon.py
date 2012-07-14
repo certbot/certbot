@@ -223,7 +223,8 @@ def issue(session):
         r.lrem("pending-requests", session)
         return
     csr = r.hget(session, "csr")
-    cert = CSR.issue(csr)
+    names = r.lrange("%s:names" % session, 0, -1)
+    cert = CSR.issue(csr, names)
     r.hset(session, "cert", cert)
     if cert:   # once issuing cert succeeded
         if debug: print "issued for", session

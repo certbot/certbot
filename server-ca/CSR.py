@@ -5,13 +5,13 @@
 import site, os
 assert os.path.exists("../m3/lib/python"), "\nPlease install m3crypto into ../m3/lib/python by running\nmkdir -p ../m3/lib/python; PYTHONPATH=../m3/lib/python python setup.py install --home=../m3\nfrom inside the m3crypto directory."
 site.addsitedir("../m3/lib/python")
-import subprocess, tempfile, re
+import subprocess, re
+from tempfile import NamedTemporaryFile as temp
 import M2Crypto
 from distutils.version import LooseVersion
 assert LooseVersion(M2Crypto.version) >= LooseVersion("0.22")
 import hashlib
-# we can use tempfile.NamedTemporaryFile() to get tempfiles
-# to pass to OpenSSL subprocesses.
+# we can use temp() to get tempfiles to pass to OpenSSL subprocesses.
 
 def parse(csr):
     """
@@ -205,21 +205,42 @@ def encrypt(key, data):
     pubkey = M2Crypto.RSA.load_pub_key_bio(bio)
     return pubkey.public_encrypt(data, M2Crypto.RSA.pkcs1_oaep_padding)
 
-
-def issue(csr):
-    """Issue the certificate requested by this CSR and return it!"""
-    # TODO: a real CA should severely restrict the content of the cert, not
-    # just grant what's asked for.  (For example, the CA shouldn't trust
-    # all the data in the subject field if it hasn't been validated.)
-    # Therefore, we should construct a new CSR from scratch using the
-    # parsed-out data from the input CSR, and then pass that to OpenSSL.
+def issue(csr, subjects):
+    """Issue a certificate requested by CSR, specifying the subject names
+    indicated in subjects, and return the certificate."""
+    if not subjects:
+        return None
     csr = str(csr)
+    subjects = [str(s) for s in subjects]
+    for s in subjects:
+        if ":" in s or "," in s or " " in s or "\n" in s or "\r" in s:
+            # We should already have validated the names to be issued a
+            # long time ago, but this is an extra sanity check to make
+            # sure that the cert issuing process can't be corrupted by
+            # attempting to issue certs for names with special characters.
+            return None
     cert = None
-    with tempfile.NamedTemporaryFile() as csr_tmp:
+    # We need three temporary files: for the CSR, for the extension config
+    # file, and for the resulting certificate.
+    with temp() as csr_tmp, temp() as ext_tmp, temp() as cert_tmp:
         csr_tmp.write(csr)
         csr_tmp.flush()
-        with tempfile.NamedTemporaryFile() as cert_tmp:
-            ret = subprocess.Popen(["./CA.sh", "-chocolate", csr_tmp.name, cert_tmp.name],shell=False,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE).wait()
-            if ret == 0:
-                cert = cert_tmp.read()
+        dn = "/CN=%s" % subjects[0]
+        ext_tmp.write("""
+basicConstraints=CA:FALSE
+keyUsage=digitalSignature, keyEncipherment, keyAgreement
+extendedKeyUsage=serverAuth
+subjectKeyIdentifier=hash
+authorityKeyIdentifier=keyid,issuer
+nsComment = "Chocolatey"
+""")
+        if subjects[1:]:
+            san_line = "subjectAltName="
+            san_line += ",".join("DNS:%s" % n for n in subjects[1:]) + "\n"
+            ext_tmp.write(san_line)
+        ext_tmp.flush()
+        print ["./CA.sh", "-complete", dn, ext_tmp.name, csr_tmp.name, cert_tmp.name]
+        ret = subprocess.Popen(["./CA.sh", "-complete", dn, ext_tmp.name, csr_tmp.name, cert_tmp.name],shell=False,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE).wait()
+        if ret == 0:
+            cert = cert_tmp.read()
     return cert

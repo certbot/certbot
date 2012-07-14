@@ -77,6 +77,7 @@ if [ -z "$CATOP" ] ; then CATOP=./demoCA ; fi
 CAKEY=./cakey.pem
 CAREQ=./careq.pem
 CACERT=./cacert.pem
+CACFG=./ca.cfg
 
 RET=0
 
@@ -168,6 +169,14 @@ case $1 in
     RET=$?
     exit $RET
     ;;
+-complete)
+    # TODO: for deployed system, add -notext to avoid getting human-readable
+    #       text output.
+    /bin/echo -e "y\ny\n" | $CA -passin env:PASSWORD -config ${CATOP}/${CACFG} -extfile "$3" -subj "$2" -out "$5" -infiles "$4"
+    RET=$?
+    exit $RET
+    ;;
+
 -signCA)
     $CA -policy policy_anything -out newcert.pem -extensions v3_ca -infiles newreq.pem
     RET=$?
