@@ -36,7 +36,7 @@ def make_request(m):
     m.request.sig = "BAR"
 
 def sign(k, m):
-    m.request.sig = CSR.sign(k, sha256("(%d) (%s) (%s)" % (m.request.timestamp, m.request.recipient, m.request.csr)))
+    m.request.sig = CSR.sign(k, ("(%d) (%s) (%s)" % (m.request.timestamp, m.request.recipient, m.request.csr)))
 
 k=chocolatemessage()
 m=chocolatemessage()
