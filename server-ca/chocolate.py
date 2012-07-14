@@ -12,6 +12,11 @@ from google.protobuf.message import DecodeError
 MaximumSessionAge = 100   # seconds, to demonstrate session timeout
 MaximumChallengeAge = 600 # to demonstrate challenge timeout
 
+try:
+    chocolate_server_name = open("SERVERNAME").read().rstrip()
+except IOError:
+    raise IOError, "Please create a SERVERNAME file containing the server name."
+
 urls = (
      '.*', 'session'
 )
@@ -217,7 +222,7 @@ class session(object):
         if time.time() - timestamp > 100:
             self.die(r, r.BadRequest, uri="https://ca.example.com/failures/past")
             return
-        if recipient != "ca.example.com":
+        if recipient != chocolate_server_name:
             self.die(r, r.BadRequest, uri="https://ca.example.com/failures/recipient")
             return
         if not CSR.parse(csr):

@@ -29,8 +29,7 @@ def init(m):
     m.session = ""
 
 def make_request(m, csr):
-    # TODO: take recipient from os.environ["CHOCOLATESERVER"]
-    m.request.recipient = "ca.example.com"
+    m.request.recipient = os.environ["CHOCOLATESERVER"]
     m.request.timestamp = int(time.time())
     m.request.csr = csr
 
