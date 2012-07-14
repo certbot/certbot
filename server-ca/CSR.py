@@ -24,12 +24,14 @@ def parse(csr):
     False if there is an error parsing it.
     """
     try:
+        csr = str(csr)
         req = M2Crypto.X509.load_request_string(csr)
         return True
-    except Exception:
+    except Exception, e:
         return False
 
 def modulusbits(key):
+    key = str(key)
     """How many bits are in the modulus of this key?"""
     bio = M2Crypto.BIO.MemoryBuffer(key)
     pubkey = M2Crypto.RSA.load_pub_key_bio(bio)
@@ -37,6 +39,7 @@ def modulusbits(key):
 
 def goodkey(key):
     """Does this public key comply with our CA policy?"""
+    key = str(key)
     bits = modulusbits(key)
     if bits and bits >= 2000:
         return True
@@ -45,6 +48,7 @@ def goodkey(key):
 
 def csr_goodkey(csr):
     """Does this CSR's embedded public key comply with our CA policy?"""
+    csr = str(csr)
     if not parse(csr): return False
     key = pubkey(csr)
     return goodkey(key)
@@ -58,6 +62,7 @@ def pubkey(csr):
     
     @return: a string of the PEM-encoded public key
     """
+    csr = str(csr)
     req = M2Crypto.X509.load_request_string(csr)
     return req.get_pubkey().get_rsa().as_pem(None)
 
@@ -70,6 +75,7 @@ def subject(csr):
     
     @return: a string of the subject
     """
+    csr = str(csr)
     req = M2Crypto.X509.load_request_string(csr)
     return req.get_subject().as_text()
 
@@ -83,7 +89,7 @@ def cn(csr):
 
     @return: string of the first 
     """
-
+    csr = str(csr)
     req = M2Crypto.X509.load_request_string(csr)
     
     # Get an array of CNs
@@ -105,6 +111,7 @@ def subject_names(csr):
     @return: array of strings of subject (CN) and subject
     alternative names (x509 extension)
     """
+    csr = str(csr)
     names = []
     names.append(cn(csr))
     
@@ -129,6 +136,7 @@ def can_sign(name):
     # ([a-z0-9]+\.)+[a-z0-9]+
     # and there is also a list of TLDs to check against to confirm that
     # the name is actually a FQDN.
+    name = str(name)
     if "." not in name: return False
     # Examples of names that are forbidden by policy due to a blacklist.
     if name in ["google.com", "www.google.com"]: return False
@@ -150,6 +158,9 @@ def verify(key, data, signature):
 
     @return: True if the signature checks out, False otherwise. 
     """
+    key = str(key)
+    data = str(data)
+    signature = str(signature)
     bio = M2Crypto.BIO.MemoryBuffer(key)
     pubkey = M2Crypto.RSA.load_pub_key_bio(bio)
     try:
@@ -171,6 +182,8 @@ def sign(key, data):
 
     @return: binary string of the signature
     """
+    key = str(key)
+    data = str(data)
     privkey = M2Crypto.RSA.load_key_string(key)
     return privkey.sign(hashlib.sha256(data).digest(), 'sha256')
 
@@ -186,6 +199,8 @@ def encrypt(key, data):
 
     @return: binary string of the encrypted value, using PKCS1_OAEP_PADDING
     """
+    key = str(key)
+    data = str(data)
     bio = M2Crypto.BIO.MemoryBuffer(key)
     pubkey = M2Crypto.RSA.load_pub_key_bio(bio)
     return pubkey.public_encrypt(data, M2Crypto.RSA.pkcs1_oaep_padding)
@@ -198,6 +213,7 @@ def issue(csr):
     # all the data in the subject field if it hasn't been validated.)
     # Therefore, we should construct a new CSR from scratch using the
     # parsed-out data from the input CSR, and then pass that to OpenSSL.
+    csr = str(csr)
     cert = None
     with tempfile.NamedTemporaryFile() as csr_tmp:
         csr_tmp.write(csr)
