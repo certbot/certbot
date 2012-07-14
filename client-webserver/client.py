@@ -28,12 +28,11 @@ def init(m):
     m.chocolateversion = 1
     m.session = ""
 
-def make_request(m):
-    # m.request.nonce = "".join([random.choice("abcdefghijklmnopqrstuvwxyz") for i in xrange(20)])
+def make_request(m, csr):
+    # TODO: take recipient from os.environ["CHOCOLATESERVER"]
     m.request.recipient = "ca.example.com"
     m.request.timestamp = int(time.time())
-    m.request.csr = "FOO"
-    m.request.sig = "BAR"
+    m.request.csr = csr
 
 def sign(k, m):
     m.request.sig = CSR.sign(k, ("(%d) (%s) (%s)" % (m.request.timestamp, m.request.recipient, m.request.csr)))
@@ -42,8 +41,7 @@ k=chocolatemessage()
 m=chocolatemessage()
 init(k)
 init(m)
-make_request(m)
-m.request.csr = open("req.pem").read()
+make_request(m, csr=open("req.pem").read())
 sign(open("key.pem").read(), m)
 r=decode(do(m))
 print r
@@ -64,8 +62,6 @@ for chall in r.challenge:
     print chall
     if chall.type == r.DomainValidateSNI:
        dvsni_nonce, dvsni_y, dvsni_ext = chall.data
-#       key = M2Crypto.RSA.load_key_string(open("key.pem").read())
-#       dvsni_r = key.private_decrypt(dvsni_y, M2Crypto.RSA.pkcs1_oaep_padding)
     sni_todo.append( (chall.name, dvsni_y, dvsni_nonce, dvsni_ext) )
 
 print sni_todo
@@ -81,6 +77,9 @@ while r.challenge or r.proceed.IsInitialized():
     k.session = r.session
     r = decode(do(k))
     print r
+
+# TODO: there should be an unperform_sni_cert_challenge() here.
+# TODO: there should be a deploy_cert() here.
 
 if r.success.IsInitialized():
     open("cert.pem", "w").write(r.success.certificate)
