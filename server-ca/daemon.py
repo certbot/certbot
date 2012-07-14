@@ -60,11 +60,10 @@
 # the server or the daemon (due to timeout or error) causes
 # a session to be treated as dead by both.
 
-import redis, time, CSR, sys, signal
+import redis, time, CSR, sys, signal, hashlib
 r = redis.Redis()
 
 from sni_challenge.verify import verify_challenge
-from Crypto.Hash import SHA256, HMAC
 from Crypto import Random
 
 debug = "debug" in sys.argv
@@ -93,10 +92,7 @@ def ancient(session, state):
     return False
 
 def sha256(m):
-    return SHA256.new(m).hexdigest()
-
-def hmac(k, m):
-    return HMAC.new(k, m, SHA256).hexdigest()
+    return hashlib.sha256(m).hexdigest()
 
 def random():
     """Return 64 hex digits representing a new 32-byte random number."""
@@ -104,7 +100,7 @@ def random():
 
 def random_raw():
     """Return 32 random bytes."""
-    return SHA256.new(Random.get_random_bytes(32)).digest()
+    return hashlib.sha256(Random.get_random_bytes(32)).digest()
 
 def makechallenge(session):
     if r.hget(session, "live") != "True":
