@@ -4,8 +4,14 @@ from chocolate_protocol_pb2 import chocolatemessage
 from Crypto.Hash import SHA256
 import CSR
 from CSR import M2Crypto
-import urllib2, os, sys, time, random, sys
+import urllib2, os, sys, time, random, sys, hashcash
 # CSR.py here should be a symlink to ../server-ca/CSR.py
+# hashcash.py here should be a symlink to ../server-ca/hashcash.py
+
+difficulty = 20
+# TODO: unfortunately, the C hashcash implementation seems to be about
+#       2^6 times faster than the native Python implementation, so
+#       calibrating the difficulty is a bit of a problem.
 
 def sha256(m):
     return SHA256.new(m).hexdigest()
@@ -29,9 +35,11 @@ def init(m):
     m.session = ""
 
 def make_request(m, csr):
-    m.request.recipient = os.environ["CHOCOLATESERVER"]
+    server = os.environ["CHOCOLATESERVER"]
+    m.request.recipient = server
     m.request.timestamp = int(time.time())
     m.request.csr = csr
+    m.request.clientpuzzle = hashcash.mint(server, difficulty)
 
 def sign(k, m):
     m.request.sig = CSR.sign(k, ("(%d) (%s) (%s)" % (m.request.timestamp, m.request.recipient, m.request.csr)))
@@ -42,6 +50,8 @@ init(k)
 init(m)
 make_request(m, csr=open("req.pem").read())
 sign(open("key.pem").read(), m)
+print m
+assert False
 r=decode(do(m))
 print r
 while r.proceed.IsInitialized():

@@ -4,6 +4,7 @@ import web, redis, time
 import CSR
 import hashlib
 import hmac
+import hashcash
 from CSR import M2Crypto
 from Crypto import Random
 from chocolate_protocol_pb2 import chocolatemessage
@@ -11,6 +12,8 @@ from google.protobuf.message import DecodeError
 
 MaximumSessionAge = 100   # seconds, to demonstrate session timeout
 MaximumChallengeAge = 600 # to demonstrate challenge timeout
+
+difficulty = 20           # bits of hashcash required with new requests
 
 try:
     chocolate_server_name = open("SERVERNAME").read().rstrip()
@@ -201,6 +204,12 @@ class session(object):
             # It is mandatory to make a signing request at the outset of a session.
             self.die(r, r.BadRequest, uri="https://ca.example.com/failures/missingrequest")
             return
+        # Check hashcash before doing any crypto or database access.
+        if not m.request.clientpuzzle or not hashcash.check(m.request.clientpuzzle, chocolate_server_name, difficulty):
+            # TODO: should enforce hashcash expiry and use the database to store valid
+            #       ones in order to prevent double-spending.
+            self.die(r, r.NeedClientPuzzle, uri="https://ca.example.com/failures/hashcash")
+            return
         if self.request_made():
             # Can't make new signing requests if there have already been requests in
             # this session.  (All signing requests should occur together at the
@@ -208,7 +217,6 @@ class session(object):
             self.die(r, r.BadRequest, uri="https://ca.example.com/failures/priorrequest")
             return
         # Process the request.
-        # TODO: check client puzzle before processing request
         timestamp = m.request.timestamp
         recipient = m.request.recipient
         csr = m.request.csr
