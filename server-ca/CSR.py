@@ -59,7 +59,7 @@ def pubkey(csr):
     @return: a string of the PEM-encoded public key
     """
     req = M2Crypto.X509.load_request_string(csr)
-    return req.get_pubkey().as_pem(None)
+    return req.get_pubkey().get_rsa().as_pem(None)
 
 def subject(csr):
     """
