@@ -194,7 +194,7 @@ def testchallenge(session):
         # response to an empty list of challenges (even though
         # the daemon that put this session on the queue should
         # also have implicitly guaranteed this).
-        print "\tall satisfied, going to issue", session
+        if debug: print "\tall satisfied, going to issue", session
         r.hset(session, "state", "issue")
         r.lpush("pending-issue", session)
     else:
@@ -235,7 +235,9 @@ def issue(session):
         r.lpush("pending-issue", session)
 
 while True:
-    if clean_shutdown: break
+    if clean_shutdown:
+        print "daemon exiting cleanly"
+        break
     session = r.rpop("pending-makechallenge")
     if session:
         if debug: print "going to makechallenge for", session
