@@ -51,7 +51,6 @@ init(m)
 make_request(m, csr=open("req.pem").read())
 sign(open("key.pem").read(), m)
 print m
-assert False
 r=decode(do(m))
 print r
 while r.proceed.IsInitialized():
