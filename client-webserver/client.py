@@ -2,8 +2,9 @@
 
 from chocolate_protocol_pb2 import chocolatemessage
 from Crypto.Hash import SHA256
-import M2Crypto
-import urllib2, os, sys, time, random, CSR, sys
+import CSR
+from CSR import M2Crypto
+import urllib2, os, sys, time, random, sys
 # CSR.py here should be a symlink to ../server-ca/CSR.py
 
 def sha256(m):
