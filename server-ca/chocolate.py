@@ -212,6 +212,17 @@ class session(object):
             # It is mandatory to make a signing request at the outset of a session.
             self.die(r, r.BadRequest, uri="https://ca.example.com/failures/missingrequest")
             return
+        timestamp = m.request.timestamp
+        recipient = m.request.recipient
+        csr = m.request.csr
+        sig = m.request.sig
+        # Check whether we are the intended recipient of the request.  Doing this
+        # before the hashcash check is more work for the server but gives a more
+        # helpful error message (because the hashcash will be wrong automatically
+        # if it's addressed to a different server!).
+        if recipient != chocolate_server_name:
+            self.die(r, r.BadRequest, uri="https://ca.example.com/failures/recipient")
+            return
         # Check hashcash before doing any crypto or database access.
         if not m.request.clientpuzzle or not self.check_hashcash(m.request.clientpuzzle):
             self.die(r, r.NeedClientPuzzle, uri="https://ca.example.com/failures/hashcash")
@@ -223,10 +234,6 @@ class session(object):
             self.die(r, r.BadRequest, uri="https://ca.example.com/failures/priorrequest")
             return
         # Process the request.
-        timestamp = m.request.timestamp
-        recipient = m.request.recipient
-        csr = m.request.csr
-        sig = m.request.sig
         if not all([safe("recipient", recipient), safe("csr", csr)]):
             self.die(r, r.BadRequest, uri="https://ca.example.com/failures/illegalcharacter")
             return
@@ -235,9 +242,6 @@ class session(object):
             return
         if time.time() - timestamp > 100:
             self.die(r, r.BadRequest, uri="https://ca.example.com/failures/past")
-            return
-        if recipient != chocolate_server_name:
-            self.die(r, r.BadRequest, uri="https://ca.example.com/failures/recipient")
             return
         if not CSR.parse(csr):
             self.die(r, r.BadCSR)
