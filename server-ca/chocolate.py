@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 
-import web, redis, time
+import web, redis, time, binascii
 import CSR
-import hashlib
-import hmac
 import hashcash
 from CSR import M2Crypto
 from Crypto import Random
@@ -24,15 +22,9 @@ urls = (
      '.*', 'session'
 )
 
-def sha256(m):
-    return hashlib.sha256(m).hexdigest()
-
-def hmac(k, m):
-    return hmac.new(k, m, hashlib.sha256).hexdigest()
-
 def random():
     """Return 64 hex digits representing a new 32-byte random number."""
-    return sha256(Random.get_random_bytes(32))
+    return binascii.hexlify(Random.get_random_bytes(32))
 
 def safe(what, s):
     """Is string s within the allowed-character policy for this field?"""
@@ -337,8 +329,6 @@ class session(object):
 
     def POST(self):
         web.header("Content-type", "application/x-protobuf+chocolate")
-#        web.setcookie("chocolate", hmac("foo", "bar"),
-#                       secure=True) # , httponly=True)
         m = chocolatemessage()
         r = chocolatemessage()
         r.chocolateversion = 1
