@@ -60,6 +60,15 @@ issue_lock = redis_lock.redis_lock(r, "issue_lock")
 # queues pending-makechallenge, pending-testchallenge, and pending-issue
 # are updated atomically and the daemon only ever acts on sessions that it
 # has removed from a queue.
+# TODO: in a deployed system, the queue for issuing certs should probably
+# be treated a first-come, first-issue fashion, so that a request doesn't
+# time out while waiting to acquire the lock just because other requests
+# happened to get it first. Another way of putting this is that there
+# could be only one thread/process that deals with pending-issue sessions,
+# even though there could be many that deal with pending-makechallenge and
+# pending-testchallenge.  Then we can guarantee that the oldest pending-issue
+# requests are dealt with first, which is impossible to guarantee when
+# multiple daemons may be opportunistically acquiring this lock.
 
 debug = "debug" in sys.argv
 clean_shutdown = False
