@@ -53,7 +53,7 @@ from sni_challenge.verify import verify_challenge
 from Crypto import Random
 
 r = redis.Redis()
-issue_lock = redis_lock(r, "issue_lock")
+issue_lock = redis_lock.redis_lock(r, "issue_lock")
 # This lock guards the ability to issue certificates with "openssl ca",
 # which has no locking of its own.  We don't need locking for the updates
 # that the daemon performs on the sessions in the database because the
