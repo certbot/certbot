@@ -140,6 +140,14 @@ class session(object):
             self.die(r, r.BadRequest, uri="https://ca.example.com/failures/internalerror")
         return
 
+    def check_hashcash(self, h):
+        """Is the hashcash string h valid for a request to this server?"""
+        # TODO: should enforce hashcash expiry.
+        if hashcash.check(h, chocolate_server_name, difficulty):
+            # sessions.sadd returns True upon adding to a set and
+            # False if the item was already in the set.
+            return sessions.sadd("spent-hashcash", h)
+
     def handlesession(self, m, r):
         if r.failure.IsInitialized(): return
         # Note that m.challenge and m.completedchallenge present
@@ -205,9 +213,7 @@ class session(object):
             self.die(r, r.BadRequest, uri="https://ca.example.com/failures/missingrequest")
             return
         # Check hashcash before doing any crypto or database access.
-        if not m.request.clientpuzzle or not hashcash.check(m.request.clientpuzzle, chocolate_server_name, difficulty):
-            # TODO: should enforce hashcash expiry and use the database to store valid
-            #       ones in order to prevent double-spending.
+        if not m.request.clientpuzzle or not self.check_hashcash(h):
             self.die(r, r.NeedClientPuzzle, uri="https://ca.example.com/failures/hashcash")
             return
         if self.request_made():
