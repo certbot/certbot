@@ -38,20 +38,8 @@
 # request, period, while still allowing clients to look
 # up successfully issued certs.
 # TODO: implement multithreading to allow several parallel
-# worker processes.  But note:
-
-#       The ca command is effectively a single user command: no locking
-#       is done on the various files and attempts to run more than one
-#       ca command on the same database can have unpredictable results.
+# worker processes.
 #
-#                             -- ca(1SSL)
-
-# So we need to implement our own locking mechanism.  This
-# can be done easily in Redis with "setnx":
-#            http://redis.io/commands/setnx
-# However apparently the proper recovery after crashes can
-# be complicated.
-
 # NOTE: The daemon enforces its own timeouts, which are
 # defined in the ancient() function.  These timeouts apply
 # to any session that has been placed in a queue and can
@@ -60,11 +48,18 @@
 # the server or the daemon (due to timeout or error) causes
 # a session to be treated as dead by both.
 
-import redis, time, CSR, sys, signal, hashlib
-r = redis.Redis()
-
+import redis, redis_lock, time, CSR, sys, signal, hashlib
 from sni_challenge.verify import verify_challenge
 from Crypto import Random
+
+r = redis.Redis()
+issue_lock = redis_lock(r, "issue_lock")
+# This lock guards the ability to issue certificates with "openssl ca",
+# which has no locking of its own.  We don't need locking for the updates
+# that the daemon performs on the sessions in the database because the
+# queues pending-makechallenge, pending-testchallenge, and pending-issue
+# are updated atomically and the daemon only ever acts on sessions that it
+# has removed from a queue.
 
 debug = "debug" in sys.argv
 clean_shutdown = False
@@ -232,7 +227,8 @@ def issue(session):
         return
     csr = r.hget(session, "csr")
     names = r.lrange("%s:names" % session, 0, -1)
-    cert = CSR.issue(csr, names)
+    with issue_lock:
+        cert = CSR.issue(csr, names)
     r.hset(session, "cert", cert)
     if cert:   # once issuing cert succeeded
         if debug: print "issued for", session
