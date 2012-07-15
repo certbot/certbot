@@ -269,7 +269,7 @@ class session(object):
         # do what the daemon does, and then return the challenges instead
         # of returning proceed.
         r.proceed.timestamp = int(time.time())
-        r.proceed.polldelay = 10
+        r.proceed.polldelay = 4
 
     def handleexistingsession(self, m, r):
         if m.request.IsInitialized():
