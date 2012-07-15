@@ -213,7 +213,7 @@ class session(object):
             self.die(r, r.BadRequest, uri="https://ca.example.com/failures/missingrequest")
             return
         # Check hashcash before doing any crypto or database access.
-        if not m.request.clientpuzzle or not self.check_hashcash(h):
+        if not m.request.clientpuzzle or not self.check_hashcash(m.request.clientpuzzle):
             self.die(r, r.NeedClientPuzzle, uri="https://ca.example.com/failures/hashcash")
             return
         if self.request_made():
