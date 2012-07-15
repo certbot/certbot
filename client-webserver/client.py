@@ -15,12 +15,22 @@ difficulty = 20
 def sha256(m):
     return hashlib.sha256(m).hexdigest()
 
-try:
-    upstream = "https://%s/chocolate.py" % os.environ["CHOCOLATESERVER"]
-except KeyError:
-    print "Please set the environment variable CHOCOLATESERVER to the hostname"
-    print "of a server that speaks this protocol."
-    sys.exit(1)
+assert len(sys.argv) > 1 or "CHOCOLATESERVER" in os.environ, "Must specify server via command line or CHOCOLATESERVER environment variable."
+if len(sys.argv) > 1:
+    server = sys.argv[1]
+else:
+    server = os.environ["CHOCOLATESERVER"]
+
+upstream = "https://%s/chocolate.py" % server
+
+if len(sys.argv) > 3:
+    req_file = sys.argv[2]
+    key_file = sys.argv[3]
+else:
+    req_file = "req.pem"
+    key_file = "key.pem"
+
+cert_file = "cert.pem"     # we should use getopt to set all of these
 
 def do(m):
     u = urllib2.urlopen(upstream, m.SerializeToString())
@@ -34,21 +44,20 @@ def init(m):
     m.session = ""
 
 def make_request(m, csr):
-    server = os.environ["CHOCOLATESERVER"]
     m.request.recipient = server
     m.request.timestamp = int(time.time())
     m.request.csr = csr
     m.request.clientpuzzle = hashcash.mint(server, difficulty)
 
-def sign(k, m):
-    m.request.sig = CSR.sign(k, ("(%d) (%s) (%s)" % (m.request.timestamp, m.request.recipient, m.request.csr)))
+def sign(key, m):
+    m.request.sig = CSR.sign(key, ("(%d) (%s) (%s)" % (m.request.timestamp, m.request.recipient, m.request.csr)))
 
 k=chocolatemessage()
 m=chocolatemessage()
 init(k)
 init(m)
-make_request(m, csr=open("req.pem").read())
-sign(open("key.pem").read(), m)
+make_request(m, csr=open(reqfile).read())
+sign(open(key_file).read(), m)
 print m
 r=decode(do(m))
 print r
@@ -74,7 +83,7 @@ for chall in r.challenge:
 print sni_todo
 import sni_challenge
 
-sni_challenge.perform_sni_cert_challenge(sni_todo, "req.pem", "key.pem")
+sni_challenge.perform_sni_cert_challenge(sni_todo, req_file, key_file)
 
 r=decode(do(k))
 print r
@@ -89,8 +98,9 @@ while r.challenge or r.proceed.IsInitialized():
 # TODO: there should be a deploy_cert() here.
 
 if r.success.IsInitialized():
-    open("cert.pem", "w").write(r.success.certificate)
-    print "Server issued certificate; certificate written to cert.pem"
+    with open(cert_file, "w") as f:
+        f.write(r.success.certificate)
+    print "Server issued certificate; certificate written to " + cert_file
 elif r.failure.IsInitialized():
     print "Server reported failure."
     sys.exit(1)
