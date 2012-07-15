@@ -56,7 +56,7 @@ k=chocolatemessage()
 m=chocolatemessage()
 init(k)
 init(m)
-make_request(m, csr=open(reqfile).read())
+make_request(m, csr=open(req_file).read())
 sign(open(key_file).read(), m)
 print m
 r=decode(do(m))
