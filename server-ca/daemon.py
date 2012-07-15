@@ -271,5 +271,5 @@ while True:
         # in "issue" state expire.
         issue(session)
         session = None
-    else: time.sleep(2)
+    else: time.sleep(1)
     # This daemon doesn't currently act on pending-done sessions.

@@ -277,7 +277,7 @@ class session(object):
         # If we're in makechallenge or issue, tell the client to come back later.
         if state == "makechallenge" or state == "issue":
             r.proceed.timestamp = int(time.time())
-            r.proceed.polldelay = 10
+            r.proceed.polldelay = 4
             return
         # If we're in testchallenge, tell the client about the challenges and their
         # current status.
