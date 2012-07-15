@@ -85,6 +85,9 @@ import sni_challenge
 
 sni_challenge.perform_sni_cert_challenge(sni_todo, req_file, key_file)
 
+print "waiting", 3
+time.sleep(3)
+
 r=decode(do(k))
 print r
 while r.challenge or r.proceed.IsInitialized():
