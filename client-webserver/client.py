@@ -32,7 +32,7 @@ else:
 
 cert_file = "cert.pem"     # we should use getopt to set all of these
 
-def sign(key, data):
+def rsa_sign(key, data):
     """
     Sign this data with this private key.  For client-side use.
 
@@ -68,7 +68,7 @@ def make_request(m, csr):
     m.request.clientpuzzle = hashcash.mint(server, difficulty)
 
 def sign(key, m):
-    m.request.sig = sign(key, ("(%d) (%s) (%s)" % (m.request.timestamp, m.request.recipient, m.request.csr)))
+    m.request.sig = rsa_sign(key, ("(%d) (%s) (%s)" % (m.request.timestamp, m.request.recipient, m.request.csr)))
 
 k=chocolatemessage()
 m=chocolatemessage()
