@@ -11,7 +11,11 @@ import M2Crypto
 from distutils.version import LooseVersion
 assert LooseVersion(M2Crypto.version) >= LooseVersion("0.22")
 import hashlib
+import blacklists
 # we can use temp() to get tempfiles to pass to OpenSSL subprocesses.
+
+forbidden_moduli = blacklists.forbidden_moduli()
+forbidden_names = blacklists.forbidden_names()
 
 def parse(csr):
     """
@@ -41,10 +45,22 @@ def goodkey(key):
     """Does this public key comply with our CA policy?"""
     key = str(key)
     bits = modulusbits(key)
-    if bits and bits >= 2000:
+    if bits and bits >= 2000 and not blacklisted(key):
         return True
     else:
         return False
+
+def blacklisted(key):
+    """Is this key blacklisted?"""
+    # There is also a modulus function that uses M2Crypto.m2.rsa_get_n
+    # instead of EVP.PKey, but it seems to erroneously prepend the exponent
+    # to the modulus or something.
+    bio = M2Crypto.BIO.MemoryBuffer(key)
+    pubkey = M2Crypto.RSA.load_pub_key_bio(bio)
+    pkey = M2Crypto.EVP.PKey()
+    pkey.assign_rsa(pubkey)
+    modulus = pkey.get_modulus()
+    return modulus in forbidden_moduli
 
 def csr_goodkey(csr):
     """Does this CSR's embedded public key comply with our CA policy?"""
@@ -138,9 +154,8 @@ def can_sign(name):
     # the name is actually a FQDN.
     name = str(name)
     if "." not in name: return False
-    # Examples of names that are forbidden by policy due to a blacklist.
-    if name in ["google.com", "www.google.com"]: return False
-    return True
+    # Names that are forbidden by policy due to a blacklist.
+    return name not in forbidden_names
 
 def verify(key, data, signature):
     """
@@ -209,7 +224,7 @@ def issue(csr, subjects):
     """Issue a certificate requested by CSR, specifying the subject names
     indicated in subjects, and return the certificate.  Calls to this
     function should be guarded with a lock to ensure that the calls never
-    overlapping calls."""
+    overlap."""
     if not subjects:
         return None
     csr = str(csr)
