@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
 from chocolate_protocol_pb2 import chocolatemessage
-import CSR
-from CSR import M2Crypto
+import M2Crypto
 import urllib2, os, sys, time, random, sys, hashlib, hashcash
-# CSR.py here should be a symlink to ../server-ca/CSR.py
+# It is OK to use the upstream M2Crypto here instead of our modified
+# version.
 # hashcash.py here should be a symlink to ../server-ca/hashcash.py
 
 difficulty = 20
@@ -32,6 +32,24 @@ else:
 
 cert_file = "cert.pem"     # we should use getopt to set all of these
 
+def sign(key, data):
+    """
+    Sign this data with this private key.  For client-side use.
+
+    @type key: str
+    @param key: PEM-encoded string of the private key.
+
+    @type data: str
+    @param data: The data to be signed. Will be hashed (sha256) prior to
+    signing.
+
+    @return: binary string of the signature
+    """
+    key = str(key)
+    data = str(data)
+    privkey = M2Crypto.RSA.load_key_string(key)
+    return privkey.sign(hashlib.sha256(data).digest(), 'sha256')
+
 def do(m):
     u = urllib2.urlopen(upstream, m.SerializeToString())
     return u.read()
@@ -50,7 +68,7 @@ def make_request(m, csr):
     m.request.clientpuzzle = hashcash.mint(server, difficulty)
 
 def sign(key, m):
-    m.request.sig = CSR.sign(key, ("(%d) (%s) (%s)" % (m.request.timestamp, m.request.recipient, m.request.csr)))
+    m.request.sig = sign(key, ("(%d) (%s) (%s)" % (m.request.timestamp, m.request.recipient, m.request.csr)))
 
 k=chocolatemessage()
 m=chocolatemessage()

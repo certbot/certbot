@@ -184,24 +184,6 @@ def verify(key, data, signature):
         return False
     return (res == 1) 
 
-def sign(key, data):
-    """
-    Sign this data with this private key.  For client-side use.
-
-    @type key: str
-    @param key: PEM-encoded string of the private key.
-
-    @type data: str
-    @param data: The data to be signed. Will be hashed (sha256) prior to
-    signing.
-
-    @return: binary string of the signature
-    """
-    key = str(key)
-    data = str(data)
-    privkey = M2Crypto.RSA.load_key_string(key)
-    return privkey.sign(hashlib.sha256(data).digest(), 'sha256')
-
 def encrypt(key, data):
     """
     Encrypt this data with this public key.
