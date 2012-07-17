@@ -11,7 +11,7 @@ from google.protobuf.message import DecodeError
 MaximumSessionAge = 100   # seconds, to demonstrate session timeout
 MaximumChallengeAge = 600 # to demonstrate challenge timeout
 
-difficulty = 20           # bits of hashcash required with new requests
+difficulty = 23           # bits of hashcash required with new requests
 
 try:
     chocolate_server_name = open("SERVERNAME").read().rstrip()

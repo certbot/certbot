@@ -2,15 +2,11 @@
 
 from chocolate_protocol_pb2 import chocolatemessage
 import M2Crypto
-import urllib2, os, sys, time, random, sys, hashlib, hashcash
+import urllib2, os, sys, time, random, sys, hashlib
 # It is OK to use the upstream M2Crypto here instead of our modified
 # version.
-# hashcash.py here should be a symlink to ../server-ca/hashcash.py
 
-difficulty = 20
-# TODO: unfortunately, the C hashcash implementation seems to be about
-#       2^6 times faster than the native Python implementation, so
-#       calibrating the difficulty is a bit of a problem.
+difficulty = 23   # bits of hashcash to generate
 
 def sha256(m):
     return hashlib.sha256(m).hexdigest()
@@ -66,6 +62,8 @@ def make_request(m, csr):
     m.request.timestamp = int(time.time())
     m.request.csr = csr
     m.request.clientpuzzle = hashcash.mint(server, difficulty)
+    hashcash_command = "hashcash -P -m -b %d -r %s" % (difficulty, server)
+    m.request.clientpuzzle = subprocess.check_output(hashcash_command.split(), shell=False).rstrip()
 
 def sign(key, m):
     m.request.sig = rsa_sign(key, ("(%d) (%s) (%s)" % (m.request.timestamp, m.request.recipient, m.request.csr)))
