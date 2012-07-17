@@ -2,7 +2,7 @@
 
 from chocolate_protocol_pb2 import chocolatemessage
 import M2Crypto
-import urllib2, os, sys, time, random, sys, hashlib
+import urllib2, os, sys, time, random, sys, hashlib, subprocess
 # It is OK to use the upstream M2Crypto here instead of our modified
 # version.
 
