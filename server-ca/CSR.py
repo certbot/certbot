@@ -60,6 +60,12 @@ def blacklisted(key):
     pkey = M2Crypto.EVP.PKey()
     pkey.assign_rsa(pubkey)
     modulus = pkey.get_modulus()
+    # The modulus is now in hexadecimal, all uppercase.
+    modulus = hashlib.sha1("Modulus=%s\n" % modulus).hexdigest()[20:]
+    # This is the format in which moduli are represented by the
+    # openssl-blacklist package (using a hash of the literal output
+    # of the openssl -rsa -modulus -pubin -noout command, including
+    # newline).
     return modulus in forbidden_moduli
 
 def csr_goodkey(csr):
