@@ -17,11 +17,24 @@ S_SIZE = 32
 NONCE_SIZE = 32
 
 def getChocCertFile(nonce):
+    """
+    Returns standardized name for challenge certificate
+
+    nonce:  string - hex
+    
+    result: returns certificate file name
+    """
+
     return CHOC_DIR + nonce + ".crt"
 
 def findApacheConfigFile():
-    #This needs to be fixed to account for multiple httpd.conf files
-    # TODO: reliably and quickly find the httpd.conf anywher on the system?
+    """
+    Locates the file path to the user's main apache config
+    
+    result: returns file path if present
+    """
+
+    # This needs to be fixed to account for multiple httpd.conf files
     try:
         p = subprocess.check_output(["sudo", "find", "/etc", "-name", "httpd.conf"], stderr=open("/dev/null"))
 	p = p[:len(p)-1]
@@ -33,6 +46,16 @@ def findApacheConfigFile():
         return None
 
 def getConfigText(nonce, ip_addr, key):
+    """
+    Chocolate virtual server configuration text
+
+    nonce:      string - hex
+    ip_addr:    string - address of challenged domain
+    key:        string - file path to key
+
+    result:     returns virtual host configuration text
+    """
+
     configText = "<VirtualHost " + ip_addr + ":443> \n \
 Servername " + nonce + ".chocolate \n \
 UseCanonicalName on \n \
@@ -50,6 +73,17 @@ DocumentRoot " + CHOC_DIR + "challenge_page/ \n \
     return configText
 
 def modifyApacheConfig(mainConfig, listSNITuple, key):
+    """
+    Modifies Apache config files to include the challenge virtual servers
+    
+    mainConfig:    string - file path to Apache user config file
+    listSNITuple:  list of tuples with form (addr, y, nonce, ext_oid)
+                   addr (string), y (byte array), nonce (hex string), ext_oid (string)
+    key:           string - file path to key
+
+    result:        Apache config includes virtual servers for issued challenges
+    """
+
     configText = "<IfModule mod_ssl.c> \n"
     for tup in listSNITuple:
         configText += getConfigText(tup[2], tup[0], key)
@@ -62,6 +96,14 @@ def modifyApacheConfig(mainConfig, listSNITuple, key):
 
 # Need to add NameVirtualHost IP_ADDR or does the chocolate install do this?
 def checkForApacheConfInclude(mainConfig):
+    """
+    Adds chocolate challenge include file if it does not already exist within mainConfig
+    
+    mainConfig:  string - file path to main user apache config file
+
+    result:      User Apache configuration includes chocolate sni challenge file
+    """
+
     searchStr = "Include " + APACHE_CHALLENGE_CONF
     #conf = open(mainConfig, 'r+')
     conf = open(mainConfig, 'r')
@@ -75,12 +117,31 @@ def checkForApacheConfInclude(mainConfig):
         
 
 def createChallengeCert(oid, ext, nonce, csr, key):
-    #Assume CSR is already generated from original request
+    """
+    Modifies challenge certificate configuration and calls openssl binary to create a certificate
+
+    oid:    string
+    ext:    string - hex z value
+    nonce:  string - hex
+    csr:    string - file path to csr
+    key:    string - file path to key
+
+    result: certificate created at getChocCertFile(nonce)
+    """
+
     updateCertConf(oid, ext)
     subprocess.call(["openssl", "x509", "-req", "-days", "21", "-extfile", CHOC_CERT_CONF, "-extensions", "v3_ca", "-signkey", key, "-out", getChocCertFile(nonce), "-in", csr])
     
 
 def generateExtension(key, y):
+    """
+    Generates z to be placed in certificate extension
+
+    key:    string - File path to key
+    y:      byte array
+
+    result: returns z value
+    """
     rsaPrivKey = M2Crypto.RSA.load_key(key)
     r = rsaPrivKey.private_decrypt(y, M2Crypto.RSA.pkcs1_oaep_padding)
     #print r
@@ -91,6 +152,13 @@ def generateExtension(key, y):
     return byteToHex(s) + extHMAC.hexdigest()
 
 def byteToHex(byteStr):
+    """
+    Converts binary array to hex string
+    
+    byteStr:  byte array
+    
+    result: returns hex representation of byteStr
+    """
     return ''.join(["%02X" % ord(x) for x in byteStr]).strip()
 
 #Searches for the first extension specified in binary
@@ -121,11 +189,22 @@ def updateCertConf(oid, value):
     move(CHOC_CERT_CONF + ".tmp", CHOC_CERT_CONF)
 
 def apache_restart():
+    """
+    Restarts apache server
+    """
     subprocess.call(["sudo", "/etc/init.d/apache2", "reload"])
 
 #main call
-# address, y, nonce, ext, CSR, KEY
 def perform_sni_cert_challenge(listSNITuple, csr, key):
+    """
+    Sets up and reloads Apache server to handle SNI challenges
+
+    listSNITuple:  List of tuples with form (addr, y, nonce, ext_oid)
+                   addr (string), y (byte array), nonce (hex string), ext_oid (string)
+    csr:           string - File path to chocolate csr
+    key:           string - File path to key
+    """
+    
     for tup in listSNITuple:
         ext = generateExtension(key, tup[1])
         createChallengeCert(tup[3], ext, tup[2], csr, key)
