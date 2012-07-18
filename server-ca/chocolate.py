@@ -10,6 +10,7 @@ from google.protobuf.message import DecodeError
 
 MaximumSessionAge = 100   # seconds, to demonstrate session timeout
 MaximumChallengeAge = 600 # to demonstrate challenge timeout
+HashcashExpiry = 60*60
 
 difficulty = 23           # bits of hashcash required with new requests
 
@@ -134,8 +135,8 @@ class session(object):
 
     def check_hashcash(self, h):
         """Is the hashcash string h valid for a request to this server?"""
-        # TODO: should enforce hashcash expiry.
-        if hashcash.check(h, chocolate_server_name, difficulty):
+        if hashcash.check(stamp=h, resource=chocolate_server_name, \
+                          bits=difficulty, check_expiration=HashcashExpiry):
             # sessions.sadd returns True upon adding to a set and
             # False if the item was already in the set.
             return sessions.sadd("spent-hashcash", h)
