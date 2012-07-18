@@ -120,17 +120,17 @@ def check(stamp, resource=None, bits=None,
             return False
         if resource is not None and resource != res:
             return False
-        elif check_expiration is not None:
+        if check_expiration is not None:
             good_until = strftime("%y%m%d%H%M%S", localtime(time()-check_expiration))
             if date < good_until:
                 return False
-        elif callable(ds_callback) and ds_callback(stamp):
+        if callable(ds_callback) and ds_callback(stamp):
             return False
-        elif type(bits) is not int:
+        if type(bits) is not int:
             return True
-        else:
-            hex_digits = int(floor(bits/4))
-            return sha(stamp).hexdigest().startswith('0'*hex_digits)
+
+        hex_digits = int(floor(bits/4))
+        return sha(stamp).hexdigest().startswith('0'*hex_digits)
     elif stamp.startswith('1:'):        # Version 1
         try:
             claim, date, res, ext, rand, counter = stamp[2:].split(':')
@@ -139,17 +139,17 @@ def check(stamp, resource=None, bits=None,
             return False
         if resource is not None and resource != res:
             return False
-        elif type(bits) is int and bits > int(claim):
+        if type(bits) is int and bits > int(claim):
             return False
-        elif check_expiration is not None:
+        if check_expiration is not None:
             good_until = strftime("%y%m%d%H%M%S", localtime(time()-check_expiration))
             if date < good_until:
                 return False
-        elif callable(ds_callback) and ds_callback(stamp):
+        if callable(ds_callback) and ds_callback(stamp):
             return False
-        else:
-            hex_digits = int(floor(int(claim)/4))
-            return sha(stamp).hexdigest().startswith('0'*hex_digits)
+
+        hex_digits = int(floor(int(claim)/4))
+        return sha(stamp).hexdigest().startswith('0'*hex_digits)
     else:                               # Unknown ver or generalized hashcash
         ERR.write("Unknown hashcash version: Minimal authentication!\n")
         if type(bits) is not int:
