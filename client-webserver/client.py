@@ -3,8 +3,9 @@
 from chocolate_protocol_pb2 import chocolatemessage
 import M2Crypto
 import urllib2, os, sys, time, random, sys, hashlib, subprocess
+import hashcash
 # It is OK to use the upstream M2Crypto here instead of our modified
-# version.
+# version. (Same with hashcash)
 
 difficulty = 23   # bits of hashcash to generate
 
@@ -61,8 +62,8 @@ def make_request(m, csr):
     m.request.recipient = server
     m.request.timestamp = int(time.time())
     m.request.csr = csr
-    hashcash_command = "hashcash -P -m -b %d -r %s" % (difficulty, server)
-    m.request.clientpuzzle = subprocess.check_output(hashcash_command.split(), shell=False).rstrip()
+    m.request.clientpuzzle = hashcash.mint(resource=server, bits=difficulty, \
+                                           stamp_seconds=True)
 
 def sign(key, m):
     m.request.sig = rsa_sign(key, ("(%d) (%s) (%s)" % (m.request.timestamp, m.request.recipient, m.request.csr)))
