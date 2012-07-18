@@ -7,7 +7,7 @@ import hashcash
 # It is OK to use the upstream M2Crypto here instead of our modified
 # version. (Same with hashcash)
 
-difficulty = 23   # bits of hashcash to generate
+difficulty = 20   # bits of hashcash to generate
 
 def sha256(m):
     return hashlib.sha256(m).hexdigest()
