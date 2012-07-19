@@ -229,6 +229,12 @@ def issue(session):
         # session nonetheless died for some reason unrelated to failing
         # challenges before the cert could be issued.  Normally, this
         # should never happen.
+        #
+        # TODO: This can definitely happen when there are at least as many
+        # sessions stuck in testchallenge state as there are daemon processes
+        # to handle them, because all sessions in testchallenge have absolute
+        # priority over all sessions in issue, from each individual daemon's
+        # point of view!  This is a bug.
         if debug: print "removing expired (issue-state!?) session", session
         r.lrem("pending-requests", session)
         return
