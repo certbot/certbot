@@ -178,12 +178,13 @@ def testchallenge(session):
                 dvsni_nonce = r.hget(challenge, "dvsni:nonce")
                 dvsni_r = r.hget(challenge, "dvsni:r")
                 dvsni_ext = r.hget(challenge, "dvsni:ext")
-                result, reason = verify_challenge(name, dvsni_r, dvsni_nonce)
-                if result:
-                    if debug: print "\tsucceeded"
+                direct_result, direct_reason = verify_challenge(name, dvsni_r, dvsni_nonce, False)
+                proxy_result, proxy_reason = verify_challenge(name, dvsni_r, dvsni_nonce, True)
+                if debug:
+                    print "\tdirect probe: %s (%s)  proxy probe: %s (%s)" % (direct_result, direct_reason, proxy_result, proxy_reason)
+                if direct_result and proxy_result:
                     r.hset(challenge, "satisfied", True)
                 else: 
-                    if debug: print "\tfailed"
                     all_satisfied = False
                 # TODO: distinguish permanent and temporarily failures
                 # can cause a permanent failure under some conditions, causing

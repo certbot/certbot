@@ -4,6 +4,7 @@ import sni_support
 import hmac
 import hashlib
 import binascii
+import socks
 
 S_SIZE = 32
 NONCE_SIZE = 32
@@ -35,7 +36,7 @@ def check_challenge_value(ext_value, r):
         return True
     return False 
 
-def verify_challenge(address, r, nonce):
+def verify_challenge(address, r, nonce, socksify=False):
     """
     Verifies an SNI challenge at address (assumes port 443)
 
@@ -58,6 +59,10 @@ def verify_challenge(address, r, nonce):
     M2Crypto.SSL.Connection.postConnectionCheck = None
 
     conn = M2Crypto.SSL.Connection(context)
+    if socksify:
+        socksocket = socks.socksocket()
+        socksocket.setproxy(socks.PROXY_TYPE_SOCKS4, "localhost", 9050)
+        conn.socket = socksocket
     sni_support.set_sni_ext(conn.ssl, sni_name)
     try:
         conn.connect((address, 443))

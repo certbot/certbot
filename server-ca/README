@@ -25,3 +25,4 @@ sni_challenge -
 	Example code is given in main method
 	Right now requires full path specification of CSR/KEY in the Global 
 	Variables (how should this be specified?)
+        requires python-socksipy, tor
