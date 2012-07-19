@@ -86,7 +86,7 @@ def ancient(session, state):
     old, even if no client request has caused the serve to mark the
     session as expired.  This is most relevant to truly abandoned
     sessions that no client ever asks about."""
-    age = int(r.hget(session, "created")) - int(time.time())
+    age = int(time.time()) - int(r.hget(session, "created"))
     if state == "makechallenge" and age > 120:
         if debug: print "considered", session, "ancient"
         return True
