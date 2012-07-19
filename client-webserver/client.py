@@ -68,7 +68,7 @@ def make_request(m, csr):
     m.request.recipient = server
     m.request.timestamp = int(time.time())
     m.request.csr = csr
-    hashcash_command = "hashcash -P -m -b %d -r %s -z 12" % (difficulty, server)
+    hashcash_command = "hashcash -P -m -z 12 -b %d -r %s" % (difficulty, server)
     hashcash = subprocess.check_output(hashcash_command.split(), preexec_fn=drop_privs, shell=False).rstrip()
     if hashcash: m.request.clientpuzzle = hashcash
 
