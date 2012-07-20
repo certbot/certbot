@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import web, redis, time, binascii
+import web, redis, time, binascii, re
 import CSR
 import hashcash
 from CSR import M2Crypto
@@ -8,11 +8,9 @@ from Crypto import Random
 from chocolate_protocol_pb2 import chocolatemessage
 from google.protobuf.message import DecodeError
 
-MaximumSessionAge = 100   # seconds, to demonstrate session timeout
-MaximumChallengeAge = 600 # to demonstrate challenge timeout
-HashcashExpiry = 60*60
-
-difficulty = 23           # bits of hashcash required with new requests
+from CONFIG import chocolate_server_name, min_keysize, difficulty, polldelay
+from CONFIG import max_names, max_csr_size, maximum_session_age
+from CONFIG import maximum_challenge_age, hashcash_expiry, extra_name_blacklist
 
 try:
     chocolate_server_name = open("SERVERNAME").read().rstrip()
@@ -36,10 +34,11 @@ def safe(what, s):
         return False
     base64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
     csr_ok = base64 + " =-"
-#    if what == "nonce":
-#        return s.isalnum()
     if what == "recipient" or what == "hostname":
-        return all(c.isalnum() or c in "-." for c in s)
+        # This rejects domain names which don't contain ".".  Although there
+        # are some of these which are valid Internet FQDNs, none of them
+        # should be subjects or recipients of Chocolate signing requests.
+        return re.match("^[A-Za-z0-9][A-Za-z0-9-]*(\.[A-Za-z0-9][A-Za-z0-9-]*)+$", s) is not None
     elif what == "csr":
        return all(all(c in csr_ok for c in line) for line in s.split("\n"))
        # Note that this implies CSRs must have LF for end-of-line, not CRLF
@@ -136,7 +135,7 @@ class session(object):
     def check_hashcash(self, h):
         """Is the hashcash string h valid for a request to this server?"""
         if hashcash.check(stamp=h, resource=chocolate_server_name, \
-                          bits=difficulty, check_expiration=HashcashExpiry):
+                          bits=difficulty, check_expiration=hashcash_expiry):
             # sessions.sadd returns True upon adding to a set and
             # False if the item was already in the set.
             return sessions.sadd("spent-hashcash", h)
@@ -186,7 +185,7 @@ class session(object):
             if not (self.exists() and self.live()):
                 # Don't need to, or can't, kill nonexistent/already dead session
                 r.failure.cause = r.StaleRequest
-            elif self.age() > MaximumSessionAge:
+            elif self.age() > maximum_session_age:
                 # TODO: Sessions in state "done" should probably not be killed by timeout
                 # because they have already resulted in issuance of a cert and no further
                 # issuance can occur.  At least, their timeout should probably be extended
@@ -236,6 +235,9 @@ class session(object):
         if time.time() - timestamp > 100:
             self.die(r, r.BadRequest, uri="https://ca.example.com/failures/past")
             return
+        if len(csr) > max_csr_size:
+            self.die(r, r.BadCSR, uri="https://ca.example.com/failures/longcsr")
+            return
         if not CSR.parse(csr):
             self.die(r, r.BadCSR)
             return
@@ -250,8 +252,11 @@ class session(object):
         if len(names) == 0:
             self.die(r, r.BadCSR)
             return
+        if len(names) > max_names:
+            self.die(r, r.BadCSR, uri="https://ca.example.com/failures/toomanynames")
+            return
         for san in names:  # includes CN as well as SANs
-            if not safe("hostname", san) or not CSR.can_sign(san):
+            if not safe("hostname", san) or not CSR.can_sign(san) or san in extra_name_blacklist:
                 # TODO: Is there a problem including client-supplied data in the URL?
                 self.die(r, r.CannotIssueThatName, uri="https://ca.example.com/failures/name?%s" % san)
                 return
@@ -262,7 +267,7 @@ class session(object):
         # do what the daemon does, and then return the challenges instead
         # of returning proceed.
         r.proceed.timestamp = int(time.time())
-        r.proceed.polldelay = 4
+        r.proceed.polldelay = polldelay
 
     def handleexistingsession(self, m, r):
         if m.request.IsInitialized():
@@ -278,7 +283,7 @@ class session(object):
         # If we're in makechallenge or issue, tell the client to come back later.
         if state == "makechallenge" or state == "issue":
             r.proceed.timestamp = int(time.time())
-            r.proceed.polldelay = 4
+            r.proceed.polldelay = polldelay
             return
         # If we're in testchallenge, tell the client about the challenges and their
         # current status.
