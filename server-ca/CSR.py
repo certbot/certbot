@@ -14,7 +14,7 @@ import hashlib
 import blacklists
 # we can use temp() to get tempfiles to pass to OpenSSL subprocesses.
 
-from CONFIG import min_key_size
+from CONFIG import min_keysize
 
 forbidden_moduli = blacklists.forbidden_moduli()
 forbidden_names = blacklists.forbidden_names()
@@ -47,7 +47,7 @@ def goodkey(key):
     """Does this public key comply with our CA policy?"""
     key = str(key)
     bits = modulusbits(key)
-    if bits and bits >= min_key_size and not blacklisted(key):
+    if bits and bits >= min_keysize and not blacklisted(key):
         return True
     else:
         return False
