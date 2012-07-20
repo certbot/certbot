@@ -31,7 +31,6 @@ message chocolatemessage {
 	message Failure {
 	     required FailureReason cause = 1;
 	     optional string URI = 2;  /* for more human-readable information */
-//             optional string affectedrequest = 3; /* nonce of the SigningRequest that provoked this failure */
 	}
 
 	message Proceed {
@@ -69,6 +68,7 @@ message chocolatemessage {
 
 	message Success {
 	     required string certificate = 1;
+             optional string chain 2;
 	}
 
 
