@@ -117,6 +117,7 @@ class session(object):
         for name in names: sessions.rpush(self.id + ":names", name)
         sessions.hset(self.id, "state", "makechallenge")
         sessions.lpush("pending-makechallenge", self.id)
+        sessions.publish("requests", "makechallenge")
         return True
 
     def challenges(self):
