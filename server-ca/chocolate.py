@@ -11,6 +11,7 @@ from google.protobuf.message import DecodeError
 from CONFIG import chocolate_server_name, min_keysize, difficulty, polldelay
 from CONFIG import max_names, max_csr_size, maximum_session_age
 from CONFIG import maximum_challenge_age, hashcash_expiry, extra_name_blacklist
+from CONFIG import cert_chain_file
 
 try:
     chocolate_server_name = open("SERVERNAME").read().rstrip()
@@ -129,6 +130,12 @@ class session(object):
         """Initialize response to return issued cert to client."""
         if self.cert():
             r.success.certificate = self.cert()
+            if cert_chain_file:
+                try:
+                    r.success.chain = open(cert_chain_file).read()
+                except IOError:
+                    # Whoops!
+                    pass
         else:
             self.die(r, r.BadRequest, uri="https://ca.example.com/failures/internalerror")
         return

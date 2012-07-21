@@ -27,6 +27,7 @@ else:
     key_file = "key.pem"
 
 cert_file = "cert.pem"     # we should use getopt to set all of these
+chain_file = "chain.pem"
 
 def rsa_sign(key, data):
     """
@@ -126,7 +127,11 @@ while r.challenge or r.proceed.IsInitialized():
 if r.success.IsInitialized():
     with open(cert_file, "w") as f:
         f.write(r.success.certificate)
+    if r.success.chain:
+        with open(chain_file, "w") as f:
+            f.write(r.success.chain)
     print "Server issued certificate; certificate written to " + cert_file
+    if r.success.chain: print "Cert chain written to " + chain_file
 elif r.failure.IsInitialized():
     print "Server reported failure."
     sys.exit(1)

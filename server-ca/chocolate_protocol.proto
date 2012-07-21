@@ -68,7 +68,7 @@ message chocolatemessage {
 
 	message Success {
 	     required string certificate = 1;
-             optional string chain 2;
+             optional string chain = 2;
 	}
 
 
