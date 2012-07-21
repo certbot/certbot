@@ -77,6 +77,7 @@ clean_shutdown = False
 def signal_handler(a, b):
     global clean_shutdown
     clean_shutdown = True
+    r.publish("requests", "clean-exit")
 
 signal.signal(signal.SIGTERM, signal_handler)
 signal.signal(signal.SIGINT, signal_handler)
@@ -300,6 +301,9 @@ for message in ps.listen():
                     r.hset(session, "live", False)
             else:
                 function(session)
+    elif populated_queue == "clean-exit":
+        pass   # fall through to check whether this particular daemon
+               # instance has its clean_shutdown flag set
     else:
         if debug: print "UNKNOWN queue %s" % populated_queue
     
