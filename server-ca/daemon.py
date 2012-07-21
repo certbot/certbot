@@ -242,11 +242,11 @@ def issue(session):
         # challenges before the cert could be issued.  Normally, this
         # should never happen.
         #
-        # TODO: This can definitely happen when there are at least as many
-        # sessions stuck in testchallenge state as there are daemon processes
-        # to handle them, because all sessions in testchallenge have absolute
-        # priority over all sessions in issue, from each individual daemon's
-        # point of view!  This is a bug.
+        # TODO: This can definitely happen when there are extremely many
+        # sessions stuck in testchallenge state compared to the number of
+        # daemon processes to handle them, because each session in
+        # testchallenge gets tested once before any daemon gets around to
+        # issuing the cert.  This is a bug.
         if debug: print "removing expired (issue-state!?) session", session
         r.lrem("pending-requests", session)
         return
