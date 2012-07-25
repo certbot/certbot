@@ -1,8 +1,5 @@
 import augeas
-
-# Important note... aug.match is by default case sensitive
-# Apache configs are not case sensitive.  It may be necessary to use our
-# own recursive matcher (recurmatch()) to search for directives.
+import subprocess
 
 BASE_DIR = "/etc/apache2/"
 
@@ -93,7 +90,10 @@ class Configurator(object):
         Helper function for get_virtual_hosts()
         """
         # This is case sensitive, but Apache is case insensitve
-        nameMatch = self.aug.match(host.path + "//*[self::directive='ServerName'] | " + host.path + "//*[self::directive='ServerAlias']")
+        # Spent a bunch of time trying to get case insensitive search
+        # it should be possible as of .7 with /i or 'append i' but I have been
+        # unsuccessful thus far
+        nameMatch = self.aug.match(host.path + "//*[self::directive=~regexp('[sS]erver[nN]ame')] | " + host.path + "//*[self::directive=~regexp('[sS]erver[aA]lias')]")
         for name in nameMatch:
             args = self.aug.match(name + "/*")
             for arg in args:
@@ -119,10 +119,10 @@ class Configurator(object):
         # search for NameVirtualHost directive for ip_addr
         # check httpd.conf, ports.conf, 
         # note ip_addr can be FQDN
-        paths = self.aug.match("/files" + BASE_DIR + "/*[self::directive=NameVirtualHost']")
+        paths = self.aug.match("/files" + BASE_DIR + "/*[self::directive=NameVirtualHost']/arg")
         name_vh = []
         for p in paths:
-            name_vh.append(self.aug.match(p + "/arg[1]"))
+            name_vh.append(self.aug.get(p))
         
         # TODO: Should be reviewed for efficiency/completeness
         # TODO: Check ramifications for FQDN/IP_ADDR mismatch overlap
@@ -145,17 +145,61 @@ class Configurator(object):
         # NameVirtualHost directive should be added for this address
         return False
 
-    def add_name_vhost(self, vhost):
+    def add_name_vhost(self, addr):
         """
-        TODO: Should add directive to httpd.conf
+        TODO: For final code... this function should check that ports.conf
+              is included along the main path... it is by default
+        """
+        aug_file_path = "/files" + BASE_DIR + "ports.conf"
+        # Some testing code
+        #self.aug.add_transform("Httpd.lns", BASE_DIR+"ports_test.conf")
+        #self.aug.load()
+        ifMods = self.aug.match(aug_file_path + "/IfModule/*[self::arg='mod_ssl.c']")
+
+        # No IfModule mod_ssl.c in ports.conf... create one
+        if len(ifMods) == 0:
+            self.append_ifmod(aug_file_path, "mod_ssl.c")
+            ifMods = self.aug.match(aug_file_path + "/IfModule/*[self::arg='mod_ssl.c']")
+
+        # Get first mod_ssl IfMod from main tree and strip arg from it
+        # Three because 'arg'
+        ifModPath = ifMods[0][:len(ifMods[0]) - 3]
+        # IfModule can have only one valid argument, so append after
+        self.aug.insert(ifMods[0], "directive", False)
+        nvhPath = ifModPath + "directive[1]"
+        self.aug.set(nvhPath, "NameVirtualHost")
+        self.aug.set(nvhPath + "/arg", addr)
+
+        # testing printout
+        #file = self.aug.match(aug_file_path + "//*")
+        #for p in file:
+            #print p, self.aug.get(p)
+
+        self.aug.save()
+
+    def append_ifmod(self, aug_conf_path, mod):
+        #print "No " + mod + " IfModule section... creating!"
+        self.aug.set(aug_conf_path + "/IfModule[last() + 1]", "")
+        self.aug.set(aug_conf_path + "/IfModule[last()]/arg", mod)
+        
+    def find_included_directive(self, directive, arg, start=BASE_DIR+"apache2.conf"):
+        """
+        TODO: Recursively search to find an included directive
         """
         return
 
     def check_ssl_loaded(self):
         """
-        TODO: Should check apache2 -M to see if mod_ssl is currently loaded
+        Checks apachectl to get loaded module list
         """
-        return
+        try:
+            p = subprocess.check_output(["sudo", "apache2ctl", "-M"], stderr=open("/dev/null"))
+        except:
+            print "Error accessing apache2ctl for loaded modules!"
+            return False
+        if "ssl_module" in p:
+            return True
+        return False
 
     # Go down the Include rabbit hole
     # TODO: Test various forms of Include, ie. /*.conf, directories
@@ -174,23 +218,27 @@ class Configurator(object):
             
         return self.aug.match("/files" + arg + searchStr)
 
-    def recurmatch(path):
-        if path:
-            if path != "/":
-                val = self.aug.get(path)
-                if val:
-                    yield (path, val)
+def recurmatch(aug, path):
+    if path:
+        if path != "/":
+            val = aug.get(path)
+            if val:
+                yield (path, val)
 
-            for i in self.aug.match(path + "/*"):
-                for x in recurmatch(i):
-                    yield x
+        for i in aug.match(path + "/*"):
+            for x in recurmatch(aug, i):
+                yield x
 
 def main():
     config = Configurator()
     config.get_virtual_hosts()
-    for vh in config.vhosts:
-        if len(vh.names) > 0:
-            config.deploy_cert(vh, "/home/james/Documents/apache_choc/default.crt", "/home/james/Documents/apache_choc/testing.key")
+    for v in config.vhosts:
+        for name in v.names:
+            print name
+    #config.add_name_vhost("example2.com:443")
+    #for vh in config.vhosts:
+        #if len(vh.names) > 0:
+            #config.deploy_cert(vh, "/home/james/Documents/apache_choc/default.crt", "/home/james/Documents/apache_choc/testing.key")
 
 #print config.search_include("/etc/apache2/choc_sni_cert_chal_test.conf", "/*")
 
