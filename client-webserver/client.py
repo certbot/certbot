@@ -17,6 +17,18 @@ if len(sys.argv) > 1:
 else:
     server = os.environ["CHOCOLATESERVER"]
 
+def is_hostname_sane(hostname):
+    """
+    Do just enough to ensure to avoid shellcode from the environment.  There's
+    no need to do more.
+    """
+    import string as s
+    allowed = s.ascii_letters + s.digits + "-."  # hostnames & IPv4
+    allowed += "[]:"                             # IPv6
+    return all([c in allowed for c in hostname])
+
+assert is_hostname_sane(server), `server` + " is an impossible hostname"
+
 upstream = "https://%s/chocolate.py" % server
 
 if len(sys.argv) > 3:
@@ -69,8 +81,8 @@ def make_request(m, csr):
     m.request.recipient = server
     m.request.timestamp = int(time.time())
     m.request.csr = csr
-    hashcash_command = "hashcash -P -m -z 12 -b %d -r %s" % (difficulty, server)
-    hashcash = subprocess.check_output(hashcash_command.split(), preexec_fn=drop_privs, shell=False).rstrip()
+    hashcash_cmd = ["hashcash", "-P", "-m", "-z", "12", "-b", `difficulty`, "-r", server]
+    hashcash = subprocess.check_output(hashcash_cmd, preexec_fn=drop_privs, shell=False).rstrip()
     if hashcash: m.request.clientpuzzle = hashcash
 
 def sign(key, m):
@@ -135,3 +147,5 @@ if r.success.IsInitialized():
 elif r.failure.IsInitialized():
     print "Server reported failure."
     sys.exit(1)
+
+# vim: set expandtab tabstop=4 shiftwidth=4
