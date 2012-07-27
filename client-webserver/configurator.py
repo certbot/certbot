@@ -1,5 +1,6 @@
 import augeas
 import subprocess
+import re
 
 BASE_DIR = "/etc/apache2/"
 
@@ -20,10 +21,17 @@ class Configurator(object):
     def __init__(self):
         self.hasSSLServer = False
         self.isModSSLLoaded = False
-        # TODO: this instantiation can be optimized to only load Httd relevant files
+        # TODO: this instantiation can be optimized to only load Httd 
+        #       relevant files
         # Set Augeas flags to save backup
         self.aug = augeas.Augeas(None, None, 1 << 0)
         self.vhosts = []
+        # httpd_files - All parsable Httpd files
+        # add_transform overwrites all currently loaded files so we must 
+        # maintain state
+        self.httpd_files = []
+        for m in self.aug.match("/augeas/load/Httpd/incl"):
+            self.httpd_files.append(self.aug.get(m))
 
     # TODO: This function can be improved to ensure that the final directives 
     # are being modified whether that be in the include files or in the 
@@ -182,11 +190,71 @@ class Configurator(object):
         self.aug.set(aug_conf_path + "/IfModule[last() + 1]", "")
         self.aug.set(aug_conf_path + "/IfModule[last()]/arg", mod)
         
-    def find_included_directive(self, directive, arg, start=BASE_DIR+"apache2.conf"):
+    def find_directive(self, directive, arg, start="/files"+BASE_DIR+"apache2.conf"):
         """
-        TODO: Recursively search to find an included directive
+        Recursively searches through config files to find directives
+        TODO: arg should probably be a list
+        TODO: Allow unknown args
         """
-        return
+        matches = self.aug.match(start + "//* [self::directive='"+directive+"']/* [self::arg='" + arg + "']")
+        includes = self.aug.match(start + "//* [self::directive='Include']/* [label()='arg']")
+
+        for include in includes:
+            matches.extend(self.find_directive(directive, arg, self.get_include_path(self.strip_dir(start[6:]), self.aug.get(include))))
+        
+        return matches
+
+    def strip_dir(self, path):
+        """
+        Precondition: file_path is a file path, ie. not an augeas section 
+                      or directive path
+        Returns the current directory from a file_path along with the file
+        """
+        index = path.rfind("/")
+        if index > 0:
+            return path[:index+1]
+        # No directory
+        return ""
+
+    def get_include_path(self, cur_dir, arg):
+        """
+        Converts an Apache Include directive argument into an Augeas 
+        searchable path
+        Returns path string
+        """
+        # Standardize the include argument based on server root
+        if not arg.startswith("/"):
+            arg = cur_dir + arg
+        # conf/ is a special variable for ServerRoot in Apache
+        elif arg.startswith("conf/"):
+            arg = BASE_DIR + arg[5:]
+        # TODO: Test if Apache allows ../ or ~/ for Includes
+ 
+        # Attempts to add a transform to the file if one does not already exist
+        self.parse_file(arg)
+        
+        # Argument represents an fnmatch regular expression, convert it
+        if "*" in arg or "?" in arg:
+            postfix = ""
+            splitArg = arg.split("/")
+            for idx, split in enumerate(splitArg):
+                # * and ? are the two special fnmatch characters 
+                if "*" in split or "?" in split:
+                    # Check to make sure only expected characters are used
+                    validChars = re.compile("[a-zA-Z0-9.*?]*")
+                    matchObj = validChars.match(split)
+                    if matchObj.group() != split:
+                        print "Error: Invalid regexp characters in", arg
+                        return []
+                    # Turn it into a augeas regex
+                    splitArg[idx] = "* [label() =~ regexp('" + self.fnmatch_to_re(split) + "')]"
+            # Reassemble the argument
+            arg = "/".join(splitArg)
+                    
+        # If the include is a directory, just return the directory as a file
+        if arg.endswith("/"):
+            return "/files" + arg[:len(arg)-1]
+        return "/files"+arg
 
     def check_ssl_loaded(self):
         """
@@ -202,8 +270,9 @@ class Configurator(object):
         return False
 
     # Go down the Include rabbit hole
-    # TODO: Test various forms of Include, ie. /*.conf, directories
+    # TODO: REMOVE... use find_directive
     def search_include(self, includeArg, searchStr):
+        print "Deprecated Function... please use find_directive"
         # Standardize the include argument based on server root
         arg = includeArg
         if not includeArg.startswith("/"):
@@ -217,6 +286,34 @@ class Configurator(object):
             self.aug.load()
             
         return self.aug.match("/files" + arg + searchStr)
+
+    def fnmatch_to_re(self, cleanFNmatch):
+        """
+        Method converts Apache's basic fnmatch to regular expression
+        """
+        regex = ""
+        for letter in cleanFNmatch:
+            if letter == '.':
+                regex = regex + "\."
+            elif letter == '*':
+                regex = regex + ".*"
+            # According to apache.org ? shouldn't appear
+            # but in case it is valid...
+            elif letter == '?':
+                regex = regex + "."
+            else:
+                regex = regex + letter
+        return regex
+
+    def parse_file(self, file_path):
+        # Test if augeas included file for Httpd.lens
+        # Note: This works for augeas globs, ie. *.conf
+        incTest = self.aug.match("/augeas/load/Httpd/incl [. ='" + file_path + "']")
+        if len(incTest) == 0:
+            # Load up files
+            self.httpd_files.append(file_path)
+            self.aug.add_transform("Httpd.lns", self.httpd_files)
+            self.aug.load()
 
 def recurmatch(aug, path):
     if path:
@@ -235,6 +332,12 @@ def main():
     for v in config.vhosts:
         for name in v.names:
             print name
+
+    for m in config.find_directive("Listen", "443"):
+        print "Directive Path:", m, "Value:", config.aug.get(m)
+
+    #for m in config.aug.match("/augeas/load/Httpd/incl"):
+    #    print m, config.aug.get(m)
     #config.add_name_vhost("example2.com:443")
     #for vh in config.vhosts:
         #if len(vh.names) > 0:
