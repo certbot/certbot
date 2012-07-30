@@ -176,7 +176,12 @@ class Configurator(object):
         nvhPath = ifModPath + "directive[1]"
         self.aug.set(nvhPath, directive)
         self.aug.set(nvhPath + "/arg", val)
-        self.aug.save()
+        try:
+            self.aug.save()
+        except IOError:
+            print "Unable to save file - Is the script running as root?"
+            return False
+        return True
 
     def make_server_sni_ready(self, addr):
         """
@@ -370,7 +375,7 @@ def main():
         for a in v.addrs:
             print a, config.is_name_vhost(a)
 
-    print config.make_server_sni_ready("127.0.0.1:443")
+    print config.make_server_sni_ready("example.com:443")
 
     #for m in config.aug.match("/augeas/load/Httpd/incl"):
     #    print m, config.aug.get(m)
