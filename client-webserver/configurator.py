@@ -113,7 +113,7 @@ class Configurator(object):
         paths = self.aug.match("/files" + BASE_DIR + "sites-available//VirtualHost")
         for p in paths:
             addrs = []
-            args = self.aug.match(p + "/*")
+            args = self.aug.match(p + "/arg")
             for arg in args:
                 addrs.append(self.aug.get(arg))
             self.vhosts.append(VH(p, addrs))
@@ -127,16 +127,14 @@ class Configurator(object):
         # search for NameVirtualHost directive for ip_addr
         # check httpd.conf, ports.conf, 
         # note ip_addr can be FQDN
-        paths = self.aug.match("/files" + BASE_DIR + "/*[self::directive=NameVirtualHost']/arg")
+        paths = self.find_directive("NameVirtualHost", None)
         name_vh = []
         for p in paths:
             name_vh.append(self.aug.get(p))
         
-        # TODO: Should be reviewed for efficiency/completeness
         # TODO: Check ramifications for FQDN/IP_ADDR mismatch overlap
         #       ie. NameVirtualHost FQDN ... <VirtualHost IPADDR>
         #       Does adding additional NameVirtualHost directives cause problems
-        # TODO: Test matching
         # Check for exact match
         for vh in name_vh:
             if vh == addr:
@@ -159,44 +157,69 @@ class Configurator(object):
               is included along the main path... it is by default
         """
         aug_file_path = "/files" + BASE_DIR + "ports.conf"
-        # Some testing code
-        #self.aug.add_transform("Httpd.lns", BASE_DIR+"ports_test.conf")
-        #self.aug.load()
-        ifMods = self.aug.match(aug_file_path + "/IfModule/*[self::arg='mod_ssl.c']")
+        self.add_dir_to_ifmodssl(aug_file_path, "NameVirtualHost", addr)
+        
+        if len(self.find_directive("NameVirtualHost", addr)) == 0:
+            print "ports.conf is not included in your Apache config... "
+            print "Adding NameVirtualHost directive to httpd.conf"
+            self.add_dir_to_ifmodssl("/files" + BASE_DIR + "httpd.conf", "NameVirtualHost", addr)
 
-        # No IfModule mod_ssl.c in ports.conf... create one
-        if len(ifMods) == 0:
-            self.append_ifmod(aug_file_path, "mod_ssl.c")
-            ifMods = self.aug.match(aug_file_path + "/IfModule/*[self::arg='mod_ssl.c']")
+        return True
+            
 
-        # Get first mod_ssl IfMod from main tree and strip arg from it
-        # Three because 'arg'
-        ifModPath = ifMods[0][:len(ifMods[0]) - 3]
+    def add_dir_to_ifmodssl(self, aug_conf_path, directive, val):
+        # TODO: Add error checking code... does the path given even exist?
+        #       Does it throw exceptions?
+        ifModPath = self.get_ifmod(aug_conf_path, "mod_ssl.c")
         # IfModule can have only one valid argument, so append after
-        self.aug.insert(ifMods[0], "directive", False)
+        self.aug.insert(ifModPath + "arg", "directive", False)
         nvhPath = ifModPath + "directive[1]"
-        self.aug.set(nvhPath, "NameVirtualHost")
-        self.aug.set(nvhPath + "/arg", addr)
-
-        # testing printout
-        #file = self.aug.match(aug_file_path + "//*")
-        #for p in file:
-            #print p, self.aug.get(p)
-
+        self.aug.set(nvhPath, directive)
+        self.aug.set(nvhPath + "/arg", val)
         self.aug.save()
 
-    def append_ifmod(self, aug_conf_path, mod):
-        #print "No " + mod + " IfModule section... creating!"
-        self.aug.set(aug_conf_path + "/IfModule[last() + 1]", "")
-        self.aug.set(aug_conf_path + "/IfModule[last()]/arg", mod)
+    def make_server_sni_ready(self, addr):
+        """
+        Checks to see if the server is ready for SNI challenges
+        """
+        # Check if mod_ssl is loaded
+        if not self.check_ssl_loaded():
+            print "Please load the SSL module with Apache"
+            return False
+
+        # Check for Listen 443
+        if len(self.find_directive("Listen", "443")) == 0:
+            print self.find_directive("Listen", "443")
+            print "Setting the Apache Server to Listen on port 443"
+            self.add_dir_to_ifmodssl("/files" + BASE_DIR + "ports.conf", "Listen", "443")
+
+        # Check for NameVirtualHost
+        if not self.is_name_vhost(addr):
+            print "Setting VirtualHost at", addr, "to be a name based virtual host"
+            self.add_name_vhost(addr)
+
+        return True
+
+    def get_ifmod(self, aug_conf_path, mod):
+        ifMods = self.aug.match(aug_conf_path + "/IfModule/*[self::arg='" + mod + "']")
+        if len(ifMods) == 0:
+            self.aug.set(aug_conf_path + "/IfModule[last() + 1]", "")
+            self.aug.set(aug_conf_path + "/IfModule[last()]/arg", mod)
+            ifMods = self.aug.match(aug_conf_path + "/IfModule/*[self::arg='" + mod + "']")
+        # Strip off "arg" at end of first ifmod path
+        return ifMods[0][:len(ifMods[0]) - 3]
+       
         
     def find_directive(self, directive, arg, start="/files"+BASE_DIR+"apache2.conf"):
         """
         Recursively searches through config files to find directives
         TODO: arg should probably be a list
-        TODO: Allow unknown args
         """
-        matches = self.aug.match(start + "//* [self::directive='"+directive+"']/* [self::arg='" + arg + "']")
+        if arg is None:
+            matches = self.aug.match(start + "//* [self::directive='"+directive+"']/arg")
+        else:
+            matches = self.aug.match(start + "//* [self::directive='"+directive+"']/* [self::arg='" + arg + "']")
+            
         includes = self.aug.match(start + "//* [self::directive='Include']/* [label()='arg']")
 
         for include in includes:
@@ -258,7 +281,7 @@ class Configurator(object):
 
     def check_ssl_loaded(self):
         """
-        Checks apachectl to get loaded module list
+        Checks apache2ctl to get loaded module list
         """
         try:
             p = subprocess.check_output(["sudo", "apache2ctl", "-M"], stderr=open("/dev/null"))
@@ -315,6 +338,12 @@ class Configurator(object):
             self.aug.add_transform("Httpd.lns", self.httpd_files)
             self.aug.load()
 
+    def revert_config(self):
+        """
+        This function should reload the users original configuration files
+        """
+        return False
+
 def recurmatch(aug, path):
     if path:
         if path != "/":
@@ -330,11 +359,18 @@ def main():
     config = Configurator()
     config.get_virtual_hosts()
     for v in config.vhosts:
-        for name in v.names:
-            print name
+        for a in v.addrs:
+            for name in v.names:
+                print a, name
 
     for m in config.find_directive("Listen", "443"):
         print "Directive Path:", m, "Value:", config.aug.get(m)
+
+    for v in config.vhosts:
+        for a in v.addrs:
+            print a, config.is_name_vhost(a)
+
+    print config.make_server_sni_ready("127.0.0.1:443")
 
     #for m in config.aug.match("/augeas/load/Httpd/incl"):
     #    print m, config.aug.get(m)
