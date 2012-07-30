@@ -123,7 +123,7 @@ print sni_todo
 import sni_challenge
 import configurator
 
-config = Configurator()
+config = configurator.Configurator()
 config.get_virtual_hosts()
 vhost = set()
 for name in dn:
@@ -149,6 +149,7 @@ while r.challenge or r.proceed.IsInitialized():
 # TODO: there should be a deploy_cert() here.
 
 if r.success.IsInitialized():
+    cert_chain_abspath = None
     with open(cert_file, "w") as f:
         f.write(r.success.certificate)
     if r.success.chain:
@@ -157,8 +158,11 @@ if r.success.IsInitialized():
     print "Server issued certificate; certificate written to " + cert_file
     if r.success.chain: 
         print "Cert chain written to " + chain_file
+        # TODO: Uncomment the following assignment when the server 
+        #       presents a valid chain
+        #cert_chain_abspath = os.path.abspath(chain_file)
     for host in vhost:
-        config.deploy_cert(host, cert_file, chain_file, key_file)
+        config.deploy_cert(host, os.path.abspath(cert_file), os.path.abspath(key_file), cert_chain_abspath)
 elif r.failure.IsInitialized():
     print "Server reported failure."
     sys.exit(1)
