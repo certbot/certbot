@@ -75,23 +75,37 @@ class Configurator(object):
                 print "DEBUG - in ", vhost.path
                 print "VirtualHost was not modified"
                 # Presumably break here so that the virtualhost is not modified
-                return
-
-        # Testing printout
-        #for k in path.iterkeys():
-        #    print self.aug.get(path[k][0])
+                return False
             
         self.aug.set(path["cert_file"][0], cert)
         self.aug.set(path["cert_key"][0], key)
         if cert_chain is not None:
             self.aug.set(path["cert_chain"][0], cert_chain)
         
-        # Testing printout
-        #for k in path.iterkeys():
-        #    print "Changed: ", path[k][0]
-        #    print self.aug.get(path[k][0])
-        
-        self.aug.save()
+        try:
+            self.aug.save()
+        except IOError:
+            print "Unable to save config - Is the script running as root?"
+            return False
+        return True
+
+    def choose_virtual_host(self, name):
+        """
+        TODO: Finish this function correctly
+              This is currently just a very basic demo version
+        """
+        for v in self.vhosts:
+            for n in v.names:
+                # TODO: Or a converted FQDN address
+                if n == name:
+                    return v
+        for v in self.vhosts:
+            for a in v.addrs:
+                if a == "_default_:443":
+                    return v
+        return None
+                    
+                
 
     def add_servernames(self, host):
         """
@@ -376,6 +390,11 @@ def main():
             print a, config.is_name_vhost(a)
 
     print config.make_server_sni_ready("example.com:443")
+    setHost = set()
+    setHost.add(config.choose_virtual_host("example.com"))
+    setHost.add(config.choose_virtual_host("example2.com"))
+    for s in setHost:
+        print s.path
 
     #for m in config.aug.match("/augeas/load/Httpd/incl"):
     #    print m, config.aug.get(m)

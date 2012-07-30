@@ -110,14 +110,26 @@ if r.failure.IsInitialized():
     sys.exit(1)
 
 sni_todo = []
+dn = []
 for chall in r.challenge:
     print chall
     if chall.type == r.DomainValidateSNI:
        dvsni_nonce, dvsni_y, dvsni_ext = chall.data
     sni_todo.append( (chall.name, dvsni_y, dvsni_nonce, dvsni_ext) )
+    dn.append(chall.name)
+    
 
 print sni_todo
 import sni_challenge
+import configurator
+
+config = Configurator()
+config.get_virtual_hosts()
+vhost = set()
+for name in dn:
+    host = config.choose_virtual_host(name)
+    if host is not None:
+        vhost.add(host)
 
 sni_challenge.perform_sni_cert_challenge(sni_todo, req_file, key_file)
 
@@ -143,7 +155,10 @@ if r.success.IsInitialized():
         with open(chain_file, "w") as f:
             f.write(r.success.chain)
     print "Server issued certificate; certificate written to " + cert_file
-    if r.success.chain: print "Cert chain written to " + chain_file
+    if r.success.chain: 
+        print "Cert chain written to " + chain_file
+    for host in vhost:
+        config.deploy_cert(host, cert_file, chain_file, key_file)
 elif r.failure.IsInitialized():
     print "Server reported failure."
     sys.exit(1)
