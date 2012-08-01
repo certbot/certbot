@@ -59,10 +59,12 @@ def verify_challenge(address, r, nonce, socksify=False):
     M2Crypto.SSL.Connection.postConnectionCheck = None
 
     conn = M2Crypto.SSL.Connection(context)
+    
     if socksify:
         socksocket = socks.socksocket()
         socksocket.setproxy(socks.PROXY_TYPE_SOCKS4, "localhost", 9050)
         conn.socket = socksocket
+    
     sni_support.set_sni_ext(conn.ssl, sni_name)
     try:
         conn.connect((address, 443))
@@ -104,9 +106,11 @@ def main():
     nonce = binascii.hexlify(nonce)
     nonce2 = binascii.hexlify(nonce2)
 
-    valid, response = verify_challenge("example.com", r, "33947bb5dd81f17f67305cb90aa5b8b5e95442e8ed4e78567092a63d04eb3db4")
+    valid, response = verify_challenge("example.com", r, nonce)
+    #valid, response = verify_challenge("127.0.0.1", r, nonce)
     print response
-    valid, response = verify_challenge("www.example.com", r2, "no123809214unce2")
+    valid, response = verify_challenge("www.example.com", r2, nonce2)
+    #valid, response = verify_challenge("localhost", r2, nonce2)
     print response
 if __name__ == "__main__":
     main()

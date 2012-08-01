@@ -25,7 +25,7 @@ class Configurator(object):
         #       relevant files
         # Set Augeas flags to save backup
         self.aug = augeas.Augeas(None, None, 1 << 0)
-        self.vhosts = []
+        self.vhosts = self.get_virtual_hosts()
         # httpd_files - All parsable Httpd files
         # add_transform overwrites all currently loaded files so we must 
         # maintain state
@@ -43,6 +43,7 @@ class Configurator(object):
         the "included" confs.  The function verifies that it has located 
         the three directives and finally modifies them to point to the correct
         destination
+        TODO: Should add/remove chain directives 
         """
         search = {}
         path = {}
@@ -92,12 +93,18 @@ class Configurator(object):
     def choose_virtual_host(self, name):
         """
         TODO: Finish this function correctly
+        TODO: This should return vhost of :443 if both 80 and 443 exist
               This is currently just a very basic demo version
         """
         for v in self.vhosts:
             for n in v.names:
                 # TODO: Or a converted FQDN address
                 if n == name:
+                    return v
+        for v in self.vhosts:
+            for a in v.addrs:
+                tup = a.partition(":")
+                if tup[0] == name:
                     return v
         for v in self.vhosts:
             for a in v.addrs:
@@ -125,17 +132,18 @@ class Configurator(object):
     def get_virtual_hosts(self):
         #Search sites-available, httpd.conf for possible virtual hosts
         paths = self.aug.match("/files" + BASE_DIR + "sites-available//VirtualHost")
+        vhs = []
         for p in paths:
             addrs = []
             args = self.aug.match(p + "/arg")
             for arg in args:
                 addrs.append(self.aug.get(arg))
-            self.vhosts.append(VH(p, addrs))
+            vhs.append(VH(p, addrs))
 
-        for host in self.vhosts:
+        for host in vhs:
             self.add_servernames(host)
 
-        return self.vhosts
+        return vhs
 
     def is_name_vhost(self, addr):
         # search for NameVirtualHost directive for ip_addr
@@ -197,7 +205,7 @@ class Configurator(object):
             return False
         return True
 
-    def make_server_sni_ready(self, addr):
+    def make_server_sni_ready(self, vhost):
         """
         Checks to see if the server is ready for SNI challenges
         """
@@ -207,15 +215,27 @@ class Configurator(object):
             return False
 
         # Check for Listen 443
+        # TODO: This could be made to also look for ip:443 combo
+        # TODO: Need to search only open directives and IfMod mod_ssl.c
         if len(self.find_directive("Listen", "443")) == 0:
             print self.find_directive("Listen", "443")
             print "Setting the Apache Server to Listen on port 443"
             self.add_dir_to_ifmodssl("/files" + BASE_DIR + "ports.conf", "Listen", "443")
 
         # Check for NameVirtualHost
-        if not self.is_name_vhost(addr):
-            print "Setting VirtualHost at", addr, "to be a name based virtual host"
-            self.add_name_vhost(addr)
+        # First see if any of the vhost addresses is a _default_ addr
+        for addr in vhost.addrs:
+            tup = addr.partition(":") 
+            if tup[0] == "_default_":
+                if not self.is_name_vhost("*:443"):
+                    print "Setting all VirtualHosts on *:443 to be name based virtual hosts"
+                    self.add_name_vhost("*:443")
+                return True
+        # No default addresses... so set each one individually
+        for addr in vhost.addrs:
+            if not self.is_name_vhost(addr):
+                print "Setting VirtualHost at", addr, "to be a name based virtual host"
+                self.add_name_vhost(addr)
 
         return True
 
@@ -227,7 +247,10 @@ class Configurator(object):
             ifMods = self.aug.match(aug_conf_path + "/IfModule/*[self::arg='" + mod + "']")
         # Strip off "arg" at end of first ifmod path
         return ifMods[0][:len(ifMods[0]) - 3]
-       
+    
+    def add_dir(self, aug_conf_path, directive, arg):
+        self.aug.set(aug_conf_path + "/directive[last() + 1]", directive)
+        self.aug.set(aug_conf_path + "/directive[last()]", arg)
         
     def find_directive(self, directive, arg, start="/files"+BASE_DIR+"apache2.conf"):
         """
@@ -306,6 +329,7 @@ class Configurator(object):
             p = subprocess.check_output(["sudo", "apache2ctl", "-M"], stderr=open("/dev/null"))
         except:
             print "Error accessing apache2ctl for loaded modules!"
+            print "This may be caused by an Apache Configuration Error"
             return False
         if "ssl_module" in p:
             return True
@@ -376,20 +400,19 @@ def recurmatch(aug, path):
 
 def main():
     config = Configurator()
-    config.get_virtual_hosts()
     for v in config.vhosts:
-        for a in v.addrs:
-            for name in v.names:
-                print a, name
+        print v.addrs
+        for name in v.names:
+            print name
 
     for m in config.find_directive("Listen", "443"):
         print "Directive Path:", m, "Value:", config.aug.get(m)
 
     for v in config.vhosts:
         for a in v.addrs:
-            print a, config.is_name_vhost(a)
+            print "Address:",a, "- Is name vhost?", config.is_name_vhost(a)
 
-    print config.make_server_sni_ready("example.com:443")
+    #print config.make_server_sni_ready("example.com:443")
     setHost = set()
     setHost.add(config.choose_virtual_host("example.com"))
     setHost.add(config.choose_virtual_host("example2.com"))
