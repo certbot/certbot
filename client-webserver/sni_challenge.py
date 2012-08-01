@@ -112,19 +112,8 @@ def checkForApacheConfInclude(mainConfig, configurator):
     result:      User Apache configuration includes chocolate sni challenge file
     """
     if len(configurator.find_directive("Include", APACHE_CHALLENGE_CONF)) == 0:
+        print "Including challenge server(s)"
         configurator.add_dir("/files" + mainConfig, "Include", APACHE_CHALLENGE_CONF)
-    #searchStr = "Include " + APACHE_CHALLENGE_CONF
-    
-    #conf = open(mainConfig, 'r+')
-    #conf = open(mainConfig, 'r')
-    #if not any(line.startswith(searchStr) for line in conf):
-        #conf.write(searchStr)
-	#process = subprocess.Popen(["echo", "\n" + searchStr], stdout=subprocess.PIPE)
-        #subprocess.check_output(["sudo", "tee", "-a", mainConfig], stdin=process.stdout)
-	#process.stdout.close()
-
-    #conf.close()
-        
 
 def createChallengeCert(oid, ext, nonce, csr, key):
     """
