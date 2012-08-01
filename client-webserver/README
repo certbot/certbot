@@ -6,3 +6,5 @@ Set CHOCOLATESERVER environment variable for client.py, or pass the server
 name as a command line argument!
 
 client.py - experimental tool for making requests and parsing replies
+configurator.py - edits Apache config files using Augeas
+sni_challenge.py - sets up the Apache server for the DV SNI cert challenge
