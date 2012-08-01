@@ -12,8 +12,7 @@ import augeas
 import configurator
 #import dns.resolver
 
-#CHOC_DIR = "/home/ubuntu/chocolate/client-webserver/"
-CHOC_DIR = "/home/james/Documents/apache_choc/"
+CHOC_DIR = "/home/ubuntu/chocolate/client-webserver/"
 CHOC_CERT_CONF = "choc_cert_extensions.cnf"
 OPTIONS_SSL_CONF = CHOC_DIR + "options-ssl.conf"
 APACHE_CHALLENGE_CONF = CHOC_DIR + "choc_sni_cert_challenge.conf"
@@ -112,7 +111,7 @@ def checkForApacheConfInclude(mainConfig, configurator):
     result:      User Apache configuration includes chocolate sni challenge file
     """
     if len(configurator.find_directive("Include", APACHE_CHALLENGE_CONF)) == 0:
-        print "Including challenge server(s)"
+        print "Including challenge virtual host(s)"
         configurator.add_dir("/files" + mainConfig, "Include", APACHE_CHALLENGE_CONF)
 
 def createChallengeCert(oid, ext, nonce, csr, key):
@@ -253,8 +252,8 @@ def main():
     
     config = configurator.Configurator()
 
-    #perform_sni_cert_challenge([("example.com", y, nonce, "1.3.3.7"), ("www.example.com",y2, nonce2, "1.3.3.7")], csr, key, config)
-    perform_sni_cert_challenge([("127.0.0.1", y, nonce, "1.3.3.7"), ("localhost", y2, nonce2, "1.3.3.7")], csr, key, config)
+    perform_sni_cert_challenge([("example.com", y, nonce, "1.3.3.7"), ("www.example.com",y2, nonce2, "1.3.3.7")], csr, key, config)
+    #perform_sni_cert_challenge([("127.0.0.1", y, nonce, "1.3.3.7"), ("localhost", y2, nonce2, "1.3.3.7")], csr, key, config)
 
 if __name__ == "__main__":
     main()
