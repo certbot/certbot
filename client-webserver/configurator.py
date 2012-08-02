@@ -1,6 +1,7 @@
 import augeas
 import subprocess
 import re
+import os
 
 BASE_DIR = "/etc/apache2/"
 
@@ -32,6 +33,7 @@ class Configurator(object):
         self.httpd_files = []
         for m in self.aug.match("/augeas/load/Httpd/incl"):
             self.httpd_files.append(self.aug.get(m))
+        self.mod_files = set()
 
     # TODO: This function can be improved to ensure that the final directives 
     # are being modified whether that be in the include files or in the 
@@ -83,12 +85,7 @@ class Configurator(object):
         if cert_chain is not None:
             self.aug.set(path["cert_chain"][0], cert_chain)
         
-        try:
-            self.aug.save()
-        except IOError:
-            print "Unable to save config - Is the script running as root?"
-            return False
-        return True
+        return self.save("Virtual Server - deploying certificate")
 
     def choose_virtual_host(self, name):
         """
@@ -114,7 +111,7 @@ class Configurator(object):
                     
                 
 
-    def add_servernames(self, host):
+    def __add_servernames(self, host):
         """
         Helper function for get_virtual_hosts()
         """
@@ -141,7 +138,7 @@ class Configurator(object):
             vhs.append(VH(p, addrs))
 
         for host in vhs:
-            self.add_servernames(host)
+            self.__add_servernames(host)
 
         return vhs
 
@@ -175,8 +172,8 @@ class Configurator(object):
 
     def add_name_vhost(self, addr):
         """
-        TODO: For final code... this function should check that ports.conf
-              is included along the main path... it is by default
+        Adds NameVirtualHost directive for given address
+        Directive is added to ports.conf unless 
         """
         aug_file_path = "/files" + BASE_DIR + "ports.conf"
         self.add_dir_to_ifmodssl(aug_file_path, "NameVirtualHost", addr)
@@ -185,8 +182,6 @@ class Configurator(object):
             print "ports.conf is not included in your Apache config... "
             print "Adding NameVirtualHost directive to httpd.conf"
             self.add_dir_to_ifmodssl("/files" + BASE_DIR + "httpd.conf", "NameVirtualHost", addr)
-
-        return True
             
 
     def add_dir_to_ifmodssl(self, aug_conf_path, directive, val):
@@ -198,12 +193,6 @@ class Configurator(object):
         nvhPath = ifModPath + "directive[1]"
         self.aug.set(nvhPath, directive)
         self.aug.set(nvhPath + "/arg", val)
-        try:
-            self.aug.save()
-        except IOError:
-            print "Unable to save file - Is the script running as root?"
-            return False
-        return True
 
     def make_server_sni_ready(self, vhost):
         """
@@ -250,9 +239,9 @@ class Configurator(object):
     
     def add_dir(self, aug_conf_path, directive, arg):
         self.aug.set(aug_conf_path + "/directive[last() + 1]", directive)
-        self.aug.set(aug_conf_path + "/directive[last()]", arg)
+        self.aug.set(aug_conf_path + "/directive[last()]/arg", arg)
         
-    def find_directive(self, directive, arg, start="/files"+BASE_DIR+"apache2.conf"):
+    def find_directive(self, directive, arg=None, start="/files"+BASE_DIR+"apache2.conf"):
         """
         Recursively searches through config files to find directives
         TODO: arg should probably be a list
@@ -381,11 +370,37 @@ class Configurator(object):
             self.aug.add_transform("Httpd.lns", self.httpd_files)
             self.aug.load()
 
+    def save(self, mod_conf="Augeas Configuration", reversible=False):
+        try:
+            self.aug.save()
+            if reversible:
+                # Retrieve list of modified files
+                save_paths = self.aug.match("/augeas/events/saved")
+                for path in save_paths:
+                    # Strip off /files
+                    filename = self.aug.get(path)[6:]
+                    if filename in self.mod_files:
+                        # Output a warning... hopefully this can be avoided so more
+                        # complex code doesn't have to be written
+                        print "Reversible file has been overwritten -", filename
+                    else:
+                        self.mod_files.add(filename)
+            return True
+        except IOError:
+            print "Unable to save file - ", mod_conf
+            print "Is the script running as root?"
+        return False
+
     def revert_config(self):
         """
         This function should reload the users original configuration files
         """
-        return False
+        for f in self.mod_files:
+            print "reverting", f
+            os.rename(f + ".augsave", f)
+        self.aug.load()
+        self.mod_files.clear()
+        
 
 def recurmatch(aug, path):
     if path:
@@ -411,13 +426,9 @@ def main():
     for v in config.vhosts:
         for a in v.addrs:
             print "Address:",a, "- Is name vhost?", config.is_name_vhost(a)
-
-    #print config.make_server_sni_ready("example.com:443")
-    setHost = set()
-    setHost.add(config.choose_virtual_host("example.com"))
-    setHost.add(config.choose_virtual_host("example2.com"))
-    for s in setHost:
-        print s.path
+    
+    config.parse_file("/etc/apache2/ports_test.conf")
+    
 
     #for m in config.aug.match("/augeas/load/Httpd/incl"):
     #    print m, config.aug.get(m)

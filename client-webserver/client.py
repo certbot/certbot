@@ -146,9 +146,9 @@ while r.challenge or r.proceed.IsInitialized():
     print r
 
 # TODO: there should be an unperform_sni_cert_challenge() here.
-# TODO: there should be a deploy_cert() here.
 
 if r.success.IsInitialized():
+    sni_challenge.cleanup(sni_todo, config)
     cert_chain_abspath = None
     with open(cert_file, "w") as f:
         f.write(r.success.certificate)
@@ -163,6 +163,7 @@ if r.success.IsInitialized():
         #cert_chain_abspath = os.path.abspath(chain_file)
     for host in vhost:
         config.deploy_cert(host, os.path.abspath(cert_file), os.path.abspath(key_file), cert_chain_abspath)
+    sni_challenge.apache_restart()
 elif r.failure.IsInitialized():
     print "Server reported failure."
     sys.exit(1)

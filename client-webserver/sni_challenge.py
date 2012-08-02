@@ -12,7 +12,8 @@ import augeas
 import configurator
 #import dns.resolver
 
-CHOC_DIR = "/home/ubuntu/chocolate/client-webserver/"
+#CHOC_DIR = "/home/ubuntu/chocolate/client-webserver/"
+CHOC_DIR = "/home/james/Documents/apache_choc/"
 CHOC_CERT_CONF = "choc_cert_extensions.cnf"
 OPTIONS_SSL_CONF = CHOC_DIR + "options-ssl.conf"
 APACHE_CHALLENGE_CONF = CHOC_DIR + "choc_sni_cert_challenge.conf"
@@ -38,7 +39,6 @@ def findApacheConfigFile():
     
     result: returns file path if present
     """
-
     # This needs to be fixed to account for multiple httpd.conf files
     try:
         p = subprocess.check_output(["sudo", "find", "/etc", "-name", "httpd.conf"], stderr=open("/dev/null"))
@@ -143,10 +143,8 @@ def generateExtension(key, y):
 
     rsaPrivKey = M2Crypto.RSA.load_key(key)
     r = rsaPrivKey.private_decrypt(y, M2Crypto.RSA.pkcs1_oaep_padding)
-    #print r
 
     s = Random.get_random_bytes(S_SIZE)
-    #s = "0xDEADBEEF"
     extHMAC = hmac.new(r, str(s), hashlib.sha256)
     return byteToHex(s) + extHMAC.hexdigest()
 
@@ -195,6 +193,28 @@ def apache_restart():
     """
     subprocess.call(["sudo", "/etc/init.d/apache2", "reload"])
 
+def cleanup(listSNITuple, configurator):
+    """
+    Remove all temporary changes necessary to perform the challenge
+    
+    configurator:  Configurator object
+    listSNITuple:  The initial challenge tuple
+
+    result: Apache server is restored to the pre-challenge state
+    """
+    configurator.revert_config()
+    apache_restart()
+    remove_files(listSNITuple)
+    
+
+def remove_files(listSNITuple):
+    """
+    Removes all of the temporary SNI files
+    """
+    for tup in listSNITuple:
+        remove(getChocCertFile(tup[2]))
+    remove(APACHE_CHALLENGE_CONF)
+
 #main call
 def perform_sni_cert_challenge(listSNITuple, csr, key, configurator):
     """
@@ -207,6 +227,9 @@ def perform_sni_cert_challenge(listSNITuple, csr, key, configurator):
     key:           string - File path to key
     configurator:  Configurator obj
     """
+    # Save any changes to the configuration as a precaution
+    # About to make temporary changes to the config
+    configurator.save("Before performing sni_challenge")
 
     for tup in listSNITuple:
         vhost = configurator.choose_virtual_host(tup[0])
@@ -224,6 +247,8 @@ def perform_sni_cert_challenge(listSNITuple, csr, key, configurator):
         createChallengeCert(tup[3], ext, tup[2], csr, key)
     
     modifyApacheConfig(findApacheConfigFile(), listSNITuple, key, configurator)
+    # Save reversible changes and restart the server
+    configurator.save("SNI Challenge", True)
     apache_restart()
 
 def main():
@@ -252,8 +277,17 @@ def main():
     
     config = configurator.Configurator()
 
-    perform_sni_cert_challenge([("example.com", y, nonce, "1.3.3.7"), ("www.example.com",y2, nonce2, "1.3.3.7")], csr, key, config)
-    #perform_sni_cert_challenge([("127.0.0.1", y, nonce, "1.3.3.7"), ("localhost", y2, nonce2, "1.3.3.7")], csr, key, config)
+    #challenges = [("example.com", y, nonce, "1.3.3.7"), ("www.example.com",y2, nonce2, "1.3.3.7")]
+    challenges = [("127.0.0.1", y, nonce, "1.3.3.7"), ("localhost", y2, nonce2, "1.3.3.7")]
+    perform_sni_cert_challenge(challenges, csr, key, config)
+
+    # Waste some time without importing time module... just for testing
+    for i in range(0, 12000):
+        if i % 2000 == 0:
+            print "Waiting:", i
+
+    print "Cleaning up"
+    cleanup(challenges, config)
 
 if __name__ == "__main__":
     main()
