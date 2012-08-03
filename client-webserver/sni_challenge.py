@@ -12,8 +12,7 @@ import augeas
 import configurator
 #import dns.resolver
 
-#CHOC_DIR = "/home/ubuntu/chocolate/client-webserver/"
-CHOC_DIR = "/home/james/Documents/apache_choc/"
+CHOC_DIR = "/home/ubuntu/chocolate/client-webserver/"
 CHOC_CERT_CONF = "choc_cert_extensions.cnf"
 OPTIONS_SSL_CONF = CHOC_DIR + "options-ssl.conf"
 APACHE_CHALLENGE_CONF = CHOC_DIR + "choc_sni_cert_challenge.conf"
@@ -277,8 +276,8 @@ def main():
     
     config = configurator.Configurator()
 
-    #challenges = [("example.com", y, nonce, "1.3.3.7"), ("www.example.com",y2, nonce2, "1.3.3.7")]
-    challenges = [("127.0.0.1", y, nonce, "1.3.3.7"), ("localhost", y2, nonce2, "1.3.3.7")]
+    challenges = [("example.com", y, nonce, "1.3.3.7"), ("www.example.com",y2, nonce2, "1.3.3.7")]
+    #challenges = [("127.0.0.1", y, nonce, "1.3.3.7"), ("localhost", y2, nonce2, "1.3.3.7")]
     perform_sni_cert_challenge(challenges, csr, key, config)
 
     # Waste some time without importing time module... just for testing

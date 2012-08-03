@@ -20,8 +20,6 @@ class VH(object):
 class Configurator(object):
     
     def __init__(self):
-        self.hasSSLServer = False
-        self.isModSSLLoaded = False
         # TODO: this instantiation can be optimized to only load Httd 
         #       relevant files
         # Set Augeas flags to save backup
@@ -324,6 +322,33 @@ class Configurator(object):
             return True
         return False
 
+    def enable_site(self, avail_fp):
+        """
+        Enables an available site, Apache restart required
+        """
+        if "/sites-available/" in avail_fp:
+            index = avail_fp.rfind("/")
+            os.symlink(avail_fp, BASE_DIR + "sites-enabled/" + avail_fp[index:])
+            return True
+        return False
+    
+    def enable_mod_ssl(self):
+        """
+        Enables mod_ssl
+        TODO: TEST
+        """
+        subprocess.call(["sudo", "a2enmod", "ssl"])
+        subprocess.call(["sudo", "/etc/init.d/apache2", "reload"])
+        """
+        a_conf = BASE_DIR + "mods-available/ssl.conf"
+        a_load = BASE_DIR + "mods-available/ssl.load"
+        if os.path.exists(a_conf) and os.path.exists(a_load):
+            os.symlink(a_conf, BASE_DIR + "mods-enabled/ssl.conf")
+            os.symlink(a_load, BASE_DIR + "mods-enabled/ssl.load")
+            return True
+        return False
+        """
+
     # Go down the Include rabbit hole
     # TODO: REMOVE... use find_directive
     def search_include(self, includeArg, searchStr):
@@ -429,7 +454,6 @@ def main():
     
     config.parse_file("/etc/apache2/ports_test.conf")
     
-
     #for m in config.aug.match("/augeas/load/Httpd/incl"):
     #    print m, config.aug.get(m)
     #config.add_name_vhost("example2.com:443")
