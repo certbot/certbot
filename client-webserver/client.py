@@ -17,15 +17,31 @@ if len(sys.argv) > 1:
 else:
     server = os.environ["CHOCOLATESERVER"]
 
+# it's weird to point to chocolate servers via raw IPv6 addresses, and such
+# addresses can be %SCARY in some contexts, so out of paranoia let's disable
+# them by default
+allow_raw_ipv6_server = False
+
 def is_hostname_sane(hostname):
     """
-    Do just enough to ensure to avoid shellcode from the environment.  There's
+    Do enough to avoid shellcode from the environment.  There's
     no need to do more.
     """
     import string as s
     allowed = s.ascii_letters + s.digits + "-."  # hostnames & IPv4
-    allowed += "[]:"                             # IPv6
-    return all([c in allowed for c in hostname])
+    if all([c in allowed for c in hostname])
+      return True
+    
+    if not allow_raw_ipv6_server: return False
+
+    # ipv6 is messy and complicated, can contain %zoneindex etc.  
+    import socket
+    try:
+      # is this a valid IPv6 address?
+      socket.getaddrinfo(hostname,443,socket.AF_INET6)
+      return True
+    except:
+      return False
 
 assert is_hostname_sane(server), `server` + " is an impossible hostname"
 
