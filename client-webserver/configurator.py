@@ -2,6 +2,7 @@ import augeas
 import subprocess
 import re
 import os
+import sys
 import socket
 
 BASE_DIR = "/etc/apache2/"
@@ -88,7 +89,9 @@ class Configurator(object):
 
     def choose_virtual_host(self, name):
         """
-        TODO: Finish this function correctly
+        Chooses a virtual host based on the given domain name
+
+        returns: VH object
         TODO: This should return vhost of :443 if both 80 and 443 exist
               This is currently just a very basic demo version
         """
@@ -143,6 +146,9 @@ class Configurator(object):
                 
 
     def get_virtual_hosts(self):
+        """
+        Returns list of virtual hosts found in the Apache configuration
+        """
         #Search sites-available, httpd.conf for possible virtual hosts
         paths = self.aug.match("/files" + BASE_DIR + "sites-available//VirtualHost")
         vhs = []
@@ -159,6 +165,10 @@ class Configurator(object):
         return vhs
 
     def is_name_vhost(self, addr):
+        """
+        Checks if addr has a NameVirtualHost directive in the Apache config
+        addr:    string
+        """
         # search for NameVirtualHost directive for ip_addr
         # check httpd.conf, ports.conf, 
         # note ip_addr can be FQDN
@@ -201,6 +211,12 @@ class Configurator(object):
             
 
     def add_dir_to_ifmodssl(self, aug_conf_path, directive, val):
+        """
+        Adds given directived and value along configuration path within 
+        an IfMod mod_ssl.c block.  If the IfMod block does not exist in
+        the file, it is created.
+        """
+
         # TODO: Add error checking code... does the path given even exist?
         #       Does it throw exceptions?
         ifModPath = self.get_ifmod(aug_conf_path, "mod_ssl.c")
@@ -245,6 +261,10 @@ class Configurator(object):
         return True
 
     def get_ifmod(self, aug_conf_path, mod):
+        """
+        Returns the path to <IfMod mod>.  Creates the block if it does
+        not exist
+        """
         ifMods = self.aug.match(aug_conf_path + "/IfModule/*[self::arg='" + mod + "']")
         if len(ifMods) == 0:
             self.aug.set(aug_conf_path + "/IfModule[last() + 1]", "")
@@ -254,6 +274,9 @@ class Configurator(object):
         return ifMods[0][:len(ifMods[0]) - 3]
     
     def add_dir(self, aug_conf_path, directive, arg):
+        """
+        Appends directive to end of file given by aug_conf_path
+        """
         self.aug.set(aug_conf_path + "/directive[last() + 1]", directive)
         self.aug.set(aug_conf_path + "/directive[last()]/arg", arg)
         
@@ -265,7 +288,7 @@ class Configurator(object):
         if arg is None:
             matches = self.aug.match(start + "//* [self::directive='"+directive+"']/arg")
         else:
-            matches = self.aug.match(start + "//* [self::directive='"+directive+"']/* [self::arg='" + arg + "']")
+            matches = self.aug.match(start + "//* [self::directive='" + directive+"']/* [self::arg='" + arg + "']")
             
         includes = self.aug.match(start + "//* [self::directive='Include']/* [label()='arg']")
 
@@ -340,9 +363,23 @@ class Configurator(object):
             return True
         return False
 
+    def is_site_enabled(self, avail_fp):
+        """
+        Checks to see if the given site is enabled
+
+        avail_fp:     string - Should be complete file path
+        """
+        enabled_dir = BASE_DIR + "sites-enabled/"
+        for f in os.listdir(enabled_dir):
+            if os.path.realpath(enabled_dir + f) == avail_fp:
+                return True
+
+        return False
+
     def enable_site(self, avail_fp):
         """
         Enables an available site, Apache restart required
+        TODO: This function should number subdomains before the domain vhost
         """
         if "/sites-available/" in avail_fp:
             index = avail_fp.rfind("/")
@@ -405,6 +442,10 @@ class Configurator(object):
         return regex
 
     def parse_file(self, file_path):
+        """
+        Checks to see if file_path is parsed by Augeas
+        If file_path isn't parsed, the file is added and Augeas is reloaded
+        """
         # Test if augeas included file for Httpd.lens
         # Note: This works for augeas globs, ie. *.conf
         incTest = self.aug.match("/augeas/load/Httpd/incl [. ='" + file_path + "']")
@@ -415,20 +456,29 @@ class Configurator(object):
             self.aug.load()
 
     def save(self, mod_conf="Augeas Configuration", reversible=False):
+        """
+        Saves all changes to the configuration files
+        Backups are stored as *.augsave files
+        
+        mod_conf:   string - Error message presented in case of problem
+                             useful for debugging
+        reversible: boolean - Indicates whether the changes made will be
+                              reversed in the future
+        """
         try:
             self.aug.save()
-            if reversible:
-                # Retrieve list of modified files
-                save_paths = self.aug.match("/augeas/events/saved")
-                for path in save_paths:
-                    # Strip off /files
-                    filename = self.aug.get(path)[6:]
-                    if filename in self.mod_files:
-                        # Output a warning... hopefully this can be avoided so more
-                        # complex code doesn't have to be written
-                        print "Reversible file has been overwritten -", filename
-                    else:
-                        self.mod_files.add(filename)
+            # Retrieve list of modified files
+            save_paths = self.aug.match("/augeas/events/saved")
+            for path in save_paths:
+                # Strip off /files
+                filename = self.aug.get(path)[6:]
+                if filename in self.mod_files:
+                    # Output a warning... hopefully this can be avoided so more
+                    # complex code doesn't have to be written
+                    print "Reversible file has been overwritten -", filename
+                    sys.exit(37)
+                if reversible:
+                    self.mod_files.add(filename)
             return True
         except IOError:
             print "Unable to save file - ", mod_conf
@@ -438,6 +488,7 @@ class Configurator(object):
     def revert_config(self):
         """
         This function should reload the users original configuration files
+        for all saves with reversible=True
         """
         for f in self.mod_files:
             print "reverting", f
@@ -474,8 +525,7 @@ def main():
     print config.get_all_names()
 
     config.parse_file("/etc/apache2/ports_test.conf")
-    
-    
+        
     #for m in config.aug.match("/augeas/load/Httpd/incl"):
     #    print m, config.aug.get(m)
     #config.add_name_vhost("example2.com:443")
