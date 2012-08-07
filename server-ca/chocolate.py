@@ -378,3 +378,5 @@ class session(object):
 if __name__ == "__main__":
     app = web.application(urls, globals())
     app.run()
+
+# vim: set tabstop=4 shiftwidth=4 expandtab
