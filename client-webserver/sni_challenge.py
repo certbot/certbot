@@ -61,7 +61,7 @@ def getConfigText(nonce, ip_addr, key):
     """
 
     configText = "<VirtualHost " + ip_addr + ":443> \n \
-Servername " + nonce + ".chocolate \n \
+ServerName " + nonce + ".chocolate \n \
 UseCanonicalName on \n \
 SSLStrictSNIVHostCheck on \n \
 \n \

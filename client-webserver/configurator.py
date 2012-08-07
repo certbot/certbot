@@ -2,6 +2,7 @@ import augeas
 import subprocess
 import re
 import os
+import socket
 
 BASE_DIR = "/etc/apache2/"
 
@@ -107,7 +108,24 @@ class Configurator(object):
                     return v
         return None
                     
-                
+    def get_all_names(self):
+        """
+        Returns all names found in the Apache Configuration
+        Returns all ServerNames, ServerAliases, and reverse DNS entries for
+        virtual host addresses
+        """
+        all_names = []
+        for v in self.vhosts:
+            all_names.extend(v.names)
+            for a in v.addrs:
+                a_tup = a.split(":")
+                try:
+                    socket.inet_aton(a_tup[0])
+                    all_names.append(socket.gethostbyaddr(a_tup[0])[0])
+                except (socket.error, socket.herror, socket.timeout):
+                    continue
+
+        return all_names
 
     def __add_servernames(self, host):
         """
@@ -337,7 +355,8 @@ class Configurator(object):
         Enables mod_ssl
         TODO: TEST
         """
-        subprocess.call(["sudo", "a2enmod", "ssl"])
+        # Use check_output so the command will finish before reloading the server
+        subprocess.check_output(["sudo", "a2enmod", "ssl"])
         subprocess.call(["sudo", "/etc/init.d/apache2", "reload"])
         """
         a_conf = BASE_DIR + "mods-available/ssl.conf"
@@ -451,8 +470,11 @@ def main():
     for v in config.vhosts:
         for a in v.addrs:
             print "Address:",a, "- Is name vhost?", config.is_name_vhost(a)
-    
+
+    print config.get_all_names()
+
     config.parse_file("/etc/apache2/ports_test.conf")
+    
     
     #for m in config.aug.match("/augeas/load/Httpd/incl"):
     #    print m, config.aug.get(m)
