@@ -147,7 +147,9 @@ for name in dn:
     if host is not None:
         vhost.add(host)
 
-sni_challenge.perform_sni_cert_challenge(sni_todo, os.path.abspath(req_file), os.path.abspath(key_file))
+if not sni_challenge.perform_sni_cert_challenge(sni_todo, os.path.abspath(req_file), os.path.abspath(key_file), config):
+    print "sni_challenge failed"
+    sys.exit(1)
 
 print "waiting", 3
 time.sleep(3)
