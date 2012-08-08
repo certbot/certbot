@@ -257,6 +257,7 @@ def perform_sni_cert_challenge(listSNITuple, csr, key, configurator):
     # Save reversible changes and restart the server
     configurator.save("SNI Challenge", True)
     apache_restart()
+    return True
 
 def main():
     key = CHOC_DIR + "key.pem"
