@@ -6,16 +6,17 @@ from Crypto import Random
 import hmac
 import hashlib
 from shutil import move
-from os import remove, close
+from os import remove, close, path
 import binascii
 import augeas
 import configurator
-#import dns.resolver
 
-CHOC_DIR = "/home/ubuntu/chocolate/client-webserver/"
-CHOC_CERT_CONF = "choc_cert_extensions.cnf"
-OPTIONS_SSL_CONF = CHOC_DIR + "options-ssl.conf"
-APACHE_CHALLENGE_CONF = CHOC_DIR + "choc_sni_cert_challenge.conf"
+WORK_DIR = "/etc/trustify/"
+CONFIG_DIR = "/var/lib/trustify/"
+SERVER_ROOT = "/etc/apache2/"
+CHOC_CERT_CONF = CONFIG_DIR + "choc_cert_extensions.cnf"
+OPTIONS_SSL_CONF = CONFIG_DIR + "options-ssl.conf"
+APACHE_CHALLENGE_CONF = CONFIG_DIR + "choc_sni_cert_challenge.conf"
 S_SIZE = 32
 NONCE_SIZE = 32
 
@@ -28,26 +29,20 @@ def getChocCertFile(nonce):
     result: returns certificate file name
     """
 
-    return CHOC_DIR + nonce + ".crt"
+    return WORK_DIR + nonce + ".crt"
 
 def findApacheConfigFile():
     """
     Locates the file path to the user's main apache config
 
-    TODO: This needs to be rewritten... should use true ServerRoot
+    TODO: This needs to use true server_root
     
     result: returns file path if present
     """
-    # This needs to be fixed to account for multiple httpd.conf files
-    try:
-        p = subprocess.check_output(["sudo", "find", "/etc", "-name", "httpd.conf"], stderr=open("/dev/null"))
-	p = p[:len(p)-1]
-	print "Apache Config: ", p
-	return p
-    except subprocess.CalledProcessError, e:
-        print "httpd.conf not found"
-	print "Please include .... in the conf file"
-        return None
+    if os.path.isfile(SERVER_ROOT + "httpd.conf"):
+        return SERVER_ROOT + "httpd.conf"
+    print "Unable to find httpd.conf, file does not exist in Apache ServerRoot"
+    return None
 
 def getConfigText(nonce, ip_addrs, key):
     """
@@ -70,7 +65,7 @@ Include " + OPTIONS_SSL_CONF + " \n \
 SSLCertificateFile " + getChocCertFile(nonce) + " \n \
 SSLCertificateKeyFile " + key + " \n \
 \n \
-DocumentRoot " + CHOC_DIR + "challenge_page/ \n \
+DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
 </VirtualHost> \n\n "
 
     return configText
@@ -191,6 +186,9 @@ def apache_restart():
     """
     subprocess.call(["sudo", "/etc/init.d/apache2", "reload"])
 
+# TODO: This function is insufficient as the user could edit the files
+# before the challenge is completed.  It is safer to log all of the changes
+# and revert each one individually
 def cleanup(listSNITuple, configurator):
     """
     Remove all temporary changes necessary to perform the challenge
@@ -259,9 +257,10 @@ def perform_sni_cert_challenge(listSNITuple, csr, key, configurator):
     apache_restart()
     return True
 
+# This main function is just used for testing
 def main():
-    key = CHOC_DIR + "key.pem"
-    csr = CHOC_DIR + "req.pem"
+    key = os.path.abspath("key.pem")
+    csr = os.path.abspath("req.pem")
 
     testkey = M2Crypto.RSA.load_key(key)
     
