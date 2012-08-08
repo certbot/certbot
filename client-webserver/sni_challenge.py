@@ -12,8 +12,7 @@ import augeas
 import configurator
 #import dns.resolver
 
-#CHOC_DIR = "/home/ubuntu/chocolate/client-webserver/"
-CHOC_DIR = "/home/james/Documents/apache_choc/"
+CHOC_DIR = "/home/ubuntu/chocolate/client-webserver/"
 CHOC_CERT_CONF = "choc_cert_extensions.cnf"
 OPTIONS_SSL_CONF = CHOC_DIR + "options-ssl.conf"
 APACHE_CHALLENGE_CONF = CHOC_DIR + "choc_sni_cert_challenge.conf"
@@ -76,7 +75,7 @@ DocumentRoot " + CHOC_DIR + "challenge_page/ \n \
 
     return configText
 
-def modifyApacheConfig(mainConfig, nonce, listlistAddrs, key, configurator):
+def modifyApacheConfig(mainConfig, listSNITuple, listlistAddrs, key, configurator):
     """
     Modifies Apache config files to include the challenge virtual servers
     
@@ -90,8 +89,8 @@ def modifyApacheConfig(mainConfig, nonce, listlistAddrs, key, configurator):
 
     # TODO: Use ip address of existing vhost instead of relying on FQDN
     configText = "<IfModule mod_ssl.c> \n"
-    for lis in listlistAddrs:
-        configText += getConfigText(nonce, lis, key)
+    for idx, lis in enumerate(listlistAddrs):
+        configText += getConfigText(listSNITuple[idx][2], lis, key)
     configText += "</IfModule> \n"
 
     checkForApacheConfInclude(mainConfig, configurator)
@@ -254,7 +253,7 @@ def perform_sni_cert_challenge(listSNITuple, csr, key, configurator):
         ext = generateExtension(key, tup[1])
         createChallengeCert(tup[3], ext, tup[2], csr, key)
     
-    modifyApacheConfig(findApacheConfigFile(), tup[2], addresses, key, configurator)
+    modifyApacheConfig(findApacheConfigFile(), listSNITuple, addresses, key, configurator)
     # Save reversible changes and restart the server
     configurator.save("SNI Challenge", True)
     apache_restart()
