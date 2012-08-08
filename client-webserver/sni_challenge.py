@@ -11,8 +11,8 @@ import binascii
 import augeas
 import configurator
 
-WORK_DIR = "/etc/trustify/"
-CONFIG_DIR = "/var/lib/trustify/"
+CONFIG_DIR = "/etc/trustify/"
+WORK_DIR = "/var/lib/trustify/"
 SERVER_ROOT = "/etc/apache2/"
 CHOC_CERT_CONF = CONFIG_DIR + "choc_cert_extensions.cnf"
 OPTIONS_SSL_CONF = CONFIG_DIR + "options-ssl.conf"
@@ -39,7 +39,7 @@ def findApacheConfigFile():
     
     result: returns file path if present
     """
-    if os.path.isfile(SERVER_ROOT + "httpd.conf"):
+    if path.isfile(SERVER_ROOT + "httpd.conf"):
         return SERVER_ROOT + "httpd.conf"
     print "Unable to find httpd.conf, file does not exist in Apache ServerRoot"
     return None
@@ -259,8 +259,8 @@ def perform_sni_cert_challenge(listSNITuple, csr, key, configurator):
 
 # This main function is just used for testing
 def main():
-    key = os.path.abspath("key.pem")
-    csr = os.path.abspath("req.pem")
+    key = path.abspath("key.pem")
+    csr = path.abspath("req.pem")
 
     testkey = M2Crypto.RSA.load_key(key)
     
