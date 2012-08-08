@@ -11,14 +11,9 @@ import binascii
 import augeas
 import configurator
 
-CONFIG_DIR = "/etc/trustify/"
-WORK_DIR = "/var/lib/trustify/"
-SERVER_ROOT = "/etc/apache2/"
-CHOC_CERT_CONF = CONFIG_DIR + "choc_cert_extensions.cnf"
-OPTIONS_SSL_CONF = CONFIG_DIR + "options-ssl.conf"
-APACHE_CHALLENGE_CONF = CONFIG_DIR + "choc_sni_cert_challenge.conf"
-S_SIZE = 32
-NONCE_SIZE = 32
+from CONFIG import CONFIG_DIR, WORK_DIR, SERVER_ROOT
+from CONFIG import CHOC_CERT_CONF, OPTIONS_SSL_CONF, APACHE_CHALLENGE_CONF
+from CONFIG import S_SIZE, NONCE_SIZE
 
 def getChocCertFile(nonce):
     """

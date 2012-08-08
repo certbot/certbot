@@ -5,7 +5,7 @@ import os
 import sys
 import socket
 
-BASE_DIR = "/etc/apache2/"
+from CONFIG import SERVER_ROOT
 
 class VH(object):
     def __init__(self, vh_path, vh_addrs):
@@ -141,7 +141,7 @@ class Configurator(object):
         Returns list of virtual hosts found in the Apache configuration
         """
         #Search sites-available, httpd.conf for possible virtual hosts
-        paths = self.aug.match("/files" + BASE_DIR + "sites-available//VirtualHost")
+        paths = self.aug.match("/files" + SERVER_ROOT + "sites-available//VirtualHost")
         vhs = []
         for p in paths:
             addrs = []
@@ -192,13 +192,13 @@ class Configurator(object):
         Adds NameVirtualHost directive for given address
         Directive is added to ports.conf unless 
         """
-        aug_file_path = "/files" + BASE_DIR + "ports.conf"
+        aug_file_path = "/files" + SERVER_ROOT + "ports.conf"
         self.add_dir_to_ifmodssl(aug_file_path, "NameVirtualHost", addr)
         
         if len(self.find_directive("NameVirtualHost", addr)) == 0:
             print "ports.conf is not included in your Apache config... "
             print "Adding NameVirtualHost directive to httpd.conf"
-            self.add_dir_to_ifmodssl("/files" + BASE_DIR + "httpd.conf", "NameVirtualHost", addr)
+            self.add_dir_to_ifmodssl("/files" + SERVER_ROOT + "httpd.conf", "NameVirtualHost", addr)
             
 
     def add_dir_to_ifmodssl(self, aug_conf_path, directive, val):
@@ -232,7 +232,7 @@ class Configurator(object):
         if len(self.find_directive("Listen", "443")) == 0:
             print self.find_directive("Listen", "443")
             print "Setting the Apache Server to Listen on port 443"
-            self.add_dir_to_ifmodssl("/files" + BASE_DIR + "ports.conf", "Listen", "443")
+            self.add_dir_to_ifmodssl("/files" + SERVER_ROOT + "ports.conf", "Listen", "443")
 
         # Check for NameVirtualHost
         # First see if any of the vhost addresses is a _default_ addr
@@ -271,7 +271,7 @@ class Configurator(object):
         self.aug.set(aug_conf_path + "/directive[last() + 1]", directive)
         self.aug.set(aug_conf_path + "/directive[last()]/arg", arg)
         
-    def find_directive(self, directive, arg=None, start="/files"+BASE_DIR+"apache2.conf"):
+    def find_directive(self, directive, arg=None, start="/files"+SERVER_ROOT+"apache2.conf"):
         """
         Recursively searches through config files to find directives
         TODO: arg should probably be a list
@@ -311,7 +311,7 @@ class Configurator(object):
             arg = cur_dir + arg
         # conf/ is a special variable for ServerRoot in Apache
         elif arg.startswith("conf/"):
-            arg = BASE_DIR + arg[5:]
+            arg = SERVER_ROOT + arg[5:]
         # TODO: Test if Apache allows ../ or ~/ for Includes
  
         # Attempts to add a transform to the file if one does not already exist
@@ -360,7 +360,7 @@ class Configurator(object):
 
         avail_fp:     string - Should be complete file path
         """
-        enabled_dir = BASE_DIR + "sites-enabled/"
+        enabled_dir = SERVER_ROOT + "sites-enabled/"
         for f in os.listdir(enabled_dir):
             if os.path.realpath(enabled_dir + f) == avail_fp:
                 return True
@@ -374,7 +374,7 @@ class Configurator(object):
         """
         if "/sites-available/" in avail_fp:
             index = avail_fp.rfind("/")
-            os.symlink(avail_fp, BASE_DIR + "sites-enabled/" + avail_fp[index:])
+            os.symlink(avail_fp, SERVER_ROOT + "sites-enabled/" + avail_fp[index:])
             return True
         return False
     
@@ -387,11 +387,11 @@ class Configurator(object):
         subprocess.check_output(["sudo", "a2enmod", "ssl"])
         subprocess.call(["sudo", "/etc/init.d/apache2", "reload"])
         """
-        a_conf = BASE_DIR + "mods-available/ssl.conf"
-        a_load = BASE_DIR + "mods-available/ssl.load"
+        a_conf = SERVER_ROOT + "mods-available/ssl.conf"
+        a_load = SERVER_ROOT + "mods-available/ssl.load"
         if os.path.exists(a_conf) and os.path.exists(a_load):
-            os.symlink(a_conf, BASE_DIR + "mods-enabled/ssl.conf")
-            os.symlink(a_load, BASE_DIR + "mods-enabled/ssl.load")
+            os.symlink(a_conf, SERVER_ROOT + "mods-enabled/ssl.conf")
+            os.symlink(a_load, SERVER_ROOT + "mods-enabled/ssl.load")
             return True
         return False
         """
@@ -403,7 +403,7 @@ class Configurator(object):
         # Standardize the include argument based on server root
         arg = includeArg
         if not includeArg.startswith("/"):
-            arg = BASE_DIR + includeArg
+            arg = SERVER_ROOT + includeArg
 
         # Test if augeas included file for Httpd.lens
         incTest = aug.match("/files" + arg + "/*")

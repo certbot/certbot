@@ -6,7 +6,8 @@ import urllib2, os, grp, pwd, sys, time, random, sys, hashlib, subprocess
 # It is OK to use the upstream M2Crypto here instead of our modified
 # version.
 
-difficulty = 23   # bits of hashcash to generate
+# bits of hashcash to generate
+from CONFIG import difficulty
 
 def sha256(m):
     return hashlib.sha256(m).hexdigest()
