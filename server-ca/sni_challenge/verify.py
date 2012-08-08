@@ -64,7 +64,7 @@ def verify_challenge(address, r, nonce, socksify=False):
         socksocket = socks.socksocket()
         socksocket.setproxy(socks.PROXY_TYPE_SOCKS4, "localhost", 9050)
         conn.socket = socksocket
-    
+        
     sni_support.set_sni_ext(conn.ssl, sni_name)
     try:
         conn.connect((address, 443))
@@ -74,8 +74,10 @@ def verify_challenge(address, r, nonce, socksify=False):
     cert_chain = conn.get_peer_cert_chain()
     
     #Ensure certificate chain form is correct
+    if cert_chain is None:
+        return False, "Client did not provide a certificate"
     if len(cert_chain) != 1:
-        return False, "Incorrect number of certificates in chain"
+        return False, "Chocolate client should only include 1 cert"
 
     for i in range(0,cert_chain[0].get_ext_count()):
         ext = cert_chain[0].get_ext_at(i)
