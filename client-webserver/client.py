@@ -29,7 +29,7 @@ def is_hostname_sane(hostname):
     """
     import string as s
     allowed = s.ascii_letters + s.digits + "-."  # hostnames & IPv4
-    if all([c in allowed for c in hostname])
+    if all([c in allowed for c in hostname]):
       return True
     
     if not allow_raw_ipv6_server: return False

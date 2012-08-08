@@ -290,17 +290,27 @@ for message in ps.listen():
     populated_queue = message["data"]
     if populated_queue in dispatch:
         queue, function = dispatch[populated_queue]
-        session = r.rpop(queue)
-        if session:
-            if debug: print "going to %s for %s" % (populated_queue, session)
-            if ancient(session, populated_queue):
-                if populated_queue == "issue":
-                    if debug: print "not expiring issue-state", session
+        for repetition in (1,2):
+            # This is a potentially inappropriate hack to prevent backlogs
+            # from accumulating in queues if daemons die or if spurious
+            # requests arrived while no daemons were listening.  The idea
+            # is that every daemon process double-checks a queue that it
+            # was told to look at, processing it twice per pubsub message
+            # instead of once.  This causes a pressure on the daemon to
+            # empty the queue over time even if it isn't explicitly asked
+            # to.  For example, if asked 7 times to process a particular
+            # queue, a daemon instance would try 14 times.
+            session = r.rpop(queue)
+            if session:
+                if debug: print "going to %s for %s" % (populated_queue, session)
+                if ancient(session, populated_queue):
+                    if populated_queue == "issue":
+                        if debug: print "not expiring issue-state", session
+                    else:
+                        if debug: print "expiring ancient session", session
+                        r.hset(session, "live", False)
                 else:
-                    if debug: print "expiring ancient session", session
-                    r.hset(session, "live", False)
-            else:
-                function(session)
+                    function(session)
     elif populated_queue == "clean-exit":
         pass   # fall through to check whether this particular daemon
                # instance has its clean_shutdown flag set
