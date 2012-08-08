@@ -217,7 +217,7 @@ class Configurator(object):
         self.aug.set(nvhPath, directive)
         self.aug.set(nvhPath + "/arg", val)
 
-    def make_server_sni_ready(self, vhost):
+    def make_server_sni_ready(self, vhost, default_addr="*:443"):
         """
         Checks to see if the server is ready for SNI challenges
         """
@@ -239,9 +239,9 @@ class Configurator(object):
         for addr in vhost.addrs:
             tup = addr.partition(":") 
             if tup[0] == "_default_":
-                if not self.is_name_vhost("*:443"):
-                    print "Setting all VirtualHosts on *:443 to be name based virtual hosts"
-                    self.add_name_vhost("*:443")
+                if not self.is_name_vhost(default_addr):
+                    print "Setting all VirtualHosts on " + default_addr + " to be name based virtual hosts"
+                    self.add_name_vhost(default_addr)
                 return True
         # No default addresses... so set each one individually
         for addr in vhost.addrs:
@@ -345,7 +345,7 @@ class Configurator(object):
         Checks apache2ctl to get loaded module list
         """
         try:
-            p = subprocess.check_output(["sudo", "apache2ctl", "-M"], stderr=open("/dev/null"))
+            p = subprocess.check_output(["sudo", "/usr/sbin/apache2ctl", "-M"], stderr=open("/dev/null"))
         except:
             print "Error accessing apache2ctl for loaded modules!"
             print "This may be caused by an Apache Configuration Error"
@@ -523,7 +523,7 @@ def main():
     """
     for vh in config.vhosts:
         if len(vh.names) > 0:
-            config.deploy_cert(vh, "/home/james/Documents/apache_choc/req.crt", "/home/james/Documents/apache_choc/key.pem")
+            config.deploy_cert(vh, "/home/james/Documents/apache_choc/req.pem", "/home/james/Documents/apache_choc/key.pem")
     """
 
 #print config.search_include("/etc/apache2/choc_sni_cert_chal_test.conf", "/*")
