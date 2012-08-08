@@ -45,31 +45,18 @@ class Configurator(object):
         the "included" confs.  The function verifies that it has located 
         the three directives and finally modifies them to point to the correct
         destination
-        TODO: Should add/remove chain directives 
+        TODO: Should add/remove chain directives
+        TODO: Make sure last directive is changed
         """
         search = {}
         path = {}
-        search["cert_file"] = "//* [self::directive='SSLCertificateFile'][last()]/arg"
-        search["cert_key"] = "//*[self::directive='SSLCertificateKeyFile'][last()]/arg"
         
-        path["cert_file"] = self.aug.match(vhost.path + search["cert_file"])
-        path["cert_key"] = self.aug.match(vhost.path + search["cert_key"])
+        path["cert_file"] = self.find_directive("SSLCertificateFile", None, vhost.path)
+        path["cert_key"] = self.find_directive("SSLCertificateKeyFile", None, vhost.path)
 
         # Only include if a certificate chain is specified
         if cert_chain is not None:
-            search["cert_chain"] = "//*[self::directive='SSLCertificateChainFile'][last()]/arg"
-            path["cert_chain"] = self.aug.match(vhost.path + search["cert_chain"])
-
-            includeArgs = self.aug.match(vhost.path + "//*[self::directive='Include']/arg")
-        for k in path.iterkeys():
-            if len(path[k]) == 0:
-                # Directive not found... search the includes
-                # Search in reverse because it is the last directive that 
-                # matters
-                for includeArg in reversed(includeArgs):  
-                    path[k] = self.search_include(includeArg, search[k])
-                    if len(path[k]) > 0:
-                        break
+            path["cert_chain"] = self.find_directive("SSLCertificateChainFile", None, vhost.path)
         
         for k in path.iterkeys():
             if len(path[k]) == 0:
@@ -79,11 +66,15 @@ class Configurator(object):
                 print "VirtualHost was not modified"
                 # Presumably break here so that the virtualhost is not modified
                 return False
+        print path["cert_file"][0], cert
+        print path["cert_key"][0], key
             
         self.aug.set(path["cert_file"][0], cert)
         self.aug.set(path["cert_key"][0], key)
         if cert_chain is not None:
             self.aug.set(path["cert_chain"][0], cert_chain)
+
+        print "Done"
         
         return self.save("Virtual Server - deploying certificate")
 
@@ -529,9 +520,11 @@ def main():
     #for m in config.aug.match("/augeas/load/Httpd/incl"):
     #    print m, config.aug.get(m)
     #config.add_name_vhost("example2.com:443")
-    #for vh in config.vhosts:
-        #if len(vh.names) > 0:
-            #config.deploy_cert(vh, "/home/james/Documents/apache_choc/default.crt", "/home/james/Documents/apache_choc/testing.key")
+    """
+    for vh in config.vhosts:
+        if len(vh.names) > 0:
+            config.deploy_cert(vh, "/home/james/Documents/apache_choc/req.crt", "/home/james/Documents/apache_choc/key.pem")
+    """
 
 #print config.search_include("/etc/apache2/choc_sni_cert_chal_test.conf", "/*")
 
