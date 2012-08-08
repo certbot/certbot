@@ -20,3 +20,4 @@ python-dev
 others:
 gnutls-bin # for make cert requests
 python-protobuf
+hashcash
