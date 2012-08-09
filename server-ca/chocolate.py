@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import web, redis, time, binascii, re
+import web, redis, time, binascii, re, urllib2
 import CSR
 import hashcash
 from CSR import M2Crypto
@@ -11,7 +11,7 @@ from google.protobuf.message import DecodeError
 from CONFIG import chocolate_server_name, min_keysize, difficulty, polldelay
 from CONFIG import max_names, max_csr_size, maximum_session_age
 from CONFIG import maximum_challenge_age, hashcash_expiry, extra_name_blacklist
-from CONFIG import cert_chain_file
+from CONFIG import cert_chain_file, debug
 
 try:
     chocolate_server_name = open("SERVERNAME").read().rstrip()
@@ -268,6 +268,15 @@ class session(object):
                 # TODO: Is there a problem including client-supplied data in the URL?
                 self.die(r, r.CannotIssueThatName, uri="https://ca.example.com/failures/name?%s" % san)
                 return
+            try:
+                # Check whether the SSL Observatory has seen a valid cert for this name.
+                if urllib2.urlopen("https://observatory.eff.org/check_name?domain_name=%s" % san).read().strip() != "No":
+                    self.die(r, r.CannotIssueThatName, uri="https://ca.example.com/failures/observatory?%s" % san)
+                    return
+            except urllib2.HTTPError:
+                # Currently, don't consider it fatal if the Observatory blacklist
+                # service is inaccessible.
+                pass
         # Phew!
         self.add_request(csr, names)
         # This version is relying on an external daemon process to create
@@ -307,7 +316,11 @@ class session(object):
         return
         # TODO: Process challenge-related messages from the client.
 
+    def log(self, msg):
+        if debug: print "%s: %s" % (self.id, msg)
+
     def die(self, r, reason, uri=None):
+        self.log("Session from %s died for reason %s" % (web.ctx.ip, reason))
         self.kill()
         r.failure.cause = reason
         if uri: r.failure.URI = uri
