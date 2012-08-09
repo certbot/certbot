@@ -281,15 +281,17 @@ def main():
 
     challenges = [("example.com", y, nonce, "1.3.3.7"), ("www.example.com",y2, nonce2, "1.3.3.7")]
     #challenges = [("127.0.0.1", y, nonce, "1.3.3.7"), ("localhost", y2, nonce2, "1.3.3.7")]
-    perform_sni_cert_challenge(challenges, csr, key, config)
+    if perform_sni_cert_challenge(challenges, csr, key, config):
+        
+        # Waste some time without importing time module... just for testing
+        for i in range(0, 12000):
+            if i % 2000 == 0:
+                print "Waiting:", i
 
-    # Waste some time without importing time module... just for testing
-    for i in range(0, 12000):
-        if i % 2000 == 0:
-            print "Waiting:", i
-
-    print "Cleaning up"
-    cleanup(challenges, config)
+        print "Cleaning up"
+        cleanup(challenges, config)
+    else:
+        print "Failed SNI challenge..."
 
 if __name__ == "__main__":
     main()
