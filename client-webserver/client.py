@@ -3,20 +3,18 @@
 from chocolate_protocol_pb2 import chocolatemessage
 import M2Crypto
 import urllib2, os, grp, pwd, sys, time, random, sys, hashlib, subprocess
+import sni_challenge
+import configurator
 # It is OK to use the upstream M2Crypto here instead of our modified
 # version.
 
 # bits of hashcash to generate
 from CONFIG import difficulty
+#Trustify certificate and chain files
+from CONFIG import cert_file, chain_file
 
 def sha256(m):
     return hashlib.sha256(m).hexdigest()
-
-assert len(sys.argv) > 1 or "CHOCOLATESERVER" in os.environ, "Must specify server via command line or CHOCOLATESERVER environment variable."
-if len(sys.argv) > 1:
-    server = sys.argv[1]
-else:
-    server = os.environ["CHOCOLATESERVER"]
 
 # it's weird to point to chocolate servers via raw IPv6 addresses, and such
 # addresses can be %SCARY in some contexts, so out of paranoia let's disable
@@ -44,19 +42,7 @@ def is_hostname_sane(hostname):
     except:
       return False
 
-assert is_hostname_sane(server), `server` + " is an impossible hostname"
 
-upstream = "https://%s/chocolate.py" % server
-
-if len(sys.argv) > 3:
-    req_file = sys.argv[2]
-    key_file = sys.argv[3]
-else:
-    req_file = "req.pem"
-    key_file = "key.pem"
-
-cert_file = "cert.pem"     # we should use getopt to set all of these
-chain_file = "chain.pem"
 
 def rsa_sign(key, data):
     """
@@ -105,86 +91,108 @@ def make_request(m, csr):
 def sign(key, m):
     m.request.sig = rsa_sign(key, ("(%d) (%s) (%s)" % (m.request.timestamp, m.request.recipient, m.request.csr)))
 
-k=chocolatemessage()
-m=chocolatemessage()
-init(k)
-init(m)
-make_request(m, csr=open(req_file).read().replace("\r", ""))
-sign(open(key_file).read(), m)
-print m
-r=decode(do(m))
-print r
-while r.proceed.IsInitialized():
-   if r.proceed.polldelay > 60: r.proceed.polldelay = 60
-   print "waiting", r.proceed.polldelay
-   time.sleep(r.proceed.polldelay)
-   k.session = r.session
-   r = decode(do(k))
-   print r
 
-if r.failure.IsInitialized():
-    print "Server reported failure."
-    sys.exit(1)
+def authenticate():
+    """
+    Main call to do DV_SNI validation and deploy the trustify certificate
+    """
+    assert len(sys.argv) > 1 or "CHOCOLATESERVER" in os.environ, "Must specify server via command line or CHOCOLATESERVER environment variable."
+    if len(sys.argv) > 1:
+        server = sys.argv[1]
+    else:
+        server = os.environ["CHOCOLATESERVER"]
 
-sni_todo = []
-dn = []
-for chall in r.challenge:
-    print chall
-    if chall.type == r.DomainValidateSNI:
-       dvsni_nonce, dvsni_y, dvsni_ext = chall.data
-    sni_todo.append( (chall.name, dvsni_y, dvsni_nonce, dvsni_ext) )
-    dn.append(chall.name)
-    
 
-print sni_todo
-import sni_challenge
-import configurator
+    assert is_hostname_sane(server), `server` + " is an impossible hostname"
 
-config = configurator.Configurator()
-config.get_virtual_hosts()
-vhost = set()
-for name in dn:
-    host = config.choose_virtual_host(name)
-    if host is not None:
-        vhost.add(host)
+    upstream = "https://%s/chocolate.py" % server
 
-if not sni_challenge.perform_sni_cert_challenge(sni_todo, os.path.abspath(req_file), os.path.abspath(key_file), config):
-    print "sni_challenge failed"
-    sys.exit(1)
+    if len(sys.argv) > 3:
+        req_file = sys.argv[2]
+        key_file = sys.argv[3]
+    else:
+        req_file = "req.pem"
+        key_file = "key.pem"
 
-print "waiting", 3
-time.sleep(3)
-
-r=decode(do(k))
-print r
-while r.challenge or r.proceed.IsInitialized():
-    print "waiting", 5
-    time.sleep(5)
-    k.session = r.session
-    r = decode(do(k))
+    k=chocolatemessage()
+    m=chocolatemessage()
+    init(k)
+    init(m)
+    make_request(m, csr=open(req_file).read().replace("\r", ""))
+    sign(open(key_file).read(), m)
+    print m
+    r=decode(do(m))
     print r
+    while r.proceed.IsInitialized():
+       if r.proceed.polldelay > 60: r.proceed.polldelay = 60
+       print "waiting", r.proceed.polldelay
+       time.sleep(r.proceed.polldelay)
+       k.session = r.session
+       r = decode(do(k))
+       print r
 
-# TODO: there should be an unperform_sni_cert_challenge() here.
+    if r.failure.IsInitialized():
+        print "Server reported failure."
+        sys.exit(1)
 
-if r.success.IsInitialized():
-    sni_challenge.cleanup(sni_todo, config)
-    cert_chain_abspath = None
-    with open(cert_file, "w") as f:
-        f.write(r.success.certificate)
-    if r.success.chain:
-        with open(chain_file, "w") as f:
-            f.write(r.success.chain)
-    print "Server issued certificate; certificate written to " + cert_file
-    if r.success.chain: 
-        print "Cert chain written to " + chain_file
-        # TODO: Uncomment the following assignment when the server 
-        #       presents a valid chain
-        #cert_chain_abspath = os.path.abspath(chain_file)
-    for host in vhost:
-        config.deploy_cert(host, os.path.abspath(cert_file), os.path.abspath(key_file), cert_chain_abspath)
-    sni_challenge.apache_restart()
-elif r.failure.IsInitialized():
-    print "Server reported failure."
-    sys.exit(1)
+    sni_todo = []
+    dn = []
+    for chall in r.challenge:
+        print chall
+        if chall.type == r.DomainValidateSNI:
+           dvsni_nonce, dvsni_y, dvsni_ext = chall.data
+        sni_todo.append( (chall.name, dvsni_y, dvsni_nonce, dvsni_ext) )
+        dn.append(chall.name)
 
-# vim: set expandtab tabstop=4 shiftwidth=4
+
+    print sni_todo
+
+    config = configurator.Configurator()
+    config.get_virtual_hosts()
+    vhost = set()
+    for name in dn:
+        host = config.choose_virtual_host(name)
+        if host is not None:
+            vhost.add(host)
+
+    if not sni_challenge.perform_sni_cert_challenge(sni_todo, os.path.abspath(req_file), os.path.abspath(key_file), config):
+        print "sni_challenge failed"
+        sys.exit(1)
+
+    print "waiting", 3
+    time.sleep(3)
+
+    r=decode(do(k))
+    print r
+    while r.challenge or r.proceed.IsInitialized():
+        print "waiting", 5
+        time.sleep(5)
+        k.session = r.session
+        r = decode(do(k))
+        print r
+
+    if r.success.IsInitialized():
+        sni_challenge.cleanup(sni_todo, config)
+        cert_chain_abspath = None
+        with open(cert_file, "w") as f:
+            f.write(r.success.certificate)
+        if r.success.chain:
+            with open(chain_file, "w") as f:
+                f.write(r.success.chain)
+        print "Server issued certificate; certificate written to " + cert_file
+        if r.success.chain: 
+            print "Cert chain written to " + chain_file
+            # TODO: Uncomment the following assignment when the server 
+            #       presents a valid chain
+            #cert_chain_abspath = os.path.abspath(chain_file)
+        for host in vhost:
+            config.deploy_cert(host, os.path.abspath(cert_file), os.path.abspath(key_file), cert_chain_abspath)
+        sni_challenge.apache_restart()
+    elif r.failure.IsInitialized():
+        print "Server reported failure."
+        sys.exit(1)
+
+    # vim: set expandtab tabstop=4 shiftwidth=4
+
+if __name__ == "__main__":
+    authenticate()

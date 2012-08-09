@@ -17,3 +17,7 @@ NONCE_SIZE = 32
 
 # bits of hashcash to generate
 difficulty = 23 
+
+# Trustify cert and chain files
+cert_file = "cert.pem"
+chain_file = "chain.pem"
