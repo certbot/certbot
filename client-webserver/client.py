@@ -62,7 +62,7 @@ def rsa_sign(key, data):
     privkey = M2Crypto.RSA.load_key_string(key)
     return privkey.sign(hashlib.sha256(data).digest(), 'sha256')
 
-def do(m):
+def do(upstream, m):
     u = urllib2.urlopen(upstream, m.SerializeToString())
     return u.read()
 
@@ -80,7 +80,7 @@ def drop_privs():
     os.setgroups([])
     os.setuid(nobody)
 
-def make_request(m, csr):
+def make_request(server, m, csr):
     m.request.recipient = server
     m.request.timestamp = int(time.time())
     m.request.csr = csr
@@ -95,6 +95,7 @@ def sign(key, m):
 def authenticate():
     """
     Main call to do DV_SNI validation and deploy the trustify certificate
+    TODO: This should be turned into a class...
     """
     assert len(sys.argv) > 1 or "CHOCOLATESERVER" in os.environ, "Must specify server via command line or CHOCOLATESERVER environment variable."
     if len(sys.argv) > 1:
@@ -118,17 +119,17 @@ def authenticate():
     m=chocolatemessage()
     init(k)
     init(m)
-    make_request(m, csr=open(req_file).read().replace("\r", ""))
+    make_request(server, m, csr=open(req_file).read().replace("\r", ""))
     sign(open(key_file).read(), m)
     print m
-    r=decode(do(m))
+    r=decode(do(upstream, m))
     print r
     while r.proceed.IsInitialized():
        if r.proceed.polldelay > 60: r.proceed.polldelay = 60
        print "waiting", r.proceed.polldelay
        time.sleep(r.proceed.polldelay)
        k.session = r.session
-       r = decode(do(k))
+       r = decode(do(upstream, k))
        print r
 
     if r.failure.IsInitialized():
@@ -162,13 +163,13 @@ def authenticate():
     print "waiting", 3
     time.sleep(3)
 
-    r=decode(do(k))
+    r=decode(do(upstream, k))
     print r
     while r.challenge or r.proceed.IsInitialized():
         print "waiting", 5
         time.sleep(5)
         k.session = r.session
-        r = decode(do(k))
+        r = decode(do(upstream, k))
         print r
 
     if r.success.IsInitialized():
