@@ -280,42 +280,36 @@ dispatch = { "makechallenge": ("pending-makechallenge", makechallenge),
              "done":          ("pending-done", lambda x: None) }
 
 # Main loop: act on queues notified via Redis pubsub mechanism.
-# If the queue is empty by the time we pop from it (indicated by
-# session is None), some other daemon instance has already handled
-# the request, which is fine; we then return immediately to waiting
-# for the next request.
+# Currently, we ignore the specific details of which queue was
+# notified and, upon any notification, repeatedly process a single
+# item from each queue until all queues are empty.
 
 ps.subscribe(["requests"])
 for message in ps.listen():
     populated_queue = message["data"]
-    if populated_queue in dispatch:
-        queue, function = dispatch[populated_queue]
-        for repetition in (1,2):
-            # This is a potentially inappropriate hack to prevent backlogs
-            # from accumulating in queues if daemons die or if spurious
-            # requests arrived while no daemons were listening.  The idea
-            # is that every daemon process double-checks a queue that it
-            # was told to look at, processing it twice per pubsub message
-            # instead of once.  This causes a pressure on the daemon to
-            # empty the queue over time even if it isn't explicitly asked
-            # to.  For example, if asked 7 times to process a particular
-            # queue, a daemon instance would try 14 times.
-            session = r.rpop(queue)
-            if session:
-                if debug: print "going to %s for %s" % (populated_queue, session)
-                if ancient(session, populated_queue):
-                    if populated_queue == "issue":
+    if populated_queue == "clean-exit":
+        pass   # fall through to check whether this particular daemon
+               # instance has its clean_shutdown flag set
+    else:
+        while True:
+            inactive = True
+            for queue in ("makechallenge", "testchallenge", "issue"):
+                session = r.rpop("pending-" + queue)
+                if session:
+                    inactive = False
+                    if debug: print "going to %s for %s" % (queue, session)
+                if ancient(session, queue):
+                    if queue == "issue":
                         if debug: print "not expiring issue-state", session
                     else:
                         if debug: print "expiring ancient session", session
                         r.hset(session, "live", False)
                 else:
-                    function(session)
-    elif populated_queue == "clean-exit":
-        pass   # fall through to check whether this particular daemon
-               # instance has its clean_shutdown flag set
-    else:
-        if debug: print "UNKNOWN queue %s" % populated_queue
+                    if queue == "makechallenge": makechallenge(session)
+                    elif queue == "testchallenge": testchallenge(session)
+                    elif queue == "issue": issue(session)
+            if inactive:
+                break
     
     if clean_shutdown:
         print "daemon exiting cleanly"
