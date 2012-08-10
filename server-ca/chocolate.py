@@ -270,7 +270,7 @@ class session(object):
                 return
             try:
                 # Check whether the SSL Observatory has seen a valid cert for this name.
-                if urllib2.urlopen("https://observatory.eff.org/check_name?domain_name=%s" % san).read().strip() != "No":
+                if urllib2.urlopen("https://observatory.eff.org/check_name?domain_name=%s" % san).read().strip() != "False":
                     self.die(r, r.CannotIssueThatName, uri="https://ca.example.com/failures/observatory?%s" % san)
                     return
             except urllib2.HTTPError:
