@@ -241,10 +241,9 @@ subjectKeyIdentifier=hash
 authorityKeyIdentifier=keyid,issuer
 nsComment = "Chocolatey"
 """)
-        if subjects[1:]:
-            san_line = "subjectAltName="
-            san_line += ",".join("DNS:%s" % n for n in subjects[1:]) + "\n"
-            ext_tmp.write(san_line)
+        san_line = "subjectAltName="
+        san_line += ",".join("DNS:%s" % n for n in subjects) + "\n"
+        ext_tmp.write(san_line)
         ext_tmp.flush()
         ret = subprocess.Popen(["./CA.sh", "-complete", dn, ext_tmp.name, csr_tmp.name, cert_tmp.name],shell=False,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE).wait()
         if ret == 0:
