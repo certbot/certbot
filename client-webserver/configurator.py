@@ -6,6 +6,7 @@ import sys
 import socket
 
 from CONFIG import SERVER_ROOT
+#from trustify.CONFIG import SERVER_ROOT
 
 class VH(object):
     def __init__(self, vh_path, vh_addrs):

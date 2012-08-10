@@ -4,15 +4,22 @@ from chocolate_protocol_pb2 import chocolatemessage
 import M2Crypto
 import urllib2, os, grp, pwd, sys, time, random, sys, hashlib, subprocess
 import dialog, getopt
+
 import sni_challenge
 import configurator
+#from trustify import sni_challenge
+#from trustify import configurator
+
 # It is OK to use the upstream M2Crypto here instead of our modified
 # version.
 
 # bits of hashcash to generate
 from CONFIG import difficulty
+#from trustify.CONFIG import difficulty
+
 #Trustify certificate and chain files
 from CONFIG import cert_file, chain_file
+#from trustify.CONFIG import cert_file, chain_file
 
 def sha256(m):
     return hashlib.sha256(m).hexdigest()
