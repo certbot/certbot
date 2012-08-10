@@ -180,7 +180,7 @@ def testchallenge(session):
         if not satisfied and not failed:
             if debug: print "challenge", challenge, "is not satisfied and not failed"
             if challtype == 0:  # DomainValidateSNI
-                if debug: print "\tbeginning dvsni test"
+                if debug: print "\tbeginning dvsni test to %s" % name
                 dvsni_nonce = r.hget(challenge, "dvsni:nonce")
                 dvsni_r = r.hget(challenge, "dvsni:r")
                 dvsni_ext = r.hget(challenge, "dvsni:ext")
