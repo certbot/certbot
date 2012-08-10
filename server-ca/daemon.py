@@ -297,17 +297,14 @@ for message in ps.listen():
                 session = r.rpop("pending-" + queue)
                 if session:
                     inactive = False
-                    if debug: print "going to %s for %s" % (queue, session)
-                if ancient(session, queue):
-                    if queue == "issue":
-                        if debug: print "not expiring issue-state", session
-                    else:
+                    if ancient(session, queue) and queue != "issue":
                         if debug: print "expiring ancient session", session
                         r.hset(session, "live", False)
-                else:
-                    if queue == "makechallenge": makechallenge(session)
-                    elif queue == "testchallenge": testchallenge(session)
-                    elif queue == "issue": issue(session)
+                    else:
+                        if debug: print "going to %s for %s" % (queue, session)
+                        if queue == "makechallenge": makechallenge(session)
+                        elif queue == "testchallenge": testchallenge(session)
+                        elif queue == "issue": issue(session)
             if inactive:
                 break
     
