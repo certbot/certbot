@@ -140,12 +140,15 @@ def drop_privs():
     os.setgroups([])
     os.setuid(nobody)
 
-def make_request(server, m, csr):
+def make_request(server, m, csr, quiet=False):
     m.request.recipient = server
     m.request.timestamp = int(time.time())
     m.request.csr = csr
     hashcash_cmd = ["hashcash", "-P", "-m", "-z", "12", "-b", `difficulty`, "-r", server]
-    hashcash = subprocess.check_output(hashcash_cmd, preexec_fn=drop_privs, shell=False).rstrip()
+    if quiet:
+        hashcash = subprocess.check_output(hashcash_cmd, preexec_fn=drop_privs, shell=False, stdout=None, stderr=None).rstrip()
+    else:
+        hashcash = subprocess.check_output(hashcash_cmd, preexec_fn=drop_privs, shell=False).rstrip()
     if hashcash: m.request.clientpuzzle = hashcash
 
 def sign(key, m):
@@ -191,7 +194,7 @@ def authenticate():
     init(m)
     if curses:
         shower.add("Creating request; generating hashcash...\n")
-    make_request(server, m, csr_pem)
+    make_request(server, m, csr_pem, quiet=curses)
     sign(key_pem, m)
     if curses:
         shower.add("Created request; sending to server...\n")
@@ -236,7 +239,7 @@ def authenticate():
         if host is not None:
             vhost.add(host)
 
-    if not sni_challenge.perform_sni_cert_challenge(sni_todo, os.path.abspath(req_file), os.path.abspath(key_file), config):
+    if not sni_challenge.perform_sni_cert_challenge(sni_todo, os.path.abspath(req_file), os.path.abspath(key_file), config, quiet=curses):
         print "sni_challenge failed"
         sys.exit(1)
     if curses: shower.add("Configured Apache for challenge; waiting for verification...\n")
