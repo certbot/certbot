@@ -386,7 +386,7 @@ class Configurator(object):
         """
         # Use check_output so the command will finish before reloading the server
         subprocess.check_output(["sudo", "a2enmod", "ssl"])
-        subprocess.call(["sudo", "/etc/init.d/apache2", "reload"])
+        subprocess.call(["sudo", "/etc/init.d/apache2", "reload"], stdout=None, stderr=None)
         """
         a_conf = SERVER_ROOT + "mods-available/ssl.conf"
         a_load = SERVER_ROOT + "mods-available/ssl.load"
