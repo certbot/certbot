@@ -259,9 +259,15 @@ def authenticate():
         if r.success.chain:
             with open(chain_file, "w") as f:
                 f.write(r.success.chain)
-        print "Server issued certificate; certificate written to " + cert_file
+        if curses:
+            shower.add("Server issued certificate; certificate written to " + cert_file)
+        else:
+            print "Server issued certificate; certificate written to " + cert_file
         if r.success.chain: 
-            print "Cert chain written to " + chain_file
+            if curses:
+                shower.add("Cert chain written to " + chain_file)
+            else:
+                print "Cert chain written to " + chain_file
             # TODO: Uncomment the following assignment when the server 
             #       presents a valid chain
             #cert_chain_abspath = os.path.abspath(chain_file)
