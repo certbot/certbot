@@ -157,7 +157,7 @@ def authenticate():
     Main call to do DV_SNI validation and deploy the trustify certificate
     TODO: This should be turned into a class...
     """
-    global server
+    global server, names, csr, privkey
     assert server or "CHOCOLATESERVER" in os.environ, "Must specify server via command line or CHOCOLATESERVER environment variable."
     if "CHOCOLATESERVER" in os.environ:
         server = os.environ["CHOCOLATESERVER"]
