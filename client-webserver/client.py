@@ -2,16 +2,16 @@
 
 from chocolate_protocol_pb2 import chocolatemessage
 import M2Crypto
+# It is OK to use the upstream M2Crypto here instead of our modified
+# version.
 import urllib2, os, grp, pwd, sys, time, random, sys, hashlib, subprocess
-import dialog, getopt
+import getopt
+# TODO: support a mode where use of interactive prompting is forbidden
 
 import sni_challenge
 import configurator
 #from trustify import sni_challenge
 #from trustify import configurator
-
-# It is OK to use the upstream M2Crypto here instead of our modified
-# version.
 
 # bits of hashcash to generate
 from CONFIG import difficulty
@@ -21,13 +21,62 @@ from CONFIG import difficulty
 from CONFIG import cert_file, chain_file
 #from trustify.CONFIG import cert_file, chain_file
 
-def sha256(m):
-    return hashlib.sha256(m).hexdigest()
-
 # it's weird to point to chocolate servers via raw IPv6 addresses, and such
 # addresses can be %SCARY in some contexts, so out of paranoia let's disable
 # them by default
 allow_raw_ipv6_server = False
+
+opts = getopt.getopt(sys.argv[1:], "", ["text", "privkey=", "csr="])
+
+curses = True
+csr = None
+privkey = None
+for opt in opts[0]:
+    if opt[0] == "--text":
+        curses = False
+    if opt[0] == "--csr":
+        csr = opt[1]
+    if opt[0] == "--privkey":
+        privkey = opt[1]
+names = opts[1]
+
+if curses:
+    import dialog
+
+def sha256(m):
+    return hashlib.sha256(m).hexdigest()
+
+def filter_names(names):
+    d = dialog.Dialog()
+    choices = [(n, "", 1) for n in names]
+    result = d.checklist("Which names would you like to activate HTTPS for?", choices=choices)
+    if result[0] != 0 or not result[1]:
+        sys.exit(1)
+    return result[1]
+
+def by_default():
+    d = dialog.Dialog()
+    choices = [("Easy", "Allow both HTTP and HTTPS access to these sites"), ("Secure", "Make all requests redirect to secure HTTPS access")]
+    result = d.menu("Please choose whether HTTPS access is required or optional.", width=70, choices=choices)
+    if result[0] != 0:
+        sys.exit(1)
+    return result[1] == "Secure"
+
+class progress_shower(object):
+    # As in "that which shows", not like a rain shower.
+    def __init__(self, firstmessage="", height=18, width=70):
+        self.content = firstmessage
+        self.d = dialog.Dialog()
+        self.height = height
+        self.width = width
+        self.show()
+
+    def add(self, s):
+        self.content += s
+        self.show()
+
+    def show(self):
+        self.d.infobox(self.content, self.height, self.width)
 
 def is_hostname_sane(hostname):
     """
@@ -111,34 +160,51 @@ def authenticate():
     else:
         server = os.environ["CHOCOLATESERVER"]
 
-
     assert is_hostname_sane(server), `server` + " is an impossible hostname"
 
     upstream = "https://%s/chocolate.py" % server
 
-    if len(sys.argv) > 3:
-        req_file = sys.argv[2]
-        key_file = sys.argv[3]
-    else:
-        req_file = "req.pem"
-        key_file = "key.pem"
+    if not names:
+        # TODO: automatically import names from Apache config
+        names = ["example.com", "www.example.com", "foo.example.com"]
 
+    if curses:
+        names = filter_names(names)
+
+    req_file = csr
+    key_file = privkey
+    if csr and privkey:
+        csr_pem = open(req_file).read().replace("\r", "")
+        key_pem = open(key_file).read().replace("\r", "")
+    if not csr or not privkey:
+        # Generate new private key and corresponding csr!
+        key_pem, csr_pem = makerequest(2048, names)
+        # TODO: IMPORTANT: NEED TO SAVE THESE TO FILES
+
+    if curses:
+        shower = progress_shower()
     k=chocolatemessage()
     m=chocolatemessage()
     init(k)
     init(m)
-    make_request(server, m, csr=open(req_file).read().replace("\r", ""))
-    sign(open(key_file).read(), m)
-    print m
+    make_request(server, m, csr_pem)
+    sign(key_pem, m)
+    if curses:
+        shower.add("Created request...\n")
+    else:
+        print m
     r=decode(do(upstream, m))
-    print r
+    if not curses: print r
     while r.proceed.IsInitialized():
        if r.proceed.polldelay > 60: r.proceed.polldelay = 60
-       print "waiting", r.proceed.polldelay
+       if curses:
+           shower.add("Waiting %d...\n" % r.proceed.polldelay)
+       else:
+           print "waiting", r.proceed.polldelay
        time.sleep(r.proceed.polldelay)
        k.session = r.session
        r = decode(do(upstream, k))
-       print r
+       if not curses: print r
 
     if r.failure.IsInitialized():
         print "Server reported failure."
@@ -146,15 +212,17 @@ def authenticate():
 
     sni_todo = []
     dn = []
+    if curses:
+        shower.add("Received %s challenges.\n" % len(r.challenge))
     for chall in r.challenge:
-        print chall
+        if not curses: print chall
         if chall.type == r.DomainValidateSNI:
            dvsni_nonce, dvsni_y, dvsni_ext = chall.data
         sni_todo.append( (chall.name, dvsni_y, dvsni_nonce, dvsni_ext) )
         dn.append(chall.name)
 
 
-    print sni_todo
+    if not curses: print sni_todo
 
     config = configurator.Configurator()
     config.get_virtual_hosts()
@@ -167,18 +235,19 @@ def authenticate():
     if not sni_challenge.perform_sni_cert_challenge(sni_todo, os.path.abspath(req_file), os.path.abspath(key_file), config):
         print "sni_challenge failed"
         sys.exit(1)
+    if curses: shower.add("Configured Apache for challenge...\n"))
 
-    print "waiting", 3
+    if not curses: print "waiting", 3
     time.sleep(3)
 
     r=decode(do(upstream, k))
-    print r
+    if not curses: print r
     while r.challenge or r.proceed.IsInitialized():
-        print "waiting", 5
+        if not curses: print "waiting", 5
         time.sleep(5)
         k.session = r.session
         r = decode(do(upstream, k))
-        print r
+        if not curses: print r
 
     if r.success.IsInitialized():
         sni_challenge.cleanup(sni_todo, config)
