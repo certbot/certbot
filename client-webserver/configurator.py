@@ -2,10 +2,11 @@ import augeas
 import subprocess
 import re
 import os
+import shutil
 import sys
 import socket
 
-from CONFIG import SERVER_ROOT
+from CONFIG import SERVER_ROOT, CONFIG_DIR
 #from trustify.CONFIG import SERVER_ROOT
 
 class VH(object):
@@ -35,6 +36,8 @@ class Configurator(object):
         for m in self.aug.match("/augeas/load/Httpd/incl"):
             self.httpd_files.append(self.aug.get(m))
         self.mod_files = set()
+        # Add name_server association dict
+        self.assoc = dict()
 
     # TODO: This function can be improved to ensure that the final directives 
     # are being modified whether that be in the include files or in the 
@@ -67,15 +70,13 @@ class Configurator(object):
                 print "VirtualHost was not modified"
                 # Presumably break here so that the virtualhost is not modified
                 return False
-        print path["cert_file"][0], cert
-        print path["cert_key"][0], key
+        
+        #print "Deploying Certificate to VirtualHost"
             
         self.aug.set(path["cert_file"][0], cert)
         self.aug.set(path["cert_key"][0], key)
         if cert_chain is not None:
             self.aug.set(path["cert_chain"][0], cert_chain)
-
-        print "Done"
         
         return self.save("Virtual Server - deploying certificate")
 
@@ -87,6 +88,11 @@ class Configurator(object):
         TODO: This should return vhost of :443 if both 80 and 443 exist
               This is currently just a very basic demo version
         """
+        # TODO: TEST
+        for dn, vh in self.assoc:
+            if dn == name:
+                return vh
+        # Check for servernames/aliases
         for v in self.vhosts:
             for n in v.names:
                 # TODO: Or a converted FQDN address
@@ -95,13 +101,21 @@ class Configurator(object):
         for v in self.vhosts:
             for a in v.addrs:
                 tup = a.partition(":")
-                if tup[0] == name:
+                if tup[0] == name and tup[2] == "443":
                     return v
         for v in self.vhosts:
             for a in v.addrs:
                 if a == "_default_:443":
                     return v
         return None
+
+    def create_dn_server_assoc(self, dn, vh):
+        """
+        Create an association for domain name with a server
+        Helps to choose an appropriate vhost
+        """
+        self.assoc[dn] = vh
+        return
                     
     def get_all_names(self):
         """
@@ -113,7 +127,7 @@ class Configurator(object):
         for v in self.vhosts:
             all_names.extend(v.names)
             for a in v.addrs:
-                a_tup = a.split(":")
+                a_tup = a.partition(":")
                 try:
                     socket.inet_aton(a_tup[0])
                     all_names.append(socket.gethostbyaddr(a_tup[0])[0])
@@ -249,7 +263,7 @@ class Configurator(object):
             if not self.is_name_vhost(addr):
                 print "Setting VirtualHost at", addr, "to be a name based virtual host"
                 self.add_name_vhost(addr)
-
+        
         return True
 
     def get_ifmod(self, aug_conf_path, mod):
@@ -346,7 +360,7 @@ class Configurator(object):
         Checks apache2ctl to get loaded module list
         """
         try:
-            p = subprocess.check_output(["sudo", "/usr/sbin/apache2ctl", "-M"], stderr=open("/dev/null", "w"))
+            p = subprocess.check_output(["sudo", "/usr/sbin/apache2ctl", "-M"], stdout=open("/dev/null", 'w'), stderr=open("/dev/null", 'w'))
         except:
             print "Error accessing apache2ctl for loaded modules!"
             print "This may be caused by an Apache Configuration Error"
@@ -354,6 +368,50 @@ class Configurator(object):
         if "ssl_module" in p:
             return True
         return False
+
+    def make_vhost_ssl(self, avail_fp):
+        """
+        Duplicates vhost and adds default ssl options
+        New vhost will reside as (avail_fp)-ssl
+        If original vhost is currently enabled, ssl-vhost will be enabled
+        """
+        # TODO TEST
+        # Copy file
+        ssl_fp = avail_fp + "-trustify-ssl"
+        orig_file = open(avail_fp, 'r')
+        new_file = open(ssl_fp, 'w')
+        new_file.write("<IfModule mod_ssl.c>\n")
+        for line in orig_file:
+            new_file.write(line)
+        new_file.write("</IfModule>\n")
+        orig_file.close()
+        new_file.close()
+        self.aug.load()
+
+        # Add IfMod mod_ssl.c
+        #self.aug.insert("/files"+ssl_fp+"/VirtualHost[1]", "IfModule")
+        #self.aug.set("/files"+ssl_fp+"/IfModule/arg", "mod_ssl.c")
+        # change address to address:443
+        addr_p = self.aug.match("/files"+ssl_fp+"//VirtualHost/arg")
+        for p in addr_p:
+            old_arg = self.aug.get(p)
+            tup = old_arg.partition(":")
+            self.aug.set(p, tup[0] + ":443")
+        # TODO:if address of original vhost != endwith(:XX) make it :80 - avoids overlap
+        # Add directives
+        vh_p = self.aug.match("/files"+ssl_fp+"//VirtualHost")
+        if len(vh_p) != 1:
+            print vh_p
+            print "Error: should only be one vhost in", avail_fp
+            sys.exit(1)
+        self.add_dir(vh_p[0], "SSLCertificateFile", "/etc/ssl/certs/ssl-cert-snakeoil.pem")
+        self.add_dir(vh_p[0], "SSLCertificateKeyFile", "/etc/ssl/private/ssl-cert-snakeoil.key")
+        self.add_dir(vh_p[0], "Include", CONFIG_DIR + "options-ssl.conf")
+        # reload configurator vhosts
+        self.vhosts = self.get_virtual_hosts()
+
+        # TODO: At some point site should be enabled
+        return
 
     def is_site_enabled(self, avail_fp):
         """
@@ -384,36 +442,9 @@ class Configurator(object):
         Enables mod_ssl
         TODO: TEST
         """
-        # Use check_output so the command will finish before reloading the server
-        subprocess.check_output(["sudo", "a2enmod", "ssl"], stderr=open("/dev/null","w"))
-        subprocess.call(["sudo", "/etc/init.d/apache2", "reload"], stdout=open("/dev/null", "w"), stderr=open("/dev/null", "w"))
-        """
-        a_conf = SERVER_ROOT + "mods-available/ssl.conf"
-        a_load = SERVER_ROOT + "mods-available/ssl.load"
-        if os.path.exists(a_conf) and os.path.exists(a_load):
-            os.symlink(a_conf, SERVER_ROOT + "mods-enabled/ssl.conf")
-            os.symlink(a_load, SERVER_ROOT + "mods-enabled/ssl.load")
-            return True
-        return False
-        """
-
-    # Go down the Include rabbit hole
-    # TODO: REMOVE... use find_directive
-    def search_include(self, includeArg, searchStr):
-        print "Deprecated Function... please use find_directive"
-        # Standardize the include argument based on server root
-        arg = includeArg
-        if not includeArg.startswith("/"):
-            arg = SERVER_ROOT + includeArg
-
-        # Test if augeas included file for Httpd.lens
-        incTest = aug.match("/files" + arg + "/*")
-        if len(incTest) == 0:
-            # Load up file
-            self.aug.add_transform("Httpd.lns", arg)
-            self.aug.load()
-            
-        return self.aug.match("/files" + arg + searchStr)
+        # Use check_output so the command will finish before reloading
+        subprocess.check_output(["sudo", "a2enmod", "ssl"], stdout=open("/dev/null", 'w'), stderr=open("/dev/null", 'w'))
+        subprocess.call(["sudo", "/etc/init.d/apache2", "reload"], stdout=open("/dev/null", 'w'))
 
     def fnmatch_to_re(self, cleanFNmatch):
         """
@@ -517,17 +548,13 @@ def main():
     print config.get_all_names()
 
     config.parse_file("/etc/apache2/ports_test.conf")
-        
-    #for m in config.aug.match("/augeas/load/Httpd/incl"):
-    #    print m, config.aug.get(m)
-    #config.add_name_vhost("example2.com:443")
+    config.make_vhost_ssl("/etc/apache2/sites-available/default")
+    config.save()
     """
     for vh in config.vhosts:
         if len(vh.names) > 0:
             config.deploy_cert(vh, "/home/james/Documents/apache_choc/req.pem", "/home/james/Documents/apache_choc/key.pem")
     """
-
-#print config.search_include("/etc/apache2/choc_sni_cert_chal_test.conf", "/*")
 
 if __name__ == "__main__":
     main()

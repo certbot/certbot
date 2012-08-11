@@ -124,7 +124,7 @@ def createChallengeCert(oid, ext, nonce, csr, key):
     """
 
     updateCertConf(oid, ext)
-    subprocess.call(["openssl", "x509", "-req", "-days", "21", "-extfile", CHOC_CERT_CONF, "-extensions", "v3_ca", "-signkey", key, "-out", getChocCertFile(nonce), "-in", csr])
+    subprocess.call(["openssl", "x509", "-req", "-days", "21", "-extfile", CHOC_CERT_CONF, "-extensions", "v3_ca", "-signkey", key, "-out", getChocCertFile(nonce), "-in", csr], stdout=open("/dev/null", 'w'))
     
 
 def generateExtension(key, y):
