@@ -146,7 +146,7 @@ def make_request(server, m, csr, quiet=False):
     m.request.csr = csr
     hashcash_cmd = ["hashcash", "-P", "-m", "-z", "12", "-b", `difficulty`, "-r", server]
     if quiet:
-        hashcash = subprocess.check_output(hashcash_cmd, preexec_fn=drop_privs, shell=False, stdout=None, stderr=None).rstrip()
+        hashcash = subprocess.check_output(hashcash_cmd, preexec_fn=drop_privs, shell=False, stderr=None).rstrip()
     else:
         hashcash = subprocess.check_output(hashcash_cmd, preexec_fn=drop_privs, shell=False).rstrip()
     if hashcash: m.request.clientpuzzle = hashcash
