@@ -205,7 +205,7 @@ def authenticate():
     while r.proceed.IsInitialized():
        if r.proceed.polldelay > 60: r.proceed.polldelay = 60
        if curses:
-           shower.add("Waiting %d...\n" % r.proceed.polldelay)
+           shower.add("Waiting %d seconds...\n" % r.proceed.polldelay)
        else:
            print "waiting", r.proceed.polldelay
        time.sleep(r.proceed.polldelay)
@@ -220,11 +220,13 @@ def authenticate():
     sni_todo = []
     dn = []
     if curses:
-        shower.add("Received %s challenges.\n" % len(r.challenge))
+        shower.add("Received %s challenges from server.\n" % len(r.challenge))
     for chall in r.challenge:
         if not curses: print chall
         if chall.type == r.DomainValidateSNI:
-           dvsni_nonce, dvsni_y, dvsni_ext = chall.data
+            if curses:
+               shower.add("\tDomainValidateSNI challenge for name %s.\n" % chall.name)
+            dvsni_nonce, dvsni_y, dvsni_ext = chall.data
         sni_todo.append( (chall.name, dvsni_y, dvsni_nonce, dvsni_ext) )
         dn.append(chall.name)
 
