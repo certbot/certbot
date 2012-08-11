@@ -346,7 +346,7 @@ class Configurator(object):
         Checks apache2ctl to get loaded module list
         """
         try:
-            p = subprocess.check_output(["sudo", "/usr/sbin/apache2ctl", "-M"], stderr=open("/dev/null"))
+            p = subprocess.check_output(["sudo", "/usr/sbin/apache2ctl", "-M"], stderr=open("/dev/null", "w"))
         except:
             print "Error accessing apache2ctl for loaded modules!"
             print "This may be caused by an Apache Configuration Error"
@@ -386,7 +386,7 @@ class Configurator(object):
         """
         # Use check_output so the command will finish before reloading the server
         subprocess.check_output(["sudo", "a2enmod", "ssl"])
-        subprocess.call(["sudo", "/etc/init.d/apache2", "reload"], stdout=None, stderr=None)
+        subprocess.call(["sudo", "/etc/init.d/apache2", "reload"], stdout=open("/dev/null", "w"), stderr=open("/dev/null", "w"))
         """
         a_conf = SERVER_ROOT + "mods-available/ssl.conf"
         a_load = SERVER_ROOT + "mods-available/ssl.load"
