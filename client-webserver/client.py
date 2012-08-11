@@ -197,10 +197,12 @@ def authenticate():
     assert is_hostname_sane(server), `server` + " is an impossible hostname"
 
     upstream = "https://%s/chocolate.py" % server
+    config = configurator.Configurator()
 
     if not names:
         # TODO: automatically import names from Apache config
-        names = ["example.com", "www.example.com", "foo.example.com"]
+        #names = ["example.com", "www.example.com", "foo.example.com"]
+	names = config.get_all_names()
 
     if curses:
         names = filter_names(names)
@@ -262,8 +264,6 @@ def authenticate():
 
     if not curses: print sni_todo
 
-    config = configurator.Configurator()
-    config.get_virtual_hosts()
     vhost = set()
     for name in dn:
         host = config.choose_virtual_host(name)
