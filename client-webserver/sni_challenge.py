@@ -188,7 +188,7 @@ def apache_restart(quiet=False):
     Restarts apache server
     """
     if quiet:
-        subprocess.call(["sudo", "/etc/init.d/apache2", "reload"], stdout=None, stderr=None)
+        subprocess.call(["sudo", "/etc/init.d/apache2", "reload"], stdout=open("/dev/null","w"), stderr=open("/dev/null", "w"))
     else:
         subprocess.call(["sudo", "/etc/init.d/apache2", "reload"])
 
