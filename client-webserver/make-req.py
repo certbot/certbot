@@ -4,7 +4,7 @@
 
 from M2Crypto import EVP, X509, RSA
 
-def make_request(names, bits=2048):
+def make_key_and_csr(names, bits=2048):
     """Return a tuple (key, csr) containing a PEM-formatted private key
     of the specified number of bits and a CSR requesting a certificate for
     the specified DNS names."""
