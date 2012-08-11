@@ -236,7 +236,7 @@ def authenticate():
     if not sni_challenge.perform_sni_cert_challenge(sni_todo, os.path.abspath(req_file), os.path.abspath(key_file), config):
         print "sni_challenge failed"
         sys.exit(1)
-    if curses: shower.add("Configured Apache for challenge...\n"))
+    if curses: shower.add("Configured Apache for challenge...\n")
 
     if not curses: print "waiting", 3
     time.sleep(3)
