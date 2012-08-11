@@ -141,6 +141,7 @@ def drop_privs():
     os.setuid(nobody)
 
 def make_request(server, m, csr, quiet=False):
+    print quiet
     m.request.recipient = server
     m.request.timestamp = int(time.time())
     m.request.csr = csr
