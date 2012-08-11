@@ -26,11 +26,12 @@ from CONFIG import cert_file, chain_file
 # them by default
 allow_raw_ipv6_server = False
 
-opts = getopt.getopt(sys.argv[1:], "", ["text", "privkey=", "csr="])
+opts = getopt.getopt(sys.argv[1:], "", ["text", "privkey=", "csr=", "server="])
 
 curses = True
 csr = None
 privkey = None
+server = None
 for opt in opts[0]:
     if opt[0] == "--text":
         curses = False
@@ -38,6 +39,8 @@ for opt in opts[0]:
         csr = opt[1]
     if opt[0] == "--privkey":
         privkey = opt[1]
+    if opt[0] == "--server":
+        server = opt[1]
 names = opts[1]
 
 if curses:
@@ -154,10 +157,8 @@ def authenticate():
     Main call to do DV_SNI validation and deploy the trustify certificate
     TODO: This should be turned into a class...
     """
-    assert len(sys.argv) > 1 or "CHOCOLATESERVER" in os.environ, "Must specify server via command line or CHOCOLATESERVER environment variable."
-    if len(sys.argv) > 1:
-        server = sys.argv[1]
-    else:
+    assert server or "CHOCOLATESERVER" in os.environ, "Must specify server via command line or CHOCOLATESERVER environment variable."
+    if "CHOCOLATESERVER" in os.environ:
         server = os.environ["CHOCOLATESERVER"]
 
     assert is_hostname_sane(server), `server` + " is an impossible hostname"
