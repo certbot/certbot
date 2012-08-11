@@ -189,10 +189,12 @@ def authenticate():
     m=chocolatemessage()
     init(k)
     init(m)
+    if curses:
+        shower.add("Creating request; generating hashcash...\n")
     make_request(server, m, csr_pem)
     sign(key_pem, m)
     if curses:
-        shower.add("Created request...\n")
+        shower.add("Created request; sending to server...\n")
     else:
         print m
     r=decode(do(upstream, m))
@@ -260,12 +262,12 @@ def authenticate():
             with open(chain_file, "w") as f:
                 f.write(r.success.chain)
         if curses:
-            shower.add("Server issued certificate; certificate written to " + cert_file)
+            shower.add("Server issued certificate; certificate written to %s\n" % cert_file)
         else:
             print "Server issued certificate; certificate written to " + cert_file
         if r.success.chain: 
             if curses:
-                shower.add("Cert chain written to " + chain_file)
+                shower.add("Cert chain written to %s\n" % chain_file)
             else:
                 print "Cert chain written to " + chain_file
             # TODO: Uncomment the following assignment when the server 
