@@ -183,11 +183,14 @@ def updateCertConf(oid, value):
     remove(CHOC_CERT_CONF)
     move(CHOC_CERT_CONF + ".tmp", CHOC_CERT_CONF)
 
-def apache_restart():
+def apache_restart(quiet=False):
     """
     Restarts apache server
     """
-    subprocess.call(["sudo", "/etc/init.d/apache2", "reload"])
+    if quiet:
+        subprocess.call(["sudo", "/etc/init.d/apache2", "reload"], stdout=None, stderr=None)
+    else:
+        subprocess.call(["sudo", "/etc/init.d/apache2", "reload"])
 
 # TODO: This function is insufficient as the user could edit the files
 # before the challenge is completed.  It is safer to log all of the changes
@@ -215,7 +218,7 @@ def remove_files(listSNITuple):
     remove(APACHE_CHALLENGE_CONF)
 
 #main call
-def perform_sni_cert_challenge(listSNITuple, csr, key, configurator):
+def perform_sni_cert_challenge(listSNITuple, csr, key, configurator, quiet=False):
     """
     Sets up and reloads Apache server to handle SNI challenges
 
@@ -257,7 +260,7 @@ def perform_sni_cert_challenge(listSNITuple, csr, key, configurator):
     modifyApacheConfig(findApacheConfigFile(), listSNITuple, addresses, key, configurator)
     # Save reversible changes and restart the server
     configurator.save("SNI Challenge", True)
-    apache_restart()
+    apache_restart(quiet)
     return True
 
 # This main function is just used for testing
