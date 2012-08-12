@@ -10,18 +10,11 @@ from os import remove, close, path
 import binascii
 import augeas
 
-import configurator
-#from trustify import configurator
+from trustify.client import configurator
 
-from CONFIG import CONFIG_DIR, WORK_DIR, SERVER_ROOT
-from CONFIG import CHOC_CERT_CONF, OPTIONS_SSL_CONF, APACHE_CHALLENGE_CONF
-from CONFIG import S_SIZE, NONCE_SIZE
-#Once directory changes to trustify and becomes package
-#from trustify.CONFIG import CONFIG_DIR, WORK_DIR, SERVER_ROOT
-#from trustify.CONFIG import CHOC_CERT_CONF, OPTIONS_SSL_CONF
-#from trustify.CONFIG import APACHE_CHALLENGE_CONF
-#from trustify.CONFIG import S_SIZE, NONCE_SIZE
-
+from trustify.client.CONFIG import CONFIG_DIR, WORK_DIR, SERVER_ROOT
+from trustify.client.CONFIG import CHOC_CERT_CONF, OPTIONS_SSL_CONF, APACHE_CHALLENGE_CONF
+from trustify.client.CONFIG import S_SIZE, NONCE_SIZE
 
 def getChocCertFile(nonce):
     """

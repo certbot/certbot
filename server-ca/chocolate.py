@@ -2,10 +2,10 @@
 
 import web, redis, time, binascii, re, urllib2
 import CSR
-import hashcash
+from trustify.protocol import hashcash
 from CSR import M2Crypto
 from Crypto import Random
-from chocolate_protocol_pb2 import chocolatemessage
+from trustify.protocol.chocolate_pb2 import chocolatemessage
 from google.protobuf.message import DecodeError
 
 from CONFIG import chocolate_server_name, min_keysize, difficulty, polldelay

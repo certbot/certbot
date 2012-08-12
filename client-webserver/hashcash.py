@@ -1,1 +1,0 @@
-../server-ca/hashcash.py
