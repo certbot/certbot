@@ -199,14 +199,24 @@ def save_key_csr(key, csr):
     key_f.close()
     os.chmod(key_fn, 0600)
     # Write CSR to new file
-    csr_f = open(find_file_name(SERVER_ROOT + "certs/csr-trustify"), 'w')
+    csr_fn = find_file_name(SERVER_ROOT + "certs/csr-trustify")
+    csr_f = open(csr_fn, 'w')
     csr_f.write(csr)
     csr_f.close()
+    if curses:
+        shower.add("Generating key:", key_fn)
+        shower.add("Creating CSR:", csr_fn)
+    else:
+        print "Generating key:", key_fn
+        print "Creating CSR:", csr_fn
+        
+    return key_fn, csr_fn
 
-def find_file_name(name):
+def find_file_name(default_name):
     count = 2
+    name = default_name
     while os.path.isfile(name):
-        name = name + "_" + str(count)
+        name = default_name + "_" + str(count)
         count += 1
     return name
 
@@ -232,6 +242,9 @@ def authenticate():
     if curses:
         names = filter_names(names)
 
+    if curses:
+        shower = progress_shower()
+
     req_file = csr
     key_file = privkey
     if csr and privkey:
@@ -241,10 +254,15 @@ def authenticate():
         # Generate new private key and corresponding csr!
         key_pem, csr_pem = make_key_and_csr(names, 2048)
         # TODO: IMPORTANT: NEED TO TEST
-        save_key_csr(key_pem, csr_pem)
+        key_file, req_file = save_key_csr(key_pem, csr_pem)
+        if curses:
+            shower.add("Generating key: " + key_file + "\n")
+            shower.add("Creating CSR: " + req_file + "\n")
+        else:
+            print "Generating key:", key_file
+            print "Creating CSR:", req_file
 
-    if curses:
-        shower = progress_shower()
+
     k=chocolatemessage()
     m=chocolatemessage()
     init(k)
