@@ -363,7 +363,7 @@ class Configurator(object):
         Checks apache2ctl to get loaded module list
         """
         try:
-            p = subprocess.check_output(["sudo", "/usr/sbin/apache2ctl", "-M"], stdout=open("/dev/null", 'w'), stderr=open("/dev/null", 'w'))
+            p = subprocess.check_output(["sudo", "/usr/sbin/apache2ctl", "-M"], stderr=open("/dev/null", 'w'))
         except:
             print "Error accessing apache2ctl for loaded modules!"
             print "This may be caused by an Apache Configuration Error"
