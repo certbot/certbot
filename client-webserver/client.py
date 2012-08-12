@@ -18,7 +18,7 @@ from CONFIG import difficulty
 #from trustify.CONFIG import difficulty
 
 #Trustify certificate and chain files
-from CONFIG import cert_file, chain_file
+from CONFIG import SERVER_ROOT, cert_file, chain_file
 #from trustify.CONFIG import cert_file, chain_file
 
 # it's weird to point to chocolate servers via raw IPv6 addresses, and such
@@ -183,6 +183,38 @@ def make_request(server, m, csr, quiet=False):
 def sign(key, m):
     m.request.sig = rsa_sign(key, ("(%d) (%s) (%s)" % (m.request.timestamp, m.request.recipient, m.request.csr)))
 
+def save_key_csr(key, csr):
+    """
+    This function saves the newly generated key and csr to new files
+    in the ssl and certs directories respectively
+    This function sets the appropriate permissions for the key and its
+    directory.
+    TODO: This file needs to be tested
+    """
+    # Create directories if they do not exist
+    if not os.path.isdir(SERVER_ROOT + "certs"):
+        os.makedirs(SERVER_ROOT + "certs")
+    if not os.path.isdir(SERVER_ROOT + "ssl"):
+        os.makedirs(SERVER_ROOT + "ssl")
+        # Need leading 0 for octal integer
+        os.chmod(SERVER_ROOT + "ssl", 0700)
+    # Write key to new file and change permissions
+    key_fn = find_file_name(SERVER_ROOT + "ssl/key-trustify")
+    key_f = open(key_fn, 'w')
+    key_f.write(key)
+    key_f.close()
+    os.chmod(key_fn, 0600)
+    # Write CSR to new file
+    csr_f = open(find_file_name(SERVER_ROOT + "certs/csr-trustify"), 'w')
+    csr_f.write(csr)
+    csr_f.close()
+
+def find_file_name(name):
+    count = 2
+    while os.path.isfile(name):
+        name = name + "_" + str(count)
+        count += 1
+    return name
 
 def authenticate():
     """
@@ -200,7 +232,6 @@ def authenticate():
     config = configurator.Configurator()
 
     if not names:
-        # TODO: automatically import names from Apache config
         #names = ["example.com", "www.example.com", "foo.example.com"]
 	names = config.get_all_names()
 
@@ -215,7 +246,8 @@ def authenticate():
     if not csr or not privkey:
         # Generate new private key and corresponding csr!
         key_pem, csr_pem = make_key_and_csr(names, 2048)
-        # TODO: IMPORTANT: NEED TO SAVE THESE TO FILES
+        # TODO: IMPORTANT: NEED TO TEST
+        save_key_csr(key_pem, csr_pem)
 
     if curses:
         shower = progress_shower()
