@@ -14,6 +14,7 @@ from trustify.protocol.chocolate_pb2 import chocolatemessage
 from trustify.client import sni_challenge
 from trustify.client import configurator
 from trustify.client.CONFIG import difficulty, cert_file, chain_file
+from trustify.client.CONFIG import SERVER_ROOT
 
 # it's weird to point to chocolate servers via raw IPv6 addresses, and such
 # addresses can be %SCARY in some contexts, so out of paranoia let's disable
@@ -203,12 +204,6 @@ def save_key_csr(key, csr):
     csr_f = open(csr_fn, 'w')
     csr_f.write(csr)
     csr_f.close()
-    if curses:
-        shower.add("Generating key:", key_fn)
-        shower.add("Creating CSR:", csr_fn)
-    else:
-        print "Generating key:", key_fn
-        print "Creating CSR:", csr_fn
         
     return key_fn, csr_fn
 
