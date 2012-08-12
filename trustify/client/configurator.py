@@ -256,13 +256,13 @@ class Configurator(object):
             tup = addr.partition(":") 
             if tup[0] == "_default_":
                 if not self.is_name_vhost(default_addr):
-                    print "Setting all VirtualHosts on " + default_addr + " to be name based virtual hosts"
+                    #print "Setting all VirtualHosts on " + default_addr + " to be name based virtual hosts"
                     self.add_name_vhost(default_addr)
                 return True
         # No default addresses... so set each one individually
         for addr in vhost.addrs:
             if not self.is_name_vhost(addr):
-                print "Setting VirtualHost at", addr, "to be a name based virtual host"
+                #print "Setting VirtualHost at", addr, "to be a name based virtual host"
                 self.add_name_vhost(addr)
         
         return True
