@@ -2,7 +2,6 @@ import augeas
 import subprocess
 import re
 import os
-import shutil
 import sys
 import socket
 
@@ -284,7 +283,12 @@ class Configurator(object):
         Appends directive to end of file given by aug_conf_path
         """
         self.aug.set(aug_conf_path + "/directive[last() + 1]", directive)
-        self.aug.set(aug_conf_path + "/directive[last()]/arg", arg)
+        if type(arg) is not list:
+            self.aug.set(aug_conf_path + "/directive[last()]/arg", arg)
+        else:
+            for i in range(len(arg)):
+                self.aug.set(aug_conf_path + "/directive[last()]/arg["+str(i+1)+"]", arg[i]) 
+            
         
     def find_directive(self, directive, arg=None, start="/files"+SERVER_ROOT+"apache2.conf"):
         """
@@ -388,22 +392,23 @@ class Configurator(object):
         new_file.close()
         self.aug.load()
 
-        # Add IfMod mod_ssl.c
-        #self.aug.insert("/files"+ssl_fp+"/VirtualHost[1]", "IfModule")
-        #self.aug.set("/files"+ssl_fp+"/IfModule/arg", "mod_ssl.c")
-        # change address to address:443
-        addr_p = self.aug.match("/files"+ssl_fp+"//VirtualHost/arg")
-        for p in addr_p:
-            old_arg = self.aug.get(p)
-            tup = old_arg.partition(":")
-            self.aug.set(p, tup[0] + ":443")
-        # TODO:if address of original vhost != endwith(:XX) make it :80 - avoids overlap
+        # change address to address:443, address:80
+        ssl_addr_p = self.aug.match("/files"+ssl_fp+"//VirtualHost/arg")
+        avail_addr_p = self.aug.match("/files"+avail_fp+"//VirtualHost/arg")
+        for i in range(avail_addr_p):
+            avail_old_arg = self.aug.get(avail_addr_p[i])
+            ssl_old_arg = self.aug.get(ssl_addr_p[i])
+            avail_tup = avail_old_arg.partition(":")
+            ssl_tup = ssl_old_arg.partition(":")
+            self.aug.set(avail_addr_p[i], avail_tup[0] + ":80")
+            self.aug.set(ssl_addr_p[i], ssl_tup[0] + ":443")
+
         # Add directives
         vh_p = self.aug.match("/files"+ssl_fp+"//VirtualHost")
         if len(vh_p) != 1:
-            print vh_p
             print "Error: should only be one vhost in", avail_fp
             sys.exit(1)
+
         self.add_dir(vh_p[0], "SSLCertificateFile", "/etc/ssl/certs/ssl-cert-snakeoil.pem")
         self.add_dir(vh_p[0], "SSLCertificateKeyFile", "/etc/ssl/private/ssl-cert-snakeoil.key")
         self.add_dir(vh_p[0], "Include", CONFIG_DIR + "options-ssl.conf")
@@ -413,6 +418,59 @@ class Configurator(object):
         # TODO: At some point site should be enabled
         return
 
+    def redirect_all_ssl(self, ssl_vhost, domains):
+        """
+        Adds Redirect directive to the port 80 equivalent of ssl_vhost
+        First the function attempts to find the vhost with equivalent
+        ip addresses that serves on non-ssl ports
+        The function then adds the directive
+        
+        I did not use mod rewrite because it can be confusing for the admin.
+        The rewrite can be placed anywhere and the admin might not be aware 
+        or remember the location.  Also, the rewrite rule would have to play
+        nicely with the existing admin's rules. It is difficult to determine
+        the exact results of the other rules and order matters.
+        
+        TODO: If port 80 vhost doesn't exist, add one to the same ssl_host 
+        file with the redirect
+        """
+        general_v = self.__general_vhost(ssl_vhost)
+        if general_v is None:
+            #Add virtual_server with redirect
+            print "Did not find general_ssl server"
+            print "This function isn't implemented yet"
+            return False
+        else:
+            #Add directives to server
+            for d in domains:
+                self.add_dir(general_v.path, "Redirect", ["permanent", "/", "https://" + d + "/"])
+        self.aug.save("Redirect all to ssl")
+        return True
+        
+    def __general_vhost(self, ssl_vhost):
+        """
+        Function needs to be throughly tested and perhaps improved
+        Will not do well with malformed configurations
+        """
+        for vh in self.vhosts:
+            found = 0
+            # Not the same vhost, and same number of addresses
+            if vh != ssl_vhost and len(vh.addrs) == len(ssl_vhost.addrs):
+                # Find each address in ssl_host in test_host
+                for ssl_a in ssl_vhost.addrs:
+                    ssl_tup = ssl_a.partition(":")
+                    for test_a in vh.addrs:
+                        test_tup = test_a.partition(":")
+                        if test_tup[0] == ssl_tup[0]:
+                            # Sanity check TODO: is * a problem?
+                            if test_tup[2] == "80":
+                                found += 1
+                                break
+                if found == len(ssl_vhost.addrs):
+                    return vh
+        return None
+                
+    
     def is_site_enabled(self, avail_fp):
         """
         Checks to see if the given site is enabled
@@ -520,17 +578,6 @@ class Configurator(object):
         self.mod_files.clear()
         
 
-def recurmatch(aug, path):
-    if path:
-        if path != "/":
-            val = aug.get(path)
-            if val:
-                yield (path, val)
-
-        for i in aug.match(path + "/*"):
-            for x in recurmatch(aug, i):
-                yield x
-
 def main():
     config = Configurator()
     for v in config.vhosts:
@@ -548,8 +595,16 @@ def main():
     print config.get_all_names()
 
     config.parse_file("/etc/apache2/ports_test.conf")
-    config.make_vhost_ssl("/etc/apache2/sites-available/default")
+    #config.make_vhost_ssl("/etc/apache2/sites-available/default")
+    """
+    # Testing redirection
+    for vh in config.vhosts:
+        if vh.addrs[0] == "*:443":
+            print "Here we go"
+            print vh.path
+            config.redirect_all_ssl(vh, ["localhost"])
     config.save()
+    """
     """
     for vh in config.vhosts:
         if len(vh.names) > 0:
