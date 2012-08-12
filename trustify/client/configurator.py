@@ -5,8 +5,7 @@ import os
 import sys
 import socket
 
-#from trustify.client.CONFIG import SERVER_ROOT
-SERVER_ROOT = "/etc/apache2/"
+from trustify.client.CONFIG import SERVER_ROOT
 
 #TODO - Stop Augeas from loading up backup emacs files in sites-available
 
