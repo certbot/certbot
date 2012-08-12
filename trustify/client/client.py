@@ -13,7 +13,7 @@ import getopt
 from trustify.protocol.chocolate_pb2 import chocolatemessage
 from trustify.client import sni_challenge
 from trustify.client import configurator
-from trustify.client.CONFIG import difficulty, cert_file, chain_file
+from trustify.client.CONFIG import difficulty, cert_file, chain_file, SERVER_ROOT
 
 # it's weird to point to chocolate servers via raw IPv6 addresses, and such
 # addresses can be %SCARY in some contexts, so out of paranoia let's disable
