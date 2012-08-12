@@ -4,9 +4,5 @@
 #	rsync -av --delete sni_challenge demoCA ${CHOCOLATESERVER}:
 #	ssh ${CHOCOLATESERVER} make -C sni_challenge clean all
 
-chocolate_protocol_pb2.py: chocolate_protocol.proto
-	protoc chocolate_protocol.proto --python_out=.
-	cp -p chocolate_protocol_pb2.py ../client-webserver/
-
 clean:
 	rm -f *.pyc

@@ -1,25 +1,19 @@
 #!/usr/bin/env python
 
-from chocolate_protocol_pb2 import chocolatemessage
 import M2Crypto
 # It is OK to use the upstream M2Crypto here instead of our modified
 # version.
-import urllib2, os, grp, pwd, sys, time, random, sys, hashlib, subprocess
+import urllib2
+import os, grp, pwd, sys, time, random, sys
+import hashlib
+import subprocess
 import getopt
 # TODO: support a mode where use of interactive prompting is forbidden
 
-import sni_challenge
-import configurator
-#from trustify import sni_challenge
-#from trustify import configurator
-
-# bits of hashcash to generate
-from CONFIG import difficulty
-#from trustify.CONFIG import difficulty
-
-#Trustify certificate and chain files
-from CONFIG import cert_file, chain_file
-#from trustify.CONFIG import cert_file, chain_file
+from trustify.protocol.chocolate_pb2 import chocolatemessage
+from trustify.client import sni_challenge
+from trustify.client import configurator
+from trustify.client.CONFIG import difficulty, cert_file, chain_file
 
 # it's weird to point to chocolate servers via raw IPv6 addresses, and such
 # addresses can be %SCARY in some contexts, so out of paranoia let's disable
@@ -314,7 +308,4 @@ def authenticate():
         print "Server reported failure."
         sys.exit(1)
 
-    # vim: set expandtab tabstop=4 shiftwidth=4
-
-if __name__ == "__main__":
-    authenticate()
+# vim: set expandtab tabstop=4 shiftwidth=4
