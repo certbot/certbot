@@ -5,7 +5,10 @@ import os
 import sys
 import socket
 
-from trustify.client.CONFIG import SERVER_ROOT
+#from trustify.client.CONFIG import SERVER_ROOT
+SERVER_ROOT = "/etc/apache2/"
+
+#TODO - Stop Augeas from loading up backup emacs files in sites-available
 
 class VH(object):
     def __init__(self, vh_path, vh_addrs):
@@ -78,7 +81,7 @@ class Configurator(object):
         
         return self.save("Virtual Server - deploying certificate")
 
-    def choose_virtual_host(self, name):
+    def choose_virtual_host(self, name, ssl=True):
         """
         Chooses a virtual host based on the given domain name
 
@@ -468,7 +471,22 @@ class Configurator(object):
                 if found == len(ssl_vhost.addrs):
                     return vh
         return None
-                
+
+    def get_file_path(self, vhost):
+        # Strip off /files
+        avail_fp = vhost.path[6:]
+        # This can be optimized...
+        while True:
+            find_if = avail_fp.find("/IfModule")
+            if  find_if != -1:
+                avail_fp = avail_fp[:find_if]
+                continue
+            find_vh = avail_fp.find("/VirtualHost")
+            if find_vh != -1:
+                avail_fp = avail_fp[:find_vh]
+                continue
+            break
+        return avail_fp
     
     def is_site_enabled(self, avail_fp):
         """
@@ -580,6 +598,7 @@ class Configurator(object):
 def main():
     config = Configurator()
     for v in config.vhosts:
+        print config.get_file_path(v)
         print v.addrs
         for name in v.names:
             print name

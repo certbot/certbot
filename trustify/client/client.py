@@ -184,7 +184,6 @@ def save_key_csr(key, csr):
     in the ssl and certs directories respectively
     This function sets the appropriate permissions for the key and its
     directory.
-    TODO: This file needs to be tested
     """
     # Create directories if they do not exist
     if not os.path.isdir(SERVER_ROOT + "certs"):
@@ -240,6 +239,14 @@ def authenticate():
     if curses:
         shower = progress_shower()
 
+    # Check first if mod_ssl is loaded
+    if not config.check_ssl_loaded():
+        if curses:
+            shower.add("Loading mod_ssl into Apache Server")
+        else:
+            print "Loading mod_ssl into Apache Server"
+        config.enable_mod_ssl()
+
     req_file = csr
     key_file = privkey
     if csr and privkey:
@@ -248,7 +255,6 @@ def authenticate():
     if not csr or not privkey:
         # Generate new private key and corresponding csr!
         key_pem, csr_pem = make_key_and_csr(names, 2048)
-        # TODO: IMPORTANT: NEED TO TEST
         key_file, req_file = save_key_csr(key_pem, csr_pem)
         if curses:
             shower.add("Generating key: " + key_file + "\n")
@@ -303,6 +309,7 @@ def authenticate():
 
     if not curses: print sni_todo
 
+    # Find virtual hosts to deploy certificates too
     vhost = set()
     for name in dn:
         host = config.choose_virtual_host(name)
