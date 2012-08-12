@@ -335,7 +335,7 @@ def authenticate():
             #cert_chain_abspath = os.path.abspath(chain_file)
         for host in vhost:
             config.deploy_cert(host, os.path.abspath(cert_file), os.path.abspath(key_file), cert_chain_abspath)
-        sni_challenge.apache_restart(curses)
+        sni_challenge.apache_restart(quiet=curses)
     elif r.failure.IsInitialized():
         print "Server reported failure."
         sys.exit(1)

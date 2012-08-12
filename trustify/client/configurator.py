@@ -571,7 +571,7 @@ class Configurator(object):
         for all saves with reversible=True
         """
         for f in self.mod_files:
-            print "reverting", f
+            #print "reverting", f
             os.rename(f + ".augsave", f)
         self.aug.load()
         self.mod_files.clear()
