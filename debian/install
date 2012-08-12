@@ -1,0 +1,2 @@
+trustify/client/choc_cert_extensions.cnf	etc/trustify
+trustify/client/options-ssl.conf		etc/trustify

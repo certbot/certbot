@@ -1,3 +1,9 @@
 *.pyc
 trustify/protocol/chocolate_pb2.py
 m3
+*.egg-info/
+build/
+debian/*.debhelper.log
+debian/*.debhelper
+debian/*.substvars
+debian/trustify/

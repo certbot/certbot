@@ -1,0 +1,5 @@
+trustify (1.0~20120812-1) UNRELEASED; urgency=low
+
+  * Initial release. (Closes: #XXXXXX)
+
+ -- Faidon Liambotis <paravoid@debian.org>  Sun, 12 Aug 2012 09:11:15 +0300
