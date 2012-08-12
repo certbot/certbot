@@ -263,7 +263,6 @@ def authenticate():
             print "Generating key:", key_file
             print "Creating CSR:", req_file
 
-
     k=chocolatemessage()
     m=chocolatemessage()
     init(k)
@@ -355,6 +354,14 @@ def authenticate():
             #cert_chain_abspath = os.path.abspath(chain_file)
         for host in vhost:
             config.deploy_cert(host, os.path.abspath(cert_file), os.path.abspath(key_file), cert_chain_abspath)
+            # Enable any vhost that was issued to, but not enabled
+            if not config.is_site_enabled(host.file):
+                if curses:
+                    shower.add("Enabling Site " + host.file)
+                else:
+                    print "Enabling Site", host.file
+                config.enable_site(host.file)
+
         sni_challenge.apache_restart(quiet=curses)
     elif r.failure.IsInitialized():
         print "Server reported failure."

@@ -11,7 +11,8 @@ SERVER_ROOT = "/etc/apache2/"
 #TODO - Stop Augeas from loading up backup emacs files in sites-available
 
 class VH(object):
-    def __init__(self, vh_path, vh_addrs):
+    def __init__(self, filename_path, vh_path, vh_addrs):
+        self.file = filename_path
         self.path = vh_path
         self.addrs = vh_addrs
         self.names = []
@@ -164,7 +165,7 @@ class Configurator(object):
             args = self.aug.match(p + "/arg")
             for arg in args:
                 addrs.append(self.aug.get(arg))
-            vhs.append(VH(p, addrs))
+            vhs.append(VH(self.get_file_path(p), p, addrs))
 
         for host in vhs:
             self.__add_servernames(host)
@@ -472,9 +473,9 @@ class Configurator(object):
                     return vh
         return None
 
-    def get_file_path(self, vhost):
+    def get_file_path(self, vhost_path):
         # Strip off /files
-        avail_fp = vhost.path[6:]
+        avail_fp = vhost_path[6:]
         # This can be optimized...
         while True:
             find_if = avail_fp.find("/IfModule")
@@ -598,7 +599,7 @@ class Configurator(object):
 def main():
     config = Configurator()
     for v in config.vhosts:
-        print config.get_file_path(v)
+        print v.file
         print v.addrs
         for name in v.names:
             print name
