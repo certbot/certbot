@@ -187,7 +187,8 @@ def testchallenge(session):
                 direct_result, direct_reason = verify_challenge(name, dvsni_r, dvsni_nonce, False)
                 proxy_result, proxy_reason = verify_challenge(name, dvsni_r, dvsni_nonce, True)
                 if debug:
-                    print "\tdirect probe: %s (%s)  proxy probe: %s (%s)" % (direct_result, direct_reason, proxy_result, proxy_reason)
+                    print "\t...direct probe: %s (%s)" % (direct_result, direct_reason)
+                    print "\tTor proxy probe: %s (%s)" % (proxy_result, proxy_reason)
                 if direct_result and proxy_result:
                     r.hset(challenge, "satisfied", True)
                 else: 
@@ -210,7 +211,7 @@ def testchallenge(session):
         # response to an empty list of challenges (even though
         # the daemon that put this session on the queue should
         # also have implicitly guaranteed this).
-        if debug: print "\tall satisfied, going to issue", session
+        if debug: print "\tall challenges satisfied, going to issue", session
         r.hset(session, "state", "issue")
         r.lpush("pending-issue", session)
         r.publish("requests", "issue")
