@@ -366,7 +366,8 @@ class Configurator(object):
         Checks apache2ctl to get loaded module list
         """
         try:
-            p = subprocess.check_output(["sudo", "/usr/sbin/apache2ctl", "-M"], stderr=open("/dev/null", 'w'))
+            #p = subprocess.check_output(["sudo", "/usr/sbin/apache2ctl", "-M"], stderr=open("/dev/null", 'w'))
+            p = subprocess.Popen(['sudo', '/usr/sbin/apache2ctl', '-M'], stdout=subprocess.PIPE, stderr=open("/dev/null", 'w')).communicate()[0]
         except:
             print "Error accessing apache2ctl for loaded modules!"
             print "This may be caused by an Apache Configuration Error"
@@ -518,7 +519,9 @@ class Configurator(object):
         TODO: TEST
         """
         # Use check_output so the command will finish before reloading
-        subprocess.check_output(["sudo", "a2enmod", "ssl"], stdout=open("/dev/null", 'w'), stderr=open("/dev/null", 'w'))
+        #subprocess.check_output(["sudo", "a2enmod", "ssl"], stdout=open("/dev/null", 'w'), stderr=open("/dev/null", 'w'))
+        # Hopefully this waits for output
+        text = subprocess.Popen(['sudo', 'a2enmod', 'ssl'], stdout=subprocess.PIPE, stderr=open("/dev/null", 'w')).communicate()[0]
         subprocess.call(["sudo", "/etc/init.d/apache2", "reload"], stdout=open("/dev/null", 'w'))
 
     def fnmatch_to_re(self, cleanFNmatch):
@@ -613,6 +616,7 @@ def main():
     print config.get_all_names()
 
     config.parse_file("/etc/apache2/ports_test.conf")
+    print config.check_ssl_loaded()
     #config.make_vhost_ssl("/etc/apache2/sites-available/default")
     """
     # Testing redirection
