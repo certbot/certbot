@@ -273,6 +273,10 @@ class session(object):
                 if urllib2.urlopen("https://observatory.eff.org/check_name?domain_name=%s" % san).read().strip() != "False":
                     self.die(r, r.CannotIssueThatName, uri="https://ca.example.com/failures/observatory?%s" % san)
                     return
+                wildcard_variant = "*." + san.partition(".")[2]
+                if urllib2.urlopen("https://observatory.eff.org/check_name?domain_name=%s" % wildcard_variant).read().strip() != "False":
+                    self.die(r, r.CannotIssueThatName, uri="https://ca.example.com/failures/observatory?%s" % san)
+                    return
             except urllib2.HTTPError:
                 # Currently, don't consider it fatal if the Observatory blacklist
                 # service is inaccessible.
