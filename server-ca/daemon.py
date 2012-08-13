@@ -188,7 +188,7 @@ def testchallenge(session):
         failed = r.hget(challenge, "failed") == "True"
         # TODO: check whether this challenge is too old
         if not satisfied and not failed:
-            if debug: print "challenge", short(challenge), "being tested"
+            # if debug: print "challenge", short(challenge), "being tested"
             if challtype == 0:  # DomainValidateSNI
                 if debug: print "\tbeginning dvsni test to %s" % name
                 dvsni_nonce = r.hget(challenge, "dvsni:nonce")
@@ -221,7 +221,7 @@ def testchallenge(session):
         # response to an empty list of challenges (even though
         # the daemon that put this session on the queue should
         # also have implicitly guaranteed this).
-        if debug: print "\tall challenges satisfied, going to issue", short(session)
+        if debug: print "\t** All challenges satisfied; request %s GRANTED", short(session)
         r.hset(session, "state", "issue")
         r.lpush("pending-issue", session)
         r.publish("requests", "issue")
