@@ -116,6 +116,7 @@ class session(object):
     def add_request(self, csr, names):
         sessions.hset(self.id, "csr", csr)
         for name in names: sessions.rpush(self.id + ":names", name)
+        sessions.hset(self.id, "client-addr", web.ctx.ip)
         sessions.hset(self.id, "state", "makechallenge")
         sessions.lpush("pending-makechallenge", self.id)
         sessions.publish("requests", "makechallenge")
@@ -321,6 +322,7 @@ class session(object):
         # TODO: Process challenge-related messages from the client.
 
     def log(self, msg):
+        sessions.publish("logs", "%s: %s" % (self.id, msg))
         if debug: print "%s: %s" % (self.id, msg)
 
     def die(self, r, reason, uri=None):
