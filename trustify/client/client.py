@@ -220,9 +220,11 @@ def authenticate():
     TODO: This should be turned into a class...
     """
     global server, names, csr, privkey
-    assert server or "CHOCOLATESERVER" in os.environ, "Must specify server via command line or CHOCOLATESERVER environment variable."
     if "CHOCOLATESERVER" in os.environ:
         server = os.environ["CHOCOLATESERVER"]
+    if not server:
+        # Global default value for Chocolate server!
+        server = "ca.theobroma.info"
 
     assert is_hostname_sane(server), `server` + " is an impossible hostname"
 
