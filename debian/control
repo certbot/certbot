@@ -9,7 +9,7 @@ Homepage: https://trustify.net/
 
 Package: trustify
 Architecture: all
-Depends: ${misc:Depends}, ${python:Depends}, python-setuptools, python-dialog
+Depends: ${misc:Depends}, ${python:Depends}, python-setuptools, python-dialog, apache2.2-common, hashcash
 Description: one-line description
  Long description here
  .
