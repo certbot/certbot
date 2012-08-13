@@ -63,21 +63,23 @@ class Configurator(object):
         if cert_chain is not None:
             path["cert_chain"] = self.find_directive("SSLCertificateChainFile", None, vhost.path)
         
-        for k in path.iterkeys():
-            if len(path[k]) == 0:
-                # Throw some "can't find all of the directives error"
-                print "DEBUG - Error: cannot find ", search[k]
-                print "DEBUG - in ", vhost.path
-                print "VirtualHost was not modified"
-                # Presumably break here so that the virtualhost is not modified
-                return False
+        if len(path["cert_file"]) == 0 or len(path["cert_key"]) == 0:
+            # Throw some "can't find all of the directives error"
+            print "DEBUG - Error: cannot find a cert or key directive"
+            print "DEBUG - in ", vhost.path
+            print "VirtualHost was not modified"
+            # Presumably break here so that the virtualhost is not modified
+            return False
         
         #print "Deploying Certificate to VirtualHost"
             
         self.aug.set(path["cert_file"][0], cert)
         self.aug.set(path["cert_key"][0], key)
         if cert_chain is not None:
-            self.aug.set(path["cert_chain"][0], cert_chain)
+            if len(path["cert_chain"]) == 0:
+                self.add_dir(vhost.path, "SSLCertificateChainFile", cert_chain)
+            else:
+                self.aug.set(path["cert_chain"][0], cert_chain)
         
         return self.save("Virtual Server - deploying certificate")
 
@@ -366,7 +368,6 @@ class Configurator(object):
         Checks apache2ctl to get loaded module list
         """
         try:
-            #p = subprocess.check_output(["sudo", "/usr/sbin/apache2ctl", "-M"], stderr=open("/dev/null", 'w'))
             p = subprocess.Popen(['sudo', '/usr/sbin/apache2ctl', '-M'], stdout=subprocess.PIPE, stderr=open("/dev/null", 'w')).communicate()[0]
         except:
             print "Error accessing apache2ctl for loaded modules!"
@@ -626,11 +627,11 @@ def main():
             config.redirect_all_ssl(vh, ["localhost"])
     config.save()
     """
-    """
+    
     for vh in config.vhosts:
         if len(vh.names) > 0:
-            config.deploy_cert(vh, "/home/james/Documents/apache_choc/req.pem", "/home/james/Documents/apache_choc/key.pem")
-    """
+            config.deploy_cert(vh, "/home/james/Documents/apache_choc/req.pem", "/home/james/Documents/apache_choc/key.pem", "/home/james/Downloads/sub.class1.server.ca.pem")
+    
 
 if __name__ == "__main__":
     main()
