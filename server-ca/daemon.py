@@ -82,6 +82,12 @@ def signal_handler(a, b):
 signal.signal(signal.SIGTERM, signal_handler)
 signal.signal(signal.SIGINT, signal_handler)
 
+def short(session):
+    """Return the first 12 bytes of a session ID, or, for a
+    challenge ID, the challenge ID with the session ID truncated."""
+    tmp = session.partition(":")
+    return tmp[0][:12] + "..." + tmp[1] + tmp[2]
+
 def ancient(session, state):
     """Given that this session is in the specified named state,
     decide whether the daemon should forcibly expire it for being too
@@ -90,10 +96,10 @@ def ancient(session, state):
     sessions that no client ever asks about."""
     age = int(time.time()) - int(r.hget(session, "created"))
     if state == "makechallenge" and age > 120:
-        if debug: print "considered", session, "ancient"
+        if debug: print "considered", short(session), "ancient"
         return True
     if state == "testchallenge" and age > 600:
-        if debug: print "considered", session, "ancient"
+        if debug: print "considered", short(session), "ancient"
         return True
     return False
 
@@ -114,7 +120,7 @@ def makechallenge(session):
         # pending-requests queue and not pushed into any other queue.
         # We don't have to remove it from pending-makechallenge
         # because the caller has already done so.
-        if debug: print "removing expired session", session
+        if debug: print "removing expired session", short(session)
         r.lrem("pending-requests", session)
         return
     # Currently only makes challenges of type 0 (DomainValidateSNI)
@@ -126,9 +132,9 @@ def makechallenge(session):
     # Make one challenge for each name.  (This one-to-one relationship
     # is not an inherent protocol requirement!)
     names = r.lrange("%s:names" % session, 0, -1)
-    if debug: print "%s: new session (request complies with policy)" % session
-    if debug: print "%s: from requesting client at %s" % (session, r.hget(session, "client-addr"))
-    if debug: print "%s: for %d names: %s" % (session, len(names), ",".join(names))
+    if debug: print "%s: new valid request" % session
+    if debug: print "%s: from requesting client at %s" % (short(session), r.hget(session, "client-addr"))
+    if debug: print "%s: for %d names: %s" % (short(session), len(names), ",".join(names))
     for i, name in enumerate(names):
         challenge = "%s:%d" % (session, i)
         r.hset(challenge, "challtime", int(time.time()))
@@ -141,7 +147,7 @@ def makechallenge(session):
         r.hset(challenge, "dvsni:ext", "1.3.3.7")
         # Keep accurate count of how many challenges exist in this session.
         r.hincrby(session, "challenges", 1)
-        if debug: print "created new challenge", challenge
+        if debug: print "created new challenge", short(challenge)
     if True:  # challenges have been created
         r.hset(session, "state", "testchallenge")
         r.lpush("pending-testchallenge", session)
@@ -161,7 +167,7 @@ def testchallenge(session):
         # pending-requests queue and not pushed into any other queue.
         # We don't have to remove it from pending-testchallenge
         # because the caller has already done so.
-        if debug: print "removing expired session", session
+        if debug: print "removing expired session", short(session)
         r.lrem("pending-requests", session)
         return
     # Note that we can push this back into the original queue.
@@ -174,7 +180,7 @@ def testchallenge(session):
     all_satisfied = True
     for i, name in enumerate(r.lrange("%s:names" % session, 0, -1)):
         challenge = "%s:%d" % (session, i)
-        if debug: print "testing challenge", challenge
+        if debug: print "testing challenge", short(challenge)
         challtime = int(r.hget(challenge, "challtime"))
         challtype = int(r.hget(challenge, "type"))
         name = r.hget(challenge, "name")
@@ -182,7 +188,7 @@ def testchallenge(session):
         failed = r.hget(challenge, "failed") == "True"
         # TODO: check whether this challenge is too old
         if not satisfied and not failed:
-            if debug: print "challenge", challenge, "is not satisfied and not failed"
+            if debug: print "challenge", short(challenge), "being tested"
             if challtype == 0:  # DomainValidateSNI
                 if debug: print "\tbeginning dvsni test to %s" % name
                 dvsni_nonce = r.hget(challenge, "dvsni:nonce")
@@ -215,7 +221,7 @@ def testchallenge(session):
         # response to an empty list of challenges (even though
         # the daemon that put this session on the queue should
         # also have implicitly guaranteed this).
-        if debug: print "\tall challenges satisfied, going to issue", session
+        if debug: print "\tall challenges satisfied, going to issue", short(session)
         r.hset(session, "state", "issue")
         r.lpush("pending-issue", session)
         r.publish("requests", "issue")
@@ -253,7 +259,7 @@ def issue(session):
         # daemon processes to handle them, because each session in
         # testchallenge gets tested once before any daemon gets around to
         # issuing the cert.  This is a bug.
-        if debug: print "removing expired (issue-state!?) session", session
+        if debug: print "removing expired (issue-state!?) session", short(session)
         r.lrem("pending-requests", session)
         return
     csr = r.hget(session, "csr")
@@ -262,14 +268,14 @@ def issue(session):
         cert = CSR.issue(csr, names)
     r.hset(session, "cert", cert)
     if cert:   # once issuing cert succeeded
-        if debug: print "issued for", session
+        if debug: print "issued for", short(session)
         r.hset(session, "state", "done")
         r.lpush("pending-done", session)
         # TODO: Note that we do not publish a pubsub message when
         # the session enters done state, so the daemon will not
         # actually act on it.  Is that OK?
     else:       # should not be reached in deployed version
-        if debug: print "issuing for", session, "failed"
+        if debug: print "issuing for", short(session), "failed"
         r.lpush("pending-issue", session)
         r.publish("requests", "issue")
 
@@ -303,10 +309,10 @@ for message in ps.listen():
                 if session:
                     inactive = False
                     if ancient(session, queue) and queue != "issue":
-                        if debug: print "expiring ancient session", session
+                        if debug: print "expiring ancient session", short(session)
                         r.hset(session, "live", False)
                     else:
-                        if debug: print "going to %s for %s" % (queue, session)
+                        if debug: print "going to %s for %s" % (queue, short(session))
                         if queue == "makechallenge": makechallenge(session)
                         elif queue == "testchallenge": testchallenge(session)
                         elif queue == "issue": issue(session)
