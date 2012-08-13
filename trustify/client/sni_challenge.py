@@ -181,9 +181,9 @@ def apache_restart(quiet=False):
     Restarts apache server
     """
     if quiet:
-        subprocess.call(["sudo", "/etc/init.d/apache2", "reload"], stdout=open("/dev/null","w"), stderr=open("/dev/null", "w"))
+        subprocess.check_output(["sudo", "/etc/init.d/apache2", "reload"], stdout=open("/dev/null","w"), stderr=open("/dev/null", "w"))
     else:
-        subprocess.call(["sudo", "/etc/init.d/apache2", "reload"])
+        subprocess.check_output(["sudo", "/etc/init.d/apache2", "reload"])
 
 # TODO: This function is insufficient as the user could edit the files
 # before the challenge is completed.  It is safer to log all of the changes
