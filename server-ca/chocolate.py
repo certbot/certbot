@@ -322,6 +322,7 @@ class session(object):
         # TODO: Process challenge-related messages from the client.
 
     def log(self, msg):
+        sessions.publish("logs", "%s: %s" % (self.id, msg))
         if debug: print "%s: %s" % (self.id, msg)
 
     def die(self, r, reason, uri=None):
