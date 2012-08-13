@@ -329,7 +329,8 @@ class session(object):
         self.kill()
         r.failure.cause = reason
         if uri: r.failure.URI = uri
-        self.log("Session from %s died for reason %s" % (web.ctx.ip, str(r.failure).split(":")[0].strip()))
+        self.log("from: %s" % web.ctx.ip)
+        self.log("died: %s" % str(r.failure).split(":")[1].strip())
         if uri: self.log("error URI: %s" % uri)
 
     def handleclientfailure(self, m, r):
