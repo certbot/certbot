@@ -77,7 +77,7 @@ clean_shutdown = False
 def signal_handler(a, b):
     global clean_shutdown
     clean_shutdown = True
-    r.publish("requests", "clean-exit")
+    r.publish("exit", "clean-exit")
 
 signal.signal(signal.SIGTERM, signal_handler)
 signal.signal(signal.SIGINT, signal_handler)
@@ -296,15 +296,25 @@ dispatch = { "makechallenge": ("pending-makechallenge", makechallenge),
 # item from each queue until all queues are empty.
 
 ps.subscribe(["requests"])
+ps.subscribe(["logs"])
+ps.subscribe(["exit"])
 for message in ps.listen():
-    populated_queue = message["data"]
-    if populated_queue == "clean-exit":
-        pass   # fall through to check whether this particular daemon
-               # instance has its clean_shutdown flag set
-    else:
+    if message["type"] != "message":
+        continue
+    if message["channel"] == "logs":
+        if debug: print message["data"]
+        continue
+    if message["channel"] == "exit":
+        break
+    if message["channel"] == "requests":
+        # populated_queue would be used by a more sophisticated scheduler
+        populated_queue = message["data"]
         while True:
             inactive = True
             for queue in ("makechallenge", "testchallenge", "issue"):
+                if clean_shutdown:
+                    inactive = True
+                    break
                 session = r.rpop("pending-" + queue)
                 if session:
                     inactive = False
