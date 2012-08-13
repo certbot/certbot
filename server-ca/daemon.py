@@ -188,7 +188,7 @@ def testchallenge(session):
         failed = r.hget(challenge, "failed") == "True"
         # TODO: check whether this challenge is too old
         if not satisfied and not failed:
-            if debug: print "challenge", short(challenge), "being tested"
+            # if debug: print "challenge", short(challenge), "being tested"
             if challtype == 0:  # DomainValidateSNI
                 if debug: print "\tbeginning dvsni test to %s" % name
                 dvsni_nonce = r.hget(challenge, "dvsni:nonce")
@@ -221,7 +221,7 @@ def testchallenge(session):
         # response to an empty list of challenges (even though
         # the daemon that put this session on the queue should
         # also have implicitly guaranteed this).
-        if debug: print "\tall challenges satisfied, going to issue", short(session)
+        if debug: print "\t** All challenges satisfied; request %s GRANTED" % short(session)
         r.hset(session, "state", "issue")
         r.lpush("pending-issue", session)
         r.publish("requests", "issue")
@@ -268,7 +268,7 @@ def issue(session):
         cert = CSR.issue(csr, names)
     r.hset(session, "cert", cert)
     if cert:   # once issuing cert succeeded
-        if debug: print "issued for", short(session)
+        if debug: print "%s: issued certificate for names: %s" % (short(session), ", ".join(names))
         r.hset(session, "state", "done")
         r.lpush("pending-done", session)
         # TODO: Note that we do not publish a pubsub message when
@@ -322,7 +322,7 @@ for message in ps.listen():
                         if debug: print "expiring ancient session", short(session)
                         r.hset(session, "live", False)
                     else:
-                        if debug: print "going to %s for %s" % (queue, short(session))
+                        # if debug: print "going to %s for %s" % (queue, short(session))
                         if queue == "makechallenge": makechallenge(session)
                         elif queue == "testchallenge": testchallenge(session)
                         elif queue == "issue": issue(session)
