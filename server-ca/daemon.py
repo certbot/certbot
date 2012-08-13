@@ -221,7 +221,7 @@ def testchallenge(session):
         # response to an empty list of challenges (even though
         # the daemon that put this session on the queue should
         # also have implicitly guaranteed this).
-        if debug: print "\t** All challenges satisfied; request %s GRANTED", short(session)
+        if debug: print "\t** All challenges satisfied; request %s GRANTED" % short(session)
         r.hset(session, "state", "issue")
         r.lpush("pending-issue", session)
         r.publish("requests", "issue")
