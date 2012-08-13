@@ -125,7 +125,11 @@ def makechallenge(session):
     #
     # Make one challenge for each name.  (This one-to-one relationship
     # is not an inherent protocol requirement!)
-    for i, name in enumerate(r.lrange("%s:names" % session, 0, -1)):
+    names = r.lrange("%s:names" % session, 0, -1)
+    if debug: print "%s: new session (request complies with policy)" % session
+    if debug: print "%s: from requesting client at %s" % (session, r.hget(session, "client-addr"))
+    if debug: print "%s: for %d names: %s" % (session, len(names), ",".join(names))
+    for i, name in enumerate(names):
         challenge = "%s:%d" % (session, i)
         r.hset(challenge, "challtime", int(time.time()))
         r.hset(challenge, "type", 0)   # DomainValidateSNI
@@ -187,7 +191,8 @@ def testchallenge(session):
                 direct_result, direct_reason = verify_challenge(name, dvsni_r, dvsni_nonce, False)
                 proxy_result, proxy_reason = verify_challenge(name, dvsni_r, dvsni_nonce, True)
                 if debug:
-                    print "\tdirect probe: %s (%s)  proxy probe: %s (%s)" % (direct_result, direct_reason, proxy_result, proxy_reason)
+                    print "\t...direct probe: %s (%s)" % (direct_result, direct_reason)
+                    print "\tTor proxy probe: %s (%s)" % (proxy_result, proxy_reason)
                 if direct_result and proxy_result:
                     r.hset(challenge, "satisfied", True)
                 else: 
@@ -210,7 +215,7 @@ def testchallenge(session):
         # response to an empty list of challenges (even though
         # the daemon that put this session on the queue should
         # also have implicitly guaranteed this).
-        if debug: print "\tall satisfied, going to issue", session
+        if debug: print "\tall challenges satisfied, going to issue", session
         r.hset(session, "state", "issue")
         r.lpush("pending-issue", session)
         r.publish("requests", "issue")

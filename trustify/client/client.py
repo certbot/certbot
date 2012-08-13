@@ -371,6 +371,8 @@ def authenticate():
                     print "Enabling Site", host.file
                 config.enable_site(host.file)
 
+        for i in range(10000):
+            continue
         sni_challenge.apache_restart(quiet=curses)
     elif r.failure.IsInitialized():
         print "Server reported failure."
