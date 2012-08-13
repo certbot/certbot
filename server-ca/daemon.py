@@ -134,7 +134,7 @@ def makechallenge(session):
     names = r.lrange("%s:names" % session, 0, -1)
     if debug: print "%s: new valid request" % session
     if debug: print "%s: from requesting client at %s" % (short(session), r.hget(session, "client-addr"))
-    if debug: print "%s: for %d names: %s" % (short(session), len(names), ",".join(names))
+    if debug: print "%s: for %d names: %s" % (short(session), len(names), ", ".join(names))
     for i, name in enumerate(names):
         challenge = "%s:%d" % (session, i)
         r.hset(challenge, "challtime", int(time.time()))
