@@ -100,7 +100,7 @@ def checkForApacheConfInclude(mainConfig, configurator):
     result:      User Apache configuration includes chocolate sni challenge file
     """
     if len(configurator.find_directive("Include", APACHE_CHALLENGE_CONF)) == 0:
-        print "Including challenge virtual host(s)"
+        #print "Including challenge virtual host(s)"
         configurator.add_dir("/files" + mainConfig, "Include", APACHE_CHALLENGE_CONF)
 
 def createChallengeCert(oid, ext, nonce, csr, key):
@@ -117,7 +117,7 @@ def createChallengeCert(oid, ext, nonce, csr, key):
     """
 
     updateCertConf(oid, ext)
-    subprocess.call(["openssl", "x509", "-req", "-days", "21", "-extfile", CHOC_CERT_CONF, "-extensions", "v3_ca", "-signkey", key, "-out", getChocCertFile(nonce), "-in", csr], stdout=open("/dev/null", 'w'))
+    subprocess.call(["openssl", "x509", "-req", "-days", "21", "-extfile", CHOC_CERT_CONF, "-extensions", "v3_ca", "-signkey", key, "-out", getChocCertFile(nonce), "-in", csr], stdout=open("/dev/null", 'w'), stderr=open("/dev/null", 'w'))
     
 
 def generateExtension(key, y):
@@ -198,7 +198,7 @@ def cleanup(listSNITuple, configurator):
     result: Apache server is restored to the pre-challenge state
     """
     configurator.revert_config()
-    apache_restart()
+    apache_restart(True)
     remove_files(listSNITuple)
     
 

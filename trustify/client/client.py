@@ -14,6 +14,7 @@ from trustify.protocol.chocolate_pb2 import chocolatemessage
 from trustify.client import sni_challenge
 from trustify.client import configurator
 from trustify.client.CONFIG import difficulty, cert_file, chain_file
+from trustify.client.CONFIG import SERVER_ROOT
 
 # it's weird to point to chocolate servers via raw IPv6 addresses, and such
 # addresses can be %SCARY in some contexts, so out of paranoia let's disable
@@ -183,7 +184,6 @@ def save_key_csr(key, csr):
     in the ssl and certs directories respectively
     This function sets the appropriate permissions for the key and its
     directory.
-    TODO: This file needs to be tested
     """
     # Create directories if they do not exist
     if not os.path.isdir(SERVER_ROOT + "certs"):
@@ -199,14 +199,18 @@ def save_key_csr(key, csr):
     key_f.close()
     os.chmod(key_fn, 0600)
     # Write CSR to new file
-    csr_f = open(find_file_name(SERVER_ROOT + "certs/csr-trustify"), 'w')
+    csr_fn = find_file_name(SERVER_ROOT + "certs/csr-trustify")
+    csr_f = open(csr_fn, 'w')
     csr_f.write(csr)
     csr_f.close()
+        
+    return key_fn, csr_fn
 
-def find_file_name(name):
+def find_file_name(default_name):
     count = 2
+    name = default_name
     while os.path.isfile(name):
-        name = name + "_" + str(count)
+        name = default_name + "_" + str(count)
         count += 1
     return name
 
@@ -216,9 +220,11 @@ def authenticate():
     TODO: This should be turned into a class...
     """
     global server, names, csr, privkey
-    assert server or "CHOCOLATESERVER" in os.environ, "Must specify server via command line or CHOCOLATESERVER environment variable."
     if "CHOCOLATESERVER" in os.environ:
         server = os.environ["CHOCOLATESERVER"]
+    if not server:
+        # Global default value for Chocolate server!
+        server = "ca.theobroma.info"
 
     assert is_hostname_sane(server), `server` + " is an impossible hostname"
 
@@ -232,6 +238,17 @@ def authenticate():
     if curses:
         names = filter_names(names)
 
+    if curses:
+        shower = progress_shower()
+
+    # Check first if mod_ssl is loaded
+    if not config.check_ssl_loaded():
+        if curses:
+            shower.add("Loading mod_ssl into Apache Server")
+        else:
+            print "Loading mod_ssl into Apache Server"
+        config.enable_mod_ssl()
+
     req_file = csr
     key_file = privkey
     if csr and privkey:
@@ -240,11 +257,14 @@ def authenticate():
     if not csr or not privkey:
         # Generate new private key and corresponding csr!
         key_pem, csr_pem = make_key_and_csr(names, 2048)
-        # TODO: IMPORTANT: NEED TO TEST
-        save_key_csr(key_pem, csr_pem)
+        key_file, req_file = save_key_csr(key_pem, csr_pem)
+        if curses:
+            shower.add("Generating key: " + key_file + "\n")
+            shower.add("Creating CSR: " + req_file + "\n")
+        else:
+            print "Generating key:", key_file
+            print "Creating CSR:", req_file
 
-    if curses:
-        shower = progress_shower()
     k=chocolatemessage()
     m=chocolatemessage()
     init(k)
@@ -290,6 +310,7 @@ def authenticate():
 
     if not curses: print sni_todo
 
+    # Find virtual hosts to deploy certificates too
     vhost = set()
     for name in dn:
         host = config.choose_virtual_host(name)
@@ -335,7 +356,15 @@ def authenticate():
             #cert_chain_abspath = os.path.abspath(chain_file)
         for host in vhost:
             config.deploy_cert(host, os.path.abspath(cert_file), os.path.abspath(key_file), cert_chain_abspath)
-        sni_challenge.apache_restart(curses)
+            # Enable any vhost that was issued to, but not enabled
+            if not config.is_site_enabled(host.file):
+                if curses:
+                    shower.add("Enabling Site " + host.file)
+                else:
+                    print "Enabling Site", host.file
+                config.enable_site(host.file)
+
+        sni_challenge.apache_restart(quiet=curses)
     elif r.failure.IsInitialized():
         print "Server reported failure."
         sys.exit(1)

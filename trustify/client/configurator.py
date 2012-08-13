@@ -7,8 +7,11 @@ import socket
 
 from trustify.client.CONFIG import SERVER_ROOT
 
+#TODO - Stop Augeas from loading up backup emacs files in sites-available
+
 class VH(object):
-    def __init__(self, vh_path, vh_addrs):
+    def __init__(self, filename_path, vh_path, vh_addrs):
+        self.file = filename_path
         self.path = vh_path
         self.addrs = vh_addrs
         self.names = []
@@ -78,7 +81,7 @@ class Configurator(object):
         
         return self.save("Virtual Server - deploying certificate")
 
-    def choose_virtual_host(self, name):
+    def choose_virtual_host(self, name, ssl=True):
         """
         Chooses a virtual host based on the given domain name
 
@@ -161,7 +164,7 @@ class Configurator(object):
             args = self.aug.match(p + "/arg")
             for arg in args:
                 addrs.append(self.aug.get(arg))
-            vhs.append(VH(p, addrs))
+            vhs.append(VH(self.get_file_path(p), p, addrs))
 
         for host in vhs:
             self.__add_servernames(host)
@@ -253,13 +256,13 @@ class Configurator(object):
             tup = addr.partition(":") 
             if tup[0] == "_default_":
                 if not self.is_name_vhost(default_addr):
-                    print "Setting all VirtualHosts on " + default_addr + " to be name based virtual hosts"
+                    #print "Setting all VirtualHosts on " + default_addr + " to be name based virtual hosts"
                     self.add_name_vhost(default_addr)
                 return True
         # No default addresses... so set each one individually
         for addr in vhost.addrs:
             if not self.is_name_vhost(addr):
-                print "Setting VirtualHost at", addr, "to be a name based virtual host"
+                #print "Setting VirtualHost at", addr, "to be a name based virtual host"
                 self.add_name_vhost(addr)
         
         return True
@@ -468,7 +471,22 @@ class Configurator(object):
                 if found == len(ssl_vhost.addrs):
                     return vh
         return None
-                
+
+    def get_file_path(self, vhost_path):
+        # Strip off /files
+        avail_fp = vhost_path[6:]
+        # This can be optimized...
+        while True:
+            find_if = avail_fp.find("/IfModule")
+            if  find_if != -1:
+                avail_fp = avail_fp[:find_if]
+                continue
+            find_vh = avail_fp.find("/VirtualHost")
+            if find_vh != -1:
+                avail_fp = avail_fp[:find_vh]
+                continue
+            break
+        return avail_fp
     
     def is_site_enabled(self, avail_fp):
         """
@@ -571,7 +589,7 @@ class Configurator(object):
         for all saves with reversible=True
         """
         for f in self.mod_files:
-            print "reverting", f
+            #print "reverting", f
             os.rename(f + ".augsave", f)
         self.aug.load()
         self.mod_files.clear()
@@ -580,6 +598,7 @@ class Configurator(object):
 def main():
     config = Configurator()
     for v in config.vhosts:
+        print v.file
         print v.addrs
         for name in v.names:
             print name
