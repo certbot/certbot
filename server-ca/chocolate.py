@@ -326,10 +326,11 @@ class session(object):
         if debug: print "%s: %s" % (self.id, msg)
 
     def die(self, r, reason, uri=None):
-        self.log("Session from %s died for reason %s" % (web.ctx.ip, reason))
         self.kill()
         r.failure.cause = reason
         if uri: r.failure.URI = uri
+        self.log("Session from %s died for reason %s" % (web.ctx.ip, str(r.failure).split(":")[0].strip())
+        if uri: self.log("error URI: %s" % uri)
 
     def handleclientfailure(self, m, r):
         if r.failure.IsInitialized(): return
