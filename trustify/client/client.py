@@ -251,7 +251,7 @@ def authenticate():
     # Check first if mod_ssl is loaded
     if not config.check_ssl_loaded():
         if curses:
-            shower.add("Loading mod_ssl into Apache Server")
+            shower.add("Loading mod_ssl into Apache Server\n")
         else:
             print "Loading mod_ssl into Apache Server"
         config.enable_mod_ssl()
