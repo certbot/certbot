@@ -268,7 +268,7 @@ def issue(session):
         cert = CSR.issue(csr, names)
     r.hset(session, "cert", cert)
     if cert:   # once issuing cert succeeded
-        if debug: print "issued for", short(session)
+        if debug: print "%s: issued certificate for names: %s" % (short(session), ", ".join(names))
         r.hset(session, "state", "done")
         r.lpush("pending-done", session)
         # TODO: Note that we do not publish a pubsub message when
@@ -322,7 +322,7 @@ for message in ps.listen():
                         if debug: print "expiring ancient session", short(session)
                         r.hset(session, "live", False)
                     else:
-                        if debug: print "going to %s for %s" % (queue, short(session))
+                        # if debug: print "going to %s for %s" % (queue, short(session))
                         if queue == "makechallenge": makechallenge(session)
                         elif queue == "testchallenge": testchallenge(session)
                         elif queue == "issue": issue(session)
