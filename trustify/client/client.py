@@ -239,6 +239,11 @@ def authenticate():
     TODO: This should be turned into a class...
     """
     global server, names, csr, privkey
+
+    # Check if root
+    if not os.geteuid()==0:
+        sys.exit("\nOnly root can run trustify\n")
+
     if "CHOCOLATESERVER" in os.environ:
         server = os.environ["CHOCOLATESERVER"]
     if not server:
