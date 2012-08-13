@@ -1,3 +1,10 @@
+trustify (1.0~20120812-1.1) UNRELEASED; urgency=low
+
+  * Non-maintainer upload.
+  * Various hacks and merges 
+
+ -- Peter Eckersley <pde@eff.org>  Sun, 12 Aug 2012 19:21:01 -0700
+
 trustify (1.0~20120812-1) UNRELEASED; urgency=low
 
   * Initial release. (Closes: #XXXXXX)
