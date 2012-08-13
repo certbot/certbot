@@ -518,7 +518,7 @@ class Configurator(object):
         TODO: TEST
         """
         # Use check_output so the command will finish before reloading
-        subprocess.check_output(["sudo", "a2enmod", "ssl"], stdout=open("/dev/null", 'w'), stderr=open("/dev/null", 'w'))
+        subprocess.check_output(["sudo", "a2enmod", "ssl"], stderr=open("/dev/null", 'w'))
         subprocess.call(["sudo", "/etc/init.d/apache2", "reload"], stdout=open("/dev/null", 'w'))
 
     def fnmatch_to_re(self, cleanFNmatch):
