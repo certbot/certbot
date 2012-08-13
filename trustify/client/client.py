@@ -177,9 +177,10 @@ def make_request(server, m, csr, quiet=False):
     m.request.csr = csr
     hashcash_cmd = ["hashcash", "-P", "-m", "-z", "12", "-b", `difficulty`, "-r", server]
     if quiet:
-        hashcash = subprocess.check_output(hashcash_cmd, preexec_fn=drop_privs, shell=False, stderr=open("/dev/null", "w")).rstrip()
+        hashcash = subprocess.Popen(hashcash_cmd, preexec_fn=drop_privs, shell= False, stdout=subprocess.PIPE, stderr=open("/dev/null", "w")).communicate()[0].rstrip()
     else:
-        hashcash = subprocess.check_output(hashcash_cmd, preexec_fn=drop_privs, shell=False).rstrip()
+        hashcash = subprocess.Popen(hashcash_cmd, preexec_fn=drop_privs, shell= False, stdout=subprocess.PIPE).communicate()[0].rstrip()
+
     if hashcash: m.request.clientpuzzle = hashcash
 
 def sign(key, m):

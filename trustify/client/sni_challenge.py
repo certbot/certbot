@@ -7,6 +7,7 @@ import hmac
 import hashlib
 from shutil import move
 from os import remove, close, path
+import sys
 import binascii
 import augeas
 
@@ -180,10 +181,14 @@ def apache_restart(quiet=False):
     """
     Restarts apache server
     """
-    if quiet:
-        subprocess.call(["sudo", "/etc/init.d/apache2", "reload"], stdout=open("/dev/null","w"), stderr=open("/dev/null", "w"))
-    else:
-        subprocess.call(["sudo", "/etc/init.d/apache2", "reload"])
+    try:
+        if quiet:
+            subprocess.check_call(["sudo", "/etc/init.d/apache2", "reload"], stdout=open("/dev/null","w"), stderr=open("/dev/null", "w"))
+        else:
+            subprocess.check_call(["sudo", "/etc/init.d/apache2", "reload"])
+    except:
+        print "Apache Restart Failed - Please Check the Configuration"
+        sys.exit(1)
 
 # TODO: This function is insufficient as the user could edit the files
 # before the challenge is completed.  It is safer to log all of the changes
