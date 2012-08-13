@@ -127,7 +127,8 @@ def cn(csr):
 
 def subject_names(csr):
     """
-    Get the cn and subjectAltNames from this CSR.
+    Get the cn and subjectAltNames from this CSR
+    (removing duplicates but retaining original order).
 
     @type csr: str
     @param csr: PEM-encoded string of the CSR
@@ -137,7 +138,7 @@ def subject_names(csr):
     """
     csr = str(csr)
     names = []
-    names.append(cn(csr))
+    names.append(cn(csr).lower())
     
     req = M2Crypto.X509.load_request_string(csr)
     for ext in req.get_extensions():            # requires M3Crypto modification
@@ -148,7 +149,9 @@ def subject_names(csr):
             for san in sans:
                 san = san.strip() # remove leading space
                 if san.startswith('DNS:'):
-                    names.append(san[len('DNS:'):])
+                    new_name = san[len('DNS:'):].lower()
+                    if new_name not in names:
+                        names.append(new_name)
 
             # Don't exit loop - support multiple SAN extensions??
 

@@ -616,7 +616,6 @@ def main():
     print config.get_all_names()
 
     config.parse_file("/etc/apache2/ports_test.conf")
-    print config.check_ssl_loaded()
     #config.make_vhost_ssl("/etc/apache2/sites-available/default")
     """
     # Testing redirection
