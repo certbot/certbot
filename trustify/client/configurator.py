@@ -522,11 +522,9 @@ class Configurator(object):
         """
         try:
 	    # Use check_output so the command will finish before reloading      
-            subprocess.check_call(["sudo", "a2enmod", "ssl"], stdout=open("/dev\
-/null", 'w'), stderr=open("/dev/null", 'w'))
+            subprocess.check_call(["sudo", "a2enmod", "ssl"], stdout=open("/dev/null", 'w'), stderr=open("/dev/null", 'w'))
             # Hopefully this waits for output                                   
-            subprocess.check_call(["sudo", "/etc/init.d/apache2", "reload"], st\
-dout=open("/dev/null", 'w'), stderr=open("/dev/null", 'w'))
+            subprocess.check_call(["sudo", "/etc/init.d/apache2", "reload"], stdout=open("/dev/null", 'w'), stderr=open("/dev/null", 'w'))
         except:
 	    print "Error enabling mod_ssl"
             sys.exit(1)
