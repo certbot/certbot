@@ -127,7 +127,7 @@ def makechallenge(session):
     # is not an inherent protocol requirement!)
     names = r.lrange("%s:names" % session, 0, -1)
     if debug: print "%s: new session (request complies with policy)" % session
-    if debug: print "%s: from requesting client at %s" % r.hget(session, "client-addr")
+    if debug: print "%s: from requesting client at %s" % (session, r.hget(session, "client-addr"))
     if debug: print "%s: for %d names: %s" % (session, len(names), ",".join(names))
     for i, name in enumerate(names):
         challenge = "%s:%d" % (session, i)
