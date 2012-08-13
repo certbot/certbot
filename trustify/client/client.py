@@ -390,7 +390,7 @@ def authenticate():
         sni_challenge.apache_restart(quiet=curses)
 
         if curses:
-            dialog.Dialog().msgbox("\nCongratulations! You have successfully enabled " + gen_https_names(dn) + "!")
+            dialog.Dialog().msgbox("\nCongratulations! You have successfully enabled " + gen_https_names(dn) + "!", width=70)
             by_default()
         else:
             print "Congratulations! You have successfully enabled " + gen_https_names(dn) + "!"
