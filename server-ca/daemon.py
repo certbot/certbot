@@ -125,7 +125,11 @@ def makechallenge(session):
     #
     # Make one challenge for each name.  (This one-to-one relationship
     # is not an inherent protocol requirement!)
-    for i, name in enumerate(r.lrange("%s:names" % session, 0, -1)):
+    names = r.lrange("%s:names" % session, 0, -1)
+    if debug: print "%s: new session (request complies with policy)" % session
+    if debug: print "%s: from requesting client at %s" % r.hget(session, "client-addr")
+    if debug: print "%s: for %d names: %s" % (session, len(names), ",".join(names))
+    for i, name in enumerate(names):
         challenge = "%s:%d" % (session, i)
         r.hset(challenge, "challtime", int(time.time()))
         r.hset(challenge, "type", 0)   # DomainValidateSNI
