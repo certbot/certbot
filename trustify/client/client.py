@@ -222,12 +222,28 @@ def find_file_name(default_name):
         count += 1
     return name
 
+def gen_https_names(domains):
+    result = ""
+    if len(domains) > 2:
+        for i in range(len(domains)-1):
+            result = result + "https://" + domains[i] + ", "
+        result = result + "and "
+    if len(domains) == 2:
+        return "https://" + domains[0] + " and https://" + domains[1]
+    result = result + "https://" + domains[len(domains)-1]
+    return result
+
 def authenticate():
     """
     Main call to do DV_SNI validation and deploy the trustify certificate
     TODO: This should be turned into a class...
     """
     global server, names, csr, privkey
+
+    # Check if root
+    if not os.geteuid()==0:
+        sys.exit("\nOnly root can run trustify\n")
+
     if "CHOCOLATESERVER" in os.environ:
         server = os.environ["CHOCOLATESERVER"]
     if not server:
@@ -251,7 +267,7 @@ def authenticate():
     # Check first if mod_ssl is loaded
     if not config.check_ssl_loaded():
         if curses:
-            shower.add("Loading mod_ssl into Apache Server")
+            shower.add("Loading mod_ssl into Apache Server\n")
         else:
             print "Loading mod_ssl into Apache Server"
         config.enable_mod_ssl()
@@ -371,9 +387,14 @@ def authenticate():
                     print "Enabling Site", host.file
                 config.enable_site(host.file)
 
-        for i in range(10000):
-            continue
         sni_challenge.apache_restart(quiet=curses)
+
+        if curses:
+            shower.add("\nCongratulations! You have successfully enabled " + gen_https_names(dn) + "!")
+        else:
+            print "Congratulations! You have successfully enabled " + gen_https_names(dn) + "!"
+
+    
     elif r.failure.IsInitialized():
         print "Server reported failure."
         sys.exit(1)
