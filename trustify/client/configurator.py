@@ -368,9 +368,8 @@ class Configurator(object):
         Checks apache2ctl to get loaded module list
         """
         try:
-            p = subprocess.check_output(['sudo', '/usr/sbin/apache2ctl', '-M'],\
- stderr=open("/dev/null", 'w'))
-            #p = subprocess.Popen(['sudo', '/usr/sbin/apache2ctl', '-M'], stdout=subprocess.PIPE, stderr=open("/dev/null", 'w')).communicate()[0]
+            #p = subprocess.check_output(['sudo', '/usr/sbin/apache2ctl', '-M'], stderr=open("/dev/null", 'w'))
+            p = subprocess.Popen(['sudo', '/usr/sbin/apache2ctl', '-M'], stdout=subprocess.PIPE, stderr=open("/dev/null", 'w')).communicate()[0]
         except:
             print "Error accessing apache2ctl for loaded modules!"
             print "This may be caused by an Apache Configuration Error"
@@ -521,11 +520,16 @@ class Configurator(object):
         Enables mod_ssl
         TODO: TEST
         """
-        # Use check_output so the command will finish before reloading
-        subprocess.check_output(["sudo", "a2enmod", "ssl"], stdout=open("/dev/null", 'w'), stderr=open("/dev/null", 'w'))
-        # Hopefully this waits for output
-        #text = subprocess.Popen(['sudo', 'a2enmod', 'ssl'], stdout=subprocess.PIPE, stderr=open("/dev/null", 'w')).communicate()[0]
-        subprocess.check_output(["sudo", "/etc/init.d/apache2", "reload"], stdout=open("/dev/null", 'w'))
+        try:
+	    # Use check_output so the command will finish before reloading      
+            subprocess.check_call(["sudo", "a2enmod", "ssl"], stdout=open("/dev\
+/null", 'w'), stderr=open("/dev/null", 'w'))
+            # Hopefully this waits for output                                   
+            subprocess.check_call(["sudo", "/etc/init.d/apache2", "reload"], st\
+dout=open("/dev/null", 'w'), stderr=open("/dev/null", 'w'))
+        except:
+	    print "Error enabling mod_ssl"
+            sys.exit(1)
 
     def fnmatch_to_re(self, cleanFNmatch):
         """
