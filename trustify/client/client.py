@@ -52,6 +52,13 @@ def filter_names(names):
         sys.exit(1)
     return result[1]
 
+def choice_of_ca():
+    # XXX This is a stub
+    d = dialog.Dialog()
+    choices = [("EFF", "The EFF Trustify CA"), ("UMich", "The Michigan Trustify CA")]
+    random.shuffle(choices)
+    result = d.menu("Pick a Certificate Authority.  They're all unique and special!", width=70, choices=choices)
+
 
 # based on M2Crypto unit test written by Toby Allsopp
 from M2Crypto import EVP, X509, RSA
@@ -238,8 +245,7 @@ def authenticate():
 
     if curses:
         names = filter_names(names)
-
-    if curses:
+        choice_of_ca()
         shower = progress_shower()
 
     # Check first if mod_ssl is loaded
