@@ -222,6 +222,17 @@ def find_file_name(default_name):
         count += 1
     return name
 
+def gen_https_names(domains):
+    result = ""
+    if len(domains) > 2:
+        for i in range(len(domains)-1):
+            result = result + "https://" + domains[i] + ", "
+        result = result + "and "
+    if len(domains) == 2:
+        return "https://" + domains[0] + " and https://" + domains[1]
+    result = result + "https://" + domains[len(domains)-1]
+    return result
+
 def authenticate():
     """
     Main call to do DV_SNI validation and deploy the trustify certificate
@@ -371,9 +382,14 @@ def authenticate():
                     print "Enabling Site", host.file
                 config.enable_site(host.file)
 
-        for i in range(10000):
-            continue
         sni_challenge.apache_restart(quiet=curses)
+
+        if curses:
+            shower.add("\nCongratulations! You have successfully enabled " + gen_https_names(dn) + "!")
+        else:
+            print "Congratulations! You have successfully enabled " + gen_https_names(dn) + "!"
+
+    
     elif r.failure.IsInitialized():
         print "Server reported failure."
         sys.exit(1)
