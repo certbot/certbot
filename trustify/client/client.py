@@ -24,6 +24,7 @@ allow_raw_ipv6_server = False
 opts = getopt.getopt(sys.argv[1:], "", ["text", "privkey=", "csr=", "server="])
 
 curses = True
+shower = None
 csr = None
 privkey = None
 server = None
@@ -201,28 +202,37 @@ def save_key_csr(key, csr):
         # Need leading 0 for octal integer
         os.chmod(SERVER_ROOT + "ssl", 0700)
     # Write key to new file and change permissions
-    key_fn = find_file_name(SERVER_ROOT + "ssl/key-trustify")
-    key_f = open(key_fn, 'w')
+    key_f, key_fn = unique_file(SERVER_ROOT+"ssl/key-trustify.pem", 0600)
     key_f.write(key)
     key_f.close()
     os.chmod(key_fn, 0600)
     # Write CSR to new file
-    csr_fn = find_file_name(SERVER_ROOT + "certs/csr-trustify")
-    csr_f = open(csr_fn, 'w')
+    csr_f, csr_fn = unique_file(SERVER_ROOT + "certs/csr-trustify.pem")
     csr_f.write(csr)
     csr_f.close()
         
     return key_fn, csr_fn
 
-def find_file_name(default_name):
-    count = 2
-    name = default_name
-    while os.path.isfile(name):
-        name = default_name + "_" + str(count)
+def unique_file(default_name, mode = 0777):
+    """
+    Safely finds a unique file for writing only (by default)
+    """
+    count = 1
+    f_parsed = os.path.splitext(default_name)
+    while 1:
+        try:
+            fd = os.open(default_name, os.O_CREAT|os.O_EXCL|os.O_WRONLY, mode)
+            return os.fdopen(fd), default_name
+        except OSError:
+            pass
+        file_name = f_parsed[0] + '_' + str(count) + f_parsed[1]
         count += 1
-    return name
 
 def gen_https_names(domains):
+    """
+    Returns a string of the domains formatted nicely with https:// prepended
+    to each
+    """
     result = ""
     if len(domains) > 2:
         for i in range(len(domains)-1):
@@ -234,6 +244,7 @@ def gen_https_names(domains):
     return result
 
 def output(outputStr):
+    global shower
     if curses:
         shower.add(outputStr + "\n")
     else:
@@ -244,7 +255,7 @@ def authenticate():
     Main call to do DV_SNI validation and deploy the trustify certificate
     TODO: This should be turned into a class...
     """
-    global server, names, csr, privkey
+    global server, names, csr, privkey, shower
 
     # Check if root
     if not os.geteuid()==0:
@@ -356,16 +367,17 @@ def authenticate():
         cert_chain_abspath = None
         with open(cert_file, "w") as f:
             f.write(r.success.certificate)
+
+        output("Server issued certificate; certificate written to %s" % cert_file)
         if r.success.chain:
             with open(chain_file, "w") as f:
                 f.write(r.success.chain)
-        
-        output("Server issued certificate; certificate written to %s" % cert_file)
-        if r.success.chain: 
+ 
             output("Cert chain written to %s" % chain_file)
 
             # This expects a valid chain file
             cert_chain_abspath = os.path.abspath(chain_file)
+
         for host in vhost:
             config.deploy_cert(host, os.path.abspath(cert_file), os.path.abspath(key_file), cert_chain_abspath)
             # Enable any vhost that was issued to, but not enabled
