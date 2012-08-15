@@ -195,17 +195,16 @@ def save_key_csr(key, csr):
     directory.
     """
     # Create directories if they do not exist
+    # TODO: Lookup what permissions cert files/directory should have...
     if not os.path.isdir(SERVER_ROOT + "certs"):
         os.makedirs(SERVER_ROOT + "certs")
     if not os.path.isdir(SERVER_ROOT + "ssl"):
-        os.makedirs(SERVER_ROOT + "ssl")
-        # Need leading 0 for octal integer
-        os.chmod(SERVER_ROOT + "ssl", 0700)
+        os.makedirs(SERVER_ROOT + "ssl", 0700)
+
     # Write key to new file and change permissions
     key_f, key_fn = unique_file(SERVER_ROOT+"ssl/key-trustify.pem", 0600)
     key_f.write(key)
     key_f.close()
-    os.chmod(key_fn, 0600)
     # Write CSR to new file
     csr_f, csr_fn = unique_file(SERVER_ROOT + "certs/csr-trustify.pem")
     csr_f.write(csr)
@@ -221,11 +220,11 @@ def unique_file(default_name, mode = 0777):
     f_parsed = os.path.splitext(default_name)
     while 1:
         try:
-            fd = os.open(default_name, os.O_CREAT|os.O_EXCL|os.O_WRONLY, mode)
-            return os.fdopen(fd), default_name
+            fd = os.open(default_name, os.O_CREAT|os.O_EXCL|os.O_RDWR, mode)
+            return os.fdopen(fd, 'w'), default_name
         except OSError:
             pass
-        file_name = f_parsed[0] + '_' + str(count) + f_parsed[1]
+        default_name = f_parsed[0] + '_' + str(count) + f_parsed[1]
         count += 1
 
 def gen_https_names(domains):
@@ -330,7 +329,7 @@ def authenticate():
         if not curses: print chall
         if chall.type == r.DomainValidateSNI:
             if curses:
-               shower.add("\tDomainValidateSNI challenge for name %s." % chall.name)
+               shower.add("\tDomainValidateSNI challenge for name %s.\n" % chall.name)
             dvsni_nonce, dvsni_y, dvsni_ext = chall.data
         sni_todo.append( (chall.name, dvsni_y, dvsni_nonce, dvsni_ext) )
         dn.append(chall.name)
