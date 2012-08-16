@@ -6,6 +6,10 @@ CONFIG_DIR = "/etc/trustify/"
 WORK_DIR = "/var/lib/trustify/"
 # Directory where configuration backups are stored
 BACKUP_DIR = WORK_DIR + "backups/"
+# Where all keys should be stored
+KEY_DIR = SERVER_ROOT + "ssl/"
+# Certificate storage
+CERT_DIR = SERVER_ROOT + "certs/"
 
 # Used by openssl to sign challenge certificate with trustify extension
 CHOC_CERT_CONF = CONFIG_DIR + "choc_cert_extensions.cnf"
@@ -23,5 +27,5 @@ NONCE_SIZE = 32
 difficulty = 23 
 
 # Trustify cert and chain files
-cert_file = "cert.pem"
-chain_file = "chain.pem"
+cert_file = CERT_DIR + "cert.pem"
+chain_file = CERT_DIR + "chain.pem"

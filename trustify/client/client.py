@@ -14,7 +14,7 @@ from trustify.protocol.chocolate_pb2 import chocolatemessage
 from trustify.client import sni_challenge
 from trustify.client import configurator
 from trustify.client.CONFIG import difficulty, cert_file, chain_file
-from trustify.client.CONFIG import SERVER_ROOT
+from trustify.client.CONFIG import KEY_DIR, CERT_DIR
 
 # it's weird to point to chocolate servers via raw IPv6 addresses, and such
 # addresses can be %SCARY in some contexts, so out of paranoia let's disable
@@ -198,17 +198,17 @@ def save_key_csr(key, csr):
     # This should probably go in the installation script
     # Make sure directories exist & make sure directories are set with the
     # correct permissions if they do exist.
-    if not os.path.isdir(SERVER_ROOT + "certs"):
-        os.makedirs(SERVER_ROOT + "certs", 0755)
-    if not os.path.isdir(SERVER_ROOT + "ssl"):
-        os.makedirs(SERVER_ROOT + "ssl", 0700)
+    if not os.path.isdir(CERT_DIR):
+        os.makedirs(CERT_DIR, 0755)
+    if not os.path.isdir(KEY_DIR):
+        os.makedirs(KEY_DIR, 0700)
 
     # Write key to new file and change permissions
-    key_f, key_fn = unique_file(SERVER_ROOT+"ssl/key-trustify.pem", 0600)
+    key_f, key_fn = unique_file(KEY_DIR + "key-trustify.pem", 0600)
     key_f.write(key)
     key_f.close()
     # Write CSR to new file
-    csr_f, csr_fn = unique_file(SERVER_ROOT + "certs/csr-trustify.pem", 0644)
+    csr_f, csr_fn = unique_file(CERT_DIR + "csr-trustify.pem", 0644)
     csr_f.write(csr)
     csr_f.close()
         
