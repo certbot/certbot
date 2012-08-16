@@ -5,6 +5,7 @@ import os
 import sys
 import socket
 import time
+import shutil
 
 from trustify.client.CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES
 #TODO - Stop Augeas from loading up backup emacs files in sites-available
@@ -584,7 +585,7 @@ class Configurator(object):
             for path in save_paths:
                 # Strip off /files
                 filename = self.aug.get(path)[6:]
-                if filename in self.mod_files:
+                if filename in mod_files:
                     # Output a warning... hopefully this can be avoided so more
                     # complex code doesn't have to be written
                     print "Reversible file has been overwritten -", filename
@@ -632,14 +633,16 @@ class Configurator(object):
                 sys.exit()
     
         try:
-            for f in self.mod_files:
-                shutil.copy2(f.rstrip() + ".augsave", f)
-                self.aug.load()
+            for f in mod_files:
+                shutil.copy2(f.rstrip() + ".augsave", f.rstrip())
+
+            self.aug.load()
             # Clear file
             mod_fd = open(MODIFIED_FILES, 'w')
             mod_fd.close()
-        except:
+        except Exception as e:
             print "Error reverting configuration"
+            print e
             sys.exit(36)
         
 
