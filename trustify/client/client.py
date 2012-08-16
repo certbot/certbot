@@ -195,9 +195,11 @@ def save_key_csr(key, csr):
     directory.
     """
     # Create directories if they do not exist
-    # TODO: Lookup what permissions cert files/directory should have...
+    # This should probably go in the installation script
+    # Make sure directories exist & make sure directories are set with the
+    # correct permissions if they do exist.
     if not os.path.isdir(SERVER_ROOT + "certs"):
-        os.makedirs(SERVER_ROOT + "certs")
+        os.makedirs(SERVER_ROOT + "certs", 0755)
     if not os.path.isdir(SERVER_ROOT + "ssl"):
         os.makedirs(SERVER_ROOT + "ssl", 0700)
 
@@ -206,7 +208,7 @@ def save_key_csr(key, csr):
     key_f.write(key)
     key_f.close()
     # Write CSR to new file
-    csr_f, csr_fn = unique_file(SERVER_ROOT + "certs/csr-trustify.pem")
+    csr_f, csr_fn = unique_file(SERVER_ROOT + "certs/csr-trustify.pem", 0644)
     csr_f.write(csr)
     csr_f.close()
         

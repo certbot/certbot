@@ -4,10 +4,12 @@ import re
 import os
 import sys
 import socket
+import time
 
-from trustify.client.CONFIG import SERVER_ROOT
-
+from trustify.client.CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES
 #TODO - Stop Augeas from loading up backup emacs files in sites-available
+#TODO - Need an initialization routine... make sure modified_files exist,
+#       directories exist..ect
 
 class VH(object):
     def __init__(self, filename_path, vh_path, vh_addrs):
@@ -36,9 +38,9 @@ class Configurator(object):
         self.httpd_files = []
         for m in self.aug.match("/augeas/load/Httpd/incl"):
             self.httpd_files.append(self.aug.get(m))
-        self.mod_files = set()
         # Add name_server association dict
         self.assoc = dict()
+        self.recovery_routine()
 
     # TODO: This function can be improved to ensure that the final directives 
     # are being modified whether that be in the include files or in the 
@@ -565,6 +567,8 @@ class Configurator(object):
         """
         Saves all changes to the configuration files
         Backups are stored as *.augsave files
+        This function is not transactional
+        TODO: Instead rely on challenge to backup all files before modifications
         
         mod_conf:   string - Error message presented in case of problem
                              useful for debugging
@@ -575,6 +579,8 @@ class Configurator(object):
             self.aug.save()
             # Retrieve list of modified files
             save_paths = self.aug.match("/augeas/events/saved")
+            mod_fd = open(MODIFIED_FILES, 'r+')
+            mod_files = mod_fd.readlines()
             for path in save_paths:
                 # Strip off /files
                 filename = self.aug.get(path)[6:]
@@ -584,23 +590,57 @@ class Configurator(object):
                     print "Reversible file has been overwritten -", filename
                     sys.exit(37)
                 if reversible:
-                    self.mod_files.add(filename)
+                    mod_fd.write(filename + "\n")
+            mod_fd.close()
             return True
         except IOError:
             print "Unable to save file - ", mod_conf
             print "Is the script running as root?"
         return False
+    
+    def save_apache_config(self):
+        # Should be safe because it is a protected directory
+        shutil.copytree(SERVER_ROOT, BACKUP_DIR + "apache2-" + str(time.time()))
+    
+    def recovery_routine(self):
+        if not os.path.isfile(MODIFIED_FILES):
+            fd = open(MODIFIED_FILES, 'w')
+            fd.close()
+        else:
+            fd = open(MODIFIED_FILES)
+            files = fd.readlines()
+            fd.close()
+            if len(files) != 0:
+                self.revert_config(files)
+            
 
-    def revert_config(self):
+    def revert_config(self, mod_files = None):
         """
         This function should reload the users original configuration files
         for all saves with reversible=True
+        TODO: This should probably instead pull in files from the 
+              backup directory... move away from augsave so the user doesn't
+              do anything unexpectedly
         """
-        for f in self.mod_files:
-            #print "reverting", f
-            os.rename(f + ".augsave", f)
-        self.aug.load()
-        self.mod_files.clear()
+        if mod_files is None:
+            try:
+                mod_fd = open(MODIFIED_FILES, 'r')
+                mod_files = mod_fd.readlines()
+                mod_fd.close()
+            except:
+                print "Error opening:", MODIFIED_FILES
+                sys.exit()
+    
+        try:
+            for f in self.mod_files:
+                shutil.copy2(f.rstrip() + ".augsave", f)
+                self.aug.load()
+            # Clear file
+            mod_fd = open(MODIFIED_FILES, 'w')
+            mod_fd.close()
+        except:
+            print "Error reverting configuration"
+            sys.exit(36)
         
 
 def main():
@@ -621,6 +661,12 @@ def main():
     print config.get_all_names()
 
     config.parse_file("/etc/apache2/ports_test.conf")
+
+    mod_fd = open(MODIFIED_FILES, 'r+')
+    mod_files = mod_fd.readlines()
+    print mod_files
+    mod_fd.write("here we go\n")
+
     #config.make_vhost_ssl("/etc/apache2/sites-available/default")
     """
     # Testing redirection
