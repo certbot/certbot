@@ -285,7 +285,7 @@ def authenticate():
     # Check first if mod_ssl is loaded
     if not config.check_ssl_loaded():
         output("Loading mod_ssl into Apache Server")
-        config.enable_mod_ssl()
+        config.enable_mod("ssl")
 
     req_file = csr
     key_file = privkey

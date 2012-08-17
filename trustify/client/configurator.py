@@ -7,13 +7,14 @@ import socket
 import time
 import shutil
 
-from trustify.client.CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES
+#from trustify.client.CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES
+from CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES
 #TODO - Stop Augeas from loading up backup emacs files in sites-available
 #TODO - Need an initialization routine... make sure modified_files exist,
 #       directories exist..ect
 
 class VH(object):
-    def __init__(self, filename_path, vh_path, vh_addrs):
+    def __init__(self, filename_path, vh_path, vh_addrs, is_ssl):
         self.file = filename_path
         self.path = vh_path
         self.addrs = vh_addrs
@@ -32,13 +33,15 @@ class Configurator(object):
         #       relevant files
         # Set Augeas flags to save backup
         self.aug = augeas.Augeas(None, None, 1 << 0)
-        self.vhosts = self.get_virtual_hosts()
+
         # httpd_files - All parsable Httpd files
         # add_transform overwrites all currently loaded files so we must 
         # maintain state
         self.httpd_files = []
         for m in self.aug.match("/augeas/load/Httpd/incl"):
             self.httpd_files.append(self.aug.get(m))
+
+        self.vhosts = self.get_virtual_hosts()
         # Add name_server association dict
         self.assoc = dict()
         self.recovery_routine()
@@ -169,7 +172,10 @@ class Configurator(object):
             args = self.aug.match(p + "/arg")
             for arg in args:
                 addrs.append(self.aug.get(arg))
-            vhs.append(VH(self.get_file_path(p), p, addrs))
+            is_ssl = False
+            if len(self.find_directive("SSLEngine", "on", p)) > 0:
+                is_ssl = True
+            vhs.append(VH(self.get_file_path(p), p, addrs, is_ssl))
 
         for host in vhs:
             self.__add_servernames(host)
@@ -387,7 +393,6 @@ class Configurator(object):
         New vhost will reside as (avail_fp)-ssl
         If original vhost is currently enabled, ssl-vhost will be enabled
         """
-        # TODO TEST
         # Copy file
         ssl_fp = avail_fp + "-trustify-ssl"
         orig_file = open(avail_fp, 'r')
@@ -432,33 +437,83 @@ class Configurator(object):
         First the function attempts to find the vhost with equivalent
         ip addresses that serves on non-ssl ports
         The function then adds the directive
-        
-        I did not use mod rewrite because it can be confusing for the admin.
-        The rewrite can be placed anywhere and the admin might not be aware 
-        or remember the location.  Also, the rewrite rule would have to play
-        nicely with the existing admin's rules. It is difficult to determine
-        the exact results of the other rules and order matters.
-        
-        TODO: If port 80 vhost doesn't exist, add one to the same ssl_host 
-        file with the redirect
         """
         general_v = self.__general_vhost(ssl_vhost)
         if general_v is None:
             #Add virtual_server with redirect
             print "Did not find general_ssl server"
-            print "This function isn't implemented yet"
-            return False
+            return self.create_redirect_vhost(ssl_vhost)
         else:
             #Add directives to server
+            # TODO: Change this to mod rewrite call
             for d in domains:
                 self.add_dir(general_v.path, "Redirect", ["permanent", "/", "https://" + d + "/"])
-        self.aug.save("Redirect all to ssl")
+            self.save("Redirect all to ssl")
+        return True
+    
+    def create_redirect_vhost(self, ssl_vhost):
+        
+        # Consider changing this to a dictionary check
+        # Make sure adding the vhost will be safe
+        redirect_addrs = ""
+        for ssl_a in ssl_vhost.addrs:
+            # Add space on each new addr, combine "VirtualHost"+redirect_addrs
+            redirect_addrs = redirect_addrs + " "
+            ssl_tup = ssl_a.partition(":")
+            ssl_a_vhttp = ssl_tup[0] + ":80"
+            # Search for a conflicting host...
+            for v in self.vhosts:
+                for a in v.addrs:
+                    # Convert :* to standard ip address
+                    if a.endswith(":*"):
+                        a = a[:len(a)-2]
+                    # Would have to use NameBasedVirtualHosts, too complicated?
+                    # Maybe do later... right now just return false
+                    # or overlapping addresses... order matters
+                    if a == ssl_a_vhttp or a == ssl_tup[0]:
+                        # We have found a conflicting host... just return
+                        return False
+            
+            redirect_addrs = redirect_addrs + ssl_a_vhttp
+
+        # get servernames and serveraliases
+        size_n = len(ssl_vhost.names)
+        if size_n > 0:
+            servername = ssl_vhost.names[0]
+            if size_n > 1:
+                serveralias = " ".join(ssl_vhost.names[1:size_n])
+
+        redirect_file = "<VirtualHost" + redirect_addrs + "> \n\
+ServerName " + servername + "\n\
+ServerAlias " + serveralias + " \n\
+ServerSignature Off \n\
+\n\
+RewriteEngine On \n\
+RewriteRule ^.*$ https://%{SERVER_NAME}%{REQUEST_URI} [L,R=permanent]\n\
+\n\
+ErrorLog /var/log/apache2/redirect.error.log \n\
+LogLevel warn \n\
+</VirtualHost>\n"
+        
+        # Write out the file
+        redirect_filename = "trustify-redirect.conf"
+        if len(ssl_vhost.names) > 0:
+            # Sanity check...
+            # make sure servername doesn't exceed filename length restriction
+            if ssl_vhost.names[0] < (255-23):
+                redirect_filename = "trustify-redirect-" + ssl_vhost.names[0] + ".conf"
+        with open(SERVER_ROOT+"sites-available/"+redirect_filename, 'w') as f:
+            f.write(redirect_file)
+        print "Created redirect file:", redirect_filename
+
+        self.aug.load()
         return True
         
     def __general_vhost(self, ssl_vhost):
         """
         Function needs to be throughly tested and perhaps improved
         Will not do well with malformed configurations
+        Consider changing this into a dict check
         """
         for vh in self.vhosts:
             found = 0
@@ -470,12 +525,16 @@ class Configurator(object):
                     for test_a in vh.addrs:
                         test_tup = test_a.partition(":")
                         if test_tup[0] == ssl_tup[0]:
-                            # Sanity check TODO: is * a problem?
-                            if test_tup[2] == "80":
+                            # Check if found...
+                            if test_tup[2] == "80" or test_tup[2] == "" or test_tup[2] == "*":
                                 found += 1
-                                break
+
                 if found == len(ssl_vhost.addrs):
                     return vh
+                if found > 0 and found < len(ssl_vhost.addrs):
+                    # Found conflicting vhost
+                    print "Conflicting host: " + get_file_path(vh.path)
+                    return None
         return None
 
     def get_file_path(self, vhost_path):
@@ -518,18 +577,18 @@ class Configurator(object):
             return True
         return False
     
-    def enable_mod_ssl(self):
+    def enable_mod(self, mod_name):
         """
         Enables mod_ssl
         TODO: TEST
         """
         try:
 	    # Use check_output so the command will finish before reloading      
-            subprocess.check_call(["sudo", "a2enmod", "ssl"], stdout=open("/dev/null", 'w'), stderr=open("/dev/null", 'w'))
+            subprocess.check_call(["sudo", "a2enmod", mod_name], stdout=open("/dev/null", 'w'), stderr=open("/dev/null", 'w'))
             # Hopefully this waits for output                                   
             subprocess.check_call(["sudo", "/etc/init.d/apache2", "reload"], stdout=open("/dev/null", 'w'), stderr=open("/dev/null", 'w'))
         except:
-	    print "Error enabling mod_ssl"
+	    print "Error enabling mod_" + mod_name
             sys.exit(1)
 
     def fnmatch_to_re(self, cleanFNmatch):
@@ -665,25 +724,20 @@ def main():
 
     config.parse_file("/etc/apache2/ports_test.conf")
 
-    mod_fd = open(MODIFIED_FILES, 'r+')
-    mod_files = mod_fd.readlines()
-    print mod_files
-    mod_fd.write("here we go\n")
-
+    
     #config.make_vhost_ssl("/etc/apache2/sites-available/default")
-    """
     # Testing redirection
     for vh in config.vhosts:
-        if vh.addrs[0] == "*:443":
+        if vh.addrs[0] == "127.0.0.1:443":
             print "Here we go"
             print vh.path
             config.redirect_all_ssl(vh, ["localhost"])
     config.save()
     """
-    
     for vh in config.vhosts:
         if len(vh.names) > 0:
             config.deploy_cert(vh, "/home/james/Documents/apache_choc/req.pem", "/home/james/Documents/apache_choc/key.pem", "/home/james/Downloads/sub.class1.server.ca.pem")
+   """
     
 
 if __name__ == "__main__":
