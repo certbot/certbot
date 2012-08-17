@@ -7,8 +7,8 @@ import socket
 import time
 import shutil
 
-#from trustify.client.CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES
-from CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES
+from trustify.client.CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES
+
 #TODO - Stop Augeas from loading up backup emacs files in sites-available
 #TODO - Need an initialization routine... make sure modified_files exist,
 #       directories exist..ect
@@ -431,7 +431,7 @@ class Configurator(object):
         # TODO: At some point site should be enabled
         return
 
-    def redirect_all_ssl(self, ssl_vhost, domains):
+    def redirect_all_ssl(self, ssl_vhost):
         """
         Adds Redirect directive to the port 80 equivalent of ssl_vhost
         First the function attempts to find the vhost with equivalent
@@ -445,9 +445,9 @@ class Configurator(object):
             return self.create_redirect_vhost(ssl_vhost)
         else:
             #Add directives to server
-            # TODO: Change this to mod rewrite call
-            for d in domains:
-                self.add_dir(general_v.path, "Redirect", ["permanent", "/", "https://" + d + "/"])
+            # TODO: Test
+            self.add_dir(general_v.path, "RewriteEngine", "On")
+            self.add_dir(general_v.path, "RewriteRule", ["^.*$", "https://%{SERVER_NAME}%{REQUEST_URI}", "[L,R=permanent]"])
             self.save("Redirect all to ssl")
         return True
     
@@ -724,16 +724,17 @@ def main():
 
     config.parse_file("/etc/apache2/ports_test.conf")
 
-    
+    """
     #config.make_vhost_ssl("/etc/apache2/sites-available/default")
     # Testing redirection
     for vh in config.vhosts:
         if vh.addrs[0] == "127.0.0.1:443":
             print "Here we go"
             print vh.path
-            config.redirect_all_ssl(vh, ["localhost"])
+            config.redirect_all_ssl(vh)
     config.save()
     """
+"""
     for vh in config.vhosts:
         if len(vh.names) > 0:
             config.deploy_cert(vh, "/home/james/Documents/apache_choc/req.pem", "/home/james/Documents/apache_choc/key.pem", "/home/james/Downloads/sub.class1.server.ca.pem")
