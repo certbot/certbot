@@ -13,6 +13,7 @@ from trustify.client.CONFIG import REWRITE_HTTPS_ARGS
 #TODO - Stop Augeas from loading up backup emacs files in sites-available
 #TODO - Need an initialization routine... make sure modified_files exist,
 #       directories exist..ect
+#TODO - Add check to see if server is configured properly
 
 class VH(object):
     def __init__(self, filename_path, vh_path, vh_addrs, is_ssl):
@@ -493,7 +494,6 @@ class Configurator(object):
         return True, 2
     
     def create_redirect_vhost(self, ssl_vhost):
-        
         # Consider changing this to a dictionary check
         # Make sure adding the vhost will be safe
         redirect_addrs = ""
@@ -559,12 +559,19 @@ LogLevel warn \n\
         Consider changing this into a dict check
         TODO: make default search for *:80 also...
         """
+        # _default_:443 check
+        # Instead... should look for vhost of the form *:80
+        # Should we prompt the user?
+        ssl_addrs = ssl_vhost.addrs
+        if ssl_addrs == ["_default_:443"]:
+            ssl_addrs = ["*:443"]
+            
         for vh in self.vhosts:
             found = 0
             # Not the same vhost, and same number of addresses
             if vh != ssl_vhost and len(vh.addrs) == len(ssl_vhost.addrs):
                 # Find each address in ssl_host in test_host
-                for ssl_a in ssl_vhost.addrs:
+                for ssl_a in ssl_addrs:
                     ssl_tup = ssl_a.partition(":")
                     for test_a in vh.addrs:
                         test_tup = test_a.partition(":")
@@ -572,13 +579,10 @@ LogLevel warn \n\
                             # Check if found...
                             if test_tup[2] == "80" or test_tup[2] == "" or test_tup[2] == "*":
                                 found += 1
+                                break
 
                 if found == len(ssl_vhost.addrs):
                     return vh
-                if found > 0 and found < len(ssl_vhost.addrs):
-                    # Found conflicting vhost
-                    print "Conflicting host: " + get_file_path(vh.path)
-                    return None
         return None
 
     def get_file_path(self, vhost_path):
@@ -624,7 +628,6 @@ LogLevel warn \n\
     def enable_mod(self, mod_name):
         """
         Enables mod_ssl
-        TODO: TEST
         """
         try:
 	    # Use check_output so the command will finish before reloading      
