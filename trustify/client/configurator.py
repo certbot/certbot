@@ -446,7 +446,7 @@ class Configurator(object):
             return self.create_redirect_vhost(ssl_vhost)
         else:
             # Check if redirection already exists
-            exists, code = self.existing_redirect(vhost)
+            exists, code = self.existing_redirect(general_v)
             if exists:
                 if code == 0:
                     print "Redirect already added"
@@ -473,8 +473,8 @@ class Configurator(object):
 
         -1 is also returned in case of no redirection/rewrite directives
         """
-        rewrite_path = find_directive("RewriteRule", None, vhost.path)
-        redirect_path = find_directive("Redirect", None, vhost.path)
+        rewrite_path = self.find_directive("RewriteRule", None, vhost.path)
+        redirect_path = self.find_directive("Redirect", None, vhost.path)
 
         if redirect_path:
             # "Existing Redirect directive for virtualhost"
@@ -518,15 +518,17 @@ class Configurator(object):
             redirect_addrs = redirect_addrs + ssl_a_vhttp
 
         # get servernames and serveraliases
+        serveralias = ""
+        servername = ""
         size_n = len(ssl_vhost.names)
         if size_n > 0:
-            servername = ssl_vhost.names[0]
+            servername = "ServerName " + ssl_vhost.names[0]
             if size_n > 1:
                 serveralias = " ".join(ssl_vhost.names[1:size_n])
-
+                serveralias = "ServerAlias " + serveralias
         redirect_file = "<VirtualHost" + redirect_addrs + "> \n\
-ServerName " + servername + "\n\
-ServerAlias " + serveralias + " \n\
+" + servername + "\n\
+" + serveralias + " \n\
 ServerSignature Off \n\
 \n\
 RewriteEngine On \n\
@@ -555,6 +557,7 @@ LogLevel warn \n\
         Function needs to be throughly tested and perhaps improved
         Will not do well with malformed configurations
         Consider changing this into a dict check
+        TODO: make default search for *:80 also...
         """
         for vh in self.vhosts:
             found = 0
@@ -753,7 +756,6 @@ def main():
         print v.addrs
         for name in v.names:
             print name
-        v.
 
     for m in config.find_directive("Listen", "443"):
         print "Directive Path:", m, "Value:", config.aug.get(m)

@@ -393,8 +393,8 @@ def authenticate():
             dialog.Dialog().msgbox("\nCongratulations! You have successfully enabled " + gen_https_names(dn) + "!", width=70)
             if by_default():
                 for ssl_vh in vhost:
-                    success, redirect_file = redirect_all_ssl(ssl_vh)
-                    output("Redirect: " + redirect_file + " - " + success)
+                    success, redirect_file = config.redirect_all_ssl(ssl_vh)
+                    output("\nRedirect vhost: " + redirect_file + " - " + str(success))
         else:
             print "Congratulations! You have successfully enabled " + gen_https_names(dn) + "!"
 
