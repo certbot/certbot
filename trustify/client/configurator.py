@@ -8,6 +8,7 @@ import time
 import shutil
 
 from trustify.client.CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES
+from trustify.client.CONFIG import REWRITE_HTTPS_ARGS
 
 #TODO - Stop Augeas from loading up backup emacs files in sites-available
 #TODO - Need an initialization routine... make sure modified_files exist,
@@ -441,15 +442,55 @@ class Configurator(object):
         general_v = self.__general_vhost(ssl_vhost)
         if general_v is None:
             #Add virtual_server with redirect
-            print "Did not find general_ssl server"
+            print "Did not find http version of ssl virtual host... creating"
             return self.create_redirect_vhost(ssl_vhost)
         else:
+            # Check if redirection already exists
+            exists, code = self.existing_redirect(vhost)
+            if exists:
+                if code == 0:
+                    print "Redirect already added"
+                    return True, self.get_file_path(general_v.path)
+                else:
+                    print "Unknown redirect exists for this vhost"
+                    return False, self.get_file_path(general_v.path)
             #Add directives to server
             # TODO: Test
             self.add_dir(general_v.path, "RewriteEngine", "On")
-            self.add_dir(general_v.path, "RewriteRule", ["^.*$", "https://%{SERVER_NAME}%{REQUEST_URI}", "[L,R=permanent]"])
+            self.add_dir(general_v.path, "RewriteRule", REWRITE_HTTPS_ARGS)
             self.save("Redirect all to ssl")
-        return True
+            return True, self.get_file_path(general_v.path)
+
+    def existing_redirect(self, vhost):
+        """
+        Checks to see if virtualhost already contains a rewrite or redirect
+        returns boolean, integer
+        The boolean indicates whether the redirection exists...
+        The integer has the following code:
+        0 - Existing trustify https rewrite rule is appropriate and in place
+        1 - Virtual host contains a Redirect directive
+        2 - Virtual host contains an unknown RewriteRule
+
+        -1 is also returned in case of no redirection/rewrite directives
+        """
+        rewrite_path = find_directive("RewriteRule", None, vhost.path)
+        redirect_path = find_directive("Redirect", None, vhost.path)
+
+        if redirect_path:
+            # "Existing Redirect directive for virtualhost"
+            return True, 1
+        if not rewrite_path:
+            # "No existing redirection for virtualhost"
+            return False, -1
+        if len(rewrite_path) == len(REWRITE_HTTPS_ARGS):
+            for idx, m in enumerate(rewrite_path):
+                if self.aug.get(m) != REWRITE_HTTPS_ARGS[idx]:
+                    # Not a trustify https rewrite
+                    return True, 2
+            # Existing trustify https rewrite rule is in place
+            return True, 0
+        # Rewrite path exists but is not a trustify https rule
+        return True, 2
     
     def create_redirect_vhost(self, ssl_vhost):
         
@@ -472,7 +513,7 @@ class Configurator(object):
                     # or overlapping addresses... order matters
                     if a == ssl_a_vhttp or a == ssl_tup[0]:
                         # We have found a conflicting host... just return
-                        return False
+                        return False, self.get_path_name(v.path)
             
             redirect_addrs = redirect_addrs + ssl_a_vhttp
 
@@ -507,7 +548,7 @@ LogLevel warn \n\
         print "Created redirect file:", redirect_filename
 
         self.aug.load()
-        return True
+        return True, SERVER_ROOT + "sites-available/" + redirect_filename
         
     def __general_vhost(self, ssl_vhost):
         """
@@ -712,6 +753,7 @@ def main():
         print v.addrs
         for name in v.names:
             print name
+        v.
 
     for m in config.find_directive("Listen", "443"):
         print "Directive Path:", m, "Value:", config.aug.get(m)

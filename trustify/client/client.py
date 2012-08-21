@@ -386,11 +386,15 @@ def authenticate():
                 output("Enabling Site " + host.file)
                 config.enable_site(host.file)
 
+        # sites may have been enabled / final cleanup
         sni_challenge.apache_restart(quiet=curses)
 
         if curses:
             dialog.Dialog().msgbox("\nCongratulations! You have successfully enabled " + gen_https_names(dn) + "!", width=70)
-            by_default()
+            if by_default():
+                for ssl_vh in vhost:
+                    success, redirect_file = redirect_all_ssl(ssl_vh)
+                    output("Redirect: " + redirect_file + " - " + success)
         else:
             print "Congratulations! You have successfully enabled " + gen_https_names(dn) + "!"
 

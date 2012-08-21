@@ -190,9 +190,6 @@ def apache_restart(quiet=False):
         print "Apache Restart Failed - Please Check the Configuration"
         sys.exit(1)
 
-# TODO: This function is insufficient as the user could edit the files
-# before the challenge is completed.  It is safer to log all of the changes
-# and revert each one individually
 def cleanup(listSNITuple, configurator):
     """
     Remove all temporary changes necessary to perform the challenge
