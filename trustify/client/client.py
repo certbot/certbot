@@ -391,6 +391,7 @@ def authenticate():
 
         if curses:
             dialog.Dialog().msgbox("\nCongratulations! You have successfully enabled " + gen_https_names(dn) + "!", width=70)
+            config.enable_mod("rewrite")
             if by_default():
                 for ssl_vh in vhost:
                     success, redirect_file = config.redirect_all_ssl(ssl_vh)
