@@ -11,9 +11,9 @@ from trustify.client.CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES
 from trustify.client.CONFIG import REWRITE_HTTPS_ARGS
 
 #TODO - Stop Augeas from loading up backup emacs files in sites-available
-#TODO - Need an initialization routine... make sure modified_files exist,
-#       directories exist..ect
-#TODO - Add check to see if server is configured properly
+#TODO - Need an initialization routine... make sure directories exist..ect
+#TODO - Only check for conflicting enabled sites during redirection
+#TODO - Update vhosts in config when new vhosts are created
 
 class VH(object):
     def __init__(self, filename_path, vh_path, vh_addrs, is_ssl):
@@ -21,6 +21,7 @@ class VH(object):
         self.path = vh_path
         self.addrs = vh_addrs
         self.names = []
+        self.ssl = is_ssl
 
     def set_names(self, listOfNames):
         self.names = listOfNames
@@ -105,10 +106,10 @@ class Configurator(object):
                 return vh
         # Check for servernames/aliases
         for v in self.vhosts:
-            for n in v.names:
-                # TODO: Or a converted FQDN address
-                if n == name:
-                    return v
+            if v.ssl == True:
+                for n in v.names:
+                    if n == name:
+                        return v
         for v in self.vhosts:
             for a in v.addrs:
                 tup = a.partition(":")
@@ -197,9 +198,8 @@ class Configurator(object):
         for p in paths:
             name_vh.append(self.aug.get(p))
         
-        # TODO: Check ramifications for FQDN/IP_ADDR mismatch overlap
-        #       ie. NameVirtualHost FQDN ... <VirtualHost IPADDR>
-        #       Does adding additional NameVirtualHost directives cause problems
+        # TODO: Reread NameBasedVirtual host matching... I think it must be an
+        #       exact match
         # Check for exact match
         for vh in name_vh:
             if vh == addr:
@@ -393,7 +393,6 @@ class Configurator(object):
         """
         Duplicates vhost and adds default ssl options
         New vhost will reside as (avail_fp)-ssl
-        If original vhost is currently enabled, ssl-vhost will be enabled
         """
         # Copy file
         ssl_fp = avail_fp + "-trustify-ssl"
@@ -585,6 +584,19 @@ LogLevel warn \n\
                     return vh
         return None
 
+    def get_all_certs(self):
+        """
+        Retrieve all certs on the Apache server
+        returns: set of file paths
+        """
+        cert_path = self.find_directive("SSLCertificateFile")
+        file_paths = set()
+        for p in cert_path:
+            file_paths.add(self.aug.get(p))
+
+        return file_paths
+            
+
     def get_file_path(self, vhost_path):
         # Strip off /files
         avail_fp = vhost_path[6:]
@@ -750,6 +762,26 @@ LogLevel warn \n\
             print "Error reverting configuration"
             print e
             sys.exit(36)
+
+    def restart(quiet=False):
+        """
+        Restarts apache server
+        """
+        try:
+            p = ''
+            if quiet:
+                p = subprocess.Popen(['/etc/init.d/apache2', 'reload'], stdout=subprocess.PIPE, stderr=open("/dev/null", 'w')).communicate()[0]
+            else:
+                p = subprocess.Popen(['/etc/init.d/apache2', 'reload'], stderr=subprocess.PIPE).communicate()[0]
+
+            if "fail" in p:
+                print "Apache configuration is incorrect"
+                print p
+                return False
+            return True
+        except:
+            print "Apache Restart Failed - Please Check the Configuration"
+            sys.exit(1)
         
 
 def main():
@@ -770,6 +802,8 @@ def main():
     print config.get_all_names()
 
     config.parse_file("/etc/apache2/ports_test.conf")
+
+    config.restart()
 
     """
     #config.make_vhost_ssl("/etc/apache2/sites-available/default")

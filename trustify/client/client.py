@@ -387,7 +387,7 @@ def authenticate():
                 config.enable_site(host.file)
 
         # sites may have been enabled / final cleanup
-        sni_challenge.apache_restart(quiet=curses)
+        config.restart(quiet=curses)
 
         if curses:
             dialog.Dialog().msgbox("\nCongratulations! You have successfully enabled " + gen_https_names(dn) + "!", width=70)

@@ -177,19 +177,6 @@ def updateCertConf(oid, value):
     remove(CHOC_CERT_CONF)
     move(CHOC_CERT_CONF + ".tmp", CHOC_CERT_CONF)
 
-def apache_restart(quiet=False):
-    """
-    Restarts apache server
-    """
-    try:
-        if quiet:
-            subprocess.check_call(["sudo", "/etc/init.d/apache2", "reload"], stdout=open("/dev/null","w"), stderr=open("/dev/null", "w"))
-        else:
-            subprocess.check_call(["sudo", "/etc/init.d/apache2", "reload"])
-    except:
-        print "Apache Restart Failed - Please Check the Configuration"
-        sys.exit(1)
-
 def cleanup(listSNITuple, configurator):
     """
     Remove all temporary changes necessary to perform the challenge
@@ -200,7 +187,7 @@ def cleanup(listSNITuple, configurator):
     result: Apache server is restored to the pre-challenge state
     """
     configurator.revert_config()
-    apache_restart(True)
+    configurator.restart(True)
     remove_files(listSNITuple)
     
 
@@ -255,7 +242,7 @@ def perform_sni_cert_challenge(listSNITuple, csr, key, configurator, quiet=False
     modifyApacheConfig(findApacheConfigFile(), listSNITuple, addresses, key, configurator)
     # Save reversible changes and restart the server
     configurator.save("SNI Challenge", True)
-    apache_restart(quiet)
+    configurator.restart(quiet)
     return True
 
 # This main function is just used for testing
