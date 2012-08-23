@@ -763,7 +763,7 @@ LogLevel warn \n\
             print e
             sys.exit(36)
 
-    def restart(quiet=False):
+    def restart(self, quiet=False):
         """
         Restarts apache server
         """
