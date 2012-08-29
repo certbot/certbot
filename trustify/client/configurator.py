@@ -6,7 +6,6 @@ import sys
 import socket
 import time
 import shutil
-from collections import deque
 
 from trustify.client.CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES
 from trustify.client.CONFIG import REWRITE_HTTPS_ARGS
@@ -38,15 +37,13 @@ class Configurator(object):
         # Set Augeas flags to save backup
         self.aug = augeas.Augeas(None, None, 1 << 0)
 
+        # TODO: Remove after new add_transform function is tested
         # httpd_incl - All parsable Httpd files
         # add_transform overwrites all currently loaded files so we must 
         # maintain state
-        self.httpd_incl = deque()
-        self.httpd_excl = []
-        for m in self.aug.match("/augeas/load/Httpd/incl"):
-            self.httpd_incl.append(self.aug.get(m))
-        for m in self.aug.match("/augeas/load/Httpd/excl"):
-            self.httpd_excl.append(self.aug.get(m))
+        #self.httpd_incl = []
+        #for m in self.aug.match("/augeas/load/Httpd/incl"):
+            #self.httpd_incl.append(self.aug.get(m))
 
         self.vhosts = self.get_virtual_hosts()
         # Add name_server association dict
@@ -690,13 +687,10 @@ LogLevel warn \n\
         incTest = self.aug.match("/augeas/load/Httpd/incl [. ='" + file_path + "']")
         if not incTest:
             # Load up files
-            self.httpd_incl.appendleft(file_path)
+            self.httpd_incl.append(file_path)
             #self.aug.add_transform("Httpd.lns", self.httpd_incl, None, self.httpd_excl)
             self.__add_httpd_transform(file_path)
             self.aug.load()
-            inc = self.aug.match("/augeas/load/Httpd/*")
-            for i in inc:
-                print i, self.aug.get(i)
 
     def save(self, mod_conf="Augeas Configuration", reversible=False):
         """
