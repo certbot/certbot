@@ -10,9 +10,7 @@ import shutil
 from trustify.client.CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES
 from trustify.client.CONFIG import REWRITE_HTTPS_ARGS
 
-#TODO - Stop Augeas from loading up backup emacs files in sites-available
 #TODO - Need an initialization routine... make sure directories exist..ect
-#TODO - Test - Only check for conflicting enabled sites during redirection
 
 class VH(object):
     def __init__(self, filename_path, vh_path, vh_addrs, is_ssl, is_enabled):
@@ -49,6 +47,7 @@ class Configurator(object):
         # Add name_server association dict
         self.assoc = dict()
         self.recovery_routine()
+        self.standardize_excl()
 
     # TODO: This function can be improved to ensure that the final directives 
     # are being modified whether that be in the include files or in the 
@@ -732,6 +731,9 @@ LogLevel warn \n\
         shutil.copytree(SERVER_ROOT, BACKUP_DIR + "apache2-" + str(time.time()))
     
     def recovery_routine(self):
+        '''
+        Revert all previously modified files. Set up log if it doesn't exist.
+        '''
         if not os.path.isfile(MODIFIED_FILES):
             fd = open(MODIFIED_FILES, 'w')
             fd.close()
@@ -741,7 +743,16 @@ LogLevel warn \n\
             fd.close()
             if len(files) != 0:
                 self.revert_config(files)
-            
+
+    def standardize_excl(self):
+        '''
+        Standardize the excl arguments for the Httpd lens in Augeas
+        Servers sometimes give incorrect defaults
+        '''
+        excl = ["*.augnew", "*.augsave", "*.dpkg-dist", "*.dpkg-bak", "*.dpkg-new", "*.dpkg-old", "*.rpmsave", "*.rpmnew", "*~"]
+        
+        for i in range(len(excl)):
+            self.aug.set("/augeas/load/Httpd/excl[%d]" % (i+1), excl[i])
 
     def revert_config(self, mod_files = None):
         """
