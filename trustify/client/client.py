@@ -187,6 +187,21 @@ def make_request(server, m, csr, quiet=False):
 def sign(key, m):
     m.request.sig = rsa_sign(key, ("(%d) (%s) (%s)" % (m.request.timestamp, m.request.recipient, m.request.csr)))
 
+def old_cert(cert_filename, days_left):
+    cert = M2Crypto.X509.load_cert(cert_filename)
+    exp_time = cert.get_not_before().get_datetime()
+    cur_time = datetime.datetime.utcnow()
+
+    # exp_time is returned in UTC time as defined by M2Crypto
+    # The datetime object is aware and cannot be compared to the naive utcnow()
+    # object. Thus, the tzinfo is stripped from exp_time assuming both objects
+    # are UTC.  Base python doesn't seem to support instantiations of tzinfo
+    # objects without 3rd party support.  It is easier just to strip tzinfo from
+    # exp_time rather than add the utc timezone to cur_time
+    if (exp_time.replace(tzinfo=None) - cur_time).days < days_left:
+        return True
+    return False
+
 def save_key_csr(key, csr):
     """
     This function saves the newly generated key and csr to new files
@@ -382,9 +397,9 @@ def authenticate():
         for host in vhost:
             config.deploy_cert(host, os.path.abspath(cert_file), os.path.abspath(key_file), cert_chain_abspath)
             # Enable any vhost that was issued to, but not enabled
-            if not config.is_site_enabled(host.file):
+            if not host.enabled:
                 output("Enabling Site " + host.file)
-                config.enable_site(host.file)
+                config.enable_site(host)
 
         # sites may have been enabled / final cleanup
         config.restart(quiet=curses)

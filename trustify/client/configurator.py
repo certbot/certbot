@@ -12,16 +12,16 @@ from trustify.client.CONFIG import REWRITE_HTTPS_ARGS
 
 #TODO - Stop Augeas from loading up backup emacs files in sites-available
 #TODO - Need an initialization routine... make sure directories exist..ect
-#TODO - Only check for conflicting enabled sites during redirection
-#TODO - Update vhosts in config when new vhosts are created
+#TODO - Test - Only check for conflicting enabled sites during redirection
 
 class VH(object):
-    def __init__(self, filename_path, vh_path, vh_addrs, is_ssl):
+    def __init__(self, filename_path, vh_path, vh_addrs, is_ssl, is_enabled):
         self.file = filename_path
         self.path = vh_path
         self.addrs = vh_addrs
         self.names = []
         self.ssl = is_ssl
+        self.enabled = is_enabled
 
     def set_names(self, listOfNames):
         self.names = listOfNames
@@ -59,8 +59,9 @@ class Configurator(object):
         the "included" confs.  The function verifies that it has located 
         the three directives and finally modifies them to point to the correct
         destination
-        TODO: Should add/remove chain directives
         TODO: Make sure last directive is changed
+        TODO: Might be nice to remove chain directive if none exists
+              * This shouldn't happen within trustify though
         """
         search = {}
         path = {}
@@ -97,8 +98,7 @@ class Configurator(object):
         Chooses a virtual host based on the given domain name
 
         returns: VH object
-        TODO: This should return vhost of :443 if both 80 and 443 exist
-              This is currently just a very basic demo version
+        TODO: This should return list if no obvious answer is presented
         """
         # TODO: TEST
         for dn, vh in self.assoc:
@@ -161,7 +161,22 @@ class Configurator(object):
             args = self.aug.match(name + "/*")
             for arg in args:
                 host.add_name(self.aug.get(arg))
-                
+    
+
+    # Test this new setup
+    def __create_vhost(self, path):
+        addrs = []
+        args = self.aug.match(p + "/arg")
+        for arg in args:
+            addrs.append(self.aug.get(arg))
+        is_ssl = False
+        if len(self.find_directive("SSLEngine", "on", p)) > 0:
+            is_ssl = True
+        filename = self.get_file_path(p)
+        is_enabled = self.is_site_enabled(filename)
+        vhost = VH(filename, p, addrs, is_ssl, is_enabled)
+        self.__add_servernames(vhost)
+        return vhost
 
     def get_virtual_hosts(self):
         """
@@ -171,17 +186,7 @@ class Configurator(object):
         paths = self.aug.match("/files" + SERVER_ROOT + "sites-available//VirtualHost")
         vhs = []
         for p in paths:
-            addrs = []
-            args = self.aug.match(p + "/arg")
-            for arg in args:
-                addrs.append(self.aug.get(arg))
-            is_ssl = False
-            if len(self.find_directive("SSLEngine", "on", p)) > 0:
-                is_ssl = True
-            vhs.append(VH(self.get_file_path(p), p, addrs, is_ssl))
-
-        for host in vhs:
-            self.__add_servernames(host)
+            vhs.append(self.__create_vhost(p))
 
         return vhs
 
@@ -429,8 +434,7 @@ class Configurator(object):
         # reload configurator vhosts
         self.vhosts = self.get_virtual_hosts()
 
-        # TODO: At some point site should be enabled
-        return
+        return ssl_fp
 
     def redirect_all_ssl(self, ssl_vhost):
         """
@@ -455,7 +459,6 @@ class Configurator(object):
                     print "Unknown redirect exists for this vhost"
                     return False, self.get_file_path(general_v.path)
             #Add directives to server
-            # TODO: Test
             self.add_dir(general_v.path, "RewriteEngine", "On")
             self.add_dir(general_v.path, "RewriteRule", REWRITE_HTTPS_ARGS)
             self.save("Redirect all to ssl")
@@ -503,16 +506,17 @@ class Configurator(object):
             ssl_a_vhttp = ssl_tup[0] + ":80"
             # Search for a conflicting host...
             for v in self.vhosts:
-                for a in v.addrs:
-                    # Convert :* to standard ip address
-                    if a.endswith(":*"):
-                        a = a[:len(a)-2]
-                    # Would have to use NameBasedVirtualHosts, too complicated?
-                    # Maybe do later... right now just return false
-                    # or overlapping addresses... order matters
-                    if a == ssl_a_vhttp or a == ssl_tup[0]:
-                        # We have found a conflicting host... just return
-                        return False, self.get_path_name(v.path)
+                if v.enabled:
+                    for a in v.addrs:
+                        # Convert :* to standard ip address
+                        if a.endswith(":*"):
+                            a = a[:len(a)-2]
+                        # Would require NameBasedVirtualHosts,too complicated?
+                        # Maybe do later... right now just return false
+                        # or overlapping addresses... order matters
+                        if a == ssl_a_vhttp or a == ssl_tup[0]:
+                            # We have found a conflicting host... just return
+                            return False, self.get_path_name(v.path)
             
             redirect_addrs = redirect_addrs + ssl_a_vhttp
 
@@ -549,14 +553,15 @@ LogLevel warn \n\
         print "Created redirect file:", redirect_filename
 
         self.aug.load()
-        return True, SERVER_ROOT + "sites-available/" + redirect_filename
+        new_fp = SERVER_ROOT + "sites-available/" + redirect_filename
+        self.vhosts.add(self.__create_vhost("/files" + new_fp))
+        return True, new_fp
         
     def __general_vhost(self, ssl_vhost):
         """
         Function needs to be throughly tested and perhaps improved
         Will not do well with malformed configurations
         Consider changing this into a dict check
-        TODO: make default search for *:80 also...
         """
         # _default_:443 check
         # Instead... should look for vhost of the form *:80
@@ -595,7 +600,6 @@ LogLevel warn \n\
             file_paths.add(self.aug.get(p))
 
         return file_paths
-            
 
     def get_file_path(self, vhost_path):
         # Strip off /files
@@ -626,14 +630,16 @@ LogLevel warn \n\
 
         return False
 
-    def enable_site(self, avail_fp):
+    def enable_site(self, vhost):
         """
         Enables an available site, Apache restart required
         TODO: This function should number subdomains before the domain vhost
         """
-        if "/sites-available/" in avail_fp:
-            index = avail_fp.rfind("/")
-            os.symlink(avail_fp, SERVER_ROOT + "sites-enabled/" + avail_fp[index:])
+        if "/sites-available/" in vhost.file:
+            index = vhost.file.rfind("/")
+            os.symlink(vhost.file, SERVER_ROOT + "sites-enabled/" + vhost.file[index:])
+            #TODO: add vh.enabled = True
+            vhost.enabled = True
             return True
         return False
     
