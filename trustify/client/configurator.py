@@ -687,7 +687,7 @@ LogLevel warn \n\
         incTest = self.aug.match("/augeas/load/Httpd/incl [. ='" + file_path + "']")
         if not incTest:
             # Load up files
-            self.httpd_incl.append(file_path)
+            #self.httpd_incl.append(file_path)
             #self.aug.add_transform("Httpd.lns", self.httpd_incl, None, self.httpd_excl)
             self.__add_httpd_transform(file_path)
             self.aug.load()
