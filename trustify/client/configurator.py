@@ -6,6 +6,7 @@ import sys
 import socket
 import time
 import shutil
+from collections import deque
 
 from trustify.client.CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES
 from trustify.client.CONFIG import REWRITE_HTTPS_ARGS
@@ -37,12 +38,15 @@ class Configurator(object):
         # Set Augeas flags to save backup
         self.aug = augeas.Augeas(None, None, 1 << 0)
 
-        # httpd_files - All parsable Httpd files
+        # httpd_incl - All parsable Httpd files
         # add_transform overwrites all currently loaded files so we must 
         # maintain state
-        self.httpd_files = []
+        self.httpd_incl = deque()
+        self.httpd_excl = []
         for m in self.aug.match("/augeas/load/Httpd/incl"):
-            self.httpd_files.append(self.aug.get(m))
+            self.httpd_incl.append(self.aug.get(m))
+        for m in self.aug.match("/augeas/load/Httpd/excl"):
+            self.httpd_excl.append(self.aug.get(m))
 
         self.vhosts = self.get_virtual_hosts()
         # Add name_server association dict
@@ -370,6 +374,7 @@ class Configurator(object):
                         print "Error: Invalid regexp characters in", arg
                         return []
                     # Turn it into a augeas regex
+                    # TODO: Can this instead be an augeas glob instead of regex
                     splitArg[idx] = "* [label() =~ regexp('" + self.fnmatch_to_re(split) + "')]"
             # Reassemble the argument
             arg = "/".join(splitArg)
@@ -683,11 +688,15 @@ LogLevel warn \n\
         # Test if augeas included file for Httpd.lens
         # Note: This works for augeas globs, ie. *.conf
         incTest = self.aug.match("/augeas/load/Httpd/incl [. ='" + file_path + "']")
-        if len(incTest) == 0:
+        if not incTest:
             # Load up files
-            self.httpd_files.append(file_path)
-            self.aug.add_transform("Httpd.lns", self.httpd_files)
+            self.httpd_incl.appendleft(file_path)
+            #self.aug.add_transform("Httpd.lns", self.httpd_incl, None, self.httpd_excl)
+            self.__add_httpd_transform(file_path)
             self.aug.load()
+            inc = self.aug.match("/augeas/load/Httpd/*")
+            for i in inc:
+                print i, self.aug.get(i)
 
     def save(self, mod_conf="Augeas Configuration", reversible=False):
         """
@@ -789,6 +798,17 @@ LogLevel warn \n\
         except:
             print "Apache Restart Failed - Please Check the Configuration"
             sys.exit(1)
+
+    def __add_httpd_transform(self, incl):
+        """
+        This function will correctly add a transform to augeas
+        The existing augeas.add_transform in python is broken
+        The augeas.set function it uses appends new includes to the end of the
+        tree which overrules the exclude parameters.
+        """
+        lastInclude = self.aug.match("/augeas/load/Httpd/incl [last()]")
+        self.aug.insert(lastInclude[0], "incl", False)
+        self.aug.set("/augeas/load/Httpd/incl[last()]", incl)
         
 
 def main():

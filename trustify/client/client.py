@@ -409,13 +409,13 @@ def authenticate():
             config.enable_mod("rewrite")
             if by_default():
                 for ssl_vh in vhost:
-                    success, redirect_file = config.redirect_all_ssl(ssl_vh)
-                    output("\nRedirect vhost: " + redirect_file + " - " + str(success))
+                    success, redirect_vhost = config.redirect_all_ssl(ssl_vh)
+                    output("\nRedirect vhost: " + redirect_vhost.file + " - " + str(success))
                     # If successful, make sure redirect site is enabled
                     if success:
-                        if not config.is_site_enabled(redirect_file):
-                            config.enable_site(redirect_file)
-                            output("Enabling available site: " + redirect_file)
+                        if not config.is_site_enabled(redirect_vhost.file):
+                            config.enable_site(redirect_vhost)
+                            output("Enabling available site: " + redirect_vhost.file)
         else:
             print "Congratulations! You have successfully enabled " + gen_https_names(dn) + "!"
 
