@@ -166,15 +166,15 @@ class Configurator(object):
     # Test this new setup
     def __create_vhost(self, path):
         addrs = []
-        args = self.aug.match(p + "/arg")
+        args = self.aug.match(path + "/arg")
         for arg in args:
             addrs.append(self.aug.get(arg))
         is_ssl = False
-        if len(self.find_directive("SSLEngine", "on", p)) > 0:
+        if len(self.find_directive("SSLEngine", "on", path)) > 0:
             is_ssl = True
-        filename = self.get_file_path(p)
+        filename = self.get_file_path(path)
         is_enabled = self.is_site_enabled(filename)
-        vhost = VH(filename, p, addrs, is_ssl, is_enabled)
+        vhost = VH(filename, path, addrs, is_ssl, is_enabled)
         self.__add_servernames(vhost)
         return vhost
 
@@ -454,15 +454,15 @@ class Configurator(object):
             if exists:
                 if code == 0:
                     print "Redirect already added"
-                    return True, self.get_file_path(general_v.path)
+                    return True, general_v
                 else:
                     print "Unknown redirect exists for this vhost"
-                    return False, self.get_file_path(general_v.path)
+                    return False, general_v
             #Add directives to server
             self.add_dir(general_v.path, "RewriteEngine", "On")
             self.add_dir(general_v.path, "RewriteRule", REWRITE_HTTPS_ARGS)
             self.save("Redirect all to ssl")
-            return True, self.get_file_path(general_v.path)
+            return True, general_v
 
     def existing_redirect(self, vhost):
         """
@@ -516,7 +516,7 @@ class Configurator(object):
                         # or overlapping addresses... order matters
                         if a == ssl_a_vhttp or a == ssl_tup[0]:
                             # We have found a conflicting host... just return
-                            return False, self.get_path_name(v.path)
+                            return False, v
             
             redirect_addrs = redirect_addrs + ssl_a_vhttp
 
@@ -554,8 +554,9 @@ LogLevel warn \n\
 
         self.aug.load()
         new_fp = SERVER_ROOT + "sites-available/" + redirect_filename
+        new_vhost = self.__create_vhost("/files" + new_fp)
         self.vhosts.add(self.__create_vhost("/files" + new_fp))
-        return True, new_fp
+        return True, new_vhost
         
     def __general_vhost(self, ssl_vhost):
         """
