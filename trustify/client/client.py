@@ -261,19 +261,12 @@ def gen_https_names(domains):
     result = result + "https://" + domains[len(domains)-1]
     return result
 
-def output(outputStr):
-    global shower
-    if curses:
-        shower.add(outputStr + "\n")
-    else:
-        print outputStr
-
 def authenticate():
     """
     Main call to do DV_SNI validation and deploy the trustify certificate
     TODO: This should be turned into a class...
     """
-    global server, names, csr, privkey, shower
+    global server, names, csr, privkey
 
     # Check if root
     if not os.geteuid()==0:
@@ -297,7 +290,7 @@ def authenticate():
     if curses:
         names = filter_names(names)
         choice_of_ca()
-        logger.setLogger(NcursesLogger())
+        logger.setLogger(logger.NcursesLogger())
         logger.setLogLevel(logger.INFO)
         #shower = progress_shower()
     else:
@@ -306,7 +299,7 @@ def authenticate():
 
     # Check first if mod_ssl is loaded
     if not config.check_ssl_loaded():
-        output("Loading mod_ssl into Apache Server")
+        logger.info("Loading mod_ssl into Apache Server")
         config.enable_mod("ssl")
 
     req_file = csr
@@ -318,14 +311,14 @@ def authenticate():
         # Generate new private key and corresponding csr!
         key_pem, csr_pem = make_key_and_csr(names, 2048)
         key_file, req_file = save_key_csr(key_pem, csr_pem)
-        output("Generating key: " + key_file)
-        output("Creating CSR: " + req_file)
+        logger.info("Generating key: " + key_file)
+        logger.info("Creating CSR: " + req_file)
 
     k=chocolatemessage()
     m=chocolatemessage()
     init(k)
     init(m)
-    output("Creating request; generating hashcash...")
+    logger.info("Creating request; generating hashcash...")
     make_request(server, m, csr_pem, quiet=curses)
     sign(key_pem, m)
     logger.info("Created request; sending to server...")
@@ -351,7 +344,7 @@ def authenticate():
     for chall in r.challenge:
         logger.debug(chall)
         if chall.type == r.DomainValidateSNI:
-            logger.info("\tDomainValidateSNI challenge for name %s.\n" % chall.name)
+            logger.info("\tDomainValidateSNI challenge for name %s." % chall.name)
             dvsni_nonce, dvsni_y, dvsni_ext = chall.data
         sni_todo.append( (chall.name, dvsni_y, dvsni_nonce, dvsni_ext) )
         dn.append(chall.name)
