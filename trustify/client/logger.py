@@ -36,6 +36,11 @@ class Logger(Singleton):
     def log(self, level, data):
         raise Exception("Error: no Logger defined")
 
+    def timefmt(self, t=None):
+        if t == None:
+            t = time.time()
+        return time.strftime("%b %d %Y %H:%M:%S", time.localtime(t)) + ('%.03f' % (t - int(t)))[1:]
+
 
 
 
@@ -44,14 +49,35 @@ class FileLogger(Logger):
         self.outfile = outfile
 
 
-    def timefmt(self, t=None):
-        if t == None:
-            t = time.time()
-        return time.strftime("%b %d %Y %H:%M:%S", time.localtime(t)) + ('%.03f' % (t - int(t)))[1:]
-
     def log(self, level, data):
         msg = "%s [%s] %s\n" % (self.timefmt(), self.debugLevel(level), data)
         self.outfile.write(msg)
+
+
+
+import dialog
+class NcursesLogger(Logger):
+
+    def __init__(self, firstmessage="", height=18, width=70):
+        self.content = firstmessage
+        self.d = dialog.Dialog()
+        self.height = height
+        self.width = width
+        self.show()
+
+    def add(self, s):
+        self.content += s
+        self.show()
+
+    def show(self):
+        self.d.infobox(self.content, self.height, self.width)
+
+    def log(self, level, data):
+        self.add(data + "\n")
+
+
+
+
 
 
 log_instance = None
@@ -97,10 +123,11 @@ if __name__ == "__main__":
     import logger
 
     # Set the logging type you want to use (stdout logging):
-    logger.setLogger(FileLogger(sys.stdout))
+    #logger.setLogger(FileLogger(sys.stdout))
+    logger.setLogger(NcursesLogger())
 
     # Set the most verbose you want to log (TRACE, DEBUG, INFO, WARN, ERROR, FATAL, NONE)
-    logger.setLogLevel(logger.INFO)
+    logger.setLogLevel(logger.TRACE)
 
     # Log a message:
     logger.log(logger.INFO, "logger!")
