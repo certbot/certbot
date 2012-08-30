@@ -8,6 +8,7 @@ import time
 import shutil
 
 from trustify.client.CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES
+#from CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES, REWRITE_HTTPS_ARGS
 from trustify.client.CONFIG import REWRITE_HTTPS_ARGS
 
 #TODO - Need an initialization routine... make sure directories exist..ect
@@ -34,6 +35,7 @@ class Configurator(object):
         #       relevant files
         # Set Augeas flags to save backup
         self.aug = augeas.Augeas(None, None, 1 << 0)
+        self.standardize_excl()
 
         # TODO: Remove after new add_transform function is tested
         # httpd_incl - All parsable Httpd files
@@ -47,7 +49,6 @@ class Configurator(object):
         # Add name_server association dict
         self.assoc = dict()
         self.recovery_routine()
-        self.standardize_excl()
 
     # TODO: This function can be improved to ensure that the final directives 
     # are being modified whether that be in the include files or in the 
@@ -640,7 +641,6 @@ LogLevel warn \n\
         if "/sites-available/" in vhost.file:
             index = vhost.file.rfind("/")
             os.symlink(vhost.file, SERVER_ROOT + "sites-enabled/" + vhost.file[index:])
-            #TODO: add vh.enabled = True
             vhost.enabled = True
             return True
         return False
@@ -749,10 +749,17 @@ LogLevel warn \n\
         Standardize the excl arguments for the Httpd lens in Augeas
         Servers sometimes give incorrect defaults
         '''
-        excl = ["*.augnew", "*.augsave", "*.dpkg-dist", "*.dpkg-bak", "*.dpkg-new", "*.dpkg-old", "*.rpmsave", "*.rpmnew", "*~"]
+        #attempt to protect against augeas error in 0.10.0 - ubuntu
+        # *.augsave -> /*.augsave upons augeas.load()
+        # Try to avoid bad httpd files
+        # There has to be a better way... but after a day and a half of testing
+        # I had no luck
+        excl = ["*.augnew", "*.augsave", "*.dpkg-dist", "*.dpkg-bak", "*.dpkg-new", "*.dpkg-old", "*.rpmsave", "*.rpmnew", "*~", SERVER_ROOT + "*.augsave", SERVER_ROOT + "*~", SERVER_ROOT + "*/*augsave", SERVER_ROOT + "*/*~", SERVER_ROOT + "*/*/*.augsave", SERVER_ROOT + "*/*/*~"]
         
         for i in range(len(excl)):
             self.aug.set("/augeas/load/Httpd/excl[%d]" % (i+1), excl[i])
+
+        self.aug.load()
 
     def revert_config(self, mod_files = None):
         """
@@ -818,6 +825,7 @@ LogLevel warn \n\
 
 def main():
     config = Configurator()
+    config.aug.load()
     for v in config.vhosts:
         print v.file
         print v.addrs
@@ -832,6 +840,7 @@ def main():
             print "Address:",a, "- Is name vhost?", config.is_name_vhost(a)
 
     print config.get_all_names()
+    
 
     config.parse_file("/etc/apache2/ports_test.conf")
 
