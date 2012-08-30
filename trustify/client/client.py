@@ -8,6 +8,7 @@ import os, grp, pwd, sys, time, random, sys
 import hashlib
 import subprocess
 import getopt
+import logger
 # TODO: support a mode where use of interactive prompting is forbidden
 
 from trustify.protocol.chocolate_pb2 import chocolatemessage
@@ -28,6 +29,7 @@ shower = None
 csr = None
 privkey = None
 server = None
+
 for opt in opts[0]:
     if opt[0] == "--text":
         curses = False
@@ -295,7 +297,12 @@ def authenticate():
     if curses:
         names = filter_names(names)
         choice_of_ca()
-        shower = progress_shower()
+        logger.setLogger(NcursesLogger())
+        logger.setLogLevel(logger.INFO)
+        #shower = progress_shower()
+    else:
+        logger.setLogger(sys.stdout)
+        logger.setLogLevel(logger.INFO)
 
     # Check first if mod_ssl is loaded
     if not config.check_ssl_loaded():
@@ -321,38 +328,36 @@ def authenticate():
     output("Creating request; generating hashcash...")
     make_request(server, m, csr_pem, quiet=curses)
     sign(key_pem, m)
-    if curses:
-        shower.add("Created request; sending to server...\n")
-    else:
-        print m
+    logger.info("Created request; sending to server...")
+    logger.debug(m)
+
     r=decode(do(upstream, m))
-    if not curses: print r
+    logger.debug(r)
     while r.proceed.IsInitialized():
        if r.proceed.polldelay > 60: r.proceed.polldelay = 60
-       output("Waiting %d seconds..." % r.proceed.polldelay)
+       logger.info("Waiting %d seconds..." % r.proceed.polldelay)
        time.sleep(r.proceed.polldelay)
        k.session = r.session
        r = decode(do(upstream, k))
-       if not curses: print r
+       logger.debug(r)
 
     if r.failure.IsInitialized():
-        print "Server reported failure."
+        logger.fatal("Chocolate Server reported failure.")
         sys.exit(1)
 
     sni_todo = []
     dn = []
-    output("Received %s challenges from server." % len(r.challenge))
+    logger.info("Received %s challenges from server." % len(r.challenge))
     for chall in r.challenge:
-        if not curses: print chall
+        logger.debug(chall)
         if chall.type == r.DomainValidateSNI:
-            if curses:
-               shower.add("\tDomainValidateSNI challenge for name %s.\n" % chall.name)
+            logger.info("\tDomainValidateSNI challenge for name %s.\n" % chall.name)
             dvsni_nonce, dvsni_y, dvsni_ext = chall.data
         sni_todo.append( (chall.name, dvsni_y, dvsni_nonce, dvsni_ext) )
         dn.append(chall.name)
 
 
-    if not curses: print sni_todo
+    logger.debug(sni_todo)
 
     # Find virtual hosts to deploy certificates too
     vhost = set()
@@ -362,21 +367,21 @@ def authenticate():
             vhost.add(host)
 
     if not sni_challenge.perform_sni_cert_challenge(sni_todo, os.path.abspath(req_file), os.path.abspath(key_file), config, quiet=curses):
-        print "sni_challenge failed"
+        logger.fatal("sni_challenge failed")
         sys.exit(1)
-    output("Configured Apache for challenge; waiting for verification...")
+    logger.info("Configured Apache for challenge; waiting for verification...")
 
-    if not curses: print "waiting", 3
+    logger.debug("waiting 3")
     time.sleep(3)
 
     r=decode(do(upstream, k))
-    if not curses: print r
+    logger.debug(r)
     while r.challenge or r.proceed.IsInitialized():
-        if not curses: print "waiting", 5
+        logger.debug("waiting 5")
         time.sleep(5)
         k.session = r.session
         r = decode(do(upstream, k))
-        if not curses: print r
+        logger.debug(r)
 
     if r.success.IsInitialized():
         sni_challenge.cleanup(sni_todo, config)
@@ -384,12 +389,12 @@ def authenticate():
         with open(cert_file, "w") as f:
             f.write(r.success.certificate)
 
-        output("Server issued certificate; certificate written to %s" % cert_file)
+        logger.info("Server issued certificate; certificate written to %s" % cert_file)
         if r.success.chain:
             with open(chain_file, "w") as f:
                 f.write(r.success.chain)
  
-            output("Cert chain written to %s" % chain_file)
+            logger.info("Cert chain written to %s" % chain_file)
 
             # This expects a valid chain file
             cert_chain_abspath = os.path.abspath(chain_file)
@@ -398,7 +403,7 @@ def authenticate():
             config.deploy_cert(host, os.path.abspath(cert_file), os.path.abspath(key_file), cert_chain_abspath)
             # Enable any vhost that was issued to, but not enabled
             if not host.enabled:
-                output("Enabling Site " + host.file)
+                logger.info("Enabling Site " + host.file)
                 config.enable_site(host)
 
         # sites may have been enabled / final cleanup
@@ -410,18 +415,18 @@ def authenticate():
             if by_default():
                 for ssl_vh in vhost:
                     success, redirect_vhost = config.redirect_all_ssl(ssl_vh)
-                    output("\nRedirect vhost: " + redirect_vhost.file + " - " + str(success))
+                    logger.info("\nRedirect vhost: " + redirect_vhost.file + " - " + str(success))
                     # If successful, make sure redirect site is enabled
                     if success:
                         if not config.is_site_enabled(redirect_vhost.file):
                             config.enable_site(redirect_vhost)
-                            output("Enabling available site: " + redirect_vhost.file)
+                            logger.info("Enabling available site: " + redirect_vhost.file)
         else:
-            print "Congratulations! You have successfully enabled " + gen_https_names(dn) + "!"
+            logger.info("Congratulations! You have successfully enabled " + gen_https_names(dn) + "!")
 
     
     elif r.failure.IsInitialized():
-        print "Server reported failure."
+        logger.fatal("Server reported failure.")
         sys.exit(1)
 
 # vim: set expandtab tabstop=4 shiftwidth=4
