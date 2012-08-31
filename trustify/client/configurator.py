@@ -76,9 +76,8 @@ class Configurator(object):
         
         if len(path["cert_file"]) == 0 or len(path["cert_key"]) == 0:
             # Throw some "can't find all of the directives error"
-            print "DEBUG - Error: cannot find a cert or key directive"
-            print "DEBUG - in ", vhost.path
-            print "VirtualHost was not modified"
+            logger.warn("Warn: cannot find a cert or key directive in ", vhost.path)
+            logger.warn("VirtualHost was not modified")
             # Presumably break here so that the virtualhost is not modified
             return False
         
@@ -231,8 +230,8 @@ class Configurator(object):
         self.add_dir_to_ifmodssl(aug_file_path, "NameVirtualHost", addr)
         
         if len(self.find_directive("NameVirtualHost", addr)) == 0:
-            print "ports.conf is not included in your Apache config... "
-            print "Adding NameVirtualHost directive to httpd.conf"
+            logger.warn("ports.conf is not included in your Apache config...")
+            logger.warn("Adding NameVirtualHost directive to httpd.conf")
             self.add_dir_to_ifmodssl("/files" + SERVER_ROOT + "httpd.conf", "NameVirtualHost", addr)
             
 
@@ -258,15 +257,15 @@ class Configurator(object):
         """
         # Check if mod_ssl is loaded
         if not self.check_ssl_loaded():
-            print "Please load the SSL module with Apache"
+            logger.error("Please load the SSL module with Apache")
             return False
 
         # Check for Listen 443
         # TODO: This could be made to also look for ip:443 combo
         # TODO: Need to search only open directives and IfMod mod_ssl.c
         if len(self.find_directive("Listen", "443")) == 0:
-            print self.find_directive("Listen", "443")
-            print "Setting the Apache Server to Listen on port 443"
+            logger.debug("No Listen 443 directive found")
+            logger.debug("Setting the Apache Server to Listen on port 443")
             self.add_dir_to_ifmodssl("/files" + SERVER_ROOT + "ports.conf", "Listen", "443")
 
         # Check for NameVirtualHost
@@ -275,13 +274,13 @@ class Configurator(object):
             tup = addr.partition(":") 
             if tup[0] == "_default_":
                 if not self.is_name_vhost(default_addr):
-                    #print "Setting all VirtualHosts on " + default_addr + " to be name based virtual hosts"
+                    logger.debug("Setting all VirtualHosts on " + default_addr + " to be name based virtual hosts")
                     self.add_name_vhost(default_addr)
                 return True
         # No default addresses... so set each one individually
         for addr in vhost.addrs:
             if not self.is_name_vhost(addr):
-                #print "Setting VirtualHost at", addr, "to be a name based virtual host"
+                logger.debug("Setting VirtualHost at", addr, "to be a name based virtual host")
                 self.add_name_vhost(addr)
         
         return True
@@ -368,7 +367,7 @@ class Configurator(object):
                     validChars = re.compile("[a-zA-Z0-9.*?]*")
                     matchObj = validChars.match(split)
                     if matchObj.group() != split:
-                        print "Error: Invalid regexp characters in", arg
+                        logger.error("Error: Invalid regexp characters in "+arg)
                         return []
                     # Turn it into a augeas regex
                     # TODO: Can this instead be an augeas glob instead of regex
@@ -389,8 +388,8 @@ class Configurator(object):
             #p = subprocess.check_output(['sudo', '/usr/sbin/apache2ctl', '-M'], stderr=open("/dev/null", 'w'))
             p = subprocess.Popen(['sudo', '/usr/sbin/apache2ctl', '-M'], stdout=subprocess.PIPE, stderr=open("/dev/null", 'w')).communicate()[0]
         except:
-            print "Error accessing apache2ctl for loaded modules!"
-            print "This may be caused by an Apache Configuration Error"
+            logger.error("Error accessing apache2ctl for loaded modules!")
+            logger.error("This may be caused by an Apache Configuration Error")
             return False
         if "ssl_module" in p:
             return True
@@ -427,7 +426,7 @@ class Configurator(object):
         # Add directives
         vh_p = self.aug.match("/files"+ssl_fp+"//VirtualHost")
         if len(vh_p) != 1:
-            print "Error: should only be one vhost in", avail_fp
+            logger.error("Error: should only be one vhost in %s" % avail_fp)
             sys.exit(1)
 
         self.add_dir(vh_p[0], "SSLCertificateFile", "/etc/ssl/certs/ssl-cert-snakeoil.pem")
@@ -448,17 +447,17 @@ class Configurator(object):
         general_v = self.__general_vhost(ssl_vhost)
         if general_v is None:
             #Add virtual_server with redirect
-            print "Did not find http version of ssl virtual host... creating"
+            logger.debug("Did not find http version of ssl virtual host... creating")
             return self.create_redirect_vhost(ssl_vhost)
         else:
             # Check if redirection already exists
             exists, code = self.existing_redirect(general_v)
             if exists:
                 if code == 0:
-                    print "Redirect already added"
+                    logger.debug("Redirect already added")
                     return True, general_v
                 else:
-                    print "Unknown redirect exists for this vhost"
+                    logger.debug("Unknown redirect exists for this vhost")
                     return False, general_v
             #Add directives to server
             self.add_dir(general_v.path, "RewriteEngine", "On")
@@ -552,7 +551,7 @@ LogLevel warn \n\
                 redirect_filename = "trustify-redirect-" + ssl_vhost.names[0] + ".conf"
         with open(SERVER_ROOT+"sites-available/"+redirect_filename, 'w') as f:
             f.write(redirect_file)
-        print "Created redirect file:", redirect_filename
+        logger.info("Created redirect file: " + redirect_filename)
 
         self.aug.load()
         new_fp = SERVER_ROOT + "sites-available/" + redirect_filename
@@ -655,7 +654,7 @@ LogLevel warn \n\
             # Hopefully this waits for output                                   
             subprocess.check_call(["sudo", "/etc/init.d/apache2", "reload"], stdout=open("/dev/null", 'w'), stderr=open("/dev/null", 'w'))
         except:
-	    print "Error enabling mod_" + mod_name
+	    logger.error("Error enabling mod_" + mod_name)
             sys.exit(1)
 
     def fnmatch_to_re(self, cleanFNmatch):
@@ -715,15 +714,15 @@ LogLevel warn \n\
                 if filename in mod_files:
                     # Output a warning... hopefully this can be avoided so more
                     # complex code doesn't have to be written
-                    print "Reversible file has been overwritten -", filename
+                    logger.fatal("Reversible file has been overwritten - %s" % filename)
                     sys.exit(37)
                 if reversible:
                     mod_fd.write(filename + "\n")
             mod_fd.close()
             return True
         except IOError:
-            print "Unable to save file - ", mod_conf
-            print "Is the script running as root?"
+            logger.error("Unable to save file - %s" % mod_conf)
+            logger.error("Is the script running as root?")
         return False
     
     def save_apache_config(self):
@@ -775,7 +774,7 @@ LogLevel warn \n\
                 mod_files = mod_fd.readlines()
                 mod_fd.close()
             except:
-                print "Error opening:", MODIFIED_FILES
+                logger.fatal("Error opening:", MODIFIED_FILES)
                 sys.exit()
     
         try:
@@ -787,8 +786,8 @@ LogLevel warn \n\
             mod_fd = open(MODIFIED_FILES, 'w')
             mod_fd.close()
         except Exception as e:
-            print "Error reverting configuration"
-            print e
+            logger.fatal("Error reverting configuration")
+            logger.fatal(e)
             sys.exit(36)
 
     def restart(self, quiet=False):
@@ -803,12 +802,12 @@ LogLevel warn \n\
                 p = subprocess.Popen(['/etc/init.d/apache2', 'reload'], stderr=subprocess.PIPE).communicate()[0]
 
             if "fail" in p:
-                print "Apache configuration is incorrect"
-                print p
+                logger.error("Apache configuration is incorrect")
+                logger.error(p)
                 return False
             return True
         except:
-            print "Apache Restart Failed - Please Check the Configuration"
+            logger.fatal("Apache Restart Failed - Please Check the Configuration")
             sys.exit(1)
 
     def __add_httpd_transform(self, incl):
@@ -825,7 +824,8 @@ LogLevel warn \n\
 
 def main():
     config = Configurator()
-    config.aug.load()
+    logger.setLogger(sys.stdout)
+    logger.setLogLevel(logger.DEBUG)
     for v in config.vhosts:
         print v.file
         print v.addrs
