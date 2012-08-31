@@ -82,7 +82,7 @@ class Configurator(object):
             # Presumably break here so that the virtualhost is not modified
             return False
         
-        #print "Deploying Certificate to VirtualHost"
+        logger.info("Deploying Certificate to VirtualHost %s" % vhost.file)
             
         self.aug.set(path["cert_file"][0], cert)
         self.aug.set(path["cert_key"][0], key)
@@ -500,27 +500,11 @@ class Configurator(object):
     def create_redirect_vhost(self, ssl_vhost):
         # Consider changing this to a dictionary check
         # Make sure adding the vhost will be safe
-        redirect_addrs = ""
-        for ssl_a in ssl_vhost.addrs:
-            # Add space on each new addr, combine "VirtualHost"+redirect_addrs
-            redirect_addrs = redirect_addrs + " "
-            ssl_tup = ssl_a.partition(":")
-            ssl_a_vhttp = ssl_tup[0] + ":80"
-            # Search for a conflicting host...
-            for v in self.vhosts:
-                if v.enabled:
-                    for a in v.addrs:
-                        # Convert :* to standard ip address
-                        if a.endswith(":*"):
-                            a = a[:len(a)-2]
-                        # Would require NameBasedVirtualHosts,too complicated?
-                        # Maybe do later... right now just return false
-                        # or overlapping addresses... order matters
-                        if a == ssl_a_vhttp or a == ssl_tup[0]:
-                            # We have found a conflicting host... just return
-                            return False, v
-            
-            redirect_addrs = redirect_addrs + ssl_a_vhttp
+        conflict, hostOrAddrs = self.__conflicting_host(ssl_vhost)
+        if conflict:
+            return False, hostOrAddrs
+        
+        redirect_addrs = hostOrAddrs
 
         # get servernames and serveraliases
         serveralias = ""
@@ -559,6 +543,33 @@ LogLevel warn \n\
         new_vhost = self.__create_vhost("/files" + new_fp)
         self.vhosts.add(self.__create_vhost("/files" + new_fp))
         return True, new_vhost
+    
+    def __conflicting_host(self, ssl_vhost):
+        # Consider changing this to a dictionary check
+        # Make sure adding the vhost will be safe
+        redirect_addrs = ""
+        for ssl_a in ssl_vhost.addrs:
+            # Add space on each new addr, combine "VirtualHost"+redirect_addrs
+            redirect_addrs = redirect_addrs + " "
+            ssl_tup = ssl_a.partition(":")
+            ssl_a_vhttp = ssl_tup[0] + ":80"
+            # Search for a conflicting host...
+            for v in self.vhosts:
+                if v.enabled:
+                    for a in v.addrs:
+                        # Convert :* to standard ip address
+                        if a.endswith(":*"):
+                            a = a[:len(a)-2]
+                        # Would require NameBasedVirtualHosts,too complicated?
+                        # Maybe do later... right now just return false
+                        # or overlapping addresses... order matters
+                        if a == ssl_a_vhttp or a == ssl_tup[0]:
+                            # We have found a conflicting host... just return
+                            return True, v
+
+            redirect_addrs = redirect_addrs + ssl_a_vhttp
+
+        return False, redirect_addrs
         
     def __general_vhost(self, ssl_vhost):
         """
