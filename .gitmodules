@@ -1,3 +1,6 @@
 [submodule "m3crypto"]
 	path = m3crypto
 	url = git@github.com:research/m3crypto.git
+[submodule "pygeoip"]
+	path = pygeoip
+	url = https://github.com/appliedsec/pygeoip.git
