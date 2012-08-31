@@ -6,6 +6,7 @@ import sys
 import socket
 import time
 import shutil
+import logger
 
 from trustify.client.CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES
 #from CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES, REWRITE_HTTPS_ARGS
