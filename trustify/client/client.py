@@ -261,6 +261,91 @@ def gen_https_names(domains):
     result = result + "https://" + domains[len(domains)-1]
     return result
 
+def send_request(key_pem, csr_pem, quiet=curses):
+    global server
+    upstream = "https://%s/chocolate.py" % server
+    k=chocolatemessage()
+    m=chocolatemessage()
+    init(k)
+    init(m)
+    logger.info("Creating request; generating hashcash...")
+    make_request(server, m, csr_pem, quiet=curses)
+    sign(key_pem, m)
+    logger.info("Created request; sending to server...")
+    logger.debug(m)
+
+    r=decode(do(upstream, m))
+    logger.debug(r)
+    while r.proceed.IsInitialized():
+       if r.proceed.polldelay > 60: r.proceed.polldelay = 60
+       logger.info("Waiting %d seconds..." % r.proceed.polldelay)
+       time.sleep(r.proceed.polldelay)
+       k.session = r.session
+       r = decode(do(upstream, k))
+       logger.debug(r)
+
+    if r.failure.IsInitialized():
+        logger.fatal("Chocolate Server reported failure.")
+        sys.exit(1)
+        
+    return r
+
+
+def handle_verification_response(r):
+    if r.success.IsInitialized():
+        sni_challenge.cleanup(sni_todo, config)
+        cert_chain_abspath = None
+        with open(cert_file, "w") as f:
+            f.write(r.success.certificate)
+
+        logger.info("Server issued certificate; certificate written to %s" % cert_file)
+        if r.success.chain:
+            with open(chain_file, "w") as f:
+                f.write(r.success.chain)
+ 
+            logger.info("Cert chain written to %s" % chain_file)
+
+            # This expects a valid chain file
+            cert_chain_abspath = os.path.abspath(chain_file)
+
+        for host in vhost:
+            config.deploy_cert(host, os.path.abspath(cert_file), os.path.abspath(key_file), cert_chain_abspath)
+            # Enable any vhost that was issued to, but not enabled
+            if not host.enabled:
+                logger.info("Enabling Site " + host.file)
+                config.enable_site(host)
+
+        # sites may have been enabled / final cleanup
+        config.restart(quiet=curses)
+
+        if curses:
+            dialog.Dialog().msgbox("\nCongratulations! You have successfully enabled " + gen_https_names(dn) + "!", width=70)
+            config.enable_mod("rewrite")
+            if by_default():
+                redirect_to_ssl(vhost)     
+        else:
+            logger.info("Congratulations! You have successfully enabled " + gen_https_names(dn) + "!")
+
+    
+    elif r.failure.IsInitialized():
+        logger.fatal("Server reported failure.")
+        sys.exit(1)
+
+    else:
+        logger.fatal("Unexpected server verification response!")
+        sys.exit(43)
+
+
+def redirect_to_ssl(vhost):
+     for ssl_vh in vhost:
+         success, redirect_vhost = config.redirect_all_ssl(ssl_vh)
+         logger.info("\nRedirect vhost: " + redirect_vhost.file + " - " + str(success))
+         # If successful, make sure redirect site is enabled
+         if success:
+             if not config.is_site_enabled(redirect_vhost.file):
+                 config.enable_site(redirect_vhost)
+                 logger.info("Enabling available site: " + redirect_vhost.file)
+
 def authenticate():
     """
     Main call to do DV_SNI validation and deploy the trustify certificate
@@ -314,29 +399,7 @@ def authenticate():
         logger.info("Generating key: " + key_file)
         logger.info("Creating CSR: " + req_file)
 
-    k=chocolatemessage()
-    m=chocolatemessage()
-    init(k)
-    init(m)
-    logger.info("Creating request; generating hashcash...")
-    make_request(server, m, csr_pem, quiet=curses)
-    sign(key_pem, m)
-    logger.info("Created request; sending to server...")
-    logger.debug(m)
-
-    r=decode(do(upstream, m))
-    logger.debug(r)
-    while r.proceed.IsInitialized():
-       if r.proceed.polldelay > 60: r.proceed.polldelay = 60
-       logger.info("Waiting %d seconds..." % r.proceed.polldelay)
-       time.sleep(r.proceed.polldelay)
-       k.session = r.session
-       r = decode(do(upstream, k))
-       logger.debug(r)
-
-    if r.failure.IsInitialized():
-        logger.fatal("Chocolate Server reported failure.")
-        sys.exit(1)
+    r = send_request(key_pem, csr_pem)
 
     sni_todo = []
     dn = []
@@ -376,50 +439,7 @@ def authenticate():
         r = decode(do(upstream, k))
         logger.debug(r)
 
-    if r.success.IsInitialized():
-        sni_challenge.cleanup(sni_todo, config)
-        cert_chain_abspath = None
-        with open(cert_file, "w") as f:
-            f.write(r.success.certificate)
-
-        logger.info("Server issued certificate; certificate written to %s" % cert_file)
-        if r.success.chain:
-            with open(chain_file, "w") as f:
-                f.write(r.success.chain)
- 
-            logger.info("Cert chain written to %s" % chain_file)
-
-            # This expects a valid chain file
-            cert_chain_abspath = os.path.abspath(chain_file)
-
-        for host in vhost:
-            config.deploy_cert(host, os.path.abspath(cert_file), os.path.abspath(key_file), cert_chain_abspath)
-            # Enable any vhost that was issued to, but not enabled
-            if not host.enabled:
-                logger.info("Enabling Site " + host.file)
-                config.enable_site(host)
-
-        # sites may have been enabled / final cleanup
-        config.restart(quiet=curses)
-
-        if curses:
-            dialog.Dialog().msgbox("\nCongratulations! You have successfully enabled " + gen_https_names(dn) + "!", width=70)
-            config.enable_mod("rewrite")
-            if by_default():
-                for ssl_vh in vhost:
-                    success, redirect_vhost = config.redirect_all_ssl(ssl_vh)
-                    logger.info("\nRedirect vhost: " + redirect_vhost.file + " - " + str(success))
-                    # If successful, make sure redirect site is enabled
-                    if success:
-                        if not config.is_site_enabled(redirect_vhost.file):
-                            config.enable_site(redirect_vhost)
-                            logger.info("Enabling available site: " + redirect_vhost.file)
-        else:
-            logger.info("Congratulations! You have successfully enabled " + gen_https_names(dn) + "!")
-
+    handle_verification_response(r)
     
-    elif r.failure.IsInitialized():
-        logger.fatal("Server reported failure.")
-        sys.exit(1)
 
 # vim: set expandtab tabstop=4 shiftwidth=4
