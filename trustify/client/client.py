@@ -288,10 +288,10 @@ def send_request(key_pem, csr_pem, quiet=curses):
         logger.fatal("Chocolate Server reported failure.")
         sys.exit(1)
         
-    return r
+    return r, k
 
 
-def handle_verification_response(r):
+def handle_verification_response(r, dn, sni_todo, vhost, key_file, config):
     if r.success.IsInitialized():
         sni_challenge.cleanup(sni_todo, config)
         cert_chain_abspath = None
@@ -322,7 +322,7 @@ def handle_verification_response(r):
             dialog.Dialog().msgbox("\nCongratulations! You have successfully enabled " + gen_https_names(dn) + "!", width=70)
             config.enable_mod("rewrite")
             if by_default():
-                redirect_to_ssl(vhost)     
+                redirect_to_ssl(vhost, config)     
         else:
             logger.info("Congratulations! You have successfully enabled " + gen_https_names(dn) + "!")
 
@@ -336,7 +336,7 @@ def handle_verification_response(r):
         sys.exit(43)
 
 
-def redirect_to_ssl(vhost):
+def redirect_to_ssl(vhost, config):
      for ssl_vh in vhost:
          success, redirect_vhost = config.redirect_all_ssl(ssl_vh)
          logger.info("\nRedirect vhost: " + redirect_vhost.file + " - " + str(success))
@@ -399,7 +399,7 @@ def authenticate():
         logger.info("Generating key: " + key_file)
         logger.info("Creating CSR: " + req_file)
 
-    r = send_request(key_pem, csr_pem)
+    r, k = send_request(key_pem, csr_pem)
 
     sni_todo = []
     dn = []
@@ -439,7 +439,7 @@ def authenticate():
         r = decode(do(upstream, k))
         logger.debug(r)
 
-    handle_verification_response(r)
+    handle_verification_response(r, dn, sni_todo, vhost, key_file, config)
     
 
 # vim: set expandtab tabstop=4 shiftwidth=4
