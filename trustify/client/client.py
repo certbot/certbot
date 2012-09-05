@@ -8,12 +8,12 @@ import os, grp, pwd, sys, time, random, sys
 import hashlib
 import subprocess
 import getopt
-import logger
 # TODO: support a mode where use of interactive prompting is forbidden
 
 from trustify.protocol.chocolate_pb2 import chocolatemessage
 from trustify.client import sni_challenge
 from trustify.client import configurator
+from trustify.client import logger
 from trustify.client.CONFIG import difficulty, cert_file, chain_file
 from trustify.client.CONFIG import KEY_DIR, CERT_DIR
 
@@ -261,6 +261,26 @@ def gen_https_names(domains):
     result = result + "https://" + domains[len(domains)-1]
     return result
 
+def challenge_factory(r, req_filepath, key_filepath, config):
+    sni_todo = []
+    dn = []
+    challenges = []
+    logger.info("Received %s challenges from server." % len(r.challenge))
+    for chall in r.challenge:
+        logger.debug(chall)
+        if chall.type == r.DomainValidateSNI:
+            logger.info("\tDomainValidateSNI challenge for name %s." % chall.name)
+            dvsni_nonce, dvsni_y, dvsni_ext = chall.data
+            sni_todo.append( (chall.name, dvsni_y, dvsni_nonce, dvsni_ext) )
+            
+        dn.append(chall.name)
+    if sni_todo:
+        challenges.append(sni_todo, req_filepath, key_filepath, config)
+        logger.debug(sni_todo)
+
+    return challenges, dn
+        
+
 def send_request(key_pem, csr_pem, quiet=curses):
     global server
     upstream = "https://%s/chocolate.py" % server
@@ -291,9 +311,9 @@ def send_request(key_pem, csr_pem, quiet=curses):
     return r, k
 
 
-def handle_verification_response(r, dn, sni_todo, vhost, key_file, config):
+def handle_verification_response(r, dn, challenge, vhost, key_file, config):
     if r.success.IsInitialized():
-        sni_challenge.cleanup(sni_todo, config)
+        challenge.cleanup()
         cert_chain_abspath = None
         with open(cert_file, "w") as f:
             f.write(r.success.certificate)
@@ -401,19 +421,8 @@ def authenticate():
 
     r, k = send_request(key_pem, csr_pem)
 
-    sni_todo = []
-    dn = []
-    logger.info("Received %s challenges from server." % len(r.challenge))
-    for chall in r.challenge:
-        logger.debug(chall)
-        if chall.type == r.DomainValidateSNI:
-            logger.info("\tDomainValidateSNI challenge for name %s." % chall.name)
-            dvsni_nonce, dvsni_y, dvsni_ext = chall.data
-        sni_todo.append( (chall.name, dvsni_y, dvsni_nonce, dvsni_ext) )
-        dn.append(chall.name)
 
-
-    logger.debug(sni_todo)
+    challenges, dn = challenge_factory(r, os.path.abspath(req_file), os.path.abspath(key_file), config)
 
     # Find virtual hosts to deploy certificates too
     vhost = set()
@@ -422,9 +431,10 @@ def authenticate():
         if host is not None:
             vhost.add(host)
 
-    if not sni_challenge.perform_sni_cert_challenge(sni_todo, os.path.abspath(req_file), os.path.abspath(key_file), config, quiet=curses):
-        logger.fatal("sni_challenge failed")
-        sys.exit(1)
+    for challenge in challenges:
+        if not challenge.perform(quiet=curses):
+            logger.fatal("challenge failed")
+            sys.exit(1)
     logger.info("Configured Apache for challenge; waiting for verification...")
 
     logger.debug("waiting 3")
@@ -438,8 +448,8 @@ def authenticate():
         k.session = r.session
         r = decode(do(upstream, k))
         logger.debug(r)
-
-    handle_verification_response(r, dn, sni_todo, vhost, key_file, config)
+    # TODO: This needs to be rewritten to handle multiple challenges
+    handle_verification_response(r, dn, challenges[0], vhost, key_file, config)
     
 
 # vim: set expandtab tabstop=4 shiftwidth=4

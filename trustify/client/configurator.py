@@ -6,11 +6,11 @@ import sys
 import socket
 import time
 import shutil
-import logger
 
 from trustify.client.CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES
 #from CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES, REWRITE_HTTPS_ARGS
 from trustify.client.CONFIG import REWRITE_HTTPS_ARGS
+from trustify.client import logger
 
 #TODO - Need an initialization routine... make sure directories exist..ect
 
@@ -545,8 +545,16 @@ LogLevel warn \n\
         return True, new_vhost
     
     def __conflicting_host(self, ssl_vhost):
+        '''
+        Checks for a conflicting host, such that a new port 80 host could not
+        be created without ruining the apache config
+        Used with redirection
+
+        returns: conflict, hostOrAddrs - boolean
+        if conflict: returns conflicting vhost
+        if not conflict: returns space separated list of new host addrs
+        '''
         # Consider changing this to a dictionary check
-        # Make sure adding the vhost will be safe
         redirect_addrs = ""
         for ssl_a in ssl_vhost.addrs:
             # Add space on each new addr, combine "VirtualHost"+redirect_addrs

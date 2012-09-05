@@ -16,42 +16,58 @@ from trustify.client import configurator
 from trustify.client.CONFIG import CONFIG_DIR, WORK_DIR, SERVER_ROOT
 from trustify.client.CONFIG import CHOC_CERT_CONF, OPTIONS_SSL_CONF, APACHE_CHALLENGE_CONF
 from trustify.client.CONFIG import S_SIZE, NONCE_SIZE
+from trustify.client import logger
+from trustify.client.challenge import Challenge
 
-def getChocCertFile(nonce):
-    """
-    Returns standardized name for challenge certificate
+class SNI_Challenge(Challenge):
+    def __init__(self, sni_todos, req_filepath, key_filepath, config):
+        '''
+        sni_todos:     List of tuples with form (addr, y, nonce, ext_oid)
+                       addr (string), y (byte array), nonce (hex string), 
+                       ext_oid (string)
+        csr:           string - File path to chocolate csr
+        key:           string - File path to key
+        configurator:  Configurator obj
+        '''
+        self.listSNITuple = sni_todos
+        self.csr = req_filepath
+        self.key = key_filepath
+        self.configurator = config
+        
 
-    nonce:  string - hex
-    
-    result: returns certificate file name
-    """
+    def getChocCertFile(self, nonce):
+        """
+        Returns standardized name for challenge certificate
 
-    return WORK_DIR + nonce + ".crt"
+        nonce:  string - hex
 
-def findApacheConfigFile():
-    """
-    Locates the file path to the user's main apache config
+        result: returns certificate file name
+        """
 
-    TODO: This needs to use true server_root
-    
-    result: returns file path if present
-    """
-    if path.isfile(SERVER_ROOT + "httpd.conf"):
-        return SERVER_ROOT + "httpd.conf"
-    print "Unable to find httpd.conf, file does not exist in Apache ServerRoot"
-    return None
+        return WORK_DIR + nonce + ".crt"
 
-def getConfigText(nonce, ip_addrs, key):
-    """
-    Chocolate virtual server configuration text
+    def findApacheConfigFile(self):
+        """
+        Locates the file path to the user's main apache config
 
-    nonce:      string - hex
-    ip_addr:    string - address of challenged domain
-    key:        string - file path to key
+        result: returns file path if present
+        """
+        if path.isfile(SERVER_ROOT + "httpd.conf"):
+            return SERVER_ROOT + "httpd.conf"
+        logger.error("Unable to find httpd.conf, file does not exist in Apache ServerRoot")
+        return None
 
-    result:     returns virtual host configuration text
-    """
-    configText = "<VirtualHost " + " ".join(ip_addrs) + "> \n \
+    def __getConfigText(self, nonce, ip_addrs, key):
+        """
+        Chocolate virtual server configuration text
+
+        nonce:      string - hex
+        ip_addr:    string - address of challenged domain
+        key:        string - file path to key
+
+        result:     returns virtual host configuration text
+        """
+        configText = "<VirtualHost " + " ".join(ip_addrs) + "> \n \
 ServerName " + nonce + ".chocolate \n \
 UseCanonicalName on \n \
 SSLStrictSNIVHostCheck on \n \
@@ -65,190 +81,191 @@ SSLCertificateKeyFile " + key + " \n \
 DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
 </VirtualHost> \n\n "
 
-    return configText
+        return configText
 
-def modifyApacheConfig(mainConfig, listSNITuple, listlistAddrs, key, configurator):
-    """
-    Modifies Apache config files to include the challenge virtual servers
-    
-    mainConfig:    string - file path to Apache user config file
-    listSNITuple:  list of tuples with form (addr, y, nonce, ext_oid)
-                   addr (string), y (byte array), nonce (hex string), ext_oid (string)
-    key:           string - file path to key
+    def modifyApacheConfig(self, mainConfig, listlistAddrs):
+        """
+        Modifies Apache config files to include the challenge virtual servers
 
-    result:        Apache config includes virtual servers for issued challenges
-    """
+        mainConfig:    string - file path to Apache user config file
+        listSNITuple:  list of tuples with form (addr, y, nonce, ext_oid)
+                       addr (string), y (byte array), nonce (hex string), ext_oid (string)
+        key:           string - file path to key
 
-    # TODO: Use ip address of existing vhost instead of relying on FQDN
-    configText = "<IfModule mod_ssl.c> \n"
-    for idx, lis in enumerate(listlistAddrs):
-        configText += getConfigText(listSNITuple[idx][2], lis, key)
-    configText += "</IfModule> \n"
+        result:        Apache config includes virtual servers for issued challenges
+        """
 
-    checkForApacheConfInclude(mainConfig, configurator)
-    newConf = open(APACHE_CHALLENGE_CONF, 'w')
-    newConf.write(configText)
-    newConf.close()
+        # TODO: Use ip address of existing vhost instead of relying on FQDN
+        configText = "<IfModule mod_ssl.c> \n"
+        for idx, lis in enumerate(listlistAddrs):
+            configText += self.__getConfigText(self.listSNITuple[idx][2], lis, self.key)
+        configText += "</IfModule> \n"
 
-# Need to add NameVirtualHost IP_ADDR or does the chocolate install do this?
-def checkForApacheConfInclude(mainConfig, configurator):
-    """
-    Adds chocolate challenge include file if it does not already exist 
-    within mainConfig
-    
-    mainConfig:  string - file path to main user apache config file
+        self.checkForApacheConfInclude(mainConfig)
+        newConf = open(APACHE_CHALLENGE_CONF, 'w')
+        newConf.write(configText)
+        newConf.close()
 
-    result:      User Apache configuration includes chocolate sni challenge file
-    """
-    if len(configurator.find_directive("Include", APACHE_CHALLENGE_CONF)) == 0:
-        #print "Including challenge virtual host(s)"
-        configurator.add_dir("/files" + mainConfig, "Include", APACHE_CHALLENGE_CONF)
+    def checkForApacheConfInclude(self, mainConfig):
+        """
+        Adds chocolate challenge include file if it does not already exist 
+        within mainConfig
 
-def createChallengeCert(oid, ext, nonce, csr, key):
-    """
-    Modifies challenge certificate configuration and calls openssl binary to create a certificate
+        mainConfig:  string - file path to main user apache config file
 
-    oid:    string
-    ext:    string - hex z value
-    nonce:  string - hex
-    csr:    string - file path to csr
-    key:    string - file path to key
+        result:      User Apache configuration includes chocolate sni challenge file
+        """
+        if len(self.configurator.find_directive("Include", APACHE_CHALLENGE_CONF)) == 0:
+            #print "Including challenge virtual host(s)"
+            self.configurator.add_dir("/files" + mainConfig, "Include", APACHE_CHALLENGE_CONF)
 
-    result: certificate created at getChocCertFile(nonce)
-    """
+    def createChallengeCert(self, oid, ext, nonce, csr, key):
+        """
+        Modifies challenge certificate configuration and calls openssl binary to create a certificate
 
-    updateCertConf(oid, ext)
-    subprocess.call(["openssl", "x509", "-req", "-days", "21", "-extfile", CHOC_CERT_CONF, "-extensions", "v3_ca", "-signkey", key, "-out", getChocCertFile(nonce), "-in", csr], stdout=open("/dev/null", 'w'), stderr=open("/dev/null", 'w'))
-    
+        oid:    string
+        ext:    string - hex z value
+        nonce:  string - hex
+        csr:    string - file path to csr
+        key:    string - file path to key
 
-def generateExtension(key, y):
-    """
-    Generates z to be placed in certificate extension
+        result: certificate created at getChocCertFile(nonce)
+        """
 
-    key:    string - File path to key
-    y:      byte array
+        updateCertConf(oid, ext)
+        subprocess.call(["openssl", "x509", "-req", "-days", "21", "-extfile", CHOC_CERT_CONF, "-extensions", "v3_ca", "-signkey", key, "-out", getChocCertFile(nonce), "-in", csr], stdout=open("/dev/null", 'w'), stderr=open("/dev/null", 'w'))
 
-    result: returns z value
-    """
 
-    rsaPrivKey = M2Crypto.RSA.load_key(key)
-    r = rsaPrivKey.private_decrypt(y, M2Crypto.RSA.pkcs1_oaep_padding)
+    def generateExtension(self, key, y):
+        """
+        Generates z to be placed in certificate extension
 
-    s = Random.get_random_bytes(S_SIZE)
-    extHMAC = hmac.new(r, str(s), hashlib.sha256)
-    return byteToHex(s) + extHMAC.hexdigest()
+        key:    string - File path to key
+        y:      byte array
 
-def byteToHex(byteStr):
-    """
-    Converts binary array to hex string
-    
-    byteStr:  byte array
-    
-    result: returns hex representation of byteStr
-    """
+        result: returns z value
+        """
 
-    return ''.join(["%02X" % ord(x) for x in byteStr]).strip()
+        rsaPrivKey = M2Crypto.RSA.load_key(key)
+        r = rsaPrivKey.private_decrypt(y, M2Crypto.RSA.pkcs1_oaep_padding)
 
-#Searches for the first extension specified in binary
-def updateCertConf(oid, value):
-    """
-    Updates the sni_challenge openssl certificate config file
+        s = Random.get_random_bytes(S_SIZE)
+        extHMAC = hmac.new(r, str(s), hashlib.sha256)
+        return self.byteToHex(s) + extHMAC.hexdigest()
 
-    oid:    string - ex. 1.3.3.7 
-    value   string hex - value of OID
+    def byteToHex(self, byteStr):
+        """
+        Converts binary array to hex string
 
-    result: updated certificate config file
-    """
+        byteStr:  byte array
 
-    confOld = open(CHOC_CERT_CONF)
-    confNew = open(CHOC_CERT_CONF + ".tmp", 'w')
-    flag = False
-    for line in confOld:
-        if "=critical, DER:" in line:
-            confNew.write(oid + "=critical, DER:" + value + "\n")
-            flag = True
-        else:
-            confNew.write(line)
-    if flag is False:
-        print "Error: Could not find extension in CHOC_CERT_CONF"
-        exit()
-    confNew.close()
-    confOld.close()
-    remove(CHOC_CERT_CONF)
-    move(CHOC_CERT_CONF + ".tmp", CHOC_CERT_CONF)
+        result: returns hex representation of byteStr
+        """
 
-def cleanup(listSNITuple, configurator):
-    """
-    Remove all temporary changes necessary to perform the challenge
-    
-    configurator:  Configurator object
-    listSNITuple:  The initial challenge tuple
+        return ''.join(["%02X" % ord(x) for x in byteStr]).strip()
 
-    result: Apache server is restored to the pre-challenge state
-    """
-    configurator.revert_config()
-    configurator.restart(True)
-    remove_files(listSNITuple)
-    
+    #Searches for the first extension specified in binary
+    def updateCertConf(self, oid, value):
+        """
+        Updates the sni_challenge openssl certificate config file
 
-def remove_files(listSNITuple):
-    """
-    Removes all of the temporary SNI files
-    """
-    for tup in listSNITuple:
-        remove(getChocCertFile(tup[2]))
-    remove(APACHE_CHALLENGE_CONF)
+        oid:    string - ex. 1.3.3.7 
+        value   string hex - value of OID
 
-#main call
-def perform_sni_cert_challenge(listSNITuple, csr, key, configurator, quiet=False):
-    """
-    Sets up and reloads Apache server to handle SNI challenges
+        result: updated certificate config file
+        """
 
-    listSNITuple:  List of tuples with form (addr, y, nonce, ext_oid)
-                   addr (string), y (byte array), nonce (hex string), 
-                   ext_oid (string)
-    csr:           string - File path to chocolate csr
-    key:           string - File path to key
-    configurator:  Configurator obj
-    """
-    # Save any changes to the configuration as a precaution
-    # About to make temporary changes to the config
-    configurator.save("Before performing sni_challenge")
+        confOld = open(CHOC_CERT_CONF)
+        confNew = open(CHOC_CERT_CONF + ".tmp", 'w')
+        flag = False
+        for line in confOld:
+            if "=critical, DER:" in line:
+                confNew.write(oid + "=critical, DER:" + value + "\n")
+                flag = True
+            else:
+                confNew.write(line)
+        if flag is False:
+            print "Error: Could not find extension in CHOC_CERT_CONF"
+            exit()
+        confNew.close()
+        confOld.close()
+        remove(CHOC_CERT_CONF)
+        move(CHOC_CERT_CONF + ".tmp", CHOC_CERT_CONF)
 
-    addresses = []
-    default_addr = "*:443"
-    for tup in listSNITuple:
-        vhost = configurator.choose_virtual_host(tup[0])
-        if vhost is None:
-            print "No vhost exists with servername or alias of:", tup[0]
-            print "No _default_:443 vhost exists"
-            print "Please specify servernames in the Apache config"
-            return False
-            
-        if not configurator.make_server_sni_ready(vhost, default_addr):
-            return False
+    def cleanup(self):
+        """
+        Remove all temporary changes necessary to perform the challenge
 
-        for a in vhost.addrs:
-            if "_default_" in a:
-                addresses.append([default_addr])
-                break
-        else:
-            addresses.append(vhost.addrs)
+        configurator:  Configurator object
+        listSNITuple:  The initial challenge tuple
 
-    for tup in listSNITuple:
-        ext = generateExtension(key, tup[1])
-        createChallengeCert(tup[3], ext, tup[2], csr, key)
-    
-    modifyApacheConfig(findApacheConfigFile(), listSNITuple, addresses, key, configurator)
-    # Save reversible changes and restart the server
-    configurator.save("SNI Challenge", True)
-    configurator.restart(quiet)
-    return True
+        result: Apache server is restored to the pre-challenge state
+        """
+        self.configurator.revert_config()
+        self.configurator.restart(True)
+        self.__remove_files()
+
+
+    def __remove_files(self):
+        """
+        Removes all of the temporary SNI files
+        """
+        for tup in self.listSNITuple:
+            remove(getChocCertFile(tup[2]))
+        remove(APACHE_CHALLENGE_CONF)
+
+    #main call
+    def perform(self, quiet=False):
+        """
+        Sets up and reloads Apache server to handle SNI challenges
+
+        listSNITuple:  List of tuples with form (addr, y, nonce, ext_oid)
+                       addr (string), y (byte array), nonce (hex string), 
+                       ext_oid (string)
+        csr:           string - File path to chocolate csr
+        key:           string - File path to key
+        configurator:  Configurator obj
+        """
+        # Save any changes to the configuration as a precaution
+        # About to make temporary changes to the config
+        self.configurator.save("Before performing sni_challenge")
+
+        addresses = []
+        default_addr = "*:443"
+        for tup in self.listSNITuple:
+            vhost = self.configurator.choose_virtual_host(tup[0])
+            if vhost is None:
+                print "No vhost exists with servername or alias of:", tup[0]
+                print "No _default_:443 vhost exists"
+                print "Please specify servernames in the Apache config"
+                return False
+
+            if not self.configurator.make_server_sni_ready(vhost, default_addr):
+                return False
+
+            for a in vhost.addrs:
+                if "_default_" in a:
+                    addresses.append([default_addr])
+                    break
+            else:
+                addresses.append(vhost.addrs)
+
+        for tup in self.listSNITuple:
+            ext = self.generateExtension(self.key, tup[1])
+            self.createChallengeCert(tup[3], ext, tup[2], self.csr, self.key)
+
+        self.modifyApacheConfig(self.findApacheConfigFile(), addresses, self.key)
+        # Save reversible changes and restart the server
+        self.configurator.save("SNI Challenge", True)
+        self.configurator.restart(quiet)
+        return True
 
 # This main function is just used for testing
 def main():
     key = path.abspath("key.pem")
     csr = path.abspath("req.pem")
+    logger.setLogger(sys.stdout)
+    logger.setLogLevel(logger.INFO)
 
     testkey = M2Crypto.RSA.load_key(key)
     
@@ -274,15 +291,15 @@ def main():
 
     challenges = [("example.com", y, nonce, "1.3.3.7"), ("www.example.com",y2, nonce2, "1.3.3.7")]
     #challenges = [("127.0.0.1", y, nonce, "1.3.3.7"), ("localhost", y2, nonce2, "1.3.3.7")]
-    if perform_sni_cert_challenge(challenges, csr, key, config):
-        
+    sni_chall = SNI_Challenge(challenges, csr, key, config)
+    if sni_chall.perform():
         # Waste some time without importing time module... just for testing
         for i in range(0, 12000):
             if i % 2000 == 0:
                 print "Waiting:", i
 
         print "Cleaning up"
-        cleanup(challenges, config)
+        sni_chall.cleanup()
     else:
         print "Failed SNI challenge..."
 
