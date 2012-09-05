@@ -11,7 +11,7 @@ import getopt
 # TODO: support a mode where use of interactive prompting is forbidden
 
 from trustify.protocol.chocolate_pb2 import chocolatemessage
-from trustify.client import sni_challenge
+from trustify.client.sni_challenge import SNI_Challenge
 from trustify.client import configurator
 from trustify.client import logger
 from trustify.client.CONFIG import difficulty, cert_file, chain_file
@@ -275,7 +275,7 @@ def challenge_factory(r, req_filepath, key_filepath, config):
             
         dn.append(chall.name)
     if sni_todo:
-        challenges.append(sni_todo, req_filepath, key_filepath, config)
+        challenges.append(SNI_Challenge(sni_todo, req_filepath, key_filepath, config))
         logger.debug(sni_todo)
 
     return challenges, dn

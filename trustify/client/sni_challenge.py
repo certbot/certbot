@@ -75,7 +75,7 @@ SSLStrictSNIVHostCheck on \n \
 LimitRequestBody 1048576 \n \
 \n \
 Include " + OPTIONS_SSL_CONF + " \n \
-SSLCertificateFile " + getChocCertFile(nonce) + " \n \
+SSLCertificateFile " + self.getChocCertFile(nonce) + " \n \
 SSLCertificateKeyFile " + key + " \n \
 \n \
 DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
@@ -132,8 +132,8 @@ DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
         result: certificate created at getChocCertFile(nonce)
         """
 
-        updateCertConf(oid, ext)
-        subprocess.call(["openssl", "x509", "-req", "-days", "21", "-extfile", CHOC_CERT_CONF, "-extensions", "v3_ca", "-signkey", key, "-out", getChocCertFile(nonce), "-in", csr], stdout=open("/dev/null", 'w'), stderr=open("/dev/null", 'w'))
+        self.updateCertConf(oid, ext)
+        subprocess.call(["openssl", "x509", "-req", "-days", "21", "-extfile", CHOC_CERT_CONF, "-extensions", "v3_ca", "-signkey", key, "-out", self.getChocCertFile(nonce), "-in", csr], stdout=open("/dev/null", 'w'), stderr=open("/dev/null", 'w'))
 
 
     def generateExtension(self, key, y):
@@ -211,7 +211,7 @@ DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
         Removes all of the temporary SNI files
         """
         for tup in self.listSNITuple:
-            remove(getChocCertFile(tup[2]))
+            remove(self.getChocCertFile(tup[2]))
         remove(APACHE_CHALLENGE_CONF)
 
     #main call
@@ -254,7 +254,7 @@ DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
             ext = self.generateExtension(self.key, tup[1])
             self.createChallengeCert(tup[3], ext, tup[2], self.csr, self.key)
 
-        self.modifyApacheConfig(self.findApacheConfigFile(), addresses, self.key)
+        self.modifyApacheConfig(self.findApacheConfigFile(), addresses)
         # Save reversible changes and restart the server
         self.configurator.save("SNI Challenge", True)
         self.configurator.restart(quiet)
