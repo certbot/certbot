@@ -13,6 +13,8 @@ from CONFIG import max_names, max_csr_size, maximum_session_age
 from CONFIG import maximum_challenge_age, hashcash_expiry, extra_name_blacklist
 from CONFIG import cert_chain_file, debug
 
+poll_interval = 10
+
 try:
     chocolate_server_name = open("SERVERNAME").read().rstrip()
 except IOError:
@@ -320,6 +322,8 @@ class session(object):
         # If we're in testchallenge, tell the client about the challenges and their
         # current status.
         if state == "testchallenge":
+            # If the client claims to have completed some challenges, try to test
+            # them, if the client hasn't asked us to do so too recently.
             if m.completedchallenge:
                 try:
                     with redis_lock(sessions, "lock-" + self.id, one_shot=True):
