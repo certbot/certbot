@@ -150,10 +150,6 @@ def makechallenge(session):
         if debug: print "created new challenge", short(challenge)
     if True:  # challenges have been created
         r.hset(session, "state", "testchallenge")
-        r.lpush("pending-testchallenge", session)
-        # TODO: this causes the daemon to immediately attempt to test the
-        # challenge for completion, with no delay.
-        r.publish("requests", "testchallenge")
     else:
         r.lpush("pending-makechallenge", session)
         r.publish("requests", "makechallenge")
@@ -170,13 +166,8 @@ def testchallenge(session):
         if debug: print "removing expired session", short(session)
         r.lrem("pending-requests", session)
         return
-    # Note that we can push this back into the original queue.
-    # TODO: need to add a way to make sure we don't test the same
-    # session too often.
-    # Conceivably, this could wait until the client announces
-    # that it has completed the challenges.  Information about
-    # the client's reporting could be stored in the database.
-    # Then the CA doesn't need to poll prematurely.
+    if r.hget(session, "state") != "testchallenge":
+        return
     all_satisfied = True
     for i, name in enumerate(r.lrange("%s:names" % session, 0, -1)):
         challenge = "%s:%d" % (session, i)
@@ -227,14 +218,7 @@ def testchallenge(session):
         r.publish("requests", "issue")
     else:
         # Some challenges are not verified.
-        # Put this session back on the stack to try to verify again.
-        r.lpush("pending-testchallenge", session)
-        # TODO: if we wanted the client to tell us when it believes
-        # it has completed the challenge, we should take this out and
-        # have the server publish the message in response to the message
-        # from the client.  Also, the current version will cause the
-        # server to retest over and over again as fast as it's able.
-        r.publish("requests", "testchallenge")
+        pass
 
 def issue(session):
     if r.hget(session, "live") != "True":
@@ -261,6 +245,8 @@ def issue(session):
         # issuing the cert.  This is a bug.
         if debug: print "removing expired (issue-state!?) session", short(session)
         r.lrem("pending-requests", session)
+        return
+    if r.hget(session, "state") != "issue":
         return
     csr = r.hget(session, "csr")
     names = r.lrange("%s:names" % session, 0, -1)
@@ -322,9 +308,10 @@ for message in ps.listen():
                         if debug: print "expiring ancient session", short(session)
                         r.hset(session, "live", False)
                     else:
-                        # if debug: print "going to %s for %s" % (queue, short(session))
                         if queue == "makechallenge": makechallenge(session)
-                        elif queue == "testchallenge": testchallenge(session)
+                        elif queue == "testchallenge":
+                            with redis_lock(r, "lock-" + session):
+                                testchallenge(session)
                         elif queue == "issue": issue(session)
             if inactive:
                 break

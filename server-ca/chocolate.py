@@ -81,6 +81,7 @@ class session(object):
         if timestamp is None: timestamp = int(time.time())
         if not self.exists():
             sessions.hset(self.id, "created", timestamp)
+            sessions.hset(self.id, "lastpoll", 0)
             sessions.hset(self.id, "live", True)
             sessions.lpush("active-requests", self.id)
         else:
@@ -100,6 +101,15 @@ class session(object):
 
     def age(self):
         return int(time.time()) - int(sessions.hget(self.id, "created"))
+
+    def poll_age(self):
+        return float(time.time()) - float(sessions.hget(self.id, "lastpoll"))
+
+    def request_test(self):
+        """Ask a daemon to test challenges."""
+        # TODO: check whether this session is already in pending-testchallenge?
+        sessions.lpush("pending-testchallenge", self.id)
+        sessions.publish("requests", "testchallenge")
 
     def request_made(self):
         """Has there already been a signing request made in this session?"""
@@ -310,6 +320,17 @@ class session(object):
         # If we're in testchallenge, tell the client about the challenges and their
         # current status.
         if state == "testchallenge":
+            if m.completedchallenge:
+                try:
+                    with redis_lock(sessions, "lock-" + self.id, one_shot=True):
+                        if self.poll_age() < poll_interval:
+                            # Too recent!
+                            pass
+                        else:
+                            sessions.hset(self.id, "lastpoll", time.time())
+                            self.request_test()
+                except KeyError:
+                    pass
             self.send_challenges(m, r)
             return
         # If we're in done, tell the client about the successfully issued cert.

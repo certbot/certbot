@@ -17,6 +17,10 @@
 # implemented, only one process succeds in clearing and acquiring a
 # particular expired lock, even "when multiple clients detected an
 # expired lock and are trying to release it".
+#
+# The optional one_shot parameter causes the attempt to acquire the
+# lock to instead raise a KeyError exception if someone else is already
+# holding a valid lock.
 
 import time, random
 
@@ -27,9 +31,10 @@ def valid(t):
     return float(t) > time.time()
 
 class redis_lock(object):
-    def __init__(self, redis, lock_name):
+    def __init__(self, redis, lock_name, one_shot=False):
         self.redis = redis
         self.lock_name = lock_name
+        self.one_shot = one_shot
 
     def __enter__(self):
         while True:
@@ -40,6 +45,8 @@ class redis_lock(object):
             # "C4 sends GET lock.foo to check if the lock expired."
             existing_lock = self.redis.get(self.lock_name)
             if (not existing_lock) or valid(existing_lock):
+                if self.one_shot:
+                    raise KeyError
                 # "If it is not, it will sleep for some time and retry from
                 # the start."
                 time.sleep(1 + random.random())
