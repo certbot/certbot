@@ -18,7 +18,7 @@ OPTIONS_SSL_CONF = CONFIG_DIR + "options-ssl.conf"
 # Temporary file for challenge virtual hosts
 APACHE_CHALLENGE_CONF = CONFIG_DIR + "choc_sni_cert_challenge.conf"
 # Modified files intended to be reset (for challenges/tmp config changes)
-MODIFIED_FILES = BACKUP_DIR + "modified_files"
+MODIFIED_FILES = WORK_DIR + "modified_files"
 # Byte size of S and Nonce
 S_SIZE = 32
 NONCE_SIZE = 32
