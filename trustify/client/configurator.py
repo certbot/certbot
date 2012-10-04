@@ -96,7 +96,7 @@ class Configurator(object):
             else:
                 self.aug.set(path["cert_chain"][0], cert_chain)
         
-        self.save_notes += "Changed vhost at %s with addresses of %s" % (vhost.file, vhost.addrs)
+        self.save_notes += "Changed vhost at %s with addresses of %s\n" % (vhost.file, vhost.addrs)
         self.save_notes += "\tSSLCertificateFile %s\n" % cert
         self.save_notes += "\tSSLCertificateKeyFile %s\n" % key
         if cert_chain:
@@ -856,13 +856,13 @@ LogLevel warn \n\
         except:
             # Check for the root of save problems
             new_errs = self.aug.match("/augeas//error")
+            logger.error("During Save - " + mod_conf)
             # Only print new errors caused by recent save
             for err in new_errs:
                 if err not in ex_errs:
-                    print "Error Saving - " + mod_conf
-                    print "Unable to save - " + err[13:len(err)-6]
-            print "Attempted Save Notes\n"
-            print self.save_notes
+                    logger.error("Unable to save file - %s" % err[13:len(err)-6])
+            logger.error("Attempted Save Notes")
+            logger.error(self.save_notes)
             # Erase Save Notes
             self.save_notes = ""
             return False
@@ -871,21 +871,23 @@ LogLevel warn \n\
         # Note: Noop saves can cause the file to be listed twice, used set to
         # remove this possibility
         save_paths = self.aug.match("/augeas/events/saved")
-        save_files = set()
-        for p in save_paths:
-            save_files.add(self.aug.get(p)[6:])
+        if save_paths:
+            save_files = set()
+            for p in save_paths:
+                save_files.add(self.aug.get(p)[6:])
 
-        for f in save_files:
-            print f
-        valid, message = self.check_tempfile_saves(save_files, reversible)
+            valid, message = self.check_tempfile_saves(save_files, reversible)
 
-        if not valid:
-            logger.error(message)
-            return False
+            if not valid:
+                logger.fatal(message)
+                # What is the protocol in this situation?
+                # This shouldn't happen...
+                return False
 
-        # Create Checkpoint
-        if not reversible:
-            self.create_checkpoint(save_files, mod_conf)
+            # Create Checkpoint
+            if not reversible:
+                self.create_checkpoint(save_files, mod_conf)
+
         self.aug.set("/augeas/save", save_state)
         self.save_notes = ""
         del self.new_files[:]

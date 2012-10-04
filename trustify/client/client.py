@@ -467,8 +467,7 @@ def authenticate():
         r = decode(do(upstream, k))
         logger.debug(r)
 
-    # TODO: This needs to be rewritten to handle multiple challenges
-    handle_verification_response(r, dn, challenges[0], vhost, key_file, config)
+    handle_verification_response(r, dn, challenges, vhost, key_file, config)
     
 
 # vim: set expandtab tabstop=4 shiftwidth=4
