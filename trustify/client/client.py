@@ -455,14 +455,32 @@ def authenticate():
             sys.exit(1)
     logger.info("Configured Apache for challenge; waiting for verification...")
 
-    logger.debug("waiting 3")
-    time.sleep(3)
+    did_it = chocolatemessage()
+    init(did_it)
+    did_it.session = r.session
+    # This will blindly assert that all of the challenges have been
+    # complied with, by simply copying them from the challenge data
+    # structure into a new completedchallenge structure.  This is
+    # kind of crude, because the client could instead actually build up
+    # a completedchallenge structure piece-by-piece as it actually
+    # complies with challenges (and then send that structure for the
+    # server to look at).  In the existing client, completedchallenge
+    # is only ever sent once _all_ of the (assumed to be dvsni)
+    # challenges have been met, and client-side failure to meet any
+    # challenge is immediately fatal to the client.  In the existing
+    # server, the client's assertion that the client has met any
+    # (assumed to be dvsni) challenge(s) will result in the server
+    # scheduling a test of all challenges.
+    did_it.completedchallenge.extend(r.challenge)
 
-    r=decode(do(upstream, k))
+    r=decode(do(upstream, did_it))
     logger.debug(r)
+    delay = 5
     while r.challenge or r.proceed.IsInitialized():
-        logger.debug("waiting 5")
-        time.sleep(5)
+        if r.proceed.IsInitialized():
+            delay = min(r.proceed.polldelay, 60)
+        logger.debug("waiting %d" % delay)
+        time.sleep(delay)
         k.session = r.session
         r = decode(do(upstream, k))
         logger.debug(r)
