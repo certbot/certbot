@@ -231,6 +231,12 @@ def save_key_csr(key, csr):
         
     return key_fn, csr_fn
 
+def recognized_ca(issuer):
+    pass
+
+def gen_req_from_cert():
+    return
+
 def unique_file(default_name, mode = 0777):
     """
     Safely finds a unique file for writing only (by default)
@@ -311,9 +317,10 @@ def send_request(key_pem, csr_pem, quiet=curses):
     return r, k
 
 
-def handle_verification_response(r, dn, challenge, vhost, key_file, config):
+def handle_verification_response(r, dn, challenges, vhost, key_file, config):
     if r.success.IsInitialized():
-        challenge.cleanup()
+        for chall in challenges:
+            chall.cleanup()
         cert_chain_abspath = None
         with open(cert_file, "w") as f:
             f.write(r.success.certificate)
@@ -365,6 +372,17 @@ def redirect_to_ssl(vhost, config):
              if not config.is_site_enabled(redirect_vhost.file):
                  config.enable_site(redirect_vhost)
                  logger.info("Enabling available site: " + redirect_vhost.file)
+
+def renew(config):
+    cert_key_pairs = config.get_all_certs_keys()
+    for tup in cert_key_pairs:
+        cert = M2Crypto.X509.load_cert(tup[0])
+        issuer = cert.get_issuer()
+        if recognized_ca(issuer):
+            generate_renewal_req()
+
+        # Wait for response, act accordingly
+    gen_req_from_cert()
 
 def authenticate():
     """
@@ -448,8 +466,8 @@ def authenticate():
         k.session = r.session
         r = decode(do(upstream, k))
         logger.debug(r)
-    # TODO: This needs to be rewritten to handle multiple challenges
-    handle_verification_response(r, dn, challenges[0], vhost, key_file, config)
+
+    handle_verification_response(r, dn, challenges, vhost, key_file, config)
     
 
 # vim: set expandtab tabstop=4 shiftwidth=4
