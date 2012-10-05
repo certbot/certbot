@@ -842,10 +842,9 @@ LogLevel warn \n\
         This function is not transactional
         TODO: Instead rely on challenge to backup all files before modifications
         
-        mod_conf:   string - Error message presented in case of problem
-                             useful for debugging
+        mod_conf:   string - The title of the save.
         reversible: boolean - Indicates whether the changes made will be
-                              reversed in the future
+                              quickly reversed in the future (challenges)
         """
         save_state = self.aug.get("/augeas/save")
         self.aug.set("/augeas/save", "noop")
@@ -871,6 +870,9 @@ LogLevel warn \n\
         # Note: Noop saves can cause the file to be listed twice, used set to
         # remove this possibility
         save_paths = self.aug.match("/augeas/events/saved")
+
+        # If the augeas tree didn't change, no files were saved and a backup
+        # should not be created
         if save_paths:
             save_files = set()
             for p in save_paths:
@@ -881,7 +883,7 @@ LogLevel warn \n\
             if not valid:
                 logger.fatal(message)
                 # What is the protocol in this situation?
-                # This shouldn't happen...
+                # This shouldn't happen if the challenge codebase is correct
                 return False
 
             # Create Checkpoint
@@ -914,6 +916,7 @@ LogLevel warn \n\
                 op_fd.write(filename + '\n')
 
         with open(cp_dir + "CHANGES_SINCE", 'w') as notes_fd:
+            notes_fd.write("-- %s --\n" % mod_conf)
             notes_fd.write(self.save_notes)
 
         # Mark any new files that have been created
@@ -968,6 +971,31 @@ LogLevel warn \n\
         protected_fd.close()
         return True, "Successful"
 
+    def display_checkpoints(self):
+        backups = os.listdir(BACKUP_DIR)
+        backups.sort(reverse=True)
+        
+        for bu in backups:
+            print time.ctime(float(bu))
+            with open(BACKUP_DIR + bu + "/CHANGES_SINCE") as f:
+                print f.read()
+            
+            print "Affected files:"
+            with open(BACKUP_DIR + bu + "/FILEPATHS") as f:
+                filepaths = f.read().splitlines()
+                for fp in filepaths:
+                    print "  %s" % fp
+            
+            try:
+                with open(cp_dir + "/NEW_FILES") as f:
+                    print "New Configuration Files:"
+                    filepaths = f.read().splitlines()
+                    for fp in filepaths:
+                        print "  %s" % fp
+            except:
+                pass
+            print ""
+
 def main():
     config = Configurator()
     logger.setLogger(logger.FileLogger(sys.stdout))
@@ -998,10 +1026,10 @@ def main():
 
     #config.save_notes = "Added listen 431 for test"
     #config.new_files.append("/home/james/Desktop/new_file.txt")
-    #config._save("testing_saves", False)
-    config.recover_checkpoint(1)
+    #config.save("Testing Saves", False)
+    #config.recover_checkpoint(1)
     """
-
+    config.display_checkpoints()
     """
     #config.make_vhost_ssl("/etc/apache2/sites-available/default")
     # Testing redirection
@@ -1018,8 +1046,5 @@ def main():
             config.deploy_cert(vh, "/home/james/Documents/apache_choc/req.pem", "/home/james/Documents/apache_choc/key.pem", "/home/james/Downloads/sub.class1.server.ca.pem")
    """
     
-
 if __name__ == "__main__":
     main()
-
-    
