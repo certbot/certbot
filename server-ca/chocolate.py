@@ -109,9 +109,15 @@ class session(object):
 
     def request_test(self):
         """Ask a daemon to test challenges."""
-        # TODO: check whether this session is already in pending-testchallenge?
-        sessions.lpush("pending-testchallenge", self.id)
-        sessions.publish("requests", "testchallenge")
+        # There is a race condition between testing for membership and
+        # adding it, but it's quite difficult to "exploit" and the result
+        # of triggering it is just that the same session will be scheduled
+        # for testing twice.  We use locking in the daemon to exclude the
+        # possibility of two daemon processes testing the same session at
+        # once, and check the session's state before beginning to test it.
+        if self.id not in sessions.lrange("pending-testchallenge", 0, -1):
+            sessions.lpush("pending-testchallenge", self.id)
+            sessions.publish("requests", "testchallenge")
 
     def request_made(self):
         """Has there already been a signing request made in this session?"""
