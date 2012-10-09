@@ -20,7 +20,8 @@
 #
 # The optional one_shot parameter causes the attempt to acquire the
 # lock to instead raise a KeyError exception if someone else is already
-# holding a valid lock.
+# holding a valid lock.  This is used in situations where a process
+# doesn't insist on doing the actions guarded by the lock.
 
 import time, random
 
