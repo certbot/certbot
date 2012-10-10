@@ -159,10 +159,11 @@ class session(object):
             self.die(r, r.BadRequest, uri="https://ca.example.com/failures/internalerror")
         return
 
-    def check_hashcash(self, h):
-        """Is the hashcash string h valid for a request to this server?"""
+    def check_hashcash(self, h, n):
+        """Is the hashcash string h valid for a request to this server for
+        signing n names?"""
         if hashcash.check(stamp=h, resource=chocolate_server_name, \
-                          bits=difficulty, check_expiration=hashcash_expiry):
+                          bits=difficulty*n, check_expiration=hashcash_expiry):
             # sessions.sadd returns True upon adding to a set and
             # False if the item was already in the set.
             return sessions.sadd("spent-hashcash", h)
@@ -243,7 +244,8 @@ class session(object):
             self.die(r, r.BadRequest, uri="https://ca.example.com/failures/recipient")
             return
         # Check hashcash before doing any crypto or database access.
-        if not m.request.clientpuzzle or not self.check_hashcash(m.request.clientpuzzle):
+        names = CSR.subject_names(csr)
+        if not m.request.clientpuzzle or not self.check_hashcash(m.request.clientpuzzle, len(names)):
             self.die(r, r.NeedClientPuzzle, uri="https://ca.example.com/failures/hashcash")
             return
         if self.request_made():
@@ -275,7 +277,6 @@ class session(object):
         if not CSR.csr_goodkey(csr):
             self.die(r, r.UnsafeKey)
             return
-        names = CSR.subject_names(csr)
         if len(names) == 0:
             self.die(r, r.BadCSR)
             return
