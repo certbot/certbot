@@ -174,11 +174,11 @@ def drop_privs():
     os.setgroups([])
     os.setuid(nobody)
 
-def make_request(server, m, csr, quiet=False):
+def make_request(server, m, csr, names, quiet=False):
     m.request.recipient = server
     m.request.timestamp = int(time.time())
     m.request.csr = csr
-    hashcash_cmd = ["hashcash", "-P", "-m", "-z", "12", "-b", `difficulty`, "-r", server]
+    hashcash_cmd = ["hashcash", "-P", "-m", "-z", "12", "-b", `difficulty*len(names)`, "-r", server]
     if quiet:
         hashcash = subprocess.Popen(hashcash_cmd, preexec_fn=drop_privs, shell= False, stdout=subprocess.PIPE, stderr=open("/dev/null", "w")).communicate()[0].rstrip()
     else:
@@ -287,7 +287,7 @@ def challenge_factory(r, req_filepath, key_filepath, config):
     return challenges, dn
         
 
-def send_request(key_pem, csr_pem, quiet=curses):
+def send_request(key_pem, csr_pem, names, quiet=curses):
     global server
     upstream = "https://%s/chocolate.py" % server
     k=chocolatemessage()
@@ -295,7 +295,7 @@ def send_request(key_pem, csr_pem, quiet=curses):
     init(k)
     init(m)
     logger.info("Creating request; generating hashcash...")
-    make_request(server, m, csr_pem, quiet=curses)
+    make_request(server, m, csr_pem, names, quiet=curses)
     sign(key_pem, m)
     logger.info("Created request; sending to server...")
     logger.debug(m)
@@ -437,7 +437,7 @@ def authenticate():
         logger.info("Generating key: " + key_file)
         logger.info("Creating CSR: " + req_file)
 
-    r, k = send_request(key_pem, csr_pem)
+    r, k = send_request(key_pem, csr_pem, names)
 
 
     challenges, dn = challenge_factory(r, os.path.abspath(req_file), os.path.abspath(key_file), config)
