@@ -14,6 +14,8 @@ chocolate.py - server-side, requires web.py (python-webpy),
 	build-essential, python-dev, and swig)
 	probably wants to run under a web server like lighttpd with fastcgi
 
+daemons/{makechallenge,testchallenge,issue,logging}-daemon.py -
+        daemons to handle back-end implementation of protocol state transitions
 
 chocolate_protocol.proto - protocol definition; needs protobuf-compiler
 

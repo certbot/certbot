@@ -84,6 +84,7 @@ class session(object):
         if not self.exists():
             sessions.hset(self.id, "created", timestamp)
             sessions.hset(self.id, "lastpoll", 0)
+            sessions.hset(self.id, "times-tested", 0)
             sessions.hset(self.id, "live", True)
             sessions.lpush("active-requests", self.id)
         else:
@@ -117,7 +118,6 @@ class session(object):
         # once, and check the session's state before beginning to test it.
         if self.id not in sessions.lrange("pending-testchallenge", 0, -1):
             sessions.lpush("pending-testchallenge", self.id)
-            sessions.publish("requests", "testchallenge")
 
     def request_made(self):
         """Has there already been a signing request made in this session?"""
@@ -137,7 +137,6 @@ class session(object):
         sessions.hset(self.id, "client-addr", web.ctx.ip)
         sessions.hset(self.id, "state", "makechallenge")
         sessions.lpush("pending-makechallenge", self.id)
-        sessions.publish("requests", "makechallenge")
         return True
 
     def challenges(self):
