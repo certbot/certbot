@@ -451,6 +451,8 @@ def authenticate():
 
     for challenge in challenges:
         if not challenge.perform(quiet=curses):
+            # TODO: In this case the client should probably send a failure
+            # to the server.
             logger.fatal("challenge failed")
             sys.exit(1)
     logger.info("Configured Apache for challenge; waiting for verification...")
