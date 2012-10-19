@@ -37,8 +37,8 @@ def parse(csr):
         return False
 
 def modulusbits(key):
-    key = str(key)
     """How many bits are in the modulus of this key?"""
+    key = str(key)
     bio = M2Crypto.BIO.MemoryBuffer(key)
     pubkey = M2Crypto.RSA.load_pub_key_bio(bio)
     return len(pubkey)
