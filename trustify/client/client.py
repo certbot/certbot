@@ -4,6 +4,7 @@ import M2Crypto
 # It is OK to use the upstream M2Crypto here instead of our modified
 # version.
 import urllib2
+# XXX TODO: per https://docs.google.com/document/pub?id=1roBIeSJsYq3Ntpf6N0PIeeAAvu4ddn7mGo6Qb7aL7ew, urllib2 is unsafe (!) and must be replaced
 import os, grp, pwd, sys, time, random, sys
 import hashlib
 import subprocess
