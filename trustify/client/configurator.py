@@ -706,7 +706,7 @@ LogLevel warn \n\
 	    # Use check_output so the command will finish before reloading      
             subprocess.check_call(["sudo", "a2enmod", mod_name], stdout=open("/dev/null", 'w'), stderr=open("/dev/null", 'w'))
             # Hopefully this waits for output                                   
-            subprocess.check_call(["sudo", "/etc/init.d/apache2", "reload"], stdout=open("/dev/null", 'w'), stderr=open("/dev/null", 'w'))
+            subprocess.check_call(["sudo", "/etc/init.d/apache2", "restart"], stdout=open("/dev/null", 'w'), stderr=open("/dev/null", 'w'))
         except:
 	    logger.error("Error enabling mod_" + mod_name)
             sys.exit(1)
@@ -813,9 +813,9 @@ LogLevel warn \n\
         try:
             p = ''
             if quiet:
-                p = subprocess.Popen(['/etc/init.d/apache2', 'reload'], stdout=subprocess.PIPE, stderr=open("/dev/null", 'w')).communicate()[0]
+                p = subprocess.Popen(['/etc/init.d/apache2', 'restart'], stdout=subprocess.PIPE, stderr=open("/dev/null", 'w')).communicate()[0]
             else:
-                p = subprocess.Popen(['/etc/init.d/apache2', 'reload'], stderr=subprocess.PIPE).communicate()[0]
+                p = subprocess.Popen(['/etc/init.d/apache2', 'restart'], stderr=subprocess.PIPE).communicate()[0]
 
             if "fail" in p:
                 logger.error("Apache configuration is incorrect")
@@ -834,6 +834,10 @@ LogLevel warn \n\
         lastInclude = self.aug.match("/augeas/load/Httpd/incl [last()]")
         self.aug.insert(lastInclude[0], "incl", False)
         self.aug.set("/augeas/load/Httpd/incl[last()]", incl)
+
+    def configtest(self):
+        p = subprocess.Popen(['sudo', '/usr/sbin/apache2ctl', 'configtest'], stdout=subprocess.PIPE, stderr=open("/dev/null", 'w')).communicate()[0]
+        print p
 
     def save(self, mod_conf="Augeas Configuration", reversible=False):
         """
@@ -867,8 +871,8 @@ LogLevel warn \n\
             return False
 
         # Retrieve list of modified files
-        # Note: Noop saves can cause the file to be listed twice, used set to
-        # remove this possibility
+        # Note: Noop saves can cause the file to be listed twice, I used a 
+        # set to remove this possibility. This is a known augeas error.
         save_paths = self.aug.match("/augeas/events/saved")
 
         # If the augeas tree didn't change, no files were saved and a backup
@@ -1030,6 +1034,7 @@ def main():
     #config.recover_checkpoint(1)
     """
     config.display_checkpoints()
+    config.configtest()
     """
     #config.make_vhost_ssl("/etc/apache2/sites-available/default")
     # Testing redirection
