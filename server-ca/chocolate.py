@@ -13,6 +13,8 @@ from CONFIG import max_names, max_csr_size, maximum_session_age
 from CONFIG import maximum_challenge_age, hashcash_expiry, extra_name_blacklist
 from CONFIG import cert_chain_file, debug
 
+poll_interval = 10
+
 try:
     chocolate_server_name = open("SERVERNAME").read().rstrip()
 except IOError:
@@ -81,6 +83,8 @@ class session(object):
         if timestamp is None: timestamp = int(time.time())
         if not self.exists():
             sessions.hset(self.id, "created", timestamp)
+            sessions.hset(self.id, "lastpoll", 0)
+            sessions.hset(self.id, "times-tested", 0)
             sessions.hset(self.id, "live", True)
             sessions.lpush("active-requests", self.id)
         else:
@@ -101,6 +105,20 @@ class session(object):
     def age(self):
         return int(time.time()) - int(sessions.hget(self.id, "created"))
 
+    def poll_age(self):
+        return float(time.time()) - float(sessions.hget(self.id, "lastpoll"))
+
+    def request_test(self):
+        """Ask a daemon to test challenges."""
+        # There is a race condition between testing for membership and
+        # adding it, but it's quite difficult to "exploit" and the result
+        # of triggering it is just that the same session will be scheduled
+        # for testing twice.  We use locking in the daemon to exclude the
+        # possibility of two daemon processes testing the same session at
+        # once, and check the session's state before beginning to test it.
+        if self.id not in sessions.lrange("pending-testchallenge", 0, -1):
+            sessions.lpush("pending-testchallenge", self.id)
+
     def request_made(self):
         """Has there already been a signing request made in this session?"""
         return sessions.hget(self.id, "state") is not None
@@ -119,7 +137,6 @@ class session(object):
         sessions.hset(self.id, "client-addr", web.ctx.ip)
         sessions.hset(self.id, "state", "makechallenge")
         sessions.lpush("pending-makechallenge", self.id)
-        sessions.publish("requests", "makechallenge")
         return True
 
     def challenges(self):
@@ -141,10 +158,11 @@ class session(object):
             self.die(r, r.BadRequest, uri="https://ca.example.com/failures/internalerror")
         return
 
-    def check_hashcash(self, h):
-        """Is the hashcash string h valid for a request to this server?"""
+    def check_hashcash(self, h, n):
+        """Is the hashcash string h valid for a request to this server for
+        signing n names?"""
         if hashcash.check(stamp=h, resource=chocolate_server_name, \
-                          bits=difficulty, check_expiration=hashcash_expiry):
+                          bits=difficulty*n, check_expiration=hashcash_expiry):
             # sessions.sadd returns True upon adding to a set and
             # False if the item was already in the set.
             return sessions.sadd("spent-hashcash", h)
@@ -225,7 +243,8 @@ class session(object):
             self.die(r, r.BadRequest, uri="https://ca.example.com/failures/recipient")
             return
         # Check hashcash before doing any crypto or database access.
-        if not m.request.clientpuzzle or not self.check_hashcash(m.request.clientpuzzle):
+        names = CSR.subject_names(csr)
+        if not m.request.clientpuzzle or not self.check_hashcash(m.request.clientpuzzle, len(names)):
             self.die(r, r.NeedClientPuzzle, uri="https://ca.example.com/failures/hashcash")
             return
         if self.request_made():
@@ -257,7 +276,6 @@ class session(object):
         if not CSR.csr_goodkey(csr):
             self.die(r, r.UnsafeKey)
             return
-        names = CSR.subject_names(csr)
         if len(names) == 0:
             self.die(r, r.BadCSR)
             return
@@ -312,6 +330,19 @@ class session(object):
         # If we're in testchallenge, tell the client about the challenges and their
         # current status.
         if state == "testchallenge":
+            # If the client claims to have completed some challenges, try to test
+            # them, if the client hasn't asked us to do so too recently.
+            if m.completedchallenge:
+                try:
+                    with redis_lock(sessions, "lock-" + self.id, one_shot=True):
+                        if self.poll_age() < poll_interval:
+                            # Too recent!
+                            pass
+                        else:
+                            sessions.hset(self.id, "lastpoll", time.time())
+                            self.request_test()
+                except KeyError:
+                    pass
             self.send_challenges(m, r)
             return
         # If we're in done, tell the client about the successfully issued cert.
