@@ -2,6 +2,7 @@
 
 import web, redis, time, binascii, re, urllib2
 import CSR
+from redis_lock import redis_lock
 from trustify.protocol import hashcash
 from CSR import M2Crypto
 from Crypto import Random
@@ -162,7 +163,7 @@ class session(object):
         """Is the hashcash string h valid for a request to this server for
         signing n names?"""
         if hashcash.check(stamp=h, resource=chocolate_server_name, \
-                          bits=difficulty*n, check_expiration=hashcash_expiry):
+                          bits=difficulty, check_expiration=hashcash_expiry):
             # sessions.sadd returns True upon adding to a set and
             # False if the item was already in the set.
             return sessions.sadd("spent-hashcash", h)

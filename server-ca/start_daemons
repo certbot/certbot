@@ -10,13 +10,13 @@ nohup ./logging-daemon.py &
 # runs of the daemon should occur here.
 
 echo "Starting issue daemon..."
-nohup daemons/issue-daemon.py &
+nohup ./issue-daemon.py &
 
 for instance in a b c
 do
   echo "Starting testchallenge daemon $instance..."
-  nohup daemons/testchallenge-daemon.py &
+  nohup ./testchallenge-daemon.py &
 done
 
 echo "Starting makechallenge daemon..."
-nohup daemons/makechallenge-daemon.py &
+nohup ./makechallenge-daemon.py &

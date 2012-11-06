@@ -28,4 +28,5 @@ hashcash_expiry = 60*60
 extra_name_blacklist = ["eff.org", "www.eff.org"]
 
 # Name of file containing cert chain
-cert_chain_file = "chain.pem"
+cert_chain_file = "demoCA/cacert.pem"
+debug = True
