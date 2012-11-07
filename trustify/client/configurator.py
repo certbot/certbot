@@ -111,7 +111,8 @@ class Configurator(object):
         returns: VH object
         TODO: This should return list if no obvious answer is presented
         """
-        # TODO: TEST
+        # Allows for domain names to be associated with a virtual host
+        # Client isn't using create_dn_server_assoc(self, dn, vh) yet
         for dn, vh in self.assoc:
             if dn == name:
                 return vh
@@ -126,6 +127,8 @@ class Configurator(object):
                 tup = a.partition(":")
                 if tup[0] == name and tup[2] == "443":
                     return v
+
+        # No matches, search for the default
         for v in self.vhosts:
             for a in v.addrs:
                 if a == "_default_:443":
@@ -164,7 +167,7 @@ class Configurator(object):
         Helper function for get_virtual_hosts()
         """
         # This is case sensitive, but Apache is case insensitve
-        # Spent a bunch of time trying to get case insensitive search
+        # Spent 2 days trying to get case insensitive search to work
         # it should be possible as of .7 with /i or 'append i' but I have been
         # unsuccessful thus far
         nameMatch = self.aug.match(host.path + "//*[self::directive=~regexp('[sS]erver[nN]ame')] | " + host.path + "//*[self::directive=~regexp('[sS]erver[aA]lias')]")
@@ -174,7 +177,6 @@ class Configurator(object):
                 host.add_name(self.aug.get(arg))
     
 
-    # Test this new setup
     def __create_vhost(self, path):
         addrs = []
         args = self.aug.match(path + "/arg")
@@ -208,7 +210,7 @@ class Configurator(object):
         """
         # search for NameVirtualHost directive for ip_addr
         # check httpd.conf, ports.conf, 
-        # note ip_addr can be FQDN
+        # note ip_addr can be FQDN although Apache does not recommend it
         paths = self.find_directive("NameVirtualHost", None)
         name_vh = []
         for p in paths:
@@ -235,7 +237,8 @@ class Configurator(object):
     def add_name_vhost(self, addr):
         """
         Adds NameVirtualHost directive for given address
-        Directive is added to ports.conf unless 
+        Directive is added to ports.conf unless the file doesn't exist
+        It is added to httpd.conf as a backup
         """
         aug_file_path = "/files" + SERVER_ROOT + "ports.conf"
         self.add_dir_to_ifmodssl(aug_file_path, "NameVirtualHost", addr)
@@ -371,6 +374,8 @@ class Configurator(object):
         self.parse_file(arg)
         
         # Argument represents an fnmatch regular expression, convert it
+        # Split up the path and convert each into an Augeas accepted regex
+        # then reassemble
         if "*" in arg or "?" in arg:
             postfix = ""
             splitArg = arg.split("/")
@@ -448,6 +453,7 @@ class Configurator(object):
         self.add_dir(vh_p[0], "SSLCertificateFile", "/etc/ssl/certs/ssl-cert-snakeoil.pem")
         self.add_dir(vh_p[0], "SSLCertificateKeyFile", "/etc/ssl/private/ssl-cert-snakeoil.key")
         self.add_dir(vh_p[0], "Include", CONFIG_DIR + "options-ssl.conf")
+
         # reload configurator vhosts
         self.vhosts = self.get_virtual_hosts()
 
@@ -546,22 +552,32 @@ LogLevel warn \n\
 </VirtualHost>\n"
         
         # Write out the file
+        # This is the default name
         redirect_filename = "trustify-redirect.conf"
+
+        # See if a more appropriate name can be applied
         if len(ssl_vhost.names) > 0:
             # Sanity check...
             # make sure servername doesn't exceed filename length restriction
             if ssl_vhost.names[0] < (255-23):
                 redirect_filename = "trustify-redirect-" + ssl_vhost.names[0] + ".conf"
+        # Write out file
         with open(SERVER_ROOT+"sites-available/"+redirect_filename, 'w') as f:
             f.write(redirect_file)
         logger.info("Created redirect file: " + redirect_filename)
+
+        # -- Now update data structures to reflect the change --
+        # Make sure that checkpoint data will 
+        # remove the file if rollback is required
         self.new_files.append(redirect_filename)
 
         self.aug.load()
+        # Make a new vhost data structure and add it to the lists
         new_fp = SERVER_ROOT + "sites-available/" + redirect_filename
         new_vhost = self.__create_vhost("/files" + new_fp)
         self.vhosts.add(new_vhost)
         
+        # Finally create documentation for the change
         self.save_notes += 'Created a port 80 vhost, %s, for redirection to ssl vhost %s\n' % (new_vhost.file, ssl_vhost.file)
 
         return True, new_vhost
@@ -657,6 +673,10 @@ LogLevel warn \n\
         return cert_key_pairs
 
     def get_file_path(self, vhost_path):
+        """
+        Takes in Augeas path and returns the file name
+        """
+
         # Strip off /files
         avail_fp = vhost_path[6:]
         # This can be optimized...
@@ -745,6 +765,7 @@ LogLevel warn \n\
             self.aug.load()
     
     def save_apache_config(self):
+        # Not currently used
         # Should be safe because it is a protected directory
         shutil.copytree(SERVER_ROOT, BACKUP_DIR + "apache2-" + str(time.time()))
     

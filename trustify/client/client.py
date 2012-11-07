@@ -13,6 +13,7 @@ import getopt
 
 from trustify.protocol.chocolate_pb2 import chocolatemessage
 from trustify.client.sni_challenge import SNI_Challenge
+from trustify.client.payment_challenge import Payment_Challenge
 from trustify.client import configurator
 from trustify.client import logger
 from trustify.client.CONFIG import difficulty, cert_file, chain_file
@@ -26,7 +27,6 @@ allow_raw_ipv6_server = False
 opts = getopt.getopt(sys.argv[1:], "", ["text", "privkey=", "csr=", "server="])
 
 curses = True
-shower = None
 csr = None
 privkey = None
 server = None
@@ -280,8 +280,17 @@ def challenge_factory(r, req_filepath, key_filepath, config):
             dvsni_nonce, dvsni_y, dvsni_ext = chall.data
             sni_todo.append( (chall.name, dvsni_y, dvsni_nonce, dvsni_ext) )
             
-        dn.append(chall.name)
+            # TODO: This domain name list is inelegant and the info should be 
+            # gathered from the challenge itself
+            dn.append(chall.name)
+
+        if chall.type == r.Payment:
+            url, reason = chall.data
+            challenges.append(Payment_Challenge(url, reason))
+        
     if sni_todo:
+        # SNI_Challenge can satisfy many sni challenges at once so only 
+        # one "challenge" is issued for all sni_challenges
         challenges.append(SNI_Challenge(sni_todo, req_filepath, key_filepath, config))
         logger.debug(sni_todo)
 
@@ -408,7 +417,6 @@ def authenticate():
     config = configurator.Configurator()
 
     if not names:
-        #names = ["example.com", "www.example.com", "foo.example.com"]
 	names = config.get_all_names()
 
     if curses:
@@ -416,7 +424,6 @@ def authenticate():
         choice_of_ca()
         logger.setLogger(logger.NcursesLogger())
         logger.setLogLevel(logger.INFO)
-        #shower = progress_shower()
     else:
         logger.setLogger(sys.stdout)
         logger.setLogLevel(logger.INFO)

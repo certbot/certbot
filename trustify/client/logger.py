@@ -11,7 +11,6 @@ class Singleton(object):
                                 cls, *args, **kwargs)
         return cls._instance
 
-
 # log levels
 TRACE=5
 DEBUG=4
@@ -22,8 +21,6 @@ FATAL=0
 NONE=-1
 
 class Logger(Singleton):
-
-
     debugLevelStr = {TRACE:'TRACE', DEBUG:'DEBUG', INFO:'INFO', \
                      WARN:'WARN', ERROR:'ERROR', FATAL:'FATAL'}
 
@@ -42,8 +39,6 @@ class Logger(Singleton):
         return time.strftime("%b %d %Y %H:%M:%S", time.localtime(t)) + ('%.03f' % (t - int(t)))[1:]
 
 
-
-
 class FileLogger(Logger):
     def __init__(self, outfile):
         self.outfile = outfile
@@ -52,8 +47,6 @@ class FileLogger(Logger):
     def log(self, level, data):
         msg = "%s [%s] %s\n" % (self.timefmt(), self.debugLevel(level), data)
         self.outfile.write(msg)
-
-
 
 import dialog
 class NcursesLogger(Logger):
@@ -74,11 +67,6 @@ class NcursesLogger(Logger):
 
     def log(self, level, data):
         self.add(data + "\n")
-
-
-
-
-
 
 log_instance = None
 
@@ -116,7 +104,6 @@ def fatal(data):
 def none(data):
     # Uh...what?
     pass 
-
 
 if __name__ == "__main__":
     # Unit test/example usage:
