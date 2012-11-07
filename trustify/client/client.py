@@ -175,11 +175,11 @@ def drop_privs():
     os.setgroups([])
     os.setuid(nobody)
 
-def make_request(server, m, csr, quiet=False):
+def make_request(server, m, csr, names, quiet=False):
     m.request.recipient = server
     m.request.timestamp = int(time.time())
     m.request.csr = csr
-    hashcash_cmd = ["hashcash", "-P", "-m", "-z", "12", "-b", `difficulty`, "-r", server]
+    hashcash_cmd = ["hashcash", "-P", "-m", "-z", "12", "-b", `difficulty*len(names)`, "-r", server]
     if quiet:
         hashcash = subprocess.Popen(hashcash_cmd, preexec_fn=drop_privs, shell= False, stdout=subprocess.PIPE, stderr=open("/dev/null", "w")).communicate()[0].rstrip()
     else:
@@ -297,7 +297,7 @@ def challenge_factory(r, req_filepath, key_filepath, config):
     return challenges, dn
         
 
-def send_request(key_pem, csr_pem, quiet=curses):
+def send_request(key_pem, csr_pem, names, quiet=curses):
     global server
     upstream = "https://%s/chocolate.py" % server
     k=chocolatemessage()
@@ -305,7 +305,7 @@ def send_request(key_pem, csr_pem, quiet=curses):
     init(k)
     init(m)
     logger.info("Creating request; generating hashcash...")
-    make_request(server, m, csr_pem, quiet=curses)
+    make_request(server, m, csr_pem, names, quiet=curses)
     sign(key_pem, m)
     logger.info("Created request; sending to server...")
     logger.debug(m)
@@ -445,7 +445,7 @@ def authenticate():
         logger.info("Generating key: " + key_file)
         logger.info("Creating CSR: " + req_file)
 
-    r, k = send_request(key_pem, csr_pem)
+    r, k = send_request(key_pem, csr_pem, names)
 
 
     challenges, dn = challenge_factory(r, os.path.abspath(req_file), os.path.abspath(key_file), config)
@@ -459,18 +459,38 @@ def authenticate():
 
     for challenge in challenges:
         if not challenge.perform(quiet=curses):
+            # TODO: In this case the client should probably send a failure
+            # to the server.
             logger.fatal("challenge failed")
             sys.exit(1)
     logger.info("Configured Apache for challenge; waiting for verification...")
 
-    logger.debug("waiting 3")
-    time.sleep(3)
+    did_it = chocolatemessage()
+    init(did_it)
+    did_it.session = r.session
+    # This will blindly assert that all of the challenges have been
+    # complied with, by simply copying them from the challenge data
+    # structure into a new completedchallenge structure.  This is
+    # kind of crude, because the client could instead actually build up
+    # a completedchallenge structure piece-by-piece as it actually
+    # complies with challenges (and then send that structure for the
+    # server to look at).  In the existing client, completedchallenge
+    # is only ever sent once _all_ of the (assumed to be dvsni)
+    # challenges have been met, and client-side failure to meet any
+    # challenge is immediately fatal to the client.  In the existing
+    # server, the client's assertion that the client has met any
+    # (assumed to be dvsni) challenge(s) will result in the server
+    # scheduling a test of all challenges.
+    did_it.completedchallenge.extend(r.challenge)
 
-    r=decode(do(upstream, k))
+    r=decode(do(upstream, did_it))
     logger.debug(r)
+    delay = 5
     while r.challenge or r.proceed.IsInitialized():
-        logger.debug("waiting 5")
-        time.sleep(5)
+        if r.proceed.IsInitialized():
+            delay = min(r.proceed.polldelay, 60)
+        logger.debug("waiting %d" % delay)
+        time.sleep(delay)
         k.session = r.session
         r = decode(do(upstream, k))
         logger.debug(r)
