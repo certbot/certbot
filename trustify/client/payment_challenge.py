@@ -17,18 +17,29 @@ class Payment_Challenge(Challenge):
     # Malware scanning services, Organization or Identity validated certs
     def __init__(self, url, reason="Specialty Certificate"):
         self.url = url
+        self.reason = reason
+        self.times_performed = 0
+        
     def perform(self, quiet=True):
         if curses:
-            dialog.Dialog().msgbox("You are buying " + formatted_reasons() + " You will need to visit " + self.url + " to submit your payment\nPlease click continue once your payment has been submitted", width=70)
+            dialog.Dialog().msgbox(get_display_string(), width=70)
+        else:
+            print get_display_string()
+            raw_input('')
+
+        self.times_performed += 1
         return True
     
-    def redo(self, quiet=True):
-        """
-        Some other message called when challenge verification wasn't successful
-        This should probably be a standard challenge function for all failed
-        challenge attempts
-        """
-        if curses:
-            dialog.Dialog().msgbox("The CA did not record your payment, please visit " + self.url + " for more information or to finish processing your transaction.", width=70)
 
-        return True
+    def get_display_string():
+        if self.times_performed == 0:
+            return "You are buying " + formatted_reasons() + " You will need to visit " + self.url + " to submit your payment\nPlease press enter once your payment has been submitted"
+
+        # The user has tried at least once... display a different message
+        else:
+            return "The CA did not record your payment, please visit " + self.url + " for more information or to finish processing your transaction.\nPress Enter to continue"
+        
+
+    def formatted_reasons():
+        return "\n\t* %s\n", self.reason
+
