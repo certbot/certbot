@@ -59,9 +59,16 @@ def filter_names(names):
 def choice_of_ca():
     # XXX This is a stub
     d = dialog.Dialog()
-    choices = [("EFF", "The EFF Trustify CA"), ("UMich", "The Michigan Trustify CA")]
+    choices = get_cas()
+    #choices = [("EFF", "The EFF Trustify CA"), ("UMich", "The Michigan Trustify CA")]
     random.shuffle(choices)
     result = d.menu("Pick a Certificate Authority.  They're all unique and special!", width=70, choices=choices)
+
+def get_cas():
+    with open(".ca_offerings") as f:
+        choices = [line.split(";", 1) for line in f]
+
+    return choices
 
 
 # based on M2Crypto unit test written by Toby Allsopp
