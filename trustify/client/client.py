@@ -65,7 +65,7 @@ def choice_of_ca():
     result = d.menu("Pick a Certificate Authority.  They're all unique and special!", width=70, choices=choices)
 
 def get_cas():
-    with open(".ca_offerings") as f:
+    with open("trustify/client/.ca_offerings") as f:
         choices = [line.split(";", 1) for line in f]
 
     return choices
