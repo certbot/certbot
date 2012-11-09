@@ -8,6 +8,8 @@ import exit_geography, random, socks
 # perform SNI challenges from the vantage point of specified
 # countries.
 
+# NOTE: This requires a modification to your torrc: AllowDotExit 1
+
 node = random.choice(exit_geography.by_country["DE"])
 socksocket = socks.socksocket()
 socksocket.setproxy(socks.PROXY_TYPE_SOCKS4, "localhost", 9050)
