@@ -1,9 +1,6 @@
 from trustify.client.challenge import Challenge
 from trustify.client import logger
 
-# TODO: How is this determined?
-curses = True;
-
 ############################################################
 # Possible addition to challenge structure: priority parameter
 # If only DVSNI and Payment are required, the user might want
@@ -21,7 +18,7 @@ class Payment_Challenge(Challenge):
         self.times_performed = 0
         
     def perform(self, quiet=True):
-        if curses:
+        if quiet:
             dialog.Dialog().msgbox(get_display_string(), width=70)
         else:
             print get_display_string()
@@ -31,7 +28,7 @@ class Payment_Challenge(Challenge):
         return True
     
 
-    def get_display_string():
+    def get_display_string(self):
         if self.times_performed == 0:
             return "You are buying " + formatted_reasons() + " You will need to visit " + self.url + " to submit your payment\nPlease press enter once your payment has been submitted"
 
@@ -40,6 +37,6 @@ class Payment_Challenge(Challenge):
             return "The CA did not record your payment, please visit " + self.url + " for more information or to finish processing your transaction.\nPress Enter to continue"
         
 
-    def formatted_reasons():
+    def formatted_reasons(self):
         return "\n\t* %s\n", self.reason
 

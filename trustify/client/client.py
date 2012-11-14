@@ -60,9 +60,9 @@ def choice_of_ca():
     # XXX This is a stub
     d = dialog.Dialog()
     choices = get_cas()
-    #choices = [("EFF", "The EFF Trustify CA"), ("UMich", "The Michigan Trustify CA")]
-    random.shuffle(choices)
+    #random.shuffle(choices)
     result = d.menu("Pick a Certificate Authority.  They're all unique and special!", width=70, choices=choices)
+    return result
 
 def get_cas():
     with open("trustify/client/.ca_offerings") as f:
@@ -107,21 +107,22 @@ def by_default():
         sys.exit(1)
     return result[1] == "Secure"
 
-class progress_shower(object):
+# should be taken out if it doesn't break anything
+#class progress_shower(object):
     # As in "that which shows", not like a rain shower.
-    def __init__(self, firstmessage="", height=18, width=70):
-        self.content = firstmessage
-        self.d = dialog.Dialog()
-        self.height = height
-        self.width = width
-        self.show()
+ #   def __init__(self, firstmessage="", height=18, width=70):
+  #      self.content = firstmessage
+   #     self.d = dialog.Dialog()
+    #    self.height = height
+     #   self.width = width
+      #  self.show()
 
-    def add(self, s):
-        self.content += s
-        self.show()
+    #def add(self, s):
+     #   self.content += s
+     #   self.show()
 
-    def show(self):
-        self.d.infobox(self.content, self.height, self.width)
+    #def show(self):
+    #    self.d.infobox(self.content, self.height, self.width)
 
 def is_hostname_sane(hostname):
     """
@@ -288,16 +289,20 @@ def challenge_factory(r, req_filepath, key_filepath, config):
             sni_todo.append( (chall.name, dvsni_y, dvsni_nonce, dvsni_ext) )
             
             # TODO: This domain name list is inelegant and the info should be 
-            # gathered from the challenge itself
+            # gathered from the challenge list itself
             dn.append(chall.name)
 
-        if chall.type == r.Payment:
-            url, reason = chall.data
-            challenges.append(Payment_Challenge(url, reason))
+        #if chall.type == r.Payment:
+        #    url, reason = chall.data
+        #    challenges.append(Payment_Challenge(url, reason))
+
+        #if chall.type == r.Interactive:
+        #    message = chall.data
+        #    challenges.append(Interactive_Challenge(message)
         
     if sni_todo:
         # SNI_Challenge can satisfy many sni challenges at once so only 
-        # one "challenge" is issued for all sni_challenges
+        # one "challenge object" is issued for all sni_challenges
         challenges.append(SNI_Challenge(sni_todo, req_filepath, key_filepath, config))
         logger.debug(sni_todo)
 
@@ -305,6 +310,9 @@ def challenge_factory(r, req_filepath, key_filepath, config):
         
 
 def send_request(key_pem, csr_pem, names, quiet=curses):
+    '''
+    Sends the request to the CA and returns a response
+    '''
     global server
     upstream = "https://%s/chocolate.py" % server
     k=chocolatemessage()
@@ -428,7 +436,7 @@ def authenticate():
 
     if curses:
         names = filter_names(names)
-        choice_of_ca()
+        choice = choice_of_ca()
         logger.setLogger(logger.NcursesLogger())
         logger.setLogLevel(logger.INFO)
     else:
@@ -457,7 +465,7 @@ def authenticate():
 
     challenges, dn = challenge_factory(r, os.path.abspath(req_file), os.path.abspath(key_file), config)
 
-    # Find virtual hosts to deploy certificates too
+    # Find set of virtual hosts to deploy certificates too
     vhost = set()
     for name in dn:
         host = config.choose_virtual_host(name)
