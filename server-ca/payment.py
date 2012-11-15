@@ -8,10 +8,31 @@
 import web, redis
 
 urls = (
-     '/(.*)', 'payment'
+     '/([a-f0-9]{64})', 'form',
+     '/submit=([a-f0-9]{64})', 'payment'
 )
 
 r = redis.Redis()
+
+class form(object):
+      def GET(self, what):
+          web.header("Content-type", "text/html")
+          return """
+          <html>
+          <h1>Payment</h1>
+          Issuing this certificate requires a payment of 17 simoleons.
+          <p>
+          In order to process this payment, please pretend to enter a 16-digit credit-card
+          number below, and then click the Submit Payment button.
+          <p>
+          <form name="ignored">
+          <input type="text" name="cc"><br>
+          </form>
+          <form action="/payment.py/submit=%s" method="GET" name="other">
+          <input type="submit" value="Submit Payment">
+          </form>
+          </html>
+          """ % what
 
 def hexdigit(s):
     return s in "0123456789abcdef"
