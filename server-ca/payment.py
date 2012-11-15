@@ -3,18 +3,15 @@
 import web, redis
 
 urls = (
-     '.*', 'payment'
+     '/(.*)', 'payment'
 )
 
 r = redis.Redis()
 
 class payment(object):
-    def GET(self):
+    def GET(self, stuff):
         web.header("Content-type", "text/html")
-        s = ""
-        try: s = web.data()
-        except: pass
-        return "Hello there! " + s
+        return "Hello there! " + stuff
 
 if __name__ == "__main__":
     app = web.application(urls, globals())
