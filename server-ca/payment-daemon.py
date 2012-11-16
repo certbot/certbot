@@ -3,6 +3,21 @@
 # Wait for news about payments received for sesssions and
 # then mark the sessions to show that that payment was received.
 
+# The reason that this is separate from payment.py (which
+# simulates actually processing a credit card payment) is
+# to make the security analysis simpler and cleaner and
+# reduce attack surface.  The idea is that payment.py decides
+# whether someone has paid, but NOT whether the certificate
+# has been granted.  This daemon decides whether the
+# certificate should be granted, but NOT whether someone has
+# paid.  Thus, payment.py does not need, or exercise, the
+# power to change session status directly.
+
+# This preserves the rule that session status is only ever
+# advanced by the appropriate daemon (though a session may
+# be killed by any part of the system that identifies a
+# fatal problem or protocol violation).
+
 # This daemon uses a different scheduling model from the
 # testchallenge daemon so ONLY ONE COPY OF THIS DAEMON SHOULD
 # BE RUN AT ONCE.  Since this daemon takes a minimal, discrete
