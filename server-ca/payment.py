@@ -22,7 +22,7 @@ class form(object):
           <h1>Payment required</h1>
           Due to certificate authority policy, issuing this certificate requires a payment.
           <p>
-          <hr width="70%" />
+          <hr width="70%%" />
           <p>
           A payment of <b>17.00 simoleons</b> is due now.
           <p>
@@ -31,9 +31,11 @@ class form(object):
           <p>
           <form action="/payment.py/submit=%s" method="GET">
           <i>Credit Card Type</i> <select name=""><option>Vista</option><option>MisterCard</option><option>Discovery</option></select> <br />
-          <i>Credit Card Number</i> <input type="text" name="" autocomplete="off" /><br />
+          <i>Credit Card Number</i> <input type="text" name="" style="font-family:monospace" autocomplete="off" /><br />
           <input type="submit" value="Submit Payment">
           </form>
+          This payment will appear on your
+          credit card statement as TRUSTIFIABLE CERTIFICATE SERVICES.
           </html>
           """ % what
 
