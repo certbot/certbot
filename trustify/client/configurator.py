@@ -782,6 +782,7 @@ LogLevel warn \n\
             fd.close()
             if len(files) != 0:
                 self.revert_config(files)
+                self.restart()
 
     def standardize_excl(self):
         '''
