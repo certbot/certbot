@@ -12,7 +12,7 @@ from google.protobuf.message import DecodeError
 from CONFIG import chocolate_server_name, min_keysize, difficulty, polldelay
 from CONFIG import max_names, max_csr_size, maximum_session_age
 from CONFIG import maximum_challenge_age, hashcash_expiry, extra_name_blacklist
-from CONFIG import cert_chain_file, debug
+from CONFIG import cert_chain_file, debug, payment_uri
 
 poll_interval = 10
 
@@ -348,7 +348,12 @@ class session(object):
             self.send_challenges(m, r)
             return
         if state == "payment":
-            # XXX TODO send a payment challenge including URL to complete payment
+            # If policy has decreed that we need to collect a payment before issuing
+            # this cert, tell the client about where to go to submit the payment.
+            # This is presented to the client as a "challenge", although it is
+            # currently not represented that way in the session database.
+            # TODO: consider session expiry and frequency limits when in this state
+            self.send_payment_request(m, r)
             pass
         # If we're in done, tell the client about the successfully issued cert.
         if state == "done":
@@ -399,6 +404,25 @@ class session(object):
             chall.data.append(c["dvsni:nonce"])
             chall.data.append(y)
             chall.data.append(c["dvsni:ext"])
+
+    def send_payment_request(self, m, r):
+        if r.failure.IsInitialized(): return
+        # This does NOT get the payment challenge out of the session database.
+        # Instead, it synthesizes a single (fixed) payment challenge for this
+        # session, with the challenge name "payment".  This is less general
+        # than it might be because, for example, it means only one payment can
+        # be required per session and payment challenges cannot be sent
+        # together with dvsni challenges inside a single message.  Here, we
+        # assume that the client would prefer to hear about payment challenges
+        # only after dvsni validation is complete, for example so that the
+        # user does not try to pay for a request that will later be rejected
+        # for other reasons.
+        chall = r.challenge.add()
+        chall.type = r.Payment
+        chall.name = "payment"
+        chall.succeeded = "False"
+        # In payment, we send address of form to complete this payment
+        chall.data.append("%s/%s" % (payment_uri, self.id))
 
     def POST(self):
         web.header("Content-type", "application/x-protobuf+chocolate")
