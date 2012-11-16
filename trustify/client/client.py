@@ -187,7 +187,7 @@ def make_request(server, m, csr, names, quiet=False):
     m.request.recipient = server
     m.request.timestamp = int(time.time())
     m.request.csr = csr
-    hashcash_cmd = ["hashcash", "-P", "-m", "-z", "12", "-b", `difficulty*len(names)`, "-r", server]
+    hashcash_cmd = ["hashcash", "-P", "-m", "-z", "12", "-b", `difficulty`, "-r", server]
     if quiet:
         hashcash = subprocess.Popen(hashcash_cmd, preexec_fn=drop_privs, shell= False, stdout=subprocess.PIPE, stderr=open("/dev/null", "w")).communicate()[0].rstrip()
     else:
