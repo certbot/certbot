@@ -25,10 +25,8 @@ class form(object):
           In order to process this payment, please pretend to enter a 16-digit credit-card
           number below, and then click the Submit Payment button.
           <p>
-          <form name="ignored">
-          <input type="text" name="cc"><br>
-          </form>
           <form action="/payment.py/submit=%s" method="GET" name="other">
+          <input type="text" name="" autocomplete="off" /><br/>
           <input type="submit" value="Submit Payment">
           </form>
           </html>
