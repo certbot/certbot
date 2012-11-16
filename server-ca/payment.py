@@ -19,14 +19,19 @@ class form(object):
           web.header("Content-type", "text/html")
           return """
           <html>
-          <h1>Payment</h1>
-          Issuing this certificate requires a payment of 17 simoleons.
+          <h1>Payment required</h1>
+          Due to certificate authority policy, issuing this certificate requires a payment.
+          <p>
+          <hr width="70%" />
+          <p>
+          A payment of <b>17.00 simoleons</b> is due now.
           <p>
           In order to process this payment, please pretend to enter a 16-digit credit-card
           number below, and then click the Submit Payment button.
           <p>
-          <form action="/payment.py/submit=%s" method="GET" name="other">
-          <input type="text" name="" autocomplete="off" /><br/>
+          <form action="/payment.py/submit=%s" method="GET">
+          <i>Credit Card Type</i> <select name=""><option>Vista</option><option>MisterCard</option><option>Discovery</option></select> <br />
+          <i>Credit Card Number</i> <input type="text" name="" autocomplete="off" /><br />
           <input type="submit" value="Submit Payment">
           </form>
           </html>
