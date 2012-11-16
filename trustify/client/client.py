@@ -409,8 +409,10 @@ def renew(config):
         # Wait for response, act accordingly
     gen_req_from_cert()
 
-def all_payment_challenge(challenges):
-    for chall in challenges:
+def all_payment_challenge(r):
+    if not r.challenge:
+        return False
+    for chall in r.challenge:
         if chall.type != r.Payment:
             return False
 
@@ -514,7 +516,7 @@ def authenticate():
     logger.debug(r)
     delay = 5
     #while r.challenge or r.proceed.IsInitialized():
-    while r.proceed.IsInitialized() or (r.challenge and not all_payment_challenge(r.challenge)):
+    while r.proceed.IsInitialized() or (r.challenge and not all_payment_challenge(r)):
         if r.proceed.IsInitialized():
             delay = min(r.proceed.polldelay, 60)
         logger.debug("waiting %d" % delay)
@@ -526,10 +528,10 @@ def authenticate():
     # This should be invoked if a payment in necessary
     # This is being tested and will have to be cleaned and organized 
     # once the protocol is finalized.
-    if r.challenge and all_payment_challenge(r.challenge):
+    if r.challenge and all_payment_challenge(r):
         challenges, dn = challenge_factory(r, os.path.abspath(req_file), os.path.abspath(key_file), config)
         for chall in challenges:
-            chall.perform(quiet)
+            chall.perform(quiet=curses)
 
         logger.info("User has continued Trustify after submitting payment")
         proceed_msg = chocolatemessage()
