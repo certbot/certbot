@@ -1,0 +1,7 @@
+#!/bin/sh
+
+redis-cli lpush exit exit
+redis-cli publish exit clean-exit
+
+# TODO: sleep a bit and then actually kill the daemon processes if they
+# don't exit

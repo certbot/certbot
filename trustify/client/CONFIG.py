@@ -4,6 +4,12 @@ SERVER_ROOT = "/etc/apache2/"
 CONFIG_DIR = "/etc/trustify/"
 # Working directory for trustify
 WORK_DIR = "/var/lib/trustify/"
+# Directory where configuration backups are stored
+BACKUP_DIR = WORK_DIR + "backups/"
+# Where all keys should be stored
+KEY_DIR = SERVER_ROOT + "ssl/"
+# Certificate storage
+CERT_DIR = SERVER_ROOT + "certs/"
 
 # Used by openssl to sign challenge certificate with trustify extension
 CHOC_CERT_CONF = CONFIG_DIR + "choc_cert_extensions.cnf"
@@ -11,6 +17,8 @@ CHOC_CERT_CONF = CONFIG_DIR + "choc_cert_extensions.cnf"
 OPTIONS_SSL_CONF = CONFIG_DIR + "options-ssl.conf"
 # Temporary file for challenge virtual hosts
 APACHE_CHALLENGE_CONF = CONFIG_DIR + "choc_sni_cert_challenge.conf"
+# Modified files intended to be reset (for challenges/tmp config changes)
+MODIFIED_FILES = WORK_DIR + "modified_files"
 # Byte size of S and Nonce
 S_SIZE = 32
 NONCE_SIZE = 32
@@ -19,5 +27,8 @@ NONCE_SIZE = 32
 difficulty = 23 
 
 # Trustify cert and chain files
-cert_file = "cert.pem"
-chain_file = "chain.pem"
+cert_file = CERT_DIR + "cert.pem"
+chain_file = CERT_DIR + "chain.pem"
+
+# Rewrite rule arguments used for redirections to https vhost
+REWRITE_HTTPS_ARGS = ["^.*$", "https://%{SERVER_NAME}%{REQUEST_URI}", "[L,R=permanent]"]

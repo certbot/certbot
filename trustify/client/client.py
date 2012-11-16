@@ -4,6 +4,7 @@ import M2Crypto
 # It is OK to use the upstream M2Crypto here instead of our modified
 # version.
 import urllib2
+# XXX TODO: per https://docs.google.com/document/pub?id=1roBIeSJsYq3Ntpf6N0PIeeAAvu4ddn7mGo6Qb7aL7ew, urllib2 is unsafe (!) and must be replaced
 import os, grp, pwd, sys, time, random, sys
 import hashlib
 import subprocess
@@ -11,10 +12,12 @@ import getopt
 # TODO: support a mode where use of interactive prompting is forbidden
 
 from trustify.protocol.chocolate_pb2 import chocolatemessage
-from trustify.client import sni_challenge
+from trustify.client.sni_challenge import SNI_Challenge
+from trustify.client.payment_challenge import Payment_Challenge
 from trustify.client import configurator
+from trustify.client import logger
 from trustify.client.CONFIG import difficulty, cert_file, chain_file
-from trustify.client.CONFIG import SERVER_ROOT
+from trustify.client.CONFIG import KEY_DIR, CERT_DIR
 
 # it's weird to point to chocolate servers via raw IPv6 addresses, and such
 # addresses can be %SCARY in some contexts, so out of paranoia let's disable
@@ -27,6 +30,7 @@ curses = True
 csr = None
 privkey = None
 server = None
+
 for opt in opts[0]:
     if opt[0] == "--text":
         curses = False
@@ -55,9 +59,16 @@ def filter_names(names):
 def choice_of_ca():
     # XXX This is a stub
     d = dialog.Dialog()
-    choices = [("EFF", "The EFF Trustify CA"), ("UMich", "The Michigan Trustify CA")]
-    random.shuffle(choices)
+    choices = get_cas()
+    #random.shuffle(choices)
     result = d.menu("Pick a Certificate Authority.  They're all unique and special!", width=70, choices=choices)
+    return result
+
+def get_cas():
+    with open("trustify/client/.ca_offerings") as f:
+        choices = [line.split(";", 1) for line in f]
+
+    return choices
 
 
 # based on M2Crypto unit test written by Toby Allsopp
@@ -96,21 +107,22 @@ def by_default():
         sys.exit(1)
     return result[1] == "Secure"
 
-class progress_shower(object):
+# should be taken out if it doesn't break anything
+#class progress_shower(object):
     # As in "that which shows", not like a rain shower.
-    def __init__(self, firstmessage="", height=18, width=70):
-        self.content = firstmessage
-        self.d = dialog.Dialog()
-        self.height = height
-        self.width = width
-        self.show()
+ #   def __init__(self, firstmessage="", height=18, width=70):
+  #      self.content = firstmessage
+   #     self.d = dialog.Dialog()
+    #    self.height = height
+     #   self.width = width
+      #  self.show()
 
-    def add(self, s):
-        self.content += s
-        self.show()
+    #def add(self, s):
+     #   self.content += s
+     #   self.show()
 
-    def show(self):
-        self.d.infobox(self.content, self.height, self.width)
+    #def show(self):
+    #    self.d.infobox(self.content, self.height, self.width)
 
 def is_hostname_sane(hostname):
     """
@@ -171,11 +183,11 @@ def drop_privs():
     os.setgroups([])
     os.setuid(nobody)
 
-def make_request(server, m, csr, quiet=False):
+def make_request(server, m, csr, names, quiet=False):
     m.request.recipient = server
     m.request.timestamp = int(time.time())
     m.request.csr = csr
-    hashcash_cmd = ["hashcash", "-P", "-m", "-z", "12", "-b", `difficulty`, "-r", server]
+    hashcash_cmd = ["hashcash", "-P", "-m", "-z", "12", "-b", `difficulty*len(names)`, "-r", server]
     if quiet:
         hashcash = subprocess.Popen(hashcash_cmd, preexec_fn=drop_privs, shell= False, stdout=subprocess.PIPE, stderr=open("/dev/null", "w")).communicate()[0].rstrip()
     else:
@@ -186,6 +198,21 @@ def make_request(server, m, csr, quiet=False):
 def sign(key, m):
     m.request.sig = rsa_sign(key, ("(%d) (%s) (%s)" % (m.request.timestamp, m.request.recipient, m.request.csr)))
 
+def old_cert(cert_filename, days_left):
+    cert = M2Crypto.X509.load_cert(cert_filename)
+    exp_time = cert.get_not_before().get_datetime()
+    cur_time = datetime.datetime.utcnow()
+
+    # exp_time is returned in UTC time as defined by M2Crypto
+    # The datetime object is aware and cannot be compared to the naive utcnow()
+    # object. Thus, the tzinfo is stripped from exp_time assuming both objects
+    # are UTC.  Base python doesn't seem to support instantiations of tzinfo
+    # objects without 3rd party support.  It is easier just to strip tzinfo from
+    # exp_time rather than add the utc timezone to cur_time
+    if (exp_time.replace(tzinfo=None) - cur_time).days < days_left:
+        return True
+    return False
+
 def save_key_csr(key, csr):
     """
     This function saves the newly generated key and csr to new files
@@ -194,35 +221,51 @@ def save_key_csr(key, csr):
     directory.
     """
     # Create directories if they do not exist
-    if not os.path.isdir(SERVER_ROOT + "certs"):
-        os.makedirs(SERVER_ROOT + "certs")
-    if not os.path.isdir(SERVER_ROOT + "ssl"):
-        os.makedirs(SERVER_ROOT + "ssl")
-        # Need leading 0 for octal integer
-        os.chmod(SERVER_ROOT + "ssl", 0700)
+    # This should probably go in the installation script
+    # Make sure directories exist & make sure directories are set with the
+    # correct permissions if they do exist.
+    if not os.path.isdir(CERT_DIR):
+        os.makedirs(CERT_DIR, 0755)
+    if not os.path.isdir(KEY_DIR):
+        os.makedirs(KEY_DIR, 0700)
+
     # Write key to new file and change permissions
-    key_fn = find_file_name(SERVER_ROOT + "ssl/key-trustify")
-    key_f = open(key_fn, 'w')
+    key_f, key_fn = unique_file(KEY_DIR + "key-trustify.pem", 0600)
     key_f.write(key)
     key_f.close()
-    os.chmod(key_fn, 0600)
     # Write CSR to new file
-    csr_fn = find_file_name(SERVER_ROOT + "certs/csr-trustify")
-    csr_f = open(csr_fn, 'w')
+    csr_f, csr_fn = unique_file(CERT_DIR + "csr-trustify.pem", 0644)
     csr_f.write(csr)
     csr_f.close()
         
     return key_fn, csr_fn
 
-def find_file_name(default_name):
-    count = 2
-    name = default_name
-    while os.path.isfile(name):
-        name = default_name + "_" + str(count)
+def recognized_ca(issuer):
+    pass
+
+def gen_req_from_cert():
+    return
+
+def unique_file(default_name, mode = 0777):
+    """
+    Safely finds a unique file for writing only (by default)
+    """
+    count = 1
+    f_parsed = os.path.splitext(default_name)
+    while 1:
+        try:
+            fd = os.open(default_name, os.O_CREAT|os.O_EXCL|os.O_RDWR, mode)
+            return os.fdopen(fd, 'w'), default_name
+        except OSError:
+            pass
+        default_name = f_parsed[0] + '_' + str(count) + f_parsed[1]
         count += 1
-    return name
 
 def gen_https_names(domains):
+    """
+    Returns a string of the domains formatted nicely with https:// prepended
+    to each
+    """
     result = ""
     if len(domains) > 2:
         for i in range(len(domains)-1):
@@ -232,6 +275,139 @@ def gen_https_names(domains):
         return "https://" + domains[0] + " and https://" + domains[1]
     result = result + "https://" + domains[len(domains)-1]
     return result
+
+def challenge_factory(r, req_filepath, key_filepath, config):
+    sni_todo = []
+    dn = []
+    challenges = []
+    logger.info("Received %s challenges from server." % len(r.challenge))
+    for chall in r.challenge:
+        logger.debug(chall)
+        if chall.type == r.DomainValidateSNI:
+            logger.info("\tDomainValidateSNI challenge for name %s." % chall.name)
+            dvsni_nonce, dvsni_y, dvsni_ext = chall.data
+            sni_todo.append( (chall.name, dvsni_y, dvsni_nonce, dvsni_ext) )
+            
+            # TODO: This domain name list is inelegant and the info should be 
+            # gathered from the challenge list itself
+            dn.append(chall.name)
+
+        #if chall.type == r.Payment:
+        #    url, reason = chall.data
+        #    challenges.append(Payment_Challenge(url, reason))
+
+        #if chall.type == r.Interactive:
+        #    message = chall.data
+        #    challenges.append(Interactive_Challenge(message)
+        
+    if sni_todo:
+        # SNI_Challenge can satisfy many sni challenges at once so only 
+        # one "challenge object" is issued for all sni_challenges
+        challenges.append(SNI_Challenge(sni_todo, req_filepath, key_filepath, config))
+        logger.debug(sni_todo)
+
+    return challenges, dn
+        
+
+def send_request(key_pem, csr_pem, names, quiet=curses):
+    '''
+    Sends the request to the CA and returns a response
+    '''
+    global server
+    upstream = "https://%s/chocolate.py" % server
+    k=chocolatemessage()
+    m=chocolatemessage()
+    init(k)
+    init(m)
+    logger.info("Creating request; generating hashcash...")
+    make_request(server, m, csr_pem, names, quiet=curses)
+    sign(key_pem, m)
+    logger.info("Created request; sending to server...")
+    logger.debug(m)
+
+    r=decode(do(upstream, m))
+    logger.debug(r)
+    while r.proceed.IsInitialized():
+       if r.proceed.polldelay > 60: r.proceed.polldelay = 60
+       logger.info("Waiting %d seconds..." % r.proceed.polldelay)
+       time.sleep(r.proceed.polldelay)
+       k.session = r.session
+       r = decode(do(upstream, k))
+       logger.debug(r)
+
+    if r.failure.IsInitialized():
+        logger.fatal("Chocolate Server reported failure.")
+        sys.exit(1)
+        
+    return r, k
+
+
+def handle_verification_response(r, dn, challenges, vhost, key_file, config):
+    if r.success.IsInitialized():
+        for chall in challenges:
+            chall.cleanup()
+        cert_chain_abspath = None
+        with open(cert_file, "w") as f:
+            f.write(r.success.certificate)
+
+        logger.info("Server issued certificate; certificate written to %s" % cert_file)
+        if r.success.chain:
+            with open(chain_file, "w") as f:
+                f.write(r.success.chain)
+ 
+            logger.info("Cert chain written to %s" % chain_file)
+
+            # This expects a valid chain file
+            cert_chain_abspath = os.path.abspath(chain_file)
+
+        for host in vhost:
+            config.deploy_cert(host, os.path.abspath(cert_file), os.path.abspath(key_file), cert_chain_abspath)
+            # Enable any vhost that was issued to, but not enabled
+            if not host.enabled:
+                logger.info("Enabling Site " + host.file)
+                config.enable_site(host)
+
+        # sites may have been enabled / final cleanup
+        config.restart(quiet=curses)
+
+        if curses:
+            dialog.Dialog().msgbox("\nCongratulations! You have successfully enabled " + gen_https_names(dn) + "!", width=70)
+            config.enable_mod("rewrite")
+            if by_default():
+                redirect_to_ssl(vhost, config)     
+        else:
+            logger.info("Congratulations! You have successfully enabled " + gen_https_names(dn) + "!")
+
+    
+    elif r.failure.IsInitialized():
+        logger.fatal("Server reported failure.")
+        sys.exit(1)
+
+    else:
+        logger.fatal("Unexpected server verification response!")
+        sys.exit(43)
+
+
+def redirect_to_ssl(vhost, config):
+     for ssl_vh in vhost:
+         success, redirect_vhost = config.redirect_all_ssl(ssl_vh)
+         logger.info("\nRedirect vhost: " + redirect_vhost.file + " - " + str(success))
+         # If successful, make sure redirect site is enabled
+         if success:
+             if not config.is_site_enabled(redirect_vhost.file):
+                 config.enable_site(redirect_vhost)
+                 logger.info("Enabling available site: " + redirect_vhost.file)
+
+def renew(config):
+    cert_key_pairs = config.get_all_certs_keys()
+    for tup in cert_key_pairs:
+        cert = M2Crypto.X509.load_cert(tup[0])
+        issuer = cert.get_issuer()
+        if recognized_ca(issuer):
+            generate_renewal_req()
+
+        # Wait for response, act accordingly
+    gen_req_from_cert()
 
 def authenticate():
     """
@@ -256,21 +432,21 @@ def authenticate():
     config = configurator.Configurator()
 
     if not names:
-        #names = ["example.com", "www.example.com", "foo.example.com"]
 	names = config.get_all_names()
 
     if curses:
         names = filter_names(names)
-        choice_of_ca()
-        shower = progress_shower()
+        choice = choice_of_ca()
+        logger.setLogger(logger.NcursesLogger())
+        logger.setLogLevel(logger.INFO)
+    else:
+        logger.setLogger(sys.stdout)
+        logger.setLogLevel(logger.INFO)
 
     # Check first if mod_ssl is loaded
     if not config.check_ssl_loaded():
-        if curses:
-            shower.add("Loading mod_ssl into Apache Server\n")
-        else:
-            print "Loading mod_ssl into Apache Server"
-        config.enable_mod_ssl()
+        logger.info("Loading mod_ssl into Apache Server")
+        config.enable_mod("ssl")
 
     req_file = csr
     key_file = privkey
@@ -281,123 +457,60 @@ def authenticate():
         # Generate new private key and corresponding csr!
         key_pem, csr_pem = make_key_and_csr(names, 2048)
         key_file, req_file = save_key_csr(key_pem, csr_pem)
-        if curses:
-            shower.add("Generating key: " + key_file + "\n")
-            shower.add("Creating CSR: " + req_file + "\n")
-        else:
-            print "Generating key:", key_file
-            print "Creating CSR:", req_file
+        logger.info("Generating key: " + key_file)
+        logger.info("Creating CSR: " + req_file)
 
-    k=chocolatemessage()
-    m=chocolatemessage()
-    init(k)
-    init(m)
-    if curses:
-        shower.add("Creating request; generating hashcash...\n")
-    make_request(server, m, csr_pem, quiet=curses)
-    sign(key_pem, m)
-    if curses:
-        shower.add("Created request; sending to server...\n")
-    else:
-        print m
-    r=decode(do(upstream, m))
-    if not curses: print r
-    while r.proceed.IsInitialized():
-       if r.proceed.polldelay > 60: r.proceed.polldelay = 60
-       if curses:
-           shower.add("Waiting %d seconds...\n" % r.proceed.polldelay)
-       else:
-           print "waiting", r.proceed.polldelay
-       time.sleep(r.proceed.polldelay)
-       k.session = r.session
-       r = decode(do(upstream, k))
-       if not curses: print r
-
-    if r.failure.IsInitialized():
-        print "Server reported failure."
-        sys.exit(1)
-
-    sni_todo = []
-    dn = []
-    if curses:
-        shower.add("Received %s challenges from server.\n" % len(r.challenge))
-    for chall in r.challenge:
-        if not curses: print chall
-        if chall.type == r.DomainValidateSNI:
-            if curses:
-               shower.add("\tDomainValidateSNI challenge for name %s.\n" % chall.name)
-            dvsni_nonce, dvsni_y, dvsni_ext = chall.data
-        sni_todo.append( (chall.name, dvsni_y, dvsni_nonce, dvsni_ext) )
-        dn.append(chall.name)
+    r, k = send_request(key_pem, csr_pem, names)
 
 
-    if not curses: print sni_todo
+    challenges, dn = challenge_factory(r, os.path.abspath(req_file), os.path.abspath(key_file), config)
 
-    # Find virtual hosts to deploy certificates too
+    # Find set of virtual hosts to deploy certificates too
     vhost = set()
     for name in dn:
         host = config.choose_virtual_host(name)
         if host is not None:
             vhost.add(host)
 
-    if not sni_challenge.perform_sni_cert_challenge(sni_todo, os.path.abspath(req_file), os.path.abspath(key_file), config, quiet=curses):
-        print "sni_challenge failed"
-        sys.exit(1)
-    if curses: shower.add("Configured Apache for challenge; waiting for verification...\n")
+    for challenge in challenges:
+        if not challenge.perform(quiet=curses):
+            # TODO: In this case the client should probably send a failure
+            # to the server.
+            logger.fatal("challenge failed")
+            sys.exit(1)
+    logger.info("Configured Apache for challenge; waiting for verification...")
 
-    if not curses: print "waiting", 3
-    time.sleep(3)
+    did_it = chocolatemessage()
+    init(did_it)
+    did_it.session = r.session
+    # This will blindly assert that all of the challenges have been
+    # complied with, by simply copying them from the challenge data
+    # structure into a new completedchallenge structure.  This is
+    # kind of crude, because the client could instead actually build up
+    # a completedchallenge structure piece-by-piece as it actually
+    # complies with challenges (and then send that structure for the
+    # server to look at).  In the existing client, completedchallenge
+    # is only ever sent once _all_ of the (assumed to be dvsni)
+    # challenges have been met, and client-side failure to meet any
+    # challenge is immediately fatal to the client.  In the existing
+    # server, the client's assertion that the client has met any
+    # (assumed to be dvsni) challenge(s) will result in the server
+    # scheduling a test of all challenges.
+    did_it.completedchallenge.extend(r.challenge)
 
-    r=decode(do(upstream, k))
-    if not curses: print r
+    r=decode(do(upstream, did_it))
+    logger.debug(r)
+    delay = 5
     while r.challenge or r.proceed.IsInitialized():
-        if not curses: print "waiting", 5
-        time.sleep(5)
+        if r.proceed.IsInitialized():
+            delay = min(r.proceed.polldelay, 60)
+        logger.debug("waiting %d" % delay)
+        time.sleep(delay)
         k.session = r.session
         r = decode(do(upstream, k))
-        if not curses: print r
+        logger.debug(r)
 
-    if r.success.IsInitialized():
-        sni_challenge.cleanup(sni_todo, config)
-        cert_chain_abspath = None
-        with open(cert_file, "w") as f:
-            f.write(r.success.certificate)
-        if r.success.chain:
-            with open(chain_file, "w") as f:
-                f.write(r.success.chain)
-        if curses:
-            shower.add("Server issued certificate; certificate written to %s\n" % cert_file)
-        else:
-            print "Server issued certificate; certificate written to " + cert_file
-        if r.success.chain: 
-            if curses:
-                shower.add("Cert chain written to %s\n" % chain_file)
-            else:
-                print "Cert chain written to " + chain_file
-            # TODO: Uncomment the following assignment when the server 
-            #       presents a valid chain
-            #cert_chain_abspath = os.path.abspath(chain_file)
-        for host in vhost:
-            config.deploy_cert(host, os.path.abspath(cert_file), os.path.abspath(key_file), cert_chain_abspath)
-            # Enable any vhost that was issued to, but not enabled
-            if not config.is_site_enabled(host.file):
-                if curses:
-                    shower.add("Enabling Site " + host.file)
-                else:
-                    print "Enabling Site", host.file
-                config.enable_site(host.file)
-
-        sni_challenge.apache_restart(quiet=curses)
-
-        if curses:
-            dialog.Dialog().msgbox("\nCongratulations! You have successfully enabled " + gen_https_names(dn) + "!", width=70)
-            by_default()
-        else:
-            print "Congratulations! You have successfully enabled " + gen_https_names(dn) + "!"
-
+    handle_verification_response(r, dn, challenges, vhost, key_file, config)
     
-    elif r.failure.IsInitialized():
-        print "Server reported failure."
-        sys.exit(1)
 
 # vim: set expandtab tabstop=4 shiftwidth=4

@@ -1,0 +1,22 @@
+#!/bin/sh
+
+# By default, daemons are not being told to exit!
+redis-cli del exit
+
+echo "Starting logger daemon..."
+nohup ./logging-daemon.py &
+
+# TODO: an attempt to reconstruct or expire sessions from previous
+# runs of the daemon should occur here.
+
+echo "Starting issue daemon..."
+nohup ./issue-daemon.py &
+
+for instance in a b c
+do
+  echo "Starting testchallenge daemon $instance..."
+  nohup ./testchallenge-daemon.py &
+done
+
+echo "Starting makechallenge daemon..."
+nohup ./makechallenge-daemon.py &

@@ -68,8 +68,8 @@ def verify_challenge(address, r, nonce, socksify=False):
     sni_support.set_sni_ext(conn.ssl, sni_name)
     try:
         conn.connect((address, 443))
-    except:
-        return False, "Connection to SSL Server failed"
+    except Exception, e:
+        return False, "Connection to SSL Server failed (%s)"  % str(e)
 
     cert_chain = conn.get_peer_cert_chain()
     
