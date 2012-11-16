@@ -5,6 +5,7 @@
 # challenges have been met, and to perform this test.
 
 import redis, time, sys, signal
+import policy
 from redis_lock import redis_lock
 from sni_challenge.verify import verify_challenge
 
@@ -83,15 +84,24 @@ def testchallenge(session):
              all_satisfied = False
     if all_satisfied:
         # Challenges all succeeded, so we should prepare to issue
-        # the requested cert.
+        # the requested cert or request a payment if applicable.
         # TODO: double-check that there were > 0 challenges,
         # so that we don't somehow mistakenly issue a cert in
         # response to an empty list of challenges (even though
         # the daemon that put this session on the queue should
         # also have implicitly guaranteed this).
-        if debug: print "\t** All challenges satisfied; request %s GRANTED" % short(session)
-        r.hset(session, "state", "issue")
-        r.lpush("pending-issue", session)
+        if policy.payment_required(session):
+            if debug: print "\t** All challenges satisfied; request %s NEEDS PAYMENT" % short(session)
+            r.hset(session, "state", "payment")
+            # According to current practice, there is no pending-payment
+            # queue because sessions can get out of payment state
+            # instantaneously as soon as the payment system sends a "payments"
+            # pubsub message to
+            # the payments daemon.
+        else:
+            if debug: print "\t** All challenges satisfied; request %s GRANTED" % short(session)
+            r.hset(session, "state", "issue")
+            r.lpush("pending-issue", session)
     else:
         # Some challenges were not verified.  In the current
         # design of this daemon, the client must contact

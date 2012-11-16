@@ -69,6 +69,7 @@ class session(object):
         #   yet been received;
         # * "makechallenge" where the CA is still coming up with challenges,
         # * "testchallenge" where the challenges have been issued,
+        # * "payment" where the recipient must pay for the certificate,
         # * "issue" where the CA is in the process of issuing the cert,
         # * "done" where the cert has been issued.
         #
@@ -346,6 +347,9 @@ class session(object):
                     pass
             self.send_challenges(m, r)
             return
+        if state == "payment":
+            # XXX TODO send a payment challenge including URL to complete payment
+            pass
         # If we're in done, tell the client about the successfully issued cert.
         if state == "done":
             self.send_cert(m, r)
