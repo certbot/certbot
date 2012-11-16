@@ -252,6 +252,10 @@ class session(object):
             self.die(r, r.BadRequest, uri="https://ca.example.com/failures/priorrequest")
             return
         # Process the request.
+        # TODO: check that each element of the CA/B Forum Baseline
+        # Requirements is enforced here or elsewhere.
+        # TODO: check that the request involves a public key algorithm
+        # that we support.
         if not all([safe("recipient", recipient), safe("csr", csr)]):
             self.die(r, r.BadRequest, uri="https://ca.example.com/failures/illegalcharacter")
             return
