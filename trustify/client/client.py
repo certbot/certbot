@@ -292,9 +292,9 @@ def challenge_factory(r, req_filepath, key_filepath, config):
             # gathered from the challenge list itself
             dn.append(chall.name)
 
-        #if chall.type == r.Payment:
-        #    url, reason = chall.data
-        #    challenges.append(Payment_Challenge(url, reason))
+        if chall.type == r.Payment:
+            url = chall.data
+            challenges.append(Payment_Challenge(url))
 
         #if chall.type == r.Interactive:
         #    message = chall.data
@@ -409,6 +409,13 @@ def renew(config):
         # Wait for response, act accordingly
     gen_req_from_cert()
 
+def all_payment_challenge(challenges):
+    for chall in challenges:
+        if chall.type != r.Payment:
+            return False
+
+    return True
+
 def authenticate():
     """
     Main call to do DV_SNI validation and deploy the trustify certificate
@@ -480,6 +487,11 @@ def authenticate():
             sys.exit(1)
     logger.info("Configured Apache for challenge; waiting for verification...")
 
+    #############################################################
+    # This whole bottom section should be reworked once the protocol
+    # is finalized... it is currently quite ugly
+    ############################################################
+
     did_it = chocolatemessage()
     init(did_it)
     did_it.session = r.session
@@ -501,7 +513,8 @@ def authenticate():
     r=decode(do(upstream, did_it))
     logger.debug(r)
     delay = 5
-    while r.challenge or r.proceed.IsInitialized():
+    #while r.challenge or r.proceed.IsInitialized():
+    while r.proceed.IsInitialized() or (r.challenge and not all_payment_challenge(r.challenge)):
         if r.proceed.IsInitialized():
             delay = min(r.proceed.polldelay, 60)
         logger.debug("waiting %d" % delay)
@@ -509,6 +522,34 @@ def authenticate():
         k.session = r.session
         r = decode(do(upstream, k))
         logger.debug(r)
+
+    # This should be invoked if a payment in necessary
+    # This is being tested and will have to be cleaned and organized 
+    # once the protocol is finalized.
+    if r.challenge and all_payment_challenge(r.challenge):
+        challenges, dn = challenge_factory(r, os.path.abspath(req_file), os.path.abspath(key_file), config)
+        for chall in challenges:
+            chall.perform(quiet)
+
+        logger.info("User has continued Trustify after submitting payment")
+        proceed_msg = chocolatemessage()
+        init(proceed_msg)
+        proceed_msg.session = r.session
+        proceed_msg.proceed.timestamp = int(time.time())
+        proceed_msg.proceed.polldelay = 60
+        # Send the proceed message
+        r = decode(do(upstream, k))
+
+        while r.proceed.IsInitialized() or r.challenge:
+            if r.proceed.IsInitialized():
+                delay = min(r.proceed.polldelay, 60)
+                logger.debug("waiting %d" % delay)
+                time.sleep(delay)
+                k.session = r.session
+                r = decode(do(upstream, k))
+                logger.debug(r)
+
+        
 
     handle_verification_response(r, dn, challenges, vhost, key_file, config)
     
