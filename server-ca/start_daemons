@@ -20,3 +20,6 @@ done
 
 echo "Starting makechallenge daemon..."
 nohup ./makechallenge-daemon.py &
+
+echo "Starting payment daemon..."
+nohup ./payment-daemon.py &
