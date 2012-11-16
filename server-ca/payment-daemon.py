@@ -28,7 +28,13 @@ for message in ps.listen():
         continue
     if message["channel"] == "payments":
         if debug: print message["data"]
-        # TODO: Actually process the payment here :-)
+        session = message["data"]
+        if len(session) != 64: continue
+        if session not in r or r.hget(self.id, "live") != "True": continue
+        if r.hget(session, "state") != "payment": continue
+        if debug: print "\t** All challenges satisfied; payment received; request %s GRANTED" % short(session)
+        r.hset(session, "state", "issue")
+        r.lpush("pending-issue", session)
         continue
     if message["channel"] == "exit":
         break
