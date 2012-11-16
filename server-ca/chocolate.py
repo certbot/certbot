@@ -100,10 +100,6 @@ class session(object):
             sessions.hset(self.id, "live", False)
             sessions.lrem("active-requests", self.id)
 
-    def destroy(self):
-        sessions.lrem("active-requests", self.id)
-        sessions.delete(self.id)
-
     def age(self):
         return int(time.time()) - int(sessions.hget(self.id, "created"))
 
