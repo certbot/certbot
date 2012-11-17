@@ -354,7 +354,7 @@ class session(object):
             # currently not represented that way in the session database.
             # TODO: consider session expiry and frequency limits when in this state
             self.send_payment_request(m, r)
-            pass
+            return
         # If we're in done, tell the client about the successfully issued cert.
         if state == "done":
             self.send_cert(m, r)
