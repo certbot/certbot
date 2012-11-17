@@ -19,18 +19,23 @@ class form(object):
           web.header("Content-type", "text/html")
           return """
           <html>
-          <h1>Payment</h1>
-          Issuing this certificate requires a payment of 17 simoleons.
+          <h1>Payment required</h1>
+          Due to certificate authority policy, issuing this certificate requires a payment.
+          <p>
+          <hr width="70%%" />
+          <p>
+          A payment of <b>17.00 simoleons</b> is due now.
           <p>
           In order to process this payment, please pretend to enter a 16-digit credit-card
           number below, and then click the Submit Payment button.
           <p>
-          <form name="ignored">
-          <input type="text" name="cc"><br>
-          </form>
-          <form action="/payment.py/submit=%s" method="GET" name="other">
+          <form action="/payment.py/submit=%s" method="GET">
+          <i>Credit Card Type</i> <select name=""><option>Vista</option><option>MisterCard</option><option>Discovery</option></select> <br />
+          <i>Credit Card Number</i> <input type="text" name="" style="font-family:monospace" autocomplete="off" /><br />
           <input type="submit" value="Submit Payment">
           </form>
+          This payment will appear on your
+          credit card statement as TRUSTIFIABLE CERTIFICATE SERVICES.
           </html>
           """ % what
 
@@ -42,7 +47,7 @@ class payment(object):
         web.header("Content-type", "text/html")
         if len(session) != 64 or not all(hexdigit(s) for s in session):
             return "Attempt to process payment for invalid session."
-        if session not in r or r.hget(self.id, "live") != "True":
+        if session not in r or r.hget(session, "live") != "True":
             return "Attempt to process payment for invalid session."
         if r.hget(session, "state") != "payment":
             return "Attempt to process payment for session not expecting it."

@@ -1,6 +1,11 @@
 # The name that the server expects to be referred to by.
 chocolate_server_name = "ca.theobroma.info"
 
+# Where is a form located through which payments can be submitted
+# if required by policy? (note: this address should expect to be
+# called followed by a slash and then the 64 hex digit session ID)
+payment_uri = "https://ca.theobroma.info/payment.py"
+
 # The shortest length in bits of an acceptable RSA modulus.
 min_keysize = 2048
 
