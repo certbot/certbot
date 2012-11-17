@@ -47,7 +47,7 @@ class payment(object):
         web.header("Content-type", "text/html")
         if len(session) != 64 or not all(hexdigit(s) for s in session):
             return "Attempt to process payment for invalid session."
-        if session not in r or r.hget(self.id, "live") != "True":
+        if session not in r or r.hget(session, "live") != "True":
             return "Attempt to process payment for invalid session."
         if r.hget(session, "state") != "payment":
             return "Attempt to process payment for session not expecting it."
