@@ -532,7 +532,8 @@ def authenticate():
     # This is being tested and will have to be cleaned and organized 
     # once the protocol is finalized.
     if r.challenge and all_payment_challenge(r):
-        challenges, dn = challenge_factory(r, os.path.abspath(req_file), os.path.abspath(key_file), config)
+        # dont need to change domain names here
+        challenges, temp = challenge_factory(r, os.path.abspath(req_file), os.path.abspath(key_file), config)
         for chall in challenges:
             chall.perform(quiet=curses)
 
