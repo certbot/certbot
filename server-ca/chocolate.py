@@ -420,7 +420,7 @@ class session(object):
         chall = r.challenge.add()
         chall.type = r.Payment
         chall.name = "payment"
-        chall.succeeded = "False"
+        chall.succeeded = False
         # In payment, we send address of form to complete this payment
         chall.data.append("%s/%s" % (payment_uri, self.id))
 
