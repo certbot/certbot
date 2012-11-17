@@ -45,7 +45,7 @@ for message in ps.listen():
         if debug: print message["data"]
         session = message["data"]
         if len(session) != 64: continue
-        if session not in r or r.hget(self.id, "live") != "True": continue
+        if session not in r or r.hget(session, "live") != "True": continue
         if r.hget(session, "state") != "payment": continue
         if debug: print "\t** All challenges satisfied; payment received; request %s GRANTED" % short(session)
         r.hset(session, "state", "issue")
