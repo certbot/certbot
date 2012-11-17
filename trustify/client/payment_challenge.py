@@ -20,9 +20,9 @@ class Payment_Challenge(Challenge):
         
     def perform(self, quiet=True):
         if quiet:
-            dialog.Dialog().msgbox(get_display_string(), width=70)
+            dialog.Dialog().msgbox(self.get_display_string(), width=70)
         else:
-            print get_display_string()
+            print self.get_display_string()
             raw_input('')
 
         self.times_performed += 1
