@@ -273,7 +273,9 @@ def gen_https_names(domains):
         result = result + "and "
     if len(domains) == 2:
         return "https://" + domains[0] + " and https://" + domains[1]
-    result = result + "https://" + domains[len(domains)-1]
+
+    if domains:
+        result = result + "https://" + domains[len(domains)-1]
     return result
 
 def challenge_factory(r, req_filepath, key_filepath, config):
