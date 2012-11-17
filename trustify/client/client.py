@@ -293,7 +293,7 @@ def challenge_factory(r, req_filepath, key_filepath, config):
             dn.append(chall.name)
 
         if chall.type == r.Payment:
-            url = chall.data
+            url = chall.data[0]
             challenges.append(Payment_Challenge(url))
 
         #if chall.type == r.Interactive:
