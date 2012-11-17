@@ -438,7 +438,6 @@ def authenticate():
     assert is_hostname_sane(server), `server` + " is an impossible hostname"
 
     upstream = "https://%s/chocolate.py" % server
-    config = configurator.Configurator()
 
     if not names:
 	names = config.get_all_names()
@@ -451,6 +450,8 @@ def authenticate():
     else:
         logger.setLogger(sys.stdout)
         logger.setLogLevel(logger.INFO)
+
+    config = configurator.Configurator()
 
     # Check first if mod_ssl is loaded
     if not config.check_ssl_loaded():
