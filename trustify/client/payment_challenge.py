@@ -17,6 +17,10 @@ class Payment_Challenge(Challenge):
         self.url = url
         self.reason = reason
         self.times_performed = 0
+
+    def cleanup(self):
+        # Currently, payment challenges do not appear to require any cleanup.
+        pass
         
     def perform(self, quiet=True):
         if quiet:
