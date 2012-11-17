@@ -1,5 +1,6 @@
 from trustify.client.challenge import Challenge
 from trustify.client import logger
+import dialog
 
 ############################################################
 # Possible addition to challenge structure: priority parameter
