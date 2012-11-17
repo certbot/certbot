@@ -422,7 +422,7 @@ class session(object):
         chall.name = "payment"
         chall.succeeded = False
         # In payment, we send address of form to complete this payment
-        chall.data.append("%s/%s" % (payment_uri, self.id))
+        chall.data.append(str("%s/%s" % (payment_uri, self.id)))
 
     def POST(self):
         web.header("Content-type", "application/x-protobuf+chocolate")
