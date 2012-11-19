@@ -68,16 +68,17 @@ def verify_challenge(address, r, nonce, socksify=False):
     sni_support.set_sni_ext(conn.ssl, sni_name)
     try:
         conn.connect((address, 443))
+        peername = str(conn.socket.getpeername())
     except Exception, e:
-        return False, "Connection to SSL Server failed (%s)"  % str(e)
+        return False, "Connection to SSL Server failed (%s)"  % str(e), peername
 
     cert_chain = conn.get_peer_cert_chain()
     
     #Ensure certificate chain form is correct
     if cert_chain is None:
-        return False, "Client did not provide a certificate"
+        return False, "Client did not provide a certificate", peername
     if len(cert_chain) != 1:
-        return False, "Chocolate client should only include 1 cert"
+        return False, "Chocolate client should only include 1 cert", peername
 
     for i in range(0,cert_chain[0].get_ext_count()):
         ext = cert_chain[0].get_ext_at(i)
@@ -87,11 +88,11 @@ def verify_challenge(address, r, nonce, socksify=False):
 
             valid = check_challenge_value(sni_support.get_unknown_value(ext.x509_ext), r)
             if valid:
-                return True, "Challenge completed successfully"
+                return True, "Challenge completed successfully", peername
             else:
-                return False, "Certificate extension does not check out"
+                return False, "Certificate extension does not check out", peername
 
-    return False, "Chocolate extension not included in certificate"
+    return False, "Chocolate extension not included in certificate", peername
 
 def main():
     #Testing the example sni_challenge
@@ -108,10 +109,10 @@ def main():
     nonce = binascii.hexlify(nonce)
     nonce2 = binascii.hexlify(nonce2)
 
-    valid, response = verify_challenge("example.com", r, nonce)
+    valid, response, peername = verify_challenge("example.com", r, nonce)
     #valid, response = verify_challenge("127.0.0.1", r, nonce)
     print response
-    valid, response = verify_challenge("www.example.com", r2, nonce2)
+    valid, response, peername = verify_challenge("www.example.com", r2, nonce2)
     #valid, response = verify_challenge("localhost", r2, nonce2)
     print response
 if __name__ == "__main__":

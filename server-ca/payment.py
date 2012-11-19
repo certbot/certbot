@@ -30,11 +30,11 @@ class payment(object):
     def GET(self, session):
         web.header("Content-type", "text/html")
         if len(session) != 64 or not all(hexdigit(s) for s in session):
-            return "Attempt to process payment for invalid session."
+            return "<html><h1>Oops!</h1>Attempt to process payment for invalid session.</html>"
         if session not in r or r.hget(session, "live") != "True":
-            return "Attempt to process payment for invalid session."
+            return "<html><h1>Oops!</h1>Attempt to process payment for invalid session.</html>"
         if r.hget(session, "state") != "payment":
-            return "Attempt to process payment for session not expecting it."
+            return "<html><h1>Oops!</h1>Attempt to process payment for session that was not expecting it.</html>"
         r.publish("payments", session)
         names = r.lrange("%s:names" % session, 0, -1)
         names_list = '<ul style="font-family:monospace">' + "\n".join("<li>%s</li>" % n for n in names) + '</ul>'
