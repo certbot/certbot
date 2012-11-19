@@ -95,7 +95,7 @@ def testchallenge(session):
             # Try to get a unique abbreviated ID (10 hex digits)
             for i in xrange(20):
                 abbreviation = random()[:10]
-                if r.hget("shorturl-%s" % abbreviation) is None:
+                if r.get("shorturl-%s" % abbreviation) is None:
                     break
             else:
                 # Mysteriously unable to get a unique abbreviated session ID!
