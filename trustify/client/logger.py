@@ -51,19 +51,49 @@ class FileLogger(Logger):
 import dialog
 class NcursesLogger(Logger):
 
-    def __init__(self, firstmessage="", height=18, width=70):
-        self.content = firstmessage
+    def __init__(self, firstmessage="", height=16, width=66):
+        self.lines = []
+        self.all_content = ""
         self.d = dialog.Dialog()
         self.height = height
         self.width = width
-        self.show()
+        self.add(firstmessage)        
 
+    '''
+    Only show the last (self.height) lines;
+    note that lines can wrap at self.width, so 
+    a single line could actually be multiple lines
+    '''
     def add(self, s):
-        self.content += s
+        self.all_content += s
+
+        for line in s.splitlines():
+            # check for lines that would wrap
+            cur_out = line
+            while len(cur_out) > self.width:
+
+                # find first space before self.width chars into cur_out
+                last_space_pos = cur_out.rfind(' ', 0, self.width)
+
+                if (last_space_pos == -1):
+                    # no spaces, just cut them off at whatever
+                    self.lines.append(cur_out[0:self.width])
+                    cur_out = cur_out[self.width:]
+                else:
+                    # cut off at last space
+                    self.lines.append(cur_out[0:last_space_pos])
+                    cur_out = cur_out[last_space_pos+1:]
+            if cur_out != '':
+                self.lines.append(cur_out)
+
+        
+        # show last 16 lines
+        self.content = '\n'.join(self.lines[-self.height:])
         self.show()
 
     def show(self):
-        self.d.infobox(self.content, self.height, self.width)
+        # add the padding around the box
+        self.d.infobox(self.content, self.height+2, self.width+4)
 
     def log(self, level, data):
         self.add(data + "\n")
@@ -117,9 +147,16 @@ if __name__ == "__main__":
     logger.setLogLevel(logger.TRACE)
 
     # Log a message:
-    logger.log(logger.INFO, "logger!")
+    #logger.log(logger.INFO, "logger!")
 
     time.sleep(0.01)
+    logger.info("This is a long line, it's pretty long, butitalso hasbig wordsthat areprobably hardtobreak oninan easywayforthe ncurseslib, sowhatdoes itdo then?")
+    logger.info("aa " + "a"*70 + "B")
+
+    for i in range(20):
+        logger.info("iteration #%d/20" % i)
+        time.sleep(0.3)
+
 
     # Alternatively, use 
     logger.error("errrrr")
