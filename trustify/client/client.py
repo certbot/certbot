@@ -456,6 +456,11 @@ def authenticate():
 	names = config.get_all_names()
 
     if curses:
+        if not names:
+            logger.fatal("No domain names were found in your apache config")
+            logger.fatal("Either specify which names you would like trustify to validate or add server names to your virtual hosts")
+            sys.exit(1)
+
         names = filter_names(names)
         choice = choice_of_ca()
 
