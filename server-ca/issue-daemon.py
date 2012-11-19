@@ -49,7 +49,7 @@ def issue(session):
         return
     csr = r.hget(session, "csr")
     names = r.lrange("%s:names" % session, 0, -1)
-    log("attempting to issue certificate for names: %s" % join(names), session)
+    log("attempting to issue certificate for names: %s" % ", ".join(names), session)
     with issue_lock:
         cert = CSR.issue(csr, names)
     r.hset(session, "cert", cert)
