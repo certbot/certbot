@@ -65,7 +65,7 @@ def choice_of_ca():
     return result
 
 def get_cas():
-    with open("trustify/client/.ca_offerings") as f:
+    with open("/etc/trustify/.ca_offerings") as f:
         choices = [line.split(";", 1) for line in f]
 
     return choices
