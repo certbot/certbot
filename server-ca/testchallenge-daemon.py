@@ -92,12 +92,23 @@ def testchallenge(session):
         # also have implicitly guaranteed this).
         if policy.payment_required(session):
             if debug: print "\t** All challenges satisfied; request %s NEEDS PAYMENT" % short(session)
+            # Try to get a unique abbreviated ID (10 hex digits)
+            for i in xrange(20):
+                abbreviation = random()[:10]
+                if r.get("shorturl-%s" % abbreviation) is None:
+                    break
+            else:
+                # Mysteriously unable to get a unique abbreviated session ID!
+                r.hset(session, "live", "False")
+                return
+            r.set("shorturl-%s" % abbreviation, session)
+            r.expire("shorturl-%s" % abbreviation, 3600)
+            r.hset(session, "shorturl", abbreviation)
             r.hset(session, "state", "payment")
             # According to current practice, there is no pending-payment
             # queue because sessions can get out of payment state
             # instantaneously as soon as the payment system sends a "payments"
-            # pubsub message to
-            # the payments daemon.
+            # pubsub message to the payments daemon.
         else:
             if debug: print "\t** All challenges satisfied; request %s GRANTED" % short(session)
             r.hset(session, "state", "issue")
