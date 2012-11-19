@@ -549,7 +549,7 @@ def authenticate():
         proceed_msg.proceed.timestamp = int(time.time())
         proceed_msg.proceed.polldelay = 60
         # Send the proceed message
-        r = decode(do(upstream, proceed_msg))
+        r = decode(do(upstream, k))
 
         while r.proceed.IsInitialized() or r.challenge:
             if r.proceed.IsInitialized():
