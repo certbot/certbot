@@ -2,7 +2,7 @@
 
 # This daemon runs on the CA side to handle logging.
 
-import redis, signal, sys
+import redis, signal, sys, time
 
 r = redis.Redis()
 ps = r.pubsub()
@@ -20,7 +20,7 @@ for message in ps.listen():
     if message["type"] != "message":
         continue
     if message["channel"] == "logs":
-        sys.stdout.write(message["data"] + "\n")
+        sys.stdout.write(time.ctime() + " " + message["data"] + "\n")
         sys.stdout.flush()
         continue
     if message["channel"] == "exit":
