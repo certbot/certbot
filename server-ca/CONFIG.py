@@ -6,6 +6,9 @@ chocolate_server_name = "ca.theobroma.info"
 # called followed by a slash and then the 64 hex digit session ID)
 payment_uri = "https://ca.theobroma.info/payment.py"
 
+# Where are on-line error messages about failures located?
+error_uri = "https://ca.theobroma.info/failures/"
+
 # The shortest length in bits of an acceptable RSA modulus.
 min_keysize = 2048
 
