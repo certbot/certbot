@@ -36,8 +36,10 @@ class payment(object):
         if r.hget(session, "state") != "payment":
             return "Attempt to process payment for session not expecting it."
         r.publish("payments", session)
+        names = r.lrange("%s:names" % session, 0, -1)
+        names_list = '<ul style="font-family:monospace">' + "\n".join("<li>%s</li>" % n for n in names) + '</ul>'
         with open("thanks.html","r") as f:
-            return f.read() % session
+            return f.read() % (session, names)
 
 if __name__ == "__main__":
     app = web.application(urls, globals())
