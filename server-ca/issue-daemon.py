@@ -7,6 +7,7 @@ import redis, redis_lock, CSR, sys, signal
 from sni_challenge.verify import verify_challenge
 from Crypto import Random
 
+global r
 r = redis.Redis()
 ps = r.pubsub()
 issue_lock = redis_lock.redis_lock(r, "issue_lock")

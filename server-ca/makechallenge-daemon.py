@@ -5,6 +5,7 @@
 
 import redis, time, sys, signal
 
+global r
 r = redis.Redis()
 ps = r.pubsub()
 

@@ -9,6 +9,7 @@ import policy
 from redis_lock import redis_lock
 from sni_challenge.verify import verify_challenge
 
+global r
 r = redis.Redis()
 ps = r.pubsub()
 

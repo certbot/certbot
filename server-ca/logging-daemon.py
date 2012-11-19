@@ -4,6 +4,7 @@
 
 import redis, signal, sys
 
+global r
 r = redis.Redis()
 ps = r.pubsub()
 
