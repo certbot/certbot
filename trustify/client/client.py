@@ -296,7 +296,7 @@ def challenge_factory(r, req_filepath, key_filepath, config):
 
         if chall.type == r.Payment:
             url = chall.data[0]
-            challenges.append(Payment_Challenge(url, "Top 10k Alexa Domain"))
+            challenges.append(Payment_Challenge(url, "Alexa Top 10k Domain"))
 
         #if chall.type == r.Interactive:
         #    message = chall.data
