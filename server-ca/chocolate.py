@@ -267,7 +267,7 @@ class session(object):
         if not all([safe("recipient", recipient), safe("csr", csr)]):
             self.die(r, r.BadRequest, uri="%sillegalcharacter" % error_uri)
             return
-        if timestamp - time.time() > 5:
+        if timestamp - time.time() > 3600:
             self.die(r, r.BadRequest, uri="%sfuture" % error_uri)
             return
         if time.time() - timestamp > 100:
