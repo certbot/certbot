@@ -21,27 +21,8 @@ class shortform(object):
           expanded = r.get("shorturl-%s" % what)
           if not expanded:
               return "<html><h1>Unknown session ID</h1></html>"
-          return """
-          <html>
-          <h1>Payment required</h1>
-          Due to certificate authority policy, issuing this certificate requires a payment.
-          <p>
-          <hr width="70%%" />
-          <p>
-          A payment of <b>17.00 simoleons</b> is due now.
-          <p>
-          In order to process this payment, please pretend to enter a 16-digit credit-card
-          number below, and then click the Submit Payment button.
-          <p>
-          <form action="/payment.py/submit=%s" method="GET">
-          <i>Credit Card Type</i> <select name=""><option>Vista</option><option>MisterCard</option><option>Discovery</option></select> <br />
-          <i>Credit Card Number</i> <input type="text" name="" style="font-family:monospace" autocomplete="off" /><br />
-          <input type="submit" value="Submit Payment">
-          </form>
-          This payment will appear on your
-          credit card statement as TRUSTIFIABLE CERTIFICATE SERVICES.
-          </html>
-          """ % expanded
+          with open("index.html","r") as f:
+              return f.read() % expanded
 
 class form(object):
       def GET(self, what):
