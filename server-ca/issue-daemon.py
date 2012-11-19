@@ -54,7 +54,7 @@ def issue(session):
         cert = CSR.issue(csr, names)
     r.hset(session, "cert", cert)
     if cert:   # once issuing cert succeeded
-        log("issued certificate for names: %s" % join(names), session)
+        log("issued certificate for names: %s" % ", ".join(names), session)
         r.hset(session, "state", "done")
         # r.lpush("pending-done", session)
     else:       # should not be reached in deployed version
