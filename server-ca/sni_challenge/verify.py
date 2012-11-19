@@ -66,10 +66,12 @@ def verify_challenge(address, r, nonce, socksify=False):
         conn.socket = socksocket
         
     sni_support.set_sni_ext(conn.ssl, sni_name)
+    peername = "[unspecified]"
     try:
         conn.connect((address, 443))
         peername = str(conn.socket.getpeername())
     except Exception, e:
+
         return False, "Connection to SSL Server failed (%s)"  % str(e), peername
 
     cert_chain = conn.get_peer_cert_chain()
