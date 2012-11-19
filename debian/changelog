@@ -1,8 +1,8 @@
-trustify (1.0~20120812-2) UNRELEASED; urgency=low
+trustify (1.0~20121118-1) UNRELEASED; urgency=low
 
-  * More hacks and merges!!! 
+  * Time for a much more sophisticated demo release
 
- -- Peter Eckersley <pde@eff.org>  Mon, 13 Aug 2012 00:01:45 -0700
+ -- Peter Eckersley <pde@eff.org>  Sun, 18 Nov 2012 21:14:16 -0800
 
 trustify (1.0~20120812-1.1) UNRELEASED; urgency=low
 
