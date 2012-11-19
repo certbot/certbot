@@ -66,5 +66,5 @@ while True:
     elif where == "pending-makechallenge":
         makechallenge(what)
     if clean_shutdown:
-        print "daemon exiting cleanly"
+        print "makechallenge daemon exiting cleanly"
         break

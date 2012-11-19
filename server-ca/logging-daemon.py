@@ -20,10 +20,11 @@ for message in ps.listen():
     if message["type"] != "message":
         continue
     if message["channel"] == "logs":
-        if debug: print message["data"]
+        sys.stdout.write(message["data"] + "\n")
+        sys.stdout.flush()
         continue
     if message["channel"] == "exit":
         break
     if clean_shutdown:
-        print "daemon exiting cleanly"
+        print "logging daemon exiting cleanly"
         break

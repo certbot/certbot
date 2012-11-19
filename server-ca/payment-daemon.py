@@ -54,5 +54,5 @@ for message in ps.listen():
     if message["channel"] == "exit":
         break
     if clean_shutdown:
-        print "daemon exiting cleanly"
+        print "payment daemon exiting cleanly"
         break
