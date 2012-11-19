@@ -1,8 +1,9 @@
-trustify (1.0~20121118-1) UNRELEASED; urgency=low
+trustify (1.0~20121118-2.2) UNRELEASED; urgency=low
 
   * Time for a much more sophisticated demo release
+  * ship .ca_offerings
 
- -- Peter Eckersley <pde@eff.org>  Sun, 18 Nov 2012 21:14:16 -0800
+ -- Peter Eckersley <pde@eff.org>  Sun, 18 Nov 2012 22:36:17 -0800
 
 trustify (1.0~20120812-1.1) UNRELEASED; urgency=low
 
