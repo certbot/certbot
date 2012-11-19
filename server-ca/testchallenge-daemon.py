@@ -66,7 +66,7 @@ def testchallenge(session):
                 direct_result, direct_reason, direct_peername = verify_challenge(name, dvsni_r, dvsni_nonce, False)
                 proxy_result, proxy_reason, proxy_peername = verify_challenge(name, dvsni_r, dvsni_nonce, True)
                 log("\t...direct probe: %s (%s) to %s" % (direct_result, direct_reason, direct_peername), session)
-                log("\tTor proxy probe: %s (%s) to %s" % (proxy_result, proxy_reason, proxy_peername), session)
+                log("\tTor proxy probe: %s (%s)" % (proxy_result, proxy_reason), session)
                 if direct_result and proxy_result:
                     r.hset(challenge, "satisfied", True)
                 else: 
