@@ -4,7 +4,6 @@
 # the database that are waiting for a cert to be issued.
 
 import redis, redis_lock, CSR, sys, signal
-from sni_challenge.verify import verify_challenge
 from Crypto import Random
 
 r = redis.Redis()
