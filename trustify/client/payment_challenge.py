@@ -35,7 +35,7 @@ class Payment_Challenge(Challenge):
 
     def get_display_string(self):
         if self.times_performed == 0:
-            return "You are buying " + self.formatted_reasons() + " You will need to visit " + self.url + " to submit your payment\nPlease press enter once your payment has been submitted"
+            return "You are buying " + self.formatted_reasons() + "You will need to visit\n  " + self.url + "\nto submit your payment.\nPlease press Enter once your payment has been submitted."
 
         # The user has tried at least once... display a different message
         else:
