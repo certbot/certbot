@@ -17,6 +17,8 @@ r = redis.Redis()
 class shortform(object):
       def GET(self, what):
           web.header("Content-type", "text/html")
+          if len(what) != 10 or not all(hexdigit(s) for s in what):
+              return "<html><h1>Unknown session ID</h1></html>"
           expanded = r.get("shorturl-%s" % what)
           if not expanded:
               return "<html><h1>Unknown session ID</h1></html>"
