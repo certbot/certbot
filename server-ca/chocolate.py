@@ -261,18 +261,8 @@ class session(object):
             self.die(r, r.BadRequest, uri="%spriorrequest" % error_uri)
             return
         # Process the request.
-        # TODO: check that each element of the CA/B Forum Baseline
-        # Requirements is enforced here or elsewhere.
-        # TODO: check that the request involves a public key algorithm
-        # that we support.
         if not all([safe("recipient", recipient), safe("csr", csr)]):
             self.die(r, r.BadRequest, uri="%sillegalcharacter" % error_uri)
-            return
-        if timestamp - time.time() > 3600:
-            self.die(r, r.BadRequest, uri="%sfuture" % error_uri)
-            return
-        if time.time() - timestamp > 100:
-            self.die(r, r.BadRequest, uri="%spast" % error_uri)
             return
         if len(csr) > max_csr_size:
             self.die(r, r.BadCSR, uri="%slongcsr" % error_uri)
