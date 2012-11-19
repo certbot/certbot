@@ -441,19 +441,24 @@ def authenticate():
 
     upstream = "https://%s/chocolate.py" % server
 
+
+    if curses:
+        logger.setLogger(logger.NcursesLogger())
+        logger.setLogLevel(logger.INFO)
+    else:
+        logger.setLogger(sys.stdout)
+        logger.setLogLevel(logger.INFO)
+        
+    # Logger should be init before config
+    config = configurator.Configurator()
+
     if not names:
 	names = config.get_all_names()
 
     if curses:
         names = filter_names(names)
         choice = choice_of_ca()
-        logger.setLogger(logger.NcursesLogger())
-        logger.setLogLevel(logger.INFO)
-    else:
-        logger.setLogger(sys.stdout)
-        logger.setLogLevel(logger.INFO)
 
-    config = configurator.Configurator()
 
     # Check first if mod_ssl is loaded
     if not config.check_ssl_loaded():
@@ -528,13 +533,13 @@ def authenticate():
         r = decode(do(upstream, k))
         logger.debug(r)
 
-    # This should be invoked if a payment in necessary
+    # This should be invoked if a payment is necessary
     # This is being tested and will have to be cleaned and organized 
     # once the protocol is finalized.
     if r.challenge and all_payment_challenge(r):
         # dont need to change domain names here
-        challenges, temp = challenge_factory(r, os.path.abspath(req_file), os.path.abspath(key_file), config)
-        for chall in challenges:
+        paymentChallenges, temp = challenge_factory(r, os.path.abspath(req_file), os.path.abspath(key_file), config)
+        for chall in paymentChallenges:
             chall.perform(quiet=curses)
 
         logger.info("User has continued Trustify after submitting payment")
@@ -544,7 +549,7 @@ def authenticate():
         proceed_msg.proceed.timestamp = int(time.time())
         proceed_msg.proceed.polldelay = 60
         # Send the proceed message
-        r = decode(do(upstream, k))
+        r = decode(do(upstream, proceed_msg))
 
         while r.proceed.IsInitialized() or r.challenge:
             if r.proceed.IsInitialized():
