@@ -38,7 +38,7 @@ def makechallenge(session):
     # is not an inherent protocol requirement!)
     names = r.lrange("%s:names" % session, 0, -1)
     log("new valid request from requesting client at %s" % r.hget(session, "client-addr"), session)
-    log("for %d names: %s" % (len(names), ", ".join(names), session))
+    log("for %d names: %s" % (len(names), ", ".join(names)), session)
     for i, name in enumerate(names):
         challenge = "%s:%d" % (session, i)
         r.hset(challenge, "challtime", int(time.time()))
