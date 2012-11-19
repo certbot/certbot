@@ -20,7 +20,7 @@ issue_lock = redis_lock.redis_lock(r, "issue_lock")
 debug = "debug" in sys.argv
 clean_shutdown = False
 
-from daemon_common import signal_handler, short, random, random_raw
+from daemon_common import signal_handler, short, random, random_raw, log
 
 signal.signal(signal.SIGTERM, signal_handler)
 signal.signal(signal.SIGINT, signal_handler)

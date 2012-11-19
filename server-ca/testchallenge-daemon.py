@@ -15,7 +15,7 @@ ps = r.pubsub()
 debug = "debug" in sys.argv
 clean_shutdown = False
 
-from daemon_common import signal_handler, short, random, random_raw
+from daemon_common import signal_handler, short, random, random_raw, log
 
 def signal_handler(a, b):
     global clean_shutdown

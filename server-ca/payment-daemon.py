@@ -32,7 +32,7 @@ ps = r.pubsub()
 debug = "debug" in sys.argv
 clean_shutdown = False
 
-from daemon_common import signal_handler, short
+from daemon_common import signal_handler, short, log
 
 signal.signal(signal.SIGTERM, signal_handler)
 signal.signal(signal.SIGINT, signal_handler)
