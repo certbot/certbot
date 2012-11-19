@@ -26,6 +26,6 @@ for message in ps.listen():
     if message["channel"] == "exit":
         break
     if clean_shutdown:
-        sys.stdout.write("logging daemon exiting cleanly"\n)
+        sys.stdout.write("logging daemon exiting cleanly\n")
         sys.stdout.flush()
         break
