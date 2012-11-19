@@ -36,7 +36,8 @@ class payment(object):
         if r.hget(session, "state") != "payment":
             return "Attempt to process payment for session not expecting it."
         r.publish("payments", session)
-        return "<h1>Thank you!</h1> Processed a payment for session ID %s." % session
+        with open("thanks.html","r") as f:
+            return f.read() % session
 
 if __name__ == "__main__":
     app = web.application(urls, globals())
