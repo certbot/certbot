@@ -422,7 +422,8 @@ class session(object):
         chall.name = "payment"
         chall.succeeded = False
         # In payment, we send address of form to complete this payment
-        chall.data.append(str("%s/%s" % (payment_uri, self.id)))
+        abbreviation = sessions.hget(self.id, "shorturl")
+        chall.data.append(str("%s/%s" % (payment_uri, abbreviation)))
 
     def POST(self):
         web.header("Content-type", "application/x-protobuf+chocolate")

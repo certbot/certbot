@@ -8,36 +8,20 @@
 import web, redis
 
 urls = (
-     '/([a-f0-9]{64})', 'form',
+     '/([a-f0-9]{10})', 'shortform',
      '/submit=([a-f0-9]{64})', 'payment'
 )
 
 r = redis.Redis()
 
-class form(object):
+class shortform(object):
       def GET(self, what):
           web.header("Content-type", "text/html")
-          return """
-          <html>
-          <h1>Payment required</h1>
-          Due to certificate authority policy, issuing this certificate requires a payment.
-          <p>
-          <hr width="70%%" />
-          <p>
-          A payment of <b>17.00 simoleons</b> is due now.
-          <p>
-          In order to process this payment, please pretend to enter a 16-digit credit-card
-          number below, and then click the Submit Payment button.
-          <p>
-          <form action="/payment.py/submit=%s" method="GET">
-          <i>Credit Card Type</i> <select name=""><option>Vista</option><option>MisterCard</option><option>Discovery</option></select> <br />
-          <i>Credit Card Number</i> <input type="text" name="" style="font-family:monospace" autocomplete="off" /><br />
-          <input type="submit" value="Submit Payment">
-          </form>
-          This payment will appear on your
-          credit card statement as TRUSTIFIABLE CERTIFICATE SERVICES.
-          </html>
-          """ % what
+          expanded = r.get("shorturl-%s" % what)
+          if not expanded:
+              return "<html><h1>Unknown session ID</h1></html>"
+          with open("index.html","r") as f:
+              return f.read() % expanded
 
 def hexdigit(s):
     return s in "0123456789abcdef"
@@ -52,7 +36,10 @@ class payment(object):
         if r.hget(session, "state") != "payment":
             return "Attempt to process payment for session not expecting it."
         r.publish("payments", session)
-        return "<h1>Thank you!</h1> Processed a payment for session ID %s." % session
+        names = r.lrange("%s:names" % session, 0, -1)
+        names_list = '<ul style="font-family:monospace">' + "\n".join("<li>%s</li>" % n for n in names) + '</ul>'
+        with open("thanks.html","r") as f:
+            return f.read() % (session, names_list)
 
 if __name__ == "__main__":
     app = web.application(urls, globals())

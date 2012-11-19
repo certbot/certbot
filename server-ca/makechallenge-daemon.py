@@ -11,7 +11,7 @@ ps = r.pubsub()
 debug = "debug" in sys.argv
 clean_shutdown = False
 
-from daemon_common import signal_handler, short, random, random_raw
+from daemon_common import signal_handler, short, random, random_raw, log
 
 signal.signal(signal.SIGTERM, signal_handler)
 signal.signal(signal.SIGINT, signal_handler)
@@ -25,7 +25,7 @@ def makechallenge(session):
         # pending-requests queue and not pushed into any other queue.
         # We don't have to remove it from pending-makechallenge
         # because the caller has already done so.
-        if debug: print "removing expired session", short(session)
+        log("removing expired session", session)
         r.lrem("pending-requests", session)
         return
     # Currently only makes challenges of type 0 (DomainValidateSNI)
@@ -37,9 +37,8 @@ def makechallenge(session):
     # Make one challenge for each name.  (This one-to-one relationship
     # is not an inherent protocol requirement!)
     names = r.lrange("%s:names" % session, 0, -1)
-    if debug: print "%s: new valid request" % session
-    if debug: print "%s: from requesting client at %s" % (short(session), r.hget(session, "client-addr"))
-    if debug: print "%s: for %d names: %s" % (short(session), len(names), ", ".join(names))
+    log("new valid request from requesting client at %s" % r.hget(session, "client-addr"), session)
+    log("for %d names: %s" % (len(names), ", ".join(names)), session)
     for i, name in enumerate(names):
         challenge = "%s:%d" % (session, i)
         r.hset(challenge, "challtime", int(time.time()))
@@ -52,7 +51,7 @@ def makechallenge(session):
         r.hset(challenge, "dvsni:ext", "1.3.3.7")
         # Keep accurate count of how many challenges exist in this session.
         r.hincrby(session, "challenges", 1)
-        if debug: print "created new challenge", short(challenge)
+        log("created new challenge %s" % challenge, session)
     if True:  # challenges have been created
         r.hset(session, "state", "testchallenge")
     else:
@@ -66,5 +65,5 @@ while True:
     elif where == "pending-makechallenge":
         makechallenge(what)
     if clean_shutdown:
-        print "daemon exiting cleanly"
+        print "makechallenge daemon exiting cleanly"
         break

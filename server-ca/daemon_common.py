@@ -2,11 +2,11 @@
 
 # functions common to the various kinds of daemon
 
-# TODO: define a log function that sends a pubsub message to the
-# logger daemon
-
 import time, binascii
 from Crypto import Random
+
+import redis
+log_redis = redis.Redis()
 
 def signal_handler(a, b):
     global clean_shutdown
@@ -27,3 +27,9 @@ def random():
 def random_raw():
     """Return 32 random bytes."""
     return Random.get_random_bytes(32)
+
+def log(msg, session = None):
+    if session:
+        log_redis.publish("logs", "%s: %s" % (short(session), msg))
+    else:
+        log_redis.publish("logs", "%s" % session)

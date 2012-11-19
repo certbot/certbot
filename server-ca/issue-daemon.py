@@ -20,7 +20,7 @@ issue_lock = redis_lock.redis_lock(r, "issue_lock")
 debug = "debug" in sys.argv
 clean_shutdown = False
 
-from daemon_common import signal_handler, short, random, random_raw
+from daemon_common import signal_handler, short, random, random_raw, log
 
 signal.signal(signal.SIGTERM, signal_handler)
 signal.signal(signal.SIGINT, signal_handler)
@@ -42,22 +42,23 @@ def issue(session):
         # session nonetheless died for some reason unrelated to failing
         # challenges before the cert could be issued.  Normally, this
         # should never happen.
-        if debug: print "removing expired (issue-state!?) session", short(session)
+        log("removing expired (issue-state!?) session", session)
         r.lrem("pending-requests", session)
         return
     if r.hget(session, "state") != "issue":
         return
     csr = r.hget(session, "csr")
     names = r.lrange("%s:names" % session, 0, -1)
+    log("attempting to issue certificate for names: %s" % ", ".join(names), session)
     with issue_lock:
         cert = CSR.issue(csr, names)
     r.hset(session, "cert", cert)
     if cert:   # once issuing cert succeeded
-        if debug: print "%s: issued certificate for names: %s" % (short(session), ", ".join(names))
+        log("issued certificate for names: %s" % ", ".join(names), session)
         r.hset(session, "state", "done")
         # r.lpush("pending-done", session)
     else:       # should not be reached in deployed version
-        if debug: print "issuing for", short(session), "failed"
+        log("issuing cert failed!?", session)
         r.lpush("pending-issue", session)
 
 while True:
@@ -68,5 +69,5 @@ while True:
     elif where == "pending-issue":
         issue(what)
     if clean_shutdown:
-        print "daemon exiting cleanly"
+        print "issue daemon exiting cleanly"
         break

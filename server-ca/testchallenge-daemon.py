@@ -15,7 +15,7 @@ ps = r.pubsub()
 debug = "debug" in sys.argv
 clean_shutdown = False
 
-from daemon_common import signal_handler, short, random, random_raw
+from daemon_common import signal_handler, short, random, random_raw, log
 
 def signal_handler(a, b):
     global clean_shutdown
@@ -34,7 +34,7 @@ def testchallenge(session):
         # pending-requests queue and not pushed into any other queue.
         # We don't have to remove it from pending-testchallenge
         # because the caller has already done so.
-        if debug: print "removing expired session", short(session)
+        log("removing expired session", session)
         r.lrem("pending-requests", session)
         return
     if r.hget(session, "state") != "testchallenge":
@@ -49,7 +49,7 @@ def testchallenge(session):
     all_satisfied = True
     for i, name in enumerate(r.lrange("%s:names" % session, 0, -1)):
         challenge = "%s:%d" % (session, i)
-        if debug: print "testing challenge", short(challenge)
+        log("testing challenge %s" % challenge, session)
         challtime = int(r.hget(challenge, "challtime"))
         challtype = int(r.hget(challenge, "type"))
         name = r.hget(challenge, "name")
@@ -59,15 +59,14 @@ def testchallenge(session):
         if not satisfied and not failed:
             # if debug: print "challenge", short(challenge), "being tested"
             if challtype == 0:  # DomainValidateSNI
-                if debug: print "\tbeginning dvsni test to %s" % name
+                log("\tbeginning dvsni test to %s" % name, session)
                 dvsni_nonce = r.hget(challenge, "dvsni:nonce")
                 dvsni_r = r.hget(challenge, "dvsni:r")
                 dvsni_ext = r.hget(challenge, "dvsni:ext")
                 direct_result, direct_reason = verify_challenge(name, dvsni_r, dvsni_nonce, False)
                 proxy_result, proxy_reason = verify_challenge(name, dvsni_r, dvsni_nonce, True)
-                if debug:
-                    print "\t...direct probe: %s (%s)" % (direct_result, direct_reason)
-                    print "\tTor proxy probe: %s (%s)" % (proxy_result, proxy_reason)
+                log("\t...direct probe: %s (%s)" % (direct_result, direct_reason), session)
+                log("\tTor proxy probe: %s (%s)" % (proxy_result, proxy_reason), session)
                 if direct_result and proxy_result:
                     r.hset(challenge, "satisfied", True)
                 else: 
@@ -80,7 +79,7 @@ def testchallenge(session):
                 # Don't know how to handle this challenge type
                 all_satisfied = False
         elif not satisfied:
-             if debug: print "\tchallenge was not attempted"
+             log("\tchallenge was not attempted", session)
              all_satisfied = False
     if all_satisfied:
         # Challenges all succeeded, so we should prepare to issue
@@ -91,15 +90,26 @@ def testchallenge(session):
         # the daemon that put this session on the queue should
         # also have implicitly guaranteed this).
         if policy.payment_required(session):
-            if debug: print "\t** All challenges satisfied; request %s NEEDS PAYMENT" % short(session)
+            log("\t** All challenges satisfied; request NEEDS PAYMENT", session)
+            # Try to get a unique abbreviated ID (10 hex digits)
+            for i in xrange(20):
+                abbreviation = random()[:10]
+                if r.get("shorturl-%s" % abbreviation) is None:
+                    break
+            else:
+                # Mysteriously unable to get a unique abbreviated session ID!
+                r.hset(session, "live", "False")
+                return
+            r.set("shorturl-%s" % abbreviation, session)
+            r.expire("shorturl-%s" % abbreviation, 3600)
+            r.hset(session, "shorturl", abbreviation)
             r.hset(session, "state", "payment")
             # According to current practice, there is no pending-payment
             # queue because sessions can get out of payment state
             # instantaneously as soon as the payment system sends a "payments"
-            # pubsub message to
-            # the payments daemon.
+            # pubsub message to the payments daemon.
         else:
-            if debug: print "\t** All challenges satisfied; request %s GRANTED" % short(session)
+            log("\t** All challenges satisfied; request GRANTED", session)
             r.hset(session, "state", "issue")
             r.lpush("pending-issue", session)
     else:
@@ -118,5 +128,5 @@ while True:
         with redis_lock(r, "lock-" + what):
             testchallenge(what)
     if clean_shutdown:
-        print "daemon exiting cleanly"
+        print "testchallenge daemon exiting cleanly"
         break

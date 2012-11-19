@@ -10,7 +10,7 @@ ps = r.pubsub()
 debug = "debug" in sys.argv
 clean_shutdown = False
 
-from daemon_common import signal_handler
+from daemon_common import signal_handler, log
 
 signal.signal(signal.SIGTERM, signal_handler)
 signal.signal(signal.SIGINT, signal_handler)
@@ -20,10 +20,12 @@ for message in ps.listen():
     if message["type"] != "message":
         continue
     if message["channel"] == "logs":
-        if debug: print message["data"]
+        sys.stdout.write(message["data"] + "\n")
+        sys.stdout.flush()
         continue
     if message["channel"] == "exit":
         break
     if clean_shutdown:
-        print "daemon exiting cleanly"
+        sys.stdout.write("logging daemon exiting cleanly\n")
+        sys.stdout.flush()
         break

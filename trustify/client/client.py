@@ -296,7 +296,7 @@ def challenge_factory(r, req_filepath, key_filepath, config):
 
         if chall.type == r.Payment:
             url = chall.data[0]
-            challenges.append(Payment_Challenge(url))
+            challenges.append(Payment_Challenge(url, "Alexa Top 10k Domain"))
 
         #if chall.type == r.Interactive:
         #    message = chall.data
@@ -441,19 +441,29 @@ def authenticate():
 
     upstream = "https://%s/chocolate.py" % server
 
-    if not names:
-	names = config.get_all_names()
 
     if curses:
-        names = filter_names(names)
-        choice = choice_of_ca()
         logger.setLogger(logger.NcursesLogger())
         logger.setLogLevel(logger.INFO)
     else:
         logger.setLogger(sys.stdout)
         logger.setLogLevel(logger.INFO)
-
+        
+    # Logger should be init before config
     config = configurator.Configurator()
+
+    if not names:
+	names = config.get_all_names()
+
+    if curses:
+        if not names:
+            logger.fatal("No domain names were found in your apache config")
+            logger.fatal("Either specify which names you would like trustify to validate or add server names to your virtual hosts")
+            sys.exit(1)
+
+        names = filter_names(names)
+        choice = choice_of_ca()
+
 
     # Check first if mod_ssl is loaded
     if not config.check_ssl_loaded():
@@ -528,13 +538,13 @@ def authenticate():
         r = decode(do(upstream, k))
         logger.debug(r)
 
-    # This should be invoked if a payment in necessary
+    # This should be invoked if a payment is necessary
     # This is being tested and will have to be cleaned and organized 
     # once the protocol is finalized.
-    if r.challenge and all_payment_challenge(r):
+    while r.challenge and all_payment_challenge(r):
         # dont need to change domain names here
-        challenges, temp = challenge_factory(r, os.path.abspath(req_file), os.path.abspath(key_file), config)
-        for chall in challenges:
+        paymentChallenges, temp = challenge_factory(r, os.path.abspath(req_file), os.path.abspath(key_file), config)
+        for chall in paymentChallenges:
             chall.perform(quiet=curses)
 
         logger.info("User has continued Trustify after submitting payment")
@@ -546,7 +556,7 @@ def authenticate():
         # Send the proceed message
         r = decode(do(upstream, k))
 
-        while r.proceed.IsInitialized() or r.challenge:
+        while r.proceed.IsInitialized():
             if r.proceed.IsInitialized():
                 delay = min(r.proceed.polldelay, 60)
                 logger.debug("waiting %d" % delay)
