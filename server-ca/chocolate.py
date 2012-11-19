@@ -239,8 +239,9 @@ class session(object):
         recipient = m.request.recipient
         csr = m.request.csr
         sig = m.request.sig
+        # Log full session ID so it's available
+        self.log(self.id)
         self.log("new session from %s" % web.ctx.ip)
-        self.log("full session ID: %s" % self.id)
         # Check whether we are the intended recipient of the request.  Doing this
         # before the hashcash check is more work for the server but gives a more
         # helpful error message (because the hashcash will be wrong automatically
