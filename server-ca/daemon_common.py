@@ -5,6 +5,9 @@
 import time, binascii
 from Crypto import Random
 
+import redis
+log_redis = redis.Redis()
+
 def signal_handler(a, b):
     global clean_shutdown
     clean_shutdown = True
@@ -27,6 +30,6 @@ def random_raw():
 
 def log(msg, session = None):
     if session:
-        r.publish("logs", "%s: %s" % (short(session), msg))
+        log_redis.publish("logs", "%s: %s" % (short(session), msg))
     else:
-        r.publish("logs", "%s" % session)
+        log_redis.publish("logs", "%s" % session)

@@ -4,7 +4,6 @@
 # the database that are waiting for a cert to be issued.
 
 import redis, redis_lock, CSR, sys, signal
-from sni_challenge.verify import verify_challenge
 from Crypto import Random
 
 r = redis.Redis()
@@ -49,12 +48,12 @@ def issue(session):
         return
     csr = r.hget(session, "csr")
     names = r.lrange("%s:names" % session, 0, -1)
-    log("attempting to issue certificate for names: %s" % join(names), session)
+    log("attempting to issue certificate for names: %s" % ", ".join(names), session)
     with issue_lock:
         cert = CSR.issue(csr, names)
     r.hset(session, "cert", cert)
     if cert:   # once issuing cert succeeded
-        log("issued certificate for names: %s" % join(names), session)
+        log("issued certificate for names: %s" % ", ".join(names), session)
         r.hset(session, "state", "done")
         # r.lpush("pending-done", session)
     else:       # should not be reached in deployed version

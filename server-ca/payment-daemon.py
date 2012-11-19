@@ -47,7 +47,7 @@ for message in ps.listen():
         if len(session) != 64: continue
         if session not in r or r.hget(session, "live") != "True": continue
         if r.hget(session, "state") != "payment": continue
-        if debug: print "\t** All challenges satisfied; payment received; request %s GRANTED" % short(session)
+        log("\t** All challenges satisfied; payment received; request GRANTED", session)
         r.hset(session, "state", "issue")
         r.lpush("pending-issue", session)
         continue
