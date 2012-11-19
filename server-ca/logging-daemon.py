@@ -20,7 +20,7 @@ for message in ps.listen():
     if message["type"] != "message":
         continue
     if message["channel"] == "logs":
-        sys.stdout.write(time.ctime() + " " + message["data"] + "\n")
+        sys.stdout.write(time.strftime("%b %d %H:%M:%S") + " " + message["data"] + "\n")
         sys.stdout.flush()
         continue
     if message["channel"] == "exit":
