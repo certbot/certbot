@@ -68,5 +68,5 @@ while True:
     elif where == "pending-issue":
         issue(what)
     if clean_shutdown:
-        print "daemon exiting cleanly"
+        print "issue daemon exiting cleanly"
         break

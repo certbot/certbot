@@ -132,18 +132,18 @@ def is_hostname_sane(hostname):
     import string as s
     allowed = s.ascii_letters + s.digits + "-."  # hostnames & IPv4
     if all([c in allowed for c in hostname]):
-      return True
+        return True
     
     if not allow_raw_ipv6_server: return False
 
     # ipv6 is messy and complicated, can contain %zoneindex etc.  
     import socket
     try:
-      # is this a valid IPv6 address?
-      socket.getaddrinfo(hostname,443,socket.AF_INET6)
-      return True
+        # is this a valid IPv6 address?
+        socket.getaddrinfo(hostname,443,socket.AF_INET6)
+        return True
     except:
-      return False
+        return False
 
 
 
@@ -541,7 +541,7 @@ def authenticate():
     # This should be invoked if a payment is necessary
     # This is being tested and will have to be cleaned and organized 
     # once the protocol is finalized.
-    if r.challenge and all_payment_challenge(r):
+    while r.challenge and all_payment_challenge(r):
         # dont need to change domain names here
         paymentChallenges, temp = challenge_factory(r, os.path.abspath(req_file), os.path.abspath(key_file), config)
         for chall in paymentChallenges:
@@ -556,7 +556,7 @@ def authenticate():
         # Send the proceed message
         r = decode(do(upstream, k))
 
-        while r.proceed.IsInitialized() or r.challenge:
+        while r.proceed.IsInitialized():
             if r.proceed.IsInitialized():
                 delay = min(r.proceed.polldelay, 60)
                 logger.debug("waiting %d" % delay)
