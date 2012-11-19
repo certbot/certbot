@@ -51,6 +51,12 @@ def safe(what, s):
     else:
        return False
 
+def short(thing):
+    """Return the first 8 bytes of a session ID, or, for a
+    challenge ID, the challenge ID with the session ID truncated."""
+    tmp = thing.partition(":")
+    return tmp[0][:8] + ".." + tmp[1] + tmp[2]
+
 sessions = redis.Redis()
 
 class session(object):
@@ -367,7 +373,7 @@ class session(object):
         # TODO: Process challenge-related messages from the client.
 
     def log(self, msg):
-        sessions.publish("logs", "%s: %s" % (self.id, msg))
+        sessions.publish("logs", "%s: %s" % (short(self.id), msg))
         if debug: print "%s: %s" % (self.id, msg)
 
     def die(self, r, reason, uri=None):

@@ -49,7 +49,7 @@ def testchallenge(session):
     all_satisfied = True
     for i, name in enumerate(r.lrange("%s:names" % session, 0, -1)):
         challenge = "%s:%d" % (session, i)
-        log("testing challenge %s" % challenge, session)
+        log("testing challenge %s" % short(challenge), session)
         challtime = int(r.hget(challenge, "challtime"))
         challtype = int(r.hget(challenge, "type"))
         name = r.hget(challenge, "name")
