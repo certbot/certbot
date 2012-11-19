@@ -129,5 +129,5 @@ while True:
         with redis_lock(r, "lock-" + what):
             testchallenge(what)
     if clean_shutdown:
-        print "daemon exiting cleanly"
+        print "testchallenge daemon exiting cleanly"
         break
