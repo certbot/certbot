@@ -44,9 +44,16 @@ for message in ps.listen():
     if message["channel"] == "payments":
         if debug: print message["data"]
         session = message["data"]
-        if len(session) != 64: continue
-        if session not in r or r.hget(session, "live") != "True": continue
-        if r.hget(session, "state") != "payment": continue
+        if len(session) != 64:
+            log("received payment request for weird session")
+            continue
+        if session not in r or r.hget(session, "live") != "True":
+            log("received payment request for nonexistent or inactive session")
+            continue
+        if r.hget(session, "state") != "payment":
+            log("received untimely payment request")
+            continue
+        log("received valid payment notification for", session)
         log("\t** All challenges satisfied; payment received; request GRANTED", session)
         r.hset(session, "state", "issue")
         r.lpush("pending-issue", session)
