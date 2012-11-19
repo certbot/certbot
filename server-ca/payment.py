@@ -26,6 +26,9 @@ class shortform(object):
 def hexdigit(s):
     return s in "0123456789abcdef"
 
+def log(msg):
+        r.publish("logs", msg)
+
 class payment(object):
     def GET(self, session):
         web.header("Content-type", "text/html")
@@ -38,6 +41,7 @@ class payment(object):
         r.publish("payments", session)
         names = r.lrange("%s:names" % session, 0, -1)
         names_list = '<ul style="font-family:monospace">' + "\n".join("<li>%s</li>" % n for n in names) + '</ul>'
+        log("received valid payment details from %s" % web.ctx.ip)
         with open("thanks.html","r") as f:
             return f.read() % (session, names_list)
 
