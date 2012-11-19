@@ -32,7 +32,7 @@ def in_top_10k(hostname):
     # That includes subdomains of top 10,000 sites, but not if the subdomain
     # is below a public suffix (such as a dynamic DNS provider or hosting
     # umbrella, perhaps)
-    parts = hostname.split(".")
+    parts = hostname.lower().split(".")
     for n in range(2, len(parts)+1):
       name_or_parent = ".".join(parts[-n:])
       if name_or_parent in top_10k:
