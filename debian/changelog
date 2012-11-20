@@ -1,3 +1,10 @@
+trustify (1.0~20121119-1) UNRELEASED; urgency=low
+
+  * Preparing for (actual) demo
+  * fix configurator.py using incorrect logger.debug syntax
+
+ -- Eric <ewust@umich.edu>  Tue, 20 Nov 2012 00:09:31 -0500
+
 trustify (1.0~20121118-2.2) UNRELEASED; urgency=low
 
   * Time for a much more sophisticated demo release
