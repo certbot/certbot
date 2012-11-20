@@ -7,11 +7,11 @@ import socket
 import time
 import shutil
 
-from trustify.client.CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES
-#from CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES, REWRITE_HTTPS_ARGS
-from trustify.client.CONFIG import REWRITE_HTTPS_ARGS
-from trustify.client import logger
-#import logger
+#from trustify.client.CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES
+from CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES, REWRITE_HTTPS_ARGS
+#from trustify.client.CONFIG import REWRITE_HTTPS_ARGS
+#from trustify.client import logger
+import logger
 
 #TODO - Need an initialization routine... make sure directories exist..ect
 
@@ -149,14 +149,14 @@ class Configurator(object):
         Returns all ServerNames, ServerAliases, and reverse DNS entries for
         virtual host addresses
         """
-        all_names = []
+        all_names = set()
         for v in self.vhosts:
-            all_names.extend(v.names)
+            all_names.update(v.names)
             for a in v.addrs:
                 a_tup = a.partition(":")
                 try:
                     socket.inet_aton(a_tup[0])
-                    all_names.append(socket.gethostbyaddr(a_tup[0])[0])
+                    all_names.add(socket.gethostbyaddr(a_tup[0])[0])
                 except (socket.error, socket.herror, socket.timeout):
                     continue
 
@@ -1054,8 +1054,8 @@ def main():
     #config.save("Testing Saves", False)
     #config.recover_checkpoint(1)
     """
-    config.display_checkpoints()
-    config.configtest()
+    #config.display_checkpoints()
+    #config.configtest()
     """
     #config.make_vhost_ssl("/etc/apache2/sites-available/default")
     # Testing redirection
