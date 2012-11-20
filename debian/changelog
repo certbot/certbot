@@ -1,3 +1,9 @@
+trustify (1.0~20121119-3.5) UNRELEASED; urgency=low
+
+  * Restart apache after adding redirect 
+
+ -- Eric <ewust@desky.eecs.umich.edu>  Tue, 20 Nov 2012 01:56:47 -0500
+
 trustify (1.0~20121119-3.4) UNRELEASED; urgency=low
 
   * Support for private IPs
