@@ -65,8 +65,12 @@ def choice_of_ca():
     return result
 
 def get_cas():
-    with open("/etc/trustify/.ca_offerings") as f:
-        choices = [line.split(";", 1) for line in f]
+    try:
+        with open("/etc/trustify/.ca_offerings") as f:
+            choices = [line.split(";", 1) for line in f]
+    except IOError as e:
+        logger.fatal("Unable to find .ca_offerings file")
+        sys.exit(1)
 
     return choices
 

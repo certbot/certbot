@@ -12,7 +12,7 @@ from google.protobuf.message import DecodeError
 from CONFIG import chocolate_server_name, min_keysize, difficulty, polldelay
 from CONFIG import max_names, max_csr_size, maximum_session_age
 from CONFIG import maximum_challenge_age, hashcash_expiry, extra_name_blacklist
-from CONFIG import cert_chain_file, debug, payment_uri
+from CONFIG import cert_chain_file, debug, payment_uri, error_uri
 
 poll_interval = 10
 
@@ -50,6 +50,12 @@ def safe(what, s):
        return len(s) == 64 and all(c in "0123456789abcdef" for c in s)
     else:
        return False
+
+def short(thing):
+    """Return the first 8 bytes of a session ID, or, for a
+    challenge ID, the challenge ID with the session ID truncated."""
+    tmp = thing.partition(":")
+    return tmp[0][:8] + ".." + tmp[1] + tmp[2]
 
 sessions = redis.Redis()
 
@@ -153,7 +159,7 @@ class session(object):
                     # Whoops!
                     pass
         else:
-            self.die(r, r.BadRequest, uri="https://ca.example.com/failures/internalerror")
+            self.die(r, r.BadRequest, uri="%sinternalerror" % error_uri)
         return
 
     def check_hashcash(self, h, n):
@@ -177,14 +183,14 @@ class session(object):
         # Check for some ways in which the message from the client
         # can be inappropriate.
         if m.challenge or m.proceed.IsInitialized() or m.success.IsInitialized():
-            self.die(r, r.BadRequest, uri="https://ca.example.com/failures/invalidfromclient")
+            self.die(r, r.BadRequest, uri="%sinvalidfromclient" % error_uri)
             return
         distinct_messages = 0
         if m.request.IsInitialized(): distinct_messages += 1
         if m.failure.IsInitialized(): distinct_messages += 1
         if m.completedchallenge: distinct_messages += 1
         if distinct_messages > 1:
-            self.die(r, r.BadRequest, uri="https://ca.example.com/failures/mixedmessages")
+            self.die(r, r.BadRequest, uri="%smixedmessages" % error_uri)
             return
         # The rule that a new session must contain a request is enforced
         # by handlenewsession.  The rule that an existing session must
@@ -203,7 +209,7 @@ class session(object):
             r.session = ""
             if not safe("session", m.session):
                 # Note that self.id is still uninitialized here.
-                self.die(r, r.BadRequest, uri="https://ca.example.com/failures/illegalsession")
+                self.die(r, r.BadRequest, uri="%sillegalsession" % error_uri)
                 return
             self.id = m.session
             r.session = m.session
@@ -227,47 +233,39 @@ class session(object):
         if r.failure.IsInitialized(): return
         if not m.request.IsInitialized():
             # It is mandatory to make a signing request at the outset of a session.
-            self.die(r, r.BadRequest, uri="https://ca.example.com/failures/missingrequest")
+            self.die(r, r.BadRequest, uri="%smissingrequest" % error_uri)
             return
         timestamp = m.request.timestamp
         recipient = m.request.recipient
         csr = m.request.csr
         sig = m.request.sig
+        # Log full session ID so it's available
+        self.log(self.id)
         self.log("new session from %s" % web.ctx.ip)
         # Check whether we are the intended recipient of the request.  Doing this
         # before the hashcash check is more work for the server but gives a more
         # helpful error message (because the hashcash will be wrong automatically
         # if it's addressed to a different server!).
         if recipient != chocolate_server_name:
-            self.die(r, r.BadRequest, uri="https://ca.example.com/failures/recipient")
+            self.die(r, r.BadRequest, uri="%srecipient" % error_uri)
             return
         # Check hashcash before doing any crypto or database access.
         names = CSR.subject_names(csr)
         if not m.request.clientpuzzle or not self.check_hashcash(m.request.clientpuzzle, len(names)):
-            self.die(r, r.NeedClientPuzzle, uri="https://ca.example.com/failures/hashcash")
+            self.die(r, r.NeedClientPuzzle, uri="%shashcash" % error_uri)
             return
         if self.request_made():
             # Can't make new signing requests if there have already been requests in
             # this session.  (All signing requests should occur together at the
             # beginning.)
-            self.die(r, r.BadRequest, uri="https://ca.example.com/failures/priorrequest")
+            self.die(r, r.BadRequest, uri="%spriorrequest" % error_uri)
             return
         # Process the request.
-        # TODO: check that each element of the CA/B Forum Baseline
-        # Requirements is enforced here or elsewhere.
-        # TODO: check that the request involves a public key algorithm
-        # that we support.
         if not all([safe("recipient", recipient), safe("csr", csr)]):
-            self.die(r, r.BadRequest, uri="https://ca.example.com/failures/illegalcharacter")
-            return
-        if timestamp - time.time() > 5:
-            self.die(r, r.BadRequest, uri="https://ca.example.com/failures/future")
-            return
-        if time.time() - timestamp > 100:
-            self.die(r, r.BadRequest, uri="https://ca.example.com/failures/past")
+            self.die(r, r.BadRequest, uri="%sillegalcharacter" % error_uri)
             return
         if len(csr) > max_csr_size:
-            self.die(r, r.BadCSR, uri="https://ca.example.com/failures/longcsr")
+            self.die(r, r.BadCSR, uri="%slongcsr" % error_uri)
             return
         if not CSR.parse(csr):
             self.die(r, r.BadCSR)
@@ -283,23 +281,23 @@ class session(object):
             self.die(r, r.BadCSR)
             return
         if len(names) > max_names:
-            self.die(r, r.BadCSR, uri="https://ca.example.com/failures/toomanynames")
+            self.die(r, r.BadCSR, uri="%stoomanynames" % error_uri)
             return
         for san in names:  # includes CN as well as SANs
             if not safe("hostname", san) or not CSR.can_sign(san) or san in extra_name_blacklist:
                 # TODO: Is there a problem including client-supplied data in the URL?
-                self.die(r, r.CannotIssueThatName, uri="https://ca.example.com/failures/name?%s" % san)
+                self.die(r, r.CannotIssueThatName, uri="%sname?%s" % (error_uri,san))
                 return
             try:
                 # Check whether the SSL Observatory has seen a valid cert for this name.
                 # XXX: This has been disabled because this API is unavailable
                 # or unreliable.
                 if False and urllib2.urlopen("https://observatory.eff.org/check_name?domain_name=%s" % san).read().strip() != "False":
-                    self.die(r, r.CannotIssueThatName, uri="https://ca.example.com/failures/observatory?%s" % san)
+                    self.die(r, r.CannotIssueThatName, uri="%sobservatory?%s" % (error_uri,san))
                     return
                 wildcard_variant = "*." + san.partition(".")[2]
                 if False and urllib2.urlopen("https://observatory.eff.org/check_name?domain_name=%s" % wildcard_variant).read().strip() != "False":
-                    self.die(r, r.CannotIssueThatName, uri="https://ca.example.com/failures/observatory?%s" % san)
+                    self.die(r, r.CannotIssueThatName, uri="%sobservatory?%s" % (error_uri,san))
                     return
             except urllib2.HTTPError:
                 # Currently, don't consider it fatal if the Observatory blacklist
@@ -317,14 +315,14 @@ class session(object):
     def handleexistingsession(self, m, r):
         self.log("received message from %s" % web.ctx.ip)
         if m.request.IsInitialized():
-            self.die(r, r.BadRequest, uri="https://ca.example.com/failures/requestinexistingsession")
+            self.die(r, r.BadRequest, uri="%srequestinexistingsession" % error_uri)
             return
         # The caller has verified that this session exists and is live.
         # If we have no state, something is crazy (maybe a race from two
         # instances of the client?).
         state = self.state()
         if state is None:
-            self.die(r, r.BadRequest, uri="https://ca.example.com/failures/uninitializedsession")
+            self.die(r, r.BadRequest, uri="%suninitializedsession" % error_uri)
             return
         # If we're in makechallenge or issue, tell the client to come back later.
         if state == "makechallenge" or state == "issue":
@@ -362,12 +360,12 @@ class session(object):
             self.send_cert(m, r)
             return
         # Unknown session status.
-        self.die(r, r.BadRequest, uri="https://ca.example.com/failures/internalerror")
+        self.die(r, r.BadRequest, uri="%sinternalerror" % error_uri)
         return
         # TODO: Process challenge-related messages from the client.
 
     def log(self, msg):
-        sessions.publish("logs", "%s: %s" % (self.id, msg))
+        sessions.publish("logs", "%s: %s" % (short(self.id), msg))
         if debug: print "%s: %s" % (self.id, msg)
 
     def die(self, r, reason, uri=None):
@@ -391,7 +389,7 @@ class session(object):
             # Currently, we can only handle challenge type 0 (dvsni)
             # TODO: unify names "succeeded" vs. "satisfied"?
             if int(c["type"]) != 0:
-                self.die(r, r.BadRequest, uri="https://ca.example.com/failures/internalerror")
+                self.die(r, r.BadRequest, uri="%sinternalerror" % error_uri)
                 return
             chall = r.challenge.add()
             chall.type = int(c["type"])

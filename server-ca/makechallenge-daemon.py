@@ -51,7 +51,7 @@ def makechallenge(session):
         r.hset(challenge, "dvsni:ext", "1.3.3.7")
         # Keep accurate count of how many challenges exist in this session.
         r.hincrby(session, "challenges", 1)
-        log("created new challenge %s" % challenge, session)
+        log("created new challenge %s" % short(challenge), session)
     if True:  # challenges have been created
         r.hset(session, "state", "testchallenge")
     else:

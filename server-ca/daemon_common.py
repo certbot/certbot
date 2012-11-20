@@ -15,10 +15,10 @@ def signal_handler(a, b):
     r.lpush("exit", "clean-exit")
 
 def short(session):
-    """Return the first 12 bytes of a session ID, or, for a
+    """Return the first 8 bytes of a session ID, or, for a
     challenge ID, the challenge ID with the session ID truncated."""
     tmp = session.partition(":")
-    return tmp[0][:12] + "..." + tmp[1] + tmp[2]
+    return tmp[0][:8] + ".." + tmp[1] + tmp[2]
 
 def random():
     """Return 64 hex digits representing a new 32-byte random number."""

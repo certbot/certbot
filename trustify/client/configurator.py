@@ -297,7 +297,7 @@ class Configurator(object):
         # No default addresses... so set each one individually
         for addr in vhost.addrs:
             if not self.is_name_vhost(addr):
-                logger.debug("Setting VirtualHost at", addr, "to be a name based virtual host")
+                logger.debug("Setting VirtualHost at" + addr + "to be a name based virtual host")
                 self.add_name_vhost(addr)
         
         return True

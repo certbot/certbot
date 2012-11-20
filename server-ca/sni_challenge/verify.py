@@ -66,6 +66,7 @@ def verify_challenge(address, r, nonce, socksify=False):
         conn.socket = socksocket
         
     sni_support.set_sni_ext(conn.ssl, sni_name)
+    peername = "[unknown]"
     try:
         conn.connect((address, 443))
         peername = str(conn.socket.getpeername())

@@ -17,6 +17,8 @@ r = redis.Redis()
 class shortform(object):
       def GET(self, what):
           web.header("Content-type", "text/html")
+          if len(what) != 10 or not all(hexdigit(s) for s in what):
+              return "<html><h1>Unknown session ID</h1></html>"
           expanded = r.get("shorturl-%s" % what)
           if not expanded:
               return "<html><h1>Unknown session ID</h1></html>"
@@ -25,6 +27,9 @@ class shortform(object):
 
 def hexdigit(s):
     return s in "0123456789abcdef"
+
+def log(msg):
+        r.publish("logs", msg)
 
 class payment(object):
     def GET(self, session):
@@ -38,6 +43,7 @@ class payment(object):
         r.publish("payments", session)
         names = r.lrange("%s:names" % session, 0, -1)
         names_list = '<ul style="font-family:monospace">' + "\n".join("<li>%s</li>" % n for n in names) + '</ul>'
+        log("received valid payment details from %s" % web.ctx.ip)
         with open("thanks.html","r") as f:
             return f.read() % (session, names_list)
 
