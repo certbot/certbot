@@ -96,7 +96,7 @@ class NcursesLogger(Logger):
         self.d.infobox(self.content, self.height+2, self.width+4)
 
     def log(self, level, data):
-        self.add(data + "\n")
+        self.add(str(data) + "\n")
 
 log_instance = None
 
