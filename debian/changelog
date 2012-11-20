@@ -1,4 +1,4 @@
-trustify (1.0~20121119-3.2) UNRELEASED; urgency=low
+trustify (1.0~20121119-3.3) UNRELEASED; urgency=low
 
   * Make logger only print strings
 
