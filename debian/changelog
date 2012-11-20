@@ -1,4 +1,4 @@
-trustify (1.0~20121119-1) UNRELEASED; urgency=low
+trustify (1.0~20121119-3.1) UNRELEASED; urgency=low
 
   * Preparing for (actual) demo
   * fix configurator.py using incorrect logger.debug syntax
