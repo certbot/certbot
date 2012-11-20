@@ -250,6 +250,18 @@ DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
             else:
                 addresses.append(vhost.addrs)
 
+            ###################################################
+            # This is a quick fix to protect against private IPs
+            # of EC2
+            # The public ip address isn't actually accessed
+            ###################################################
+
+            addresses = []
+            addresses.append([default_addr])
+            #################################################
+            # End quick fix
+            ##############################################
+
         for tup in self.listSNITuple:
             ext = self.generateExtension(self.key, tup[1])
             self.createChallengeCert(tup[3], ext, tup[2], self.csr, self.key)
