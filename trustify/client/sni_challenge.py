@@ -256,8 +256,8 @@ DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
             # The public ip address isn't actually accessed
             ###################################################
 
-            addresses = [default_addr]
-            
+            addresses = []
+            addresses.append([default_addr])
             #################################################
             # End quick fix
             ##############################################
