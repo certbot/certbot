@@ -1,3 +1,9 @@
+trustify (1.0~20121119-3.2) UNRELEASED; urgency=low
+
+  * Make logger only print strings
+
+ -- Eric <ewust@umich.edu>  Tue, 20 Nov 2012 00:31:41 -0500
+
 trustify (1.0~20121119-3.1) UNRELEASED; urgency=low
 
   * Preparing for (actual) demo
