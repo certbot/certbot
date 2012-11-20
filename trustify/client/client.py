@@ -380,11 +380,11 @@ def handle_verification_response(r, dn, challenges, vhost, key_file, config):
             dialog.Dialog().msgbox("\nCongratulations! You have successfully enabled " + gen_https_names(dn) + "!", width=70)
             config.enable_mod("rewrite")
             if by_default():
-                redirect_to_ssl(vhost, config)     
+                redirect_to_ssl(vhost, config)
+                config.restart(quiet=curses)     
         else:
             logger.info("Congratulations! You have successfully enabled " + gen_https_names(dn) + "!")
 
-    
     elif r.failure.IsInitialized():
         logger.fatal("Server reported failure.")
         sys.exit(1)
