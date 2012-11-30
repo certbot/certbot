@@ -7,11 +7,11 @@ import socket
 import time
 import shutil
 
-from trustify.client.CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES
-#from CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES, REWRITE_HTTPS_ARGS
-from trustify.client.CONFIG import REWRITE_HTTPS_ARGS
-from trustify.client import logger
-#import logger
+#from trustify.client.CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES
+from CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES, REWRITE_HTTPS_ARGS, CONFIG_DIR
+#from trustify.client.CONFIG import REWRITE_HTTPS_ARGS, CONFIG_DIR
+#from trustify.client import logger
+import logger
 
 #TODO - Need an initialization routine... make sure directories exist..ect
 
@@ -38,14 +38,6 @@ class Configurator(object):
         # Set Augeas flags to save backup
         self.aug = augeas.Augeas(None, None, 1 << 0)
         self.standardize_excl()
-
-        # TODO: Remove after new add_transform function is tested
-        # httpd_incl - All parsable Httpd files
-        # add_transform overwrites all currently loaded files so we must 
-        # maintain state
-        #self.httpd_incl = []
-        #for m in self.aug.match("/augeas/load/Httpd/incl"):
-            #self.httpd_incl.append(self.aug.get(m))
 
         self.save_notes = ""
         # new_files is for save checkpoints and to allow reverts
@@ -116,17 +108,27 @@ class Configurator(object):
         for dn, vh in self.assoc:
             if dn == name:
                 return vh
-        # Check for servernames/aliases
+        # Check for servernames/aliases for ssl hosts
         for v in self.vhosts:
             if v.ssl == True:
                 for n in v.names:
                     if n == name:
                         return v
+        # Checking for domain name in vhost address
+        # This technique is not recommended by Apache but is valid
         for v in self.vhosts:
             for a in v.addrs:
                 tup = a.partition(":")
                 if tup[0] == name and tup[2] == "443":
                     return v
+
+        # Check for non ssl vhosts with servernames/aliases == 'name'
+        for v in self.vhosts:
+            if v.ssl == False:
+                for n in v.names:
+                    if n == name:
+                        # Must create ssl equivalent vhost
+                        return self.make_vhost_ssl(v.path)
 
         # No matches, search for the default
         for v in self.vhosts:
@@ -178,6 +180,9 @@ class Configurator(object):
     
 
     def __create_vhost(self, path):
+        """
+        Private function used by get_virtual_hosts to create vhost objects
+        """
         addrs = []
         args = self.aug.match(path + "/arg")
         for arg in args:
@@ -414,11 +419,12 @@ class Configurator(object):
             return True
         return False
 
-    def make_vhost_ssl(self, avail_fp):
+    def make_vhost_ssl(self, nonssl_vhost):
         """
         Duplicates vhost and adds default ssl options
-        New vhost will reside as (avail_fp)-ssl
+        New vhost will reside as (nonssl_vhost.path)-trustify-ssl
         """
+        avail_fp = nonssl_vhost.file
         # Copy file
         ssl_fp = avail_fp + "-trustify-ssl"
         orig_file = open(avail_fp, 'r')
@@ -432,17 +438,22 @@ class Configurator(object):
         # This is used for checkpoints
         self.new_files.append(ssl_fp)
         self.aug.load()
+        # Delete the VH addresses because they may change here
+        del nonssl_vhost.addrs[:]
 
         # change address to address:443, address:80
         ssl_addr_p = self.aug.match("/files"+ssl_fp+"//VirtualHost/arg")
         avail_addr_p = self.aug.match("/files"+avail_fp+"//VirtualHost/arg")
-        for i in range(avail_addr_p):
+        for i in range(len(avail_addr_p)):
             avail_old_arg = self.aug.get(avail_addr_p[i])
             ssl_old_arg = self.aug.get(ssl_addr_p[i])
             avail_tup = avail_old_arg.partition(":")
             ssl_tup = ssl_old_arg.partition(":")
-            self.aug.set(avail_addr_p[i], avail_tup[0] + ":80")
-            self.aug.set(ssl_addr_p[i], ssl_tup[0] + ":443")
+            avail_new_addr = avail_tup[0] + ":80"
+            ssl_new_addr = ssl_tup[0] + ":443"
+            self.aug.set(avail_addr_p[i], avail_new_addr)
+            self.aug.set(ssl_addr_p[i], ssl_new_addr)
+            nonssl_vhost.addrs.append(avail_new_addr)
 
         # Add directives
         vh_p = self.aug.match("/files"+ssl_fp+"//VirtualHost")
@@ -453,13 +464,17 @@ class Configurator(object):
         self.add_dir(vh_p[0], "SSLCertificateFile", "/etc/ssl/certs/ssl-cert-snakeoil.pem")
         self.add_dir(vh_p[0], "SSLCertificateKeyFile", "/etc/ssl/private/ssl-cert-snakeoil.key")
         self.add_dir(vh_p[0], "Include", CONFIG_DIR + "options-ssl.conf")
+ 
+        # We know the length is one because of the assertion above
+        ssl_vhost = self.__create_vhost(vh_p[0])
+        self.vhosts.append(ssl_vhost)
 
-        # reload configurator vhosts
-        self.vhosts = self.get_virtual_hosts()
-
+        # Log actions and create save notes
+        logger.info("Created an SSL vhost at %s" % ssl_fp)
         self.save_notes += 'Created ssl vhost at %s\n' % ssl_fp
-
-        return ssl_fp
+        self.save("Making new ssl vhost at " + ssl_fp)
+        
+        return ssl_vhost
 
     def redirect_all_ssl(self, ssl_vhost):
         """
@@ -575,7 +590,7 @@ LogLevel warn \n\
         # Make a new vhost data structure and add it to the lists
         new_fp = SERVER_ROOT + "sites-available/" + redirect_filename
         new_vhost = self.__create_vhost("/files" + new_fp)
-        self.vhosts.add(new_vhost)
+        self.vhosts.append(new_vhost)
         
         # Finally create documentation for the change
         self.save_notes += 'Created a port 80 vhost, %s, for redirection to ssl vhost %s\n' % (new_vhost.file, ssl_vhost.file)
@@ -1031,6 +1046,7 @@ def main():
         for name in v.names:
             print name
 
+    """
     for m in config.find_directive("Listen", "443"):
         print "Directive Path:", m, "Value:", config.aug.get(m)
 
@@ -1039,6 +1055,7 @@ def main():
             print "Address:",a, "- Is name vhost?", config.is_name_vhost(a)
 
     print config.get_all_names()
+    """
     """
     test_file = "/home/james/Desktop/ports_test.conf"
     config.parse_file(test_file)
@@ -1057,16 +1074,19 @@ def main():
     #config.display_checkpoints()
     #config.configtest()
     """
-    #config.make_vhost_ssl("/etc/apache2/sites-available/default")
-    # Testing redirection
+    # Testing redirection and make_vhost_ssl
+    ssl_vh = None
     for vh in config.vhosts:
-        if vh.addrs[0] == "127.0.0.1:443":
+        if not vh.addrs:
+            print vh.names
+            print vh.file
+        if vh.addrs[0] == "23.20.47.131:80":
             print "Here we go"
-            print vh.path
-            config.redirect_all_ssl(vh)
-    config.save()
+            ssl_vh = config.make_vhost_ssl(vh)
+            
+    config.redirect_all_ssl(ssl_vh)
     """
-"""
+    """
     for vh in config.vhosts:
         if len(vh.names) > 0:
             config.deploy_cert(vh, "/home/james/Documents/apache_choc/req.pem", "/home/james/Documents/apache_choc/key.pem", "/home/james/Downloads/sub.class1.server.ca.pem")
