@@ -128,7 +128,7 @@ class Configurator(object):
                 for n in v.names:
                     if n == name:
                         # Must create ssl equivalent vhost
-                        return self.make_vhost_ssl(v.path)
+                        return self.make_vhost_ssl(v)
 
         # No matches, search for the default
         for v in self.vhosts:
