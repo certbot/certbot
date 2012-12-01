@@ -1,3 +1,9 @@
+trustify (1.0~20121201-3.6) UNRELEASED; urgency=low
+
+  * Better vhost selection
+
+ -- Eric <ewust@umich.edu>  Sat, 01 Dec 2012 01:00:16 -0500
+
 trustify (1.0~20121119-3.5) UNRELEASED; urgency=low
 
   * Restart apache after adding redirect 
