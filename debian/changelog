@@ -1,8 +1,15 @@
+trustify (1.0~20121201-3.7) UNRELEASED; urgency=low
+
+  * James version bump
+
+ -- Eric <ewust@umich.edu>  Sat, 01 Dec 2012 06:03:30 -0500
+
 trustify (1.0~20121201-3.6) UNRELEASED; urgency=low
 
   * Better vhost selection
+  * -
 
- -- Eric <ewust@umich.edu>  Sat, 01 Dec 2012 01:00:16 -0500
+ -- Eric <ewust@desky.eecs.umich.edu>  Sat, 01 Dec 2012 06:03:28 -0500
 
 trustify (1.0~20121119-3.5) UNRELEASED; urgency=low
 
