@@ -489,8 +489,7 @@ class Configurator(object):
                 self.save("Added permanent NameVirtualHost for " + ssl_addrs[0])
 
         return ssl_vhost
-        
-        return ssl_vhost
+
 
     def redirect_all_ssl(self, ssl_vhost):
         """
