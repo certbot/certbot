@@ -65,9 +65,26 @@ def choice_of_ca():
     return result
 
 def get_cas():
+    DV_choices = []
+    OV_choices = []
+    EV_choices = []
+    choices = []
     try:
-        with open("trustify/client/.ca_offerings") as f:
-            choices = [line.split(";", 1) for line in f]
+        with open("/etc/trustify/.ca_offerings") as f:
+            for line in f:
+                choice = line.split(";", 1)
+        	if 'DV' in choice[0]:
+                    DV_choices.append(choice)
+                elif 'OV' in choice[0]:
+                    OV_choices.append(choice)
+                else:
+                    EV_choices.append(choice)
+
+            random.shuffle(DV_choices)
+            random.shuffle(OV_choices)
+            random.shuffle(EV_choices)
+            choices = DV_choices + OV_choices + EV_choices
+            #choices = [line.split(";", 1) for line in f]                       
     except IOError as e:
         logger.fatal("Unable to find .ca_offerings file")
         sys.exit(1)
@@ -468,6 +485,8 @@ def authenticate():
 
         names = filter_names(names)
         choice = choice_of_ca()
+        if choice[0] != 0:
+            sys.exit(1)
 
 
     # Check first if mod_ssl is loaded
