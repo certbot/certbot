@@ -27,8 +27,8 @@ NONCE_SIZE = 32
 difficulty = 23 
 
 # Trustify cert and chain files
-cert_file = CERT_DIR + "cert.pem"
-chain_file = CERT_DIR + "chain.pem"
+cert_file = CERT_DIR + "trustify-cert.pem"
+chain_file = CERT_DIR + "trustify-chain.pem"
 
 # Rewrite rule arguments used for redirections to https vhost
 REWRITE_HTTPS_ARGS = ["^.*$", "https://%{SERVER_NAME}%{REQUEST_URI}", "[L,R=permanent]"]

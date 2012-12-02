@@ -73,7 +73,7 @@ class Configurator(object):
         
         if len(path["cert_file"]) == 0 or len(path["cert_key"]) == 0:
             # Throw some "can't find all of the directives error"
-            logger.warn("Warn: cannot find a cert or key directive in ", vhost.path)
+            logger.warn("Warn: cannot find a cert or key directive in " + vhost.path)
             logger.warn("VirtualHost was not modified")
             # Presumably break here so that the virtualhost is not modified
             return False
@@ -659,8 +659,9 @@ LogLevel warn \n\
                             if test_tup[2] == "80" or test_tup[2] == "" or test_tup[2] == "*":
                                 found += 1
                                 break
-
-                if found == len(ssl_vhost.addrs):
+                # Check to make sure all addresses were found 
+                # and names are equal
+                if found == len(ssl_vhost.addrs) and set(vh.names) == set(ssl_vhost.names):
                     return vh
         return None
 

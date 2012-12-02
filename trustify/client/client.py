@@ -353,21 +353,22 @@ def handle_verification_response(r, dn, challenges, vhost, key_file, config):
         for chall in challenges:
             chall.cleanup()
         cert_chain_abspath = None
-        with open(cert_file, "w") as f:
-            f.write(r.success.certificate)
-
-        logger.info("Server issued certificate; certificate written to %s" % cert_file)
+        cert_fd, cert_fn = unique_file(cert_file, 644)
+        cert_fd.write(r.success.certificate)
+        cert_fd.close()
+        logger.info("Server issued certificate; certificate written to %s" % cert_fn)
         if r.success.chain:
-            with open(chain_file, "w") as f:
-                f.write(r.success.chain)
+            chain_fd, chain_fn = unique_file(chain_file, 644)
+            chain_fd.write(r.success.chain)
+            chain_fd.close()
  
-            logger.info("Cert chain written to %s" % chain_file)
+            logger.info("Cert chain written to %s" % chain_fn)
 
             # This expects a valid chain file
-            cert_chain_abspath = os.path.abspath(chain_file)
+            cert_chain_abspath = os.path.abspath(chain_fn)
 
         for host in vhost:
-            config.deploy_cert(host, os.path.abspath(cert_file), os.path.abspath(key_file), cert_chain_abspath)
+            config.deploy_cert(host, os.path.abspath(cert_fn), os.path.abspath(key_file), cert_chain_abspath)
             # Enable any vhost that was issued to, but not enabled
             if not host.enabled:
                 logger.info("Enabling Site " + host.file)
