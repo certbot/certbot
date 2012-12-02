@@ -440,6 +440,7 @@ class Configurator(object):
         self.aug.load()
         # Delete the VH addresses because they may change here
         del nonssl_vhost.addrs[:]
+        ssl_addrs = []
 
         # change address to address:443, address:80
         ssl_addr_p = self.aug.match("/files"+ssl_fp+"//VirtualHost/arg")
@@ -454,6 +455,7 @@ class Configurator(object):
             self.aug.set(avail_addr_p[i], avail_new_addr)
             self.aug.set(ssl_addr_p[i], ssl_new_addr)
             nonssl_vhost.addrs.append(avail_new_addr)
+            ssl_addrs.append[ssl_new_addr]
 
         # Add directives
         vh_p = self.aug.match("/files"+ssl_fp+"//VirtualHost")
@@ -464,15 +466,29 @@ class Configurator(object):
         self.add_dir(vh_p[0], "SSLCertificateFile", "/etc/ssl/certs/ssl-cert-snakeoil.pem")
         self.add_dir(vh_p[0], "SSLCertificateKeyFile", "/etc/ssl/private/ssl-cert-snakeoil.key")
         self.add_dir(vh_p[0], "Include", CONFIG_DIR + "options-ssl.conf")
- 
-        # We know the length is one because of the assertion above
-        ssl_vhost = self.__create_vhost(vh_p[0])
-        self.vhosts.append(ssl_vhost)
 
         # Log actions and create save notes
         logger.info("Created an SSL vhost at %s" % ssl_fp)
         self.save_notes += 'Created ssl vhost at %s\n' % ssl_fp
         self.save("Making new ssl vhost at " + ssl_fp)
+ 
+        # We know the length is one because of the assertion above
+        ssl_vhost = self.__create_vhost(vh_p[0])
+        self.vhosts.append(ssl_vhost)
+
+        # Check if nonssl_vhost's address was NameVirtualHost
+        # NOTE: Searhes through Augeas seem to ruin changes to directives
+        #       The configuration must also be saved before being searched
+        #       for the new directives; For these reasons... this is tacked
+        #       on after fully creating the new vhost
+        # TODO: Figure out what to do for vhosts with multiple addresses
+        if len(nonssl_vhost.addrs) == 1:
+            if self.is_name_vhost(nonssl_vhost.addrs[0]) and not self.is_name_vhost(ssl_addrs[0]):
+                self.add_name_vhost(ssl_addrs[0])
+                logger.info("Enabling NameVirtualHosts on " + ssl_addrs[0])
+                self.save("Added permanent NameVirtualHost for " + ssl_addrs[0])
+
+        return ssl_vhost
         
         return ssl_vhost
 
