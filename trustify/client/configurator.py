@@ -455,7 +455,7 @@ class Configurator(object):
             self.aug.set(avail_addr_p[i], avail_new_addr)
             self.aug.set(ssl_addr_p[i], ssl_new_addr)
             nonssl_vhost.addrs.append(avail_new_addr)
-            ssl_addrs.append[ssl_new_addr]
+            ssl_addrs.append(ssl_new_addr)
 
         # Add directives
         vh_p = self.aug.match("/files"+ssl_fp+"//VirtualHost")
