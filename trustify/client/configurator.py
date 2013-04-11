@@ -3,17 +3,18 @@ import subprocess
 import re
 import os
 import sys
+import stat
 import socket
 import time
 import shutil
 
-from trustify.client.CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES
-#from CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES, REWRITE_HTTPS_ARGS, CONFIG_DIR
-from trustify.client.CONFIG import REWRITE_HTTPS_ARGS, CONFIG_DIR
-from trustify.client import logger
-#import logger
+#from trustify.client.CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES
+from CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES, REWRITE_HTTPS_ARGS, CONFIG_DIR, WORK_DIR
+#from trustify.client.CONFIG import REWRITE_HTTPS_ARGS, CONFIG_DIR, WORK_DIR
+#from trustify.client import logger
+import logger
 
-#TODO - Need an initialization routine... make sure directories exist..ect
+# Question: Are there attacks that can result from modifying CONFIG file?
 
 class VH(object):
     def __init__(self, filename_path, vh_path, vh_addrs, is_ssl, is_enabled):
@@ -45,6 +46,9 @@ class Configurator(object):
         self.vhosts = self.get_virtual_hosts()
         # Add name_server association dict
         self.assoc = dict()
+        # Verify that all directories exist with proper permissions
+        self.verify_dir_setup()
+        # See if any temporary changes need to be recovered
         self.recovery_routine()
 
     # TODO: This function can be improved to ensure that the final directives 
@@ -152,17 +156,29 @@ class Configurator(object):
         virtual host addresses
         """
         all_names = set()
+
+        # Kept in same function to avoid multiple compilations of the regex
+        priv_ip_regex = "(^127\.0\.0\.1)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)"
+        privateIPs = re.compile(priv_ip_regex)
+
         for v in self.vhosts:
             all_names.update(v.names)
             for a in v.addrs:
                 a_tup = a.partition(":")
-                try:
-                    socket.inet_aton(a_tup[0])
-                    all_names.add(socket.gethostbyaddr(a_tup[0])[0])
-                except (socket.error, socket.herror, socket.timeout):
-                    continue
+
+                # If it isn't a private IP, do a reverse DNS lookup
+                if not privateIPs.match(a_tup[0]):
+                    try:
+                        socket.inet_aton(a_tup[0])
+                        all_names.add(socket.gethostbyaddr(a_tup[0])[0])
+                    except (socket.error, socket.herror, socket.timeout):
+                        continue
 
         return all_names
+
+    def __is_private_ip(ipaddr):
+        re.compile()
+        
 
     def __add_servernames(self, host):
         """
@@ -814,13 +830,37 @@ LogLevel warn \n\
             if len(files) != 0:
                 self.revert_config(files)
 
+    def verify_dir_setup(self):
+        '''
+        Make sure that directories are setup with appropriate permissions
+        Aim for defensive coding... make sure all input files 
+        have permissions of root
+        '''
+        self.__make_or_verify_restricted_dir(CONFIG_DIR)
+        self.__make_or_verify_restricted_dir(WORK_DIR)
+        self.__make_or_verify_restricted_dir(BACKUP_DIR)
+
+    def __make_or_verify_restricted_dir(self, directory, permissions=0755):
+        if os.path.isdir(directory):
+            if not self.__check_permissions(directory, permissions):
+                logger.fatal(directory + " exists and does not contain the proper permissions or owner (root)")
+                sys.exit(57)
+        else:
+            os.makedirs(directory, permissions)
+
+    def __check_permissions(self, filepath, mode, uid=0):
+        file_stat = os.stat(filepath)
+        if stat.S_IMODE(file_stat.st_mode) != mode:
+            return False
+        return file_stat.st_uid == uid
+
     def standardize_excl(self):
         '''
         Standardize the excl arguments for the Httpd lens in Augeas
         Servers sometimes give incorrect defaults
         '''
-        #attempt to protect against augeas error in 0.10.0 - ubuntu
-        # *.augsave -> /*.augsave upons augeas.load()
+        # attempt to protect against augeas error in 0.10.0 - ubuntu
+        # *.augsave -> /*.augsave upon augeas.load()
         # Try to avoid bad httpd files
         # There has to be a better way... but after a day and a half of testing
         # I had no luck
@@ -1088,7 +1128,7 @@ def main():
     #config.recover_checkpoint(1)
     """
     #config.display_checkpoints()
-    #config.configtest()
+    config.configtest()
     """
     # Testing redirection and make_vhost_ssl
     ssl_vh = None
