@@ -167,7 +167,7 @@ class Client(object):
     def check_payment(r):
         while r.challenge and all_payment_challenge(r):
             # dont need to change domain names here
-            paymentChallenges, temp = challenge_factory(r, os.path.abspath(req_file), os.path.abspath(key_file), config)
+            paymentChallenges, temp = challenge_factory(r)
             for chall in paymentChallenges:
                 chall.perform(quiet=self.curses)
 
@@ -246,7 +246,7 @@ class Client(object):
         if sni_todo:
             # SNI_Challenge can satisfy many sni challenges at once so only 
             # one "challenge object" is issued for all sni_challenges
-            challenges.append(SNI_Challenge(sni_todo, os.path.abspath(req_filepath), os.path.abspath(key_filepath), self.config))
+            challenges.append(SNI_Challenge(sni_todo, os.path.abspath(self.csr_file), os.path.abspath(self.key_file), self.config))
             logger.debug(sni_todo)
 
         return challenges
