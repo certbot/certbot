@@ -4,6 +4,7 @@
 
 import getopt
 import os
+import sys
 
 from trustify.client import client
 
@@ -21,6 +22,7 @@ def main():
         sys.exit(2)
 
     server = None
+    csr = None
     privkey = None
     curses = True
     names = args
@@ -43,7 +45,7 @@ def main():
         else:
             server = "ca.theobroma.info"
     
-    c = client.client(server, args, csr, privkey, curses)
+    c = client.Client(server, args, csr, privkey, curses)
     c.authenticate()
 
 def usage():

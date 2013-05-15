@@ -34,7 +34,7 @@ class VH(object):
 
 class Configurator(object):
     
-    def __init__(self):
+    def __init__(self, server_root=SERVER_ROOT):
         # TODO: this instantiation can be optimized to only load Httd 
         #       relevant files
         # Set Augeas flags to save backup

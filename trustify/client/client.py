@@ -28,8 +28,18 @@ from trustify.client.CONFIG import SERVER_ROOT, KEY_DIR, CERT_DIR
 allow_raw_ipv6_server = False
 RSA_KEY_SIZE = 2048
 
+
 class Client(object):
+    # In case of import, dialog needs scope over the class
+    dialog = None
+
     def __init__(self, ca_server, domains=[], cert_signing_request=None, private_key=None, use_curses=True):
+        global dialog
+
+        self.curses = use_curses
+        if self.curses:
+            import dialog
+
         # Logger needs to be initialized before Configurator
         self.init_logger()
         self.config = configurator.Configurator(SERVER_ROOT)
@@ -40,7 +50,7 @@ class Client(object):
         else:
             self.names = self.get_all_names()
         self.csr_file = cert_signing_request
-        self.key_file = privkey
+        self.key_file = private_key
 
         # If CSR is provided, the private key should also be provided.
         # TODO: Make sure key was actually used in CSR
@@ -48,10 +58,6 @@ class Client(object):
         if self.csr_file and not self.key_file:
             logger.fatal("Please provide the private key file used in generating the provided CSR")
             sys.exit(1)
-
-        self.curses = use_curses
-        if self.curses:
-            import dialog
 
         self.sanity_check_names([ca_server] + domains)
 
@@ -83,11 +89,11 @@ class Client(object):
 
         # Perform all "client knows first" challenges
         for challenge in challenges:
-        if not challenge.perform(quiet=self.curses):
-            # TODO: In this case the client should probably send a failure
-            # to the server.
-            logger.fatal("challenge failed")
-            sys.exit(1)
+            if not challenge.perform(quiet=self.curses):
+                # TODO: In this case the client should probably send a failure
+                # to the server.
+                logger.fatal("challenge failed")
+                sys.exit(1)
         logger.info("Configured Apache for challenges; waiting for verification...")
 
         r = self.notify_server_of_completion(r)
@@ -463,7 +469,7 @@ class Client(object):
 
     def sanity_check_names(self, names):
         for name in names:
-            assert is_hostname_sane(name), `name` + " is an impossible hostname"
+            assert self.is_hostname_sane(name), `name` + " is an impossible hostname"
 
     def is_hostname_sane(self, hostname):
         """
