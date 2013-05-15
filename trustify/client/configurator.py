@@ -14,7 +14,8 @@ from trustify.client.CONFIG import REWRITE_HTTPS_ARGS, CONFIG_DIR, WORK_DIR
 from trustify.client import logger
 #import logger
 
-# Question: Are there attacks that can result from modifying CONFIG file?
+# Question: Am I missing any attacks that can result from modifying CONFIG file?
+# Configurator should be turned into a Singleton
 
 class VH(object):
     def __init__(self, filename_path, vh_path, vh_addrs, is_ssl, is_enabled):
@@ -493,7 +494,7 @@ class Configurator(object):
         self.vhosts.append(ssl_vhost)
 
         # Check if nonssl_vhost's address was NameVirtualHost
-        # NOTE: Searhes through Augeas seem to ruin changes to directives
+        # NOTE: Searches through Augeas seem to ruin changes to directives
         #       The configuration must also be saved before being searched
         #       for the new directives; For these reasons... this is tacked
         #       on after fully creating the new vhost
