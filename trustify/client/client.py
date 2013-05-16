@@ -12,7 +12,7 @@ import urllib2
 import os, grp, pwd, sys, time, random, sys
 import hashlib
 import subprocess
-# TODO: support a mode where use of interactive prompting is forbidden
+from M2Crypto import EVP, X509, RSA
 
 from trustify.protocol.chocolate_pb2 import chocolatemessage
 from trustify.client.sni_challenge import SNI_Challenge
@@ -71,18 +71,18 @@ class Client(object):
 
         # Display choice of CA screen
         # TODO: Use correct server depending on CA
-        choice = choice_of_ca()
+        choice = self.choice_of_ca()
 
         # Check first if mod_ssl is loaded
-        if not config.check_ssl_loaded():
+        if not self.config.check_ssl_loaded():
             logger.info("Loading mod_ssl into Apache Server")
-            config.enable_mod("ssl")
+            self.config.enable_mod("ssl")
         
         key_pem, csr_pem = self.get_key_csr_pem()
         
-        r, k = self.send_request(key_pem, csr_pem, names)
+        r, k = self.send_request(key_pem, csr_pem, self.names)
 
-        challenges = challenge_factory(r)
+        challenges = self.challenge_factory(r)
 
         # Find set of virtual hosts to deploy certificates to
         vhost = self.get_virtual_hosts(self.names)
@@ -97,7 +97,6 @@ class Client(object):
         logger.info("Configured Apache for challenges; waiting for verification...")
 
         r = self.notify_server_of_completion(r)
-
         r = self.check_payment(r)
 
         self.handle_verification_response(r, challenges, vhost)
@@ -135,13 +134,13 @@ class Client(object):
             self.config.restart(quiet=self.curses)
 
             if self.curses:
-                dialog.Dialog().msgbox("\nCongratulations! You have successfully enabled " + gen_https_names(self.names) + "!", width=70)
-                self.config.enable_mod("rewrite")
-                if by_default():
+                dialog.Dialog().msgbox("\nCongratulations! You have successfully enabled " + self.gen_https_names(self.names) + "!", width=70)
+                if self.by_default():
+                    self.config.enable_mod("rewrite")
                     self.redirect_to_ssl(vhost)
                     self.config.restart(quiet=self.curses)     
             else:
-                logger.info("Congratulations! You have successfully enabled " + gen_https_names(self.names) + "!")
+                logger.info("Congratulations! You have successfully enabled " + self.gen_https_names(self.names) + "!")
 
         elif r.failure.IsInitialized():
             logger.fatal("Server reported failure.")
@@ -151,7 +150,7 @@ class Client(object):
             logger.fatal("Unexpected server verification response!")
             sys.exit(43)
 
-    def all_payment_challenge(r):
+    def all_payment_challenge(self, r):
         if not r.challenge:
             return False
         for chall in r.challenge:
@@ -170,10 +169,10 @@ class Client(object):
                  self.config.enable_site(redirect_vhost)
                  logger.info("Enabling available site: " + redirect_vhost.file)
 
-    def check_payment(r):
-        while r.challenge and all_payment_challenge(r):
+    def check_payment(self, r, k):
+        while r.challenge and self.all_payment_challenge(r):
             # dont need to change domain names here
-            paymentChallenges, temp = challenge_factory(r)
+            paymentChallenges = self.challenge_factory(r)
             for chall in paymentChallenges:
                 chall.perform(quiet=self.curses)
 
@@ -185,7 +184,7 @@ class Client(object):
             proceed_msg.proceed.polldelay = 60
             # Send the proceed message
             # this used to be k?
-            r = self.decode(self.do(self.upstream, proceed_msg))
+            r = self.decode(self.do(self.upstream, k))
 
         while r.proceed.IsInitialized():
             if r.proceed.IsInitialized():
@@ -194,11 +193,12 @@ class Client(object):
                 time.sleep(delay)
                 k.session = r.session
                 # this used to be k?
-                r = self.decode(self.do(self.upstream, proceed_msg))
+                r = self.decode(self.do(self.upstream, k))
                 logger.debug(r)
         return r
 
-    def notify_server_of_completion(self, r):
+    # Figure out k's purpose..
+    def notify_server_of_completion(self, r, k):
         did_it = chocolatemessage()
         self.init_message(did_it)
         did_it.session = r.session
@@ -211,7 +211,7 @@ class Client(object):
         delay = 5
 
         # TODO: Check this while statement
-        while r.proceed.IsInitialized() or (r.challenge and not all_payment_challenge(r)):
+        while r.proceed.IsInitialized() or (r.challenge and not self.all_payment_challenge(r)):
             if r.proceed.IsInitialized():
                 delay = min(r.proceed.polldelay, 60)
             logger.debug("waiting %d" % delay)
@@ -263,7 +263,7 @@ class Client(object):
         self.init_message(k)
         self.init_message(m)
         logger.info("Creating request; generating hashcash...")
-        self.make_request(m, csr_pem)
+        self.make_request(m, csr_pem, quiet=self.curses)
         self.sign_message(key_pem, m)
         logger.info("Created request; sending to server...")
         logger.debug(m)
@@ -284,11 +284,11 @@ class Client(object):
         
         return r, k
 
-    def make_request(self, m, csr_pem):
-        m.request.recipient = server
+    def make_request(self, m, csr_pem, quiet=False):
+        m.request.recipient = self.server
         m.request.timestamp = int(time.time())
         m.request.csr = csr_pem
-        hashcash_cmd = ["hashcash", "-P", "-m", "-z", "12", "-b", `difficulty`, "-r", server]
+        hashcash_cmd = ["hashcash", "-P", "-m", "-z", "12", "-b", `difficulty`, "-r", self.server]
         if quiet:
             hashcash = subprocess.Popen(hashcash_cmd, preexec_fn=drop_privs, shell= False, stdout=subprocess.PIPE, stderr=open("/dev/null", "w")).communicate()[0].rstrip()
         else:
@@ -304,11 +304,11 @@ class Client(object):
         key_pem = None
         csr_pem = None
         if not self.key_file:
-            key_pem = make_key(RSA_KEY_SIZE)
+            key_pem = self.make_key(RSA_KEY_SIZE)
             # Save file
             if not os.path.isdir(KEY_DIR):
                 os.makedirs(KEY_DIR, 0700)
-            key_f, self.key_file = self.unique_file(KEY_DIR + "key-trustify.pem", 0600)
+            key_f, self.key_file = unique_file(KEY_DIR + "key-trustify.pem", 0600)
             key_f.write(key_pem)
             key_f.close()
         else:
@@ -319,12 +319,12 @@ class Client(object):
                 sys.exit(1)
 
         if not self.csr_file:
-            csr_pem = make_csr(self.names)
+            csr_pem = self.make_csr(self.names)
             # Save CSR
             if not os.path.isdir(CERT_DIR):
                 os.makedirs(CERT_DIR, 0755)
             csr_f, self.csr_file = unique_file(CERT_DIR + "csr-trustify.pem", 0644)
-            csr_f.write(csr)
+            csr_f.write(csr_pem)
             csr_f.close()
         else:
             try:
@@ -337,7 +337,6 @@ class Client(object):
 
 
     # based on M2Crypto unit test written by Toby Allsopp
-    from M2Crypto import EVP, X509, RSA
 
     def make_key(self, bits=RSA_KEY_SIZE):
         """
@@ -362,6 +361,7 @@ class Client(object):
         x.set_pubkey(pk)
         name = x.get_subject()
         name.CN = domains[0]
+        extstack = X509.X509_Extension_Stack()
         for d in domains:
             ext = X509.new_extension('subjectAltName', 'DNS:%s' % d)
             extstack.push(ext)
@@ -402,7 +402,7 @@ class Client(object):
         m.session = ""
 
     def sign_message(self, key, m):
-        m.request.sig = __rsa_sign(key, ("(%d) (%s) (%s)" % (m.request.timestamp, m.request.recipient, m.request.csr)))
+        m.request.sig = self.__rsa_sign(key, ("(%d) (%s) (%s)" % (m.request.timestamp, m.request.recipient, m.request.csr)))
         
     def filter_names(self, names):
         d = dialog.Dialog()
@@ -414,7 +414,7 @@ class Client(object):
 
     def choice_of_ca(self):
         d = dialog.Dialog()
-        choices = get_cas()
+        choices = self.get_cas()
 
         result = d.menu("Pick a Certificate Authority.  They're all unique and special!", width=70, choices=choices)
 
@@ -423,7 +423,7 @@ class Client(object):
 
         return result
 
-    def get_cas():
+    def get_cas(self):
         DV_choices = []
         OV_choices = []
         EV_choices = []
@@ -451,7 +451,7 @@ class Client(object):
         return choices
 
     def get_all_names(self):
-	self.names = config.get_all_names()
+	self.names = self.config.get_all_names()
         
         if not self.names:
             logger.fatal("No domain names were found in your apache config")
