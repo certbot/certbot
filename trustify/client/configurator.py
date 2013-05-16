@@ -1024,6 +1024,11 @@ LogLevel warn \n\
                     nf_fd.write(filename + '\n')
 
     def recover_checkpoint(self, rollback = 1):
+        # Sanity check input
+        if type(rollback) is not int or rollbackrollback < 1:
+            logger.error("Rollback argument must be a positive integer")
+            return
+
         backups = os.listdir(BACKUP_DIR)
         backups.sort()
 

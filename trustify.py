@@ -37,8 +37,16 @@ def main():
         elif o == "--server":
             server = a
         elif o == "--rollback":
-        #TODO: Call code to rollback
+            from trustify.client import configurator
+            config = configurator.Configurator()
+            config.recover_checkpoint(a)
             continue
+        elif o == "--view-checkpoints":
+            from trustify.client import configurator
+            config = configurator.Configurator()
+            config.display_checkpoints()
+            sys.exit(0)
+            
     if not server:
         if "CHOCOLATESERVER" in os.environ:
             server = os.environ["CHOCOLATESERVER"]
@@ -49,7 +57,7 @@ def main():
     c.authenticate()
 
 def usage():
-    print "Available options: --text, --privkey=, --csr=, --server=, --rollback="
+    print "Available options: --text, --privkey=, --csr=, --server=, --rollback=, --view-checkpoints"
 
 if __name__ == "__main__":
     main()
