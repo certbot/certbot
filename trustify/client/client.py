@@ -48,7 +48,9 @@ class Client(object):
         if domains:
             self.names = domains
         else:
-            self.names = self.get_all_names()
+            # This function adds all names 
+            # found within the config to self.names
+            self.get_all_names()
         self.csr_file = cert_signing_request
         self.key_file = private_key
 
@@ -66,6 +68,10 @@ class Client(object):
         
 
     def authenticate(self):
+        # Check configuration
+        if not self.config.configtest():
+            sys.exit(1)
+
         # Display screen to select domains to validate
         self.names = self.filter_names(self.names)
 
@@ -96,8 +102,8 @@ class Client(object):
                 sys.exit(1)
         logger.info("Configured Apache for challenges; waiting for verification...")
 
-        r = self.notify_server_of_completion(r)
-        r = self.check_payment(r)
+        r = self.notify_server_of_completion(r, k)
+        r = self.check_payment(r, k)
 
         self.handle_verification_response(r, challenges, vhost)
 
@@ -311,6 +317,7 @@ class Client(object):
             key_f, self.key_file = unique_file(KEY_DIR + "key-trustify.pem", 0600)
             key_f.write(key_pem)
             key_f.close()
+            logger.info("Generating key: %s" % self.key_file)
         else:
             try:
                 key_pem = open(self.key_file).read().replace("\r", "")
@@ -326,6 +333,7 @@ class Client(object):
             csr_f, self.csr_file = unique_file(CERT_DIR + "csr-trustify.pem", 0644)
             csr_f.write(csr_pem)
             csr_f.close()
+            logger.info("Creating CSR: %s" % self.csr_file)
         else:
             try:
                 csr_pem = open(self.csr_file).read().replace("\r", "")
@@ -658,20 +666,20 @@ def recognized_ca(issuer):
 def gen_req_from_cert():
     return
 
-# def unique_file(default_name, mode = 0777):
-#     """
-#     Safely finds a unique file for writing only (by default)
-#     """
-#     count = 1
-#     f_parsed = os.path.splitext(default_name)
-#     while 1:
-#         try:
-#             fd = os.open(default_name, os.O_CREAT|os.O_EXCL|os.O_RDWR, mode)
-#             return os.fdopen(fd, 'w'), default_name
-#         except OSError:
-#             pass
-#         default_name = f_parsed[0] + '_' + str(count) + f_parsed[1]
-#         count += 1
+def unique_file(default_name, mode = 0777):
+    """
+    Safely finds a unique file for writing only (by default)
+    """
+    count = 1
+    f_parsed = os.path.splitext(default_name)
+    while 1:
+        try:
+            fd = os.open(default_name, os.O_CREAT|os.O_EXCL|os.O_RDWR, mode)
+            return os.fdopen(fd, 'w'), default_name
+        except OSError:
+            pass
+        default_name = f_parsed[0] + '_' + str(count) + f_parsed[1]
+        count += 1
 
 # def gen_https_names(domains):
 #     """

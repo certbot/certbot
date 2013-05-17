@@ -903,6 +903,7 @@ LogLevel warn \n\
         """
         Restarts apache server
         """
+        #TODO: This should be written to use the process returncode
         try:
             p = ''
             if quiet:
@@ -929,8 +930,21 @@ LogLevel warn \n\
         self.aug.set("/augeas/load/Httpd/incl[last()]", incl)
 
     def configtest(self):
-        p = subprocess.Popen(['sudo', '/usr/sbin/apache2ctl', 'configtest'], stdout=subprocess.PIPE, stderr=open("/dev/null", 'w')).communicate()[0]
-        print p
+        try:
+            p = subprocess.Popen(['sudo', '/usr/sbin/apache2ctl', 'configtest'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            text = p.communicate()
+        except:
+            logger.fatal("Unable to run /usr/sbin/apache2ctl configtest")
+            sys.exit(1)
+
+        if p.returncode != 0:
+            # Enter recovery routine...
+            logger.error("Configtest failed")
+            logger.error(text[0])
+            logger.error(text[1])
+            return False
+
+        return True
 
     def save(self, mod_conf="Augeas Configuration", reversible=False):
         """
@@ -1076,6 +1090,9 @@ LogLevel warn \n\
     def display_checkpoints(self):
         backups = os.listdir(BACKUP_DIR)
         backups.sort(reverse=True)
+
+        if not backups:
+            print "Trustify has not saved any backups of your apache configuration"
         
         for bu in backups:
             print time.ctime(float(bu))

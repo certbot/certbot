@@ -14,7 +14,7 @@ def main():
         sys.exit("\nOnly root can run trustify.\n")
     # Parse options
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "", ["text", "privkey=", "csr=", "server=", "rollback="])
+        opts, args = getopt.getopt(sys.argv[1:], "", ["text", "view-checkpoints", "privkey=", "csr=", "server=", "rollback="])
     except getopt.GetoptError as err:
         # print help info and exit
         print str(err)
