@@ -17,6 +17,10 @@ from trustify.client import logger
 # Question: Am I missing any attacks that can result from modifying CONFIG file?
 # Configurator should be turned into a Singleton
 
+# Note: Apache 2.4 NameVirtualHost directive is deprecated... all vhost twins
+# are considered name based vhosts by default. The use of the directive will
+# emit a warning.
+
 class VH(object):
     def __init__(self, filename_path, vh_path, vh_addrs, is_ssl, is_enabled):
         self.file = filename_path
@@ -238,21 +242,22 @@ class Configurator(object):
         for p in paths:
             name_vh.append(self.aug.get(p))
         
-        # TODO: Reread NameBasedVirtual host matching... I think it must be an
-        #       exact match
+        # Mixed and matched wildcard NameVirtualHost with VirtualHost
+        # behavior is undefined. Make sure that an exact match exists
+
         # Check for exact match
         for vh in name_vh:
             if vh == addr:
                 return True
-        # Check for general IP_ADDR name_vh
-        tup = addr.partition(":")
-        for vh in name_vh:
-            if vh == tup[0]:
-                return True
-        # Check for straight wildcard name_vh
-        for vh in name_vh:
-            if vh == "*":
-                return True
+        # # Check for general IP_ADDR name_vh
+        # tup = addr.partition(":")
+        # for vh in name_vh:
+        #     if vh == tup[0]:
+        #         return True
+        # # Check for straight wildcard name_vh
+        # for vh in name_vh:
+        #     if vh == "*":
+        #         return True
         # NameVirtualHost directive should be added for this address
         return False
 
@@ -498,12 +503,15 @@ class Configurator(object):
         #       The configuration must also be saved before being searched
         #       for the new directives; For these reasons... this is tacked
         #       on after fully creating the new vhost
-        # TODO: Figure out what to do for vhosts with multiple addresses
-        if len(nonssl_vhost.addrs) == 1:
-            if self.is_name_vhost(nonssl_vhost.addrs[0]) and not self.is_name_vhost(ssl_addrs[0]):
-                self.add_name_vhost(ssl_addrs[0])
-                logger.info("Enabling NameVirtualHosts on " + ssl_addrs[0])
-                self.save("Added permanent NameVirtualHost for " + ssl_addrs[0])
+        need_to_save = False
+        for i in range(len(nonssl_vhost.addrs)):
+            if self.is_name_vhost(nonssl_vhost.addrs[i]) and not self.is_name_vhost(ssl_addrs[i]):
+                self.add_name_vhost(ssl_addrs[i])
+                logger.info("Enabling NameVirtualHosts on " + ssl_addrs[i])
+                need_to_save = True
+        
+        if need_to_save:
+            self.save("Added permanent NameVirtualHost for " + ssl_addrs[i])
 
         return ssl_vhost
 

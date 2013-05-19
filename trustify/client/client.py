@@ -28,7 +28,6 @@ from trustify.client.CONFIG import SERVER_ROOT, KEY_DIR, CERT_DIR
 allow_raw_ipv6_server = False
 RSA_KEY_SIZE = 2048
 
-
 class Client(object):
     # In case of import, dialog needs scope over the class
     dialog = None
@@ -566,34 +565,34 @@ def sha256(m):
 #     return result[1] == "Secure"
 
 
-def rsa_sign(key, data):
-    """
-    Sign this data with this private key.  For client-side use.
+# def rsa_sign(key, data):
+#     """
+#     Sign this data with this private key.  For client-side use.
 
-    @type key: str
-    @param key: PEM-encoded string of the private key.
+#     @type key: str
+#     @param key: PEM-encoded string of the private key.
 
-    @type data: str
-    @param data: The data to be signed. Will be hashed (sha256) prior to
-    signing.
+#     @type data: str
+#     @param data: The data to be signed. Will be hashed (sha256) prior to
+#     signing.
 
-    @return: binary string of the signature
-    """
-    key = str(key)
-    data = str(data)
-    privkey = M2Crypto.RSA.load_key_string(key)
-    return privkey.sign(hashlib.sha256(data).digest(), 'sha256')
+#     @return: binary string of the signature
+#     """
+#     key = str(key)
+#     data = str(data)
+#     privkey = M2Crypto.RSA.load_key_string(key)
+#     return privkey.sign(hashlib.sha256(data).digest(), 'sha256')
 
-def do(upstream, m):
-    u = urllib2.urlopen(upstream, m.SerializeToString())
-    return u.read()
+# def do(upstream, m):
+#     u = urllib2.urlopen(upstream, m.SerializeToString())
+#     return u.read()
 
-def decode(m):
-    return (chocolatemessage.FromString(m))
+# def decode(m):
+#     return (chocolatemessage.FromString(m))
 
-def init(m):
-    m.chocolateversion = 1
-    m.session = ""
+# def init(m):
+#     m.chocolateversion = 1
+#     m.session = ""
 
 def drop_privs():
     nogroup = grp.getgrnam("nogroup").gr_gid
@@ -614,8 +613,8 @@ def drop_privs():
 
 #     if hashcash: m.request.clientpuzzle = hashcash
 
-def sign(key, m):
-    m.request.sig = rsa_sign(key, ("(%d) (%s) (%s)" % (m.request.timestamp, m.request.recipient, m.request.csr)))
+# def sign(key, m):
+#     m.request.sig = rsa_sign(key, ("(%d) (%s) (%s)" % (m.request.timestamp, m.request.recipient, m.request.csr)))
 
 def old_cert(cert_filename, days_left):
     cert = M2Crypto.X509.load_cert(cert_filename)
@@ -841,154 +840,154 @@ def renew(config):
 
 #     return True
 
-def authenticate():
-    """
-    Main call to do DV_SNI validation and deploy the trustify certificate
-    TODO: This should be turned into a class...
-    """
-    global server, names, csr, privkey
+# def authenticate():
+#     """
+#     Main call to do DV_SNI validation and deploy the trustify certificate
+#     TODO: This should be turned into a class...
+#     """
+#     global server, names, csr, privkey
 
-    # Check if root
-    if not os.geteuid()==0:
-        sys.exit("\nOnly root can run trustify\n")
+#     # Check if root
+#     if not os.geteuid()==0:
+#         sys.exit("\nOnly root can run trustify\n")
 
-    if "CHOCOLATESERVER" in os.environ:
-        server = os.environ["CHOCOLATESERVER"]
-    if not server:
-        # Global default value for Chocolate server!
-        server = "ca.theobroma.info"
+#     if "CHOCOLATESERVER" in os.environ:
+#         server = os.environ["CHOCOLATESERVER"]
+#     if not server:
+#         # Global default value for Chocolate server!
+#         server = "ca.theobroma.info"
 
-    assert is_hostname_sane(server), `server` + " is an impossible hostname"
+#     assert is_hostname_sane(server), `server` + " is an impossible hostname"
 
-    upstream = "https://%s/chocolate.py" % server
+#     upstream = "https://%s/chocolate.py" % server
 
 
-    if curses:
-        logger.setLogger(logger.NcursesLogger())
-        logger.setLogLevel(logger.INFO)
-    else:
-        logger.setLogger(sys.stdout)
-        logger.setLogLevel(logger.INFO)
+#     if curses:
+#         logger.setLogger(logger.NcursesLogger())
+#         logger.setLogLevel(logger.INFO)
+#     else:
+#         logger.setLogger(sys.stdout)
+#         logger.setLogLevel(logger.INFO)
         
-    # Logger should be init before config
-    config = configurator.Configurator()
+#     # Logger should be init before config
+#     config = configurator.Configurator()
 
-    if not names:
-	names = config.get_all_names()
+#     if not names:
+# 	names = config.get_all_names()
 
-    if curses:
-        if not names:
-            logger.fatal("No domain names were found in your apache config")
-            logger.fatal("Either specify which names you would like trustify to validate or add server names to your virtual hosts")
-            sys.exit(1)
+#     if curses:
+#         if not names:
+#             logger.fatal("No domain names were found in your apache config")
+#             logger.fatal("Either specify which names you would like trustify to validate or add server names to your virtual hosts")
+#             sys.exit(1)
 
-        names = filter_names(names)
-        choice = choice_of_ca()
-        if choice[0] != 0:
-            sys.exit(1)
-
-
-    # Check first if mod_ssl is loaded
-    if not config.check_ssl_loaded():
-        logger.info("Loading mod_ssl into Apache Server")
-        config.enable_mod("ssl")
-
-    req_file = csr
-    key_file = privkey
-    if csr and privkey:
-        csr_pem = open(req_file).read().replace("\r", "")
-        key_pem = open(key_file).read().replace("\r", "")
-    if not csr or not privkey:
-        # Generate new private key and corresponding csr!
-        key_pem, csr_pem = make_key_and_csr(names, 2048)
-        key_file, req_file = save_key_csr(key_pem, csr_pem)
-        logger.info("Generating key: " + key_file)
-        logger.info("Creating CSR: " + req_file)
-
-    r, k = send_request(key_pem, csr_pem, names)
+#         names = filter_names(names)
+#         choice = choice_of_ca()
+#         if choice[0] != 0:
+#             sys.exit(1)
 
 
-    challenges, dn = challenge_factory(r, os.path.abspath(req_file), os.path.abspath(key_file), config)
+#     # Check first if mod_ssl is loaded
+#     if not config.check_ssl_loaded():
+#         logger.info("Loading mod_ssl into Apache Server")
+#         config.enable_mod("ssl")
 
-    # Find set of virtual hosts to deploy certificates to
-    vhost = set()
-    for name in dn:
-        host = config.choose_virtual_host(name)
-        if host is not None:
-            vhost.add(host)
+#     req_file = csr
+#     key_file = privkey
+#     if csr and privkey:
+#         csr_pem = open(req_file).read().replace("\r", "")
+#         key_pem = open(key_file).read().replace("\r", "")
+#     if not csr or not privkey:
+#         # Generate new private key and corresponding csr!
+#         key_pem, csr_pem = make_key_and_csr(names, 2048)
+#         key_file, req_file = save_key_csr(key_pem, csr_pem)
+#         logger.info("Generating key: " + key_file)
+#         logger.info("Creating CSR: " + req_file)
 
-    for challenge in challenges:
-        if not challenge.perform(quiet=curses):
-            # TODO: In this case the client should probably send a failure
-            # to the server.
-            logger.fatal("challenge failed")
-            sys.exit(1)
-    logger.info("Configured Apache for challenge; waiting for verification...")
+#     r, k = send_request(key_pem, csr_pem, names)
 
-    #############################################################
-    # This whole bottom section should be reworked once the protocol
-    # is finalized... it is currently quite ugly
-    ############################################################
 
-    did_it = chocolatemessage()
-    init(did_it)
-    did_it.session = r.session
-    # This will blindly assert that all of the challenges have been
-    # complied with, by simply copying them from the challenge data
-    # structure into a new completedchallenge structure.  This is
-    # kind of crude, because the client could instead actually build up
-    # a completedchallenge structure piece-by-piece as it actually
-    # complies with challenges (and then send that structure for the
-    # server to look at).  In the existing client, completedchallenge
-    # is only ever sent once _all_ of the (assumed to be dvsni)
-    # challenges have been met, and client-side failure to meet any
-    # challenge is immediately fatal to the client.  In the existing
-    # server, the client's assertion that the client has met any
-    # (assumed to be dvsni) challenge(s) will result in the server
-    # scheduling a test of all challenges.
-    did_it.completedchallenge.extend(r.challenge)
+#     challenges, dn = challenge_factory(r, os.path.abspath(req_file), os.path.abspath(key_file), config)
 
-    r=decode(do(upstream, did_it))
-    logger.debug(r)
-    delay = 5
-    #while r.challenge or r.proceed.IsInitialized():
-    while r.proceed.IsInitialized() or (r.challenge and not all_payment_challenge(r)):
-        if r.proceed.IsInitialized():
-            delay = min(r.proceed.polldelay, 60)
-        logger.debug("waiting %d" % delay)
-        time.sleep(delay)
-        k.session = r.session
-        r = decode(do(upstream, k))
-        logger.debug(r)
+#     # Find set of virtual hosts to deploy certificates to
+#     vhost = set()
+#     for name in dn:
+#         host = config.choose_virtual_host(name)
+#         if host is not None:
+#             vhost.add(host)
 
-    # This should be invoked if a payment is necessary
-    # This is being tested and will have to be cleaned and organized 
-    # once the protocol is finalized.
-    while r.challenge and all_payment_challenge(r):
-        # dont need to change domain names here
-        paymentChallenges, temp = challenge_factory(r, os.path.abspath(req_file), os.path.abspath(key_file), config)
-        for chall in paymentChallenges:
-            chall.perform(quiet=curses)
+#     for challenge in challenges:
+#         if not challenge.perform(quiet=curses):
+#             # TODO: In this case the client should probably send a failure
+#             # to the server.
+#             logger.fatal("challenge failed")
+#             sys.exit(1)
+#     logger.info("Configured Apache for challenge; waiting for verification...")
 
-        logger.info("User has continued Trustify after submitting payment")
-        proceed_msg = chocolatemessage()
-        init(proceed_msg)
-        proceed_msg.session = r.session
-        proceed_msg.proceed.timestamp = int(time.time())
-        proceed_msg.proceed.polldelay = 60
-        # Send the proceed message
-        r = decode(do(upstream, k))
+#     #############################################################
+#     # This whole bottom section should be reworked once the protocol
+#     # is finalized... it is currently quite ugly
+#     ############################################################
 
-        while r.proceed.IsInitialized():
-            if r.proceed.IsInitialized():
-                delay = min(r.proceed.polldelay, 60)
-                logger.debug("waiting %d" % delay)
-                time.sleep(delay)
-                k.session = r.session
-                r = decode(do(upstream, k))
-                logger.debug(r)
+#     did_it = chocolatemessage()
+#     init(did_it)
+#     did_it.session = r.session
+#     # This will blindly assert that all of the challenges have been
+#     # complied with, by simply copying them from the challenge data
+#     # structure into a new completedchallenge structure.  This is
+#     # kind of crude, because the client could instead actually build up
+#     # a completedchallenge structure piece-by-piece as it actually
+#     # complies with challenges (and then send that structure for the
+#     # server to look at).  In the existing client, completedchallenge
+#     # is only ever sent once _all_ of the (assumed to be dvsni)
+#     # challenges have been met, and client-side failure to meet any
+#     # challenge is immediately fatal to the client.  In the existing
+#     # server, the client's assertion that the client has met any
+#     # (assumed to be dvsni) challenge(s) will result in the server
+#     # scheduling a test of all challenges.
+#     did_it.completedchallenge.extend(r.challenge)
 
-    handle_verification_response(r, dn, challenges, vhost, key_file, config)
+#     r=decode(do(upstream, did_it))
+#     logger.debug(r)
+#     delay = 5
+#     #while r.challenge or r.proceed.IsInitialized():
+#     while r.proceed.IsInitialized() or (r.challenge and not all_payment_challenge(r)):
+#         if r.proceed.IsInitialized():
+#             delay = min(r.proceed.polldelay, 60)
+#         logger.debug("waiting %d" % delay)
+#         time.sleep(delay)
+#         k.session = r.session
+#         r = decode(do(upstream, k))
+#         logger.debug(r)
+
+#     # This should be invoked if a payment is necessary
+#     # This is being tested and will have to be cleaned and organized 
+#     # once the protocol is finalized.
+#     while r.challenge and all_payment_challenge(r):
+#         # dont need to change domain names here
+#         paymentChallenges, temp = challenge_factory(r, os.path.abspath(req_file), os.path.abspath(key_file), config)
+#         for chall in paymentChallenges:
+#             chall.perform(quiet=curses)
+
+#         logger.info("User has continued Trustify after submitting payment")
+#         proceed_msg = chocolatemessage()
+#         init(proceed_msg)
+#         proceed_msg.session = r.session
+#         proceed_msg.proceed.timestamp = int(time.time())
+#         proceed_msg.proceed.polldelay = 60
+#         # Send the proceed message
+#         r = decode(do(upstream, k))
+
+#         while r.proceed.IsInitialized():
+#             if r.proceed.IsInitialized():
+#                 delay = min(r.proceed.polldelay, 60)
+#                 logger.debug("waiting %d" % delay)
+#                 time.sleep(delay)
+#                 k.session = r.session
+#                 r = decode(do(upstream, k))
+#                 logger.debug(r)
+
+#     handle_verification_response(r, dn, challenges, vhost, key_file, config)
     
 
 # vim: set expandtab tabstop=4 shiftwidth=4

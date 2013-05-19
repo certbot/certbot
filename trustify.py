@@ -14,7 +14,7 @@ def main():
         sys.exit("\nOnly root can run trustify.\n")
     # Parse options
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "", ["text", "view-checkpoints", "privkey=", "csr=", "server=", "rollback="])
+        opts, args = getopt.getopt(sys.argv[1:], "", ["text", "test", "view-checkpoints", "privkey=", "csr=", "server=", "rollback="])
     except getopt.GetoptError as err:
         # print help info and exit
         print str(err)
@@ -46,7 +46,10 @@ def main():
             config = configurator.Configurator()
             config.display_checkpoints()
             sys.exit(0)
-            
+        elif o == "--test":
+            #put any temporary tests in here
+            continue
+       
     if not server:
         if "CHOCOLATESERVER" in os.environ:
             server = os.environ["CHOCOLATESERVER"]
