@@ -73,12 +73,12 @@ class Configurator(object):
         search = {}
         path = {}
         
-        path["cert_file"] = self.find_directive(self.__case_i("SSLCertificateFile"), None, vhost.path)
-        path["cert_key"] = self.find_directive(self.__case_i("SSLCertificateKeyFile"), None, vhost.path)
+        path["cert_file"] = self.find_directive(self.case_i("SSLCertificateFile"), None, vhost.path)
+        path["cert_key"] = self.find_directive(self.case_i("SSLCertificateKeyFile"), None, vhost.path)
 
         # Only include if a certificate chain is specified
         if cert_chain is not None:
-            path["cert_chain"] = self.find_directive(self.__case_i("SSLCertificateChainFile"), None, vhost.path)
+            path["cert_chain"] = self.find_directive(self.case_i("SSLCertificateChainFile"), None, vhost.path)
         
         if len(path["cert_file"]) == 0 or len(path["cert_key"]) == 0:
             # Throw some "can't find all of the directives error"
@@ -189,7 +189,7 @@ class Configurator(object):
         """
         Helper function for get_virtual_hosts()
         """
-        nameMatch = self.aug.match(host.path + "//*[self::directive=~regexp('%s')] | " + host.path + "//*[self::directive=~regexp('%s')]" % (self.__case_i('ServerName'), self.__case_i('ServerAlias')))
+        nameMatch = self.aug.match("%s//*[self::directive=~regexp('%s')] | %s//*[self::directive=~regexp('%s')]" % (host.path, self.case_i('ServerName'), host.path, self.case_i('ServerAlias')))
         for name in nameMatch:
             args = self.aug.match(name + "/*")
             for arg in args:
@@ -205,7 +205,7 @@ class Configurator(object):
         for arg in args:
             addrs.append(self.aug.get(arg))
         is_ssl = False
-        if len(self.find_directive(self.__case_i("SSLEngine"), "on", path)) > 0:
+        if len(self.find_directive(self.case_i("SSLEngine"), "on", path)) > 0:
             is_ssl = True
         filename = self.get_file_path(path)
         is_enabled = self.is_site_enabled(filename)
@@ -233,7 +233,7 @@ class Configurator(object):
         # search for NameVirtualHost directive for ip_addr
         # check httpd.conf, ports.conf, 
         # note ip_addr can be FQDN although Apache does not recommend it
-        paths = self.find_directive(self.__case_i("NameVirtualHost"), None)
+        paths = self.find_directive(self.case_i("NameVirtualHost"), None)
         name_vh = []
         for p in paths:
             name_vh.append(self.aug.get(p))
@@ -266,7 +266,7 @@ class Configurator(object):
         aug_file_path = "/files" + SERVER_ROOT + "ports.conf"
         self.add_dir_to_ifmodssl(aug_file_path, "NameVirtualHost", addr)
         
-        if len(self.find_directive(self.__case_i("NameVirtualHost"), addr)) == 0:
+        if len(self.find_directive(self.case_i("NameVirtualHost"), addr)) == 0:
             logger.warn("ports.conf is not included in your Apache config...")
             logger.warn("Adding NameVirtualHost directive to httpd.conf")
             self.add_dir_to_ifmodssl("/files" + SERVER_ROOT + "httpd.conf", "NameVirtualHost", addr)
@@ -301,7 +301,7 @@ class Configurator(object):
         # Check for Listen 443
         # TODO: This could be made to also look for ip:443 combo
         # TODO: Need to search only open directives and IfMod mod_ssl.c
-        if len(self.find_directive(self.__case_i("Listen"), "443")) == 0:
+        if len(self.find_directive(self.case_i("Listen"), "443")) == 0:
             logger.debug("No Listen 443 directive found")
             logger.debug("Setting the Apache Server to Listen on port 443")
             self.add_dir_to_ifmodssl("/files" + SERVER_ROOT + "ports.conf", "Listen", "443")
@@ -360,7 +360,7 @@ class Configurator(object):
         insensitive.  Augeas 1.0 allows case insensitive regexes like 
         regexp(/Listen/, 'i'), however the version currently supported
         by Ubuntu 0.10 does not.  Thus I have included my own case insensitive
-        transformation by calling __case_i() on everything to maintain
+        transformation by calling case_i() on everything to maintain
         compatibility.
         """
         # if arg is None:
@@ -375,14 +375,14 @@ class Configurator(object):
         else:
             matches = self.aug.match(start + "//*[self::directive=~regexp('%s')]/*[self::arg='%s']" % (directive, arg))
             
-        includes = self.aug.match(start + "//* [self::directive=~regexp('%s')]/* [label()='arg']" % self.__case_i('Include'))
+        includes = self.aug.match(start + "//* [self::directive=~regexp('%s')]/* [label()='arg']" % self.case_i('Include'))
         
         for include in includes:
             matches.extend(self.find_directive(directive, arg, self.get_include_path(self.strip_dir(start[6:]), self.aug.get(include))))
         
         return matches
 
-    def __case_i(self, string):
+    def case_i(self, string):
         '''
         Returns a sloppy, but necessary version of a case insensitive regex.
         May be replaced by a more proper /i once augeas 1.0 is widely 
@@ -576,8 +576,8 @@ class Configurator(object):
 
         -1 is also returned in case of no redirection/rewrite directives
         """
-        rewrite_path = self.find_directive(self.__case_i("RewriteRule"), None, vhost.path)
-        redirect_path = self.find_directive(self.__case_i("Redirect"), None, vhost.path)
+        rewrite_path = self.find_directive(self.case_i("RewriteRule"), None, vhost.path)
+        redirect_path = self.find_directive(self.case_i("Redirect"), None, vhost.path)
 
         if redirect_path:
             # "Existing Redirect directive for virtualhost"
@@ -734,8 +734,8 @@ LogLevel warn \n\
 
         for vhost in self.vhosts:
             if vhost.ssl:
-                cert_path = self.find_directive(self.__case_i("SSLCertificateFile"), None, vhost.path)
-                key_path = self.find_directive(self.__case_i("SSLCertificateKeyFile"), None, vhost.path)
+                cert_path = self.find_directive(self.case_i("SSLCertificateFile"), None, vhost.path)
+                key_path = self.find_directive(self.case_i("SSLCertificateKeyFile"), None, vhost.path)
                 # Can be removed once find directive can return ordered results
                 if cert_path != 1 or key_path != 1:
                     logger.error("Too many cert or key directives in vhost %s" % vhost.file)

@@ -115,7 +115,7 @@ DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
 
         result:      User Apache configuration includes chocolate sni challenge file
         """
-        if len(self.configurator.find_directive(self.__case_i("Include"), APACHE_CHALLENGE_CONF)) == 0:
+        if len(self.configurator.find_directive(self.case_i("Include"), APACHE_CHALLENGE_CONF)) == 0:
             #print "Including challenge virtual host(s)"
             self.configurator.add_dir("/files" + mainConfig, "Include", APACHE_CHALLENGE_CONF)
 
