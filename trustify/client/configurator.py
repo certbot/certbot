@@ -21,6 +21,19 @@ from trustify.client import logger
 # are considered name based vhosts by default. The use of the directive will
 # emit a warning.
 
+# TODO: Augeas sections ie. <VirtualHost>, <IfModule> beginning and closing
+# tags need to be the same case, otherwise Augeas doesn't recognize them.
+# This is not able to be completely remedied by regular expressions because
+# Augeas views <VirtualHost> </Virtualhost> as an error. This will just
+# require another check_parsing_errors() after all files are included...
+# (after a find_directive search is executed currently)
+
+# Note: This protocol works for filenames with spaces in it, the sites are
+# properly set up and directives are changed appropriately, but Apache won't
+# recognize names in sites-enabled that have spaces. These are not added to the
+# Apache configuration. It may be wise to warn the user if they are trying 
+# to use vhost filenames that contain spaces and offer to change ' ' to '_'
+
 class VH(object):
     def __init__(self, filename_path, vh_path, vh_addrs, is_ssl, is_enabled):
         self.file = filename_path
@@ -40,9 +53,13 @@ class Configurator(object):
     
     def __init__(self, server_root=SERVER_ROOT):
         # TODO: this instantiation can be optimized to only load Httd 
-        #       relevant files
+        #       relevant files - I believe -> NO_MODL_AUTOLOAD
+        # TODO: Use server_root instead SERVER_ROOT
         # Set Augeas flags to save backup
-        self.aug = augeas.Augeas(None, None, 1 << 0)
+        self.aug = augeas.Augeas(flags=augeas.Augeas.SAVE_BACKUP)
+        # Check for errors in parsing files with Augeas
+        self.check_parsing_errors()
+        # This problem has been fixed in Augeas 1.0
         self.standardize_excl()
 
         self.save_notes = ""
@@ -205,7 +222,7 @@ class Configurator(object):
         for arg in args:
             addrs.append(self.aug.get(arg))
         is_ssl = False
-        if len(self.find_directive(self.case_i("SSLEngine"), "on", path)) > 0:
+        if len(self.find_directive(self.case_i("SSLEngine"), self.case_i("on"), path)) > 0:
             is_ssl = True
         filename = self.get_file_path(path)
         is_enabled = self.is_site_enabled(filename)
@@ -218,7 +235,7 @@ class Configurator(object):
         Returns list of virtual hosts found in the Apache configuration
         """
         #Search sites-available, httpd.conf for possible virtual hosts
-        paths = self.aug.match("/files" + SERVER_ROOT + "sites-available//VirtualHost")
+        paths = self.aug.match("/files%ssites-available//*[label()=~regexp('%s')" % (SERVER_ROOT, 'VirtualHost'))
         vhs = []
         for p in paths:
             vhs.append(self.__create_vhost(p))
@@ -245,16 +262,7 @@ class Configurator(object):
         for vh in name_vh:
             if vh == addr:
                 return True
-        # # Check for general IP_ADDR name_vh
-        # tup = addr.partition(":")
-        # for vh in name_vh:
-        #     if vh == tup[0]:
-        #         return True
-        # # Check for straight wildcard name_vh
-        # for vh in name_vh:
-        #     if vh == "*":
-        #         return True
-        # NameVirtualHost directive should be added for this address
+    
         return False
 
     def add_name_vhost(self, addr):
@@ -263,7 +271,7 @@ class Configurator(object):
         Directive is added to ports.conf unless the file doesn't exist
         It is added to httpd.conf as a backup
         """
-        aug_file_path = "/files" + SERVER_ROOT + "ports.conf"
+        aug_file_path = "/files%sports.conf" % SERVER_ROOT
         self.add_dir_to_ifmodssl(aug_file_path, "NameVirtualHost", addr)
         
         if len(self.find_directive(self.case_i("NameVirtualHost"), addr)) == 0:
@@ -332,9 +340,9 @@ class Configurator(object):
         """
         ifMods = self.aug.match(aug_conf_path + "/IfModule/*[self::arg='" + mod + "']")
         if len(ifMods) == 0:
-            self.aug.set(aug_conf_path + "/IfModule[last() + 1]", "")
-            self.aug.set(aug_conf_path + "/IfModule[last()]/arg", mod)
-            ifMods = self.aug.match(aug_conf_path + "/IfModule/*[self::arg='" + mod + "']")
+            self.aug.set("%s/IfModule[last() + 1]" % aug_conf_path, "")
+            self.aug.set("%s/IfModule[last()]/arg" % aug_conf_path, mod)
+            ifMods = self.aug.match("%s/IfModule/*[self::arg='%s']" % (aug_conf_path, mod))
         # Strip off "arg" at end of first ifmod path
         return ifMods[0][:len(ifMods[0]) - 3]
     
@@ -373,21 +381,22 @@ class Configurator(object):
         if arg is None:
             matches = self.aug.match(start + "//*[self::directive=~regexp('%s')]/arg" % directive)
         else:
-            matches = self.aug.match(start + "//*[self::directive=~regexp('%s')]/*[self::arg='%s']" % (directive, arg))
+            matches = self.aug.match(start + "//*[self::directive=~regexp('%s')]/*[self::arg=~regexp('%s')]" % (directive, arg))
             
         includes = self.aug.match(start + "//* [self::directive=~regexp('%s')]/* [label()='arg']" % self.case_i('Include'))
         
         for include in includes:
+            # start[6:] to strip off /files
             matches.extend(self.find_directive(directive, arg, self.get_include_path(self.strip_dir(start[6:]), self.aug.get(include))))
         
         return matches
 
     def case_i(self, string):
-        '''
+        """
         Returns a sloppy, but necessary version of a case insensitive regex.
         May be replaced by a more proper /i once augeas 1.0 is widely 
         supported.
-        '''
+        """
         return '[' + "][".join([c.upper()+c.lower() for c in string]) + ']'
 
     def strip_dir(self, path):
@@ -408,6 +417,24 @@ class Configurator(object):
         searchable path
         Returns path string
         """
+        # Sanity check argument - maybe
+        # Question: what can the attacker do with control over this string
+        # Effect parse file... maybe exploit unknown errors in Augeas
+        # If the attacker can Include anything though... and this function
+        # only operates on Apache real config data... then the attacker has
+        # already won.
+        # Perhaps it is better to simply check the permissions on all 
+        # included files?
+        # check_config to validate apache config doesn't work because it
+        # would create a race condition between the check and this input
+
+        # Check to make sure only expected characters are used <- maybe remove
+        validChars = re.compile("[a-zA-Z0-9.*?_-/]*")
+        matchObj = validChars.match(arg)
+        if matchObj.group() != arg:
+            logger.error("Error: Invalid regexp characters in %s" % arg)
+            return []
+
         # Standardize the include argument based on server root
         if not arg.startswith("/"):
             arg = cur_dir + arg
@@ -428,15 +455,9 @@ class Configurator(object):
             for idx, split in enumerate(splitArg):
                 # * and ? are the two special fnmatch characters 
                 if "*" in split or "?" in split:
-                    # Check to make sure only expected characters are used
-                    validChars = re.compile("[a-zA-Z0-9.*?]*")
-                    matchObj = validChars.match(split)
-                    if matchObj.group() != split:
-                        logger.error("Error: Invalid regexp characters in "+arg)
-                        return []
                     # Turn it into a augeas regex
                     # TODO: Can this instead be an augeas glob instead of regex
-                    splitArg[idx] = "* [label() =~ regexp('" + self.fnmatch_to_re(split) + "')]"
+                    splitArg[idx] = "* [label()=~regexp('%s')]" % self.fnmatch_to_re(split)
             # Reassemble the argument
             arg = "/".join(splitArg)
                     
@@ -484,8 +505,9 @@ class Configurator(object):
         ssl_addrs = []
 
         # change address to address:443, address:80
-        ssl_addr_p = self.aug.match("/files"+ssl_fp+"//VirtualHost/arg")
-        avail_addr_p = self.aug.match("/files"+avail_fp+"//VirtualHost/arg")
+        addr_match = "/files%s//* [label()=~regexp('%s')]/arg"
+        ssl_addr_p = self.aug.match(addr_match % (ssl_fp, self.case_i('VirtualHost')))
+        avail_addr_p = self.aug.match(addr_match % (avail_fp, self.case_i('VirtualHost')))
         for i in range(len(avail_addr_p)):
             avail_old_arg = self.aug.get(avail_addr_p[i])
             ssl_old_arg = self.aug.get(ssl_addr_p[i])
@@ -499,7 +521,7 @@ class Configurator(object):
             ssl_addrs.append(ssl_new_addr)
 
         # Add directives
-        vh_p = self.aug.match("/files"+ssl_fp+"//VirtualHost")
+        vh_p = self.aug.match("/files%s//* [label()=~regexp('%s')]" % (ssl_fp, self.case_i('VirtualHost')))
         if len(vh_p) != 1:
             logger.error("Error: should only be one vhost in %s" % avail_fp)
             sys.exit(1)
@@ -729,15 +751,15 @@ LogLevel warn \n\
         Retrieve all certs and keys set in VirtualHosts on the Apache server
         returns: list of tuples with form [(cert, key)]
         """
-
         cert_key_pairs  = set()
 
         for vhost in self.vhosts:
             if vhost.ssl:
                 cert_path = self.find_directive(self.case_i("SSLCertificateFile"), None, vhost.path)
                 key_path = self.find_directive(self.case_i("SSLCertificateKeyFile"), None, vhost.path)
+
                 # Can be removed once find directive can return ordered results
-                if cert_path != 1 or key_path != 1:
+                if len(cert_path) != 1 or len(key_path) != 1:
                     logger.error("Too many cert or key directives in vhost %s" % vhost.file)
                     sys.exit(40)
 
@@ -756,11 +778,12 @@ LogLevel warn \n\
         avail_fp = vhost_path[6:]
         # This can be optimized...
         while True:
-            find_if = avail_fp.find("/IfModule")
+            # Cast both to lowercase to be case insensitive
+            find_if = avail_fp.lower().find("/ifmodule")
             if  find_if != -1:
                 avail_fp = avail_fp[:find_if]
                 continue
-            find_vh = avail_fp.find("/VirtualHost")
+            find_vh = avail_fp.lower().find("/virtualhost")
             if find_vh != -1:
                 avail_fp = avail_fp[:find_vh]
                 continue
@@ -886,18 +909,37 @@ LogLevel warn \n\
         '''
         Standardize the excl arguments for the Httpd lens in Augeas
         Servers sometimes give incorrect defaults
+        Note: This problem should be fixed in Augeas 1.0.  Unfortunately,
+        Augeas 0.10 appears to be the most popular version currently.
         '''
         # attempt to protect against augeas error in 0.10.0 - ubuntu
         # *.augsave -> /*.augsave upon augeas.load()
         # Try to avoid bad httpd files
         # There has to be a better way... but after a day and a half of testing
         # I had no luck
+        # This is a hack... work around... submit to augeas if still not fixed
+
         excl = ["*.augnew", "*.augsave", "*.dpkg-dist", "*.dpkg-bak", "*.dpkg-new", "*.dpkg-old", "*.rpmsave", "*.rpmnew", "*~", SERVER_ROOT + "*.augsave", SERVER_ROOT + "*~", SERVER_ROOT + "*/*augsave", SERVER_ROOT + "*/*~", SERVER_ROOT + "*/*/*.augsave", SERVER_ROOT + "*/*/*~"]
         
         for i in range(len(excl)):
             self.aug.set("/augeas/load/Httpd/excl[%d]" % (i+1), excl[i])
 
         self.aug.load()
+
+    def check_parsing_errors(self):
+        '''
+        This function checks to see if Augeas was unable to parse any of the
+        Httpd lens files
+        '''
+        error_files = self.aug.match("/augeas//error")
+
+        for e in error_files:
+            # Check to see if it was an error resulting from the use of
+            # the httpd lens 
+            if 'httpd.aug' in self.aug.get(e + '/lens'):
+                # Strip off /augeas/files and /error
+                logger.error('There has been an error in parsing the file: %s' % e[13:len(e) - 6])
+                logger.error(self.aug.get(e + '/message'))
 
     def revert_config(self, mod_files = None):
         """
@@ -1038,7 +1080,6 @@ LogLevel warn \n\
     def create_checkpoint(self, save_files, mod_conf):
         cp_dir = BACKUP_DIR + str(time.time())
         try:
-            #os.makedirs(BACKUP_DIR + datetime.date.today().strftime('%m-%y'))
             os.makedirs(cp_dir)
         except OSError as exception:
             if exception.errno != errno.EEXIST:

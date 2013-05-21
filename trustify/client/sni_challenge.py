@@ -115,7 +115,7 @@ DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
 
         result:      User Apache configuration includes chocolate sni challenge file
         """
-        if len(self.configurator.find_directive(self.case_i("Include"), APACHE_CHALLENGE_CONF)) == 0:
+        if len(self.configurator.find_directive(self.configurator.case_i("Include"), APACHE_CHALLENGE_CONF)) == 0:
             #print "Including challenge virtual host(s)"
             self.configurator.add_dir("/files" + mainConfig, "Include", APACHE_CHALLENGE_CONF)
 
@@ -249,18 +249,6 @@ DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
                     break
             else:
                 addresses.append(vhost.addrs)
-
-            ###################################################
-            # This is a quick fix to protect against private IPs
-            # of EC2
-            # The public ip address isn't actually accessed
-            ###################################################
-
-            #addresses = []
-            #addresses.append([default_addr])
-            #################################################
-            # End quick fix
-            ##############################################
 
         for tup in self.listSNITuple:
             ext = self.generateExtension(self.key, tup[1])
