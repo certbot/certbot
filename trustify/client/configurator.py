@@ -13,7 +13,7 @@ from trustify.client.CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES
 #from CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES, REWRITE_HTTPS_ARGS, CONFIG_DIR, WORK_DIR
 from trustify.client.CONFIG import REWRITE_HTTPS_ARGS, CONFIG_DIR, WORK_DIR
 from trustify.client.CONFIG import TEMP_CHECKPOINT_DIR, IN_PROGRESS_DIR
-from trustify.client import logger
+from trustify.client import logger, trustify_util
 #import logger
 
 # Question: Am I missing any attacks that can result from modifying CONFIG file?
@@ -28,7 +28,9 @@ from trustify.client import logger
 # This is not able to be completely remedied by regular expressions because
 # Augeas views <VirtualHost> </Virtualhost> as an error. This will just
 # require another check_parsing_errors() after all files are included...
-# (after a find_directive search is executed currently)
+# (after a find_directive search is executed currently). It can be a one
+# time check however because all of Trustifies transactions will ensure
+# only properly formed sections are added.
 
 # Note: This protocol works for filenames with spaces in it, the sites are
 # properly set up and directives are changed appropriately, but Apache won't
@@ -37,8 +39,20 @@ from trustify.client import logger
 # to use vhost filenames that contain spaces and offer to change ' ' to '_'
 
 # TODO: Make IfModule completely case-insensitive
-# TODO: Checkpoints are not registering the creaton of enable_site
-# This results in broken links in sites-enabled on revert
+
+# NOTE: NEW_FILES is not transactional... if the files are added and the program
+# quits before Configurator.save() runs and completes, the files will be
+# orphaned on the system. The paths need to be appended to NEW_FILES before  
+# creation.  Though, there doesn't appear to be a clean fix, new_files
+# need to know if they are going to be appended to an IN_PROGRESS or TEMP cp,
+# which may not be apparent at the time of file creation.
+# Idea: Maybe a force_critical_new_file() should be added that simply appends
+# to the path to a recovery_specific file. This wouldn't clear out self.new_files
+# but would only be used in case of a crash... cleared every save, checked at 
+# start...  
+# 
+# However, FILEPATHS and changes to files are transactional.  They are copied
+# over before the updates are made to the existing files.
 
 class VH(object):
     def __init__(self, filename_path, vh_path, vh_addrs, is_ssl, is_enabled):
@@ -822,9 +836,11 @@ LogLevel warn \n\
         """
         if "/sites-available/" in vhost.file:
             index = vhost.file.rfind("/")
-            os.symlink(vhost.file, SERVER_ROOT + "sites-enabled/" + vhost.file[index:])
+            enabled_path = "%ssites-enabled/%s" % (SERVER_ROOT, vhost.file[index:])
+            os.symlink(vhost.file, enabled_path)
             vhost.enabled = True
             self.save_notes += 'Enabled site %s\n' % vhost.file
+            self.new_files.append(enabled_path)
             return True
         return False
     
@@ -1093,7 +1109,7 @@ LogLevel warn \n\
         final_dir = BACKUP_DIR + str(time.time())
         try:
             with open(cp_dir + "CHANGES_SINCE.tmp", 'w') as ft:
-                ft.write("-- %s --" % title)
+                ft.write("-- %s --\n" % title)
                 with open(cp_dir + "CHANGES_SINCE", 'r') as f:
                   ft.write(f.read())
             shutil.move(cp_dir + "CHANGES_SINCE.tmp", cp_dir + "CHANGES_SINCE")

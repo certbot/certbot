@@ -19,6 +19,7 @@ from trustify.client.sni_challenge import SNI_Challenge
 from trustify.client.payment_challenge import Payment_Challenge
 from trustify.client import configurator
 from trustify.client import logger
+from trustify.client import trustify_util
 from trustify.client.CONFIG import difficulty, cert_file, chain_file
 from trustify.client.CONFIG import SERVER_ROOT, KEY_DIR, CERT_DIR
 
@@ -297,9 +298,9 @@ class Client(object):
         m.request.csr = csr_pem
         hashcash_cmd = ["hashcash", "-P", "-m", "-z", "12", "-b", `difficulty`, "-r", self.server]
         if quiet:
-            hashcash = subprocess.Popen(hashcash_cmd, preexec_fn=drop_privs, shell= False, stdout=subprocess.PIPE, stderr=open("/dev/null", "w")).communicate()[0].rstrip()
+            hashcash = subprocess.Popen(hashcash_cmd, preexec_fn=trustify_util.drop_privs, shell= False, stdout=subprocess.PIPE, stderr=open("/dev/null", "w")).communicate()[0].rstrip()
         else:
-            hashcash = subprocess.Popen(hashcash_cmd, preexec_fn=drop_privs, shell= False, stdout=subprocess.PIPE).communicate()[0].rstrip()
+            hashcash = subprocess.Popen(hashcash_cmd, preexec_fn=trustify_util.drop_privs, shell= False, stdout=subprocess.PIPE).communicate()[0].rstrip()
 
         if hashcash: m.request.clientpuzzle = hashcash
 

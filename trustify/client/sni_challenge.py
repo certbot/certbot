@@ -102,6 +102,7 @@ DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
         configText += "</IfModule> \n"
 
         self.checkForApacheConfInclude(mainConfig)
+        self.configurator.new_files.append(APACHE_CHALLENGE_CONF)
         newConf = open(APACHE_CHALLENGE_CONF, 'w')
         newConf.write(configText)
         newConf.close()
@@ -134,6 +135,7 @@ DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
 
         self.updateCertConf(oid, ext)
         subprocess.call(["openssl", "x509", "-req", "-days", "21", "-extfile", CHOC_CERT_CONF, "-extensions", "v3_ca", "-signkey", key, "-out", self.getChocCertFile(nonce), "-in", csr], stdout=open("/dev/null", 'w'), stderr=open("/dev/null", 'w'))
+        self.configurator.new_files.append(self.getChocCertFile(nonce))
 
 
     def generateExtension(self, key, y):
@@ -203,16 +205,7 @@ DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
         """
         self.configurator.revert_challenge_config()
         self.configurator.restart(True)
-        self.__remove_files()
-
-    # TODO: This should be done within configuration NEW_FILES temp cp
-    def __remove_files(self):
-        """
-        Removes all of the temporary SNI files
-        """
-        for tup in self.listSNITuple:
-            remove(self.getChocCertFile(tup[2]))
-        remove(APACHE_CHALLENGE_CONF)
+    
 
     #main call
     def perform(self, quiet=False):
