@@ -116,12 +116,12 @@ class Client(object):
             for chall in challenges:
                 chall.cleanup()
             cert_chain_abspath = None
-            cert_fd, cert_fn = unique_file(cert_file, 644)
+            cert_fd, cert_fn = trustify_util.unique_file(cert_file, 644)
             cert_fd.write(r.success.certificate)
             cert_fd.close()
             logger.info("Server issued certificate; certificate written to %s" % cert_fn)
             if r.success.chain:
-                chain_fd, chain_fn = unique_file(chain_file, 644)
+                chain_fd, chain_fn = trustify_util.unique_file(chain_file, 644)
                 chain_fd.write(r.success.chain)
                 chain_fd.close()
  
@@ -313,9 +313,8 @@ class Client(object):
         if not self.key_file:
             key_pem = self.make_key(RSA_KEY_SIZE)
             # Save file
-            if not os.path.isdir(KEY_DIR):
-                os.makedirs(KEY_DIR, 0700)
-            key_f, self.key_file = unique_file(KEY_DIR + "key-trustify.pem", 0600)
+            trustify_util.make_or_verify_dir(KEY_DIR, 0700)
+            key_f, self.key_file = trustify_util.unique_file(KEY_DIR + "key-trustify.pem", 0600)
             key_f.write(key_pem)
             key_f.close()
             logger.info("Generating key: %s" % self.key_file)
@@ -329,9 +328,8 @@ class Client(object):
         if not self.csr_file:
             csr_pem = self.make_csr(self.names)
             # Save CSR
-            if not os.path.isdir(CERT_DIR):
-                os.makedirs(CERT_DIR, 0755)
-            csr_f, self.csr_file = unique_file(CERT_DIR + "csr-trustify.pem", 0644)
+            trustify_util.make_or_verify_dir(CERT_DIR, 0755)
+            csr_f, self.csr_file = trustify_util.unique_file(CERT_DIR + "csr-trustify.pem", 0644)
             csr_f.write(csr_pem)
             csr_f.close()
             logger.info("Creating CSR: %s" % self.csr_file)
@@ -596,13 +594,6 @@ def sha256(m):
 #     m.chocolateversion = 1
 #     m.session = ""
 
-def drop_privs():
-    nogroup = grp.getgrnam("nogroup").gr_gid
-    nobody = pwd.getpwnam("nobody").pw_uid
-    os.setgid(nogroup)
-    os.setgroups([])
-    os.setuid(nobody)
-
 # def make_request(server, m, csr, names, quiet=False):
 #     m.request.recipient = server
 #     m.request.timestamp = int(time.time())
@@ -666,21 +657,6 @@ def recognized_ca(issuer):
 
 def gen_req_from_cert():
     return
-
-def unique_file(default_name, mode = 0777):
-    """
-    Safely finds a unique file for writing only (by default)
-    """
-    count = 1
-    f_parsed = os.path.splitext(default_name)
-    while 1:
-        try:
-            fd = os.open(default_name, os.O_CREAT|os.O_EXCL|os.O_RDWR, mode)
-            return os.fdopen(fd, 'w'), default_name
-        except OSError:
-            pass
-        default_name = f_parsed[0] + '_' + str(count) + f_parsed[1]
-        count += 1
 
 # def gen_https_names(domains):
 #     """

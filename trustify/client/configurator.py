@@ -38,7 +38,7 @@ from trustify.client import logger
 
 # TODO: Make IfModule completely case-insensitive
 # TODO: Checkpoints are not registering the creaton of enable_site
-# This results in broken links in sites-enabled
+# This results in broken links in sites-enabled on revert
 
 class VH(object):
     def __init__(self, filename_path, vh_path, vh_addrs, is_ssl, is_enabled):
@@ -906,25 +906,9 @@ LogLevel warn \n\
         Aim for defensive coding... make sure all input files 
         have permissions of root
         '''
-        self.__make_or_verify_restricted_dir(CONFIG_DIR)
-        self.__make_or_verify_restricted_dir(WORK_DIR)
-        self.__make_or_verify_restricted_dir(BACKUP_DIR)
-
-    def __make_or_verify_restricted_dir(self, directory, permissions=0755):
-        if os.path.isdir(directory):
-            if not self.__check_permissions(directory, permissions):
-                logger.fatal(directory + " exists and does not contain the proper permissions or owner (root)")
-                sys.exit(57)
-        else:
-            # If this throws errors... meaning a race condition attack.
-            # Allow program to fail...
-            os.makedirs(directory, permissions)
-
-    def __check_permissions(self, filepath, mode, uid=0):
-        file_stat = os.stat(filepath)
-        if stat.S_IMODE(file_stat.st_mode) != mode:
-            return False
-        return file_stat.st_uid == uid
+        trustify_util.make_or_verify_dir(CONFIG_DIR, 0755)
+        trustify_util.make_or_verify_dir(WORK_DIR, 0755)
+        trustify_util.make_or_verify_dir(BACKUP_DIR, 0755)
 
     def standardize_excl(self):
         """
@@ -1124,12 +1108,8 @@ LogLevel warn \n\
         return True
 
     def __add_to_checkpoint(self, cp_dir, save_files):
-        try:
-            os.makedirs(cp_dir)
-        except OSError as exception:
-            if exception.errno != errno.EEXIST:
-                raise
-
+        trustify_util.make_or_verify_dir(cp_dir, 0755)
+        
         existing_filepaths = []
         op_fd = None
         # Open up FILEPATHS differently depending on if it already exists
