@@ -1065,7 +1065,7 @@ LogLevel warn \n\
 
         # If the augeas tree didn't change, no files were saved and a backup
         # should not be created
-        if save_paths:
+        if save_paths or self.new_files:
             save_files = set()
             for p in save_paths:
                 save_files.add(self.aug.get(p)[6:])
@@ -1192,6 +1192,7 @@ LogLevel warn \n\
                     shutil.copy2(cp_dir + '/' + os.path.basename(fp) + '_' + str(idx), fp)
         except:
             # This file is required in all checkpoints.
+            logger.error("Unable to recover files from %s" % cp_dir)
             return 1
         try:
             # Remove any newly added files if they exist
@@ -1251,6 +1252,11 @@ LogLevel warn \n\
             print "Trustify has not saved any backups of your apache configuration"
         # Make sure there isn't anything unexpected in the backup folder
         # There should only be timestamped (float) directories
+        try:
+            float(bu) for bu in backups
+        except:
+            assert(False, "Invalid files in %s" % BACKUP_DIR)
+                
         assert(all(bu.isdigit() for bu in backups))
 
         for bu in backups:
@@ -1265,7 +1271,7 @@ LogLevel warn \n\
                     print "  %s" % fp
             
             try:
-                with open(cp_dir + "/NEW_FILES") as f:
+                with open(BACKUP_DIR + "/NEW_FILES") as f:
                     print "New Configuration Files:"
                     filepaths = f.read().splitlines()
                     for fp in filepaths:
