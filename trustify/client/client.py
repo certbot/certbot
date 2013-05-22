@@ -106,6 +106,8 @@ class Client(object):
 
         self.handle_verification_response(r, challenges, vhost)
 
+        self.config.save("Completed Augeas Authentication")
+
         return
 
     def handle_verification_response(self, r, challenges, vhost):

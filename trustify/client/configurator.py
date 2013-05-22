@@ -7,6 +7,7 @@ import stat
 import socket
 import time
 import shutil
+import errno
 
 from trustify.client.CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES
 #from CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES, REWRITE_HTTPS_ARGS, CONFIG_DIR, WORK_DIR
@@ -243,7 +244,7 @@ class Configurator(object):
         Returns list of virtual hosts found in the Apache configuration
         """
         #Search sites-available, httpd.conf for possible virtual hosts
-        paths = self.aug.match("/files%ssites-available//*[label()=~regexp('%s')" % (SERVER_ROOT, 'VirtualHost'))
+        paths = self.aug.match("/files%ssites-available//*[label()=~regexp('%s')]" % (SERVER_ROOT, self.case_i('VirtualHost')))
         vhs = []
         for p in paths:
             vhs.append(self.__create_vhost(p))
@@ -435,13 +436,14 @@ class Configurator(object):
         # included files?
         # check_config to validate apache config doesn't work because it
         # would create a race condition between the check and this input
-
+        
+        # TODO: Fix this
         # Check to make sure only expected characters are used <- maybe remove
-        validChars = re.compile("[a-zA-Z0-9.*?_-/]*")
-        matchObj = validChars.match(arg)
-        if matchObj.group() != arg:
-            logger.error("Error: Invalid regexp characters in %s" % arg)
-            return []
+        # validChars = re.compile("[a-zA-Z0-9.*?_-/]*")
+        # matchObj = validChars.match(arg)
+        # if matchObj.group() != arg:
+        #     logger.error("Error: Invalid regexp characters in %s" % arg)
+        #     return []
 
         # Standardize the include argument based on server root
         if not arg.startswith("/"):
@@ -1123,14 +1125,24 @@ LogLevel warn \n\
             if exception.errno != errno.EEXIST:
                 raise
 
-        with open(cp_dir + "FILEPATHS", 'r+') as op_fd:
+        existing_filepaths = []
+        op_fd = None
+        # Open up FILEPATHS differently depending on if it already exists
+        if os.path.isfile(cp_dir + "FILEPATHS"):
+            op_fd = open(cp_dir + "FILEPATHS", 'r+')
             existing_filepaths = op_fd.read().splitlines()
-            for idx, filename in enumerate(save_files):
-                if filename not in existing_filepaths:
-                    # Tag files with index so multiple files can have same name
-                    logger.debug("Creating backup of %s" % filename)
-                    shutil.copy2(filename, cp_dir + os.path.basename(filename) + "_" + str(idx))
-                    op_fd.write(filename + '\n')
+        else:
+            op_fd = open(cp_dir + "FILEPATHS", 'w')
+
+        idx = len(existing_filepaths)
+        for filename in save_files:
+            if filename not in existing_filepaths:
+                # Tag files with index so multiple files can 
+                # have the same filename
+                logger.debug("Creating backup of %s" % filename)
+                shutil.copy2(filename, cp_dir + os.path.basename(filename) + "_" + str(idx))
+                op_fd.write(filename + '\n')
+                idx += 1
 
         with open(cp_dir + "CHANGES_SINCE", 'a') as notes_fd:
             #notes_fd.write("-- %s --\n" % mod_conf)
@@ -1186,9 +1198,9 @@ LogLevel warn \n\
                 filepaths = f.read().splitlines()
                 for fp in filepaths:
                     os.remove(fp)
-            except:
-                # This file is optional
-                pass
+        except:
+            # This file is optional
+            pass
 
         try:
             shutil.rmtree(cp_dir)
