@@ -201,11 +201,11 @@ DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
 
         result: Apache server is restored to the pre-challenge state
         """
-        self.configurator.revert_config()
+        self.configurator.revert_challenge_config()
         self.configurator.restart(True)
         self.__remove_files()
 
-
+    # TODO: This should be done within configuration NEW_FILES temp cp
     def __remove_files(self):
         """
         Removes all of the temporary SNI files
@@ -228,7 +228,7 @@ DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
         """
         # Save any changes to the configuration as a precaution
         # About to make temporary changes to the config
-        self.configurator.save("Before performing sni_challenge")
+        self.configurator.save()
 
         addresses = []
         default_addr = "*:443"

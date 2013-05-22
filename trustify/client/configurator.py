@@ -11,6 +11,7 @@ import shutil
 from trustify.client.CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES
 #from CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES, REWRITE_HTTPS_ARGS, CONFIG_DIR, WORK_DIR
 from trustify.client.CONFIG import REWRITE_HTTPS_ARGS, CONFIG_DIR, WORK_DIR
+from trustify.client.CONFIG import TEMP_CHECKPOINT_DIR, IN_PROGRESS_DIR
 from trustify.client import logger
 #import logger
 
@@ -33,6 +34,8 @@ from trustify.client import logger
 # recognize names in sites-enabled that have spaces. These are not added to the
 # Apache configuration. It may be wise to warn the user if they are trying 
 # to use vhost filenames that contain spaces and offer to change ' ' to '_'
+
+# TODO: Make IfModule completely case-insensitive
 
 class VH(object):
     def __init__(self, filename_path, vh_path, vh_addrs, is_ssl, is_enabled):
@@ -72,6 +75,11 @@ class Configurator(object):
         self.verify_dir_setup()
         # See if any temporary changes need to be recovered
         self.recovery_routine()
+        
+        # Note: initialization doesn't check to see if the config is correct
+        # by Apache's standards. This should be done by the client if it is
+        # desired. There may be instances where correct configuration isn't
+        # required on startup.
 
     # TODO: This function can be improved to ensure that the final directives 
     # are being modified whether that be in the include files or in the 
@@ -120,7 +128,7 @@ class Configurator(object):
         if cert_chain:
             self.save_notes += "\tSSLCertificateChainFile %s\n" % cert_chain
         # This is a significant operation, make a checkpoint
-        return self.save("Virtual Server - deploying certificate", False)
+        return self.save()
 
     def choose_virtual_host(self, name, ssl=True):
         """
@@ -533,7 +541,7 @@ class Configurator(object):
         # Log actions and create save notes
         logger.info("Created an SSL vhost at %s" % ssl_fp)
         self.save_notes += 'Created ssl vhost at %s\n' % ssl_fp
-        self.save("Making new ssl vhost at " + ssl_fp)
+        self.save()
  
         # We know the length is one because of the assertion above
         ssl_vhost = self.__create_vhost(vh_p[0])
@@ -552,7 +560,7 @@ class Configurator(object):
                 need_to_save = True
         
         if need_to_save:
-            self.save("Added permanent NameVirtualHost for " + ssl_addrs[i])
+            self.save()
 
         return ssl_vhost
 
@@ -583,7 +591,7 @@ class Configurator(object):
             self.add_dir(general_v.path, "RewriteEngine", "On")
             self.add_dir(general_v.path, "RewriteRule", REWRITE_HTTPS_ARGS)
             self.save_notes += 'Redirecting host in %s to ssl vhost in %s\n' % (general_v.file, ssl_vhost.file)
-            self.save("Redirect all to ssl")
+            self.save()
             return True, general_v
 
     def existing_redirect(self, vhost):
@@ -868,18 +876,25 @@ LogLevel warn \n\
         shutil.copytree(SERVER_ROOT, BACKUP_DIR + "apache2-" + str(time.time()))
     
     def recovery_routine(self):
-        '''
-        Revert all previously modified files. Set up log if it doesn't exist.
-        '''
-        if not os.path.isfile(MODIFIED_FILES):
-            fd = open(MODIFIED_FILES, 'w')
-            fd.close()
-        else:
-            fd = open(MODIFIED_FILES)
-            files = fd.readlines()
-            fd.close()
-            if len(files) != 0:
-                self.revert_config(files)
+        """
+        Revert all previously modified files. First, any changes found in a
+        TEMP_CHECKPOINT_DIR are removed, then IN_PROGRESS changes are removed
+        The order is important. IN_PROGRESS is unable to add files that are
+        already added by a TEMP change.  Thus TEMP must be rolled back first
+        because that will be the 'latest' occurance of the file.
+        """
+        self.revert_challenge_config()
+        if os.path.isdir(IN_PROGRESS_DIR):
+            result = self.__recover_checkpoint(IN_PROGRESS_DIR)
+            if result != 0:
+                # We have a partial or incomplete recovery
+                # Not as egregious
+                # TODO: Additional tests? recovery
+                logger.fatal("Incomplete or failed recovery for %s" % IN_PROGRESS_DIR)
+                sys.exit(68)
+
+            # Need to reload configuration after these changes take effect
+            self.aug.load()
 
     def verify_dir_setup(self):
         '''
@@ -897,6 +912,8 @@ LogLevel warn \n\
                 logger.fatal(directory + " exists and does not contain the proper permissions or owner (root)")
                 sys.exit(57)
         else:
+            # If this throws errors... meaning a race condition attack.
+            # Allow program to fail...
             os.makedirs(directory, permissions)
 
     def __check_permissions(self, filepath, mode, uid=0):
@@ -906,12 +923,12 @@ LogLevel warn \n\
         return file_stat.st_uid == uid
 
     def standardize_excl(self):
-        '''
+        """
         Standardize the excl arguments for the Httpd lens in Augeas
         Servers sometimes give incorrect defaults
         Note: This problem should be fixed in Augeas 1.0.  Unfortunately,
         Augeas 0.10 appears to be the most popular version currently.
-        '''
+        """
         # attempt to protect against augeas error in 0.10.0 - ubuntu
         # *.augsave -> /*.augsave upon augeas.load()
         # Try to avoid bad httpd files
@@ -927,10 +944,10 @@ LogLevel warn \n\
         self.aug.load()
 
     def check_parsing_errors(self):
-        '''
+        """
         This function checks to see if Augeas was unable to parse any of the
         Httpd lens files
-        '''
+        """
         error_files = self.aug.match("/augeas//error")
 
         for e in error_files:
@@ -941,32 +958,20 @@ LogLevel warn \n\
                 logger.error('There has been an error in parsing the file: %s' % e[13:len(e) - 6])
                 logger.error(self.aug.get(e + '/message'))
 
-    def revert_config(self, mod_files = None):
+    def revert_challenge_config(self):
         """
         This function should reload the users original configuration files
         for all saves with reversible=True
         """
-        if mod_files is None:
-            try:
-                mod_fd = open(MODIFIED_FILES, 'r')
-                mod_files = mod_fd.readlines()
-                mod_fd.close()
-            except:
-                logger.fatal("Error opening:", MODIFIED_FILES)
-                sys.exit()
-    
-        try:
-            for f in mod_files:
-                shutil.copy2(f.rstrip() + ".augsave", f.rstrip())
-
+        if os.path.isdir(TEMP_CHECKPOINT_DIR):
+            result = self.__recover_checkpoint(TEMP_CHECKPOINT_DIR)
+            changes = True
+            if result != 0:
+                # We have a partial or incomplete recovery
+                logger.fatal("Incomplete or failed recovery for %s" % TEMP_CHECKPOINT_DIR)
+                sys.exit(67)
+            # Remember to reload Augeas
             self.aug.load()
-            # Clear file
-            mod_fd = open(MODIFIED_FILES, 'w')
-            mod_fd.close()
-        except Exception as e:
-            logger.fatal("Error reverting configuration")
-            logger.fatal(e)
-            sys.exit(36)
 
     def restart(self, quiet=False):
         """
@@ -1015,19 +1020,22 @@ LogLevel warn \n\
 
         return True
 
-    def save(self, mod_conf="Augeas Configuration", reversible=False):
+    def save(self, title=None, temporary=False):
         """
         Saves all changes to the configuration files
-        Backups are stored as *.augsave files
         This function is not transactional
         TODO: Instead rely on challenge to backup all files before modifications
         
-        mod_conf:   string - The title of the save.
-        reversible: boolean - Indicates whether the changes made will be
-                              quickly reversed in the future (challenges)
+        title:     string - The title of the save. If a title is given, the
+                            configuration will be saved as a new checkpoint
+                            and put in a timestamped directory.
+                            `title` has no effect if temporary is true.
+        temporary: boolean - Indicates whether the changes made will be
+                             quickly reversed in the future (challenges)
         """
         save_state = self.aug.get("/augeas/save")
         self.aug.set("/augeas/save", "noop")
+        # Existing Errors
         ex_errs = self.aug.match("/augeas//error")
         try:
             # This is a noop save
@@ -1048,7 +1056,7 @@ LogLevel warn \n\
 
         # Retrieve list of modified files
         # Note: Noop saves can cause the file to be listed twice, I used a 
-        # set to remove this possibility. This is a known augeas error.
+        # set to remove this possibility. This is a known augeas 0.10 error.
         save_paths = self.aug.match("/augeas/events/saved")
 
         # If the augeas tree didn't change, no files were saved and a backup
@@ -1058,7 +1066,7 @@ LogLevel warn \n\
             for p in save_paths:
                 save_files.add(self.aug.get(p)[6:])
 
-            valid, message = self.check_tempfile_saves(save_files, reversible)
+            valid, message = self.check_tempfile_saves(save_files, temporary)
 
             if not valid:
                 logger.fatal(message)
@@ -1067,8 +1075,18 @@ LogLevel warn \n\
                 return False
 
             # Create Checkpoint
-            if not reversible:
-                self.create_checkpoint(save_files, mod_conf)
+            if temporary:
+                self.__add_to_checkpoint(TEMP_CHECKPOINT_DIR, save_files)
+            else:
+                self.__add_to_checkpoint(IN_PROGRESS_DIR, save_files)
+                if title:
+                    success = self.__finalize_checkpoint(progress_dir, title)
+                    if not success:
+                        # This should never happen
+                        # This will be hopefully be cleaned up on the recovery
+                        # routine startup
+                        sys.exit(9)
+                        
 
         self.aug.set("/augeas/save", save_state)
         self.save_notes = ""
@@ -1077,35 +1095,56 @@ LogLevel warn \n\
 
         return True
 
-    def create_checkpoint(self, save_files, mod_conf):
-        cp_dir = BACKUP_DIR + str(time.time())
+    def __finalize_checkpoint(self, cp_dir, title):
+        """
+        Add title to cp_dir CHANGES_SINCE
+        Move cp_dir to Backups directory and rename with timestamp
+        """
+        final_dir = BACKUP_DIR + str(time.time())
+        try:
+            with open(cp_dir + "CHANGES_SINCE.tmp", 'w') as ft:
+                ft.write("-- %s --" % title)
+                with open(cp_dir + "CHANGES_SINCE", 'r') as f:
+                  ft.write(f.read())  
+        except:
+            logger.error("Unable to finalize checkpoint - adding title")
+            return False
+        try:
+            os.rename(cp_dir, final_dir)
+        except:
+            logger.error("Unable to finalize checkpoint, %s -> %s" % cp_dir, final_dir)
+            return False
+        return True
+
+    def __add_to_checkpoint(self, cp_dir, save_files):
         try:
             os.makedirs(cp_dir)
         except OSError as exception:
             if exception.errno != errno.EEXIST:
                 raise
-        #Update cp_dir for cleaner path creation
-        cp_dir = cp_dir + "/"
 
-        with open(cp_dir + "FILEPATHS", 'w') as op_fd:
+        with open(cp_dir + "FILEPATHS", 'r+') as op_fd:
+            existing_filepaths = op_fd.read().splitlines()
             for idx, filename in enumerate(save_files):
-                # Tag files with index so multiple files can have same basename
-                logger.debug("Creating backup of %s" % filename)
-                shutil.copy2(filename, cp_dir + os.path.basename(filename) + "_" + str(idx))
-                op_fd.write(filename + '\n')
+                if filename not in existing_filepaths:
+                    # Tag files with index so multiple files can have same name
+                    logger.debug("Creating backup of %s" % filename)
+                    shutil.copy2(filename, cp_dir + os.path.basename(filename) + "_" + str(idx))
+                    op_fd.write(filename + '\n')
 
-        with open(cp_dir + "CHANGES_SINCE", 'w') as notes_fd:
-            notes_fd.write("-- %s --\n" % mod_conf)
+        with open(cp_dir + "CHANGES_SINCE", 'a') as notes_fd:
+            #notes_fd.write("-- %s --\n" % mod_conf)
             notes_fd.write(self.save_notes)
 
         # Mark any new files that have been created
         # The files will be deleted if the checkpoint is rolledback
+        # Note: This should naturally be a `set` of files
         if self.new_files:
-            with open(cp_dir + "NEW_FILES", 'w') as nf_fd:
+            with open(cp_dir + "NEW_FILES", 'a') as nf_fd:
                 for filename in self.new_files:
                     nf_fd.write(filename + '\n')
 
-    def recover_checkpoint(self, rollback = 1):
+    def rollback_checkpoints(self, rollback = 1):
         # Sanity check input
         if type(rollback) is not int or rollbackrollback < 1:
             logger.error("Rollback argument must be a positive integer")
@@ -1119,54 +1158,93 @@ LogLevel warn \n\
         
         while rollback > 0 and backups:
             cp_dir = BACKUP_DIR + backups.pop()
-            with open(cp_dir + "/FILEPATHS") as f:
-                filepaths = f.read().splitlines()
-                for idx, fp in enumerate(filepaths):
-                    shutil.copy2(cp_dir + '/' + os.path.basename(fp) + '_' + str(idx), fp)
-            try:
-                # Remove any newly added files if they exist
-                with open(cp_dir + "/NEW_FILES") as f:
-                    filepaths = f.read().splitlines()
-                    for fp in filepaths:
-                        os.remove(fp)
-            except:
-                pass
-
-            try:
-                shutil.rmtree(cp_dir)
-            except:
-                logger.error("Unable to remove directory: %s" % cp_dir)
+            result = self.__recover_checkpoint(cp_dir)
+            if result != 0:
+                logger.fatal("Failed to load checkpoint during rollback")
+                sys.exit(39)
             rollback -= 1
 
         self.aug.load()
 
-    def check_tempfile_saves(self, save_files, reversible):
-        protected_fd = open(MODIFIED_FILES, 'r+')
-        protected_files = protected_fd.read().splitlines()
-        for filename in save_files:
-            if filename in protected_files:
-                protected_fd.close()
-                return False, "Attempting to overwrite a reversible file - %s" %filename
-        # No protected files are trying to be overwritten
-        if reversible:
-            for filename in save_files:
-                protected_fd.write(filename + "\n")
+    def __recover_checkpoint(self, cp_dir):
+        """
+        Recover a specific checkpoint provided by cp_dir
 
-        protected_fd.close()
+        returns: 0 success, 1 Unable to revert, -1 Unable to delete
+        """
+        try:
+            with open(cp_dir + "/FILEPATHS") as f:
+                filepaths = f.read().splitlines()
+                for idx, fp in enumerate(filepaths):
+                    shutil.copy2(cp_dir + '/' + os.path.basename(fp) + '_' + str(idx), fp)
+        except:
+            # This file is required in all checkpoints.
+            return 1
+        try:
+            # Remove any newly added files if they exist
+            with open(cp_dir + "/NEW_FILES") as f:
+                filepaths = f.read().splitlines()
+                for fp in filepaths:
+                    os.remove(fp)
+            except:
+                # This file is optional
+                pass
+
+        try:
+            shutil.rmtree(cp_dir)
+        except:
+            logger.error("Unable to remove directory: %s" % cp_dir)
+            return -1
+
+        return 0
+
+    def check_tempfile_saves(self, save_files, temporary):
+        temp_path = "%sFILEPATHS" % TEMP_CHECKPOINT_DIR
+        if os.path.isfile(temp_path):
+            with open(temp_path, 'r') as protected_fd:
+                protected_files = protected_fd.read().splitlines()
+                for filename in protected_files:
+                    if filename in save_files:
+                        return False, "Attempting to overwrite challenge file - %s" % filename
+
         return True, "Successful"
 
+        
+        # protected_fd = open(MODIFIED_FILES, 'r+')
+        # protected_files = protected_fd.read().splitlines()
+        # for filename in save_files:
+        #     if filename in protected_files:
+        #         protected_fd.close()
+        #         return False, "Attempting to overwrite a reversible file - %s" %filename
+        # # No protected files are trying to be overwritten
+        # if reversible:
+        #     for filename in save_files:
+        #         protected_fd.write(filename + "\n")
+
+        # protected_fd.close()
+        # return True, "Successful"
+
     def display_checkpoints(self):
+        """
+        Displays all saved checkpoints
+        Note: Any 'IN_PROGRESS' checkpoints will be removed by the cleanup
+        script found in the constructor, before this function would ever be
+        called
+        """
         backups = os.listdir(BACKUP_DIR)
         backups.sort(reverse=True)
 
         if not backups:
             print "Trustify has not saved any backups of your apache configuration"
-        
+        # Make sure there isn't anything unexpected in the backup folder
+        # There should only be timestamped (float) directories
+        assert(all(bu.isdigit() for bu in backups))
+
         for bu in backups:
             print time.ctime(float(bu))
             with open(BACKUP_DIR + bu + "/CHANGES_SINCE") as f:
                 print f.read()
-            
+                
             print "Affected files:"
             with open(BACKUP_DIR + bu + "/FILEPATHS") as f:
                 filepaths = f.read().splitlines()

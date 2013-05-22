@@ -6,6 +6,10 @@ CONFIG_DIR = "/etc/trustify/"
 WORK_DIR = "/var/lib/trustify/"
 # Directory where configuration backups are stored
 BACKUP_DIR = WORK_DIR + "backups/"
+# Replaces MODIFIED_FILES, directory where temp checkpoint is created
+TEMP_CHECKPOINT_DIR = WORK_DIR + "temp_checkpoint/"
+# Directory used before a permanent checkpoint is finalized
+IN_PROGRESS_DIR = BACKUP_DIR + "IN_PROGRESS/"
 # Where all keys should be stored
 KEY_DIR = SERVER_ROOT + "ssl/"
 # Certificate storage
@@ -19,6 +23,7 @@ OPTIONS_SSL_CONF = CONFIG_DIR + "options-ssl.conf"
 APACHE_CHALLENGE_CONF = CONFIG_DIR + "choc_sni_cert_challenge.conf"
 # Modified files intended to be reset (for challenges/tmp config changes)
 MODIFIED_FILES = WORK_DIR + "modified_files"
+
 # Byte size of S and Nonce
 S_SIZE = 32
 NONCE_SIZE = 32
