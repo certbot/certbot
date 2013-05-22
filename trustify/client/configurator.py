@@ -37,6 +37,8 @@ from trustify.client import logger
 # to use vhost filenames that contain spaces and offer to change ' ' to '_'
 
 # TODO: Make IfModule completely case-insensitive
+# TODO: Checkpoints are not registering the creaton of enable_site
+# This results in broken links in sites-enabled
 
 class VH(object):
     def __init__(self, filename_path, vh_path, vh_addrs, is_ssl, is_enabled):
@@ -1081,13 +1083,15 @@ LogLevel warn \n\
                 self.__add_to_checkpoint(TEMP_CHECKPOINT_DIR, save_files)
             else:
                 self.__add_to_checkpoint(IN_PROGRESS_DIR, save_files)
-                if title:
-                    success = self.__finalize_checkpoint(progress_dir, title)
-                    if not success:
-                        # This should never happen
-                        # This will be hopefully be cleaned up on the recovery
-                        # routine startup
-                        sys.exit(9)
+                
+
+        if title and not temporary and os.path.isdir(IN_PROGRESS_DIR):
+            success = self.__finalize_checkpoint(IN_PROGRESS_DIR, title)
+            if not success:
+                # This should never happen
+                # This will be hopefully be cleaned up on the recovery
+                # routine startup
+                sys.exit(9)
                         
 
         self.aug.set("/augeas/save", save_state)
@@ -1107,7 +1111,8 @@ LogLevel warn \n\
             with open(cp_dir + "CHANGES_SINCE.tmp", 'w') as ft:
                 ft.write("-- %s --" % title)
                 with open(cp_dir + "CHANGES_SINCE", 'r') as f:
-                  ft.write(f.read())  
+                  ft.write(f.read())
+            shutil.move(cp_dir + "CHANGES_SINCE.tmp", cp_dir + "CHANGES_SINCE")
         except:
             logger.error("Unable to finalize checkpoint - adding title")
             return False
