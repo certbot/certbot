@@ -9,7 +9,7 @@ import time
 import shutil
 import errno
 
-from trustify.client.CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES
+from trustify.client.CONFIG import SERVER_ROOT, BACKUP_DIR, ORPHAN_FILE
 #from CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES, REWRITE_HTTPS_ARGS, CONFIG_DIR, WORK_DIR
 from trustify.client.CONFIG import REWRITE_HTTPS_ARGS, CONFIG_DIR, WORK_DIR
 from trustify.client.CONFIG import TEMP_CHECKPOINT_DIR, IN_PROGRESS_DIR
@@ -50,6 +50,7 @@ from trustify.client import logger, trustify_util
 # to the path to a recovery_specific file. This wouldn't clear out self.new_files
 # but would only be used in case of a crash... cleared every save, checked at 
 # start...  
+# STARTING WORK
 # 
 # However, FILEPATHS and changes to files are transactional.  They are copied
 # over before the updates are made to the existing files.
@@ -516,6 +517,10 @@ class Configurator(object):
         # Copy file
         ssl_fp = avail_fp + "-trustify-ssl"
         orig_file = open(avail_fp, 'r')
+        
+        # First register the creation so that it is properly removed if
+        # configuration is rolled back
+        self.register_file_creation(ssl_fp)
         new_file = open(ssl_fp, 'w')
         new_file.write("<IfModule mod_ssl.c>\n")
         for line in orig_file:
@@ -523,8 +528,6 @@ class Configurator(object):
         new_file.write("</IfModule>\n")
         orig_file.close()
         new_file.close()
-        # This is used for checkpoints
-        self.new_files.append(ssl_fp)
         self.aug.load()
         # Delete the VH addresses because they may change here
         del nonssl_vhost.addrs[:]
@@ -683,15 +686,18 @@ LogLevel warn \n\
             # make sure servername doesn't exceed filename length restriction
             if ssl_vhost.names[0] < (255-23):
                 redirect_filename = "trustify-redirect-" + ssl_vhost.names[0] + ".conf"
+
+        redirect_filepath = SERVER_ROOT + "sites-available/" + redirect_filename
+
+        # Register the new file that will be created
+        # Note: always register the creation before writing to ensure file will
+        # be removed in case of unexpected program exit
+        self.register_file_creation(redirect_filepath)
+
         # Write out file
-        with open(SERVER_ROOT+"sites-available/"+redirect_filename, 'w') as f:
+        with open(redirect_filepath, 'w') as f:
             f.write(redirect_file)
         logger.info("Created redirect file: " + redirect_filename)
-
-        # -- Now update data structures to reflect the change --
-        # Make sure that checkpoint data will 
-        # remove the file if rollback is required
-        self.new_files.append(redirect_filename)
 
         self.aug.load()
         # Make a new vhost data structure and add it to the lists
@@ -835,12 +841,11 @@ LogLevel warn \n\
         TODO: This function should number subdomains before the domain vhost
         """
         if "/sites-available/" in vhost.file:
-            index = vhost.file.rfind("/")
-            enabled_path = "%ssites-enabled/%s" % (SERVER_ROOT, vhost.file[index:])
+            enabled_path = "%ssites-enabled/%s" % (SERVER_ROOT, os.path.basename(vhost.file))
+            self.register_file_creation(enabled_path)
             os.symlink(vhost.file, enabled_path)
             vhost.enabled = True
             self.save_notes += 'Enabled site %s\n' % vhost.file
-            self.new_files.append(enabled_path)
             return True
         return False
     
@@ -897,12 +902,18 @@ LogLevel warn \n\
     
     def recovery_routine(self):
         """
-        Revert all previously modified files. First, any changes found in a
+        Revert all previously modified files. First, remove any potentially
+        orphaned files (those that did not make it to a checkpoint)
+        Then any changes found in
         TEMP_CHECKPOINT_DIR are removed, then IN_PROGRESS changes are removed
         The order is important. IN_PROGRESS is unable to add files that are
         already added by a TEMP change.  Thus TEMP must be rolled back first
         because that will be the 'latest' occurance of the file.
         """
+        # See if there were any orphaned files
+        # (Files that were created but never found their way into a checkpoint)
+        if self.__remove_contained_files(ORPHAN_FILE):
+            self.aug.load()
         self.revert_challenge_config()
         if os.path.isdir(IN_PROGRESS_DIR):
             result = self.__recover_checkpoint(IN_PROGRESS_DIR)
@@ -915,6 +926,25 @@ LogLevel warn \n\
 
             # Need to reload configuration after these changes take effect
             self.aug.load()
+
+    def __remove_contained_files(self, file_list):
+        """
+        Erase any files contained within the text file, file_list
+        """
+        # Check to see that file exists to differentiate can't find file_list
+        # and can't remove filepaths within file_list errors.
+        if not os.isfile(file_list):
+            return False
+        try:
+            with open(file_list, 'r') as f:
+                filepaths = f.read().splitlines()
+                for fp in filepaths:
+                    os.remove(fp)
+        except IOError:
+            logger.fatal("Unable to remove filepaths contained within %s" % file_list)
+            sys.exit(41)
+            
+        return True
 
     def verify_dir_setup(self):
         '''
@@ -1097,6 +1127,9 @@ LogLevel warn \n\
         self.aug.set("/augeas/save", save_state)
         self.save_notes = ""
         del self.new_files[:]
+        # Clear orphan file... 
+        # The orphans have been placed appropriately in a checkpoint
+        open(ORPHAN_FILE, 'w').close()
         self.aug.save()
 
         return True
@@ -1158,8 +1191,12 @@ LogLevel warn \n\
                     nf_fd.write(filename + '\n')
 
     def rollback_checkpoints(self, rollback = 1):
+        try:
+            rollback = int(rollback)
+        except:
+            logger.error("Rollback argument must be a positive integer")
         # Sanity check input
-        if type(rollback) is not int or rollbackrollback < 1:
+        if rollbackrollback < 1:
             logger.error("Rollback argument must be a positive integer")
             return
 
@@ -1182,6 +1219,7 @@ LogLevel warn \n\
     def __recover_checkpoint(self, cp_dir):
         """
         Recover a specific checkpoint provided by cp_dir
+        Note: this function does not reload augeas. 
 
         returns: 0 success, 1 Unable to revert, -1 Unable to delete
         """
@@ -1194,15 +1232,9 @@ LogLevel warn \n\
             # This file is required in all checkpoints.
             logger.error("Unable to recover files from %s" % cp_dir)
             return 1
-        try:
-            # Remove any newly added files if they exist
-            with open(cp_dir + "/NEW_FILES") as f:
-                filepaths = f.read().splitlines()
-                for fp in filepaths:
-                    os.remove(fp)
-        except:
-            # This file is optional
-            pass
+
+        # Remove any newly added files if they exist
+        self.__remove_contained_files(cp_dir + "/NEW_FILES")
 
         try:
             shutil.rmtree(cp_dir)
@@ -1279,6 +1311,23 @@ LogLevel warn \n\
                 pass
             print ""
 
+    def register_file_creation(*files):
+        """
+        This is used to register the creation of all files during Trustify
+        execution. Call this method before writing to the file to make sure
+        that the file will be cleaned up if the program exits unexpectedly.
+        (Before a save occurs)
+        """
+        try:
+            with open(ORPHAN_FILE, 'a') as fd:
+                for f in files:
+                    self.new_files.append(f)
+                    fd.write("%s\n" % f)
+        except:
+            logger.error("Unable to register file creation")
+            
+        
+
 def main():
     config = Configurator()
     logger.setLogger(logger.FileLogger(sys.stdout))
@@ -1310,7 +1359,7 @@ def main():
     config.aug.set("/files" + test_file + "/IfModule[1]/directive[2]/arg", "555")
 
     #config.save_notes = "Added listen 431 for test"
-    #config.new_files.append("/home/james/Desktop/new_file.txt")
+    #config.register_file_creation("/home/james/Desktop/new_file.txt")
     #config.save("Testing Saves", False)
     #config.recover_checkpoint(1)
     """

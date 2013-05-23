@@ -472,7 +472,7 @@ class Client(object):
             logger.setLogger(logger.NcursesLogger())
             logger.setLogLevel(logger.INFO)
         else:
-            logger.setLogger(sys.stdout)
+            logger.setLogger(logger.FileLogger(sys.stdout))
             logger.setLogLevel(logger.INFO)
 
     def sanity_check_names(self, names):

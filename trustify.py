@@ -37,12 +37,16 @@ def main():
         elif o == "--server":
             server = a
         elif o == "--rollback":
-            from trustify.client import configurator
+            from trustify.client import configurator, logger
+            logger.setLogger(logger.FileLogger(sys.stdout))
+            logger.setLogLevel(logger.INFO)
             config = configurator.Configurator()
-            config.recover_checkpoint(a)
-            continue
+            config.rollback_checkpoints(a)
+            sys.exit(0)
         elif o == "--view-checkpoints":
-            from trustify.client import configurator
+            from trustify.client import configurator, logger
+            logger.setLogger(logger.FileLogger(sys.stdout))
+            logger.setLogLevel(logger.INFO)
             config = configurator.Configurator()
             config.display_checkpoints()
             sys.exit(0)
