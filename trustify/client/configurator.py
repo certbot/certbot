@@ -1253,11 +1253,10 @@ LogLevel warn \n\
         # Make sure there isn't anything unexpected in the backup folder
         # There should only be timestamped (float) directories
         try:
-            float(bu) for bu in backups
+            for bu in backups:
+                float(bu)
         except:
-            assert(False, "Invalid files in %s" % BACKUP_DIR)
-                
-        assert(all(bu.isdigit() for bu in backups))
+            assert False, "Invalid files in %s" % BACKUP_DIR
 
         for bu in backups:
             print time.ctime(float(bu))
@@ -1271,7 +1270,7 @@ LogLevel warn \n\
                     print "  %s" % fp
             
             try:
-                with open(BACKUP_DIR + "/NEW_FILES") as f:
+                with open(BACKUP_DIR + bu + "/NEW_FILES") as f:
                     print "New Configuration Files:"
                     filepaths = f.read().splitlines()
                     for fp in filepaths:
