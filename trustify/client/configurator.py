@@ -40,20 +40,9 @@ from trustify.client import logger, trustify_util
 
 # TODO: Make IfModule completely case-insensitive
 
-# NOTE: NEW_FILES is not transactional... if the files are added and the program
-# quits before Configurator.save() runs and completes, the files will be
-# orphaned on the system. The paths need to be appended to NEW_FILES before  
-# creation.  Though, there doesn't appear to be a clean fix, new_files
-# need to know if they are going to be appended to an IN_PROGRESS or TEMP cp,
-# which may not be apparent at the time of file creation.
-# Idea: Maybe a force_critical_new_file() should be added that simply appends
-# to the path to a recovery_specific file. This wouldn't clear out self.new_files
-# but would only be used in case of a crash... cleared every save, checked at 
-# start...  
-# STARTING WORK
-# 
-# However, FILEPATHS and changes to files are transactional.  They are copied
-# over before the updates are made to the existing files.
+# Note: FILEPATHS and changes to files are transactional.  They are copied
+# over before the updates are made to the existing files. NEW_FILES is
+# transactional due to the use of register_file_creation()
 
 class VH(object):
     def __init__(self, filename_path, vh_path, vh_addrs, is_ssl, is_enabled):
@@ -76,8 +65,15 @@ class Configurator(object):
         # TODO: this instantiation can be optimized to only load Httd 
         #       relevant files - I believe -> NO_MODL_AUTOLOAD
         # TODO: Use server_root instead SERVER_ROOT
+
         # Set Augeas flags to save backup
         self.aug = augeas.Augeas(flags=augeas.Augeas.NONE)
+
+        # See if any temporary changes need to be recovered
+        # This needs to occur before VH objects are setup...
+        # because this will change the underlying configuration and potential
+        # vhosts
+        self.recovery_routine()
         # Check for errors in parsing files with Augeas
         self.check_parsing_errors()
         # This problem has been fixed in Augeas 1.0
@@ -91,8 +87,6 @@ class Configurator(object):
         self.assoc = dict()
         # Verify that all directories and files exist with proper permissions
         self.verify_setup()
-        # See if any temporary changes need to be recovered
-        self.recovery_routine()
         
         # Note: initialization doesn't check to see if the config is correct
         # by Apache's standards. This should be done by the client if it is
@@ -839,6 +833,7 @@ LogLevel warn \n\
         """
         Enables an available site, Apache restart required
         TODO: This function should number subdomains before the domain vhost
+        TODO: Make sure link is not broken...
         """
         if "/sites-available/" in vhost.file:
             enabled_path = "%ssites-enabled/%s" % (SERVER_ROOT, os.path.basename(vhost.file))
