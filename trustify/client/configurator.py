@@ -77,7 +77,7 @@ class Configurator(object):
         #       relevant files - I believe -> NO_MODL_AUTOLOAD
         # TODO: Use server_root instead SERVER_ROOT
         # Set Augeas flags to save backup
-        self.aug = augeas.Augeas(flags=augeas.Augeas.SAVE_BACKUP)
+        self.aug = augeas.Augeas(flags=augeas.Augeas.NONE)
         # Check for errors in parsing files with Augeas
         self.check_parsing_errors()
         # This problem has been fixed in Augeas 1.0
@@ -89,8 +89,8 @@ class Configurator(object):
         self.vhosts = self.get_virtual_hosts()
         # Add name_server association dict
         self.assoc = dict()
-        # Verify that all directories exist with proper permissions
-        self.verify_dir_setup()
+        # Verify that all directories and files exist with proper permissions
+        self.verify_setup()
         # See if any temporary changes need to be recovered
         self.recovery_routine()
         
@@ -912,8 +912,10 @@ LogLevel warn \n\
         """
         # See if there were any orphaned files
         # (Files that were created but never found their way into a checkpoint)
+        
         if self.__remove_contained_files(ORPHAN_FILE):
             self.aug.load()
+            
         self.revert_challenge_config()
         if os.path.isdir(IN_PROGRESS_DIR):
             result = self.__recover_checkpoint(IN_PROGRESS_DIR)
@@ -933,7 +935,7 @@ LogLevel warn \n\
         """
         # Check to see that file exists to differentiate can't find file_list
         # and can't remove filepaths within file_list errors.
-        if not os.isfile(file_list):
+        if not os.path.isfile(file_list):
             return False
         try:
             with open(file_list, 'r') as f:
@@ -946,9 +948,9 @@ LogLevel warn \n\
             
         return True
 
-    def verify_dir_setup(self):
+    def verify_setup(self):
         '''
-        Make sure that directories are setup with appropriate permissions
+        Make sure that files/directories are setup with appropriate permissions
         Aim for defensive coding... make sure all input files 
         have permissions of root
         '''
@@ -1179,7 +1181,6 @@ LogLevel warn \n\
                 idx += 1
 
         with open(cp_dir + "CHANGES_SINCE", 'a') as notes_fd:
-            #notes_fd.write("-- %s --\n" % mod_conf)
             notes_fd.write(self.save_notes)
 
         # Mark any new files that have been created
@@ -1196,7 +1197,7 @@ LogLevel warn \n\
         except:
             logger.error("Rollback argument must be a positive integer")
         # Sanity check input
-        if rollbackrollback < 1:
+        if rollback < 1:
             logger.error("Rollback argument must be a positive integer")
             return
 
@@ -1311,7 +1312,7 @@ LogLevel warn \n\
                 pass
             print ""
 
-    def register_file_creation(*files):
+    def register_file_creation(self, *files):
         """
         This is used to register the creation of all files during Trustify
         execution. Call this method before writing to the file to make sure
@@ -1324,7 +1325,7 @@ LogLevel warn \n\
                     self.new_files.append(f)
                     fd.write("%s\n" % f)
         except:
-            logger.error("Unable to register file creation")
+            logger.error("ERROR: Unable to register file creation")
             
         
 
