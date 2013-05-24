@@ -9,7 +9,7 @@ import time
 import shutil
 import errno
 
-from trustify.client.CONFIG import SERVER_ROOT, BACKUP_DIR, ORPHAN_FILE
+from trustify.client.CONFIG import SERVER_ROOT, BACKUP_DIR
 #from CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES, REWRITE_HTTPS_ARGS, CONFIG_DIR, WORK_DIR
 from trustify.client.CONFIG import REWRITE_HTTPS_ARGS, CONFIG_DIR, WORK_DIR
 from trustify.client.CONFIG import TEMP_CHECKPOINT_DIR, IN_PROGRESS_DIR
@@ -896,20 +896,12 @@ LogLevel warn \n\
     
     def recovery_routine(self):
         """
-        Revert all previously modified files. First, remove any potentially
-        orphaned files (those that did not make it to a checkpoint)
-        Then any changes found in
+        Revert all previously modified files. First, any changes found in
         TEMP_CHECKPOINT_DIR are removed, then IN_PROGRESS changes are removed
         The order is important. IN_PROGRESS is unable to add files that are
         already added by a TEMP change.  Thus TEMP must be rolled back first
         because that will be the 'latest' occurance of the file.
         """
-        # See if there were any orphaned files
-        # (Files that were created but never found their way into a checkpoint)
-        
-        if self.__remove_contained_files(ORPHAN_FILE):
-            self.aug.load()
-            
         self.revert_challenge_config()
         if os.path.isdir(IN_PROGRESS_DIR):
             result = self.__recover_checkpoint(IN_PROGRESS_DIR)
@@ -1169,7 +1161,7 @@ LogLevel warn \n\
                 shutil.copy2(filename, cp_dir + os.path.basename(filename) + "_" + str(idx))
                 op_fd.write(filename + '\n')
                 idx += 1
-        of_fd.close()
+        op_fd.close()
 
         with open(cp_dir + "CHANGES_SINCE", 'a') as notes_fd:
             notes_fd.write(self.save_notes)

@@ -42,6 +42,7 @@ def main():
             logger.setLogLevel(logger.INFO)
             config = configurator.Configurator()
             config.rollback_checkpoints(a)
+            config.restart()
             sys.exit(0)
         elif o == "--view-checkpoints":
             from trustify.client import configurator, logger

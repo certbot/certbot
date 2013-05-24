@@ -21,8 +21,6 @@ CHOC_CERT_CONF = CONFIG_DIR + "choc_cert_extensions.cnf"
 OPTIONS_SSL_CONF = CONFIG_DIR + "options-ssl.conf"
 # Temporary file for challenge virtual hosts
 APACHE_CHALLENGE_CONF = CONFIG_DIR + "choc_sni_cert_challenge.conf"
-# Modified files intended to be reset (for challenges/tmp config changes)
-ORPHAN_FILE = WORK_DIR + "orphans"
 
 # Byte size of S and Nonce
 S_SIZE = 32
