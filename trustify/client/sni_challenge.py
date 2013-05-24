@@ -102,7 +102,7 @@ DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
         configText += "</IfModule> \n"
 
         self.checkForApacheConfInclude(mainConfig)
-        self.configurator.register_file_creation(APACHE_CHALLENGE_CONF)
+        self.configurator.register_file_creation(True, APACHE_CHALLENGE_CONF)
         newConf = open(APACHE_CHALLENGE_CONF, 'w')
         newConf.write(configText)
         newConf.close()
@@ -134,7 +134,7 @@ DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
         """
 
         self.updateCertConf(oid, ext)
-        self.configurator.register_file_creation(self.getChocCertFile(nonce))
+        self.configurator.register_file_creation(True, self.getChocCertFile(nonce))
         subprocess.call(["openssl", "x509", "-req", "-days", "21", "-extfile", CHOC_CERT_CONF, "-extensions", "v3_ca", "-signkey", key, "-out", self.getChocCertFile(nonce), "-in", csr], stdout=open("/dev/null", 'w'), stderr=open("/dev/null", 'w'))
 
 

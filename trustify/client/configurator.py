@@ -80,8 +80,7 @@ class Configurator(object):
         self.standardize_excl()
 
         self.save_notes = ""
-        # new_files is for save checkpoints and to allow reverts
-        self.new_files = []
+
         self.vhosts = self.get_virtual_hosts()
         # Add name_server association dict
         self.assoc = dict()
@@ -514,7 +513,7 @@ class Configurator(object):
         
         # First register the creation so that it is properly removed if
         # configuration is rolled back
-        self.register_file_creation(ssl_fp)
+        self.register_file_creation(False, ssl_fp)
         new_file = open(ssl_fp, 'w')
         new_file.write("<IfModule mod_ssl.c>\n")
         for line in orig_file:
@@ -686,7 +685,7 @@ LogLevel warn \n\
         # Register the new file that will be created
         # Note: always register the creation before writing to ensure file will
         # be removed in case of unexpected program exit
-        self.register_file_creation(redirect_filepath)
+        self.register_file_creation(False, redirect_filepath)
 
         # Write out file
         with open(redirect_filepath, 'w') as f:
@@ -837,7 +836,7 @@ LogLevel warn \n\
         """
         if "/sites-available/" in vhost.file:
             enabled_path = "%ssites-enabled/%s" % (SERVER_ROOT, os.path.basename(vhost.file))
-            self.register_file_creation(enabled_path)
+            self.register_file_creation(False, enabled_path)
             os.symlink(vhost.file, enabled_path)
             vhost.enabled = True
             self.save_notes += 'Enabled site %s\n' % vhost.file
@@ -1092,7 +1091,7 @@ LogLevel warn \n\
 
         # If the augeas tree didn't change, no files were saved and a backup
         # should not be created
-        if save_paths or self.new_files:
+        if save_paths:
             save_files = set()
             for p in save_paths:
                 save_files.add(self.aug.get(p)[6:])
@@ -1123,10 +1122,6 @@ LogLevel warn \n\
 
         self.aug.set("/augeas/save", save_state)
         self.save_notes = ""
-        del self.new_files[:]
-        # Clear orphan file... 
-        # The orphans have been placed appropriately in a checkpoint
-        open(ORPHAN_FILE, 'w').close()
         self.aug.save()
 
         return True
@@ -1174,17 +1169,10 @@ LogLevel warn \n\
                 shutil.copy2(filename, cp_dir + os.path.basename(filename) + "_" + str(idx))
                 op_fd.write(filename + '\n')
                 idx += 1
+        of_fd.close()
 
         with open(cp_dir + "CHANGES_SINCE", 'a') as notes_fd:
             notes_fd.write(self.save_notes)
-
-        # Mark any new files that have been created
-        # The files will be deleted if the checkpoint is rolledback
-        # Note: This should naturally be a `set` of files
-        if self.new_files:
-            with open(cp_dir + "NEW_FILES", 'a') as nf_fd:
-                for filename in self.new_files:
-                    nf_fd.write(filename + '\n')
 
     def rollback_checkpoints(self, rollback = 1):
         try:
@@ -1307,17 +1295,22 @@ LogLevel warn \n\
                 pass
             print ""
 
-    def register_file_creation(self, *files):
+    def register_file_creation(self, temporary, *files):
         """
         This is used to register the creation of all files during Trustify
         execution. Call this method before writing to the file to make sure
         that the file will be cleaned up if the program exits unexpectedly.
         (Before a save occurs)
         """
+        if temporary:
+            cp_dir = TEMP_CHECKPOINT_DIR
+        else:
+            cp_dir = IN_PROGRESS_DIR
+        
+        trustify_util.make_or_verify_dir(cp_dir)
         try:
-            with open(ORPHAN_FILE, 'a') as fd:
+            with open(cp_dir + "NEW_FILES", 'a') as fd:
                 for f in files:
-                    self.new_files.append(f)
                     fd.write("%s\n" % f)
         except:
             logger.error("ERROR: Unable to register file creation")
