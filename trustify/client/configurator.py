@@ -1001,20 +1001,22 @@ LogLevel warn \n\
         """
         #TODO: This should be written to use the process returncode
         try:
-            p = ''
-            if quiet:
-                p = subprocess.Popen(['/etc/init.d/apache2', 'restart'], stdout=subprocess.PIPE, stderr=open("/dev/null", 'w')).communicate()[0]
-            else:
-                p = subprocess.Popen(['/etc/init.d/apache2', 'restart'], stderr=subprocess.PIPE).communicate()[0]
+            p = subprocess.Popen(['/etc/init.d/apache2', 'restart'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+            text = p.communicate()
+            
 
-            if "fail" in p:
-                logger.error("Apache configuration is incorrect")
-                logger.error(p)
-                return False
-            return True
+            if p.returncode != 0:
+                # Enter recovery routine...
+                logger.error("Configtest failed")
+                logger.error(text[0])
+                logger.error(text[1])
+            return False
+
         except:
             logger.fatal("Apache Restart Failed - Please Check the Configuration")
             sys.exit(1)
+
+        return True
 
     def __add_httpd_transform(self, incl):
         """
