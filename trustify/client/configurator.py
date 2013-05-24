@@ -1001,7 +1001,7 @@ LogLevel warn \n\
         """
         #TODO: This should be written to use the process returncode
         try:
-            p = subprocess.Popen(['/etc/init.d/apache2', 'restart'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+            p = subprocess.Popen(['/etc/init.d/apache2', 'restart'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             text = p.communicate()
             
 
