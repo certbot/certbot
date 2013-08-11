@@ -2,7 +2,7 @@ The Chocolate project to implement sweet automatic encryption for webservers.
 
 There are two portions to the Chocoate protocol.
 
-client-webserver/ contains code that can be run on any webserver (eventually,
+trustify/ contains code that can be run on any webserver (eventually,
 email, XMPP and other SSL-securable servers too); it is used to automatically
 request and install a CA-signed certificate for that server's public names.
 
