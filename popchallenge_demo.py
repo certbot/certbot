@@ -1,6 +1,10 @@
 from trustify.protocol import chocolate_pb2 
 from popchallenge import *
 
+# openssl genrsa 2048 > /tmp/priv.pem
+# openssl genrsa 2048 > /tmp/decoy.pem
+# openssl rsa -in /tmp/priv.pem -pubout > /tmp/pub.pem
+
 m = chocolate_pb2.chocolatemessage()
 r = chocolate_pb2.chocolatemessage()
 
