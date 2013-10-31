@@ -3,7 +3,7 @@
 from pyasn1.type import univ, namedtype
 from pyasn1.codec.der import encoder as der_encoder
 from Crypto.PublicKey import RSA
-from Crypto.Signature import PKCS1_v1_5
+from Crypto.Signature import PKCS1_PSS
 from Crypto.Hash import SHA, SHA512
 from Crypto.Random import random
 
@@ -74,9 +74,9 @@ class POPChallengeResponder(object):
             return None
         to_sign = "chocolate protocol %s %s" % (self.nonce, self.server_nonce)
         # XXX TODO What is an appropriate and safe RSA signature algorithm to
-        # use for creating signatures? Is the use of PKCS#1 1.5 with SHA-512
+        # use for creating signatures? Is the use of PKCS#1 PSS with SHA-512
         # safe?  Is this implementation free of timing attacks?
-        sig = PKCS1_v1_5.new(self.privkey).sign(SHA512.new(to_sign))
+        sig = PKCS1_PSS.new(self.privkey).sign(SHA512.new(to_sign))
         # Try to forget the private key now that it's been used.
         self.privkey = None
         return (self.nonce, sig)
@@ -100,4 +100,4 @@ def verify_challenge_response(pubkey, challenge_string, client_nonce, sig):
     except:
         return False
     text = "chocolate protocol %s %s" % (client_nonce, challenge_string)
-    return PKCS1_v1_5.new(key).verify(SHA512.new(text), sig)
+    return PKCS1_PSS.new(key).verify(SHA512.new(text), sig)
