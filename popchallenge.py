@@ -23,6 +23,8 @@ def keyid(pem_key_data):
     performed by certificate authorities, as specified in RFC 5280."""
     r = RSA.importKey(pem_key_data)
     (n, e) = r.publickey().n, r.publickey().e
+    # Try to forget the other key parameters (in case it was a private key)
+    del r
     pk = rsa_pk()
     pk.setComponentByName("n",n)
     pk.setComponentByName("e",e)
@@ -55,8 +57,10 @@ class POPChallengeResponder(object):
                             # Only private keys are appropriate here, even
                             # though keyid() is defined for both public and
                             # private keys!
-                            self.privkey = RSA.importKey(pem_data)
+                            self.privkey = this_key
+                            del this_key
                             return
+                        del this_key
             except (IOError, ValueError) as e:
                 # If file can't be read or doesn't contain an RSA key,
                 # go on to the next file
@@ -73,6 +77,8 @@ class POPChallengeResponder(object):
         # use for creating signatures? Is the use of PKCS#1 1.5 with SHA-512
         # safe?  Is this implementation free of timing attacks?
         sig = PKCS1_v1_5.new(self.privkey).sign(SHA512.new(to_sign))
+        # Try to forget the private key now that it's been used.
+        self.privkey = None
         return (self.nonce, sig)
 
 
