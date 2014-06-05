@@ -10,9 +10,9 @@ Most email transferred between SMTP servers (aka MTAs) is transmitted in the cle
 
 To illustrate an easy version of this attack, suppose a network-based attacker Mallory notices that Alice has just uploaded message to her mail server. Mallory can inject a TCP reset (RST) packet during the mail server's next TLS negotiation with another mail server. Nearly all mail servers that implement STARTTLS do so in opportunistic mode, which means that they will retry without encryption if there is any problem with a TLS connection. So Alice's message will be transmitted in the clear.
 
-Opportunistic TLS in SMTP also extends to certificate validation.  Mail servers commonly provide self-signed certificates or certificates with non-validatable hostnames, and senders commonly accept these. This means that if we say 'require TLS for this mail domain,' the domain may still be vulnerable to a man-in-the-middle using any key and certificate chosen by the attacker.
+Opportunistic TLS in SMTP also extends to certificate validation. Mail servers commonly provide self-signed certificates or certificates with non-validatable hostnames, and senders commonly accept these. This means that if we say 'require TLS for this mail domain,' the domain may still be vulnerable to a man-in-the-middle using any key and certificate chosen by the attacker.
 
-Even if senders require a valid certificate that matches the hostname of a mail host, a  DNS MITM is still possible. The sender, to find the correct target hostname, queries DNS for MX records on the recipient domain. Absent DNSSEC, the response can be spoofed to provide the attacker's hostname, for which the attacker holds a valid certificate.
+Even if senders require a valid certificate that matches the hostname of a mail host, a DNS MITM is still possible. The sender, to find the correct target hostname, queries DNS for MX records on the recipient domain. Absent DNSSEC, the response can be spoofed to provide the attacker's hostname, for which the attacker holds a valid certificate.
 
 STARTTLS by itself thwarts purely passive eavesdroppers. However, as currently deployed, it allows either bulk or semi-targeted attacks that are very unlikely to be detected. We would like to deploy both detection and prevention for such semi-targeted attacks.
 
@@ -52,7 +52,7 @@ The basic file format will be JSON with comments (http://blog.getify.com/json-co
       "timestamp": 1401093333
       "author": "Electronic Frontier Foundation https://eff.org",
       "expires": 1401414363, // epoch seconds
-      "nexthop-domains": {
+      "address-domains": {
         "gmail.com": {
           "accept-mx-domains": ["google.com", "gmail.com"]
         }
@@ -111,11 +111,11 @@ Option 2: Git is a revision control system built on top of an authenticated, his
 
 Config-generator should attempt to fetch the configuration file daily and transform it into MTA configs. If there is a retrieval failure, and the cached configuration file has an 'expires' time past the current date, an alert should be raised to the system operator and all existing configs from config-generator should be removed, reverting the MTA configuration to use opportunistic TLS for all domains.
 
-**nexthop-domains**
+**address-domains**
 
-The _nexthop-domains _field maps from mail domains (the part of an address after the "@") onto a list of properties for that domain. Matching of mail domains is on an exact-match basis, not a subdomain basis. For instance, eff.org would be listed separately from lists.eff.org in the _nexthop-domains _section.
+The _address-domains_ field maps from mail domains (the part of an address after the "@") onto a list of properties for that domain. Matching of mail domains is on an exact-match basis, not a subdomain basis. For instance, eff.org would be listed separately from lists.eff.org in the _address-domains_ section.
 
-Currently the only property defined for _nexthop-domains _is _accept-mx-domains_, a list. If an MX lookup for a listed nexthop domain returns a hostname that is not a subdomain of one of the domains listed in the _accept-mx-domains_ property, the MTA should fail delivery or log an advisory failure, as appropriate. Matching of MX hostnames against the _accept-mx-domains_ list is on a subdomain basis. For instance, if an MX record for yahoo.com lists mta7.am0.yahoodns.net, and the _accept-mx-domains_ property for yahoo.com is ["yahoodns.net"], that should be considered a match. All domains listed in any _accept-mx-domains _list must correspond to an exactly matching field in the _mx-domains_ config section.
+Currently the only property defined for _address-domains_ is _accept-mx-domains_, a list. If an MX lookup for a listed address domain returns a hostname that is not a subdomain of one of the domains listed in the _accept-mx-domains_ property, the MTA should fail delivery or log an advisory failure, as appropriate. Matching of MX hostnames against the _accept-mx-domains_ list is on a subdomain basis. For instance, if an MX record for yahoo.com lists mta7.am0.yahoodns.net, and the _accept-mx-domains_ property for yahoo.com is ["yahoodns.net"], that should be considered a match. All domains listed in any _accept-mx-domains _list must correspond to an exactly matching field in the _mx-domains_ config section.
 
 The _accept-mx-domains_ mechanism partially solves the problem of DNS MITM. It doesn't completely solve the problem, since an attacker might somehow control a different hostname under an acceptable domain, e.g. evil.yahoodns.net. But it strikes a balance between improving security and allowing mail operators to change configuration as needed. Some mail operators delegate their MX handling to a third-party provider (i.e. Google Apps for Your Domain). If those operators are included in STARTTLS Everywhere and wish to change providers, they will have to first send an update to their _accept-mx-domains_ to include their new provider.
 
