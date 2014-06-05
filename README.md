@@ -45,63 +45,59 @@ Senders need to know which target hosts are known to support STARTTLS, and how t
 
 ## File Format
 
-The basic file format will be JSON with comments ([](http://blog.getify.com/json-comments/))http://blog.getify.com/json-comments/). Example:
+The basic file format will be JSON with comments (http://blog.getify.com/json-comments/). Example:
 
-*   {
-*     // Canonical URL [](https://eff.org/starttls-everywhere/config)[https://eff.org/s](https://eff.org/that-email-thing)tarttls-everywhere/config -- redirects to latest version
-*     "timestamp": 1401093333
-*     "author": "Electronic Frontier Foundation [](https://eff.org)https://eff.org",
-*     "expires": 1401414363, // epoch seconds
-*     "nexthop-domains": {
-*       "gmail.com": {
-*         "accept-mx-domains": ["google.com", "gmail.com"]
-*       }
-*       "yahoo.com": {
-*         "accept-mx-domains": ["yahoodns.net"]
-*       }
-*       "eff.org": {
-*         "accept-mx-domains": ["eff.org"]
-*       }
-*     }
-*     "mx-domains": {
-*       "eff.org": {
-*         "require-tls": true,
-*         "min-tls-version": "TLSv1.1",
-*         "enforce-mode": "enforce"
-*       }
-*       "google.com": {
-*         "require-valid-certificate": true,
-*         "min-tls-version": "TLSv1.1",
-*         "accept-pinset": "google",
-*         "enforce-mode": "log-only",
-*         // error-notification domains *
-*         "error-notification": "[](https://googlemail.com/post/reports/here)https://g[o](https://g)[o](https://go)[g](https://goo)[l](https://goog)[e](https://googl)[m](https://google)[a](https://googlem)[il](https://googlema)[.co](https://googlemail)[m](https://googlemail.co)[/](https://googlemail.com)post/[r](https://googlemail.com/xhr/)[e](https://googlemail.com/xhr/r)[por](https://googlemail.com/xhr/re)[t](https://googlemail.com/xhr/repor)[s](https://googlemail.com/xhr/report)[/](https://googlemail.com/xhr/reports/go)[he](https://googlemail.com/xhr/reports/go/)[r](https://googlemail.com/xhr/reports/go/he)[e](https://googlemail.com/xhr/reports/go/her)["](https://googlemail.com/xhr/reports/go/here)
-*       },
-*       "yahoodns.net": {
-*          "require-valid-certificate": true,
-*        }
-*     }
-*     // Similar to
-*     // [](https://src.chromium.org/chrome/trunk/src/net/http/transport_security_state_static.json)https://src.chromium.org/chrome/trunk/src/net/http/transport_security_state_static.json
-*     "pinsets": [
-*       {
-*         "name": "google",
-*         "static_spki_hashes": [
-*           "GoogleBackup2048",
-*           "GoogleG2"
-*         ]
-*       }
-*     ],
-*     "spki_hashes": {
+    {
+      // Canonical URL https://eff.org/starttls-everywhere/config -- redirects to latest version
+      "timestamp": 1401093333
+      "author": "Electronic Frontier Foundation https://eff.org",
+      "expires": 1401414363, // epoch seconds
+      "nexthop-domains": {
+        "gmail.com": {
+          "accept-mx-domains": ["google.com", "gmail.com"]
+        }
+        "yahoo.com": {
+          "accept-mx-domains": ["yahoodns.net"]
+        }
+        "eff.org": {
+          "accept-mx-domains": ["eff.org"]
+        }
+      }
+      "mx-domains": {
+        "eff.org": {
+          "require-tls": true,
+          "min-tls-version": "TLSv1.1",
+          "enforce-mode": "enforce"
+        }
+        "google.com": {
+          "require-valid-certificate": true,
+          "min-tls-version": "TLSv1.1",
+          "accept-pinset": "google",
+          "enforce-mode": "log-only",
+          // error-notification domains *
+          "error-notification": "https://google.com/post/reports/here"
+        },
+        "yahoodns.net": {
+           "require-valid-certificate": true,
+         }
+      }
+      // Similar to
+      // [](https://src.chromium.org/chrome/trunk/src/net/http/transport_security_state_static.json)https://src.chromium.org/chrome/trunk/src/net/http/transport_security_state_static.json
+      "pinsets": [
+        {
+          "name": "google",
+          "static_spki_hashes": [
+            "GoogleBackup2048",
+            "GoogleG2"
+          ]
+        }
+      ],
+      "spki_hashes": {
+        "GoogleBackup2048": "sha1/vq7OyjSnqOco9nyMCDGdy77eijM=",
+        "GoogleG2": "sha1/Q9rWMO5T+KmAym79hfRqo3mQ4Oo="
+      }
+    }
 
-*     Are base64 encoded hashes already widely used/defined?  If not, I'd lean towards hex here in this JSON file, since we hopefully have gzip to reduce the encoding overhead anyway, and this file should optimize for admin ease of use. 
-*   These are what's used for certificate pinning in Chrome. Most likely we'll have people use the same tooling to generate these SPKI hashes for us, so I think using the same format and encoding makes sense. It's also easy on admins: "We'll just use the same set of pins we use for HTTPS."
-*   The other thing I forgot to mention: There isn't, AFAIK, a good way to get the SPKI hash other than using the Chrome tool. It's not one of the fields output by openssl x509, for example.
-
-*       "GoogleBackup2048": "sha1/vq7OyjSnqOco9nyMCDGdy77eijM=",
-*       "GoogleG2": "sha1/Q9rWMO5T+KmAym79hfRqo3mQ4Oo="
-*     }
-*   }
 
 A user of this file format may choose to accept multiple files. For instance, the EFF might provide an overall configuration covering major mail providers, and another organization might produce an overlay for mail providers in a specific country. If so, they override each other on a per-domain basis.
 
