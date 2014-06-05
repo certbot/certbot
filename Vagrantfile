@@ -5,18 +5,15 @@
 VAGRANTFILE_API_VERSION = "2"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-  # All Vagrant configuration is done here. The most common configuration
-  # options are documented and commented below. For a complete reference,
-  # please see the online documentation at vagrantup.com.
-
-  # Every Vagrant virtual environment requires a box to build off of.
   config.vm.box = "hashicorp/precise32"
 
   config.vm.define "sender" do |sender|
     sender.vm.network "private_network", ip: "192.168.33.5"
+    sender.vm.hostname = "sender.example.com"
   end
   config.vm.define "valid" do |valid|
     valid.vm.network "private_network", ip: "192.168.33.7"
+    valid.vm.hostname = "valid-example-recipient.com"
   end
   config.vm.provision :shell, path: "vagrant-bootstrap.sh"
 

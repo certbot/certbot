@@ -35,7 +35,7 @@ def extract_names(pem):
         # >>> twitter_cert.get_ext('subjectAltName').get_value()
         # 'DNS:www.twitter.com, DNS:twitter.com'
         alt_names = leaf.get_ext('subjectAltName').get_value()
-        alt_names = alt_names.split(',')
+        alt_names = alt_names.split(', ')
         alt_names = [name.partition(':') for name in alt_names]
         alt_names = [name for prot, _, name in alt_names if prot == 'DNS']
     except:
@@ -43,48 +43,52 @@ def extract_names(pem):
     return set(common_names + alt_names)
 
 def tls_connect(mx_host, mail_domain):
-  # smtplib doesn't let us access certificate information,
-  # so shell out to openssl.
-  output = subprocess.check_output(
-      """openssl s_client \
-         -CApath /usr/share/ca-certificates/mozilla/ \
-         -starttls smtp -connect %s:25 -showcerts </dev/null
-         """ % mx_host, shell=True)
+  if supports_starttls(mx_host):
+    # smtplib doesn't let us access certificate information,
+    # so shell out to openssl.
+    try:
+      output = subprocess.check_output(
+          """openssl s_client \
+             -CApath /usr/share/ca-certificates/mozilla/ \
+             -starttls smtp -connect %s:25 -showcerts </dev/null \
+             2>/dev/null
+             """ % mx_host, shell=True)
+    except subprocess.CalledProcessError:
+      print "Failed s_client"
+      return
 
-  # Save a copy of the certificate for later analysis
-  with open(os.path.join(mail_domain, mx_host), "w") as f:
-    f.write(output)
+    # Save a copy of the certificate for later analysis
+    with open(os.path.join(mail_domain, mx_host), "w") as f:
+      f.write(output)
 
-  cert = re.findall("-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----", output, flags = re.DOTALL)
-  if len(cert) > 0:
-    print "iiii ", len(cert)
-    print extract_names(cert[0])
-  #lines = output.split("\n")
-  #for i in range(0, len(lines)):
-    #line = lines[i]
-    #if re.search("Subject:.* CN=(.*)", line):
-      #m = re.search("Subject:.* CN=(.*)", line)
-      #print "CN=", m.group(1)
-    #elif re.search("Subject Alternative Name:", line):
-      #dns = re.findall("DNS:([^,]*),", lines[i+1])
-      #for d in dns:
-        #print d
+    cert = re.findall("-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----", output, flags = re.DOTALL)
+    if len(cert) > 0:
+      names = extract_names(cert[0])
+      print "%s certificate -> %s" % (mx_host, ", ".join(names))
+      if mx_host in names:
+        print "  MATCH"
+      else:
+        print "  NOMATCH"
 
-#  try:
-#    smtpserver = smtplib.SMTP(mx_host, 25, timeout = 2)
-#    smtpserver.ehlo()
-#    smtpserver.starttls()
-#    print "Success: %s" % mx_host
-#  except socket.error as e:
-#    print "Connection to %s failed: %s" % (mx_host, e.strerror)
-#    pass
+def supports_starttls(mx_host):
+  try:
+    smtpserver = smtplib.SMTP(mx_host, 25, timeout = 2)
+    smtpserver.ehlo()
+    smtpserver.starttls()
+    return True
+    print "Success: %s" % mx_host
+  except socket.error as e:
+    print "Connection to %s failed: %s" % (mx_host, e.strerror)
+    return False
+  except smtplib.SMTPException:
+    print "No STARTTLS support on %s" % mx_host
+    return False
 
 def check(mail_domain):
   mkdirp(mail_domain)
   answers = dns.resolver.query(mail_domain, 'MX')
   for rdata in answers:
-      mx_host = str(rdata.exchange)
-      print 'Host', rdata.exchange, 'has preference', rdata.preference
+      mx_host = str(rdata.exchange).rstrip(".")
       tls_connect(mx_host, mail_domain)
 
 if len(sys.argv) == 1:
