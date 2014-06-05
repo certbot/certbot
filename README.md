@@ -82,7 +82,7 @@ The basic file format will be JSON with comments (http://blog.getify.com/json-co
          }
       }
       // Similar to
-      // [](https://src.chromium.org/chrome/trunk/src/net/http/transport_security_state_static.json)https://src.chromium.org/chrome/trunk/src/net/http/transport_security_state_static.json
+      // https://src.chromium.org/chrome/trunk/src/net/http/transport_security_state_static.json
       "pinsets": [
         {
           "name": "google",
