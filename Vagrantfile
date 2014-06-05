@@ -21,4 +21,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
  #   vb.gui = true
      vb.customize ["modifyvm", :id, "--memory", "256"]
   end
+
+  config.vm.synced_folder "vm-postfix-config", "/etc/postfix"
 end
