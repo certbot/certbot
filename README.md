@@ -68,11 +68,11 @@ The basic file format will be JSON with comments (http://blog.getify.com/json-co
           "require-tls": true,
           "min-tls-version": "TLSv1.1",
           "enforce-mode": "enforce"
+          "accept-pinset": "eff",
         }
         "google.com": {
           "require-valid-certificate": true,
           "min-tls-version": "TLSv1.1",
-          "accept-pinset": "google",
           "enforce-mode": "log-only",
           // error-notification domains *
           "error-notification": "https://google.com/post/reports/here"
@@ -85,16 +85,16 @@ The basic file format will be JSON with comments (http://blog.getify.com/json-co
       // https://src.chromium.org/chrome/trunk/src/net/http/transport_security_state_static.json
       "pinsets": [
         {
-          "name": "google",
+          "name": "eff",
           "static_spki_hashes": [
-            "GoogleBackup2048",
-            "GoogleG2"
+            "EFFBackup2048",
+            "EFF"
           ]
         }
       ],
       "spki_hashes": {
-        "GoogleBackup2048": "sha1/vq7OyjSnqOco9nyMCDGdy77eijM=",
-        "GoogleG2": "sha1/Q9rWMO5T+KmAym79hfRqo3mQ4Oo="
+        "EFFBackup2048": "sha1/5R0zeLx7EWRxqw6HRlgCRxNLHDo=",
+        "EFF": "sha1/YlrkMlC6C4SJRZSVyRvnvoJ+8eM="
       }
     }
 
