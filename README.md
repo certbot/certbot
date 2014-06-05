@@ -88,13 +88,14 @@ The basic file format will be JSON with comments (http://blog.getify.com/json-co
           "name": "eff",
           "static_spki_hashes": [
             "EFFBackup2048",
-            "EFF"
+            "StartCom Class 2 Primary Intermediate Server CA"
           ]
         }
       ],
       "spki_hashes": {
+        // Not real SPKI hashes, just examples
         "EFFBackup2048": "sha1/5R0zeLx7EWRxqw6HRlgCRxNLHDo=",
-        "EFF": "sha1/YlrkMlC6C4SJRZSVyRvnvoJ+8eM="
+        "StartCom Class 2 Primary Intermediate Server CA": "sha1/YlrkMlC6C4SJRZSVyRvnvoJ+8eM="
       }
     }
 
