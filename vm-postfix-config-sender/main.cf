@@ -39,4 +39,4 @@ recipient_delimiter = +
 inet_interfaces = all
 
 #STARTTLS EVERYWHERE MAGIC STARTS HERE
-smtp_tls_policy_maps = hash:/etc/postfix/tls_policy
+smtp_tls_policy_maps = texthash:/etc/postfix/tls_policy
