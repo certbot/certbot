@@ -1,0 +1,17 @@
+{
+  // Canonical URL https://eff.org/starttls-everywhere/config -- redirects to
+  // latest version
+  "timestamp": 1401093333
+  "author": "Electronic Frontier Foundation https://eff.org",
+  "expires": 1404677353, // epoch seconds
+  "address-domains": {
+    "valid-example-recipient.com": {
+      "accept-mx-domains": [ "valid-example-recipient.com" ]
+    }
+  }
+  "mx-domains": {
+    "valid-example-recipient.com": {
+      "min-tls-version": "TLSv1.1"
+    }
+  }
+}
