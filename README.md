@@ -68,34 +68,20 @@ The basic file format will be JSON with comments (http://blog.getify.com/json-co
           "require-tls": true,
           "min-tls-version": "TLSv1.1",
           "enforce-mode": "enforce"
-          "accept-pinset": "eff",
+          "accept-spki-hashes": [
+            "sha1/5R0zeLx7EWRxqw6HRlgCRxNLHDo=",
+            "sha1/YlrkMlC6C4SJRZSVyRvnvoJ+8eM="
+          ]
         }
         "google.com": {
           "require-valid-certificate": true,
           "min-tls-version": "TLSv1.1",
           "enforce-mode": "log-only",
-          // error-notification domains *
           "error-notification": "https://google.com/post/reports/here"
         },
         "yahoodns.net": {
            "require-valid-certificate": true,
          }
-      }
-      // Similar to
-      // https://src.chromium.org/chrome/trunk/src/net/http/transport_security_state_static.json
-      "pinsets": [
-        {
-          "name": "eff",
-          "static_spki_hashes": [
-            "EFFBackup2048",
-            "StartCom Class 2 Primary Intermediate Server CA"
-          ]
-        }
-      ],
-      "spki_hashes": {
-        // Not real SPKI hashes, just examples
-        "EFFBackup2048": "sha1/5R0zeLx7EWRxqw6HRlgCRxNLHDo=",
-        "StartCom Class 2 Primary Intermediate Server CA": "sha1/YlrkMlC6C4SJRZSVyRvnvoJ+8eM="
       }
     }
 
