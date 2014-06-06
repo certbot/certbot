@@ -4,7 +4,7 @@ export DEBIAN_FRONTEND=noninteractive
 
 apt-get update -q
 apt-get install -q -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" \
-  postfix dnsmasq mutt
+  postfix dnsmasq mutt vim
 
 # Provide hostnames so the boxes can talk to each other. DNSMasq will also serve
 # results to each box based on these contents.
