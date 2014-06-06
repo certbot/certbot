@@ -1,6 +1,6 @@
 The Chocolate project to implement sweet automatic encryption for webservers.
 
-There are two portions to the Chocoate protocol.
+There are two portions to the Chocolate protocol.
 
 trustify/ contains code that can be run on any webserver (eventually,
 email, XMPP and other SSL-securable servers too); it is used to automatically
