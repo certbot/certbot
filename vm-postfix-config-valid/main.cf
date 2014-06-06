@@ -38,5 +38,9 @@ mailbox_size_limit = 0
 recipient_delimiter = +
 inet_interfaces = all
 
+# STARTLS Everywhere recommended best-practice settings
+smtpd_tls_session_cache_timeout = 3600s
+smtpd_tls_received_header = yes
+
 #STARTTLS EVERYWHERE MAGIC STARTS HERE
 smtp_tls_policy_maps = texthash:/etc/postfix/tls_policy

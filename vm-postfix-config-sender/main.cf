@@ -40,7 +40,6 @@ inet_interfaces = all
 
 #STARTTLS EVERYWHERE MAGIC STARTS HERE
 smtp_tls_policy_maps = texthash:/etc/postfix/tls_policy
-smtpd_tls_loglevel = 1
-smtpd_tls_received_header = yes
 
 smtp_tls_loglevel = 1
+smtp_tls_security_level = may
