@@ -1,1 +1,0 @@
-smtp_tls_policy_maps = hash:/etc/postfix/tls_policy
