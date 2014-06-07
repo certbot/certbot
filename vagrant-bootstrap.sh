@@ -20,8 +20,8 @@ echo selfmx > /etc/dnsmasq.conf
 /etc/init.d/dnsmasq restart
 
 if [ "`hostname`" = "sender" ]; then
-  crontab <<EOF
-    MAILTO=vagrant@valid-example-recipient.com
-    * * * * * echo "hi"
+  (while sleep 10; do
+    echo -e 'Subject: hi\n\nhi' | sendmail vagrant@valid-example-recipient.com
+   done) &
 EOF
 fi
