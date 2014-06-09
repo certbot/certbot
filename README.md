@@ -52,19 +52,11 @@ The basic file format will be JSON with comments (http://blog.getify.com/json-co
       "timestamp": 1401093333
       "author": "Electronic Frontier Foundation https://eff.org",
       "expires": 1401414363, // epoch seconds
-      "address-domains": {
-        "gmail.com": {
-          "accept-mx-domains": ["google.com", "gmail.com"]
-        }
-        "yahoo.com": {
-          "accept-mx-domains": ["yahoodns.net"]
-        }
-        "eff.org": {
-          "accept-mx-domains": ["eff.org"]
-        }
-      }
       "mx-domains": {
-        "eff.org": {
+        "*.yahoodns.net": {
+           "require-valid-certificate": true,
+         }
+        "*.eff.org": {
           "require-tls": true,
           "min-tls-version": "TLSv1.1",
           "enforce-mode": "enforce"
@@ -73,15 +65,25 @@ The basic file format will be JSON with comments (http://blog.getify.com/json-co
             "sha1/YlrkMlC6C4SJRZSVyRvnvoJ+8eM="
           ]
         }
-        "google.com": {
+        "*.google.com": {
           "require-valid-certificate": true,
           "min-tls-version": "TLSv1.1",
           "enforce-mode": "log-only",
           "error-notification": "https://google.com/post/reports/here"
         },
-        "yahoodns.net": {
-           "require-valid-certificate": true,
-         }
+      }
+      // Since the MX lookup is not secure, we list valid responses to protect
+      // against DNS spoofing.
+      "address-domains": {
+        "yahoo.com": {
+          "accept-mx-domains": ["*.yahoodns.net"]
+        }
+        "gmail.com": {
+          "accept-mx-domains": ["*.google.com"]
+        }
+        "eff.org": {
+          "accept-mx-domains": ["*.eff.org"]
+        }
       }
     }
 
