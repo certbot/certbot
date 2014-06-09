@@ -49,10 +49,12 @@ The basic file format will be JSON with comments (http://blog.getify.com/json-co
 
     {
       // Canonical URL https://eff.org/starttls-everywhere/config -- redirects to latest version
-      "timestamp": 1401093333
+      "timestamp": "2014-06-06T14:30:16+00:00",
+      // "timestamp": 1401414363,  : also acceptable
       "author": "Electronic Frontier Foundation https://eff.org",
-      "expires": 1401414363, // epoch seconds
-      "mx-domains": {
+      "expires": "2014-06-06T14:30:16+00:00",
+      "security-policies": {
+        // These match on the MX domain.
         "*.yahoodns.net": {
            "require-valid-certificate": true,
          }
@@ -72,9 +74,9 @@ The basic file format will be JSON with comments (http://blog.getify.com/json-co
           "error-notification": "https://google.com/post/reports/here"
         },
       }
-      // Since the MX lookup is not secure, we list valid responses to protect
-      // against DNS spoofing.
-      "address-domains": {
+      // Since the MX lookup is not secure, we list valid responses for each
+      // address domain, to protect against DNS spoofing.
+      "acceptable-mxs": {
         "yahoo.com": {
           "accept-mx-domains": ["*.yahoodns.net"]
         }
@@ -83,6 +85,9 @@ The basic file format will be JSON with comments (http://blog.getify.com/json-co
         }
         "eff.org": {
           "accept-mx-domains": ["*.eff.org"]
+        }
+        "*.yahoodns.net": {
+           "require-valid-certificate": true,
         }
       }
     }
