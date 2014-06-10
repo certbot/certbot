@@ -4,10 +4,11 @@ import string
 
 DEFAULT_POLICY_FILE = "texthash:/etc/postfix/starttls_everywhere_policy"
 
-def parse_line(self, line):
+def parse_line(self, line_data):
   "return the and right hand sides of stripped, non-comment postfix config line"
   # lines are like: 
   # smtpd_tls_session_cache_database = btree:${data_directory}/smtpd_scache
+  num,line = line_data
   left, sep, right = line.partition("=")
   if not sep:
     return None
@@ -34,22 +35,28 @@ class PostfixConfigGenerator(MTAConfigGenerator):
 
     acceptable = [ideal] + also_acceptable
 
-    l = [line for line in cf if line.startswith("stmpd_use_tls")]
+    l = [num,line for num,line in enumerate(cf) if line.startswith(var)]
     if not any(l):
       this.additions.append("smtpd_use_tls = yes")
     else:
       values = [right for left, right in map(parse_line, l)]
       if len(set(values)) > 1:
+        if this.fixup:
+          this.deletions.append(
         raise ExistingConfigError, "Conflicting existing config values " + `l`
       if values[0] != "yes":
     
-  def wrangle_existing_config(self):
-    "Try to ensure/mutate that the config file is in a sane state."
+  def wrangle_existing_config(self, fixup=false):
+    """
+    Try to ensure/mutate that the config file is in a sane state.
+    Fixup means we'll delete existing lines if necessary to get there.
+    """
     this.additions = []
     fn = find_postfix_cf()
     raw_cf = open(fn).readlines()
-    cf = map(string.strip, raw_cf)
-    this.cf = [line for line in cf if line and not line.startswith("#")]
+    this.cf = map(string.strip, raw_cf)
+    #this.cf = [line for line in cf if line and not line.startswith("#")]
+    this.fixup = fixup
 
     # Check we're currently accepting inbound STARTTLS sensibly
     this.ensure_cf_var("smtpd_use_tls", "yes", [])
