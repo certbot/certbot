@@ -152,7 +152,7 @@ if __name__ == '__main__':
     }
   }
   for domain in sys.argv[1:]:
-    #collect(domain)
+    collect(domain)
     if len(os.listdir(domain)) == 0:
       continue
     suffix = check_certs(domain)
