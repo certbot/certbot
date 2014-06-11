@@ -105,7 +105,9 @@ class PostfixConfigGenerator(MTAConfigGenerator):
     self.new_cf += sep + new_cf_lines
 
     print self.new_cf
-    f = open(self.fn, "w").write(self.new_cf)
+    f = open(self.fn, "w")
+    f.write(self.new_cf)
+    f.close()
 
   def find_postfix_cf(self):
     "Search far and wide for the correct postfix configuration file"
@@ -121,8 +123,9 @@ class PostfixConfigGenerator(MTAConfigGenerator):
 
     f = open(DEFAULT_POLICY_FILE, "w")
     f.write("\n".join(self.policy_lines) + "\n")
+    f.close()
 
 if __name__ == "__main__":
   import ConfigParser
-  c = ConfigParser.Config()
+  c = ConfigParser.Config("starttls-everywhere.json")
   pcgen = PostfixConfigGenerator(c, fixup=True)
