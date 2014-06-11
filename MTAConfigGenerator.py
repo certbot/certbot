@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
 import string
+import os.path
 
-
-DEFAULT_POLICY_FILE = "/etc/postfix/starttls_everywhere_policy"
+POSTFIX_DIR = "/etc/postfix"
+DEFAULT_POLICY_FILE = os.path.join(POSTFIX_DIR, "starttls_everywhere_policy")
 POLICY_CF_ENTRY="texthash:" + DEFAULT_POLICY_FILE
 
 def parse_line(line_data):
@@ -111,7 +112,7 @@ class PostfixConfigGenerator(MTAConfigGenerator):
 
   def find_postfix_cf(self):
     "Search far and wide for the correct postfix configuration file"
-    return "/etc/postfix/main.cf"
+    return os.path.join(POSTFIX_DIR,"main.cf")
 
   def set_domainwise_tls_policies(self):
     self.policy_lines = []
