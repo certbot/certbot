@@ -113,16 +113,16 @@ class PostfixConfigGenerator(MTAConfigGenerator):
 
   def set_domainwise_tls_policies(self):
     self.policy_lines = []
-    for domain, policy in self.policy_config.tls_policies:
-      entry = domain + " encrypt "
+    for domain, policy in self.policy_config.tls_policies.items():
+      entry = domain + " encrypt"
       if "min-tls-version" in policy:
         entry += " " + policy["min-tls-version"]
       self.policy_lines.append(entry)
 
     f = open(DEFAULT_POLICY_FILE, "w")
-    f.write("\n".join(self.policy_lines))
+    f.write("\n".join(self.policy_lines) + "\n")
 
 if __name__ == "__main__":
-  import config-parser
-  c = config-parser.Config()
+  import ConfigParser
+  c = ConfigParser.Config()
   pcgen = PostfixConfigGenerator(c, fixup=True)
