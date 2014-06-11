@@ -1,1 +1,1 @@
-#valid-example-recipient.com encrypt protocols=TLSv1.1
+valid-example-recipient.com	secure match=valid-example-recipient.com:.valid-example-recipient.com

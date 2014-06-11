@@ -43,3 +43,4 @@ smtp_tls_policy_maps = texthash:/etc/postfix/tls_policy
 
 smtp_tls_loglevel = 1
 smtp_tls_security_level = may
+smtp_tls_CAfile = /etc/certificates/ca.crt

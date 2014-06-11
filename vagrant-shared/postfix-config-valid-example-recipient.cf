@@ -18,8 +18,6 @@ append_dot_mydomain = no
 readme_directory = no
 
 # TLS parameters
-smtpd_tls_cert_file=/etc/ssl/certs/ssl-cert-snakeoil.pem
-smtpd_tls_key_file=/etc/ssl/private/ssl-cert-snakeoil.key
 smtpd_use_tls=yes
 smtpd_tls_session_cache_database = btree:${data_directory}/smtpd_scache
 smtp_tls_session_cache_database = btree:${data_directory}/smtp_scache
@@ -44,3 +42,5 @@ smtpd_tls_received_header = yes
 
 #STARTTLS EVERYWHERE MAGIC STARTS HERE
 smtp_tls_policy_maps = texthash:/etc/postfix/tls_policy
+smtpd_tls_cert_file=/etc/certificates/valid.crt
+smtpd_tls_key_file=/etc/certificates/valid.key
