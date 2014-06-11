@@ -47,7 +47,7 @@ class Config:
         self.timestamp = parse_timestamp(val)
       elif atr == "expires":
         self.expires = parse_timestamp(val)
-      elif atr == "security-policies":
+      elif atr == "tls-policies":
         self.tls_policies = {}
         for domain,policies in self.check_tls_policy_domains(val):
           if type(policies) != dict:
@@ -67,18 +67,18 @@ class Config:
 
   def check_tls_policy_domains(self, val):
     if type(val) != dict:
-      raise TypeError, "security-policies should be a dict" + `val`
+      raise TypeError, "tls-policies should be a dict" + `val`
     for domain, policies in val.items():
       try:
         assert type(domain) == unicode
         d = str(domain) # convert from unicode
       except:
-        raise TypeError, "security-policy domain not a string" + `domain`
+        raise TypeError, "tls-policy domain not a string" + `domain`
       if not d.startswith("*."):
-        raise ValueError, "security-policy domains must start with *.; try *."+d
+        raise ValueError, "tls-policy domains must start with *.; try *."+d
       d = d.partition("*.")[2]
       if not looks_like_a_domain(d):
-        raise ValueError, "security-policy for something that a domain? " + d
+        raise ValueError, "tls-policy for something that a domain? " + d
       yield (d, policies)
 
 if __name__ == "__main__":
