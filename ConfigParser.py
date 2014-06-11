@@ -55,7 +55,7 @@ class Config:
           self.tls_policies[domain] = {} # being here enforces TLS at all
           for policy, value in policies.items():
             if policy == "min-tls-version":
-              reasonable = ["TLS", "TLSv1.1", "TLSv1.2", "TLSv1.3"]
+              reasonable = ["TLS", "TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]
               if not value in reasonable:
                 raise ValueError, "Not a valid TLS version string: " + `value`
               self.tls_policies[domain]["min-tls-version"] = str(value)
