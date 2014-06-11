@@ -4,7 +4,7 @@ import string
 
 DEFAULT_POLICY_FILE = "texthash:/etc/postfix/starttls_everywhere_policy"
 
-def parse_line(self, line_data):
+def parse_line(line_data):
   "return the and right hand sides of stripped, non-comment postfix config line"
   # lines are like: 
   # smtpd_tls_session_cache_database = btree:${data_directory}/smtpd_scache
@@ -12,7 +12,7 @@ def parse_line(self, line_data):
   left, sep, right = line.partition("=")
   if not sep:
     return None
-  return (left.strip(), right.strip())
+  return (num, left.strip(), right.strip())
 
 #def get_cf_values(lines, var):
 
@@ -23,10 +23,11 @@ class MTAConfigGenerator:
 class ExistingConfigError(ValueError): pass
 
 class PostfixConfigGenerator(MTAConfigGenerator):
-  def __init__(self, stlse_config):
+  def __init__(self, stlse_config, fixup=False):
+    self.fixup = fixup
     MTAConfigGenerator.__init__(self, stlse_config)
-    this.postfix_cf_file = this.find_postfix_cf()
-    this.wrangle_existing_config()
+    self.postfix_cf_file = self.find_postfix_cf()
+    self.wrangle_existing_config()
 
   def ensure_cf_var(self, var, ideal, also_acceptable):
     """
@@ -35,53 +36,77 @@ class PostfixConfigGenerator(MTAConfigGenerator):
 
     acceptable = [ideal] + also_acceptable
 
-    l = [num,line for num,line in enumerate(cf) if line.startswith(var)]
+    l = [(num,line) for num,line in enumerate(self.cf) if line.startswith(var)]
     if not any(l):
-      this.additions.append("smtpd_use_tls = yes")
+      self.additions.append(var + " = " + ideal)
     else:
-      values = [right for left, right in map(parse_line, l)]
+      values = map(parse_line, l)
       if len(set(values)) > 1:
-        if this.fixup:
-          this.deletions.append(
-        raise ExistingConfigError, "Conflicting existing config values " + `l`
-      if values[0] != "yes":
+        if self.fixup:
+          #print "Scheduling deletions:" + `values`
+          conflicting_lines = [num for num,_var,val in values]
+          self.deletions.extend(conflicting_lines)
+          self.additions.append(var + " = " + ideal)
+        else:
+          raise ExistingConfigError, "Conflicting existing config values " + `l`
+      val = values[0][2]
+      if val not in acceptable:
+        #print "Scheduling deletions:" + `values`
+        if self.fixup:
+          self.deletions.append(values[0][0])
+          self.additions.append(var + " = " + ideal)
+        else:
+          raise ExistingConfigError, "Existing config has %s=%s"%(var,val)
     
-  def wrangle_existing_config(self, fixup=false):
+  def wrangle_existing_config(self):
     """
     Try to ensure/mutate that the config file is in a sane state.
     Fixup means we'll delete existing lines if necessary to get there.
     """
-    this.additions = []
-    fn = find_postfix_cf()
-    raw_cf = open(fn).readlines()
-    this.cf = map(string.strip, raw_cf)
-    #this.cf = [line for line in cf if line and not line.startswith("#")]
-    this.fixup = fixup
+    self.additions = []
+    self.deletions = []
+    self.fn = self.find_postfix_cf()
+    self.raw_cf = open(self.fn).readlines()
+    self.cf = map(string.strip, self.raw_cf)
+    #self.cf = [line for line in cf if line and not line.startswith("#")]
 
     # Check we're currently accepting inbound STARTTLS sensibly
-    this.ensure_cf_var("smtpd_use_tls", "yes", [])
+    self.ensure_cf_var("smtpd_use_tls", "yes", [])
     # Ideally we use it opportunistically in the outbound direction
-    this.ensure_cf_var("smtp_tls_security_level", "may", ["encrypt"])
+    self.ensure_cf_var("smtp_tls_security_level", "may", ["encrypt"])
     # Maximum verbosity lets us collect failure information
-    this.ensure_cf_var("smtp_tls_loglevel", "1", [])
+    self.ensure_cf_var("smtp_tls_loglevel", "1", [])
     # Inject a reference to our per-domain policy map
-    this.ensure_cf_var("smtp_tls_policy_maps", DEFAULT_POLICY_FILE, [])
+    self.ensure_cf_var("smtp_tls_policy_maps", DEFAULT_POLICY_FILE, [])
 
-    this.maybe_add_config_lines()
+    self.maybe_add_config_lines()
 
   def maybe_add_config_lines(self):
-    if not this.additions:
+    if not self.additions:
       return
-    this.additions[:0]=["","# New config lines added by STARTTLS Everywhere",""]
-    new_cf_lines = "\n".join(this.additions)
-    print "Adding to %s:" % fn
+    if self.fixup:
+      print "Deleting lines:", self.deletions
+    self.additions[:0]=["#","# New config lines added by STARTTLS Everywhere","#"]
+    new_cf_lines = "\n".join(self.additions)
+    print "Adding to %s:" % self.fn
     print new_cf_lines
-    if raw_cf[-1][-1] == "\n":     sep = ""
-    else:                          sep = "\n"
-    new_cf = "".join(raw_cf) + sep + new_cf_lines
-    f = open(fn, "w").write(new_cf)
-    f.close()
+    if self.raw_cf[-1][-1] == "\n":     sep = ""
+    else:                               sep = "\n"
+
+    self.new_cf = ""
+    for num, line in enumerate(self.raw_cf):
+      if self.fixup and num in self.deletions:
+        self.new_cf += "# Line removed by STARTTLS Everywhere\n# " + line
+      else:
+        self.new_cf += line
+    self.new_cf += sep + new_cf_lines
+
+    print self.new_cf
+    f = open(self.fn, "w").write(self.new_cf)
 
   def find_postfix_cf(self):
     "Search far and wide for the correct postfix configuration file"
     return "/etc/postfix/main.cf"
+
+if __name__ == "__main__":
+  pcgen = PostfixConfigGenerator(None, fixup=True)
