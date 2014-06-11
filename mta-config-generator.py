@@ -2,7 +2,9 @@
 
 import string
 
-DEFAULT_POLICY_FILE = "texthash:/etc/postfix/starttls_everywhere_policy"
+
+DEFAULT_POLICY_FILE = "/etc/postfix/starttls_everywhere_policy"
+POLICY_CF_ENTRY="texthash:" + DEFAULT_POLICY_FILE
 
 def parse_line(line_data):
   "return the and right hand sides of stripped, non-comment postfix config line"
@@ -17,17 +19,18 @@ def parse_line(line_data):
 #def get_cf_values(lines, var):
 
 class MTAConfigGenerator:
-  def __init__(self, stlse_config):
-    self.c = stlse_config
+  def __init__(self, policy_config):
+    self.policy_config = policy_config
 
 class ExistingConfigError(ValueError): pass
 
 class PostfixConfigGenerator(MTAConfigGenerator):
-  def __init__(self, stlse_config, fixup=False):
+  def __init__(self, policy_config, fixup=False):
     self.fixup = fixup
-    MTAConfigGenerator.__init__(self, stlse_config)
+    MTAConfigGenerator.__init__(self, policy_config)
     self.postfix_cf_file = self.find_postfix_cf()
     self.wrangle_existing_config()
+    self.set_domainwise_tls_policies()
 
   def ensure_cf_var(self, var, ideal, also_acceptable):
     """
@@ -77,7 +80,7 @@ class PostfixConfigGenerator(MTAConfigGenerator):
     # Maximum verbosity lets us collect failure information
     self.ensure_cf_var("smtp_tls_loglevel", "1", [])
     # Inject a reference to our per-domain policy map
-    self.ensure_cf_var("smtp_tls_policy_maps", DEFAULT_POLICY_FILE, [])
+    self.ensure_cf_var("smtp_tls_policy_maps", POLICY_CF_ENTRY, [])
 
     self.maybe_add_config_lines()
 
@@ -87,7 +90,7 @@ class PostfixConfigGenerator(MTAConfigGenerator):
     if self.fixup:
       print "Deleting lines:", self.deletions
     self.additions[:0]=["#","# New config lines added by STARTTLS Everywhere","#"]
-    new_cf_lines = "\n".join(self.additions)
+    new_cf_lines = "\n".join(self.additions) + "\n"
     print "Adding to %s:" % self.fn
     print new_cf_lines
     if self.raw_cf[-1][-1] == "\n":     sep = ""
@@ -108,5 +111,18 @@ class PostfixConfigGenerator(MTAConfigGenerator):
     "Search far and wide for the correct postfix configuration file"
     return "/etc/postfix/main.cf"
 
+  def set_domainwise_tls_policies(self):
+    self.policy_lines = []
+    for domain, policy in self.policy_config.tls_policies:
+      entry = domain + " encrypt "
+      if "min-tls-version" in policy:
+        entry += " " + policy["min-tls-version"]
+      self.policy_lines.append(entry)
+
+    f = open(DEFAULT_POLICY_FILE, "w")
+    f.write("\n".join(self.policy_lines))
+
 if __name__ == "__main__":
-  pcgen = PostfixConfigGenerator(None, fixup=True)
+  import config-parser
+  c = config-parser.Config()
+  pcgen = PostfixConfigGenerator(c, fixup=True)
