@@ -1,5 +1,9 @@
 {
   "tls-policies": {
+    "*.valid-example-recipient.com": {
+      "min-tls-version": "TLSv1.1",
+      "force-tls" : true
+    },
     "*.mx.aol.com": {
       "min-tls-version": "TLSv1", 
       "require-tls": true
@@ -50,6 +54,9 @@
     }
   }, 
   "acceptable-mxs": {
+    "valid-example-recipient.com": {
+      "accept-mx-domains": [ "*.valid-example-recipient.com" ]
+    },
     "wp.pl": {
       "accept-mx-domains": [
         "*.wp.pl"
