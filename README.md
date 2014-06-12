@@ -53,7 +53,7 @@ The basic file format will be JSON with comments (http://blog.getify.com/json-co
       // "timestamp": 1401414363,  : also acceptable
       "author": "Electronic Frontier Foundation https://eff.org",
       "expires": "2014-06-06T14:30:16+00:00",
-      "security-policies": {
+      "tls-policies": {
         // These match on the MX domain.
         "*.yahoodns.net": {
            "require-valid-certificate": true,
