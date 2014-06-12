@@ -36,7 +36,6 @@ class Config:
     f = open(cfg_file_name)
     self.cfg = json.loads(f.read())
     for atr, val in self.cfg.items():
-      #print atr,val
       # Verify each attribute of the structure
       if atr.startswith("comment"):
         continue

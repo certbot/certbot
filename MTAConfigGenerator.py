@@ -3,12 +3,12 @@
 import string
 import os.path
 
-POSTFIX_DIR = "/etc/postfix"
+POSTFIX_DIR = "postfix-copy"
 DEFAULT_POLICY_FILE = os.path.join(POSTFIX_DIR, "starttls_everywhere_policy")
 POLICY_CF_ENTRY="texthash:" + DEFAULT_POLICY_FILE
 
 def parse_line(line_data):
-  "return the and right hand sides of stripped, non-comment postfix config line"
+  "return the left and right hand sides of stripped, non-comment postfix config line"
   # lines are like: 
   # smtpd_tls_session_cache_database = btree:${data_directory}/smtpd_scache
   num,line = line_data
@@ -16,8 +16,6 @@ def parse_line(line_data):
   if not sep:
     return None
   return (num, left.strip(), right.strip())
-
-#def get_cf_values(lines, var):
 
 class MTAConfigGenerator:
   def __init__(self, policy_config):
@@ -36,8 +34,8 @@ class PostfixConfigGenerator(MTAConfigGenerator):
   def ensure_cf_var(self, var, ideal, also_acceptable):
     """
     Ensure that existing postfix config @var is in the list of @acceptable
-    values; if not, set it to the ideal value.  """
-
+    values; if not, set it to the ideal value.
+    """
     acceptable = [ideal] + also_acceptable
 
     l = [(num,line) for num,line in enumerate(self.cf) if line.startswith(var)]
