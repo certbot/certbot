@@ -1,14 +1,16 @@
 #!/usr/bin/env python
 
 import string
-import os.path
+import os, os.path
 
 POSTFIX_DIR = "/etc/postfix"
 DEFAULT_POLICY_FILE = os.path.join(POSTFIX_DIR, "starttls_everywhere_policy")
 POLICY_CF_ENTRY="texthash:" + DEFAULT_POLICY_FILE
 
 def parse_line(line_data):
-  "return the and right hand sides of stripped, non-comment postfix config line"
+  """
+  return the (line number, left hand side, right hand side)
+  of a stripped postfix config line"""
   # lines are like: 
   # smtpd_tls_session_cache_database = btree:${data_directory}/smtpd_scache
   num,line = line_data
@@ -32,6 +34,7 @@ class PostfixConfigGenerator(MTAConfigGenerator):
     self.postfix_cf_file = self.find_postfix_cf()
     self.wrangle_existing_config()
     self.set_domainwise_tls_policies()
+    os.system("sudo service postfix reload")
 
   def ensure_cf_var(self, var, ideal, also_acceptable):
     """
@@ -105,7 +108,7 @@ class PostfixConfigGenerator(MTAConfigGenerator):
         self.new_cf += line
     self.new_cf += sep + new_cf_lines
 
-    print self.new_cf
+    #print self.new_cf
     f = open(self.fn, "w")
     f.write(self.new_cf)
     f.close()
