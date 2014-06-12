@@ -3,7 +3,7 @@
   "timestamp": 1401093333,
   "author": "Electronic Frontier Foundation https://eff.org",
   "expires": 1404677353, "comment 2:": "epoch seconds",
-  "security-policies": {
+  "tls-policies": {
     "*.valid-example-recipient.com": {
       "min-tls-version": "TLSv1.1"
     }
