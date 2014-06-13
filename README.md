@@ -33,6 +33,10 @@ STARTTLS by itself thwarts purely passive eavesdroppers. However, as currently d
 
 Attacker has control of routers on the path between two MTAs of interest. Attacker cannot or will not issue valid certificates for arbitrary names. Attacker cannot or will not attack endpoints. We are trying to protect confidentiality and integrity of email transmitted over SMTP between MTAs.
 
+## Alternatives
+
+Our goals can also be accomplished through use of [DNSSEC and DANE](http://tools.ietf.org/html/draft-ietf-dane-smtp-with-dane-10), which is certainly a more scalable solution. However, operators have been very slow to roll out DNSSEC supprt. We feel there is value in deploying an intermediate solution that does not rely on DNSSEC. This will improve the email security situation more quickly. It will also provide operational experience with authenticated SMTP over TLS that will make eventual rollout of a DANE solution easier.
+
 ## Detailed design
 
 Senders need to know which target hosts are known to support STARTTLS, and how to authenticate them. Since the network cannot be trusted to provide this information, it must be communicated securely out-of-band. We will provide:
