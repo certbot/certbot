@@ -1,7 +1,6 @@
 {
   "tls-policies": {
     "*.valid-example-recipient.com": {
-      "min-tls-version": "TLSv1.1",
       "force-tls" : true
     },
     "*.mx.aol.com": {
