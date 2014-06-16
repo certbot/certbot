@@ -78,7 +78,7 @@ class PostfixConfigGenerator(MTAConfigGenerator):
     # Check we're currently accepting inbound STARTTLS sensibly
     self.ensure_cf_var("smtpd_use_tls", "yes", [])
     # Ideally we use it opportunistically in the outbound direction
-    self.ensure_cf_var("smtp_tls_security_level", "may", ["encrypt"])
+    self.ensure_cf_var("smtp_tls_security_level", "may", ["encrypt","dane"])
     # Maximum verbosity lets us collect failure information
     self.ensure_cf_var("smtp_tls_loglevel", "1", [])
     # Inject a reference to our per-domain policy map
