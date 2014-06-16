@@ -114,10 +114,15 @@ class PostfixConfigGenerator(MTAConfigGenerator):
 
   def set_domainwise_tls_policies(self):
     self.policy_lines = []
-    for domain, policy in self.policy_config.tls_policies.items():
-      entry = domain + " encrypt"
-      if "min-tls-version" in policy:
-        entry += " " + policy["min-tls-version"]
+    for address_domain, properties in self.policy_config.acceptable_mxs.items():
+      mx_list = properties["accept-mx-domains"]
+      if len(mx_list) > 1:
+        print "Lists of multiple accept-mx-domains not yet supported, skipping ", address_domain
+      mx_domain = mx_list[0]
+      mx_policy = self.policy_config.tls_policies[mx_domain]
+      entry = address_domain + " encrypt"
+      if "min-tls-version" in mx_policy:
+        entry += " " + mx_policy["min-tls-version"]
       self.policy_lines.append(entry)
 
     f = open(DEFAULT_POLICY_FILE, "w")

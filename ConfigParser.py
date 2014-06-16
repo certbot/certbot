@@ -59,10 +59,10 @@ class Config:
                 raise ValueError, "Not a valid TLS version string: " + `value`
               self.tls_policies[domain]["min-tls-version"] = str(value)
       elif atr == "acceptable-mxs":
+        self.acceptable_mxs = val
         pass
       else:
-        sys.stderr.write("Uknown attribute: " + `atr` + "\n")
-    print self.tls_policies
+        sys.stderr.write("Unknown attribute: " + `atr` + "\n")
 
   def check_tls_policy_domains(self, val):
     if type(val) != dict:
@@ -73,11 +73,6 @@ class Config:
         d = str(domain) # convert from unicode
       except:
         raise TypeError, "tls-policy domain not a string" + `domain`
-      if not d.startswith("*."):
-        raise ValueError, "tls-policy domains must start with *.; try *."+d
-      d = d.partition("*.")[2]
-      if not looks_like_a_domain(d):
-        raise ValueError, "tls-policy for something that a domain? " + d
       yield (d, policies)
 
 if __name__ == "__main__":

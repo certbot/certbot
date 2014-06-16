@@ -50,11 +50,6 @@
     }
   }, 
   "acceptable-mxs": {
-    "wp.pl": {
-      "accept-mx-domains": [
-        "*.wp.pl"
-      ]
-    }, 
     "yahoo.co.uk": {
       "accept-mx-domains": [
         "*.yahoodns.net"
