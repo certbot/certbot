@@ -54,7 +54,7 @@ class Config:
             raise TypeError, domain + "'s policies should be a dict: " + `policies`
           self.tls_policies[domain] = {} # being here enforces TLS at all
           for policy, v in policies.items():
-            value = lower(str(v))
+            value = str(v).lower()
             if policy == "require-tls":
               if value in ("true", "1", "yes"):
                 self.tls_policies[domain]["required"] = True
@@ -64,6 +64,7 @@ class Config:
                 raise ValueError, "Unknown require-tls value " + `value`
             elif policy == "min-tls-version":
               reasonable = ["TLS", "TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]
+              reasonable = map(string.lower, reasonable)
               if not value in reasonable:
                 raise ValueError, "Not a valid TLS version string: " + `value`
               self.tls_policies[domain]["min-tls-version"] = str(value)
@@ -76,7 +77,7 @@ class Config:
                 raise ValueError, "Not a known enoforcement policy " + `value`
       elif atr == "acceptable-mxs":
         self.acceptable_mxs = val
-        for domain, mxball in selg.acceptable_mxs:
+        for domain, mxball in self.acceptable_mxs.items():
           pass
       else:
         sys.stderr.write("Unknown attribute: " + `atr` + "\n")
