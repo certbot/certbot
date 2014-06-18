@@ -75,10 +75,11 @@ class Config:
               else:
                 raise ValueError, "Not a known enoforcement policy " + `value`
       elif atr == "acceptable-mxs":
-        for domain, mxball in acceptable_mx:
+        self.acceptable_mxs = val
+        for domain, mxball in selg.acceptable_mxs:
           pass
       else:
-        sys.stderr.write("Uknown attribute: " + `atr` + "\n")
+        sys.stderr.write("Unknown attribute: " + `atr` + "\n")
     # XXX is it ever permissible to have a domain with an acceptable-mx 
     # that does not point to a TLS security policy?  If not, check/warn/fail
     # here
@@ -93,11 +94,6 @@ class Config:
         d = str(domain) # convert from unicode
       except:
         raise TypeError, "tls-policy domain not a string" + `domain`
-      if not d.startswith("*."):
-        raise ValueError, "tls-policy domains must start with *.; try *."+d
-      d = d.partition("*.")[2]
-      if not looks_like_a_domain(d):
-        raise ValueError, "tls-policy for something that a domain? " + d
       yield (d, policies)
 
 if __name__ == "__main__":
