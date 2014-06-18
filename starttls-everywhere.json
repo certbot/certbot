@@ -1,50 +1,50 @@
 {
   "tls-policies": {
-    "*.mx.aol.com": {
+    ".mx.aol.com": {
       "min-tls-version": "TLSv1", 
       "require-tls": true
     }, 
-    "*.psmtp.com": {
+    ".psmtp.com": {
       "min-tls-version": "TLSv1", 
       "require-tls": true
     }, 
-    "*.ukr.net": {
+    ".ukr.net": {
       "min-tls-version": "TLSv1.1", 
       "require-tls": true
     }, 
-    "*.interia.pl": {
+    ".interia.pl": {
       "min-tls-version": "TLSv1", 
       "require-tls": true
     }, 
-    "*.gmx.net": {
+    ".gmx.net": {
       "min-tls-version": "TLSv1.1", 
       "require-tls": true
     }, 
-    "*.web.de": {
+    ".web.de": {
       "min-tls-version": "TLSv1.1", 
       "require-tls": true
     }, 
-    "*.marktplaats.nl": {
+    ".marktplaats.nl": {
       "min-tls-version": "TLSv1.1", 
       "require-tls": true
     }, 
-    "*.wp.pl": {
+    ".wp.pl": {
       "min-tls-version": "TLSv1.1", 
       "require-tls": true
     }, 
-    "*.yahoodns.net": {
+    ".yahoodns.net": {
       "min-tls-version": "TLSv1", 
       "require-tls": true
     }, 
-    "*.t-online.de": {
+    ".t-online.de": {
       "min-tls-version": "TLSv1.1", 
       "require-tls": true
     }, 
-    "*.rambler.ru": {
+    ".rambler.ru": {
       "min-tls-version": "TLSv1.1", 
       "require-tls": true
     }, 
-    "*.t.facebook.com": {
+    ".t.facebook.com": {
       "min-tls-version": "TLSv1", 
       "require-tls": true
     }
@@ -52,87 +52,87 @@
   "acceptable-mxs": {
     "yahoo.co.uk": {
       "accept-mx-domains": [
-        "*.yahoodns.net"
+        ".yahoodns.net"
       ]
     }, 
     "rocketmail.com": {
       "accept-mx-domains": [
-        "*.yahoodns.net"
+        ".yahoodns.net"
       ]
     }, 
     "web.de": {
       "accept-mx-domains": [
-        "*.web.de"
+        ".web.de"
       ]
     }, 
     "sbcglobal.net": {
       "accept-mx-domains": [
-        "*.yahoodns.net"
+        ".yahoodns.net"
       ]
     }, 
     "aol.com": {
       "accept-mx-domains": [
-        "*.mx.aol.com"
+        ".mx.aol.com"
       ]
     }, 
     "facebook.com": {
       "accept-mx-domains": [
-        "*.t.facebook.com"
+        ".t.facebook.com"
       ]
     }, 
     "sompo-japan.co.jp": {
       "accept-mx-domains": [
-        "*.psmtp.com"
+        ".psmtp.com"
       ]
     }, 
     "salesforce.com": {
       "accept-mx-domains": [
-        "*.psmtp.com"
+        ".psmtp.com"
       ]
     }, 
     "rambler.ru": {
       "accept-mx-domains": [
-        "*.rambler.ru"
+        ".rambler.ru"
       ]
     }, 
     "t-online.de": {
       "accept-mx-domains": [
-        "*.t-online.de"
+        ".t-online.de"
       ]
     }, 
     "gmx.net": {
       "accept-mx-domains": [
-        "*.gmx.net"
+        ".gmx.net"
       ]
     }, 
     "gmx.de": {
       "accept-mx-domains": [
-        "*.gmx.net"
+        ".gmx.net"
       ]
     }, 
     "ukr.net": {
       "accept-mx-domains": [
-        "*.ukr.net"
+        ".ukr.net"
       ]
     }, 
     "rogers.com": {
       "accept-mx-domains": [
-        "*.yahoodns.net"
+        ".yahoodns.net"
       ]
     }, 
     "ymail.com": {
       "accept-mx-domains": [
-        "*.yahoodns.net"
+        ".yahoodns.net"
       ]
     }, 
     "marktplaats.nl": {
       "accept-mx-domains": [
-        "*.marktplaats.nl"
+        ".marktplaats.nl"
       ]
     }, 
     "interia.pl": {
       "accept-mx-domains": [
-        "*.interia.pl"
+        ".interia.pl"
       ]
     }
   }
