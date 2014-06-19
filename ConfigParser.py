@@ -4,7 +4,7 @@ import sys
 import json
 from datetime import datetime
 import string
-
+import collections
 
 def parse_timestamp(ts):
   try:
@@ -49,7 +49,7 @@ class Config:
       elif atr == "expires":
         self.expires = parse_timestamp(val)
       elif atr == "tls-policies":
-        for domain,policies in self.check_tls_policy_domains(val):
+        for domain, policies in self.check_tls_policy_domains(val):
           if type(policies) != dict:
             raise TypeError, domain + "'s policies should be a dict: " + `policies`
           self.tls_policies[domain] = {} # being here enforces TLS at all
@@ -77,14 +77,28 @@ class Config:
                 raise ValueError, "Not a known enoforcement policy " + `value`
       elif atr == "acceptable-mxs":
         self.acceptable_mxs = val
-        for domain, mxball in self.acceptable_mxs.items():
-          pass
+        self.mx_domain_to_address_domains = collections.defaultdict(set)
+        for address_domain, properties in self.acceptable_mxs.items():
+          mx_list = properties["accept-mx-domains"]
+          if len(mx_list) > 1:
+            print "Lists of multiple accept-mx-domains not yet supported, skipping ", address_domain
+          mx_domain = mx_list[0]
+          self.mx_domain_to_address_domains[mx_domain].add(address_domain)
+        pass
       else:
         sys.stderr.write("Unknown attribute: " + `atr` + "\n")
     # XXX is it ever permissible to have a domain with an acceptable-mx 
     # that does not point to a TLS security policy?  If not, check/warn/fail
     # here
     print self.tls_policies
+
+  def get_address_domains(self, mx_hostname):
+    for mx_domain, address_domains in self.mx_domain_to_address_domains.items():
+      # TODO: write this better
+      if (mx_hostname.find(mx_domain) > 0 and
+          mx_hostname.find(mx_domain) == len(mx_hostname) - len(mx_domain)):
+        return address_domains
+    return None
 
   def check_tls_policy_domains(self, val):
     if type(val) != dict:
