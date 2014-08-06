@@ -72,11 +72,11 @@ class Config:
         sys.stderr.write("Unknown attribute: " + `atr` + "\n")
 
   def get_address_domains(self, mx_hostname):
-    for mx_domain, address_domains in self.mx_domain_to_address_domains.items():
-      # TODO: write this better
-      if (mx_hostname.find(mx_domain) > 0 and
-          mx_hostname.find(mx_domain) == len(mx_hostname) - len(mx_domain)):
-        return address_domains
+    labels = mx_hostname.split(".")
+    for n in range(1, len(labels)):
+      parent = "." + ".".join(labels[n:])
+      if parent in self.mx_domain_to_address_domains:
+        return self.mx_domain_to_address_domains[parent]
     return None
 
   def check_tls_policy_domains(self, val):
