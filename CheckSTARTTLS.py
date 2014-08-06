@@ -10,6 +10,9 @@ import json
 
 import dns.resolver
 from M2Crypto import X509
+from publicsuffix import PublicSuffixList
+
+public_suffix_list = PublicSuffixList()
 
 def mkdirp(path):
     try:
@@ -71,6 +74,8 @@ def valid_cert(filename):
   if open(filename).read().find("-----BEGIN CERTIFICATE-----") == -1:
     return False
   try:
+    # The file contains both the leaf cert and any intermediates, so we pass it
+    # as both the cert to validate and as the "untrusted" chain.
     output = subprocess.check_output("""openssl verify -CApath /home/jsha/mozilla/ -purpose sslserver \
               -untrusted "%s" \
               "%s"
@@ -87,10 +92,11 @@ def check_certs(mail_domain):
       return ""
     else:
       new_names = extract_names_from_openssl_output(filename)
+      new_names = map(lambda n: public_suffix_list.get_public_suffix(n), new_names)
       names.update(new_names)
-      names.add(filename.rstrip("."))
   if len(names) >= 1:
-    return common_suffix(names)
+    # Hack: Just pick an arbitrary suffix for now. Do something cleverer later.
+    return names.pop()
   else:
     return ""
 
@@ -134,6 +140,7 @@ def min_tls_version(mail_domain):
   return min(protocols)
 
 def collect(mail_domain):
+  print "Checking domain %s" % mail_domain
   mkdirp(mail_domain)
   answers = dns.resolver.query(mail_domain, 'MX')
   for rdata in answers:
@@ -143,7 +150,7 @@ def collect(mail_domain):
 if __name__ == '__main__':
   """Consume a target list of domains and output a configuration file for those domains."""
   if len(sys.argv) == 1:
-    print("Please pass at least one mail domain as an argument")
+    print("Usage: CheckSTARTTLS.py list-of-domains.txt > output.json")
 
   config = {
     "address-domains": {
@@ -151,14 +158,16 @@ if __name__ == '__main__':
     "mx-domains": {
     }
   }
-  for domain in sys.argv[1:]:
-    collect(domain)
+  for domain in open(sys.argv[1]).readlines():
+    domain = domain.strip()
+    if not os.path.exists(domain):
+      collect(domain)
     if len(os.listdir(domain)) == 0:
       continue
     suffix = check_certs(domain)
     min_version = min_tls_version(domain)
     if suffix != "":
-      suffix_match = "*." + suffix
+      suffix_match = "." + suffix
       config["address-domains"][domain] = {
         "accept-mx-domains": [suffix_match]
       }
@@ -167,4 +176,4 @@ if __name__ == '__main__':
         "min-tls-version": min_version
       }
 
-  print json.dumps(config, indent=2)
+  print json.dumps(config, indent=2, sort_keys=True)
