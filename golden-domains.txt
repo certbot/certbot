@@ -20,3 +20,5 @@ facebook.com
 craigslist.org
 bigpond.com
 aol.com
+gmail.com
+yahoo.com
