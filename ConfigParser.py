@@ -35,6 +35,8 @@ class Config:
   def __init__(self, cfg_file_name = "config.json"):
     f = open(cfg_file_name)
     self.cfg = json.loads(f.read())
+    self.tls_policies = {}
+    self.mx_map = {}
     for atr, val in self.cfg.items():
       # Verify each attribute of the structure
       if atr.startswith("comment"):
@@ -47,17 +49,32 @@ class Config:
       elif atr == "expires":
         self.expires = parse_timestamp(val)
       elif atr == "tls-policies":
-        self.tls_policies = {}
         for domain, policies in self.check_tls_policy_domains(val):
           if type(policies) != dict:
             raise TypeError, domain + "'s policies should be a dict: " + `policies`
           self.tls_policies[domain] = {} # being here enforces TLS at all
-          for policy, value in policies.items():
-            if policy == "min-tls-version":
+          for policy, v in policies.items():
+            value = str(v).lower()
+            if policy == "require-tls":
+              if value in ("true", "1", "yes"):
+                self.tls_policies[domain]["required"] = True
+              elif value in ("false", "0", "no"):
+                self.tls_policies[domain]["required"] = False
+              else:
+                raise ValueError, "Unknown require-tls value " + `value`
+            elif policy == "min-tls-version":
               reasonable = ["TLS", "TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]
+              reasonable = map(string.lower, reasonable)
               if not value in reasonable:
                 raise ValueError, "Not a valid TLS version string: " + `value`
               self.tls_policies[domain]["min-tls-version"] = str(value)
+            elif policy == "enforce-mode":
+              if value == "enforce":
+                self.tls_policies[domain]["enforce"] = True
+              elif value == "log-only":
+                self.tls_policies[domain]["enforce"] = False
+              else:
+                raise ValueError, "Not a known enoforcement policy " + `value`
       elif atr == "acceptable-mxs":
         self.acceptable_mxs = val
         self.mx_domain_to_address_domains = collections.defaultdict(set)
@@ -70,6 +87,10 @@ class Config:
         pass
       else:
         sys.stderr.write("Unknown attribute: " + `atr` + "\n")
+    # XXX is it ever permissible to have a domain with an acceptable-mx 
+    # that does not point to a TLS security policy?  If not, check/warn/fail
+    # here
+    print self.tls_policies
 
   def get_address_domains(self, mx_hostname):
     labels = mx_hostname.split(".")

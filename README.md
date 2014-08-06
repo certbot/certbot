@@ -90,9 +90,6 @@ The basic file format will be JSON with comments (http://blog.getify.com/json-co
         "eff.org": {
           "accept-mx-domains": ["*.eff.org"]
         }
-        "*.yahoodns.net": {
-           "require-valid-certificate": true,
-        }
       }
     }
 

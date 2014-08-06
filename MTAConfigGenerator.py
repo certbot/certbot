@@ -2,12 +2,13 @@
 
 import sys
 import string
-import os.path
+import os, os.path
 
 def parse_line(line_data):
   """
   Return the left and right hand sides of stripped, non-comment postfix
-  config line.
+  Return the (line number, left hand side, right hand side) of a stripped
+  postfix config line.
 
   Lines are like:
   smtpd_tls_session_cache_database = btree:${data_directory}/smtpd_scache
@@ -33,7 +34,7 @@ class PostfixConfigGenerator(MTAConfigGenerator):
     self.postfix_cf_file = self.find_postfix_cf()
     self.wrangle_existing_config()
     self.set_domainwise_tls_policies()
-    print "Configuration complete. Now run `sudo service postfix reload'."
+    os.system("sudo service postfix reload")
 
   def ensure_cf_var(self, var, ideal, also_acceptable):
     """
@@ -79,7 +80,7 @@ class PostfixConfigGenerator(MTAConfigGenerator):
     # Check we're currently accepting inbound STARTTLS sensibly
     self.ensure_cf_var("smtpd_use_tls", "yes", [])
     # Ideally we use it opportunistically in the outbound direction
-    self.ensure_cf_var("smtp_tls_security_level", "may", ["encrypt"])
+    self.ensure_cf_var("smtp_tls_security_level", "may", ["encrypt","dane"])
     # Maximum verbosity lets us collect failure information
     self.ensure_cf_var("smtp_tls_loglevel", "1", [])
     # Inject a reference to our per-domain policy map
@@ -109,7 +110,7 @@ class PostfixConfigGenerator(MTAConfigGenerator):
         self.new_cf += line
     self.new_cf += sep + new_cf_lines
 
-    print self.new_cf
+    #print self.new_cf
     f = open(self.fn, "w")
     f.write(self.new_cf)
     f.close()

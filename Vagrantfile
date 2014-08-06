@@ -16,6 +16,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     valid.vm.hostname = "valid-example-recipient.com"
   end
   config.vm.synced_folder "vagrant-shared", "/vagrant"
+  config.vm.synced_folder "vagrant-shared/starttls-everywhere", "/vagrant/starttls-everywhere"
   config.vm.provision :shell, path: "vagrant-bootstrap.sh"
 
   config.vm.provider "virtualbox" do |vb|
