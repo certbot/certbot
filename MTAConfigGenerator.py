@@ -1,16 +1,17 @@
 #!/usr/bin/env python
 
+import sys
 import string
 import os.path
 
-POSTFIX_DIR = "postfix-copy"
-DEFAULT_POLICY_FILE = os.path.join(POSTFIX_DIR, "starttls_everywhere_policy")
-POLICY_CF_ENTRY="texthash:" + DEFAULT_POLICY_FILE
-
 def parse_line(line_data):
-  "return the left and right hand sides of stripped, non-comment postfix config line"
-  # lines are like: 
-  # smtpd_tls_session_cache_database = btree:${data_directory}/smtpd_scache
+  """
+  Return the left and right hand sides of stripped, non-comment postfix
+  config line.
+
+  Lines are like:
+  smtpd_tls_session_cache_database = btree:${data_directory}/smtpd_scache
+  """
   num,line = line_data
   left, sep, right = line.partition("=")
   if not sep:
@@ -24,12 +25,15 @@ class MTAConfigGenerator:
 class ExistingConfigError(ValueError): pass
 
 class PostfixConfigGenerator(MTAConfigGenerator):
-  def __init__(self, policy_config, fixup=False):
+  def __init__(self, policy_config, postfix_dir, fixup=False):
     self.fixup = fixup
+    self.postfix_dir = postfix_dir
+    self.policy_file = os.path.join(postfix_dir, "starttls_everywhere_policy")
     MTAConfigGenerator.__init__(self, policy_config)
     self.postfix_cf_file = self.find_postfix_cf()
     self.wrangle_existing_config()
     self.set_domainwise_tls_policies()
+    print "Configuration complete. Now run `sudo service postfix reload'."
 
   def ensure_cf_var(self, var, ideal, also_acceptable):
     """
@@ -59,7 +63,7 @@ class PostfixConfigGenerator(MTAConfigGenerator):
           self.additions.append(var + " = " + ideal)
         else:
           raise ExistingConfigError, "Existing config has %s=%s"%(var,val)
-    
+
   def wrangle_existing_config(self):
     """
     Try to ensure/mutate that the config file is in a sane state.
@@ -79,7 +83,9 @@ class PostfixConfigGenerator(MTAConfigGenerator):
     # Maximum verbosity lets us collect failure information
     self.ensure_cf_var("smtp_tls_loglevel", "1", [])
     # Inject a reference to our per-domain policy map
-    self.ensure_cf_var("smtp_tls_policy_maps", POLICY_CF_ENTRY, [])
+    policy_cf_entry = "texthash:" + self.policy_file
+
+    self.ensure_cf_var("smtp_tls_policy_maps", policy_cf_entry, [])
 
     self.maybe_add_config_lines()
 
@@ -110,7 +116,7 @@ class PostfixConfigGenerator(MTAConfigGenerator):
 
   def find_postfix_cf(self):
     "Search far and wide for the correct postfix configuration file"
-    return os.path.join(POSTFIX_DIR,"main.cf")
+    return os.path.join(self.postfix_dir, "main.cf")
 
   def set_domainwise_tls_policies(self):
     self.policy_lines = []
@@ -122,14 +128,18 @@ class PostfixConfigGenerator(MTAConfigGenerator):
       mx_policy = self.policy_config.tls_policies[mx_domain]
       entry = address_domain + " encrypt"
       if "min-tls-version" in mx_policy:
-        entry += " " + mx_policy["min-tls-version"]
+        entry += " protocols=" + mx_policy["min-tls-version"]
       self.policy_lines.append(entry)
 
-    f = open(DEFAULT_POLICY_FILE, "w")
+    f = open(self.policy_file, "w")
     f.write("\n".join(self.policy_lines) + "\n")
     f.close()
 
 if __name__ == "__main__":
   import ConfigParser
-  c = ConfigParser.Config("starttls-everywhere.json")
-  pcgen = PostfixConfigGenerator(c, fixup=True)
+  if len(sys.argv) != 3:
+    print "Usage: MTAConfigGenerator starttls-everywhere.json /etc/postfix"
+    sys.exit(1)
+  c = ConfigParser.Config(sys.argv[1])
+  postfix_dir = sys.argv[2]
+  pcgen = PostfixConfigGenerator(c, postfix_dir, fixup=True)
