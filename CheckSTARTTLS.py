@@ -7,6 +7,7 @@ import socket
 import subprocess
 import re
 import json
+import collections
 
 import dns.resolver
 from M2Crypto import X509
@@ -152,12 +153,8 @@ if __name__ == '__main__':
   if len(sys.argv) == 1:
     print("Usage: CheckSTARTTLS.py list-of-domains.txt > output.json")
 
-  config = {
-    "address-domains": {
-    },
-    "mx-domains": {
-    }
-  }
+  config = collections.defaultdict(dict)
+
   for domain in open(sys.argv[1]).readlines():
     domain = domain.strip()
     if not os.path.exists(domain):
@@ -168,10 +165,10 @@ if __name__ == '__main__':
     min_version = min_tls_version(domain)
     if suffix != "":
       suffix_match = "." + suffix
-      config["address-domains"][domain] = {
+      config["acceptable-mxs"][domain] = {
         "accept-mx-domains": [suffix_match]
       }
-      config["mx-domains"][suffix_match] = {
+      config["tls-policies"][suffix_match] = {
         "require-tls": True,
         "min-tls-version": min_version
       }
