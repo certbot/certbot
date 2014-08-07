@@ -1,5 +1,15 @@
 {
-  "address-domains": {
+  "acceptable-mxs": {
+    "163.com": {
+      "accept-mx-domains": [
+        ".163.com"
+      ]
+    }, 
+    "aol.com": {
+      "accept-mx-domains": [
+        ".aol.com"
+      ]
+    }, 
     "craigslist.org": {
       "accept-mx-domains": [
         ".craigslist.org"
@@ -10,19 +20,49 @@
         ".google.com"
       ]
     }, 
-    "interia.pl": {
+    "hotmail.com": {
       "accept-mx-domains": [
-        ".interia.pl"
+        ".outlook.com"
       ]
     }, 
-    "marktplaats.nl": {
+    "icloud.com": {
       "accept-mx-domains": [
-        ".marktplaats.nl"
+        ".icloud.com"
       ]
     }, 
-    "rambler.ru": {
+    "live.com": {
       "accept-mx-domains": [
-        ".rambler.ru"
+        ".outlook.com"
+      ]
+    }, 
+    "mac.com": {
+      "accept-mx-domains": [
+        ".icloud.com"
+      ]
+    }, 
+    "me.com": {
+      "accept-mx-domains": [
+        ".icloud.com"
+      ]
+    }, 
+    "msn.com": {
+      "accept-mx-domains": [
+        ".outlook.com"
+      ]
+    }, 
+    "naver.com": {
+      "accept-mx-domains": [
+        ".naver.com"
+      ]
+    }, 
+    "outlook.com": {
+      "accept-mx-domains": [
+        ".outlook.com"
+      ]
+    }, 
+    "qq.com": {
+      "accept-mx-domains": [
+        ".qq.com"
       ]
     }, 
     "rocketmail.com": {
@@ -45,9 +85,14 @@
         ".yahoo.com"
       ]
     }, 
-    "sompo-japan.co.jp": {
+    "shaw.ca": {
       "accept-mx-domains": [
-        ".psmtp.com"
+        ".shaw.ca"
+      ]
+    }, 
+    "sympatico.ca": {
+      "accept-mx-domains": [
+        ".outlook.com"
       ]
     }, 
     "t-online.de": {
@@ -60,12 +105,12 @@
         ".wp.pl"
       ]
     }, 
-    "yahoo.co.uk": {
+    "yahoo.com": {
       "accept-mx-domains": [
         ".yahoo.com"
       ]
     }, 
-    "yahoo.com": {
+    "yahoogroups.com": {
       "accept-mx-domains": [
         ".yahoo.com"
       ]
@@ -81,7 +126,15 @@
       ]
     }
   }, 
-  "mx-domains": {
+  "tls-policies": {
+    ".163.com": {
+      "min-tls-version": "TLSv1.1", 
+      "require-tls": true
+    }, 
+    ".aol.com": {
+      "min-tls-version": "TLSv1", 
+      "require-tls": true
+    }, 
     ".craigslist.org": {
       "min-tls-version": "TLSv1.1", 
       "require-tls": true
@@ -90,11 +143,15 @@
       "min-tls-version": "TLSv1.1", 
       "require-tls": true
     }, 
-    ".interia.pl": {
+    ".icloud.com": {
       "min-tls-version": "TLSv1", 
       "require-tls": true
     }, 
-    ".marktplaats.nl": {
+    ".naver.com": {
+      "min-tls-version": "TLSv1.1", 
+      "require-tls": true
+    }, 
+    ".outlook.com": {
       "min-tls-version": "TLSv1.1", 
       "require-tls": true
     }, 
@@ -102,8 +159,12 @@
       "min-tls-version": "TLSv1", 
       "require-tls": true
     }, 
-    ".rambler.ru": {
-      "min-tls-version": "TLSv1.1", 
+    ".qq.com": {
+      "min-tls-version": "TLSv1", 
+      "require-tls": true
+    }, 
+    ".shaw.ca": {
+      "min-tls-version": "TLSv1", 
       "require-tls": true
     }, 
     ".t-online.de": {
