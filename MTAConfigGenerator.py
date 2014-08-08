@@ -6,7 +6,6 @@ import os, os.path
 
 def parse_line(line_data):
   """
-  Return the left and right hand sides of stripped, non-comment postfix
   Return the (line number, left hand side, right hand side) of a stripped
   postfix config line.
 
