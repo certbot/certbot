@@ -25,6 +25,7 @@ def get_counts(input, config):
   counts = collections.defaultdict(lambda: collections.defaultdict(int))
   # Typical line looks like:
   # Jun 12 06:24:14 sender postfix/smtp[9045]: Untrusted TLS connection established to valid-example-recipient.com[192.168.33.7]:25: TLSv1.1 with cipher AECDH-AES256-SHA (256/256 bits)
+  # ([^[]*) <--- any group of characters that is not "["
   r = re.compile("([A-Za-z]+) TLS connection established to ([^[]*)")
   for line in sys.stdin:
     result = r.search(line)
