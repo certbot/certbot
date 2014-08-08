@@ -24,7 +24,7 @@ def mkdirp(path):
         else: raise
 
 def extract_names(pem):
-    """Return a list of DNS subject names from PEM-encoded leaf cert."""
+    """Return a set of DNS subject names from PEM-encoded leaf cert."""
     leaf = X509.load_cert_string(pem, X509.FORMAT_PEM)
 
     subj = leaf.get_subject()
@@ -93,7 +93,7 @@ def check_certs(mail_domain):
       return ""
     else:
       new_names = extract_names_from_openssl_output(filename)
-      new_names = map(lambda n: public_suffix_list.get_public_suffix(n), new_names)
+      new_names = set(public_suffix_list.get_public_suffix(n) for in new_names)
       names.update(new_names)
   if len(names) >= 1:
     # Hack: Just pick an arbitrary suffix for now. Do something cleverer later.
