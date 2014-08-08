@@ -86,6 +86,8 @@ def valid_cert(filename):
     return False
 
 def check_certs(mail_domain):
+  # Return "" if any certs for any mx domains pointed to by mail_domain
+  # were invalid, and a public suffix for one if they were all valid
   names = set()
   for mx_hostname in os.listdir(mail_domain):
     filename = os.path.join(mail_domain, mx_hostname)
@@ -141,6 +143,8 @@ def min_tls_version(mail_domain):
   return min(protocols)
 
 def collect(mail_domain):
+  # XXX comment this function and explain why we're using the
+  # filesystem rather than internal data structures for plumbing here
   print "Checking domain %s" % mail_domain
   mkdirp(mail_domain)
   answers = dns.resolver.query(mail_domain, 'MX')
