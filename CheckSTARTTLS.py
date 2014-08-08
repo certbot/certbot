@@ -150,7 +150,7 @@ def collect(mail_domain):
 
 if __name__ == '__main__':
   """Consume a target list of domains and output a configuration file for those domains."""
-  if len(sys.argv) == 1:
+  if len(sys.argv) != 2:     # XXX or accept multiple files as input
     print("Usage: CheckSTARTTLS.py list-of-domains.txt > output.json")
 
   config = collections.defaultdict(dict)
