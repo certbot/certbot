@@ -40,6 +40,7 @@ def get_counts(input, config):
           counts[d][validation] += 1
           counts[d]["all"] += 1
   if not seen_trusted:
+    # XXX aren't these outbound?  How can the admin install certs?
     print "Didn't see any trusted connections. Need to install some certs?"
   return counts
 
