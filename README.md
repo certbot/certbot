@@ -4,6 +4,10 @@
 
 Jacob Hoffman-Andrews <jsha@eff.org>, Peter Eckersley <pde@eff.org>
 
+## Mailing List
+
+starttls-everywhere@eff.org, https://lists.eff.org/mailman/listinfo/starttls-everywhere
+
 ## Background
 
 Most email transferred between SMTP servers (aka MTAs) is transmitted in the clear and trivially interceptable. Encryption of SMTP traffic is possible using the STARTTLS mechanism, which encrypts traffic but is vulnerable to a trivial downgrade attack.
