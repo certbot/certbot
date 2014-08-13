@@ -14,6 +14,7 @@ from M2Crypto import X509
 from publicsuffix import PublicSuffixList
 
 public_suffix_list = PublicSuffixList()
+CERTS_OBSERVED = 'certs-observed'
 
 def mkdirp(path):
     try:
@@ -63,7 +64,7 @@ def tls_connect(mx_host, mail_domain):
       return
 
     # Save a copy of the certificate for later analysis
-    with open(os.path.join(mail_domain, mx_host), "w") as f:
+    with open(os.path.join(CERTS_OBSERVED, mail_domain, mx_host), "w") as f:
       f.write(output)
 
 def valid_cert(filename):
@@ -90,9 +91,12 @@ def check_certs(mail_domain):
   Return "" if any certs for any mx domains pointed to by mail_domain
   were invalid, and a public suffix for one if they were all valid
   """
+  dir = os.path.join(CERTS_OBSERVED, mail_domain)
+  if not os.path.exists(dir):
+    collect(mail_domain)
   names = set()
-  for mx_hostname in os.listdir(mail_domain):
-    filename = os.path.join(mail_domain, mx_hostname)
+  for mx_hostname in os.listdir(dir):
+    filename = os.path.join(dir, mx_hostname)
     if not valid_cert(filename):
       return ""
     else:
@@ -137,8 +141,8 @@ def supports_starttls(mx_host):
 
 def min_tls_version(mail_domain):
   protocols = []
-  for mx_hostname in os.listdir(mail_domain):
-    filename = os.path.join(mail_domain, mx_hostname)
+  for mx_hostname in os.listdir(os.path.join(CERTS_OBSERVED, mail_domain)):
+    filename = os.path.join(CERTS_OBSERVED, mail_domain, mx_hostname)
     contents = open(filename).read()
     protocol = re.findall("Protocol  : (.*)", contents)[0]
     protocols.append(protocol)
@@ -151,7 +155,7 @@ def collect(mail_domain):
   subsequent analysis faster.
   """
   print "Checking domain %s" % mail_domain
-  mkdirp(mail_domain)
+  mkdirp(os.path.join(CERTS_OBSERVED, mail_domain))
   answers = dns.resolver.query(mail_domain, 'MX')
   for rdata in answers:
       mx_host = str(rdata.exchange).rstrip(".")
@@ -167,10 +171,6 @@ if __name__ == '__main__':
   for input in sys.argv[1:]:
     for domain in open(input).readlines():
       domain = domain.strip()
-      if not os.path.exists(domain):
-        collect(domain)
-      if len(os.listdir(domain)) == 0:
-        continue
       suffix = check_certs(domain)
       min_version = min_tls_version(domain)
       if suffix != "":
