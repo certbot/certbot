@@ -5,7 +5,7 @@ import collections
 
 import ConfigParser
 
-# XXX There's more to be learned from postfix logs!  Here's one sample
+# TODO: There's more to be learned from postfix logs!  Here's one sample
 # observed during failures from the sender vagrant vm:
 
 # Jun  6 00:21:31 precise32 postfix/smtpd[3648]: connect from localhost[127.0.0.1]
@@ -40,8 +40,9 @@ def get_counts(input, config):
           counts[d][validation] += 1
           counts[d]["all"] += 1
   if not seen_trusted:
-    # XXX aren't these outbound?  How can the admin install certs?
-    print "Didn't see any trusted connections. Need to install some certs?"
+    # Postfix will only emit 'Trusted' if the certificate validates according to
+    # the set of trust roots (CA certs) configured in smtp_tls_CAfile.
+    print "Didn't see any trusted connections. Need to install some trust roots?"
   return counts
 
 def print_summary(counts):

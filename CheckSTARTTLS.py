@@ -86,8 +86,10 @@ def valid_cert(filename):
     return False
 
 def check_certs(mail_domain):
-  # Return "" if any certs for any mx domains pointed to by mail_domain
-  # were invalid, and a public suffix for one if they were all valid
+  """
+  Return "" if any certs for any mx domains pointed to by mail_domain
+  were invalid, and a public suffix for one if they were all valid
+  """
   names = set()
   for mx_hostname in os.listdir(mail_domain):
     filename = os.path.join(mail_domain, mx_hostname)
@@ -95,7 +97,7 @@ def check_certs(mail_domain):
       return ""
     else:
       new_names = extract_names_from_openssl_output(filename)
-      new_names = set(public_suffix_list.get_public_suffix(n) for in new_names)
+      new_names = set(public_suffix_list.get_public_suffix(n) for n in new_names)
       names.update(new_names)
   if len(names) >= 1:
     # Hack: Just pick an arbitrary suffix for now. Do something cleverer later.
@@ -143,8 +145,11 @@ def min_tls_version(mail_domain):
   return min(protocols)
 
 def collect(mail_domain):
-  # XXX comment this function and explain why we're using the
-  # filesystem rather than internal data structures for plumbing here
+  """
+  Attempt to connect to each MX hostname for mail_doman and negotiate STARTTLS.
+  Store the output in a directory with the same name as mail_domain to make
+  subsequent analysis faster.
+  """
   print "Checking domain %s" % mail_domain
   mkdirp(mail_domain)
   answers = dns.resolver.query(mail_domain, 'MX')
@@ -154,27 +159,28 @@ def collect(mail_domain):
 
 if __name__ == '__main__':
   """Consume a target list of domains and output a configuration file for those domains."""
-  if len(sys.argv) != 2:     # XXX or accept multiple files as input
+  if len(sys.argv) < 2:
     print("Usage: CheckSTARTTLS.py list-of-domains.txt > output.json")
 
   config = collections.defaultdict(dict)
 
-  for domain in open(sys.argv[1]).readlines():
-    domain = domain.strip()
-    if not os.path.exists(domain):
-      collect(domain)
-    if len(os.listdir(domain)) == 0:
-      continue
-    suffix = check_certs(domain)
-    min_version = min_tls_version(domain)
-    if suffix != "":
-      suffix_match = "." + suffix
-      config["acceptable-mxs"][domain] = {
-        "accept-mx-domains": [suffix_match]
-      }
-      config["tls-policies"][suffix_match] = {
-        "require-tls": True,
-        "min-tls-version": min_version
-      }
+  for input in sys.argv[1:]:
+    for domain in open(input).readlines():
+      domain = domain.strip()
+      if not os.path.exists(domain):
+        collect(domain)
+      if len(os.listdir(domain)) == 0:
+        continue
+      suffix = check_certs(domain)
+      min_version = min_tls_version(domain)
+      if suffix != "":
+        suffix_match = "." + suffix
+        config["acceptable-mxs"][domain] = {
+          "accept-mx-domains": [suffix_match]
+        }
+        config["tls-policies"][suffix_match] = {
+          "require-tls": True,
+          "min-tls-version": min_version
+        }
 
   print json.dumps(config, indent=2, sort_keys=True)
