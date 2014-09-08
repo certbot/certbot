@@ -135,8 +135,13 @@ def supports_starttls(mx_host):
   except socket.error as e:
     print "Connection to %s failed: %s" % (mx_host, e.strerror)
     return False
-  except smtplib.SMTPException:
-    print "No STARTTLS support on %s" % mx_host
+  except smtplib.SMTPException, e:
+    # In order to talk to some hosts, you need to run this from a host that has a
+    # reverse DNS entry. AWS instances all have reverse DNS, as an example.
+    if e[0] == 554:
+      print e[1]
+    else:
+      print "No STARTTLS support on %s" % mx_host, e[0]
     return False
 
 def min_tls_version(mail_domain):
@@ -172,8 +177,8 @@ if __name__ == '__main__':
     for domain in open(input).readlines():
       domain = domain.strip()
       suffix = check_certs(domain)
-      min_version = min_tls_version(domain)
       if suffix != "":
+        min_version = min_tls_version(domain)
         suffix_match = "." + suffix
         config["acceptable-mxs"][domain] = {
           "accept-mx-domains": [suffix_match]
