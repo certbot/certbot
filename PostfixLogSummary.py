@@ -18,18 +18,27 @@ import ConfigParser
 # Jun  6 00:22:01 precise32 postfix/smtp[3682]: SSL_connect error to valid-example-recipient.com[192.168.33.7]:25: -1
 # Jun  6 00:22:01 precise32 postfix/smtp[3682]: warning: TLS library problem: 3682:error:140740BF:SSL routines:SSL23_CLIENT_HELLO:no protocols available:s23_clnt.c:381:
 # Jun  6 00:22:01 precise32 postfix/smtp[3682]: AF3B6480475: to=<vagrant@valid-example-recipient.com>, relay=valid-example-recipient.com[192.168.33.7]:25, delay=0.06, delays=0.03/0.03/0/0, dsn=4.7.5, status=deferred (Cannot start TLS: handshake failure)
-# 
+#
+# Also:
+# Oct 10 19:12:13 sender postfix/smtp[1711]: 62D3F481249: to=<vagrant@valid-example-recipient.com>, relay=valid-example-recipient.com[192.168.33.7]:25, delay=0.07, delays=0.03/0.01/0.03/0, dsn=4.7.4, status=deferred (TLS is required, but was not offered by host valid-example-recipient.com[192.168.33.7])
 def get_counts(input, config):
   seen_trusted = False
 
   counts = collections.defaultdict(lambda: collections.defaultdict(int))
+  tls_deferred = collections.defaultdict(int)
   # Typical line looks like:
   # Jun 12 06:24:14 sender postfix/smtp[9045]: Untrusted TLS connection established to valid-example-recipient.com[192.168.33.7]:25: TLSv1.1 with cipher AECDH-AES256-SHA (256/256 bits)
+  # indicate a problem that should be alerted on.
   # ([^[]*) <--- any group of characters that is not "["
-  r = re.compile("([A-Za-z]+) TLS connection established to ([^[]*)")
+  # Log lines for when a message is deferred for a TLS-related reason. These
+  deferred_re = re.compile("relay=([^[]*).* status=deferred.*TLS")
+  # Log lines for when a TLS connection was successfully established. These can
+  # indicate the difference between Untrusted, Trusted, and Verified certs.
+  connected_re = re.compile("([A-Za-z]+) TLS connection established to ([^[]*)")
   for line in sys.stdin:
-    result = r.search(line)
-    if result:
+    deferred = deferred_re.search(line)
+    connected = connected_re.search(line)
+    if connected:
       validation = result.group(1)
       mx_hostname = result.group(2).lower()
       if validation == "Trusted" or validation == "Verified":
@@ -39,11 +48,14 @@ def get_counts(input, config):
         for d in address_domains:
           counts[d][validation] += 1
           counts[d]["all"] += 1
+    elif deferred:
+      mx_hostname = result.group(1).lower()
+      tls_deferred[mx_hostname] += 1
   if not seen_trusted:
     # Postfix will only emit 'Trusted' if the certificate validates according to
     # the set of trust roots (CA certs) configured in smtp_tls_CAfile.
     print "Didn't see any trusted connections. Need to install some trust roots?"
-  return counts
+  return (counts, tls_deferred)
 
 def print_summary(counts):
   for mx_hostname, validations in counts.items():
@@ -54,5 +66,6 @@ def print_summary(counts):
 
 if __name__ == "__main__":
   config = ConfigParser.Config("starttls-everywhere.json")
-  counts = get_counts(sys.stdin, config)
+  (counts, tls_deferred) = get_counts(sys.stdin, config)
   print_summary(counts)
+  print tls_deferred

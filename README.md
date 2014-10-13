@@ -33,6 +33,14 @@ STARTTLS by itself thwarts purely passive eavesdroppers. However, as currently d
 *   Develop a fully-decentralized solution.
 *   Initially we are not engineering to scale to all mail domains on the Internet, though we believe this design can be scaled as required if large numbers of domains publish policies to it.
 
+## Motivating examples
+
+*   [Unnammed mobile broadband provider overwrites STARTTLS flag and commands to
+    prevent negotiating an encrypted connection]
+    (https://www.techdirt.com/articles/20141012/06344928801/revealed-isps-already-violating-net-neutrality-to-block-encryption-make-everyone-less-safe-online.shtml)
+*   [Unknown party removes STARTTLS flag from all SMTP connections leaving
+    Thailand](http://www.telecomasia.net/content/google-yahoo-smtp-email-severs-hit-thailand)
+
 ## Threat model
 
 Attacker has control of routers on the path between two MTAs of interest. Attacker cannot or will not issue valid certificates for arbitrary names. Attacker cannot or will not attack endpoints. We are trying to protect confidentiality and integrity of email transmitted over SMTP between MTAs.
