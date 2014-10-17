@@ -90,7 +90,6 @@ class Config:
     # XXX is it ever permissible to have a domain with an acceptable-mx 
     # that does not point to a TLS security policy?  If not, check/warn/fail
     # here
-    print self.tls_policies
 
   def get_address_domains(self, mx_hostname):
     labels = mx_hostname.split(".")
