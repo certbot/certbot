@@ -28,11 +28,16 @@ class PostfixConfigGenerator(MTAConfigGenerator):
   def __init__(self, policy_config, postfix_dir, fixup=False):
     self.fixup = fixup
     self.postfix_dir = postfix_dir
-    self.policy_file = os.path.join(postfix_dir, "starttls_everywhere_policy")
-    MTAConfigGenerator.__init__(self, policy_config)
     self.postfix_cf_file = self.find_postfix_cf()
+    if not os.access(self.postfix_cf_file, os.W_OK):
+      raise Exception("Can't write to %s, please re-run as root."
+        % self.postfix_cf_file)
+    self.policy_file = os.path.join(postfix_dir, "starttls_everywhere_policy")
+    self.ca_file = os.path.join(postfix_dir, "starttls_everywhere_CAfile")
+    MTAConfigGenerator.__init__(self, policy_config)
     self.wrangle_existing_config()
     self.set_domainwise_tls_policies()
+    self.update_CAfile()
     os.system("sudo service postfix reload")
 
   def ensure_cf_var(self, var, ideal, also_acceptable):
@@ -49,7 +54,6 @@ class PostfixConfigGenerator(MTAConfigGenerator):
       values = map(parse_line, l)
       if len(set(values)) > 1:
         if self.fixup:
-          #print "Scheduling deletions:" + `values`
           conflicting_lines = [num for num,_var,val in values]
           self.deletions.extend(conflicting_lines)
           self.additions.append(var + " = " + ideal)
@@ -57,7 +61,6 @@ class PostfixConfigGenerator(MTAConfigGenerator):
           raise ExistingConfigError, "Conflicting existing config values " + `l`
       val = values[0][2]
       if val not in acceptable:
-        #print "Scheduling deletions:" + `values`
         if self.fixup:
           self.deletions.append(values[0][0])
           self.additions.append(var + " = " + ideal)
@@ -86,6 +89,7 @@ class PostfixConfigGenerator(MTAConfigGenerator):
     policy_cf_entry = "texthash:" + self.policy_file
 
     self.ensure_cf_var("smtp_tls_policy_maps", policy_cf_entry, [])
+    self.ensure_cf_var("smtp_tls_CAfile", self.ca_file, [])
 
     self.maybe_add_config_lines()
 
@@ -109,7 +113,6 @@ class PostfixConfigGenerator(MTAConfigGenerator):
         self.new_cf += line
     self.new_cf += sep + new_cf_lines
 
-    #print self.new_cf
     f = open(self.fn, "w")
     f.write(self.new_cf)
     f.close()
@@ -142,6 +145,10 @@ class PostfixConfigGenerator(MTAConfigGenerator):
     f.write("\n".join(self.policy_lines) + "\n")
     f.close()
 
+  def update_CAfile(self):
+    os.system("cat /usr/share/ca-certificates/mozilla/*.crt > " +
+      self.ca_file)
+
 if __name__ == "__main__":
   import ConfigParser
   if len(sys.argv) != 3:
@@ -150,3 +157,4 @@ if __name__ == "__main__":
   c = ConfigParser.Config(sys.argv[1])
   postfix_dir = sys.argv[2]
   pcgen = PostfixConfigGenerator(c, postfix_dir, fixup=True)
+  print "Done."
