@@ -2,6 +2,7 @@
 import re
 import sys
 import collections
+import argparse
 
 import ConfigParser
 
@@ -39,8 +40,8 @@ def get_counts(input, config):
     deferred = deferred_re.search(line)
     connected = connected_re.search(line)
     if connected:
-      validation = result.group(1)
-      mx_hostname = result.group(2).lower()
+      validation = connected.group(1)
+      mx_hostname = connected.group(2).lower()
       if validation == "Trusted" or validation == "Verified":
         seen_trusted = True
       address_domains = config.get_address_domains(mx_hostname)
@@ -49,13 +50,13 @@ def get_counts(input, config):
           counts[d][validation] += 1
           counts[d]["all"] += 1
     elif deferred:
-      mx_hostname = result.group(1).lower()
+      mx_hostname = deferred.group(1).lower()
       tls_deferred[mx_hostname] += 1
   if not seen_trusted:
     # Postfix will only emit 'Trusted' if the certificate validates according to
     # the set of trust roots (CA certs) configured in smtp_tls_CAfile.
     print "Didn't see any trusted connections. Need to install some trust roots?"
-  return (counts, tls_deferred)
+  return (counts, tls_deferred, seen_trusted)
 
 def print_summary(counts):
   for mx_hostname, validations in counts.items():
@@ -65,7 +66,19 @@ def print_summary(counts):
       print mx_hostname, validation, validation_count / validations["all"], "of", validations["all"]
 
 if __name__ == "__main__":
+  arg_parser = argparse.ArgumentParser(description='This is a PyMOTW sample program')
+  arg_parser.add_argument('-c', action="store_true", dest="cron", default=False)
+  args = arg_parser.parse_args()
+
   config = ConfigParser.Config("starttls-everywhere.json")
-  (counts, tls_deferred) = get_counts(sys.stdin, config)
-  print_summary(counts)
-  print tls_deferred
+  (counts, tls_deferred, seen_trusted) = get_counts(sys.stdin, config)
+
+  # If not running in cron, print an overall summary of log lines seen from known hosts.
+  if not args.cron:
+    print_summary(counts)
+    if not seen_trusted:
+      print 'No Trusted connections seen! Probably need to install a CAfile.'
+
+  if len(tls_deferred) > 0:
+    print "Some mail was deferred due to TLS problems:"
+    print tls_deferred
