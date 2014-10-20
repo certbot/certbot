@@ -1,10 +1,14 @@
 #!/usr/bin/python2.7
+import argparse
+import collections
+import os
 import re
 import sys
-import collections
-import argparse
+import time
 
 import ConfigParser
+
+TIME_FORMAT = "%b %d %H:%M:%S"
 
 # TODO: There's more to be learned from postfix logs!  Here's one sample
 # observed during failures from the sender vagrant vm:
@@ -22,7 +26,7 @@ import ConfigParser
 #
 # Also:
 # Oct 10 19:12:13 sender postfix/smtp[1711]: 62D3F481249: to=<vagrant@valid-example-recipient.com>, relay=valid-example-recipient.com[192.168.33.7]:25, delay=0.07, delays=0.03/0.01/0.03/0, dsn=4.7.4, status=deferred (TLS is required, but was not offered by host valid-example-recipient.com[192.168.33.7])
-def get_counts(input, config):
+def get_counts(input, config, earliest_timestamp):
   seen_trusted = False
 
   counts = collections.defaultdict(lambda: collections.defaultdict(int))
@@ -32,11 +36,15 @@ def get_counts(input, config):
   # indicate a problem that should be alerted on.
   # ([^[]*) <--- any group of characters that is not "["
   # Log lines for when a message is deferred for a TLS-related reason. These
-  deferred_re = re.compile("relay=([^[]*).* status=deferred.*TLS")
+  deferred_re = re.compile("relay=([^[ ]*).* status=deferred.*TLS")
   # Log lines for when a TLS connection was successfully established. These can
   # indicate the difference between Untrusted, Trusted, and Verified certs.
   connected_re = re.compile("([A-Za-z]+) TLS connection established to ([^[]*)")
+  timestamp = 0
   for line in sys.stdin:
+    timestamp = time.strptime(line[0:15], TIME_FORMAT)
+    if timestamp < earliest_timestamp:
+      continue
     deferred = deferred_re.search(line)
     connected = connected_re.search(line)
     if connected:
@@ -52,11 +60,7 @@ def get_counts(input, config):
     elif deferred:
       mx_hostname = deferred.group(1).lower()
       tls_deferred[mx_hostname] += 1
-  if not seen_trusted:
-    # Postfix will only emit 'Trusted' if the certificate validates according to
-    # the set of trust roots (CA certs) configured in smtp_tls_CAfile.
-    print "Didn't see any trusted connections. Need to install some trust roots?"
-  return (counts, tls_deferred, seen_trusted)
+  return (counts, tls_deferred, seen_trusted, timestamp)
 
 def print_summary(counts):
   for mx_hostname, validations in counts.items():
@@ -71,7 +75,14 @@ if __name__ == "__main__":
   args = arg_parser.parse_args()
 
   config = ConfigParser.Config("starttls-everywhere.json")
-  (counts, tls_deferred, seen_trusted) = get_counts(sys.stdin, config)
+
+  last_timestamp_processed = 0
+  timestamp_file = '/tmp/starttls-everywhere-last-timestamp-processed.txt'
+  if os.path.isfile(timestamp_file):
+    last_timestamp_processed = time.strptime(open(timestamp_file).read(), TIME_FORMAT)
+  (counts, tls_deferred, seen_trusted, latest_timestamp) = get_counts(sys.stdin, config, last_timestamp_processed)
+  with open(timestamp_file, "w") as f:
+    f.write(time.strftime(TIME_FORMAT, latest_timestamp))
 
   # If not running in cron, print an overall summary of log lines seen from known hosts.
   if not args.cron:
@@ -81,4 +92,5 @@ if __name__ == "__main__":
 
   if len(tls_deferred) > 0:
     print "Some mail was deferred due to TLS problems:"
-    print tls_deferred
+    for (k, v) in tls_deferred.iteritems():
+      print "%s: %s" % (k, v)
