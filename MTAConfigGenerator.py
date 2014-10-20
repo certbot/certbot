@@ -132,11 +132,11 @@ class PostfixConfigGenerator(MTAConfigGenerator):
       entry = address_domain + " encrypt"
       if "min-tls-version" in mx_policy:
         if mx_policy["min-tls-version"].lower() == "tlsv1":
-          entry += " protocols=!SSLv2,!SSLv3"
+          entry += " protocols=!SSLv2:!SSLv3"
         elif mx_policy["min-tls-version"].lower() == "tlsv1.1":
-          entry += " protocols=!SSLv2,!SSLv3,!TLSv1"
+          entry += " protocols=!SSLv2:!SSLv3:!TLSv1"
         elif mx_policy["min-tls-version"].lower() == "tlsv1.2":
-          entry += " protocols=!SSLv2,!SSLv3,!TLSv1,!TLSv1.1"
+          entry += " protocols=!SSLv2:!SSLv3:!TLSv1:!TLSv1.1"
         else:
           print mx_policy["min-tls-version"]
       self.policy_lines.append(entry)
