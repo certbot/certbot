@@ -33,5 +33,8 @@ difficulty = 23
 cert_file = CERT_DIR + "trustify-cert.pem"
 chain_file = CERT_DIR + "trustify-chain.pem"
 
+#Invalid Extension                                                              
+INVALID_EXT = ".acme.invalid"
+
 # Rewrite rule arguments used for redirections to https vhost
 REWRITE_HTTPS_ARGS = ["^.*$", "https://%{SERVER_NAME}%{REQUEST_URI}", "[L,R=permanent]"]
