@@ -2,8 +2,76 @@
 import errno
 import stat
 import os, pwd, grp
+import M2Crypto
+import time
+from M2Crypto import EVP, X509, RSA, ASN1
 from trustify.client import logger
+#import logger
 
+
+def make_csr(key_file, domains):
+    """
+    Returns new CSR in PEM form using key_file containing all domains
+    """
+    assert domains, "Must provide one or more hostnames for the CSR."
+    rsa_key = M2Crypto.RSA.load_key(key_file)
+    pk = EVP.PKey()
+    pk.assign_rsa(rsa_key)
+    
+    x = X509.Request()
+    x.set_pubkey(pk)
+    name = x.get_subject()
+    name.CN = domains[0]
+    extstack = X509.X509_Extension_Stack()
+    for d in domains:
+        ext = X509.new_extension('subjectAltName', 'DNS:%s' % d)
+        extstack.push(ext)
+    x.add_extensions(extstack)
+    x.sign(pk,'sha256')
+    assert x.verify(pk)
+    pk2 = x.get_pubkey()
+    assert x.verify(pk2)
+    return x.as_pem()
+
+def make_ss_cert(key_file, domains):
+    """
+    Returns new self-signed cert in PEM form using key_file containing all domains
+    """
+    assert domains, "Must provide one or more hostnames for the CSR."
+    rsa_key = M2Crypto.RSA.load_key(key_file)
+    pk = EVP.PKey()
+    pk.assign_rsa(rsa_key)
+    
+    x = X509.X509()
+    x.set_pubkey(pk)
+    x.set_serial_number(1337)
+    x.set_version(2)
+
+    t = long(time.time())
+    current = ASN1.ASN1_UTCTIME()
+    current.set_time(t)
+    expire = ASN1.ASN1_UTCTIME()
+    expire.set_time((7 * 24 * 60 * 60) + t)
+    x.set_not_before(current)
+    x.set_not_after(expire)
+
+    name = x.get_subject()
+    name.C = "US"
+    name.ST = "Michigan"
+    name.L = "Ann Arbor"
+    name.O = "University of Michigan"
+    name.OU = "Halderman's Research Group"
+    name.CN = domains[0]
+    x.set_issuer(x.get_subject())
+
+    x.add_ext(X509.new_extension('subjectAltName', ",".join(["DNS:%s" % d for d in domains])))
+    
+    x.sign(pk, 'sha1')
+    assert x.verify(pk)
+    pk2 = x.get_pubkey()
+    assert x.verify(pk2)
+    return x.as_pem()
+    
 def make_or_verify_dir(directory, permissions=0755, uid=0):
     try:
         os.makedirs(directory, permissions)

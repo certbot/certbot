@@ -10,11 +10,12 @@ import shutil
 import errno
 
 from trustify.client.CONFIG import SERVER_ROOT, BACKUP_DIR
-#from CONFIG import SERVER_ROOT, BACKUP_DIR, MODIFIED_FILES, REWRITE_HTTPS_ARGS, CONFIG_DIR, WORK_DIR
 from trustify.client.CONFIG import REWRITE_HTTPS_ARGS, CONFIG_DIR, WORK_DIR
 from trustify.client.CONFIG import TEMP_CHECKPOINT_DIR, IN_PROGRESS_DIR
+from trustify.client.CONFIG import OPTIONS_SSL_CONF
 from trustify.client import logger, trustify_util
-#import logger
+#from CONFIG import SERVER_ROOT, BACKUP_DIR, REWRITE_HTTPS_ARGS, CONFIG_DIR, WORK_DIR, TEMP_CHECKPOINT_DIR, IN_PROGRESS_DIR, OPTIONS_SSL_CONF
+#import logger, trustify_util
 
 # Question: Am I missing any attacks that can result from modifying CONFIG file?
 # Configurator should be turned into a Singleton
@@ -66,6 +67,8 @@ class Configurator(object):
         #       relevant files - I believe -> NO_MODL_AUTOLOAD
         # TODO: Use server_root instead SERVER_ROOT
 
+        self.server_root = server_root
+
         # Set Augeas flags to save backup
         self.aug = augeas.Augeas(flags=augeas.Augeas.NONE)
 
@@ -78,6 +81,9 @@ class Configurator(object):
         self.check_parsing_errors()
         # This problem has been fixed in Augeas 1.0
         self.standardize_excl()
+        
+        # Determine user's main config file
+        self.__set_user_config_file()
 
         self.save_notes = ""
 
@@ -88,9 +94,9 @@ class Configurator(object):
         self.verify_setup()
         
         # Note: initialization doesn't check to see if the config is correct
-        # by Apache's standards. This should be done by the client if it is
-        # desired. There may be instances where correct configuration isn't
-        # required on startup.
+        # by Apache's standards. This should be done by the client (client.py)
+        # if it is desired. There may be instances where correct configuration 
+        # isn't required on startup.
 
     # TODO: This function can be improved to ensure that the final directives 
     # are being modified whether that be in the include files or in the 
@@ -217,8 +223,19 @@ class Configurator(object):
 
         return all_names
 
-    def __is_private_ip(ipaddr):
-        re.compile()
+    def __set_user_config_file(self, filename = ''):
+        if filename:
+            self.user_config_file = filename
+        else:
+            # Basic check to see if httpd.conf exists and is included via direct include
+            # httpd.conf was very common as a user file in Apache 2.2
+            if os.path.isfile(self.server_root + 'httpd.conf') and self.find_directive(self.case_i("Include"), self.case_i("httpd.conf")):
+                self.user_config_file = self.server_root + 'httpd.conf'
+            else:
+                self.user_config_file = self.server_root + 'apache2.conf'
+
+    #def __is_private_ip(ipaddr):
+    #    re.compile()
         
 
     def __add_servernames(self, host):
@@ -293,7 +310,7 @@ class Configurator(object):
         aug_file_path = "/files%sports.conf" % SERVER_ROOT
         self.add_dir_to_ifmodssl(aug_file_path, "NameVirtualHost", addr)
         
-        if len(self.find_directive(self.case_i("NameVirtualHost"), addr)) == 0:
+        if len(self.find_directive(self.case_i("NameVirtualHost"), self.case_i(addr))) == 0:
             logger.warn("ports.conf is not included in your Apache config...")
             logger.warn("Adding NameVirtualHost directive to httpd.conf")
             self.add_dir_to_ifmodssl("/files" + SERVER_ROOT + "httpd.conf", "NameVirtualHost", addr)
@@ -390,6 +407,10 @@ class Configurator(object):
         transformation by calling case_i() on everything to maintain
         compatibility.
         """
+
+        #Debug code
+        #print "find_dir:", directive, "arg:", arg, " | Looking in:", start
+        # No regexp code
         # if arg is None:
         #     matches = self.aug.match(start + "//*[self::directive='"+directive+"']/arg")
         # else:
@@ -413,11 +434,15 @@ class Configurator(object):
     def case_i(self, string):
         """
         Returns a sloppy, but necessary version of a case insensitive regex.
+        Any string should be able to be submitted and the string is
+        escaped and then made case insensitive.
         May be replaced by a more proper /i once augeas 1.0 is widely 
         supported.
         """
-        return '[' + "][".join([c.upper()+c.lower() for c in string]) + ']'
-
+        
+        #return '[' + "][".join([c.upper()+c.lower() if c.isalpha() else c for c in re.escape(string)]) + ']'
+        return "".join(["["+c.upper()+c.lower()+"]" if c.isalpha() else c for c in re.escape(string)])
+    
     def strip_dir(self, path):
         """
         Precondition: file_path is a file path, ie. not an augeas section 
@@ -550,7 +575,7 @@ class Configurator(object):
 
         self.add_dir(vh_p[0], "SSLCertificateFile", "/etc/ssl/certs/ssl-cert-snakeoil.pem")
         self.add_dir(vh_p[0], "SSLCertificateKeyFile", "/etc/ssl/private/ssl-cert-snakeoil.key")
-        self.add_dir(vh_p[0], "Include", CONFIG_DIR + "options-ssl.conf")
+        self.add_dir(vh_p[0], "Include", OPTIONS_SSL_CONF)
 
         # Log actions and create save notes
         logger.info("Created an SSL vhost at %s" % ssl_fp)
@@ -927,7 +952,12 @@ LogLevel warn \n\
             with open(file_list, 'r') as f:
                 filepaths = f.read().splitlines()
                 for fp in filepaths:
-                    os.remove(fp)
+                    # Files are registered before they are added... so check to see if file
+                    # exists first
+                    if os.path.isfile(fp):
+                        os.remove(fp)
+                    else:
+                        logger.warn("File: %s - Could not be found to be deleted\nProgram was probably shut down unexpectedly, in which case this is not a problem" % fp)
         except IOError:
             logger.fatal("Unable to remove filepaths contained within %s" % file_list)
             sys.exit(41)
@@ -975,10 +1005,13 @@ LogLevel warn \n\
         for e in error_files:
             # Check to see if it was an error resulting from the use of
             # the httpd lens 
-            if 'httpd.aug' in self.aug.get(e + '/lens'):
+            lens_path = self.aug.get(e + '/lens')
+            # As aug.get may return null
+            if lens_path and 'httpd.aug' in lens_path:
                 # Strip off /augeas/files and /error
                 logger.error('There has been an error in parsing the file: %s' % e[13:len(e) - 6])
                 logger.error(self.aug.get(e + '/message'))
+
 
     def revert_challenge_config(self):
         """
@@ -1201,15 +1234,17 @@ LogLevel warn \n\
 
         returns: 0 success, 1 Unable to revert, -1 Unable to delete
         """
-        try:
-            with open(cp_dir + "/FILEPATHS") as f:
-                filepaths = f.read().splitlines()
-                for idx, fp in enumerate(filepaths):
-                    shutil.copy2(cp_dir + '/' + os.path.basename(fp) + '_' + str(idx), fp)
-        except:
-            # This file is required in all checkpoints.
-            logger.error("Unable to recover files from %s" % cp_dir)
-            return 1
+        
+        if os.path.isfile(cp_dir + "/FILEPATHS"):
+            try:
+                with open(cp_dir + "/FILEPATHS") as f:
+                    filepaths = f.read().splitlines()
+                    for idx, fp in enumerate(filepaths):
+                        shutil.copy2(cp_dir + '/' + os.path.basename(fp) + '_' + str(idx), fp)
+            except:
+                # This file is required in all checkpoints.
+                logger.error("Unable to recover files from %s" % cp_dir)
+                return 1
 
         # Remove any newly added files if they exist
         self.__remove_contained_files(cp_dir + "/NEW_FILES")
@@ -1315,12 +1350,15 @@ def main():
     config = Configurator()
     logger.setLogger(logger.FileLogger(sys.stdout))
     logger.setLogLevel(logger.DEBUG)
+    """
     for v in config.vhosts:
         print v.file
         print v.addrs
         for name in v.names:
             print name
-
+    """
+    print config.find_directive(config.case_i("NameVirtualHost"), config.case_i("holla:443"))
+    
     """
     for m in config.find_directive("Listen", "443"):
         print "Directive Path:", m, "Value:", config.aug.get(m)

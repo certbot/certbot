@@ -327,7 +327,7 @@ class Client(object):
                 sys.exit(1)
 
         if not self.csr_file:
-            csr_pem = self.make_csr(self.names)
+            csr_pem = trustify_util.make_csr(self.key_file, self.names)
             # Save CSR
             trustify_util.make_or_verify_dir(CERT_DIR, 0755)
             csr_f, self.csr_file = trustify_util.unique_file(CERT_DIR + "csr-trustify.pem", 0644)
@@ -356,30 +356,6 @@ class Client(object):
 
         return key_pem
         
-    def make_csr(self, domains):
-        """
-        Returns new CSR in PEM form using self.key_file containing all domains
-        """
-        assert domains, "Must provide one or more hostnames for the CSR."
-        rsa_key = M2Crypto.RSA.load_key(self.key_file)
-        pk = EVP.PKey()
-        pk.assign_rsa(rsa_key)
-
-        x = X509.Request()
-        x.set_pubkey(pk)
-        name = x.get_subject()
-        name.CN = domains[0]
-        extstack = X509.X509_Extension_Stack()
-        for d in domains:
-            ext = X509.new_extension('subjectAltName', 'DNS:%s' % d)
-            extstack.push(ext)
-        x.add_extensions(extstack)
-        x.sign(pk,'sha1')
-        assert x.verify(pk)
-        pk2 = x.get_pubkey()
-        assert x.verify(pk2)
-        return x.as_pem()
-
     def __rsa_sign(self, key, data):
         """
         Sign this data with this private key.  For client-side use.
