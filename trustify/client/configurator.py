@@ -14,8 +14,8 @@ from trustify.client.CONFIG import REWRITE_HTTPS_ARGS, CONFIG_DIR, WORK_DIR
 from trustify.client.CONFIG import TEMP_CHECKPOINT_DIR, IN_PROGRESS_DIR
 from trustify.client.CONFIG import OPTIONS_SSL_CONF
 from trustify.client import logger, trustify_util
-#from CONFIG import SERVER_ROOT, BACKUP_DIR, REWRITE_HTTPS_ARGS, CONFIG_DIR, WORK_DIR, TEMP_CHECKPOINT_DIR, IN_PROGRESS_DIR, OPTIONS_SSL_CONF
 #import logger, trustify_util
+#from CONFIG import SERVER_ROOT, BACKUP_DIR, REWRITE_HTTPS_ARGS, CONFIG_DIR, WORK_DIR, TEMP_CHECKPOINT_DIR, IN_PROGRESS_DIR, OPTIONS_SSL_CONF
 
 # Question: Am I missing any attacks that can result from modifying CONFIG file?
 # Configurator should be turned into a Singleton
@@ -178,8 +178,9 @@ class Configurator(object):
             if v.ssl == False:
                 for n in v.names:
                     if n == name:
-                        # Must create ssl equivalent vhost
+                        # When do we need to self.make_vhost_ssl(v)
                         return self.make_vhost_ssl(v)
+                        #return v
 
         # No matches, search for the default
         for v in self.vhosts:

@@ -56,11 +56,16 @@ def main():
             continue
        
     if not server:
-        if "CHOCOLATESERVER" in os.environ:
-            server = os.environ["CHOCOLATESERVER"]
+        print os.environ
+        if "ACMESERVER" in os.environ:
+            server = os.environ["ACMESERVER"]
         else:
-            server = "ca.theobroma.info"
-    
+            from trustify.client import logger
+            logger.setLogger(logger.FileLogger(sys.stdout))
+            logger.setLogLevel(logger.INFO)
+            logger.warn("No ACME server specified. Please specify the ACMESERVER enviornment variable or the --server option")
+            server = "54.183.196.250"
+
     c = client.Client(server, args, csr, privkey, curses)
     c.authenticate()
 

@@ -24,7 +24,7 @@ APACHE_CHALLENGE_CONF = CONFIG_DIR + "choc_sni_cert_challenge.conf"
 
 # Byte size of S and Nonce
 S_SIZE = 32
-NONCE_SIZE = 32
+NONCE_SIZE = 16
 
 # bits of hashcash to generate
 difficulty = 23 
@@ -38,3 +38,9 @@ INVALID_EXT = ".acme.invalid"
 
 # Rewrite rule arguments used for redirections to https vhost
 REWRITE_HTTPS_ARGS = ["^.*$", "https://%{SERVER_NAME}%{REQUEST_URI}", "[L,R=permanent]"]
+
+# Challenge Preferences Dict for currently supported challenges
+CHALLENGE_PREFERENCES = ["dvsni", "recoveryToken"]
+
+# Mutually Exclusive Challenges - only solve 1
+EXCLUSIVE_CHALLENGES = [set(["dvsni", "simpleHttps"])]

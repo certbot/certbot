@@ -22,10 +22,11 @@ def make_csr(key_file, domains):
     x.set_pubkey(pk)
     name = x.get_subject()
     name.CN = domains[0]
+
     extstack = X509.X509_Extension_Stack()
-    for d in domains:
-        ext = X509.new_extension('subjectAltName', 'DNS:%s' % d)
-        extstack.push(ext)
+    ext = X509.new_extension('subjectAltName', ", ".join(["DNS:%s" % d for d in domains]))
+
+    extstack.push(ext)
     x.add_extensions(extstack)
     x.sign(pk,'sha256')
     assert x.verify(pk)
@@ -59,17 +60,18 @@ def make_ss_cert(key_file, domains):
     name.C = "US"
     name.ST = "Michigan"
     name.L = "Ann Arbor"
-    name.O = "University of Michigan"
-    name.OU = "Halderman's Research Group"
+    name.O = "University of Michigan and the EFF"
     name.CN = domains[0]
     x.set_issuer(x.get_subject())
 
-    x.add_ext(X509.new_extension('subjectAltName', ",".join(["DNS:%s" % d for d in domains])))
+    x.add_ext(X509.new_extension('basicConstraints', 'CA:FALSE'))
+    #x.add_ext(X509.new_extension('extendedKeyUsage', 'TLS Web Server Authentication'))
+    x.add_ext(X509.new_extension('subjectAltName', ", ".join(["DNS:%s" % d for d in domains])))
     
-    x.sign(pk, 'sha1')
+    x.sign(pk, 'sha256')
     assert x.verify(pk)
-    pk2 = x.get_pubkey()
-    assert x.verify(pk2)
+    assert x.verify()
+    #print check_purpose(,0
     return x.as_pem()
     
 def make_or_verify_dir(directory, permissions=0755, uid=0):

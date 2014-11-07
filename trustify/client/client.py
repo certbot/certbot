@@ -7,22 +7,25 @@
 import M2Crypto
 # It is OK to use the upstream M2Crypto here instead of our modified
 # version.
-import urllib2
+import urllib2, json
 # XXX TODO: per https://docs.google.com/document/pub?id=1roBIeSJsYq3Ntpf6N0PIeeAAvu4ddn7mGo6Qb7aL7ew, urllib2 is unsafe (!) and must be replaced
 import os, grp, pwd, sys, time, random, sys
-import hashlib
+import hashlib, binascii, jose
 import subprocess
 from M2Crypto import EVP, X509, RSA
+from Crypto.Random import get_random_bytes
+from Crypto.PublicKey import RSA
+from Crypto.Signature import PKCS1_v1_5
+from Crypto.Hash import SHA256
 
-from trustify.protocol.chocolate_pb2 import chocolatemessage
 from trustify.client.sni_challenge import SNI_Challenge
 from trustify.client.payment_challenge import Payment_Challenge
 from trustify.client import configurator
 from trustify.client import logger
 from trustify.client import trustify_util
-from trustify.client.CONFIG import difficulty, cert_file, chain_file
+from trustify.client.CONFIG import NONCE_SIZE, cert_file, chain_file
 from trustify.client.CONFIG import SERVER_ROOT, KEY_DIR, CERT_DIR
-
+from trustify.client.CONFIG import CHALLENGE_PREFERENCES, EXCLUSIVE_CHALLENGES
 # it's weird to point to chocolate servers via raw IPv6 addresses, and such
 # addresses can be %SCARY in some contexts, so out of paranoia let's disable
 # them by default
@@ -32,7 +35,7 @@ RSA_KEY_SIZE = 2048
 class Client(object):
     # In case of import, dialog needs scope over the class
     dialog = None
-
+    
     def __init__(self, ca_server, domains=[], cert_signing_request=None, private_key=None, use_curses=True):
         global dialog
 
@@ -63,7 +66,7 @@ class Client(object):
 
         self.sanity_check_names([ca_server] + domains)
 
-        self.upstream = "https://%s/chocolate.py" % self.server
+        self.server_url = "https://%s/acme/" % self.server
 
         
 
@@ -83,33 +86,231 @@ class Client(object):
         if not self.config.check_ssl_loaded():
             logger.info("Loading mod_ssl into Apache Server")
             self.config.enable_mod("ssl")
-        
+
         key_pem, csr_pem = self.get_key_csr_pem()
         
-        r, k = self.send_request(key_pem, csr_pem, self.names)
+        #r, k = self.send_request(key_pem, csr_pem, self.names)
+        challenge_dict = self.send(self.challenge_request(self.names))
+        
+        challenge_dict = self.is_expected_msg(challenge_dict, "challenge")
 
-        challenges = self.challenge_factory(r)
+        if not challenge_dict:
+            logger.fatal("Unable to retreive Challenge message from server")
+            sys.exit(1)
 
-        # Find set of virtual hosts to deploy certificates to
-        vhost = self.get_virtual_hosts(self.names)
+        print challenge_dict
+        #assert self.is_challenge(challenge_dict)
 
-        # Perform all "client knows first" challenges
-        for challenge in challenges:
-            if not challenge.perform(quiet=self.curses):
-                # TODO: In this case the client should probably send a failure
-                # to the server.
-                logger.fatal("challenge failed")
-                sys.exit(1)
-        logger.info("Configured Apache for challenges; waiting for verification...")
+        #Perform Challenges
 
-        r = self.notify_server_of_completion(r, k)
-        r = self.check_payment(r, k)
+        responses, challenge_objs = self.verify_identity(challenge_dict)
 
-        self.handle_verification_response(r, challenges, vhost)
+        authorization_dict = self.send(self.authorization_request(challenge_dict["sessionID"], self.names[0], challenge_dict["nonce"], responses))
+
+        authorization_dict = self.is_expected_msg(authorization_dict, "authorization")
+        if not authorization_dict:
+            self.cleanup_challenges(challenge_objs)
+            logger.fatal("Failed Authorization procedure - cleaning up challenges")
+            sys.exit(1)
+        
+        certificate_dict = self.send(self.certificate_request(self.names, self.key_file, self.key_file))
+        
+        certifcate_dict = self.is_expected_msg(certificate_dict, "certificate")
+
+        sys.exit()
+        # Install Certificate
+        
+        # Perform optimal config changes
+        
+
+        # challenges = self.challenge_factory(r)
+
+        # # Find set of virtual hosts to deploy certificates to
+        # vhost = self.get_virtual_hosts(self.names)
+
+        # # Perform all "client knows first" challenges
+        # for challenge in challenges:
+        #     if not challenge.perform(quiet=self.curses):
+        #         # TODO: In this case the client should probably send a failure
+        #         # to the server.
+        #         logger.fatal("challenge failed")
+        #         sys.exit(1)
+        # logger.info("Configured Apache for challenges; waiting for verification...")
+
+        # r = self.notify_server_of_completion(r, k)
+        # r = self.check_payment(r, k)
+
+        # self.handle_verification_response(r, challenges, vhost)
 
         self.config.save("Completed Augeas Authentication")
 
         return
+
+    def certificate_request(self, names, auth_key, cert_key):
+        logger.info("Preparing and sending CSR for %s" % names[0])
+
+        logger.info(csr_pem)
+
+    def cleanup_challenges(self, challenge_objs):
+        for c in challenge_objs:
+            c.cleanup()
+
+    def is_expected_msg(self, msg_dict, expected, delay=5, rounds = 20):
+        for i in range(rounds):
+            if msg_dict["type"] == expected:
+                return msg_dict
+            elif msg_dict["type"] == "error":
+                logger.error("%s: %s - More Info: %s" % (msg_dict["error"], msg_dict.get("message", ""), msg_dict.get("moreInfo", "")))
+                return None
+            elif msg_dict["type"] == "defer":
+                logger.info("Waiting for %d seconds..." % delay)
+                time.sleep(delay)
+                msg_dict = self.send(self.status_request(msg_dict["token"]))
+
+        logger.error("Server has deferred past the max of %d seconds" % (rounds * delay))
+        return None
+        
+
+    def authorization_request(self, id, name, server_nonce, responses):
+        auth_req = {"type":"authorizationRequest", "sessionID":id, "nonce":server_nonce}
+        auth_req["signature"] = self.create_authorization_sig(name + jose.b64decode_url(server_nonce))
+        auth_req["responses"] = responses
+        print auth_req
+        return auth_req
+
+    def status_request(self, token):
+        return {"type":"statusRequest", "token":token}
+
+    def __leading_zeros(self, s):
+        if len(s) % 2:
+            return "0" + s
+        return s
+
+    def create_authorization_sig(self, msg, signer_nonce = None, signer_nonce_len = NONCE_SIZE):
+        # DOES prepend signer_nonce to message
+        # TODO: Change this over to M2Crypto... PKey
+        # Protect against crypto unicode errors... is this sufficient? Do I need to escape?
+        msg = str(msg)
+        key = RSA.importKey(open(self.key_file).read())
+        if signer_nonce is None:
+            signer_nonce = get_random_bytes(signer_nonce_len)
+        h = SHA256.new(signer_nonce + msg)
+        signer = PKCS1_v1_5.new(key)
+        signature = signer.sign(h)
+        print "signing:", signer_nonce + msg
+        print "signature:", signature
+        n, e = key.n, key.e
+        n_bytes = binascii.unhexlify(self.__leading_zeros(hex(n)[2:].replace("L", "")))
+        e_bytes = binascii.unhexlify(self.__leading_zeros(hex(e)[2:].replace("L", "")))
+        n_encoded = jose.b64encode_url(n_bytes)
+        e_encoded = jose.b64encode_url(e_bytes)
+        signer_nonce_encoded = jose.b64encode_url(signer_nonce)
+        sig_encoded = jose.b64encode_url(signature)
+        jwk = { "kty": "RSA", "n": n_encoded, "e": e_encoded }
+        signature = { "nonce": signer_nonce_encoded, "alg": "RS256", "jwk": jwk, "sig": sig_encoded }
+        # return json.dumps(signature)
+        return (signature)
+
+    def challenge_request(self, names):
+        logger.info("Temporarily only enabling one name")
+        return {"type":"challengeRequest", "identifier": names[0]}
+
+    def verify_identity(self, c):
+        path = self.gen_challenge_path(c["challenges"], c.get("combinations", None))
+        logger.info("Peforming the following challenges:")
+        print c["challenges"]
+        print c
+        for chall in path:
+            logger.info(c["challenges"][chall])
+        
+        # Every indicies element is a list of integers referring to which challenges in the master list
+        # the challenge object satisfies
+        # Single Challenge objects that can satisfy multiple server challenges
+        # mess up the order of the challenges, thus requiring the indicies
+        challenge_objs, indicies = self.challenge_factory(self.names[0], c["challenges"], path)
+
+
+        responses = [None] * len(c["challenges"])
+
+        # Perform challenges and populate responses
+        for i, c_obj in enumerate(challenge_objs):
+            if not c_obj.perform():
+                logger.fatal("Challenge Failed")
+                sys.exit(1)
+            for index in indicies[i]:
+                responses[index] = c_obj.generate_response()
+
+        logger.info("Configured Apache for challenges; waiting for verification...")
+            
+        return responses, challenge_objs
+            
+    def gen_challenge_path(self, challenges, combos):
+        if combos:
+            return self.__find_smart_path(challenges, combos)
+
+        return self.__find_dumb_path(challenges)
+        
+    def __find_smart_path(self, challenges, combos):
+        """
+        Can be called if combinations  is included
+        Function uses a simple ranking system to choose the combo with the lowest cost
+        """
+        chall_cost = {}
+        max_cost = 0
+        for i, chall in enumerate(CHALLENGE_PREFERENCES):
+            chall_cost[chall] = i
+            max_cost += i
+
+        best_combo = []
+        # Set above completing all of the available challenges
+        best_combo_cost = max_cost + 1
+        
+        combo_total = 0
+        for combo in combos:
+            for c in combo:
+                combo_total += chall_cost.get(challenges[c]["type"], max_cost)
+            if combo_total < best_combo_total:
+                best_combo = combo
+            combo_total = 0
+
+        if not best_combo:
+            logger.fatal("Client does not support any combination of challenges to satisfy ACME server")
+            sys.exit(22)
+
+        return best_combo
+
+    def __find_dumb_path(self, challenges):
+        """
+        Should be called if the combinations hint is not included by the server
+        This function returns the best path that does not contain multiple mutually exclusive
+        challenges
+        """
+        # Add logic for a crappy server
+        # Choose a DV
+        path = []
+        for pref_c in CHALLENGE_PREFERENCES:
+            for i, offered_c in enumerate(challenges):
+                if pref_c == offered_c["type"] and self.is_preferred(offered_c["type"], path):
+                    path.append((i, offered_c["type"]))
+
+        return [tup[0] for tup in path]
+
+
+    def is_preferred(self, offered_c_type, path):
+        for tup in path:
+            for s in EXCLUSIVE_CHALLENGES:
+                # Second part is in case we eventually allow multiple names to be challenged
+                # at the same time
+                if (tup[1] in s and offered_c_type in s) and tup[1] != offered_c_type:
+                    return False
+
+        return True
+
+    def send(self, json_obj):
+        #validate(json.dumps(json_obj))
+        response = urllib2.urlopen(self.server_url, json.dumps(json_obj)).read()
+        #validate(response)
+        return json.loads(response)
 
     def handle_verification_response(self, r, challenges, vhost):
         if r.success.IsInitialized():
@@ -238,32 +439,38 @@ class Client(object):
                 vhost.add(host)
         return vhost
 
-    def challenge_factory(self, r):
+    def challenge_factory(self, name, challenges, path):
         sni_todo = []
-        challenges = []
-        logger.info("Received %s challenges from server." % len(r.challenge))
-        for chall in r.challenge:
-            logger.debug(chall)
-            if chall.type == r.DomainValidateSNI:
-                logger.info("\tDomainValidateSNI challenge for name %s." % chall.name)
-                dvsni_nonce, dvsni_y, dvsni_ext = chall.data
-                sni_todo.append( (chall.name, dvsni_y, dvsni_nonce, dvsni_ext) )
-        
-            if chall.type == r.Payment:
-                url = chall.data[0]
-                challenges.append(Payment_Challenge(url, "Alexa Top 10k Domain"))
+        # Since a single invocation of SNI challenge can satsify multiple challenges
+        # We must keep track of all the challenges it satisfies
+        sni_satisfies = []
 
-        #if chall.type == r.Interactive:
-        #    message = chall.data
-        #    challenges.append(Interactive_Challenge(message)
+        challenge_objs = []
+        challenge_obj_indicies = []
+        for c in path:
+            if challenges[c]["type"] == "dvsni":
+                logger.info("\tDomainValidateSNI challenge for name %s." % name)
+                sni_satisfies.append(c)
+                sni_todo.append( (str(name), str(challenges[c]["r"]), str(challenges[c]["nonce"])) )
+        
+            elif challenges[c]["type"] == "recoveryToken":
+                logger.fatal("RecoveryToken Challenge type not currently supported")
+                sys.exit(82)
+
+            else:
+                logger.fatal("Challenge not currently supported")
+                sys.exit(82)
         
         if sni_todo:
             # SNI_Challenge can satisfy many sni challenges at once so only 
             # one "challenge object" is issued for all sni_challenges
-            challenges.append(SNI_Challenge(sni_todo, os.path.abspath(self.csr_file), os.path.abspath(self.key_file), self.config))
+            challenge_objs.append(SNI_Challenge(sni_todo, os.path.abspath(self.key_file), self.config))
+            challenge_obj_indicies.append(sni_satisfies)
             logger.debug(sni_todo)
 
-        return challenges
+        return challenge_objs, challenge_obj_indicies
+
+        
 
     def send_request(self, key_pem, csr_pem, names):
         k = chocolatemessage()
@@ -306,7 +513,7 @@ class Client(object):
 
     def get_key_csr_pem(self):
         """
-        Returns key and CSR in pem form, using provided files or generating a new files if 
+        Returns key and CSR in pem form, using provided files or generating new files if 
         necessary
         """
         key_pem = None
@@ -505,87 +712,6 @@ def sha256(m):
     return hashlib.sha256(m).hexdigest()
 
 
-# based on M2Crypto unit test written by Toby Allsopp
-#from M2Crypto import EVP, X509, RSA
-
-# def make_key_and_csr(names, bits=2048):
-#     """Return a tuple (key, csr) containing a PEM-formatted private key
-#     of the specified number of bits and a CSR requesting a certificate for
-#     the specified DNS names."""
-#     assert names, "Must provide one or more hostnames."
-#     pk = EVP.PKey()
-#     x = X509.Request()
-#     rsa = RSA.gen_key(bits, 65537)
-#     pk.assign_rsa(rsa)
-#     key_pem = rsa.as_pem(cipher=None)
-#     rsa = None # should not be freed here
-#     x.set_pubkey(pk)
-#     name = x.get_subject()
-#     name.CN = names[0]
-#     extstack = X509.X509_Extension_Stack()
-#     for n in names:
-#         ext = X509.new_extension('subjectAltName', 'DNS:%s' % n)
-#         extstack.push(ext)
-#     x.add_extensions(extstack)
-#     x.sign(pk,'sha1')
-#     assert x.verify(pk)
-#     pk2 = x.get_pubkey()
-#     assert x.verify(pk2)
-#     return key_pem, x.as_pem()
-
-# def by_default():
-#     d = dialog.Dialog()
-#     choices = [("Easy", "Allow both HTTP and HTTPS access to these sites"), ("Secure", "Make all requests redirect to secure HTTPS access")]
-#     result = d.menu("Please choose whether HTTPS access is required or optional.", width=70, choices=choices)
-#     if result[0] != 0:
-#         sys.exit(1)
-#     return result[1] == "Secure"
-
-
-# def rsa_sign(key, data):
-#     """
-#     Sign this data with this private key.  For client-side use.
-
-#     @type key: str
-#     @param key: PEM-encoded string of the private key.
-
-#     @type data: str
-#     @param data: The data to be signed. Will be hashed (sha256) prior to
-#     signing.
-
-#     @return: binary string of the signature
-#     """
-#     key = str(key)
-#     data = str(data)
-#     privkey = M2Crypto.RSA.load_key_string(key)
-#     return privkey.sign(hashlib.sha256(data).digest(), 'sha256')
-
-# def do(upstream, m):
-#     u = urllib2.urlopen(upstream, m.SerializeToString())
-#     return u.read()
-
-# def decode(m):
-#     return (chocolatemessage.FromString(m))
-
-# def init(m):
-#     m.chocolateversion = 1
-#     m.session = ""
-
-# def make_request(server, m, csr, names, quiet=False):
-#     m.request.recipient = server
-#     m.request.timestamp = int(time.time())
-#     m.request.csr = csr
-#     hashcash_cmd = ["hashcash", "-P", "-m", "-z", "12", "-b", `difficulty`, "-r", server]
-#     if quiet:
-#         hashcash = subprocess.Popen(hashcash_cmd, preexec_fn=drop_privs, shell= False, stdout=subprocess.PIPE, stderr=open("/dev/null", "w")).communicate()[0].rstrip()
-#     else:
-#         hashcash = subprocess.Popen(hashcash_cmd, preexec_fn=drop_privs, shell= False, stdout=subprocess.PIPE).communicate()[0].rstrip()
-
-#     if hashcash: m.request.clientpuzzle = hashcash
-
-# def sign(key, m):
-#     m.request.sig = rsa_sign(key, ("(%d) (%s) (%s)" % (m.request.timestamp, m.request.recipient, m.request.csr)))
-
 def old_cert(cert_filename, days_left):
     cert = M2Crypto.X509.load_cert(cert_filename)
     exp_time = cert.get_not_before().get_datetime()
@@ -601,33 +727,6 @@ def old_cert(cert_filename, days_left):
         return True
     return False
 
-# def save_key_csr(key, csr):
-#     """
-#     This function saves the newly generated key and csr to new files
-#     in the ssl and certs directories respectively
-#     This function sets the appropriate permissions for the key and its
-#     directory.
-#     """
-#     # Create directories if they do not exist
-#     # This should probably go in the installation script
-#     # Make sure directories exist & make sure directories are set with the
-#     # correct permissions if they do exist.
-#     # Note: Appears I forgot to check existing directories permissions
-#     if not os.path.isdir(CERT_DIR):
-#         os.makedirs(CERT_DIR, 0755)
-#     if not os.path.isdir(KEY_DIR):
-#         os.makedirs(KEY_DIR, 0700)
-
-#     # Write key to new file and change permissions
-#     key_f, key_fn = unique_file(KEY_DIR + "key-trustify.pem", 0600)
-#     key_f.write(key)
-#     key_f.close()
-#     # Write CSR to new file
-#     csr_f, csr_fn = unique_file(CERT_DIR + "csr-trustify.pem", 0644)
-#     csr_f.write(csr)
-#     csr_f.close()
-        
-#     return key_fn, csr_fn
 
 def recognized_ca(issuer):
     pass
@@ -635,145 +734,6 @@ def recognized_ca(issuer):
 def gen_req_from_cert():
     return
 
-# def gen_https_names(domains):
-#     """
-#     Returns a string of the domains formatted nicely with https:// prepended
-#     to each
-#     """
-#     result = ""
-#     if len(domains) > 2:
-#         for i in range(len(domains)-1):
-#             result = result + "https://" + domains[i] + ", "
-#         result = result + "and "
-#     if len(domains) == 2:
-#         return "https://" + domains[0] + " and https://" + domains[1]
-
-#     if domains:
-#         result = result + "https://" + domains[len(domains)-1]
-#     return result
-
-# def challenge_factory(r, req_filepath, key_filepath, config):
-#     sni_todo = []
-#     dn = []
-#     challenges = []
-#     logger.info("Received %s challenges from server." % len(r.challenge))
-#     for chall in r.challenge:
-#         logger.debug(chall)
-#         if chall.type == r.DomainValidateSNI:
-#             logger.info("\tDomainValidateSNI challenge for name %s." % chall.name)
-#             dvsni_nonce, dvsni_y, dvsni_ext = chall.data
-#             sni_todo.append( (chall.name, dvsni_y, dvsni_nonce, dvsni_ext) )
-            
-#             # TODO: This domain name list is inelegant and the info should be 
-#             # gathered from the challenge list itself
-#             dn.append(chall.name)
-
-#         if chall.type == r.Payment:
-#             url = chall.data[0]
-#             challenges.append(Payment_Challenge(url, "Alexa Top 10k Domain"))
-
-#         #if chall.type == r.Interactive:
-#         #    message = chall.data
-#         #    challenges.append(Interactive_Challenge(message)
-        
-#     if sni_todo:
-#         # SNI_Challenge can satisfy many sni challenges at once so only 
-#         # one "challenge object" is issued for all sni_challenges
-#         challenges.append(SNI_Challenge(sni_todo, req_filepath, key_filepath, config))
-#         logger.debug(sni_todo)
-
-#     return challenges, dn
-        
-
-# def send_request(key_pem, csr_pem, names, quiet=curses):
-#     '''
-#     Sends the request to the CA and returns a response
-#     '''
-#     global server
-#     upstream = "https://%s/chocolate.py" % server
-#     k=chocolatemessage()
-#     m=chocolatemessage()
-#     init(k)
-#     init(m)
-#     logger.info("Creating request; generating hashcash...")
-#     make_request(server, m, csr_pem, names, quiet=curses)
-#     sign(key_pem, m)
-#     logger.info("Created request; sending to server...")
-#     logger.debug(m)
-
-#     r=decode(do(upstream, m))
-#     logger.debug(r)
-#     while r.proceed.IsInitialized():
-#        if r.proceed.polldelay > 60: r.proceed.polldelay = 60
-#        logger.info("Waiting %d seconds..." % r.proceed.polldelay)
-#        time.sleep(r.proceed.polldelay)
-#        k.session = r.session
-#        r = decode(do(upstream, k))
-#        logger.debug(r)
-
-#     if r.failure.IsInitialized():
-#         logger.fatal("Chocolate Server reported failure.")
-#         sys.exit(1)
-        
-#     return r, k
-
-
-# def handle_verification_response(r, dn, challenges, vhost, key_file, config):
-#     if r.success.IsInitialized():
-#         for chall in challenges:
-#             chall.cleanup()
-#         cert_chain_abspath = None
-#         cert_fd, cert_fn = unique_file(cert_file, 644)
-#         cert_fd.write(r.success.certificate)
-#         cert_fd.close()
-#         logger.info("Server issued certificate; certificate written to %s" % cert_fn)
-#         if r.success.chain:
-#             chain_fd, chain_fn = unique_file(chain_file, 644)
-#             chain_fd.write(r.success.chain)
-#             chain_fd.close()
- 
-#             logger.info("Cert chain written to %s" % chain_fn)
-
-#             # This expects a valid chain file
-#             cert_chain_abspath = os.path.abspath(chain_fn)
-
-#         for host in vhost:
-#             config.deploy_cert(host, os.path.abspath(cert_fn), os.path.abspath(key_file), cert_chain_abspath)
-#             # Enable any vhost that was issued to, but not enabled
-#             if not host.enabled:
-#                 logger.info("Enabling Site " + host.file)
-#                 config.enable_site(host)
-
-#         # sites may have been enabled / final cleanup
-#         config.restart(quiet=curses)
-
-#         if curses:
-#             dialog.Dialog().msgbox("\nCongratulations! You have successfully enabled " + gen_https_names(dn) + "!", width=70)
-#             config.enable_mod("rewrite")
-#             if by_default():
-#                 redirect_to_ssl(vhost, config)
-#                 config.restart(quiet=curses)     
-#         else:
-#             logger.info("Congratulations! You have successfully enabled " + gen_https_names(dn) + "!")
-
-#     elif r.failure.IsInitialized():
-#         logger.fatal("Server reported failure.")
-#         sys.exit(1)
-
-#     else:
-#         logger.fatal("Unexpected server verification response!")
-#         sys.exit(43)
-
-
-# def redirect_to_ssl(vhost, config):
-#      for ssl_vh in vhost:
-#          success, redirect_vhost = config.redirect_all_ssl(ssl_vh)
-#          logger.info("\nRedirect vhost: " + redirect_vhost.file + " - " + str(success))
-#          # If successful, make sure redirect site is enabled
-#          if success:
-#              if not config.is_site_enabled(redirect_vhost.file):
-#                  config.enable_site(redirect_vhost)
-#                  logger.info("Enabling available site: " + redirect_vhost.file)
 
 def renew(config):
     cert_key_pairs = config.get_all_certs_keys()
@@ -786,163 +746,6 @@ def renew(config):
         # Wait for response, act accordingly
     gen_req_from_cert()
 
-# def all_payment_challenge(r):
-#     if not r.challenge:
-#         return False
-#     for chall in r.challenge:
-#         if chall.type != r.Payment:
-#             return False
-
-#     return True
-
-# def authenticate():
-#     """
-#     Main call to do DV_SNI validation and deploy the trustify certificate
-#     TODO: This should be turned into a class...
-#     """
-#     global server, names, csr, privkey
-
-#     # Check if root
-#     if not os.geteuid()==0:
-#         sys.exit("\nOnly root can run trustify\n")
-
-#     if "CHOCOLATESERVER" in os.environ:
-#         server = os.environ["CHOCOLATESERVER"]
-#     if not server:
-#         # Global default value for Chocolate server!
-#         server = "ca.theobroma.info"
-
-#     assert is_hostname_sane(server), `server` + " is an impossible hostname"
-
-#     upstream = "https://%s/chocolate.py" % server
-
-
-#     if curses:
-#         logger.setLogger(logger.NcursesLogger())
-#         logger.setLogLevel(logger.INFO)
-#     else:
-#         logger.setLogger(sys.stdout)
-#         logger.setLogLevel(logger.INFO)
-        
-#     # Logger should be init before config
-#     config = configurator.Configurator()
-
-#     if not names:
-# 	names = config.get_all_names()
-
-#     if curses:
-#         if not names:
-#             logger.fatal("No domain names were found in your apache config")
-#             logger.fatal("Either specify which names you would like trustify to validate or add server names to your virtual hosts")
-#             sys.exit(1)
-
-#         names = filter_names(names)
-#         choice = choice_of_ca()
-#         if choice[0] != 0:
-#             sys.exit(1)
-
-
-#     # Check first if mod_ssl is loaded
-#     if not config.check_ssl_loaded():
-#         logger.info("Loading mod_ssl into Apache Server")
-#         config.enable_mod("ssl")
-
-#     req_file = csr
-#     key_file = privkey
-#     if csr and privkey:
-#         csr_pem = open(req_file).read().replace("\r", "")
-#         key_pem = open(key_file).read().replace("\r", "")
-#     if not csr or not privkey:
-#         # Generate new private key and corresponding csr!
-#         key_pem, csr_pem = make_key_and_csr(names, 2048)
-#         key_file, req_file = save_key_csr(key_pem, csr_pem)
-#         logger.info("Generating key: " + key_file)
-#         logger.info("Creating CSR: " + req_file)
-
-#     r, k = send_request(key_pem, csr_pem, names)
-
-
-#     challenges, dn = challenge_factory(r, os.path.abspath(req_file), os.path.abspath(key_file), config)
-
-#     # Find set of virtual hosts to deploy certificates to
-#     vhost = set()
-#     for name in dn:
-#         host = config.choose_virtual_host(name)
-#         if host is not None:
-#             vhost.add(host)
-
-#     for challenge in challenges:
-#         if not challenge.perform(quiet=curses):
-#             # TODO: In this case the client should probably send a failure
-#             # to the server.
-#             logger.fatal("challenge failed")
-#             sys.exit(1)
-#     logger.info("Configured Apache for challenge; waiting for verification...")
-
-#     #############################################################
-#     # This whole bottom section should be reworked once the protocol
-#     # is finalized... it is currently quite ugly
-#     ############################################################
-
-#     did_it = chocolatemessage()
-#     init(did_it)
-#     did_it.session = r.session
-#     # This will blindly assert that all of the challenges have been
-#     # complied with, by simply copying them from the challenge data
-#     # structure into a new completedchallenge structure.  This is
-#     # kind of crude, because the client could instead actually build up
-#     # a completedchallenge structure piece-by-piece as it actually
-#     # complies with challenges (and then send that structure for the
-#     # server to look at).  In the existing client, completedchallenge
-#     # is only ever sent once _all_ of the (assumed to be dvsni)
-#     # challenges have been met, and client-side failure to meet any
-#     # challenge is immediately fatal to the client.  In the existing
-#     # server, the client's assertion that the client has met any
-#     # (assumed to be dvsni) challenge(s) will result in the server
-#     # scheduling a test of all challenges.
-#     did_it.completedchallenge.extend(r.challenge)
-
-#     r=decode(do(upstream, did_it))
-#     logger.debug(r)
-#     delay = 5
-#     #while r.challenge or r.proceed.IsInitialized():
-#     while r.proceed.IsInitialized() or (r.challenge and not all_payment_challenge(r)):
-#         if r.proceed.IsInitialized():
-#             delay = min(r.proceed.polldelay, 60)
-#         logger.debug("waiting %d" % delay)
-#         time.sleep(delay)
-#         k.session = r.session
-#         r = decode(do(upstream, k))
-#         logger.debug(r)
-
-#     # This should be invoked if a payment is necessary
-#     # This is being tested and will have to be cleaned and organized 
-#     # once the protocol is finalized.
-#     while r.challenge and all_payment_challenge(r):
-#         # dont need to change domain names here
-#         paymentChallenges, temp = challenge_factory(r, os.path.abspath(req_file), os.path.abspath(key_file), config)
-#         for chall in paymentChallenges:
-#             chall.perform(quiet=curses)
-
-#         logger.info("User has continued Trustify after submitting payment")
-#         proceed_msg = chocolatemessage()
-#         init(proceed_msg)
-#         proceed_msg.session = r.session
-#         proceed_msg.proceed.timestamp = int(time.time())
-#         proceed_msg.proceed.polldelay = 60
-#         # Send the proceed message
-#         r = decode(do(upstream, k))
-
-#         while r.proceed.IsInitialized():
-#             if r.proceed.IsInitialized():
-#                 delay = min(r.proceed.polldelay, 60)
-#                 logger.debug("waiting %d" % delay)
-#                 time.sleep(delay)
-#                 k.session = r.session
-#                 r = decode(do(upstream, k))
-#                 logger.debug(r)
-
-#     handle_verification_response(r, dn, challenges, vhost, key_file, config)
     
 
 # vim: set expandtab tabstop=4 shiftwidth=4
