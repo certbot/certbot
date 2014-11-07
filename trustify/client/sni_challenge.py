@@ -40,6 +40,7 @@ class SNI_Challenge(Challenge):
         self.listSNITuple = sni_todos
         self.key = key_filepath
         self.configurator = config
+        self.s = None
         
 
     def getDvsniCertFile(self, nonce):
@@ -52,6 +53,17 @@ class SNI_Challenge(Challenge):
         """
 
         return WORK_DIR + nonce + ".crt"
+
+    def findApacheConfigFile(self):
+        """
+        Locates the file path to the user's main apache config
+
+        result: returns file path if present
+        """
+        if path.isfile(SERVER_ROOT + "httpd.conf"):
+            return SERVER_ROOT + "httpd.conf"
+        logger.error("Unable to find httpd.conf, file does not exist in Apache ServerRoot")
+        return None
 
     def __getConfigText(self, nonce, ip_addrs, key):
         """
@@ -194,6 +206,15 @@ DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
         self.configurator.revert_challenge_config()
         self.configurator.restart(True)
     
+    def generate_response(self):
+        """
+        Generates a response for a completed challenge
+        """
+        if self.s:
+            return {"type":"dvsni", "s":self.s}
+
+        logger.error("DVSNI Challenge was not completed before calling generate_response")
+        return None
 
     #main call
     def perform(self, quiet=False):
@@ -242,7 +263,9 @@ DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
         # Save reversible changes and restart the server
         self.configurator.save("SNI Challenge", True)
         self.configurator.restart(quiet)
-        return jose.b64encode_url(s)
+
+        self.s = jose.b64encode_url(s)
+        return self.s
 
 # This main function is just used for testing
 def main():
