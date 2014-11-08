@@ -51,12 +51,18 @@ def main():
             config = configurator.Configurator()
             config.display_checkpoints()
             sys.exit(0)
+        elif o == "--revoke":
+            # Do Stuff
+            continue
+        elif o == "--view-keys":
+            # Do Stuff
+            continue
+
         elif o == "--test":
             #put any temporary tests in here
             continue
        
     if not server:
-        print os.environ
         if "ACMESERVER" in os.environ:
             server = os.environ["ACMESERVER"]
         else:
@@ -70,7 +76,7 @@ def main():
     c.authenticate()
 
 def usage():
-    print "Available options: --text, --privkey=, --csr=, --server=, --rollback=, --view-checkpoints"
+    print "Available options: --text, --privkey=, --csr=, --server=, --rollback=, --view-checkpoints, --revoke, --view-keys"
 
 if __name__ == "__main__":
     main()

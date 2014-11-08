@@ -11,7 +11,7 @@ from trustify.client import logger
 
 def make_csr(key_file, domains):
     """
-    Returns new CSR in PEM form using key_file containing all domains
+    Returns new CSR in PEM and DER form using key_file containing all domains
     """
     assert domains, "Must provide one or more hostnames for the CSR."
     rsa_key = M2Crypto.RSA.load_key(key_file)
@@ -32,7 +32,7 @@ def make_csr(key_file, domains):
     assert x.verify(pk)
     pk2 = x.get_pubkey()
     assert x.verify(pk2)
-    return x.as_pem()
+    return x.as_pem(), x.as_der()
 
 def make_ss_cert(key_file, domains):
     """

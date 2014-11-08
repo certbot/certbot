@@ -12,10 +12,10 @@ import errno
 from trustify.client.CONFIG import SERVER_ROOT, BACKUP_DIR
 from trustify.client.CONFIG import REWRITE_HTTPS_ARGS, CONFIG_DIR, WORK_DIR
 from trustify.client.CONFIG import TEMP_CHECKPOINT_DIR, IN_PROGRESS_DIR
-from trustify.client.CONFIG import OPTIONS_SSL_CONF
+from trustify.client.CONFIG import OPTIONS_SSL_CONF, TRUSTIFY_VHOST_EXT
 from trustify.client import logger, trustify_util
+#from CONFIG import SERVER_ROOT, BACKUP_DIR, REWRITE_HTTPS_ARGS, CONFIG_DIR, WORK_DIR, TEMP_CHECKPOINT_DIR, IN_PROGRESS_DIR, OPTIONS_SSL_CONF, TRUSTIFY_VHOST_EXT
 #import logger, trustify_util
-#from CONFIG import SERVER_ROOT, BACKUP_DIR, REWRITE_HTTPS_ARGS, CONFIG_DIR, WORK_DIR, TEMP_CHECKPOINT_DIR, IN_PROGRESS_DIR, OPTIONS_SSL_CONF
 
 # Question: Am I missing any attacks that can result from modifying CONFIG file?
 # Configurator should be turned into a Singleton
@@ -530,11 +530,11 @@ class Configurator(object):
     def make_vhost_ssl(self, nonssl_vhost):
         """
         Duplicates vhost and adds default ssl options
-        New vhost will reside as (nonssl_vhost.path)-trustify-ssl
+        New vhost will reside as (nonssl_vhost.path) + TRUSTIFY_VHOST_EXT
         """
         avail_fp = nonssl_vhost.file
         # Copy file
-        ssl_fp = avail_fp + "-trustify-ssl"
+        ssl_fp = avail_fp + TRUSTIFY_VHOST_EXT
         orig_file = open(avail_fp, 'r')
         
         # First register the creation so that it is properly removed if
@@ -955,7 +955,7 @@ LogLevel warn \n\
                 for fp in filepaths:
                     # Files are registered before they are added... so check to see if file
                     # exists first
-                    if os.path.isfile(fp):
+                    if os.path.lexists(fp):
                         os.remove(fp)
                     else:
                         logger.warn("File: %s - Could not be found to be deleted\nProgram was probably shut down unexpectedly, in which case this is not a problem" % fp)
