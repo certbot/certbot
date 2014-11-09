@@ -14,7 +14,7 @@ def main():
         sys.exit("\nOnly root can run trustify.\n")
     # Parse options
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "", ["text", "test", "view-checkpoints", "privkey=", "csr=", "server=", "rollback="])
+        opts, args = getopt.getopt(sys.argv[1:], "", ["text", "test", "view-checkpoints", "privkey=", "csr=", "server=", "rollback=", "revoke"])
     except getopt.GetoptError as err:
         # print help info and exit
         print str(err)
@@ -26,6 +26,7 @@ def main():
     privkey = None
     curses = True
     names = args
+    flag_revoke = False
 
     for o, a in opts:
         if o == "--text":
@@ -53,10 +54,7 @@ def main():
             sys.exit(0)
         elif o == "--revoke":
             # Do Stuff
-            continue
-        elif o == "--view-keys":
-            # Do Stuff
-            continue
+            flag_revoke = True
 
         elif o == "--test":
             #put any temporary tests in here
@@ -73,10 +71,13 @@ def main():
             server = "54.183.196.250"
 
     c = client.Client(server, args, csr, privkey, curses)
-    c.authenticate()
+    if flag_revoke:
+        c.list_certs_keys()
+    else:
+        c.authenticate()
 
 def usage():
-    print "Available options: --text, --privkey=, --csr=, --server=, --rollback=, --view-checkpoints, --revoke, --view-keys"
+    print "Available options: --text, --privkey=, --csr=, --server=, --rollback=, --view-checkpoints, --revoke"
 
 if __name__ == "__main__":
     main()

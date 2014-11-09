@@ -17,7 +17,7 @@ def make_csr(key_file, domains):
     rsa_key = M2Crypto.RSA.load_key(key_file)
     pk = EVP.PKey()
     pk.assign_rsa(rsa_key)
-    
+
     x = X509.Request()
     x.set_pubkey(pk)
     name = x.get_subject()
@@ -42,7 +42,7 @@ def make_ss_cert(key_file, domains):
     rsa_key = M2Crypto.RSA.load_key(key_file)
     pk = EVP.PKey()
     pk.assign_rsa(rsa_key)
-    
+
     x = X509.X509()
     x.set_pubkey(pk)
     x.set_serial_number(1337)
@@ -67,13 +67,13 @@ def make_ss_cert(key_file, domains):
     x.add_ext(X509.new_extension('basicConstraints', 'CA:FALSE'))
     #x.add_ext(X509.new_extension('extendedKeyUsage', 'TLS Web Server Authentication'))
     x.add_ext(X509.new_extension('subjectAltName', ", ".join(["DNS:%s" % d for d in domains])))
-    
+
     x.sign(pk, 'sha256')
     assert x.verify(pk)
     assert x.verify()
     #print check_purpose(,0
     return x.as_pem()
-    
+
 def make_or_verify_dir(directory, permissions=0755, uid=0):
     try:
         os.makedirs(directory, permissions)
@@ -105,6 +105,33 @@ def unique_file(default_name, mode = 0777):
             pass
         default_name = f_parsed[0] + '_' + str(count) + f_parsed[1]
         count += 1
+
+
+def get_cert_info(filename):
+    d = {}
+    # M2Crypto Library only supports RSA right now
+    x = M2Crypto.X509.load_cert(filename)
+    d["not_before"] = x.get_not_before().get_datetime()
+    d["not_after"] = x.get_not_after().get_datetime()
+    d["subject"] = x.get_subject().as_text()
+    d["cn"] = x.get_subject().CN
+    d["issuer"] = x.get_issuer().as_text()
+    d["fingerprint"] = x.get_fingerprint(md='sha1')
+    d["san"] = x.get_ext("subjectAltName").get_value()
+    d["serial"] = x.get_serial_number()
+    d["pub_key"] = "RSA " + str(x.get_pubkey().size() * 8)
+    return d
+
+def cert_info_string(cert):
+    text = "Subject: %s\n" % cert["subject"]
+    text += "SAN: %s\n" % cert["san"]
+    text += "Issuer: %s\n" % cert["issuer"]
+    text += "Public Key: %s\n" % cert["pub_key"]
+    text += "Not Before: %s\n" % str(cert["not_before"])
+    text += "Not After: %s\n" % str(cert["not_after"])
+    text += "Serial Number: %s\n" % cert["serial"]
+    text += "SHA1: %s\n" % cert["fingerprint"]
+    return text
 
 def drop_privs():
     nogroup = grp.getgrnam("nogroup").gr_gid
