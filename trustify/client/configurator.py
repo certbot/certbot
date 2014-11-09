@@ -12,7 +12,7 @@ import errno
 from trustify.client.CONFIG import SERVER_ROOT, BACKUP_DIR
 from trustify.client.CONFIG import REWRITE_HTTPS_ARGS, CONFIG_DIR, WORK_DIR
 from trustify.client.CONFIG import TEMP_CHECKPOINT_DIR, IN_PROGRESS_DIR
-from trustify.client.CONFIG import OPTIONS_SSL_CONF, TRUSTIFY_VHOST_EXT
+from trustify.client.CONFIG import OPTIONS_SSL_CONF
 from trustify.client import logger, trustify_util
 #from CONFIG import SERVER_ROOT, BACKUP_DIR, REWRITE_HTTPS_ARGS, CONFIG_DIR, WORK_DIR, TEMP_CHECKPOINT_DIR, IN_PROGRESS_DIR, OPTIONS_SSL_CONF, TRUSTIFY_VHOST_EXT
 #import logger, trustify_util
@@ -1134,9 +1134,9 @@ LogLevel warn \n\
 
             # Create Checkpoint
             if temporary:
-                self.__add_to_checkpoint(TEMP_CHECKPOINT_DIR, save_files)
+                self.add_to_checkpoint(TEMP_CHECKPOINT_DIR, save_files)
             else:
-                self.__add_to_checkpoint(IN_PROGRESS_DIR, save_files)
+                self.add_to_checkpoint(IN_PROGRESS_DIR, save_files)
                 
 
         if title and not temporary and os.path.isdir(IN_PROGRESS_DIR):
@@ -1176,7 +1176,7 @@ LogLevel warn \n\
             return False
         return True
 
-    def __add_to_checkpoint(self, cp_dir, save_files):
+    def add_to_checkpoint(self, cp_dir, save_files):
         trustify_util.make_or_verify_dir(cp_dir, 0755)
         
         existing_filepaths = []
