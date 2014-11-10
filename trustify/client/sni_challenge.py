@@ -17,7 +17,7 @@ from trustify.client import configurator
 from trustify.client.CONFIG import CONFIG_DIR, WORK_DIR, SERVER_ROOT
 from trustify.client.CONFIG import CHOC_CERT_CONF, OPTIONS_SSL_CONF, APACHE_CHALLENGE_CONF, INVALID_EXT
 from trustify.client.CONFIG import S_SIZE, NONCE_SIZE
-from trustify.client import logger, trustify_util
+from trustify.client import logger, crypto_util
 from trustify.client.challenge import Challenge
 
 # import configurator
@@ -141,7 +141,7 @@ DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
         self.createCHOC_CERT_CONF(name, ext)
 
         self.configurator.register_file_creation(True, self.getDvsniCertFile(nonce))
-        cert_pem = trustify_util.make_ss_cert(key, [nonce + INVALID_EXT, name, ext])
+        cert_pem = crypto_util.make_ss_cert(key, [nonce + INVALID_EXT, name, ext])
         with open(self.getDvsniCertFile(nonce), 'w') as f:
             f.write(cert_pem)
 

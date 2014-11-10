@@ -12,7 +12,7 @@ import errno
 from trustify.client.CONFIG import SERVER_ROOT, BACKUP_DIR
 from trustify.client.CONFIG import REWRITE_HTTPS_ARGS, CONFIG_DIR, WORK_DIR
 from trustify.client.CONFIG import TEMP_CHECKPOINT_DIR, IN_PROGRESS_DIR
-from trustify.client.CONFIG import OPTIONS_SSL_CONF
+from trustify.client.CONFIG import OPTIONS_SSL_CONF, TRUSTIFY_VHOST_EXT
 from trustify.client import logger, trustify_util
 #from CONFIG import SERVER_ROOT, BACKUP_DIR, REWRITE_HTTPS_ARGS, CONFIG_DIR, WORK_DIR, TEMP_CHECKPOINT_DIR, IN_PROGRESS_DIR, OPTIONS_SSL_CONF, TRUSTIFY_VHOST_EXT
 #import logger, trustify_util

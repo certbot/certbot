@@ -10,7 +10,7 @@ import M2Crypto
 import urllib2, json
 # XXX TODO: per https://docs.google.com/document/pub?id=1roBIeSJsYq3Ntpf6N0PIeeAAvu4ddn7mGo6Qb7aL7ew, urllib2 is unsafe (!) and must be replaced
 import os, grp, pwd, sys, time, random, sys, shutil
-import hashlib, binascii, jose, csv
+import jose, csv
 import subprocess
 from M2Crypto import EVP, X509, RSA
 from Crypto.Random import get_random_bytes
@@ -23,15 +23,14 @@ from trustify.client.sni_challenge import SNI_Challenge
 from trustify.client.payment_challenge import Payment_Challenge
 from trustify.client import configurator
 from trustify.client import logger
-from trustify.client import trustify_util
-from trustify.client.CONFIG import NONCE_SIZE, CERT_PATH, CHAIN_PATH
+from trustify.client import trustify_util, crypto_util, display
+from trustify.client.CONFIG import NONCE_SIZE, RSA_KEY_SIZE, CERT_PATH, CHAIN_PATH
 from trustify.client.CONFIG import SERVER_ROOT, KEY_DIR, CERT_DIR, CERT_KEY_BACKUP
 from trustify.client.CONFIG import CHALLENGE_PREFERENCES, EXCLUSIVE_CHALLENGES
 # it's weird to point to chocolate servers via raw IPv6 addresses, and such
 # addresses can be %SCARY in some contexts, so out of paranoia let's disable
 # them by default
 allow_raw_ipv6_server = False
-RSA_KEY_SIZE = 2048
 
 class Client(object):
     # In case of import, dialog needs scope over the class
@@ -97,8 +96,6 @@ class Client(object):
         
         challenge_dict = self.is_expected_msg(challenge_dict, "challenge")
 
-        
-        #assert self.is_challenge(challenge_dict)
 
         #Perform Challenges
 
@@ -124,6 +121,7 @@ class Client(object):
         self.install_certificate(certificate_dict, vhost)
         
         # Perform optimal config changes
+        self.optimize_config(vhost)
 
         self.config.save("Completed Augeas Authentication")
 
@@ -133,20 +131,20 @@ class Client(object):
 
 
     def revoke(self, c):
-        x = M2Crypto.X509.load_cert(c["cert_file"])
+        x = M2Crypto.X509.load_cert(c["backup_cert_file"])
         cert_der = x.as_der()
 
         #self.find_key_for_cert()
-        revocation_dict = self.send(self.revocation_request(cert_der))
+        revocation_dict = self.send(self.revocation_request(c["backup_key_file"], cert_der))
 
         revocation_dict = self.is_expected_msg(revocation_dict, "revocation")
 
         self.d.msgbox("You have successfully revoked the certificate for %s" % c["cn"], width=70, height=16)
 
-        self.remove_cert_key(c["cert_file"], c["key_file"])
+        self.remove_cert_key(c)
         sys.exit(0)
 
-    def remove_cert_key(self, c_file, k_file):
+    def remove_cert_key(self, c):
         list_file = CERT_KEY_BACKUP + "LIST"
         list_file2 = CERT_KEY_BACKUP + "LIST.tmp"
         with open(list_file, 'rb') as orgfile:
@@ -154,12 +152,15 @@ class Client(object):
             with open(list_file2, 'wb') as newfile:
                 csvwriter = csv.writer(newfile)
                 for row in csvreader:
-                    if not (row[1] == c_file and row[2] == k_file):
+                    if not (row[0] == str(c["idx"]) and row[1] == c["orig_cert_file"] and row[2] == c["orig_key_file"]):
                         csvwriter.writerow(row)
+                        
 
+        # remember that these are
         shutil.copy2(list_file2, list_file)
-        os.remove(c_file)
-        os.remove(k_file)
+        os.remove(list_file2)
+        os.remove(c['backup_cert_file'])
+        os.remove(c['backup_key_file'])
     
     def store_revocation_token(self, token):
         return
@@ -202,9 +203,12 @@ class Client(object):
         with open(list_file, 'rb') as csvfile:
             csvreader = csv.reader(csvfile)
             for row in csvreader:
-                c = trustify_util.get_cert_info(row[1])
-                c["key_file"] = row[2]
-                c["cert_file"] = row[1]
+                c = crypto_util.get_cert_info(row[1])
+                c["orig_key_file"] = row[2]
+                c["orig_cert_file"] = row[1]
+                c["backup_key_file"] = CERT_KEY_BACKUP + os.path.basename(row[2]) + "_" + row[0]
+                c["backup_cert_file"] = CERT_KEY_BACKUP + os.path.basename(row[1]) + "_" + row[0]
+                c["idx"] = int(row[0])
                 certs.append(c)
                 
         self.__display_certs(certs)
@@ -219,47 +223,30 @@ class Client(object):
 
 
                 if code == self.d.DIALOG_OK:
-                    self.__confirm_revocation(certs[int(selection)-1])
+                    if display.confirm_revocation(certs[int(selection)-1]):
+                        self.revoke(c)
+                    
                 elif code == self.d.DIALOG_CANCEL:
                     exit(0)
                 elif code == "help":
-                    self.__more_info_cert(certs[int(selection)-1])
+                    display.more_info_cert(certs[int(selection)-1])
                 
-    def __more_info_cert(self, cert):
-        text = "Certificate Information:\n"
-        text += "-" * 66
-        text += trustify_util.cert_info_string(cert)
-        text += "-" * 66
-        self.d.msgbox(text, width=70, height=16)
-
-    def __confirm_revocation(self, cert):
-        text = "Are you sure you would like to revoke the following certificate:\n"
-        text += "-" * 66 + "\n"
-        text += trustify_util.cert_info_string(cert)
-        text += "-" * 66
-        text += "This action cannot be reversed!"
-        a = self.d.yesno(text, width=70, height=16)
-        if a == self.d.DIALOG_OK:
-            self.revoke(cert)
-            
+                    
         
-    def revocation_request(self, cert_der):
-        return {"type":"revocationRequest", "certificate":jose.b64encode_url(cert_der), "signature":self.create_sig(cert_der)}
+    def revocation_request(self, key_file, cert_der):
+        return {"type":"revocationRequest", "certificate":jose.b64encode_url(cert_der), "signature":crypto_util.create_sig(cert_der, key_file)}
 
-    def convert_b64_cert_to_pem(self, b64_der_cert):
-        x = M2Crypto.X509.load_cert_der_string(jose.b64decode_url(b64_der_cert))
-        return x.as_pem()
-
+    
     def install_certificate(self, certificate_dict, vhost):
         cert_chain_abspath = None
         cert_fd, self.cert_file = trustify_util.unique_file(CERT_PATH, 644)
-        cert_fd.write(self.convert_b64_cert_to_pem(certificate_dict["certificate"]))
+        cert_fd.write(crypto_util.convert_b64_cert_to_pem(certificate_dict["certificate"]))
         cert_fd.close()
         logger.info("Server issued certificate; certificate written to %s" % self.cert_file)
         if certificate_dict.get("chain", None):
             chain_fd, chain_fn = trustify_util.unique_file(CHAIN_PATH, 644)
             for c in certificate_dict.get("chain", []):
-                chain_fd.write(self.convert_b64_cert_to_pem(c))
+                chain_fd.write(crypto_util.convert_b64_cert_to_pem(c))
             chain_fd.close()
             
             logger.info("Cert chain written to %s" % chain_fn)
@@ -277,19 +264,18 @@ class Client(object):
         # sites may have been enabled / final cleanup
         self.config.restart(quiet=self.curses)
 
-        if self.curses:
-            self.d.msgbox("\nCongratulations! You have successfully enabled " + self.gen_https_names(self.names) + "!", width=70)
-            if self.by_default():
-                self.config.enable_mod("rewrite")
-                self.redirect_to_ssl(vhost)
-                self.config.restart(quiet=self.curses)     
-        else:
-            logger.info("Congratulations! You have successfully enabled " + self.gen_https_names(self.names) + "!")
+        display.success_installation(self.curses, self.names)
 
+
+    def optimize_config(self, vhost):
+        if display.redirect_by_default(self.curses):
+            self.config.enable_mod("rewrite")
+            self.redirect_to_ssl(vhost)
+            self.config.restart(quiet=self.curses)
 
     def certificate_request(self, csr_der, key):
         logger.info("Preparing and sending CSR..")
-        return {"type":"certificateRequest", "csr":jose.b64encode_url(csr_der), "signature":self.create_sig(csr_der)}
+        return {"type":"certificateRequest", "csr":jose.b64encode_url(csr_der), "signature":crypto_util.create_sig(csr_der, self.key_file)}
 
     def cleanup_challenges(self, challenge_objs):
         logger.info("Cleaning up challenges...")
@@ -307,6 +293,11 @@ class Client(object):
                 logger.info("Waiting for %d seconds..." % delay)
                 time.sleep(delay)
                 msg_dict = self.send(self.status_request(msg_dict["token"]))
+            else:
+                logger.fatal("Received unexpected message")
+                logger.fatal("Expected: %s" % expected)
+                logger.fatal("Received: " + msg_dict)
+                sys.exit(33)
 
         logger.error("Server has deferred past the max of %d seconds" % (rounds * delay))
         return None
@@ -314,45 +305,15 @@ class Client(object):
 
     def authorization_request(self, id, name, server_nonce, responses):
         auth_req = {"type":"authorizationRequest", "sessionID":id, "nonce":server_nonce}
-        auth_req["signature"] = self.create_sig(name + jose.b64decode_url(server_nonce))
+        auth_req["signature"] = crypto_util.create_sig(name + jose.b64decode_url(server_nonce), self.key_file)
         auth_req["responses"] = responses
         return auth_req
 
     def status_request(self, token):
         return {"type":"statusRequest", "token":token}
-
-    def __leading_zeros(self, s):
-        if len(s) % 2:
-            return "0" + s
-        return s
-
-    def create_sig(self, msg, signer_nonce = None, signer_nonce_len = NONCE_SIZE):
-        # DOES prepend signer_nonce to message
-        # TODO: Change this over to M2Crypto... PKey
-        # Protect against crypto unicode errors... is this sufficient? Do I need to escape?
-        msg = str(msg)
-        key = RSA.importKey(open(self.key_file).read())
-        if signer_nonce is None:
-            signer_nonce = get_random_bytes(signer_nonce_len)
-        h = SHA256.new(signer_nonce + msg)
-        signer = PKCS1_v1_5.new(key)
-        signature = signer.sign(h)
-        #print "signing:", signer_nonce + msg
-        #print "signature:", signature
-        n, e = key.n, key.e
-        n_bytes = binascii.unhexlify(self.__leading_zeros(hex(n)[2:].replace("L", "")))
-        e_bytes = binascii.unhexlify(self.__leading_zeros(hex(e)[2:].replace("L", "")))
-        n_encoded = jose.b64encode_url(n_bytes)
-        e_encoded = jose.b64encode_url(e_bytes)
-        signer_nonce_encoded = jose.b64encode_url(signer_nonce)
-        sig_encoded = jose.b64encode_url(signature)
-        jwk = { "kty": "RSA", "n": n_encoded, "e": e_encoded }
-        signature = { "nonce": signer_nonce_encoded, "alg": "RS256", "jwk": jwk, "sig": sig_encoded }
-        # return json.dumps(signature)
-        return (signature)
-
+    
     def challenge_request(self, names):
-        logger.info("Temporarily only enabling one name")
+        #logger.info("Temporarily only enabling one name")
         return {"type":"challengeRequest", "identifier": names[0]}
 
     def verify_identity(self, c):
@@ -510,7 +471,7 @@ class Client(object):
         key_pem = None
         csr_pem = None
         if not self.key_file:
-            key_pem = self.make_key(RSA_KEY_SIZE)
+            key_pem = crypto_util.make_key(RSA_KEY_SIZE)
             # Save file
             trustify_util.make_or_verify_dir(KEY_DIR, 0700)
             key_f, self.key_file = trustify_util.unique_file(KEY_DIR + "key-trustify.pem", 0600)
@@ -525,7 +486,7 @@ class Client(object):
                 sys.exit(1)
 
         if not self.csr_file:
-            csr_pem, csr_der = trustify_util.make_csr(self.key_file, self.names)
+            csr_pem, csr_der = crypto_util.make_csr(self.key_file, self.names)
             # Save CSR
             trustify_util.make_or_verify_dir(CERT_DIR, 0755)
             csr_f, self.csr_file = trustify_util.unique_file(CERT_DIR + "csr-trustify.pem", 0644)
@@ -533,6 +494,7 @@ class Client(object):
             csr_f.close()
             logger.info("Creating CSR: %s" % self.csr_file)
         else:
+            #TODO fix this der situation
             try:
                 csr_pem = open(self.csr_file).read().replace("\r", "")
             except:
@@ -544,48 +506,15 @@ class Client(object):
 
         return key_pem, csr_pem
 
-
-
-    # based on M2Crypto unit test written by Toby Allsopp
-
-    def make_key(self, bits=RSA_KEY_SIZE):
-        """
-        Returns new RSA key in PEM form with specified bits
-        """
-        rsa = RSA.gen_key(bits, 65537)
-        key_pem = rsa.as_pem(cipher=None)
-        rsa = None # should not be freed here
-
-        return key_pem
-        
-    def __rsa_sign(self, key, data):
-        """
-        Sign this data with this private key.  For client-side use.
-        
-        @type key: str
-        @param key: PEM-encoded string of the private key.
-        
-        @type data: str
-        @param data: The data to be signed. Will be hashed (sha256) prior to
-        signing.
-        
-        @return: binary string of the signature
-        """
-        key = str(key)
-        data = str(data)
-        privkey = M2Crypto.RSA.load_key_string(key)
-        return privkey.sign(hashlib.sha256(data).digest(), 'sha256')
-
             
     def filter_names(self, names):
-        choices = [(n, "", 1) for n in names]
+        choices = [(n, "", 0) for n in names]
         result = self.d.checklist("Which names would you like to activate HTTPS for?", choices=choices)
         if result[0] != 0 or not result[1]:
             sys.exit(1)
         return result[1]
 
     def choice_of_ca(self):
-        
         choices = self.get_cas()
 
         result = self.d.menu("Pick a Certificate Authority.  They're all unique and special!", width=70, choices=choices)
@@ -611,11 +540,11 @@ class Client(object):
                     else:
                         EV_choices.append(choice)
 
-                random.shuffle(DV_choices)
-                random.shuffle(OV_choices)
-                random.shuffle(EV_choices)
+                # random.shuffle(DV_choices)
+                # random.shuffle(OV_choices)
+                # random.shuffle(EV_choices)
                 choices = DV_choices + OV_choices + EV_choices
-            #choices = [line.split(";", 1) for line in f]                       
+            
         except IOError as e:
             logger.fatal("Unable to find .ca_offerings file")
             sys.exit(1)
@@ -663,34 +592,6 @@ class Client(object):
             return True
         except:
             return False
-
-    def gen_https_names(self, domains):
-        """
-        Returns a string of the domains formatted nicely with https:// prepended
-        to each
-        """
-        result = ""
-        if len(domains) > 2:
-            for i in range(len(domains)-1):
-                result = result + "https://" + domains[i] + ", "
-            result = result + "and "
-        if len(domains) == 2:
-            return "https://" + domains[0] + " and https://" + domains[1]
-
-        if domains:
-            result = result + "https://" + domains[len(domains)-1]
-        return result
-
-    def by_default(self):
-        d = dialog.Dialog()
-        choices = [("Easy", "Allow both HTTP and HTTPS access to these sites"), ("Secure", "Make all requests redirect to secure HTTPS access")]
-        result = d.menu("Please choose whether HTTPS access is required or optional.", width=70, choices=choices)
-        if result[0] != 0:
-            sys.exit(1)
-        return result[1] == "Secure"
-
-def sha256(m):
-    return hashlib.sha256(m).hexdigest()
 
 
 def old_cert(cert_filename, days_left):

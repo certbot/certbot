@@ -10,6 +10,8 @@ BACKUP_DIR = WORK_DIR + "backups/"
 TEMP_CHECKPOINT_DIR = WORK_DIR + "temp_checkpoint/"
 # Directory used before a permanent checkpoint is finalized
 IN_PROGRESS_DIR = BACKUP_DIR + "IN_PROGRESS/"
+# Directory where all certificates/keys are stored - used for easy revocation
+CERT_KEY_BACKUP = WORK_DIR + "keys-certs/"
 # Where all keys should be stored
 KEY_DIR = SERVER_ROOT + "ssl/"
 # Certificate storage
@@ -28,12 +30,15 @@ APACHE_CHALLENGE_CONF = CONFIG_DIR + "choc_sni_cert_challenge.conf"
 S_SIZE = 32
 NONCE_SIZE = 16
 
+# Key Sizes
+RSA_KEY_SIZE = 2048
+
 # bits of hashcash to generate
 difficulty = 23 
 
 # Trustify cert and chain files
-cert_file = CERT_DIR + "trustify-cert.pem"
-chain_file = CERT_DIR + "trustify-chain.pem"
+CERT_PATH = CERT_DIR + "trustify-cert.pem"
+CHAIN_PATH = CERT_DIR + "trustify-chain.pem"
 
 #Invalid Extension                                                              
 INVALID_EXT = ".acme.invalid"
