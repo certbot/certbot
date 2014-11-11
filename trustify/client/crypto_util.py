@@ -12,7 +12,7 @@ from trustify.client import logger
 from trustify.client.CONFIG import NONCE_SIZE, RSA_KEY_SIZE
 
 
-def convert_b64_cert_to_pem(b64_der_cert):
+def b64_cert_to_pem(b64_der_cert):
     x = M2Crypto.X509.load_cert_der_string(jose.b64decode_url(b64_der_cert))
     return x.as_pem()
 

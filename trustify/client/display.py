@@ -100,11 +100,11 @@ class NcursesDisplay(Display):
                          str(c["not_before"])[:-6])
                         for i, c in enumerate(certs)]
 
-        c, s = self.d.menu("Which certificate would you like to revoke?",
+        code, s = self.d.menu("Which certificate would you like to revoke?",
                            choices = menu_choices, help_button=True,
                            help_label="More Info", ok_label="Revoke",
                            width=WIDTH, height=HEIGHT)
-        return c, s
+        return code, s
 
 
     def redirect_by_default(self):
