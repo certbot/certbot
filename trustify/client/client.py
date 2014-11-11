@@ -34,12 +34,7 @@ class Client(object):
     
     def __init__(self, ca_server, domains=[], cert_signing_request=None, private_key=None, use_curses=True):
         global dialog
-
         self.curses = use_curses
-        if self.curses:
-            import dialog
-            self.d = dialog.Dialog()
-            
 
         # Logger needs to be initialized before Configurator
         self.init_logger()
@@ -74,8 +69,12 @@ class Client(object):
             sys.exit(1)
 
         # Display screen to select domains to validate
-        self.names = self.filter_names(self.names)
-        self.names = [self.names[0]]
+        code, self.names = display.filter_names(self.names)
+        if code == display.OK:
+            # TODO: Allow multiple names once it is setup
+            self.names = [self.names[0]]
+        else:
+            sys.exit(0)
 
         # Display choice of CA screen
         # TODO: Use correct server depending on CA
@@ -135,7 +134,7 @@ class Client(object):
 
         revocation_dict = self.is_expected_msg(revocation_dict, "revocation")
 
-        self.d.msgbox("You have successfully revoked the certificate for %s" % c["cn"], width=70, height=16)
+        dialog.generic_notification("You have successfully revoked the certificate for %s" % c["cn"])
 
         self.remove_cert_key(c)
         sys.exit(0)
@@ -207,27 +206,21 @@ class Client(object):
                 c["idx"] = int(row[0])
                 certs.append(c)
         if certs:
-            self.__display_certs(certs)
+            self.choose_certs(certs)
         else:
-            logger.info("There are not any trusted Let's Encrypt certificates for this server.")
+            display.generic_notification("There are not any trusted Let's Encrypt certificates for this server.")
 
-    def __display_certs(self, certs):
+    def choose_certs(self, certs):
         while True:
-            menu_choices = [(str(i+1), str(c["cn"]) + " - " + c["pub_key"] + " - " + str(c["not_before"])[:-6]) for i, c in enumerate(certs)]
-            if self.curses:
-                code, selection = self.d.menu("Which certificate would you like to revoke?", choices = menu_choices, 
-                                              help_button=True, help_label="More Info", ok_label="Revoke", 
-                                              width=70, height=16)
-
-
-                if code == self.d.DIALOG_OK:
-                    if display.confirm_revocation(certs[int(selection)-1]):
-                        self.revoke(c)
+            code, selection = display.display_certs(certs)
+            if code == display.OK:
+                if display.confirm_revocation(certs[int(selection)-1]):
+                    self.revoke(c)
                     
-                elif code == self.d.DIALOG_CANCEL:
-                    exit(0)
-                elif code == "help":
-                    display.more_info_cert(certs[int(selection)-1])
+            elif code == display.CANCEL:
+                exit(0)
+            elif code == display.HELP:
+                display.more_info_cert(certs[int(selection)-1])
                 
                     
         
@@ -340,6 +333,12 @@ class Client(object):
         return responses, challenge_objs
             
     def gen_challenge_path(self, challenges, combos):
+        """
+        Generate a plan to get authority over the identity
+        TODO: Make sure that the challenges are feasible...
+        TODO Example: Do you have the recovery key?
+        """
+
         if combos:
             return self.__find_smart_path(challenges, combos)
 
@@ -504,23 +503,17 @@ class Client(object):
 
         return key_pem, csr_pem
 
-            
-    def filter_names(self, names):
-        choices = [(n, "", 0) for n in names]
-        result = self.d.checklist("Which names would you like to activate HTTPS for?", choices=choices)
-        if result[0] != 0 or not result[1]:
-            sys.exit(1)
-        return result[1]
-
+        
     def choice_of_ca(self):
         choices = self.get_cas()
+        message = "Pick a Certificate Authority.  They're all unique and special!"
+        in_txt = "Enter the number of a Certificate Authority (c to cancel): "
+        code, selection = display.generic_menu(message, choices, in_txt)
 
-        result = self.d.menu("Pick a Certificate Authority.  They're all unique and special!", width=70, choices=choices)
+        if code != display.OK:
+            sys.exit(0)
 
-        if result[0] != 0:
-            sys.exit(1)
-
-        return result
+        return selection
 
     def get_cas(self):
         DV_choices = []
@@ -542,6 +535,7 @@ class Client(object):
                 # random.shuffle(OV_choices)
                 # random.shuffle(EV_choices)
                 choices = DV_choices + OV_choices + EV_choices
+                choices = [(l[0], l[1]) for l in choices]
             
         except IOError as e:
             logger.fatal("Unable to find .ca_offerings file")
