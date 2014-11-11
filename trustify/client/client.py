@@ -1,9 +1,5 @@
 #!/usr/bin/env python
 
-# I am attempting to clean up client.py by making it object oriented and
-# adding proper better functions. The client should be able to be easily
-# tested after the changes have been instituted.
-
 import M2Crypto
 # It is OK to use the upstream M2Crypto here instead of our modified
 # version.
@@ -22,7 +18,7 @@ from trustify.client.acme import acme_object_validate
 from trustify.client.sni_challenge import SNI_Challenge
 from trustify.client.payment_challenge import Payment_Challenge
 from trustify.client import configurator
-from trustify.client import logger
+from trustify.client import logger, display
 from trustify.client import trustify_util, crypto_util, display
 from trustify.client.CONFIG import NONCE_SIZE, RSA_KEY_SIZE, CERT_PATH, CHAIN_PATH
 from trustify.client.CONFIG import SERVER_ROOT, KEY_DIR, CERT_DIR, CERT_KEY_BACKUP
@@ -43,6 +39,7 @@ class Client(object):
         if self.curses:
             import dialog
             self.d = dialog.Dialog()
+            
 
         # Logger needs to be initialized before Configurator
         self.init_logger()
@@ -98,7 +95,6 @@ class Client(object):
 
 
         #Perform Challenges
-
         responses, challenge_objs = self.verify_identity(challenge_dict)
 
         # Find set of virtual hosts to deploy certificates to
@@ -210,8 +206,10 @@ class Client(object):
                 c["backup_cert_file"] = CERT_KEY_BACKUP + os.path.basename(row[1]) + "_" + row[0]
                 c["idx"] = int(row[0])
                 certs.append(c)
-                
-        self.__display_certs(certs)
+        if certs:
+            self.__display_certs(certs)
+        else:
+            logger.info("There are not any trusted Let's Encrypt certificates for this server.")
 
     def __display_certs(self, certs):
         while True:
@@ -264,11 +262,11 @@ class Client(object):
         # sites may have been enabled / final cleanup
         self.config.restart(quiet=self.curses)
 
-        display.success_installation(self.curses, self.names)
+        display.success_installation(self.names)
 
 
     def optimize_config(self, vhost):
-        if display.redirect_by_default(self.curses):
+        if display.redirect_by_default():
             self.config.enable_mod("rewrite")
             self.redirect_to_ssl(vhost)
             self.config.restart(quiet=self.curses)

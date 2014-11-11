@@ -7,6 +7,7 @@ import os
 import sys
 
 from trustify.client import client
+from trustify.client import display
 
 def main():
     # Check to make sure user is root
@@ -59,6 +60,11 @@ def main():
         elif o == "--test":
             #put any temporary tests in here
             continue
+
+    if curses:
+        display.setDisplay(display.NcursesDisplay())
+    else:
+        display.setDisplay(display.FileDisplay(sys.stdout))
        
     if not server:
         if "ACMESERVER" in os.environ:
