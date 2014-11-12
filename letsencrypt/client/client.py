@@ -14,16 +14,16 @@ from Crypto.PublicKey import RSA
 from Crypto.Signature import PKCS1_v1_5
 from Crypto.Hash import SHA256
 
-from trustify.client.acme import acme_object_validate
-from trustify.client.sni_challenge import SNI_Challenge
-from trustify.client.payment_challenge import Payment_Challenge
-from trustify.client import configurator
-from trustify.client import logger, display
-from trustify.client import trustify_util, crypto_util, display
-from trustify.client.CONFIG import NONCE_SIZE, RSA_KEY_SIZE, CERT_PATH
-from trustify.client.CONFIG import CHAIN_PATH, SERVER_ROOT, KEY_DIR, CERT_DIR
-from trustify.client.CONFIG import CERT_KEY_BACKUP
-from trustify.client.CONFIG import CHALLENGE_PREFERENCES, EXCLUSIVE_CHALLENGES
+from letsencrypt.client.acme import acme_object_validate
+from letsencrypt.client.sni_challenge import SNI_Challenge
+from letsencrypt.client.payment_challenge import Payment_Challenge
+from letsencrypt.client import configurator
+from letsencrypt.client import logger, display
+from letsencrypt.client import le_util, crypto_util, display
+from letsencrypt.client.CONFIG import NONCE_SIZE, RSA_KEY_SIZE, CERT_PATH
+from letsencrypt.client.CONFIG import CHAIN_PATH, SERVER_ROOT, KEY_DIR, CERT_DIR
+from letsencrypt.client.CONFIG import CERT_KEY_BACKUP
+from letsencrypt.client.CONFIG import CHALLENGE_PREFERENCES, EXCLUSIVE_CHALLENGES
 # it's weird to point to chocolate servers via raw IPv6 addresses, and such
 # addresses can be %SCARY in some contexts, so out of paranoia let's disable
 # them by default
@@ -193,7 +193,7 @@ class Client(object):
 
     def store_cert_key(self, encrypt = False):
         list_file = CERT_KEY_BACKUP + "LIST"
-        trustify_util.make_or_verify_dir(CERT_KEY_BACKUP, 0700)
+        le_util.make_or_verify_dir(CERT_KEY_BACKUP, 0700)
         idx = 0
 
         if encrypt:
@@ -226,7 +226,7 @@ class Client(object):
         certs = []
 
         if not os.path.isfile(CERT_KEY_BACKUP + "LIST"):
-            logger.info("You don't have any certificates saved from trustify")
+            logger.info("You don't have any certificates saved from letsencrypt")
             return
 
         with open(list_file, 'rb') as csvfile:
@@ -272,7 +272,7 @@ class Client(object):
 
     def install_certificate(self, certificate_dict, vhost):
         cert_chain_abspath = None
-        cert_fd, self.cert_file = trustify_util.unique_file(CERT_PATH, 644)
+        cert_fd, self.cert_file = le_util.unique_file(CERT_PATH, 644)
         cert_fd.write(
             crypto_util.b64_cert_to_pem(certificate_dict["certificate"]))
         cert_fd.close()
@@ -280,7 +280,7 @@ class Client(object):
                     self.cert_file)
 
         if certificate_dict.get("chain", None):
-            chain_fd, chain_fn = trustify_util.unique_file(CHAIN_PATH, 644)
+            chain_fd, chain_fn = le_util.unique_file(CHAIN_PATH, 644)
             for c in certificate_dict.get("chain", []):
                 chain_fd.write(crypto_util.b64_cert_to_pem(c))
             chain_fd.close()
@@ -547,9 +547,9 @@ class Client(object):
         if not self.key_file:
             key_pem = crypto_util.make_key(RSA_KEY_SIZE)
             # Save file
-            trustify_util.make_or_verify_dir(KEY_DIR, 0700)
-            key_f, self.key_file = trustify_util.unique_file(
-                KEY_DIR + "key-trustify.pem", 0600)
+            le_util.make_or_verify_dir(KEY_DIR, 0700)
+            key_f, self.key_file = le_util.unique_file(
+                KEY_DIR + "key-letsencrypt.pem", 0600)
             key_f.write(key_pem)
             key_f.close()
             logger.info("Generating key: %s" % self.key_file)
@@ -563,9 +563,9 @@ class Client(object):
         if not self.csr_file:
             csr_pem, csr_der = crypto_util.make_csr(self.key_file, self.names)
             # Save CSR
-            trustify_util.make_or_verify_dir(CERT_DIR, 0755)
-            csr_f, self.csr_file = trustify_util.unique_file(
-                CERT_DIR + "csr-trustify.pem", 0644)
+            le_util.make_or_verify_dir(CERT_DIR, 0755)
+            csr_f, self.csr_file = le_util.unique_file(
+                CERT_DIR + "csr-letsencrypt.pem", 0644)
             csr_f.write(csr_pem)
             csr_f.close()
             logger.info("Creating CSR: %s" % self.csr_file)
@@ -600,7 +600,7 @@ class Client(object):
         EV_choices = []
         choices = []
         try:
-            with open("/etc/trustify/.ca_offerings") as f:
+            with open("/etc/letsencrypt/.ca_offerings") as f:
                 for line in f:
                     choice = line.split(";", 1)
                     if 'DV' in choice[0]:
@@ -627,7 +627,7 @@ class Client(object):
 
         if not self.names:
             logger.fatal("No domain names were found in your apache config")
-            logger.fatal("Either specify which names you would like trustify \
+            logger.fatal("Either specify which names you would like letsencrypt \
             to validate or add server names to your virtual hosts")
             sys.exit(1)
 

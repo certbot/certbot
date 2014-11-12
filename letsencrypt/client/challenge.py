@@ -1,4 +1,4 @@
-from trustify.client import logger
+from letsencrypt.client import logger
 #import logger
 
 class Challenge(object):

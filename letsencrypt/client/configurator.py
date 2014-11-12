@@ -9,13 +9,13 @@ import time
 import shutil
 import errno
 
-from trustify.client.CONFIG import SERVER_ROOT, BACKUP_DIR
-from trustify.client.CONFIG import REWRITE_HTTPS_ARGS, CONFIG_DIR, WORK_DIR
-from trustify.client.CONFIG import TEMP_CHECKPOINT_DIR, IN_PROGRESS_DIR
-from trustify.client.CONFIG import OPTIONS_SSL_CONF, TRUSTIFY_VHOST_EXT
-from trustify.client import logger, trustify_util
+from letsencrypt.client.CONFIG import SERVER_ROOT, BACKUP_DIR
+from letsencrypt.client.CONFIG import REWRITE_HTTPS_ARGS, CONFIG_DIR, WORK_DIR
+from letsencrypt.client.CONFIG import TEMP_CHECKPOINT_DIR, IN_PROGRESS_DIR
+from letsencrypt.client.CONFIG import OPTIONS_SSL_CONF, LE_VHOST_EXT
+from letsencrypt.client import logger, le_util
 #from CONFIG import SERVER_ROOT, BACKUP_DIR, REWRITE_HTTPS_ARGS, CONFIG_DIR, WORK_DIR, TEMP_CHECKPOINT_DIR, IN_PROGRESS_DIR, OPTIONS_SSL_CONF, TRUSTIFY_VHOST_EXT
-#import logger, trustify_util
+#import logger, le_util
 
 # Question: Am I missing any attacks that can result from modifying CONFIG file?
 # Configurator should be turned into a Singleton
@@ -65,7 +65,6 @@ class Configurator(object):
     def __init__(self, server_root=SERVER_ROOT):
         # TODO: this instantiation can be optimized to only load Httd 
         #       relevant files - I believe -> NO_MODL_AUTOLOAD
-        # TODO: Use server_root instead SERVER_ROOT
 
         self.server_root = server_root
 
@@ -110,7 +109,7 @@ class Configurator(object):
         destination
         TODO: Make sure last directive is changed
         TODO: Might be nice to remove chain directive if none exists
-              * This shouldn't happen within trustify though
+              * This shouldn't happen within letsencrypt though
         """
         search = {}
         path = {}
@@ -272,7 +271,7 @@ class Configurator(object):
         Returns list of virtual hosts found in the Apache configuration
         """
         #Search sites-available, httpd.conf for possible virtual hosts
-        paths = self.aug.match("/files%ssites-available//*[label()=~regexp('%s')]" % (SERVER_ROOT, self.case_i('VirtualHost')))
+        paths = self.aug.match("/files%ssites-available//*[label()=~regexp('%s')]" % (self.server_root, self.case_i('VirtualHost')))
         vhs = []
         for p in paths:
             vhs.append(self.__create_vhost(p))
@@ -308,13 +307,13 @@ class Configurator(object):
         Directive is added to ports.conf unless the file doesn't exist
         It is added to httpd.conf as a backup
         """
-        aug_file_path = "/files%sports.conf" % SERVER_ROOT
+        aug_file_path = "/files%sports.conf" % self.server_root
         self.add_dir_to_ifmodssl(aug_file_path, "NameVirtualHost", addr)
         
         if len(self.find_directive(self.case_i("NameVirtualHost"), self.case_i(addr))) == 0:
             logger.warn("ports.conf is not included in your Apache config...")
             logger.warn("Adding NameVirtualHost directive to httpd.conf")
-            self.add_dir_to_ifmodssl("/files" + SERVER_ROOT + "httpd.conf", "NameVirtualHost", addr)
+            self.add_dir_to_ifmodssl("/files" + self.server_root + "httpd.conf", "NameVirtualHost", addr)
         
         self.save_notes += 'Setting %s to be NameBasedVirtualHost\n' % addr
 
@@ -349,7 +348,7 @@ class Configurator(object):
         if len(self.find_directive(self.case_i("Listen"), "443")) == 0:
             logger.debug("No Listen 443 directive found")
             logger.debug("Setting the Apache Server to Listen on port 443")
-            self.add_dir_to_ifmodssl("/files" + SERVER_ROOT + "ports.conf", "Listen", "443")
+            self.add_dir_to_ifmodssl("/files" + self.server_root + "ports.conf", "Listen", "443")
             self.save_notes += "Added Listen 443 directive to ports.conf\n"
 
         # Check for NameVirtualHost
@@ -395,7 +394,7 @@ class Configurator(object):
                 self.aug.set(aug_conf_path + "/directive[last()]/arg["+str(i+1)+"]", arg[i]) 
             
         
-    def find_directive(self, directive, arg=None, start="/files"+SERVER_ROOT+"apache2.conf"):
+    def find_directive(self, directive, arg=None, start=""):
         """
         Recursively searches through config files to find directives
         Directives should be in the form of a case insensitive regex currently
@@ -408,7 +407,11 @@ class Configurator(object):
         transformation by calling case_i() on everything to maintain
         compatibility.
         """
-
+        
+        # Cannot place member variable in the definition of the function so...
+        if not start:
+            start = "/files%sapache2.conf" % self.server_root
+            
         #Debug code
         #print "find_dir:", directive, "arg:", arg, " | Looking in:", start
         # No regexp code
@@ -441,7 +444,6 @@ class Configurator(object):
         supported.
         """
         
-        #return '[' + "][".join([c.upper()+c.lower() if c.isalpha() else c for c in re.escape(string)]) + ']'
         return "".join(["["+c.upper()+c.lower()+"]" if c.isalpha() else c for c in re.escape(string)])
     
     def strip_dir(self, path):
@@ -486,7 +488,7 @@ class Configurator(object):
             arg = cur_dir + arg
         # conf/ is a special variable for ServerRoot in Apache
         elif arg.startswith("conf/"):
-            arg = SERVER_ROOT + arg[5:]
+            arg = self.server_root + arg[5:]
         # TODO: Test if Apache allows ../ or ~/ for Includes
  
         # Attempts to add a transform to the file if one does not already exist
@@ -530,23 +532,33 @@ class Configurator(object):
     def make_vhost_ssl(self, nonssl_vhost):
         """
         Duplicates vhost and adds default ssl options
-        New vhost will reside as (nonssl_vhost.path) + TRUSTIFY_VHOST_EXT
+        New vhost will reside as (nonssl_vhost.path) + LE_VHOST_EXT
         """
         avail_fp = nonssl_vhost.file
         # Copy file
-        ssl_fp = avail_fp + TRUSTIFY_VHOST_EXT
-        orig_file = open(avail_fp, 'r')
+        if avail_fp.endswith(".conf"):
+            ssl_fp = avail_fp[:-(len(".conf"))] + LE_VHOST_EXT
+        else:
+            ssl_fp = avail_fp + LE_VHOST_EXT
         
         # First register the creation so that it is properly removed if
         # configuration is rolled back
         self.register_file_creation(False, ssl_fp)
-        new_file = open(ssl_fp, 'w')
-        new_file.write("<IfModule mod_ssl.c>\n")
-        for line in orig_file:
-            new_file.write(line)
-        new_file.write("</IfModule>\n")
-        orig_file.close()
-        new_file.close()
+
+        try:
+            orig_file = open(avail_fp, 'r')
+            new_file = open(ssl_fp, 'w')
+            new_file.write("<IfModule mod_ssl.c>\n")
+            for line in orig_file:
+                new_file.write(line)
+            new_file.write("</IfModule>\n")
+        except:
+            logger.fatal("Error writing/reading to file in make_vhost_ssl")
+            sys.exit(49)
+        finally:
+            orig_file.close()
+            new_file.close()
+
         self.aug.load()
         # Delete the VH addresses because they may change here
         del nonssl_vhost.addrs[:]
@@ -640,7 +652,7 @@ class Configurator(object):
         returns boolean, integer
         The boolean indicates whether the redirection exists...
         The integer has the following code:
-        0 - Existing trustify https rewrite rule is appropriate and in place
+        0 - Existing letsencrypt https rewrite rule is appropriate and in place
         1 - Virtual host contains a Redirect directive
         2 - Virtual host contains an unknown RewriteRule
 
@@ -658,11 +670,11 @@ class Configurator(object):
         if len(rewrite_path) == len(REWRITE_HTTPS_ARGS):
             for idx, m in enumerate(rewrite_path):
                 if self.aug.get(m) != REWRITE_HTTPS_ARGS[idx]:
-                    # Not a trustify https rewrite
+                    # Not a letsencrypt https rewrite
                     return True, 2
-            # Existing trustify https rewrite rule is in place
+            # Existing letsencrypt https rewrite rule is in place
             return True, 0
-        # Rewrite path exists but is not a trustify https rule
+        # Rewrite path exists but is not a letsencrypt https rule
         return True, 2
     
     def create_redirect_vhost(self, ssl_vhost):
@@ -697,16 +709,16 @@ LogLevel warn \n\
         
         # Write out the file
         # This is the default name
-        redirect_filename = "trustify-redirect.conf"
+        redirect_filename = "letsencrypt-redirect.conf"
 
         # See if a more appropriate name can be applied
         if len(ssl_vhost.names) > 0:
             # Sanity check...
             # make sure servername doesn't exceed filename length restriction
             if ssl_vhost.names[0] < (255-23):
-                redirect_filename = "trustify-redirect-" + ssl_vhost.names[0] + ".conf"
+                redirect_filename = "letsencrypt-redirect-" + ssl_vhost.names[0] + ".conf"
 
-        redirect_filepath = SERVER_ROOT + "sites-available/" + redirect_filename
+        redirect_filepath = self.server_root + "sites-available/" + redirect_filename
 
         # Register the new file that will be created
         # Note: always register the creation before writing to ensure file will
@@ -720,7 +732,7 @@ LogLevel warn \n\
 
         self.aug.load()
         # Make a new vhost data structure and add it to the lists
-        new_fp = SERVER_ROOT + "sites-available/" + redirect_filename
+        new_fp = self.server_root + "sites-available/" + redirect_filename
         new_vhost = self.__create_vhost("/files" + new_fp)
         self.vhosts.append(new_vhost)
         
@@ -847,7 +859,7 @@ LogLevel warn \n\
 
         avail_fp:     string - Should be complete file path
         """
-        enabled_dir = SERVER_ROOT + "sites-enabled/"
+        enabled_dir = self.server_root + "sites-enabled/"
         for f in os.listdir(enabled_dir):
             if os.path.realpath(enabled_dir + f) == avail_fp:
                 return True
@@ -861,7 +873,7 @@ LogLevel warn \n\
         TODO: Make sure link is not broken...
         """
         if "/sites-available/" in vhost.file:
-            enabled_path = "%ssites-enabled/%s" % (SERVER_ROOT, os.path.basename(vhost.file))
+            enabled_path = "%ssites-enabled/%s" % (self.server_root, os.path.basename(vhost.file))
             self.register_file_creation(False, enabled_path)
             os.symlink(vhost.file, enabled_path)
             vhost.enabled = True
@@ -918,7 +930,7 @@ LogLevel warn \n\
     def save_apache_config(self):
         # Not currently used
         # Should be safe because it is a protected directory
-        shutil.copytree(SERVER_ROOT, BACKUP_DIR + "apache2-" + str(time.time()))
+        shutil.copytree(self.server_root, BACKUP_DIR + "apache2-" + str(time.time()))
     
     def recovery_routine(self):
         """
@@ -971,9 +983,9 @@ LogLevel warn \n\
         Aim for defensive coding... make sure all input files 
         have permissions of root
         '''
-        trustify_util.make_or_verify_dir(CONFIG_DIR, 0755)
-        trustify_util.make_or_verify_dir(WORK_DIR, 0755)
-        trustify_util.make_or_verify_dir(BACKUP_DIR, 0755)
+        le_util.make_or_verify_dir(CONFIG_DIR, 0755)
+        le_util.make_or_verify_dir(WORK_DIR, 0755)
+        le_util.make_or_verify_dir(BACKUP_DIR, 0755)
 
     def standardize_excl(self):
         """
@@ -989,7 +1001,7 @@ LogLevel warn \n\
         # I had no luck
         # This is a hack... work around... submit to augeas if still not fixed
 
-        excl = ["*.augnew", "*.augsave", "*.dpkg-dist", "*.dpkg-bak", "*.dpkg-new", "*.dpkg-old", "*.rpmsave", "*.rpmnew", "*~", SERVER_ROOT + "*.augsave", SERVER_ROOT + "*~", SERVER_ROOT + "*/*augsave", SERVER_ROOT + "*/*~", SERVER_ROOT + "*/*/*.augsave", SERVER_ROOT + "*/*/*~"]
+        excl = ["*.augnew", "*.augsave", "*.dpkg-dist", "*.dpkg-bak", "*.dpkg-new", "*.dpkg-old", "*.rpmsave", "*.rpmnew", "*~", self.server_root + "*.augsave", self.server_root + "*~", self.server_root + "*/*augsave", self.server_root + "*/*~", self.server_root + "*/*/*.augsave", self.server_root + "*/*/*~"]
         
         for i in range(len(excl)):
             self.aug.set("/augeas/load/Httpd/excl[%d]" % (i+1), excl[i])
@@ -1177,7 +1189,7 @@ LogLevel warn \n\
         return True
 
     def add_to_checkpoint(self, cp_dir, save_files):
-        trustify_util.make_or_verify_dir(cp_dir, 0755)
+        le_util.make_or_verify_dir(cp_dir, 0755)
         
         existing_filepaths = []
         op_fd = None
@@ -1269,21 +1281,6 @@ LogLevel warn \n\
 
         return True, "Successful"
 
-        
-        # protected_fd = open(MODIFIED_FILES, 'r+')
-        # protected_files = protected_fd.read().splitlines()
-        # for filename in save_files:
-        #     if filename in protected_files:
-        #         protected_fd.close()
-        #         return False, "Attempting to overwrite a reversible file - %s" %filename
-        # # No protected files are trying to be overwritten
-        # if reversible:
-        #     for filename in save_files:
-        #         protected_fd.write(filename + "\n")
-
-        # protected_fd.close()
-        # return True, "Successful"
-
     def display_checkpoints(self):
         """
         Displays all saved checkpoints
@@ -1295,7 +1292,7 @@ LogLevel warn \n\
         backups.sort(reverse=True)
 
         if not backups:
-            print "Trustify has not saved any backups of your apache configuration"
+            print "Letsencrypt has not saved any backups of your apache configuration"
         # Make sure there isn't anything unexpected in the backup folder
         # There should only be timestamped (float) directories
         try:
@@ -1327,7 +1324,7 @@ LogLevel warn \n\
 
     def register_file_creation(self, temporary, *files):
         """
-        This is used to register the creation of all files during Trustify
+        This is used to register the creation of all files during Letsencrypt
         execution. Call this method before writing to the file to make sure
         that the file will be cleaned up if the program exits unexpectedly.
         (Before a save occurs)
@@ -1337,7 +1334,7 @@ LogLevel warn \n\
         else:
             cp_dir = IN_PROGRESS_DIR
         
-        trustify_util.make_or_verify_dir(cp_dir)
+        le_util.make_or_verify_dir(cp_dir)
         try:
             with open(cp_dir + "NEW_FILES", 'a') as fd:
                 for f in files:
