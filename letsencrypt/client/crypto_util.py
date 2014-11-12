@@ -8,8 +8,8 @@ from Crypto.Hash import SHA256
 from M2Crypto import EVP, X509, ASN1
 
 
-from trustify.client import logger
-from trustify.client.CONFIG import NONCE_SIZE, RSA_KEY_SIZE
+from letsencrypt.client import logger
+from letsencrypt.client.CONFIG import NONCE_SIZE, RSA_KEY_SIZE
 
 
 def b64_cert_to_pem(b64_der_cert):

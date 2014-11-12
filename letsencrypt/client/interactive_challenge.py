@@ -1,5 +1,5 @@
-from trustify.client.challenge import Challenge
-from trustify.client import logger
+from letsencrypt.client.challenge import Challenge
+from letsencrypt.client import logger
 import textwrap
 
 ############################################################
@@ -14,7 +14,7 @@ import textwrap
 # Interactive challlenge displays the string sent by the CA
 # formatted to fit on the screen of the client
 # The Challenge also adds proper instructions for how the
-# client should continue the trustify process
+# client should continue the letsencrypt process
 ###########################################################
 
 class Interactive_Challenge(Challenge):

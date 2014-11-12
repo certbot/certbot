@@ -1,6 +1,6 @@
-from trustify.client.challenge import Challenge
-from trustify.client import logger
-from trustify.client.CONFIG import RECOVERY_TOKEN_EXT
+from letsencrypt.client.challenge import Challenge
+from letsencrypt.client import logger
+from letsencrypt.client.CONFIG import RECOVERY_TOKEN_EXT
 # TODO: Replace urllib2 because of lack of certificate validation checks
 import dialog, urllib2
 

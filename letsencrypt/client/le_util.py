@@ -1,10 +1,10 @@
-# This file will contain functions useful for all Trustify Classes
+# This file will contain functions useful for all Letsencrypt Classes
 import errno
 import stat
 import os, pwd, grp
 import M2Crypto
 import time
-from trustify.client import logger
+from letsencrypt.client import logger
 #import logger
 
 

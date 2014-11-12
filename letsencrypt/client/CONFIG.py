@@ -1,9 +1,9 @@
 # Apache server root directory
 SERVER_ROOT = "/etc/apache2/"
-# Configuration file directory for trustify
-CONFIG_DIR = "/etc/trustify/"
-# Working directory for trustify
-WORK_DIR = "/var/lib/trustify/"
+# Configuration file directory for letsencrypt
+CONFIG_DIR = "/etc/letsencrypt/"
+# Working directory for letsencrypt
+WORK_DIR = "/var/lib/letsencrypt/"
 # Directory where configuration backups are stored
 BACKUP_DIR = WORK_DIR + "backups/"
 # Replaces MODIFIED_FILES, directory where temp checkpoint is created
@@ -17,14 +17,15 @@ KEY_DIR = SERVER_ROOT + "ssl/"
 # Certificate storage
 CERT_DIR = SERVER_ROOT + "certs/"
 
-# Used by openssl to sign challenge certificate with trustify extension
-CHOC_CERT_CONF = CONFIG_DIR + "choc_cert_extensions.cnf"
+# Used by openssl to sign challenge certificate with letsencrypt extension
+# No longer used
+#CHOC_CERT_CONF = CONFIG_DIR + "choc_cert_extensions.cnf"
 # Contains standard Apache SSL directives
 OPTIONS_SSL_CONF = CONFIG_DIR + "options-ssl.conf"
-# Trustify SSL vhost configuration extension
-TRUSTIFY_VHOST_EXT = "-trustify-ssl.conf"
+# Let's Encrypt SSL vhost configuration extension
+LE_VHOST_EXT = "-letsencrypt-ssl.conf"
 # Temporary file for challenge virtual hosts
-APACHE_CHALLENGE_CONF = CONFIG_DIR + "choc_sni_cert_challenge.conf"
+APACHE_CHALLENGE_CONF = CONFIG_DIR + "LE_dvsni_cert_challenge.conf"
 
 # Byte size of S and Nonce
 S_SIZE = 32
@@ -36,9 +37,9 @@ RSA_KEY_SIZE = 2048
 # bits of hashcash to generate
 difficulty = 23 
 
-# Trustify cert and chain files
-CERT_PATH = CERT_DIR + "trustify-cert.pem"
-CHAIN_PATH = CERT_DIR + "trustify-chain.pem"
+# Let's Encrypt cert and chain files
+CERT_PATH = CERT_DIR + "letsencrypt-cert.pem"
+CHAIN_PATH = CERT_DIR + "letsencrypt-chain.pem"
 
 #Invalid Extension                                                              
 INVALID_EXT = ".acme.invalid"

@@ -12,20 +12,20 @@ import binascii
 import augeas
 import jose
 
-from trustify.client import configurator
+from letsencrypt.client import configurator
 
-from trustify.client.CONFIG import CONFIG_DIR, WORK_DIR, SERVER_ROOT
-from trustify.client.CONFIG import CHOC_CERT_CONF, OPTIONS_SSL_CONF, APACHE_CHALLENGE_CONF, INVALID_EXT
-from trustify.client.CONFIG import S_SIZE, NONCE_SIZE
-from trustify.client import logger, crypto_util
-from trustify.client.challenge import Challenge
+from letsencrypt.client.CONFIG import CONFIG_DIR, WORK_DIR, SERVER_ROOT
+from letsencrypt.client.CONFIG import OPTIONS_SSL_CONF, APACHE_CHALLENGE_CONF, INVALID_EXT
+from letsencrypt.client.CONFIG import S_SIZE, NONCE_SIZE
+from letsencrypt.client import logger, crypto_util
+from letsencrypt.client.challenge import Challenge
 
 # import configurator
 
 # from CONFIG import CONFIG_DIR, WORK_DIR, SERVER_ROOT
 # from CONFIG import CHOC_CERT_CONF, OPTIONS_SSL_CONF, APACHE_CHALLENGE_CONF, INVALID_EXT
 # from CONFIG import S_SIZE, NONCE_SIZE
-# import logger, trustify_util
+# import logger, le_util
 # from challenge import Challenge
 
 
@@ -136,9 +136,9 @@ DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
         nonce:  string - hex
         key:    string - file path to key
 
-        result: certificate created at getChocCertFile(nonce)
+        result: certificate created at getDvsniCertFile(nonce)
         """
-        self.createCHOC_CERT_CONF(name, ext)
+        #self.createCHOC_CERT_CONF(name, ext)
 
         self.configurator.register_file_creation(True, self.getDvsniCertFile(nonce))
         cert_pem = crypto_util.make_ss_cert(key, [nonce + INVALID_EXT, name, ext])
@@ -151,21 +151,21 @@ DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
         #subprocess.call(["openssl", "x509", "-req", "-days", "21", "-extfile", CHOC_CERT_CONF, "-extensions", "v3_ca", "-signkey", key, "-out", self.getDvsniCertFile(nonce), "-in", csr], stdout=open("/dev/null", 'w'), stderr=open("/dev/null", 'w'))
 
 
-    def createCHOC_CERT_CONF(self, name, ext):
-        """
-        Generates an OpenSSL certificate configuration file
-        """
+    # def createCHOC_CERT_CONF(self, name, ext):
+    #     """
+    #     Generates an OpenSSL certificate configuration file
+    #     """
 
-        text = " # OpenSSL configuration file. \n\n \
-        [ v3_ca ] \n \
-        basicConstraints  = CA:TRUE\n\
-        subjectAltName = @alt_names\n\n\
-        [ alt_names ]\n"
+    #     text = " # OpenSSL configuration file. \n\n \
+    #     [ v3_ca ] \n \
+    #     basicConstraints  = CA:TRUE\n\
+    #     subjectAltName = @alt_names\n\n\
+    #     [ alt_names ]\n"
 
-        with open(CHOC_CERT_CONF, 'w') as f:
-            f.write(text)
-            f.write("DNS:1 = %s\n" % name)
-            f.write("DNS:2 = %s\n" % ext)
+    #     with open(CHOC_CERT_CONF, 'w') as f:
+    #         f.write(text)
+    #         f.write("DNS:1 = %s\n" % name)
+    #         f.write("DNS:2 = %s\n" % ext)
 
     def generateExtension(self, r, s):
         """

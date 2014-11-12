@@ -1,5 +1,5 @@
 import dialog
-from trustify.client import logger
+from letsencrypt.client import logger
 
 
 WIDTH = 70
@@ -18,6 +18,8 @@ class Display(SingletonD):
     def generic_notification(self, message):
         raise Exception("Error no display defined")
     def generic_menu(self, message, choices, input_text):
+        raise Exception("Error no display defined")
+    def generic_input(self, message):
         raise Exception("Error no display defined")
     def filter_names(self, names):
         raise Exception("Error no display defined")
@@ -82,6 +84,9 @@ class NcursesDisplay(Display):
 
         return self.d.menu(message, choices = choices,
                            width=WIDTH, height=HEIGHT)
+
+    def generic_input(self, message):
+        return self.d.inputbox(message)
 
     def filter_names(self, names):
         choices = [(n, "", 0) for n in names]
@@ -155,6 +160,14 @@ class FileDisplay(Display):
         Certificate Authority (c to cancel): ")
 
         return code, selection
+
+    def generic_input(self, message):
+        ans = raw_input("%s (Enter c to cancel)\n" % message)
+
+        if ans.startswith('c') or ans.startswith('C'):
+            return CANCEL, -1
+        else:
+            return OK, ans
 
     def filter_names(self, names):
         c, s = self.generic_menu(
@@ -235,6 +248,9 @@ def generic_notification(message):
 
 def generic_menu(message, choices, input_text):
     return display.generic_menu(message, choices, input_text)
+
+def generic_input(message):
+    return display.generic_message(message)
 
 def filter_names(names):
     return display.filter_names(names)

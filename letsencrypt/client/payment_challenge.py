@@ -1,5 +1,5 @@
-from trustify.client.challenge import Challenge
-from trustify.client import logger
+from letsencrypt.client.challenge import Challenge
+from letsencrypt.client import logger
 import dialog
 
 ############################################################
