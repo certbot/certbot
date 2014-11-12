@@ -65,7 +65,7 @@ def main():
         display.setDisplay(display.NcursesDisplay())
     else:
         display.setDisplay(display.FileDisplay(sys.stdout))
-       
+
     if not server:
         if "ACMESERVER" in os.environ:
             server = os.environ["ACMESERVER"]
