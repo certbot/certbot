@@ -54,11 +54,13 @@ def make_key(bits=RSA_KEY_SIZE):
     """
     Returns new RSA key in PEM form with specified bits
     """
-    rsa = M2Crypto.RSA.gen_key(bits, 65537)
-    key_pem = rsa.as_pem(cipher=None)
-    rsa = None # should not be freed here
+    #Python Crypto module doesn't produce any stdout
+    key = RSA.generate(bits)
+    #rsa = M2Crypto.RSA.gen_key(bits, 65537)
+    #key_pem = rsa.as_pem(cipher=None)
+    #rsa = None # should not be freed here
     
-    return key_pem
+    return key.exportKey(format='PEM')
 
 
 def make_csr(key_file, domains):

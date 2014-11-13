@@ -6,16 +6,24 @@ import getopt
 import os
 import sys
 
-from trustify.client import client
-from trustify.client import display
+from letsencrypt.client import client
+from letsencrypt.client import display
+from letsencrypt.client.CONFIG import ACME_SERVER
 
 def main():
     # Check to make sure user is root
     if not os.geteuid() == 0:
-        sys.exit("\nOnly root can run trustify.\n")
+        sys.exit("\nOnly root can run letsencrypt.\n")
     # Parse options
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "", ["text", "test", "view-checkpoints", "privkey=", "csr=", "server=", "rollback=", "revoke"])
+        opts, args = getopt.getopt(sys.argv[1:], "", ["text", "test", 
+                                                      "view-checkpoints", 
+                                                      "privkey=", "csr=", 
+                                                      "server=", "rollback=", 
+                                                      "revoke", "agree-eula",
+                                                      "redirect",
+                                                      "no-redirect",
+                                                      "max-security"])
     except getopt.GetoptError as err:
         # print help info and exit
         print str(err)
@@ -28,6 +36,8 @@ def main():
     curses = True
     names = args
     flag_revoke = False
+    redirect = None
+    eula = False
 
     for o, a in opts:
         if o == "--text":
@@ -39,7 +49,7 @@ def main():
         elif o == "--server":
             server = a
         elif o == "--rollback":
-            from trustify.client import configurator, logger
+            from letsencrypt.client import configurator, logger
             logger.setLogger(logger.FileLogger(sys.stdout))
             logger.setLogLevel(logger.INFO)
             config = configurator.Configurator()
@@ -47,7 +57,7 @@ def main():
             config.restart()
             sys.exit(0)
         elif o == "--view-checkpoints":
-            from trustify.client import configurator, logger
+            from letsencrypt.client import configurator, logger
             logger.setLogger(logger.FileLogger(sys.stdout))
             logger.setLogLevel(logger.INFO)
             config = configurator.Configurator()
@@ -56,7 +66,12 @@ def main():
         elif o == "--revoke":
             # Do Stuff
             flag_revoke = True
-
+        elif o == "--redirect":
+            redirect = True
+        elif o == "--no-redirect":
+            redirect = False
+        elif o == "--agree-eula":
+            eula = True
         elif o == "--test":
             #put any temporary tests in here
             continue
@@ -65,25 +80,18 @@ def main():
         display.setDisplay(display.NcursesDisplay())
     else:
         display.setDisplay(display.FileDisplay(sys.stdout))
-
+       
     if not server:
-        if "ACMESERVER" in os.environ:
-            server = os.environ["ACMESERVER"]
-        else:
-            from trustify.client import logger
-            logger.setLogger(logger.FileLogger(sys.stdout))
-            logger.setLogLevel(logger.INFO)
-            logger.warn("No ACME server specified. Please specify the ACMESERVER enviornment variable or the --server option")
-            server = "54.183.196.250"
-
-    c = client.Client(server, args, csr, privkey, curses)
+        server = ACME_SERVER
+    
+    c = client.Client(server, csr, privkey, curses)
     if flag_revoke:
         c.list_certs_keys()
     else:
-        c.authenticate()
+        c.authenticate(args, redirect, eula)
 
 def usage():
-    print "Available options: --text, --privkey=, --csr=, --server=, --rollback=, --view-checkpoints, --revoke"
+    print "Available options: --text, --privkey=, --csr=, --server=, --rollback=, --view-checkpoints, --revoke, --agree-eula, --redirect, --no-redirect, --max-security"
 
 if __name__ == "__main__":
     main()

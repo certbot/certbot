@@ -1,6 +1,6 @@
 import sys
 import time
-
+from letsencrypt.client import display
 
 class Singleton(object):
     _instance = None
@@ -50,7 +50,10 @@ class FileLogger(Logger):
 import dialog
 class NcursesLogger(Logger):
 
-    def __init__(self, firstmessage="", height=16, width=66):
+    def __init__(self, 
+                 firstmessage="", 
+                 height = display.HEIGHT, 
+                 width = display.WIDTH - 4):
         self.lines = []
         self.all_content = ""
         self.d = dialog.Dialog()

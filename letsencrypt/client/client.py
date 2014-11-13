@@ -6,6 +6,14 @@ import urllib2, json
 #id=1roBIeSJsYq3Ntpf6N0PIeeAAvu4ddn7mGo6Qb7aL7ew
 # urllib2 is unsafe (!) and must be replaced
 import os, grp, pwd, sys, time, random, sys, shutil
+
+# This line suppresses the no logging found for module 'jose' warning
+# TODO: Check out this module and see if we should be using it for our
+#       logging features
+import logging
+logging.basicConfig(filename="/dev/null", level=logging.ERROR)
+
+
 import jose, csv
 import subprocess
 from M2Crypto import EVP, X509, RSA
@@ -33,7 +41,7 @@ class Client(object):
     # In case of import, dialog needs scope over the class
     dialog = None
 
-    def __init__(self, ca_server, domains=[], cert_signing_request=None,
+    def __init__(self, ca_server, cert_signing_request=None,
                  private_key=None, use_curses=True):
         global dialog
         self.curses = use_curses
@@ -43,12 +51,7 @@ class Client(object):
         self.config = configurator.Configurator(SERVER_ROOT)
 
         self.server = ca_server
-        if domains:
-            self.names = domains
-        else:
-            # This function adds all names
-            # found within the config to self.names
-            self.get_all_names()
+        
         self.csr_file = cert_signing_request
         self.key_file = private_key
 
@@ -60,37 +63,50 @@ class Client(object):
             generating the provided CSR")
             sys.exit(1)
 
-        self.sanity_check_names([ca_server] + domains)
-
         self.server_url = "https://%s/acme/" % self.server
 
-    def authenticate(self):
+    def authenticate(self, domains = [], redirect = None, eula = False):
         # Check configuration
         if not self.config.configtest():
             sys.exit(1)
 
+        self.redirect = redirect
+        
+        # Display preview warning
+        if not eula:
+            with open('EULA') as f:
+                if not display.generic_yesno(f.read()):
+                    sys.exit(0)
+
         # Display screen to select domains to validate
-        code, self.names = display.filter_names(self.names)
-        if code == display.OK:
-            # TODO: Allow multiple names once it is setup
-            self.names = [self.names[0]]
+        if domains:
+            self.sanity_check_names([self.server] + domains)
+            self.names = domains
         else:
-            sys.exit(0)
+            # This function adds all names
+            # found within the config to self.names
+            # Then filters them based on user selection
+            code, self.names = display.filter_names(self.get_all_names())
+            if code == display.OK:
+                # TODO: Allow multiple names once it is setup
+                self.names = [self.names[0]]
+            else:
+                sys.exit(0)
 
         # Display choice of CA screen
         # TODO: Use correct server depending on CA
-        choice = self.choice_of_ca()
+        #choice = self.choice_of_ca()
 
         # Check first if mod_ssl is loaded
         if not self.config.check_ssl_loaded():
             logger.info("Loading mod_ssl into Apache Server")
             self.config.enable_mod("ssl")
 
-
-        key_pem, csr_der = self.get_key_csr_pem()
-
         #Request Challenges
         challenge_dict = self.handle_challenge()
+
+        # Get key and csr to perform challenges
+        key_pem, csr_der = self.get_key_csr_pem()
 
         #Perform Challenges
         responses, challenge_objs = self.verify_identity(challenge_dict)
@@ -163,10 +179,9 @@ class Client(object):
         revocation_dict = self.is_expected_msg(revocation_dict, "revocation")
 
         display.generic_notification(
-            "You have successfully revoked the certificate for %s" % c["cn"])
+            "You have successfully revoked the certificate for %s" % c["cn"], width=70, height=9)
 
         self.remove_cert_key(c)
-        sys.exit(0)
 
     def remove_cert_key(self, c):
         list_file = CERT_KEY_BACKUP + "LIST"
@@ -254,14 +269,18 @@ class Client(object):
         while True:
             code, selection = display.display_certs(certs)
             if code == display.OK:
-                if display.confirm_revocation(certs[int(selection)-1]):
-                    self.revoke(certs[int(selection)-1])
+                for s in selection:
+                    if display.confirm_revocation(certs[s]):
+                        self.revoke(certs[s])
 
-            elif code == display.CANCEL:
-                exit(0)
+                # Exit after revoking all of the certificates
+                sys.exit(0)
             elif code == display.HELP:
-                display.more_info_cert(certs[int(selection)-1])
+                for s in selection:
+                    display.more_info_cert(certs[s])
 
+            else:
+                exit(0)
 
 
     def revocation_request(self, key_file, cert_der):
@@ -307,7 +326,10 @@ class Client(object):
 
 
     def optimize_config(self, vhost):
-        if display.redirect_by_default():
+        if self.redirect is None:
+            self.redirect = display.redirect_by_default()
+
+        if self.redirect:
             self.config.enable_mod("rewrite")
             self.redirect_to_ssl(vhost)
             self.config.restart(quiet=self.curses)
@@ -511,12 +533,13 @@ class Client(object):
         challenge_obj_indicies = []
         for c in path:
             if challenges[c]["type"] == "dvsni":
-                logger.info("\tDomainValidateSNI challenge for name %s." % name)
+                logger.info("\tDVSNI challenge for name %s." % name)
                 sni_satisfies.append(c)
                 sni_todo.append( (str(name), str(challenges[c]["r"]),
                                   str(challenges[c]["nonce"])) )
 
             elif challenges[c]["type"] == "recoveryToken":
+                logger.info("\tRecovery Token Challenge for name: %s." % name)
                 challenge_objs_indicies.append(c)
                 challenge_objs.append(RecoveryToken())
 
@@ -623,14 +646,19 @@ class Client(object):
         return choices
 
     def get_all_names(self):
-        self.names = self.config.get_all_names()
+        """
+        Should return all valid names in the configuration
+        """
+        names = list(self.config.get_all_names())
+        self.sanity_check_names(names)
 
-        if not self.names:
+        if not names:
             logger.fatal("No domain names were found in your apache config")
             logger.fatal("Either specify which names you would like letsencrypt \
             to validate or add server names to your virtual hosts")
             sys.exit(1)
 
+        return names
 
     def init_logger(self):
         if self.curses:
@@ -644,6 +672,7 @@ class Client(object):
         for name in names:
             if not self.is_hostname_sane(name):
                 logger.fatal(`name` + " is an impossible hostname")
+                sys.exit(81)
 
     def is_hostname_sane(self, hostname):
         """
