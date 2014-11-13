@@ -1,9 +1,7 @@
 import dialog
-from letsencrypt.client import logger
 
-
-WIDTH = 70
-HEIGHT = 16
+WIDTH = 72
+HEIGHT = 18
 
 class SingletonD(object):
     _instance = None
@@ -15,11 +13,13 @@ class SingletonD(object):
 
 
 class Display(SingletonD):
-    def generic_notification(self, message):
+    def generic_notification(self, message, width = WIDTH, height = HEIGHT):
         raise Exception("Error no display defined")
     def generic_menu(self, message, choices, input_text):
         raise Exception("Error no display defined")
     def generic_input(self, message):
+        raise Exception("Error no display defined")
+    def generic_yesno(self, message, yes_label = "Yes", no_label = "No"):
         raise Exception("Error no display defined")
     def filter_names(self, names):
         raise Exception("Error no display defined")
@@ -77,8 +77,8 @@ class NcursesDisplay(Display):
     def __init__(self):
         self.d = dialog.Dialog()
 
-    def generic_notification(self, message):
-        self.d.msgbox(message, width=WIDTH, height=HEIGHT)
+    def generic_notification(self, message, w = WIDTH, h = HEIGHT):
+        self.d.msgbox(message, width = w, height = h)
 
     def generic_menu(self, message, choices, input_text):
 
@@ -87,7 +87,12 @@ class NcursesDisplay(Display):
 
     def generic_input(self, message):
         return self.d.inputbox(message)
+    
+    def generic_yesno(self, message, yes = "Yes", no = "No"):
+        a = self.d.yesno(message, HEIGHT, WIDTH)
 
+        return a == self.d.DIALOG_OK
+        
     def filter_names(self, names):
         choices = [(n, "", 0) for n in names]
         c, s = self.d.checklist("Which names would you like to activate \
@@ -101,15 +106,20 @@ class NcursesDisplay(Display):
                       + self.gen_https_names(domains) + "!", width=WIDTH)
 
     def display_certs(self, certs):
-        menu_choices = [(str(i+1), str(c["cn"]) + " - " + c["pub_key"] + " - " +
-                         str(c["not_before"])[:-6])
-                        for i, c in enumerate(certs)]
-
-        code, s = self.d.menu("Which certificate would you like to revoke?",
-                           choices = menu_choices, help_button=True,
+        list_choices = [
+             (str(i+1),
+              "%s | %s | %s" % 
+              (str(c["cn"].ljust(WIDTH - 39)), 
+               c["not_before"].strftime("%m-%d-%y"), 
+               "Installed"),
+              0) 
+            for i, c in enumerate(certs)]
+        
+        code, se = self.d.checklist("Which certificates would you like to revoke?",
+                           choices = list_choices, help_button=True,
                            help_label="More Info", ok_label="Revoke",
                            width=WIDTH, height=HEIGHT)
-        return code, s
+        return code, [int(s[0])-1 for s in se]
 
 
     def redirect_by_default(self):
@@ -142,9 +152,10 @@ class FileDisplay(Display):
     def __init__(self, outfile):
         self.outfile = outfile
 
-    def generic_notification(self, message):
-        side_frame = '-' * WIDTH - 4
+    def generic_notification(self, message, width = WIDTH, height = HEIGHT):
+        side_frame = '-' * (WIDTH - 4)
         self.outfile.write("\n%s\n%s\n%s\n" % (side_frame, message, side_frame))
+        raw_input("Press Enter to Continue")
 
     def generic_menu(self, message, choices, input_text):
         self.outfile.write("\n%s\n" % message)
@@ -169,6 +180,11 @@ class FileDisplay(Display):
         else:
             return OK, ans
 
+    def generic_yesno(self, message):
+        self.outfile.write("\n%s\n" % message)
+        ans = raw_input("y/n")
+        return ans.startswith('y') or ans.startswith('Y')
+
     def filter_names(self, names):
         c, s = self.generic_menu(
             "Choose the names would you like to upgrade to HTTPS?",
@@ -182,17 +198,18 @@ class FileDisplay(Display):
         menu_choices = [(str(i+1), str(c["cn"]) + " - " + c["pub_key"] +
                          " - " + str(c["not_before"])[:-6])
                         for i, c in enumerate(certs)]
-
+        
         self.outfile.write("Which certificate would you like to revoke?\n")
         for c in menu_choices:
             self.outfile.write("%s: %s - %s Signed (UTC): %s\n"
                                % (c[0], c[1], c[2], c[3]))
 
-        return self.__get_valid_int_ans("Revoke Number (c to cancel): ")
+        return [self.__get_valid_int_ans("Revoke Number (c to cancel): ") - 1]
 
     def __get_valid_int_ans(self, input_string):
         valid_ans = False
 
+        e_msg = "Please input a number or the letter c to cancel\n"
         while not valid_ans:
 
             ans = raw_input(input_string)
@@ -202,19 +219,22 @@ class FileDisplay(Display):
             else:
                 try:
                     selection = int(ans)
+                    #TODO add check to make sure it is liess than max
+                    if selection < 0:
+                        self.outfile.write(e_msg)
+                        continue
                     code = OK
+                    valid_ans = True
                 except ValueError:
-                    self.outfile("Please input a number, \
-                    or the letter c to cancel")
-
-            valid_ans = True
+                    self.outfile.write(e_msg)
 
         return code, selection
 
 
     def success_installation(self, domains):
-        self.outfile.write("Congratulations! You have successfully enabled " +
-                           self.gen_https_names(domains) + "!\n")
+        s_f = '*' * (WIDTH - 4)
+        msg = "%s\nCongratulations! You have successfully enabled %s!\n%s\n" 
+        self.outfile.write(msg % (s_f, self.gen_https_names(domains), s_f))
 
     def redirect_by_default(self):
         ans = raw_input("Would you like to redirect all \
@@ -243,14 +263,17 @@ def setDisplay(display_inst):
     global display
     display = display_inst
 
-def generic_notification(message):
-    display.generic_notification(message)
+def generic_notification(message, width = WIDTH, height = HEIGHT):
+    display.generic_notification(message, width, height)
 
 def generic_menu(message, choices, input_text):
     return display.generic_menu(message, choices, input_text)
 
 def generic_input(message):
     return display.generic_message(message)
+
+def generic_yesno(message, yes_label = "Yes", no_label = "No"):
+    return display.generic_yesno(message, yes_label, no_label)
 
 def filter_names(names):
     return display.filter_names(names)

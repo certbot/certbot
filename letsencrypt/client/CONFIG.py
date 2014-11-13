@@ -1,3 +1,5 @@
+# CA hostname
+ACME_SERVER = "54.183.196.250"
 # Apache server root directory
 SERVER_ROOT = "/etc/apache2/"
 # Configuration file directory for letsencrypt
@@ -23,9 +25,9 @@ CERT_DIR = SERVER_ROOT + "certs/"
 # Contains standard Apache SSL directives
 OPTIONS_SSL_CONF = CONFIG_DIR + "options-ssl.conf"
 # Let's Encrypt SSL vhost configuration extension
-LE_VHOST_EXT = "-letsencrypt-ssl.conf"
+LE_VHOST_EXT = "-le-ssl.conf"
 # Temporary file for challenge virtual hosts
-APACHE_CHALLENGE_CONF = CONFIG_DIR + "LE_dvsni_cert_challenge.conf"
+APACHE_CHALLENGE_CONF = CONFIG_DIR + "le_dvsni_cert_challenge.conf"
 
 # Byte size of S and Nonce
 S_SIZE = 32
