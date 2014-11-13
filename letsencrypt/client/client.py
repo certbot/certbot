@@ -533,7 +533,7 @@ class Client(object):
         challenge_obj_indicies = []
         for c in path:
             if challenges[c]["type"] == "dvsni":
-                logger.info("\tDVSNI challenge for name %s." % name)
+                logger.info("  DVSNI challenge for name %s." % name)
                 sni_satisfies.append(c)
                 sni_todo.append( (str(name), str(challenges[c]["r"]),
                                   str(challenges[c]["nonce"])) )
