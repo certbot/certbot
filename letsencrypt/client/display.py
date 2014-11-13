@@ -147,28 +147,34 @@ class NcursesDisplay(Display):
         text += self.cert_info_frame(cert)
         self.d.msgbox(text, width=WIDTH, height=HEIGHT)
 
+textwrap = None
 
 class FileDisplay(Display):
+    global textwrap
+    import textwrap
+
     def __init__(self, outfile):
         self.outfile = outfile
 
     def generic_notification(self, message, width = WIDTH, height = HEIGHT):
-        side_frame = '-' * (WIDTH - 4)
-        self.outfile.write("\n%s\n%s\n%s\n" % (side_frame, message, side_frame))
+        side_frame = '-' * (79)
+        wm = textwrap.fill(message, 80)
+        text = "\n%s\n%s\n%s\n" % (side_frame, wm, side_frame)
+        self.outfile.write(text)
         raw_input("Press Enter to Continue")
 
     def generic_menu(self, message, choices, input_text):
         self.outfile.write("\n%s\n" % message)
-        side_frame = '-' * (WIDTH - 4)
+        side_frame = '-' * (79)
         self.outfile.write("%s\n" % side_frame)
 
         for i, c in enumerate(choices):
-            self.outfile.write("%d: %s\n" % (i, c))
+            wc = textwrap.fill("%d: %s" % (i, c), 80)
+            self.outfile.write("%s\n" % wc)
 
         self.outfile.write("%s\n" % side_frame)
 
-        code, selection = self.__get_valid_int_ans("Enter the number of a \
-        Certificate Authority (c to cancel): ")
+        code, selection = self.__get_valid_int_ans("%s (c to cancel): " % input_text)
 
         return code, selection
 
@@ -180,8 +186,8 @@ class FileDisplay(Display):
         else:
             return OK, ans
 
-    def generic_yesno(self, message):
-        self.outfile.write("\n%s\n" % message)
+    def generic_yesno(self, message, yes_label = "Yes", no_label = "No"):
+        self.outfile.write("\n%s\n" % textwrap.fill(message, 80))
         ans = raw_input("y/n")
         return ans.startswith('y') or ans.startswith('Y')
 
@@ -192,7 +198,7 @@ class FileDisplay(Display):
             "Select the number of the name (c to cancel): ")
 
         # Make sure to return a list...
-        return c, [s]
+        return c, [names[s]]
 
     def display_certs(self, certs):
         menu_choices = [(str(i+1), str(c["cn"]) + " - " + c["pub_key"] +
@@ -201,8 +207,9 @@ class FileDisplay(Display):
         
         self.outfile.write("Which certificate would you like to revoke?\n")
         for c in menu_choices:
-            self.outfile.write("%s: %s - %s Signed (UTC): %s\n"
-                               % (c[0], c[1], c[2], c[3]))
+            wm = textwrap.fill("%s: %s - %s Signed (UTC): %s\n" %
+                               (c[0], c[1], c[2], c[3]))
+            self.outfile.write(wm)
 
         return [self.__get_valid_int_ans("Revoke Number (c to cancel): ") - 1]
 
@@ -216,6 +223,7 @@ class FileDisplay(Display):
             if ans.startswith('c') or ans.startswith('C'):
                 code = CANCEL
                 selection = -1
+                valid_ans = True
             else:
                 try:
                     selection = int(ans)
@@ -232,13 +240,15 @@ class FileDisplay(Display):
 
 
     def success_installation(self, domains):
-        s_f = '*' * (WIDTH - 4)
-        msg = "%s\nCongratulations! You have successfully enabled %s!\n%s\n" 
-        self.outfile.write(msg % (s_f, self.gen_https_names(domains), s_f))
+        s_f = '*' * (79)
+        wm = textwrap.fill(("Congratulations! You have successfully " +
+                           "enabled %s!") % self.gen_https_names(domains))
+        msg = "%s\n%s\n%s\n" 
+        self.outfile.write(msg % (s_f, wm, s_f))
 
     def redirect_by_default(self):
-        ans = raw_input("Would you like to redirect all \
-        normal HTTP traffic to HTTPS? y/n")
+        ans = raw_input("Would you like to redirect all " +
+        "normal HTTP traffic to HTTPS? y/n: ")
         return ans.startswith('y') or ans.startswith('Y')
 
     def confirm_revocation(self, cert):
