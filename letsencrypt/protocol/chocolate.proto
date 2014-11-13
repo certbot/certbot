@@ -43,6 +43,7 @@ message chocolatemessage {
 	     DomainValidateTLSExt = 1;
 	     EmailValidate = 2;
 	     Payment = 3;
+	     ProofOfPossession = 4;
 	}
 
 	message Challenge {

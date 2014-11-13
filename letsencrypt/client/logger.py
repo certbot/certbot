@@ -1,7 +1,6 @@
-
 import sys
 import time
-
+from letsencrypt.client import display
 
 class Singleton(object):
     _instance = None
@@ -38,20 +37,28 @@ class Logger(Singleton):
             t = time.time()
         return time.strftime("%b %d %Y %H:%M:%S", time.localtime(t)) + ('%.03f' % (t - int(t)))[1:]
 
+textwrap = None
 
 class FileLogger(Logger):
+    global textwrap
+    import textwrap
+
     def __init__(self, outfile):
         self.outfile = outfile
 
 
     def log(self, level, data):
-        msg = "%s [%s] %s\n" % (self.timefmt(), self.debugLevel(level), data)
-        self.outfile.write(msg)
+        msg = "%s [%s] %s" % (self.timefmt(), self.debugLevel(level), data)
+        wm = textwrap.fill(msg, 80)
+        self.outfile.write("%s\n" % wm)
 
 import dialog
 class NcursesLogger(Logger):
 
-    def __init__(self, firstmessage="", height=16, width=66):
+    def __init__(self, 
+                 firstmessage="", 
+                 height = display.HEIGHT, 
+                 width = display.WIDTH - 4):
         self.lines = []
         self.all_content = ""
         self.d = dialog.Dialog()

@@ -1,0 +1,869 @@
+<?xml version="1.0" encoding="US-ASCII"?>
+<!DOCTYPE rfc SYSTEM "rfc2629.dtd" [
+<!ENTITY RFC2119 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.2119.xml">
+<!ENTITY RFC2314 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.2314.xml">
+<!ENTITY RFC2818 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.2818.xml">
+<!ENTITY RFC5226 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.5226.xml">
+<!ENTITY RFC5246 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.5246.xml">
+]>
+<?xml-stylesheet type="text/xsl" href="rfc2629.xslt" ?>
+<?rfc toc="yes" ?>
+<?rfc symrefs="yes" ?>
+<?rfc strict="yes" ?>
+<?rfc compact="yes" ?>
+<?rfc sortrefs="yes" ?>
+<?rfc colonspace="yes" ?>
+<?rfc rfcedstyle="no" ?>
+<!-- Don't change this. It breaks stuff -->
+<?rfc tocdepth="4"?>
+<rfc category="std" docName="draft-rescorla-stir-fallback-00"
+     ipr="pre5378Trust200902">
+  <front>
+    <title abbrev="ACIP">Automatic Certificate Issuance Protocol (ACIP)</title>
+
+    <author fullname="Eric Rescorla" initials="E.K." surname="Rescorla">
+      <organization>Mozilla</organization>
+
+      <address>
+        <postal>
+          <street>2064 Edgewood Drive</street>
+
+          <city>Palo Alto</city>
+
+          <region>CA</region>
+
+          <code>94303</code>
+
+          <country>USA</country>
+        </postal>
+
+        <phone>+1 650 678 2350</phone>
+
+        <email>ekr@rtfm.com</email>
+        
+        <!-- Insert names of other people here -->
+      </address>
+    </author>
+
+    <date day="11" month="December" year="2013" />
+
+    <area>SEC</area>
+
+    <abstract>
+      <t>
+        [TODO]
+      </t>
+    </abstract>
+  </front>
+
+  
+  <middle>
+    <section anchor="sec-term" title="Terminology">
+      <t>The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+      "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+      document are to be interpreted as described in <xref
+      target="RFC2119">RFC 2119</xref>.</t>
+    </section>
+    
+    <section title="Introduction" anchor="sec.intro">
+      <t>
+        Existing Web PKI certificate authorities tend to run on
+        a set of ad hoc protocols for certificate issuance and
+        identity verification. A typical user experience is something
+        like:
+      </t>
+      <t>
+      <list style="symbols">
+        <t>Generate a PKCS#10 <xref target="RFC2314"/> Certificate Signing Request (CSR).</t>
+        <t>Cut-and-paste the CSR into a CA web page.</t>
+        <t>Prove ownership of the domain by one of the following methods:
+        <list style="symbols">
+          <t>Put a CA-provided challenge at a specific place on the web server</t>
+
+          <t>Put a CA-challenge at a DNS location corresponding to the target domain.</t>
+          
+          <t>Receive CA challenge at an (allegedly) administrator controlled e-mail address corresponding to the domain and then respond to it on the CA's web page.</t>
+        </list>
+        </t>
+        <t>Download the issued certificate and install it on their Web Server.</t>
+      </list>
+      </t>
+      <t>
+        With the exception of the CSR itself and the certificates that are
+        issued, these are all completely ad hoc procedures and are accomplished
+        by getting the user to follow instructions from the CA rather than by
+        published protocols. In many cases, the instructions are difficult to
+        follow and cause significant confusion. Even in the best case, the
+        lack of published, standardized mechanisms presents an obstacle to
+        the wide deployment of certificate-using systems.
+      </t>
+      <t>
+        This document describes a framework for automating the issuance
+        and domain validation procedure, thus enabling the construction of
+        certificate-holding entities which can obtain certificates without
+        user interaction. It is hoped that this will radically increase
+        the level of deployment of certificate-using systems and specifically
+        of HTTPS.
+      </t>
+    </section>
+    <section title="Deployment Model and Operator Experience">
+      <t>
+        It's easiest to understand ACIP in the context of certificates
+        for Web sites (HTTPS <xref target="RFC2818"/>). In that case, the
+        server is intended to speak for one or more domains and the process of
+        certificate issuance is intended to verify that the server actually
+        speaks for the domain. In the case of "Domain Validation" (DV) certificates,
+        the server validation process merely verifies that the requester
+        has effective control of the domain but does not really attempt to
+        verify their real-world identity. (This is as opposed to "Extended
+        Validation" (EV) certificates where the process is intended to also verify
+        the real-world identity of the requester.)
+      </t>
+      <t>
+        When an operator deploys a current HTTPS server, it generally prompts
+        him to generate a self-signed certificate.
+        When an operator deploys an ACIP-compatible server, the experience would
+        be something like this:
+      </t>
+      <t>
+        <list style="symbols">
+          <t>The server prompts the operator for the intended domain name(s) that the
+          server is to stand for.</t>
+          <t>The server presents the operator with a list of CAs which it
+          could get a certificate from. The server might prompt the operator
+          for payment information at this point.</t>
+          <t>Once the operator has selected a CA, tells the operator that he will have a certificate shortly.</t>
+          <t>In the background, the server contacts the CA, sends a CSR, and
+          engages in the validation procedure.</t>
+          <t>Once the CA is satisfied, the certificate is issued and the
+          server automatically downloads and installs it, potentially notifying
+          the operator via e-mail, SMS, etc.</t>
+          <t>The server periodically contacts the CA to get updated certificates,
+          stapled OCSP responses, or whatever else would be required to keep
+          the server functional and its credentials up-to-date.</t>
+        </list>
+      </t>
+      <t>
+        The overall idea is that it's nearly as easy to deploy with a valid
+        certificate as a self-signed certificate and that once the operator
+        has done so, the process is self-sustaining with minimal manual
+        intervention.
+      </t>
+      <section title="Other Use Cases">
+        <t>
+          While ACIP is explicitly designed for HTTPS server certificates,
+          it is in general usable in any situation where the certificate
+          subject is automatically verifiable. In principle, then, it
+          could be used with personal addresses (XMPP or e-mail) if there
+          is some straightforward way of responding to the validation
+          procedure, e.g., by having the client automatically
+          detect and respond to validation answerback queries.
+        </t>
+      </section>
+    </section>
+    <section title="System Architecture Overview" anchor="sec.overview">
+      <t>
+        We assume that that an ACIP-compatible agent which wishes
+        to get a certificate (currently, the "Certificate Holder" (CH))
+        starts with a list of ACIP-compliant CAs represented as URLs.
+        From there, the protocol proceeds as shown below. Note
+        that we have taken some liberties with messages from the
+        CA to the CH: everything is done over HTTPS, so messages
+        from the CA likely require either polling by the CH or
+        that the CH have some accessible endpoint for the CA to
+        talk to.
+      </t>
+      <section title="Initial Issuance" anchor="sec.initial-issuance">
+      <figure>
+        <artwork align="left" alt="" height="" name="Initial Issuance" type="" width=""
+                 xml:space="preserve"><![CDATA[
+      CH                                                         CA
+      
+                                                             Policy
+                                   <--------     Validation Methods
+
+      Desired identity             
+      CSR
+      Validation Method            -------->
+
+                                   <--------              Challenge
+
+      Response                     -------->
+
+                                   <--------            Certificate
+                                 ]]></artwork>
+      </figure>
+      <t>
+        Initially, the CH contacts the CA and retrieves the CA's
+        capabilities. This likely includes information like
+        the validation types (e-mail, DNS, Web, etc.) that the
+        CA supports, whether it charges, the types of keys it will
+        issue for, how often the certificates
+        need to be reissued, etc. The CH might contact multiple
+        CAs to find one with the best policies before it actually
+        requests a certificate.
+      </t>
+      <t>
+        Once the CH (or more likely the operator) has selected a CA,
+        the CH generates a key pair and contacts the CA with 
+        signing request. He will also indicate (probably separately),
+        the identity he wants the certificate issued for and which
+        validation method he wants the CA to use. He might
+        also provide a URL which the CA can use to indicate that
+        the certificate is ready.
+      </t>
+      <t>
+        Depending on the validation method, the CA will then supply
+        a challenge to the CH. This might happen immediately, as
+        in the case of HTTPS validation (section XXX) or might
+        happen later, as in the case of e-mail validation (section YYY).
+        The CH responds to the challenge, e.g., by putting it somewhere
+        in /.well-known on their server.
+      </t>
+      <t>
+        Once the CA has validated the CH's identity, it issues the
+        certificate. The CH might either poll the CA for readiness
+        or the CH can provide a URL for the CA to contact when
+        the certificate is ready. In either case, once the CH
+        has the certificate, it installs it.
+      </t>
+      </section>
+      <section title="Certificate Refresh" anchor="sec.cert-refresh">
+      <figure>
+        <artwork align="left" alt="" height="" name="Re-Issuance" type="" width=""
+                 xml:space="preserve"><![CDATA[
+      CH                                                         CA
+      
+      Retrieve Certificate         -------->
+
+                                   <--------            Certificate
+                                 ]]></artwork>
+      </figure>
+      <t>
+        Because certificates eventually expire, there must be some
+        for the CH to get a new certificate. This need not involve
+        a new authentication transaction--and if short-lived
+        certificates are used, then it generally will not--but
+        does require getting new bits to the CH.
+        In general, the CA will just generate new certificates
+        periodically and publish them at some deterministic
+        URL that the CH can retrieve them at. Where a new
+        authentication transaction is required, we just repeat
+        the flow of <xref target="sec.initial-issuance"/>
+      </t>
+      </section>
+    </section>
+
+    <section title="Protocol Description">
+      <t>
+        This section describes the relevant protocol elements.
+        For explanatory reasons, we have chosen to describe
+        these as if they were JSON structures. Eventually
+        we may decide on some more fixed binary encoding,
+        but it's easier to explain with JSON and we may
+        eventually just use JSON in any cse.
+      </t>
+
+      <section title="CA Policies" anchor="sec.ca-policies">
+        <t>
+          Every ACIP-compliant CA will post a policy document in
+          some public location. This document MUST be hosted over
+          HTTPS <xref target="RFC2818"/> so that it can be validated.
+          The URL is assumed to be known to the CH.
+        </t>
+        <t>
+          The policy document contains the following values:
+        </t>
+        <t>
+          <list style="hanging">
+            <t></t><t hangText="issuance_validation_methods (mandatory):"></t>
+            <t>A list of validation methods for issuance that the CA supports.</t>
+
+            <t></t><t hangText="revocation_validation_methods (mandatory):"></t>
+            <t>A list of validation methods for revocation that the CA supports.</t>
+
+            <t></t><t hangText="signature_algorithms (mandatory):"></t>
+            <t>A list of signature algorithms that the CA supports. [TODO: which registry]</t>
+            <t></t><t hangText="key_types (mandatory):"></t>
+            <t>A list of the key types that the CA allows the CH to have, structured
+            as an algorithm and an (optional min/max} [TODO: which registry.</t>
+
+            <t></t><t hangText="status_mechanisms (mandatory)"></t>
+            <t>A list of the status mechanisms that the CA supports (OCSP, etc.)</t>
+
+            <t></t><t hangText="signing_certificate (optional):"></t>
+            <t>The base64 [REF] encoding of the certificate which will
+            be used to authorize the CH's key. If the CA has multiple
+            certificates signed by some intermediate, it will include
+            the intermediate. The idea here is to provide some idea
+            of what the final certificate will look like.</t>
+            
+            <t></t><t hangText="min_lifetime (optional):"></t>
+            <t>The minimum lifetime of certificates issued by the CA in seconds
+            so that the CH knows how often it is likely to have to refresh.</t>
+
+          </list>
+        </t>
+        <t>
+          An example policy document might look like the one below.
+        </t>
+      <figure>
+        <artwork><![CDATA[
+        {
+            "issuance_issuance_validation_methods" :
+              ["https", "https-sni"],
+            "revocation_validation_methods" :
+              ["https", "shared-secret"],
+            "signature_algorithms" : [ "RSA", "ECDSA"],
+            "key_types" : [
+              {
+                "algorithm" : "RSA",
+                "min" : 2048,
+                "max" : 4096
+              },
+              {
+                "algorithm" : "ECDSA",
+                "min" : 192,
+                "max" : 512
+              },
+              "min_lifetime" : 604800,
+              "status_mechanisms" : ["OCSP",
+                                     "short-lived",
+                                     "OCSP-stapled"],
+            ]
+        }
+        ]]></artwork>
+      </figure>
+      <t>
+        Note that one important consideration is that it be possible for
+        add new policy values. Since these are just information to the
+        CH, if they are unknown they can be ignored, but may of course
+        cause issuance failure. [TODO: Add some support for payment.]
+        [TODO: Add other types.]
+      </t>
+      </section>
+      
+      <section title="Protocol Messages" anchor="sec.messages">
+        <t>
+          All ACIP protocol messages other than the policy document are
+          carried in a generic wrapper.
+        </t>
+        <t>
+        <list style="hanging">
+            <t></t><t hangText="type (mandatory):"></t>
+            <t>The message type, either "error" or one of the messages
+            described below.</t>
+
+            <t></t><t hangText="message (mandatory):"></t>
+            <t>The message itself. In the JSON encoding here, just the
+            JSON structure shown below.</t>
+        </list>
+        </t>
+        <t>
+          An example message is shown below.
+        </t>
+        <figure>
+          <artwork><![CDATA[
+          {
+            "type": "issuance_request",
+            "message":
+            {
+              "validation_method" : "https",
+              "identities" : [
+                {
+                  "type" : "dnsNAme",
+                  "www1.example.com"
+                },
+                {
+                  "type" : "dnsNAme",
+                  "www2.example.com"
+                }
+              ],
+              "csr" : "<base-64-encoded CSR>",
+              "notification_endpoint" :
+                 "http://status.example.com/acip-notification"
+            }
+          }
+          ]]></artwork>
+        </figure>
+      <section title="Issuance Requests" anchor="sec.issuance-requests">
+        <t>
+          The issuance request (message type "issuance_request") is relatively simple:
+        </t>
+        <t>
+        <list style="hanging">
+            <t></t><t hangText="validation_method (mandatory):"></t>
+            <t>The validation method the CH has selected.</t>
+
+            <t></t><t hangText="identities (mandatory):"></t>
+            <t>A list of the identities that the CH wants issuance for.
+            Each identity is a pair of PKIX type and a string indicating
+            the identity and may also contain a "validation_info"
+            value for the selected validation method.</t>
+
+            <t></t><t hangText="csr (mandatory):"></t>
+            <t>The PKCS#10 CSR.</t>
+
+            <t></t><t hangText="notification_endpoint (optional):"></t>
+            <t>A URL that the CA can contact with status notifications"</t>
+        </list>
+        </t>
+        <t>
+          An example issuance request is shown below:
+        </t>
+      <figure>
+        <artwork><![CDATA[
+        {
+          "validation_method" : "https",
+          "identities" : [
+            {
+              "type" : "dnsNAme",
+              "www1.example.com"
+            },
+            {
+              "type" : "dnsNAme",
+              "www2.example.com"
+            }
+          ],
+          "csr" : "<base-64-encoded CSR>",
+          "notification_endpoint" :
+             "http://status.example.com/acip-notification"
+        }
+        ]]></artwork>
+      </figure>
+
+      <t>
+        The CA responds to a successful issuance request with a message
+        indicating acknowledgement (type "issuance_response"),
+        and containing the following contents.
+      </t>
+      <t>
+        <list style="hanging">
+          <t></t><t hangText="challenges (optional)"></t>
+          <t>If the selected validation method requires a challenge, then
+          the CA shall include the challenge data in the challenges
+          value. The data is a list of values containing an identity
+          field from the request. More than one challenge may be
+          provided for a given identity, which means that the CH
+          must comply with all of them. [TODO: Do we want to allow
+          multiple simultaneous types of challenge? If so, we may
+          need to tweak the negotiation to make the client offer
+          and then add a type in this field.</t>
+
+          <t></t><t hangText="status_url (mandatory)"></t>
+          <t>A URL which the CH can contact to find the status of the
+          request. This MUST contain a large enough random component
+          to avoid guessing (minumum 80 bits of entropy).</t>
+
+          <t></t><t hangText="certificate_url (mandatory)"></t>
+          <t>A URL where the eventual certificate will live. At any
+          point this MUST contain the most recent certificate, thus
+          enabling short-lived certificates. This need not be secret.</t>
+        </list>
+      </t>
+      <t>
+        An example issuance response is shown below:
+      </t>
+      <figure>
+        <artwork><![CDATA[
+        {
+          "challenges" : [
+            {
+              "identity" : {
+                "type" : "dnsNAme",
+                "www1.example.com"
+              },
+              "value" : {
+                   "path" : "<random1>",
+                   "value" : "<random2>",
+                },
+            },
+            {
+              "identity" : {
+                "type" : "dnsNAme",
+                "www2.example.com"
+              },
+              "value" : {
+                   "path" : "<random3>",
+                   "value" : "<random4>",
+               }
+            }
+          ],
+          "status_url":"https://ca.example.com/status/<random>",
+          "certificate_url:"https://ca.example.com/cert/1234"
+        ]]></artwork>
+      </figure>
+            
+      </section>
+        <section title="HTTPS with SNI" anchor="sec.https-with-sni">
+          <t>[TODO]</t>
+        </section>
+
+        <section title="DNS" anchor="sec.dns"/>
+        <section title="DANE" anchor="sec.dane"/>
+      </section>
+      
+      <section title="Certificate Issuance" anchor="sec.issuance">
+        <t>
+          Once the certificate is issued, the CA places it at the
+          location indicated by the "certificate_url" it previously
+          provided in its request to the issuance response. A
+          HTTP GET to that location produces a JSON structure
+          of the following form.
+        </t>
+        <t>
+          <list style="hanging">
+            <t></t><t hangText="certificate chain (mandatory):"></t>
+            <t>A list of certificates in the order specified by
+            TLS <xref target="RFC5246"/>
+            (i.e., with each certificate certifying the next one and the
+            end-entity certificate as the last one.). The 
+            CA SHOULD include the intermediate certificates
+            that it believes a relying party would use,but
+            ultimately it is the CH's job to sort this out.</t>
+
+            <t></t><t hangText="next_issuance (mandatory):"></t>
+            <t>The time that the CA expects to automatically
+            issue a replacement for the certificate, to be used
+            for the CH to determine when to refresh.</t>
+          </list>
+        </t>
+      </section>
+
+      <section title="Requesting Revocation" anchor="sec.revocation-request">
+        <t>
+          [TODO(ekr@rtfm.com): Should we refactor this and issuance to
+          have the common elements in one place.]
+          Under some circumstances, ACIP-issued certificates may need to
+          be revoked. While conventional mechanisms (OCSP, CRLs, etc.)
+          can be used for disseminating status information, an automatic
+          mechanism is needed for informing the CA that the certificate
+          should be revoked. As with certificate issuance, ACIP provides
+          a generic framework for this request, which then must be validated
+          by one or more of several validation mechanisms.
+        </t>
+        <t>
+          The general form of the revocation request is:
+        </t>
+        <t>
+        <list style="hanging">
+            <t></t><t hangText="validation_method (mandatory):"></t>
+            <t>The revocation validation method the CH has selected.</t>
+
+            <t></t><t hangText="certificates (mandatory):"></t>
+            <t>A list of the certificates to revoke. 
+            Each entry in the list has a "certificate" field and
+            may also have a "validation_info" field if required
+            by the validation method.
+            If multiple certificates
+            have been provided, they MUST all have the same identities.
+            </t>
+        </list>
+        </t>
+        <t>
+          For example:
+        </t>
+        <figure>
+          <artwork><![CDATA[
+          {
+            "validation_method" : "shared_secret",
+            "certificates" : [
+              "certificate" : "<base-64-encoded cert>",
+              "validation_info" : "<revocation-secret>"
+            ]
+          }
+          ]]></artwork>
+        </figure>
+        <t>
+          The CA responds to a revocation request either with an error
+          or with an indication of what the CH needs to do in order to
+          have the certificate revoked (type "revocation_response"),
+          containing the following items:
+        </t>
+        <t>
+        <list style="hanging">
+          <t></t><t hangText="challenges (optional)"></t>
+          <t>If the selected validation method requires a challenge, then
+          the CA shall include the challenge data in the challenges
+          value. The data is a list of values containing an identity
+          field from the request. More than one challenge may be
+          provided for a given identity, which means that the CH
+          must comply with all of them.</t>
+
+          <t></t><t hangText="status_url (mandatory)"></t>
+          <t>A URL which the CH can contact to find the status of the
+          request. This MUST contain a large enough random component
+          to avoid guessing (minumum 80 bits of entropy).</t>
+        </list>
+        </t>
+      </section>
+      
+      <section title="Validation Methods" anchor="sec.validation-types">
+        <t>
+          This section describes mechanisms for validating requests (both
+          issuance and revocation). In practice, some of these may only
+          be useful for validating issuance or revocation (noted below
+          where known) but because there is significant overlap,
+          and this is somewhat subject to CA policy, we simply describe
+          validation requests.
+        </t>
+        <section title="Simple HTTPS" anchor="sec.simple-https">
+          <t>
+            The "Simple HTTPS" validation method consists simply of verifying
+            that the operator of the server has authority to insert a given
+            data value at a specific location in the /.well-known directory
+            of the target Web server, specifically under "/.well-known/acip-verify".
+            [TODO: Registration needed for this?]. The challenge information is a JSON
+            [TODO: What if the server for some reason has an existing cert?
+            SNI is a clumsy discrimination mechanism here...]
+            dictionary with two values:
+          </t>
+          <t>
+          <list style="hanging">
+            <t></t><t hangText="path (mandatory):"></t>
+            <t>The location in /.well-known/acip-verify to write the challenge value.</t>
+
+            <t></t><t hangText="value (mandatory):"></t>
+            <t>The value to write.</t>
+
+            <t></t><t hangText="expected_certificate (mandatory):"></t>
+            <t>The certificate which MUST be used by the CH server to authenticate the connection.</t>
+          </list>
+          </t>
+          <t>
+            For instance:
+          </t>
+          <figure>
+            <artwork><![CDATA[
+            {
+            "path" : "abcdef",
+            "value" : "12345",
+            "expected_key" : "<base64-encoded key>"
+            }
+            ]]></artwork>
+          </figure>
+          <t>
+            In this example, the CH MUST write the string "12345" to the file
+            /well-known/acip-verify/12345.
+          </t>
+          <t>
+            The CH server MUST use the a certificate which matches the
+            "expected_key" provided by the client. If the server has
+            no such certificate, it MUST signal an error to the operator.
+            In general, the expected_key will be chosen to match one of two
+            values:
+          </t>
+          <t>
+            <list style="symbols">
+              <t>The key in the CSR.</t>
+              <t>Some previous key that the operator knows the CH previously used.</t>
+            </list>
+          </t>
+          <t>
+            [TODO: Do we want to force both of these? if so we will need to discriminate
+            via SNI. We could also require that the challenge be signed for POP...]
+          </t>
+        </section>
+        <section title="Digital Signature" anchor="sec.digital-signature">
+          <t>
+            The digital signature validation request involves the CH
+            signing a message requesting a service from a CA. This
+            message MAY involve a challenge from the CA, but need not
+            (for instance, a signed request for revocation need not
+            involve a challenge, as the requester clearly had
+            control of the key at some point and therefore a request
+            for revocation seems in order.
+          </t>
+          <t>
+            [TODO: RLB, please provide the JWT text here.]
+          </t>
+        </section>
+        <section title="Secret Token" anchor="sec.secret-token">
+          <t>
+            In some cases, the CA and the CH may wish to establish a
+            shared secret which can be used non-cryptographically to
+            authenticate the CH to the CA. The most obvious example is
+            that the CA may want to issue the CH a "revocation token"
+            which it can use to authenticate revocation requests.
+            This value could be comparatively low entropy if it is
+            used solely to revoke the certificate.
+          </t>
+        </section>
+      </section>
+      <section title="Errors" anchor="sec.errors">
+        <t>
+          Any request from the CH to the CA can potentially generate an error
+          (message type = "error"). The error message contents are:
+        </t>
+        <t>
+        <list style="hanging">
+          <t></t><t hangText="error_code (mandatory):"></t>
+          <t>An IANA-defined error code.</t>
+          
+          <t></t><t hangText="error_reason (optional):"></t>
+          <t>A free-form text string providing further information. The
+          error_reason field SHOULD be populated.</t>
+        </list>
+        </t>
+        <t>
+          For example:
+        </t>
+        
+        <figure>
+          <artwork><![CDATA[
+          {
+            "error_code" : "invalid_key",
+            "error_reason" : "RSA key less than 2048 bits provided."
+          }
+          ]]>
+          </artwork>
+        </figure>
+        
+        <t>
+          The following error codes are defined.
+        </t>
+        <t>
+        <list style="hanging">
+            <t></t><t hangText="invalid_key:"></t>
+            <t>The provided key was invalid for some reason.</t>
+
+            <t></t><t hangText="invalid_csr:"></t>
+            <t>The provided CSR was invalid for some reason other than the key,
+            e.g., because the signature is broken.</t>
+
+            <t></t><t hangText="invalid_validation_method:"></t>
+            <t>The authentication method specified is unknown or unacceptable.</t>
+
+            
+            <t></t><t hangText="invalid_identity:"></t>
+            <t>The requested identity is invalid for some reason, e.g., because
+            it is improperly formatted.</t>
+
+            <t></t><t hangText="other_error:"></t>
+            <t>There is some other error not covered by the above. The
+            "error_reason" field MUST be populated for this error, as
+            it is the only way for the CH to get information about what
+            happened.</t>
+        </list>
+        </t>
+      </section>
+      <section title="Status Publication" anchor="sec.status">
+        <t>
+          CAs are encouraged to provide a status URL so that CHs can determine
+          the status of a given request. A GET to the status URL returns a
+          status document consisting of:
+        </t>
+        <t>
+          <list style="hanging">
+            <t></t><t hangText="request_status (mandatory):"></t>
+            <t>One of the following values:
+            
+            <list style="symbols">
+              <t>"pending": the request is pending.</t>
+              <t>"complete": the request has successfully completed.</t>
+              <t>"failed": the request has failed</t>
+            </list>
+            </t>
+
+            <t></t><t hangText="error (optional):"></t>
+            <t>If the request failed, the CA SHOULD supply the error information
+            that would have been published in an error.</t>
+
+            <t></t><t hangText="log (optional):"></t>
+            <t>A free-text field consisting of logging information that might be
+            helpful to the CH.</t>
+          </list>
+        </t>
+      </section>
+      <section title="HTTPS Binding" anchor="sec.http-binding">
+        <t>
+          While the protocol defined in this document could in principle be
+          carried over any transport, this document defines a single transport
+          over HTTPS <xref target="RFC2818"/>.
+        </t>
+        <t>
+          An CA has a single URL which it uses as its main
+          ACIP endpoint. As discussed in <xref target="sec.overview"/>,
+          the CH knows this URL via some out-of-band mechanism. The
+          CA responds to both GET and POST requests at this URL
+          as described below. All messages have the type "application/json" [REF].
+        </t>
+        <t>
+          The response to any GET request is the policy document <xref target="sec.ca-policies"/>. The GET request SHOULD not contain any HTTP parameters or body and 
+          in any case these MUST be ignored.
+        </t>
+        <t>
+          The CH issues instructions to the CA using HTTP POST. The
+          body of the POST message contains an ACIP message as
+          specified in <xref target="sec.messages"/>. Again, there
+          SHOULD be no query arguments. If the message is not well-formed,
+          than an HTTP 400 "bad request" error SHOULD be generated. If the
+          message is well-formed, then the CA SHOULD attempt to process
+          it and return any errors in the response body with an HTTP 200
+          success code, rather than as an HTTP error.
+        </t>
+        <t>
+          In addition to the above, the CA is expected to maintain a number
+          of informational URLs for a given certificate or certificate request
+          (e.g., "status_url" and "certificate_url") however these are
+          orthogonal to the protocol used for interacting with the CA
+          (since the client just does GETs to them) and therefore could
+          in principle be used even if some other protocol were used
+          to interact with the CA.
+        </t>
+      </section>
+    </section>
+    <section title="Security Considerations" anchor="sec.sec-cons">
+      <t>
+        <list style="symbols">
+          <t>CAs should bind the challenge to the key to prevent referrals...</t>
+        </list>
+      </t>
+    </section>
+
+    <section title="IANA Considerations" anchor="sec.iana-cons">
+      <t>
+        IANA [SHALL create/has created] an ACIP Validation Protocol specification
+        registry. The values are ASCII strings [REF: 8859-1?] and the registry
+        is initially populated with values as below. The registration policy
+        is Specification Required <xref target="RFC5226"/>.
+      </t>
+        <texttable>
+          <ttcol>Code Point</ttcol>
+          <ttcol>Description</ttcol>
+          <c>simple-https</c>
+          <c><xref target="sec.simple-https"/></c>
+          <c>https-sni</c>
+          <c><xref target="sec.https-with-sni"/></c>
+          <c>digital-signature</c>
+          <c><xref target="sec.digital-signature"/></c>
+          <c>secret-token</c>
+          <c><xref target="sec.secret-token"/></c>
+        </texttable>
+
+        <t>
+          IANA [SHALL create/has created] an ACIP Error registry. 
+          The values are ASCII strings [REF: 8859-1?] and the registry
+          is initially populated with values from <xref target="sec.errors"/>.
+          The registration policy
+          is Standards Action <xref target="RFC5226"/>. The 
+        </t>
+    </section>
+
+    <section title="Acknowledgements" anchor="sec.acknowledgments">
+    </section>
+  </middle>
+    <back>
+    <references title="Normative References">
+      &RFC2119;
+      &RFC2314;
+      &RFC2818;
+      &RFC5226;
+      &RFC5246;
+    </references>
+<!--
+    <references title="Informative References">
+    </references>-->
+    </back>
+  </rfc>
+
