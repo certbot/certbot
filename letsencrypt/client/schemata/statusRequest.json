@@ -1,0 +1,15 @@
+{
+    "id": "https://letsencrypt.org/schema/01/statusRequest#",
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "description": "Schema for a statusRequest message",
+    "type": "object",
+    "required": ["type", "token"],
+    "properties": {
+        "type" : {
+            "enum" : [ "statusRequest" ]
+        },
+        "token" : {
+            "type": "string"
+        }
+    }
+}

@@ -1,0 +1,12 @@
+{
+    "id": "https://letsencrypt.org/schema/01/revocation#",
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "description": "Schema for a revocation message",
+    "type": "object",
+    "required": ["type"],
+    "properties": {
+        "type" : {
+            "enum" : [ "revocation" ]
+        }
+    }
+}
