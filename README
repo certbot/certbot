@@ -1,24 +1,11 @@
-The Chocolate project to implement sweet automatic encryption for webservers.
+This is the Let's Encrypt Agent DEVELOPER PREVIEW repository.
 
-There are two portions to the Chocolate protocol.
+DO NOT RUN THIS CODE ON A PRODUCTION WEBSERVER.  IT WILL INSTALL CERTIFICATES
+SIGNED BY A TEST CA, AND WILL CAUSE CERT WARNINGS FOR USERS.
 
-trustify/ contains code that can be run on any webserver (eventually,
-email, XMPP and other SSL-securable servers too); it is used to automatically
-request and install a CA-signed certificate for that server's public names.
+This code intended for testing, demonstration, and integration engineering
+with OSes and hosting platforms.
 
-server-ca/ contains a reference implementation for CAs to receive requests for
-certs, set challenges for the requesting servers to prove that they really
-control the names, and issue certificates.
 
-Debian dependencies:
-
-build deps:
-swig
-protobuf-compiler
-python-dev
-
-others:
-gnutls-bin # for make cert requests
-python-protobuf
-python-dialog
-hashcash
+Debian packaging work will continue in the separate "debian" branch of this
+repo.
