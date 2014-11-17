@@ -183,6 +183,8 @@ class Client(object):
 
         self.remove_cert_key(c)
 
+        self.list_certs_keys()
+
     def remove_cert_key(self, c):
         list_file = CERT_KEY_BACKUP + "LIST"
         list_file2 = CERT_KEY_BACKUP + "LIST.tmp"
@@ -201,41 +203,7 @@ class Client(object):
         os.remove(c['backup_cert_file'])
         os.remove(c['backup_key_file'])
 
-    def store_revocation_token(self, token):
-        return
-
-
-
-    def store_cert_key(self, encrypt = False):
-        list_file = CERT_KEY_BACKUP + "LIST"
-        le_util.make_or_verify_dir(CERT_KEY_BACKUP, 0700)
-        idx = 0
-
-        if encrypt:
-            logger.error("Unfortunately securely storing the certificates/keys \
-            is not yet available. Stay tuned for the next update!")
-            return False
-
-        if os.path.isfile(list_file):
-            with open(list_file, 'r+b') as csvfile:
-                csvreader = csv.reader(csvfile)
-                for r in csvreader:
-                    idx = int(r[0]) + 1
-                csvwriter = csv.writer(csvfile)
-                csvwriter.writerow([str(idx), self.cert_file, self.key_file])
-
-        else:
-            with open(list_file, 'wb') as csvfile:
-                csvwriter = csv.writer(csvfile)
-                csvwriter.writerow(["0", self.cert_file, self.key_file])
-
-        shutil.copy2(self.key_file,
-                     CERT_KEY_BACKUP + os.path.basename(self.key_file) +
-                     "_" + str(idx))
-        shutil.copy2(self.cert_file,
-                     CERT_KEY_BACKUP + os.path.basename(self.cert_file) +
-                     "_" + str(idx))
-
+    
     def list_certs_keys(self):
         list_file = CERT_KEY_BACKUP + "LIST"
         certs = []
@@ -244,6 +212,13 @@ class Client(object):
             logger.info("You don't have any certificates saved from letsencrypt")
             return
 
+        c_sha1_vh = {}
+        for x in self.config.get_all_certs_keys():
+            try:
+                c_sha1_vh[M2Crypto.X509.load_cert(x[0]).get_fingerprint(md='sha1')] = x[2] 
+            except:
+                continue
+        
         with open(list_file, 'rb') as csvfile:
             csvreader = csv.reader(csvfile)
             for row in csvreader:
@@ -257,6 +232,7 @@ class Client(object):
                 c["idx"] = int(row[0])
                 c["backup_key_file"] = b_k
                 c["backup_cert_file"] = b_c
+                c["installed"] = c_sha1_vh.get(c["fingerprint"], "")
 
                 certs.append(c)
         if certs:
@@ -266,21 +242,18 @@ class Client(object):
             Let's Encrypt certificates for this server.")
 
     def choose_certs(self, certs):
-        while True:
-            code, selection = display.display_certs(certs)
-            if code == display.OK:
-                for s in selection:
-                    if display.confirm_revocation(certs[s]):
-                        self.revoke(certs[s])
-
-                # Exit after revoking all of the certificates
-                sys.exit(0)
-            elif code == display.HELP:
-                for s in selection:
-                    display.more_info_cert(certs[s])
-
+        code, s = display.display_certs(certs)
+        if code == display.OK:
+            if display.confirm_revocation(certs[s]):
+                self.revoke(certs[s])
             else:
-                exit(0)
+                self.choose_certs(certs)
+        elif code == display.HELP:
+            print code, s, certs[s]
+            display.more_info_cert(certs[s])
+            self.choose_certs(certs)
+        else:
+            exit(0)
 
 
     def revocation_request(self, key_file, cert_der):
@@ -333,6 +306,17 @@ class Client(object):
             self.config.enable_mod("rewrite")
             self.redirect_to_ssl(vhost)
             self.config.restart(quiet=self.curses)
+
+        #if self.ocsp_stapling is None:
+            # q = "Would you like to protect the privacy of of your users " +
+            # "by enabling OCSP stapling? If so, your users will not have to " +
+            # "query the Let's Encrypt CA separately about the current " +
+            # "revocation status of your certificate."
+            #self.ocsp_stapling = self.ocsp_stapling = display.ocsp_stapling(q)
+        #if self.ocsp_stapling:
+            # TODO enable OCSP Stapling
+         #   continue
+            
 
     def certificate_request(self, csr_der, key):
         logger.info("Preparing and sending CSR..")
@@ -414,8 +398,8 @@ class Client(object):
             for index in indicies[i]:
                 responses[index] = c_obj.generate_response()
 
-        logger.info("Configured Apache for challenges; \
-        waiting for verification...")
+        logger.info("Configured Apache for challenges; " +
+        "waiting for verification...")
 
         return responses, challenge_objs
 
@@ -501,6 +485,42 @@ class Client(object):
         except:
             logger.fatal("Send() failed... may have lost connection to server")
             sys.exit(8)
+
+
+    def store_revocation_token(self, token):
+        return
+
+
+
+    def store_cert_key(self, encrypt = False):
+        list_file = CERT_KEY_BACKUP + "LIST"
+        le_util.make_or_verify_dir(CERT_KEY_BACKUP, 0700)
+        idx = 0
+
+        if encrypt:
+            logger.error("Unfortunately securely storing the certificates/keys \
+            is not yet available. Stay tuned for the next update!")
+            return False
+
+        if os.path.isfile(list_file):
+            with open(list_file, 'r+b') as csvfile:
+                csvreader = csv.reader(csvfile)
+                for r in csvreader:
+                    idx = int(r[0]) + 1
+                csvwriter = csv.writer(csvfile)
+                csvwriter.writerow([str(idx), self.cert_file, self.key_file])
+
+        else:
+            with open(list_file, 'wb') as csvfile:
+                csvwriter = csv.writer(csvfile)
+                csvwriter.writerow(["0", self.cert_file, self.key_file])
+
+        shutil.copy2(self.key_file,
+                     CERT_KEY_BACKUP + os.path.basename(self.key_file) +
+                     "_" + str(idx))
+        shutil.copy2(self.cert_file,
+                     CERT_KEY_BACKUP + os.path.basename(self.cert_file) +
+                     "_" + str(idx))
 
 
     def redirect_to_ssl(self, vhost):
