@@ -1,7 +1,7 @@
 import dialog
 
 WIDTH = 72
-HEIGHT = 18
+HEIGHT = 20
 
 class SingletonD(object):
     _instance = None
@@ -15,7 +15,7 @@ class SingletonD(object):
 class Display(SingletonD):
     def generic_notification(self, message, width = WIDTH, height = HEIGHT):
         raise Exception("Error no display defined")
-    def generic_menu(self, message, choices, input_text):
+    def generic_menu(self, message, choices, input_text = "", width = WIDTH, height = HEIGHT):
         raise Exception("Error no display defined")
     def generic_input(self, message):
         raise Exception("Error no display defined")
@@ -25,8 +25,7 @@ class Display(SingletonD):
         raise Exception("Error no display defined")
     def success_installation(self, domains):
         raise Exception("Error no display defined")
-    def redirect_by_default(self):
-        raise Exception("Error no display defined")
+            
     def gen_https_names(self, domains):
         """
         Returns a string of the domains formatted nicely with https:// prepended
@@ -65,6 +64,7 @@ class Display(SingletonD):
         text += "Not After: %s\n" % str(cert["not_after"])
         text += "Serial Number: %s\n" % cert["serial"]
         text += "SHA1: %s\n" % cert["fingerprint"]
+        text += "Installed: %s\n" % cert["installed"]
         return text
 
     def more_info_cert(self, cert):
@@ -80,10 +80,17 @@ class NcursesDisplay(Display):
     def generic_notification(self, message, w = WIDTH, h = HEIGHT):
         self.d.msgbox(message, width = w, height = h)
 
-    def generic_menu(self, message, choices, input_text):
+    def generic_menu(self, message, choices, input_text = "", width = WIDTH, height = HEIGHT):
+        # Can accept either tuples or just the actual choices
+        if choices and isinstance(choices[0], tuple):
+            return self.d.menu(message, choices = choices,
+                           width = WIDTH, height = HEIGHT)
+        else:
+            choices = [((i + 1), c) for c in choices]
+            code, s = self.d.menu(message, choices = choices,
+                               width = WIDTH, height = HEIGHT)
 
-        return self.d.menu(message, choices = choices,
-                           width=WIDTH, height=HEIGHT)
+            return code (int(s) - 1)
 
     def generic_input(self, message):
         return self.d.inputbox(message)
@@ -111,28 +118,16 @@ class NcursesDisplay(Display):
               "%s | %s | %s" % 
               (str(c["cn"].ljust(WIDTH - 39)), 
                c["not_before"].strftime("%m-%d-%y"), 
-               "Installed"),
-              0) 
+               "Installed" if c["installed"] else "")) 
             for i, c in enumerate(certs)]
         
-        code, se = self.d.checklist("Which certificates would you like to revoke?",
+        code, s = self.d.menu("Which certificates would you like to revoke?",
                            choices = list_choices, help_button=True,
                            help_label="More Info", ok_label="Revoke",
                            width=WIDTH, height=HEIGHT)
-        return code, [int(s[0])-1 for s in se]
-
-
-    def redirect_by_default(self):
-        choices = [
-            ("Easy", "Allow both HTTP and HTTPS access to these sites"),
-            ("Secure", "Make all requests redirect to secure HTTPS access")]
-
-        result = self.d.menu("Please choose whether HTTPS access is required \
-        or optional.", width=WIDTH, choices=choices)
-
-        if result[0] != 0:
-            return False
-        return result[1] == "Secure"
+        if not s:
+            s = -1
+        return code, (int(s) - 1)
 
     def confirm_revocation(self, cert):
         text = "Are you sure you would like to revoke the following \
@@ -145,6 +140,7 @@ class NcursesDisplay(Display):
     def more_info_cert(self, cert):
         text = "Certificate Information:\n"
         text += self.cert_info_frame(cert)
+        print text
         self.d.msgbox(text, width=WIDTH, height=HEIGHT)
 
 textwrap = None
@@ -163,20 +159,24 @@ class FileDisplay(Display):
         self.outfile.write(text)
         raw_input("Press Enter to Continue")
 
-    def generic_menu(self, message, choices, input_text):
+    def generic_menu(self, message, choices, input_text = "", width = WIDTH, height = HEIGHT):
+        # Can take either tuples or single items in choices list
+        if choices and isinstance(choices[0], tuple):
+            choices = ["%s - %s" % (c[0], c[1]) for c in choices]
+
         self.outfile.write("\n%s\n" % message)
         side_frame = '-' * (79)
         self.outfile.write("%s\n" % side_frame)
 
         for i, c in enumerate(choices):
-            wc = textwrap.fill("%d: %s" % (i, c), 80)
+            wc = textwrap.fill("%d: %s" % (i + 1, c), 80)
             self.outfile.write("%s\n" % wc)
 
         self.outfile.write("%s\n" % side_frame)
 
         code, selection = self.__get_valid_int_ans("%s (c to cancel): " % input_text)
 
-        return code, selection
+        return code, (selection - 1)
 
     def generic_input(self, message):
         ans = raw_input("%s (Enter c to cancel)\n" % message)
@@ -211,7 +211,7 @@ class FileDisplay(Display):
                                (c[0], c[1], c[2], c[3]))
             self.outfile.write(wm)
 
-        return [self.__get_valid_int_ans("Revoke Number (c to cancel): ") - 1]
+        return (self.__get_valid_int_ans("Revoke Number (c to cancel): ") - 1)
 
     def __get_valid_int_ans(self, input_string):
         valid_ans = False
@@ -245,12 +245,7 @@ class FileDisplay(Display):
                            "enabled %s!") % self.gen_https_names(domains))
         msg = "%s\n%s\n%s\n" 
         self.outfile.write(msg % (s_f, wm, s_f))
-
-    def redirect_by_default(self):
-        ans = raw_input("Would you like to redirect all " +
-        "normal HTTP traffic to HTTPS? y/n: ")
-        return ans.startswith('y') or ans.startswith('Y')
-
+    
     def confirm_revocation(self, cert):
         self.outfile.write("Are you sure you would like to revoke \
         the following certificate:\n")
@@ -269,6 +264,7 @@ CANCEL = 1
 HELP = "help"
 
 
+
 def setDisplay(display_inst):
     global display
     display = display_inst
@@ -276,8 +272,8 @@ def setDisplay(display_inst):
 def generic_notification(message, width = WIDTH, height = HEIGHT):
     display.generic_notification(message, width, height)
 
-def generic_menu(message, choices, input_text):
-    return display.generic_menu(message, choices, input_text)
+def generic_menu(message, choices, input_text = "", width = WIDTH, height = HEIGHT):
+    return display.generic_menu(message, choices, input_text, width, height)
 
 def generic_input(message):
     return display.generic_message(message)
@@ -301,7 +297,20 @@ def success_installation(domains):
     return display.success_installation(domains)
 
 def redirect_by_default():
-    return display.redirect_by_default()
+    choices = [
+        ("Easy", "Allow both HTTP and HTTPS access to these sites"),
+        ("Secure", "Make all requests redirect to secure HTTPS access")]
+    
+    result = display.generic_menu("Please choose whether HTTPS access " +
+                                  "is required or optional.", 
+                                  choices=choices, width = WIDTH)
+
+    if result[0] != 0:
+        return False
+
+    # different answer for each type of display
+    return (result[1] == "Secure" or result[1] == 0)
+
 
 def confirm_revocation(cert):
     return display.confirm_revocation(cert)

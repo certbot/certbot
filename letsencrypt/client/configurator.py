@@ -812,9 +812,9 @@ LogLevel warn \n\
     def get_all_certs_keys(self):
         """
         Retrieve all certs and keys set in VirtualHosts on the Apache server
-        returns: list of tuples with form [(cert, key)]
+        returns: list of tuples with form [(cert, key, path)]
         """
-        cert_key_pairs  = set()
+        c_k  = set()
 
         for vhost in self.vhosts:
             if vhost.ssl:
@@ -828,9 +828,9 @@ LogLevel warn \n\
 
                 cert = os.path.abspath(self.aug.get(cert_path[0]))
                 key = os.path.abspath(self.aug.get(key_path[0]))
-                cert_key_pairs.add( (cert,key) )
+                c_k.add( (cert, key, self.get_file_path(cert_path[0])) )
 
-        return cert_key_pairs
+        return c_k
 
     def get_file_path(self, vhost_path):
         """
