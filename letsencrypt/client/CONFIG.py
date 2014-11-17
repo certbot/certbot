@@ -40,8 +40,8 @@ RSA_KEY_SIZE = 2048
 difficulty = 23 
 
 # Let's Encrypt cert and chain files
-CERT_PATH = CERT_DIR + "letsencrypt-cert.pem"
-CHAIN_PATH = CERT_DIR + "letsencrypt-chain.pem"
+CERT_PATH = CERT_DIR + "cert-letsencrypt.pem"
+CHAIN_PATH = CERT_DIR + "chain-letsencrypt.pem"
 
 #Invalid Extension                                                              
 INVALID_EXT = ".acme.invalid"
