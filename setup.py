@@ -35,6 +35,9 @@ class build_py_with_protobuf(build_py):
                 "files with protoc.")
 
     def run(self):
+        if self.protoc is None:
+            raise DistutilsPlatformError("Could not find protobuf compiler")
+
         for p in proto:
             self.run_protoc(p)
 
