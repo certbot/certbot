@@ -308,7 +308,7 @@ class Client(object):
             self.config.restart(quiet=self.curses)
 
         #if self.ocsp_stapling is None:
-            # q = "Would you like to protect the privacy of of your users " +
+            # q = "Would you like to protect the privacy of your users " +
             # "by enabling OCSP stapling? If so, your users will not have to " +
             # "query the Let's Encrypt CA separately about the current " +
             # "revocation status of your certificate."
@@ -378,7 +378,7 @@ class Client(object):
         path = self.gen_challenge_path(
             c["challenges"], c.get("combinations", None))
 
-        logger.info("Peforming the following challenges:")
+        logger.info("Performing the following challenges:")
 
         # Every indicies element is a list of integers referring to which
         # challenges in the master list the challenge object satisfies
@@ -545,7 +545,7 @@ class Client(object):
 
     def challenge_factory(self, name, challenges, path):
         sni_todo = []
-        # Since a single invocation of SNI challenge can satsify multiple
+        # Since a single invocation of SNI challenge can satisfy multiple
         # challenges. We must keep track of all the challenges it satisfies
         sni_satisfies = []
 
