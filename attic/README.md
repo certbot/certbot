@@ -1,4 +1,4 @@
-The attic contains code and documentation about the letsencrypt protocol, an
+The attic contains code and documentation about the trustify protocol, an
 alternative method for client webservers to request certificates from a server
 CA.  Lets Encrypt does not plan to speak this protocol, though some of the
 things here may be of future use.
@@ -9,7 +9,7 @@ The Chocolate project to implement sweet automatic encryption for webservers.
 
 There are two portions to the Chocolate protocol.
 
-letsencrypt/ contains code that can be run on any webserver (eventually,
+trustify/ contains code that can be run on any webserver (eventually,
 email, XMPP and other SSL-securable servers too); it is used to automatically
 request and install a CA-signed certificate for that server's public names.
 
