@@ -801,7 +801,7 @@ LogLevel warn \n\
         
     def __general_vhost(self, ssl_vhost):
         """
-        Function needs to be throughly tested and perhaps improved
+        Function needs to be thoroughly tested and perhaps improved
         Will not do well with malformed configurations
         Consider changing this into a dict check
         """
@@ -961,7 +961,7 @@ LogLevel warn \n\
         TEMP_CHECKPOINT_DIR are removed, then IN_PROGRESS changes are removed
         The order is important. IN_PROGRESS is unable to add files that are
         already added by a TEMP change.  Thus TEMP must be rolled back first
-        because that will be the 'latest' occurance of the file.
+        because that will be the 'latest' occurrence of the file.
         """
         self.revert_challenge_config()
         if os.path.isdir(IN_PROGRESS_DIR):
