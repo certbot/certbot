@@ -7,25 +7,18 @@ This code intended for testing, demonstration, and integration engineering
 with OSes and hosting platforms.  Currently the code works with Linux and
 Apache, though we will be expanding it to other platforms.
 
-## Running the demo code on Debian
+## Running the demo code on Ubuntu 
 
-` sudo apt-get install python-pip python-crypto python-dev python-jsonschema python-augeas gcc python-m2crypto` 
+`sudo apt-get install python-pip python-crypto python-dev python-jsonschema python-augeas gcc python-m2crypto python-dialog` 
 
 `sudo pip install jose`
 
-Now get a working copy of the python2 "dialog" module.  On debian stable:
-
-`sudo apt-get install python-dialog`
-
-on testing/unstable, clear any buggy versions of dialog out (you may need "pip
-uninstall dialog", "pip uninstall pythondialog")
-
-`sudo pip install pythondialog=2.7` 
-
 `sudo ./letsencrypt.py`
 
-Debian packaging work will continue in the separate "debian" branch of this
-repo.
+Hint: on Debian testing/unstable, python-dialog is unavailable and you may
+need to do `sudo pip install pythondialog=2.7` (lets-encrypt does not yet
+handle debian unstable's Apache2 conf layout, either...)
+
 
 ## Command line usage
 
