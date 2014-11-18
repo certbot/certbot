@@ -12,7 +12,7 @@
 /><br
 /><b>INTRODUCTION</b><br
 /><br
-/>The Trustify (aka Chococlate) protocol is used between a <b>client</b>, which is a software package on an Internet-connected host that is or will be used to operate a Web server or other TLS service, and a <b>server</b>, which is a certification service provided by a certificate authority.<br
+/>The Trustify (aka Chocolate) protocol is used between a <b>client</b>, which is a software package on an Internet-connected host that is or will be used to operate a Web server or other TLS service, and a <b>server</b>, which is a certification service provided by a certificate authority.<br
 /><br
 />The protocol is implemented as a series of Protocol Buffers messages which are serialized and transported as HTTP POST request and response bodies relative to an HTTPS URI published by the server. Currently, each client to server message is a new HTTP POST and each server reply is a new response body.&nbsp; Hence, the client and server alternate sending messages; asynchronous notification of changes in server state do not occur, but the client can be instructed to poll periodically while the server is working.&nbsp; Full specification of the Trustify message format is in the Messages section below.<br
 /><br
@@ -22,7 +22,7 @@
 /><br
 /><b>IDENTIFYING AVAILABLE TRUSTIFY SERVERS</b><br
 /><br
-/>The first step for a Trustify client is to identify the currently operating and available Trustify servers that correspond to CAs issuing certificates through the protocol.&nbsp; Clients contain an HTTPS URL that always referrs to a fresh client list.&nbsp; For reliability purposes, if the URL cannot be fetched, clients may refer to a previously cached copy of the list.<br
+/>The first step for a Trustify client is to identify the currently operating and available Trustify servers that correspond to CAs issuing certificates through the protocol.&nbsp; Clients contain an HTTPS URL that always refers to a fresh client list.&nbsp; For reliability purposes, if the URL cannot be fetched, clients may refer to a previously cached copy of the list.<br
 /><br
 />The Trustify Server List will contain the following data:<br
 /><br
@@ -83,17 +83,17 @@
 /><br
 />During the course of a session, the Trustify server presents the client with one or more <b>challenges</b>,&nbsp; which are messages specifying tasks that must be completed to verify&nbsp; the preconditions of issuance for the certificate(s) that the client has requested.&nbsp; Challenges are an abstraction layer to allow the Trustify protocol to be enhanced and expanded over time.<br
 /><br
-/>Several challenges may be presented at once, but further or additional&nbsp; challenges may be presented after previous sets, possibly as a result of&nbsp; information that the server obtained while verfiying the earlier&nbsp; challenges.<br
+/>Several challenges may be presented at once, but further or additional&nbsp; challenges may be presented after previous sets, possibly as a result of&nbsp; information that the server obtained while verifying the earlier&nbsp; challenges.<br
 /><br
 />Clients may decide to meet all of the outstanding challenges at once, or may&nbsp; decide to send responses to the challenges one at a time. The semantic&nbsp; relationship between the outstanding challenges may be conjunctive (all challenges must eventually be met before issuance), disjunctive (only one or a subset of challenges must be met), or variable (the set of challenges that are required depends on the manner in which the earlier ones are completed)<br
 /><br
-/>As&nbsp; a matter of protocol synchronization, there are two subtypes of&nbsp; challenges: those where completion of the challenge is signalled by the client and then verified by the server (such as the DVSNI challenge&nbsp; described below, which requires the client to configure a TLS server in a particular way) and those where completion of the challenge is identified and verified solely by the server (such as a challenge involving a payment or other organizational validation for a high-value domain).<br
+/>As&nbsp; a matter of protocol synchronization, there are two subtypes of&nbsp; challenges: those where completion of the challenge is signaled by the client and then verified by the server (such as the DVSNI challenge&nbsp; described below, which requires the client to configure a TLS server in a particular way) and those where completion of the challenge is identified and verified solely by the server (such as a challenge involving a payment or other organizational validation for a high-value domain).<br
 /><br
 /><b>DVSNI Challenges:</b><br
 /><br
 />DVSNI challenges are the fundamental method employed by the Trustify protocol to ensure that clients control&nbsp; the DNS names for which they are requesting certificates.&nbsp; It is intended to be more automatable (and in some cases, more secure) than&nbsp; the email receipt verification that is commonly used by DV CAs, and&nbsp; categorically more secure than the HTTP nonce deployment verification used by some DV CAs.<br
 /><br
-/>DVSNI requires the client to demonstrate significant administrative control&nbsp; of the domain by not only changing responses from an HTTP server, but by&nbsp; altering the TLS configuration of an HTTPS server to answer specially crafted SNI (Server Name Indication) requests. This shows that the client at least has adminitrative control of the DNS name's web server&nbsp; software, and probably has full adminstrative control of the servers that the DNS name points to.<br
+/>DVSNI requires the client to demonstrate significant administrative control&nbsp; of the domain by not only changing responses from an HTTP server, but by&nbsp; altering the TLS configuration of an HTTPS server to answer specially crafted SNI (Server Name Indication) requests. This shows that the client at least has administrative control of the DNS name's web server&nbsp; software, and probably has full administrative control of the servers that the DNS name points to.<br
 /><br
 /><b>DVSNI implementation specifics:</b><br
 /><br
@@ -118,11 +118,11 @@
 /><br
 />&nbsp;&nbsp;&nbsp; <i>Explanation:</i><br
 />Using ${nonce}.chocolate&nbsp; (instead of domain.com) allows a currently running web server to&nbsp; continue serving domain.com without interruption. (Note we still use the&nbsp; IP for domain.com when we connect to the server)&nbsp;&nbsp; It is of slight importance that the .chocolate TLD is not real; it may&nbsp; protect against elaborate attacks against domains like dyndns.com which&nbsp; would allow attackers to control nonce.dyndns.com.&nbsp; If such a domain&nbsp; were also hosted on a virtual hosting service/CDN with the same IP as&nbsp; the attacker, and which really did SNI, it would be important that&nbsp; .chocolate not be real.<br
-/>We&nbsp; require the certificate to be modified to ensure that it is freshly&nbsp; generated for this purpose, and not just being served a wildcard&nbsp; certificate. We could do this several ways, but it is neccessary to tie&nbsp; this modification to control of the private key (hence the need for z)&nbsp; and to the current Chocolate request (hence the need for ${ext}).&nbsp; Otherwise, a "rogue CA" could receive a request from domain.com, forward&nbsp; it to a "real CA" with a different public key, and have the real&nbsp; domain.com carry out this challenge (which real CA would verify, and&nbsp; give rogue CA a signed cert for domain.com).<br
+/>We&nbsp; require the certificate to be modified to ensure that it is freshly&nbsp; generated for this purpose, and not just being served a wildcard&nbsp; certificate. We could do this several ways, but it is necessary to tie&nbsp; this modification to control of the private key (hence the need for z)&nbsp; and to the current Chocolate request (hence the need for ${ext}).&nbsp; Otherwise, a "rogue CA" could receive a request from domain.com, forward&nbsp; it to a "real CA" with a different public key, and have the real&nbsp; domain.com carry out this challenge (which real CA would verify, and&nbsp; give rogue CA a signed cert for domain.com).<br
 /><br
 />&nbsp;&nbsp;&nbsp; <i>Deviations from model:</i><br
 />&nbsp;&nbsp;&nbsp;&nbsp; SNI only allows multiplexing over the domain.&nbsp; Apache always has a&nbsp; default SNI page... even if you provide a completely wrong header.&nbsp; The&nbsp; real challenge happens with y and z.<br
-/>&nbsp;&nbsp;&nbsp;&nbsp; Apache uses the first virtual server specifed on the ip/port to act as a&nbsp; default server if the SNI extension is specified by the client but does&nbsp; not match any of the virtual servers.<br
+/>&nbsp;&nbsp;&nbsp;&nbsp; Apache uses the first virtual server specified on the ip/port to act as a&nbsp; default server if the SNI extension is specified by the client but does&nbsp; not match any of the virtual servers.<br
 /><br
 /><b>DVSNI Security Considerations:</b><br
 /><br
@@ -130,7 +130,7 @@
 /><br
 />Verification&nbsp; of control on TLS ports other than 443 (such as the TLS email serivces&nbsp; on ports 465, 993 and 995) in the presence of virtual hosting presents similar but possibly more serious challenges, since use of these ports on virtual private servers may be rarer, and policies about them more&nbsp; varied.<br
 /><br
-/><b>Proof-of-posession challenges:</b><br
+/><b>Proof-of-possession challenges:</b><br
 /><br
 />The&nbsp; server MUST check whether there are pre-existing valid certificates for the requested DNS names by consulting Certificate Transparency logs and/or the EFF SSL Observatory.&nbsp; If such certificates exist, the server SHOULD NOT proceed unless it can ensure that issuance will not reduce the security of TLS services deployed with those existing certificates.<br
 /><br
@@ -139,7 +139,7 @@
 /><br
 /><b>Payment challenges:</b><br
 /><br
-/>In&nbsp; limited situations, it may be determined that traditional OV or EV processes are required for the issuance of ceriticates for high-value, high-traffic DNS names.&nbsp; In such cases a payment challenge may be used to facilitate the transition to the OV or EV process at the client end. The Trustify governance foundation may or may not decide to allow such challenges, but if it does they will&nbsp; be in limited circumstances, where the OV or EV process significant enhances the security of the domain in question, and not a common case for Trustify protocol execution.<br
+/>In&nbsp; limited situations, it may be determined that traditional OV or EV processes are required for the issuance of certificates  for high-value, high-traffic DNS names.&nbsp; In such cases a payment challenge may be used to facilitate the transition to the OV or EV process at the client end. The Trustify governance foundation may or may not decide to allow such challenges, but if it does they will&nbsp; be in limited circumstances, where the OV or EV process significant enhances the security of the domain in question, and not a common case for Trustify protocol execution.<br
 /><br
 />If Payment challenges exist, they will simply contain a URL for a web page that can specify and accept the payment required.<br
 /><br
@@ -219,7 +219,7 @@
 /><br
 />cause is the FailureReason enumerated type reason why the session or request failed or is being abandoned.<br
 /><br
-/>URI is an optional refernce to a URI where more human-readable information about the failure can be obtained. This can be used to clarify to the human user whether there is an action that could be taken to correct the problem.<br
+/>URI is an optional reference to a URI where more human-readable information about the failure can be obtained. This can be used to clarify to the human user whether there is an action that could be taken to correct the problem.<br
 /><br
 /><br
 />Proceed:&nbsp;<br
