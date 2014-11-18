@@ -14,10 +14,12 @@ from letsencrypt.client.CONFIG import REWRITE_HTTPS_ARGS, CONFIG_DIR, WORK_DIR
 from letsencrypt.client.CONFIG import TEMP_CHECKPOINT_DIR, IN_PROGRESS_DIR
 from letsencrypt.client.CONFIG import OPTIONS_SSL_CONF, LE_VHOST_EXT
 from letsencrypt.client import logger, le_util
-#from CONFIG import SERVER_ROOT, BACKUP_DIR, REWRITE_HTTPS_ARGS, CONFIG_DIR, WORK_DIR, TEMP_CHECKPOINT_DIR, IN_PROGRESS_DIR, OPTIONS_SSL_CONF, TRUSTIFY_VHOST_EXT
+#from CONFIG import SERVER_ROOT, BACKUP_DIR, REWRITE_HTTPS_ARGS, CONFIG_DIR, 
+#from CONFIG import WORK_DIR, TEMP_CHECKPOINT_DIR, IN_PROGRESS_DIR, OPTIONS_SSL_CONF, TRUSTIFY_VHOST_EXT
 #import logger, le_util
 
-# Question: Am I missing any attacks that can result from modifying CONFIG file?
+
+
 # Configurator should be turned into a Singleton
 
 # Note: Apache 2.4 NameVirtualHost directive is deprecated... all vhost twins
@@ -39,8 +41,6 @@ from letsencrypt.client import logger, le_util
 # Apache configuration. It may be wise to warn the user if they are trying 
 # to use vhost filenames that contain spaces and offer to change ' ' to '_'
 
-# TODO: Make IfModule completely case-insensitive
-
 # Note: FILEPATHS and changes to files are transactional.  They are copied
 # over before the updates are made to the existing files. NEW_FILES is
 # transactional due to the use of register_file_creation()
@@ -61,7 +61,26 @@ class VH(object):
         self.names.append(name)
 
 class Configurator(object):
+    """
+    State of Configurator:
+    This class was originally developed for Apache 2.2 and has not seen a
+    an overhaul to include proper setup of new Apache configurations.
+    The biggest changes have been the IncludeOptional directive, the 
+    deprecation of the NameVirtualHost directive, and the name change of 
+    mod_ssl.c to ssl_module. Although these changes
+    have not been implemented yet, they will be shortly.
+    That being said, this class can still adequately configure most typical
+    Apache 2.4 servers as the deprecated NameVirtualHost has no effect
+    and the typical directories are parsed by the Augeas configuration
+    parser automatically.
     
+    The API of this class will change in the coming weeks as the exact
+    needs of client's are clarified with the new and developing protocol.
+    
+    This class will eventually derive from a generic Configurator class
+    so that other Configurators (like Nginx) can be developed and interoperate
+    with the client.
+    """
     def __init__(self, server_root=SERVER_ROOT):
         # TODO: this instantiation can be optimized to only load Httd 
         #       relevant files - I believe -> NO_MODL_AUTOLOAD
