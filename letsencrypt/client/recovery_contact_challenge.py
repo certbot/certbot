@@ -1,8 +1,9 @@
+import requests
+
 from letsencrypt.client.challenge import Challenge
 from letsencrypt.client import logger
 from letsencrypt.client.CONFIG import RECOVERY_TOKEN_EXT
-# TODO: Replace urllib2 because of lack of certificate validation checks
-import dialog, urllib2
+import dialog
 
 class RecoveryContact(Challenge):
     
@@ -48,7 +49,7 @@ class RecoveryContact(Challenge):
         
     def poll(self, rounds = 10, quiet = True):
         for i in range(rounds):
-            if urllib2.urlopen(self.successURL).getcode() != 200:
+            if requests.get(self.successURL).status_code != 200:
                 time.sleep(self.poll_delay)
             else:
                 return True
