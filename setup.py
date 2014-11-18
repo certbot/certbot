@@ -73,7 +73,7 @@ setup(
         #'dialog',
         'requests',
         'protobuf',
-        'python-augeas',
+        #'python-augeas',
         'pycrypto',
         'M2Crypto',
     ],
