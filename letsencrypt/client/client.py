@@ -1,10 +1,7 @@
 #!/usr/bin/env python
 
 import M2Crypto
-import urllib2, json
-# XXX TODO: per https://docs.google.com/document/pub?
-#id=1roBIeSJsYq3Ntpf6N0PIeeAAvu4ddn7mGo6Qb7aL7ew
-# urllib2 is unsafe (!) and must be replaced
+import json
 import os, grp, pwd, sys, time, random, sys, shutil
 
 # This line suppresses the no logging found for module 'jose' warning
@@ -21,6 +18,8 @@ from Crypto.Random import get_random_bytes
 from Crypto.PublicKey import RSA
 from Crypto.Signature import PKCS1_v1_5
 from Crypto.Hash import SHA256
+
+import requests
 
 from letsencrypt.client.acme import acme_object_validate
 from letsencrypt.client.sni_challenge import SNI_Challenge
@@ -478,10 +477,10 @@ class Client(object):
     def send(self, json_obj):
         try:
             acme_object_validate(json.dumps(json_obj))
-            response = urllib2.urlopen(
-                self.server_url, json.dumps(json_obj)).read()
-            acme_object_validate(response)
-            return json.loads(response)
+            response = requests.get(self.server_url, json=json_obj)
+            body = response.content
+            acme_object_validate(body)
+            return response.json()
         except:
             logger.fatal("Send() failed... may have lost connection to server")
             sys.exit(8)
