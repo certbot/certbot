@@ -72,7 +72,7 @@ setup(
     install_requires=[
         #'dialog',
         'protobuf',
-        'python-augeas',
+        #'python-augeas',
         'pycrypto',
         'M2Crypto',
     ],
