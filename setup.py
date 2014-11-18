@@ -8,7 +8,7 @@ import os
 import subprocess
 from distutils.spawn import find_executable
 
-proto = [ 'trustify/protocol/chocolate.proto' ]
+proto = [ 'letsencrypt/protocol/chocolate.proto' ]
 
 class build_py_with_protobuf(build_py):
     protoc = find_executable("protoc")
@@ -58,16 +58,16 @@ class clean_with_protobuf(Command):
             os.unlink(pb2)
 
 setup(
-    name="trustify",
+    name="letsencrypt",
     version="0.1",
-    description="Trustify",
-    author="Trustify project",
+    description="Let's Encrypt",
+    author="Let's Encrypt project",
     license="",
-    url="https://trustify.net/",
+    url="https://letsencrypt.org/",
     packages=[
-        'trustify',
-        'trustify.protocol',
-        'trustify.client',
+        'letsencrypt',
+        'letsencrypt.protocol',
+        'letsencrypt.client',
     ],
     install_requires=[
         #'dialog',
@@ -78,7 +78,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'trustify = trustify.client.client:authenticate'
+            'letsencrypt = letsencrypt.client.client:authenticate'
         ]
     },
     cmdclass={

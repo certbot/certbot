@@ -1,4 +1,4 @@
-from trustify.protocol import chocolate_pb2 
+from letsencrypt.protocol import chocolate_pb2
 from popchallenge import *
 
 # openssl genrsa 2048 > /tmp/priv.pem
