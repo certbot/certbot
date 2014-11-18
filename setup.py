@@ -73,13 +73,13 @@ setup(
         'letsencrypt.client',
     ],
     install_requires=[
-        'protobuf',
-        #'python-augeas',
-        'pycrypto',
-        'M2Crypto',
-        'python2-pythondialog',
         'jose',
         'jsonschema',
+        'M2Crypto',
+        'protobuf',
+        'pycrypto',
+        #'python-augeas',
+        'python2-pythondialog',
     ],
     entry_points={
         'console_scripts': [
