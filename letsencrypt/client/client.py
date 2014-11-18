@@ -476,8 +476,9 @@ class Client(object):
 
     def send(self, json_obj):
         try:
-            acme_object_validate(json.dumps(json_obj))
-            response = requests.get(self.server_url, json=json_obj)
+            json_encoded = json.dumps(json_obj)
+            acme_object_validate(json_encoded)
+            response = requests.get(self.server_url, data=json_encoded)
             body = response.content
             acme_object_validate(body)
             return response.json()
