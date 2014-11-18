@@ -63,6 +63,10 @@ class VH(object):
 class Configurator(object):
     """
     State of Configurator:
+    This code has been tested under Ubuntu 12.04 Apache 2.2
+    and this code works for Ubuntu 14.04 Apache 2.4. Further
+    notes below.
+
     This class was originally developed for Apache 2.2 and has not seen a
     an overhaul to include proper setup of new Apache configurations.
     The biggest changes have been the IncludeOptional directive, the 
