@@ -188,7 +188,7 @@ class FileDisplay(Display):
 
     def generic_yesno(self, message, yes_label = "Yes", no_label = "No"):
         self.outfile.write("\n%s\n" % textwrap.fill(message, 80))
-        ans = raw_input("y/n")
+        ans = raw_input("y/n: ")
         return ans.startswith('y') or ans.startswith('Y')
 
     def filter_names(self, names):
@@ -302,14 +302,16 @@ def redirect_by_default():
         ("Secure", "Make all requests redirect to secure HTTPS access")]
     
     result = display.generic_menu("Please choose whether HTTPS access " +
-                                  "is required or optional.", 
-                                  choices=choices, width = WIDTH)
+                                  "is required or optional.",
+                                  choices, 
+                                  "Please enter the appropriate number",
+                                  width = WIDTH)
 
     if result[0] != 0:
         return False
 
     # different answer for each type of display
-    return (result[1] == "Secure" or result[1] == 0)
+    return (result[1] == "Secure" or result[1] == 1)
 
 
 def confirm_revocation(cert):
