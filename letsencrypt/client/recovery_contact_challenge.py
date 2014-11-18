@@ -20,7 +20,7 @@ class RecoveryContact(Challenge):
                 d.infobox(self.get_display_string())
                 return self.poll(10, quiet)
             else:
-                exit, self.token  = d.inputbox(self.get_display_string()))
+                exit, self.token  = d.inputbox(self.get_display_string())
                 if exit != d.OK:
                     return False
                 
