@@ -478,7 +478,11 @@ class Client(object):
         try:
             json_encoded = json.dumps(json_obj)
             acme_object_validate(json_encoded)
-            response = requests.get(self.server_url, data=json_encoded)
+            response = requests.post(
+                self.server_url,
+                data=json_encoded,
+                headers={"Content-Type": "application/json"},
+            )
             body = response.content
             acme_object_validate(body)
             return response.json()
