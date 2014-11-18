@@ -71,7 +71,7 @@ setup(
     ],
     install_requires=[
         #'dialog',
-        'requests>=2.4.3',
+        'requests',
         'protobuf',
         'python-augeas',
         'pycrypto',
