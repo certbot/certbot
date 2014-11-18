@@ -195,7 +195,7 @@ class FileDisplay(Display):
         c, s = self.generic_menu(
             "Choose the names would you like to upgrade to HTTPS?",
             names,
-            "Select the number of the name (c to cancel): ")
+            "Select the number of the name: ")
 
         # Make sure to return a list...
         return c, [names[s]]
