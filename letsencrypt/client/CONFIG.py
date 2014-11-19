@@ -1,5 +1,8 @@
 # CA hostname
-ACME_SERVER = "54.183.196.250"
+# If you create your own server... change this line
+# Note: the server certificate must be trusted in order to avoid
+# further modifications to the client
+ACME_SERVER = "letsencrypt-demo.org"
 # Apache server root directory
 SERVER_ROOT = "/etc/apache2/"
 # Configuration file directory for letsencrypt
