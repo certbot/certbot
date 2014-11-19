@@ -8,19 +8,21 @@ Apache, though we will be expanding it to other platforms.
 
 ## Running the demo code on Ubuntu 
 
-`sudo apt-get install python-pip python-crypto python-dev python-jsonschema python-augeas gcc python-m2crypto python-dialog` 
+`sudo apt-get install python python-setuptools python-dev python-augeas gcc`
 
-`sudo pip install jose`
+`python setup.py install --user`
 
-`sudo ./letsencrypt.py`
+`sudo ./letsencrypt.py` (or `~/.local/bin/letsencrypt`)
 
-Hint: on Debian testing/unstable, python-dialog is unavailable and you may
-need to do `sudo pip install python2-pythondialog` (lets-encrypt does not yet
-handle debian unstable's Apache2 conf layout, either...)
+Note, that letsencrypt does not yet handle Debian unstable's Apache2
+conf layout.
+
+## Developing
+
+`python setup.py develop --user`
 
 
 ## Command line usage
-
 
 sudo ./letsencrypt.py  (default authentication mode using pythondialog)
                                                    
