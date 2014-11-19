@@ -79,7 +79,7 @@ class Client(object):
             # found within the config to self.names
             # Then filters them based on user selection
             code, self.names = display.filter_names(self.get_all_names())
-            if code == display.OK:
+            if code == display.OK and self.names:
                 # TODO: Allow multiple names once it is setup
                 self.names = [self.names[0]]
             else:

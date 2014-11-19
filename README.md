@@ -21,22 +21,19 @@ conf layout.
 
 `python setup.py develop --user`
 
-
 ## Command line usage
 
-sudo ./letsencrypt.py  (default authentication mode using pythondialog)
-                                                   
-options --text (text mode)                              
+```
+sudo ./letsencrypt.py  (default authentication mode using pythondialog) options 
+
+--text (text mode)                              
 --privkey= (specify privatekey file to use to generate the certificate)            
---csr= (Use a specific CSR. If this is specified, privkey must also be             
-specified with the correct private key for the CSR)                                
---server (list the ACME CA server address)                       
---revoke (revoke a certificate)                                                    
---view-checkpoints (Used to view available checkpoints and see what                
-configuration changes have been made)                                              
+--csr= (Use a specific CSR. If this is specified, privkey must also be specified with the correct private key for the CSR)                             
+--server (list the ACME CA server address)
+--revoke (revoke a certificate)
+--view-checkpoints (Used to view available checkpoints and see what configuration changes have been made)
 --rollback=X (Revert the configuration X number of checkpoints)                    
---redirect (Automatically redirect all HTTP traffic to HTTPS for the newly         
-authenticated vhost)                                                               
---no-redirect (Skip the HTTPS redirect question, allowing both HTTP and            
-HTTPS)                                                                             
+--redirect (Automatically redirect all HTTP traffic to HTTPS for the newly authenticated vhost)                   
+--no-redirect (Skip the HTTPS redirect question, allowing both HTTP and HTTPS)
 --agree-eula (Skip the end user agreement screen)
+```
