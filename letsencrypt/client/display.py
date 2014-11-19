@@ -80,11 +80,13 @@ class NcursesDisplay(Display):
     def generic_notification(self, message, w = WIDTH, h = HEIGHT):
         self.d.msgbox(message, width = w, height = h)
 
-    def generic_menu(self, message, choices, input_text = "", width = WIDTH, height = HEIGHT):
+    def generic_menu(self, message, choices, input_text = "", width = WIDTH,
+                     height = HEIGHT):
         # Can accept either tuples or just the actual choices
         if choices and isinstance(choices[0], tuple):
-            return self.d.menu(message, choices = choices,
+            c, selection = self.d.menu(message, choices = choices,
                            width = WIDTH, height = HEIGHT)
+            return c, str(selection)
         else:
             choices = [((i + 1), c) for c in choices]
             code, s = self.d.menu(message, choices = choices,
@@ -102,10 +104,10 @@ class NcursesDisplay(Display):
 
     def filter_names(self, names):
         choices = [(n, "", 0) for n in names]
-        c, s = self.d.checklist("Which names would you like to activate \
+        c, names = self.d.checklist("Which names would you like to activate \
         HTTPS for?", choices=choices)
 
-        return c, s
+        return c, [str(s) for s in names]
 
 
     def success_installation(self, domains):
@@ -259,8 +261,8 @@ class FileDisplay(Display):
         self.outfile.write(self.cert_info_frame(cert))
 
 display = None
-OK = 0
-CANCEL = 1
+OK = "ok"
+CANCEL = "cancel"
 HELP = "help"
 
 

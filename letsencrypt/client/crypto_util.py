@@ -1,5 +1,5 @@
 import M2Crypto
-import time, jose, binascii
+import time, binascii
 import hashlib
 from Crypto.Random import get_random_bytes
 from Crypto.PublicKey import RSA
@@ -7,12 +7,11 @@ from Crypto.Signature import PKCS1_v1_5
 from Crypto.Hash import SHA256
 from M2Crypto import EVP, X509, ASN1
 
-
 from letsencrypt.client.CONFIG import NONCE_SIZE, RSA_KEY_SIZE
-
+from letsencrypt.client import le_util
 
 def b64_cert_to_pem(b64_der_cert):
-    x = M2Crypto.X509.load_cert_der_string(jose.b64decode_url(b64_der_cert))
+    x = M2Crypto.X509.load_cert_der_string(le_util.b64_url_dec(b64_der_cert))
     return x.as_pem()
 
 def create_sig(msg, key_file, signer_nonce = None, signer_nonce_len = NONCE_SIZE):
@@ -31,10 +30,10 @@ def create_sig(msg, key_file, signer_nonce = None, signer_nonce_len = NONCE_SIZE
     n, e = key.n, key.e
     n_bytes = binascii.unhexlify(leading_zeros(hex(n)[2:].replace("L", "")))
     e_bytes = binascii.unhexlify(leading_zeros(hex(e)[2:].replace("L", "")))
-    n_encoded = jose.b64encode_url(n_bytes)
-    e_encoded = jose.b64encode_url(e_bytes)
-    signer_nonce_encoded = jose.b64encode_url(signer_nonce)
-    sig_encoded = jose.b64encode_url(signature)
+    n_encoded = le_util.b64_url_enc(n_bytes)
+    e_encoded = le_util.b64_url_enc(e_bytes)
+    signer_nonce_encoded = le_util.b64_url_enc(signer_nonce)
+    sig_encoded = le_util.b64_url_enc(signature)
     jwk = { "kty": "RSA", "n": n_encoded, "e": e_encoded }
     signature = { "nonce": signer_nonce_encoded, "alg": "RS256", "jwk": jwk, "sig": sig_encoded }
     # return json.dumps(signature)

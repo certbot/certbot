@@ -4,14 +4,7 @@ import M2Crypto
 import json
 import os, time, sys, shutil
 
-# This line suppresses the no logging found for module 'jose' warning
-# TODO: Check out this module and see if we should be using it for our
-#       logging features
-import logging
-logging.basicConfig(filename="/dev/null", level=logging.ERROR)
-
-
-import jose, csv
+import csv
 
 import requests
 
@@ -118,7 +111,7 @@ class Client(object):
         # Perform optimal config changes
         self.optimize_config(vhost)
 
-        self.config.save("Completed Augeas Authentication")
+        self.config.save("Completed Let's Encrypt Authentication")
 
         self.store_cert_key(False)
 
@@ -250,7 +243,7 @@ class Client(object):
 
     def revocation_request(self, key_file, cert_der):
         return {"type":"revocationRequest",
-                "certificate":jose.b64encode_url(cert_der),
+                "certificate":le_util.b64_url_enc(cert_der),
                 "signature":crypto_util.create_sig(cert_der, key_file)}
 
 
@@ -313,7 +306,7 @@ class Client(object):
     def certificate_request(self, csr_der, key):
         logger.info("Preparing and sending CSR..")
         return {"type":"certificateRequest",
-                "csr":jose.b64encode_url(csr_der),
+                "csr":le_util.b64_url_enc(csr_der),
                 "signature":crypto_util.create_sig(csr_der, self.key_file)}
 
     def cleanup_challenges(self, challenge_objs):
@@ -354,7 +347,7 @@ class Client(object):
                     "nonce":server_nonce}
 
         auth_req["signature"] = crypto_util.create_sig(
-            name + jose.b64decode_url(server_nonce), self.key_file)
+            name + le_util.b64_url_dec(server_nonce), self.key_file)
 
         auth_req["responses"] = responses
         return auth_req

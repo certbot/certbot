@@ -2,8 +2,8 @@
 import errno
 import stat
 import os, pwd, grp
-import M2Crypto
 import time
+import base64
 from letsencrypt.client import logger
 #import logger
 
@@ -49,3 +49,24 @@ def drop_privs():
     os.setgid(nogroup)
     os.setgroups([])
     os.setuid(nobody)
+
+# Quick implementations of b64 url safe encode/decode
+# We will include a proper library in the future if the library
+# doesn't conflict with our existing dependencies
+def b64_url_enc(s):
+    try:
+        s = s.encode("utf8")
+    except:
+        pass
+
+    i = base64.urlsafe_b64encode(s)
+    return i.rstrip("=")
+
+def b64_url_dec(s):
+    try:
+        s = s.encode("utf8")
+    except:
+        pass
+
+    pad = '=' * (4 - (len(s) % 4))
+    return base64.urlsafe_b64decode(s + pad)
