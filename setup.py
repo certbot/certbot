@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 from setuptools import setup
 setup(
-    name="trustify",
+    name="letsencrypt",
     version="0.1",
-    description="Trustify",
-    author="Trustify project",
+    description="Let's Encrypt",
+    author="Let's Encrypt Project",
     license="",
     url="https://letsencrypt.org",
     packages=[
@@ -23,7 +23,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'trustify = trustify.client.client:authenticate'
+            'letsencrypt = letsencrypt.client.client:authenticate'
         ]
     },
 )
