@@ -1,6 +1,0 @@
-[submodule "m3crypto"]
-	path = attic/m3crypto
-	url = git@github.com:research/m3crypto.git
-[submodule "pygeoip"]
-	path = attic/pygeoip
-	url = https://github.com/appliedsec/pygeoip.git
