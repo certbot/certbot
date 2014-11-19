@@ -10,4 +10,4 @@ class Challenge(object):
         logger.error("Error - base class challenge.generate_response()")
     def clean(self):
         logger.error("Error - base class challenge.clean()")
-    
+

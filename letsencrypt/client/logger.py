@@ -1,4 +1,3 @@
-import sys
 import time
 from letsencrypt.client import display
 
@@ -55,20 +54,20 @@ class FileLogger(Logger):
 import dialog
 class NcursesLogger(Logger):
 
-    def __init__(self, 
-                 firstmessage="", 
-                 height = display.HEIGHT, 
+    def __init__(self,
+                 firstmessage="",
+                 height = display.HEIGHT,
                  width = display.WIDTH - 4):
         self.lines = []
         self.all_content = ""
         self.d = dialog.Dialog()
         self.height = height
         self.width = width
-        self.add(firstmessage)        
+        self.add(firstmessage)
 
     '''
     Only show the last (self.height) lines;
-    note that lines can wrap at self.width, so 
+    note that lines can wrap at self.width, so
     a single line could actually be multiple lines
     '''
     def add(self, s):
@@ -93,7 +92,7 @@ class NcursesLogger(Logger):
             if cur_out != '':
                 self.lines.append(cur_out)
 
-        
+
         # show last 16 lines
         self.content = '\n'.join(self.lines[-self.height:])
         self.show()
@@ -110,7 +109,7 @@ log_instance = None
 def setLogger(log_inst):
     global log_instance
     log_instance = log_inst
-    
+
 def setLogLevel(log_level):
     global log_instance
     log_instance.level = log_level
@@ -140,7 +139,7 @@ def fatal(data):
 
 def none(data):
     # Uh...what?
-    pass 
+    pass
 
 if __name__ == "__main__":
     # Unit test/example usage:
@@ -165,7 +164,7 @@ if __name__ == "__main__":
         time.sleep(0.3)
 
 
-    # Alternatively, use 
+    # Alternatively, use
     logger.error("errrrr")
 
     logger.trace("some trace data: %d - %f - %s" % (5, 8.3, 'cows'))
