@@ -16,10 +16,10 @@ def main():
         sys.exit("\nOnly root can run letsencrypt.\n")
     # Parse options
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "", ["text", "test", 
-                                                      "view-checkpoints", 
-                                                      "privkey=", "csr=", 
-                                                      "server=", "rollback=", 
+        opts, args = getopt.getopt(sys.argv[1:], "", ["text", "test",
+                                                      "view-checkpoints",
+                                                      "privkey=", "csr=",
+                                                      "server=", "rollback=",
                                                       "revoke", "agree-eula",
                                                       "redirect",
                                                       "no-redirect",

@@ -25,7 +25,7 @@ class Display(SingletonD):
         raise Exception("Error no display defined")
     def success_installation(self, domains):
         raise Exception("Error no display defined")
-            
+
     def gen_https_names(self, domains):
         """
         Returns a string of the domains formatted nicely with https:// prepended
@@ -94,12 +94,12 @@ class NcursesDisplay(Display):
 
     def generic_input(self, message):
         return self.d.inputbox(message)
-    
+
     def generic_yesno(self, message, yes = "Yes", no = "No"):
         a = self.d.yesno(message, HEIGHT, WIDTH)
 
         return a == self.d.DIALOG_OK
-        
+
     def filter_names(self, names):
         choices = [(n, "", 0) for n in names]
         c, s = self.d.checklist("Which names would you like to activate \
@@ -115,12 +115,12 @@ class NcursesDisplay(Display):
     def display_certs(self, certs):
         list_choices = [
              (str(i+1),
-              "%s | %s | %s" % 
-              (str(c["cn"].ljust(WIDTH - 39)), 
-               c["not_before"].strftime("%m-%d-%y"), 
-               "Installed" if c["installed"] else "")) 
+              "%s | %s | %s" %
+              (str(c["cn"].ljust(WIDTH - 39)),
+               c["not_before"].strftime("%m-%d-%y"),
+               "Installed" if c["installed"] else ""))
             for i, c in enumerate(certs)]
-        
+
         code, s = self.d.menu("Which certificates would you like to revoke?",
                            choices = list_choices, help_button=True,
                            help_label="More Info", ok_label="Revoke",
@@ -204,7 +204,7 @@ class FileDisplay(Display):
         menu_choices = [(str(i+1), str(c["cn"]) + " - " + c["pub_key"] +
                          " - " + str(c["not_before"])[:-6])
                         for i, c in enumerate(certs)]
-        
+
         self.outfile.write("Which certificate would you like to revoke?\n")
         for c in menu_choices:
             wm = textwrap.fill("%s: %s - %s Signed (UTC): %s\n" %
@@ -243,9 +243,9 @@ class FileDisplay(Display):
         s_f = '*' * (79)
         wm = textwrap.fill(("Congratulations! You have successfully " +
                            "enabled %s!") % self.gen_https_names(domains))
-        msg = "%s\n%s\n%s\n" 
+        msg = "%s\n%s\n%s\n"
         self.outfile.write(msg % (s_f, wm, s_f))
-    
+
     def confirm_revocation(self, cert):
         self.outfile.write("Are you sure you would like to revoke \
         the following certificate:\n")
@@ -300,10 +300,10 @@ def redirect_by_default():
     choices = [
         ("Easy", "Allow both HTTP and HTTPS access to these sites"),
         ("Secure", "Make all requests redirect to secure HTTPS access")]
-    
+
     result = display.generic_menu("Please choose whether HTTPS access " +
                                   "is required or optional.",
-                                  choices, 
+                                  choices,
                                   "Please enter the appropriate number",
                                   width = WIDTH)
 

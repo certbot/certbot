@@ -3,18 +3,16 @@ import subprocess
 import re
 import os
 import sys
-import stat
 import socket
 import time
 import shutil
-import errno
 
 from letsencrypt.client.CONFIG import SERVER_ROOT, BACKUP_DIR
 from letsencrypt.client.CONFIG import REWRITE_HTTPS_ARGS, CONFIG_DIR, WORK_DIR
 from letsencrypt.client.CONFIG import TEMP_CHECKPOINT_DIR, IN_PROGRESS_DIR
 from letsencrypt.client.CONFIG import OPTIONS_SSL_CONF, LE_VHOST_EXT
 from letsencrypt.client import logger, le_util
-#from CONFIG import SERVER_ROOT, BACKUP_DIR, REWRITE_HTTPS_ARGS, CONFIG_DIR, 
+#from CONFIG import SERVER_ROOT, BACKUP_DIR, REWRITE_HTTPS_ARGS, CONFIG_DIR,
 #from CONFIG import WORK_DIR, TEMP_CHECKPOINT_DIR, IN_PROGRESS_DIR, OPTIONS_SSL_CONF, TRUSTIFY_VHOST_EXT
 #import logger, le_util
 
@@ -38,7 +36,7 @@ from letsencrypt.client import logger, le_util
 # Note: This protocol works for filenames with spaces in it, the sites are
 # properly set up and directives are changed appropriately, but Apache won't
 # recognize names in sites-enabled that have spaces. These are not added to the
-# Apache configuration. It may be wise to warn the user if they are trying 
+# Apache configuration. It may be wise to warn the user if they are trying
 # to use vhost filenames that contain spaces and offer to change ' ' to '_'
 
 # Note: FILEPATHS and changes to files are transactional.  They are copied
@@ -69,24 +67,24 @@ class Configurator(object):
 
     This class was originally developed for Apache 2.2 and has not seen a
     an overhaul to include proper setup of new Apache configurations.
-    The biggest changes have been the IncludeOptional directive, the 
-    deprecation of the NameVirtualHost directive, and the name change of 
+    The biggest changes have been the IncludeOptional directive, the
+    deprecation of the NameVirtualHost directive, and the name change of
     mod_ssl.c to ssl_module. Although these changes
     have not been implemented yet, they will be shortly.
     That being said, this class can still adequately configure most typical
     Apache 2.4 servers as the deprecated NameVirtualHost has no effect
     and the typical directories are parsed by the Augeas configuration
     parser automatically.
-    
+
     The API of this class will change in the coming weeks as the exact
     needs of client's are clarified with the new and developing protocol.
-    
+
     This class will eventually derive from a generic Configurator class
     so that other Configurators (like Nginx) can be developed and interoperate
     with the client.
     """
     def __init__(self, server_root=SERVER_ROOT):
-        # TODO: this instantiation can be optimized to only load Httd 
+        # TODO: this instantiation can be optimized to only load Httd
         #       relevant files - I believe -> NO_MODL_AUTOLOAD
 
         self.server_root = server_root
@@ -103,7 +101,7 @@ class Configurator(object):
         self.check_parsing_errors()
         # This problem has been fixed in Augeas 1.0
         self.standardize_excl()
-        
+
         # Determine user's main config file
         self.__set_user_config_file()
 
@@ -114,20 +112,20 @@ class Configurator(object):
         self.assoc = dict()
         # Verify that all directories and files exist with proper permissions
         self.verify_setup()
-        
+
         # Note: initialization doesn't check to see if the config is correct
         # by Apache's standards. This should be done by the client (client.py)
-        # if it is desired. There may be instances where correct configuration 
+        # if it is desired. There may be instances where correct configuration
         # isn't required on startup.
 
-    # TODO: This function can be improved to ensure that the final directives 
-    # are being modified whether that be in the include files or in the 
+    # TODO: This function can be improved to ensure that the final directives
+    # are being modified whether that be in the include files or in the
     # virtualhost declaration - these directives can be overwritten
     def deploy_cert(self, vhost, cert, key, cert_chain=None):
         """
         Currently tries to find the last directives to deploy the cert in
         the given virtualhost.  If it can't find the directives, it searches
-        the "included" confs.  The function verifies that it has located 
+        the "included" confs.  The function verifies that it has located
         the three directives and finally modifies them to point to the correct
         destination
         TODO: Make sure last directive is changed
@@ -136,23 +134,23 @@ class Configurator(object):
         """
         search = {}
         path = {}
-        
+
         path["cert_file"] = self.find_directive(self.case_i("SSLCertificateFile"), None, vhost.path)
         path["cert_key"] = self.find_directive(self.case_i("SSLCertificateKeyFile"), None, vhost.path)
 
         # Only include if a certificate chain is specified
         if cert_chain is not None:
             path["cert_chain"] = self.find_directive(self.case_i("SSLCertificateChainFile"), None, vhost.path)
-        
+
         if len(path["cert_file"]) == 0 or len(path["cert_key"]) == 0:
             # Throw some "can't find all of the directives error"
             logger.warn("Warn: cannot find a cert or key directive in " + vhost.path)
             logger.warn("VirtualHost was not modified")
             # Presumably break here so that the virtualhost is not modified
             return False
-        
+
         logger.info("Deploying Certificate to VirtualHost %s" % vhost.file)
-            
+
         self.aug.set(path["cert_file"][0], cert)
         self.aug.set(path["cert_key"][0], key)
         if cert_chain is not None:
@@ -160,7 +158,7 @@ class Configurator(object):
                 self.add_dir(vhost.path, "SSLCertificateChainFile", cert_chain)
             else:
                 self.aug.set(path["cert_chain"][0], cert_chain)
-        
+
         self.save_notes += "Changed vhost at %s with addresses of %s\n" % (vhost.file, vhost.addrs)
         self.save_notes += "\tSSLCertificateFile %s\n" % cert
         self.save_notes += "\tSSLCertificateKeyFile %s\n" % key
@@ -218,7 +216,7 @@ class Configurator(object):
         """
         self.assoc[dn] = vh
         return
-                    
+
     def get_all_names(self):
         """
         Returns all names found in the Apache Configuration
@@ -259,7 +257,7 @@ class Configurator(object):
 
     #def __is_private_ip(ipaddr):
     #    re.compile()
-        
+
 
     def __add_servernames(self, host):
         """
@@ -270,7 +268,7 @@ class Configurator(object):
             args = self.aug.match(name + "/*")
             for arg in args:
                 host.add_name(self.aug.get(arg))
-    
+
 
     def __create_vhost(self, path):
         """
@@ -307,13 +305,13 @@ class Configurator(object):
         addr:    string
         """
         # search for NameVirtualHost directive for ip_addr
-        # check httpd.conf, ports.conf, 
+        # check httpd.conf, ports.conf,
         # note ip_addr can be FQDN although Apache does not recommend it
         paths = self.find_directive(self.case_i("NameVirtualHost"), None)
         name_vh = []
         for p in paths:
             name_vh.append(self.aug.get(p))
-        
+
         # Mixed and matched wildcard NameVirtualHost with VirtualHost
         # behavior is undefined. Make sure that an exact match exists
 
@@ -321,7 +319,7 @@ class Configurator(object):
         for vh in name_vh:
             if vh == addr:
                 return True
-    
+
         return False
 
     def add_name_vhost(self, addr):
@@ -332,17 +330,17 @@ class Configurator(object):
         """
         aug_file_path = "/files%sports.conf" % self.server_root
         self.add_dir_to_ifmodssl(aug_file_path, "NameVirtualHost", addr)
-        
+
         if len(self.find_directive(self.case_i("NameVirtualHost"), self.case_i(addr))) == 0:
             logger.warn("ports.conf is not included in your Apache config...")
             logger.warn("Adding NameVirtualHost directive to httpd.conf")
             self.add_dir_to_ifmodssl("/files" + self.server_root + "httpd.conf", "NameVirtualHost", addr)
-        
+
         self.save_notes += 'Setting %s to be NameBasedVirtualHost\n' % addr
 
     def add_dir_to_ifmodssl(self, aug_conf_path, directive, val):
         """
-        Adds given directived and value along configuration path within 
+        Adds given directived and value along configuration path within
         an IfMod mod_ssl.c block.  If the IfMod block does not exist in
         the file, it is created.
         """
@@ -377,7 +375,7 @@ class Configurator(object):
         # Check for NameVirtualHost
         # First see if any of the vhost addresses is a _default_ addr
         for addr in vhost.addrs:
-            tup = addr.partition(":") 
+            tup = addr.partition(":")
             if tup[0] == "_default_":
                 if not self.is_name_vhost(default_addr):
                     logger.debug("Setting all VirtualHosts on " + default_addr + " to be name based virtual hosts")
@@ -389,7 +387,7 @@ class Configurator(object):
             if not self.is_name_vhost(addr):
                 logger.debug("Setting VirtualHost at" + addr + "to be a name based virtual host")
                 self.add_name_vhost(addr)
-        
+
         return True
 
     def get_ifmod(self, aug_conf_path, mod):
@@ -404,7 +402,7 @@ class Configurator(object):
             ifMods = self.aug.match("%s/IfModule/*[self::arg='%s']" % (aug_conf_path, mod))
         # Strip off "arg" at end of first ifmod path
         return ifMods[0][:len(ifMods[0]) - 3]
-    
+
     def add_dir(self, aug_conf_path, directive, arg):
         """
         Appends directive to end of file given by aug_conf_path
@@ -414,9 +412,9 @@ class Configurator(object):
             self.aug.set(aug_conf_path + "/directive[last()]/arg", arg)
         else:
             for i in range(len(arg)):
-                self.aug.set(aug_conf_path + "/directive[last()]/arg["+str(i+1)+"]", arg[i]) 
-            
-        
+                self.aug.set(aug_conf_path + "/directive[last()]/arg["+str(i+1)+"]", arg[i])
+
+
     def find_directive(self, directive, arg=None, start=""):
         """
         Recursively searches through config files to find directives
@@ -424,17 +422,17 @@ class Configurator(object):
         TODO: arg should probably be a list
 
         Note: Augeas is inherently case sensitive while Apache is case
-        insensitive.  Augeas 1.0 allows case insensitive regexes like 
+        insensitive.  Augeas 1.0 allows case insensitive regexes like
         regexp(/Listen/, 'i'), however the version currently supported
         by Ubuntu 0.10 does not.  Thus I have included my own case insensitive
         transformation by calling case_i() on everything to maintain
         compatibility.
         """
-        
+
         # Cannot place member variable in the definition of the function so...
         if not start:
             start = "/files%sapache2.conf" % self.server_root
-            
+
         #Debug code
         #print "find_dir:", directive, "arg:", arg, " | Looking in:", start
         # No regexp code
@@ -442,20 +440,20 @@ class Configurator(object):
         #     matches = self.aug.match(start + "//*[self::directive='"+directive+"']/arg")
         # else:
         #     matches = self.aug.match(start + "//*[self::directive='" + directive+"']/* [self::arg='" + arg + "']")
-            
+
         # includes = self.aug.match(start + "//* [self::directive='Include']/* [label()='arg']")
 
         if arg is None:
             matches = self.aug.match(start + "//*[self::directive=~regexp('%s')]/arg" % directive)
         else:
             matches = self.aug.match(start + "//*[self::directive=~regexp('%s')]/*[self::arg=~regexp('%s')]" % (directive, arg))
-            
+
         includes = self.aug.match(start + "//* [self::directive=~regexp('%s')]/* [label()='arg']" % self.case_i('Include'))
-        
+
         for include in includes:
             # start[6:] to strip off /files
             matches.extend(self.find_directive(directive, arg, self.get_include_path(self.strip_dir(start[6:]), self.aug.get(include))))
-        
+
         return matches
 
     def case_i(self, string):
@@ -463,15 +461,15 @@ class Configurator(object):
         Returns a sloppy, but necessary version of a case insensitive regex.
         Any string should be able to be submitted and the string is
         escaped and then made case insensitive.
-        May be replaced by a more proper /i once augeas 1.0 is widely 
+        May be replaced by a more proper /i once augeas 1.0 is widely
         supported.
         """
-        
+
         return "".join(["["+c.upper()+c.lower()+"]" if c.isalpha() else c for c in re.escape(string)])
-    
+
     def strip_dir(self, path):
         """
-        Precondition: file_path is a file path, ie. not an augeas section 
+        Precondition: file_path is a file path, ie. not an augeas section
                       or directive path
         Returns the current directory from a file_path along with the file
         """
@@ -483,7 +481,7 @@ class Configurator(object):
 
     def get_include_path(self, cur_dir, arg):
         """
-        Converts an Apache Include directive argument into an Augeas 
+        Converts an Apache Include directive argument into an Augeas
         searchable path
         Returns path string
         """
@@ -493,11 +491,11 @@ class Configurator(object):
         # If the attacker can Include anything though... and this function
         # only operates on Apache real config data... then the attacker has
         # already won.
-        # Perhaps it is better to simply check the permissions on all 
+        # Perhaps it is better to simply check the permissions on all
         # included files?
         # check_config to validate apache config doesn't work because it
         # would create a race condition between the check and this input
-        
+
         # TODO: Fix this
         # Check to make sure only expected characters are used <- maybe remove
         # validChars = re.compile("[a-zA-Z0-9.*?_-/]*")
@@ -513,10 +511,10 @@ class Configurator(object):
         elif arg.startswith("conf/"):
             arg = self.server_root + arg[5:]
         # TODO: Test if Apache allows ../ or ~/ for Includes
- 
+
         # Attempts to add a transform to the file if one does not already exist
         self.parse_file(arg)
-        
+
         # Argument represents an fnmatch regular expression, convert it
         # Split up the path and convert each into an Augeas accepted regex
         # then reassemble
@@ -524,14 +522,14 @@ class Configurator(object):
             postfix = ""
             splitArg = arg.split("/")
             for idx, split in enumerate(splitArg):
-                # * and ? are the two special fnmatch characters 
+                # * and ? are the two special fnmatch characters
                 if "*" in split or "?" in split:
                     # Turn it into a augeas regex
                     # TODO: Can this instead be an augeas glob instead of regex
                     splitArg[idx] = "* [label()=~regexp('%s')]" % self.fnmatch_to_re(split)
             # Reassemble the argument
             arg = "/".join(splitArg)
-                    
+
         # If the include is a directory, just return the directory as a file
         if arg.endswith("/"):
             return "/files" + arg[:len(arg)-1]
@@ -563,7 +561,7 @@ class Configurator(object):
             ssl_fp = avail_fp[:-(len(".conf"))] + LE_VHOST_EXT
         else:
             ssl_fp = avail_fp + LE_VHOST_EXT
-        
+
         # First register the creation so that it is properly removed if
         # configuration is rolled back
         self.register_file_creation(False, ssl_fp)
@@ -617,7 +615,7 @@ class Configurator(object):
         logger.info("Created an SSL vhost at %s" % ssl_fp)
         self.save_notes += 'Created ssl vhost at %s\n' % ssl_fp
         self.save()
- 
+
         # We know the length is one because of the assertion above
         ssl_vhost = self.__create_vhost(vh_p[0])
         self.vhosts.append(ssl_vhost)
@@ -633,7 +631,7 @@ class Configurator(object):
                 self.add_name_vhost(ssl_addrs[i])
                 logger.info("Enabling NameVirtualHosts on " + ssl_addrs[i])
                 need_to_save = True
-        
+
         if need_to_save:
             self.save()
 
@@ -699,14 +697,14 @@ class Configurator(object):
             return True, 0
         # Rewrite path exists but is not a letsencrypt https rule
         return True, 2
-    
+
     def create_redirect_vhost(self, ssl_vhost):
         # Consider changing this to a dictionary check
         # Make sure adding the vhost will be safe
         conflict, hostOrAddrs = self.__conflicting_host(ssl_vhost)
         if conflict:
             return False, hostOrAddrs
-        
+
         redirect_addrs = hostOrAddrs
 
         # get servernames and serveraliases
@@ -729,7 +727,7 @@ RewriteRule ^.*$ https://%{SERVER_NAME}%{REQUEST_URI} [L,R=permanent]\n\
 ErrorLog /var/log/apache2/redirect.error.log \n\
 LogLevel warn \n\
 </VirtualHost>\n"
-        
+
         # Write out the file
         # This is the default name
         redirect_filename = "letsencrypt-redirect.conf"
@@ -758,12 +756,12 @@ LogLevel warn \n\
         new_fp = self.server_root + "sites-available/" + redirect_filename
         new_vhost = self.__create_vhost("/files" + new_fp)
         self.vhosts.append(new_vhost)
-        
+
         # Finally create documentation for the change
         self.save_notes += 'Created a port 80 vhost, %s, for redirection to ssl vhost %s\n' % (new_vhost.file, ssl_vhost.file)
 
         return True, new_vhost
-    
+
     def __conflicting_host(self, ssl_vhost):
         '''
         Checks for a conflicting host, such that a new port 80 host could not
@@ -798,7 +796,7 @@ LogLevel warn \n\
             redirect_addrs = redirect_addrs + ssl_a_vhttp
 
         return False, redirect_addrs
-        
+
     def __general_vhost(self, ssl_vhost):
         """
         Function needs to be thoroughly tested and perhaps improved
@@ -811,7 +809,7 @@ LogLevel warn \n\
         ssl_addrs = ssl_vhost.addrs
         if ssl_addrs == ["_default_:443"]:
             ssl_addrs = ["*:443"]
-            
+
         for vh in self.vhosts:
             found = 0
             # Not the same vhost, and same number of addresses
@@ -826,7 +824,7 @@ LogLevel warn \n\
                             if test_tup[2] == "80" or test_tup[2] == "" or test_tup[2] == "*":
                                 found += 1
                                 break
-                # Check to make sure all addresses were found 
+                # Check to make sure all addresses were found
                 # and names are equal
                 if found == len(ssl_vhost.addrs) and set(vh.names) == set(ssl_vhost.names):
                     return vh
@@ -875,7 +873,7 @@ LogLevel warn \n\
                 continue
             break
         return avail_fp
-    
+
     def is_site_enabled(self, avail_fp):
         """
         Checks to see if the given site is enabled
@@ -903,18 +901,18 @@ LogLevel warn \n\
             self.save_notes += 'Enabled site %s\n' % vhost.file
             return True
         return False
-    
+
     def enable_mod(self, mod_name):
         """
         Enables mod_ssl
         """
         try:
-	    # Use check_output so the command will finish before reloading      
+            # Use check_output so the command will finish before reloading
             subprocess.check_call(["sudo", "a2enmod", mod_name], stdout=open("/dev/null", 'w'), stderr=open("/dev/null", 'w'))
-            # Hopefully this waits for output                                   
+            # Hopefully this waits for output
             subprocess.check_call(["sudo", "/etc/init.d/apache2", "restart"], stdout=open("/dev/null", 'w'), stderr=open("/dev/null", 'w'))
         except:
-	    logger.error("Error enabling mod_" + mod_name)
+            logger.error("Error enabling mod_" + mod_name)
             sys.exit(1)
 
     def fnmatch_to_re(self, cleanFNmatch):
@@ -949,12 +947,12 @@ LogLevel warn \n\
             #self.aug.add_transform("Httpd.lns", self.httpd_incl, None, self.httpd_excl)
             self.__add_httpd_transform(file_path)
             self.aug.load()
-    
+
     def save_apache_config(self):
         # Not currently used
         # Should be safe because it is a protected directory
         shutil.copytree(self.server_root, BACKUP_DIR + "apache2-" + str(time.time()))
-    
+
     def recovery_routine(self):
         """
         Revert all previously modified files. First, any changes found in
@@ -997,13 +995,13 @@ LogLevel warn \n\
         except IOError:
             logger.fatal("Unable to remove filepaths contained within %s" % file_list)
             sys.exit(41)
-            
+
         return True
 
     def verify_setup(self):
         '''
         Make sure that files/directories are setup with appropriate permissions
-        Aim for defensive coding... make sure all input files 
+        Aim for defensive coding... make sure all input files
         have permissions of root
         '''
         le_util.make_or_verify_dir(CONFIG_DIR, 0755)
@@ -1025,7 +1023,7 @@ LogLevel warn \n\
         # This is a hack... work around... submit to augeas if still not fixed
 
         excl = ["*.augnew", "*.augsave", "*.dpkg-dist", "*.dpkg-bak", "*.dpkg-new", "*.dpkg-old", "*.rpmsave", "*.rpmnew", "*~", self.server_root + "*.augsave", self.server_root + "*~", self.server_root + "*/*augsave", self.server_root + "*/*~", self.server_root + "*/*/*.augsave", self.server_root + "*/*/*~"]
-        
+
         for i in range(len(excl)):
             self.aug.set("/augeas/load/Httpd/excl[%d]" % (i+1), excl[i])
 
@@ -1040,7 +1038,7 @@ LogLevel warn \n\
 
         for e in error_files:
             # Check to see if it was an error resulting from the use of
-            # the httpd lens 
+            # the httpd lens
             lens_path = self.aug.get(e + '/lens')
             # As aug.get may return null
             if lens_path and 'httpd.aug' in lens_path:
@@ -1072,7 +1070,7 @@ LogLevel warn \n\
         try:
             p = subprocess.Popen(['/etc/init.d/apache2', 'restart'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             text = p.communicate()
-            
+
 
             if p.returncode != 0:
                 # Enter recovery routine...
@@ -1118,7 +1116,7 @@ LogLevel warn \n\
         Saves all changes to the configuration files
         This function is not transactional
         TODO: Instead rely on challenge to backup all files before modifications
-        
+
         title:     string - The title of the save. If a title is given, the
                             configuration will be saved as a new checkpoint
                             and put in a timestamped directory.
@@ -1148,7 +1146,7 @@ LogLevel warn \n\
             return False
 
         # Retrieve list of modified files
-        # Note: Noop saves can cause the file to be listed twice, I used a 
+        # Note: Noop saves can cause the file to be listed twice, I used a
         # set to remove this possibility. This is a known augeas 0.10 error.
         save_paths = self.aug.match("/augeas/events/saved")
 
@@ -1172,7 +1170,7 @@ LogLevel warn \n\
                 self.add_to_checkpoint(TEMP_CHECKPOINT_DIR, save_files)
             else:
                 self.add_to_checkpoint(IN_PROGRESS_DIR, save_files)
-                
+
 
         if title and not temporary and os.path.isdir(IN_PROGRESS_DIR):
             success = self.__finalize_checkpoint(IN_PROGRESS_DIR, title)
@@ -1181,7 +1179,7 @@ LogLevel warn \n\
                 # This will be hopefully be cleaned up on the recovery
                 # routine startup
                 sys.exit(9)
-                        
+
 
         self.aug.set("/augeas/save", save_state)
         self.save_notes = ""
@@ -1213,7 +1211,7 @@ LogLevel warn \n\
 
     def add_to_checkpoint(self, cp_dir, save_files):
         le_util.make_or_verify_dir(cp_dir, 0755)
-        
+
         existing_filepaths = []
         op_fd = None
         # Open up FILEPATHS differently depending on if it already exists
@@ -1226,7 +1224,7 @@ LogLevel warn \n\
         idx = len(existing_filepaths)
         for filename in save_files:
             if filename not in existing_filepaths:
-                # Tag files with index so multiple files can 
+                # Tag files with index so multiple files can
                 # have the same filename
                 logger.debug("Creating backup of %s" % filename)
                 shutil.copy2(filename, cp_dir + os.path.basename(filename) + "_" + str(idx))
@@ -1252,7 +1250,7 @@ LogLevel warn \n\
 
         if len(backups) < rollback:
             logger.error("Unable to rollback %d checkpoints, only %d exist" % (rollback, len(backups)))
-        
+
         while rollback > 0 and backups:
             cp_dir = BACKUP_DIR + backups.pop()
             result = self.__recover_checkpoint(cp_dir)
@@ -1266,11 +1264,11 @@ LogLevel warn \n\
     def __recover_checkpoint(self, cp_dir):
         """
         Recover a specific checkpoint provided by cp_dir
-        Note: this function does not reload augeas. 
+        Note: this function does not reload augeas.
 
         returns: 0 success, 1 Unable to revert, -1 Unable to delete
         """
-        
+
         if os.path.isfile(cp_dir + "/FILEPATHS"):
             try:
                 with open(cp_dir + "/FILEPATHS") as f:
@@ -1328,13 +1326,13 @@ LogLevel warn \n\
             print time.ctime(float(bu))
             with open(BACKUP_DIR + bu + "/CHANGES_SINCE") as f:
                 print f.read()
-                
+
             print "Affected files:"
             with open(BACKUP_DIR + bu + "/FILEPATHS") as f:
                 filepaths = f.read().splitlines()
                 for fp in filepaths:
                     print "  %s" % fp
-            
+
             try:
                 with open(BACKUP_DIR + bu + "/NEW_FILES") as f:
                     print "New Configuration Files:"
@@ -1356,7 +1354,7 @@ LogLevel warn \n\
             cp_dir = TEMP_CHECKPOINT_DIR
         else:
             cp_dir = IN_PROGRESS_DIR
-        
+
         le_util.make_or_verify_dir(cp_dir)
         try:
             with open(cp_dir + "NEW_FILES", 'a') as fd:
@@ -1364,8 +1362,8 @@ LogLevel warn \n\
                     fd.write("%s\n" % f)
         except:
             logger.error("ERROR: Unable to register file creation")
-            
-        
+
+
 
 def main():
     config = Configurator()
@@ -1379,7 +1377,7 @@ def main():
             print name
     """
     print config.find_directive(config.case_i("NameVirtualHost"), config.case_i("holla:443"))
-    
+
     """
     for m in config.find_directive("Listen", "443"):
         print "Directive Path:", m, "Value:", config.aug.get(m)
@@ -1417,7 +1415,7 @@ def main():
         if vh.addrs[0] == "23.20.47.131:80":
             print "Here we go"
             ssl_vh = config.make_vhost_ssl(vh)
-            
+
     config.redirect_all_ssl(ssl_vh)
     """
     """
@@ -1425,6 +1423,6 @@ def main():
         if len(vh.names) > 0:
             config.deploy_cert(vh, "/home/james/Documents/apache_choc/req.pem", "/home/james/Documents/apache_choc/key.pem", "/home/james/Downloads/sub.class1.server.ca.pem")
    """
-    
+
 if __name__ == "__main__":
     main()
