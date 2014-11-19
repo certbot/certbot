@@ -76,6 +76,9 @@ setup(
         #'python-augeas',
         'pycrypto',
         'M2Crypto',
+        'python2-pythondialog',
+        'jose',
+        'jsonschema',
     ],
     entry_points={
         'console_scripts': [
