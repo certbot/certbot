@@ -1,2 +1,5 @@
 *.pyc
+*.egg-info
+build/
+dist/
 m3
