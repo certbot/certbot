@@ -10,7 +10,7 @@ import textwrap
 #############################################################
 
 ###########################################################
-# Interactive challlenge displays the string sent by the CA
+# Interactive challenge displays the string sent by the CA
 # formatted to fit on the screen of the client
 # The Challenge also adds proper instructions for how the
 # client should continue the letsencrypt process
