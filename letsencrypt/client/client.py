@@ -688,7 +688,7 @@ class Client(object):
     def sanity_check_names(self, names):
         for name in names:
             if not self.is_hostname_sane(name):
-                logger.fatal(`name` + " is an impossible hostname")
+                logger.fatal(repr(name) + " is an impossible hostname")
                 sys.exit(81)
 
     def is_hostname_sane(self, hostname):

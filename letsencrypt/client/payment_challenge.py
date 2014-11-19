@@ -43,4 +43,3 @@ class Payment_Challenge(Challenge):
 
     def formatted_reasons(self):
         return "\n\t* %s\n" % self.reason
-
