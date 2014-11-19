@@ -19,9 +19,9 @@ def acme_object_validate(j):
     j = json.loads(j)
     if not isinstance(j, dict):
         raise jsonschema.ValidationError("this is not a dictionary object")
-    if not j.has_key("type"):
+    if "type" not in j:
         raise jsonschema.ValidationError("missing type field")
-    if not schemata.has_key(j["type"]):
+    if j["type"] not in schemata:
         raise jsonschema.ValidationError("unknown type %s" % j["type"])
     jsonschema.validate(j, schemata[j["type"]])
 
