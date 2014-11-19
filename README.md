@@ -8,7 +8,7 @@ Apache, though we will be expanding it to other platforms.
 
 ## Running the demo code on Ubuntu 
 
-`sudo apt-get install python-pip python-crypto python-dev python-jsonschema python-augeas gcc python-m2crypto python-dialog` 
+`sudo apt-get install python-pip python-crypto python-dev python-jsonschema python-augeas gcc python-m2crypto python-dialog python-requests` 
 
 `sudo pip install jose`
 
