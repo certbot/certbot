@@ -340,7 +340,7 @@ class Configurator(object):
 
     def add_dir_to_ifmodssl(self, aug_conf_path, directive, val):
         """
-        Adds given directived and value along configuration path within
+        Adds given directive and value along configuration path within
         an IfMod mod_ssl.c block.  If the IfMod block does not exist in
         the file, it is created.
         """
