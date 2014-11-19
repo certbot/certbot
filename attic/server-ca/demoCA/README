@@ -1,6 +1,0 @@
-This is a toy CA for us to play with.  The password is "dang".  The way to use
-it is:
-
-cd ..
-cp $YOUR_CSR_FILE newreq.pem
-./CA.sh -sign

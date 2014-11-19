@@ -1,2 +1,0 @@
-V	150707200759Z		93A580A1E0D9B5C2	unknown	/C=US/ST=CA/O=Internet Widgits Pty Ltd/CN=notreally.eff.org/emailAddress=notreally@eff.org
-V	130707200943Z		93A580A1E0D9B5C3	unknown	/C=US/ST=CA/L=San Francisco/O=I/OU=I/CN=example.com
