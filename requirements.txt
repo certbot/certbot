@@ -1,5 +1,5 @@
 M2Crypto==0.22.3
-pythondialog==2.7
+python2-pythondialog
 jose==0.1
 jsonschema==2.4.0
 #python-augeas==0.5.0
