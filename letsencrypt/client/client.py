@@ -1,11 +1,8 @@
 #!/usr/bin/env python
 
 import M2Crypto
-import urllib2, json
-# XXX TODO: per https://docs.google.com/document/pub?
-#id=1roBIeSJsYq3Ntpf6N0PIeeAAvu4ddn7mGo6Qb7aL7ew
-# urllib2 is unsafe (!) and must be replaced
-import os, grp, pwd, sys, time, random, sys, shutil
+import json
+import os, time, sys, shutil
 
 # This line suppresses the no logging found for module 'jose' warning
 # TODO: Check out this module and see if we should be using it for our
@@ -15,20 +12,15 @@ logging.basicConfig(filename="/dev/null", level=logging.ERROR)
 
 
 import jose, csv
-import subprocess
-from M2Crypto import EVP, X509, RSA
-from Crypto.Random import get_random_bytes
-from Crypto.PublicKey import RSA
-from Crypto.Signature import PKCS1_v1_5
-from Crypto.Hash import SHA256
+
+import requests
 
 from letsencrypt.client.acme import acme_object_validate
 from letsencrypt.client.sni_challenge import SNI_Challenge
-from letsencrypt.client.payment_challenge import Payment_Challenge
 from letsencrypt.client import configurator
 from letsencrypt.client import logger, display
-from letsencrypt.client import le_util, crypto_util, display
-from letsencrypt.client.CONFIG import NONCE_SIZE, RSA_KEY_SIZE, CERT_PATH
+from letsencrypt.client import le_util, crypto_util
+from letsencrypt.client.CONFIG import RSA_KEY_SIZE, CERT_PATH
 from letsencrypt.client.CONFIG import CHAIN_PATH, SERVER_ROOT, KEY_DIR, CERT_DIR
 from letsencrypt.client.CONFIG import CERT_KEY_BACKUP
 from letsencrypt.client.CONFIG import CHALLENGE_PREFERENCES, EXCLUSIVE_CHALLENGES
@@ -51,7 +43,7 @@ class Client(object):
         self.config = configurator.Configurator(SERVER_ROOT)
 
         self.server = ca_server
-        
+
         self.csr_file = cert_signing_request
         self.key_file = private_key
 
@@ -71,7 +63,7 @@ class Client(object):
             sys.exit(1)
 
         self.redirect = redirect
-        
+
         # Display preview warning
         if not eula:
             with open('EULA') as f:
@@ -203,7 +195,7 @@ class Client(object):
         os.remove(c['backup_cert_file'])
         os.remove(c['backup_key_file'])
 
-    
+
     def list_certs_keys(self):
         list_file = CERT_KEY_BACKUP + "LIST"
         certs = []
@@ -215,10 +207,10 @@ class Client(object):
         c_sha1_vh = {}
         for x in self.config.get_all_certs_keys():
             try:
-                c_sha1_vh[M2Crypto.X509.load_cert(x[0]).get_fingerprint(md='sha1')] = x[2] 
+                c_sha1_vh[M2Crypto.X509.load_cert(x[0]).get_fingerprint(md='sha1')] = x[2]
             except:
                 continue
-        
+
         with open(list_file, 'rb') as csvfile:
             csvreader = csv.reader(csvfile)
             for row in csvreader:
@@ -316,7 +308,7 @@ class Client(object):
         #if self.ocsp_stapling:
             # TODO enable OCSP Stapling
          #   continue
-            
+
 
     def certificate_request(self, csr_der, key):
         logger.info("Preparing and sending CSR..")
@@ -477,11 +469,16 @@ class Client(object):
 
     def send(self, json_obj):
         try:
-            acme_object_validate(json.dumps(json_obj))
-            response = urllib2.urlopen(
-                self.server_url, json.dumps(json_obj)).read()
-            acme_object_validate(response)
-            return json.loads(response)
+            json_encoded = json.dumps(json_obj)
+            acme_object_validate(json_encoded)
+            response = requests.post(
+                self.server_url,
+                data=json_encoded,
+                headers={"Content-Type": "application/json"},
+            )
+            body = response.content
+            acme_object_validate(body)
+            return response.json()
         except:
             logger.fatal("Send() failed... may have lost connection to server")
             sys.exit(8)
@@ -691,7 +688,7 @@ class Client(object):
     def sanity_check_names(self, names):
         for name in names:
             if not self.is_hostname_sane(name):
-                logger.fatal(`name` + " is an impossible hostname")
+                logger.fatal(repr(name) + " is an impossible hostname")
                 sys.exit(81)
 
     def is_hostname_sane(self, hostname):
