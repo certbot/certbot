@@ -56,4 +56,4 @@ CHALLENGE_PREFERENCES = ["dvsni", "recoveryToken"]
 EXCLUSIVE_CHALLENGES = [set(["dvsni", "simpleHttps"])]
 
 # Rewrite rule arguments used for redirections to https vhost
-REWRITE_HTTPS_ARGS = ["^.*$", "https://%{SERVER_NAME}%{REQUEST_URI}", "[L,R=permanent]"]
+REWRITE_HTTPS_ARGS = ["^", "https://%{SERVER_NAME}%{REQUEST_URI}", "[L,QSA,R=permanent]"]
