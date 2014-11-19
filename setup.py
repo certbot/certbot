@@ -80,6 +80,7 @@ setup(
         'pycrypto',
         #'python-augeas',
         'python2-pythondialog',
+        'requests',
     ],
     entry_points={
         'console_scripts': [
