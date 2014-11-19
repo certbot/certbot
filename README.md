@@ -18,6 +18,23 @@ Hint: on Debian testing/unstable, python-dialog is unavailable and you may
 need to do `sudo pip install python2-pythondialog` (lets-encrypt does not yet
 handle debian unstable's Apache2 conf layout, either...)
 
+## Running the demo code on FreeBSD
+
+```
+# clone repository
+git clone https://github.com/letsencrypt/lets-encrypt-preview.git; cd lets-encrypt-preview
+
+# install python dependencies and symlink 'swig'
+sudo pkg install -y py27-pip augeas swig ; sudo ln -s /usr/local/bin/swig2.0 /usr/local/bin/swig
+
+# depending on your shell
+rehash
+
+# install letsencrypt dependencies
+sudo pip install -r requirements.txt
+sudo ./letsencrypt.py
+```
+Note: letsencrypt.py displays window but it doesn't currently work because of issues related to paths, missing commands etc. but it will help to fast start with development under BSD system.
 
 ## Command line usage
 
