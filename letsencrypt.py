@@ -96,7 +96,7 @@ def usage():
     s = "Available options: --text, --privkey=, --csr=, --server=, "
     s += "--rollback=, --view-checkpoints, --revoke, --agree-eula, --redirect,"
     s += " --no-redirect, --help"
-    print str
+    print s
 
 def print_options():
     print "\nsudo ./letsencrypt.py (default authentication mode using pythondialog)"
