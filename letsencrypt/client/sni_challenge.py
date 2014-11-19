@@ -6,14 +6,13 @@ import hashlib
 from os import path
 import sys
 import binascii
-import jose
 
 from letsencrypt.client import configurator
 
 from letsencrypt.client.CONFIG import CONFIG_DIR, WORK_DIR, SERVER_ROOT
 from letsencrypt.client.CONFIG import OPTIONS_SSL_CONF, APACHE_CHALLENGE_CONF, INVALID_EXT
 from letsencrypt.client.CONFIG import S_SIZE
-from letsencrypt.client import logger, crypto_util
+from letsencrypt.client import logger, crypto_util, le_util
 from letsencrypt.client.challenge import Challenge
 
 # import configurator
@@ -251,7 +250,7 @@ DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
         # Create all of the challenge certs
         for tup in self.listSNITuple:
             # Need to decode from base64
-            r = jose.b64decode_url(tup[1])
+            r = le_util.b64_url_dec(tup[1])
             ext = self.generateExtension(r, s)
             self.createChallengeCert(tup[0], ext, tup[2], self.key)
 
@@ -260,7 +259,7 @@ DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
         self.configurator.save("SNI Challenge", True)
         self.configurator.restart(quiet)
 
-        self.s = jose.b64encode_url(s)
+        self.s = le_util.b64_url_enc(s)
         return self.s
 
 # This main function is just used for testing
@@ -279,8 +278,8 @@ def main():
     r2 = "testValueForR2"
     nonce2 = "nonce2"
 
-    r = jose.b64encode_url(r)
-    r2 = jose.b64encode_url(r2)
+    r = le_util.b64_url_enc(r)
+    r2 = le_util.b64_url_enc(r2)
 
     #ans = dns.resolver.query("google.com")
     #print ans.rrset

@@ -17,7 +17,6 @@ setup(
     install_requires=[
         #'dialog',
         'requests',
-        'jose',
         'jsonschema',
         'M2Crypto',
         'pycrypto',
