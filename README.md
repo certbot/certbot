@@ -8,14 +8,14 @@ Apache, though we will be expanding it to other platforms.
 
 ## Running the demo code on Ubuntu 
 
-`sudo apt-get install python-pip python-crypto python-dev python-jsonschema python-augeas gcc python-m2crypto python-dialog` 
+`sudo apt-get install python-pip python-crypto python-dev python-jsonschema python-augeas gcc python-m2crypto python-dialog`
 
 `sudo pip install jose`
 
 `sudo ./letsencrypt.py`
 
 Hint: on Debian testing/unstable, python-dialog is unavailable and you may
-need to do `sudo pip install pythondialog=2.7` (lets-encrypt does not yet
+need to do `sudo pip install python2-pythondialog` (lets-encrypt does not yet
 handle debian unstable's Apache2 conf layout, either...)
 
 
