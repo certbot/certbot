@@ -907,12 +907,12 @@ LogLevel warn \n\
         Enables mod_ssl
         """
         try:
-	    # Use check_output so the command will finish before reloading
+            # Use check_output so the command will finish before reloading
             subprocess.check_call(["sudo", "a2enmod", mod_name], stdout=open("/dev/null", 'w'), stderr=open("/dev/null", 'w'))
             # Hopefully this waits for output
             subprocess.check_call(["sudo", "/etc/init.d/apache2", "restart"], stdout=open("/dev/null", 'w'), stderr=open("/dev/null", 'w'))
         except:
-	    logger.error("Error enabling mod_" + mod_name)
+            logger.error("Error enabling mod_" + mod_name)
             sys.exit(1)
 
     def fnmatch_to_re(self, cleanFNmatch):
