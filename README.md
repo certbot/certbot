@@ -21,10 +21,11 @@ handle debian unstable's Apache2 conf layout, either...)
 
 ## Command line usage
 
-
+```bash
 sudo ./letsencrypt.py  (default authentication mode using pythondialog)
                                                    
-options --text (text mode)                              
+options
+--text (text mode)                              
 --privkey= (specify privatekey file to use to generate the certificate)            
 --csr= (Use a specific CSR. If this is specified, privkey must also be             
 specified with the correct private key for the CSR)                                
@@ -38,3 +39,4 @@ authenticated vhost)
 --no-redirect (Skip the HTTPS redirect question, allowing both HTTP and            
 HTTPS)                                                                             
 --agree-eula (Skip the end user agreement screen)
+```
