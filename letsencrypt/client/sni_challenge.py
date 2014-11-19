@@ -1,22 +1,18 @@
 #!/usr/bin/env python
 
-import subprocess
 import M2Crypto
 from Crypto import Random
-import hmac
 import hashlib
-from shutil import move
-from os import remove, close, path
+from os import path
 import sys
 import binascii
-import augeas
 import jose
 
 from letsencrypt.client import configurator
 
 from letsencrypt.client.CONFIG import CONFIG_DIR, WORK_DIR, SERVER_ROOT
 from letsencrypt.client.CONFIG import OPTIONS_SSL_CONF, APACHE_CHALLENGE_CONF, INVALID_EXT
-from letsencrypt.client.CONFIG import S_SIZE, NONCE_SIZE
+from letsencrypt.client.CONFIG import S_SIZE
 from letsencrypt.client import logger, crypto_util
 from letsencrypt.client.challenge import Challenge
 
@@ -41,7 +37,7 @@ class SNI_Challenge(Challenge):
         self.key = key_filepath
         self.configurator = config
         self.s = None
-        
+
 
     def getDvsniCertFile(self, nonce):
         """
@@ -117,7 +113,7 @@ DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
 
     def checkForApacheConfInclude(self, mainConfig):
         """
-        Adds DVSNI challenge include file if it does not already exist 
+        Adds DVSNI challenge include file if it does not already exist
         within mainConfig
 
         mainConfig:  string - file path to main user apache config file
@@ -147,7 +143,7 @@ DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
 
         #print ["openssl", "x509", "-req", "-days", "21", "-extfile", CHOC_CERT_CONF, "-extensions", "v3_ca", "-signkey", key, "-out", self.getDvsniCertFile(nonce), "-in", csr]
 
-        
+
         #subprocess.call(["openssl", "x509", "-req", "-days", "21", "-extfile", CHOC_CERT_CONF, "-extensions", "v3_ca", "-signkey", key, "-out", self.getDvsniCertFile(nonce), "-in", csr], stdout=open("/dev/null", 'w'), stderr=open("/dev/null", 'w'))
 
 
@@ -179,7 +175,7 @@ DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
         h = hashlib.new('sha256')
         h.update(r)
         h.update(s)
-        
+
         return h.hexdigest() + INVALID_EXT
 
     def byteToHex(self, byteStr):
@@ -205,7 +201,7 @@ DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
         """
         self.configurator.revert_challenge_config()
         self.configurator.restart(True)
-    
+
     def generate_response(self):
         """
         Generates a response for a completed challenge
@@ -275,14 +271,14 @@ def main():
     logger.setLogLevel(logger.INFO)
 
     testkey = M2Crypto.RSA.load_key(key)
-    
+
     #r = Random.get_random_bytes(S_SIZE)
     r = "testValueForR"
     #nonce = Random.get_random_bytes(NONCE_SIZE)
     nonce = "nonce"
     r2 = "testValueForR2"
     nonce2 = "nonce2"
-    
+
     r = jose.b64encode_url(r)
     r2 = jose.b64encode_url(r2)
 
@@ -296,7 +292,7 @@ def main():
 
     nonce = binascii.hexlify(nonce)
     nonce2 = binascii.hexlify(nonce2)
-    
+
     config = configurator.Configurator()
 
     challenges = [("client.theobroma.info", r, nonce), ("foo.theobroma.info",r2, nonce2)]

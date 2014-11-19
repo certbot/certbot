@@ -8,7 +8,6 @@ from Crypto.Hash import SHA256
 from M2Crypto import EVP, X509, ASN1
 
 
-from letsencrypt.client import logger
 from letsencrypt.client.CONFIG import NONCE_SIZE, RSA_KEY_SIZE
 
 
@@ -59,7 +58,7 @@ def make_key(bits=RSA_KEY_SIZE):
     #rsa = M2Crypto.RSA.gen_key(bits, 65537)
     #key_pem = rsa.as_pem(cipher=None)
     #rsa = None # should not be freed here
-    
+
     return key.exportKey(format='PEM')
 
 
@@ -147,7 +146,7 @@ def get_cert_info(filename):
         d["san"] = x.get_ext("subjectAltName").get_value()
     except:
         d["san"] = ""
-    
+
     d["serial"] = x.get_serial_number()
     d["pub_key"] = "RSA " + str(x.get_pubkey().size() * 8)
     return d
