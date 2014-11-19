@@ -4,8 +4,10 @@
 # validate JSON objects as ACME protocol messages
 
 import json, jsonschema
+import pkg_resources
 
-schemata = {schema: json.load(open("letsencrypt/client/schemata/%s.json" % schema)) for schema in [
+schemata = {schema: json.load(open(pkg_resources.resource_filename(
+    __name__, "schemata/%s.json" % schema))) for schema in [
   "authorization", "authorizationRequest", "certificate", "certificateRequest",
   "challenge", "challengeRequest", "defer", "error", "revocation",
   "revocationRequest", "statusRequest"]

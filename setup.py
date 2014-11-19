@@ -29,4 +29,6 @@ setup(
             'letsencrypt = letsencrypt.scripts.main:main'
         ]
     },
+    zip_safe=False,
+    include_package_data=True,
 )
