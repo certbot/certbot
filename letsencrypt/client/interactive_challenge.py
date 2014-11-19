@@ -1,13 +1,12 @@
 from letsencrypt.client.challenge import Challenge
-from letsencrypt.client import logger
 import textwrap
 
 ############################################################
 # Possible addition to challenge structure: priority parameter
 # If only DVSNI and Payment are required, the user might want
 # to be validated before submitting payment, allowing the user
-# to gain confidence in the system.  If things do go poorly the 
-# user has less invested in that particular session/transaction. 
+# to gain confidence in the system.  If things do go poorly the
+# user has less invested in that particular session/transaction.
 #############################################################
 
 ###########################################################
@@ -22,7 +21,7 @@ class Interactive_Challenge(Challenge):
 
     def __init__(self, string):
         self.string = string
-        
+
     def perform(self, quiet=True):
         if quiet:
             dialog.Dialog().msgbox(get_display_string(), width=BOX_SIZE)
@@ -31,7 +30,7 @@ class Interactive_Challenge(Challenge):
             raw_input('')
 
         return True
-    
+
 
     def get_display_string(self):
         return textwrap.fill(self.string, width=BOX_SIZE) + "\n\nPlease Press Enter to Continue"
