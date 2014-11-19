@@ -82,10 +82,10 @@ def main():
         display.setDisplay(display.NcursesDisplay())
     else:
         display.setDisplay(display.FileDisplay(sys.stdout))
-       
+
     if not server:
         server = ACME_SERVER
-    
+
     c = client.Client(server, csr, privkey, curses)
     if flag_revoke:
         c.list_certs_keys()
@@ -108,7 +108,7 @@ def print_options():
                 "view-checkpoints (Used to view available checkpoints and " +
                 "see what configuration changes have been made)",
                 "rollback=X (Revert the configuration X number of checkpoints)",
-                "redirect (Automatically redirect all HTTP traffic to " + 
+                "redirect (Automatically redirect all HTTP traffic to " +
                 "HTTPS for the newly authenticated vhost)",
                 "no-redirect (Skip the HTTPS redirect question, " +
                 "allowing both HTTP and HTTPS)",
