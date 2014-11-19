@@ -40,13 +40,13 @@ NONCE_SIZE = 16
 RSA_KEY_SIZE = 2048
 
 # bits of hashcash to generate
-difficulty = 23 
+difficulty = 23
 
 # Let's Encrypt cert and chain files
 CERT_PATH = CERT_DIR + "cert-letsencrypt.pem"
 CHAIN_PATH = CERT_DIR + "chain-letsencrypt.pem"
 
-#Invalid Extension                                                              
+#Invalid Extension
 INVALID_EXT = ".acme.invalid"
 
 # Challenge Preferences Dict for currently supported challenges

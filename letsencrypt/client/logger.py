@@ -168,8 +168,3 @@ if __name__ == "__main__":
     logger.error("errrrr")
 
     logger.trace("some trace data: %d - %f - %s" % (5, 8.3, 'cows'))
-
-
-
-
-
