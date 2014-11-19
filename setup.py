@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 from setuptools import setup
+
+
 setup(
     name="letsencrypt",
     version="0.1",
@@ -10,6 +12,7 @@ setup(
     packages=[
         'letsencrypt',
         'letsencrypt.client',
+        'letsencrypt.scripts',
     ],
     install_requires=[
         #'dialog',
@@ -23,7 +26,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'letsencrypt = letsencrypt.client.client:authenticate'
+            'letsencrypt = letsencrypt.scripts.main:main'
         ]
     },
 )
