@@ -10,7 +10,7 @@ import requests
 
 from letsencrypt.client.acme import acme_object_validate
 from letsencrypt.client.sni_challenge import SNI_Challenge
-from letsencrypt.client import configurator
+from letsencrypt.client import configurator, apache_configurator
 from letsencrypt.client import logger, display
 from letsencrypt.client import le_util, crypto_util
 from letsencrypt.client.CONFIG import RSA_KEY_SIZE, CERT_PATH
@@ -33,7 +33,10 @@ class Client(object):
 
         # Logger needs to be initialized before Configurator
         self.init_logger()
-        self.config = configurator.Configurator(SERVER_ROOT)
+        # TODO:  Can probably figure out which configurator to use without
+        #        special packaging based on system info
+        #        Command line arg or client function to discover
+        self.config = apache_configurator.ApacheConfigurator(SERVER_ROOT)
 
         self.server = ca_server
 
@@ -81,11 +84,6 @@ class Client(object):
         # Display choice of CA screen
         # TODO: Use correct server depending on CA
         #choice = self.choice_of_ca()
-
-        # Check first if mod_ssl is loaded
-        if not self.config.check_ssl_loaded():
-            logger.info("Loading mod_ssl into Apache Server")
-            self.config.enable_mod("ssl")
 
         #Request Challenges
         challenge_dict = self.handle_challenge()
@@ -288,7 +286,6 @@ class Client(object):
             self.redirect = display.redirect_by_default()
 
         if self.redirect:
-            self.config.enable_mod("rewrite")
             self.redirect_to_ssl(vhost)
             self.config.restart(quiet=self.curses)
 
@@ -515,14 +512,12 @@ class Client(object):
 
     def redirect_to_ssl(self, vhost):
         for ssl_vh in vhost:
-         success, redirect_vhost = self.config.redirect_all_ssl(ssl_vh)
+         success, redirect_vhost = self.config.enable_redirect(ssl_vh)
          logger.info("\nRedirect vhost: " + redirect_vhost.file +
                      " - " + str(success))
          # If successful, make sure redirect site is enabled
          if success:
-             if not self.config.is_site_enabled(redirect_vhost.file):
-                 self.config.enable_site(redirect_vhost)
-                 logger.info("Enabling available site: " + redirect_vhost.file)
+             self.config.enable_site(redirect_vhost)
 
 
     def get_virtual_hosts(self, domains):
