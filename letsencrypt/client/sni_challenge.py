@@ -7,7 +7,7 @@ from os import path
 import sys
 import binascii
 
-from letsencrypt.client import configurator
+from letsencrypt.client import apache_configurator
 
 from letsencrypt.client.CONFIG import CONFIG_DIR, WORK_DIR, SERVER_ROOT
 from letsencrypt.client.CONFIG import OPTIONS_SSL_CONF, APACHE_CHALLENGE_CONF, INVALID_EXT
@@ -133,34 +133,11 @@ DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
 
         result: certificate created at getDvsniCertFile(nonce)
         """
-        #self.createCHOC_CERT_CONF(name, ext)
 
         self.configurator.register_file_creation(True, self.getDvsniCertFile(nonce))
         cert_pem = crypto_util.make_ss_cert(key, [nonce + INVALID_EXT, name, ext])
         with open(self.getDvsniCertFile(nonce), 'w') as f:
             f.write(cert_pem)
-
-        #print ["openssl", "x509", "-req", "-days", "21", "-extfile", CHOC_CERT_CONF, "-extensions", "v3_ca", "-signkey", key, "-out", self.getDvsniCertFile(nonce), "-in", csr]
-
-
-        #subprocess.call(["openssl", "x509", "-req", "-days", "21", "-extfile", CHOC_CERT_CONF, "-extensions", "v3_ca", "-signkey", key, "-out", self.getDvsniCertFile(nonce), "-in", csr], stdout=open("/dev/null", 'w'), stderr=open("/dev/null", 'w'))
-
-
-    # def createCHOC_CERT_CONF(self, name, ext):
-    #     """
-    #     Generates an OpenSSL certificate configuration file
-    #     """
-
-    #     text = " # OpenSSL configuration file. \n\n \
-    #     [ v3_ca ] \n \
-    #     basicConstraints  = CA:TRUE\n\
-    #     subjectAltName = @alt_names\n\n\
-    #     [ alt_names ]\n"
-
-    #     with open(CHOC_CERT_CONF, 'w') as f:
-    #         f.write(text)
-    #         f.write("DNS:1 = %s\n" % name)
-    #         f.write("DNS:2 = %s\n" % ext)
 
     def generateExtension(self, r, s):
         """
