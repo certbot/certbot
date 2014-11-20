@@ -13,6 +13,9 @@ class Configurator(object):
     """
     __metaclass__ = abc.ABCMeta
 
+    def __init__(self):
+        return
+
     @abc.abstractmethod
     def deploy_cert(self, vhost, cert, key , cert_chain=None):
         return

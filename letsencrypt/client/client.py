@@ -55,7 +55,7 @@ class Client(object):
 
     def authenticate(self, domains = [], redirect = None, eula = False):
         # Check configuration
-        if not self.config.configtest():
+        if not self.config.config_test():
             sys.exit(1)
 
         self.redirect = redirect
@@ -63,7 +63,7 @@ class Client(object):
         # Display preview warning
         if not eula:
             with open('EULA') as f:
-                if not display.generic_yesno(f.read(), "Agree", "Disagree"):
+                if not display.generic_yesno(f.read(), "Agree", "Cancel"):
                     sys.exit(0)
 
         # Display screen to select domains to validate
@@ -286,6 +286,7 @@ class Client(object):
             self.redirect = display.redirect_by_default()
 
         if self.redirect:
+            print "HERE"
             self.redirect_to_ssl(vhost)
             self.config.restart(quiet=self.curses)
 
@@ -376,7 +377,7 @@ class Client(object):
         responses = ["null"] * len(c["challenges"])
 
         # Perform challenges
-        for i, c_obj in challenge_objs:
+        for i, c_obj in enumerate(challenge_objs):
             response = "null"
             if c_obj["type"] in CONFIG_CHALLENGES:
                 response = self.config.perform(c_obj)
@@ -386,7 +387,7 @@ class Client(object):
 
             for index in indicies[i]:
                 responses[index] = response
-        
+
         logger.info("Configured Apache for challenges; " +
         "waiting for verification...")
 
@@ -562,7 +563,7 @@ class Client(object):
         if sni_todo:
             # SNI_Challenge can satisfy many sni challenges at once so only
             # one "challenge object" is issued for all sni_challenges
-            challenge_objs.append({"type":"dvsni", "listSNITuple":snitodo
+            challenge_objs.append({"type":"dvsni", "listSNITuple":sni_todo,
                                    "dvsni_key":os.path.abspath(self.key_file)})
             challenge_obj_indicies.append(sni_satisfies)
             logger.debug(sni_todo)
