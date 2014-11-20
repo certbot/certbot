@@ -1,6 +1,8 @@
 import abc
 from abc_base import Configurator
 
+import augeas
+
 from letsencrypt.client.CONFIG import TEMP_CHECKPOINT_DIR, IN_PROGRESS_DIR
 
 class AugeasConfigurator(Configurator):

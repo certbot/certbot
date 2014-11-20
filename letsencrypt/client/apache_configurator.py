@@ -1052,8 +1052,181 @@ LogLevel warn \n\
 
         return True
 
+    ###########################################################################
+    # Challenges Section
+    ###########################################################################
+
+    def perform(self, chall_type, tup):
+        if chall_type == 'dvsni':
+            return dvsni_perform(tup)
+        return None
+
+    def dvsni_perform(self, tup):
+        """
+        Sets up and reloads Apache server to handle SNI challenges
+
+        listSNITuple:  List of tuples with form (addr, r, nonce)
+                       addr (string), r (base64 string), nonce (hex string)
+        key:           string - File path to key
+        configurator:  Configurator obj
+        """
+        # Save any changes to the configuration as a precaution
+        # About to make temporary changes to the config
+        self.save()
+
+        if len(tup) != 2:
+            logger.fatal("Incorrect parameter given to Apache DVSNI challenge")
+            sys.exit(1)
+
+        listSNITuple = tup[0]
+        dvsni_key = tup[1]
+
+        addresses = []
+        default_addr = "*:443"
+        for tup in listSNITuple:
+            vhost = self.choose_virtual_host(tup[0])
+            if vhost is None:
+                logger.error("No vhost exists with servername or alias of:%s" % tup[0])
+                logger.error("No _default_:443 vhost exists")
+                logger.error("Please specify servernames in the Apache config")
+                return None
+
+            # TODO - @jdkasten review this code to make sure it makes sense
+            if not self.make_server_sni_ready(vhost, default_addr):
+                return None
+
+            for a in vhost.addrs:
+                if "_default_" in a:
+                    addresses.append([default_addr])
+                    break
+            else:
+                addresses.append(vhost.addrs)
+
+        # Generate S
+        s = Random.get_random_bytes(S_SIZE)
+        # Create all of the challenge certs
+        for t in listSNITuple:
+            # Need to decode from base64
+            r = le_util.b64_url_dec(t[1])
+            ext = self.generateExtension(r, s)
+            self.createChallengeCert(t[0], ext, t[2], dvsni_key)
+
+        self.dvsni_mod_config(self.user_config_file, listSNITuple, addresses)
+        # Save reversible changes and restart the server
+        self.save("SNI Challenge", True)
+        self.restart(quiet)
+
+        s = le_util.b64_url_enc(s)
+        return {"type":"dvsni", "s":s}
+
+    def cleanup(self):
+        self.revert_challenge_config()
+        self.restart(True)
 
 
+    def dvsni_get_cert_file(self, nonce):
+        """
+        Returns standardized name for challenge certificate
+        nonce:  string - hex
+        result: returns certificate file name
+        """
+        return WORK_DIR + nonce + ".crt"
+
+    def __getConfigText(self, nonce, ip_addrs, key):
+        """
+        Chocolate virtual server configuration text
+
+        nonce:      string - hex
+        ip_addr:    string - address of challenged domain
+        key:        string - file path to key
+
+        result:     returns virtual host configuration text
+        """
+        configText = "<VirtualHost " + " ".join(ip_addrs) + "> \n \
+ServerName " + nonce + INVALID_EXT + " \n \
+UseCanonicalName on \n \
+SSLStrictSNIVHostCheck on \n \
+\n \
+LimitRequestBody 1048576 \n \
+\n \
+Include " + OPTIONS_SSL_CONF + " \n \
+SSLCertificateFile " + self.dvsni_get_cert_file(nonce) + " \n \
+SSLCertificateKeyFile " + key + " \n \
+\n \
+DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
+</VirtualHost> \n\n "
+
+        return configText
+
+    def dvsni_mod_config(self, mainConfig, listSNITuple, listlistAddrs):
+        """
+        Modifies Apache config files to include the challenge virtual servers
+
+        mainConfig:    string - file path to Apache user config file
+        listSNITuple:  list of tuples with form (addr, y, nonce, ext_oid)
+                       addr (string), y (byte array), nonce (hex string), ext_oid (string)
+        key:           string - file path to key
+
+        result:        Apache config includes virtual servers for issued challenges
+        """
+
+        # TODO: Use ip address of existing vhost instead of relying on FQDN
+        configText = "<IfModule mod_ssl.c> \n"
+        for idx, lis in enumerate(listlistAddrs):
+            configText += self.__getConfigText(listSNITuple[idx][2], lis, self.key)
+        configText += "</IfModule> \n"
+
+        self.dvsni_conf_include_check(mainConfig)
+        self.register_file_creation(True, APACHE_CHALLENGE_CONF)
+        newConf = open(APACHE_CHALLENGE_CONF, 'w')
+        newConf.write(configText)
+        newConf.close()
+
+
+
+    def dvsni_conf_include_check(self, mainConfig):
+        """
+        Adds DVSNI challenge include file if it does not already exist
+        within mainConfig
+
+        mainConfig:  string - file path to main user apache config file
+
+        result:      User Apache configuration includes chocolate sni challenge file
+        """
+        if len(self.find_directive(self.case_i("Include"), APACHE_CHALLENGE_CONF)) == 0:
+            #print "Including challenge virtual host(s)"
+            self.add_dir("/files" + mainConfig, "Include", APACHE_CHALLENGE_CONF)
+
+    def createChallengeCert(self, name, ext, nonce, key):
+        """
+        Modifies challenge certificate configuration and calls openssl binary to create a certificate
+
+        ext:    string - hex z value
+        nonce:  string - hex
+        key:    string - file path to key
+
+        result: certificate created at dvsni_get_cert_file(nonce)
+        """
+
+        self.register_file_creation(True, self.dvsni_get_cert_file(nonce))
+        cert_pem = crypto_util.make_ss_cert(key, [nonce + INVALID_EXT, name, ext])
+        with open(self.dvsni_get_cert_file(nonce), 'w') as f:
+            f.write(cert_pem)
+
+    def dvsni_gen_ext(self, r, s):
+        """
+        Generates z to be placed in certificate extension
+
+        r:    byte array
+        s:    byte array
+
+        result: returns z + INVALID_EXT
+        """
+        h = hashlib.new('sha256')
+        h.update(r)
+        h.update(s)
+
+        return h.hexdigest() + INVALID_EXT
 
 def main():
     config = Configurator()
