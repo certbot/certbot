@@ -1,14 +1,6 @@
 from letsencrypt.client.challenge import Challenge
 import textwrap
 
-############################################################
-# Possible addition to challenge structure: priority parameter
-# If only DVSNI and Payment are required, the user might want
-# to be validated before submitting payment, allowing the user
-# to gain confidence in the system.  If things do go poorly the
-# user has less invested in that particular session/transaction.
-#############################################################
-
 ###########################################################
 # Interactive challenge displays the string sent by the CA
 # formatted to fit on the screen of the client
