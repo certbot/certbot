@@ -286,7 +286,6 @@ class Client(object):
             self.redirect = display.redirect_by_default()
 
         if self.redirect:
-            print "HERE"
             self.redirect_to_ssl(vhost)
             self.config.restart(quiet=self.curses)
 
@@ -520,12 +519,12 @@ class Client(object):
 
     def redirect_to_ssl(self, vhost):
         for ssl_vh in vhost:
-         success, redirect_vhost = self.config.enable_redirect(ssl_vh)
-         logger.info("\nRedirect vhost: " + redirect_vhost.file +
+            success, redirect_vhost = self.config.enable_redirect(ssl_vh)
+            logger.info("\nRedirect vhost: " + redirect_vhost.file +
                      " - " + str(success))
-         # If successful, make sure redirect site is enabled
-         if success:
-             self.config.enable_site(redirect_vhost)
+            # If successful, make sure redirect site is enabled
+            if success:
+                self.config.enable_site(redirect_vhost)
 
 
     def get_virtual_hosts(self, domains):
