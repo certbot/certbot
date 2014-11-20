@@ -10,13 +10,13 @@ import requests
 
 from letsencrypt.client.acme import acme_object_validate
 from letsencrypt.client.sni_challenge import SNI_Challenge
-from letsencrypt.client import configurator
+from letsencrypt.client import configurator, apache_configurator
 from letsencrypt.client import logger, display
 from letsencrypt.client import le_util, crypto_util
 from letsencrypt.client.CONFIG import RSA_KEY_SIZE, CERT_PATH
 from letsencrypt.client.CONFIG import CHAIN_PATH, SERVER_ROOT, KEY_DIR, CERT_DIR
-from letsencrypt.client.CONFIG import CERT_KEY_BACKUP
-from letsencrypt.client.CONFIG import CHALLENGE_PREFERENCES, EXCLUSIVE_CHALLENGES
+from letsencrypt.client.CONFIG import CERT_KEY_BACKUP, EXCLUSIVE_CHALLENGES
+from letsencrypt.client.CONFIG import CHALLENGE_PREFERENCES, CONFIG_CHALLENGES
 # it's weird to point to chocolate servers via raw IPv6 addresses, and such
 # addresses can be %SCARY in some contexts, so out of paranoia let's disable
 # them by default
@@ -33,7 +33,10 @@ class Client(object):
 
         # Logger needs to be initialized before Configurator
         self.init_logger()
-        self.config = configurator.Configurator(SERVER_ROOT)
+        # TODO:  Can probably figure out which configurator to use without
+        #        special packaging based on system info
+        #        Command line arg or client function to discover
+        self.config = apache_configurator.ApacheConfigurator(SERVER_ROOT)
 
         self.server = ca_server
 
@@ -52,7 +55,7 @@ class Client(object):
 
     def authenticate(self, domains = [], redirect = None, eula = False):
         # Check configuration
-        if not self.config.configtest():
+        if not self.config.config_test():
             sys.exit(1)
 
         self.redirect = redirect
@@ -60,7 +63,7 @@ class Client(object):
         # Display preview warning
         if not eula:
             with open('EULA') as f:
-                if not display.generic_yesno(f.read(), "Agree", "Disagree"):
+                if not display.generic_yesno(f.read(), "Agree", "Cancel"):
                     sys.exit(0)
 
         # Display screen to select domains to validate
@@ -81,11 +84,6 @@ class Client(object):
         # Display choice of CA screen
         # TODO: Use correct server depending on CA
         #choice = self.choice_of_ca()
-
-        # Check first if mod_ssl is loaded
-        if not self.config.check_ssl_loaded():
-            logger.info("Loading mod_ssl into Apache Server")
-            self.config.enable_mod("ssl")
 
         #Request Challenges
         challenge_dict = self.handle_challenge()
@@ -288,7 +286,6 @@ class Client(object):
             self.redirect = display.redirect_by_default()
 
         if self.redirect:
-            self.config.enable_mod("rewrite")
             self.redirect_to_ssl(vhost)
             self.config.restart(quiet=self.curses)
 
@@ -312,7 +309,11 @@ class Client(object):
     def cleanup_challenges(self, challenge_objs):
         logger.info("Cleaning up challenges...")
         for c in challenge_objs:
-            c.cleanup()
+            if c["type"] in CONFIG_CHALLENGES:
+                self.config.cleanup()
+            else:
+                #Handle other cleanup if needed
+                pass
 
     def is_expected_msg(self, msg_dict, expected, delay=3, rounds = 20):
         for i in range(rounds):
@@ -372,16 +373,19 @@ class Client(object):
         challenge_objs, indicies = self.challenge_factory(
             self.names[0], c["challenges"], path)
 
+        responses = ["null"] * len(c["challenges"])
 
-        responses = [None] * len(c["challenges"])
-
-        # Perform challenges and populate responses
+        # Perform challenges
         for i, c_obj in enumerate(challenge_objs):
-            if not c_obj.perform():
-                logger.fatal("Challenge Failed")
-                sys.exit(1)
+            response = "null"
+            if c_obj["type"] in CONFIG_CHALLENGES:
+                response = self.config.perform(c_obj)
+            else:
+                # Handle RecoveryToken type challenges
+                pass
+
             for index in indicies[i]:
-                responses[index] = c_obj.generate_response()
+                responses[index] = response
 
         logger.info("Configured Apache for challenges; " +
         "waiting for verification...")
@@ -392,7 +396,7 @@ class Client(object):
         """
         Generate a plan to get authority over the identity
         TODO: Make sure that the challenges are feasible...
-        TODO Example: Do you have the recovery key?
+              Example: Do you have the recovery key?
         """
 
         if combos:
@@ -515,14 +519,12 @@ class Client(object):
 
     def redirect_to_ssl(self, vhost):
         for ssl_vh in vhost:
-         success, redirect_vhost = self.config.redirect_all_ssl(ssl_vh)
-         logger.info("\nRedirect vhost: " + redirect_vhost.file +
+            success, redirect_vhost = self.config.enable_redirect(ssl_vh)
+            logger.info("\nRedirect vhost: " + redirect_vhost.file +
                      " - " + str(success))
-         # If successful, make sure redirect site is enabled
-         if success:
-             if not self.config.is_site_enabled(redirect_vhost.file):
-                 self.config.enable_site(redirect_vhost)
-                 logger.info("Enabling available site: " + redirect_vhost.file)
+            # If successful, make sure redirect site is enabled
+            if success:
+                self.config.enable_site(redirect_vhost)
 
 
     def get_virtual_hosts(self, domains):
@@ -551,7 +553,7 @@ class Client(object):
             elif challenges[c]["type"] == "recoveryToken":
                 logger.info("\tRecovery Token Challenge for name: %s." % name)
                 challenge_objs_indicies.append(c)
-                challenge_objs.append(RecoveryToken())
+                challenge_objs.append({type:"recoveryToken"})
 
             else:
                 logger.fatal("Challenge not currently supported")
@@ -560,8 +562,8 @@ class Client(object):
         if sni_todo:
             # SNI_Challenge can satisfy many sni challenges at once so only
             # one "challenge object" is issued for all sni_challenges
-            challenge_objs.append(SNI_Challenge(
-                sni_todo, os.path.abspath(self.key_file), self.config))
+            challenge_objs.append({"type":"dvsni", "listSNITuple":sni_todo,
+                                   "dvsni_key":os.path.abspath(self.key_file)})
             challenge_obj_indicies.append(sni_satisfies)
             logger.debug(sni_todo)
 
@@ -627,33 +629,36 @@ class Client(object):
 
         return selection
 
-    def get_cas(self):
-        DV_choices = []
-        OV_choices = []
-        EV_choices = []
-        choices = []
-        try:
-            with open("/etc/letsencrypt/.ca_offerings") as f:
-                for line in f:
-                    choice = line.split(";", 1)
-                    if 'DV' in choice[0]:
-                        DV_choices.append(choice)
-                    elif 'OV' in choice[0]:
-                        OV_choices.append(choice)
-                    else:
-                        EV_choices.append(choice)
+    # Legacy Code: Although I would like to see a free and open marketplace
+    # in the future. The Let's Encrypt Client will not have this feature at
+    # launch
+    # def get_cas(self):
+    #     DV_choices = []
+    #     OV_choices = []
+    #     EV_choices = []
+    #     choices = []
+    #     try:
+    #         with open("/etc/letsencrypt/.ca_offerings") as f:
+    #             for line in f:
+    #                 choice = line.split(";", 1)
+    #                 if 'DV' in choice[0]:
+    #                     DV_choices.append(choice)
+    #                 elif 'OV' in choice[0]:
+    #                     OV_choices.append(choice)
+    #                 else:
+    #                     EV_choices.append(choice)
 
-                # random.shuffle(DV_choices)
-                # random.shuffle(OV_choices)
-                # random.shuffle(EV_choices)
-                choices = DV_choices + OV_choices + EV_choices
-                choices = [(l[0], l[1]) for l in choices]
+    #             # random.shuffle(DV_choices)
+    #             # random.shuffle(OV_choices)
+    #             # random.shuffle(EV_choices)
+    #             choices = DV_choices + OV_choices + EV_choices
+    #             choices = [(l[0], l[1]) for l in choices]
 
-        except IOError as e:
-            logger.fatal("Unable to find .ca_offerings file")
-            sys.exit(1)
+    #     except IOError as e:
+    #         logger.fatal("Unable to find .ca_offerings file")
+    #         sys.exit(1)
 
-        return choices
+    #     return choices
 
     def get_all_names(self):
         """

@@ -309,11 +309,11 @@ def redirect_by_default():
                                   "Please enter the appropriate number",
                                   width = WIDTH)
 
-    if result[0] != 0:
+    if result[0] != OK:
         return False
 
     # different answer for each type of display
-    return (result[1] == "Secure" or result[1] == 1)
+    return (str(result[1]) == "Secure" or result[1] == 1)
 
 
 def confirm_revocation(cert):
