@@ -411,3 +411,11 @@ class AugeasConfigurator(Configurator):
         Restart or refresh the server content
         """
         raise Exception("Error: augeas Configurator class")
+    
+    def perform(self, challenge):
+        """ Perform the challenge """
+        raise Exception("Error: augeas Configurator class")
+
+    def cleanup(self):
+        """ Clean up any challenge configurations """
+        raise Exception("Error: augeas Configurator class")

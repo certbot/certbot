@@ -55,5 +55,8 @@ CHALLENGE_PREFERENCES = ["dvsni", "recoveryToken"]
 # Mutually Exclusive Challenges - only solve 1
 EXCLUSIVE_CHALLENGES = [set(["dvsni", "simpleHttps"])]
 
+# These are challenges that must be solved by a Configurator object
+CONFIG_CHALLENGES = {"dvsni", "simpleHttps"}
+
 # Rewrite rule arguments used for redirections to https vhost
 REWRITE_HTTPS_ARGS = ["^.*$", "https://%{SERVER_NAME}%{REQUEST_URI}", "[L,R=permanent]"]
