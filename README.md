@@ -10,6 +10,8 @@ Apache, though we will be expanding it to other platforms.
 
 `sudo apt-get install python python-setuptools python-dev python-augeas gcc swig dialog`
 
+`pip install python2-pythondialog`
+
 `python setup.py install --user`
 
 `sudo ./letsencrypt.py` (or `~/.local/bin/letsencrypt`)
