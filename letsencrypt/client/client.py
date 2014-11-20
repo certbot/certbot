@@ -60,7 +60,7 @@ class Client(object):
         # Display preview warning
         if not eula:
             with open('EULA') as f:
-                if not display.generic_yesno(f.read()):
+                if not display.generic_yesno(f.read(), "Agree", "Disagree"):
                     sys.exit(0)
 
         # Display screen to select domains to validate
