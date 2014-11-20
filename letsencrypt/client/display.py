@@ -98,7 +98,7 @@ class NcursesDisplay(Display):
         return self.d.inputbox(message)
 
     def generic_yesno(self, message, yes = "Yes", no = "No"):
-        a = self.d.yesno(message, HEIGHT, WIDTH)
+        a = self.d.yesno(message, HEIGHT, WIDTH, yes_label = yes, no_label = no)
 
         return a == self.d.DIALOG_OK
 
