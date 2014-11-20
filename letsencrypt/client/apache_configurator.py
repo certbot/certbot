@@ -11,7 +11,14 @@ from letsencrypt.client.CONFIG import SERVER_ROOT, BACKUP_DIR
 from letsencrypt.client.CONFIG import REWRITE_HTTPS_ARGS, CONFIG_DIR, WORK_DIR
 from letsencrypt.client.CONFIG import TEMP_CHECKPOINT_DIR, IN_PROGRESS_DIR
 from letsencrypt.client.CONFIG import OPTIONS_SSL_CONF, LE_VHOST_EXT
-from letsencrypt.client import logger, le_util, configurator
+from letsencrypt.client import logger, le_util, augeas_configurator
+from letsencrypt.client import crypto_util
+
+# Challenge specific imports
+import binascii, hashlib
+from Crypto import Random
+from letsencrypt.client.CONFIG import S_SIZE, APACHE_CHALLENGE_CONF, INVALID_EXT
+
 #from CONFIG import SERVER_ROOT, BACKUP_DIR, REWRITE_HTTPS_ARGS, CONFIG_DIR,
 #from CONFIG import WORK_DIR, TEMP_CHECKPOINT_DIR, IN_PROGRESS_DIR, OPTIONS_SSL_CONF, LE_VHOST_EXT
 #import logger, le_util
@@ -57,7 +64,7 @@ class VH(object):
     def add_name(self, name):
         self.names.append(name)
 
-class ApacheConfigurator(AugeasConfigurator):
+class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     """
     State of Configurator:
     This code has been tested under Ubuntu 12.04 Apache 2.2
@@ -83,8 +90,7 @@ class ApacheConfigurator(AugeasConfigurator):
     with the client.
     """
     def __init__(self, server_root=SERVER_ROOT):
-        # TODO: this instantiation can be optimized to only load Httd
-        #       relevant files - I believe -> NO_MODL_AUTOLOAD
+        super(ApacheConfigurator, self).__init__()
 
         self.server_root = server_root
 
@@ -915,7 +921,7 @@ LogLevel warn \n\
             self.register_file_creation(False, enabled_path)
             os.symlink(vhost.file, enabled_path)
             vhost.enabled = True
-            logger.info("Enabling available site: %s" vhost.file)
+            logger.info("Enabling available site: %s" % vhost.file)
             self.save_notes += 'Enabled site %s\n' % vhost.file
             return True
         return False
@@ -1056,12 +1062,12 @@ LogLevel warn \n\
     # Challenges Section
     ###########################################################################
 
-    def perform(self, chall_type, tup):
-        if chall_type == 'dvsni':
-            return dvsni_perform(tup)
+    def perform(self, chall_dict):
+        if chall_dict.get("type", "") == 'dvsni':
+            return self.dvsni_perform(chall_dict)
         return None
 
-    def dvsni_perform(self, tup):
+    def dvsni_perform(self, chall_dict):
         """
         Sets up and reloads Apache server to handle SNI challenges
 
@@ -1074,16 +1080,15 @@ LogLevel warn \n\
         # About to make temporary changes to the config
         self.save()
 
-        if len(tup) != 2:
+        # Do weak validation that challenge is of expected type
+        if not ("listSNITuple" in chall_dict and "dvsni_key" in chall_dict):
             logger.fatal("Incorrect parameter given to Apache DVSNI challenge")
+            logger.fatal("Chall dict: " + str(chall_dict))
             sys.exit(1)
-
-        listSNITuple = tup[0]
-        dvsni_key = tup[1]
 
         addresses = []
         default_addr = "*:443"
-        for tup in listSNITuple:
+        for tup in chall_dict["listSNITuple"]:
             vhost = self.choose_virtual_host(tup[0])
             if vhost is None:
                 logger.error("No vhost exists with servername or alias of:%s" % tup[0])
@@ -1105,16 +1110,17 @@ LogLevel warn \n\
         # Generate S
         s = Random.get_random_bytes(S_SIZE)
         # Create all of the challenge certs
-        for t in listSNITuple:
+        for t in chall_dict["listSNITuple"]:
             # Need to decode from base64
             r = le_util.b64_url_dec(t[1])
-            ext = self.generateExtension(r, s)
-            self.createChallengeCert(t[0], ext, t[2], dvsni_key)
+            ext = self.dvsni_gen_ext(r, s)
+            self.dvsni_create_chall_cert(t[0], ext, t[2], chall_dict["dvsni_key"])
 
-        self.dvsni_mod_config(self.user_config_file, listSNITuple, addresses)
+        self.dvsni_mod_config(self.user_config_file, chall_dict["listSNITuple"],
+                              chall_dict["dvsni_key"], addresses)
         # Save reversible changes and restart the server
         self.save("SNI Challenge", True)
-        self.restart(quiet)
+        self.restart(True)
 
         s = le_util.b64_url_enc(s)
         return {"type":"dvsni", "s":s}
@@ -1158,7 +1164,8 @@ DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
 
         return configText
 
-    def dvsni_mod_config(self, mainConfig, listSNITuple, listlistAddrs):
+    def dvsni_mod_config(self, mainConfig, listSNITuple, dvsni_key,
+                         listlistAddrs):
         """
         Modifies Apache config files to include the challenge virtual servers
 
@@ -1173,7 +1180,7 @@ DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
         # TODO: Use ip address of existing vhost instead of relying on FQDN
         configText = "<IfModule mod_ssl.c> \n"
         for idx, lis in enumerate(listlistAddrs):
-            configText += self.__getConfigText(listSNITuple[idx][2], lis, self.key)
+            configText += self.__getConfigText(listSNITuple[idx][2], lis, dvsni_key)
         configText += "</IfModule> \n"
 
         self.dvsni_conf_include_check(mainConfig)
@@ -1197,7 +1204,7 @@ DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
             #print "Including challenge virtual host(s)"
             self.add_dir("/files" + mainConfig, "Include", APACHE_CHALLENGE_CONF)
 
-    def createChallengeCert(self, name, ext, nonce, key):
+    def dvsni_create_chall_cert(self, name, ext, nonce, key):
         """
         Modifies challenge certificate configuration and calls openssl binary to create a certificate
 

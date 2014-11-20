@@ -1,16 +1,19 @@
-import abc
-from abc_base import Configurator
+import abc, os, sys, shutil, time
+from letsencrypt.client.configurator import Configurator
 
 import augeas
-
+from letsencrypt.client import le_util, logger
 from letsencrypt.client.CONFIG import TEMP_CHECKPOINT_DIR, IN_PROGRESS_DIR
+from letsencrypt.client.CONFIG import BACKUP_DIR
 
 class AugeasConfigurator(Configurator):
 
     def __init__(self):
+        super(AugeasConfigurator, self).__init__()
+        # TODO: this instantiation can be optimized to only load
+        #       relevant files - I believe -> NO_MODL_AUTOLOAD
         # Set Augeas flags to save backup
         self.aug = augeas.Augeas(flags=augeas.Augeas.NONE)
-
         self.save_notes = ""
 
     def deploy_cert(self, vhost, cert, key , cert_chain=None):
