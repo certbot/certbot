@@ -8,7 +8,7 @@ Apache, though we will be expanding it to other platforms.
 
 ## Running the demo code on Ubuntu
 
-`sudo apt-get install python python-setuptools python-dev python-augeas gcc`
+`sudo apt-get install python python-setuptools python-dev python-augeas gcc swig dialog`
 
 `python setup.py install --user`
 
