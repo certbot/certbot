@@ -1,3 +1,7 @@
+# Note: abc requires python 2.6 so we may remove this before
+# launch.  This should help in the creation of other configurators while
+# we develop though
+
 import abc
 
 class Configurator(object):
@@ -114,4 +118,14 @@ class Configurator(object):
         """
         Restart or refresh the server content
         """
+        return
+
+    @abc.abstractmethod
+    def perform(self, chall_type, tup):
+        """ Perform the given challenge"""
+        return
+
+    @abc.abstractmethod
+    def cleanup(self):
+        """ Cleanup configuration changes from challenge """
         return
