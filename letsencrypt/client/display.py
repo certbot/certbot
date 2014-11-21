@@ -6,28 +6,31 @@ import dialog
 WIDTH = 72
 HEIGHT = 20
 
+
 class SingletonD(object):
     _instance = None
+
     def __new__(cls, *args, **kwargs):
         if not cls._instance:
             cls._instance = super(SingletonD, cls).__new__(
-                                cls, *args, **kwargs)
+                cls, *args, **kwargs)
         return cls._instance
 
 
 class Display(SingletonD):
     """Generic display."""
 
-    def generic_notification(self, message, width = WIDTH, height = HEIGHT):
+    def generic_notification(self, message, width=WIDTH, height=HEIGHT):
         raise NotImplementedError()
 
-    def generic_menu(self, message, choices, input_text = "", width = WIDTH, height = HEIGHT):
+    def generic_menu(self, message, choices, input_text="",
+                     width=WIDTH, height=HEIGHT):
         raise NotImplementedError()
 
     def generic_input(self, message):
         raise NotImplementedError()
 
-    def generic_yesno(self, message, yes_label = "Yes", no_label = "No"):
+    def generic_yesno(self, message, yes_label="Yes", no_label="No"):
         raise NotImplementedError()
 
     def filter_names(self, names):
@@ -46,9 +49,9 @@ class Display(SingletonD):
         raise NotImplementedError()
 
     def gen_https_names(self, domains):
-        """
-        Returns a string of the domains formatted nicely with https:// prepended
-        to each
+        """Returns a string of the https domains.
+
+        Domains are formatted nicely with https:// prepended to each.
         """
         result = ""
         if len(domains) > 2:
@@ -86,28 +89,28 @@ class NcursesDisplay(Display):
     def __init__(self):
         self.d = dialog.Dialog()
 
-    def generic_notification(self, message, w = WIDTH, h = HEIGHT):
-        self.d.msgbox(message, width = w, height = h)
+    def generic_notification(self, message, w=WIDTH, h=HEIGHT):
+        self.d.msgbox(message, width=w, height=h)
 
-    def generic_menu(self, message, choices, input_text = "", width = WIDTH,
-                     height = HEIGHT):
+    def generic_menu(self, message, choices, input_text="", width=WIDTH,
+                     height=HEIGHT):
         # Can accept either tuples or just the actual choices
         if choices and isinstance(choices[0], tuple):
-            c, selection = self.d.menu(message, choices = choices,
-                           width = WIDTH, height = HEIGHT)
+            c, selection = self.d.menu(
+                message, choices=choices, width=WIDTH, height=HEIGHT)
             return c, str(selection)
         else:
             choices = list(enumerate(choices, 1))
-            code, s = self.d.menu(message, choices = choices,
-                               width = WIDTH, height = HEIGHT)
+            code, s = self.d.menu(
+                message, choices=choices, width=WIDTH, height=HEIGHT)
 
-            return code (int(s) - 1)
+            return code(int(s) - 1)
 
     def generic_input(self, message):
         return self.d.inputbox(message)
 
-    def generic_yesno(self, message, yes = "Yes", no = "No"):
-        a = self.d.yesno(message, HEIGHT, WIDTH, yes_label = yes, no_label = no)
+    def generic_yesno(self, message, yes="Yes", no="No"):
+        a = self.d.yesno(message, HEIGHT, WIDTH, yes_label=yes, no_label=no)
 
         return a == self.d.DIALOG_OK
 
@@ -118,24 +121,23 @@ class NcursesDisplay(Display):
 
         return c, [str(s) for s in names]
 
-
     def success_installation(self, domains):
         self.d.msgbox("\nCongratulations! You have successfully enabled "
                       + self.gen_https_names(domains) + "!", width=WIDTH)
 
     def display_certs(self, certs):
         list_choices = [
-             (str(i+1),
-              "%s | %s | %s" %
-              (str(c["cn"].ljust(WIDTH - 39)),
-               c["not_before"].strftime("%m-%d-%y"),
-               "Installed" if c["installed"] else ""))
+            (str(i+1), "%s | %s | %s" %
+                (str(c["cn"].ljust(WIDTH - 39)),
+                 c["not_before"].strftime("%m-%d-%y"),
+                 "Installed" if c["installed"] else ""))
             for i, c in enumerate(certs)]
 
-        code, s = self.d.menu("Which certificates would you like to revoke?",
-                           choices = list_choices, help_button=True,
-                           help_label="More Info", ok_label="Revoke",
-                           width=WIDTH, height=HEIGHT)
+        code, s = self.d.menu(
+            "Which certificates would you like to revoke?",
+            choices=list_choices, help_button=True,
+            help_label="More Info", ok_label="Revoke",
+            width=WIDTH, height=HEIGHT)
         if not s:
             s = -1
         return code, (int(s) - 1)
@@ -160,14 +162,15 @@ class FileDisplay(Display):
     def __init__(self, outfile):
         self.outfile = outfile
 
-    def generic_notification(self, message, width = WIDTH, height = HEIGHT):
+    def generic_notification(self, message, width=WIDTH, height=HEIGHT):
         side_frame = '-' * (79)
         wm = textwrap.fill(message, 80)
         text = "\n%s\n%s\n%s\n" % (side_frame, wm, side_frame)
         self.outfile.write(text)
         raw_input("Press Enter to Continue")
 
-    def generic_menu(self, message, choices, input_text = "", width = WIDTH, height = HEIGHT):
+    def generic_menu(self, message, choices, input_text="",
+                     width=WIDTH, height=HEIGHT):
         # Can take either tuples or single items in choices list
         if choices and isinstance(choices[0], tuple):
             choices = ["%s - %s" % (c[0], c[1]) for c in choices]
@@ -182,7 +185,8 @@ class FileDisplay(Display):
 
         self.outfile.write("%s\n" % side_frame)
 
-        code, selection = self.__get_valid_int_ans("%s (c to cancel): " % input_text)
+        code, selection = self.__get_valid_int_ans(
+            "%s (c to cancel): " % input_text)
 
         return code, (selection - 1)
 
@@ -194,7 +198,7 @@ class FileDisplay(Display):
         else:
             return OK, ans
 
-    def generic_yesno(self, message, yes_label = "Yes", no_label = "No"):
+    def generic_yesno(self, message, yes_label="Yes", no_label="No"):
         self.outfile.write("\n%s\n" % textwrap.fill(message, 80))
         ans = raw_input("y/n: ")
         return ans.startswith('y') or ans.startswith('Y')
@@ -235,7 +239,7 @@ class FileDisplay(Display):
             else:
                 try:
                     selection = int(ans)
-                    #TODO add check to make sure it is liess than max
+                    # TODO add check to make sure it is liess than max
                     if selection < 0:
                         self.outfile.write(e_msg)
                         continue
@@ -245,7 +249,6 @@ class FileDisplay(Display):
                     self.outfile.write(e_msg)
 
         return code, selection
-
 
     def success_installation(self, domains):
         s_f = '*' * (79)
@@ -258,7 +261,7 @@ class FileDisplay(Display):
         self.outfile.write("Are you sure you would like to revoke \
         the following certificate:\n")
         self.outfile.write(self.cert_info_frame(cert))
-        self.outfile("This action cannot be reversed!\n");
+        self.outfile("This action cannot be reversed!\n")
         ans = raw_input("y/n")
         return ans.startswith('y') or ans.startswith('Y')
 
@@ -272,37 +275,46 @@ CANCEL = "cancel"
 HELP = "help"
 
 
-
 def setDisplay(display_inst):
     global display
     display = display_inst
 
-def generic_notification(message, width = WIDTH, height = HEIGHT):
+
+def generic_notification(message, width=WIDTH, height=HEIGHT):
     display.generic_notification(message, width, height)
 
-def generic_menu(message, choices, input_text = "", width = WIDTH, height = HEIGHT):
+
+def generic_menu(message, choices, input_text="", width=WIDTH, height=HEIGHT):
     return display.generic_menu(message, choices, input_text, width, height)
+
 
 def generic_input(message):
     return display.generic_message(message)
 
-def generic_yesno(message, yes_label = "Yes", no_label = "No"):
+
+def generic_yesno(message, yes_label="Yes", no_label="No"):
     return display.generic_yesno(message, yes_label, no_label)
+
 
 def filter_names(names):
     return display.filter_names(names)
 
+
 def display_certs(certs):
     return display.display_certs(certs)
+
 
 def cert_info_string(cert):
     return display.cert_info_string(cert)
 
+
 def gen_https_names(domains):
     return display.gen_https_names(domains)
 
+
 def success_installation(domains):
     return display.success_installation(domains)
+
 
 def redirect_by_default():
     choices = [
@@ -313,7 +325,7 @@ def redirect_by_default():
                                   "is required or optional.",
                                   choices,
                                   "Please enter the appropriate number",
-                                  width = WIDTH)
+                                  width=WIDTH)
 
     if result[0] != OK:
         return False
@@ -324,6 +336,7 @@ def redirect_by_default():
 
 def confirm_revocation(cert):
     return display.confirm_revocation(cert)
+
 
 def more_info_cert(cert):
     return display.more_info_cert(cert)
