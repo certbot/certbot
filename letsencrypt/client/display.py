@@ -275,7 +275,7 @@ CANCEL = "cancel"
 HELP = "help"
 
 
-def setDisplay(display_inst):
+def set_display(display_inst):
     global display
     display = display_inst
 
