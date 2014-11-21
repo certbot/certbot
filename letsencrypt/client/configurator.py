@@ -76,7 +76,7 @@ class Configurator(object):
         """Make sure the configuration is valid."""
         raise NotImplementedError()
 
-    def restart(self):
+    def restart(self, quiet=False):
         """Restart or refresh the server content."""
         raise NotImplementedError()
 
