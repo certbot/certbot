@@ -52,74 +52,74 @@ class Display(SingletonD):
 class NcursesDisplay(Display):
 
     def __init__(self):
-        self.d = dialog.Dialog()
+        self.dialog = dialog.Dialog()
 
     def generic_notification(self, message, w=WIDTH, h=HEIGHT):
-        self.d.msgbox(message, width=w, height=h)
+        self.dialog.msgbox(message, width=w, height=h)
 
     def generic_menu(self, message, choices, input_text="", width=WIDTH,
                      height=HEIGHT):
         # Can accept either tuples or just the actual choices
         if choices and isinstance(choices[0], tuple):
-            c, selection = self.d.menu(
+            code, selection = self.dialog.menu(
                 message, choices=choices, width=WIDTH, height=HEIGHT)
-            return c, str(selection)
+            return code, str(selection)
         else:
             choices = list(enumerate(choices, 1))
-            code, s = self.d.menu(
+            code, tag = self.dialog.menu(
                 message, choices=choices, width=WIDTH, height=HEIGHT)
 
-            return code(int(s) - 1)
+            return code(int(tag) - 1)
 
     def generic_input(self, message):
-        return self.d.inputbox(message)
+        return self.dialog.inputbox(message)
 
     def generic_yesno(self, message, yes="Yes", no="No"):
-        a = self.d.yesno(message, HEIGHT, WIDTH, yes_label=yes, no_label=no)
-
-        return a == self.d.DIALOG_OK
+        return self.dialog.DIALOG_OK == self.dialog.yesno(
+            message, HEIGHT, WIDTH, yes_label=yes, no_label=no)
 
     def filter_names(self, names):
         choices = [(n, "", 0) for n in names]
-        c, names = self.d.checklist("Which names would you like to activate \
-        HTTPS for?", choices=choices)
-
-        return c, [str(s) for s in names]
+        code, names = self.dialog.checklist(
+            "Which names would you like to activate HTTPS for?",
+            choices=choices)
+        return code, [str(s) for s in names]
 
     def success_installation(self, domains):
-        self.d.msgbox("\nCongratulations! You have successfully enabled "
-                      + gen_https_names(domains) + "!", width=WIDTH)
+        self.dialog.msgbox(
+            "\nCongratulations! You have successfully enabled "
+            + gen_https_names(domains) + "!", width=WIDTH)
 
     def display_certs(self, certs):
         list_choices = [
             (str(i+1), "%s | %s | %s" %
-                (str(c["cn"].ljust(WIDTH - 39)),
-                 c["not_before"].strftime("%m-%d-%y"),
-                 "Installed" if c["installed"] else ""))
+             (str(c["cn"].ljust(WIDTH - 39)),
+              c["not_before"].strftime("%m-%d-%y"),
+              "Installed" if c["installed"] else ""))
             for i, c in enumerate(certs)]
 
-        code, s = self.d.menu(
+        code, tag = self.dialog.menu(
             "Which certificates would you like to revoke?",
             choices=list_choices, help_button=True,
             help_label="More Info", ok_label="Revoke",
             width=WIDTH, height=HEIGHT)
-        if not s:
-            s = -1
-        return code, (int(s) - 1)
+        if not tag:
+            tag = -1
+        return code, (int(tag) - 1)
 
     def confirm_revocation(self, cert):
-        text = "Are you sure you would like to revoke the following \
-        certificate:\n"
+        text = ("Are you sure you would like to revoke the following "
+                "certificate:\n")
         text += cert_info_frame(cert)
         text += "This action cannot be reversed!"
-        a = self.d.yesno(text, width=WIDTH, height=HEIGHT)
-        return a == self.d.DIALOG_OK
+        return self.dialog.DIALOG_OK == self.dialog.yesno(
+            text, width=WIDTH, height=HEIGHT)
 
     def more_info_cert(self, cert):
         text = "Certificate Information:\n"
         text += cert_info_frame(cert)
         print text
-        self.d.msgbox(text, width=WIDTH, height=HEIGHT)
+        self.dialog.msgbox(text, width=WIDTH, height=HEIGHT)
 
 
 class FileDisplay(Display):
@@ -144,9 +144,9 @@ class FileDisplay(Display):
         side_frame = '-' * (79)
         self.outfile.write("%s\n" % side_frame)
 
-        for i, c in enumerate(choices):
-            wc = textwrap.fill("%d: %s" % (i + 1, c), 80)
-            self.outfile.write("%s\n" % wc)
+        for i, choice in enumerate(choices, 1):
+            self.outfile.write(textwrap.fill(
+                "%d: %s" % (i, choice), 80) + '\n')
 
         self.outfile.write("%s\n" % side_frame)
 
@@ -169,13 +169,12 @@ class FileDisplay(Display):
         return ans.startswith('y') or ans.startswith('Y')
 
     def filter_names(self, names):
-        c, s = self.generic_menu(
+        code, tag = self.generic_menu(
             "Choose the names would you like to upgrade to HTTPS?",
-            names,
-            "Select the number of the name: ")
+            names, "Select the number of the name: ")
 
         # Make sure to return a list...
-        return c, [names[s]]
+        return code, [names[tag]]
 
     def display_certs(self, certs):
         menu_choices = [(str(i+1), str(c["cn"]) + " - " + c["pub_key"] +
@@ -183,12 +182,11 @@ class FileDisplay(Display):
                         for i, c in enumerate(certs)]
 
         self.outfile.write("Which certificate would you like to revoke?\n")
-        for c in menu_choices:
-            wm = textwrap.fill("%s: %s - %s Signed (UTC): %s\n" %
-                               (c[0], c[1], c[2], c[3]))
-            self.outfile.write(wm)
+        for choice in menu_choices:
+            self.outfile.write(textwrap.fill(
+                "%s: %s - %s Signed (UTC): %s\n" % choice[:4]))
 
-        return (self.__get_valid_int_ans("Revoke Number (c to cancel): ") - 1)
+        return self.__get_valid_int_ans("Revoke Number (c to cancel): ") - 1
 
     def __get_valid_int_ans(self, input_string):
         valid_ans = False
@@ -218,13 +216,13 @@ class FileDisplay(Display):
     def success_installation(self, domains):
         s_f = '*' * (79)
         wm = textwrap.fill(("Congratulations! You have successfully " +
-                           "enabled %s!") % gen_https_names(domains))
+                            "enabled %s!") % gen_https_names(domains))
         msg = "%s\n%s\n%s\n"
         self.outfile.write(msg % (s_f, wm, s_f))
 
     def confirm_revocation(self, cert):
-        self.outfile.write("Are you sure you would like to revoke \
-        the following certificate:\n")
+        self.outfile.write("Are you sure you would like to revoke "
+                           "the following certificate:\n")
         self.outfile.write(cert_info_frame(cert))
         self.outfile("This action cannot be reversed!\n")
         ans = raw_input("y/n")
@@ -326,7 +324,7 @@ def redirect_by_default():
         return False
 
     # different answer for each type of display
-    return (str(result[1]) == "Secure" or result[1] == 1)
+    return str(result[1]) == "Secure" or result[1] == 1
 
 
 def confirm_revocation(cert):
