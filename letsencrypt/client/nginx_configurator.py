@@ -19,8 +19,9 @@ from letsencrypt.client import augeas_configurator
 #         self.names.append(name)
 
 class NginxConfigurator(augeas_configurator.AugeasConfigurator):
-    
+
     def __init__(self, server_root=CONFIG.SERVER_ROOT):
+        super(NginxConfigurator, self).__init__()
         self.server_root = server_root
 
         # See if any temporary changes need to be recovered
@@ -31,27 +32,16 @@ class NginxConfigurator(augeas_configurator.AugeasConfigurator):
         # Check for errors in parsing files with Augeas
         # TODO - insert nginx lens info here???
         #self.check_parsing_errors("httpd.aug")
-        
 
     def deploy_cert(self, vhost, cert, key, cert_chain=None):
-        """
-        Deploy cert in nginx
-        """
-        return
+        """Deploy cert in nginx"""
 
     def choose_virtual_host(self, name):
-        """
-        Chooses a virtual host based on the given domain name
-        """
-        return None
+        """Chooses a virtual host based on the given domain name"""
 
     def get_all_names(self):
-        """
-        Returns all names found in the nginx configuration
-        """
-        all_names = set()
-        
-        return all_names
+        """Returns all names found in the nginx configuration"""
+        return set()
 
         # Might be helpful... I know nothing about nginx lens
     # def get_include_path(self, cur_dir, arg):
@@ -72,7 +62,7 @@ class NginxConfigurator(augeas_configurator.AugeasConfigurator):
     #     # would create a race condition between the check and this input
 
     #     # TODO: Fix this
-    #     # Check to make sure only expected characters are used <- maybe remove
+    #     # Check to make sure only expected characters are used, maybe remove
     #     # validChars = re.compile("[a-zA-Z0-9.*?_-/]*")
     #     # matchObj = validChars.match(arg)
     #     # if matchObj.group() != arg:
@@ -87,7 +77,8 @@ class NginxConfigurator(augeas_configurator.AugeasConfigurator):
     #         arg = self.server_root + arg[5:]
     #     # TODO: Test if Apache allows ../ or ~/ for Includes
 
-    #     # Attempts to add a transform to the file if one does not already exist
+    #     # Attempts to add a transform to the file if one does not already
+    #     # exist
     #     self.parse_file(arg)
 
     #     # Argument represents an fnmatch regular expression, convert it
@@ -100,8 +91,9 @@ class NginxConfigurator(augeas_configurator.AugeasConfigurator):
     #             # * and ? are the two special fnmatch characters
     #             if "*" in split or "?" in split:
     #                 # Turn it into a augeas regex
-    #                 # TODO: Can this instead be an augeas glob instead of regex
-    #                 splitArg[idx] = "* [label()=~regexp('%s')]" % self.fnmatch_to_re(split)
+    #                 # TODO: Can this be an augeas glob instead of regex
+    #                 splitArg[idx] = ("* [label()=~regexp('%s')]" %
+    #                                  self.fnmatch_to_re(split)
     #         # Reassemble the argument
     #         arg = "/".join(splitArg)
 
@@ -110,7 +102,6 @@ class NginxConfigurator(augeas_configurator.AugeasConfigurator):
     #         return "/files" + arg[:len(arg)-1]
     #     return "/files"+arg
 
-    
     def enable_redirect(self, ssl_vhost):
         """
         Adds Redirect directive to the port 80 equivalent of ssl_vhost
@@ -120,7 +111,6 @@ class NginxConfigurator(augeas_configurator.AugeasConfigurator):
         """
         return
 
-    
     def enable_ocsp_stapling(self, ssl_vhost):
         return False
 
@@ -156,9 +146,7 @@ class NginxConfigurator(augeas_configurator.AugeasConfigurator):
     #     return avail_fp
 
     def enable_site(self, vhost):
-        """
-        Enables an available site, Apache restart required
-        """
+        """Enables an available site, Apache restart required"""
         return False
 
         # Might be a usefule reference
@@ -169,31 +157,29 @@ class NginxConfigurator(augeas_configurator.AugeasConfigurator):
     #     """
     #     # Test if augeas included file for Httpd.lens
     #     # Note: This works for augeas globs, ie. *.conf
-    #     incTest = self.aug.match("/augeas/load/Httpd/incl [. ='" + file_path + "']")
+    #     incTest = self.aug.match(
+    #         "/augeas/load/Httpd/incl [. ='" + file_path + "']")
     #     if not incTest:
     #         # Load up files
     #         #self.httpd_incl.append(file_path)
-    #         #self.aug.add_transform("Httpd.lns", self.httpd_incl, None, self.httpd_excl)
+    #         #self.aug.add_transform(
+    #         #    "Httpd.lns", self.httpd_incl, None, self.httpd_excl)
     #         self.__add_httpd_transform(file_path)
     #         self.aug.load()
 
-
     # Helpful reference?
     # def verify_setup(self):
-    #     '''
-    #     Make sure that files/directories are setup with appropriate permissions
-    #     Aim for defensive coding... make sure all input files
+    #     """
+    #     Make sure that files/directories are setup with appropriate
+    #     permissions. Aim for defensive coding... make sure all input files
     #     have permissions of root
-    #     '''
+    #     """
     #     le_util.make_or_verify_dir(CONFIG.CONFIG_DIR, 0755)
     #     le_util.make_or_verify_dir(CONFIG.WORK_DIR, 0755)
     #     le_util.make_or_verify_dir(CONFIG.BACKUP_DIR, 0755)
-    
+
     def restart(self, quiet=False):
-        """
-        Restarts nginx server
-        """
-        return
+        """Restarts nginx server"""
 
     # May be of use?
     # def __add_httpd_transform(self, incl):
@@ -206,10 +192,8 @@ class NginxConfigurator(augeas_configurator.AugeasConfigurator):
     #     self.aug.set("/augeas/load/Httpd/incl[last()]", incl)
 
     def config_test(self):
-        """ Check Configuration """
+        """Check Configuration"""
         return False
-
-
 
 
 def main():
