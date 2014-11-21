@@ -6,6 +6,7 @@ import sys
 import socket
 import time
 import shutil
+import pkg_resources
 
 from letsencrypt.client.CONFIG import SERVER_ROOT, BACKUP_DIR
 from letsencrypt.client.CONFIG import REWRITE_HTTPS_ARGS, CONFIG_DIR, WORK_DIR
@@ -1180,7 +1181,9 @@ DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
 
         # Check to make sure options-ssl.conf is installed
         if not os.path.isfile(OPTIONS_SSL_CONF):
-            shutil.copyfile("letsencrypt/client/%s" % os.path.basename(OPTIONS_SSL_CONF), OPTIONS_SSL_CONF)
+            dist_conf = pkg_resources.resource_filename(
+                __name__, os.path.basename(OPTIONS_SSL_CONF))
+            shutil.copyfile(dist_conf, OPTIONS_SSL_CONF)
 
         # TODO: Use ip address of existing vhost instead of relying on FQDN
         configText = "<IfModule mod_ssl.c> \n"
