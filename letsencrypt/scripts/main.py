@@ -49,18 +49,18 @@ def main():
         elif o == "--server":
             server = a
         elif o == "--rollback":
-            from letsencrypt.client import configurator, logger
+            from letsencrypt.client import apache_configurator, logger
             logger.setLogger(logger.FileLogger(sys.stdout))
             logger.setLogLevel(logger.INFO)
-            config = configurator.Configurator()
+            config = apache_configurator.ApacheConfigurator()
             config.rollback_checkpoints(a)
             config.restart()
             sys.exit(0)
         elif o == "--view-checkpoints":
-            from letsencrypt.client import configurator, logger
+            from letsencrypt.client import apache_configurator, logger
             logger.setLogger(logger.FileLogger(sys.stdout))
             logger.setLogLevel(logger.INFO)
-            config = configurator.Configurator()
+            config = apache_configurator.ApacheConfigurator()
             config.display_checkpoints()
             sys.exit(0)
         elif o == "--revoke":
