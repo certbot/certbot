@@ -48,23 +48,6 @@ class Display(SingletonD):
     def more_info_cert(self, cert):
         raise NotImplementedError()
 
-    def gen_https_names(self, domains):
-        """Returns a string of the https domains.
-
-        Domains are formatted nicely with https:// prepended to each.
-        """
-        result = ""
-        if len(domains) > 2:
-            for i in range(len(domains)-1):
-                result = result + "https://" + domains[i] + ", "
-            result = result + "and "
-        if len(domains) == 2:
-            return "https://" + domains[0] + " and https://" + domains[1]
-        if domains:
-            result = result + "https://" + domains[len(domains)-1]
-
-        return result
-
     def cert_info_frame(self, cert):
         text = "-" * (WIDTH - 4) + "\n"
         text += self.cert_info_string(cert)
@@ -123,7 +106,7 @@ class NcursesDisplay(Display):
 
     def success_installation(self, domains):
         self.d.msgbox("\nCongratulations! You have successfully enabled "
-                      + self.gen_https_names(domains) + "!", width=WIDTH)
+                      + gen_https_names(domains) + "!", width=WIDTH)
 
     def display_certs(self, certs):
         list_choices = [
@@ -253,7 +236,7 @@ class FileDisplay(Display):
     def success_installation(self, domains):
         s_f = '*' * (79)
         wm = textwrap.fill(("Congratulations! You have successfully " +
-                           "enabled %s!") % self.gen_https_names(domains))
+                           "enabled %s!") % gen_https_names(domains))
         msg = "%s\n%s\n%s\n"
         self.outfile.write(msg % (s_f, wm, s_f))
 
@@ -309,7 +292,21 @@ def cert_info_string(cert):
 
 
 def gen_https_names(domains):
-    return display.gen_https_names(domains)
+    """Returns a string of the https domains.
+
+    Domains are formatted nicely with https:// prepended to each.
+    """
+    result = ""
+    if len(domains) > 2:
+        for i in range(len(domains)-1):
+            result = result + "https://" + domains[i] + ", "
+        result = result + "and "
+    if len(domains) == 2:
+        return "https://" + domains[0] + " and https://" + domains[1]
+    if domains:
+        result = result + "https://" + domains[len(domains)-1]
+
+    return result
 
 
 def success_installation(domains):
