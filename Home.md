@@ -2,7 +2,7 @@
 
 ## Getting Started!
 
-This client is being designed to follow the [ACME protocol](https://github.com/letsencrypt/acme-spec).  The protocol is subject to change, but most changes should mainly effect logic in client.py (which is not overly complex and should be static from one webserver to another)
+This client is being designed to follow the [ACME protocol](https://github.com/letsencrypt/acme-spec).  The protocol is subject to change, but most changes should mainly affect logic in client.py (which is not overly complex and should be static from one webserver to another)
 
 ### Client Installation
 
