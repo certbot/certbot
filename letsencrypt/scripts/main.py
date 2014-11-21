@@ -78,9 +78,9 @@ def main():
             continue
 
     if curses:
-        display.setDisplay(display.NcursesDisplay())
+        display.set_display(display.NcursesDisplay())
     else:
-        display.setDisplay(display.FileDisplay(sys.stdout))
+        display.set_display(display.FileDisplay(sys.stdout))
 
     if not server:
         server = CONFIG.ACME_SERVER
