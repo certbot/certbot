@@ -22,9 +22,6 @@ KEY_DIR = SERVER_ROOT + "ssl/"
 # Certificate storage
 CERT_DIR = SERVER_ROOT + "certs/"
 
-# Used by openssl to sign challenge certificate with letsencrypt extension
-# No longer used
-#CHOC_CERT_CONF = CONFIG_DIR + "choc_cert_extensions.cnf"
 # Contains standard Apache SSL directives
 OPTIONS_SSL_CONF = CONFIG_DIR + "options-ssl.conf"
 # Let's Encrypt SSL vhost configuration extension
