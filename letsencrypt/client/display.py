@@ -1,5 +1,6 @@
 import dialog
 
+
 WIDTH = 72
 HEIGHT = 20
 
@@ -13,18 +14,34 @@ class SingletonD(object):
 
 
 class Display(SingletonD):
+    """Generic display."""
+
     def generic_notification(self, message, width = WIDTH, height = HEIGHT):
-        raise Exception("Error no display defined")
+        raise NotImplementedError()
+
     def generic_menu(self, message, choices, input_text = "", width = WIDTH, height = HEIGHT):
-        raise Exception("Error no display defined")
+        raise NotImplementedError()
+
     def generic_input(self, message):
-        raise Exception("Error no display defined")
+        raise NotImplementedError()
+
     def generic_yesno(self, message, yes_label = "Yes", no_label = "No"):
-        raise Exception("Error no display defined")
+        raise NotImplementedError()
+
     def filter_names(self, names):
-        raise Exception("Error no display defined")
+        raise NotImplementedError()
+
     def success_installation(self, domains):
-        raise Exception("Error no display defined")
+        raise NotImplementedError()
+
+    def display_certs(self, certs):
+        raise NotImplementedError()
+
+    def confirm_revocation(self, cert):
+        raise NotImplementedError()
+
+    def more_info_cert(self, cert):
+        raise NotImplementedError()
 
     def gen_https_names(self, domains):
         """
@@ -43,12 +60,6 @@ class Display(SingletonD):
 
         return result
 
-    def display_certs(self, certs):
-        raise Exception("Error no display define")
-
-    def confirm_revocation(self, cert):
-        raise Exception("Error no display defined")
-
     def cert_info_frame(self, cert):
         text = "-" * (WIDTH - 4) + "\n"
         text += self.cert_info_string(cert)
@@ -66,9 +77,6 @@ class Display(SingletonD):
         text += "SHA1: %s\n" % cert["fingerprint"]
         text += "Installed: %s\n" % cert["installed"]
         return text
-
-    def more_info_cert(self, cert):
-        raise Exception("Error no display defined")
 
 
 class NcursesDisplay(Display):

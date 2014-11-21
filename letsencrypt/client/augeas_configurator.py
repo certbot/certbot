@@ -1,4 +1,4 @@
-import abc, os, sys, shutil, time
+import os, sys, shutil, time
 from letsencrypt.client.configurator import Configurator
 
 import augeas
@@ -15,54 +15,6 @@ class AugeasConfigurator(Configurator):
         # Set Augeas flags to save backup
         self.aug = augeas.Augeas(flags=augeas.Augeas.NONE)
         self.save_notes = ""
-
-    def deploy_cert(self, vhost, cert, key , cert_chain=None):
-        raise Exception("Error: augeas Configurator class")
-
-
-    def choose_virtual_host(self, name):
-        """
-        Chooses a virtual host based on a given domain name
-        """
-        raise Exception("Error: augeas Configurator class")
-
-    def get_all_names(self):
-        """
-        Return  all names found in the Configuration
-        """
-        raise Exception("Error: augeas Configurator class")
-
-    def enable_redirect(self, ssl_vhost):
-        """
-        Makes all traffic redirect to the given ssl_vhost
-        ie. port 80 => 443
-        """
-        raise Exception("Error: augeas Configurator class")
-
-    def enable_hsts(self, ssl_vhost):
-        """
-        Enable HSTS on the given ssl_vhost
-        """
-        raise Exception("Error: augeas Configurator class")
-
-    def enable_ocsp_stapling(self, ssl_vhost):
-        """
-        Enable OCSP stapling on given ssl_vhost
-        """
-        raise Exception("Error: augeas Configurator class")
-
-    def get_all_certs_keys(self):
-        """
-        Retrieve all certs and keys set in configuration
-        return list of tuples with form [(cert, key, path)]
-        """
-        raise Exception("Error: augeas Configurator class")
-
-    def enable_site(self, vhost):
-        """
-        Enable the site at the given vhost
-        """
-        raise Exception("Error: augeas Configurator class")
 
     def check_parsing_errors(self, lens):
         """
@@ -400,25 +352,3 @@ class AugeasConfigurator(Configurator):
             sys.exit(41)
 
         return True
-
-
-
-    def config_test(self):
-        """
-        Make sure the configuration is valid
-        """
-        raise Exception("Error: augeas Configurator class")
-
-    def restart(self):
-        """
-        Restart or refresh the server content
-        """
-        raise Exception("Error: augeas Configurator class")
-    
-    def perform(self, challenge):
-        """ Perform the challenge """
-        raise Exception("Error: augeas Configurator class")
-
-    def cleanup(self):
-        """ Clean up any challenge configurations """
-        raise Exception("Error: augeas Configurator class")
