@@ -5,6 +5,7 @@ import time
 import dialog
 
 from letsencrypt.client import display
+from letsencrypt.client import errors
 
 
 class Singleton(object):
@@ -35,7 +36,7 @@ class Logger(Singleton):
         return self.debugLevelStr[level]
 
     def log(self, level, data):
-        raise Exception("Error: no Logger defined")
+        raise errors.LetsEncryptClientError("No Logger defined")
 
     def timefmt(self, t=None):
         if t == None:

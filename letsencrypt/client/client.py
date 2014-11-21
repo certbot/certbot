@@ -16,6 +16,7 @@ from letsencrypt.client import apache_configurator
 from letsencrypt.client import CONFIG
 from letsencrypt.client import crypto_util
 from letsencrypt.client import display
+from letsencrypt.client import errors
 from letsencrypt.client import le_util
 from letsencrypt.client import logger
 
@@ -328,7 +329,7 @@ class Client(object):
                              (msg_dict["error"],
                               msg_dict.get("message", ""),
                               msg_dict.get("moreInfo", "")))
-                raise Exception(msg_dict["error"])
+                raise errors.LetsEncryptClientError(msg_dict["error"])
 
             elif msg_dict["type"] == "defer":
                 logger.info("Waiting for %d seconds..." % delay)
