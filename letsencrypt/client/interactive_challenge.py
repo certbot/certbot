@@ -31,5 +31,5 @@ class Interactive_Challenge(challenge.Challenge):
     def get_display_string(self):
         return textwrap.fill(self.string, width=self.BOX_SIZE) + "\n\nPlease Press Enter to Continue"
 
-    def formatted_reasons(self):
-        return "\n\t* %s\n", self.reason
+    # def formatted_reasons(self):
+    #    return "\n\t* %s\n", self.reason

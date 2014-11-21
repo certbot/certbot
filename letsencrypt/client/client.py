@@ -624,16 +624,16 @@ class Client(object):
         return key_pem, csr_pem
 
 
-    def choice_of_ca(self):
-        choices = self.get_cas()
-        message = "Pick a Certificate Authority.  They're all unique and special!"
-        in_txt = "Enter the number of a Certificate Authority (c to cancel): "
-        code, selection = display.generic_menu(message, choices, in_txt)
+    # def choice_of_ca(self):
+    #     choices = self.get_cas()
+    #     message = "Pick a Certificate Authority.  They're all unique and special!"
+    #     in_txt = "Enter the number of a Certificate Authority (c to cancel): "
+    #     code, selection = display.generic_menu(message, choices, in_txt)
 
-        if code != display.OK:
-            sys.exit(0)
+    #     if code != display.OK:
+    #         sys.exit(0)
 
-        return selection
+    #     return selection
 
     # Legacy Code: Although I would like to see a free and open marketplace
     # in the future. The Let's Encrypt Client will not have this feature at

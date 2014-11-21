@@ -217,7 +217,7 @@ class AugeasConfigurator(configurator.Configurator):
         try:
             os.rename(cp_dir, final_dir)
         except:
-            logger.error("Unable to finalize checkpoint, %s -> %s" % cp_dir, final_dir)
+            logger.error("Unable to finalize checkpoint, %s -> %s" % (cp_dir, final_dir))
             return False
         return True
 
