@@ -48,24 +48,6 @@ class Display(SingletonD):
     def more_info_cert(self, cert):
         raise NotImplementedError()
 
-    def cert_info_frame(self, cert):
-        text = "-" * (WIDTH - 4) + "\n"
-        text += self.cert_info_string(cert)
-        text += "-" * (WIDTH - 4)
-        return text
-
-    def cert_info_string(self, cert):
-        text = "Subject: %s\n" % cert["subject"]
-        text += "SAN: %s\n" % cert["san"]
-        text += "Issuer: %s\n" % cert["issuer"]
-        text += "Public Key: %s\n" % cert["pub_key"]
-        text += "Not Before: %s\n" % str(cert["not_before"])
-        text += "Not After: %s\n" % str(cert["not_after"])
-        text += "Serial Number: %s\n" % cert["serial"]
-        text += "SHA1: %s\n" % cert["fingerprint"]
-        text += "Installed: %s\n" % cert["installed"]
-        return text
-
 
 class NcursesDisplay(Display):
 
@@ -128,14 +110,14 @@ class NcursesDisplay(Display):
     def confirm_revocation(self, cert):
         text = "Are you sure you would like to revoke the following \
         certificate:\n"
-        text += self.cert_info_frame(cert)
+        text += cert_info_frame(cert)
         text += "This action cannot be reversed!"
         a = self.d.yesno(text, width=WIDTH, height=HEIGHT)
         return a == self.d.DIALOG_OK
 
     def more_info_cert(self, cert):
         text = "Certificate Information:\n"
-        text += self.cert_info_frame(cert)
+        text += cert_info_frame(cert)
         print text
         self.d.msgbox(text, width=WIDTH, height=HEIGHT)
 
@@ -243,14 +225,14 @@ class FileDisplay(Display):
     def confirm_revocation(self, cert):
         self.outfile.write("Are you sure you would like to revoke \
         the following certificate:\n")
-        self.outfile.write(self.cert_info_frame(cert))
+        self.outfile.write(cert_info_frame(cert))
         self.outfile("This action cannot be reversed!\n")
         ans = raw_input("y/n")
         return ans.startswith('y') or ans.startswith('Y')
 
     def more_info_cert(self, cert):
         self.outfile.write("\nCertificate Information:\n")
-        self.outfile.write(self.cert_info_frame(cert))
+        self.outfile.write(cert_info_frame(cert))
 
 display = None
 OK = "ok"
@@ -287,8 +269,24 @@ def display_certs(certs):
     return display.display_certs(certs)
 
 
+def cert_info_frame(cert):
+    text = "-" * (WIDTH - 4) + "\n"
+    text += cert_info_string(cert)
+    text += "-" * (WIDTH - 4)
+    return text
+
+
 def cert_info_string(cert):
-    return display.cert_info_string(cert)
+    text = "Subject: %s\n" % cert["subject"]
+    text += "SAN: %s\n" % cert["san"]
+    text += "Issuer: %s\n" % cert["issuer"]
+    text += "Public Key: %s\n" % cert["pub_key"]
+    text += "Not Before: %s\n" % str(cert["not_before"])
+    text += "Not After: %s\n" % str(cert["not_after"])
+    text += "Serial Number: %s\n" % cert["serial"]
+    text += "SHA1: %s\n" % cert["fingerprint"]
+    text += "Installed: %s\n" % cert["installed"]
+    return text
 
 
 def gen_https_names(domains):
