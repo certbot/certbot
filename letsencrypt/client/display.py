@@ -97,7 +97,7 @@ class NcursesDisplay(Display):
                            width = WIDTH, height = HEIGHT)
             return c, str(selection)
         else:
-            choices = [((i + 1), c) for c in choices]
+            choices = list(enumerate(choices, 1))
             code, s = self.d.menu(message, choices = choices,
                                width = WIDTH, height = HEIGHT)
 

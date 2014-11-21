@@ -20,16 +20,16 @@ class Interactive_Challenge(challenge.Challenge):
 
     def perform(self, quiet=True):
         if quiet:
-            dialog.Dialog().msgbox(get_display_string(), width=BOX_SIZE)
+            dialog.Dialog().msgbox(self.get_display_string(), width=self.BOX_SIZE)
         else:
-            print get_display_string()
+            print self.get_display_string()
             raw_input('')
 
         return True
 
 
     def get_display_string(self):
-        return textwrap.fill(self.string, width=BOX_SIZE) + "\n\nPlease Press Enter to Continue"
+        return textwrap.fill(self.string, width=self.BOX_SIZE) + "\n\nPlease Press Enter to Continue"
 
     def formatted_reasons(self):
         return "\n\t* %s\n", self.reason
