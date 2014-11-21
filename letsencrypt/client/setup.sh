@@ -1,3 +1,2 @@
 #!/usr/bin/sh
-cp ca_offerings /etc/trustify/.ca_offerings
-cp options-ssl.conf /etc/trustify/options-ssl.conf
+cp options-ssl.conf /etc/letsencrypt/options-ssl.conf
