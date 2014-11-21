@@ -26,4 +26,4 @@ Two: If you have a spare domain name you can get a browser trusted certificate a
 
 Once you have your own server running, you can point the server to your client with any domain by modifying the /etc/hosts file.  You can now configure your server to host any domains that you please and test a variety of configurations.
 
-This setup should allow you to do rapid testing in the future.  I would like to create an automatic testing process that would allow all additions of the code base to be automatically and thoroughly tested using different example configurations. More on this in the future work section.
+This setup should allow you to do rapid testing in the future.  I would like to create an automatic testing process that would allow all additions of the code base to be automatically and thoroughly tested using different example configurations. More on this in the "How to Contribute" section.
