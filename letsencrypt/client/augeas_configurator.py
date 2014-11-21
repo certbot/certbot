@@ -35,15 +35,17 @@ class AugeasConfigurator(configurator.Configurator):
             # As aug.get may return null
             if lens_path and lens in lens_path:
                 # Strip off /augeas/files and /error
-                logger.error('There has been an error in parsing the file: %s' % e[13:len(e) - 6])
+                logger.error('There has been an error in parsing the file: '
+                             '%s' % e[13:len(e) - 6])
                 logger.error(self.aug.get(e + '/message'))
 
-
     def save(self, title=None, temporary=False):
-        """
-        Saves all changes to the configuration files
+        """Saves all changes to the configuration files.
+
         This function is not transactional
-        TODO: Instead rely on challenge to backup all files before modifications
+
+        TODO: Instead rely on challenge to backup all files before
+        modifications
 
         title:     string - The title of the save. If a title is given, the
                             configuration will be saved as a new checkpoint
@@ -66,7 +68,8 @@ class AugeasConfigurator(configurator.Configurator):
             # Only print new errors caused by recent save
             for err in new_errs:
                 if err not in ex_errs:
-                    logger.error("Unable to save file - %s" % err[13:len(err)-6])
+                    logger.error("Unable to save file - "
+                                 "%s" % err[13:len(err)-6])
             logger.error("Attempted Save Notes")
             logger.error(self.save_notes)
             # Erase Save Notes
@@ -99,7 +102,6 @@ class AugeasConfigurator(configurator.Configurator):
             else:
                 self.add_to_checkpoint(CONFIG.IN_PROGRESS_DIR, save_files)
 
-
         if title and not temporary and os.path.isdir(CONFIG.IN_PROGRESS_DIR):
             success = self.__finalize_checkpoint(CONFIG.IN_PROGRESS_DIR, title)
             if not success:
@@ -107,7 +109,6 @@ class AugeasConfigurator(configurator.Configurator):
                 # This will be hopefully be cleaned up on the recovery
                 # routine startup
                 sys.exit(9)
-
 
         self.aug.set("/augeas/save", save_state)
         self.save_notes = ""
@@ -125,14 +126,14 @@ class AugeasConfigurator(configurator.Configurator):
             changes = True
             if result != 0:
                 # We have a partial or incomplete recovery
-                logger.fatal("Incomplete or failed recovery for %s" % CONFIG.TEMP_CHECKPOINT_DIR)
+                logger.fatal("Incomplete or failed recovery for "
+                             "%s" % CONFIG.TEMP_CHECKPOINT_DIR)
                 sys.exit(67)
             # Remember to reload Augeas
             self.aug.load()
 
-
-    def rollback_checkpoints(self, rollback = 1):
-        """ Revert 'rollback' number of configuration checkpoints """
+    def rollback_checkpoints(self, rollback=1):
+        """Revert 'rollback' number of configuration checkpoints."""
         try:
             rollback = int(rollback)
         except:
@@ -146,7 +147,8 @@ class AugeasConfigurator(configurator.Configurator):
         backups.sort()
 
         if len(backups) < rollback:
-            logger.error("Unable to rollback %d checkpoints, only %d exist" % (rollback, len(backups)))
+            logger.error(("Unable to rollback %d checkpoints, only "
+                         "%d exist") % (rollback, len(backups)))
 
         while rollback > 0 and backups:
             cp_dir = CONFIG.BACKUP_DIR + backups.pop()
@@ -169,7 +171,8 @@ class AugeasConfigurator(configurator.Configurator):
         backups.sort(reverse=True)
 
         if not backups:
-            print "Letsencrypt has not saved any backups of your apache configuration"
+            print ("Letsencrypt has not saved any backups of your "
+                   "apache configuration")
         # Make sure there isn't anything unexpected in the backup folder
         # There should only be timestamped (float) directories
         try:
@@ -209,7 +212,7 @@ class AugeasConfigurator(configurator.Configurator):
             with open(cp_dir + "CHANGES_SINCE.tmp", 'w') as ft:
                 ft.write("-- %s --\n" % title)
                 with open(cp_dir + "CHANGES_SINCE", 'r') as f:
-                  ft.write(f.read())
+                    ft.write(f.read())
             shutil.move(cp_dir + "CHANGES_SINCE.tmp", cp_dir + "CHANGES_SINCE")
         except:
             logger.error("Unable to finalize checkpoint - adding title")
@@ -217,7 +220,8 @@ class AugeasConfigurator(configurator.Configurator):
         try:
             os.rename(cp_dir, final_dir)
         except:
-            logger.error("Unable to finalize checkpoint, %s -> %s" % (cp_dir, final_dir))
+            logger.error("Unable to finalize checkpoint, %s -> %s" %
+                         (cp_dir, final_dir))
             return False
         return True
 
@@ -239,15 +243,14 @@ class AugeasConfigurator(configurator.Configurator):
                 # Tag files with index so multiple files can
                 # have the same filename
                 logger.debug("Creating backup of %s" % filename)
-                shutil.copy2(filename, cp_dir + os.path.basename(filename) + "_" + str(idx))
+                shutil.copy2(filename, cp_dir + os.path.basename(filename)
+                             + "_" + str(idx))
                 op_fd.write(filename + '\n')
                 idx += 1
         op_fd.close()
 
         with open(cp_dir + "CHANGES_SINCE", 'a') as notes_fd:
             notes_fd.write(self.save_notes)
-
-
 
     def __recover_checkpoint(self, cp_dir):
         """
@@ -262,7 +265,8 @@ class AugeasConfigurator(configurator.Configurator):
                 with open(cp_dir + "/FILEPATHS") as f:
                     filepaths = f.read().splitlines()
                     for idx, fp in enumerate(filepaths):
-                        shutil.copy2(cp_dir + '/' + os.path.basename(fp) + '_' + str(idx), fp)
+                        shutil.copy2(cp_dir + '/' + os.path.basename(fp)
+                                     + '_' + str(idx), fp)
             except:
                 # This file is required in all checkpoints.
                 logger.error("Unable to recover files from %s" % cp_dir)
@@ -286,16 +290,16 @@ class AugeasConfigurator(configurator.Configurator):
                 protected_files = protected_fd.read().splitlines()
                 for filename in protected_files:
                     if filename in save_files:
-                        return False, "Attempting to overwrite challenge file - %s" % filename
+                        return False, ("Attempting to overwrite challenge "
+                                       "file - %s" % filename)
 
         return True, "Successful"
 
-
     def register_file_creation(self, temporary, *files):
-        """
-        This is used to register the creation of all files during Letsencrypt
-        execution. Call this method before writing to the file to make sure
-        that the file will be cleaned up if the program exits unexpectedly.
+        """Register the creation of all files during Letsencrypt execution.
+
+        Call this method before writing to the file to make sure that the
+        file will be cleaned up if the program exits unexpectedly.
         (Before a save occurs)
         """
         if temporary:
@@ -311,14 +315,14 @@ class AugeasConfigurator(configurator.Configurator):
         except:
             logger.error("ERROR: Unable to register file creation")
 
-
     def recovery_routine(self):
-        """
-        Revert all previously modified files. First, any changes found in
-        CONFIG.TEMP_CHECKPOINT_DIR are removed, then IN_PROGRESS changes are removed
-        The order is important. IN_PROGRESS is unable to add files that are
-        already added by a TEMP change.  Thus TEMP must be rolled back first
-        because that will be the 'latest' occurrence of the file.
+        """Revert all previously modified files.
+
+        First, any changes found in CONFIG.TEMP_CHECKPOINT_DIR are removed,
+        then IN_PROGRESS changes are removed The order is important.
+        IN_PROGRESS is unable to add files that are already added by a TEMP
+        change.  Thus TEMP must be rolled back first because that will be the
+        'latest' occurrence of the file.
         """
         self.revert_challenge_config()
         if os.path.isdir(CONFIG.IN_PROGRESS_DIR):
@@ -327,12 +331,12 @@ class AugeasConfigurator(configurator.Configurator):
                 # We have a partial or incomplete recovery
                 # Not as egregious
                 # TODO: Additional tests? recovery
-                logger.fatal("Incomplete or failed recovery for %s" % CONFIG.IN_PROGRESS_DIR)
+                logger.fatal("Incomplete or failed recovery for %s" %
+                             CONFIG.IN_PROGRESS_DIR)
                 sys.exit(68)
 
             # Need to reload configuration after these changes take effect
             self.aug.load()
-
 
     def __remove_contained_files(self, file_list):
         """
@@ -346,14 +350,18 @@ class AugeasConfigurator(configurator.Configurator):
             with open(file_list, 'r') as f:
                 filepaths = f.read().splitlines()
                 for fp in filepaths:
-                    # Files are registered before they are added... so check to see if file
-                    # exists first
+                    # Files are registered before they are added... so
+                    # check to see if file exists first
                     if os.path.lexists(fp):
                         os.remove(fp)
                     else:
-                        logger.warn("File: %s - Could not be found to be deleted\nProgram was probably shut down unexpectedly, in which case this is not a problem" % fp)
+                        logger.warn((
+                            "File: %s - Could not be found to be deleted\n"
+                            "Program was probably shut down unexpectedly, "
+                            "in which case this is not a problem") % fp)
         except IOError:
-            logger.fatal("Unable to remove filepaths contained within %s" % file_list)
+            logger.fatal(
+                "Unable to remove filepaths contained within %s" % file_list)
             sys.exit(41)
 
         return True
