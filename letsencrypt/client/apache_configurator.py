@@ -1244,7 +1244,7 @@ DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
         return h.hexdigest() + INVALID_EXT
 
 def main():
-    config = Configurator()
+    config = ApacheConfigurator()
     logger.setLogger(logger.FileLogger(sys.stdout))
     logger.setLogLevel(logger.DEBUG)
     """
