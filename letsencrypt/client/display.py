@@ -1,3 +1,5 @@
+import textwrap
+
 import dialog
 
 
@@ -80,7 +82,6 @@ class Display(SingletonD):
 
 
 class NcursesDisplay(Display):
-    import dialog
 
     def __init__(self):
         self.d = dialog.Dialog()
@@ -153,11 +154,8 @@ class NcursesDisplay(Display):
         print text
         self.d.msgbox(text, width=WIDTH, height=HEIGHT)
 
-textwrap = None
 
 class FileDisplay(Display):
-    global textwrap
-    import textwrap
 
     def __init__(self, outfile):
         self.outfile = outfile

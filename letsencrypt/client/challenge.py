@@ -1,5 +1,5 @@
 from letsencrypt.client import logger
-#import logger
+
 
 class Challenge(object):
     def __init__(self, configurator):

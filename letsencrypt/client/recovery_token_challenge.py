@@ -1,6 +1,9 @@
-from letsencrypt.client.challenge import Challenge
+import dialog
 
-class RecoveryToken(Challenge):
+from letsencrypt.client import challenge
+
+
+class RecoveryToken(challenge.Challenge):
 
     def __init__(self):
         self.token = ""

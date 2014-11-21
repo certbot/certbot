@@ -1,5 +1,9 @@
-from letsencrypt.client.challenge import Challenge
 import textwrap
+
+import dialog
+
+from letsencrypt.client import challenge
+
 
 ###########################################################
 # Interactive challenge displays the string sent by the CA
@@ -8,7 +12,7 @@ import textwrap
 # client should continue the letsencrypt process
 ###########################################################
 
-class Interactive_Challenge(Challenge):
+class Interactive_Challenge(challenge.Challenge):
     BOX_SIZE = 70
 
     def __init__(self, string):

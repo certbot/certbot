@@ -1,8 +1,5 @@
-from letsencrypt.client.CONFIG import SERVER_ROOT, BACKUP_DIR
-from letsencrypt.client.CONFIG import REWRITE_HTTPS_ARGS, CONFIG_DIR, WORK_DIR
-from letsencrypt.client.CONFIG import TEMP_CHECKPOINT_DIR, IN_PROGRESS_DIR
-from letsencrypt.client.CONFIG import OPTIONS_SSL_CONF, LE_VHOST_EXT
-from letsencrypt.client import logger, le_util, configurator
+from letsencrypt.client import CONFIG
+from letsencrypt.client import augeas_configurator
 
 
 # This might be helpful... but feel free to use whatever you want
@@ -21,9 +18,9 @@ from letsencrypt.client import logger, le_util, configurator
 #     def add_name(self, name):
 #         self.names.append(name)
 
-class NginxConfigurator(AugeasConfigurator):
+class NginxConfigurator(augeas_configurator.AugeasConfigurator):
     
-    def __init__(self, server_root=SERVER_ROOT):
+    def __init__(self, server_root=CONFIG.SERVER_ROOT):
         self.server_root = server_root
 
         # See if any temporary changes need to be recovered
@@ -188,9 +185,9 @@ class NginxConfigurator(AugeasConfigurator):
     #     Aim for defensive coding... make sure all input files
     #     have permissions of root
     #     '''
-    #     le_util.make_or_verify_dir(CONFIG_DIR, 0755)
-    #     le_util.make_or_verify_dir(WORK_DIR, 0755)
-    #     le_util.make_or_verify_dir(BACKUP_DIR, 0755)
+    #     le_util.make_or_verify_dir(CONFIG.CONFIG_DIR, 0755)
+    #     le_util.make_or_verify_dir(CONFIG.WORK_DIR, 0755)
+    #     le_util.make_or_verify_dir(CONFIG.BACKUP_DIR, 0755)
     
     def restart(self, quiet=False):
         """
