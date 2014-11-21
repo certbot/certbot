@@ -1,3 +1,5 @@
+import os.path
+
 # CA hostname
 # If you create your own server... change this line
 # Note: the server certificate must be trusted in order to avoid
@@ -10,24 +12,24 @@ CONFIG_DIR = "/etc/letsencrypt/"
 # Working directory for letsencrypt
 WORK_DIR = "/var/lib/letsencrypt/"
 # Directory where configuration backups are stored
-BACKUP_DIR = WORK_DIR + "backups/"
+BACKUP_DIR = os.path.join(WORK_DIR, "backups/")
 # Replaces MODIFIED_FILES, directory where temp checkpoint is created
-TEMP_CHECKPOINT_DIR = WORK_DIR + "temp_checkpoint/"
+TEMP_CHECKPOINT_DIR = os.path.join(WORK_DIR, "temp_checkpoint/")
 # Directory used before a permanent checkpoint is finalized
-IN_PROGRESS_DIR = BACKUP_DIR + "IN_PROGRESS/"
+IN_PROGRESS_DIR = os.path.join(BACKUP_DIR, "IN_PROGRESS/")
 # Directory where all certificates/keys are stored - used for easy revocation
-CERT_KEY_BACKUP = WORK_DIR + "keys-certs/"
+CERT_KEY_BACKUP = os.path.join(WORK_DIR, "keys-certs/")
 # Where all keys should be stored
-KEY_DIR = SERVER_ROOT + "ssl/"
+KEY_DIR = os.path.join(SERVER_ROOT, "ssl/")
 # Certificate storage
-CERT_DIR = SERVER_ROOT + "certs/"
+CERT_DIR = os.path.join(SERVER_ROOT, "certs/")
 
 # Contains standard Apache SSL directives
-OPTIONS_SSL_CONF = CONFIG_DIR + "options-ssl.conf"
+OPTIONS_SSL_CONF = os.path.join(CONFIG_DIR, "options-ssl.conf")
 # Let's Encrypt SSL vhost configuration extension
 LE_VHOST_EXT = "-le-ssl.conf"
 # Temporary file for challenge virtual hosts
-APACHE_CHALLENGE_CONF = CONFIG_DIR + "le_dvsni_cert_challenge.conf"
+APACHE_CHALLENGE_CONF = os.path.join(CONFIG_DIR, "le_dvsni_cert_challenge.conf")
 
 # Byte size of S and Nonce
 S_SIZE = 32
@@ -37,13 +39,13 @@ NONCE_SIZE = 16
 RSA_KEY_SIZE = 2048
 
 # bits of hashcash to generate
-difficulty = 23
+DIFFICULTY = 23
 
 # Let's Encrypt cert and chain files
 CERT_PATH = CERT_DIR + "cert-letsencrypt.pem"
 CHAIN_PATH = CERT_DIR + "chain-letsencrypt.pem"
 
-#Invalid Extension
+# Invalid Extension
 INVALID_EXT = ".acme.invalid"
 
 # Challenge Preferences Dict for currently supported challenges
@@ -56,4 +58,5 @@ EXCLUSIVE_CHALLENGES = [set(["dvsni", "simpleHttps"])]
 CONFIG_CHALLENGES = {"dvsni", "simpleHttps"}
 
 # Rewrite rule arguments used for redirections to https vhost
-REWRITE_HTTPS_ARGS = ["^.*$", "https://%{SERVER_NAME}%{REQUEST_URI}", "[L,R=permanent]"]
+REWRITE_HTTPS_ARGS = [
+    "^.*$", "https://%{SERVER_NAME}%{REQUEST_URI}", "[L,R=permanent]"]
