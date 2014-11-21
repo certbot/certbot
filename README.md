@@ -9,11 +9,13 @@ Apache, though we will be expanding it to other platforms.
 
 ## Running the demo code on Ubuntu
 
-`sudo apt-get install python python-setuptools python-dev python-augeas gcc swig dialog`
-
-`python setup.py install --user`
-
-`sudo ./letsencrypt.py` (or `~/.local/bin/letsencrypt`)
+```
+sudo apt-get install python python-setuptools python-virtualenv \
+  python-dev python-augeas gcc swig dialog
+virtualenv --system-site-packages venv
+./venv/bin/python setup.py install
+sudo ./venv/bin/letsencrypt
+```
 
 Note, that letsencrypt does not yet handle Debian unstable's Apache2
 conf layout.
