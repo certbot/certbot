@@ -42,6 +42,11 @@ sudo ./letsencrypt.py  (default authentication mode using pythondialog) options
 --agree-eula (Skip the end user agreement screen)
 ```
 
+## More Information
+
+Further Setup, documentation and open projects are available in the [Wiki]
+(https://github.com/letsencrypt/lets-encrypt-preview/wiki)
+
 Client software development can be discussed on this [mailing list]
 (https://groups.google.com/a/letsencrypt.org/forum/#!forum/client-dev)
 
