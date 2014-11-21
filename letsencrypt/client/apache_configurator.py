@@ -20,7 +20,7 @@ import binascii, hashlib
 from Crypto import Random
 from letsencrypt.client.CONFIG import S_SIZE, APACHE_CHALLENGE_CONF, INVALID_EXT
 
-options_ssl_conf = resource_filename(__name__, os.basename(OPTIONS_SSL_CONF))
+options_ssl_conf = resource_filename(__name__, os.path.basename(OPTIONS_SSL_CONF))
 
 #from CONFIG import SERVER_ROOT, BACKUP_DIR, REWRITE_HTTPS_ARGS, CONFIG_DIR,
 #from CONFIG import WORK_DIR, TEMP_CHECKPOINT_DIR, IN_PROGRESS_DIR, OPTIONS_SSL_CONF, LE_VHOST_EXT
