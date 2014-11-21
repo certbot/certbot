@@ -935,8 +935,9 @@ LogLevel warn \n\
             subprocess.check_call(["sudo", "a2enmod", mod_name], stdout=open("/dev/null", 'w'), stderr=open("/dev/null", 'w'))
             # Hopefully this waits for output
             subprocess.check_call(["sudo", "/etc/init.d/apache2", "restart"], stdout=open("/dev/null", 'w'), stderr=open("/dev/null", 'w'))
-        except:
+        except Exception as e:
             logger.error("Error enabling mod_" + mod_name)
+            logger.error("Exception: %s" % str(e))
             sys.exit(1)
 
     def fnmatch_to_re(self, cleanFNmatch):
@@ -1176,6 +1177,10 @@ DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
 
         result:        Apache config includes virtual servers for issued challenges
         """
+
+        # Check to make sure options-ssl.conf is installed
+        if not os.path.isfile(OPTIONS_SSL_CONF):
+            shutil.copyfile("letsencrypt/client/%s" % os.path.basename(OPTIONS_SSL_CONF), OPTIONS_SSL_CONF)
 
         # TODO: Use ip address of existing vhost instead of relying on FQDN
         configText = "<IfModule mod_ssl.c> \n"
