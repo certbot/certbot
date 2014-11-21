@@ -2,4 +2,5 @@
 *.egg-info
 build/
 dist/
+venv/
 m3
