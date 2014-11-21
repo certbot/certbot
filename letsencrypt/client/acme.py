@@ -1,10 +1,9 @@
-#!/usr/bin/env python
-
-# acme.py
-# validate JSON objects as ACME protocol messages
-
-import json, jsonschema
+"""Validate JSON objects as ACME protocol messages."""
+import json
 import pkg_resources
+
+import jsonschema
+
 
 schemata = {schema: json.load(open(pkg_resources.resource_filename(
     __name__, "schemata/%s.json" % schema))) for schema in [

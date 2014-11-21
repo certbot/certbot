@@ -1,11 +1,11 @@
-import requests
-
-from letsencrypt.client.challenge import Challenge
-from letsencrypt.client import logger
-from letsencrypt.client.CONFIG import RECOVERY_TOKEN_EXT
 import dialog
+import requests
+import time
 
-class RecoveryContact(Challenge):
+from letsencrypt.client import challenge
+
+
+class RecoveryContact(challenge.Challenge):
 
     def __init__(self, activationURL = "", successURL = "", contact = "", poll_delay = 3):
         self.token = ""
