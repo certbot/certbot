@@ -10,7 +10,7 @@ class Configurator(object):
     and other challenges.
     """
 
-    def deploy_cert(self, vhost, cert, key , cert_chain=None):
+    def deploy_cert(self, vhost, cert, key, cert_chain=None):
         raise NotImplementedError()
 
     def choose_virtual_host(self, name):
@@ -22,7 +22,7 @@ class Configurator(object):
         raise NotImplementedError()
 
     def enable_redirect(self, ssl_vhost):
-        """Makes all traffic redirect to the given ssl_vhost (port 80 => 443)."""
+        """Redirect all traffic to the given ssl_vhost (port 80 => 443)."""
         raise NotImplementedError()
 
     def enable_hsts(self, ssl_vhost):
@@ -64,7 +64,7 @@ class Configurator(object):
         """Reload the users original configuration files."""
         raise NotImplementedError()
 
-    def rollback_checkpoints(self, rollback = 1):
+    def rollback_checkpoints(self, rollback=1):
         """Revert `rollback` number of configuration checkpoints."""
         raise NotImplementedError()
 
