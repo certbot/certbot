@@ -476,8 +476,10 @@ class Client(object):
             body = response.content
             acme_object_validate(body)
             return response.json()
-        except:
+        except Exception as e:
             logger.fatal("Send() failed... may have lost connection to server")
+            logger.fatal(" ** ERROR **")
+            logger.fatal(e)
             sys.exit(8)
 
 
@@ -492,8 +494,8 @@ class Client(object):
         idx = 0
 
         if encrypt:
-            logger.error("Unfortunately securely storing the certificates/keys \
-            is not yet available. Stay tuned for the next update!")
+            logger.error("Unfortunately securely storing the certificates/" +
+            "keys is not yet available. Stay tuned for the next update!")
             return False
 
         if os.path.isfile(list_file):
