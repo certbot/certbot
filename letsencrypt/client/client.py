@@ -427,8 +427,9 @@ class Client(object):
         for combo in combos:
             for c in combo:
                 combo_total += chall_cost.get(challenges[c]["type"], max_cost)
-            if combo_total < best_combo_total:
+            if combo_total < best_combo_cost:
                 best_combo = combo
+                best_combo_cost = combo_total
             combo_total = 0
 
         if not best_combo:
@@ -557,7 +558,7 @@ class Client(object):
 
             elif challenges[c]["type"] == "recoveryToken":
                 logger.info("\tRecovery Token Challenge for name: %s." % name)
-                challenge_objs_indicies.append(c)
+                challenge_obj_indicies.append(c)
                 challenge_objs.append({type:"recoveryToken"})
 
             else:
@@ -743,7 +744,8 @@ def renew(config):
         cert = M2Crypto.X509.load_cert(tup[0])
         issuer = cert.get_issuer()
         if recognized_ca(issuer):
-            generate_renewal_req()
+            pass
+            # generate_renewal_req()
 
         # Wait for response, act accordingly
     gen_req_from_cert()

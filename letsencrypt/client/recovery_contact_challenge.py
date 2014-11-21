@@ -27,7 +27,7 @@ class RecoveryContact(challenge.Challenge):
 
         else:
             print self.get_display_string()
-            if successURL:
+            if self.successURL:
                 return self.poll(10, quiet)
             else:
                 self.token = raw_input("Enter the recovery token:")

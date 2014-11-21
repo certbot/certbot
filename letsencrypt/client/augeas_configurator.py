@@ -62,7 +62,7 @@ class AugeasConfigurator(configurator.Configurator):
         except:
             # Check for the root of save problems
             new_errs = self.aug.match("/augeas//error")
-            logger.error("During Save - " + mod_conf)
+            # logger.error("During Save - " + mod_conf)
             # Only print new errors caused by recent save
             for err in new_errs:
                 if err not in ex_errs:
