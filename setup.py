@@ -15,18 +15,20 @@ setup(
         'letsencrypt.scripts',
     ],
     install_requires=[
-        #'dialog',
-        'requests',
         'jsonschema',
         'M2Crypto',
         'pycrypto',
-        #'python-augeas',
+        'python-augeas',
         'python2-pythondialog',
+        'requests',
+    dependency_links=[
+        # http://augeas.net/download.html
+        'https://fedorahosted.org/released/python-augeas/',
     ],
     entry_points={
         'console_scripts': [
-            'letsencrypt = letsencrypt.scripts.main:main'
-        ]
+            'letsencrypt = letsencrypt.scripts.main:main',
+        ],
     },
     zip_safe=False,
     include_package_data=True,
