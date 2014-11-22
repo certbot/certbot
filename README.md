@@ -11,8 +11,8 @@ Apache, though we will be expanding it to other platforms.
 
 ```
 sudo apt-get install python python-setuptools python-virtualenv \
-  python-dev python-augeas gcc swig dialog libssl-dev
-virtualenv --system-site-packages venv
+  python-dev gcc swig dialog libssl-dev
+virtualenv --no-site-packages venv
 ./venv/bin/python setup.py install
 sudo ./venv/bin/letsencrypt
 ```
