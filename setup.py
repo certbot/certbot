@@ -21,6 +21,7 @@ setup(
         'python-augeas',
         'python2-pythondialog',
         'requests',
+    ],
     dependency_links=[
         # http://augeas.net/download.html
         'https://fedorahosted.org/released/python-augeas/',
