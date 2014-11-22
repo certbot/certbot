@@ -6,7 +6,7 @@ import sys
 import socket
 import time
 import shutil
-from pkg_resources import Requirement, resource_filename
+import pkg_resources
 
 from letsencrypt.client.CONFIG import SERVER_ROOT, BACKUP_DIR
 from letsencrypt.client.CONFIG import REWRITE_HTTPS_ARGS, CONFIG_DIR, WORK_DIR
@@ -19,8 +19,6 @@ from letsencrypt.client import crypto_util
 import binascii, hashlib
 from Crypto import Random
 from letsencrypt.client.CONFIG import S_SIZE, APACHE_CHALLENGE_CONF, INVALID_EXT
-
-options_ssl_conf = resource_filename(__name__, os.path.basename(OPTIONS_SSL_CONF))
 
 #from CONFIG import SERVER_ROOT, BACKUP_DIR, REWRITE_HTTPS_ARGS, CONFIG_DIR,
 #from CONFIG import WORK_DIR, TEMP_CHECKPOINT_DIR, IN_PROGRESS_DIR, OPTIONS_SSL_CONF, LE_VHOST_EXT
@@ -622,7 +620,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         self.add_dir(vh_p[0], "SSLCertificateFile", "/etc/ssl/certs/ssl-cert-snakeoil.pem")
         self.add_dir(vh_p[0], "SSLCertificateKeyFile", "/etc/ssl/private/ssl-cert-snakeoil.key")
-        self.add_dir(vh_p[0], "Include", options_ssl_conf)
+        self.add_dir(vh_p[0], "Include", OPTIONS_SSL_CONF)
 
         # Log actions and create save notes
         logger.info("Created an SSL vhost at %s" % ssl_fp)
@@ -1159,7 +1157,7 @@ SSLStrictSNIVHostCheck on \n \
 \n \
 LimitRequestBody 1048576 \n \
 \n \
-Include " + options_ssl_conf + " \n \
+Include " + OPTIONS_SSL_CONF + " \n \
 SSLCertificateFile " + self.dvsni_get_cert_file(nonce) + " \n \
 SSLCertificateKeyFile " + key + " \n \
 \n \
@@ -1180,6 +1178,13 @@ DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
 
         result:        Apache config includes virtual servers for issued challenges
         """
+
+        # Check to make sure options-ssl.conf is installed
+        if not os.path.isfile(OPTIONS_SSL_CONF):
+            dist_conf = pkg_resources.resource_filename(
+                __name__, os.path.basename(OPTIONS_SSL_CONF))
+            shutil.copyfile(dist_conf, OPTIONS_SSL_CONF)
+
         # TODO: Use ip address of existing vhost instead of relying on FQDN
         configText = "<IfModule mod_ssl.c> \n"
         for idx, lis in enumerate(listlistAddrs):
@@ -1239,7 +1244,7 @@ DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
         return h.hexdigest() + INVALID_EXT
 
 def main():
-    config = Configurator()
+    config = ApacheConfigurator()
     logger.setLogger(logger.FileLogger(sys.stdout))
     logger.setLogLevel(logger.DEBUG)
     """
