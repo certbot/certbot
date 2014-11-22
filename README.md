@@ -3,17 +3,27 @@ This is the Let's Encrypt Agent DEVELOPER PREVIEW repository.
 DO NOT RUN THIS CODE ON A PRODUCTION WEBSERVER.  IT WILL INSTALL CERTIFICATES
 SIGNED BY A TEST CA, AND WILL CAUSE CERT WARNINGS FOR USERS.
 
-This code intended for testing, demonstration, and integration engineering
+This code is intended for testing, demonstration, and integration engineering
 with OSes and hosting platforms.  Currently the code works with Linux and
 Apache, though we will be expanding it to other platforms.
 
 ## Running the demo code on Ubuntu
 
+<<<<<<< HEAD
 `sudo apt-get install python python-setuptools python-dev python-augeas gcc swig dialog libssl-dev`
 
 `python setup.py install --user`
 
 `sudo ./letsencrypt.py` (or `~/.local/bin/letsencrypt`)
+=======
+```
+sudo apt-get install python python-setuptools python-virtualenv \
+  python-dev python-augeas gcc swig dialog
+virtualenv --system-site-packages venv
+./venv/bin/python setup.py install
+sudo ./venv/bin/letsencrypt
+```
+>>>>>>> 45ef583a3cebca6159ca2e610b2d8cdd54e5ff6a
 
 Note, that letsencrypt does not yet handle Debian unstable's Apache2
 conf layout.

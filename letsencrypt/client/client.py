@@ -9,7 +9,6 @@ import csv
 import requests
 
 from letsencrypt.client.acme import acme_object_validate
-from letsencrypt.client.sni_challenge import SNI_Challenge
 from letsencrypt.client import configurator, apache_configurator
 from letsencrypt.client import logger, display
 from letsencrypt.client import le_util, crypto_util
