@@ -612,7 +612,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         self.add_dir(vh_p[0], "SSLCertificateFile", "/etc/ssl/certs/ssl-cert-snakeoil.pem")
         self.add_dir(vh_p[0], "SSLCertificateKeyFile", "/etc/ssl/private/ssl-cert-snakeoil.key")
-        self.add_dir(vh_p[0], "Include", OPTIONS_SSL_CONF)
+        self.add_dir(vh_p[0], "Include", CONFIG.OPTIONS_SSL_CONF)
 
         # Log actions and create save notes
         logger.info("Created an SSL vhost at %s" % ssl_fp)
@@ -1149,7 +1149,7 @@ SSLStrictSNIVHostCheck on \n \
 \n \
 LimitRequestBody 1048576 \n \
 \n \
-Include " + OPTIONS_SSL_CONF + " \n \
+Include " + CONFIG.OPTIONS_SSL_CONF + " \n \
 SSLCertificateFile " + self.dvsni_get_cert_file(nonce) + " \n \
 SSLCertificateKeyFile " + key + " \n \
 \n \
