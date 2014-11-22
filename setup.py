@@ -15,6 +15,7 @@ testing_extras = [
     'coverage',
     'nose',
     'pylint',
+    'tox>=1.6',
 ]
 
 setup(

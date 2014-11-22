@@ -24,7 +24,7 @@ conf layout.
 
 #. Bootstrap: `./venv/bin/python setup.py dev`
 
-#. Test code base: `./venv/bin/nosetests`
+#. Test code base: `./venv/bin/tox`
 
 #. Check coding style for the whole project `./venv/bin/pylint letsencrypt`,
    or specific module, e.g. `./venv/bin/pylint letsencrypt.client.acme`.
