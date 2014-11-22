@@ -22,9 +22,9 @@ conf layout.
 
 ## Hacking
 
-#. Bootstrap: `./venv/bin/python setup.py dev`
+1. Bootstrap: `./venv/bin/python setup.py dev`
 
-#. Test code base: `./venv/bin/tox`
+2. Test code base: `./venv/bin/tox`
 
 ## Command line usage
 
