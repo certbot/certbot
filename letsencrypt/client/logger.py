@@ -1,5 +1,11 @@
+import logger
+import textwrap
 import time
+
+import dialog
+
 from letsencrypt.client import display
+
 
 class Singleton(object):
     _instance = None
@@ -36,11 +42,8 @@ class Logger(Singleton):
             t = time.time()
         return time.strftime("%b %d %Y %H:%M:%S", time.localtime(t)) + ('%.03f' % (t - int(t)))[1:]
 
-textwrap = None
 
 class FileLogger(Logger):
-    global textwrap
-    import textwrap
 
     def __init__(self, outfile):
         self.outfile = outfile
@@ -51,7 +54,7 @@ class FileLogger(Logger):
         wm = textwrap.fill(msg, 80)
         self.outfile.write("%s\n" % wm)
 
-import dialog
+
 class NcursesLogger(Logger):
 
     def __init__(self,
@@ -143,28 +146,27 @@ def none(data):
 
 if __name__ == "__main__":
     # Unit test/example usage:
-    import logger
 
     # Set the logging type you want to use (stdout logging):
     #logger.setLogger(FileLogger(sys.stdout))
-    logger.setLogger(NcursesLogger())
+    setLogger(NcursesLogger())
 
     # Set the most verbose you want to log (TRACE, DEBUG, INFO, WARN, ERROR, FATAL, NONE)
-    logger.setLogLevel(logger.TRACE)
+    setLogLevel(logger.TRACE)
 
     # Log a message:
     #logger.log(logger.INFO, "logger!")
 
     time.sleep(0.01)
-    logger.info("This is a long line, it's pretty long, butitalso hasbig wordsthat areprobably hardtobreak oninan easywayforthe ncurseslib, sowhatdoes itdo then?")
-    logger.info("aa " + "a"*70 + "B")
+    info("This is a long line, it's pretty long, butitalso hasbig wordsthat areprobably hardtobreak oninan easywayforthe ncurseslib, sowhatdoes itdo then?")
+    info("aa " + "a"*70 + "B")
 
     for i in range(20):
-        logger.info("iteration #%d/20" % i)
+        info("iteration #%d/20" % i)
         time.sleep(0.3)
 
 
     # Alternatively, use
-    logger.error("errrrr")
+    error("errrrr")
 
-    logger.trace("some trace data: %d - %f - %s" % (5, 8.3, 'cows'))
+    trace("some trace data: %d - %f - %s" % (5, 8.3, 'cows'))

@@ -1,12 +1,14 @@
 class Validator(object):
-    """
-    This Class will contain an API to validate configurations.
-    """
-    def redirect(name):
-        return
-    def ocsp_stapling(name):
-        return
-    def https(names):
-        return
-    def hsts(name):
-        return
+    """Configuration validator."""
+
+    def redirect(self, name):
+        raise NotImplementedError()
+
+    def ocsp_stapling(self, name):
+        raise NotImplementedError()
+
+    def https(self, names):
+        raise NotImplementedError()
+
+    def hsts(self, name):
+        raise NotImplementedError()

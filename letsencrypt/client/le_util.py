@@ -1,12 +1,13 @@
-# This file will contain functions useful for all Letsencrypt Classes
-import errno
-import stat
-import os, pwd, grp
-import time
+"""Utilities for all Let's Encrypt."""
 import base64
-from letsencrypt.client import logger
-#import logger
+import grp
+import errno
+import os
+import pwd
+import stat
+import sys
 
+from letsencrypt.client import logger
 
 
 def make_or_verify_dir(directory, permissions=0755, uid=0):

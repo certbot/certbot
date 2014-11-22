@@ -1,21 +1,25 @@
-#!/usr/bin/env python
+import csv
+import datetime
+import json
+import os
+import shutil
+import socket
+import string
+import sys
+import time
 
 import M2Crypto
-import json
-import os, time, sys, shutil
-
-import csv
-
 import requests
 
-from letsencrypt.client.acme import acme_object_validate
-from letsencrypt.client import configurator, apache_configurator
-from letsencrypt.client import logger, display
-from letsencrypt.client import le_util, crypto_util
-from letsencrypt.client.CONFIG import RSA_KEY_SIZE, CERT_PATH
-from letsencrypt.client.CONFIG import CHAIN_PATH, SERVER_ROOT, KEY_DIR, CERT_DIR
-from letsencrypt.client.CONFIG import CERT_KEY_BACKUP, EXCLUSIVE_CHALLENGES
-from letsencrypt.client.CONFIG import CHALLENGE_PREFERENCES, CONFIG_CHALLENGES
+from letsencrypt.client import acme
+from letsencrypt.client import apache_configurator
+from letsencrypt.client import CONFIG
+from letsencrypt.client import crypto_util
+from letsencrypt.client import display
+from letsencrypt.client import le_util
+from letsencrypt.client import logger
+
+
 # it's weird to point to chocolate servers via raw IPv6 addresses, and such
 # addresses can be %SCARY in some contexts, so out of paranoia let's disable
 # them by default
@@ -35,7 +39,7 @@ class Client(object):
         # TODO:  Can probably figure out which configurator to use without
         #        special packaging based on system info
         #        Command line arg or client function to discover
-        self.config = apache_configurator.ApacheConfigurator(SERVER_ROOT)
+        self.config = apache_configurator.ApacheConfigurator(CONFIG.SERVER_ROOT)
 
         self.server = ca_server
 
@@ -168,8 +172,8 @@ class Client(object):
         self.list_certs_keys()
 
     def remove_cert_key(self, c):
-        list_file = CERT_KEY_BACKUP + "LIST"
-        list_file2 = CERT_KEY_BACKUP + "LIST.tmp"
+        list_file = CONFIG.CERT_KEY_BACKUP + "LIST"
+        list_file2 = CONFIG.CERT_KEY_BACKUP + "LIST.tmp"
         with open(list_file, 'rb') as orgfile:
             csvreader = csv.reader(orgfile)
             with open(list_file2, 'wb') as newfile:
@@ -187,10 +191,10 @@ class Client(object):
 
 
     def list_certs_keys(self):
-        list_file = CERT_KEY_BACKUP + "LIST"
+        list_file = CONFIG.CERT_KEY_BACKUP + "LIST"
         certs = []
 
-        if not os.path.isfile(CERT_KEY_BACKUP + "LIST"):
+        if not os.path.isfile(CONFIG.CERT_KEY_BACKUP + "LIST"):
             logger.info("You don't have any certificates saved from letsencrypt")
             return
 
@@ -206,8 +210,8 @@ class Client(object):
             for row in csvreader:
                 c = crypto_util.get_cert_info(row[1])
 
-                b_k = CERT_KEY_BACKUP + os.path.basename(row[2]) + "_" + row[0]
-                b_c = CERT_KEY_BACKUP + os.path.basename(row[1]) + "_" + row[0]
+                b_k = CONFIG.CERT_KEY_BACKUP + os.path.basename(row[2]) + "_" + row[0]
+                b_c = CONFIG.CERT_KEY_BACKUP + os.path.basename(row[1]) + "_" + row[0]
 
                 c["orig_key_file"] = row[2]
                 c["orig_cert_file"] = row[1]
@@ -246,7 +250,7 @@ class Client(object):
 
     def install_certificate(self, certificate_dict, vhost):
         cert_chain_abspath = None
-        cert_fd, self.cert_file = le_util.unique_file(CERT_PATH, 644)
+        cert_fd, self.cert_file = le_util.unique_file(CONFIG.CERT_PATH, 644)
         cert_fd.write(
             crypto_util.b64_cert_to_pem(certificate_dict["certificate"]))
         cert_fd.close()
@@ -254,7 +258,7 @@ class Client(object):
                     self.cert_file)
 
         if certificate_dict.get("chain", None):
-            chain_fd, chain_fn = le_util.unique_file(CHAIN_PATH, 644)
+            chain_fd, chain_fn = le_util.unique_file(CONFIG.CHAIN_PATH, 644)
             for c in certificate_dict.get("chain", []):
                 chain_fd.write(crypto_util.b64_cert_to_pem(c))
             chain_fd.close()
@@ -308,7 +312,7 @@ class Client(object):
     def cleanup_challenges(self, challenge_objs):
         logger.info("Cleaning up challenges...")
         for c in challenge_objs:
-            if c["type"] in CONFIG_CHALLENGES:
+            if c["type"] in CONFIG.CONFIG_CHALLENGES:
                 self.config.cleanup()
             else:
                 #Handle other cleanup if needed
@@ -377,7 +381,7 @@ class Client(object):
         # Perform challenges
         for i, c_obj in enumerate(challenge_objs):
             response = "null"
-            if c_obj["type"] in CONFIG_CHALLENGES:
+            if c_obj["type"] in CONFIG.CONFIG_CHALLENGES:
                 response = self.config.perform(c_obj)
             else:
                 # Handle RecoveryToken type challenges
@@ -411,7 +415,7 @@ class Client(object):
         """
         chall_cost = {}
         max_cost = 0
-        for i, chall in enumerate(CHALLENGE_PREFERENCES):
+        for i, chall in enumerate(CONFIG.CHALLENGE_PREFERENCES):
             chall_cost[chall] = i
             max_cost += i
 
@@ -423,8 +427,9 @@ class Client(object):
         for combo in combos:
             for c in combo:
                 combo_total += chall_cost.get(challenges[c]["type"], max_cost)
-            if combo_total < best_combo_total:
+            if combo_total < best_combo_cost:
                 best_combo = combo
+                best_combo_cost = combo_total
             combo_total = 0
 
         if not best_combo:
@@ -443,7 +448,7 @@ class Client(object):
         # Add logic for a crappy server
         # Choose a DV
         path = []
-        for pref_c in CHALLENGE_PREFERENCES:
+        for pref_c in CONFIG.CHALLENGE_PREFERENCES:
             for i, offered_c in enumerate(challenges):
                 if (pref_c == offered_c["type"] and
                     self.is_preferred(offered_c["type"], path)):
@@ -454,7 +459,7 @@ class Client(object):
 
     def is_preferred(self, offered_c_type, path):
         for tup in path:
-            for s in EXCLUSIVE_CHALLENGES:
+            for s in CONFIG.EXCLUSIVE_CHALLENGES:
                 # Second part is in case we eventually allow multiple names
                 # to be challenges at the same time
                 if (tup[1] in s and offered_c_type in s and
@@ -466,14 +471,14 @@ class Client(object):
     def send(self, json_obj):
         try:
             json_encoded = json.dumps(json_obj)
-            acme_object_validate(json_encoded)
+            acme.acme_object_validate(json_encoded)
             response = requests.post(
                 self.server_url,
                 data=json_encoded,
                 headers={"Content-Type": "application/json"},
             )
             body = response.content
-            acme_object_validate(body)
+            acme.acme_object_validate(body)
             return response.json()
         except Exception as e:
             logger.fatal("Send() failed... may have lost connection to server")
@@ -488,8 +493,8 @@ class Client(object):
 
 
     def store_cert_key(self, encrypt = False):
-        list_file = CERT_KEY_BACKUP + "LIST"
-        le_util.make_or_verify_dir(CERT_KEY_BACKUP, 0700)
+        list_file = CONFIG.CERT_KEY_BACKUP + "LIST"
+        le_util.make_or_verify_dir(CONFIG.CERT_KEY_BACKUP, 0700)
         idx = 0
 
         if encrypt:
@@ -511,10 +516,10 @@ class Client(object):
                 csvwriter.writerow(["0", self.cert_file, self.key_file])
 
         shutil.copy2(self.key_file,
-                     CERT_KEY_BACKUP + os.path.basename(self.key_file) +
+                     CONFIG.CERT_KEY_BACKUP + os.path.basename(self.key_file) +
                      "_" + str(idx))
         shutil.copy2(self.cert_file,
-                     CERT_KEY_BACKUP + os.path.basename(self.cert_file) +
+                     CONFIG.CERT_KEY_BACKUP + os.path.basename(self.cert_file) +
                      "_" + str(idx))
 
 
@@ -553,7 +558,7 @@ class Client(object):
 
             elif challenges[c]["type"] == "recoveryToken":
                 logger.info("\tRecovery Token Challenge for name: %s." % name)
-                challenge_objs_indicies.append(c)
+                challenge_obj_indicies.append(c)
                 challenge_objs.append({type:"recoveryToken"})
 
             else:
@@ -581,11 +586,11 @@ class Client(object):
         key_pem = None
         csr_pem = None
         if not self.key_file:
-            key_pem = crypto_util.make_key(RSA_KEY_SIZE)
+            key_pem = crypto_util.make_key(CONFIG.RSA_KEY_SIZE)
             # Save file
-            le_util.make_or_verify_dir(KEY_DIR, 0700)
+            le_util.make_or_verify_dir(CONFIG.KEY_DIR, 0700)
             key_f, self.key_file = le_util.unique_file(
-                KEY_DIR + "key-letsencrypt.pem", 0600)
+                CONFIG.KEY_DIR + "key-letsencrypt.pem", 0600)
             key_f.write(key_pem)
             key_f.close()
             logger.info("Generating key: %s" % self.key_file)
@@ -599,9 +604,9 @@ class Client(object):
         if not self.csr_file:
             csr_pem, csr_der = crypto_util.make_csr(self.key_file, self.names)
             # Save CSR
-            le_util.make_or_verify_dir(CERT_DIR, 0755)
+            le_util.make_or_verify_dir(CONFIG.CERT_DIR, 0755)
             csr_f, self.csr_file = le_util.unique_file(
-                CERT_DIR + "csr-letsencrypt.pem", 0644)
+                CONFIG.CERT_DIR + "csr-letsencrypt.pem", 0644)
             csr_f.write(csr_pem)
             csr_f.close()
             logger.info("Creating CSR: %s" % self.csr_file)
@@ -619,16 +624,16 @@ class Client(object):
         return key_pem, csr_pem
 
 
-    def choice_of_ca(self):
-        choices = self.get_cas()
-        message = "Pick a Certificate Authority.  They're all unique and special!"
-        in_txt = "Enter the number of a Certificate Authority (c to cancel): "
-        code, selection = display.generic_menu(message, choices, in_txt)
+    # def choice_of_ca(self):
+    #     choices = self.get_cas()
+    #     message = "Pick a Certificate Authority.  They're all unique and special!"
+    #     in_txt = "Enter the number of a Certificate Authority (c to cancel): "
+    #     code, selection = display.generic_menu(message, choices, in_txt)
 
-        if code != display.OK:
-            sys.exit(0)
+    #     if code != display.OK:
+    #         sys.exit(0)
 
-        return selection
+    #     return selection
 
     # Legacy Code: Although I would like to see a free and open marketplace
     # in the future. The Let's Encrypt Client will not have this feature at
@@ -695,15 +700,13 @@ class Client(object):
         Do enough to avoid shellcode from the environment.  There's
         no need to do more.
         """
-        import string as s
-        allowed = s.ascii_letters + s.digits + "-."  # hostnames & IPv4
+        allowed = string.ascii_letters + string.digits + "-."  # hostnames & IPv4
         if all([c in allowed for c in hostname]):
             return True
 
         if not allow_raw_ipv6_server: return False
 
         # ipv6 is messy and complicated, can contain %zoneindex etc.
-        import socket
         try:
             # is this a valid IPv6 address?
             socket.getaddrinfo(hostname,443,socket.AF_INET6)
@@ -741,7 +744,8 @@ def renew(config):
         cert = M2Crypto.X509.load_cert(tup[0])
         issuer = cert.get_issuer()
         if recognized_ca(issuer):
-            generate_renewal_req()
+            pass
+            # generate_renewal_req()
 
         # Wait for response, act accordingly
     gen_req_from_cert()

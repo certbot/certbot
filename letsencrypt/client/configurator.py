@@ -1,83 +1,55 @@
-# Note: abc requires python 2.6 so we may remove this before
-# launch.  This should help in the creation of other configurators while
-# we develop though
+"""Configurator."""
 
-import abc
 
 class Configurator(object):
-    """
+    """Generic Let's Encrypt configurator.
+
     Class represents all possible webservers and configuration editors
     This includes the generic webserver which wont have configuration
     files at all, but instead create a new process to handle the DVSNI
     and other challenges.
     """
-    __metaclass__ = abc.ABCMeta
 
-    def __init__(self):
-        return
+    def deploy_cert(self, vhost, cert, key, cert_chain=None):
+        raise NotImplementedError()
 
-    @abc.abstractmethod
-    def deploy_cert(self, vhost, cert, key , cert_chain=None):
-        return
-
-    @abc.abstractmethod
     def choose_virtual_host(self, name):
-        """
-        Chooses a virtual host based on a given domain name
-        """
-        return
+        """Chooses a virtual host based on a given domain name."""
+        raise NotImplementedError()
 
-    @abc.abstractmethod
     def get_all_names(self):
-        """
-        Returns all names found in the Configuration
-        """
-        return
+        """Returns all names found in the configuration."""
+        raise NotImplementedError()
 
-    @abc.abstractmethod
     def enable_redirect(self, ssl_vhost):
-        """
-        Makes all traffic redirect to the given ssl_vhost
-        ie. port 80 => 443
-        """
-        return
+        """Redirect all traffic to the given ssl_vhost (port 80 => 443)."""
+        raise NotImplementedError()
 
-    @abc.abstractmethod
     def enable_hsts(self, ssl_vhost):
-        """
-        Enable HSTS on the given ssl_vhost
-        """
-        return
+        """Enable HSTS on the given ssl_vhost."""
+        raise NotImplementedError()
 
-    @abc.abstractmethod
     def enable_ocsp_stapling(self, ssl_vhost):
-        """
-        Enable OCSP stapling on given ssl_vhost
-        """
-        return
+        """Enable OCSP stapling on given ssl_vhost."""
+        raise NotImplementedError()
 
-    @abc.abstractmethod
     def get_all_certs_keys(self):
-        """
-        Retrieve all certs and keys set in configuration
+        """Retrieve all certs and keys set in configuration.
+
         returns: list of tuples with form [(cert, key, path)]
         """
-        return
+        raise NotImplementedError()
 
-    @abc.abstractmethod
     def enable_site(self, vhost):
-        """
-        Enable the site at the given vhost
-        """
-        return
+        """Enable the site at the given vhost."""
+        raise NotImplementedError()
 
-    @abc.abstractmethod
     def save(self, title=None, temporary=False):
-        """
-        Saves all changes to the configuration files, both
-        title and temporary are needed because a save may be
-        intended to be permanent, but the save is not ready
-        to be a full checkpoint
+        """Saves all changes to the configuration files.
+
+        Both title and temporary are needed because a save may be
+        intended to be permanent, but the save is not ready to be a full
+        checkpoint
 
         title:     string - The title of the save. If a title is given, the
                             configuration will be saved as a new checkpoint
@@ -86,49 +58,32 @@ class Configurator(object):
         temporary: boolean - Indicates whether the changes made will be
                              quickly reversed in the future (challenges)
         """
-        return
+        raise NotImplementedError()
 
-    @abc.abstractmethod
     def revert_challenge_config(self):
-        """
-        This function should reload the users original configuration files
-        """
-        return
+        """Reload the users original configuration files."""
+        raise NotImplementedError()
 
-    @abc.abstractmethod
-    def rollback_checkpoints(self, rollback = 1):
-        """
-        Revert `rollback` number of configuration checkpoints
-        """
-        return
+    def rollback_checkpoints(self, rollback=1):
+        """Revert `rollback` number of configuration checkpoints."""
+        raise NotImplementedError()
 
-    @abc.abstractmethod
     def display_checkpoints(self):
-        """
-        Display the saved configuration checkpoints
-        """
-        return
+        """Display the saved configuration checkpoints."""
+        raise NotImplementedError()
 
-    @abc.abstractmethod
     def config_test(self):
-        """
-        Make sure the configuration is valid
-        """
-        return
+        """Make sure the configuration is valid."""
+        raise NotImplementedError()
 
-    @abc.abstractmethod
-    def restart(self):
-        """
-        Restart or refresh the server content
-        """
-        return
+    def restart(self, quiet=False):
+        """Restart or refresh the server content."""
+        raise NotImplementedError()
 
-    @abc.abstractmethod
     def perform(self, chall_type, tup):
-        """ Perform the given challenge"""
-        return
+        """Perform the given challenge"""
+        raise NotImplementedError()
 
-    @abc.abstractmethod
     def cleanup(self):
-        """ Cleanup configuration changes from challenge """
-        return
+        """Cleanup configuration changes from challenge."""
+        raise NotImplementedError()
