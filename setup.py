@@ -2,6 +2,21 @@
 from setuptools import setup
 
 
+install_requires = [
+    'jsonschema',
+    'M2Crypto',
+    'pycrypto',
+    'python-augeas',
+    'python2-pythondialog',
+    'requests',
+]
+
+testing_extras = [
+    'coverage',
+    'nose',
+    'pylint',
+]
+
 setup(
     name="letsencrypt",
     version="0.1",
@@ -14,18 +29,15 @@ setup(
         'letsencrypt.client',
         'letsencrypt.scripts',
     ],
-    install_requires=[
-        'jsonschema',
-        'M2Crypto',
-        'pycrypto',
-        'python-augeas',
-        'python2-pythondialog',
-        'requests',
-    ],
     dependency_links=[
         # http://augeas.net/download.html
         'https://fedorahosted.org/released/python-augeas/',
     ],
+    install_requires=install_requires,
+    tests_require=install_requires,
+    extras_require={
+        'testing': testing_extras,
+    },
     entry_points={
         'console_scripts': [
             'letsencrypt = letsencrypt.scripts.main:main',
