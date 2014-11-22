@@ -244,7 +244,7 @@ class Client(object):
 
     def revocation_request(self, key_file, cert_der):
         return {"type":"revocationRequest",
-                "certificate":le_util.b64_url_enc(cert_der),
+                "certificate":le_util.jose_b64encode(cert_der),
                 "signature":crypto_util.create_sig(cert_der, key_file)}
 
 
@@ -306,7 +306,7 @@ class Client(object):
     def certificate_request(self, csr_der, key):
         logger.info("Preparing and sending CSR..")
         return {"type":"certificateRequest",
-                "csr":le_util.b64_url_enc(csr_der),
+                "csr":le_util.jose_b64encode(csr_der),
                 "signature":crypto_util.create_sig(csr_der, self.key_file)}
 
     def cleanup_challenges(self, challenge_objs):
@@ -351,7 +351,7 @@ class Client(object):
                     "nonce":server_nonce}
 
         auth_req["signature"] = crypto_util.create_sig(
-            name + le_util.b64_url_dec(server_nonce), self.key_file)
+            name + le_util.jose_b64decode(server_nonce), self.key_file)
 
         auth_req["responses"] = responses
         return auth_req
