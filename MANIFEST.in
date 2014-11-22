@@ -1,6 +1,3 @@
 recursive-include letsencrypt *.json
 recursive-include letsencrypt *.sh
 recursive-include letsencrypt *.conf
-recursive-include letsencrypt *.cnf
-include letsencrypt/client/ca_offerings
-include letsencrypt/client/.ca_offerings
