@@ -51,6 +51,8 @@ sudo ./letsencrypt.py  (default authentication mode using pythondialog) options
 Further Setup, documentation and open projects are available in the [Wiki]
 (https://github.com/letsencrypt/lets-encrypt-preview/wiki)
 
+Join us at our IRC channel @ freenode.net #letsencrypt
+
 Client software development can be discussed on this [mailing list]
 (https://groups.google.com/a/letsencrypt.org/forum/#!forum/client-dev)
 
