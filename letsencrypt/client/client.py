@@ -369,11 +369,11 @@ class Client(object):
 
         logger.info("Performing the following challenges:")
 
-        # Every indicies element is a list of integers referring to which
+        # Every indices element is a list of integers referring to which
         # challenges in the master list the challenge object satisfies
         # Single Challenge objects that can satisfy multiple server challenges
-        # mess up the order of the challenges, thus requiring the indicies
-        challenge_objs, indicies = self.challenge_factory(
+        # mess up the order of the challenges, thus requiring the indices
+        challenge_objs, indices = self.challenge_factory(
             self.names[0], c["challenges"], path)
 
         responses = ["null"] * len(c["challenges"])
@@ -387,7 +387,7 @@ class Client(object):
                 # Handle RecoveryToken type challenges
                 pass
 
-            for index in indicies[i]:
+            for index in indices[i]:
                 responses[index] = response
 
         logger.info("Configured Apache for challenges; " +
@@ -548,7 +548,7 @@ class Client(object):
         sni_satisfies = []
 
         challenge_objs = []
-        challenge_obj_indicies = []
+        challenge_obj_indices = []
         for c in path:
             if challenges[c]["type"] == "dvsni":
                 logger.info("  DVSNI challenge for name %s." % name)
@@ -558,7 +558,7 @@ class Client(object):
 
             elif challenges[c]["type"] == "recoveryToken":
                 logger.info("\tRecovery Token Challenge for name: %s." % name)
-                challenge_obj_indicies.append(c)
+                challenge_obj_indices.append(c)
                 challenge_objs.append({type:"recoveryToken"})
 
             else:
@@ -570,10 +570,10 @@ class Client(object):
             # one "challenge object" is issued for all sni_challenges
             challenge_objs.append({"type":"dvsni", "listSNITuple":sni_todo,
                                    "dvsni_key":os.path.abspath(self.key_file)})
-            challenge_obj_indicies.append(sni_satisfies)
+            challenge_obj_indices.append(sni_satisfies)
             logger.debug(sni_todo)
 
-        return challenge_objs, challenge_obj_indicies
+        return challenge_objs, challenge_obj_indices
 
 
     def get_key_csr_pem(self, csr_return_format = 'der'):
