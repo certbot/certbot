@@ -3,6 +3,8 @@ I believe this project is extremely important for the future of the Internet, an
 Obligatory mailing list plug - Client software development can be discussed on this [mailing list]
 (https://groups.google.com/a/letsencrypt.org/forum/#!forum/client-dev)
 
+Join our IRC channel @ freenode.net #letsencrypt
+
 To subscribe without a Google account, send mail to
 [client-dev+subscribe@letsencrypt.org]
 (mailto:client-dev+subscribe@letsencrypt.org).
