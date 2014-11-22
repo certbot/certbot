@@ -1,14 +1,15 @@
 #!/usr/bin/env python
-
-# This file parses the command line and calls the appropriate functions
-
+"""Parse command line and call the appropriate functions."""
 import getopt
 import os
 import sys
 
+from letsencrypt.client import apache_configurator
+from letsencrypt.client import CONFIG
 from letsencrypt.client import client
 from letsencrypt.client import display
-from letsencrypt.client.CONFIG import ACME_SERVER
+from letsencrypt.client import logger
+
 
 def main():
     # Check to make sure user is root
@@ -49,7 +50,6 @@ def main():
         elif o == "--server":
             server = a
         elif o == "--rollback":
-            from letsencrypt.client import apache_configurator, logger
             logger.setLogger(logger.FileLogger(sys.stdout))
             logger.setLogLevel(logger.INFO)
             config = apache_configurator.ApacheConfigurator()
@@ -57,7 +57,6 @@ def main():
             config.restart()
             sys.exit(0)
         elif o == "--view-checkpoints":
-            from letsencrypt.client import apache_configurator, logger
             logger.setLogger(logger.FileLogger(sys.stdout))
             logger.setLogLevel(logger.INFO)
             config = apache_configurator.ApacheConfigurator()
@@ -79,12 +78,12 @@ def main():
             continue
 
     if curses:
-        display.setDisplay(display.NcursesDisplay())
+        display.set_display(display.NcursesDisplay())
     else:
-        display.setDisplay(display.FileDisplay(sys.stdout))
+        display.set_display(display.FileDisplay(sys.stdout))
 
     if not server:
-        server = ACME_SERVER
+        server = CONFIG.ACME_SERVER
 
     c = client.Client(server, csr, privkey, curses)
     if flag_revoke:

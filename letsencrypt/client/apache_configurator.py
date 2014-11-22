@@ -1,30 +1,23 @@
-import augeas
-import subprocess
-import re
+import hashlib
 import os
-import sys
-import socket
-import time
+import pkg_resources
+import re
 import shutil
-from pkg_resources import Requirement, resource_filename
+import socket
+import subprocess
+import sys
+import time
 
-from letsencrypt.client.CONFIG import SERVER_ROOT, BACKUP_DIR
-from letsencrypt.client.CONFIG import REWRITE_HTTPS_ARGS, CONFIG_DIR, WORK_DIR
-from letsencrypt.client.CONFIG import TEMP_CHECKPOINT_DIR, IN_PROGRESS_DIR
-from letsencrypt.client.CONFIG import OPTIONS_SSL_CONF, LE_VHOST_EXT
-from letsencrypt.client import logger, le_util, augeas_configurator
-from letsencrypt.client import crypto_util
-
-# Challenge specific imports
-import binascii, hashlib
 from Crypto import Random
-from letsencrypt.client.CONFIG import S_SIZE, APACHE_CHALLENGE_CONF, INVALID_EXT
 
-options_ssl_conf = resource_filename(__name__, os.path.basename(OPTIONS_SSL_CONF))
+from letsencrypt.client import augeas_configurator
+from letsencrypt.client import CONFIG
+from letsencrypt.client import crypto_util
+from letsencrypt.client import le_util
+from letsencrypt.client import logger
 
-#from CONFIG import SERVER_ROOT, BACKUP_DIR, REWRITE_HTTPS_ARGS, CONFIG_DIR,
-#from CONFIG import WORK_DIR, TEMP_CHECKPOINT_DIR, IN_PROGRESS_DIR, OPTIONS_SSL_CONF, LE_VHOST_EXT
-#import logger, le_util
+
+options_ssl_conf = pkg_resources.resource_filename(__name__, os.path.basename(CONFIG.OPTIONS_SSL_CONF))
 
 
 # Configurator should be turned into a Singleton
@@ -92,7 +85,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     so that other Configurators (like Nginx) can be developed and interoperate
     with the client.
     """
-    def __init__(self, server_root=SERVER_ROOT):
+    def __init__(self, server_root=CONFIG.SERVER_ROOT):
         super(ApacheConfigurator, self).__init__()
 
         self.server_root = server_root
@@ -566,14 +559,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     def make_vhost_ssl(self, nonssl_vhost):
         """
         Duplicates vhost and adds default ssl options
-        New vhost will reside as (nonssl_vhost.path) + LE_VHOST_EXT
+        New vhost will reside as (nonssl_vhost.path) + CONFIG.LE_VHOST_EXT
         """
         avail_fp = nonssl_vhost.file
         # Copy file
         if avail_fp.endswith(".conf"):
-            ssl_fp = avail_fp[:-(len(".conf"))] + LE_VHOST_EXT
+            ssl_fp = avail_fp[:-(len(".conf"))] + CONFIG.LE_VHOST_EXT
         else:
-            ssl_fp = avail_fp + LE_VHOST_EXT
+            ssl_fp = avail_fp + CONFIG.LE_VHOST_EXT
 
         # First register the creation so that it is properly removed if
         # configuration is rolled back
@@ -678,7 +671,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     return False, general_v
             #Add directives to server
             self.add_dir(general_v.path, "RewriteEngine", "On")
-            self.add_dir(general_v.path, "RewriteRule", REWRITE_HTTPS_ARGS)
+            self.add_dir(general_v.path, "RewriteRule", CONFIG.REWRITE_HTTPS_ARGS)
             self.save_notes += 'Redirecting host in %s to ssl vhost in %s\n' % (general_v.file, ssl_vhost.file)
             self.save()
             return True, general_v
@@ -704,9 +697,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if not rewrite_path:
             # "No existing redirection for virtualhost"
             return False, -1
-        if len(rewrite_path) == len(REWRITE_HTTPS_ARGS):
+        if len(rewrite_path) == len(CONFIG.REWRITE_HTTPS_ARGS):
             for idx, m in enumerate(rewrite_path):
-                if self.aug.get(m) != REWRITE_HTTPS_ARGS[idx]:
+                if self.aug.get(m) != CONFIG.REWRITE_HTTPS_ARGS[idx]:
                     # Not a letsencrypt https rewrite
                     return True, 2
             # Existing letsencrypt https rewrite rule is in place
@@ -979,7 +972,7 @@ LogLevel warn \n\
     def save_apache_config(self):
         # Not currently used
         # Should be safe because it is a protected directory
-        shutil.copytree(self.server_root, BACKUP_DIR + "apache2-" + str(time.time()))
+        shutil.copytree(self.server_root, CONFIG.BACKUP_DIR + "apache2-" + str(time.time()))
 
 
     def verify_setup(self):
@@ -988,9 +981,9 @@ LogLevel warn \n\
         Aim for defensive coding... make sure all input files
         have permissions of root
         '''
-        le_util.make_or_verify_dir(CONFIG_DIR, 0755)
-        le_util.make_or_verify_dir(WORK_DIR, 0755)
-        le_util.make_or_verify_dir(BACKUP_DIR, 0755)
+        le_util.make_or_verify_dir(CONFIG.CONFIG_DIR, 0755)
+        le_util.make_or_verify_dir(CONFIG.WORK_DIR, 0755)
+        le_util.make_or_verify_dir(CONFIG.BACKUP_DIR, 0755)
 
     def standardize_excl(self):
         """
@@ -1112,7 +1105,7 @@ LogLevel warn \n\
                 addresses.append(vhost.addrs)
 
         # Generate S
-        s = Random.get_random_bytes(S_SIZE)
+        s = Random.get_random_bytes(CONFIG.S_SIZE)
         # Create all of the challenge certs
         for t in chall_dict["listSNITuple"]:
             # Need to decode from base64
@@ -1140,7 +1133,7 @@ LogLevel warn \n\
         nonce:  string - hex
         result: returns certificate file name
         """
-        return WORK_DIR + nonce + ".crt"
+        return CONFIG.WORK_DIR + nonce + ".crt"
 
     def __getConfigText(self, nonce, ip_addrs, key):
         """
@@ -1153,7 +1146,7 @@ LogLevel warn \n\
         result:     returns virtual host configuration text
         """
         configText = "<VirtualHost " + " ".join(ip_addrs) + "> \n \
-ServerName " + nonce + INVALID_EXT + " \n \
+ServerName " + nonce + CONFIG.INVALID_EXT + " \n \
 UseCanonicalName on \n \
 SSLStrictSNIVHostCheck on \n \
 \n \
@@ -1163,7 +1156,7 @@ Include " + options_ssl_conf + " \n \
 SSLCertificateFile " + self.dvsni_get_cert_file(nonce) + " \n \
 SSLCertificateKeyFile " + key + " \n \
 \n \
-DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
+DocumentRoot " + CONFIG.CONFIG_DIR + "challenge_page/ \n \
 </VirtualHost> \n\n "
 
         return configText
@@ -1187,8 +1180,8 @@ DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
         configText += "</IfModule> \n"
 
         self.dvsni_conf_include_check(mainConfig)
-        self.register_file_creation(True, APACHE_CHALLENGE_CONF)
-        newConf = open(APACHE_CHALLENGE_CONF, 'w')
+        self.register_file_creation(True, CONFIG.APACHE_CHALLENGE_CONF)
+        newConf = open(CONFIG.APACHE_CHALLENGE_CONF, 'w')
         newConf.write(configText)
         newConf.close()
 
@@ -1203,9 +1196,9 @@ DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
 
         result:      User Apache configuration includes chocolate sni challenge file
         """
-        if len(self.find_directive(self.case_i("Include"), APACHE_CHALLENGE_CONF)) == 0:
+        if len(self.find_directive(self.case_i("Include"), CONFIG.APACHE_CHALLENGE_CONF)) == 0:
             #print "Including challenge virtual host(s)"
-            self.add_dir("/files" + mainConfig, "Include", APACHE_CHALLENGE_CONF)
+            self.add_dir("/files" + mainConfig, "Include", CONFIG.APACHE_CHALLENGE_CONF)
 
     def dvsni_create_chall_cert(self, name, ext, nonce, key):
         """
@@ -1219,7 +1212,7 @@ DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
         """
 
         self.register_file_creation(True, self.dvsni_get_cert_file(nonce))
-        cert_pem = crypto_util.make_ss_cert(key, [nonce + INVALID_EXT, name, ext])
+        cert_pem = crypto_util.make_ss_cert(key, [nonce + CONFIG.INVALID_EXT, name, ext])
         with open(self.dvsni_get_cert_file(nonce), 'w') as f:
             f.write(cert_pem)
 
@@ -1230,16 +1223,16 @@ DocumentRoot " + CONFIG_DIR + "challenge_page/ \n \
         r:    byte array
         s:    byte array
 
-        result: returns z + INVALID_EXT
+        result: returns z + CONFIG.INVALID_EXT
         """
         h = hashlib.new('sha256')
         h.update(r)
         h.update(s)
 
-        return h.hexdigest() + INVALID_EXT
+        return h.hexdigest() + CONFIG.INVALID_EXT
 
 def main():
-    config = Configurator()
+    config = ApacheConfigurator()
     logger.setLogger(logger.FileLogger(sys.stdout))
     logger.setLogLevel(logger.DEBUG)
     """
