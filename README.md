@@ -20,9 +20,11 @@ sudo ./venv/bin/letsencrypt
 Note, that letsencrypt does not yet handle Debian unstable's Apache2
 conf layout.
 
-## Developing
+## Hacking
 
-`python setup.py develop --user`
+1. Bootstrap: `./venv/bin/python setup.py dev`
+
+2. Test code base: `./venv/bin/tox`
 
 ## Command line usage
 

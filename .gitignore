@@ -3,4 +3,5 @@
 build/
 dist/
 venv/
+.tox/
 m3
