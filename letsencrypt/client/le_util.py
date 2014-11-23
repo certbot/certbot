@@ -97,7 +97,7 @@ def jose_b64decode(arg, decoding='utf-8'):
     """JOSE Base64 decode.
 
     :param arg: Base64 string to be decoded.
-    :type arg: str
+    :type arg: str or unicode
 
     :param decoding: Name of the encoding to be performed after
                      Base64 decoding.
@@ -107,5 +107,6 @@ def jose_b64decode(arg, decoding='utf-8'):
     :rtype: str or unicode
 
     """
-    decoded = base64.urlsafe_b64decode(arg + '=' * (4 - (len(arg) % 4)))
+    ascii = arg.encode('ascii')  # equivalent to str(arg), for unicode input
+    decoded = base64.urlsafe_b64decode(ascii + '=' * (4 - (len(ascii) % 4)))
     return decoded if decoding is None else decoded.decode(decoding)
