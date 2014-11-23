@@ -72,32 +72,32 @@ class CheckPermissionsTest(unittest.TestCase):
 class JOSEB64EncodeTest(unittest.TestCase):
     """Tests for letsencrypt.client.le_util.jose_b64encode."""
 
-    def _call(self, arg):
+    def _call(self, data, encoding):
         from letsencrypt.client.le_util import jose_b64encode
-        return jose_b64encode(arg)
+        return jose_b64encode(data, encoding)
 
-    def test_str(self):
-        self.assertEqual(self._call('foo'), 'Zm9v')
+    def test_without_encoding(self):
+        self.assertEqual(self._call('foo', None), 'Zm9v')
 
-    def test_unicode(self):
-        self.assertEqual(self._call(u'\u0105'), 'xIU')
+    def test_with_encoding(self):
+        self.assertEqual(self._call(u'\u0105', 'utf-8'), 'xIU')
 
 
 class JOSEB64DecodeTest(unittest.TestCase):
     """Tests for letsencrypt.client.le_util.jose_b64decode."""
 
-    def _call(self, arg):
+    def _call(self, jose_b64_string, decoding):
         from letsencrypt.client.le_util import jose_b64decode
-        return jose_b64decode(arg)
+        return jose_b64decode(jose_b64_string, decoding)
 
-    def test_str(self):
-        self.assertEqual(self._call('Zm9v='), 'foo')
+    def test_without_decoding(self):
+        self.assertEqual(self._call('Zm9v=', None), 'foo')
 
-    def test_unicode(self):
-        self.assertEqual(self._call(u'XIU='), '\\\x85')
+    def test_with_encoding(self):
+        self.assertEqual(self._call('xIU=', 'utf-8'), u'\u0105')
 
     def test_fills_padding(self):
-        self.assertEqual(self._call('Zm9v'), 'foo')
+        self.assertEqual(self._call('Zm9v', None), 'foo')
 
 
 if __name__ == '__main__':

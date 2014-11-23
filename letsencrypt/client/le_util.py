@@ -65,48 +65,47 @@ def unique_file(default_name, mode=0777):
         count += 1
 
 
-def _to_utf8(arg):
-    """Normalize to UTF-8 string."""
-    return arg.encode('utf-8') if isinstance(arg, unicode) else arg
+# https://tools.ietf.org/html/draft-ietf-jose-json-web-signature-37#appendix-C
+#
+# Jose Base64:
+#
+#   - URL-safe Base64
+#
+#   - padding stripped
 
 
-def jose_b64encode(arg):
+def jose_b64encode(data, encoding='utf-8'):
     """JOSE Base64 encode.
 
-    JOSE Base64:
-    - URL-safe Base64
-    - padding stripped
+    :param data: Data to be encoded.
+    :type data: str or unicode
 
-    https://tools.ietf.org/html/draft-ietf-jose-json-web-signature-37#appendix-C
-
-    :param arg: String to be encoded. Unicode input will be encoded
-                to UTF-8 before Base64 encoding.
-    :type arg: str or unicode
+    :param encoding: Name of the encoding to be performed before
+                     Base64 encoding. If not None, then `data`
+                     has to be unicode.
+    :type encoding: str or None
 
     :returns: JOSE Base64 string.
     :rtype: str
 
     """
-    return base64.urlsafe_b64encode(_to_utf8(arg)).rstrip('=')
+    encoded = data if encoding is None else data.encode(encoding)
+    return base64.urlsafe_b64encode(encoded).rstrip('=')
 
 
-def jose_b64decode(arg):
+def jose_b64decode(arg, decoding='utf-8'):
     """JOSE Base64 decode.
 
-    Jose Base64:
-    - URL-safe Base64
-    - padding stripped
+    :param arg: Base64 string to be decoded.
+    :type arg: str
 
-    https://tools.ietf.org/html/draft-ietf-jose-json-web-signature-37#appendix-C
+    :param decoding: Name of the encoding to be performed after
+                     Base64 decoding.
+    :type decoding: str or None
 
-    :param arg: Base64 string to be decoded. Unicode input will be
-                encoded to UTF-8 before Base64 decoding.
-    :type arg: str or unicode
-
-    :returns: Decoded string.
-    :rtype: str
+    :returns: Decoded data. Unicode if `decoding` is not None.
+    :rtype: str or unicode
 
     """
-    normalized = _to_utf8(arg)
-    return base64.urlsafe_b64decode(
-        normalized + '=' * (4 - (len(normalized) % 4)))
+    decoded = base64.urlsafe_b64decode(arg + '=' * (4 - (len(arg) % 4)))
+    return decoded if decoding is None else decoded.decode(decoding)
