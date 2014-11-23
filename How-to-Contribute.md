@@ -1,4 +1,4 @@
-I believe this project is extremely important for the future of the Internet, and together, we can make it a success.  There is a ton of work to be done, so I thought I would compile a list of known issues or things I would like to see implemented.  If you would like to work on any of these sub-projects, I might suggest making an issue regarding it before you start the work. That way, everyone interested in the topic can convene and work together towards a solution in a group branch.  This list is by no means exhaustive. These ideas have just been floating around in my head for awhile, if you have ideas of your own, feel free to implement them.  All support is greatly appreciated!
+This project is extremely important for the future of the Internet, and together, we can make it a success.  There is a ton of work to be done, so I thought I would compile a list of known issues or things I would like to see implemented.  If you would like to work on any of these sub-projects, I might suggest making an issue regarding it before you start the work. That way, everyone interested in the topic can convene and work together towards a solution in a group branch.  This list is by no means exhaustive. These ideas have just been floating around in my head for awhile, if you have ideas of your own, feel free to implement them.  All support is greatly appreciated!
 
 Obligatory mailing list plug - Client software development can be discussed on this [mailing list]
 (https://groups.google.com/a/letsencrypt.org/forum/#!forum/client-dev)
@@ -13,7 +13,7 @@ To subscribe without a Google account, send mail to
 
 #### NginxConfigurator
 
-There has been alot of stated demand for nginx support and there have been a few interested developers.  It is an extremely popular webserver and I would really like to see it fully supported. (I may be biased because I run a few nginx servers myself :))  There is an Augeas lens for nginx.  I have already created a stub class based off an AugeasConfigurator. Hopefully the nginx supported lens will be sufficient, I personally haven't worked with it yet.  (Augeas is also a great open source project, so we could always perfect the lens as it will help both causes.)  Of course, you are free to find your own clean solution to supporting nginx though too.
+There has been alot of stated demand for nginx support and there have been a few interested developers.  It is an extremely popular webserver and it would be great if it was fully supported.  There is an Augeas lens for nginx.  There is a stub class that you are welcome to develop off of that is based on an AugeasConfigurator(). Hopefully the nginx supported lens will be sufficient.  (Augeas is also a great open source project, so we could always perfect the lens as it will help both causes.)  Of course, you are free to find your own clean solution to supporting nginx though too.
 
 #### Port to new OSes/distros
 
@@ -37,7 +37,7 @@ It would be great to see all webserver configuration changes be validated.  Does
 
 #### Testing Framework
 
-I would like to build a repository of valid configurations that we can test all changes to the code against before pushing the code into the master branch.  The ApacheConfigurator can be initialized with any SERVER_ROOT, so it should be feasible to automate the process and provide lots of tests.  This project could use the Validator class to verify correct results.
+The project would benefit from building a repository of valid configurations so we can test all changes to the code against it before pushing the code into the master branch.  The ApacheConfigurator can be initialized with any SERVER_ROOT, so it should be feasible to automate the process and provide lots of tests.  This project could use the Validator class (currently a stub) to verify correct results.
 
 ## Small Projects
 
