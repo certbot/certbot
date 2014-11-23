@@ -470,23 +470,32 @@ class Client(object):
         return True
 
     def send(self, json_obj):
+        json_encoded = json.dumps(json_obj)
+        acme.acme_object_validate(json_encoded)
+
         try:
-            json_encoded = json.dumps(json_obj)
-            acme.acme_object_validate(json_encoded)
             response = requests.post(
                 self.server_url,
                 data=json_encoded,
                 headers={"Content-Type": "application/json"},
             )
-            body = response.content
-            acme.acme_object_validate(body)
-            return response.json()
-        except Exception as e:
+        except requests.exceptions.RequestException as e:
             logger.fatal("Send() failed... may have lost connection to server")
             logger.fatal(" ** ERROR **")
             logger.fatal(e)
             sys.exit(8)
 
+        try:
+            acme.acme_object_validate(response.content)
+        except ValueError:
+            logger.fatal('Server did not send JSON serializable message')
+            sys.exit(8)
+        except jsonschema.ValidationError as error:
+            logger.fatal('Server did not send valid ACME message')
+            logger.fatal(error)
+            sys.exit(8)
+
+        return response.json()
 
     def store_revocation_token(self, token):
         return
