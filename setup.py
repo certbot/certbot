@@ -15,7 +15,7 @@ testing_extras = [
     'coverage',
     'nose',
     'pylint',
-    'tox>=1.6',
+    'tox',
 ]
 
 setup(
@@ -29,10 +29,6 @@ setup(
         'letsencrypt',
         'letsencrypt.client',
         'letsencrypt.scripts',
-    ],
-    dependency_links=[
-        # http://augeas.net/download.html
-        'https://fedorahosted.org/released/python-augeas/',
     ],
     install_requires=install_requires,
     tests_require=install_requires,
