@@ -87,3 +87,13 @@ There are plenty of examples throughout the code.
 Normal Augeas configuration changes do not modify files until all of the
 changes are saved.
 The main function is Configurator.save(title=None, temporary=False)
+
+## Notes on Security
+
+Threat Model: Attackers can have user level access to the filesystem (perhaps from an unpatched vulnerability in the existing webserver).  The attacker should not be able to receive a trusted certificate or exploit the Let's Encrypt client via a privilege escalation attack.
+
+The security and safety of this code is extremely important.  The program runs with root privileges and its goal is to display authoritative ownership of the service.  As with securing any program, all inputs must be carefully scrutinized.  The Let's Encrypt client attempts to guarantee all inputs are "trusted". Most of the inputs to Let's Encrypt are sensitive and many are executed in one way or another.  Therefore all inputs must be checked for root privilege in order to avoid [privilege escalation attacks](https://en.wikipedia.org/wiki/Privilege_escalation).  
+
+le_util.py contains several helper functions to ensure a safe execution environment.  These functions are also designed to avoid [TOCTOU attacks](http://www.hpenterprisesecurity.com/vulncat/en/vulncat/cpp/file_access_race_condition.html).
+
+The project's goal is to minimally raise the attack surface of Let's Encrypt webservers.  The code aims avoid the  introduction of any new vulnerabilities to an existing webserver.  If you find any vulnerabilities given this threat model, please raise a Github issue about it.
