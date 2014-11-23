@@ -28,7 +28,8 @@ def acme_object_validate(j):
 
     Success will return None; failure to validate will raise a
     jsonschema.ValidationError exception describing the reason that the
-    object could not be validated successfully.
+    object could not be validated successfully, or a ValueError exception
+    if the object cannot even be parsed as valid JSON.
     """
     j = json.loads(j)
     if not isinstance(j, dict):
