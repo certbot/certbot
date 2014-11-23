@@ -12,6 +12,10 @@ install_requires = [
     'requests',
 ]
 
+docs_extras = [
+    'Sphinx',
+]
+
 testing_extras = [
     'coverage',
     'nose',
@@ -36,6 +40,7 @@ setup(
     tests_require=install_requires,
     test_suite='letsencrypt',
     extras_require={
+        'docs': docs_extras,
         'testing': testing_extras,
     },
     entry_points={
