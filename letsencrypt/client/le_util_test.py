@@ -126,6 +126,9 @@ class JOSEB64DecodeTest(unittest.TestCase):
     def test_with_encoding(self):
         self.assertEqual(self._call('xIU=', 'utf-8'), u'\u0105')
 
+    def test_unicode(self):
+        self.assertEqual(self._call(u'YQ', None), 'a')
+
 
 if __name__ == '__main__':
     unittest.main()
