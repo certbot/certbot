@@ -1,6 +1,5 @@
 M2Crypto==0.22.3
 python2-pythondialog
 jsonschema==2.4.0
-#python-augeas==0.5.0
+python-augeas==0.5.0
 requests==2.4.3
-https://github.com/giraldeau/python-augeas/archive/v0.5.0.zip
