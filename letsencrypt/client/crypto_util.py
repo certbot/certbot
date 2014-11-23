@@ -18,36 +18,54 @@ def b64_cert_to_pem(b64_der_cert):
         le_util.b64_url_dec(b64_der_cert)).as_pem()
 
 
-def create_sig(msg, key_file, signer_nonce=None,
-               signer_nonce_len=CONFIG.NONCE_SIZE):
-    # DOES prepend signer_nonce to message
-    # TODO: Change this over to M2Crypto... PKey
-    # Protect against crypto unicode errors... is this sufficient?
-    # Do I need to escape?
+def create_sig(msg, key_file, nonce=None, nonce_len=CONFIG.NONCE_SIZE):
+    """Create signature with nonce prepended to the message.
+
+    TODO: Change this over to M2Crypto... PKey
+          Protect against crypto unicode errors... is this sufficient?
+          Do I need to escape?
+
+    :param msg: Message to be signed
+    :type msg: Anything with __str__ method
+
+    :param key_file: Path to a file containing RSA key. Accepted formats
+                     are the same as for `Crypto.PublicKey.RSA.importKey`.
+    :type key_file: str
+
+    :param nonce: Nonce to be used. If None, nonce of `signer_nonce_len` size
+                  will be randomly genereted.
+    :type nonce: str or None
+
+    :param nonce_len: Size of the automaticaly generated nonce.
+    :type nonce_len: int
+
+    :returns: Signature.
+    :rtype: dict
+
+    """
     msg = str(msg)
     key = Crypto.PublicKey.RSA.importKey(open(key_file).read())
-    if signer_nonce is None:
-        signer_nonce = Random.get_random_bytes(signer_nonce_len)
-    hashed = Crypto.Hash.SHA256.new(signer_nonce + msg)
-    signer = Crypto.Signature.PKCS1_v1_5.new(key)
-    signature = signer.sign(hashed)
-    #print "signing:", signer_nonce + msg
-    #print "signature:", signature
+    nonce = Random.get_random_bytes(nonce_len) if nonce is None else nonce
+
+    msg_with_nonce = nonce + msg
+    hashed = Crypto.Hash.SHA256.new(msg_with_nonce)
+    signature = Crypto.Signature.PKCS1_v1_5.new(key).sign(hashed)
+
+    logger.debug('%s signed as %s' % (msg_with_nonce, signature))
+
     n_bytes = binascii.unhexlify(leading_zeros(hex(key.n)[2:].replace("L", "")))
     e_bytes = binascii.unhexlify(leading_zeros(hex(key.e)[2:].replace("L", "")))
-    n_encoded = le_util.b64_url_enc(n_bytes)
-    e_encoded = le_util.b64_url_enc(e_bytes)
-    signer_nonce_encoded = le_util.b64_url_enc(signer_nonce)
-    sig_encoded = le_util.b64_url_enc(signature)
-    jwk = {"kty": "RSA", "n": n_encoded, "e": e_encoded}
-    signature = {
-        "nonce": signer_nonce_encoded,
+
+    return {
+        "nonce": le_util.b64_url_enc(signer_nonce),
         "alg": "RS256",
-        "jwk": jwk,
-        "sig": sig_encoded
+        "jwk": {
+            "kty": "RSA",
+            "n": le_util.b64_url_enc(n_bytes),
+            "e": le_util.b64_url_enc(e_bytes),
+        },
+        "sig": le_util.b64_url_enc(signature),
     }
-    # return json.dumps(signature)
-    return signature
 
 
 def leading_zeros(arg):
@@ -151,6 +169,14 @@ def make_ss_cert(key_file, domains):
 
 
 def get_cert_info(filename):
+    """Get certificate info.
+
+    :param filename: Name of file containing certificate in PEM format.
+    :type filename: str
+
+    :rtype: dict
+
+    """
     # M2Crypto Library only supports RSA right now
     cert = M2Crypto.X509.load_cert(filename)
 
