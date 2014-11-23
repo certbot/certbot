@@ -69,6 +69,22 @@ class CheckPermissionsTest(unittest.TestCase):
         self.assertFalse(self._call(0600))
 
 
+# https://en.wikipedia.org/wiki/Base64#Examples
+JOSE_B64_PADDING_EXAMPLES = {
+    'any carnal pleasure.': ('YW55IGNhcm5hbCBwbGVhc3VyZS4', '='),
+    'any carnal pleasure': ('YW55IGNhcm5hbCBwbGVhc3VyZQ', '=='),
+    'any carnal pleasur': ('YW55IGNhcm5hbCBwbGVhc3Vy', ''),
+    'any carnal pleasu': ('YW55IGNhcm5hbCBwbGVhc3U', '='),
+    'any carnal pleas': ('YW55IGNhcm5hbCBwbGVhcw', '=='),
+}
+
+
+B64_URL_UNSAFE_EXAMPLES = {
+    chr(251) + chr(239): '--8',
+    chr(255) * 2: '__8',
+}
+
+
 class JOSEB64EncodeTest(unittest.TestCase):
     """Tests for letsencrypt.client.le_util.jose_b64encode."""
 
@@ -76,8 +92,13 @@ class JOSEB64EncodeTest(unittest.TestCase):
         from letsencrypt.client.le_util import jose_b64encode
         return jose_b64encode(data, encoding)
 
-    def test_without_encoding(self):
-        self.assertEqual(self._call('foo', None), 'Zm9v')
+    def test_unsafe_url(self):
+        for text, b64 in B64_URL_UNSAFE_EXAMPLES.iteritems():
+            self.assertEqual(self._call(text, None), b64)
+
+    def test_different_paddings(self):
+        for text, (b64, _) in JOSE_B64_PADDING_EXAMPLES.iteritems():
+            self.assertEqual(self._call(text, None), b64)
 
     def test_with_encoding(self):
         self.assertEqual(self._call(u'\u0105', 'utf-8'), 'xIU')
@@ -90,14 +111,20 @@ class JOSEB64DecodeTest(unittest.TestCase):
         from letsencrypt.client.le_util import jose_b64decode
         return jose_b64decode(jose_b64_string, decoding)
 
-    def test_without_decoding(self):
-        self.assertEqual(self._call('Zm9v=', None), 'foo')
+    def test_unsafe_url(self):
+        for text, b64 in B64_URL_UNSAFE_EXAMPLES.iteritems():
+            self.assertEqual(self._call(b64, None), text)
+
+    def test_input_without_padding(self):
+        for text, (b64, _) in JOSE_B64_PADDING_EXAMPLES.iteritems():
+            self.assertEqual(self._call(b64, None), text)
+
+    def test_input_with_padding(self):
+        for text, (b64, pad) in JOSE_B64_PADDING_EXAMPLES.iteritems():
+            self.assertEqual(self._call(b64 + pad, None), text)
 
     def test_with_encoding(self):
         self.assertEqual(self._call('xIU=', 'utf-8'), u'\u0105')
-
-    def test_fills_padding(self):
-        self.assertEqual(self._call('Zm9v', None), 'foo')
 
 
 if __name__ == '__main__':
