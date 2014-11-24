@@ -36,7 +36,9 @@ class Configurator(object):
     def get_all_certs_keys(self):
         """Retrieve all certs and keys set in configuration.
 
-        returns: list of tuples with form [(cert, key, path)]
+        :returns: List of tuples with form [(cert, key, path)].
+        :rtype: list
+
         """
         raise NotImplementedError()
 
