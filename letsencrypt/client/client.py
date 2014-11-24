@@ -70,7 +70,8 @@ class Client(object):
             sys.exit(1)
         # If CSR and key are provided, the key must be the same key used
         # in the CSR.
-        if self.csr_file and self.key_file and not csr_matches_pubkey(self.csr_file, self.key_file):
+        if self.csr_file and self.key_file and \
+                not csr_matches_pubkey(self.csr_file, self.key_file):
             logger.fatal("The provided key is not the same key referred to by \
             the CSR file")
             sys.exit(1)
@@ -615,10 +616,8 @@ class Client(object):
     def get_key_csr_pem(self, csr_return_format='der'):
         """
         Returns key and CSR using provided files or generating new files if
-        necessary. Both will be saved in pem format on the filesystem.
-        The CSR can optionally be returned in DER format as the CSR cannot be
-        loaded back into M2Crypto.
-        """
+        necessary. Both will be saved in PEM format on the filesystem.
+        The CSR can optionally be returned in DER format."""
         key_pem = None
         csr_pem = None
         if not self.key_file:
@@ -647,17 +646,17 @@ class Client(object):
             csr_f.close()
             logger.info("Creating CSR: %s" % self.csr_file)
         else:
-            # TODO fix this der situation
             try:
-                csr_pem = open(self.csr_file).read().replace("\r", "")
+                csr = M2Crypto.X509.load_request(self.csr_file)
+                csr_pem, csr_der = csr.as_pem(), csr.as_der()
             except:
                 logger.fatal("Unable to open CSR file: %s" % self.csr_file)
                 sys.exit(1)
 
         if csr_return_format == 'der':
             return key_pem, csr_der
-
-        return key_pem, csr_pem
+        else:
+            return key_pem, csr_pem
 
     # def choice_of_ca(self):
     #     choices = self.get_cas()
