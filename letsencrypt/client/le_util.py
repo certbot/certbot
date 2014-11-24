@@ -74,39 +74,42 @@ def unique_file(default_name, mode=0777):
 #   - padding stripped
 
 
-def jose_b64encode(data, encoding='utf-8'):
+def jose_b64encode(data):
     """JOSE Base64 encode.
 
     :param data: Data to be encoded.
-    :type data: str or unicode
+    :type data: str or bytearray
 
-    :param encoding: Name of the encoding to be performed before
-                     Base64 encoding. If not None, then `data`
-                     has to be unicode.
-    :type encoding: str or None
+    :raises: TypeError
 
     :returns: JOSE Base64 string.
     :rtype: str
 
     """
-    encoded = data if encoding is None else data.encode(encoding)
-    return base64.urlsafe_b64encode(encoded).rstrip('=')
+    if not isinstance(data, str):
+        raise TypeError('argument should be str or bytearray')
+    return base64.urlsafe_b64encode(data).rstrip('=')
 
 
-def jose_b64decode(arg, decoding='utf-8'):
+def jose_b64decode(data):
     """JOSE Base64 decode.
 
-    :param arg: Base64 string to be decoded.
-    :type arg: str or unicode
+    :param data: Base64 string to be decoded. If it's unicode, then
+                 only ASCII characters are allowed.
+    :type data: str or unicode
 
-    :param decoding: Name of the encoding to be performed after
-                     Base64 decoding.
-    :type decoding: str or None
+    :raises: ValueError, TypeError
 
-    :returns: Decoded data. Unicode if `decoding` is not None.
-    :rtype: str or unicode
+    :returns: Decoded data.
 
     """
-    ascii = arg.encode('ascii')  # equivalent to str(arg), for unicode input
-    decoded = base64.urlsafe_b64decode(ascii + '=' * (4 - (len(ascii) % 4)))
-    return decoded if decoding is None else decoded.decode(decoding)
+    if isinstance(data, unicode):
+        try:
+            data = data.encode('ascii')
+        except UnicodeEncodeError:
+            raise ValueError(
+                'unicode argument should contain only ASCII characters')
+    elif not isinstance(data, str):
+        raise TypeError('argument should be a str or unicode')
+
+    return base64.urlsafe_b64decode(data + '=' * (4 - (len(data) % 4)))
