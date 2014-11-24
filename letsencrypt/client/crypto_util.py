@@ -11,6 +11,7 @@ import M2Crypto
 
 from letsencrypt.client import CONFIG
 from letsencrypt.client import le_util
+from letsencrypt.client import logger
 
 
 def b64_cert_to_pem(b64_der_cert):
@@ -32,7 +33,7 @@ def create_sig(msg, key_file, nonce=None, nonce_len=CONFIG.NONCE_SIZE):
                      are the same as for `Crypto.PublicKey.RSA.importKey`.
     :type key_file: str
 
-    :param nonce: Nonce to be used. If None, nonce of `signer_nonce_len` size
+    :param nonce: Nonce to be used. If None, nonce of `nonce_len` size
                   will be randomly genereted.
     :type nonce: str or None
 
@@ -57,7 +58,7 @@ def create_sig(msg, key_file, nonce=None, nonce_len=CONFIG.NONCE_SIZE):
     e_bytes = binascii.unhexlify(leading_zeros(hex(key.e)[2:].replace("L", "")))
 
     return {
-        "nonce": le_util.b64_url_enc(signer_nonce),
+        "nonce": le_util.b64_url_enc(nonce),
         "alg": "RS256",
         "jwk": {
             "kty": "RSA",
