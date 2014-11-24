@@ -127,7 +127,7 @@ def certificate_request(csr_der, key):
     """
     return {
         "type": "certificateRequest",
-        "csr": le_util.jose_b64encode(csr_der),
+        "csr": le_util.jose_b64encode(csr_der),  # TODO: csr_der.encode?
         "signature": crypto_util.create_sig(csr_der, key),
     }
 
@@ -148,7 +148,7 @@ def revocation_request(key_file, cert_der):
     """
     return {
         "type": "revocationRequest",
-        "certificate": le_util.jose_b64encode(cert_der),
+        "certificate": le_util.jose_b64encode(cert_der),  # TODO: csr_der.encode?
         "signature": crypto_util.create_sig(cert_der, key_file),
     }
 
