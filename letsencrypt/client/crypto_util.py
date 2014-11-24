@@ -58,14 +58,14 @@ def create_sig(msg, key_file, nonce=None, nonce_len=CONFIG.NONCE_SIZE):
     e_bytes = binascii.unhexlify(leading_zeros(hex(key.e)[2:].replace("L", "")))
 
     return {
-        "nonce": le_util.jose_b64encode(nonce),  # TODO: nonce.encode?
+        "nonce": le_util.jose_b64encode(nonce),
         "alg": "RS256",
         "jwk": {
             "kty": "RSA",
-            "n": le_util.jose_b64encode(n_bytes),  # TODO: n_bytes.encode?
-            "e": le_util.jose_b64encode(e_bytes),  # TODO: e_bytes.encode?
+            "n": le_util.jose_b64encode(n_bytes),
+            "e": le_util.jose_b64encode(e_bytes),
         },
-        "sig": le_util.jose_b64encode(signature),  # TODO: signature.encode?
+        "sig": le_util.jose_b64encode(signature),
     }
 
 
