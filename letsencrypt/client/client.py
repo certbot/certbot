@@ -1,5 +1,4 @@
 import csv
-import datetime
 import json
 import os
 import shutil
@@ -8,11 +7,13 @@ import string
 import sys
 import time
 
+import jsonschema
 import M2Crypto
 import requests
 
 from letsencrypt.client import acme
 from letsencrypt.client import apache_configurator
+from letsencrypt.client import challenge
 from letsencrypt.client import CONFIG
 from letsencrypt.client import crypto_util
 from letsencrypt.client import display
@@ -20,26 +21,26 @@ from letsencrypt.client import le_util
 from letsencrypt.client import logger
 
 
-# it's weird to point to chocolate servers via raw IPv6 addresses, and such
-# addresses can be %SCARY in some contexts, so out of paranoia let's disable
-# them by default
-allow_raw_ipv6_server = False
+# it's weird to point to chocolate servers via raw IPv6 addresses, and
+# such addresses can be %SCARY in some contexts, so out of paranoia
+# let's disable them by default
+ALLOW_RAW_IPV6_SERVER = False
+
 
 class Client(object):
-    # In case of import, dialog needs scope over the class
-    dialog = None
+    """ACME protocol client."""
 
     def __init__(self, ca_server, cert_signing_request=None,
                  private_key=None, use_curses=True):
-        global dialog
         self.curses = use_curses
 
         # Logger needs to be initialized before Configurator
         self.init_logger()
-        # TODO:  Can probably figure out which configurator to use without
-        #        special packaging based on system info
-        #        Command line arg or client function to discover
-        self.config = apache_configurator.ApacheConfigurator(CONFIG.SERVER_ROOT)
+        # TODO: Can probably figure out which configurator to use
+        #       without special packaging based on system info Command
+        #       line arg or client function to discover
+        self.config = apache_configurator.ApacheConfigurator(
+            CONFIG.SERVER_ROOT)
 
         self.server = ca_server
 
@@ -56,7 +57,9 @@ class Client(object):
 
         self.server_url = "https://%s/acme/" % self.server
 
-    def authenticate(self, domains = [], redirect = None, eula = False):
+    def authenticate(self, domains=None, redirect=None, eula=False):
+        domains = [] if domains is None else domains
+
         # Check configuration
         if not self.config.config_test():
             sys.exit(1)
@@ -65,13 +68,14 @@ class Client(object):
 
         # Display preview warning
         if not eula:
-            with open('EULA') as f:
-                if not display.generic_yesno(f.read(), "Agree", "Cancel"):
+            with open('EULA') as eula_file:
+                if not display.generic_yesno(eula_file.read(),
+                                             "Agree", "Cancel"):
                     sys.exit(0)
 
         # Display screen to select domains to validate
         if domains:
-            self.sanity_check_names([self.server] + domains)
+            sanity_check_names([self.server] + domains)
             self.names = domains
         else:
             # This function adds all names
@@ -88,179 +92,297 @@ class Client(object):
         # TODO: Use correct server depending on CA
         #choice = self.choice_of_ca()
 
-        #Request Challenges
-        challenge_dict = self.handle_challenge()
+        # Request Challenges
+        challenge_msg = self.acme_challenge()
 
         # Get key and csr to perform challenges
-        key_pem, csr_der = self.get_key_csr_pem()
+        _, csr_der = self.get_key_csr_pem()
 
-        #Perform Challenges
-        responses, challenge_objs = self.verify_identity(challenge_dict)
+        # Perform Challenges
+        responses, challenge_objs = self.verify_identity(challenge_msg)
         # Get Authorization
-        self.handle_authorization(challenge_dict, challenge_objs, responses)
+        self.acme_authorization(challenge_msg, challenge_objs, responses)
 
         # Retrieve certificate
-        certificate_dict = self.handle_certificate(csr_der)
-
+        certificate_dict = self.acme_certificate(csr_der)
 
         # Find set of virtual hosts to deploy certificates to
         vhost = self.get_virtual_hosts(self.names)
 
         # Install Certificate
-        self.install_certificate(certificate_dict, vhost)
+        cert_file = self.install_certificate(certificate_dict, vhost)
 
         # Perform optimal config changes
         self.optimize_config(vhost)
 
         self.config.save("Completed Let's Encrypt Authentication")
 
-        self.store_cert_key(False)
+        self.store_cert_key(cert_file, False)
 
-        return
+    def acme_challenge(self):
+        """Handle ACME "challenge" phase.
 
+        :returns: ACME "challenge" message.
+        :rtype: dict
 
-    def handle_challenge(self):
-        challenge_dict = self.send(self.challenge_request(self.names))
-        try:
-            return self.is_expected_msg(challenge_dict, "challenge")
-        except:
-            logger.fatal("Unexpected error")
-            sys.exit(1)
+        """
+        return self.send_and_receive_expected(
+            acme.challenge_request(self.names), "challenge")
 
-    def handle_authorization(self, challenge_dict, chal_objs, responses):
-        auth_dict = self.send(self.authorization_request(
-            challenge_dict["sessionID"], self.names[0],
-            challenge_dict["nonce"], responses))
+    def acme_authorization(self, challenge_msg, chal_objs, responses):
+        """Handle ACME "authorization" phase.
+
+        :param challenge_msg: ACME "challenge" message.
+        :type challenge_msg: dict
+
+        :param chal_objs: TODO
+        :type chal_objs: TODO
+
+        :param responses: TODO
+        :type responses: TODO
+
+        :returns: ACME "authorization" message.
+        :rtype: dict
+
+        """
+        auth_dict = self.send(acme.authorization_request(
+            challenge_msg["sessionID"], self.names[0],
+            challenge_msg["nonce"], responses, self.key_file))
 
         try:
             return self.is_expected_msg(auth_dict, "authorization")
         except:
-            logger.fatal("Failed Authorization procedure - \
-            cleaning up challenges")
+            logger.fatal("Failed Authorization procedure - "
+                         "cleaning up challenges")
             sys.exit(1)
-
         finally:
             self.cleanup_challenges(chal_objs)
 
+    def acme_certificate(self, csr_der):
+        """Handle ACME "certificate" phase.
 
-    def handle_certificate(self, csr_der):
-        certificate_dict = self.send(
-            self.certificate_request(csr_der, self.key_file))
+        :param csr_der: TODO
+        :type csr_der: TODO
 
-        try:
-            return self.is_expected_msg(certificate_dict, "certificate")
-        except:
-            logger.fatal("Encountered unexpected message")
-            sys.exit(1)
+        :returns: ACME "certificate" message.
+        :rtype: dict
 
+        """
+        logger.info("Preparing and sending CSR..")
+        return self.send_and_receive_expected(
+            acme.certificate_request(csr_der, self.key_file), "certificate")
 
-    def revoke(self, c):
-        x = M2Crypto.X509.load_cert(c["backup_cert_file"])
-        cert_der = x.as_der()
+    def acme_revocation(self, cert):
+        """Handle ACME "revocation" phase.
 
-        #self.find_key_for_cert()
-        revocation_dict = self.send(
-            self.revocation_request(c["backup_key_file"], cert_der))
+        :param cert: TODO
+        :type cert: dict
 
-        revocation_dict = self.is_expected_msg(revocation_dict, "revocation")
+        :returns: ACME "revocation" message.
+        :rtype: dict
+
+        """
+        cert_der = M2Crypto.X509.load_cert(cert["backup_cert_file"]).as_der()
+
+        revocation = self.send_and_receive_expected(
+            acme.revocation_request(cert["backup_key_file"], cert_der),
+            "revocation")
 
         display.generic_notification(
-            "You have successfully revoked the certificate for %s" % c["cn"], width=70, height=9)
+            "You have successfully revoked the certificate for "
+            "%s" % cert["cn"], width=70, height=9)
 
-        self.remove_cert_key(c)
-
+        remove_cert_key(cert)
         self.list_certs_keys()
 
-    def remove_cert_key(self, c):
-        list_file = CONFIG.CERT_KEY_BACKUP + "LIST"
-        list_file2 = CONFIG.CERT_KEY_BACKUP + "LIST.tmp"
-        with open(list_file, 'rb') as orgfile:
-            csvreader = csv.reader(orgfile)
-            with open(list_file2, 'wb') as newfile:
-                csvwriter = csv.writer(newfile)
-                for row in csvreader:
-                    if not (row[0] == str(c["idx"]) and
-                            row[1] == c["orig_cert_file"] and
-                            row[2] == c["orig_key_file"]):
-                        csvwriter.writerow(row)
+        return revocation
 
-        shutil.copy2(list_file2, list_file)
-        os.remove(list_file2)
-        os.remove(c['backup_cert_file'])
-        os.remove(c['backup_key_file'])
+    def send(self, msg):
+        """Send ACME message to server.
 
+        :param msg: ACME message (JSON serializable).
+        :type msg: dict
+
+        :raises: TypeError if `msg` is not JSON serializable or
+                 jsonschema.ValidationError if not valid ACME message or
+                 Exception if response from server is not valid ACME message
+
+        :returns: Server response message.
+        :rtype: dict
+
+        """
+        json_encoded = json.dumps(msg)
+        acme.acme_object_validate(json_encoded)
+
+        try:
+            response = requests.post(
+                self.server_url,
+                data=json_encoded,
+                headers={"Content-Type": "application/json"},
+            )
+        except requests.exceptions.RequestException as error:
+            logger.fatal("Send() failed... may have lost connection to server")
+            logger.fatal(" ** ERROR **")
+            logger.fatal(error)
+            sys.exit(8)
+
+        try:
+            acme.acme_object_validate(response.content)
+        except jsonschema.ValidationError:
+            raise Exception('Response from server is not a valid ACME message')
+
+        return response.json()
+
+    def send_and_receive_expected(self, msg, expected):
+        """Send ACME message to server and return expected message.
+
+        :param msg: ACME message (JSON serializable).
+        :type acem_msg: dict
+
+        :param expected: Name of the expected response ACME message type.
+        :type expected: str
+
+        :returns: ACME response message of expected type.
+        :rtype: dict
+
+        """
+        response = self.send(msg)
+        try:
+            return self.is_expected_msg(response, expected)
+        except:  # TODO: too generic exception
+            raise Exception('Expected message (%s) not received' % expected)
+
+    def is_expected_msg(self, response, expected, delay=3, rounds=20):
+        """Is reponse expected ACME message?
+
+        :param response: ACME response message from server.
+        :type response: dict
+
+        :param expected: Name of the expected response ACME message type.
+        :type expected: str
+
+        :param delay: Number of seconds to delay before next round in case
+                      of ACME "defer" response message.
+        :type delay: int
+
+        :param rounds: Number of resend attempts in case of ACME "defer"
+                       reponse message.
+        :type rounds: int
+
+        :raises: Exception
+
+        :returns: ACME response message from server.
+        :rtype: dict
+
+        """
+        for _ in xrange(rounds):
+            if response["type"] == expected:
+                return response
+
+            elif response["type"] == "error":
+                logger.error("%s: %s - More Info: %s" %
+                             (response["error"],
+                              response.get("message", ""),
+                              response.get("moreInfo", "")))
+                raise Exception(response["error"])
+
+            elif response["type"] == "defer":
+                logger.info("Waiting for %d seconds..." % delay)
+                time.sleep(delay)
+                response = self.send(acme.status_request(response["token"]))
+            else:
+                logger.fatal("Received unexpected message")
+                logger.fatal("Expected: %s" % expected)
+                logger.fatal("Received: " + response)
+                sys.exit(33)
+
+        logger.error("Server has deferred past the max of %d seconds" %
+                     (rounds * delay))
 
     def list_certs_keys(self):
-        list_file = CONFIG.CERT_KEY_BACKUP + "LIST"
+        list_file = os.path.join(CONFIG.CERT_KEY_BACKUP, "LIST")
         certs = []
 
-        if not os.path.isfile(CONFIG.CERT_KEY_BACKUP + "LIST"):
-            logger.info("You don't have any certificates saved from letsencrypt")
+        if not os.path.isfile(list_file):
+            logger.info(
+                "You don't have any certificates saved from letsencrypt")
             return
 
         c_sha1_vh = {}
-        for x in self.config.get_all_certs_keys():
+        for (cert, _, path) in self.config.get_all_certs_keys():
             try:
-                c_sha1_vh[M2Crypto.X509.load_cert(x[0]).get_fingerprint(md='sha1')] = x[2]
+                c_sha1_vh[M2Crypto.X509.load_cert(
+                    cert).get_fingerprint(md='sha1')] = path
             except:
                 continue
 
         with open(list_file, 'rb') as csvfile:
             csvreader = csv.reader(csvfile)
             for row in csvreader:
-                c = crypto_util.get_cert_info(row[1])
+                cert = crypto_util.get_cert_info(row[1])
 
-                b_k = CONFIG.CERT_KEY_BACKUP + os.path.basename(row[2]) + "_" + row[0]
-                b_c = CONFIG.CERT_KEY_BACKUP + os.path.basename(row[1]) + "_" + row[0]
+                b_k = os.path.join(CONFIG.CERT_KEY_BACKUP,
+                                   os.path.basename(row[2]) + "_" + row[0])
+                b_c = os.path.join(CONFIG.CERT_KEY_BACKUP,
+                                   os.path.basename(row[1]) + "_" + row[0])
 
-                c["orig_key_file"] = row[2]
-                c["orig_cert_file"] = row[1]
-                c["idx"] = int(row[0])
-                c["backup_key_file"] = b_k
-                c["backup_cert_file"] = b_c
-                c["installed"] = c_sha1_vh.get(c["fingerprint"], "")
-
-                certs.append(c)
+                cert.update({
+                    "orig_key_file": row[2],
+                    "orig_cert_file": row[1],
+                    "idx": int(row[0]),
+                    "backup_key_file": b_k,
+                    "backup_cert_file": b_c,
+                    "installed": c_sha1_vh.get(cert["fingerprint"], ""),
+                })
+                certs.append(cert)
         if certs:
             self.choose_certs(certs)
         else:
-            display.generic_notification("There are not any trusted \
-            Let's Encrypt certificates for this server.")
+            display.generic_notification(
+                "There are not any trusted Let's Encrypt "
+                "certificates for this server.")
 
     def choose_certs(self, certs):
-        code, s = display.display_certs(certs)
+        """Display choose certificates menu.
+
+        :param certs: List of cert dicts.
+        :type certs: list
+
+        """
+        code, tag = display.display_certs(certs)
+        cert = certs[tag]
+
         if code == display.OK:
-            if display.confirm_revocation(certs[s]):
-                self.revoke(certs[s])
+            if display.confirm_revocation(cert):
+                self.acme_revocation(cert)
             else:
                 self.choose_certs(certs)
         elif code == display.HELP:
-            print code, s, certs[s]
-            display.more_info_cert(certs[s])
+            print code, tag, cert
+            display.more_info_cert(cert)
             self.choose_certs(certs)
         else:
             exit(0)
 
-
-    def revocation_request(self, key_file, cert_der):
-        return {"type":"revocationRequest",
-                "certificate":le_util.jose_b64encode(cert_der),
-                "signature":crypto_util.create_sig(cert_der, key_file)}
-
-
     def install_certificate(self, certificate_dict, vhost):
+        """Install certificate
+
+        :returns: Path to a certificate file.
+        :rtype: str
+
+        """
         cert_chain_abspath = None
-        cert_fd, self.cert_file = le_util.unique_file(CONFIG.CERT_PATH, 644)
+        cert_fd, cert_file = le_util.unique_file(CONFIG.CERT_PATH, 644)
         cert_fd.write(
             crypto_util.b64_cert_to_pem(certificate_dict["certificate"]))
         cert_fd.close()
         logger.info("Server issued certificate; certificate written to %s" %
-                    self.cert_file)
+                    cert_file)
 
         if certificate_dict.get("chain", None):
             chain_fd, chain_fn = le_util.unique_file(CONFIG.CHAIN_PATH, 644)
-            for c in certificate_dict.get("chain", []):
-                chain_fd.write(crypto_util.b64_cert_to_pem(c))
+            for cert in certificate_dict.get("chain", []):
+                chain_fd.write(crypto_util.b64_cert_to_pem(cert))
             chain_fd.close()
 
             logger.info("Cert chain written to %s" % chain_fn)
@@ -270,7 +392,7 @@ class Client(object):
 
         for host in vhost:
             self.config.deploy_cert(host,
-                                    os.path.abspath(self.cert_file),
+                                    os.path.abspath(cert_file),
                                     os.path.abspath(self.key_file),
                                     cert_chain_abspath)
             # Enable any vhost that was issued to, but not enabled
@@ -283,6 +405,7 @@ class Client(object):
 
         display.success_installation(self.names)
 
+        return cert_file
 
     def optimize_config(self, vhost):
         if self.redirect is None:
@@ -292,80 +415,37 @@ class Client(object):
             self.redirect_to_ssl(vhost)
             self.config.restart(quiet=self.curses)
 
-        #if self.ocsp_stapling is None:
-            # q = "Would you like to protect the privacy of your users " +
-            # "by enabling OCSP stapling? If so, your users will not have to " +
-            # "query the Let's Encrypt CA separately about the current " +
-            # "revocation status of your certificate."
-            #self.ocsp_stapling = self.ocsp_stapling = display.ocsp_stapling(q)
-        #if self.ocsp_stapling:
-            # TODO enable OCSP Stapling
-         #   continue
+        # if self.ocsp_stapling is None:
+        #     q = ("Would you like to protect the privacy of your users "
+        #         "by enabling OCSP stapling? If so, your users will not have "
+        #         "to query the Let's Encrypt CA separately about the current "
+        #         "revocation status of your certificate.")
+        #    self.ocsp_stapling = self.ocsp_stapling = display.ocsp_stapling(q)
+        # if self.ocsp_stapling:
+        #    # TODO enable OCSP Stapling
+        #    continue
 
-
-    def certificate_request(self, csr_der, key):
-        logger.info("Preparing and sending CSR..")
-        return {"type":"certificateRequest",
-                "csr":le_util.jose_b64encode(csr_der),
-                "signature":crypto_util.create_sig(csr_der, self.key_file)}
-
-    def cleanup_challenges(self, challenge_objs):
+    def cleanup_challenges(self, challenges):
         logger.info("Cleaning up challenges...")
-        for c in challenge_objs:
-            if c["type"] in CONFIG.CONFIG_CHALLENGES:
+        for chall in challenges:
+            if chall["type"] in CONFIG.CONFIG_CHALLENGES:
                 self.config.cleanup()
             else:
-                #Handle other cleanup if needed
+                # Handle other cleanup if needed
                 pass
 
-    def is_expected_msg(self, msg_dict, expected, delay=3, rounds = 20):
-        for i in range(rounds):
-            if msg_dict["type"] == expected:
-                return msg_dict
+    def verify_identity(self, challenge_msg):
+        """Verify identity.
 
-            elif msg_dict["type"] == "error":
-                logger.error("%s: %s - More Info: %s" %
-                             (msg_dict["error"],
-                              msg_dict.get("message", ""),
-                              msg_dict.get("moreInfo", "")))
-                raise Exception(msg_dict["error"])
+        :param challenge_msg: ACME "challenge" message.
+        :type challenge_msg: dict
 
-            elif msg_dict["type"] == "defer":
-                logger.info("Waiting for %d seconds..." % delay)
-                time.sleep(delay)
-                msg_dict = self.send(self.status_request(msg_dict["token"]))
-            else:
-                logger.fatal("Received unexpected message")
-                logger.fatal("Expected: %s" % expected)
-                logger.fatal("Received: " + msg_dict)
-                sys.exit(33)
+        :returns: TODO
+        :rtype: dict
 
-        logger.error("Server has deferred past the max of %d seconds" %
-                     (rounds * delay))
-        return None
-
-
-    def authorization_request(self, id, name, server_nonce, responses):
-        auth_req = {"type":"authorizationRequest",
-                    "sessionID":id,
-                    "nonce":server_nonce}
-
-        auth_req["signature"] = crypto_util.create_sig(
-            name + le_util.jose_b64decode(server_nonce), self.key_file)
-
-        auth_req["responses"] = responses
-        return auth_req
-
-    def status_request(self, token):
-        return {"type":"statusRequest", "token":token}
-
-    def challenge_request(self, names):
-        #logger.info("Temporarily only enabling one name")
-        return {"type":"challengeRequest", "identifier": names[0]}
-
-    def verify_identity(self, c):
-        path = self.gen_challenge_path(
-            c["challenges"], c.get("combinations", None))
+        """
+        path = challenge.gen_challenge_path(
+            challenge_msg["challenges"], challenge_msg.get("combinations", []))
 
         logger.info("Performing the following challenges:")
 
@@ -374,9 +454,9 @@ class Client(object):
         # Single Challenge objects that can satisfy multiple server challenges
         # mess up the order of the challenges, thus requiring the indices
         challenge_objs, indices = self.challenge_factory(
-            self.names[0], c["challenges"], path)
+            self.names[0], challenge_msg["challenges"], path)
 
-        responses = ["null"] * len(c["challenges"])
+        responses = ["null"] * len(challenge_msg["challenges"])
 
         # Perform challenges
         for i, c_obj in enumerate(challenge_objs):
@@ -391,147 +471,60 @@ class Client(object):
                 responses[index] = response
 
         logger.info("Configured Apache for challenges; " +
-        "waiting for verification...")
+                    "waiting for verification...")
 
         return responses, challenge_objs
 
-    def gen_challenge_path(self, challenges, combos):
+    def store_cert_key(self, cert_file, encrypt=False):
+        """Store certificate key.
+
+        :param cert_file: Path to a certificate file.
+        :type cert_file: str
+
+        :param encrypt: Should the certificate key be encrypted?
+        :type encrypt: bool
+
         """
-        Generate a plan to get authority over the identity
-        TODO: Make sure that the challenges are feasible...
-              Example: Do you have the recovery key?
-        """
-
-        if combos:
-            return self.__find_smart_path(challenges, combos)
-
-        return self.__find_dumb_path(challenges)
-
-    def __find_smart_path(self, challenges, combos):
-        """
-        Can be called if combinations  is included
-        Function uses a simple ranking system to choose the combo with the
-        lowest cost
-        """
-        chall_cost = {}
-        max_cost = 0
-        for i, chall in enumerate(CONFIG.CHALLENGE_PREFERENCES):
-            chall_cost[chall] = i
-            max_cost += i
-
-        best_combo = []
-        # Set above completing all of the available challenges
-        best_combo_cost = max_cost + 1
-
-        combo_total = 0
-        for combo in combos:
-            for c in combo:
-                combo_total += chall_cost.get(challenges[c]["type"], max_cost)
-            if combo_total < best_combo_cost:
-                best_combo = combo
-                best_combo_cost = combo_total
-            combo_total = 0
-
-        if not best_combo:
-            logger.fatal("Client does not support any combination of \
-            challenges to satisfy ACME server")
-            sys.exit(22)
-
-        return best_combo
-
-    def __find_dumb_path(self, challenges):
-        """
-        Should be called if the combinations hint is not included by the server
-        This function returns the best path that does not contain multiple
-        mutually exclusive challenges
-        """
-        # Add logic for a crappy server
-        # Choose a DV
-        path = []
-        for pref_c in CONFIG.CHALLENGE_PREFERENCES:
-            for i, offered_c in enumerate(challenges):
-                if (pref_c == offered_c["type"] and
-                    self.is_preferred(offered_c["type"], path)):
-                    path.append((i, offered_c["type"]))
-
-        return [tup[0] for tup in path]
-
-
-    def is_preferred(self, offered_c_type, path):
-        for tup in path:
-            for s in CONFIG.EXCLUSIVE_CHALLENGES:
-                # Second part is in case we eventually allow multiple names
-                # to be challenges at the same time
-                if (tup[1] in s and offered_c_type in s and
-                tup[1] != offered_c_type):
-                    return False
-
-        return True
-
-    def send(self, json_obj):
-        try:
-            json_encoded = json.dumps(json_obj)
-            acme.acme_object_validate(json_encoded)
-            response = requests.post(
-                self.server_url,
-                data=json_encoded,
-                headers={"Content-Type": "application/json"},
-            )
-            body = response.content
-            acme.acme_object_validate(body)
-            return response.json()
-        except Exception as e:
-            logger.fatal("Send() failed... may have lost connection to server")
-            logger.fatal(" ** ERROR **")
-            logger.fatal(e)
-            sys.exit(8)
-
-
-    def store_revocation_token(self, token):
-        return
-
-
-
-    def store_cert_key(self, encrypt = False):
-        list_file = CONFIG.CERT_KEY_BACKUP + "LIST"
+        list_file = os.path.join(CONFIG.CERT_KEY_BACKUP, "LIST")
         le_util.make_or_verify_dir(CONFIG.CERT_KEY_BACKUP, 0700)
         idx = 0
 
         if encrypt:
-            logger.error("Unfortunately securely storing the certificates/" +
-            "keys is not yet available. Stay tuned for the next update!")
+            logger.error("Unfortunately securely storing the certificates/"
+                         "keys is not yet available. Stay tuned for the "
+                         "next update!")
             return False
 
         if os.path.isfile(list_file):
             with open(list_file, 'r+b') as csvfile:
                 csvreader = csv.reader(csvfile)
-                for r in csvreader:
-                    idx = int(r[0]) + 1
+                for row in csvreader:
+                    idx = int(row[0]) + 1
                 csvwriter = csv.writer(csvfile)
-                csvwriter.writerow([str(idx), self.cert_file, self.key_file])
+                csvwriter.writerow([str(idx), cert_file, self.key_file])
 
         else:
             with open(list_file, 'wb') as csvfile:
                 csvwriter = csv.writer(csvfile)
-                csvwriter.writerow(["0", self.cert_file, self.key_file])
+                csvwriter.writerow(["0", cert_file, self.key_file])
 
         shutil.copy2(self.key_file,
-                     CONFIG.CERT_KEY_BACKUP + os.path.basename(self.key_file) +
-                     "_" + str(idx))
-        shutil.copy2(self.cert_file,
-                     CONFIG.CERT_KEY_BACKUP + os.path.basename(self.cert_file) +
-                     "_" + str(idx))
-
+                     os.path.join(
+                         CONFIG.CERT_KEY_BACKUP,
+                         os.path.basename(self.key_file) + "_" + str(idx)))
+        shutil.copy2(cert_file,
+                     os.path.join(
+                         CONFIG.CERT_KEY_BACKUP,
+                         os.path.basename(cert_file) + "_" + str(idx)))
 
     def redirect_to_ssl(self, vhost):
         for ssl_vh in vhost:
             success, redirect_vhost = self.config.enable_redirect(ssl_vh)
             logger.info("\nRedirect vhost: " + redirect_vhost.file +
-                     " - " + str(success))
+                        " - " + str(success))
             # If successful, make sure redirect site is enabled
             if success:
                 self.config.enable_site(redirect_vhost)
-
 
     def get_virtual_hosts(self, domains):
         vhost = set()
@@ -542,6 +535,23 @@ class Client(object):
         return vhost
 
     def challenge_factory(self, name, challenges, path):
+        """
+
+        :param name: TODO
+        :type name: TODO
+
+        :param challanges: A list of challenges from ACME "challenge"
+                           server message to be fulfilled by the client
+                           in order to prove possession of the identifier.
+        :type challenges: list
+
+        :param path: List of indices from `challenges`.
+        :type path: list
+
+        :returns: A pair of TODO
+        :rtype: tuple
+
+        """
         sni_todo = []
         # Since a single invocation of SNI challenge can satisfy multiple
         # challenges. We must keep track of all the challenges it satisfies
@@ -549,17 +559,21 @@ class Client(object):
 
         challenge_objs = []
         challenge_obj_indices = []
-        for c in path:
-            if challenges[c]["type"] == "dvsni":
-                logger.info("  DVSNI challenge for name %s." % name)
-                sni_satisfies.append(c)
-                sni_todo.append( (str(name), str(challenges[c]["r"]),
-                                  str(challenges[c]["nonce"])) )
+        for index in path:
+            chall = challenges[index]
 
-            elif challenges[c]["type"] == "recoveryToken":
+            if chall["type"] == "dvsni":
+                logger.info("  DVSNI challenge for name %s." % name)
+                sni_satisfies.append(index)
+                sni_todo.append((str(name), str(chall["r"]),
+                                 str(chall["nonce"])))
+
+            elif chall["type"] == "recoveryToken":
                 logger.info("\tRecovery Token Challenge for name: %s." % name)
-                challenge_obj_indices.append(c)
-                challenge_objs.append({type:"recoveryToken"})
+                challenge_obj_indices.append(index)
+                challenge_objs.append({
+                    type: "recoveryToken",
+                })
 
             else:
                 logger.fatal("Challenge not currently supported")
@@ -568,15 +582,17 @@ class Client(object):
         if sni_todo:
             # SNI_Challenge can satisfy many sni challenges at once so only
             # one "challenge object" is issued for all sni_challenges
-            challenge_objs.append({"type":"dvsni", "listSNITuple":sni_todo,
-                                   "dvsni_key":os.path.abspath(self.key_file)})
+            challenge_objs.append({
+                "type": "dvsni",
+                "listSNITuple": sni_todo,
+                "dvsni_key": os.path.abspath(self.key_file),
+            })
             challenge_obj_indices.append(sni_satisfies)
             logger.debug(sni_todo)
 
         return challenge_objs, challenge_obj_indices
 
-
-    def get_key_csr_pem(self, csr_return_format = 'der'):
+    def get_key_csr_pem(self, csr_return_format='der'):
         """
         Returns key and CSR using provided files or generating new files if
         necessary. Both will be saved in pem format on the filesystem.
@@ -590,7 +606,7 @@ class Client(object):
             # Save file
             le_util.make_or_verify_dir(CONFIG.KEY_DIR, 0700)
             key_f, self.key_file = le_util.unique_file(
-                CONFIG.KEY_DIR + "key-letsencrypt.pem", 0600)
+                os.path.join(CONFIG.KEY_DIR, "key-letsencrypt.pem"), 0600)
             key_f.write(key_pem)
             key_f.close()
             logger.info("Generating key: %s" % self.key_file)
@@ -606,12 +622,12 @@ class Client(object):
             # Save CSR
             le_util.make_or_verify_dir(CONFIG.CERT_DIR, 0755)
             csr_f, self.csr_file = le_util.unique_file(
-                CONFIG.CERT_DIR + "csr-letsencrypt.pem", 0644)
+                os.path.join(CONFIG.CERT_DIR, "csr-letsencrypt.pem"), 0644)
             csr_f.write(csr_pem)
             csr_f.close()
             logger.info("Creating CSR: %s" % self.csr_file)
         else:
-            #TODO fix this der situation
+            # TODO fix this der situation
             try:
                 csr_pem = open(self.csr_file).read().replace("\r", "")
             except:
@@ -623,11 +639,12 @@ class Client(object):
 
         return key_pem, csr_pem
 
-
     # def choice_of_ca(self):
     #     choices = self.get_cas()
-    #     message = "Pick a Certificate Authority.  They're all unique and special!"
-    #     in_txt = "Enter the number of a Certificate Authority (c to cancel): "
+    #     message = ("Pick a Certificate Authority. "
+    #                "They're all unique and special!")
+    #     in_txt = ("Enter the number of a Certificate Authority "
+    #               "(c to cancel): ")
     #     code, selection = display.generic_menu(message, choices, in_txt)
 
     #     if code != display.OK:
@@ -667,16 +684,15 @@ class Client(object):
     #     return choices
 
     def get_all_names(self):
-        """
-        Should return all valid names in the configuration
-        """
+        """Return all valid names in the configuration."""
         names = list(self.config.get_all_names())
-        self.sanity_check_names(names)
+        sanity_check_names(names)
 
         if not names:
             logger.fatal("No domain names were found in your apache config")
-            logger.fatal("Either specify which names you would like letsencrypt \
-            to validate or add server names to your virtual hosts")
+            logger.fatal("Either specify which names you would like "
+                         "letsencrypt to validate or add server names "
+                         "to your virtual hosts")
             sys.exit(1)
 
         return names
@@ -689,65 +705,59 @@ class Client(object):
             logger.setLogger(logger.FileLogger(sys.stdout))
             logger.setLogLevel(logger.INFO)
 
-    def sanity_check_names(self, names):
-        for name in names:
-            if not self.is_hostname_sane(name):
-                logger.fatal(repr(name) + " is an impossible hostname")
-                sys.exit(81)
 
-    def is_hostname_sane(self, hostname):
-        """
-        Do enough to avoid shellcode from the environment.  There's
-        no need to do more.
-        """
-        allowed = string.ascii_letters + string.digits + "-."  # hostnames & IPv4
-        if all([c in allowed for c in hostname]):
-            return True
+def remove_cert_key(cert):
+    """Remove certificate key.
 
-        if not allow_raw_ipv6_server: return False
+    :param cert:
+    :type cert: dict
 
-        # ipv6 is messy and complicated, can contain %zoneindex etc.
-        try:
-            # is this a valid IPv6 address?
-            socket.getaddrinfo(hostname,443,socket.AF_INET6)
-            return True
-        except:
-            return False
+    """
+    list_file = os.path.join(CONFIG.CERT_KEY_BACKUP, "LIST")
+    list_file2 = os.path.join(CONFIG.CERT_KEY_BACKUP, "LIST.tmp")
+
+    with open(list_file, 'rb') as orgfile:
+        csvreader = csv.reader(orgfile)
+
+        with open(list_file2, 'wb') as newfile:
+            csvwriter = csv.writer(newfile)
+
+            for row in csvreader:
+                if not (row[0] == str(cert["idx"]) and
+                        row[1] == cert["orig_cert_file"] and
+                        row[2] == cert["orig_key_file"]):
+                    csvwriter.writerow(row)
+
+    shutil.copy2(list_file2, list_file)
+    os.remove(list_file2)
+    os.remove(cert["backup_cert_file"])
+    os.remove(cert["backup_key_file"])
 
 
-def old_cert(cert_filename, days_left):
-    cert = M2Crypto.X509.load_cert(cert_filename)
-    exp_time = cert.get_not_before().get_datetime()
-    cur_time = datetime.datetime.utcnow()
+def sanity_check_names(names):
+    for name in names:
+        if not is_hostname_sane(name):
+            logger.fatal(repr(name) + " is an impossible hostname")
+            sys.exit(81)
 
-    # exp_time is returned in UTC time as defined by M2Crypto
-    # The datetime object is aware and cannot be compared to the naive utcnow()
-    # object. Thus, the tzinfo is stripped from exp_time assuming both objects
-    # are UTC.  Base python doesn't seem to support instantiations of tzinfo
-    # objects without 3rd party support.  It is easier just to strip tzinfo from
-    # exp_time rather than add the utc timezone to cur_time
-    if (exp_time.replace(tzinfo=None) - cur_time).days < days_left:
+
+def is_hostname_sane(hostname):
+    """
+    Do enough to avoid shellcode from the environment.  There's
+    no need to do more.
+    """
+    # hostnames & IPv4
+    allowed = string.ascii_letters + string.digits + "-."
+    if all([c in allowed for c in hostname]):
         return True
-    return False
 
+    if not ALLOW_RAW_IPV6_SERVER:
+        return False
 
-def recognized_ca(issuer):
-    pass
-
-def gen_req_from_cert():
-    return
-
-
-def renew(config):
-    cert_key_pairs = config.get_all_certs_keys()
-    for tup in cert_key_pairs:
-        cert = M2Crypto.X509.load_cert(tup[0])
-        issuer = cert.get_issuer()
-        if recognized_ca(issuer):
-            pass
-            # generate_renewal_req()
-
-        # Wait for response, act accordingly
-    gen_req_from_cert()
-
-# vim: set expandtab tabstop=4 shiftwidth=4
+    # ipv6 is messy and complicated, can contain %zoneindex etc.
+    try:
+        # is this a valid IPv6 address?
+        socket.getaddrinfo(hostname, 443, socket.AF_INET6)
+        return True
+    except:
+        return False
