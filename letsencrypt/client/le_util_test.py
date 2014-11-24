@@ -88,46 +88,46 @@ B64_URL_UNSAFE_EXAMPLES = {
 class JOSEB64EncodeTest(unittest.TestCase):
     """Tests for letsencrypt.client.le_util.jose_b64encode."""
 
-    def _call(self, data, encoding):
+    def _call(self, data):
         from letsencrypt.client.le_util import jose_b64encode
-        return jose_b64encode(data, encoding)
+        return jose_b64encode(data)
 
     def test_unsafe_url(self):
         for text, b64 in B64_URL_UNSAFE_EXAMPLES.iteritems():
-            self.assertEqual(self._call(text, None), b64)
+            self.assertEqual(self._call(text), b64)
 
     def test_different_paddings(self):
         for text, (b64, _) in JOSE_B64_PADDING_EXAMPLES.iteritems():
-            self.assertEqual(self._call(text, None), b64)
+            self.assertEqual(self._call(text), b64)
 
-    def test_with_encoding(self):
-        self.assertEqual(self._call(u'\u0105', 'utf-8'), 'xIU')
+    def test_unicode_fails_with_type_error(self):
+        self.assertRaises(TypeError, self._call, u'some unicode')
 
 
 class JOSEB64DecodeTest(unittest.TestCase):
     """Tests for letsencrypt.client.le_util.jose_b64decode."""
 
-    def _call(self, jose_b64_string, decoding):
+    def _call(self, data):
         from letsencrypt.client.le_util import jose_b64decode
-        return jose_b64decode(jose_b64_string, decoding)
+        return jose_b64decode(data)
 
     def test_unsafe_url(self):
         for text, b64 in B64_URL_UNSAFE_EXAMPLES.iteritems():
-            self.assertEqual(self._call(b64, None), text)
+            self.assertEqual(self._call(b64), text)
 
     def test_input_without_padding(self):
         for text, (b64, _) in JOSE_B64_PADDING_EXAMPLES.iteritems():
-            self.assertEqual(self._call(b64, None), text)
+            self.assertEqual(self._call(b64), text)
 
     def test_input_with_padding(self):
         for text, (b64, pad) in JOSE_B64_PADDING_EXAMPLES.iteritems():
-            self.assertEqual(self._call(b64 + pad, None), text)
+            self.assertEqual(self._call(b64 + pad), text)
 
-    def test_with_encoding(self):
-        self.assertEqual(self._call('xIU=', 'utf-8'), u'\u0105')
+    def test_unicode_with_ascii(self):
+        self.assertEqual(self._call(u'YQ'), 'a')
 
-    def test_unicode(self):
-        self.assertEqual(self._call(u'YQ', None), 'a')
+    def test_non_ascii_unicode_fails(self):
+        self.assertRaises(ValueError, self._call, u'\u0105')
 
 
 if __name__ == '__main__':
