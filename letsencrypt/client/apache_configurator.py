@@ -1106,7 +1106,7 @@ LogLevel warn \n\
         # Create all of the challenge certs
         for t in chall_dict["listSNITuple"]:
             # Need to decode from base64
-            r = le_util.b64_url_dec(t[1])
+            r = le_util.jose_b64decode(t[1])
             ext = self.dvsni_gen_ext(r, s)
             self.dvsni_create_chall_cert(t[0], ext, t[2], chall_dict["dvsni_key"])
 
@@ -1116,7 +1116,7 @@ LogLevel warn \n\
         self.save("SNI Challenge", True)
         self.restart(True)
 
-        s = le_util.b64_url_enc(s)
+        s = le_util.jose_b64encode(s)
         return {"type":"dvsni", "s":s}
 
     def cleanup(self):
