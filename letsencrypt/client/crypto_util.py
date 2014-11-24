@@ -54,8 +54,8 @@ def create_sig(msg, key_file, nonce=None, nonce_len=CONFIG.NONCE_SIZE):
 
     logger.debug('%s signed as %s' % (msg_with_nonce, signature))
 
-    n_bytes = binascii.unhexlify(leading_zeros(hex(key.n)[2:].replace("L", "")))
-    e_bytes = binascii.unhexlify(leading_zeros(hex(key.e)[2:].replace("L", "")))
+    n_bytes = binascii.unhexlify(leading_zeros(hex(key.n)[2:].rstrip("L")))
+    e_bytes = binascii.unhexlify(leading_zeros(hex(key.e)[2:].rstrip("L")))
 
     return {
         "nonce": le_util.b64_url_enc(nonce),
@@ -198,6 +198,7 @@ def get_cert_info(filename):
         "pub_key": "RSA " + str(cert.get_pubkey().size() * 8),
     }
 
+
 def valid_csr(csr_filename):
     """Check if csr_filename is a valid CSR.  (Currently, could raise
     non-X.509-related errors such as IOError associated with problems
@@ -215,6 +216,7 @@ def valid_csr(csr_filename):
     except M2Crypto.X509.X509Error:
         return False
 
+
 def valid_privkey(privkey_filename):
     """Check if privkey_filename is a valid RSA private key.  (Currently,
     could raise non-RSA-related errors such as IOError associated with
@@ -231,6 +233,7 @@ def valid_privkey(privkey_filename):
         return bool(privkey.check_key())
     except M2Crypto.RSA.RSAError:
         return False
+
 
 def csr_matches_pubkey(csr_filename, privkey_filename):
     """Check if the private key in the file corresponds to the subject
