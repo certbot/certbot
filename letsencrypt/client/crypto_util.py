@@ -201,7 +201,14 @@ def get_cert_info(filename):
 def valid_csr(csr_filename):
     """Check if csr_filename is a valid CSR.  (Currently, could raise
     non-X.509-related errors such as IOError associated with problems
-    reading the file.)"""
+    reading the file.)
+
+    :param csr_filename: Path to the purported CSR file.
+    :type csr_filename: str
+
+    :returns: Validity of CSR.
+    :rtype: bool"""
+
     try:
         csr = M2Crypto.X509.load_request(csr_filename)
         return bool(csr.verify(csr.get_pubkey()))
@@ -211,7 +218,14 @@ def valid_csr(csr_filename):
 def valid_privkey(privkey_filename):
     """Check if privkey_filename is a valid RSA private key.  (Currently,
     could raise non-RSA-related errors such as IOError associated with
-    problems reading the file.)"""
+    problems reading the file.)
+
+    :param privkey_filename: Path to the purported private key file.
+    :type privkey_filename: str
+
+    :returns: Validity of private key.
+    :rtype: bool"""
+
     try:
         privkey = M2Crypto.RSA.load_key(privkey_filename)
         return bool(privkey.check_key())
@@ -220,7 +234,17 @@ def valid_privkey(privkey_filename):
 
 def csr_matches_pubkey(csr_filename, privkey_filename):
     """Check if the private key in the file corresponds to the subject
-    public key in the CSR."""
+    public key in the CSR.
+
+    :param csr_filename: Path to the purported CSR file.
+    :type csr_filename: str
+
+    :param privkey_filename: Path to the purported private key file.
+    :type privkey_filename: str
+
+    :returns: Correspondence of private key to CSR subject public key.
+    :rtype: bool"""
+
     csr = M2Crypto.X509.load_request(csr_filename)
     privkey = M2Crypto.RSA.load_key(privkey_filename)
     csr_pub = csr.get_pubkey().get_rsa().pub()
