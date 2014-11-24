@@ -48,11 +48,31 @@ class Client(object):
         self.key_file = private_key
 
         # If CSR is provided, the private key should also be provided.
-        # TODO: Make sure key was actually used in CSR
-        # TODO: Make sure key has proper permissions
         if self.csr_file and not self.key_file:
             logger.fatal("Please provide the private key file used in \
             generating the provided CSR")
+            sys.exit(1)
+        # If CSR is provided, it must be readable and valid.
+        try:
+            if self.csr_file and not crypto.util.valid_csr(self.csr_file):
+                logger.fatal("The provided CSR is not a valid CSR")
+                sys.exit(1)
+        except IOError, e:
+            logger.fatal("The provided CSR could not be read")
+            sys.exit(1)
+        # If key is provided, it must be readable and valid.
+        try:
+            if self.key_file and not crypto.util.valid_privkey(self.key_file):
+                logger.fatal("The provided key is not a valid key")
+                sys.exit(1)
+        except IOError, e:
+            logger.fatal("The provided key could not be read")
+            sys.exit(1)
+        # If CSR and key are provided, the key must be the same key used
+        # in the CSR.
+        if self.csr_file and self.key_file and not csr_matches_pubkey(self.csr_file, self.key_file):
+            logger.fatal("The provided key is not the same key referred to by \
+            the CSR file")
             sys.exit(1)
 
         self.server_url = "https://%s/acme/" % self.server
