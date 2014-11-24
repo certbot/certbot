@@ -54,7 +54,7 @@ class Client(object):
             sys.exit(1)
         # If CSR is provided, it must be readable and valid.
         try:
-            if self.csr_file and not crypto.util.valid_csr(self.csr_file):
+            if self.csr_file and not crypto_util.valid_csr(self.csr_file):
                 logger.fatal("The provided CSR is not a valid CSR")
                 sys.exit(1)
         except IOError, e:
@@ -62,7 +62,7 @@ class Client(object):
             sys.exit(1)
         # If key is provided, it must be readable and valid.
         try:
-            if self.key_file and not crypto.util.valid_privkey(self.key_file):
+            if self.key_file and not crypto_util.valid_privkey(self.key_file):
                 logger.fatal("The provided key is not a valid key")
                 sys.exit(1)
         except IOError, e:
