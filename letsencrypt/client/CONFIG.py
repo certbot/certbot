@@ -52,10 +52,10 @@ INVALID_EXT = ".acme.invalid"
 CHALLENGE_PREFERENCES = ["dvsni", "recoveryToken"]
 
 # Mutually Exclusive Challenges - only solve 1
-EXCLUSIVE_CHALLENGES = [set(["dvsni", "simpleHttps"])]
+EXCLUSIVE_CHALLENGES = [frozenset(["dvsni", "simpleHttps"])]
 
 # These are challenges that must be solved by a Configurator object
-CONFIG_CHALLENGES = {"dvsni", "simpleHttps"}
+CONFIG_CHALLENGES = frozenset(["dvsni", "simpleHttps"])
 
 # Rewrite rule arguments used for redirections to https vhost
 REWRITE_HTTPS_ARGS = [
