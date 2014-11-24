@@ -1116,7 +1116,7 @@ LogLevel warn \n\
         self.save("SNI Challenge", True)
         self.restart(True)
 
-        s = le_util.jose_b64encode(s)
+        s = le_util.jose_b64encode(s)  # TODO: s.encode?
         return {"type":"dvsni", "s":s}
 
     def cleanup(self):
