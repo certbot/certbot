@@ -102,21 +102,21 @@ def usage():
 def print_options():
     print ("\nsudo ./letsencrypt.py "
            "(default authentication mode using pythondialog)")
-    options = ["privkey= (specify key file to use to generate the " +
+    options = [("privkey= (specify key file to use to generate the "
                "certificate)",
-               "csr= (Use a specific CSR. If this is specified, privkey " +
-               "must also be specified with the correct" +
+               "csr= (Use a specific CSR. If this is specified, privkey "
+               "must also be specified with the correct"
                " private key for the CSR)",
                "server (list the ACME CA server address)",
                "revoke (revoke a certificate)",
-               "view-checkpoints (Used to view available checkpoints and " +
+               "view-checkpoints (Used to view available checkpoints and "
                "see what configuration changes have been made)",
                "rollback=X (Revert the configuration X number of checkpoints)",
-               "redirect (Automatically redirect all HTTP traffic to " +
+               "redirect (Automatically redirect all HTTP traffic to "
                "HTTPS for the newly authenticated vhost)",
-               "no-redirect (Skip the HTTPS redirect question, " +
+               "no-redirect (Skip the HTTPS redirect question, "
                "allowing both HTTP and HTTPS)",
-               "agree-eula (Skip the end user agreement screen)"]
+                "agree-eula (Skip the end user agreement screen))")]
     for o in options:
         print "    --%s" % o
     sys.exit(0)

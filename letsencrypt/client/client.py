@@ -47,8 +47,14 @@ class Client(object):
         self.csr_file = cert_signing_request
         self.key_file = private_key
 
-        self._validate_csr_key_cli()
-
+        # TODO: Figure out all exceptions from this function
+        try:
+            self._validate_csr_key_cli()
+        except Exception as e:
+            # TODO: Something nice here...
+            logger.fatal(("%s - until the programmers get their act together, "
+                          "we are just going to exit" % str(e)))
+            sys.exit(1)
         self.server_url = "https://%s/acme/" % self.server
 
     def authenticate(self, domains=None, redirect=None, eula=False):
@@ -88,8 +94,10 @@ class Client(object):
         # Get key and csr to perform challenges
         _, csr_der = self.get_key_csr_pem()
 
+        # TODO: Handle this exception/problem
         if not crypto_util.csr_matches_names(self.csr_file, self.names):
-            raise Exception("CSR subject does not contain the specified name")
+            raise Exception(("CSR subject does not contain one of the "
+                            "specified names"))
 
         # Perform Challenges
         responses, challenge_objs = self.verify_identity(challenge_msg)
@@ -650,6 +658,10 @@ class Client(object):
         correspond to one another.
 
         """
+        # TODO: Handle all of these problems appropriately
+        # The client can eventually do things like prompt the user
+        # and allow the user to take more appropriate actions
+
         # If CSR is provided, the private key should also be provided.
         if self.csr_file and not self.key_file:
             logger.fatal(("Please provide the private key file used in "
@@ -658,15 +670,13 @@ class Client(object):
         # If CSR is provided, it must be readable and valid.
         try:
             if self.csr_file and not crypto_util.valid_csr(self.csr_file):
-                logger.fatal("The provided CSR is not a valid CSR")
-                sys.exit(1)
+                raise Exception("The provided CSR is not a valid CSR")
         except IOError:
             raise Exception("The provided CSR could not be read")
         # If key is provided, it must be readable and valid.
         try:
             if self.key_file and not crypto_util.valid_privkey(self.key_file):
-                logger.fatal("The provided key is not a valid key")
-                sys.exit(1)
+                raise Exception("The provided key is not a valid key")
         except IOError:
             raise Exception("The provided key could not be read")
 
@@ -679,50 +689,6 @@ class Client(object):
                     raise Exception("The key and CSR do not match")
             except IOError:
                 raise Exception("The key or CSR files could not be read")
-
-    # def choice_of_ca(self):
-    #     choices = self.get_cas()
-    #     message = ("Pick a Certificate Authority. "
-    #                "They're all unique and special!")
-    #     in_txt = ("Enter the number of a Certificate Authority "
-    #               "(c to cancel): ")
-    #     code, selection = display.generic_menu(message, choices, in_txt)
-
-    #     if code != display.OK:
-    #         sys.exit(0)
-
-    #     return selection
-
-    # Legacy Code: Although I would like to see a free and open marketplace
-    # in the future. The Let's Encrypt Client will not have this feature at
-    # launch
-    # def get_cas(self):
-    #     DV_choices = []
-    #     OV_choices = []
-    #     EV_choices = []
-    #     choices = []
-    #     try:
-    #         with open("/etc/letsencrypt/.ca_offerings") as f:
-    #             for line in f:
-    #                 choice = line.split(";", 1)
-    #                 if 'DV' in choice[0]:
-    #                     DV_choices.append(choice)
-    #                 elif 'OV' in choice[0]:
-    #                     OV_choices.append(choice)
-    #                 else:
-    #                     EV_choices.append(choice)
-
-    #             # random.shuffle(DV_choices)
-    #             # random.shuffle(OV_choices)
-    #             # random.shuffle(EV_choices)
-    #             choices = DV_choices + OV_choices + EV_choices
-    #             choices = [(l[0], l[1]) for l in choices]
-
-    #     except IOError as e:
-    #         logger.fatal("Unable to find .ca_offerings file")
-    #         sys.exit(1)
-
-    #     return choices
 
     def get_all_names(self):
         """Return all valid names in the configuration."""
