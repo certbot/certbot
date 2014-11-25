@@ -47,7 +47,7 @@ class Client(object):
         self.csr_file = cert_signing_request
         self.key_file = private_key
 
-        self.__validate_csr_key_cli()
+        self._validate_csr_key_cli()
 
         self.server_url = "https://%s/acme/" % self.server
 
@@ -643,10 +643,13 @@ class Client(object):
         else:
             return key_pem, csr_pem
 
-    def __validate_csr_key_cli(self):
+    def _validate_csr_key_cli(self):
+        """Validate CSR and key files.
+
+        Verifies that the client key and csr arguments are valid and
+        correspond to one another.
+
         """
-        Verifies that the client key and csr arguments are valid and correspond
-        to one another"""
         # If CSR is provided, the private key should also be provided.
         if self.csr_file and not self.key_file:
             logger.fatal(("Please provide the private key file used in "
@@ -657,24 +660,24 @@ class Client(object):
             if self.csr_file and not crypto_util.valid_csr(self.csr_file):
                 logger.fatal("The provided CSR is not a valid CSR")
                 sys.exit(1)
-        except IOError, e:
+        except IOError:
             raise Exception("The provided CSR could not be read")
         # If key is provided, it must be readable and valid.
         try:
             if self.key_file and not crypto_util.valid_privkey(self.key_file):
                 logger.fatal("The provided key is not a valid key")
                 sys.exit(1)
-        except IOError, e:
+        except IOError:
             raise Exception("The provided key could not be read")
 
         # If CSR and key are provided, the key must be the same key used
         # in the CSR.
         if self.csr_file and self.key_file:
             try:
-                if not crypto_util.csr_matches_pubkey(self.csr_file,
-                                                      self.key_file):
+                if not crypto_util.csr_matches_pubkey(
+                        self.csr_file, self.key_file):
                     raise Exception("The key and CSR do not match")
-            except IOError, e:
+            except IOError:
                 raise Exception("The key or CSR files could not be read")
 
     # def choice_of_ca(self):
