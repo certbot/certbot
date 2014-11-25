@@ -1,11 +1,12 @@
-from letsencrypt.client.challenge import Challenge
-from letsencrypt.client import logger
-from letsencrypt.client.CONFIG import RECOVERY_TOKEN_EXT
-# TODO: Replace urllib2 because of lack of certificate validation checks
-import dialog, urllib2
+import dialog
+import requests
+import time
 
-class RecoveryContact(Challenge):
-    
+from letsencrypt.client import challenge
+
+
+class RecoveryContact(challenge.Challenge):
+
     def __init__(self, activationURL = "", successURL = "", contact = "", poll_delay = 3):
         self.token = ""
         self.activationURL = activationURL
@@ -20,17 +21,17 @@ class RecoveryContact(Challenge):
                 d.infobox(self.get_display_string())
                 return self.poll(10, quiet)
             else:
-                exit, self.token  = d.inputbox(self.get_display_string()))
+                exit, self.token  = d.inputbox(self.get_display_string())
                 if exit != d.OK:
                     return False
-                
+
         else:
             print self.get_display_string()
-            if successURL:
+            if self.successURL:
                 return self.poll(10, quiet)
             else:
                 self.token = raw_input("Enter the recovery token:")
-        
+
         return True
 
     def cleanup(self):
@@ -45,10 +46,10 @@ class RecoveryContact(Challenge):
             string += " or respond to the recovery email sent to " + self.contact
         elif self.contact:
             string += "Recovery email sent to" + self.contact
-        
+
     def poll(self, rounds = 10, quiet = True):
         for i in range(rounds):
-            if urllib2.urlopen(self.successURL).getcode() != 200:
+            if requests.get(self.successURL).status_code != 200:
                 time.sleep(self.poll_delay)
             else:
                 return True

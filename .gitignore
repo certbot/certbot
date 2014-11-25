@@ -1,5 +1,9 @@
 *.pyc
-trustify/protocol/chocolate_pb2.py
+*.egg-info
+build/
+dist/
+venv/
+.tox/
 m3
 *.egg-info/
 build/

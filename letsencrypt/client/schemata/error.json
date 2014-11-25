@@ -1,0 +1,21 @@
+{
+    "id": "https://letsencrypt.org/schema/01/error#",
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "description": "Schema for an error message",
+    "type": "object",
+    "required": ["type", "error"],
+    "properties": {
+        "type" : {
+            "enum" : [ "error" ]
+        },
+        "error" : {
+            "enum" : [ "malformed", "unauthorized", "serverInternal", "nonSupported", "unknown", "badCSR" ]
+        },
+        "message" : {
+            "type": "string"
+        },
+        "moreInfo": {
+            "type": "string"
+        }
+    }
+}

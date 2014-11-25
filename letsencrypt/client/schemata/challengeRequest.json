@@ -1,0 +1,15 @@
+{
+    "id": "https://letsencrypt.org/schema/01/challengeRequest#",
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "description": "Schema for a challengeRequest message",
+    "type": "object",
+    "required": ["type", "identifier"],
+    "properties": {
+        "type" : {
+            "enum" : [ "challengeRequest" ]
+        },
+        "identifier" : {
+            "type": "string"
+        }
+    }
+}
