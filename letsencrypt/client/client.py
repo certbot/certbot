@@ -47,13 +47,7 @@ class Client(object):
         self.csr_file = cert_signing_request
         self.key_file = private_key
 
-        # If CSR is provided, the private key should also be provided.
-        # TODO: Make sure key was actually used in CSR
-        # TODO: Make sure key has proper permissions
-        if self.csr_file and not self.key_file:
-            logger.fatal("Please provide the private key file used in \
-            generating the provided CSR")
-            sys.exit(1)
+        self.__validate_csr_key_cli()
 
         self.server_url = "https://%s/acme/" % self.server
 
@@ -97,6 +91,9 @@ class Client(object):
 
         # Get key and csr to perform challenges
         _, csr_der = self.get_key_csr_pem()
+
+        if not crypto_util.csr_matches_names(self.csr_file, self.names):
+            raise Exception("CSR subject does not contain the specified name")
 
         # Perform Challenges
         responses, challenge_objs = self.verify_identity(challenge_msg)
@@ -595,10 +592,8 @@ class Client(object):
     def get_key_csr_pem(self, csr_return_format='der'):
         """
         Returns key and CSR using provided files or generating new files if
-        necessary. Both will be saved in pem format on the filesystem.
-        The CSR can optionally be returned in DER format as the CSR cannot be
-        loaded back into M2Crypto.
-        """
+        necessary. Both will be saved in PEM format on the filesystem.
+        The CSR can optionally be returned in DER format."""
         key_pem = None
         csr_pem = None
         if not self.key_file:
@@ -627,17 +622,51 @@ class Client(object):
             csr_f.close()
             logger.info("Creating CSR: %s" % self.csr_file)
         else:
-            # TODO fix this der situation
             try:
-                csr_pem = open(self.csr_file).read().replace("\r", "")
+                csr = M2Crypto.X509.load_request(self.csr_file)
+                csr_pem, csr_der = csr.as_pem(), csr.as_der()
             except:
                 logger.fatal("Unable to open CSR file: %s" % self.csr_file)
                 sys.exit(1)
 
         if csr_return_format == 'der':
             return key_pem, csr_der
+        else:
+            return key_pem, csr_pem
 
-        return key_pem, csr_pem
+    def __validate_csr_key_cli(self):
+        """
+        Verifies that the client key and csr arguments are valid and correspond
+        to one another"""
+        # If CSR is provided, the private key should also be provided.
+        if self.csr_file and not self.key_file:
+            logger.fatal(("Please provide the private key file used in "
+                          "generating the provided CSR"))
+            sys.exit(1)
+        # If CSR is provided, it must be readable and valid.
+        try:
+            if self.csr_file and not crypto_util.valid_csr(self.csr_file):
+                logger.fatal("The provided CSR is not a valid CSR")
+                sys.exit(1)
+        except IOError, e:
+            raise Exception("The provided CSR could not be read")
+        # If key is provided, it must be readable and valid.
+        try:
+            if self.key_file and not crypto_util.valid_privkey(self.key_file):
+                logger.fatal("The provided key is not a valid key")
+                sys.exit(1)
+        except IOError, e:
+            raise Exception("The provided key could not be read")
+
+        # If CSR and key are provided, the key must be the same key used
+        # in the CSR.
+        if self.csr_file and self.key_file:
+            try:
+                if not crypto_util.csr_matches_pubkey(self.csr_file,
+                                                      self.key_file):
+                    raise Exception("The key and CSR do not match")
+            except IOError, e:
+                raise Exception("The key or CSR files could not be read")
 
     # def choice_of_ca(self):
     #     choices = self.get_cas()
