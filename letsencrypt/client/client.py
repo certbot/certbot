@@ -199,7 +199,8 @@ class Client(object):
 
         :raises: TypeError if `msg` is not JSON serializable or
                  jsonschema.ValidationError if not valid ACME message or
-                 Exception if response from server is not valid ACME message
+                 `errors.LetsEncryptClientError` in case of connection error
+                 or if response from server is not a valid ACME message.
 
         :returns: Server response message.
         :rtype: dict
@@ -215,20 +216,17 @@ class Client(object):
                 headers={"Content-Type": "application/json"},
             )
         except requests.exceptions.RequestException as error:
-            logger.fatal("Send() failed... may have lost connection to server")
-            logger.fatal(" ** ERROR **")
-            logger.fatal(error)
-            sys.exit(8)
+            raise errors.LetsEncryptClientError(
+                'Sending ACME message to server has failed: %s' % error)
 
         try:
             acme.acme_object_validate(response.content)
         except ValueError:
-            logger.fatal('Server did not send JSON serializable message')
-            sys.exit(8)
+            raise errors.LetsEncryptClientError(
+                'Server did not send JSON serializable message')
         except jsonschema.ValidationError as error:
-            logger.fatal('Server did not send valid ACME message')
-            logger.fatal(error)
-            sys.exit(8)
+            raise errors.LetsEncryptClientError(
+                'Response from server is not a valid ACME message')
 
         return response.json()
 
