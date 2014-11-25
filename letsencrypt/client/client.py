@@ -70,8 +70,8 @@ class Client(object):
             sys.exit(1)
         # If CSR and key are provided, the key must be the same key used
         # in the CSR.
-        if self.csr_file and self.key_file and \
-                not csr_matches_pubkey(self.csr_file, self.key_file):
+        if self.csr_file and self.key_file and not \
+                crypto_util.csr_matches_pubkey(self.csr_file, self.key_file):
             logger.fatal("The provided key is not the same key referred to by \
             the CSR file")
             sys.exit(1)
