@@ -10,10 +10,10 @@ class ACMEObjectValidateTest(unittest.TestCase):
     def setUp(self):
         self.schemata = {
             'foo': {
-                'type' : 'object',
-                'properties' : {
-                    'price' : {'type' : 'number'},
-                    'name' : {'type' : 'string'},
+                'type': 'object',
+                'properties': {
+                    'price': {'type': 'number'},
+                    'name': {'type': 'string'},
                 },
             },
         }

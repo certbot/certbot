@@ -82,10 +82,6 @@ class Client(object):
             else:
                 sys.exit(0)
 
-        # Display choice of CA screen
-        # TODO: Use correct server depending on CA
-        #choice = self.choice_of_ca()
-
         # Request Challenges
         challenge_msg = self.acme_challenge()
 
