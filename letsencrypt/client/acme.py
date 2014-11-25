@@ -108,15 +108,15 @@ def authorization_request(req_id, name, server_nonce, responses, key_file):
         "nonce": server_nonce,
         "responses": responses,
         "signature": crypto_util.create_sig(
-            name + le_util.b64_url_dec(server_nonce), key_file),
+            name + le_util.jose_b64decode(server_nonce), key_file),
     }
 
 
 def certificate_request(csr_der, key):
     """Create ACME "certificateRequest" message.
 
-    :param csr_der: TODO
-    :type csr_der: TODO
+    :param csr_der: DER encoded CSR.
+    :type csr_der: str
 
     :param key: TODO
     :type key: TODO
@@ -127,7 +127,7 @@ def certificate_request(csr_der, key):
     """
     return {
         "type": "certificateRequest",
-        "csr": le_util.b64_url_enc(csr_der),
+        "csr": le_util.jose_b64encode(csr_der),
         "signature": crypto_util.create_sig(csr_der, key),
     }
 
@@ -148,7 +148,7 @@ def revocation_request(key_file, cert_der):
     """
     return {
         "type": "revocationRequest",
-        "certificate": le_util.b64_url_enc(cert_der),
+        "certificate": le_util.jose_b64encode(cert_der),
         "signature": crypto_util.create_sig(cert_der, key_file),
     }
 

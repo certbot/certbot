@@ -16,7 +16,7 @@ from letsencrypt.client import logger
 
 def b64_cert_to_pem(b64_der_cert):
     return M2Crypto.X509.load_cert_der_string(
-        le_util.b64_url_dec(b64_der_cert)).as_pem()
+        le_util.jose_b64decode(b64_der_cert)).as_pem()
 
 
 def create_sig(msg, key_file, nonce=None, nonce_len=CONFIG.NONCE_SIZE):
@@ -58,14 +58,14 @@ def create_sig(msg, key_file, nonce=None, nonce_len=CONFIG.NONCE_SIZE):
     e_bytes = binascii.unhexlify(leading_zeros(hex(key.e)[2:].rstrip("L")))
 
     return {
-        "nonce": le_util.b64_url_enc(nonce),
+        "nonce": le_util.jose_b64encode(nonce),
         "alg": "RS256",
         "jwk": {
             "kty": "RSA",
-            "n": le_util.b64_url_enc(n_bytes),
-            "e": le_util.b64_url_enc(e_bytes),
+            "n": le_util.jose_b64encode(n_bytes),
+            "e": le_util.jose_b64encode(e_bytes),
         },
-        "sig": le_util.b64_url_enc(signature),
+        "sig": le_util.jose_b64encode(signature),
     }
 
 
