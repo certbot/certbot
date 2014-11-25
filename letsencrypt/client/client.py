@@ -158,8 +158,8 @@ class Client(object):
     def acme_certificate(self, csr_der):
         """Handle ACME "certificate" phase.
 
-        :param csr_der: TODO
-        :type csr_der: TODO
+        :param csr_der: CSR in DER format.
+        :type csr_der: str
 
         :returns: ACME "certificate" message.
         :rtype: dict
@@ -590,10 +590,23 @@ class Client(object):
         return challenge_objs, challenge_obj_indices
 
     def get_key_csr_pem(self, csr_return_format='der'):
+        """Return key and CSR, generate if necessary.
+
+        Returns key and CSR using provided files or generating new files
+        if necessary. Both will be saved in PEM format on the
+        filesystem. The CSR can optionally be returned in DER format as
+        the CSR cannot be loaded back into M2Crypto.
+
+        :param csr_return_format: If "der" returned CSR is in DER format,
+                                  PEM otherwise.
+        :param csr_return_format: str
+
+        :returns: A pair of `(key, csr)`, where `key` is PEM encoded `str`
+                  and `csr` is PEM/DER (depedning on `csr_return_format`
+                  encoded `str`.
+        :rtype: tuple
+
         """
-        Returns key and CSR using provided files or generating new files if
-        necessary. Both will be saved in PEM format on the filesystem.
-        The CSR can optionally be returned in DER format."""
         key_pem = None
         csr_pem = None
         if not self.key_file:
