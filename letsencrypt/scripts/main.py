@@ -74,7 +74,7 @@ def main():
         elif o == "--help":
             print_options()
         elif o == "--test":
-            #put any temporary tests in here
+            # put any temporary tests in here
             continue
 
     if curses:
@@ -91,30 +91,36 @@ def main():
     else:
         c.authenticate(args, redirect, eula)
 
+
 def usage():
     s = "Available options: --text, --privkey=, --csr=, --server=, "
     s += "--rollback=, --view-checkpoints, --revoke, --agree-eula, --redirect,"
     s += " --no-redirect, --help"
     print s
 
+
 def print_options():
-    print "\nsudo ./letsencrypt.py (default authentication mode using pythondialog)"
-    options = [ "privkey= (specify privatekey file to use to generate the certificate)",
-                "csr= (Use a specific CSR. If this is specified, privkey " +
-                "must also be specified with the correct private key for the CSR)",
-                "server (list the ACME CA server address)",
-                "revoke (revoke a certificate)",
-                "view-checkpoints (Used to view available checkpoints and " +
-                "see what configuration changes have been made)",
-                "rollback=X (Revert the configuration X number of checkpoints)",
-                "redirect (Automatically redirect all HTTP traffic to " +
-                "HTTPS for the newly authenticated vhost)",
-                "no-redirect (Skip the HTTPS redirect question, " +
-                "allowing both HTTP and HTTPS)",
-                "agree-eula (Skip the end user agreement screen)" ]
+    print ("\nsudo ./letsencrypt.py "
+           "(default authentication mode using pythondialog)")
+    options = ["privkey= (specify key file to use to generate the " +
+               "certificate)",
+               "csr= (Use a specific CSR. If this is specified, privkey " +
+               "must also be specified with the correct" +
+               " private key for the CSR)",
+               "server (list the ACME CA server address)",
+               "revoke (revoke a certificate)",
+               "view-checkpoints (Used to view available checkpoints and " +
+               "see what configuration changes have been made)",
+               "rollback=X (Revert the configuration X number of checkpoints)",
+               "redirect (Automatically redirect all HTTP traffic to " +
+               "HTTPS for the newly authenticated vhost)",
+               "no-redirect (Skip the HTTPS redirect question, " +
+               "allowing both HTTP and HTTPS)",
+               "agree-eula (Skip the end user agreement screen)"]
     for o in options:
         print "    --%s" % o
     sys.exit(0)
+
 
 if __name__ == "__main__":
     main()
