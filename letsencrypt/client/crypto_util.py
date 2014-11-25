@@ -205,16 +205,20 @@ def get_cert_info(filename):
 # B. Audit the parsing code for vulnerabilities
 
 def valid_csr(csr_filename):
-    """Check if csr_filename is a valid CSR for the given domains.
-    (Currently, could raise non-X.509-related errors such as IOError
-    associated with problems reading the file.)
+    """Validate CSR.
+
+    Check if `csr_filename` is a valid CSR for the given domains.
+
+    TODO: Currently, could raise non-X.509-related errors such as IOError
+          associated with problems reading the file. Comment or handle.
 
     :param csr_filename: Path to the purported CSR file.
     :type csr_filename: str
 
     :returns: Validity of CSR.
-    :rtype: bool"""
+    :rtype: bool
 
+    """
     try:
         csr = M2Crypto.X509.load_request(csr_filename)
         return bool(csr.verify(csr.get_pubkey()))
@@ -223,52 +227,57 @@ def valid_csr(csr_filename):
 
 
 def csr_matches_names(csr_filename, domains):
-    """Check if csr_filename contains the subject of one of the domains
+    """Check if CSR contains the subject of one of the domains.
+
     M2Crypto currently does not expose the OpenSSL interface to
     also check the SAN extension. This is insufficient for full testing
-    (Currently, could raise non-X.509-related errors such as IOError
-    associated with problems reading the file.)
+
+    TODO: Currently, could raise non-X.509-related errors such as IOError
+          associated with problems reading the file. Comment or handle.
 
     :param csr_filename: Path to the purported CSR file.
     :type csr_filename: str
 
-    :param domains: domains the csr should contain
+    :param domains: Domains the CSR should contain.
     :type domains: list
 
-    :returns: If the csr subject contains one of the domains
-    :rtype: bool"""
+    :returns: If the CSR subject contains one of the domains
+    :rtype: bool
 
+    """
     try:
         csr = M2Crypto.X509.load_request(csr_filename)
-        subject = csr.get_subject()
-
-        return subject.CN in domains
-
+        return csr.get_subject().CN in domains
     except M2Crypto.X509.X509Error:
         return False
 
 
 def valid_privkey(privkey_filename):
-    """Check if privkey_filename is a valid RSA private key.  (Currently,
-    could raise non-RSA-related errors such as IOError associated with
-    problems reading the file.)
+    """Is valid RSA private key?
+
+    TODO: Currently, could raise non-X.509-related errors such as IOError
+          associated with problems reading the file. Comment or handle.
 
     :param privkey_filename: Path to the purported private key file.
     :type privkey_filename: str
 
     :returns: Validity of private key.
-    :rtype: bool"""
+    :rtype: bool
 
+    """
     try:
-        privkey = M2Crypto.RSA.load_key(privkey_filename)
-        return bool(privkey.check_key())
+        return bool(M2Crypto.RSA.load_key(privkey_filename).check_key())
     except M2Crypto.RSA.RSAError:
         return False
 
 
 def csr_matches_pubkey(csr_filename, privkey_filename):
-    """Check if the private key in the file corresponds to the subject
-    public key in the CSR.
+    """Does private key correspond to the subject public key in the CSR?
+
+    TODO: Currently, could raise non-X.509-related errors such as IOError
+          associated with problems reading the file. Comment or handle.
+
+    TODO: Seems that this doesn not handle X509 eceptions either.
 
     :param csr_filename: Path to the purported CSR file.
     :type csr_filename: str
@@ -277,10 +286,9 @@ def csr_matches_pubkey(csr_filename, privkey_filename):
     :type privkey_filename: str
 
     :returns: Correspondence of private key to CSR subject public key.
-    :rtype: bool"""
+    :rtype: bool
 
+    """
     csr = M2Crypto.X509.load_request(csr_filename)
     privkey = M2Crypto.RSA.load_key(privkey_filename)
-    csr_pub = csr.get_pubkey().get_rsa().pub()
-    privkey_pub = privkey.pub()
-    return csr_pub == privkey_pub
+    return csr.get_pubkey().get_rsa().pub() == privkey.pub()
