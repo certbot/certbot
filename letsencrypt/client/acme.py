@@ -10,19 +10,18 @@ from letsencrypt.client import le_util
 
 SCHEMATA = dict([
     (schema, json.load(open(pkg_resources.resource_filename(
-        __name__, "schemata/%s.json" % schema)))) for schema in [
-            "authorization",
-            "authorizationRequest",
-            "certificate",
-            "certificateRequest",
-            "challenge",
-            "challengeRequest",
-            "defer",
-            "error",
-            "revocation",
-            "revocationRequest",
-            "statusRequest",
-        ]
+        __name__, "schemata/%s.json" % schema))))
+    for schema in ["authorization",
+                   "authorizationRequest",
+                   "certificate",
+                   "certificateRequest",
+                   "challenge",
+                   "challengeRequest",
+                   "defer",
+                   "error",
+                   "revocation",
+                   "revocationRequest",
+                   "statusRequest"]
 ])
 
 
