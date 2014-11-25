@@ -148,12 +148,12 @@ def make_ss_cert(key_file, domains):
     cert.set_not_before(current)
     cert.set_not_after(expire)
 
-    name = cert.get_subject()
-    name.C = "US"
-    name.ST = "Michigan"
-    name.L = "Ann Arbor"
-    name.O = "University of Michigan and the EFF"
-    name.CN = domains[0]
+    subject = cert.get_subject()
+    subject.C = "US"
+    subject.ST = "Michigan"
+    subject.L = "Ann Arbor"
+    subject.O = "University of Michigan and the EFF"
+    subject.CN = domains[0]
     cert.set_issuer(cert.get_subject())
 
     cert.add_ext(M2Crypto.X509.new_extension('basicConstraints', 'CA:FALSE'))
@@ -199,10 +199,15 @@ def get_cert_info(filename):
     }
 
 
+# WARNING: the csr and private key file are possible attack vectors for TOCTOU
+# We should either...
+# A. Do more checks to verify that the CSR is trusted/valid
+# B. Audit the parsing code for vulnerabilities
+
 def valid_csr(csr_filename):
-    """Check if csr_filename is a valid CSR.  (Currently, could raise
-    non-X.509-related errors such as IOError associated with problems
-    reading the file.)
+    """Check if csr_filename is a valid CSR for the given domains.
+    (Currently, could raise non-X.509-related errors such as IOError
+    associated with problems reading the file.)
 
     :param csr_filename: Path to the purported CSR file.
     :type csr_filename: str
@@ -213,6 +218,32 @@ def valid_csr(csr_filename):
     try:
         csr = M2Crypto.X509.load_request(csr_filename)
         return bool(csr.verify(csr.get_pubkey()))
+    except M2Crypto.X509.X509Error:
+        return False
+
+
+def csr_matches_names(csr_filename, domains):
+    """Check if csr_filename contains the subject of one of the domains
+    M2Crypto currently does not expose the OpenSSL interface to
+    also check the SAN extension. This is insufficient for full testing
+    (Currently, could raise non-X.509-related errors such as IOError
+    associated with problems reading the file.)
+
+    :param csr_filename: Path to the purported CSR file.
+    :type csr_filename: str
+
+    :param domains: domains the csr should contain
+    :type domains: list
+
+    :returns: If the csr subject contains one of the domains
+    :rtype: bool"""
+
+    try:
+        csr = M2Crypto.X509.load_request(csr_filename)
+        subject = csr.get_subject()
+
+        return subject.CN in domains
+
     except M2Crypto.X509.X509Error:
         return False
 
