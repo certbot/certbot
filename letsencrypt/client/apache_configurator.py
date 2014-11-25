@@ -1240,6 +1240,11 @@ DocumentRoot " + CONFIG.CONFIG_DIR + "challenge_page/ \n \
         result:        Apache config includes virtual servers for issued challs
         """
 
+        # WARNING: THIS IS A POTENTIAL SECURITY VULNERABILITY
+        # THIS SHOULD BE HANDLED BY THE PACKAGE MANAGER
+        # AND TAKEN OUT BEFORE RELEASE, INSTEAD
+        # SHOWING A NICE ERROR MESSAGE ABOUT THE PROBLEM
+
         # Check to make sure options-ssl.conf is installed
         if not os.path.isfile(CONFIG.OPTIONS_SSL_CONF):
             dist_conf = pkg_resources.resource_filename(

@@ -14,6 +14,8 @@ from letsencrypt.client import le_util
 from letsencrypt.client import logger
 
 
+# TODO: All of these functions need unit tests
+
 def b64_cert_to_pem(b64_der_cert):
     return M2Crypto.X509.load_cert_der_string(
         le_util.jose_b64decode(b64_der_cert)).as_pem()
@@ -84,11 +86,11 @@ def make_key(bits=CONFIG.RSA_KEY_SIZE):
     """
     Returns new RSA key in PEM form with specified bits
     """
-    #Python Crypto module doesn't produce any stdout
+    # Python Crypto module doesn't produce any stdout
     key = Crypto.PublicKey.RSA.generate(bits)
-    #rsa = M2Crypto.RSA.gen_key(bits, 65537)
-    #key_pem = rsa.as_pem(cipher=None)
-    #rsa = None # should not be freed here
+    # rsa = M2Crypto.RSA.gen_key(bits, 65537)
+    # key_pem = rsa.as_pem(cipher=None)
+    # rsa = None # should not be freed here
 
     return key.exportKey(format='PEM')
 
@@ -157,7 +159,7 @@ def make_ss_cert(key_file, domains):
     cert.set_issuer(cert.get_subject())
 
     cert.add_ext(M2Crypto.X509.new_extension('basicConstraints', 'CA:FALSE'))
-    #cert.add_ext(M2Crypto.X509.new_extension(
+    # cert.add_ext(M2Crypto.X509.new_extension(
     #    'extendedKeyUsage', 'TLS Web Server Authentication'))
     cert.add_ext(M2Crypto.X509.new_extension(
         'subjectAltName', ", ".join(["DNS:%s" % d for d in domains])))
@@ -165,7 +167,7 @@ def make_ss_cert(key_file, domains):
     cert.sign(pubkey, 'sha256')
     assert cert.verify(pubkey)
     assert cert.verify()
-    #print check_purpose(,0
+    # print check_purpose(,0
     return cert.as_pem()
 
 

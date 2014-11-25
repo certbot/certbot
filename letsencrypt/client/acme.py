@@ -21,7 +21,7 @@ SCHEMATA = dict([
             "error",
             "revocation",
             "revocationRequest",
-            "statusRequest",
+            "statusRequest"
         ]
 ])
 
