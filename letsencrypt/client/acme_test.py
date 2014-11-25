@@ -10,10 +10,10 @@ class ACMEObjectValidateTest(unittest.TestCase):
     def setUp(self):
         self.schemata = {
             'foo': {
-                'type' : 'object',
-                'properties' : {
-                    'price' : {'type' : 'number'},
-                    'name' : {'type' : 'string'},
+                'type': 'object',
+                'properties': {
+                    'price': {'type': 'number'},
+                    'name': {'type': 'string'},
                 },
             },
         }
@@ -50,8 +50,8 @@ class PrettyTest(unittest.TestCase):
 
     def test_it(self):
         self.assertEqual(
-            self._call('{"foo": "bar", "foo2": "bar2"}'),
-            '{\n    "foo2": "bar2", \n    "foo": "bar"\n}')
+            self._call('{"foo": {"bar": "baz"}}'),
+            '{\n    "foo": {\n        "bar": "baz"\n    }\n}')
 
 
 if __name__ == '__main__':
