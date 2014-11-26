@@ -976,7 +976,7 @@ LogLevel warn \n\
             subprocess.check_call(["sudo", "/etc/init.d/apache2", "restart"],
                                   stdout=open("/dev/null", 'w'),
                                   stderr=open("/dev/null", 'w'))
-        except Exception as e:
+        except (OSError, subprocess.CalledProcessError) as e:
             logger.error("Error enabling mod_" + mod_name)
             logger.error("Exception: %s" % str(e))
             sys.exit(1)
