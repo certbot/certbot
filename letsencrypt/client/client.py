@@ -17,6 +17,7 @@ from letsencrypt.client import challenge
 from letsencrypt.client import CONFIG
 from letsencrypt.client import crypto_util
 from letsencrypt.client import display
+from letsencrypt.client import errors
 from letsencrypt.client import le_util
 from letsencrypt.client import logger
 
@@ -206,7 +207,8 @@ class Client(object):
 
         :raises: TypeError if `msg` is not JSON serializable or
                  jsonschema.ValidationError if not valid ACME message or
-                 Exception if response from server is not valid ACME message
+                 `errors.LetsEncryptClientError` in case of connection error
+                 or if response from server is not a valid ACME message.
 
         :returns: Server response message.
         :rtype: dict
@@ -222,15 +224,17 @@ class Client(object):
                 headers={"Content-Type": "application/json"},
             )
         except requests.exceptions.RequestException as error:
-            logger.fatal("Send() failed... may have lost connection to server")
-            logger.fatal(" ** ERROR **")
-            logger.fatal(error)
-            sys.exit(8)
+            raise errors.LetsEncryptClientError(
+                'Sending ACME message to server has failed: %s' % error)
 
         try:
             acme.acme_object_validate(response.content)
-        except jsonschema.ValidationError:
-            raise Exception('Response from server is not a valid ACME message')
+        except ValueError:
+            raise errors.LetsEncryptClientError(
+                'Server did not send JSON serializable message')
+        except jsonschema.ValidationError as error:
+            raise errors.LetsEncryptClientError(
+                'Response from server is not a valid ACME message')
 
         return response.json()
 
@@ -251,7 +255,8 @@ class Client(object):
         try:
             return self.is_expected_msg(response, expected)
         except:  # TODO: too generic exception
-            raise Exception('Expected message (%s) not received' % expected)
+            raise errors.LetsEncryptClientError(
+                'Expected message (%s) not received' % expected)
 
     def is_expected_msg(self, response, expected, delay=3, rounds=20):
         """Is reponse expected ACME message?
@@ -285,7 +290,7 @@ class Client(object):
                              (response["error"],
                               response.get("message", ""),
                               response.get("moreInfo", "")))
-                raise Exception(response["error"])
+                raise errors.LetsEncryptClientError(response["error"])
 
             elif response["type"] == "defer":
                 logger.info("Waiting for %d seconds..." % delay)
