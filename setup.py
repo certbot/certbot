@@ -9,6 +9,7 @@ install_requires = [
     'python-augeas',
     'python2-pythondialog',
     'requests',
+    'argparse',
 ]
 
 testing_extras = [
