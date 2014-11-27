@@ -44,9 +44,15 @@ class Client(object):
             CONFIG.SERVER_ROOT)
 
         self.server = ca_server
-
-        self.csr_file = cert_signing_request.name
-        self.key_file = private_key.name
+        
+        if cert_signing_request:
+            self.csr_file = cert_signing_request.name
+        else:
+            self.csr_file = None
+        if private_key:
+            self.key_file = private_key.name
+        else:
+            self.key_file = None
 
         # TODO: Figure out all exceptions from this function
         try:
