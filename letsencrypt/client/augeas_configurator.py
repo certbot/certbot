@@ -22,9 +22,11 @@ class AugeasConfigurator(configurator.Configurator):
         self.save_notes = ""
 
     def check_parsing_errors(self, lens):
-        """
-        This function checks to see if Augeas was unable to parse any of the
-        lens files
+        """Verify Augeas can parse all of the lens files.
+
+        :param lens: lens to check for errors
+        :type lens: str
+
         """
         error_files = self.aug.match("/augeas//error")
 
@@ -42,17 +44,19 @@ class AugeasConfigurator(configurator.Configurator):
     def save(self, title=None, temporary=False):
         """Saves all changes to the configuration files.
 
-        This function is not transactional
+        This function first checks for save errors, if none are found,
+        all configuration changes made will be saved. According to the
+        function parameters.
 
-        TODO: Instead rely on challenge to backup all files before
-        modifications
+        :param title: The title of the save. If a title is given, the
+                      configuration will be saved as a new checkpoint
+                      and put in a timestamped directory.
+        :type title: str
 
-        title:     string - The title of the save. If a title is given, the
-                            configuration will be saved as a new checkpoint
-                            and put in a timestamped directory.
-                            `title` has no effect if temporary is true.
-        temporary: boolean - Indicates whether the changes made will be
-                             quickly reversed in the future (challenges)
+        :param temporary: Indicates whether the changes made will be quickly
+                           reversed in the future (ie. challenges)
+        :type temporary: bool
+
         """
         save_state = self.aug.get("/augeas/save")
         self.aug.set("/augeas/save", "noop")
@@ -88,7 +92,7 @@ class AugeasConfigurator(configurator.Configurator):
             for p in save_paths:
                 save_files.add(self.aug.get(p)[6:])
 
-            valid, message = self.check_tempfile_saves(save_files, temporary)
+            valid, message = self.check_tempfile_saves(save_files)
 
             if not valid:
                 logger.fatal(message)
@@ -117,9 +121,11 @@ class AugeasConfigurator(configurator.Configurator):
         return True
 
     def revert_challenge_config(self):
-        """
+        """Reload users original configuration files after a challenge.
+
         This function should reload the users original configuration files
-        for all saves with reversible=True
+        for all saves with temporary=True
+
         """
         if os.path.isdir(CONFIG.TEMP_CHECKPOINT_DIR):
             result = self.__recover_checkpoint(CONFIG.TEMP_CHECKPOINT_DIR)
@@ -133,7 +139,12 @@ class AugeasConfigurator(configurator.Configurator):
             self.aug.load()
 
     def rollback_checkpoints(self, rollback=1):
-        """Revert 'rollback' number of configuration checkpoints."""
+        """Revert 'rollback' number of configuration checkpoints.
+
+        :param rollback: Number of checkpoints to reverse
+        :type rollback: int
+
+        """
         try:
             rollback = int(rollback)
         except:
@@ -161,11 +172,14 @@ class AugeasConfigurator(configurator.Configurator):
         self.aug.load()
 
     def display_checkpoints(self):
-        """
-        Displays all saved checkpoints
+        """Displays all saved checkpoints.
+
+        All checkpoints are printed to the console.
+
         Note: Any 'IN_PROGRESS' checkpoints will be removed by the cleanup
         script found in the constructor, before this function would ever be
-        called
+        called.
+
         """
         backups = os.listdir(CONFIG.BACKUP_DIR)
         backups.sort(reverse=True)
@@ -203,11 +217,19 @@ class AugeasConfigurator(configurator.Configurator):
             print ""
 
     def __finalize_checkpoint(self, cp_dir, title):
-        """
-        Add title to cp_dir CHANGES_SINCE
+        """Move IN_PROGRESS checkpoint to timestamped checkpoint.
+
+        Adds title to cp_dir CHANGES_SINCE
         Move cp_dir to Backups directory and rename with timestamp
+
+        :param cp_dir: "IN PROGRESS" directory
+        :type cp_dir: str
+
+        :returns: Success
+        :rtype: bool
+
         """
-        final_dir = CONFIG.BACKUP_DIR + str(time.time())
+        final_dir = os.path.join(CONFIG.BACKUP_DIR, str(time.time()))
         try:
             with open(cp_dir + "CHANGES_SINCE.tmp", 'w') as ft:
                 ft.write("-- %s --\n" % title)
@@ -226,6 +248,15 @@ class AugeasConfigurator(configurator.Configurator):
         return True
 
     def add_to_checkpoint(self, cp_dir, save_files):
+        """Add save files to checkpoint directory.
+
+        :param cp_dir: Checkpoint directory filepath
+        :type cp_dir: str
+
+        :param save_files: set of files to save
+        :type save_files: set
+
+        """
         le_util.make_or_verify_dir(cp_dir, 0755)
 
         existing_filepaths = []
@@ -253,13 +284,18 @@ class AugeasConfigurator(configurator.Configurator):
             notes_fd.write(self.save_notes)
 
     def __recover_checkpoint(self, cp_dir):
-        """
+        """Recover a specific checkpoint.
+
         Recover a specific checkpoint provided by cp_dir
         Note: this function does not reload augeas.
 
-        returns: 0 success, 1 Unable to revert, -1 Unable to delete
-        """
+        :param cp_dir: checkpoint directory file path
+        :type cp_dir: str
 
+        :returns: 0 success, 1 Unable to revert, -1 Unable to delete
+        :rtype: int
+
+        """
         if os.path.isfile(cp_dir + "/FILEPATHS"):
             try:
                 with open(cp_dir + "/FILEPATHS") as f:
@@ -283,7 +319,16 @@ class AugeasConfigurator(configurator.Configurator):
 
         return 0
 
-    def check_tempfile_saves(self, save_files, temporary):
+    def check_tempfile_saves(self, save_files):
+        """Verify save isn't overwriting any temporary files.
+
+        :param save_files: Set of files about to be saved.
+        :type save_files: set
+
+        :returns: Success, error message
+        :rtype: bool, str
+
+        """
         temp_path = "%sFILEPATHS" % CONFIG.TEMP_CHECKPOINT_DIR
         if os.path.isfile(temp_path):
             with open(temp_path, 'r') as protected_fd:
@@ -293,14 +338,22 @@ class AugeasConfigurator(configurator.Configurator):
                         return False, ("Attempting to overwrite challenge "
                                        "file - %s" % filename)
 
-        return True, "Successful"
+        return True, ""
 
     def register_file_creation(self, temporary, *files):
-        """Register the creation of all files during Letsencrypt execution.
+        """Register the creation of all files during letsencrypt execution.
 
         Call this method before writing to the file to make sure that the
         file will be cleaned up if the program exits unexpectedly.
         (Before a save occurs)
+
+        :param temporary: If the file creation registry is for a temp or
+        permanent save.
+        :type temporary: bool
+
+        :param *files: file paths to be registered
+        :type *files: str
+
         """
         if temporary:
             cp_dir = CONFIG.TEMP_CHECKPOINT_DIR
@@ -310,8 +363,8 @@ class AugeasConfigurator(configurator.Configurator):
         le_util.make_or_verify_dir(cp_dir)
         try:
             with open(cp_dir + "NEW_FILES", 'a') as fd:
-                for f in files:
-                    fd.write("%s\n" % f)
+                for file_path in files:
+                    fd.write("%s\n" % file_path)
         except:
             logger.error("ERROR: Unable to register file creation")
 
@@ -323,6 +376,7 @@ class AugeasConfigurator(configurator.Configurator):
         IN_PROGRESS is unable to add files that are already added by a TEMP
         change.  Thus TEMP must be rolled back first because that will be the
         'latest' occurrence of the file.
+
         """
         self.revert_challenge_config()
         if os.path.isdir(CONFIG.IN_PROGRESS_DIR):
@@ -339,8 +393,14 @@ class AugeasConfigurator(configurator.Configurator):
             self.aug.load()
 
     def __remove_contained_files(self, file_list):
-        """
-        Erase any files contained within the text file, file_list
+        """Erase all files contained within file_list
+
+        :param file_list: file containing list of file paths to be deleted
+        :type file_list: str
+
+        :returns: Success
+        :rtype: bool
+
         """
         # Check to see that file exists to differentiate can't find file_list
         # and can't remove filepaths within file_list errors.
