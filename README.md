@@ -1,13 +1,15 @@
-This is the Let's Encrypt Agent DEVELOPER PREVIEW repository.
+This is the Let's Encrypt Agent **DEVELOPER PREVIEW** repository.
 
-DO NOT RUN THIS CODE ON A PRODUCTION WEBSERVER.  IT WILL INSTALL CERTIFICATES
-SIGNED BY A TEST CA, AND WILL CAUSE CERT WARNINGS FOR USERS.
+**DO NOT RUN THIS CODE ON A PRODUCTION WEBSERVER.  IT WILL INSTALL CERTIFICATES
+SIGNED BY A TEST CA, AND WILL CAUSE CERT WARNINGS FOR USERS.**
 
 This code is intended for testing, demonstration, and integration engineering
 with OSes and hosting platforms.  Currently the code works with Linux and
 Apache, though we will be expanding it to other platforms.
 
-## Running the demo code on Ubuntu
+## Running the demo code
+
+### on Ubuntu
 
 ```
 sudo apt-get install python python-setuptools python-virtualenv \
@@ -19,6 +21,16 @@ sudo ./venv/bin/letsencrypt
 
 Note, that letsencrypt does not yet handle Debian unstable's Apache2
 conf layout.
+
+### on OSX
+
+* [swig] is required for compiling [m2crypto].
+* [augeas] is required for editing configuration.
+
+```
+sudo brew install swig
+sudo brew install augeas
+```
 
 ## Hacking
 
@@ -63,14 +75,18 @@ optional arguments:
 
 ## More Information
 
-Further Setup, documentation and open projects are available in the [Wiki]
-(https://github.com/letsencrypt/lets-encrypt-preview/wiki)
+Further Setup, documentation and open projects are available in the [Wiki].
 
-Join us at our IRC channel @ freenode.net #letsencrypt
+Join us at our IRC channel @ freenode.net `#letsencrypt`.
 
-Client software development can be discussed on this [mailing list]
-(https://groups.google.com/a/letsencrypt.org/forum/#!forum/client-dev)
+Client software development can be discussed on this [mailing list].
 
-To subscribe without a Google account, send mail to
-[client-dev+subscribe@letsencrypt.org]
-(mailto:client-dev+subscribe@letsencrypt.org).
+To subscribe without a Google account, send mail to <client-dev+subscribe@letsencrypt.org>.
+
+
+<!-- these are links found above -->
+[swig]: http://www.swig.org/
+[m2crypto]: https://github.com/M2Crypto/M2Crypto
+[augeas]: http://augeas.net/
+[mailing list]: https://groups.google.com/a/letsencrypt.org/forum/#!forum/client-dev
+[wiki]: https://github.com/letsencrypt/lets-encrypt-preview/wiki
