@@ -45,8 +45,8 @@ class Client(object):
 
         self.server = ca_server
 
-        self.csr_file = cert_signing_request
-        self.key_file = private_key
+        self.csr_file = cert_signing_request.name
+        self.key_file = private_key.name
 
         # TODO: Figure out all exceptions from this function
         try:
