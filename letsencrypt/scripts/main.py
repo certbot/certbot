@@ -65,7 +65,7 @@ def main():
 
     # Enforce '--privkey' is set along with '--csr'.
     if args.csr and not args.privkey:
-        parser.error("private key file (--privkey) must be specified along{} "
+        parser.error("private key file (--privkey) must be specified along{0} "
                      "with the certificate signing request file (--csr)"
                      .format(os.linesep))
 
