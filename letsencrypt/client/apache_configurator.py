@@ -99,7 +99,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.standardize_excl()
 
         # Determine user's main config file
-        self.__set_user_config_file()
+        self._set_user_config_file()
 
         self.vhosts = self.get_virtual_hosts()
         # Add name_server association dict
@@ -282,7 +282,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         return all_names
 
-    def __set_user_config_file(self, filename=''):
+    def _set_user_config_file(self, filename=''):
         """Set the appropriate user configuration file
 
         TODO: This will have to be updated for other distros versions
@@ -304,7 +304,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             else:
                 self.user_config_file = self.server_root + 'apache2.conf'
 
-    def __add_servernames(self, host):
+    def _add_servernames(self, host):
         """Helper function for get_virtual_hosts().
 
         :param host: In progress vhost whose names will be added
@@ -322,7 +322,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             for arg in args:
                 host.add_name(self.aug.get(arg))
 
-    def __create_vhost(self, path):
+    def _create_vhost(self, path):
         """Used by get_virtual_hosts to create vhost objects
 
         :param path: Augeas path to virtual host
@@ -345,7 +345,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         filename = self.get_file_path(path)
         is_enabled = self.is_site_enabled(filename)
         vhost = VH(filename, path, addrs, is_ssl, is_enabled)
-        self.__add_servernames(vhost)
+        self._add_servernames(vhost)
         return vhost
 
     # TODO: make "sites-available" a configurable directory
@@ -362,7 +362,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
              (self.server_root, case_i('VirtualHost'))))
         vhs = []
         for p in paths:
-            vhs.append(self.__create_vhost(p))
+            vhs.append(self._create_vhost(p))
 
         return vhs
 
@@ -556,7 +556,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :type directive: str
 
         :param arg: Specific value direcitve must have, None if all should
-        be considered
+                    be considered
         :type arg: str or None
 
         :param start: Beginning Augeas path to begin looking
@@ -777,7 +777,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.save()
 
         # We know the length is one because of the assertion above
-        ssl_vhost = self.__create_vhost(vh_p[0])
+        ssl_vhost = self._create_vhost(vh_p[0])
         self.vhosts.append(ssl_vhost)
 
         # Check if nonssl_vhost's address was NameVirtualHost
@@ -818,7 +818,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         #       to avoid the extra restart
         self.enable_mod("rewrite")
 
-        general_v = self.__general_vhost(ssl_vhost)
+        general_v = self._general_vhost(ssl_vhost)
         if general_v is None:
             # Add virtual_server with redirect
             logger.debug(
@@ -896,7 +896,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         # Consider changing this to a dictionary check
         # Make sure adding the vhost will be safe
-        conflict, hostOrAddrs = self.__conflicting_host(ssl_vhost)
+        conflict, hostOrAddrs = self._conflicting_host(ssl_vhost)
         if conflict:
             return False, hostOrAddrs
 
@@ -950,7 +950,7 @@ LogLevel warn \n\
         self.aug.load()
         # Make a new vhost data structure and add it to the lists
         new_fp = self.server_root + "sites-available/" + redirect_filename
-        new_vhost = self.__create_vhost("/files" + new_fp)
+        new_vhost = self._create_vhost("/files" + new_fp)
         self.vhosts.append(new_vhost)
 
         # Finally create documentation for the change
@@ -960,8 +960,8 @@ LogLevel warn \n\
 
         return True, new_vhost
 
-    def __conflicting_host(self, ssl_vhost):
-        """Checks for conflicting HTTP vhost for ssl_vhost
+    def _conflicting_host(self, ssl_vhost):
+        """Checks for conflicting HTTP vhost for ssl_vhost.
 
         Checks for a conflicting host, such that a new port 80 host could not
         be created without ruining the apache config
@@ -1003,7 +1003,7 @@ LogLevel warn \n\
 
         return False, redirect_addrs
 
-    def __general_vhost(self, ssl_vhost):
+    def _general_vhost(self, ssl_vhost):
         """Find appropriate HTTP vhost for ssl_vhost.
 
         Function needs to be thoroughly tested and perhaps improved
@@ -1182,7 +1182,7 @@ LogLevel warn \n\
             sys.exit(1)
 
     def fnmatch_to_re(self, clean_fn_match):
-        """Method converts Apache's basic fnmatch to regular expression
+        """Method converts Apache's basic fnmatch to regular expression.
 
         :param clean_fn_match: Apache style filename match, similar to globs
         :type clean_fn_match: str
@@ -1224,7 +1224,7 @@ LogLevel warn \n\
             # self.httpd_incl.append(file_path)
             # self.aug.add_transform("Httpd.lns",
             #                       self.httpd_incl, None, self.httpd_excl)
-            self.__add_httpd_transform(file_path)
+            self._add_httpd_transform(file_path)
             self.aug.load()
 
     def save_apache_config(self):
@@ -1306,7 +1306,7 @@ LogLevel warn \n\
 
         return True
 
-    def __add_httpd_transform(self, incl):
+    def _add_httpd_transform(self, incl):
         """Add a transform to Augeas.
 
         This function will correctly add a transform to augeas
@@ -1365,9 +1365,10 @@ LogLevel warn \n\
     def dvsni_perform(self, chall_dict):
         """Peform a DVSNI challenge.
 
+        Composed of
         listSNITuple:  List of tuples with form (addr, r, nonce)
                        addr (string), r (base64 string), nonce (hex string)
-        key:           string - File path to key
+        dvsni_key:     string - File path to key
 
         :param chall_dict: dvsni challenge - see documentation
         :type chall_dict: dict
@@ -1444,7 +1445,7 @@ LogLevel warn \n\
         """
         return CONFIG.WORK_DIR + nonce + ".crt"
 
-    def __getConfigText(self, nonce, ip_addrs, key):
+    def _getConfigText(self, nonce, ip_addrs, key):
         """Chocolate virtual server configuration text
 
         :param nonce: hex form of nonce
@@ -1460,21 +1461,19 @@ LogLevel warn \n\
         :rtype: str
 
         """
-        configText = "<VirtualHost " + " ".join(ip_addrs) + "> \n \
-ServerName " + nonce + CONFIG.INVALID_EXT + " \n \
-UseCanonicalName on \n \
-SSLStrictSNIVHostCheck on \n \
-\n \
-LimitRequestBody 1048576 \n \
-\n \
-Include " + CONFIG.OPTIONS_SSL_CONF + " \n \
-SSLCertificateFile " + self.dvsni_get_cert_file(nonce) + " \n \
-SSLCertificateKeyFile " + key + " \n \
-\n \
-DocumentRoot " + CONFIG.CONFIG_DIR + "challenge_page/ \n \
-</VirtualHost> \n\n "
-
-        return configText
+        return ("<VirtualHost " + " ".join(ip_addrs) + "> \n"
+                "ServerName " + nonce + CONFIG.INVALID_EXT + " \n"
+                "UseCanonicalName on \n"
+                "SSLStrictSNIVHostCheck on \n"
+                "\n"
+                "LimitRequestBody 1048576 \n"
+                "\n"
+                "Include " + CONFIG.OPTIONS_SSL_CONF + " \n"
+                "SSLCertificateFile " + self.dvsni_get_cert_file(nonce) + " \n"
+                "SSLCertificateKeyFile " + key + " \n"
+                "\n"
+                "DocumentRoot " + CONFIG.CONFIG_DIR + "challenge_page/ \n"
+                "</VirtualHost> \n\n")
 
     def dvsni_mod_config(self, mainConfig, listSNITuple, dvsni_key,
                          listlistAddrs):
@@ -1507,7 +1506,7 @@ DocumentRoot " + CONFIG.CONFIG_DIR + "challenge_page/ \n \
         # TODO: Use ip address of existing vhost instead of relying on FQDN
         configText = "<IfModule mod_ssl.c> \n"
         for idx, lis in enumerate(listlistAddrs):
-            configText += self.__getConfigText(listSNITuple[idx][2],
+            configText += self._getConfigText(listSNITuple[idx][2],
                                                lis,
                                                dvsni_key)
         configText += "</IfModule> \n"

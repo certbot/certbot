@@ -54,7 +54,7 @@ class AugeasConfigurator(configurator.Configurator):
         :type title: str
 
         :param temporary: Indicates whether the changes made will be quickly
-                           reversed in the future (ie. challenges)
+                          reversed in the future (ie. challenges)
         :type temporary: bool
 
         """
@@ -107,7 +107,7 @@ class AugeasConfigurator(configurator.Configurator):
                 self.add_to_checkpoint(CONFIG.IN_PROGRESS_DIR, save_files)
 
         if title and not temporary and os.path.isdir(CONFIG.IN_PROGRESS_DIR):
-            success = self.__finalize_checkpoint(CONFIG.IN_PROGRESS_DIR, title)
+            success = self._finalize_checkpoint(CONFIG.IN_PROGRESS_DIR, title)
             if not success:
                 # This should never happen
                 # This will be hopefully be cleaned up on the recovery
@@ -128,7 +128,7 @@ class AugeasConfigurator(configurator.Configurator):
 
         """
         if os.path.isdir(CONFIG.TEMP_CHECKPOINT_DIR):
-            result = self.__recover_checkpoint(CONFIG.TEMP_CHECKPOINT_DIR)
+            result = self._recover_checkpoint(CONFIG.TEMP_CHECKPOINT_DIR)
             changes = True
             if result != 0:
                 # We have a partial or incomplete recovery
@@ -163,7 +163,7 @@ class AugeasConfigurator(configurator.Configurator):
 
         while rollback > 0 and backups:
             cp_dir = CONFIG.BACKUP_DIR + backups.pop()
-            result = self.__recover_checkpoint(cp_dir)
+            result = self._recover_checkpoint(cp_dir)
             if result != 0:
                 logger.fatal("Failed to load checkpoint during rollback")
                 sys.exit(39)
@@ -216,7 +216,7 @@ class AugeasConfigurator(configurator.Configurator):
                 pass
             print ""
 
-    def __finalize_checkpoint(self, cp_dir, title):
+    def _finalize_checkpoint(self, cp_dir, title):
         """Move IN_PROGRESS checkpoint to timestamped checkpoint.
 
         Adds title to cp_dir CHANGES_SINCE
@@ -283,7 +283,7 @@ class AugeasConfigurator(configurator.Configurator):
         with open(cp_dir + "CHANGES_SINCE", 'a') as notes_fd:
             notes_fd.write(self.save_notes)
 
-    def __recover_checkpoint(self, cp_dir):
+    def _recover_checkpoint(self, cp_dir):
         """Recover a specific checkpoint.
 
         Recover a specific checkpoint provided by cp_dir
@@ -309,7 +309,7 @@ class AugeasConfigurator(configurator.Configurator):
                 return 1
 
         # Remove any newly added files if they exist
-        self.__remove_contained_files(cp_dir + "/NEW_FILES")
+        self._remove_contained_files(cp_dir + "/NEW_FILES")
 
         try:
             shutil.rmtree(cp_dir)
@@ -380,7 +380,7 @@ class AugeasConfigurator(configurator.Configurator):
         """
         self.revert_challenge_config()
         if os.path.isdir(CONFIG.IN_PROGRESS_DIR):
-            result = self.__recover_checkpoint(CONFIG.IN_PROGRESS_DIR)
+            result = self._recover_checkpoint(CONFIG.IN_PROGRESS_DIR)
             if result != 0:
                 # We have a partial or incomplete recovery
                 # Not as egregious
@@ -392,8 +392,8 @@ class AugeasConfigurator(configurator.Configurator):
             # Need to reload configuration after these changes take effect
             self.aug.load()
 
-    def __remove_contained_files(self, file_list):
-        """Erase all files contained within file_list
+    def _remove_contained_files(self, file_list):
+        """Erase all files contained within file_list.
 
         :param file_list: file containing list of file paths to be deleted
         :type file_list: str
