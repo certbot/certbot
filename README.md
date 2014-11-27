@@ -1,3 +1,5 @@
+Build status: [![Build Status](https://travis-ci.org/letsencrypt/lets-encrypt-preview.svg?branch=master)](https://travis-ci.org/letsencrypt/lets-encrypt-preview)
+
 This is the Let's Encrypt Agent DEVELOPER PREVIEW repository.
 
 DO NOT RUN THIS CODE ON A PRODUCTION WEBSERVER.  IT WILL INSTALL CERTIFICATES
