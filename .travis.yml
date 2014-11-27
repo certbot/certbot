@@ -1,6 +1,8 @@
 language: python
 python:
   - "2.7"
+before_install:
+  - sudo apt-get install python python-setuptools python-virtualenv python-dev gcc swig dialog libaugeas0 libssl-dev
 install:
   - pip install tox
 script:
