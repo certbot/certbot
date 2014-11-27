@@ -15,6 +15,7 @@ install_requires = [
 testing_extras = [
     'coverage',
     'nose',
+    'nosexcover',
     'pylint',
     'tox',
 ]
