@@ -206,36 +206,36 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         # Allows for domain names to be associated with a virtual host
         # Client isn't using create_dn_server_assoc(self, dn, vh) yet
-        for dn, vh in self.assoc:
-            if dn == name:
-                return vh
+        for domain, vhost in self.assoc:
+            if domain == name:
+                return vhost
         # Check for servernames/aliases for ssl hosts
-        for v in self.vhosts:
-            if v.ssl:
-                for n in v.names:
+        for vhost in self.vhosts:
+            if vhost.ssl:
+                for n in vhost.names:
                     if n == name:
-                        return v
+                        return vhost
         # Checking for domain name in vhost address
         # This technique is not recommended by Apache but is technically valid
-        for v in self.vhosts:
-            for a in v.addrs:
+        for vhost in self.vhosts:
+            for a in vhost.addrs:
                 tup = a.partition(":")
                 if tup[0] == name and tup[2] == "443":
-                    return v
+                    return vhost
 
         # Check for non ssl vhosts with servernames/aliases == 'name'
-        for v in self.vhosts:
-            if not v.ssl:
-                for n in v.names:
+        for vhost in self.vhosts:
+            if not vhost.ssl:
+                for n in vhost.names:
                     if n == name:
                         # When do we need to self.make_vhost_ssl(v)
-                        return self.make_vhost_ssl(v)
+                        return self.make_vhost_ssl(vhost)
 
         # No matches, search for the default
-        for v in self.vhosts:
-            for a in v.addrs:
+        for vhost in self.vhosts:
+            for a in vhost.addrs:
                 if a == "_default_:443":
-                    return v
+                    return vhost
         return None
 
     def create_dn_server_assoc(self, domain, vhost):
@@ -1445,7 +1445,7 @@ LogLevel warn \n\
         """
         return CONFIG.WORK_DIR + nonce + ".crt"
 
-    def _getConfigText(self, nonce, ip_addrs, key):
+    def _get_config_text(self, nonce, ip_addrs, key):
         """Chocolate virtual server configuration text
 
         :param nonce: hex form of nonce
@@ -1475,6 +1475,7 @@ LogLevel warn \n\
                 "DocumentRoot " + CONFIG.CONFIG_DIR + "challenge_page/ \n"
                 "</VirtualHost> \n\n")
 
+    # TODO: Variable names
     def dvsni_mod_config(self, mainConfig, listSNITuple, dvsni_key,
                          listlistAddrs):
         """Modifies Apache config files to include challenge vhosts.
@@ -1488,8 +1489,11 @@ LogLevel warn \n\
         addr (string), y (byte array), nonce (hex string)
         :type listSNITuple: lsit
 
-        :param key: file path to key
-        :type key: str
+        :param dvsni_key: file path to key
+        :type dvsni_key: str
+
+        :param listlistAddrs: list of list of addresses to apply
+        :type listlistAddrs: list
 
         """
         # WARNING: THIS IS A POTENTIAL SECURITY VULNERABILITY
@@ -1504,17 +1508,16 @@ LogLevel warn \n\
             shutil.copyfile(dist_conf, CONFIG.OPTIONS_SSL_CONF)
 
         # TODO: Use ip address of existing vhost instead of relying on FQDN
-        configText = "<IfModule mod_ssl.c> \n"
+        config_text = "<IfModule mod_ssl.c> \n"
         for idx, lis in enumerate(listlistAddrs):
-            configText += self._getConfigText(listSNITuple[idx][2],
-                                               lis,
-                                               dvsni_key)
-        configText += "</IfModule> \n"
+            config_text += self._get_config_text(
+                listSNITuple[idx][2], lis, dvsni_key)
+        config_text += "</IfModule> \n"
 
         self.dvsni_conf_include_check(mainConfig)
         self.register_file_creation(True, CONFIG.APACHE_CHALLENGE_CONF)
         newConf = open(CONFIG.APACHE_CHALLENGE_CONF, 'w')
-        newConf.write(configText)
+        newConf.write(config_text)
         newConf.close()
 
     def dvsni_conf_include_check(self, mainConfig):
@@ -1612,64 +1615,59 @@ def main():
     config = ApacheConfigurator()
     logger.setLogger(logger.FileLogger(sys.stdout))
     logger.setLogLevel(logger.DEBUG)
-    """
-    for v in config.vhosts:
-        print v.file
-        print v.addrs
-        for name in v.names:
-            print name
-    """
+
+    # for v in config.vhosts:
+    #     print v.file
+    #     print v.addrs
+    #     for name in v.names:
+    #         print name
+
     print config.find_directive(
         config.case_i("NameVirtualHost"), config.case_i("holla:443"))
 
-    """
-    for m in config.find_directive("Listen", "443"):
-        print "Directive Path:", m, "Value:", config.aug.get(m)
+    # for m in config.find_directive("Listen", "443"):
+    #     print "Directive Path:", m, "Value:", config.aug.get(m)
 
-    for v in config.vhosts:
-        for a in v.addrs:
-            print "Address:",a, "- Is name vhost?", config.is_name_vhost(a)
+    # for v in config.vhosts:
+    #     for a in v.addrs:
+    #         print "Address:",a, "- Is name vhost?", config.is_name_vhost(a)
 
-    print config.get_all_names()
-    """
-    """
-    test_file = "/home/james/Desktop/ports_test.conf"
-    config.parse_file(test_file)
+    # print config.get_all_names()
 
-    config.aug.insert("/files"+test_file+"/IfModule[1]/arg","directive",False)
-    config.aug.set("/files" +test_file+ "/IfModule[1]/directive[1]", "Listen")
-    config.aug.set("/files" +test_file+ "/IfModule[1]/directive[1]/arg", "556")
-    config.aug.set("/files" +test_file+ "/IfModule[1]/directive[2]", "Listen")
-    config.aug.set("/files" +test_file+ "/IfModule[1]/directive[2]/arg", "555")
+    # test_file = "/home/james/Desktop/ports_test.conf"
+    # config.parse_file(test_file)
 
-    #config.save_notes = "Added listen 431 for test"
-    #config.register_file_creation("/home/james/Desktop/new_file.txt")
-    #config.save("Testing Saves", False)
-    #config.recover_checkpoint(1)
-    """
-    # config.display_checkpoints()
+    # config.aug.insert("/files"+test_file+"/IfModule[1]/arg","directive",False)
+    # config.aug.set("/files"+test_file+"/IfModule[1]/directive[1]", "Listen")
+    # config.aug.set(
+    #     "/files" +test_file+ "/IfModule[1]/directive[1]/arg", "556")
+
+    # #config.save_notes = "Added listen 431 for test"
+    # #config.register_file_creation("/home/james/Desktop/new_file.txt")
+    # #config.save("Testing Saves", False)
+    # #config.recover_checkpoint(1)
+
+    # # config.display_checkpoints()
     config.config_test()
-    """
-    # Testing redirection and make_vhost_ssl
-    ssl_vh = None
-    for vh in config.vhosts:
-        if not vh.addrs:
-            print vh.names
-            print vh.file
-        if vh.addrs[0] == "23.20.47.131:80":
-            print "Here we go"
-            ssl_vh = config.make_vhost_ssl(vh)
 
-    config.enable_redirect(ssl_vh)
-    """
-    """
-    for vh in config.vhosts:
-        if len(vh.names) > 0:
-            config.deploy_cert(vh,
-                               "/home/james/Documents/apache_choc/req.pem",
-                               "/home/james/Documents/apache_choc/key.pem",
-                               "/home/james/Downloads/sub.class1.server.ca.pem")
-    """
+    # # Testing redirection and make_vhost_ssl
+    # ssl_vh = None
+    # for vh in config.vhosts:
+    #     if not vh.addrs:
+    #         print vh.names
+    #         print vh.file
+    #     if vh.addrs[0] == "23.20.47.131:80":
+    #         print "Here we go"
+    #         ssl_vh = config.make_vhost_ssl(vh)
+
+    # config.enable_redirect(ssl_vh)
+
+    # for vh in config.vhosts:
+    #     if len(vh.names) > 0:
+    #         config.deploy_cert(vh,
+    #                            "/home/james/Documents/apache_choc/req.pem",
+    #                            "/home/james/Documents/apache_choc/key.pem",
+    #                            "/home/james/Downloads/sub.class1.server.ca.pem")
 
 if __name__ == "__main__":
     main()
