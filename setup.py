@@ -3,6 +3,7 @@ from setuptools import setup
 
 
 install_requires = [
+    'argparse',
     'jsonschema',
     'M2Crypto',
     'pycrypto',

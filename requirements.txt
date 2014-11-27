@@ -3,3 +3,4 @@ python2-pythondialog
 jsonschema==2.4.0
 python-augeas==0.5.0
 requests==2.4.3
+argparse==1.2.2
