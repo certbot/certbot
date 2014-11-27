@@ -28,10 +28,10 @@ def main():
                         nargs="+")
     parser.add_argument("-s", "--server", dest="server",
                         help="The ACME CA server address.")
-    parser.add_argument("-p", "--privkey", dest="privkey",
+    parser.add_argument("-p", "--privkey", dest="privkey", type=file,
                         help="Path to the private key file for certificate "
                              "generation.")
-    parser.add_argument("-c", "--csr", dest="csr",
+    parser.add_argument("-c", "--csr", dest="csr", type=file,
                         help="Path to the certificate signing request file "
                              "corresponding to the private key file. The "
                              "private key file argument is required if this "
