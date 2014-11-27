@@ -10,7 +10,6 @@ from letsencrypt.client import client
 from letsencrypt.client import display
 from letsencrypt.client import logger
 
-BASENAME = os.path.basename(sys.argv[0])
 logger.setLogger(logger.FileLogger(sys.stdout))
 logger.setLogLevel(logger.INFO)
 config = apache_configurator.ApacheConfigurator()
