@@ -18,7 +18,7 @@ it to other platforms.
 
 ## Running the demo code
 
-The demo code is supported and known to work on *Ubuntu only* (even
+The demo code is supported and known to work on **Ubuntu only** (even
 closely related [Debian is known to fail]
 (https://github.com/letsencrypt/lets-encrypt-preview/issues/68)).
 Therefore, prerequisites for other platforms listed below are provided
@@ -29,7 +29,7 @@ mainly for the [developers](#hacking) reference.
 In general:
 
 * [swig] is required for compiling [m2crypto]
-* [libaugeas] is required for the `python-augeas` bindings
+* [augeas] is required for the `python-augeas` bindings
 
 #### Ubuntu
 
@@ -96,17 +96,17 @@ optional arguments:
 - Further setup, documentation and open projects are available in the
   [Wiki].
 
-- Join us at our IRC channel @ [freenode.net
-  `#letsencrypt`](irc://irc.freenode.net/letsencrypt).
+- Join us at our IRC channel: #letsencrypt at [Freenode].
 
 - Client software development can be discussed on this [mailing
-  list]. To subscribe without a Google account, send mail to
+  list]. To subscribe without a Google account, send an email to
   <client-dev+subscribe@letsencrypt.org>.
 
 
-[Let's Encrypt](https://letsencrypt.org)
-[swig]: http://www.swig.org
-[m2crypto]: https://github.com/M2Crypto/M2Crypto
 [augeas]: http://augeas.net
+[Freenode]: https://freenode.net
+[Let's Encrypt]: https://letsencrypt.org
+[m2crypto]: https://github.com/M2Crypto/M2Crypto
 [mailing list]: https://groups.google.com/a/letsencrypt.org/forum/#!forum/client-dev
+[swig]: http://www.swig.org
 [wiki]: https://github.com/letsencrypt/lets-encrypt-preview/wiki
