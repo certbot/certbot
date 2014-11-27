@@ -100,7 +100,7 @@ optional arguments:
 
 - Client software development can be discussed on this [mailing
   list]. To subscribe without a Google account, send an email to
-  <client-dev+subscribe@letsencrypt.org>.
+  client-dev+subscribe@letsencrypt.org.
 
 
 [augeas]: http://augeas.net
