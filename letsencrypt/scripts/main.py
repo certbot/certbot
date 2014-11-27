@@ -11,6 +11,9 @@ from letsencrypt.client import display
 from letsencrypt.client import logger
 
 BASENAME = os.path.basename(sys.argv[0])
+logger.setLogger(logger.FileLogger(sys.stdout))
+logger.setLogLevel(logger.INFO)
+config = apache_configurator.ApacheConfigurator()
 
 
 def main():
@@ -98,18 +101,12 @@ def rollback(checkpoints):
     :type checkpoints: int
 
     """
-    logger.setLogger(logger.FileLogger(sys.stdout))
-    logger.setLogLevel(logger.INFO)
-    config = apache_configurator.ApacheConfigurator()
     config.rollback_checkpoints(checkpoints)
     config.restart()
 
 
 def view_checkpoints():
     """View checkpoints and associated configuration changes."""
-    logger.setLogger(logger.FileLogger(sys.stdout))
-    logger.setLogLevel(logger.INFO)
-    config = apache_configurator.ApacheConfigurator()
     config.display_checkpoints()
 
 
