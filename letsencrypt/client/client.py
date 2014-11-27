@@ -44,6 +44,8 @@ class Client(object):
             CONFIG.SERVER_ROOT)
 
         self.server = ca_server
+        self.redirect = None
+        self.names = []
 
         self.csr_file = cert_signing_request
         self.key_file = private_key
@@ -65,13 +67,13 @@ class Client(object):
         if not self.config.config_test():
             sys.exit(1)
 
-        self.redirect = redirect
+        if redirect is not None:
+            self.redirect = redirect
 
         # Display preview warning
         if not eula:
             with open('EULA') as eula_file:
-                if not display.generic_yesno(eula_file.read(),
-                                             "Agree", "Cancel"):
+                if not display.generic_yesno(eula_file.read(), "Agree", "Cancel"):
                     sys.exit(0)
 
         # Display screen to select domains to validate

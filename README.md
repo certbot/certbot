@@ -29,21 +29,36 @@ conf layout.
 ## Command line usage
 
 ```
-sudo ./letsencrypt.py  (default authentication mode using pythondialog) options
+usage: sudo letsencrypt.py [-h] [-d DOMAIN [DOMAIN ...]] [-s SERVER] [-p PRIVKEY]
+                      [-c CSR] [-b ROLLBACK] [-k] [-v] [-r] [-n] [-e] [-t]
+                      [--test]
 
---text (text mode)
---privkey= (specify privatekey file to use to generate the certificate)
---csr= (Use a specific CSR. If this is specified, privkey must also be specified
-    with the correct private key for the CSR)
---server (list the ACME CA server address)
---revoke (revoke a certificate)
---view-checkpoints (Used to view available checkpoints and see what configuration
-    changes have been made)
---rollback=X (Revert the configuration X number of checkpoints)
---redirect (Automatically redirect all HTTP traffic to HTTPS for the newly
-    authenticated vhost)
---no-redirect (Skip the HTTPS redirect question, allowing both HTTP and HTTPS)
---agree-eula (Skip the end user agreement screen)
+An ACME client that can update Apache configurations.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -d DOMAIN [DOMAIN ...], --domains DOMAIN [DOMAIN ...]
+  -s SERVER, --server SERVER
+                        The ACME CA server address.
+  -p PRIVKEY, --privkey PRIVKEY
+                        Path to the private key file for certificate
+                        generation.
+  -c CSR, --csr CSR     Path to the certificate signing request file
+                        corresponding to the private key file. The private key
+                        file argument is required if this argument is
+                        specified.
+  -b ROLLBACK, --rollback ROLLBACK
+                        Revert configuration <ROLLBACK> number of checkpoints.
+  -k, --revoke          Revoke a certificate.
+  -v, --view-checkpoints
+                        View checkpoints and associated configuration changes.
+  -r, --redirect        Automatically redirect all HTTP traffic to HTTPS for
+                        the newly authenticated vhost.
+  -n, --no-redirect     Skip the HTTPS redirect question, allowing both HTTP
+                        and HTTPS.
+  -e, --agree-eula      Skip the end user license agreement screen.
+  -t, --text            Use the text output instead of the curses UI.
+  --test                Run in test mode.
 ```
 
 ## More Information
