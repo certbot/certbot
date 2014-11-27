@@ -1,35 +1,53 @@
-This is the Let's Encrypt Agent **DEVELOPER PREVIEW** repository.
+# Let's Encrypt
 
-**DO NOT RUN THIS CODE ON A PRODUCTION WEBSERVER.  IT WILL INSTALL CERTIFICATES
-SIGNED BY A TEST CA, AND WILL CAUSE CERT WARNINGS FOR USERS.**
+[![Build Status](https://travis-ci.org/letsencrypt/lets-encrypt-preview.svg?branch=master)]
+(https://travis-ci.org/letsencrypt/lets-encrypt-preview)
 
-This code is intended for testing, demonstration, and integration engineering
-with OSes and hosting platforms.  Currently the code works with Linux and
-Apache, though we will be expanding it to other platforms.
+## Disclaimer
+
+This is the [Let's Encrypt] Agent **DEVELOPER PREVIEW** repository.
+
+**DO NOT RUN THIS CODE ON A PRODUCTION WEBSERVER. IT WILL INSTALL
+CERTIFICATES SIGNED BY A TEST CA, AND WILL CAUSE CERT WARNINGS FOR
+USERS.**
+
+This code is intended for testing, demonstration, and integration
+engineering with OSes and hosting platforms. For the time being
+project focuses on Linux and Apache, though we will be expanding
+it to other platforms.
 
 ## Running the demo code
 
-### on Ubuntu
+The demo code is supported and known to work on *Ubuntu only* (even
+closely related [Debian is known to fail]
+(https://github.com/letsencrypt/lets-encrypt-preview/issues/68)).
+Therefore, prerequisites for other platforms listed below are provided
+mainly for the [developers](#hacking) reference.
+
+### Prerequisites
+
+In general:
+
+* [swig] is required for compiling [m2crypto]
+* [libaugeas] is required for the `python-augeas` bindings
+
+#### Ubuntu
 
 ```
 sudo apt-get install python python-setuptools python-virtualenv \
   python-dev gcc swig dialog libaugeas0 libssl-dev
+```
+
+#### Mac OSX
+
+`sudo brew install augeas swig`
+
+### Installation
+
+```
 virtualenv --no-site-packages venv
 ./venv/bin/python setup.py install
 sudo ./venv/bin/letsencrypt
-```
-
-Note, that letsencrypt does not yet handle Debian unstable's Apache2
-conf layout.
-
-### on OSX
-
-* [swig] is required for compiling [m2crypto].
-* [augeas] is required for editing configuration.
-
-```
-sudo brew install swig
-sudo brew install augeas
 ```
 
 ## Hacking
@@ -75,18 +93,20 @@ optional arguments:
 
 ## More Information
 
-Further Setup, documentation and open projects are available in the [Wiki].
+- Further setup, documentation and open projects are available in the
+  [Wiki].
 
-Join us at our IRC channel @ freenode.net `#letsencrypt`.
+- Join us at our IRC channel @ [freenode.net
+  `#letsencrypt`](irc://irc.freenode.net/letsencrypt).
 
-Client software development can be discussed on this [mailing list].
+- Client software development can be discussed on this [mailing
+  list]. To subscribe without a Google account, send mail to
+  <client-dev+subscribe@letsencrypt.org>.
 
-To subscribe without a Google account, send mail to <client-dev+subscribe@letsencrypt.org>.
 
-
-<!-- these are links found above -->
-[swig]: http://www.swig.org/
+[Let's Encrypt](https://letsencrypt.org)
+[swig]: http://www.swig.org
 [m2crypto]: https://github.com/M2Crypto/M2Crypto
-[augeas]: http://augeas.net/
+[augeas]: http://augeas.net
 [mailing list]: https://groups.google.com/a/letsencrypt.org/forum/#!forum/client-dev
 [wiki]: https://github.com/letsencrypt/lets-encrypt-preview/wiki
