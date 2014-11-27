@@ -28,10 +28,10 @@ def main():
                         nargs="+")
     parser.add_argument("-s", "--server", dest="server",
                         help="The ACME CA server address.")
-    parser.add_argument("-p", "--privkey", dest="privkey", type=file,
+    parser.add_argument("-p", "--privkey", dest="privkey", type=str,
                         help="Path to the private key file for certificate "
                              "generation.")
-    parser.add_argument("-c", "--csr", dest="csr", type=file,
+    parser.add_argument("-c", "--csr", dest="csr", type=str,
                         help="Path to the certificate signing request file "
                              "corresponding to the private key file. The "
                              "private key file argument is required if this "
@@ -63,10 +63,14 @@ def main():
 
     args = parser.parse_args()
 
-    # Enforce --privkey is set along with --csr.
+    # Make sure each given file is readable.
+    for f in (args.privkey, args.csr):
+        if f and not os.access(f, os.R_OK):
+            parser.error("the file '{}' is not readable.".format(f))
+
+    # Enforce '--privkey' is set along with '--csr'.
     if args.csr and not args.privkey:
-        parser.print_usage()
-        parser.error("private key file (--privkey) must be specified along{}"
+        parser.error("private key file (--privkey) must be specified along{} "
                      "with the certificate signing request file (--csr)"
                      .format(os.linesep))
 
