@@ -12,7 +12,6 @@ from letsencrypt.client import logger
 
 logger.setLogger(logger.FileLogger(sys.stdout))
 logger.setLogLevel(logger.INFO)
-config = apache_configurator.ApacheConfigurator()
 
 
 def main():
@@ -77,11 +76,11 @@ def main():
         display.set_display(display.FileDisplay(sys.stdout))
 
     if args.rollback > 0:
-        rollback(args.rollback)
+        rollback(apache_configurator.ApacheConfigurator(), args.rollback)
         sys.exit()
 
     if args.view_checkpoints:
-        view_checkpoints()
+        view_checkpoints(apache_configurator.ApacheConfigurator())
         sys.exit()
 
     server = args.server is None and CONFIG.ACME_SERVER or args.server
@@ -93,8 +92,11 @@ def main():
         acme.authenticate(args.domains, args.redirect, args.eula)
 
 
-def rollback(checkpoints):
+def rollback(config, checkpoints):
     """Revert configuration the specified number of checkpoints.
+
+    :param config: Configurator object
+    :type config: ApacheConfigurator
 
     :param checkpoints: Number of checkpoints to revert.
     :type checkpoints: int
@@ -104,8 +106,13 @@ def rollback(checkpoints):
     config.restart()
 
 
-def view_checkpoints():
-    """View checkpoints and associated configuration changes."""
+def view_checkpoints(config):
+    """View checkpoints and associated configuration changes.
+
+    :param config: Configurator object
+    :type config: ApacheConfigurator
+
+    """
     config.display_checkpoints()
 
 
