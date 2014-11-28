@@ -47,8 +47,7 @@ optional arguments:
                         corresponding to the private key file. The private key
                         file argument is required if this argument is
                         specified.
-  -b ROLLBACK, --rollback ROLLBACK
-                        Revert configuration <ROLLBACK> number of checkpoints.
+  -b N, --rollback N    Revert configuration N number of checkpoints.
   -k, --revoke          Revoke a certificate.
   -v, --view-checkpoints
                         View checkpoints and associated configuration changes.

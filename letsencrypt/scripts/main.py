@@ -37,9 +37,8 @@ def main():
                              "private key file argument is required if this "
                              "argument is specified.")
     parser.add_argument("-b", "--rollback", dest="rollback", type=int,
-                        default=0,
-                        help="Revert configuration <ROLLBACK> number of "
-                             "checkpoints.")
+                        default=0, metavar="N",
+                        help="Revert configuration N number of checkpoints.")
     parser.add_argument("-k", "--revoke", dest="revoke", action="store_true",
                         help="Revoke a certificate.")
     parser.add_argument("-v", "--view-checkpoints", dest="view_checkpoints",
