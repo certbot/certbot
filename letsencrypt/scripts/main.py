@@ -28,10 +28,10 @@ def main():
                         nargs="+")
     parser.add_argument("-s", "--server", dest="server",
                         help="The ACME CA server address.")
-    parser.add_argument("-p", "--privkey", dest="privkey", type=file,
+    parser.add_argument("-p", "--privkey", dest="privkey", type=open_file,
                         help="Path to the private key file for certificate "
                              "generation.")
-    parser.add_argument("-c", "--csr", dest="csr", type=file,
+    parser.add_argument("-c", "--csr", dest="csr", type=open_file,
                         help="Path to the certificate signing request file "
                              "corresponding to the private key file. The "
                              "private key file argument is required if this "
@@ -61,7 +61,10 @@ def main():
     parser.add_argument("--test", dest="test", action="store_true",
                         help="Run in test mode.")
 
-    args = parser.parse_args()
+    try:
+        args = parser.parse_args()
+    except IOError as e:
+        parser.error(e)
 
     # Enforce '--privkey' is set along with '--csr'.
     if args.csr and not args.privkey:
@@ -89,6 +92,26 @@ def main():
         acme.list_certs_keys()
     else:
         acme.authenticate(args.domains, args.redirect, args.eula)
+
+
+def open_file(filename):
+    """Returns a file object for the given filename.
+
+    :param filename: Filename
+    :type filename: str
+
+    :return: file object
+    :raise IOError: File does not exist or is not readable.
+
+    """
+
+    if not os.path.exists(filename):
+        raise IOError("the file '{0}' is not found".format(filename))
+
+    if not os.access(filename, os.R_OK):
+        raise IOError("the file '{0}' is not readable".format(filename))
+
+    return file(filename)
 
 
 def rollback(config, checkpoints):
