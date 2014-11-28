@@ -62,21 +62,20 @@ def pretty(json_string):
     return json.dumps(json.loads(json_string), indent=4)
 
 
-def challenge_request(names):
+def challenge_request(name):
     """Create ACME "challengeRequest message.
 
-    TODO: Temporarily only enabling one name
-
-    :param names: TODO
-    :type names: list
+    :param name: Domain name
+    :type name: unicode
 
     :returns: ACME "challengeRequest" message.
     :rtype: dict
 
     """
+
     return {
         "type": "challengeRequest",
-        "identifier": names[0],
+        "identifier": name,
     }
 
 

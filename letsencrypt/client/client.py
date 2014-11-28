@@ -130,12 +130,15 @@ class Client(object):
     def acme_challenge(self):
         """Handle ACME "challenge" phase.
 
+        TODO: Handle more than one domain name in self.names
+
         :returns: ACME "challenge" message.
         :rtype: dict
 
         """
+
         return self.send_and_receive_expected(
-            acme.challenge_request(self.names), "challenge")
+            acme.challenge_request(self.names[0]), "challenge")
 
     def acme_authorization(self, challenge_msg, chal_objs, responses):
         """Handle ACME "authorization" phase.
