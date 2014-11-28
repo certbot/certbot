@@ -1,3 +1,9 @@
+trustify (0.20141127-1) UNRELEASED; urgency=low
+
+  * Fix the package version number
+
+ -- Francois Marier <francois@debian.org>  Fri, 28 Nov 2014 20:54:22 +1300
+
 trustify (1.0~20121201-3.8) UNRELEASED; urgency=low
 
   * Full support for multiple Name-based Virtual Hosts
