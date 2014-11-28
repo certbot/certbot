@@ -10,4 +10,5 @@ build/
 debian/*.debhelper.log
 debian/*.debhelper
 debian/*.substvars
+debian/files
 debian/trustify/
