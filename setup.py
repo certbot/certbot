@@ -15,6 +15,7 @@ install_requires = [
 testing_extras = [
     'coverage',
     'nose',
+    'nosexcover',
     'pylint',
     'tox',
 ]
@@ -33,6 +34,7 @@ setup(
     ],
     install_requires=install_requires,
     tests_require=install_requires,
+    test_suite='letsencrypt',
     extras_require={
         'testing': testing_extras,
     },
