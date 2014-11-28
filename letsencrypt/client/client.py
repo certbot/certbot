@@ -635,37 +635,28 @@ class Client(object):
         key_pem = None
         csr_pem = None
         if not self.key_file:
-            key_pem = crypto_util.make_key(CONFIG.RSA_KEY_SIZE)
+            self.key_file = crypto_util.make_key(CONFIG.RSA_KEY_SIZE)
             # Save file
             le_util.make_or_verify_dir(CONFIG.KEY_DIR, 0700)
-            key_f, self.key_file = le_util.unique_file(
+            key_f, key_filename = le_util.unique_file(
                 os.path.join(CONFIG.KEY_DIR, "key-letsencrypt.pem"), 0600)
-            key_f.write(key_pem)
+            key_f.write(self.key_file)
             key_f.close()
-            logger.info("Generating key: %s" % self.key_file)
-        else:
-            try:
-                key_pem = open(self.key_file).read().replace("\r", "")
-            except:
-                logger.fatal("Unable to open key file: %s" % self.key_file)
-                sys.exit(1)
+            logger.info("Generating key: %s" % key_filename)
 
         if not self.csr_file:
-            csr_pem, csr_der = crypto_util.make_csr(self.key_file, self.names)
+            self.csr_file, csr_der = crypto_util.make_csr(self.key_file,
+                                                          self.names)
             # Save CSR
             le_util.make_or_verify_dir(CONFIG.CERT_DIR, 0755)
-            csr_f, self.csr_file = le_util.unique_file(
+            csr_f, csr_filename = le_util.unique_file(
                 os.path.join(CONFIG.CERT_DIR, "csr-letsencrypt.pem"), 0644)
-            csr_f.write(csr_pem)
+            csr_f.write(self.csr_file)
             csr_f.close()
-            logger.info("Creating CSR: %s" % self.csr_file)
+            logger.info("Creating CSR: %s" % csr_filename)
         else:
-            try:
-                csr = M2Crypto.X509.load_request(self.csr_file)
-                csr_pem, csr_der = csr.as_pem(), csr.as_der()
-            except:
-                logger.fatal("Unable to open CSR file: %s" % self.csr_file)
-                sys.exit(1)
+            csr = M2Crypto.X509.load_request_string(self.csr_file)
+            csr_pem, csr_der = csr.as_pem(), csr.as_der()
 
         if csr_return_format == 'der':
             return key_pem, csr_der
