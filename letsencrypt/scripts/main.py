@@ -111,7 +111,7 @@ def open_file(filename):
     if not os.access(filename, os.R_OK):
         raise IOError("the file '{0}' is not readable".format(filename))
 
-    return file(filename)
+    return file(filename, 'rU')
 
 
 def rollback(config, checkpoints):
