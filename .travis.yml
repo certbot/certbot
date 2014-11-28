@@ -5,7 +5,7 @@ before_install: >
   python-virtualenv python-dev gcc swig dialog libaugeas0 libssl-dev
 
 install: travis_retry python setup.py dev[testing]
-script: travis_retry tox -e $TOX_ENV
+script: travis_retry tox
 
 env:
   - TOX_ENV=py26
