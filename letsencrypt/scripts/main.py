@@ -28,10 +28,10 @@ def main():
                         nargs="+")
     parser.add_argument("-s", "--server", dest="server",
                         help="The ACME CA server address.")
-    parser.add_argument("-p", "--privkey", dest="privkey", type=open_file,
+    parser.add_argument("-p", "--privkey", dest="privkey", type=read_file,
                         help="Path to the private key file for certificate "
                              "generation.")
-    parser.add_argument("-c", "--csr", dest="csr", type=open_file,
+    parser.add_argument("-c", "--csr", dest="csr", type=read_file,
                         help="Path to the certificate signing request file "
                              "corresponding to the private key file. The "
                              "private key file argument is required if this "
@@ -63,8 +63,8 @@ def main():
 
     try:
         args = parser.parse_args()
-    except IOError as e:
-        parser.error(e)
+    except IOError as exc:
+        parser.error(exc)
 
     # Enforce '--privkey' is set along with '--csr'.
     if args.csr and not args.privkey:
@@ -94,14 +94,17 @@ def main():
         acme.authenticate(args.domains, args.redirect, args.eula)
 
 
-def open_file(filename):
-    """Returns a file object for the given filename.
+def read_file(filename):
+    """Returns the given file's contents with universal new line support.
 
     :param filename: Filename
     :type filename: str
 
-    :return: file object
-    :raise IOError: File does not exist or is not readable.
+    :returns: File contents
+    :rtype: str
+    :raise IOError: File does not exist or is not readable. file() will
+    potentially throw its own IOError exceptions in addition to the two
+    explicitely thrown.
 
     """
 
@@ -111,7 +114,7 @@ def open_file(filename):
     if not os.access(filename, os.R_OK):
         raise IOError("the file '{0}' is not readable".format(filename))
 
-    return file(filename, 'rU')
+    return file(filename, 'rU').read()
 
 
 def rollback(config, checkpoints):

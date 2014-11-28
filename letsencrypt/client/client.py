@@ -44,13 +44,13 @@ class Client(object):
             CONFIG.SERVER_ROOT)
 
         self.server = ca_server
-        
+
         if cert_signing_request:
-            self.csr_file = cert_signing_request.name
+            self.csr_file = cert_signing_request
         else:
             self.csr_file = None
         if private_key:
-            self.key_file = private_key.name
+            self.key_file = private_key
         else:
             self.key_file = None
 
@@ -65,6 +65,16 @@ class Client(object):
         self.server_url = "https://%s/acme/" % self.server
 
     def authenticate(self, domains=None, redirect=None, eula=False):
+        """
+
+        :param domains: List of domains
+        :type domains: list
+        :param redirect:
+        :type redirect: bool|None
+        :param eula: EULA accepted
+        :type eula: bool
+        :raise Exception: CSR does not contain one of the specified names.
+        """
         domains = [] if domains is None else domains
 
         # Check configuration
@@ -248,7 +258,7 @@ class Client(object):
         """Send ACME message to server and return expected message.
 
         :param msg: ACME message (JSON serializable).
-        :type acem_msg: dict
+        :type msg: dict
 
         :param expected: Name of the expected response ACME message type.
         :type expected: str
@@ -552,7 +562,7 @@ class Client(object):
         :param name: TODO
         :type name: TODO
 
-        :param challanges: A list of challenges from ACME "challenge"
+        :param challenges: A list of challenges from ACME "challenge"
                            server message to be fulfilled by the client
                            in order to prove possession of the identifier.
         :type challenges: list
@@ -673,33 +683,19 @@ class Client(object):
         # The client can eventually do things like prompt the user
         # and allow the user to take more appropriate actions
 
-        # If CSR is provided, the private key should also be provided.
-        if self.csr_file and not self.key_file:
-            logger.fatal(("Please provide the private key file used in "
-                          "generating the provided CSR"))
-            sys.exit(1)
         # If CSR is provided, it must be readable and valid.
-        try:
-            if self.csr_file and not crypto_util.valid_csr(self.csr_file):
-                raise Exception("The provided CSR is not a valid CSR")
-        except IOError:
-            raise Exception("The provided CSR could not be read")
+        if self.csr_file and not crypto_util.valid_csr(self.csr_file):
+            raise Exception("The provided CSR is not a valid CSR")
+
         # If key is provided, it must be readable and valid.
-        try:
-            if self.key_file and not crypto_util.valid_privkey(self.key_file):
-                raise Exception("The provided key is not a valid key")
-        except IOError:
-            raise Exception("The provided key could not be read")
+        if self.key_file and not crypto_util.valid_privkey(self.key_file):
+            raise Exception("The provided key is not a valid key")
 
         # If CSR and key are provided, the key must be the same key used
         # in the CSR.
         if self.csr_file and self.key_file:
-            try:
-                if not crypto_util.csr_matches_pubkey(
-                        self.csr_file, self.key_file):
-                    raise Exception("The key and CSR do not match")
-            except IOError:
-                raise Exception("The key or CSR files could not be read")
+            if not crypto_util.csr_matches_pubkey(self.csr_file, self.key_file):
+                raise Exception("The key and CSR do not match")
 
     def get_all_names(self):
         """Return all valid names in the configuration."""
@@ -753,6 +749,12 @@ def remove_cert_key(cert):
 
 
 def sanity_check_names(names):
+    """Make sure host names are valid.
+
+    :param names: List of host names
+    :type names: list
+
+    """
     for name in names:
         if not is_hostname_sane(name):
             logger.fatal(repr(name) + " is an impossible hostname")
@@ -760,9 +762,17 @@ def sanity_check_names(names):
 
 
 def is_hostname_sane(hostname):
-    """
+    """Make sure the given host name is sane.
+
     Do enough to avoid shellcode from the environment.  There's
     no need to do more.
+
+    :param hostname: Host name to validate
+    :type hostname: str
+
+    :returns: True if hostname is valid, otherwise false.
+    :rtype: bool
+
     """
     # hostnames & IPv4
     allowed = string.ascii_letters + string.digits + "-."
