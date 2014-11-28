@@ -1,15 +1,13 @@
 language: python
 
-before_install:
-  - travis_retry sudo apt-get install python python-setuptools python-virtualenv python-dev gcc swig dialog libaugeas0 libssl-dev
+before_install: >
+  travis_retry sudo apt-get install python python-setuptools 
+  python-virtualenv python-dev gcc swig dialog libaugeas0 libssl-dev
 
-install:
-  - travis_retry python setup.py dev[testing]
+install: travis_retry python setup.py dev[testing]
+script: travis_retry tox -e $TOX_ENV
 
 env:
   - TOX_ENV=py26
   - TOX_ENV=py27
   - TOX_ENV=lint
-
-script:
-  - travis_retry tox -e $TOX_ENV
