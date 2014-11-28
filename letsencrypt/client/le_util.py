@@ -50,7 +50,7 @@ def check_permissions(filepath, mode, uid=0):
     return stat.S_IMODE(file_stat.st_mode) == mode and file_stat.st_uid == uid
 
 
-def unique_file(default_name, mode=0777):
+def unique_file(default_name, mode=0644):
     """Safely finds a unique file for writing only (by default)."""
     count = 1
     f_parsed = os.path.splitext(default_name)
