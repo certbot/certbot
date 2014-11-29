@@ -16,7 +16,7 @@ class MakeOrVerifyDirTest(unittest.TestCase):
     def setUp(self):
         self.root_path = tempfile.mkdtemp()
         self.path = os.path.join(self.root_path, 'foo')
-        os.mkdir(self.path, 0400)
+        os.mkdir(self.path, 0o400)
 
         self.uid = os.getuid()
 
@@ -29,16 +29,16 @@ class MakeOrVerifyDirTest(unittest.TestCase):
 
     def test_creates_dir_when_missing(self):
         path = os.path.join(self.root_path, 'bar')
-        self._call(path, 0650)
+        self._call(path, 0o650)
         self.assertTrue(os.path.isdir(path))
         # TODO: check mode
 
     def test_existing_correct_mode_does_not_fail(self):
-        self._call(self.path, 0400)
+        self._call(self.path, 0o400)
         # TODO: check mode
 
     def test_existing_wrong_mode_fails(self):
-        self.assertRaises(Exception, self._call, self.path, 0600)
+        self.assertRaises(Exception, self._call, self.path, 0o600)
 
 
 class CheckPermissionsTest(unittest.TestCase):
@@ -61,12 +61,12 @@ class CheckPermissionsTest(unittest.TestCase):
         return check_permissions(self.path, mode, self.uid)
 
     def test_ok_mode(self):
-        os.chmod(self.path, 0600)
-        self.assertTrue(self._call(0600))
+        os.chmod(self.path, 0o600)
+        self.assertTrue(self._call(0o600))
 
     def test_wrong_mode(self):
-        os.chmod(self.path, 0400)
-        self.assertFalse(self._call(0600))
+        os.chmod(self.path, 0o400)
+        self.assertFalse(self._call(0o600))
 
 
 # https://en.wikipedia.org/wiki/Base64#Examples
