@@ -18,5 +18,5 @@ install: travis_retry python setup.py dev  # installs tox
 script: travis_retry tox
 
 env:
-  - TOX_ENV=py${TRAVIS_PYTHON_VERSION//[.]/}
-  - TOX_ENV=lint
+  - TOXENV=py${TRAVIS_PYTHON_VERSION//[.]/}
+  - TOXENV=lint
