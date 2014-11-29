@@ -384,7 +384,7 @@ class Client(object):
 
         """
         cert_chain_abspath = None
-        cert_fd, cert_file = le_util.unique_file(CONFIG.CERT_PATH, 644)
+        cert_fd, cert_file = le_util.unique_file(CONFIG.CERT_PATH, 0644)
         cert_fd.write(
             crypto_util.b64_cert_to_pem(certificate_dict["certificate"]))
         cert_fd.close()
@@ -392,7 +392,7 @@ class Client(object):
                     cert_file)
 
         if certificate_dict.get("chain", None):
-            chain_fd, chain_fn = le_util.unique_file(CONFIG.CHAIN_PATH, 644)
+            chain_fd, chain_fn = le_util.unique_file(CONFIG.CHAIN_PATH, 0644)
             for cert in certificate_dict.get("chain", []):
                 chain_fd.write(crypto_util.b64_cert_to_pem(cert))
             chain_fd.close()
