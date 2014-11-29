@@ -320,11 +320,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         name_match = self.aug.match(("%s//*[self::directive=~regexp('%s')] | "
-                                   "%s//*[self::directive=~regexp('%s')]" %
-                                    (host.path,
-                                     case_i('ServerName'),
-                                     host.path,
-                                     case_i('ServerAlias'))))
+                                     "%s//*[self::directive=~regexp('%s')]" %
+                                     (host.path,
+                                      case_i('ServerName'),
+                                      host.path,
+                                      case_i('ServerAlias'))))
         for name in name_match:
             args = self.aug.match(name + "/*")
             for arg in args:
@@ -593,8 +593,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                                       % (start, directive)))
         else:
             matches = self.aug.match(("%s//*[self::directive=~regexp('%s')]/*"
-                                 "[self::arg=~regexp('%s')]" %
-                                 (start, directive, arg)))
+                                      "[self::arg=~regexp('%s')]" %
+                                      (start, directive, arg)))
 
         includes = self.aug.match(("%s//* [self::directive=~regexp('%s')]/* "
                                    "[label()='arg']" %
@@ -669,7 +669,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     # Turn it into a augeas regex
                     # TODO: Can this instead be an augeas glob instead of regex
                     split_arg[idx] = ("* [label()=~regexp('%s')]" %
-                                     self.fnmatch_to_re(split))
+                                      self.fnmatch_to_re(split))
             # Reassemble the argument
             arg = "/".join(split_arg)
 
@@ -1557,6 +1557,7 @@ def strip_dir(path):
     # No directory
     return ""
 
+
 def dvsni_get_cert_file(nonce):
     """Returns standardized name for challenge certificate.
 
@@ -1618,7 +1619,6 @@ def dvsni_gen_ext(dvsni_r, dvsni_s):
     z_base.update(dvsni_s)
 
     return z_base.hexdigest() + CONFIG.INVALID_EXT
-
 
 
 def main():

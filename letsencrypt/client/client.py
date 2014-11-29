@@ -44,7 +44,7 @@ class Client(object):
             CONFIG.SERVER_ROOT)
 
         self.server = ca_server
-        
+
         if cert_signing_request:
             self.csr_file = cert_signing_request.name
         else:

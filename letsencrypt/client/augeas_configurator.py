@@ -423,7 +423,7 @@ def finalize_checkpoint(cp_dir, title):
             changes_tmp.write("-- %s --\n" % title)
             with open(cp_dir + "CHANGES_SINCE", 'r') as changes_orig:
                 changes_tmp.write(changes_orig.read())
-        shutil.move(os.path.join(cp_dir, "CHANGES_SINCE.tmp"), 
+        shutil.move(os.path.join(cp_dir, "CHANGES_SINCE.tmp"),
                     os.path.join(cp_dir, "CHANGES_SINCE"))
     except:
         logger.error("Unable to finalize checkpoint - adding title")
