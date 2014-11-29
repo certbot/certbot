@@ -79,8 +79,8 @@ Most importantly, **be consistent with the rest of the code**, please.
 
 2. Follow [Google Python Style Guide]
 (https://google-styleguide.googlecode.com/svn/trunk/pyguide.html),
-with the following exception that we use
-[Sphinx](http://sphinx-doc.org/)-style documentation:
+with the exception that we use [Sphinx](http://sphinx-doc.org/)-style
+documentation:
 
    ```python
    def foo(arg):
