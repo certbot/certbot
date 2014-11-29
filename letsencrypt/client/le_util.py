@@ -50,18 +50,30 @@ def check_permissions(filepath, mode, uid=0):
     return stat.S_IMODE(file_stat.st_mode) == mode and file_stat.st_uid == uid
 
 
-def unique_file(default_name, mode=0777):
-    """Safely finds a unique file for writing only (by default)."""
+def unique_file(name, mode=0777):
+    """Safely finds a unique file for writing only (by default).
+
+    :param name: Prefeferred file name. Similar names will be tried,
+                 if `name` already exists.
+    :type name: str
+
+    :param mode: Has the same meaning as the corresponding argument
+                 to the built-in open() function.
+    :type mode: int
+
+    :returns: File handle opened for writing.
+    :rtype: file
+
+    """
     count = 1
-    f_parsed = os.path.splitext(default_name)
+    f_parsed = os.path.splitext(name)
     while 1:
         try:
-            fd = os.open(
-                default_name, os.O_CREAT | os.O_EXCL | os.O_RDWR, mode)
-            return os.fdopen(fd, 'w'), default_name
+            fd = os.open(name, os.O_CREAT | os.O_EXCL | os.O_RDWR, mode)
+            return os.fdopen(fd, 'w')
         except OSError:
             pass
-        default_name = f_parsed[0] + '_' + str(count) + f_parsed[1]
+        name = f_parsed[0] + '_' + str(count) + f_parsed[1]
         count += 1
 
 

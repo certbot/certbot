@@ -384,27 +384,27 @@ class Client(object):
 
         """
         cert_chain_abspath = None
-        cert_fd, cert_file = le_util.unique_file(CONFIG.CERT_PATH, 644)
+        cert_fd = le_util.unique_file(CONFIG.CERT_PATH, 644)
         cert_fd.write(
             crypto_util.b64_cert_to_pem(certificate_dict["certificate"]))
         cert_fd.close()
         logger.info("Server issued certificate; certificate written to %s" %
-                    cert_file)
+                    cert_fd.name)
 
         if certificate_dict.get("chain", None):
-            chain_fd, chain_fn = le_util.unique_file(CONFIG.CHAIN_PATH, 644)
+            chain_fd = le_util.unique_file(CONFIG.CHAIN_PATH, 644)
             for cert in certificate_dict.get("chain", []):
                 chain_fd.write(crypto_util.b64_cert_to_pem(cert))
             chain_fd.close()
 
-            logger.info("Cert chain written to %s" % chain_fn)
+            logger.info("Cert chain written to %s" % chain_fd.name)
 
             # This expects a valid chain file
             cert_chain_abspath = os.path.abspath(chain_fn)
 
         for host in vhost:
             self.config.deploy_cert(host,
-                                    os.path.abspath(cert_file),
+                                    os.path.abspath(cert_fd.name),
                                     os.path.abspath(self.key_file),
                                     cert_chain_abspath)
             # Enable any vhost that was issued to, but not enabled
@@ -417,7 +417,7 @@ class Client(object):
 
         display.success_installation(self.names)
 
-        return cert_file
+        return cert_fd.name
 
     def optimize_config(self, vhost):
         if self.redirect is None:
@@ -628,8 +628,9 @@ class Client(object):
             key_pem = crypto_util.make_key(CONFIG.RSA_KEY_SIZE)
             # Save file
             le_util.make_or_verify_dir(CONFIG.KEY_DIR, 0700)
-            key_f, self.key_file = le_util.unique_file(
+            key_f = le_util.unique_file(
                 os.path.join(CONFIG.KEY_DIR, "key-letsencrypt.pem"), 0600)
+            self.key_file = key_f.name
             key_f.write(key_pem)
             key_f.close()
             logger.info("Generating key: %s" % self.key_file)
@@ -644,8 +645,9 @@ class Client(object):
             csr_pem, csr_der = crypto_util.make_csr(self.key_file, self.names)
             # Save CSR
             le_util.make_or_verify_dir(CONFIG.CERT_DIR, 0755)
-            csr_f, self.csr_file = le_util.unique_file(
-                os.path.join(CONFIG.CERT_DIR, "csr-letsencrypt.pem"), 0644)
+            csr_f = le_util.unique_file(os.path.join(
+                CONFIG.CERT_DIR, "csr-letsencrypt.pem"), 0644)
+            self.csr_file = csr_f.name
             csr_f.write(csr_pem)
             csr_f.close()
             logger.info("Creating CSR: %s" % self.csr_file)
