@@ -57,10 +57,10 @@ class Client(object):
         # TODO: Figure out all exceptions from this function
         try:
             self._validate_csr_key_cli()
-        except Exception as e:
+        except errors.LetsEncryptClientError as e:
             # TODO: Something nice here...
-            logger.fatal(("%s - until the programmers get their act together, "
-                          "we are just going to exit" % str(e)))
+            logger.fatal("%s - until the programmers get their act together, "
+                         "we are just going to exit" % e)
             sys.exit(1)
         self.server_url = "https://%s/acme/" % self.server
 
@@ -103,8 +103,8 @@ class Client(object):
 
         # TODO: Handle this exception/problem
         if not crypto_util.csr_matches_names(self.csr_file, self.names):
-            raise Exception(("CSR subject does not contain one of the "
-                            "specified names"))
+            raise errrors.LetsEncryptClientError(
+                "CSR subject does not contain one of the specified names")
 
         # Perform Challenges
         responses, challenge_objs = self.verify_identity(challenge_msg)
@@ -211,10 +211,10 @@ class Client(object):
         :param msg: ACME message (JSON serializable).
         :type msg: dict
 
-        :raises: TypeError if `msg` is not JSON serializable or
-                 jsonschema.ValidationError if not valid ACME message or
-                 `errors.LetsEncryptClientError` in case of connection error
-                 or if response from server is not a valid ACME message.
+        :raises TypeError: if `msg` is not JSON serializable
+        :raises jsonschema.ValidationError: if `msg` is not valid ACME message
+        :raises LetsEncryptClientError: in case of a connection error
+            or if a response from server is not a valid ACME message
 
         :returns: Server response message.
         :rtype: dict
@@ -281,7 +281,7 @@ class Client(object):
                        reponse message.
         :type rounds: int
 
-        :raises: Exception
+        :raises LetsEncryptClientError: if server sent ACME "error" message
 
         :returns: ACME response message from server.
         :rtype: dict
@@ -668,6 +668,8 @@ class Client(object):
         Verifies that the client key and csr arguments are valid and
         correspond to one another.
 
+        :raises LetsEncryptClientError: if validation fails
+
         """
         # TODO: Handle all of these problems appropriately
         # The client can eventually do things like prompt the user
@@ -681,15 +683,19 @@ class Client(object):
         # If CSR is provided, it must be readable and valid.
         try:
             if self.csr_file and not crypto_util.valid_csr(self.csr_file):
-                raise Exception("The provided CSR is not a valid CSR")
+                raise errors.LetsEncryptClientError(
+                    "The provided CSR is not a valid CSR")
         except IOError:
-            raise Exception("The provided CSR could not be read")
+            raise errors.LetsEncryptClientError(
+                "The provided CSR could not be read")
         # If key is provided, it must be readable and valid.
         try:
             if self.key_file and not crypto_util.valid_privkey(self.key_file):
-                raise Exception("The provided key is not a valid key")
+                raise LetsEncryptClientError(
+                    "The provided key is not a valid key")
         except IOError:
-            raise Exception("The provided key could not be read")
+            raise raise LetsEncryptClientError(
+                "The provided key could not be read")
 
         # If CSR and key are provided, the key must be the same key used
         # in the CSR.
@@ -697,9 +703,11 @@ class Client(object):
             try:
                 if not crypto_util.csr_matches_pubkey(
                         self.csr_file, self.key_file):
-                    raise Exception("The key and CSR do not match")
+                    raise errors.LetsEncryptClientError(
+                        "The key and CSR do not match")
             except IOError:
-                raise Exception("The key or CSR files could not be read")
+                raise errors.LetsEncryptClientError(
+                    "The key or CSR files could not be read")
 
     def get_all_names(self):
         """Return all valid names in the configuration."""
