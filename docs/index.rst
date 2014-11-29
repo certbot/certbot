@@ -6,11 +6,13 @@
 Welcome to Let's Encrypt's documentation!
 =========================================
 
-Contents:
+API documentation
+-----------------
 
 .. toctree::
-   :maxdepth: 2
+   :glob:
 
+   api/**
 
 
 Indices and tables
