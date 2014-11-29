@@ -12,6 +12,12 @@ from letsencrypt.client import logger
 
 
 class AugeasConfigurator(configurator.Configurator):
+    """Base Augeas Configurator class.
+
+    TODO: Fix generic exception handling.
+    TODO: Go through and make sure to use os.path.join
+
+    """
 
     def __init__(self):
         super(AugeasConfigurator, self).__init__()
@@ -30,16 +36,16 @@ class AugeasConfigurator(configurator.Configurator):
         """
         error_files = self.aug.match("/augeas//error")
 
-        for e in error_files:
+        for path in error_files:
             # Check to see if it was an error resulting from the use of
             # the httpd lens
-            lens_path = self.aug.get(e + '/lens')
+            lens_path = self.aug.get(path + '/lens')
             # As aug.get may return null
             if lens_path and lens in lens_path:
                 # Strip off /augeas/files and /error
                 logger.error('There has been an error in parsing the file: '
-                             '%s' % e[13:len(e) - 6])
-                logger.error(self.aug.get(e + '/message'))
+                             '%s' % path[13:len(path) - 6])
+                logger.error(self.aug.get(path + '/message'))
 
     def save(self, title=None, temporary=False):
         """Saves all changes to the configuration files.
@@ -89,8 +95,8 @@ class AugeasConfigurator(configurator.Configurator):
         # should not be created
         if save_paths:
             save_files = set()
-            for p in save_paths:
-                save_files.add(self.aug.get(p)[6:])
+            for path in save_paths:
+                save_files.add(self.aug.get(path)[6:])
 
             valid, message = self.check_tempfile_saves(save_files)
 
@@ -107,7 +113,7 @@ class AugeasConfigurator(configurator.Configurator):
                 self.add_to_checkpoint(CONFIG.IN_PROGRESS_DIR, save_files)
 
         if title and not temporary and os.path.isdir(CONFIG.IN_PROGRESS_DIR):
-            success = self._finalize_checkpoint(CONFIG.IN_PROGRESS_DIR, title)
+            success = finalize_checkpoint(CONFIG.IN_PROGRESS_DIR, title)
             if not success:
                 # This should never happen
                 # This will be hopefully be cleaned up on the recovery
@@ -129,7 +135,6 @@ class AugeasConfigurator(configurator.Configurator):
         """
         if os.path.isdir(CONFIG.TEMP_CHECKPOINT_DIR):
             result = self._recover_checkpoint(CONFIG.TEMP_CHECKPOINT_DIR)
-            changes = True
             if result != 0:
                 # We have a partial or incomplete recovery
                 logger.fatal("Incomplete or failed recovery for "
@@ -190,62 +195,34 @@ class AugeasConfigurator(configurator.Configurator):
         # Make sure there isn't anything unexpected in the backup folder
         # There should only be timestamped (float) directories
         try:
-            for bu in backups:
-                float(bu)
+            for bkup in backups:
+                float(bkup)
         except:
             assert False, "Invalid files in %s" % CONFIG.BACKUP_DIR
 
-        for bu in backups:
-            print time.ctime(float(bu))
-            with open(CONFIG.BACKUP_DIR + bu + "/CHANGES_SINCE") as f:
-                print f.read()
+        for bkup in backups:
+            print time.ctime(float(bkup))
+            with open(
+                    CONFIG.BACKUP_DIR + bkup + "/CHANGES_SINCE") as changes_fd:
+                print changes_fd.read()
 
             print "Affected files:"
-            with open(CONFIG.BACKUP_DIR + bu + "/FILEPATHS") as f:
-                filepaths = f.read().splitlines()
-                for fp in filepaths:
-                    print "  %s" % fp
+            with open(
+                    CONFIG.BACKUP_DIR + bkup + "/FILEPATHS") as paths_fd:
+                filepaths = paths_fd.read().splitlines()
+                for path in filepaths:
+                    print "  %s" % path
 
             try:
-                with open(CONFIG.BACKUP_DIR + bu + "/NEW_FILES") as f:
+                with open(
+                        CONFIG.BACKUP_DIR + bkup + "/NEW_FILES") as new_fd:
                     print "New Configuration Files:"
-                    filepaths = f.read().splitlines()
-                    for fp in filepaths:
-                        print "  %s" % fp
+                    filepaths = new_fd.read().splitlines()
+                    for path in filepaths:
+                        print "  %s" % path
             except:
                 pass
             print ""
-
-    def _finalize_checkpoint(self, cp_dir, title):
-        """Move IN_PROGRESS checkpoint to timestamped checkpoint.
-
-        Adds title to cp_dir CHANGES_SINCE
-        Move cp_dir to Backups directory and rename with timestamp
-
-        :param cp_dir: "IN PROGRESS" directory
-        :type cp_dir: str
-
-        :returns: Success
-        :rtype: bool
-
-        """
-        final_dir = os.path.join(CONFIG.BACKUP_DIR, str(time.time()))
-        try:
-            with open(cp_dir + "CHANGES_SINCE.tmp", 'w') as ft:
-                ft.write("-- %s --\n" % title)
-                with open(cp_dir + "CHANGES_SINCE", 'r') as f:
-                    ft.write(f.read())
-            shutil.move(cp_dir + "CHANGES_SINCE.tmp", cp_dir + "CHANGES_SINCE")
-        except:
-            logger.error("Unable to finalize checkpoint - adding title")
-            return False
-        try:
-            os.rename(cp_dir, final_dir)
-        except:
-            logger.error("Unable to finalize checkpoint, %s -> %s" %
-                         (cp_dir, final_dir))
-            return False
-        return True
 
     def add_to_checkpoint(self, cp_dir, save_files):
         """Add save files to checkpoint directory.
@@ -298,18 +275,18 @@ class AugeasConfigurator(configurator.Configurator):
         """
         if os.path.isfile(cp_dir + "/FILEPATHS"):
             try:
-                with open(cp_dir + "/FILEPATHS") as f:
-                    filepaths = f.read().splitlines()
-                    for idx, fp in enumerate(filepaths):
-                        shutil.copy2(cp_dir + '/' + os.path.basename(fp)
-                                     + '_' + str(idx), fp)
+                with open(cp_dir + "/FILEPATHS") as paths_fd:
+                    filepaths = paths_fd.read().splitlines()
+                    for idx, path in enumerate(filepaths):
+                        shutil.copy2(cp_dir + '/' + os.path.basename(path)
+                                     + '_' + str(idx), path)
             except:
                 # This file is required in all checkpoints.
                 logger.error("Unable to recover files from %s" % cp_dir)
                 return 1
 
         # Remove any newly added files if they exist
-        self._remove_contained_files(cp_dir + "/NEW_FILES")
+        self._remove_contained_files(os.path.join(cp_dir, "/NEW_FILES"))
 
         try:
             shutil.rmtree(cp_dir)
@@ -362,9 +339,9 @@ class AugeasConfigurator(configurator.Configurator):
 
         le_util.make_or_verify_dir(cp_dir)
         try:
-            with open(cp_dir + "NEW_FILES", 'a') as fd:
+            with open(os.path.join(cp_dir, "NEW_FILES"), 'a') as new_fd:
                 for file_path in files:
-                    fd.write("%s\n" % file_path)
+                    new_fd.write("%s\n" % file_path)
         except:
             logger.error("ERROR: Unable to register file creation")
 
@@ -407,21 +384,54 @@ class AugeasConfigurator(configurator.Configurator):
         if not os.path.isfile(file_list):
             return False
         try:
-            with open(file_list, 'r') as f:
-                filepaths = f.read().splitlines()
-                for fp in filepaths:
+            with open(file_list, 'r') as list_fd:
+                filepaths = list_fd.read().splitlines()
+                for path in filepaths:
                     # Files are registered before they are added... so
                     # check to see if file exists first
-                    if os.path.lexists(fp):
-                        os.remove(fp)
+                    if os.path.lexists(path):
+                        os.remove(path)
                     else:
                         logger.warn((
                             "File: %s - Could not be found to be deleted\n"
                             "Program was probably shut down unexpectedly, "
-                            "in which case this is not a problem") % fp)
+                            "in which case this is not a problem") % path)
         except IOError:
             logger.fatal(
                 "Unable to remove filepaths contained within %s" % file_list)
             sys.exit(41)
 
         return True
+
+
+def finalize_checkpoint(cp_dir, title):
+    """Move IN_PROGRESS checkpoint to timestamped checkpoint.
+
+    Adds title to cp_dir CHANGES_SINCE
+    Move cp_dir to Backups directory and rename with timestamp
+
+    :param cp_dir: "IN PROGRESS" directory
+    :type cp_dir: str
+
+    :returns: Success
+    :rtype: bool
+
+    """
+    final_dir = os.path.join(CONFIG.BACKUP_DIR, str(time.time()))
+    try:
+        with open(cp_dir + "CHANGES_SINCE.tmp", 'w') as changes_tmp:
+            changes_tmp.write("-- %s --\n" % title)
+            with open(cp_dir + "CHANGES_SINCE", 'r') as changes_orig:
+                changes_tmp.write(changes_orig.read())
+        shutil.move(os.path.join(cp_dir, "CHANGES_SINCE.tmp"), 
+                    os.path.join(cp_dir, "CHANGES_SINCE"))
+    except:
+        logger.error("Unable to finalize checkpoint - adding title")
+        return False
+    try:
+        os.rename(cp_dir, final_dir)
+    except:
+        logger.error("Unable to finalize checkpoint, %s -> %s" %
+                     (cp_dir, final_dir))
+        return False
+    return True
