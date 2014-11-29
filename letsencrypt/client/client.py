@@ -596,7 +596,7 @@ class Client(object):
             # one "challenge object" is issued for all sni_challenges
             challenge_objs.append({
                 "type": "dvsni",
-                "listSNITuple": sni_todo,
+                "list_sni_tuple": sni_todo,
                 "dvsni_key": os.path.abspath(self.key_file),
             })
             challenge_obj_indices.append(sni_satisfies)
