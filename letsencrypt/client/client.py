@@ -384,7 +384,7 @@ class Client(object):
 
         """
         cert_chain_abspath = None
-        cert_fd, cert_file = le_util.unique_file(CONFIG.CERT_PATH, 0644)
+        cert_fd, cert_file = le_util.unique_file(CONFIG.CERT_PATH, 0o644)
         cert_fd.write(
             crypto_util.b64_cert_to_pem(certificate_dict["certificate"]))
         cert_fd.close()
@@ -392,7 +392,7 @@ class Client(object):
                     cert_file)
 
         if certificate_dict.get("chain", None):
-            chain_fd, chain_fn = le_util.unique_file(CONFIG.CHAIN_PATH, 0644)
+            chain_fd, chain_fn = le_util.unique_file(CONFIG.CHAIN_PATH, 0o644)
             for cert in certificate_dict.get("chain", []):
                 chain_fd.write(crypto_util.b64_cert_to_pem(cert))
             chain_fd.close()
@@ -498,7 +498,7 @@ class Client(object):
 
         """
         list_file = os.path.join(CONFIG.CERT_KEY_BACKUP, "LIST")
-        le_util.make_or_verify_dir(CONFIG.CERT_KEY_BACKUP, 0700)
+        le_util.make_or_verify_dir(CONFIG.CERT_KEY_BACKUP, 0o700)
         idx = 0
 
         if encrypt:
@@ -627,9 +627,9 @@ class Client(object):
         if not self.key_file:
             key_pem = crypto_util.make_key(CONFIG.RSA_KEY_SIZE)
             # Save file
-            le_util.make_or_verify_dir(CONFIG.KEY_DIR, 0700)
+            le_util.make_or_verify_dir(CONFIG.KEY_DIR, 0o700)
             key_f, self.key_file = le_util.unique_file(
-                os.path.join(CONFIG.KEY_DIR, "key-letsencrypt.pem"), 0600)
+                os.path.join(CONFIG.KEY_DIR, "key-letsencrypt.pem"), 0o600)
             key_f.write(key_pem)
             key_f.close()
             logger.info("Generating key: %s" % self.key_file)
@@ -643,9 +643,9 @@ class Client(object):
         if not self.csr_file:
             csr_pem, csr_der = crypto_util.make_csr(self.key_file, self.names)
             # Save CSR
-            le_util.make_or_verify_dir(CONFIG.CERT_DIR, 0755)
+            le_util.make_or_verify_dir(CONFIG.CERT_DIR, 0o755)
             csr_f, self.csr_file = le_util.unique_file(
-                os.path.join(CONFIG.CERT_DIR, "csr-letsencrypt.pem"), 0644)
+                os.path.join(CONFIG.CERT_DIR, "csr-letsencrypt.pem"), 0o644)
             csr_f.write(csr_pem)
             csr_f.close()
             logger.info("Creating CSR: %s" % self.csr_file)

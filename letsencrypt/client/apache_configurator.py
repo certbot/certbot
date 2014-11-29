@@ -1242,9 +1242,9 @@ LogLevel warn \n\
         have permissions of root
 
         """
-        le_util.make_or_verify_dir(CONFIG.CONFIG_DIR, 0755)
-        le_util.make_or_verify_dir(CONFIG.WORK_DIR, 0755)
-        le_util.make_or_verify_dir(CONFIG.BACKUP_DIR, 0755)
+        le_util.make_or_verify_dir(CONFIG.CONFIG_DIR, 0o755)
+        le_util.make_or_verify_dir(CONFIG.WORK_DIR, 0o755)
+        le_util.make_or_verify_dir(CONFIG.BACKUP_DIR, 0o755)
 
     def standardize_excl(self):
         """Standardize the excl arguments for the Httpd lens in Augeas.
