@@ -72,7 +72,7 @@ style](#coding-style)**. The following tools are there to help you:
 
 ### Coding style
 
-Most importantly, *be consistent with the rest of the code*, please.
+Most importantly, **be consistent with the rest of the code**, please.
 
 1. Read [PEP 8 - Style Guide for PythonCode]
 (https://www.python.org/dev/peps/pep-0008).
