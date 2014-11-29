@@ -1,6 +1,6 @@
 # Let's Encrypt
 
-Build status: [![Build Status]
+[![Build Status]
 (https://travis-ci.org/letsencrypt/lets-encrypt-preview.svg?branch=master)]
 (https://travis-ci.org/letsencrypt/lets-encrypt-preview)
 
