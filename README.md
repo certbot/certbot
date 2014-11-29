@@ -74,7 +74,7 @@ style](#coding-style)**. The following tools are there to help you:
 
 Most importantly, **be consistent with the rest of the code**, please.
 
-1. Read [PEP 8 - Style Guide for PythonCode]
+1. Read [PEP 8 - Style Guide for Python Code]
 (https://www.python.org/dev/peps/pep-0008).
 
 2. Follow [Google Python Style Guide]
