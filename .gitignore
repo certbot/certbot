@@ -4,4 +4,5 @@ build/
 dist/
 venv/
 .tox/
+.coverage
 m3
