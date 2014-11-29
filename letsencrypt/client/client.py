@@ -694,8 +694,7 @@ class Client(object):
                 raise LetsEncryptClientError(
                     "The provided key is not a valid key")
         except IOError:
-            raise raise LetsEncryptClientError(
-                "The provided key could not be read")
+            raise LetsEncryptClientError("The provided key could not be read")
 
         # If CSR and key are provided, the key must be the same key used
         # in the CSR.
