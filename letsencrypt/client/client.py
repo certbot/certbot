@@ -659,7 +659,7 @@ class Client(object):
 
             # Save file
             le_util.make_or_verify_dir(CONFIG.KEY_DIR, 0o700)
-            key_f, self.key_file = le_util.unique_file(
+            key_f, key_filename = le_util.unique_file(
                 os.path.join(CONFIG.KEY_DIR, "key-letsencrypt.pem"), 0o600)
             key_f.write(key_pem)
             key_f.close()
@@ -673,7 +673,7 @@ class Client(object):
 
             # Save CSR
             le_util.make_or_verify_dir(CONFIG.CERT_DIR, 0o755)
-            csr_f, self.csr_file = le_util.unique_file(
+            csr_f, csr_filename = le_util.unique_file(
                 os.path.join(CONFIG.CERT_DIR, "csr-letsencrypt.pem"), 0o644)
             csr_f.write(csr_pem)
             csr_f.close()
