@@ -1,3 +1,4 @@
+"""Let's Encrypt client crypto utility functions"""
 import binascii
 import hashlib
 import time
@@ -206,33 +207,33 @@ def get_cert_info(filename):
 # A. Do more checks to verify that the CSR is trusted/valid
 # B. Audit the parsing code for vulnerabilities
 
-def valid_csr(csr_file):
+def valid_csr(csr):
     """Validate CSR.
 
-    Check if `csr_filename` is a valid CSR for the given domains.
+    Check if `csr` is a valid CSR for the given domains.
 
-    :param csr_file: CSR file contents
-    :type csr_file: str
+    :param csr: CSR file contents
+    :type csr: str
 
     :returns: Validity of CSR.
     :rtype: bool
 
     """
     try:
-        csr = M2Crypto.X509.load_request_string(csr_file)
-        return bool(csr.verify(csr.get_pubkey()))
+        csr_obj = M2Crypto.X509.load_request_string(csr)
+        return bool(csr_obj.verify(csr_obj.get_pubkey()))
     except M2Crypto.X509.X509Error:
         return False
 
 
-def csr_matches_names(csr_file, domains):
+def csr_matches_names(csr, domains):
     """Check if CSR contains the subject of one of the domains.
 
     M2Crypto currently does not expose the OpenSSL interface to
     also check the SAN extension. This is insufficient for full testing
 
-    :param csr_file: CSR file contents
-    :type csr_file: str
+    :param csr: CSR file contents
+    :type csr: str
 
     :param domains: Domains the CSR should contain.
     :type domains: list
@@ -242,41 +243,41 @@ def csr_matches_names(csr_file, domains):
 
     """
     try:
-        csr = M2Crypto.X509.load_request_string(csr_file)
-        return csr.get_subject().CN in domains
+        csr_obj = M2Crypto.X509.load_request_string(csr)
+        return csr_obj.get_subject().CN in domains
     except M2Crypto.X509.X509Error:
         return False
 
 
-def valid_privkey(privkey_file):
+def valid_privkey(privkey):
     """Is valid RSA private key?
 
-    :param privkey_file: Private key file contents
-    :type privkey_file: str
+    :param privkey: Private key file contents
+    :type privkey: str
 
     :returns: Validity of private key.
     :rtype: bool
 
     """
     try:
-        return bool(M2Crypto.RSA.load_key_string(privkey_file).check_key())
+        return bool(M2Crypto.RSA.load_key_string(privkey).check_key())
     except M2Crypto.RSA.RSAError:
         return False
 
 
-def csr_matches_pubkey(csr_file, privkey_file):
+def csr_matches_pubkey(csr, privkey):
     """Does private key correspond to the subject public key in the CSR?
 
-    :param csr_file: CSR file contents
-    :type csr_file: str
+    :param csr: CSR file contents
+    :type csr: str
 
-    :param privkey_file: Private key file contents
-    :type privkey_file: str
+    :param privkey: Private key file contents
+    :type privkey: str
 
     :returns: Correspondence of private key to CSR subject public key.
     :rtype: bool
 
     """
-    csr = M2Crypto.X509.load_request_string(csr_file)
-    privkey = M2Crypto.RSA.load_key_string(privkey_file)
-    return csr.get_pubkey().get_rsa().pub() == privkey.pub()
+    csr_obj = M2Crypto.X509.load_request_string(csr)
+    privkey_obj = M2Crypto.RSA.load_key_string(privkey)
+    return csr_obj.get_pubkey().get_rsa().pub() == privkey_obj.pub()

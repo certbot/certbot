@@ -60,10 +60,7 @@ def main():
     parser.add_argument("--test", dest="test", action="store_true",
                         help="Run in test mode.")
 
-    try:
-        args = parser.parse_args()
-    except IOError as exc:
-        parser.error(exc)
+    args = parser.parse_args()
 
     # Enforce '--privkey' is set along with '--csr'.
     if args.csr and not args.privkey:
@@ -101,19 +98,14 @@ def read_file(filename):
 
     :returns: File contents
     :rtype: str
-    :raise IOError: File does not exist or is not readable. file() will
-    potentially throw its own IOError exceptions in addition to the two
-    explicitely thrown.
+
+    :raises argparse.ArgumentTypeError: File does not exist or is not readable.
 
     """
-
-    if not os.path.exists(filename):
-        raise IOError("the file '{0}' is not found".format(filename))
-
-    if not os.access(filename, os.R_OK):
-        raise IOError("the file '{0}' is not readable".format(filename))
-
-    return file(filename, 'rU').read()
+    try:
+        return file(filename, 'rU').read()
+    except IOError as exc:
+        raise argparse.ArgumentTypeError(exc.strerror)
 
 
 def rollback(config, checkpoints):
