@@ -81,7 +81,7 @@ def challenge_request(names):
 
 
 def authorization_request(req_id, name, server_nonce, responses, key_file):
-    """Create ACME "authoriazationRequest" message.
+    """Create ACME "authorizationRequest" message.
 
     :param req_id: TODO
     :type req_id: TODO
@@ -98,7 +98,7 @@ def authorization_request(req_id, name, server_nonce, responses, key_file):
     :param key_file: TODO
     :type key_file: TODO
 
-    :returns: ACME "authoriazationRequest" message.
+    :returns: ACME "authorizationRequest" message.
     :rtype: dict
 
     """

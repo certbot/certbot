@@ -5,7 +5,7 @@ import os
 import stat
 
 
-def make_or_verify_dir(directory, mode=0755, uid=0):
+def make_or_verify_dir(directory, mode=0o755, uid=0):
     """Make sure directory exists with proper permissions.
 
     :param directory: Path to a directry.
@@ -50,7 +50,7 @@ def check_permissions(filepath, mode, uid=0):
     return stat.S_IMODE(file_stat.st_mode) == mode and file_stat.st_uid == uid
 
 
-def unique_file(name, mode=0777):
+def unique_file(name, mode=0o777):
     """Safely finds a unique file for writing only (by default).
 
     :param name: Prefeferred file name. Similar names will be tried,

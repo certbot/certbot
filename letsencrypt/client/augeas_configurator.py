@@ -257,7 +257,7 @@ class AugeasConfigurator(configurator.Configurator):
         :type save_files: set
 
         """
-        le_util.make_or_verify_dir(cp_dir, 0755)
+        le_util.make_or_verify_dir(cp_dir, 0o755)
 
         existing_filepaths = []
         op_fd = None
