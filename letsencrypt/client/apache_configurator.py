@@ -1389,7 +1389,7 @@ LogLevel warn \n\
             raise errors.LetsEncryptDvsniError(
                 "Unable to load key file: %s" % key_file)
 
-        self.register_file_creation(True, self.dvsni_get_cert_file(nonce))
+        self.register_file_creation(True, dvsni_get_cert_file(nonce))
 
         cert_pem = crypto_util.make_ss_cert(
             key_str, [nonce + CONFIG.INVALID_EXT, name, ext])
