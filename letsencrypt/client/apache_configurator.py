@@ -44,7 +44,7 @@ from letsencrypt.client import logger
 # transactional due to the use of register_file_creation()
 
 class VH(object):
-    """Virtual host."""
+    """Represents an Apache Virtualhost."""
 
     def __init__(self, filename_path, vh_path, vh_addrs, is_ssl, is_enabled):
         self.file = filename_path
@@ -54,10 +54,12 @@ class VH(object):
         self.ssl = is_ssl
         self.enabled = is_enabled
 
-    def set_names(self, listOfNames):
-        self.names = listOfNames
+    def set_names(self, list_of_names):
+        """Set names."""
+        self.names = list_of_names
 
     def add_name(self, name):
+        """Add name to vhost."""
         self.names.append(name)
 
 
@@ -102,22 +104,22 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.standardize_excl()
 
         # Determine user's main config file
-        self._set_user_config_file()
+        self.user_config_file = self._set_user_config_file()
 
         self.vhosts = self.get_virtual_hosts()
         # Add name_server association dict
         self.assoc = dict()
         # Verify that all directories and files exist with proper permissions
-        self.verify_setup()
+        verify_setup()
 
         # Enable mod_ssl if it isn't already enabled
         # This is Let's Encrypt... we enable mod_ssl on initialization :)
         # TODO: attempt to make the check faster... this enable should
         #       be asynchronous as it shouldn't be that time sensitive
         #       on initialization
-        if not self.check_ssl_loaded():
+        if not check_ssl_loaded():
             logger.info("Loading mod_ssl into Apache Server")
-            self.enable_mod("ssl")
+            enable_mod("ssl")
 
         # Note: initialization doesn't check to see if the config is correct
         # by Apache's standards. This should be done by the client (client.py)
@@ -144,7 +146,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :param vhost: ssl vhost to deploy certificate
         :type vhost: :class:`VH`
 
-        :param strcert: certificate filename
+        :param str cert: certificate filename
         :param str key: private key filename
         :param str cert_chain: certificate chain filename
 
@@ -152,7 +154,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: bool
 
         """
-        search = {}
         path = {}
 
         path["cert_file"] = self.find_directive(case_i(
@@ -192,7 +193,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # This is a significant operation, make a checkpoint
         return self.save()
 
-    def choose_virtual_host(self, name, ssl=True):
+    def choose_virtual_host(self, target_name):
         """ Chooses a virtual host based on the given domain name.
 
         .. todo:: This should maybe return list if no obvious answer is presented
@@ -206,34 +207,34 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Allows for domain names to be associated with a virtual host
         # Client isn't using create_dn_server_assoc(self, dn, vh) yet
         for domain, vhost in self.assoc:
-            if domain == name:
+            if domain == target_name:
                 return vhost
         # Check for servernames/aliases for ssl hosts
         for vhost in self.vhosts:
             if vhost.ssl:
-                for n in vhost.names:
-                    if n == name:
+                for name in vhost.names:
+                    if name == target_name:
                         return vhost
         # Checking for domain name in vhost address
         # This technique is not recommended by Apache but is technically valid
         for vhost in self.vhosts:
-            for a in vhost.addrs:
-                tup = a.partition(":")
-                if tup[0] == name and tup[2] == "443":
+            for addr in vhost.addrs:
+                tup = addr.partition(":")
+                if tup[0] == target_name and tup[2] == "443":
                     return vhost
 
         # Check for non ssl vhosts with servernames/aliases == 'name'
         for vhost in self.vhosts:
             if not vhost.ssl:
-                for n in vhost.names:
-                    if n == name:
+                for name in vhost.names:
+                    if name == target_name:
                         # When do we need to self.make_vhost_ssl(v)
                         return self.make_vhost_ssl(vhost)
 
         # No matches, search for the default
         for vhost in self.vhosts:
-            for a in vhost.addrs:
-                if a == "_default_:443":
+            for addr in vhost.addrs:
+                if addr == "_default_:443":
                     return vhost
         return None
 
@@ -261,17 +262,17 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         all_names = set()
 
         # Kept in same function to avoid multiple compilations of the regex
-        priv_ip_regex = ("(^127\.0\.0\.1)|(^10\.)|(^172\.1[6-9]\.)|"
-                         "(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)")
-        privateIPs = re.compile(priv_ip_regex)
+        priv_ip_regex = (r"(^127\.0\.0\.1)|(^10\.)|(^172\.1[6-9]\.)|"
+                         r"(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)")
+        private_ips = re.compile(priv_ip_regex)
 
-        for v in self.vhosts:
-            all_names.update(v.names)
-            for a in v.addrs:
-                a_tup = a.partition(":")
+        for vhost in self.vhosts:
+            all_names.update(vhost.names)
+            for addr in vhost.addrs:
+                a_tup = addr.partition(":")
 
                 # If it isn't a private IP, do a reverse DNS lookup
-                if not privateIPs.match(a_tup[0]):
+                if not private_ips.match(a_tup[0]):
                     try:
                         socket.inet_aton(a_tup[0])
                         all_names.add(socket.gethostbyaddr(a_tup[0])[0])
@@ -289,7 +290,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         if filename:
-            self.user_config_file = filename
+            return filename
         else:
             # Basic check to see if httpd.conf exists and
             # in heirarchy via direct include
@@ -297,9 +298,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             if (os.path.isfile(self.server_root + 'httpd.conf') and
                 self.find_directive(case_i("Include"),
                                     case_i("httpd.conf"))):
-                self.user_config_file = self.server_root + 'httpd.conf'
+                return os.path.join(self.server_root, 'httpd.conf')
             else:
-                self.user_config_file = self.server_root + 'apache2.conf'
+                return os.path.join(self.server_root + 'apache2.conf')
 
     def _add_servernames(self, host):
         """Helper function for get_virtual_hosts().
@@ -308,13 +309,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :type host: :class:`VH`
 
         """
-        nameMatch = self.aug.match(("%s//*[self::directive=~regexp('%s')] | "
-                                   "%s//*[self::directive=~regexp('%s')]" %
-                                    (host.path,
-                                     case_i('ServerName'),
-                                     host.path,
-                                     case_i('ServerAlias'))))
-        for name in nameMatch:
+        name_match = self.aug.match(("%s//*[self::directive=~regexp('%s')] | "
+                                     "%s//*[self::directive=~regexp('%s')]" %
+                                     (host.path,
+                                      case_i('ServerName'),
+                                      host.path,
+                                      case_i('ServerAlias'))))
+        for name in name_match:
             args = self.aug.match(name + "/*")
             for arg in args:
                 host.add_name(self.aug.get(arg))
@@ -338,7 +339,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 case_i("SSLEngine"), case_i("on"), path)) > 0:
             is_ssl = True
 
-        filename = self.get_file_path(path)
+        filename = get_file_path(path)
         is_enabled = self.is_site_enabled(filename)
         vhost = VH(filename, path, addrs, is_ssl, is_enabled)
         self._add_servernames(vhost)
@@ -357,12 +358,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             ("/files%ssites-available//*[label()=~regexp('%s')]" %
              (self.server_root, case_i('VirtualHost'))))
         vhs = []
-        for p in paths:
-            vhs.append(self._create_vhost(p))
+        for path in paths:
+            vhs.append(self._create_vhost(path))
 
         return vhs
 
-    def is_name_vhost(self, addr):
+    def is_name_vhost(self, target_addr):
         """Returns if vhost is a name based vhost
 
         Checks if addr has a NameVirtualHost directive in the Apache config
@@ -378,15 +379,15 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # note ip_addr can be FQDN although Apache does not recommend it
         paths = self.find_directive(case_i("NameVirtualHost"), None)
         name_vh = []
-        for p in paths:
-            name_vh.append(self.aug.get(p))
+        for path in paths:
+            name_vh.append(self.aug.get(path))
 
         # Mixed and matched wildcard NameVirtualHost with VirtualHost
         # behavior is undefined. Make sure that an exact match exists
 
         # Check for exact match
-        for vh in name_vh:
-            if vh == addr:
+        for addr in name_vh:
+            if addr == target_addr:
                 return True
 
         return False
@@ -429,12 +430,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         # TODO: Add error checking code... does the path given even exist?
         #       Does it throw exceptions?
-        ifModPath = self.get_ifmod(aug_conf_path, "mod_ssl.c")
+        if_mod_path = self.get_ifmod(aug_conf_path, "mod_ssl.c")
         # IfModule can have only one valid argument, so append after
-        self.aug.insert(ifModPath + "arg", "directive", False)
-        nvhPath = ifModPath + "directive[1]"
-        self.aug.set(nvhPath, directive)
-        self.aug.set(nvhPath + "/arg", val)
+        self.aug.insert(if_mod_path + "arg", "directive", False)
+        nvh_path = if_mod_path + "directive[1]"
+        self.aug.set(nvh_path, directive)
+        self.aug.set(nvh_path + "/arg", val)
 
     def make_server_sni_ready(self, vhost, default_addr="*:443"):
         """Checks to see if the server is ready for SNI challenges.
@@ -448,7 +449,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         # Check if mod_ssl is loaded
-        if not self.check_ssl_loaded():
+        if not check_ssl_loaded():
             logger.error("Please load the SSL module with Apache")
             return False
 
@@ -489,15 +490,15 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :param str mod: module ie. mod_ssl.c
 
         """
-        ifMods = self.aug.match(("%s/IfModule/*[self::arg='%s']" %
+        if_mods = self.aug.match(("%s/IfModule/*[self::arg='%s']" %
                                  (aug_conf_path, mod)))
-        if len(ifMods) == 0:
+        if len(if_mods) == 0:
             self.aug.set("%s/IfModule[last() + 1]" % aug_conf_path, "")
             self.aug.set("%s/IfModule[last()]/arg" % aug_conf_path, mod)
-            ifMods = self.aug.match(("%s/IfModule/*[self::arg='%s']" %
+            if_mods = self.aug.match(("%s/IfModule/*[self::arg='%s']" %
                                      (aug_conf_path, mod)))
         # Strip off "arg" at end of first ifmod path
-        return ifMods[0][:len(ifMods[0]) - 3]
+        return if_mods[0][:len(if_mods[0]) - 3]
 
     def add_dir(self, aug_conf_path, directive, arg):
         """Appends directive to the end fo the file given by aug_conf_path.
@@ -561,12 +562,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # "//* [self::directive='Include']/* [label()='arg']")
 
         if arg is None:
-            ms = self.aug.match(("%s//*[self::directive=~regexp('%s')]/arg" %
-                                 (start, directive)))
+            matches = self.aug.match(("%s//*[self::directive=~regexp('%s')]/arg"
+                                      % (start, directive)))
         else:
-            ms = self.aug.match(("%s//*[self::directive=~regexp('%s')]/*"
-                                 "[self::arg=~regexp('%s')]" %
-                                 (start, directive, arg)))
+            matches = self.aug.match(("%s//*[self::directive=~regexp('%s')]/*"
+                                      "[self::arg=~regexp('%s')]" %
+                                      (start, directive, arg)))
 
         includes = self.aug.match(("%s//* [self::directive=~regexp('%s')]/* "
                                    "[label()='arg']" %
@@ -574,11 +575,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         for include in includes:
             # start[6:] to strip off /files
-            ms.extend(self.find_directive(
+            matches.extend(self.find_directive(
                 directive, arg, self.get_include_path(strip_dir(start[6:]),
                                                       self.aug.get(include))))
 
-        return ms
+        return matches
 
     def get_include_path(self, cur_dir, arg):
         """Converts an Apache Include directive into Augeas path.
@@ -633,48 +634,21 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Split up the path and convert each into an Augeas accepted regex
         # then reassemble
         if "*" in arg or "?" in arg:
-            postfix = ""
-            splitArg = arg.split("/")
-            for idx, split in enumerate(splitArg):
+            split_arg = arg.split("/")
+            for idx, split in enumerate(split_arg):
                 # * and ? are the two special fnmatch characters
                 if "*" in split or "?" in split:
                     # Turn it into a augeas regex
                     # TODO: Can this instead be an augeas glob instead of regex
-                    splitArg[idx] = ("* [label()=~regexp('%s')]" %
-                                     self.fnmatch_to_re(split))
+                    split_arg[idx] = ("* [label()=~regexp('%s')]" %
+                                      self.fnmatch_to_re(split))
             # Reassemble the argument
-            arg = "/".join(splitArg)
+            arg = "/".join(split_arg)
 
         # If the include is a directory, just return the directory as a file
         if arg.endswith("/"):
             return "/files" + arg[:len(arg)-1]
         return "/files"+arg
-
-    def check_ssl_loaded(self):
-        """Checks to see if mod_ssl is loaded
-
-        Currently uses apache2ctl to get loaded module list
-
-        .. todo:: This function is likely fragile to versions/distros
-
-        :returns: If ssl_module is included and active in Apache
-        :rtype: bool
-
-        """
-        try:
-            # p=subprocess.check_output(['sudo', '/usr/sbin/apache2ctl', '-M'],
-            #                            stderr=open("/dev/null", 'w'))
-            p = subprocess.Popen(['sudo', '/usr/sbin/apache2ctl', '-M'],
-                                 stdout=subprocess.PIPE,
-                                 stderr=open(
-                                     "/dev/null", 'w')).communicate()[0]
-        except:
-            logger.error("Error accessing apache2ctl for loaded modules!")
-            logger.error("This may be caused by an Apache Configuration Error")
-            return False
-        if "ssl_module" in p:
-            return True
-        return False
 
     def make_vhost_ssl(self, nonssl_vhost):
         """Makes an ssl_vhost version of a nonssl_vhost.
@@ -707,7 +681,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             for line in orig_file:
                 new_file.write(line)
             new_file.write("</IfModule>\n")
-        except:
+        except IOError:
             logger.fatal("Error writing/reading to file in make_vhost_ssl")
             sys.exit(49)
         finally:
@@ -796,7 +770,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         # TODO: Enable check to see if it is already there
         #       to avoid the extra restart
-        self.enable_mod("rewrite")
+        enable_mod("rewrite")
 
         general_v = self._general_vhost(ssl_vhost)
         if general_v is None:
@@ -855,8 +829,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # "No existing redirection for virtualhost"
             return False, -1
         if len(rewrite_path) == len(CONFIG.REWRITE_HTTPS_ARGS):
-            for idx, m in enumerate(rewrite_path):
-                if self.aug.get(m) != CONFIG.REWRITE_HTTPS_ARGS[idx]:
+            for idx, match in enumerate(rewrite_path):
+                if self.aug.get(match) != CONFIG.REWRITE_HTTPS_ARGS[idx]:
                     # Not a letsencrypt https rewrite
                     return True, 2
             # Existing letsencrypt https rewrite rule is in place
@@ -876,11 +850,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         # Consider changing this to a dictionary check
         # Make sure adding the vhost will be safe
-        conflict, hostOrAddrs = self._conflicting_host(ssl_vhost)
+        conflict, host_or_addrs = self._conflicting_host(ssl_vhost)
         if conflict:
-            return False, hostOrAddrs
+            return False, host_or_addrs
 
-        redirect_addrs = hostOrAddrs
+        redirect_addrs = host_or_addrs
 
         # get servernames and serveraliases
         serveralias = ""
@@ -923,8 +897,8 @@ LogLevel warn \n\
         self.register_file_creation(False, redirect_filepath)
 
         # Write out file
-        with open(redirect_filepath, 'w') as f:
-            f.write(redirect_file)
+        with open(redirect_filepath, 'w') as redirect_fd:
+            redirect_fd.write(redirect_file)
         logger.info("Created redirect file: " + redirect_filename)
 
         self.aug.load()
@@ -947,7 +921,7 @@ LogLevel warn \n\
         be created without ruining the apache config
         Used with redirection
 
-        returns: conflict, hostOrAddrs - boolean
+        returns: conflict, host_or_addrs - boolean
         if conflict: returns conflicting vhost
         if not conflict: returns space separated list of new host addrs
 
@@ -966,18 +940,18 @@ LogLevel warn \n\
             ssl_tup = ssl_a.partition(":")
             ssl_a_vhttp = ssl_tup[0] + ":80"
             # Search for a conflicting host...
-            for v in self.vhosts:
-                if v.enabled:
-                    for a in v.addrs:
+            for vhost in self.vhosts:
+                if vhost.enabled:
+                    for addr in vhost.addrs:
                         # Convert :* to standard ip address
-                        if a.endswith(":*"):
-                            a = a[:len(a)-2]
+                        if addr.endswith(":*"):
+                            addr = addr[:len(addr)-2]
                         # Would require NameBasedVirtualHosts,too complicated?
                         # Maybe do later... right now just return false
                         # or overlapping addresses... order matters
-                        if a == ssl_a_vhttp or a == ssl_tup[0]:
+                        if addr == ssl_a_vhttp or addr == ssl_tup[0]:
                             # We have found a conflicting host... just return
-                            return True, v
+                            return True, vhost
 
             redirect_addrs = redirect_addrs + ssl_a_vhttp
 
@@ -1004,14 +978,14 @@ LogLevel warn \n\
         if ssl_addrs == ["_default_:443"]:
             ssl_addrs = ["*:443"]
 
-        for vh in self.vhosts:
+        for vhost in self.vhosts:
             found = 0
             # Not the same vhost, and same number of addresses
-            if vh != ssl_vhost and len(vh.addrs) == len(ssl_vhost.addrs):
+            if vhost != ssl_vhost and len(vhost.addrs) == len(ssl_vhost.addrs):
                 # Find each address in ssl_host in test_host
                 for ssl_a in ssl_addrs:
                     ssl_tup = ssl_a.partition(":")
-                    for test_a in vh.addrs:
+                    for test_a in vhost.addrs:
                         test_tup = test_a.partition(":")
                         if test_tup[0] == ssl_tup[0]:
                             # Check if found...
@@ -1023,8 +997,8 @@ LogLevel warn \n\
                 # Check to make sure all addresses were found
                 # and names are equal
                 if (found == len(ssl_vhost.addrs) and
-                        set(vh.names) == set(ssl_vhost.names)):
-                    return vh
+                        set(vhost.names) == set(ssl_vhost.names)):
+                    return vhost
         return None
 
     # TODO - both of these
@@ -1060,36 +1034,9 @@ LogLevel warn \n\
 
                 cert = os.path.abspath(self.aug.get(cert_path[0]))
                 key = os.path.abspath(self.aug.get(key_path[0]))
-                c_k.add((cert, key, self.get_file_path(cert_path[0])))
+                c_k.add((cert, key, get_file_path(cert_path[0])))
 
         return c_k
-
-    def get_file_path(self, vhost_path):
-        """Get file path from augeas_vhost_path.
-
-        Takes in Augeas path and returns the file name
-
-        :param str vhost_path: Augeas virtual host path
-
-        :returns: filename of vhost
-        :rtype: str
-
-        """
-        # Strip off /files
-        avail_fp = vhost_path[6:]
-        # This can be optimized...
-        while True:
-            # Cast both to lowercase to be case insensitive
-            find_if = avail_fp.lower().find("/ifmodule")
-            if find_if != -1:
-                avail_fp = avail_fp[:find_if]
-                continue
-            find_vh = avail_fp.lower().find("/virtualhost")
-            if find_vh != -1:
-                avail_fp = avail_fp[:find_vh]
-                continue
-            break
-        return avail_fp
 
     def is_site_enabled(self, avail_fp):
         """Checks to see if the given site is enabled.
@@ -1102,9 +1049,9 @@ LogLevel warn \n\
         :rtype: bool
 
         """
-        enabled_dir = self.server_root + "sites-enabled/"
-        for f in os.listdir(enabled_dir):
-            if os.path.realpath(enabled_dir + f) == avail_fp:
+        enabled_dir = os.path.join(self.server_root, "sites-enabled/")
+        for entry in os.listdir(enabled_dir):
+            if os.path.realpath(enabled_dir + entry) == avail_fp:
                 return True
 
         return False
@@ -1137,28 +1084,6 @@ LogLevel warn \n\
             return True
         return False
 
-    def enable_mod(self, mod_name):
-        """Enables module in Apache.
-
-        Both enables and restarts Apache so module is active.
-
-        :param str mod_name: Name of the module to enable
-
-        """
-        try:
-            # Use check_output so the command will finish before reloading
-            subprocess.check_call(["sudo", "a2enmod", mod_name],
-                                  stdout=open("/dev/null", 'w'),
-                                  stderr=open("/dev/null", 'w'))
-            # Hopefully this waits for output
-            subprocess.check_call(["sudo", "/etc/init.d/apache2", "restart"],
-                                  stdout=open("/dev/null", 'w'),
-                                  stderr=open("/dev/null", 'w'))
-        except (OSError, subprocess.CalledProcessError) as e:
-            logger.error("Error enabling mod_" + mod_name)
-            logger.error("Exception: %s" % str(e))
-            sys.exit(1)
-
     def fnmatch_to_re(self, clean_fn_match):
         """Method converts Apache's basic fnmatch to regular expression.
 
@@ -1171,7 +1096,7 @@ LogLevel warn \n\
         regex = ""
         for letter in clean_fn_match:
             if letter == '.':
-                regex = regex + "\."
+                regex = regex + r"\."
             elif letter == '*':
                 regex = regex + ".*"
             # According to apache.org ? shouldn't appear
@@ -1193,9 +1118,9 @@ LogLevel warn \n\
         """
         # Test if augeas included file for Httpd.lens
         # Note: This works for augeas globs, ie. *.conf
-        incTest = self.aug.match(
+        inc_test = self.aug.match(
             "/augeas/load/Httpd/incl [. ='%s']" % file_path)
-        if not incTest:
+        if not inc_test:
             # Load up files
             # self.httpd_incl.append(file_path)
             # self.aug.add_transform("Httpd.lns",
@@ -1209,18 +1134,6 @@ LogLevel warn \n\
         # Should be safe because it is a protected directory
         shutil.copytree(self.server_root,
                         "%sapache2-%s" % (CONFIG.BACKUP_DIR, str(time.time())))
-
-    def verify_setup(self):
-        """Verify the setup to ensure safe operating environment.
-
-        Make sure that files/directories are setup with appropriate permissions
-        Aim for defensive coding... make sure all input files
-        have permissions of root
-
-        """
-        le_util.make_or_verify_dir(CONFIG.CONFIG_DIR, 0o755)
-        le_util.make_or_verify_dir(CONFIG.WORK_DIR, 0o755)
-        le_util.make_or_verify_dir(CONFIG.BACKUP_DIR, 0o755)
 
     def standardize_excl(self):
         """Standardize the excl arguments for the Httpd lens in Augeas.
@@ -1263,19 +1176,19 @@ LogLevel warn \n\
         """
         # TODO: This should be written to use the process returncode
         try:
-            p = subprocess.Popen(['/etc/init.d/apache2', 'restart'],
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE)
-            text = p.communicate()
+            proc = subprocess.Popen(['/etc/init.d/apache2', 'restart'],
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
+            text = proc.communicate()
 
-            if p.returncode != 0:
+            if proc.returncode != 0:
                 # Enter recovery routine...
                 logger.error("Configtest failed")
                 logger.error(text[0])
                 logger.error(text[1])
             return False
 
-        except:
+        except (OSError, ValueError):
             logger.fatal(("Apache Restart Failed - "
                           "Please Check the Configuration"))
             sys.exit(1)
@@ -1291,8 +1204,8 @@ LogLevel warn \n\
         :param str incl: TODO
 
         """
-        lastInclude = self.aug.match("/augeas/load/Httpd/incl [last()]")
-        self.aug.insert(lastInclude[0], "incl", False)
+        last_include = self.aug.match("/augeas/load/Httpd/incl [last()]")
+        self.aug.insert(last_include[0], "incl", False)
         self.aug.set("/augeas/load/Httpd/incl[last()]", incl)
 
     def config_test(self):
@@ -1303,16 +1216,16 @@ LogLevel warn \n\
 
         """
         try:
-            p = subprocess.Popen(
+            proc = subprocess.Popen(
                 ['sudo', '/usr/sbin/apache2ctl', 'configtest'],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
-            text = p.communicate()
-        except:
+            text = proc.communicate()
+        except (OSError, ValueError):
             logger.fatal("Unable to run /usr/sbin/apache2ctl configtest")
             sys.exit(1)
 
-        if p.returncode != 0:
+        if proc.returncode != 0:
             # Enter recovery routine...
             logger.error("Configtest failed")
             logger.error(text[0])
@@ -1339,16 +1252,13 @@ LogLevel warn \n\
     def dvsni_perform(self, chall_dict):
         """Peform a DVSNI challenge.
 
-        Composed of:
+        Composed of
+        list_sni_tuple:  List of tuples with form (addr, r, nonce)
+                       addr (string), r (base64 string), nonce (hex string)
+        dvsni_key:     string - File path to key
 
-        listSNITuple
-          List of tuples with form (addr, r, nonce)
-          addr (string), r (base64 string), nonce (hex string)
-
-        dvsni_key
-          string - File path to key
-
-        :param dict chall_dict: dvsni challenge - see documentation
+        :param chall_dict: dvsni challenge - see documentation
+        :type chall_dict: dict
 
         """
         # Save any changes to the configuration as a precaution
@@ -1356,14 +1266,14 @@ LogLevel warn \n\
         self.save()
 
         # Do weak validation that challenge is of expected type
-        if not ("listSNITuple" in chall_dict and "dvsni_key" in chall_dict):
+        if not ("list_sni_tuple" in chall_dict and "dvsni_key" in chall_dict):
             logger.fatal("Incorrect parameter given to Apache DVSNI challenge")
             logger.fatal("Chall dict: " + str(chall_dict))
             sys.exit(1)
 
         addresses = []
         default_addr = "*:443"
-        for tup in chall_dict["listSNITuple"]:
+        for tup in chall_dict["list_sni_tuple"]:
             vhost = self.choose_virtual_host(tup[0])
             if vhost is None:
                 logger.error(("No vhost exists with servername "
@@ -1376,33 +1286,31 @@ LogLevel warn \n\
             if not self.make_server_sni_ready(vhost, default_addr):
                 return None
 
-            for a in vhost.addrs:
-                if "_default_" in a:
+            for addr in vhost.addrs:
+                if "_default_" in addr:
                     addresses.append([default_addr])
                     break
             else:
                 addresses.append(vhost.addrs)
 
         # Generate S
-        s = Random.get_random_bytes(CONFIG.S_SIZE)
+        dvsni_s = Random.get_random_bytes(CONFIG.S_SIZE)
         # Create all of the challenge certs
-        for t in chall_dict["listSNITuple"]:
+        for tup in chall_dict["list_sni_tuple"]:
             # Need to decode from base64
-            r = le_util.jose_b64decode(t[1])
-            ext = self.dvsni_gen_ext(r, s)
+            dvsni_r = le_util.jose_b64decode(tup[1])
+            ext = dvsni_gen_ext(dvsni_r, dvsni_s)
             self.dvsni_create_chall_cert(
-                t[0], ext, t[2], chall_dict["dvsni_key"])
+                tup[0], ext, tup[2], chall_dict["dvsni_key"])
 
-        self.dvsni_mod_config(self.user_config_file,
-                              chall_dict["listSNITuple"],
+        self.dvsni_mod_config(chall_dict["list_sni_tuple"],
                               chall_dict["dvsni_key"],
                               addresses)
         # Save reversible changes and restart the server
         self.save("SNI Challenge", True)
         self.restart(True)
 
-        s = le_util.jose_b64encode(s)
-        return {"type": "dvsni", "s": s}
+        return {"type": "dvsni", "s": le_util.jose_b64encode(dvsni_s)}
 
     def cleanup(self):
         """Revert all challenges."""
@@ -1410,57 +1318,20 @@ LogLevel warn \n\
         self.revert_challenge_config()
         self.restart(True)
 
-    def dvsni_get_cert_file(self, nonce):
-        """Returns standardized name for challenge certificate.
-
-        :param str nonce: hex form of nonce
-
-        :returns: certificate file name
-        :rtype: str
-
-        """
-        return CONFIG.WORK_DIR + nonce + ".crt"
-
-    def _get_config_text(self, nonce, ip_addrs, key):
-        """Chocolate virtual server configuration text
-
-        :param str nonce: hex form of nonce
-        :param str ip_addrs: addresses of challenged domain
-        :param str key: file path to key
-
-        :returns: virtual host configuration text
-        :rtype: str
-
-        """
-        return ("<VirtualHost " + " ".join(ip_addrs) + "> \n"
-                "ServerName " + nonce + CONFIG.INVALID_EXT + " \n"
-                "UseCanonicalName on \n"
-                "SSLStrictSNIVHostCheck on \n"
-                "\n"
-                "LimitRequestBody 1048576 \n"
-                "\n"
-                "Include " + CONFIG.OPTIONS_SSL_CONF + " \n"
-                "SSLCertificateFile " + self.dvsni_get_cert_file(nonce) + " \n"
-                "SSLCertificateKeyFile " + key + " \n"
-                "\n"
-                "DocumentRoot " + CONFIG.CONFIG_DIR + "challenge_page/ \n"
-                "</VirtualHost> \n\n")
-
     # TODO: Variable names
-    def dvsni_mod_config(self, mainConfig, listSNITuple, dvsni_key,
-                         listlistAddrs):
+    def dvsni_mod_config(self, list_sni_tuple, dvsni_key,
+                         ll_addrs):
         """Modifies Apache config files to include challenge vhosts.
 
         Result: Apache config includes virtual servers for issued challs
 
-        :param str mainConfig: file path to Apache user config file
-
-        :param list listSNITuple: list of tuples with the form (addr, y, nonce)
-            addr (string), y (byte array), nonce (hex string)
+        :param list_sni_tuple: list of tuples with the form (addr, y, nonce)
+                               addr (string), y (byte array), nonce (hex str)
+        :type list_sni_tuple: list
 
         :param str dvsni_key: file path to key
 
-        :param list listlistAddrs: list of list of addresses to apply
+        :param list ll_addrs: list of list of addresses to apply
 
         """
         # WARNING: THIS IS A POTENTIAL SECURITY VULNERABILITY
@@ -1476,30 +1347,30 @@ LogLevel warn \n\
 
         # TODO: Use ip address of existing vhost instead of relying on FQDN
         config_text = "<IfModule mod_ssl.c> \n"
-        for idx, lis in enumerate(listlistAddrs):
-            config_text += self._get_config_text(
-                listSNITuple[idx][2], lis, dvsni_key)
+        for idx, lis in enumerate(ll_addrs):
+            config_text += get_config_text(
+                list_sni_tuple[idx][2], lis, dvsni_key)
         config_text += "</IfModule> \n"
 
-        self.dvsni_conf_include_check(mainConfig)
+        self.dvsni_conf_include_check(self.user_config_file)
         self.register_file_creation(True, CONFIG.APACHE_CHALLENGE_CONF)
-        newConf = open(CONFIG.APACHE_CHALLENGE_CONF, 'w')
-        newConf.write(config_text)
-        newConf.close()
 
-    def dvsni_conf_include_check(self, mainConfig):
+        with open(CONFIG.APACHE_CHALLENGE_CONF, 'w') as new_conf:
+            new_conf.write(config_text)
+
+    def dvsni_conf_include_check(self, main_config):
         """Adds DVSNI challenge conf file into configuration.
 
         Adds DVSNI challenge include file if it does not already exist
         within mainConfig
 
-        :param str mainConfig: file path to main user apache config file
+        :param str main_config: file path to main user apache config file
 
         """
         if len(self.find_directive(
                 case_i("Include"), CONFIG.APACHE_CHALLENGE_CONF)) == 0:
             # print "Including challenge virtual host(s)"
-            self.add_dir("/files" + mainConfig,
+            self.add_dir("/files" + main_config,
                          "Include", CONFIG.APACHE_CHALLENGE_CONF)
 
     def dvsni_create_chall_cert(self, name, ext, nonce, key_file):
@@ -1523,23 +1394,72 @@ LogLevel warn \n\
         cert_pem = crypto_util.make_ss_cert(
             key_str, [nonce + CONFIG.INVALID_EXT, name, ext])
 
-        with open(self.dvsni_get_cert_file(nonce), 'w') as f:
-            f.write(cert_pem)
+        with open(dvsni_get_cert_file(nonce), 'w') as chall_cert_file:
+            chall_cert_file.write(cert_pem)
 
-    def dvsni_gen_ext(self, r, s):
-        """Generates z extension to be placed in certificate extension.
 
-        :param bytearray r: DVSNI r value
-        :param bytearray s: DVSNI s value
+def enable_mod(mod_name):
+    """Enables module in Apache.
 
-        result: returns z + CONFIG.INVALID_EXT
+    Both enables and restarts Apache so module is active.
 
-        """
-        h = hashlib.new('sha256')
-        h.update(r)
-        h.update(s)
+    :param mod_name: Name of the module to enable
+    :type mod_name: str
 
-        return h.hexdigest() + CONFIG.INVALID_EXT
+    """
+    try:
+        # Use check_output so the command will finish before reloading
+        subprocess.check_call(["sudo", "a2enmod", mod_name],
+                              stdout=open("/dev/null", 'w'),
+                              stderr=open("/dev/null", 'w'))
+        # Hopefully this waits for output
+        subprocess.check_call(["sudo", "/etc/init.d/apache2", "restart"],
+                              stdout=open("/dev/null", 'w'),
+                              stderr=open("/dev/null", 'w'))
+    except (OSError, subprocess.CalledProcessError) as err:
+        logger.error("Error enabling mod_" + mod_name)
+        logger.error("Exception: %s" % str(err))
+        sys.exit(1)
+
+
+def check_ssl_loaded():
+    """Checks to see if mod_ssl is loaded
+
+    Currently uses apache2ctl to get loaded module list
+    TODO: This function is likely fragile to versions/distros
+
+    :returns: If ssl_module is included and active in Apache
+    :rtype: bool
+
+    """
+    try:
+        # p=subprocess.check_output(['sudo', '/usr/sbin/apache2ctl', '-M'],
+        #                            stderr=open("/dev/null", 'w'))
+        proc = subprocess.Popen(['sudo', '/usr/sbin/apache2ctl', '-M'],
+                                stdout=subprocess.PIPE,
+                                stderr=open(
+                                    "/dev/null", 'w')).communicate()[0]
+    except (OSError, ValueError):
+        logger.error("Error accessing apache2ctl for loaded modules!")
+        logger.error("This may be caused by an Apache Configuration Error")
+        return False
+
+    if "ssl_module" in proc:
+        return True
+    return False
+
+
+def verify_setup():
+    """Verify the setup to ensure safe operating environment.
+
+    Make sure that files/directories are setup with appropriate permissions
+    Aim for defensive coding... make sure all input files
+    have permissions of root
+
+    """
+    le_util.make_or_verify_dir(CONFIG.CONFIG_DIR, 0o755)
+    le_util.make_or_verify_dir(CONFIG.WORK_DIR, 0o755)
+    le_util.make_or_verify_dir(CONFIG.BACKUP_DIR, 0o755)
 
 
 def case_i(string):
@@ -1558,13 +1478,42 @@ def case_i(string):
                     if c.isalpha() else c for c in re.escape(string)])
 
 
+def get_file_path(vhost_path):
+    """Get file path from augeas_vhost_path.
+
+    Takes in Augeas path and returns the file name
+
+    :param vhost_path: Augeas virtual host path
+    :type vhost_path: str
+
+    :returns: filename of vhost
+    :rtype: str
+
+    """
+    # Strip off /files
+    avail_fp = vhost_path[6:]
+    # This can be optimized...
+    while True:
+        # Cast both to lowercase to be case insensitive
+        find_if = avail_fp.lower().find("/ifmodule")
+        if find_if != -1:
+            avail_fp = avail_fp[:find_if]
+            continue
+        find_vh = avail_fp.lower().find("/virtualhost")
+        if find_vh != -1:
+            avail_fp = avail_fp[:find_vh]
+            continue
+        break
+    return avail_fp
+
+
 def strip_dir(path):
     """Returns directory of file path.
 
     .. todo:: Replace this with Python standard function
 
     :param str path: path is a file path. not an augeas section or
-        directive path
+                     directive path
 
     :returns: directory
     :rtype: str
@@ -1577,7 +1526,72 @@ def strip_dir(path):
     return ""
 
 
+def dvsni_get_cert_file(nonce):
+    """Returns standardized name for challenge certificate.
+
+    :param nonce: hex form of nonce
+    :type nonce: str
+
+    :returns: certificate file name
+    :rtype: str
+
+    """
+    return CONFIG.WORK_DIR + nonce + ".crt"
+
+
+def get_config_text(nonce, ip_addrs, key):
+    """Chocolate virtual server configuration text
+
+    :param nonce: hex form of nonce
+    :type nonce: str
+
+    :param ip_addrs: addresses of challenged domain
+    :type ip_addrs: str
+
+    :param key: file path to key
+    :type key: str
+
+    :returns: virtual host configuration text
+    :rtype: str
+
+    """
+    return ("<VirtualHost " + " ".join(ip_addrs) + "> \n"
+            "ServerName " + nonce + CONFIG.INVALID_EXT + " \n"
+            "UseCanonicalName on \n"
+            "SSLStrictSNIVHostCheck on \n"
+            "\n"
+            "LimitRequestBody 1048576 \n"
+            "\n"
+            "Include " + CONFIG.OPTIONS_SSL_CONF + " \n"
+            "SSLCertificateFile " + dvsni_get_cert_file(nonce) + " \n"
+            "SSLCertificateKeyFile " + key + " \n"
+            "\n"
+            "DocumentRoot " + CONFIG.CONFIG_DIR + "challenge_page/ \n"
+            "</VirtualHost> \n\n")
+
+
+def dvsni_gen_ext(dvsni_r, dvsni_s):
+    """Generates z extension to be placed in certificate extension.
+
+    :param dvsni_r: DVSNI r value
+    :type dvsni_r: byte array
+
+    :param dvsni_s: DVSNI s value
+    :type dvsni_s: byte array
+
+    result: returns z + CONFIG.INVALID_EXT
+
+    """
+    z_base = hashlib.new('sha256')
+    z_base.update(dvsni_r)
+    z_base.update(dvsni_s)
+
+    return z_base.hexdigest() + CONFIG.INVALID_EXT
+
+
 def main():
+    """ Main function used for quick testing purposes """
+
     config = ApacheConfigurator()
     logger.setLogger(logger.FileLogger(sys.stdout))
     logger.setLogLevel(logger.DEBUG)
@@ -1630,10 +1644,11 @@ def main():
 
     # for vh in config.vhosts:
     #     if len(vh.names) > 0:
-    #         config.deploy_cert(vh,
-    #                            "/home/james/Documents/apache_choc/req.pem",
-    #                            "/home/james/Documents/apache_choc/key.pem",
-    #                            "/home/james/Downloads/sub.class1.server.ca.pem")
+    #         config.deploy_cert(
+    #             vh,
+    #             "/home/james/Documents/apache_choc/req.pem",
+    #             "/home/james/Documents/apache_choc/key.pem",
+    #             "/home/james/Downloads/sub.class1.server.ca.pem")
 
 if __name__ == "__main__":
     main()

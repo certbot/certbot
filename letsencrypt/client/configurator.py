@@ -89,7 +89,7 @@ class Configurator(object):
         """Restart or refresh the server content."""
         raise NotImplementedError()
 
-    def perform(self, chall_type, tup):
+    def perform(self, chall_dict):
         """Perform the given challenge"""
         raise NotImplementedError()
 
