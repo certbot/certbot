@@ -70,32 +70,67 @@ def challenge_request(name):
     :rtype: dict
 
     """
+
+    if type(name) is not unicode:
+        raise TypeError("Parameter `name` must be unicode")
+
+    if not name:
+        raise ValueError("Parameter `name` must not be empty")
+
     return {
         "type": "challengeRequest",
         "identifier": name,
     }
 
 
-def authorization_request(req_id, name, server_nonce, responses, key_file):
+def authorization_request(req_id, name, server_nonce, responses, key):
     """Create ACME "authorizationRequest" message.
 
-    :param req_id: TODO
-    :param name: TODO
-    :param server_nonce: TODO
-    :param responses: TODO
-    :param key_file: TODO
+    :param str req_id: SessionID from the server challenge
+    :param unicode name: Hostname
+    :param str server_nonce: Nonce from the server challenge
+    :param list responses: List of completed challenges
+    :param str key: Key in string form. Accepted formats
+        are the same as for `Crypto.PublicKey.RSA.importKey`.
 
     :returns: ACME "authorizationRequest" message.
     :rtype: dict
 
     """
+    if type(req_id) is not str:
+        raise TypeError("Parameter `req_id` must be of type str")
+
+    if not req_id:
+        raise ValueError("Parameter `req_id` must not be empty")
+
+    if type(name) is not unicode:
+        raise TypeError("Parameter `name` must be of type unicode")
+
+    if not name:
+        raise ValueError("Parameter `name` must not be empty")
+
+    if type(server_nonce) is not str:
+        raise TypeError("Parameter `server_nonce` must be of type str")
+
+    if not server_nonce:
+        raise ValueError("Parameter `server_nonce` must not be empty")
+
+    if type(responses) is not list:
+        raise TypeError("Parameter `responses` must be of type list")
+
+    if type(key) is not str:
+        raise TypeError("Parameter `key` must be of type str")
+
+    if not key:
+        raise ValueError("Parameter `key` must not be empty")
+
     return {
         "type": "authorizationRequest",
         "sessionID": req_id,
         "nonce": server_nonce,
         "responses": responses,
         "signature": crypto_util.create_sig(
-            name + le_util.jose_b64decode(server_nonce), key_file),
+            name + le_util.jose_b64decode(server_nonce), key),
     }
 
 
@@ -103,12 +138,25 @@ def certificate_request(csr_der, key):
     """Create ACME "certificateRequest" message.
 
     :param str csr_der: DER encoded CSR.
-    :param key: TODO
+    :param str key: Key in string form. Accepted formats
+        are the same as for `Crypto.PublicKey.RSA.importKey`.
 
     :returns: ACME "certificateRequest" message.
     :rtype: dict
 
     """
+    if type(csr_der) is not str:
+        raise TypeError("Parameter `csr_der` must be of type str")
+
+    if not csr_der:
+        raise ValueError("Parameter `csr_der` must not be empty")
+
+    if type(key) is not str:
+        raise TypeError("Parameter `key` must be of type str")
+
+    if not key:
+        raise ValueError("Parameter `key` must not be empty")
+
     return {
         "type": "certificateRequest",
         "csr": le_util.jose_b64encode(csr_der),
@@ -128,6 +176,18 @@ def revocation_request(key_file, cert_der):
     :rtype: dict
 
     """
+    if type(key_file) is not str:
+        raise TypeError("Parameter `key_file` must be of type str")
+
+    if not key_file:
+        raise ValueError("Parameter `key_file` must not be empty")
+
+    if type(cert_der) is not str:
+        raise TypeError("Parameter `cert_der` must be of type str")
+
+    if not cert_der:
+        raise ValueError("Parameter `cert_der` must not be empty")
+
     return {
         "type": "revocationRequest",
         "certificate": le_util.jose_b64encode(cert_der),
@@ -144,6 +204,12 @@ def status_request(token):
     :rtype: dict
 
     """
+    if type(token) is not str:
+        raise TypeError("Parameter `token` must be of type str")
+
+    if not token:
+        raise ValueError("Parameter `token` must not be empty")
+
     return {
         "type": "statusRequest",
         "token": token,
