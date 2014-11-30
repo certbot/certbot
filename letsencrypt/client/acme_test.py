@@ -53,6 +53,19 @@ class PrettyTest(unittest.TestCase):
             self._call('{"foo": {"bar": "baz"}}'),
             '{\n    "foo": {\n        "bar": "baz"\n    }\n}')
 
+class ChallengeRequestTest(unittest.TestCase):
+    """Tests for letsencrypt.client.acme.challenge_request_test"""
+
+    def test_supports_unicode(self):
+        """Test support unicode parameter"""
+        from letsencrypt.client.acme import challenge_request
+        self.assertEqual(
+            challenge_request(u'unicode'),
+            {
+                "type": "challengeRequest",
+                "identifier": u'unicode',
+            }
+        )
 
 if __name__ == '__main__':
     unittest.main()
