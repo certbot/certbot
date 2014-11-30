@@ -48,11 +48,8 @@ def check_permissions(filepath, mode, uid=0):
 def unique_file(default_name, mode=0o777):
     """Safely finds a unique file for writing only (by default).
 
-    :param default_name: Default file name
-    :type default_name: str
-
-    :param mode: File mode
-    :type mode: int
+    :param str default_name: Default file name
+    :param int mode: File mode
 
     :return: tuple of file object and file name
 

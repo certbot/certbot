@@ -36,20 +36,11 @@ class Client(object):
                  private_key=None, private_key_file=None, use_curses=True):
         """
 
-        :param ca_server: Certificate authority server
-        :type ca_server: str
-
-        :param cert_signing_request: Contents of the CSR
-        :type cert_signing_request: str
-
-        :param private_key: Contents of the private key
-        :type private_key: str
-
-        :param private_key_file: absolute path to private_key
-        :type private_key_file: str
-
-        :param use_curses: Use curses UI
-        :type use_curses: bool
+        :param str ca_server: Certificate authority server
+        :param str cert_signing_request: Contents of the CSR
+        :param str private_key: Contents of the private key
+        :param str private_key_file: absolute path to private_key
+        :param bool use_curses: Use curses UI
 
         """
         self.curses = use_curses
@@ -80,14 +71,12 @@ class Client(object):
     def authenticate(self, domains=None, redirect=None, eula=False):
         """
 
-        :param domains: List of domains
-        :type domains: list
+        :param list domains: List of domains
 
         :param redirect:
-        :type redirect: bool|None
+        :type redirect: bool or None
 
-        :param eula: EULA accepted
-        :type eula: bool
+        :param bool eula: EULA accepted
 
         :raises errors.LetsEncryptClientError: CSR does not contain one of the
             specified names.
@@ -757,8 +746,7 @@ def remove_cert_key(cert):
 def sanity_check_names(names):
     """Make sure host names are valid.
 
-    :param names: List of host names
-    :type names: list
+    :param list names: List of host names
 
     """
     for name in names:
@@ -773,8 +761,7 @@ def is_hostname_sane(hostname):
     Do enough to avoid shellcode from the environment.  There's
     no need to do more.
 
-    :param hostname: Host name to validate
-    :type hostname: str
+    :param str hostname: Host name to validate
 
     :returns: True if hostname is valid, otherwise false.
     :rtype: bool

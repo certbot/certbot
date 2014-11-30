@@ -100,8 +100,7 @@ def main():
 def read_file(filename):
     """Returns the given file's contents with universal new line support.
 
-    :param filename: Filename
-    :type filename: str
+    :param str filename: Filename
 
     :returns: File contents
     :rtype: str
@@ -119,10 +118,9 @@ def rollback(config, checkpoints):
     """Revert configuration the specified number of checkpoints.
 
     :param config: Configurator object
-    :type config: ApacheConfigurator
+    :type config: :class:`ApacheConfigurator`
 
-    :param checkpoints: Number of checkpoints to revert.
-    :type checkpoints: int
+    :param int checkpoints: Number of checkpoints to revert.
 
     """
     config.rollback_checkpoints(checkpoints)
@@ -133,7 +131,7 @@ def view_checkpoints(config):
     """View checkpoints and associated configuration changes.
 
     :param config: Configurator object
-    :type config: ApacheConfigurator
+    :type config: :class:`ApacheConfigurator`
 
     """
     config.display_checkpoints()

@@ -32,7 +32,6 @@ def create_sig(msg, key_str, nonce=None, nonce_len=CONFIG.NONCE_SIZE):
 
     :param str key_str: Key in string form. Accepted formats
         are the same as for `Crypto.PublicKey.RSA.importKey`.
-    :type key_str: str
 
     :param str msg: Message to be signed
 
@@ -231,7 +230,6 @@ def csr_matches_names(csr, domains):
     also check the SAN extension. This is insufficient for full testing
 
     :param str csr: CSR file contents
-    :type csr: str
 
     :param list domains: Domains the CSR should contain.
 
