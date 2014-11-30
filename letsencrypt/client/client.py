@@ -31,54 +31,57 @@ ALLOW_RAW_IPV6_SERVER = False
 
 
 class Client(object):
-    """ACME protocol client."""
+    """ACME protocol client.
+
+    :ivar config: Configurator.
+    :type config: :class:`letsencrypt.client.configurator.Configurator`
+
+    :ivar str ca_server: Certificate authority server
+    :ivar str ca_server_url: Full URL of the CSR server
+
+    :ivar csr: Certificate Signing Request
+    :type csr: :class:`CSR`
+
+    :ivar list names: Domain names (:class:`list` of :class:`str`).
+
+    :ivar privkey: Private key
+    :type privkey: :class:`Key`
+
+    :ivar redirect: Redirect HTTP to HTTPS?
+    :type redirect: bool or None
+
+    :ivar bool use_curses: Use curses UI
+
+    """
     Key = collections.namedtuple("Key", "file pem")
     CSR = collections.namedtuple("CSR", "file data type")
 
-    def __init__(self, ca_server, cert_signing_request=CSR(None, None, None),
-                 private_key=Key(None, None), use_curses=True):
-        """
+    def __init__(self, ca_server, csr=CSR(None, None, None),
+                 privkey=Key(None, None), redirect=None, use_curses=True):
+        """Initialize a client."""
+        self.ca_server = ca_server
+        self.ca_server_url = "https://%s/acme/" % self.ca_server
+        self.names = []
+        self.redirect = redirect
+        self.use_curses = use_curses
 
-        :param str ca_server: Certificate authority server
-        :param str cert_signing_request: Contents of the CSR
-        :param str private_key: Contents of the private key
-        :param bool use_curses: Use curses UI
-
-        """
-        self.curses = use_curses
+        self.csr = csr
+        self.privkey = privkey
+        self._validate_csr_key_cli()  # TODO: catch exceptions
 
         # Logger needs to be initialized before Configurator
         self.init_logger()
+
         # TODO: Can probably figure out which configurator to use
         #       without special packaging based on system info Command
         #       line arg or client function to discover
         self.config = apache_configurator.ApacheConfigurator(
             CONFIG.SERVER_ROOT)
-        self.server = ca_server
 
-        # These are CSR/Key namedtuples
-        self.csr = cert_signing_request
-        self.privkey = private_key
-
-        # TODO: Figure out all exceptions from this function
-        try:
-            self._validate_csr_key_cli()
-
-        except errors.LetsEncryptClientError as e:
-            # TODO: Something nice here...
-            logger.fatal(("%s - until the programmers get their act together, "
-                          "we are just going to exit" % str(e)))
-            sys.exit(1)
-        self.server_url = "https://%s/acme/" % self.server
-
-    def authenticate(self, domains=None, redirect=None, eula=False):
+    def authenticate(self, domains=None, eula=False):
         """
 
         :param list domains: List of domains
-
-        :param redirect:
-        :type redirect: bool or None
-
         :param bool eula: EULA accepted
 
         :raises errors.LetsEncryptClientError: CSR does not contain one of the
@@ -91,8 +94,6 @@ class Client(object):
         if not self.config.config_test():
             sys.exit(1)
 
-        self.redirect = redirect
-
         # Display preview warning
         if not eula:
             with open('EULA') as eula_file:
@@ -102,7 +103,7 @@ class Client(object):
 
         # Display screen to select domains to validate
         if domains:
-            sanity_check_names([self.server] + domains)
+            sanity_check_names([self.ca_server] + domains)
             self.names = domains
         else:
             # This function adds all names
@@ -240,7 +241,7 @@ class Client(object):
 
         try:
             response = requests.post(
-                self.server_url,
+                self.ca_server_url,
                 data=json_encoded,
                 headers={"Content-Type": "application/json"},
             )
@@ -422,7 +423,7 @@ class Client(object):
                 self.config.enable_site(host)
 
         # sites may have been enabled / final cleanup
-        self.config.restart(quiet=self.curses)
+        self.config.restart(quiet=self.use_curses)
 
         display.success_installation(self.names)
 
@@ -434,7 +435,7 @@ class Client(object):
 
         if self.redirect:
             self.redirect_to_ssl(vhost)
-            self.config.restart(quiet=self.curses)
+            self.config.restart(quiet=self.use_curses)
 
         # if self.ocsp_stapling is None:
         #     q = ("Would you like to protect the privacy of your users "
@@ -703,7 +704,7 @@ class Client(object):
         return names
 
     def init_logger(self):
-        if self.curses:
+        if self.use_curses:
             logger.setLogger(logger.NcursesLogger())
             logger.setLogLevel(logger.INFO)
         else:
