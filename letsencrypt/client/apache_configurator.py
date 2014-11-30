@@ -13,6 +13,7 @@ from Crypto import Random
 from letsencrypt.client import augeas_configurator
 from letsencrypt.client import CONFIG
 from letsencrypt.client import crypto_util
+from letsencrypt.client import errors
 from letsencrypt.client import le_util
 from letsencrypt.client import logger
 
@@ -1536,7 +1537,7 @@ LogLevel warn \n\
             self.add_dir("/files" + mainConfig,
                          "Include", CONFIG.APACHE_CHALLENGE_CONF)
 
-    def dvsni_create_chall_cert(self, name, ext, nonce, key):
+    def dvsni_create_chall_cert(self, name, ext, nonce, key_file):
         """Creates DVSNI challenge certifiate.
 
         Certificate created at dvsni_get_cert_file(nonce)
@@ -1544,14 +1545,20 @@ LogLevel warn \n\
         :param nonce: hex form of nonce
         :type nonce: str
 
-        :param key: file path to key
+        :param key_file: absolute path to key file
         :type key: str
 
         """
+        try:
+            with open(key_file, 'r') as key_fd:
+                key_str = key_fd.read()
+        except IOError:
+            raise LetsEncryptDvsniError("Unable to load key file: %s" % key)
+
         self.register_file_creation(True, self.dvsni_get_cert_file(nonce))
 
         cert_pem = crypto_util.make_ss_cert(
-            key, [nonce + CONFIG.INVALID_EXT, name, ext])
+            key_str, [nonce + CONFIG.INVALID_EXT, name, ext])
 
         with open(self.dvsni_get_cert_file(nonce), 'w') as f:
             f.write(cert_pem)

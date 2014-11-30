@@ -1,3 +1,4 @@
+"""ACME protocol client class and helper functions."""
 import csv
 import json
 import os
@@ -32,7 +33,25 @@ class Client(object):
     """ACME protocol client."""
 
     def __init__(self, ca_server, cert_signing_request=None,
-                 private_key=None, use_curses=True):
+                 private_key=None, private_key_file=None, use_curses=True):
+        """
+
+        :param ca_server: Certificate authority server
+        :type ca_server: str
+
+        :param cert_signing_request: Contents of the CSR
+        :type cert_signing_request: str
+
+        :param private_key: Contents of the private key
+        :type private_key: str
+
+        :param private_key_file: absolute path to private_key
+        :type private_key_file: str
+
+        :param use_curses: Use curses UI
+        :type use_curses: bool
+
+        """
         self.curses = use_curses
 
         # Logger needs to be initialized before Configurator
@@ -42,29 +61,37 @@ class Client(object):
         #       line arg or client function to discover
         self.config = apache_configurator.ApacheConfigurator(
             CONFIG.SERVER_ROOT)
-
         self.server = ca_server
-        
-        if cert_signing_request:
-            self.csr_file = cert_signing_request.name
-        else:
-            self.csr_file = None
-        if private_key:
-            self.key_file = private_key.name
-        else:
-            self.key_file = None
+        self.csr = cert_signing_request
+        self.privkey = private_key
+        self.privkey_file = private_key_file
 
         # TODO: Figure out all exceptions from this function
         try:
             self._validate_csr_key_cli()
-        except Exception as e:
+        except Exception as exc:
             # TODO: Something nice here...
             logger.fatal(("%s - until the programmers get their act together, "
-                          "we are just going to exit" % str(e)))
+                          "we are just going to exit" % str(exc)))
             sys.exit(1)
         self.server_url = "https://%s/acme/" % self.server
 
     def authenticate(self, domains=None, redirect=None, eula=False):
+        """
+
+        :param domains: List of domains
+        :type domains: list
+
+        :param redirect:
+        :type redirect: bool|None
+
+        :param eula: EULA accepted
+        :type eula: bool
+
+        :raises errors.LetsEncryptClientError: CSR does not contain one of the
+            specified names.
+
+        """
         domains = [] if domains is None else domains
 
         # Check configuration
@@ -102,9 +129,9 @@ class Client(object):
         _, csr_der = self.get_key_csr_pem()
 
         # TODO: Handle this exception/problem
-        if not crypto_util.csr_matches_names(self.csr_file, self.names):
-            raise Exception(("CSR subject does not contain one of the "
-                            "specified names"))
+        if not crypto_util.csr_matches_names(self.csr, self.names):
+            raise errors.LetsEncryptClientError(("CSR subject does not contain "
+                                                 "one of the specified names"))
 
         # Perform Challenges
         responses, challenge_objs = self.verify_identity(challenge_msg)
@@ -155,7 +182,7 @@ class Client(object):
         """
         auth_dict = self.send(acme.authorization_request(
             challenge_msg["sessionID"], self.names[0],
-            challenge_msg["nonce"], responses, self.key_file))
+            challenge_msg["nonce"], responses, self.privkey))
 
         try:
             return self.is_expected_msg(auth_dict, "authorization")
@@ -178,7 +205,7 @@ class Client(object):
         """
         logger.info("Preparing and sending CSR..")
         return self.send_and_receive_expected(
-            acme.certificate_request(csr_der, self.key_file), "certificate")
+            acme.certificate_request(csr_der, self.privkey), "certificate")
 
     def acme_revocation(self, cert):
         """Handle ACME "revocation" phase.
@@ -211,13 +238,13 @@ class Client(object):
         :param msg: ACME message (JSON serializable).
         :type msg: dict
 
-        :raises: TypeError if `msg` is not JSON serializable or
-                 jsonschema.ValidationError if not valid ACME message or
-                 `errors.LetsEncryptClientError` in case of connection error
-                 or if response from server is not a valid ACME message.
-
         :returns: Server response message.
         :rtype: dict
+
+        :raises TypeError: if `msg` is not JSON serializable
+        :raises jsonschema.ValidationError: if not valid ACME message
+        :raises errors.LetsEncryptClientError: in case of connection error
+            or if response from server is not a valid ACME message.
 
         """
         json_encoded = json.dumps(msg)
@@ -248,13 +275,15 @@ class Client(object):
         """Send ACME message to server and return expected message.
 
         :param msg: ACME message (JSON serializable).
-        :type acem_msg: dict
+        :type msg: dict
 
         :param expected: Name of the expected response ACME message type.
         :type expected: str
 
         :returns: ACME response message of expected type.
         :rtype: dict
+
+        :raises errors.LetsEncryptClientError: An exception is thrown
 
         """
         response = self.send(msg)
@@ -281,10 +310,10 @@ class Client(object):
                        reponse message.
         :type rounds: int
 
-        :raises: Exception
-
         :returns: ACME response message from server.
         :rtype: dict
+
+        :raises errors.LetsEncryptClientError:
 
         """
         for _ in xrange(rounds):
@@ -312,6 +341,7 @@ class Client(object):
                      (rounds * delay))
 
     def list_certs_keys(self):
+        """List trusted Let's Encrypt certificates."""
         list_file = os.path.join(CONFIG.CERT_KEY_BACKUP, "LIST")
         certs = []
 
@@ -370,7 +400,6 @@ class Client(object):
             else:
                 self.choose_certs(certs)
         elif code == display.HELP:
-            print code, tag, cert
             display.more_info_cert(cert)
             self.choose_certs(certs)
         else:
@@ -405,7 +434,7 @@ class Client(object):
         for host in vhost:
             self.config.deploy_cert(host,
                                     os.path.abspath(cert_file),
-                                    os.path.abspath(self.key_file),
+                                    os.path.abspath(self.privkey_file),
                                     cert_chain_abspath)
             # Enable any vhost that was issued to, but not enabled
             if not host.enabled:
@@ -496,6 +525,9 @@ class Client(object):
         :param encrypt: Should the certificate key be encrypted?
         :type encrypt: bool
 
+        :returns: True if key file was stored successfully, False otherwise.
+        :rtype: bool
+
         """
         list_file = os.path.join(CONFIG.CERT_KEY_BACKUP, "LIST")
         le_util.make_or_verify_dir(CONFIG.CERT_KEY_BACKUP, 0o700)
@@ -513,21 +545,23 @@ class Client(object):
                 for row in csvreader:
                     idx = int(row[0]) + 1
                 csvwriter = csv.writer(csvfile)
-                csvwriter.writerow([str(idx), cert_file, self.key_file])
+                csvwriter.writerow([str(idx), cert_file, self.privkey_file])
 
         else:
             with open(list_file, 'wb') as csvfile:
                 csvwriter = csv.writer(csvfile)
-                csvwriter.writerow(["0", cert_file, self.key_file])
+                csvwriter.writerow(["0", cert_file, self.privkey_file])
 
-        shutil.copy2(self.key_file,
+        shutil.copy2(self.privkey_file,
                      os.path.join(
                          CONFIG.CERT_KEY_BACKUP,
-                         os.path.basename(self.key_file) + "_" + str(idx)))
+                         os.path.basename(self.privkey_file) + "_" + str(idx)))
         shutil.copy2(cert_file,
                      os.path.join(
                          CONFIG.CERT_KEY_BACKUP,
                          os.path.basename(cert_file) + "_" + str(idx)))
+
+        return True
 
     def redirect_to_ssl(self, vhost):
         for ssl_vh in vhost:
@@ -552,7 +586,7 @@ class Client(object):
         :param name: TODO
         :type name: TODO
 
-        :param challanges: A list of challenges from ACME "challenge"
+        :param challenges: A list of challenges from ACME "challenge"
                            server message to be fulfilled by the client
                            in order to prove possession of the identifier.
         :type challenges: list
@@ -597,7 +631,7 @@ class Client(object):
             challenge_objs.append({
                 "type": "dvsni",
                 "listSNITuple": sni_todo,
-                "dvsni_key": os.path.abspath(self.key_file),
+                "dvsni_key": os.path.abspath(self.privkey_file),
             })
             challenge_obj_indices.append(sni_satisfies)
             logger.debug(sni_todo)
@@ -622,40 +656,36 @@ class Client(object):
         :rtype: tuple
 
         """
-        key_pem = None
-        csr_pem = None
-        if not self.key_file:
+        if not self.privkey:
             key_pem = crypto_util.make_key(CONFIG.RSA_KEY_SIZE)
+            self.privkey = key_pem
+
             # Save file
             le_util.make_or_verify_dir(CONFIG.KEY_DIR, 0o700)
-            key_f, self.key_file = le_util.unique_file(
+            key_f, key_filename = le_util.unique_file(
                 os.path.join(CONFIG.KEY_DIR, "key-letsencrypt.pem"), 0o600)
             key_f.write(key_pem)
             key_f.close()
-            logger.info("Generating key: %s" % self.key_file)
-        else:
-            try:
-                key_pem = open(self.key_file).read().replace("\r", "")
-            except:
-                logger.fatal("Unable to open key file: %s" % self.key_file)
-                sys.exit(1)
 
-        if not self.csr_file:
-            csr_pem, csr_der = crypto_util.make_csr(self.key_file, self.names)
+            self.privkey_file = key_filename
+            logger.info("Generating key: %s" % self.privkey_file)
+        else:
+            key_pem = self.privkey
+
+        if not self.csr:
+            csr_pem, csr_der = crypto_util.make_csr(self.privkey, self.names)
+            self.csr = csr_pem
+
             # Save CSR
             le_util.make_or_verify_dir(CONFIG.CERT_DIR, 0o755)
-            csr_f, self.csr_file = le_util.unique_file(
+            csr_f, csr_filename = le_util.unique_file(
                 os.path.join(CONFIG.CERT_DIR, "csr-letsencrypt.pem"), 0o644)
             csr_f.write(csr_pem)
             csr_f.close()
-            logger.info("Creating CSR: %s" % self.csr_file)
+            logger.info("Creating CSR: %s" % csr_filename)
         else:
-            try:
-                csr = M2Crypto.X509.load_request(self.csr_file)
-                csr_pem, csr_der = csr.as_pem(), csr.as_der()
-            except:
-                logger.fatal("Unable to open CSR file: %s" % self.csr_file)
-                sys.exit(1)
+            csr_obj = M2Crypto.X509.load_request_string(self.csr)
+            csr_pem, csr_der = csr_obj.as_pem(), csr_obj.as_der()
 
         if csr_return_format == 'der':
             return key_pem, csr_der
@@ -673,33 +703,22 @@ class Client(object):
         # The client can eventually do things like prompt the user
         # and allow the user to take more appropriate actions
 
-        # If CSR is provided, the private key should also be provided.
-        if self.csr_file and not self.key_file:
-            logger.fatal(("Please provide the private key file used in "
-                          "generating the provided CSR"))
-            sys.exit(1)
         # If CSR is provided, it must be readable and valid.
-        try:
-            if self.csr_file and not crypto_util.valid_csr(self.csr_file):
-                raise Exception("The provided CSR is not a valid CSR")
-        except IOError:
-            raise Exception("The provided CSR could not be read")
+        if self.csr and not crypto_util.valid_csr(self.csr):
+            raise errors.LetsEncryptClientError("The provided CSR is not a "
+                                                "valid CSR")
+
         # If key is provided, it must be readable and valid.
-        try:
-            if self.key_file and not crypto_util.valid_privkey(self.key_file):
-                raise Exception("The provided key is not a valid key")
-        except IOError:
-            raise Exception("The provided key could not be read")
+        if self.privkey and not crypto_util.valid_privkey(self.privkey):
+            raise errors.LetsEncryptClientError("The provided key is not a "
+                                                "valid key")
 
         # If CSR and key are provided, the key must be the same key used
         # in the CSR.
-        if self.csr_file and self.key_file:
-            try:
-                if not crypto_util.csr_matches_pubkey(
-                        self.csr_file, self.key_file):
-                    raise Exception("The key and CSR do not match")
-            except IOError:
-                raise Exception("The key or CSR files could not be read")
+        if self.csr and self.privkey:
+            if not crypto_util.csr_matches_pubkey(self.csr, self.privkey):
+                raise errors.LetsEncryptClientError("The key and CSR do not "
+                                                    "match")
 
     def get_all_names(self):
         """Return all valid names in the configuration."""
@@ -753,6 +772,12 @@ def remove_cert_key(cert):
 
 
 def sanity_check_names(names):
+    """Make sure host names are valid.
+
+    :param names: List of host names
+    :type names: list
+
+    """
     for name in names:
         if not is_hostname_sane(name):
             logger.fatal(repr(name) + " is an impossible hostname")
@@ -760,9 +785,17 @@ def sanity_check_names(names):
 
 
 def is_hostname_sane(hostname):
-    """
+    """Make sure the given host name is sane.
+
     Do enough to avoid shellcode from the environment.  There's
     no need to do more.
+
+    :param hostname: Host name to validate
+    :type hostname: str
+
+    :returns: True if hostname is valid, otherwise false.
+    :rtype: bool
+
     """
     # hostnames & IPv4
     allowed = string.ascii_letters + string.digits + "-."
