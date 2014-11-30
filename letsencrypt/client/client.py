@@ -130,8 +130,8 @@ class Client(object):
         _, csr_der = self.get_key_csr_pem()
 
         # TODO: Handle this exception/problem
-        if not crypto_util.csr_matches_names(self.csr_file, self.names):
-            raise errrors.LetsEncryptClientError(
+        if not crypto_util.csr_matches_names(self.csr, self.names):
+            raise errors.LetsEncryptClientError(
                 "CSR subject does not contain one of the specified names")
 
         # Perform Challenges
