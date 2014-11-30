@@ -251,7 +251,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :type vhost: VH
 
         """
-        self.assoc[dn] = vh
+        self.assoc[domain] = vhost
 
     def get_all_names(self):
         """Returns all names found in the Apache Configuration.
@@ -1553,7 +1553,8 @@ LogLevel warn \n\
             with open(key_file, 'r') as key_fd:
                 key_str = key_fd.read()
         except IOError:
-            raise LetsEncryptDvsniError("Unable to load key file: %s" % key)
+            raise errors.LetsEncryptDvsniError(
+                "Unable to load key file: %s" % key_file)
 
         self.register_file_creation(True, self.dvsni_get_cert_file(nonce))
 
@@ -1630,7 +1631,7 @@ def main():
     #         print name
 
     print config.find_directive(
-        config.case_i("NameVirtualHost"), config.case_i("holla:443"))
+        case_i("NameVirtualHost"), case_i("holla:443"))
 
     # for m in config.find_directive("Listen", "443"):
     #     print "Directive Path:", m, "Value:", config.aug.get(m)

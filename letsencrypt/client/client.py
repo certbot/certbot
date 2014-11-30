@@ -131,7 +131,7 @@ class Client(object):
 
         # TODO: Handle this exception/problem
         if not crypto_util.csr_matches_names(self.csr, self.names):
-            raise errrors.LetsEncryptClientError(
+            raise errors.LetsEncryptClientError(
                 "CSR subject does not contain one of the specified names")
 
         # Perform Challenges
