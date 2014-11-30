@@ -1,1 +1,1 @@
-letsencrypt/client/options-ssl.conf		etc/trustify
+letsencrypt/client/options-ssl.conf		etc/letsencrypt

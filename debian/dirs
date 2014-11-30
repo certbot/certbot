@@ -1,2 +1,2 @@
-etc/trustify
-var/lib/trustify
+etc/letsencrypt
+var/lib/letsencrypt
