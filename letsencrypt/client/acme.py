@@ -72,10 +72,10 @@ def challenge_request(name):
     """
 
     if type(name) is not unicode:
-        raise TypeError("Parameter `name` must be unicode")
+        raise TypeError("Parameter 'name' must be unicode")
 
     if not name:
-        raise ValueError("Parameter `name` must not be empty")
+        raise ValueError("Parameter 'name' must not be empty")
 
     return {
         "type": "challengeRequest",
@@ -98,31 +98,31 @@ def authorization_request(req_id, name, server_nonce, responses, key):
 
     """
     if type(req_id) is not str:
-        raise TypeError("Parameter `req_id` must be of type str")
+        raise TypeError("Parameter 'req_id' must be of type str")
 
     if not req_id:
-        raise ValueError("Parameter `req_id` must not be empty")
+        raise ValueError("Parameter 'req_id' must not be empty")
 
     if type(name) is not unicode:
-        raise TypeError("Parameter `name` must be of type unicode")
+        raise TypeError("Parameter 'name' must be of type unicode")
 
     if not name:
-        raise ValueError("Parameter `name` must not be empty")
+        raise ValueError("Parameter 'name' must not be empty")
 
     if type(server_nonce) is not str:
-        raise TypeError("Parameter `server_nonce` must be of type str")
+        raise TypeError("Parameter 'server_nonce' must be of type str")
 
     if not server_nonce:
-        raise ValueError("Parameter `server_nonce` must not be empty")
+        raise ValueError("Parameter 'server_nonce' must not be empty")
 
     if type(responses) is not list:
-        raise TypeError("Parameter `responses` must be of type list")
+        raise TypeError("Parameter 'responses' must be of type list")
 
     if type(key) is not str:
-        raise TypeError("Parameter `key` must be of type str")
+        raise TypeError("Parameter 'key' must be of type str")
 
     if not key:
-        raise ValueError("Parameter `key` must not be empty")
+        raise ValueError("Parameter 'key' must not be empty")
 
     return {
         "type": "authorizationRequest",
@@ -146,16 +146,16 @@ def certificate_request(csr_der, key):
 
     """
     if type(csr_der) is not str:
-        raise TypeError("Parameter `csr_der` must be of type str")
+        raise TypeError("Parameter 'csr_der' must be of type str")
 
     if not csr_der:
-        raise ValueError("Parameter `csr_der` must not be empty")
+        raise ValueError("Parameter 'csr_der' must not be empty")
 
     if type(key) is not str:
-        raise TypeError("Parameter `key` must be of type str")
+        raise TypeError("Parameter 'key' must be of type str")
 
     if not key:
-        raise ValueError("Parameter `key` must not be empty")
+        raise ValueError("Parameter 'key' must not be empty")
 
     return {
         "type": "certificateRequest",
@@ -177,16 +177,16 @@ def revocation_request(key_file, cert_der):
 
     """
     if type(key_file) is not str:
-        raise TypeError("Parameter `key_file` must be of type str")
+        raise TypeError("Parameter 'key_file' must be of type str")
 
     if not key_file:
-        raise ValueError("Parameter `key_file` must not be empty")
+        raise ValueError("Parameter 'key_file' must not be empty")
 
     if type(cert_der) is not str:
-        raise TypeError("Parameter `cert_der` must be of type str")
+        raise TypeError("Parameter 'cert_der' must be of type str")
 
     if not cert_der:
-        raise ValueError("Parameter `cert_der` must not be empty")
+        raise ValueError("Parameter 'cert_der' must not be empty")
 
     return {
         "type": "revocationRequest",
@@ -205,10 +205,10 @@ def status_request(token):
 
     """
     if type(token) is not str:
-        raise TypeError("Parameter `token` must be of type str")
+        raise TypeError("Parameter 'token' must be of type str")
 
     if not token:
-        raise ValueError("Parameter `token` must not be empty")
+        raise ValueError("Parameter 'token' must not be empty")
 
     return {
         "type": "statusRequest",
