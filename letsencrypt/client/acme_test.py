@@ -59,19 +59,16 @@ class ChallengeRequestTest(unittest.TestCase):
 
     def test_empty_parameter(self):
         """Test showing challenge_request does not allow empty unicode"""
-
         from letsencrypt.client.acme import challenge_request
         self.assertRaises(ValueError, challenge_request, u'')
 
     def test_string_not_supported(self):
         """Test error when passing non-unicode string"""
-
         from letsencrypt.client.acme import challenge_request
         self.assertRaises(TypeError, challenge_request, 'string')
 
     def test_supports_unicode(self):
         """Test support unicode parameter"""
-
         from letsencrypt.client.acme import challenge_request
         self.assertEqual(
             challenge_request(u'unicode'),
