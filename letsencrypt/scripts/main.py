@@ -105,8 +105,8 @@ def read_file(filename):
 
     :param str filename: Filename
 
-    :returns: File contents
-    :rtype: str
+    :returns: A tuple of filename and its contents
+    :rtype: tuple
 
     :raises argparse.ArgumentTypeError: File does not exist or is not readable.
 
