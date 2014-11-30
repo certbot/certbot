@@ -25,23 +25,21 @@ def b64_cert_to_pem(b64_der_cert):
 def create_sig(msg, key_str, nonce=None, nonce_len=CONFIG.NONCE_SIZE):
     """Create signature with nonce prepended to the message.
 
-    TODO: Change this over to M2Crypto... PKey
-          Protect against crypto unicode errors... is this sufficient?
-          Do I need to escape?
+    .. todo:: Change this over to M2Crypto... PKey
 
-    :param msg: Message to be signed
-    :type msg: Anything with __str__ method
+    .. todo::Protect against crypto unicode errors... is this sufficient?
+        Do I need to escape?
 
-    :param key_str:  Key in string form. Accepted formats
-                     are the same as for `Crypto.PublicKey.RSA.importKey`.
-    :type key_str: str
+    :param str key_str: Key in string form. Accepted formats
+        are the same as for `Crypto.PublicKey.RSA.importKey`.
+
+    :param str msg: Message to be signed
 
     :param nonce: Nonce to be used. If None, nonce of `nonce_len` size
                   will be randomly genereted.
     :type nonce: str or None
 
-    :param nonce_len: Size of the automaticaly generated nonce.
-    :type nonce_len: int
+    :param int nonce_len: Size of the automaticaly generated nonce.
 
     :returns: Signature.
     :rtype: dict
@@ -176,8 +174,7 @@ def make_ss_cert(key_str, domains):
 def get_cert_info(filename):
     """Get certificate info.
 
-    :param filename: Name of file containing certificate in PEM format.
-    :type filename: str
+    :param str filename: Name of file containing certificate in PEM format.
 
     :rtype: dict
 
@@ -213,8 +210,7 @@ def valid_csr(csr):
 
     Check if `csr` is a valid CSR for the given domains.
 
-    :param csr: CSR file contents
-    :type csr: str
+    :param str csr: CSR file contents
 
     :returns: Validity of CSR.
     :rtype: bool
@@ -233,11 +229,9 @@ def csr_matches_names(csr, domains):
     M2Crypto currently does not expose the OpenSSL interface to
     also check the SAN extension. This is insufficient for full testing
 
-    :param csr: CSR file contents
-    :type csr: str
+    :param str csr: CSR file contents
 
-    :param domains: Domains the CSR should contain.
-    :type domains: list
+    :param list domains: Domains the CSR should contain.
 
     :returns: If the CSR subject contains one of the domains
     :rtype: bool
@@ -253,8 +247,7 @@ def csr_matches_names(csr, domains):
 def valid_privkey(privkey):
     """Is valid RSA private key?
 
-    :param privkey: Private key file contents
-    :type privkey: str
+    :param str privkey: Private key file contents
 
     :returns: Validity of private key.
     :rtype: bool
@@ -269,11 +262,8 @@ def valid_privkey(privkey):
 def csr_matches_pubkey(csr, privkey):
     """Does private key correspond to the subject public key in the CSR?
 
-    :param csr: CSR file contents
-    :type csr: str
-
-    :param privkey: Private key file contents
-    :type privkey: str
+    :param str csr: CSR file contents
+    :param str privkey: Private key file contents
 
     :returns: Correspondence of private key to CSR subject public key.
     :rtype: bool
