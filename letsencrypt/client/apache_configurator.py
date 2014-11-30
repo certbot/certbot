@@ -64,10 +64,10 @@ class VH(object):
 
 
 class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
-    """
-    State of Configurator:
-    This code has been tested under Ubuntu 12.04 Apache 2.2
-    and this code works for Ubuntu 14.04 Apache 2.4. Further
+    """Apache configurator.
+
+    State of Configurator: This code has been tested under Ubuntu 12.04
+    Apache 2.2 and this code works for Ubuntu 14.04 Apache 2.4. Further
     notes below.
 
     This class was originally developed for Apache 2.2 and has not seen a
@@ -87,6 +87,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     This class will eventually derive from a generic Configurator class
     so that other Configurators (like Nginx) can be developed and interoperate
     with the client.
+
     """
     def __init__(self, server_root=CONFIG.SERVER_ROOT):
         super(ApacheConfigurator, self).__init__()
@@ -1252,13 +1253,16 @@ LogLevel warn \n\
     def dvsni_perform(self, chall_dict):
         """Peform a DVSNI challenge.
 
-        Composed of
-        list_sni_tuple:  List of tuples with form (addr, r, nonce)
-                       addr (string), r (base64 string), nonce (hex string)
-        dvsni_key:     string - File path to key
+        Composed of:
 
-        :param chall_dict: dvsni challenge - see documentation
-        :type chall_dict: dict
+        list_sni_tuple:
+          List of tuples with form `(addr, r, nonce)`, where
+          `addr` (`str`), `r` (base64 `str`), nonce (hex `str`)
+
+        dvsni_key:
+          File path to key (str)
+
+        :param dict chall_dict: dvsni challenge - see documentation
 
         """
         # Save any changes to the configuration as a precaution
@@ -1325,12 +1329,10 @@ LogLevel warn \n\
 
         Result: Apache config includes virtual servers for issued challs
 
-        :param list_sni_tuple: list of tuples with the form (addr, y, nonce)
-                               addr (string), y (byte array), nonce (hex str)
-        :type list_sni_tuple: list
-
+        :param list list_sni_tuple: list of tuples with the form
+            `(addr, y, nonce)`, where `addr` is `str`, `y` is `bytearray`,
+            and nonce is hex `str`
         :param str dvsni_key: file path to key
-
         :param list ll_addrs: list of list of addresses to apply
 
         """
@@ -1403,8 +1405,7 @@ def enable_mod(mod_name):
 
     Both enables and restarts Apache so module is active.
 
-    :param mod_name: Name of the module to enable
-    :type mod_name: str
+    :param str mod_name: Name of the module to enable
 
     """
     try:
@@ -1426,7 +1427,8 @@ def check_ssl_loaded():
     """Checks to see if mod_ssl is loaded
 
     Currently uses apache2ctl to get loaded module list
-    TODO: This function is likely fragile to versions/distros
+
+    .. todo:: This function is likely fragile to versions/distros
 
     :returns: If ssl_module is included and active in Apache
     :rtype: bool
@@ -1483,8 +1485,7 @@ def get_file_path(vhost_path):
 
     Takes in Augeas path and returns the file name
 
-    :param vhost_path: Augeas virtual host path
-    :type vhost_path: str
+    :param str vhost_path: Augeas virtual host path
 
     :returns: filename of vhost
     :rtype: str
@@ -1529,8 +1530,7 @@ def strip_dir(path):
 def dvsni_get_cert_file(nonce):
     """Returns standardized name for challenge certificate.
 
-    :param nonce: hex form of nonce
-    :type nonce: str
+    :param str nonce: hex form of nonce
 
     :returns: certificate file name
     :rtype: str
@@ -1542,14 +1542,9 @@ def dvsni_get_cert_file(nonce):
 def get_config_text(nonce, ip_addrs, key):
     """Chocolate virtual server configuration text
 
-    :param nonce: hex form of nonce
-    :type nonce: str
-
-    :param ip_addrs: addresses of challenged domain
-    :type ip_addrs: str
-
-    :param key: file path to key
-    :type key: str
+    :param str nonce: hex form of nonce
+    :param str ip_addrs: addresses of challenged domain
+    :param str key: file path to key
 
     :returns: virtual host configuration text
     :rtype: str
@@ -1573,11 +1568,8 @@ def get_config_text(nonce, ip_addrs, key):
 def dvsni_gen_ext(dvsni_r, dvsni_s):
     """Generates z extension to be placed in certificate extension.
 
-    :param dvsni_r: DVSNI r value
-    :type dvsni_r: byte array
-
-    :param dvsni_s: DVSNI s value
-    :type dvsni_s: byte array
+    :param bytearray dvsni_r: DVSNI r value
+    :param bytearray dvsni_s: DVSNI s value
 
     result: returns z + CONFIG.INVALID_EXT
 
@@ -1590,7 +1582,7 @@ def dvsni_gen_ext(dvsni_r, dvsni_s):
 
 
 def main():
-    """ Main function used for quick testing purposes """
+    """Main function used for quick testing purposes"""
 
     config = ApacheConfigurator()
     logger.setLogger(logger.FileLogger(sys.stdout))
