@@ -197,7 +197,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     def choose_virtual_host(self, target_name):
         """ Chooses a virtual host based on the given domain name.
 
-        .. todo:: This should maybe return list if no obvious answer is presented
+        .. todo:: This should maybe return list if no obvious answer
+            is presented.
 
         :param str name: domain name
 
@@ -287,7 +288,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         .. todo:: This will have to be updated for other distros versions
 
-        :param str filename: optional filename that will be used as the user config
+        :param str filename: optional filename that will be used as the
+            user config
 
         """
         if filename:
@@ -1260,7 +1262,7 @@ LogLevel warn \n\
           `addr` (`str`), `r` (base64 `str`), nonce (hex `str`)
 
         dvsni_key:
-          File path to key (str)
+          DVSNI key (:class:`letsencrypt.client.client.Client.Key`)
 
         :param dict chall_dict: dvsni challenge - see documentation
 
@@ -1332,7 +1334,10 @@ LogLevel warn \n\
         :param list list_sni_tuple: list of tuples with the form
             `(addr, y, nonce)`, where `addr` is `str`, `y` is `bytearray`,
             and nonce is hex `str`
-        :param str dvsni_key: file path to key
+
+        :param dvsni_key: DVSNI key
+        :type dvsni_key: :class:`letsencrypt.client.client.Client.Key`
+
         :param list ll_addrs: list of list of addresses to apply
 
         """
@@ -1351,7 +1356,7 @@ LogLevel warn \n\
         config_text = "<IfModule mod_ssl.c> \n"
         for idx, lis in enumerate(ll_addrs):
             config_text += get_config_text(
-                list_sni_tuple[idx][2], lis, dvsni_key)
+                list_sni_tuple[idx][2], lis, dvsni_key.file)
         config_text += "</IfModule> \n"
 
         self.dvsni_conf_include_check(self.user_config_file)
@@ -1375,26 +1380,21 @@ LogLevel warn \n\
             self.add_dir("/files" + main_config,
                          "Include", CONFIG.APACHE_CHALLENGE_CONF)
 
-    def dvsni_create_chall_cert(self, name, ext, nonce, key_file):
+    def dvsni_create_chall_cert(self, name, ext, nonce, dvsni_key):
         """Creates DVSNI challenge certifiate.
 
         Certificate created at dvsni_get_cert_file(nonce)
 
         :param str nonce: hex form of nonce
-        :param str key_file: absolute path to key file
+
+        :param dvsni_key: absolute path to key file
+        :type dvsni_key: `client.Client.Key`
 
         """
-        try:
-            with open(key_file, 'r') as key_fd:
-                key_str = key_fd.read()
-        except IOError:
-            raise errors.LetsEncryptDvsniError(
-                "Unable to load key file: %s" % key_file)
-
         self.register_file_creation(True, dvsni_get_cert_file(nonce))
 
         cert_pem = crypto_util.make_ss_cert(
-            key_str, [nonce + CONFIG.INVALID_EXT, name, ext])
+            dvsni_key.pem, [nonce + CONFIG.INVALID_EXT, name, ext])
 
         with open(dvsni_get_cert_file(nonce), 'w') as chall_cert_file:
             chall_cert_file.write(cert_pem)
@@ -1514,7 +1514,7 @@ def strip_dir(path):
     .. todo:: Replace this with Python standard function
 
     :param str path: path is a file path. not an augeas section or
-                     directive path
+        directive path
 
     :returns: directory
     :rtype: str
@@ -1539,12 +1539,12 @@ def dvsni_get_cert_file(nonce):
     return CONFIG.WORK_DIR + nonce + ".crt"
 
 
-def get_config_text(nonce, ip_addrs, key):
+def get_config_text(nonce, ip_addrs, dvsni_key_file):
     """Chocolate virtual server configuration text
 
     :param str nonce: hex form of nonce
     :param str ip_addrs: addresses of challenged domain
-    :param str key: file path to key
+    :param str dvsni_key_file: Path to key file
 
     :returns: virtual host configuration text
     :rtype: str
@@ -1559,7 +1559,7 @@ def get_config_text(nonce, ip_addrs, key):
             "\n"
             "Include " + CONFIG.OPTIONS_SSL_CONF + " \n"
             "SSLCertificateFile " + dvsni_get_cert_file(nonce) + " \n"
-            "SSLCertificateKeyFile " + key + " \n"
+            "SSLCertificateKeyFile " + dvsni_key_file + " \n"
             "\n"
             "DocumentRoot " + CONFIG.CONFIG_DIR + "challenge_page/ \n"
             "</VirtualHost> \n\n")

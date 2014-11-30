@@ -28,10 +28,10 @@ def main():
                         nargs="+")
     parser.add_argument("-s", "--server", dest="server",
                         help="The ACME CA server address.")
-    parser.add_argument("-p", "--privkey", dest="privkey_tup", type=read_file,
+    parser.add_argument("-p", "--privkey", dest="privkey", type=read_file,
                         help="Path to the private key file for certificate "
                              "generation.")
-    parser.add_argument("-c", "--csr", dest="csr_tup", type=read_file,
+    parser.add_argument("-c", "--csr", dest="csr", type=read_file,
                         help="Path to the certificate signing request file "
                              "corresponding to the private key file. The "
                              "private key file argument is required if this "
@@ -63,7 +63,7 @@ def main():
     args = parser.parse_args()
 
     # Enforce '--privkey' is set along with '--csr'.
-    if args.csr_tup and not args.privkey_tup:
+    if args.csr and not args.privkey:
         parser.error("private key file (--privkey) must be specified along{0} "
                      "with the certificate signing request file (--csr)"
                      .format(os.linesep))
@@ -84,13 +84,16 @@ def main():
     server = args.server is None and CONFIG.ACME_SERVER or args.server
 
     # Prepare for init of Client
-    if args.privkey_tup is None:
-        args.privkey_tup = (None, None)
-    if args.csr_tup is None:
-        args.csr_tup = (None, None)
+    if args.privkey is None:
+        privkey = client.Client.Key(None, None)
+    else:
+        privkey = client.Client.Key(args.privkey[0], args.privkey[1])
+    if args.csr is None:
+        csr = client.Client.CSR(None, None, None)
+    else:
+        csr = client.Client.CSR(args.csr[0], args.csr[1], "pem")
 
-    acme = client.Client(server, args.csr_tup[1], args.privkey_tup[1],
-                         args.privkey_tup[0], args.curses)
+    acme = client.Client(server, csr, privkey, args.curses)
     if args.revoke:
         acme.list_certs_keys()
     else:
