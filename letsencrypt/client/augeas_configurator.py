@@ -14,8 +14,7 @@ from letsencrypt.client import logger
 class AugeasConfigurator(configurator.Configurator):
     """Base Augeas Configurator class.
 
-    TODO: Fix generic exception handling.
-    TODO: Go through and make sure to use os.path.join
+    .. todo:: Fix generic exception handling.
 
     """
 
@@ -238,12 +237,14 @@ class AugeasConfigurator(configurator.Configurator):
 
         existing_filepaths = []
         op_fd = None
+        filepaths_path = os.path.join(cp_dir, "FILEPATHS")
+
         # Open up FILEPATHS differently depending on if it already exists
-        if os.path.isfile(cp_dir + "FILEPATHS"):
-            op_fd = open(cp_dir + "FILEPATHS", 'r+')
+        if os.path.isfile(filepaths_path):
+            op_fd = open(filepaths_path, 'r+')
             existing_filepaths = op_fd.read().splitlines()
         else:
-            op_fd = open(cp_dir + "FILEPATHS", 'w')
+            op_fd = open(filepaths_path, 'w')
 
         idx = len(existing_filepaths)
         for filename in save_files:
@@ -251,13 +252,13 @@ class AugeasConfigurator(configurator.Configurator):
                 # Tag files with index so multiple files can
                 # have the same filename
                 logger.debug("Creating backup of %s" % filename)
-                shutil.copy2(filename, cp_dir + os.path.basename(filename)
-                             + "_" + str(idx))
+                shutil.copy2(filename, os.path.join(
+                    cp_dir, os.path.basename(filename) + "_" + str(idx)))
                 op_fd.write(filename + '\n')
                 idx += 1
         op_fd.close()
 
-        with open(cp_dir + "CHANGES_SINCE", 'a') as notes_fd:
+        with open(os.path.join(cp_dir, "CHANGES_SINCE"), 'a') as notes_fd:
             notes_fd.write(self.save_notes)
 
     def _recover_checkpoint(self, cp_dir):
@@ -273,20 +274,22 @@ class AugeasConfigurator(configurator.Configurator):
         :rtype: int
 
         """
-        if os.path.isfile(cp_dir + "/FILEPATHS"):
+        if os.path.isfile(os.path.join(cp_dir, "FILEPATHS")):
             try:
-                with open(cp_dir + "/FILEPATHS") as paths_fd:
+                with open(os.path.join(cp_dir, "FILEPATHS")) as paths_fd:
                     filepaths = paths_fd.read().splitlines()
                     for idx, path in enumerate(filepaths):
-                        shutil.copy2(cp_dir + '/' + os.path.basename(path)
-                                     + '_' + str(idx), path)
+                        shutil.copy2(os.path.join(
+                            cp_dir,
+                            os.path.basename(path) + '_' + str(idx)),
+                            path)
             except:
                 # This file is required in all checkpoints.
                 logger.error("Unable to recover files from %s" % cp_dir)
                 return 1
 
         # Remove any newly added files if they exist
-        self._remove_contained_files(os.path.join(cp_dir, "/NEW_FILES"))
+        self._remove_contained_files(os.path.join(cp_dir, "NEW_FILES"))
 
         try:
             shutil.rmtree(cp_dir)
@@ -418,13 +421,17 @@ def finalize_checkpoint(cp_dir, title):
 
     """
     final_dir = os.path.join(CONFIG.BACKUP_DIR, str(time.time()))
+    changes_since_path = os.path.join(cp_dir, "CHANGES_SINCE")
+    changes_since_tmp_path = os.path.join(cp_dir, "CHANGES_SINCE.tmp")
+
     try:
-        with open(cp_dir + "CHANGES_SINCE.tmp", 'w') as changes_tmp:
+        with open(changes_since_tmp_path, 'w') as changes_tmp:
             changes_tmp.write("-- %s --\n" % title)
-            with open(cp_dir + "CHANGES_SINCE", 'r') as changes_orig:
+            with open(changes_since_path, 'r') as changes_orig:
                 changes_tmp.write(changes_orig.read())
-        shutil.move(os.path.join(cp_dir, "CHANGES_SINCE.tmp"),
-                    os.path.join(cp_dir, "CHANGES_SINCE"))
+
+        shutil.move(changes_since_tmp_path, changes_since_path)
+
     except:
         logger.error("Unable to finalize checkpoint - adding title")
         return False
