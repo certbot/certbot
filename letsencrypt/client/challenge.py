@@ -6,6 +6,7 @@ from letsencrypt.client import logger
 
 
 class Challenge(object):
+    """Let's Encrypt challenge."""
 
     def __init__(self, configurator):
         self.config = configurator
