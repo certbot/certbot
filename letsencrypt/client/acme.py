@@ -37,8 +37,9 @@ def acme_object_validate(json_string, schemata=None):
     :type schemata: dict
 
     :returns: None if validation was successful.
-    :raises: jsonschema.ValidationError if validation was unsuccessful
-             ValueError if the object cannot even be parsed as valid JSON
+
+    :raises jsonschema.ValidationError: if validation was unsuccessful
+    :raises ValueError: if the object cannot even be parsed as valid JSON
 
     """
     schemata = SCHEMATA if schemata is None else schemata

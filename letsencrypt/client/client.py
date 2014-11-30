@@ -69,10 +69,11 @@ class Client(object):
         # TODO: Figure out all exceptions from this function
         try:
             self._validate_csr_key_cli()
-        except Exception as exc:
+
+        except errors.LetsEncryptClientError as e:
             # TODO: Something nice here...
-            logger.fatal(("%s - until the programmers get their act together, "
-                          "we are just going to exit" % str(exc)))
+            logger.fatal("%s - until the programmers get their act together, "
+                         "we are just going to exit" % e)
             sys.exit(1)
         self.server_url = "https://%s/acme/" % self.server
 
@@ -129,9 +130,9 @@ class Client(object):
         _, csr_der = self.get_key_csr_pem()
 
         # TODO: Handle this exception/problem
-        if not crypto_util.csr_matches_names(self.csr, self.names):
-            raise errors.LetsEncryptClientError(("CSR subject does not contain "
-                                                 "one of the specified names"))
+        if not crypto_util.csr_matches_names(self.csr_file, self.names):
+            raise errrors.LetsEncryptClientError(
+                "CSR subject does not contain one of the specified names")
 
         # Perform Challenges
         responses, challenge_objs = self.verify_identity(challenge_msg)
@@ -313,7 +314,7 @@ class Client(object):
         :returns: ACME response message from server.
         :rtype: dict
 
-        :raises errors.LetsEncryptClientError:
+        :raises LetsEncryptClientError: if server sent ACME "error" message
 
         """
         for _ in xrange(rounds):
@@ -698,6 +699,8 @@ class Client(object):
         Verifies that the client key and csr arguments are valid and
         correspond to one another.
 
+        :raises LetsEncryptClientError: if validation fails
+
         """
         # TODO: Handle all of these problems appropriately
         # The client can eventually do things like prompt the user
@@ -705,20 +708,20 @@ class Client(object):
 
         # If CSR is provided, it must be readable and valid.
         if self.csr and not crypto_util.valid_csr(self.csr):
-            raise errors.LetsEncryptClientError("The provided CSR is not a "
-                                                "valid CSR")
+            raise errors.LetsEncryptClientError(
+                "The provided CSR is not a valid CSR")
 
         # If key is provided, it must be readable and valid.
         if self.privkey and not crypto_util.valid_privkey(self.privkey):
-            raise errors.LetsEncryptClientError("The provided key is not a "
-                                                "valid key")
+            raise errors.LetsEncryptClientError(
+                "The provided key is not a valid key")
 
         # If CSR and key are provided, the key must be the same key used
         # in the CSR.
         if self.csr and self.privkey:
             if not crypto_util.csr_matches_pubkey(self.csr, self.privkey):
-                raise errors.LetsEncryptClientError("The key and CSR do not "
-                                                    "match")
+                raise errors.LetsEncryptClientError(
+                    "The key and CSR do not match")
 
     def get_all_names(self):
         """Return all valid names in the configuration."""
