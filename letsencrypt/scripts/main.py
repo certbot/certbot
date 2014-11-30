@@ -28,10 +28,10 @@ def main():
                         nargs="+")
     parser.add_argument("-s", "--server", dest="server",
                         help="The ACME CA server address.")
-    parser.add_argument("-p", "--privkey", dest="privkey", type=read_file,
+    parser.add_argument("-p", "--privkey", dest="privkey_tup", type=read_file,
                         help="Path to the private key file for certificate "
                              "generation.")
-    parser.add_argument("-c", "--csr", dest="csr", type=read_file,
+    parser.add_argument("-c", "--csr", dest="csr_tup", type=read_file,
                         help="Path to the certificate signing request file "
                              "corresponding to the private key file. The "
                              "private key file argument is required if this "
@@ -63,7 +63,7 @@ def main():
     args = parser.parse_args()
 
     # Enforce '--privkey' is set along with '--csr'.
-    if args.csr and not args.privkey:
+    if args.csr_tup and not args.privkey_tup:
         parser.error("private key file (--privkey) must be specified along{0} "
                      "with the certificate signing request file (--csr)"
                      .format(os.linesep))
@@ -83,7 +83,14 @@ def main():
 
     server = args.server is None and CONFIG.ACME_SERVER or args.server
 
-    acme = client.Client(server, args.csr, args.privkey, args.curses)
+    # Prepare for init of Client
+    if args.privkey_tup is None:
+        args.privkey_tup = (None, None)
+    if args.csr_tup is None:
+        args.csr_tup = (None, None)
+
+    acme = client.Client(server, args.csr_tup[1], args.privkey_tup[1],
+                         args.privkey_tup[0], args.curses)
     if args.revoke:
         acme.list_certs_keys()
     else:
@@ -103,7 +110,7 @@ def read_file(filename):
 
     """
     try:
-        return file(filename, 'rU').read()
+        return filename, file(filename, 'rU').read()
     except IOError as exc:
         raise argparse.ArgumentTypeError(exc.strerror)
 

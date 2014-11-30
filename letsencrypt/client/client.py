@@ -33,7 +33,7 @@ class Client(object):
     """ACME protocol client."""
 
     def __init__(self, ca_server, cert_signing_request=None,
-                 private_key=None, use_curses=True):
+                 private_key=None, private_key_file=None, use_curses=True):
         """
 
         :param ca_server: Certificate authority server
@@ -44,6 +44,9 @@ class Client(object):
 
         :param private_key: Contents of the private key
         :type private_key: str
+
+        :param private_key_file: absolute path to private_key
+        :type private_key_file: str
 
         :param use_curses: Use curses UI
         :type use_curses: bool
@@ -61,6 +64,7 @@ class Client(object):
         self.server = ca_server
         self.csr = cert_signing_request
         self.privkey = private_key
+        self.privkey_file = private_key_file
 
         # TODO: Figure out all exceptions from this function
         try:
@@ -396,7 +400,6 @@ class Client(object):
             else:
                 self.choose_certs(certs)
         elif code == display.HELP:
-            print code, tag, cert
             display.more_info_cert(cert)
             self.choose_certs(certs)
         else:
@@ -431,7 +434,7 @@ class Client(object):
         for host in vhost:
             self.config.deploy_cert(host,
                                     os.path.abspath(cert_file),
-                                    os.path.abspath(self.privkey),
+                                    os.path.abspath(self.privkey_file),
                                     cert_chain_abspath)
             # Enable any vhost that was issued to, but not enabled
             if not host.enabled:
@@ -542,17 +545,17 @@ class Client(object):
                 for row in csvreader:
                     idx = int(row[0]) + 1
                 csvwriter = csv.writer(csvfile)
-                csvwriter.writerow([str(idx), cert_file, self.privkey])
+                csvwriter.writerow([str(idx), cert_file, self.privkey_file])
 
         else:
             with open(list_file, 'wb') as csvfile:
                 csvwriter = csv.writer(csvfile)
-                csvwriter.writerow(["0", cert_file, self.privkey])
+                csvwriter.writerow(["0", cert_file, self.privkey_file])
 
-        shutil.copy2(self.privkey,
+        shutil.copy2(self.privkey_file,
                      os.path.join(
                          CONFIG.CERT_KEY_BACKUP,
-                         os.path.basename(self.privkey) + "_" + str(idx)))
+                         os.path.basename(self.privkey_file) + "_" + str(idx)))
         shutil.copy2(cert_file,
                      os.path.join(
                          CONFIG.CERT_KEY_BACKUP,
@@ -628,7 +631,7 @@ class Client(object):
             challenge_objs.append({
                 "type": "dvsni",
                 "listSNITuple": sni_todo,
-                "dvsni_key": os.path.abspath(self.privkey),
+                "dvsni_key": os.path.abspath(self.privkey_file),
             })
             challenge_obj_indices.append(sni_satisfies)
             logger.debug(sni_todo)
@@ -663,7 +666,9 @@ class Client(object):
                 os.path.join(CONFIG.KEY_DIR, "key-letsencrypt.pem"), 0o600)
             key_f.write(key_pem)
             key_f.close()
-            logger.info("Generating key: %s" % key_filename)
+
+            self.privkey_file = key_filename
+            logger.info("Generating key: %s" % self.privkey_file)
         else:
             key_pem = self.privkey
 

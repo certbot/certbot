@@ -22,7 +22,7 @@ def b64_cert_to_pem(b64_der_cert):
         le_util.jose_b64decode(b64_der_cert)).as_pem()
 
 
-def create_sig(msg, key_file, nonce=None, nonce_len=CONFIG.NONCE_SIZE):
+def create_sig(msg, key_str, nonce=None, nonce_len=CONFIG.NONCE_SIZE):
     """Create signature with nonce prepended to the message.
 
     TODO: Change this over to M2Crypto... PKey
@@ -32,9 +32,9 @@ def create_sig(msg, key_file, nonce=None, nonce_len=CONFIG.NONCE_SIZE):
     :param msg: Message to be signed
     :type msg: Anything with __str__ method
 
-    :param key_file: Path to a file containing RSA key. Accepted formats
+    :param key_str:  Key in string form. Accepted formats
                      are the same as for `Crypto.PublicKey.RSA.importKey`.
-    :type key_file: str
+    :type key_str: str
 
     :param nonce: Nonce to be used. If None, nonce of `nonce_len` size
                   will be randomly genereted.
@@ -48,7 +48,7 @@ def create_sig(msg, key_file, nonce=None, nonce_len=CONFIG.NONCE_SIZE):
 
     """
     msg = str(msg)
-    key = Crypto.PublicKey.RSA.importKey(open(key_file).read())
+    key = Crypto.PublicKey.RSA.importKey(key_str)
     nonce = Random.get_random_bytes(nonce_len) if nonce is None else nonce
 
     msg_with_nonce = nonce + msg
@@ -96,12 +96,12 @@ def make_key(bits=CONFIG.RSA_KEY_SIZE):
     return key.exportKey(format='PEM')
 
 
-def make_csr(key_file, domains):
+def make_csr(key_str, domains):
     """
     Returns new CSR in PEM and DER form using key_file containing all domains
     """
     assert domains, "Must provide one or more hostnames for the CSR."
-    rsa_key = M2Crypto.RSA.load_key(key_file)
+    rsa_key = M2Crypto.RSA.load_key_string(key_str)
     pubkey = M2Crypto.EVP.PKey()
     pubkey.assign_rsa(rsa_key)
 
@@ -128,13 +128,14 @@ def make_csr(key_file, domains):
     return csr.as_pem(), csr.as_der()
 
 
-def make_ss_cert(key_file, domains):
+def make_ss_cert(key_str, domains):
     """Returns new self-signed cert in PEM form.
 
-    Uses key_file and contains all domains.
+    Uses key_str and contains all domains.
     """
     assert domains, "Must provide one or more hostnames for the CSR."
-    rsa_key = M2Crypto.RSA.load_key(key_file)
+
+    rsa_key = M2Crypto.RSA.load_key_string(key_str)
     pubkey = M2Crypto.EVP.PKey()
     pubkey.assign_rsa(rsa_key)
 
