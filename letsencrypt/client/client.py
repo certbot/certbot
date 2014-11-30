@@ -1,4 +1,5 @@
 """ACME protocol client class and helper functions."""
+import collections
 import csv
 import json
 import os
@@ -31,15 +32,16 @@ ALLOW_RAW_IPV6_SERVER = False
 
 class Client(object):
     """ACME protocol client."""
+    Key = collections.namedtuple("Key", "file pem")
+    CSR = collections.namedtuple("CSR", "file data type")
 
-    def __init__(self, ca_server, cert_signing_request=None,
-                 private_key=None, private_key_file=None, use_curses=True):
+    def __init__(self, ca_server, cert_signing_request=CSR(None, None, None),
+                 private_key=Key(None, None), use_curses=True):
         """
 
         :param str ca_server: Certificate authority server
         :param str cert_signing_request: Contents of the CSR
         :param str private_key: Contents of the private key
-        :param str private_key_file: absolute path to private_key
         :param bool use_curses: Use curses UI
 
         """
@@ -53,9 +55,10 @@ class Client(object):
         self.config = apache_configurator.ApacheConfigurator(
             CONFIG.SERVER_ROOT)
         self.server = ca_server
+
+        # These are CSR/Key namedtuples
         self.csr = cert_signing_request
         self.privkey = private_key
-        self.privkey_file = private_key_file
 
         # TODO: Figure out all exceptions from this function
         try:
@@ -115,11 +118,11 @@ class Client(object):
         # Request Challenges
         challenge_msg = self.acme_challenge()
 
-        # Get key and csr to perform challenges
-        _, csr_der = self.get_key_csr_pem()
+        # Make sure we have key and csr to perform challenges
+        self.init_key_csr()
 
         # TODO: Handle this exception/problem
-        if not crypto_util.csr_matches_names(self.csr, self.names):
+        if not crypto_util.csr_matches_names(self.csr.data, self.names):
             raise errors.LetsEncryptClientError(
                 "CSR subject does not contain one of the specified names")
 
@@ -129,7 +132,7 @@ class Client(object):
         self.acme_authorization(challenge_msg, challenge_objs, responses)
 
         # Retrieve certificate
-        certificate_dict = self.acme_certificate(csr_der)
+        certificate_dict = self.acme_certificate(self.csr.data)
 
         # Find set of virtual hosts to deploy certificates to
         vhost = self.get_virtual_hosts(self.names)
@@ -170,7 +173,7 @@ class Client(object):
         """
         auth_dict = self.send(acme.authorization_request(
             challenge_msg["sessionID"], self.names[0],
-            challenge_msg["nonce"], responses, self.privkey))
+            challenge_msg["nonce"], responses, self.privkey.pem))
 
         try:
             return self.is_expected_msg(auth_dict, "authorization")
@@ -192,7 +195,7 @@ class Client(object):
         """
         logger.info("Preparing and sending CSR..")
         return self.send_and_receive_expected(
-            acme.certificate_request(csr_der, self.privkey), "certificate")
+            acme.certificate_request(csr_der, self.privkey.pem), "certificate")
 
     def acme_revocation(self, cert):
         """Handle ACME "revocation" phase.
@@ -411,7 +414,7 @@ class Client(object):
         for host in vhost:
             self.config.deploy_cert(host,
                                     os.path.abspath(cert_file),
-                                    os.path.abspath(self.privkey_file),
+                                    os.path.abspath(self.privkey.file),
                                     cert_chain_abspath)
             # Enable any vhost that was issued to, but not enabled
             if not host.enabled:
@@ -519,17 +522,17 @@ class Client(object):
                 for row in csvreader:
                     idx = int(row[0]) + 1
                 csvwriter = csv.writer(csvfile)
-                csvwriter.writerow([str(idx), cert_file, self.privkey_file])
+                csvwriter.writerow([str(idx), cert_file, self.privkey.file])
 
         else:
             with open(list_file, 'wb') as csvfile:
                 csvwriter = csv.writer(csvfile)
-                csvwriter.writerow(["0", cert_file, self.privkey_file])
+                csvwriter.writerow(["0", cert_file, self.privkey.file])
 
-        shutil.copy2(self.privkey_file,
+        shutil.copy2(self.privkey.file,
                      os.path.join(
                          CONFIG.CERT_KEY_BACKUP,
-                         os.path.basename(self.privkey_file) + "_" + str(idx)))
+                         os.path.basename(self.privkey.file) + "_" + str(idx)))
         shutil.copy2(cert_file,
                      os.path.join(
                          CONFIG.CERT_KEY_BACKUP,
@@ -602,34 +605,24 @@ class Client(object):
             challenge_objs.append({
                 "type": "dvsni",
                 "list_sni_tuple": sni_todo,
-                "dvsni_key": os.path.abspath(self.privkey_file),
+                "dvsni_key": self.privkey,
             })
             challenge_obj_indices.append(sni_satisfies)
             logger.debug(sni_todo)
 
         return challenge_objs, challenge_obj_indices
 
-    def get_key_csr_pem(self, csr_return_format='der'):
-        """Return key and CSR, generate if necessary.
+    def init_key_csr(self):
+        """Initializes privkey and csr.
 
-        Returns key and CSR using provided files or generating new files
+        Inits key and CSR using provided files or generating new files
         if necessary. Both will be saved in PEM format on the
-        filesystem. The CSR can optionally be returned in DER format as
-        the CSR cannot be loaded back into M2Crypto.
-
-        :param csr_return_format: If "der" returned CSR is in DER format,
-                                  PEM otherwise.
-        :param csr_return_format: str
-
-        :returns: A pair of `(key, csr)`, where `key` is PEM encoded `str`
-                  and `csr` is PEM/DER (depedning on `csr_return_format`
-                  encoded `str`.
-        :rtype: tuple
+        filesystem. The CSR is placed into DER format to allow
+        the namedtuple to easily work with the protocol.
 
         """
-        if not self.privkey:
+        if not self.privkey.file:
             key_pem = crypto_util.make_key(CONFIG.RSA_KEY_SIZE)
-            self.privkey = key_pem
 
             # Save file
             le_util.make_or_verify_dir(CONFIG.KEY_DIR, 0o700)
@@ -638,14 +631,13 @@ class Client(object):
             key_f.write(key_pem)
             key_f.close()
 
-            self.privkey_file = key_filename
-            logger.info("Generating key: %s" % self.privkey_file)
-        else:
-            key_pem = self.privkey
+            logger.info("Generating key: %s" % key_filename)
 
-        if not self.csr:
-            csr_pem, csr_der = crypto_util.make_csr(self.privkey, self.names)
-            self.csr = csr_pem
+            self.privkey = Client.Key(key_filename, key_pem)
+
+        if not self.csr.file:
+            csr_pem, csr_der = crypto_util.make_csr(
+                self.privkey.pem, self.names)
 
             # Save CSR
             le_util.make_or_verify_dir(CONFIG.CERT_DIR, 0o755)
@@ -653,15 +645,16 @@ class Client(object):
                 os.path.join(CONFIG.CERT_DIR, "csr-letsencrypt.pem"), 0o644)
             csr_f.write(csr_pem)
             csr_f.close()
-            logger.info("Creating CSR: %s" % csr_filename)
-        else:
-            csr_obj = M2Crypto.X509.load_request_string(self.csr)
-            csr_pem, csr_der = csr_obj.as_pem(), csr_obj.as_der()
 
-        if csr_return_format == 'der':
-            return key_pem, csr_der
-        else:
-            return key_pem, csr_pem
+            logger.info("Creating CSR: %s" % csr_filename)
+
+            self.csr = Client.CSR(csr_filename, csr_der, "der")
+        elif self.csr.type != "der":
+            # The user is going to pass in a pem format file
+            # That is why we must conver it to der since the
+            # protocol uses der exclusively.
+            csr_obj = M2Crypto.X509.load_request_string(self.csr.data)
+            self.csr = Client.CSR(self.csr.file, csr_obj.as_der(), "der")
 
     def _validate_csr_key_cli(self):
         """Validate CSR and key files.
@@ -677,19 +670,21 @@ class Client(object):
         # and allow the user to take more appropriate actions
 
         # If CSR is provided, it must be readable and valid.
-        if self.csr and not crypto_util.valid_csr(self.csr):
+        if self.csr.data and not crypto_util.valid_csr(self.csr.data):
             raise errors.LetsEncryptClientError(
                 "The provided CSR is not a valid CSR")
 
         # If key is provided, it must be readable and valid.
-        if self.privkey and not crypto_util.valid_privkey(self.privkey):
+        if (self.privkey.pem and
+                not crypto_util.valid_privkey(self.privkey.pem)):
             raise errors.LetsEncryptClientError(
                 "The provided key is not a valid key")
 
         # If CSR and key are provided, the key must be the same key used
         # in the CSR.
-        if self.csr and self.privkey:
-            if not crypto_util.csr_matches_pubkey(self.csr, self.privkey):
+        if self.csr.data and self.privkey.pem:
+            if not crypto_util.csr_matches_pubkey(
+                    self.csr.data, self.privkey.pem):
                 raise errors.LetsEncryptClientError(
                     "The key and CSR do not match")
 

@@ -238,7 +238,7 @@ def csr_matches_names(csr, domains):
 
     """
     try:
-        csr_obj = M2Crypto.X509.load_request_string(csr)
+        csr_obj = M2Crypto.X509.load_request_der_string(csr)
         return csr_obj.get_subject().CN in domains
     except M2Crypto.X509.X509Error:
         return False
