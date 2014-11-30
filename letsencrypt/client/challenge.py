@@ -12,12 +12,19 @@ class Challenge(object):
         self.config = configurator
 
     def perform(self, quiet=True):
+        """Perform the challange.
+
+        :param bool quiet: TODO
+
+        """
         raise NotImplementedError()
 
     def generate_response(self):
+        """Generate response."""
         raise NotImplementedError()
 
     def cleanup(self):
+        """Cleanup."""
         raise NotImplementedError()
 
 
@@ -47,10 +54,10 @@ def gen_challenge_path(challenges, combos=None):
 
 
 def _find_smart_path(challenges, combos):
-    """
-    Can be called if combinations is included
-    Function uses a simple ranking system to choose the combo with the
-    lowest cost
+    """Find challenge path with server hints.
+
+    Can be called if combinations is included. Function uses a simple
+    ranking system to choose the combo with the lowest cost.
 
     :param list challenges: A list of challenges from ACME "challenge"
         server message to be fulfilled by the client in order to prove
@@ -94,10 +101,11 @@ def _find_smart_path(challenges, combos):
 
 
 def _find_dumb_path(challenges):
-    """
-    Should be called if the combinations hint is not included by the server
-    This function returns the best path that does not contain multiple
-    mutually exclusive challenges
+    """Find challange path without server hints.
+
+    Should be called if the combinations hint is not included by the
+    server. This function returns the best path that does not contain
+    multiple mutually exclusive challenges.
 
     :param list challanges: A list of challenges from ACME "challenge"
         server message to be fulfilled by the client in order to prove
