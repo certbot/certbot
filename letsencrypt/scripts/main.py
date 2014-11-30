@@ -28,18 +28,17 @@ def main():
                         nargs="+")
     parser.add_argument("-s", "--server", dest="server",
                         help="The ACME CA server address.")
-    parser.add_argument("-p", "--privkey", dest="privkey", type=file,
+    parser.add_argument("-p", "--privkey", dest="privkey_tup", type=read_file,
                         help="Path to the private key file for certificate "
                              "generation.")
-    parser.add_argument("-c", "--csr", dest="csr", type=file,
+    parser.add_argument("-c", "--csr", dest="csr_tup", type=read_file,
                         help="Path to the certificate signing request file "
                              "corresponding to the private key file. The "
                              "private key file argument is required if this "
                              "argument is specified.")
     parser.add_argument("-b", "--rollback", dest="rollback", type=int,
-                        default=0,
-                        help="Revert configuration <ROLLBACK> number of "
-                             "checkpoints.")
+                        default=0, metavar="N",
+                        help="Revert configuration N number of checkpoints.")
     parser.add_argument("-k", "--revoke", dest="revoke", action="store_true",
                         help="Revoke a certificate.")
     parser.add_argument("-v", "--view-checkpoints", dest="view_checkpoints",
@@ -63,10 +62,9 @@ def main():
 
     args = parser.parse_args()
 
-    # Enforce --privkey is set along with --csr.
-    if args.csr and not args.privkey:
-        parser.print_usage()
-        parser.error("private key file (--privkey) must be specified along{}"
+    # Enforce '--privkey' is set along with '--csr'.
+    if args.csr_tup and not args.privkey_tup:
+        parser.error("private key file (--privkey) must be specified along{0} "
                      "with the certificate signing request file (--csr)"
                      .format(os.linesep))
 
@@ -85,11 +83,36 @@ def main():
 
     server = args.server is None and CONFIG.ACME_SERVER or args.server
 
-    acme = client.Client(server, args.csr, args.privkey, args.curses)
+    # Prepare for init of Client
+    if args.privkey_tup is None:
+        args.privkey_tup = (None, None)
+    if args.csr_tup is None:
+        args.csr_tup = (None, None)
+
+    acme = client.Client(server, args.csr_tup[1], args.privkey_tup[1],
+                         args.privkey_tup[0], args.curses)
     if args.revoke:
         acme.list_certs_keys()
     else:
         acme.authenticate(args.domains, args.redirect, args.eula)
+
+
+def read_file(filename):
+    """Returns the given file's contents with universal new line support.
+
+    :param filename: Filename
+    :type filename: str
+
+    :returns: File contents
+    :rtype: str
+
+    :raises argparse.ArgumentTypeError: File does not exist or is not readable.
+
+    """
+    try:
+        return filename, file(filename, 'rU').read()
+    except IOError as exc:
+        raise argparse.ArgumentTypeError(exc.strerror)
 
 
 def rollback(config, checkpoints):

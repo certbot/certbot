@@ -55,7 +55,17 @@ def check_permissions(filepath, mode, uid=0):
 
 
 def unique_file(default_name, mode=0o777):
-    """Safely finds a unique file for writing only (by default)."""
+    """Safely finds a unique file for writing only (by default).
+
+    :param default_name: Default file name
+    :type default_name: str
+
+    :param mode: File mode
+    :type mode: int
+
+    :return: tuple of file object and file name
+
+    """
     count = 1
     f_parsed = os.path.splitext(default_name)
     while 1:

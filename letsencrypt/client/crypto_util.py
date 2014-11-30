@@ -1,3 +1,4 @@
+"""Let's Encrypt client crypto utility functions"""
 import binascii
 import hashlib
 import time
@@ -21,7 +22,7 @@ def b64_cert_to_pem(b64_der_cert):
         le_util.jose_b64decode(b64_der_cert)).as_pem()
 
 
-def create_sig(msg, key_file, nonce=None, nonce_len=CONFIG.NONCE_SIZE):
+def create_sig(msg, key_str, nonce=None, nonce_len=CONFIG.NONCE_SIZE):
     """Create signature with nonce prepended to the message.
 
     TODO: Change this over to M2Crypto... PKey
@@ -31,9 +32,9 @@ def create_sig(msg, key_file, nonce=None, nonce_len=CONFIG.NONCE_SIZE):
     :param msg: Message to be signed
     :type msg: Anything with __str__ method
 
-    :param key_file: Path to a file containing RSA key. Accepted formats
+    :param key_str:  Key in string form. Accepted formats
                      are the same as for `Crypto.PublicKey.RSA.importKey`.
-    :type key_file: str
+    :type key_str: str
 
     :param nonce: Nonce to be used. If None, nonce of `nonce_len` size
                   will be randomly genereted.
@@ -47,7 +48,7 @@ def create_sig(msg, key_file, nonce=None, nonce_len=CONFIG.NONCE_SIZE):
 
     """
     msg = str(msg)
-    key = Crypto.PublicKey.RSA.importKey(open(key_file).read())
+    key = Crypto.PublicKey.RSA.importKey(key_str)
     nonce = Random.get_random_bytes(nonce_len) if nonce is None else nonce
 
     msg_with_nonce = nonce + msg
@@ -95,12 +96,12 @@ def make_key(bits=CONFIG.RSA_KEY_SIZE):
     return key.exportKey(format='PEM')
 
 
-def make_csr(key_file, domains):
+def make_csr(key_str, domains):
     """
     Returns new CSR in PEM and DER form using key_file containing all domains
     """
     assert domains, "Must provide one or more hostnames for the CSR."
-    rsa_key = M2Crypto.RSA.load_key(key_file)
+    rsa_key = M2Crypto.RSA.load_key_string(key_str)
     pubkey = M2Crypto.EVP.PKey()
     pubkey.assign_rsa(rsa_key)
 
@@ -127,13 +128,14 @@ def make_csr(key_file, domains):
     return csr.as_pem(), csr.as_der()
 
 
-def make_ss_cert(key_file, domains):
+def make_ss_cert(key_str, domains):
     """Returns new self-signed cert in PEM form.
 
-    Uses key_file and contains all domains.
+    Uses key_str and contains all domains.
     """
     assert domains, "Must provide one or more hostnames for the CSR."
-    rsa_key = M2Crypto.RSA.load_key(key_file)
+
+    rsa_key = M2Crypto.RSA.load_key_string(key_str)
     pubkey = M2Crypto.EVP.PKey()
     pubkey.assign_rsa(rsa_key)
 
@@ -206,39 +208,33 @@ def get_cert_info(filename):
 # A. Do more checks to verify that the CSR is trusted/valid
 # B. Audit the parsing code for vulnerabilities
 
-def valid_csr(csr_filename):
+def valid_csr(csr):
     """Validate CSR.
 
-    Check if `csr_filename` is a valid CSR for the given domains.
+    Check if `csr` is a valid CSR for the given domains.
 
-    TODO: Currently, could raise non-X.509-related errors such as IOError
-          associated with problems reading the file. Comment or handle.
-
-    :param csr_filename: Path to the purported CSR file.
-    :type csr_filename: str
+    :param csr: CSR file contents
+    :type csr: str
 
     :returns: Validity of CSR.
     :rtype: bool
 
     """
     try:
-        csr = M2Crypto.X509.load_request(csr_filename)
-        return bool(csr.verify(csr.get_pubkey()))
+        csr_obj = M2Crypto.X509.load_request_string(csr)
+        return bool(csr_obj.verify(csr_obj.get_pubkey()))
     except M2Crypto.X509.X509Error:
         return False
 
 
-def csr_matches_names(csr_filename, domains):
+def csr_matches_names(csr, domains):
     """Check if CSR contains the subject of one of the domains.
 
     M2Crypto currently does not expose the OpenSSL interface to
     also check the SAN extension. This is insufficient for full testing
 
-    TODO: Currently, could raise non-X.509-related errors such as IOError
-          associated with problems reading the file. Comment or handle.
-
-    :param csr_filename: Path to the purported CSR file.
-    :type csr_filename: str
+    :param csr: CSR file contents
+    :type csr: str
 
     :param domains: Domains the CSR should contain.
     :type domains: list
@@ -248,49 +244,41 @@ def csr_matches_names(csr_filename, domains):
 
     """
     try:
-        csr = M2Crypto.X509.load_request(csr_filename)
-        return csr.get_subject().CN in domains
+        csr_obj = M2Crypto.X509.load_request_string(csr)
+        return csr_obj.get_subject().CN in domains
     except M2Crypto.X509.X509Error:
         return False
 
 
-def valid_privkey(privkey_filename):
+def valid_privkey(privkey):
     """Is valid RSA private key?
 
-    TODO: Currently, could raise non-X.509-related errors such as IOError
-          associated with problems reading the file. Comment or handle.
-
-    :param privkey_filename: Path to the purported private key file.
-    :type privkey_filename: str
+    :param privkey: Private key file contents
+    :type privkey: str
 
     :returns: Validity of private key.
     :rtype: bool
 
     """
     try:
-        return bool(M2Crypto.RSA.load_key(privkey_filename).check_key())
+        return bool(M2Crypto.RSA.load_key_string(privkey).check_key())
     except M2Crypto.RSA.RSAError:
         return False
 
 
-def csr_matches_pubkey(csr_filename, privkey_filename):
+def csr_matches_pubkey(csr, privkey):
     """Does private key correspond to the subject public key in the CSR?
 
-    TODO: Currently, could raise non-X.509-related errors such as IOError
-          associated with problems reading the file. Comment or handle.
+    :param csr: CSR file contents
+    :type csr: str
 
-    TODO: Seems that this doesn not handle X509 eceptions either.
-
-    :param csr_filename: Path to the purported CSR file.
-    :type csr_filename: str
-
-    :param privkey_filename: Path to the purported private key file.
-    :type privkey_filename: str
+    :param privkey: Private key file contents
+    :type privkey: str
 
     :returns: Correspondence of private key to CSR subject public key.
     :rtype: bool
 
     """
-    csr = M2Crypto.X509.load_request(csr_filename)
-    privkey = M2Crypto.RSA.load_key(privkey_filename)
-    return csr.get_pubkey().get_rsa().pub() == privkey.pub()
+    csr_obj = M2Crypto.X509.load_request_string(csr)
+    privkey_obj = M2Crypto.RSA.load_key_string(privkey)
+    return csr_obj.get_pubkey().get_rsa().pub() == privkey_obj.pub()
