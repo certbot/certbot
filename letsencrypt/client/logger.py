@@ -1,3 +1,4 @@
+"""Logger."""
 import logger
 import textwrap
 import time

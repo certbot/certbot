@@ -157,9 +157,12 @@ class Client(object):
 
     def acme_challenge(self):
         """Handle ACME "challenge" phase.
-        TODO: Handle more than one domain name in self.names
+
+        .. todo:: Handle more than one domain name in self.names
+
         :returns: ACME "challenge" message.
         :rtype: dict
+
         """
         return self.send_and_receive_expected(
             acme.challenge_request(self.names[0]), "challenge")
@@ -167,14 +170,10 @@ class Client(object):
     def acme_authorization(self, challenge_msg, chal_objs, responses):
         """Handle ACME "authorization" phase.
 
-        :param challenge_msg: ACME "challenge" message.
-        :type challenge_msg: dict
+        :param dict challenge_msg: ACME "challenge" message.
 
         :param chal_objs: TODO
-        :type chal_objs: TODO
-
         :param responses: TODO
-        :type responses: TODO
 
         :returns: ACME "authorization" message.
         :rtype: dict
@@ -196,8 +195,7 @@ class Client(object):
     def acme_certificate(self, csr_der):
         """Handle ACME "certificate" phase.
 
-        :param csr_der: CSR in DER format.
-        :type csr_der: str
+        :param str csr_der: CSR in DER format.
 
         :returns: ACME "certificate" message.
         :rtype: dict
@@ -210,8 +208,7 @@ class Client(object):
     def acme_revocation(self, cert):
         """Handle ACME "revocation" phase.
 
-        :param cert: TODO
-        :type cert: dict
+        :param dict cert: TODO
 
         :returns: ACME "revocation" message.
         :rtype: dict
@@ -235,8 +232,7 @@ class Client(object):
     def send(self, msg):
         """Send ACME message to server.
 
-        :param msg: ACME message (JSON serializable).
-        :type msg: dict
+        :param dict msg: ACME message (JSON serializable).
 
         :returns: Server response message.
         :rtype: dict
@@ -274,11 +270,8 @@ class Client(object):
     def send_and_receive_expected(self, msg, expected):
         """Send ACME message to server and return expected message.
 
-        :param msg: ACME message (JSON serializable).
-        :type msg: dict
-
-        :param expected: Name of the expected response ACME message type.
-        :type expected: str
+        :param dict msg: ACME message (JSON serializable).
+        :param str expected: Name of the expected response ACME message type.
 
         :returns: ACME response message of expected type.
         :rtype: dict
@@ -296,19 +289,15 @@ class Client(object):
     def is_expected_msg(self, response, expected, delay=3, rounds=20):
         """Is reponse expected ACME message?
 
-        :param response: ACME response message from server.
-        :type response: dict
+        :param dict response: ACME response message from server.
 
-        :param expected: Name of the expected response ACME message type.
-        :type expected: str
+        :param str expected: Name of the expected response ACME message type.
 
-        :param delay: Number of seconds to delay before next round in case
-                      of ACME "defer" response message.
-        :type delay: int
+        :param int delay: Number of seconds to delay before next round
+            in case of ACME "defer" response message.
 
-        :param rounds: Number of resend attempts in case of ACME "defer"
-                       reponse message.
-        :type rounds: int
+        :param int rounds: Number of resend attempts in case of ACME "defer"
+            reponse message.
 
         :returns: ACME response message from server.
         :rtype: dict
@@ -387,8 +376,7 @@ class Client(object):
     def choose_certs(self, certs):
         """Display choose certificates menu.
 
-        :param certs: List of cert dicts.
-        :type certs: list
+        :param list certs: List of cert dicts.
 
         """
         code, tag = display.display_certs(certs)
@@ -478,8 +466,7 @@ class Client(object):
     def verify_identity(self, challenge_msg):
         """Verify identity.
 
-        :param challenge_msg: ACME "challenge" message.
-        :type challenge_msg: dict
+        :param dict challenge_msg: ACME "challenge" message.
 
         :returns: TODO
         :rtype: dict
@@ -519,11 +506,9 @@ class Client(object):
     def store_cert_key(self, cert_file, encrypt=False):
         """Store certificate key.
 
-        :param cert_file: Path to a certificate file.
-        :type cert_file: str
+        :param str cert_file: Path to a certificate file.
 
-        :param encrypt: Should the certificate key be encrypted?
-        :type encrypt: bool
+        :param bool encrypt: Should the certificate key be encrypted?
 
         :returns: True if key file was stored successfully, False otherwise.
         :rtype: bool
@@ -584,15 +569,12 @@ class Client(object):
         """
 
         :param name: TODO
-        :type name: TODO
 
-        :param challenges: A list of challenges from ACME "challenge"
-                           server message to be fulfilled by the client
-                           in order to prove possession of the identifier.
-        :type challenges: list
+        :param list challenges: A list of challenges from ACME "challenge"
+            server message to be fulfilled by the client in order to prove
+            possession of the identifier.
 
-        :param path: List of indices from `challenges`.
-        :type path: list
+        :param list path: List of indices from `challenges`.
 
         :returns: A pair of TODO
         :rtype: tuple
@@ -748,8 +730,7 @@ class Client(object):
 def remove_cert_key(cert):
     """Remove certificate key.
 
-    :param cert:
-    :type cert: dict
+    :param dict cert:
 
     """
     list_file = os.path.join(CONFIG.CERT_KEY_BACKUP, "LIST")

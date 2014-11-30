@@ -11,6 +11,13 @@ class Configurator(object):
     """
 
     def deploy_cert(self, vhost, cert, key, cert_chain=None):
+        """Deploy certificate.
+
+        :param vhost
+        :param str cert: CSR
+        :param str key: Private key
+
+        """
         raise NotImplementedError()
 
     def choose_virtual_host(self, name):
@@ -53,12 +60,12 @@ class Configurator(object):
         intended to be permanent, but the save is not ready to be a full
         checkpoint
 
-        title:     string - The title of the save. If a title is given, the
-                            configuration will be saved as a new checkpoint
-                            and put in a timestamped directory.
-                            `title` has no effect if temporary is true.
-        temporary: boolean - Indicates whether the changes made will be
-                             quickly reversed in the future (challenges)
+        :param str title: The title of the save. If a title is given, the
+            configuration will be saved as a new checkpoint and put in a
+            timestamped directory. `title` has no effect if temporary is true.
+
+        :param bool temporary: Indicates whether the changes made will
+            be quickly reversed in the future (challenges)
         """
         raise NotImplementedError()
 

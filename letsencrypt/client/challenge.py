@@ -23,18 +23,16 @@ class Challenge(object):
 def gen_challenge_path(challenges, combos=None):
     """Generate a plan to get authority over the identity.
 
-    TODO: Make sure that the challenges are feasible...
-          Example: Do you have the recovery key?
+    .. todo:: Make sure that the challenges are feasible...
+        Example: Do you have the recovery key?
 
-    :param challenges: A list of challenges from ACME "challenge"
-                       server message to be fulfilled by the client
-                       in order to prove possession of the identifier.
-    :type challenges: list
+    :param list challenges: A list of challenges from ACME "challenge"
+        server message to be fulfilled by the client in order to prove
+        possession of the identifier.
 
     :param combos:  A collection of sets of challenges from ACME
-                    "challenge" server message ("combinations"),
-                    each of which would be sufficient to prove
-                    possession of the identifier.
+        "challenge" server message ("combinations"), each of which would
+        be sufficient to prove possession of the identifier.
     :type combos: list or None
 
     :returns: List of indices from `challenges`.
@@ -49,19 +47,17 @@ def gen_challenge_path(challenges, combos=None):
 
 def _find_smart_path(challenges, combos):
     """
-    Can be called if combinations  is included
+    Can be called if combinations is included
     Function uses a simple ranking system to choose the combo with the
     lowest cost
 
-    :param challenges: A list of challenges from ACME "challenge"
-                       server message to be fulfilled by the client
-                       in order to prove possession of the identifier.
-    :type challenges: list
+    :param list challenges: A list of challenges from ACME "challenge"
+        server message to be fulfilled by the client in order to prove
+        possession of the identifier.
 
     :param combos:  A collection of sets of challenges from ACME
-                    "challenge" server message ("combinations"),
-                    each of which would be sufficient to prove
-                    possession of the identifier.
+        "challenge" server message ("combinations"), each of which would
+        be sufficient to prove possession of the identifier.
     :type combos: list or None
 
     :returns: List of indices from `challenges`.
@@ -102,10 +98,9 @@ def _find_dumb_path(challenges):
     This function returns the best path that does not contain multiple
     mutually exclusive challenges
 
-    :param challanges: A list of challenges from ACME "challenge"
-                       server message to be fulfilled by the client
-                       in order to prove possession of the identifier.
-    :type challenges: list
+    :param list challanges: A list of challenges from ACME "challenge"
+        server message to be fulfilled by the client in order to prove
+        possession of the identifier.
 
     :returns: List of indices from `challenges`.
     :rtype: list

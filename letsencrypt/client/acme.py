@@ -29,12 +29,10 @@ SCHEMATA = dict([
 def acme_object_validate(json_string, schemata=None):
     """Validate a JSON string against the ACME protocol using JSON Schema.
 
-    :param json_string: Well-formed input JSON string.
-    :type json_string: str
+    :param str json_string: Well-formed input JSON string.
 
-    :param schemata: Mapping from type name to JSON Schema definition.
-                     Useful for testing.
-    :type schemata: dict
+    :param dict schemata: Mapping from type name to JSON Schema
+        definition. Useful for testing.
 
     :returns: None if validation was successful.
 
@@ -66,14 +64,12 @@ def pretty(json_string):
 def challenge_request(name):
     """Create ACME "challengeRequest message.
 
-    :param name: Domain name
-    :type name: unicode
+    :param unicode name: Domain name
 
     :returns: ACME "challengeRequest" message.
     :rtype: dict
 
     """
-
     return {
         "type": "challengeRequest",
         "identifier": name,
@@ -84,19 +80,10 @@ def authorization_request(req_id, name, server_nonce, responses, key_file):
     """Create ACME "authorizationRequest" message.
 
     :param req_id: TODO
-    :type req_id: TODO
-
     :param name: TODO
-    :type name: TODO
-
     :param server_nonce: TODO
-    :type server_nonce: TODO
-
     :param responses: TODO
-    :type response: TODO
-
     :param key_file: TODO
-    :type key_file: TODO
 
     :returns: ACME "authorizationRequest" message.
     :rtype: dict
@@ -115,11 +102,8 @@ def authorization_request(req_id, name, server_nonce, responses, key_file):
 def certificate_request(csr_der, key):
     """Create ACME "certificateRequest" message.
 
-    :param csr_der: DER encoded CSR.
-    :type csr_der: str
-
+    :param str csr_der: DER encoded CSR.
     :param key: TODO
-    :type key: TODO
 
     :returns: ACME "certificateRequest" message.
     :rtype: dict
@@ -135,12 +119,10 @@ def certificate_request(csr_der, key):
 def revocation_request(key_file, cert_der):
     """Create ACME "revocationRequest" message.
 
-    :param key_file: Path to a file containing RSA key. Accepted formats
-                     are the same as for `Crypto.PublicKey.RSA.importKey`.
-    :type key_file: str
+    :param str key_file: Path to a file containing RSA key. Accepted
+        formats are the same as for `Crypto.PublicKey.RSA.importKey`.
 
-    :param cert_der: DER encoded certificate.
-    :type cert_der: str
+    :param str cert_der: DER encoded certificate.
 
     :returns: ACME "revocationRequest" message.
     :rtype: dict
@@ -156,8 +138,7 @@ def revocation_request(key_file, cert_der):
 def status_request(token):
     """Create ACME "statusRequest" message.
 
-    :param token: Token provided in ACME "defer" message.
-    :type token: str
+    :param str token: Token provided in ACME "defer" message.
 
     :returns: ACME "statusRequest" message.
     :rtype: dict

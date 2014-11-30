@@ -10,14 +10,9 @@ from letsencrypt.client import errors
 def make_or_verify_dir(directory, mode=0o755, uid=0):
     """Make sure directory exists with proper permissions.
 
-    :param directory: Path to a directry.
-    :type directory: str
-
-    :param mode: Diretory mode.
-    :type mode: int
-
-    :param uid: Directory owner.
-    :type uid: int
+    :param str directory: Path to a directry.
+    :param int mode: Diretory mode.
+    :param int uid: Directory owner.
 
     :raises LetsEncryptClientError: if a directory already exists,
         but has wrong permissions or owner
@@ -38,16 +33,12 @@ def make_or_verify_dir(directory, mode=0o755, uid=0):
 def check_permissions(filepath, mode, uid=0):
     """Check file or directory permissions.
 
-    :param filepath: Path to the tested file (or directory).
-    :type filepath: str
+    :param str filepath: Path to the tested file (or directory).
+    :param int mode: Expected file mode.
+    :param int uid: Expected file owner.
 
-    :param mode: Expected file mode.
-    :type mode: int
-
-    :param uid: Expected file owner.
-    :type uid: int
-
-    :returns: bool -- True if `mode` and `uid` match, False otherwise.
+    :returns: True if `mode` and `uid` match, False otherwise.
+    :rtype: bool
 
     """
     file_stat = os.stat(filepath)
@@ -94,10 +85,10 @@ def jose_b64encode(data):
     :param data: Data to be encoded.
     :type data: str or bytearray
 
-    :raises TypeError: if input is of incorrect type
-
     :returns: JOSE Base64 string.
     :rtype: str
+
+    :raises TypeError: if `data` is of incorrect type
 
     """
     if not isinstance(data, str):
@@ -112,10 +103,10 @@ def jose_b64decode(data):
                  only ASCII characters are allowed.
     :type data: str or unicode
 
+    :returns: Decoded data.
+
     :raises TypeError: if input is of incorrect type
     :raises ValueError: if unput is unicode with non-ASCII characters
-
-    :returns: Decoded data.
 
     """
     if isinstance(data, unicode):

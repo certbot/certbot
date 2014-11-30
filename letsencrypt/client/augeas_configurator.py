@@ -12,6 +12,7 @@ from letsencrypt.client import logger
 
 
 class AugeasConfigurator(configurator.Configurator):
+    """Augeas configurator."""
 
     def __init__(self):
         super(AugeasConfigurator, self).__init__()
@@ -24,8 +25,7 @@ class AugeasConfigurator(configurator.Configurator):
     def check_parsing_errors(self, lens):
         """Verify Augeas can parse all of the lens files.
 
-        :param lens: lens to check for errors
-        :type lens: str
+        :param str lens: lens to check for errors
 
         """
         error_files = self.aug.match("/augeas//error")
@@ -48,14 +48,12 @@ class AugeasConfigurator(configurator.Configurator):
         all configuration changes made will be saved. According to the
         function parameters.
 
-        :param title: The title of the save. If a title is given, the
-                      configuration will be saved as a new checkpoint
-                      and put in a timestamped directory.
-        :type title: str
+        :param str title: The title of the save. If a title is given, the
+            configuration will be saved as a new checkpoint and put in a
+            timestamped directory.
 
-        :param temporary: Indicates whether the changes made will be quickly
-                          reversed in the future (ie. challenges)
-        :type temporary: bool
+        :param bool temporary: Indicates whether the changes made will
+            be quickly reversed in the future (ie. challenges)
 
         """
         save_state = self.aug.get("/augeas/save")
@@ -141,8 +139,7 @@ class AugeasConfigurator(configurator.Configurator):
     def rollback_checkpoints(self, rollback=1):
         """Revert 'rollback' number of configuration checkpoints.
 
-        :param rollback: Number of checkpoints to reverse
-        :type rollback: int
+        :param int rollback: Number of checkpoints to reverse
 
         """
         try:
@@ -222,8 +219,7 @@ class AugeasConfigurator(configurator.Configurator):
         Adds title to cp_dir CHANGES_SINCE
         Move cp_dir to Backups directory and rename with timestamp
 
-        :param cp_dir: "IN PROGRESS" directory
-        :type cp_dir: str
+        :param str cp_dir: "IN PROGRESS" directory
 
         :returns: Success
         :rtype: bool
@@ -250,11 +246,8 @@ class AugeasConfigurator(configurator.Configurator):
     def add_to_checkpoint(self, cp_dir, save_files):
         """Add save files to checkpoint directory.
 
-        :param cp_dir: Checkpoint directory filepath
-        :type cp_dir: str
-
-        :param save_files: set of files to save
-        :type save_files: set
+        :param str cp_dir: Checkpoint directory filepath
+        :param set save_files: set of files to save
 
         """
         le_util.make_or_verify_dir(cp_dir, 0o755)
@@ -289,8 +282,7 @@ class AugeasConfigurator(configurator.Configurator):
         Recover a specific checkpoint provided by cp_dir
         Note: this function does not reload augeas.
 
-        :param cp_dir: checkpoint directory file path
-        :type cp_dir: str
+        :param str cp_dir: checkpoint directory file path
 
         :returns: 0 success, 1 Unable to revert, -1 Unable to delete
         :rtype: int
@@ -322,8 +314,7 @@ class AugeasConfigurator(configurator.Configurator):
     def check_tempfile_saves(self, save_files):
         """Verify save isn't overwriting any temporary files.
 
-        :param save_files: Set of files about to be saved.
-        :type save_files: set
+        :param set save_files: Set of files about to be saved.
 
         :returns: Success, error message
         :rtype: bool, str
@@ -347,12 +338,10 @@ class AugeasConfigurator(configurator.Configurator):
         file will be cleaned up if the program exits unexpectedly.
         (Before a save occurs)
 
-        :param temporary: If the file creation registry is for a temp or
-        permanent save.
-        :type temporary: bool
+        :param bool temporary: If the file creation registry is for
+            a temp or permanent save.
 
-        :param *files: file paths to be registered
-        :type *files: str
+        :param \*files: file paths (str) to be registered
 
         """
         if temporary:
@@ -395,8 +384,7 @@ class AugeasConfigurator(configurator.Configurator):
     def _remove_contained_files(self, file_list):
         """Erase all files contained within file_list.
 
-        :param file_list: file containing list of file paths to be deleted
-        :type file_list: str
+        :param str file_list: file containing list of file paths to be deleted
 
         :returns: Success
         :rtype: bool
