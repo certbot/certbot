@@ -1,5 +1,5 @@
 {
-    "id": "https://lets-encrypt.org/schema/01/signature#",
+    "id": "https://letsencrypt.org/schema/01/signature#",
     "$schema": "http://json-schema.org/draft-04/schema#",
     "description": "Schema for a signature (alg RS256/e=65537 or P-256 ONLY)",
     "type": "object",
