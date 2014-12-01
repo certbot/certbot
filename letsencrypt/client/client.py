@@ -36,8 +36,8 @@ class Client(object):
     :ivar config: Configurator.
     :type config: :class:`letsencrypt.client.configurator.Configurator`
 
-    :ivar str ca_server: Certificate authority server
-    :ivar str ca_server_url: Full URL of the CSR server
+    :ivar str server: Certificate authority server
+    :ivar str server_url: Full URL of the CSR server
 
     :ivar csr: Certificate Signing Request
     :type csr: :class:`CSR`
@@ -56,11 +56,11 @@ class Client(object):
     Key = collections.namedtuple("Key", "file pem")
     CSR = collections.namedtuple("CSR", "file data type")
 
-    def __init__(self, ca_server, csr=CSR(None, None, None),
+    def __init__(self, server, csr=CSR(None, None, None),
                  privkey=Key(None, None), redirect=None, use_curses=True):
         """Initialize a client."""
-        self.ca_server = ca_server
-        self.ca_server_url = "https://%s/acme/" % self.ca_server
+        self.server = server
+        self.server_url = "https://%s/acme/" % self.server
         self.names = []
         self.redirect = redirect
         self.use_curses = use_curses
@@ -103,7 +103,7 @@ class Client(object):
 
         # Display screen to select domains to validate
         if domains:
-            sanity_check_names([self.ca_server] + domains)
+            sanity_check_names([self.server] + domains)
             self.names = domains
         else:
             # This function adds all names
@@ -241,7 +241,7 @@ class Client(object):
 
         try:
             response = requests.post(
-                self.ca_server_url,
+                self.server_url,
                 data=json_encoded,
                 headers={"Content-Type": "application/json"},
             )
