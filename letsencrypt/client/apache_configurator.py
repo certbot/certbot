@@ -371,7 +371,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         Checks if addr has a NameVirtualHost directive in the Apache config
 
-        :param str addr: vhost address ie. *:443
+        :param str addr: vhost address ie. \*:443
 
         :returns: Success
         :rtype: bool

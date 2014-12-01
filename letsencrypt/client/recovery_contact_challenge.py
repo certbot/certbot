@@ -1,7 +1,7 @@
 """Recovery Contact Identifier Validation Challenge.
 
-NOTE: THIS CLASS IS NOT FULLY IMPLEMENTED INTO THE PROJECT
-YET.
+.. note:: This class is not complete and is not included in the project
+    currently.
 
 """
 import time
