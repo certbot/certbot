@@ -37,11 +37,16 @@ class Client(object):
 
     def __init__(self, ca_server, cert_signing_request=CSR(None, None, None),
                  private_key=Key(None, None), use_curses=True):
-        """
+        """Initialize client.
 
         :param str ca_server: Certificate authority server
-        :param str cert_signing_request: Contents of the CSR
-        :param str private_key: Contents of the private key
+
+        :param cert_signing_request: Certificate Signing Request
+        :type cert_signing_request: :class:`CSR`
+
+        :param private_key: Private key
+        :type private_key: :class:`Key`
+
         :param bool use_curses: Use curses UI
 
         """
