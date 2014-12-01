@@ -64,10 +64,10 @@ class Client(object):
         try:
             self._validate_csr_key_cli()
 
-        except errors.LetsEncryptClientError as e:
+        except errors.LetsEncryptClientError as exc:
             # TODO: Something nice here...
             logger.fatal(("%s - until the programmers get their act together, "
-                          "we are just going to exit" % str(e)))
+                          "we are just going to exit" % str(exc)))
             sys.exit(1)
         self.server_url = "https://%s/acme/" % self.server
 
@@ -90,8 +90,6 @@ class Client(object):
         # Check configuration
         if not self.config.config_test():
             sys.exit(1)
-
-        self.redirect = redirect
 
         # Display preview warning
         if not eula:
@@ -141,7 +139,7 @@ class Client(object):
         cert_file = self.install_certificate(certificate_dict, vhost)
 
         # Perform optimal config changes
-        self.optimize_config(vhost)
+        self.optimize_config(vhost, redirect)
 
         self.config.save("Completed Let's Encrypt Authentication")
 
@@ -428,11 +426,19 @@ class Client(object):
 
         return cert_file
 
-    def optimize_config(self, vhost):
-        if self.redirect is None:
-            self.redirect = display.redirect_by_default()
+    def optimize_config(self, vhost, redirect):
+        """Optimize the configuration.
 
-        if self.redirect:
+        :param vhost: vhost to optimize
+        :type vhost: :class:`apache_configurator.VH`
+
+        :param bool redirect: If traffic should be forwarded from HTTP to HTTPS
+
+        """
+        if redirect is None:
+            redirect = display.redirect_by_default()
+
+        if redirect:
             self.redirect_to_ssl(vhost)
             self.config.restart(quiet=self.curses)
 
@@ -447,6 +453,11 @@ class Client(object):
         #    continue
 
     def cleanup_challenges(self, challenges):
+        """Cleanup configuration challenges
+
+        :param dict challenges: challenges from a challenge message
+
+        """
         logger.info("Cleaning up challenges...")
         for chall in challenges:
             if chall["type"] in CONFIG.CONFIG_CHALLENGES:
@@ -541,6 +552,12 @@ class Client(object):
         return True
 
     def redirect_to_ssl(self, vhost):
+        """Redirect all traffic from HTTP to HTTPS
+
+        :param vhost: list of ssl_vhosts
+        :type vhost: :class:`apache_configurator.VH`
+
+        """
         for ssl_vh in vhost:
             success, redirect_vhost = self.config.enable_redirect(ssl_vh)
             logger.info("\nRedirect vhost: " + redirect_vhost.file +
@@ -550,6 +567,14 @@ class Client(object):
                 self.config.enable_site(redirect_vhost)
 
     def get_virtual_hosts(self, domains):
+        """Retrieve the appropriate virtual host for the domain
+
+        :param list domains: Domains to find ssl vhosts for
+
+        :returns: associated vhosts
+        :rtype: :class:`apache_configurator.VH`
+
+        """
         vhost = set()
         for name in domains:
             host = self.config.choose_virtual_host(name)
