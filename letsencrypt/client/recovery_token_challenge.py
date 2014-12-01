@@ -1,4 +1,9 @@
-"""Recovery Token Identifier Validation Challenge."""
+"""Recovery Token Identifier Validation Challenge.
+
+NOTE: THIS CHALLENGE IS NOT IMPLEMENTED OR INCLUDED
+IN THE PROJECT CURRENTLY
+
+"""
 import dialog
 
 from letsencrypt.client import challenge

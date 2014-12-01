@@ -1,4 +1,9 @@
-"""Recovery Contact Identifier Validation Challenge."""
+"""Recovery Contact Identifier Validation Challenge.
+
+NOTE: THIS CLASS IS NOT FULLY IMPLEMENTED INTO THE PROJECT
+YET.
+
+"""
 import time
 
 import dialog
@@ -100,7 +105,6 @@ class RecoveryContact(challenge.Challenge):
             ans = raw_input(prompt + "y/n")
 
         return ans.startswith('y') or ans.startswith('Y')
-
 
     def generate_response(self):
         if not self.token:

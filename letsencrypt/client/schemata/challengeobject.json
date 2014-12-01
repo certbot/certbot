@@ -1,5 +1,5 @@
 {
-    "id": "https://lets-encrypt.org/schema/01/challengeobject#",
+    "id": "https://letsencrypt.org/schema/01/challengeobject#",
     "$schema": "http://json-schema.org/draft-04/schema#",
     "description": "Subschema for an individual challenge (within challenge)",
     "anyOf": [
