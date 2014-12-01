@@ -5,7 +5,7 @@ Maintainer: Faidon Liambotis <paravoid@debian.org>
 Build-Depends: debhelper (>= 9), python-all (>= 2.5), python-setuptools
 Standards-Version: 3.9.3
 XS-Python-Version: >= 2.6
-Homepage: https://trustify.net/
+Homepage: https://www.letsencrypt.org/
 
 Package: letsencrypt
 Architecture: all
