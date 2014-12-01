@@ -70,12 +70,6 @@ def challenge_request(name):
     :rtype: dict
 
     """
-    if not isinstance(name, unicode):
-        raise TypeError("Parameter 'name' must be unicode")
-
-    if not name:
-        raise ValueError("Parameter 'name' must not be empty")
-
     return {
         "type": "challengeRequest",
         "identifier": name,
@@ -96,33 +90,6 @@ def authorization_request(req_id, name, server_nonce, responses, key):
     :rtype: dict
 
     """
-    if not isinstance(req_id, str):
-        raise TypeError("Parameter 'req_id' must be of type str")
-
-    if not req_id:
-        raise ValueError("Parameter 'req_id' must not be empty")
-
-    if not isinstance(name, unicode):
-        raise TypeError("Parameter 'name' must be of type unicode")
-
-    if not name:
-        raise ValueError("Parameter 'name' must not be empty")
-
-    if not isinstance(server_nonce, str):
-        raise TypeError("Parameter 'server_nonce' must be of type str")
-
-    if not server_nonce:
-        raise ValueError("Parameter 'server_nonce' must not be empty")
-
-    if not isinstance(responses, list):
-        raise TypeError("Parameter 'responses' must be of type list")
-
-    if not isinstance(key, str):
-        raise TypeError("Parameter 'key' must be of type str")
-
-    if not key:
-        raise ValueError("Parameter 'key' must not be empty")
-
     return {
         "type": "authorizationRequest",
         "sessionID": req_id,
@@ -144,18 +111,6 @@ def certificate_request(csr_der, key):
     :rtype: dict
 
     """
-    if not isinstance(csr_der, str):
-        raise TypeError("Parameter 'csr_der' must be of type str")
-
-    if not csr_der:
-        raise ValueError("Parameter 'csr_der' must not be empty")
-
-    if not isinstance(key, str):
-        raise TypeError("Parameter 'key' must be of type str")
-
-    if not key:
-        raise ValueError("Parameter 'key' must not be empty")
-
     return {
         "type": "certificateRequest",
         "csr": le_util.jose_b64encode(csr_der),
@@ -175,18 +130,6 @@ def revocation_request(key_file, cert_der):
     :rtype: dict
 
     """
-    if not isinstance(key_file, str):
-        raise TypeError("Parameter 'key_file' must be of type str")
-
-    if not key_file:
-        raise ValueError("Parameter 'key_file' must not be empty")
-
-    if not isinstance(cert_der, str):
-        raise TypeError("Parameter 'cert_der' must be of type str")
-
-    if not cert_der:
-        raise ValueError("Parameter 'cert_der' must not be empty")
-
     return {
         "type": "revocationRequest",
         "certificate": le_util.jose_b64encode(cert_der),
@@ -203,12 +146,6 @@ def status_request(token):
     :rtype: dict
 
     """
-    if not isinstance(token, str):
-        raise TypeError("Parameter 'token' must be of type str")
-
-    if not token:
-        raise ValueError("Parameter 'token' must not be empty")
-
     return {
         "type": "statusRequest",
         "token": token,
