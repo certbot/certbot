@@ -27,7 +27,7 @@ def create_sig(msg, key_str, nonce=None, nonce_len=CONFIG.NONCE_SIZE):
 
     .. todo:: Change this over to M2Crypto... PKey
 
-    .. todo::Protect against crypto unicode errors... is this sufficient?
+    .. todo:: Protect against crypto unicode errors... is this sufficient?
         Do I need to escape?
 
     :param str key_str: Key in string form. Accepted formats

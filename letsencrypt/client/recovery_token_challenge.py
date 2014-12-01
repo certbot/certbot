@@ -1,7 +1,6 @@
 """Recovery Token Identifier Validation Challenge.
 
-NOTE: THIS CHALLENGE IS NOT IMPLEMENTED OR INCLUDED
-IN THE PROJECT CURRENTLY
+.. note:: This challenge has not been implemented into the project yet
 
 """
 import dialog
