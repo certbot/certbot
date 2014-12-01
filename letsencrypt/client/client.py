@@ -47,9 +47,6 @@ class Client(object):
     :ivar privkey: Private key
     :type privkey: :class:`Key`
 
-    :ivar redirect: If traffic should be forwarded from HTTP to HTTPS.
-    :type redirect: bool or None
-
     :ivar bool use_curses: Use curses UI
 
     """
@@ -57,12 +54,11 @@ class Client(object):
     CSR = collections.namedtuple("CSR", "file data type")
 
     def __init__(self, server, csr=CSR(None, None, None),
-                 privkey=Key(None, None), redirect=None, use_curses=True):
+                 privkey=Key(None, None), use_curses=True):
         """Initialize a client."""
         self.server = server
         self.server_url = "https://%s/acme/" % self.server
         self.names = []
-        self.redirect = redirect
         self.use_curses = use_curses
 
         self.csr = csr
@@ -78,11 +74,14 @@ class Client(object):
         self.config = apache_configurator.ApacheConfigurator(
             CONFIG.SERVER_ROOT)
 
-    def authenticate(self, domains=None, eula=False):
+    def authenticate(self, domains=None, eula=False, redirect=None):
         """
 
         :param list domains: List of domains
         :param bool eula: EULA accepted
+
+        :param redirect: If traffic should be forwarded from HTTP to HTTPS.
+        :type redirect: bool or None
 
         :raises errors.LetsEncryptClientError: CSR does not contain one of the
             specified names.
@@ -142,7 +141,7 @@ class Client(object):
         cert_file = self.install_certificate(certificate_dict, vhost)
 
         # Perform optimal config changes
-        self.optimize_config(vhost)
+        self.optimize_config(vhost, redirect)
 
         self.config.save("Completed Let's Encrypt Authentication")
 
@@ -429,18 +428,21 @@ class Client(object):
 
         return cert_file
 
-    def optimize_config(self, vhost):
+    def optimize_config(self, vhost, redirect=None):
         """Optimize the configuration.
 
         :param vhost: vhost to optimize
         :type vhost: :class:`apache_configurator.VH`
 
+        :param redirect: If traffic should be forwarded from HTTP to HTTPS.
+        :type redirect: bool or None
+
         """
         # TODO: this should most definitely be moved to __init__
-        if self.redirect is None:
-            self.redirect = display.redirect_by_default()
+        if redirect is None:
+            redirect = display.redirect_by_default()
 
-        if self.redirect:
+        if redirect:
             self.redirect_to_ssl(vhost)
             self.config.restart(quiet=self.use_curses)
 

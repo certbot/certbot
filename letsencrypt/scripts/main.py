@@ -93,11 +93,11 @@ def main():
     else:
         csr = client.Client.CSR(args.csr[0], args.csr[1], "pem")
 
-    acme = client.Client(server, csr, privkey, args.redirect, args.curses)
+    acme = client.Client(server, csr, privkey, args.curses)
     if args.revoke:
         acme.list_certs_keys()
     else:
-        acme.authenticate(args.domains, args.eula)
+        acme.authenticate(args.domains, args.eula, arg.redirect)
 
 
 def read_file(filename):
