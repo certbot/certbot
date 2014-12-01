@@ -47,7 +47,7 @@ class Client(object):
     :ivar privkey: Private key
     :type privkey: :class:`Key`
 
-    :ivar redirect: Redirect HTTP to HTTPS?
+    :ivar redirect: If traffic should be forwarded from HTTP to HTTPS.
     :type redirect: bool or None
 
     :ivar bool use_curses: Use curses UI
@@ -142,7 +142,7 @@ class Client(object):
         cert_file = self.install_certificate(certificate_dict, vhost)
 
         # Perform optimal config changes
-        self.optimize_config(vhost, redirect)
+        self.optimize_config(vhost)
 
         self.config.save("Completed Let's Encrypt Authentication")
 
@@ -429,19 +429,18 @@ class Client(object):
 
         return cert_file
 
-    def optimize_config(self, vhost, redirect):
+    def optimize_config(self, vhost):
         """Optimize the configuration.
 
         :param vhost: vhost to optimize
         :type vhost: :class:`apache_configurator.VH`
 
-        :param bool redirect: If traffic should be forwarded from HTTP to HTTPS
-
         """
-        if redirect is None:
-            redirect = display.redirect_by_default()
+        # TODO: this should most definitely be moved to __init__
+        if self.redirect is None:
+            self.redirect = display.redirect_by_default()
 
-        if redirect:
+        if self.redirect:
             self.redirect_to_ssl(vhost)
             self.config.restart(quiet=self.use_curses)
 
