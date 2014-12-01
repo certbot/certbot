@@ -370,7 +370,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         Checks if addr has a NameVirtualHost directive in the Apache config
 
-        :param str addr: vhost address ie. \*:443
+        :param str addr: vhost address ie. *:443
 
         :returns: Success
         :rtype: bool
@@ -1176,26 +1176,7 @@ LogLevel warn \n\
         :rtype: bool
 
         """
-        # TODO: This should be written to use the process returncode
-        try:
-            proc = subprocess.Popen(['/etc/init.d/apache2', 'restart'],
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE)
-            text = proc.communicate()
-
-            if proc.returncode != 0:
-                # Enter recovery routine...
-                logger.error("Configtest failed")
-                logger.error(text[0])
-                logger.error(text[1])
-            return False
-
-        except (OSError, ValueError):
-            logger.fatal(("Apache Restart Failed - "
-                          "Please Check the Configuration"))
-            sys.exit(1)
-
-        return True
+        return apache_restart(quiet)
 
     def _add_httpd_transform(self, incl):
         """Add a transform to Augeas.
@@ -1240,6 +1221,9 @@ LogLevel warn \n\
     # Challenges Section
     ###########################################################################
 
+    # TODO: Change list_sni_tuple to namedtuple. Also include key within tuple.
+    #       This allows the keys to be different for each SNI challenge
+
     def perform(self, chall_dict):
         """Perform the configuration related challenge.
 
@@ -1254,11 +1238,14 @@ LogLevel warn \n\
     def dvsni_perform(self, chall_dict):
         """Peform a DVSNI challenge.
 
-        Composed of
-        list_sni_tuple: List of tuples with form (addr, r, nonce)
-            addr (string), r (base64 string), nonce (hex string)
+        chall_dict composed of:
 
-        dvsni_key: namedtuple - client.Client.Key()
+        list_sni_tuple:
+            List of tuples with form `(addr, r, nonce)`
+            `addr` (`string`), `r` (base64 `str`), `nonce` (hex `str`)
+
+        dvsni_key:
+            :class:`client.Client.Key`
 
         :param dict chall_dict: dvsni challenge - see documentation
 
@@ -1327,12 +1314,12 @@ LogLevel warn \n\
 
         Result: Apache config includes virtual servers for issued challs
 
-        :param list_sni_tuple: list of tuples with the form (addr, y, nonce)
-            addr (string), y (byte array), nonce (hex str)
-        :type list_sni_tuple: list
+        :param list list_sni_tuple: list of tuples with the form
+            `(addr, y, nonce)`, where `addr` is `str`, y is `byte array`,
+            `nonce` is `str`
 
         :param dvsni_key: Namedtuple with file, pem
-        :type dvsni_key: `client.Client.Key` - namedtuple
+        :type dvsni_key: :class:`client.Client.Key`
 
         :param list ll_addrs: list of list of addresses to apply
 
@@ -1445,6 +1432,29 @@ def check_ssl_loaded():
     if "ssl_module" in proc:
         return True
     return False
+
+
+def apache_restart(quiet=False):
+    # TODO: This should be written to use the process returncode
+    try:
+        proc = subprocess.Popen(['/etc/init.d/apache2', 'restart'],
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE)
+        text = proc.communicate()
+
+        if proc.returncode != 0:
+            # Enter recovery routine...
+            logger.error("Configtest failed")
+            logger.error(text[0])
+            logger.error(text[1])
+            return False
+
+    except (OSError, ValueError):
+        logger.fatal(("Apache Restart Failed - "
+                      "Please Check the Configuration"))
+        sys.exit(1)
+
+    return True
 
 
 def verify_setup():
