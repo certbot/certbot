@@ -31,60 +31,57 @@ ALLOW_RAW_IPV6_SERVER = False
 
 
 class Client(object):
-    """ACME protocol client."""
+    """ACME protocol client.
+
+    :ivar config: Configurator.
+    :type config: :class:`letsencrypt.client.configurator.Configurator`
+
+    :ivar str server: Certificate authority server
+    :ivar str server_url: Full URL of the CSR server
+
+    :ivar csr: Certificate Signing Request
+    :type csr: :class:`CSR`
+
+    :ivar list names: Domain names (:class:`list` of :class:`str`).
+
+    :ivar privkey: Private key
+    :type privkey: :class:`Key`
+
+    :ivar bool use_curses: Use curses UI
+
+    """
     Key = collections.namedtuple("Key", "file pem")
     CSR = collections.namedtuple("CSR", "file data type")
 
-    def __init__(self, ca_server, cert_signing_request=CSR(None, None, None),
-                 private_key=Key(None, None), use_curses=True):
-        """Initialize client.
+    def __init__(self, server, csr=CSR(None, None, None),
+                 privkey=Key(None, None), use_curses=True):
+        """Initialize a client."""
+        self.server = server
+        self.server_url = "https://%s/acme/" % self.server
+        self.names = []
+        self.use_curses = use_curses
 
-        :param str ca_server: Certificate authority server
-
-        :param cert_signing_request: Certificate Signing Request
-        :type cert_signing_request: :class:`CSR`
-
-        :param private_key: Private key
-        :type private_key: :class:`Key`
-
-        :param bool use_curses: Use curses UI
-
-        """
-        self.curses = use_curses
+        self.csr = csr
+        self.privkey = privkey
+        self._validate_csr_key_cli()  # TODO: catch exceptions
 
         # Logger needs to be initialized before Configurator
         self.init_logger()
+
         # TODO: Can probably figure out which configurator to use
         #       without special packaging based on system info Command
         #       line arg or client function to discover
         self.config = apache_configurator.ApacheConfigurator(
             CONFIG.SERVER_ROOT)
-        self.server = ca_server
 
-        # These are CSR/Key namedtuples
-        self.csr = cert_signing_request
-        self.privkey = private_key
-
-        # TODO: Figure out all exceptions from this function
-        try:
-            self._validate_csr_key_cli()
-
-        except errors.LetsEncryptClientError as exc:
-            # TODO: Something nice here...
-            logger.fatal(("%s - until the programmers get their act together, "
-                          "we are just going to exit" % str(exc)))
-            sys.exit(1)
-        self.server_url = "https://%s/acme/" % self.server
-
-    def authenticate(self, domains=None, redirect=None, eula=False):
+    def authenticate(self, domains=None, eula=False, redirect=None):
         """
 
         :param list domains: List of domains
-
-        :param redirect:
-        :type redirect: bool or None
-
         :param bool eula: EULA accepted
+
+        :param redirect: If traffic should be forwarded from HTTP to HTTPS.
+        :type redirect: bool or None
 
         :raises errors.LetsEncryptClientError: CSR does not contain one of the
             specified names.
@@ -425,27 +422,29 @@ class Client(object):
                 self.config.enable_site(host)
 
         # sites may have been enabled / final cleanup
-        self.config.restart(quiet=self.curses)
+        self.config.restart(quiet=self.use_curses)
 
         display.success_installation(self.names)
 
         return cert_file
 
-    def optimize_config(self, vhost, redirect):
+    def optimize_config(self, vhost, redirect=None):
         """Optimize the configuration.
 
         :param vhost: vhost to optimize
         :type vhost: :class:`apache_configurator.VH`
 
-        :param bool redirect: If traffic should be forwarded from HTTP to HTTPS
+        :param redirect: If traffic should be forwarded from HTTP to HTTPS.
+        :type redirect: bool or None
 
         """
+        # TODO: this should most definitely be moved to __init__
         if redirect is None:
             redirect = display.redirect_by_default()
 
         if redirect:
             self.redirect_to_ssl(vhost)
-            self.config.restart(quiet=self.curses)
+            self.config.restart(quiet=self.use_curses)
 
         # if self.ocsp_stapling is None:
         #     q = ("Would you like to protect the privacy of your users "
@@ -733,7 +732,7 @@ class Client(object):
         return names
 
     def init_logger(self):
-        if self.curses:
+        if self.use_curses:
             logger.setLogger(logger.NcursesLogger())
             logger.setLogLevel(logger.INFO)
         else:

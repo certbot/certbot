@@ -5,14 +5,15 @@ import dialog
 from letsencrypt.client import challenge
 
 
-###########################################################
-# Interactive challenge displays the string sent by the CA
-# formatted to fit on the screen of the client
-# The Challenge also adds proper instructions for how the
-# client should continue the letsencrypt process
-###########################################################
+class InteractiveChallenge(challenge.Challenge):
+    """Interactive challange.
 
-class Interactive_Challenge(challenge.Challenge):
+    Interactive challenge displays the string sent by the CA formatted
+    to fit on the screen of the client. The Challenge also adds proper
+    instructions for how the client should continue the letsencrypt
+    process.
+
+    """
     BOX_SIZE = 70
 
     def __init__(self, string):
@@ -20,16 +21,17 @@ class Interactive_Challenge(challenge.Challenge):
 
     def perform(self, quiet=True):
         if quiet:
-            dialog.Dialog().msgbox(self.get_display_string(), width=self.BOX_SIZE)
+            dialog.Dialog().msgbox(
+                self.get_display_string(), width=self.BOX_SIZE)
         else:
             print self.get_display_string()
             raw_input('')
 
         return True
 
-
     def get_display_string(self):
-        return textwrap.fill(self.string, width=self.BOX_SIZE) + "\n\nPlease Press Enter to Continue"
+        return (textwrap.fill(self.string, width=self.BOX_SIZE) +
+                "\n\nPlease Press Enter to Continue")
 
     # def formatted_reasons(self):
     #    return "\n\t* %s\n", self.reason

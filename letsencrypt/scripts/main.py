@@ -97,7 +97,7 @@ def main():
     if args.revoke:
         acme.list_certs_keys()
     else:
-        acme.authenticate(args.domains, args.redirect, args.eula)
+        acme.authenticate(args.domains, args.eula, args.redirect)
 
 
 def read_file(filename):
