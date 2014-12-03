@@ -109,7 +109,7 @@ class AugeasConfigurator(configurator.Configurator):
                 self.add_to_checkpoint(CONFIG.IN_PROGRESS_DIR, save_files)
 
         if title and not temporary and os.path.isdir(CONFIG.IN_PROGRESS_DIR):
-            success = finalize_checkpoint(CONFIG.IN_PROGRESS_DIR, title)
+            success = self._finalize_checkpoint(CONFIG.IN_PROGRESS_DIR, title)
             if not success:
                 # This should never happen
                 # This will be hopefully be cleaned up on the recovery
@@ -395,38 +395,38 @@ class AugeasConfigurator(configurator.Configurator):
         return True
 
 
-def finalize_checkpoint(cp_dir, title):
-    """Move IN_PROGRESS checkpoint to timestamped checkpoint.
+    def _finalize_checkpoint(cp_dir, title): # pylint: disable=no-self-use
+        """Move IN_PROGRESS checkpoint to timestamped checkpoint.
 
-    Adds title to cp_dir CHANGES_SINCE
-    Move cp_dir to Backups directory and rename with timestamp
+        Adds title to cp_dir CHANGES_SINCE
+        Move cp_dir to Backups directory and rename with timestamp
 
-    :param cp_dir: "IN PROGRESS" directory
-    :type cp_dir: str
+        :param cp_dir: "IN PROGRESS" directory
+        :type cp_dir: str
 
-    :returns: Success
-    :rtype: bool
+        :returns: Success
+        :rtype: bool
 
-    """
-    final_dir = os.path.join(CONFIG.BACKUP_DIR, str(time.time()))
-    changes_since_path = os.path.join(cp_dir, "CHANGES_SINCE")
-    changes_since_tmp_path = os.path.join(cp_dir, "CHANGES_SINCE.tmp")
+        """
+        final_dir = os.path.join(CONFIG.BACKUP_DIR, str(time.time()))
+        changes_since_path = os.path.join(cp_dir, "CHANGES_SINCE")
+        changes_since_tmp_path = os.path.join(cp_dir, "CHANGES_SINCE.tmp")
 
-    try:
-        with open(changes_since_tmp_path, 'w') as changes_tmp:
-            changes_tmp.write("-- %s --\n" % title)
-            with open(changes_since_path, 'r') as changes_orig:
-                changes_tmp.write(changes_orig.read())
+        try:
+            with open(changes_since_tmp_path, 'w') as changes_tmp:
+                changes_tmp.write("-- %s --\n" % title)
+                with open(changes_since_path, 'r') as changes_orig:
+                    changes_tmp.write(changes_orig.read())
 
-        shutil.move(changes_since_tmp_path, changes_since_path)
+            shutil.move(changes_since_tmp_path, changes_since_path)
 
-    except:
-        logger.error("Unable to finalize checkpoint - adding title")
-        return False
-    try:
-        os.rename(cp_dir, final_dir)
-    except:
-        logger.error("Unable to finalize checkpoint, %s -> %s" %
-                     (cp_dir, final_dir))
-        return False
-    return True
+        except:
+            logger.error("Unable to finalize checkpoint - adding title")
+            return False
+        try:
+            os.rename(cp_dir, final_dir)
+        except:
+            logger.error("Unable to finalize checkpoint, %s -> %s" %
+                         (cp_dir, final_dir))
+            return False
+        return True

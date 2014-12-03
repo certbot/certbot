@@ -299,8 +299,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # in heirarchy via direct include
             # httpd.conf was very common as a user file in Apache 2.2
             if (os.path.isfile(self.server_root + 'httpd.conf') and
-                self.find_directive(case_i("Include"),
-                                    case_i("httpd.conf"))):
+                    self.find_directive(
+                        case_i("Include"), case_i("httpd.conf"))):
                 return os.path.join(self.server_root, 'httpd.conf')
             else:
                 return os.path.join(self.server_root + 'apache2.conf')
@@ -481,7 +481,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         for addr in vhost.addrs:
             if not self.is_name_vhost(addr):
                 logger.debug(("Setting VirtualHost at %s "
-                             "to be a name based virtual host" % addr))
+                              "to be a name based virtual host" % addr))
                 self.add_name_vhost(addr)
 
         return True
@@ -1170,7 +1170,7 @@ LogLevel warn \n\
 
         self.aug.load()
 
-    def restart(self, quiet=False):
+    def restart(self, quiet=False): # pylint: disable=no-self-use
         """Restarts apache server.
 
         :returns: Success
