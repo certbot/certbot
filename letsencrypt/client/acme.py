@@ -76,14 +76,15 @@ def challenge_request(name):
     }
 
 
-def authorization_request(req_id, name, server_nonce, responses, key_file):
+def authorization_request(req_id, name, server_nonce, responses, key):
     """Create ACME "authorizationRequest" message.
 
-    :param req_id: TODO
-    :param name: TODO
-    :param server_nonce: TODO
-    :param responses: TODO
-    :param key_file: TODO
+    :param str req_id: SessionID from the server challenge
+    :param unicode name: Hostname
+    :param str server_nonce: Nonce from the server challenge
+    :param list responses: List of completed challenges
+    :param str key: Key in string form. Accepted formats
+        are the same as for `Crypto.PublicKey.RSA.importKey`.
 
     :returns: ACME "authorizationRequest" message.
     :rtype: dict
@@ -95,7 +96,7 @@ def authorization_request(req_id, name, server_nonce, responses, key_file):
         "nonce": server_nonce,
         "responses": responses,
         "signature": crypto_util.create_sig(
-            name + le_util.jose_b64decode(server_nonce), key_file),
+            name + le_util.jose_b64decode(server_nonce), key),
     }
 
 
@@ -103,7 +104,8 @@ def certificate_request(csr_der, key):
     """Create ACME "certificateRequest" message.
 
     :param str csr_der: DER encoded CSR.
-    :param key: TODO
+    :param str key: Key in string form. Accepted formats
+        are the same as for `Crypto.PublicKey.RSA.importKey`.
 
     :returns: ACME "certificateRequest" message.
     :rtype: dict
