@@ -1299,7 +1299,10 @@ LogLevel warn \n\
         num_decimal = matches[0].count(".")
 
         # Format return value such as 2.47 rather than 2.4.7
-        return float("".join(matches[0].rsplit(".", num_decimal-1)))
+        if num_decimal > 0:
+            return float("".join(matches[0].rsplit(".", num_decimal-1)))
+
+        return float(matches[0])
 
     ###########################################################################
     # Challenges Section
