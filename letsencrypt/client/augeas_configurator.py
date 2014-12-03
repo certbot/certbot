@@ -1,3 +1,4 @@
+"""Class of Augeas Configurators."""
 import os
 import sys
 import shutil
@@ -291,7 +292,7 @@ class AugeasConfigurator(configurator.Configurator):
 
         return 0
 
-    def check_tempfile_saves(self, save_files):
+    def check_tempfile_saves(self, save_files):  # pylint: disable=no-self-use
         """Verify save isn't overwriting any temporary files.
 
         :param set save_files: Set of files about to be saved.
@@ -311,6 +312,7 @@ class AugeasConfigurator(configurator.Configurator):
 
         return True, ""
 
+    # pylint: disable=no-self-use
     def register_file_creation(self, temporary, *files):
         """Register the creation of all files during letsencrypt execution.
 
@@ -361,6 +363,7 @@ class AugeasConfigurator(configurator.Configurator):
             # Need to reload configuration after these changes take effect
             self.aug.load()
 
+    # pylint: disable=no-self-use
     def _remove_contained_files(self, file_list):
         """Erase all files contained within file_list.
 
@@ -394,8 +397,8 @@ class AugeasConfigurator(configurator.Configurator):
 
         return True
 
-
-    def _finalize_checkpoint(cp_dir, title): # pylint: disable=no-self-use
+    # pylint: disable=no-self-use
+    def _finalize_checkpoint(self, cp_dir, title):
         """Move IN_PROGRESS checkpoint to timestamped checkpoint.
 
         Adds title to cp_dir CHANGES_SINCE

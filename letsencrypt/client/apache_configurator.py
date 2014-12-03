@@ -1,3 +1,4 @@
+"""Apache Configuration based off of Augeas Configurator."""
 import hashlib
 import os
 import pkg_resources
@@ -44,15 +45,31 @@ from letsencrypt.client import logger
 # transactional due to the use of register_file_creation()
 
 class VH(object):
-    """Represents an Apache Virtualhost."""
+    """Represents an Apache Virtualhost.
 
-    def __init__(self, filename_path, vh_path, vh_addrs, is_ssl, is_enabled):
-        self.file = filename_path
-        self.path = vh_path
-        self.addrs = vh_addrs
+    :ivar str file: filename path of VH
+
+    :ivar str path: Augeas path to virtual host
+
+    :ivar list addrs: Virtual Host addresses (:class:`list` of :class:`str`)
+
+    :ivar list names: Server names/aliases of vhost
+        (:class:`list` of :class:`str`)
+
+    :ivar bool ssl: SSLEngine on in vhost
+
+    :ivar bool enabled: Virtual host is enabled
+
+    """
+
+    def __init__(self, filename, path, addrs, ssl, enabled):
+        """Initialize a VH."""
+        self.file = filename
+        self.path = path
+        self.addrs = addrs
         self.names = []
-        self.ssl = is_ssl
-        self.enabled = is_enabled
+        self.ssl = ssl
+        self.enabled = enabled
 
     def set_names(self, list_of_names):
         """Set names."""
@@ -61,6 +78,22 @@ class VH(object):
     def add_name(self, name):
         """Add name to vhost."""
         self.names.append(name)
+
+    def __str__(self):
+        return ("file: %s\n"
+                "vh_path: %s\n"
+                "addrs: %s\n"
+                "names: %s\n"
+                "ssl: %s\n"
+                "enabled: %s" % (self.file, self.path, self.addrs,
+                                 self.names, self.ssl, self.enabled))
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return (self.file == other.file and self.path == other.path and
+                    set(self.addrs) == set(other.addrs) and
+                    set(self.names) == set(other.naems) and
+                    self.ssl == other.ssl and self.enabled == other.enabled)
 
 
 class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
@@ -88,8 +121,20 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     so that other Configurators (like Nginx) can be developed and interoperate
     with the client.
 
+    :ivar str server_root: Path to Apache root directory
+
+    :ivar float version: version of Apache
+
+    :ivar str user_config_file: Path to the user's configuration file
+
+    :ivar list vhosts: All vhosts found in the configuration
+        (:class:`list` of :class:`VH`)
+
+    :ivar dict assoc: Mapping between domains and vhosts
+
     """
-    def __init__(self, server_root=CONFIG.SERVER_ROOT):
+    def __init__(self, server_root=CONFIG.SERVER_ROOT, version=None):
+        """Initialize an Apache Configurator."""
         super(ApacheConfigurator, self).__init__()
 
         self.server_root = server_root
@@ -99,6 +144,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # because this will change the underlying configuration and potential
         # vhosts
         self.recovery_routine()
+
+        # Set Version
+        if not version:
+            self.version = self.get_version()
+        else:
+            self.version = version
+
         # Check for errors in parsing files with Augeas
         self.check_parsing_errors("httpd.aug")
         # This problem has been fixed in Augeas 1.0
@@ -631,7 +683,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # TODO: Test if Apache allows ../ or ~/ for Includes
 
         # Attempts to add a transform to the file if one does not already exist
-        self.parse_file(arg)
+        self._parse_file(arg)
 
         # Argument represents an fnmatch regular expression, convert it
         # Split up the path and convert each into an Augeas accepted regex
@@ -1087,7 +1139,7 @@ LogLevel warn \n\
             return True
         return False
 
-    def fnmatch_to_re(self, clean_fn_match):
+    def fnmatch_to_re(self, clean_fn_match):  # pylint: disable=no-self-use
         """Method converts Apache's basic fnmatch to regular expression.
 
         :param str clean_fn_match: Apache style filename match, similar to globs
@@ -1110,7 +1162,7 @@ LogLevel warn \n\
                 regex = regex + letter
         return regex
 
-    def parse_file(self, file_path):
+    def _parse_file(self, file_path):
         """Parse file with Augeas
 
         Checks to see if file_path is parsed by Augeas
@@ -1170,7 +1222,7 @@ LogLevel warn \n\
 
         self.aug.load()
 
-    def restart(self, quiet=False): # pylint: disable=no-self-use
+    def restart(self, quiet=False):  # pylint: disable=no-self-use
         """Restarts apache server.
 
         :returns: Success
@@ -1217,6 +1269,37 @@ LogLevel warn \n\
             return False
 
         return True
+
+    def get_version(self):  # pylint: disable=no-self-use
+        """Return version of Apache Server.
+
+        Version is returned as float. (ie. 2.4.7 = 2.47)
+
+        :returns: version
+        :rtype: float
+
+        """
+        try:
+            proc = subprocess.Popen(
+                ['sudo', '/usr/sbin/apache2ctl', '-v'],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE)
+            text = proc.communicate()[0]
+        except (OSError, ValueError):
+            raise errors.LetsEncryptConfiguratorError(
+                "Unable to run /usr/sbin/apache2ctl -v")
+
+        regex = re.compile(r"Apache/([0-9\.]*)", re.IGNORECASE)
+        matches = regex.findall(text)
+
+        if len(matches) != 1:
+            raise errors.LetsEncryptConfiguratorError(
+                "Unable to find Apache version")
+
+        num_decimal = matches[0].count(".")
+
+        # Format return value such as 2.47 rather than 2.4.7
+        return float("".join(matches[0].rsplit(".", num_decimal-1)))
 
     ###########################################################################
     # Challenges Section
@@ -1436,7 +1519,12 @@ def check_ssl_loaded():
 
 
 def apache_restart(quiet=False):
-    # TODO: This should be written to use the process returncode
+    """Restarts the Apache Server.
+
+    .. todo:: Try to use reload instead. (This caused timing problems before)
+    .. todo:: This should be written to use the process return code.
+
+    """
     try:
         proc = subprocess.Popen(['/etc/init.d/apache2', 'restart'],
                                 stdout=subprocess.PIPE,
@@ -1614,7 +1702,7 @@ def main():
     # print config.get_all_names()
 
     # test_file = "/home/james/Desktop/ports_test.conf"
-    # config.parse_file(test_file)
+    # config._parse_file(test_file)
 
     # config.aug.insert("/files"+test_file+"/IfModule[1]/arg","directive",False)
     # config.aug.set("/files"+test_file+"/IfModule[1]/directive[1]", "Listen")
