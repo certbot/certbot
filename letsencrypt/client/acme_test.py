@@ -53,8 +53,9 @@ class PrettyTest(unittest.TestCase):
             self._call('{"foo": {"bar": "baz"}}'),
             '{\n    "foo": {\n        "bar": "baz"\n    }\n}')
 
+
 class ChallengeRequestTest(unittest.TestCase):
-    """Tests for letsencrypt.client.acme.challenge_request_test"""
+    """Tests for letsencrypt.client.acme.challenge_request"""
 
     def test_supports_unicode(self):
         """Test support unicode parameter"""
