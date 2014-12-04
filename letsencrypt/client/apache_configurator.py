@@ -92,8 +92,10 @@ class VH(object):
         if isinstance(other, self.__class__):
             return (self.file == other.file and self.path == other.path and
                     set(self.addrs) == set(other.addrs) and
-                    set(self.names) == set(other.naems) and
+                    set(self.names) == set(other.names) and
                     self.ssl == other.ssl and self.enabled == other.enabled)
+
+        return False
 
 
 class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
@@ -144,6 +146,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # because this will change the underlying configuration and potential
         # vhosts
         self.recovery_routine()
+
+        # Find configuration root and make sure augeas can parse it.
+        self.config_root = self._find_config_root()
+        self._parse_file(self.config_root)
+
+        # Must also attempt to parse sites-available or equivalent
+        # Sites-available is not included naturally in configuration
+        self._parse_file(os.path.join(self.server_root, "sites-available/*"))
 
         # Set Version
         if not version:
@@ -335,6 +345,16 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         return all_names
 
+    def _find_config_root(self):
+        location = ["apache2.conf", "httpd.conf"]
+
+        for name in location:
+            if os.path.isfile(os.path.join(self.server_root, name)):
+                return os.path.join(self.server_root, name)
+
+        raise errors.LetsEncryptConfiguratorError(
+            "Could not find configuration root")
+
     def _set_user_config_file(self, filename=''):
         """Set the appropriate user configuration file
 
@@ -370,6 +390,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                                       case_i('ServerName'),
                                       host.path,
                                       case_i('ServerAlias'))))
+
         for name in name_match:
             args = self.aug.match(name + "/*")
             for arg in args:
@@ -413,6 +434,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             ("/files%ssites-available//*[label()=~regexp('%s')]" %
              (self.server_root, case_i('VirtualHost'))))
         vhs = []
+
         for path in paths:
             vhs.append(self._create_vhost(path))
 
@@ -601,7 +623,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         # Cannot place member variable in the definition of the function so...
         if not start:
-            start = "/files%sapache2.conf" % self.server_root
+            start = "/files%s" % self.config_root
 
         # Debug code
         # print "find_dir:", directive, "arg:", arg, " | Looking in:", start
@@ -624,9 +646,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                                       "[self::arg=~regexp('%s')]" %
                                       (start, directive, arg)))
 
+        incl_regex = "(%s)|(%s)" % (case_i('Include'),
+                                    case_i('IncludeOptional'))
+
         includes = self.aug.match(("%s//* [self::directive=~regexp('%s')]/* "
-                                   "[label()='arg']" %
-                                   (start, case_i('Include'))))
+                                   "[label()='arg']" % (start, incl_regex)))
+
+        # for inc in includes:
+        #    print inc, self.aug.get(inc)
 
         for include in includes:
             # start[6:] to strip off /files
@@ -1273,15 +1300,18 @@ LogLevel warn \n\
     def get_version(self):  # pylint: disable=no-self-use
         """Return version of Apache Server.
 
-        Version is returned as float. (ie. 2.4.7 = 2.47)
+        Version is returned as tuple. (ie. 2.4.7 = (2, 4, 7))
 
         :returns: version
-        :rtype: float
+        :rtype: tuple
+
+        :raises errors.LetsEncryptConfiguratorError:
+            Unable to find Apache version
 
         """
         try:
             proc = subprocess.Popen(
-                ['sudo', '/usr/sbin/apache2ctl', '-v'],
+                ['/usr/sbin/apache2ctl', '-v'],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
             text = proc.communicate()[0]
@@ -1296,10 +1326,7 @@ LogLevel warn \n\
             raise errors.LetsEncryptConfiguratorError(
                 "Unable to find Apache version")
 
-        num_decimal = matches[0].count(".")
-
-        # Format return value such as 2.47 rather than 2.4.7
-        return float("".join(matches[0].rsplit(".", num_decimal-1)))
+        num_decimal = tuple(matches[0].split('.'))
 
     ###########################################################################
     # Challenges Section
@@ -1481,7 +1508,7 @@ def enable_mod(mod_name):
                               stdout=open("/dev/null", 'w'),
                               stderr=open("/dev/null", 'w'))
         # Hopefully this waits for output
-        subprocess.check_call(["sudo", "/etc/init.d/apache2", "restart"],
+        subprocess.check_call(["sudo", APACHE2, "restart"],
                               stdout=open("/dev/null", 'w'),
                               stderr=open("/dev/null", 'w'))
     except (OSError, subprocess.CalledProcessError) as err:
@@ -1518,7 +1545,7 @@ def check_ssl_loaded():
     return False
 
 
-def apache_restart(quiet=False):
+def apache_restart():
     """Restarts the Apache Server.
 
     .. todo:: Try to use reload instead. (This caused timing problems before)
@@ -1526,7 +1553,7 @@ def apache_restart(quiet=False):
 
     """
     try:
-        proc = subprocess.Popen(['/etc/init.d/apache2', 'restart'],
+        proc = subprocess.Popen([APACHE2, 'restart'],
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
         text = proc.communicate()
