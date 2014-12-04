@@ -109,17 +109,17 @@ class TwoVhosts_80(unittest.TestCase):
         self.assertTrue(len(test2) == 3)
 
     def test_get_virtual_hosts(self):
-        """get_virtual_hosts."""
+        """inefficient get_virtual_hosts check."""
         vhs = self.config.get_virtual_hosts()
         self.assertTrue(len(vhs) == 4)
-        failed = False
+        found = 0
         for vhost in vhs:
             for truth in self.vh_truth:
                 if vhost == truth:
+                    found += 1
                     break
-            failed = True
 
-        self.assertTrue(failed)
+        self.assertTrue(found == 4)
 
     def test_is_site_enabled(self):
         """test is_site_enabled"""
