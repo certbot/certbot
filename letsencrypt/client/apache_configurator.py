@@ -88,13 +88,6 @@ class VH(object):
                 "enabled: %s" % (self.file, self.path, self.addrs,
                                  self.names, self.ssl, self.enabled))
 
-    def __eq__(self, other):
-        if isinstance(other, self.__class__):
-            return (self.file == other.file and self.path == other.path and
-                    set(self.addrs) == set(other.addrs) and
-                    set(self.names) == set(other.naems) and
-                    self.ssl == other.ssl and self.enabled == other.enabled)
-
 
 class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     """Apache configurator.
@@ -133,7 +126,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     :ivar dict assoc: Mapping between domains and vhosts
 
     """
-    def __init__(self, server_root=CONFIG.SERVER_ROOT, version=None):
+    def __init__(self, server_root=CONFIG.SERVER_ROOT):
         """Initialize an Apache Configurator."""
         super(ApacheConfigurator, self).__init__()
 
@@ -144,12 +137,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # because this will change the underlying configuration and potential
         # vhosts
         self.recovery_routine()
-
-        # Set Version
-        if not version:
-            self.version = self.get_version()
-        else:
-            self.version = version
 
         # Check for errors in parsing files with Augeas
         self.check_parsing_errors("httpd.aug")
@@ -1269,40 +1256,6 @@ LogLevel warn \n\
             return False
 
         return True
-
-    def get_version(self):  # pylint: disable=no-self-use
-        """Return version of Apache Server.
-
-        Version is returned as float. (ie. 2.4.7 = 2.47)
-
-        :returns: version
-        :rtype: float
-
-        """
-        try:
-            proc = subprocess.Popen(
-                ['sudo', '/usr/sbin/apache2ctl', '-v'],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE)
-            text = proc.communicate()[0]
-        except (OSError, ValueError):
-            raise errors.LetsEncryptConfiguratorError(
-                "Unable to run /usr/sbin/apache2ctl -v")
-
-        regex = re.compile(r"Apache/([0-9\.]*)", re.IGNORECASE)
-        matches = regex.findall(text)
-
-        if len(matches) != 1:
-            raise errors.LetsEncryptConfiguratorError(
-                "Unable to find Apache version")
-
-        num_decimal = matches[0].count(".")
-
-        # Format return value such as 2.47 rather than 2.4.7
-        if num_decimal > 0:
-            return float("".join(matches[0].rsplit(".", num_decimal-1)))
-
-        return float(matches[0])
 
     ###########################################################################
     # Challenges Section
