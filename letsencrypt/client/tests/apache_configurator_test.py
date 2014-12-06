@@ -8,11 +8,12 @@ still running smoothly.
 
 """
 
+import re
 import os
 import shutil
+import sys
 import tarfile
 import unittest
-import sys
 
 from letsencrypt.client import apache_configurator
 from letsencrypt.client import CONFIG
@@ -49,8 +50,13 @@ class TwoVhosts_80(unittest.TestCase):
     def setUp(self):
         # Final slash is currently important
         self.config_path = os.path.join(TEMP_DIR, "two_vhost_80/apache2/")
+
+        # Using a new configurator every time allows the Configurator to clean
+        # up after itself
         self.config = apache_configurator.ApacheConfigurator(
             self.config_path, (2, 4, 7))
+
+        self.aug_path = "/files" + self.config_path
 
         prefix = os.path.join(TEMP_DIR, "two_vhost_80/apache2/sites-available/")
         aug_pre = "/files" + prefix
@@ -128,44 +134,68 @@ class TwoVhosts_80(unittest.TestCase):
         self.assertTrue(self.config.is_site_enabled(self.vh_truth[2].file))
         self.assertTrue(self.config.is_site_enabled(self.vh_truth[3].file))
 
-    # def test_deploy_cert(self):
-    #     """test deploy_cert."""
-    #     self.config.deploy_cert(
-    #         self.vh_truth[1],
-    #         "example/cert.pem", "example/key.pem", "example/cert_chain.pem")
+    def test_deploy_cert(self):
+        """test deploy_cert.
 
-    #     loc_cert = self.config.find_directive(
-    #         apache_configurator.case_i(
-    #             "sslcertificatefile"), "example/cert.pem")
-    #     loc_key = self.config.find_directive(
-    #         apache_configurator.case_i(
-    #             "sslcertificateKeyfile"), "example/key.pem")
-    #     loc_chain = self.config.find_directive(
-    #         apache_configurator.case_i(
-    #             "SSLCertificateChainFile"), "example/chain.pem")
+        This test modifies the default-ssl vhost SSL directives.
 
-    #     self.assertTrue(len(loc_cert) == 1 and
-    #            apache_configurator.get_file_path(
-    #                loc_cert[0]) == self.vh_truth[1].file)
+        """
+        self.config.deploy_cert(
+            self.vh_truth[1],
+            "example/cert.pem", "example/key.pem", "example/cert_chain.pem")
 
-    #     self.assertTrue(len(loc_key) == 1 and
-    #            apache_configurator.get_file_path(
-    #                loc_key[0]) == self.vh_truth[1].file)
+        loc_cert = self.config.find_directive(
+            apache_configurator.case_i("sslcertificatefile"),
+            re.escape("example/cert.pem"), self.vh_truth[1].path)
+        loc_key = self.config.find_directive(
+            apache_configurator.case_i("sslcertificateKeyfile"),
+            re.escape("example/key.pem"), self.vh_truth[1].path)
+        loc_chain = self.config.find_directive(
+            apache_configurator.case_i("SSLCertificateChainFile"),
+            re.escape("example/cert_chain.pem"), self.vh_truth[1].path)
 
-    #     self.assertTrue(len(loc_chain) == 1 and
-    #            apache_configurator.get_file_path(
-    #                loc_chain[0]) == self.vh_truth[1].file)
+        # debug_file(self.vh_truth[1].file)
+
+        # Verify one directive was found in the correct file
+        self.assertTrue(len(loc_cert) == 1 and
+                        apache_configurator.get_file_path(loc_cert[0]) ==
+                        self.vh_truth[1].file)
+
+        self.assertTrue(len(loc_key) == 1 and
+                        apache_configurator.get_file_path(loc_key[0]) ==
+                        self.vh_truth[1].file)
+
+        self.assertTrue(len(loc_chain) == 1 and
+                        apache_configurator.get_file_path(loc_chain[0]) ==
+                        self.vh_truth[1].file)
 
     def test_is_name_vhost(self):
         """test is_name_vhost."""
-        self.assertTrue(not self.config.is_name_vhost("*:80"))
+        self.assertTrue(self.config.is_name_vhost("*:80"))
+        self.config.version = (2, 2)
+        self.assertFalse(self.config.is_name_vhost("*:80"))
 
-    # def test_add_name_vhost(self):
-    #     """test add_name_vhost."""
-    #     self.config.add_name_vhost("*:443")
-    #     self.config.save(temporary=True)
+    def test_add_name_vhost(self):
+        """test add_name_vhost."""
+        self.config.add_name_vhost("*:443")
+        self.config.save(temporary=True)
+        self.assertTrue(self.config.find_directive(
+            "NameVirtualHost", re.escape("*:443")))
 
-    #     self.assertTrue(self.config.is_name_vhost("*:443"))
+    def test_add_dir_to_ifmodssl(self):
+        """test _add_dir_to_ifmodssl.
+
+        .. todo:: test what happens when a bad path is given... ie. ports.conf
+            doesn't exist
+
+        """
+        self.config._add_dir_to_ifmodssl(
+            self.aug_path + "ports.conf", "FakeDirective", "123")
+
+        matches = self.config.find_directive("FakeDirective", "123")
+        print matches
+        self.assertTrue(len(matches) == 1)
+        self.assertTrue("IfModule" in matches[0])
 
     def _verify_redirect(self, config_path):
         with open(config_path, 'r') as config_fd:
@@ -173,6 +203,10 @@ class TwoVhosts_80(unittest.TestCase):
 
         return CONFIG.REWRITE_HTTPS_ARGS[1] in conf
 
+
+def debug_file(filepath):
+    with open(filepath, 'r')as file_d:
+        print file_d.read()
 
 if __name__ == '__main__':
     unittest.main()

@@ -116,12 +116,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     and the typical directories are parsed by the Augeas configuration
     parser automatically.
 
+    .. todo:: Add support for config file variables Define rootDir /var/www/
+
     The API of this class will change in the coming weeks as the exact
     needs of client's are clarified with the new and developing protocol.
-
-    This class will eventually derive from a generic Configurator class
-    so that other Configurators (like Nginx) can be developed and interoperate
-    with the client.
 
     :ivar str server_root: Path to Apache root directory
 
@@ -180,9 +178,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # TODO: attempt to make the check faster... this enable should
         #       be asynchronous as it shouldn't be that time sensitive
         #       on initialization
-        if not check_ssl_loaded():
-            logger.info("Loading mod_ssl into Apache Server")
-            enable_mod("ssl")
+        self._prepare_server_https()
 
         # Note: initialization doesn't check to see if the config is correct
         # by Apache's standards. This should be done by the client (client.py)
@@ -238,6 +234,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             return False
 
         logger.info("Deploying Certificate to VirtualHost %s" % vhost.file)
+        print path
 
         self.aug.set(path["cert_file"][0], cert)
         self.aug.set(path["cert_key"][0], key)
@@ -443,7 +440,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     def is_name_vhost(self, target_addr):
         """Returns if vhost is a name based vhost
 
-        Checks if addr has a NameVirtualHost directive in the Apache config
+        NameVirtualHost was deprecated in Apache 2.4 as all VirtualHosts are
+        now NameVirtualHosts. If version is earlier than 2.4, check if addr
+        has a NameVirtualHost directive in the Apache config
 
         :param str addr: vhost address ie. \*:443
 
@@ -451,49 +450,67 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: bool
 
         """
-        # search for NameVirtualHost directive for ip_addr
-        # check httpd.conf, ports.conf,
-        # note ip_addr can be FQDN although Apache does not recommend it
-        paths = self.find_directive(case_i("NameVirtualHost"), None)
-        name_vh = []
-        for path in paths:
-            name_vh.append(self.aug.get(path))
-
         # Mixed and matched wildcard NameVirtualHost with VirtualHost
         # behavior is undefined. Make sure that an exact match exists
 
-        # Check for exact match
-        for addr in name_vh:
-            if addr == target_addr:
-                return True
-
+        # search for NameVirtualHost directive for ip_addr
+        # check httpd.conf, ports.conf,
+        # note ip_addr can be FQDN although Apache does not recommend it
+        if (self.version >= (2, 4) or
+                self.find_directive(
+                    case_i("NameVirtualHost"), case_i(target_addr))):
+            return True
         return False
 
     def add_name_vhost(self, addr):
         """Adds NameVirtualHost directive for given address.
 
         Directive is added to ports.conf unless the file doesn't exist
-        It is added to httpd.conf as a backup
+        It is added to user_config_file as a backup
 
         :param str addr: Address that will be added as NameVirtualHost directive
 
         """
-        aug_file_path = "/files%sports.conf" % self.server_root
-        self.add_dir_to_ifmodssl(aug_file_path, "NameVirtualHost", addr)
+        aug_path = "/files%sports.conf" % self.server_root
+        path = self.add_gen_ssl_dir_config(aug_path, "NameVirtualHost", addr)
 
-        # TODO: Check to see if len(find_dir) can just be if find_dir()
-        if len(self.find_directive(
-                case_i("NameVirtualHost"), case_i(addr))) == 0:
-            logger.warn("ports.conf is not included in your Apache config...")
-            logger.warn("Adding NameVirtualHost directive to httpd.conf")
+        self.save_notes += "Setting %s to be NameBasedVirtualHost\n" % addr
+        self.save_notes += "\tDirective added to %s\n" % path
 
-            self.add_dir_to_ifmodssl("/files%shttpd.conf" % self.server_root,
-                                     "NameVirtualHost",
-                                     addr)
+    def add_gen_ssl_dir_config(self, aug_path, directive, val):
+        """Adds directive to ifmodssl somewhere in config.
 
-        self.save_notes += 'Setting %s to be NameBasedVirtualHost\n' % addr
+        First the function tries to place the ssl directive along the
+        aug_path, if that is not available it places the directive
+        in the self.user_config_file which is expected to be valid.
 
-    def add_dir_to_ifmodssl(self, aug_conf_path, directive, val):
+        :param str aug_path: Augeas configuration path
+        :param str directive: Directive you would like to add to config
+        :param str val: Value of the directive
+
+        :returns: Path to file that directive was added
+        :rtype: str
+
+        """
+        # First try original path
+        self._add_dir_to_ifmodssl(
+            aug_path, re.escape(directive), re.escape(val))
+
+        if self.find_directive(case_i(directive), case_i(val), start=aug_path):
+            return get_file_path(aug_path)
+
+        # Try default path
+        logger.debug(
+            "%s is not included in your Apache config..." %
+            os.path.basename(get_file_path(aug_path)))
+        logger.debug(
+            "Adding %s directive to %s" % (directive, self.user_config_file))
+
+        self._add_dir_to_ifmodssl(
+            "/files%s" % self.user_config_file, directive, val)
+        return self.user_config_file
+
+    def _add_dir_to_ifmodssl(self, aug_conf_path, directive, val):
         """Adds directive and value to IfMod ssl block.
 
         Adds given directive and value along configuration path within
@@ -507,12 +524,33 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         # TODO: Add error checking code... does the path given even exist?
         #       Does it throw exceptions?
-        if_mod_path = self.get_ifmod(aug_conf_path, "mod_ssl.c")
+        if_mod_path = self._get_ifmod(aug_conf_path, "mod_ssl.c")
         # IfModule can have only one valid argument, so append after
         self.aug.insert(if_mod_path + "arg", "directive", False)
         nvh_path = if_mod_path + "directive[1]"
         self.aug.set(nvh_path, directive)
         self.aug.set(nvh_path + "/arg", val)
+
+    def _prepare_server_https(self):
+        """Prepare the server for HTTPS.
+
+        Make sure that the ssl_module is loaded and that the server
+        is appropriately listening on port 443.
+
+        """
+        if not check_ssl_loaded():
+            logger.info("Loading mod_ssl into Apache Server")
+            enable_mod("ssl")
+
+        # Check for Listen 443
+        # Note: This could be made to also look for ip:443 combo
+        # TODO: Need to search only open directives and IfMod mod_ssl.c
+        if len(self.find_directive(case_i("Listen"), "443")) == 0:
+            logger.debug("No Listen 443 directive found")
+            logger.debug("Setting the Apache Server to Listen on port 443")
+            path = self.add_gen_ssl_dir_config(
+                "/files%sports.conf" % self.server_root, "Listen", "443")
+            self.save_notes += "Added Listen 443 directive to %s\n" % path
 
     def make_server_sni_ready(self, vhost, default_addr="*:443"):
         """Checks to see if the server is ready for SNI challenges.
@@ -525,21 +563,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :param str default_addr: TODO - investigate function further
 
         """
-        # Check if mod_ssl is loaded
-        if not check_ssl_loaded():
-            logger.error("Please load the SSL module with Apache")
-            return False
-
-        # Check for Listen 443
-        # TODO: This could be made to also look for ip:443 combo
-        # TODO: Need to search only open directives and IfMod mod_ssl.c
-        if len(self.find_directive(case_i("Listen"), "443")) == 0:
-            logger.debug("No Listen 443 directive found")
-            logger.debug("Setting the Apache Server to Listen on port 443")
-            self.add_dir_to_ifmodssl("/files%sports.conf" % self.server_root,
-                                     "Listen", "443")
-            self.save_notes += "Added Listen 443 directive to ports.conf\n"
-
         # Check for NameVirtualHost
         # First see if any of the vhost addresses is a _default_ addr
         for addr in vhost.addrs:
@@ -560,7 +583,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         return True
 
-    def get_ifmod(self, aug_conf_path, mod):
+    def _get_ifmod(self, aug_conf_path, mod):
         """Returns the path to <IfMod mod> and creates one if it doesn't exist.
 
         :param str aug_conf_path: Augeas configuration path
@@ -585,7 +608,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :param str aug_conf_path: Augeas configuration path to add directive
         :param str directive: Directive to add
         :param str arg: Value of the directive. ie. Listen 443, 443 is arg
-
 
         """
         self.aug.set(aug_conf_path + "/directive[last() + 1]", directive)
@@ -1256,7 +1278,7 @@ LogLevel warn \n\
         :rtype: bool
 
         """
-        return apache_restart(quiet)
+        return apache_restart()
 
     def _add_httpd_transform(self, incl):
         """Add a transform to Augeas.
@@ -1326,7 +1348,7 @@ LogLevel warn \n\
             raise errors.LetsEncryptConfiguratorError(
                 "Unable to find Apache version")
 
-        num_decimal = tuple(matches[0].split('.'))
+        return tuple(matches[0].split('.'))
 
     ###########################################################################
     # Challenges Section
@@ -1508,7 +1530,7 @@ def enable_mod(mod_name):
                               stdout=open("/dev/null", 'w'),
                               stderr=open("/dev/null", 'w'))
         # Hopefully this waits for output
-        subprocess.check_call(["sudo", APACHE2, "restart"],
+        subprocess.check_call(["sudo", CONFIG.APACHE2, "restart"],
                               stdout=open("/dev/null", 'w'),
                               stderr=open("/dev/null", 'w'))
     except (OSError, subprocess.CalledProcessError) as err:
@@ -1531,12 +1553,13 @@ def check_ssl_loaded():
     try:
         # p=subprocess.check_output(['sudo', '/usr/sbin/apache2ctl', '-M'],
         #                            stderr=open("/dev/null", 'w'))
-        proc = subprocess.Popen(['sudo', '/usr/sbin/apache2ctl', '-M'],
+        proc = subprocess.Popen([CONFIG.APACHE_CTL, '-M'],
                                 stdout=subprocess.PIPE,
                                 stderr=open(
                                     "/dev/null", 'w')).communicate()[0]
     except (OSError, ValueError):
-        logger.error("Error accessing apache2ctl for loaded modules!")
+        logger.error(
+            "Error accessing %s for loaded modules!" % CONFIG.APACHE_CTL)
         logger.error("This may be caused by an Apache Configuration Error")
         return False
 
@@ -1553,7 +1576,7 @@ def apache_restart():
 
     """
     try:
-        proc = subprocess.Popen([APACHE2, 'restart'],
+        proc = subprocess.Popen([CONFIG.APACHE2, 'restart'],
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
         text = proc.communicate()
