@@ -48,16 +48,12 @@ class VH(object):
     """Represents an Apache Virtualhost.
 
     :ivar str file: filename path of VH
-
     :ivar str path: Augeas path to virtual host
-
     :ivar list addrs: Virtual Host addresses (:class:`list` of :class:`str`)
-
     :ivar list names: Server names/aliases of vhost
         (:class:`list` of :class:`str`)
 
     :ivar bool ssl: SSLEngine on in vhost
-
     :ivar bool enabled: Virtual host is enabled
 
     """
@@ -107,10 +103,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     This class was originally developed for Apache 2.2 and has not seen a
     an overhaul to include proper setup of new Apache configurations.
-    The biggest changes have been the IncludeOptional directive, the
-    deprecation of the NameVirtualHost directive, and the name change of
-    mod_ssl.c to ssl_module. Although these changes
-    have not been implemented yet, they will be shortly.
+    I have implemented most of the changes... the missing ones are
+    mod_ssl.c vs ssl_mod, and I need to account for configuration variables.
     That being said, this class can still adequately configure most typical
     Apache 2.4 servers as the deprecated NameVirtualHost has no effect
     and the typical directories are parsed by the Augeas configuration
@@ -122,11 +116,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     needs of client's are clarified with the new and developing protocol.
 
     :ivar str server_root: Path to Apache root directory
-
     :ivar float version: version of Apache
-
     :ivar str user_config_file: Path to the user's configuration file
-
     :ivar list vhosts: All vhosts found in the configuration
         (:class:`list` of :class:`VH`)
 
@@ -146,8 +137,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.recovery_routine()
 
         # Find configuration root and make sure augeas can parse it.
-        self.config_root = self._find_config_root()
-        self._parse_file(self.config_root)
+        self.location = self._set_locations()
+        self._parse_file(self.location["root"])
 
         # Must also attempt to parse sites-available or equivalent
         # Sites-available is not included naturally in configuration
@@ -342,7 +333,32 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         return all_names
 
+    def _set_locations(self):
+        """Set default location for directives.
+
+        Locations are given as file_paths
+        .. todo:: Make sure that files are included
+
+        """
+
+        root = self._find_config_root()
+        default = self._set_user_config_file()
+        temp = os.path.join(self.server_root, "ports.conf")
+        if os.path.isfile(temp):
+            listen = temp
+            name = temp
+        else:
+            listen = default
+            name = default
+
+        return {"root": root,
+                "default": default,
+                "listen": listen,
+                "name": name}
+
     def _find_config_root(self):
+        """Find the Apache Configuration Root file."""
+
         location = ["apache2.conf", "httpd.conf"]
 
         for name in location:
@@ -454,7 +470,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # behavior is undefined. Make sure that an exact match exists
 
         # search for NameVirtualHost directive for ip_addr
-        # check httpd.conf, ports.conf,
         # note ip_addr can be FQDN although Apache does not recommend it
         if (self.version >= (2, 4) or
                 self.find_directive(
@@ -471,44 +486,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :param str addr: Address that will be added as NameVirtualHost directive
 
         """
-        aug_path = "/files%sports.conf" % self.server_root
-        path = self.add_gen_ssl_dir_config(aug_path, "NameVirtualHost", addr)
+        path = self._add_dir_to_ifmodssl(
+            get_aug_path(self.location["name"]), "NameVirtualHost", addr)
 
         self.save_notes += "Setting %s to be NameBasedVirtualHost\n" % addr
         self.save_notes += "\tDirective added to %s\n" % path
-
-    def add_gen_ssl_dir_config(self, aug_path, directive, val):
-        """Adds directive to ifmodssl somewhere in config.
-
-        First the function tries to place the ssl directive along the
-        aug_path, if that is not available it places the directive
-        in the self.user_config_file which is expected to be valid.
-
-        :param str aug_path: Augeas configuration path
-        :param str directive: Directive you would like to add to config
-        :param str val: Value of the directive
-
-        :returns: Path to file that directive was added
-        :rtype: str
-
-        """
-        # First try original path
-        self._add_dir_to_ifmodssl(
-            aug_path, re.escape(directive), re.escape(val))
-
-        if self.find_directive(case_i(directive), case_i(val), start=aug_path):
-            return get_file_path(aug_path)
-
-        # Try default path
-        logger.debug(
-            "%s is not included in your Apache config..." %
-            os.path.basename(get_file_path(aug_path)))
-        logger.debug(
-            "Adding %s directive to %s" % (directive, self.user_config_file))
-
-        self._add_dir_to_ifmodssl(
-            "/files%s" % self.user_config_file, directive, val)
-        return self.user_config_file
 
     def _add_dir_to_ifmodssl(self, aug_conf_path, directive, val):
         """Adds directive and value to IfMod ssl block.
@@ -548,8 +530,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if len(self.find_directive(case_i("Listen"), "443")) == 0:
             logger.debug("No Listen 443 directive found")
             logger.debug("Setting the Apache Server to Listen on port 443")
-            path = self.add_gen_ssl_dir_config(
-                "/files%sports.conf" % self.server_root, "Listen", "443")
+            path = self._add_dir_to_ifmodssl(
+                get_aug_path(self.location["listen"]), "Listen", "443")
             self.save_notes += "Added Listen 443 directive to %s\n" % path
 
     def make_server_sni_ready(self, vhost, default_addr="*:443"):
@@ -645,7 +627,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         # Cannot place member variable in the definition of the function so...
         if not start:
-            start = "/files%s" % self.config_root
+            start = get_aug_path(self.location["root"])
 
         # Debug code
         # print "find_dir:", directive, "arg:", arg, " | Looking in:", start
@@ -751,8 +733,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         # If the include is a directory, just return the directory as a file
         if arg.endswith("/"):
-            return "/files" + arg[:len(arg)-1]
-        return "/files"+arg
+            return get_aug_path(arg[:len(arg)-1])
+        return get_aug_path(arg)
 
     def make_vhost_ssl(self, nonssl_vhost):
         """Makes an ssl_vhost version of a nonssl_vhost.
@@ -1008,7 +990,7 @@ LogLevel warn \n\
         self.aug.load()
         # Make a new vhost data structure and add it to the lists
         new_fp = self.server_root + "sites-available/" + redirect_filename
-        new_vhost = self._create_vhost("/files" + new_fp)
+        new_vhost = self._create_vhost(get_aug_path(new_fp))
         self.vhosts.append(new_vhost)
 
         # Finally create documentation for the change
@@ -1475,7 +1457,7 @@ LogLevel warn \n\
                 list_sni_tuple[idx][2], lis, dvsni_key.file)
         config_text += "</IfModule> \n"
 
-        self.dvsni_conf_include_check(self.user_config_file)
+        self.dvsni_conf_include_check(self.location["default"])
         self.register_file_creation(True, CONFIG.APACHE_CHALLENGE_CONF)
 
         with open(CONFIG.APACHE_CHALLENGE_CONF, 'w') as new_conf:
@@ -1493,7 +1475,7 @@ LogLevel warn \n\
         if len(self.find_directive(
                 case_i("Include"), CONFIG.APACHE_CHALLENGE_CONF)) == 0:
             # print "Including challenge virtual host(s)"
-            self.add_dir("/files" + main_config,
+            self.add_dir(get_aug_path(main_config),
                          "Include", CONFIG.APACHE_CHALLENGE_CONF)
 
     def dvsni_create_chall_cert(self, name, ext, nonce, dvsni_key):
@@ -1652,6 +1634,13 @@ def get_file_path(vhost_path):
         break
     return avail_fp
 
+def get_aug_path(file_path):
+    """Return augeas path for full filepath.
+
+    :param str file_path: Full filepath
+
+    """
+    return "/files%s" % file_path
 
 def strip_dir(path):
     """Returns directory of file path.
@@ -1716,7 +1705,8 @@ def dvsni_gen_ext(dvsni_r, dvsni_s):
     :param bytearray dvsni_r: DVSNI r value
     :param bytearray dvsni_s: DVSNI s value
 
-    result: returns z + CONFIG.INVALID_EXT
+    :returns: z + CONFIG.INVALID_EXT
+    :rtype: str
 
     """
     z_base = hashlib.new('sha256')

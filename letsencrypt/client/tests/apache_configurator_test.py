@@ -178,7 +178,7 @@ class TwoVhosts_80(unittest.TestCase):
     def test_add_name_vhost(self):
         """test add_name_vhost."""
         self.config.add_name_vhost("*:443")
-        self.config.save(temporary=True)
+        #self.config.save(temporary=True)
         self.assertTrue(self.config.find_directive(
             "NameVirtualHost", re.escape("*:443")))
 
@@ -193,7 +193,7 @@ class TwoVhosts_80(unittest.TestCase):
             self.aug_path + "ports.conf", "FakeDirective", "123")
 
         matches = self.config.find_directive("FakeDirective", "123")
-        print matches
+
         self.assertTrue(len(matches) == 1)
         self.assertTrue("IfModule" in matches[0])
 
