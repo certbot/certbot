@@ -134,6 +134,15 @@ class TwoVhosts_80(unittest.TestCase):
         self.assertTrue(self.config.is_site_enabled(self.vh_truth[2].file))
         self.assertTrue(self.config.is_site_enabled(self.vh_truth[3].file))
 
+    def test_add_dir(self):
+        """test add_dir."""
+        aug_default = "/files" + self.config.location["default"]
+        self.config.add_dir(
+            aug_default, "AddDirective", "test")
+
+        self.assertTrue(
+            self.config.find_directive("AddDirective", "test", aug_default))
+
     def test_deploy_cert(self):
         """test deploy_cert.
 
@@ -178,7 +187,7 @@ class TwoVhosts_80(unittest.TestCase):
     def test_add_name_vhost(self):
         """test add_name_vhost."""
         self.config.add_name_vhost("*:443")
-        #self.config.save(temporary=True)
+        # self.config.save(temporary=True)
         self.assertTrue(self.config.find_directive(
             "NameVirtualHost", re.escape("*:443")))
 
@@ -190,14 +199,43 @@ class TwoVhosts_80(unittest.TestCase):
 
         """
         self.config._add_dir_to_ifmodssl(
-            self.aug_path + "ports.conf", "FakeDirective", "123")
+            "/files" + self.config.location["default"], "FakeDirective", "123")
 
         matches = self.config.find_directive("FakeDirective", "123")
 
         self.assertTrue(len(matches) == 1)
         self.assertTrue("IfModule" in matches[0])
 
+    def test_make_vhost_ssl(self):
+        """test make_vhost_ssl."""
+        ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[0])
+
+        self.assertTrue(
+            ssl_vhost.file ==
+            os.path.join(self.config_path, "sites-available",
+                         "encryption-example-le-ssl.conf"))
+
+        self.assertTrue(ssl_vhost.path ==
+                        "/files" + ssl_vhost.file + "/IfModule/VirtualHost")
+        self.assertTrue(ssl_vhost.addrs == ["*:443"])
+        self.assertTrue(ssl_vhost.names == ["encryption-example.demo"])
+        self.assertTrue(ssl_vhost.ssl)
+        self.assertFalse(ssl_vhost.enabled)
+
+        self.assertTrue(self.config.find_directive(
+            "SSLCertificateFile", None, ssl_vhost.path))
+        self.assertTrue(self.config.find_directive(
+            "SSLCertificateKeyFile", None, ssl_vhost.path))
+        self.assertTrue(self.config.find_directive(
+            "Include", CONFIG.OPTIONS_SSL_CONF, ssl_vhost.path))
+
+        self.assertTrue(self.config.is_name_vhost(self.vh_truth[0]) ==
+                        self.config.is_name_vhost(ssl_vhost))
+
+        self.assertTrue(len(self.config.vhosts) == 5)
+
     def _verify_redirect(self, config_path):
+        """Verifies that the vhost contains the REWRITE."""
         with open(config_path, 'r') as config_fd:
             conf = config_fd.read()
 
@@ -205,6 +243,7 @@ class TwoVhosts_80(unittest.TestCase):
 
 
 def debug_file(filepath):
+    """Print out the file."""
     with open(filepath, 'r')as file_d:
         print file_d.read()
 

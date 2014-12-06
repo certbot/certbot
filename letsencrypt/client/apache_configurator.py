@@ -225,7 +225,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             return False
 
         logger.info("Deploying Certificate to VirtualHost %s" % vhost.file)
-        print path
 
         self.aug.set(path["cert_file"][0], cert)
         self.aug.set(path["cert_key"][0], key)
@@ -537,14 +536,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     def make_server_sni_ready(self, vhost, default_addr="*:443"):
         """Checks to see if the server is ready for SNI challenges.
 
-        .. todo:: This should largely depend on the version of Apache
-
         :param vhost: VHost to check SNI compatibility
         :type vhost: :class:`VH`
 
         :param str default_addr: TODO - investigate function further
 
         """
+        if self.version >= (2, 4):
+            return
         # Check for NameVirtualHost
         # First see if any of the vhost addresses is a _default_ addr
         for addr in vhost.addrs:
@@ -555,15 +554,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                                   "%s to be name based vhosts" % default_addr))
                     self.add_name_vhost(default_addr)
 
-                return True
         # No default addresses... so set each one individually
         for addr in vhost.addrs:
             if not self.is_name_vhost(addr):
                 logger.debug(("Setting VirtualHost at %s "
                               "to be a name based virtual host" % addr))
                 self.add_name_vhost(addr)
-
-        return True
 
     def _get_ifmod(self, aug_conf_path, mod):
         """Returns the path to <IfMod mod> and creates one if it doesn't exist.
@@ -585,7 +581,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     def add_dir(self, aug_conf_path, directive, arg):
         """Appends directive to the end fo the file given by aug_conf_path.
 
-        Note: Not added to AugeasConfigurator because it may depend on the lens
+        .. note:: Not added to AugeasConfigurator because it may depend
+            on the lens
 
         :param str aug_conf_path: Augeas configuration path to add directive
         :param str directive: Directive to add
@@ -662,12 +659,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         for include in includes:
             # start[6:] to strip off /files
             matches.extend(self.find_directive(
-                directive, arg, self.get_include_path(strip_dir(start[6:]),
-                                                      self.aug.get(include))))
+                directive, arg, self._get_include_path(strip_dir(start[6:]),
+                                                       self.aug.get(include))))
 
         return matches
 
-    def get_include_path(self, cur_dir, arg):
+    def _get_include_path(self, cur_dir, arg):
         """Converts an Apache Include directive into Augeas path.
 
         Converts an Apache Include directive argument into an Augeas
@@ -1387,8 +1384,7 @@ LogLevel warn \n\
                 return None
 
             # TODO - @jdkasten review this code to make sure it makes sense
-            if not self.make_server_sni_ready(vhost, default_addr):
-                return None
+            self.make_server_sni_ready(vhost, default_addr)
 
             for addr in vhost.addrs:
                 if "_default_" in addr:
@@ -1634,6 +1630,7 @@ def get_file_path(vhost_path):
         break
     return avail_fp
 
+
 def get_aug_path(file_path):
     """Return augeas path for full filepath.
 
@@ -1641,6 +1638,7 @@ def get_aug_path(file_path):
 
     """
     return "/files%s" % file_path
+
 
 def strip_dir(path):
     """Returns directory of file path.
