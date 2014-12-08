@@ -18,6 +18,7 @@ docs_extras = [
 
 testing_extras = [
     'coverage',
+    'mock',
     'nose',
     'nosexcover',
     'pylint',
