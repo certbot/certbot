@@ -126,16 +126,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     """
     def __init__(self, server_root=CONFIG.SERVER_ROOT, dir=None, version=None):
         """Initialize an Apache Configurator."""
-        # The top 3 are the only ones that need to be 
-        # defined for Augeas Configurator
-        if dir:
-            self.dir = dir
-        else:
-            self.dir = {"backup": CONFIG.BACKUP_DIR,
-                        "temp": CONFIG.TEMP_CHECKPOINT_DIR,
-                        "progress": CONFIG.IN_PROGRESS_DIR,
-                        "config": CONFIG.CONFIG_DIR,
-                        "work": CONFIG.WORK_DIR}
+        if not dir:
+            dir = {"backup": CONFIG.BACKUP_DIR,
+                   "temp": CONFIG.TEMP_CHECKPOINT_DIR,
+                   "progress": CONFIG.IN_PROGRESS_DIR,
+                   "config": CONFIG.CONFIG_DIR,
+                   "work": CONFIG.WORK_DIR}
 
         super(ApacheConfigurator, self).__init__(dir)
 
@@ -1557,6 +1553,8 @@ def check_ssl_loaded():
             "Error accessing %s for loaded modules!" % CONFIG.APACHE_CTL)
         logger.error("This may be caused by an Apache Configuration Error")
         return False
+
+    print "%%%%%%%% PROC:", proc
 
     if "ssl_module" in proc:
         return True

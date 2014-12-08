@@ -48,12 +48,12 @@ class TwoVhost80(unittest.TestCase):
     """Standard two http vhosts that are well configured."""
 
     @mock.patch("letsencrypt.client.apache_configurator."
-                "subprocess.Popen.communicate")
-    def setUp(self, mock_subprocess):
+                "subprocess.Popen")
+    def setUp(self, mock_Popen):
         """Run before each and every tests."""
 
         # This just states that the ssl module is already loaded
-        mock_subprocess.return_value = ("ssl_module", "")
+        mock_Popen.return_value = my_Popen()
 
         # Final slash is currently important
         self.config_path = os.path.join(TEMP_DIR, "two_vhost_80/apache2/")
@@ -257,6 +257,12 @@ def debug_file(filepath):
     """Print out the file."""
     with open(filepath, 'r')as file_d:
         print file_d.read()
+
+
+# I am sure there is a cleaner way to do this... but it works
+class my_Popen(object):
+    def communicate(self):
+        return "ssl_module", ""
 
 if __name__ == '__main__':
     unittest.main()
