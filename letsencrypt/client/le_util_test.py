@@ -69,6 +69,45 @@ class CheckPermissionsTest(unittest.TestCase):
         self.assertFalse(self._call(0o600))
 
 
+class UniqueFileTest(unittest.TestCase):
+    """Tests for letsencrypt.class.le_util.unique_file."""
+
+    def setUp(self):
+        self.root_path = tempfile.mkdtemp()
+        self.default_name = os.path.join(self.root_path, 'foo.txt')
+
+    def _call(self, mode=0o600):
+        from letsencrypt.client.le_util import unique_file
+        return unique_file(self.default_name, mode)
+
+    def test_returns_fd_for_writing(self):
+        fd, name = self._call()
+        fd.write('bar')
+        fd.close()
+        self.assertEqual(open(name).read(), 'bar')
+
+    def test_default_not_exists(self):
+        self.assertEqual(self._call()[1], self.default_name)
+
+    def test_default_exists(self):
+        name1 = self._call()[1]  # create foo.txt
+        name2 = self._call()[1]
+        name3 = self._call()[1]
+
+        self.assertNotEqual(name1, name2)
+        basename2 = os.path.basename(name2)
+        self.assertEqual(os.path.dirname(name2), self.root_path)
+        self.assertTrue(basename2.startswith('foo'))
+        self.assertTrue(basename2.endswith('.txt'))
+
+        self.assertNotEqual(name1, name3)
+        self.assertNotEqual(name2, name3)
+        basename3 = os.path.basename(name3)
+        self.assertEqual(os.path.dirname(name3), self.root_path)
+        self.assertTrue(basename3.startswith('foo'))
+        self.assertTrue(basename3.endswith('.txt'))
+
+
 # https://en.wikipedia.org/wiki/Base64#Examples
 JOSE_B64_PADDING_EXAMPLES = {
     'any carnal pleasure.': ('YW55IGNhcm5hbCBwbGVhc3VyZS4', '='),
