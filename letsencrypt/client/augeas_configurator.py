@@ -23,9 +23,9 @@ class AugeasConfigurator(configurator.Configurator):
         super(AugeasConfigurator, self).__init__()
 
         if not dir:
-            dir={"backup": CONFIG.BACKUP_DIR,
-                 "temp": CONFIG.TEMP_CHECKPOINT_DIR,
-                 "progress": CONFIG.IN_PROGRESS_DIR}
+            dir = {"backup": CONFIG.BACKUP_DIR,
+                   "temp": CONFIG.TEMP_CHECKPOINT_DIR,
+                   "progress": CONFIG.IN_PROGRESS_DIR}
 
         self.dir = dir
         # TODO: this instantiation can be optimized to only load

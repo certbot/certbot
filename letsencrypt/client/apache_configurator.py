@@ -124,14 +124,20 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     :ivar dict assoc: Mapping between domains and vhosts
 
     """
-    def __init__(self, server_root=CONFIG.SERVER_ROOT, save_dir=None, version=None):
+    def __init__(self, server_root=CONFIG.SERVER_ROOT, dir=None, version=None):
         """Initialize an Apache Configurator."""
-        if not save_dir:
-            save_dir={"backup": CONFIG.BACKUP_DIR,
-                      "temp": CONFIG.TEMP_CHECKPOINT_DIR,
-                      "progress": CONFIG.IN_PROGRESS_DIR}
+        # The top 3 are the only ones that need to be 
+        # defined for Augeas Configurator
+        if dir:
+            self.dir = dir
+        else:
+            self.dir = {"backup": CONFIG.BACKUP_DIR,
+                        "temp": CONFIG.TEMP_CHECKPOINT_DIR,
+                        "progress": CONFIG.IN_PROGRESS_DIR,
+                        "config": CONFIG.CONFIG_DIR,
+                        "work": CONFIG.WORK_DIR}
 
-        super(ApacheConfigurator, self).__init__(save_dir)
+        super(ApacheConfigurator, self).__init__(dir)
 
         self.server_root = server_root
 
@@ -167,7 +173,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Add name_server association dict
         self.assoc = dict()
         # Verify that all directories and files exist with proper permissions
-        verify_setup()
+        self.verify_setup()
 
         # Enable mod_ssl if it isn't already enabled
         # This is Let's Encrypt... we enable mod_ssl on initialization :)
@@ -1327,6 +1333,19 @@ LogLevel warn \n\
 
         return tuple(matches[0].split('.'))
 
+    def verify_setup(self):
+        """Verify the setup to ensure safe operating environment.
+
+        Make sure that files/directories are setup with appropriate permissions
+        Aim for defensive coding... make sure all input files
+        have permissions of root
+
+        """
+        uid = os.geteuid()
+        le_util.make_or_verify_dir(self.dir["config"], 0o755, uid)
+        le_util.make_or_verify_dir(self.dir["work"], 0o755, uid)
+        le_util.make_or_verify_dir(self.dir["backup"], 0o755, uid)
+
     ###########################################################################
     # Challenges Section
     ###########################################################################
@@ -1570,19 +1589,6 @@ def apache_restart():
         sys.exit(1)
 
     return True
-
-
-def verify_setup():
-    """Verify the setup to ensure safe operating environment.
-
-    Make sure that files/directories are setup with appropriate permissions
-    Aim for defensive coding... make sure all input files
-    have permissions of root
-
-    """
-    le_util.make_or_verify_dir(CONFIG.CONFIG_DIR, 0o755)
-    le_util.make_or_verify_dir(CONFIG.WORK_DIR, 0o755)
-    le_util.make_or_verify_dir(CONFIG.BACKUP_DIR, 0o755)
 
 
 def case_i(string):
