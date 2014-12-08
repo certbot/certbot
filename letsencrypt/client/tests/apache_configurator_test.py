@@ -8,6 +8,7 @@ still running smoothly.
 
 """
 
+import mock
 import re
 import os
 import shutil
@@ -46,13 +47,17 @@ def tearDownModule():
 class TwoVhost80(unittest.TestCase):
     """Standard two http vhosts that are well configured."""
 
-    def setUp(self):
+    @mock.patch("letsencrypt.client.apache_configurator."
+                "subprocess.Popen.communicate")
+    def setUp(self, mock_subprocess):
         """Run before each and every tests."""
+
+        # This just states that the ssl module is already loaded
+        mock_subprocess.return_value = ("ssl_module", "")
+
         # Final slash is currently important
         self.config_path = os.path.join(TEMP_DIR, "two_vhost_80/apache2/")
 
-        # Using a new configurator every time allows the Configurator to clean
-        # up after itself
         self.config = apache_configurator.ApacheConfigurator(
             self.config_path,
             {"backup": os.path.join(TESTING_DIR, "backups"),
