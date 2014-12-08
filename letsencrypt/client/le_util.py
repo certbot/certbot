@@ -17,6 +17,10 @@ def make_or_verify_dir(directory, mode=0o755, uid=0):
     :raises LetsEncryptClientError: if a directory already exists,
         but has wrong permissions or owner
 
+    :raises OSError: if invalid or inaccessible file names and
+        paths, or other arguments that have the correct type,
+        but are not accepted by the operating system.
+
     """
     try:
         os.makedirs(directory, mode)

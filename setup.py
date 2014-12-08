@@ -5,6 +5,7 @@ from setuptools import setup
 install_requires = [
     'argparse',
     'jsonschema',
+    'mock',
     'M2Crypto',
     'pycrypto',
     'python-augeas',
