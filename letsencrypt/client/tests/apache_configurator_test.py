@@ -12,25 +12,21 @@ import re
 import os
 import shutil
 import sys
-import tarfile
 import unittest
 
 from letsencrypt.client import apache_configurator
 from letsencrypt.client import CONFIG
 from letsencrypt.client import display
-from letsencrypt.client import le_util
 from letsencrypt.client import logger
 
 # Some of these will likely go into a letsencrypt.tests.CONFIG file
-TESTING_DIR = "/home/ubuntu/testing/"
-UBUNTU_CONFIGS = os.path.join(TESTING_DIR, "ubuntu_apache_2_4/")
+TESTING_DIR = os.path.dirname(os.path.realpath(__file__))
+UBUNTU_CONFIGS = os.path.join(TESTING_DIR, "debian_apache_2_4/")
 TEMP_DIR = os.path.join(TESTING_DIR, "temp")
-
-# This will end up going into the repo...
-CONFIG_TGZ_URL = "https://jdkasten.com/projects/config.tgz"
 
 
 def setUpModule():
+    """Run once before all unittests."""
     logger.setLogger(logger.FileLogger(sys.stdout))
     logger.setLogLevel(logger.INFO)
     display.set_display(display.NcursesDisplay())
@@ -42,12 +38,15 @@ def setUpModule():
 
 
 def tearDownModule():
+    """Run once after all unittests."""
     shutil.rmtree(TEMP_DIR)
 
 
-class TwoVhosts_80(unittest.TestCase):
+class TwoVhost80(unittest.TestCase):
+    """Standard two http vhosts that are well configured."""
 
     def setUp(self):
+        """Run before each and every tests."""
         # Final slash is currently important
         self.config_path = os.path.join(TEMP_DIR, "two_vhost_80/apache2/")
 
@@ -234,12 +233,12 @@ class TwoVhosts_80(unittest.TestCase):
 
         self.assertTrue(len(self.config.vhosts) == 5)
 
-    def _verify_redirect(self, config_path):
-        """Verifies that the vhost contains the REWRITE."""
-        with open(config_path, 'r') as config_fd:
-            conf = config_fd.read()
+    # def _verify_redirect(self, config_path):
+    #     """Verifies that the vhost contains the REWRITE."""
+    #     with open(config_path, 'r') as config_fd:
+    #         conf = config_fd.read()
 
-        return CONFIG.REWRITE_HTTPS_ARGS[1] in conf
+    #     return CONFIG.REWRITE_HTTPS_ARGS[1] in conf
 
 
 def debug_file(filepath):
@@ -249,13 +248,3 @@ def debug_file(filepath):
 
 if __name__ == '__main__':
     unittest.main()
-# def download_unpack_tests(url=CONFIG_TGZ_URL):
-#     r = requests.get(url)
-#     local_tgz_file = os.path.join(TESTING_DIR, 'ubuntu_2_4.tgz')
-#     with open(local_tgz_file, 'w') as tgz_file:
-#         tgz_file.write(r.content)
-
-#     if tarfile.is_tarfile(local_tgz_file):
-#         tar = tarfile.open(local_tgz_file)
-#         tar.extractall()
-#         tar.close()
