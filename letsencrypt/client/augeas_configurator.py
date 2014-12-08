@@ -19,8 +19,15 @@ class AugeasConfigurator(configurator.Configurator):
 
     """
 
-    def __init__(self):
+    def __init__(self, dir=None):
         super(AugeasConfigurator, self).__init__()
+
+        if not dir:
+            dir={"backup": CONFIG.BACKUP_DIR,
+                 "temp": CONFIG.TEMP_CHECKPOINT_DIR,
+                 "progress": CONFIG.IN_PROGRESS_DIR}
+
+        self.dir = dir
         # TODO: this instantiation can be optimized to only load
         #       relevant files - I believe -> NO_MODL_AUTOLOAD
         # Set Augeas flags to save backup
@@ -105,12 +112,12 @@ class AugeasConfigurator(configurator.Configurator):
 
             # Create Checkpoint
             if temporary:
-                self.add_to_checkpoint(CONFIG.TEMP_CHECKPOINT_DIR, save_files)
+                self.add_to_checkpoint(self.dir["temp"], save_files)
             else:
-                self.add_to_checkpoint(CONFIG.IN_PROGRESS_DIR, save_files)
+                self.add_to_checkpoint(self.dir["progress"], save_files)
 
-        if title and not temporary and os.path.isdir(CONFIG.IN_PROGRESS_DIR):
-            success = self._finalize_checkpoint(CONFIG.IN_PROGRESS_DIR, title)
+        if title and not temporary and os.path.isdir(self.dir["progress"]):
+            success = self._finalize_checkpoint(self.dir["progress"], title)
             if not success:
                 # This should never happen
                 # This will be hopefully be cleaned up on the recovery
@@ -130,12 +137,12 @@ class AugeasConfigurator(configurator.Configurator):
         for all saves with temporary=True
 
         """
-        if os.path.isdir(CONFIG.TEMP_CHECKPOINT_DIR):
-            result = self._recover_checkpoint(CONFIG.TEMP_CHECKPOINT_DIR)
+        if os.path.isdir(self.dir["temp"]):
+            result = self._recover_checkpoint(self.dir["temp"])
             if result != 0:
                 # We have a partial or incomplete recovery
                 logger.fatal("Incomplete or failed recovery for "
-                             "%s" % CONFIG.TEMP_CHECKPOINT_DIR)
+                             "%s" % self.dir["temp"])
                 sys.exit(67)
             # Remember to reload Augeas
             self.aug.load()
@@ -155,7 +162,7 @@ class AugeasConfigurator(configurator.Configurator):
             logger.error("Rollback argument must be a positive integer")
             return
 
-        backups = os.listdir(CONFIG.BACKUP_DIR)
+        backups = os.listdir(self.dir["backup"])
         backups.sort()
 
         if len(backups) < rollback:
@@ -163,7 +170,7 @@ class AugeasConfigurator(configurator.Configurator):
                          "%d exist") % (rollback, len(backups)))
 
         while rollback > 0 and backups:
-            cp_dir = CONFIG.BACKUP_DIR + backups.pop()
+            cp_dir = self.dir["backup"] + backups.pop()
             result = self._recover_checkpoint(cp_dir)
             if result != 0:
                 logger.fatal("Failed to load checkpoint during rollback")
@@ -182,7 +189,7 @@ class AugeasConfigurator(configurator.Configurator):
         called.
 
         """
-        backups = os.listdir(CONFIG.BACKUP_DIR)
+        backups = os.listdir(self.dir["backup"])
         backups.sort(reverse=True)
 
         if not backups:
@@ -194,24 +201,24 @@ class AugeasConfigurator(configurator.Configurator):
             for bkup in backups:
                 float(bkup)
         except:
-            assert False, "Invalid files in %s" % CONFIG.BACKUP_DIR
+            assert False, "Invalid files in %s" % self.dir["backup"]
 
         for bkup in backups:
             print time.ctime(float(bkup))
             with open(
-                    CONFIG.BACKUP_DIR + bkup + "/CHANGES_SINCE") as changes_fd:
+                    self.dir["backup"] + bkup + "/CHANGES_SINCE") as changes_fd:
                 print changes_fd.read()
 
             print "Affected files:"
             with open(
-                    CONFIG.BACKUP_DIR + bkup + "/FILEPATHS") as paths_fd:
+                    self.dir["backup"] + bkup + "/FILEPATHS") as paths_fd:
                 filepaths = paths_fd.read().splitlines()
                 for path in filepaths:
                     print "  %s" % path
 
             try:
                 with open(
-                        CONFIG.BACKUP_DIR + bkup + "/NEW_FILES") as new_fd:
+                        self.dir["backup"] + bkup + "/NEW_FILES") as new_fd:
                     print "New Configuration Files:"
                     filepaths = new_fd.read().splitlines()
                     for path in filepaths:
@@ -227,7 +234,7 @@ class AugeasConfigurator(configurator.Configurator):
         :param set save_files: set of files to save
 
         """
-        le_util.make_or_verify_dir(cp_dir, 0o755)
+        le_util.make_or_verify_dir(cp_dir, 0o755, os.geteuid())
 
         existing_filepaths = []
         op_fd = None
@@ -301,7 +308,7 @@ class AugeasConfigurator(configurator.Configurator):
         :rtype: bool, str
 
         """
-        temp_path = "%sFILEPATHS" % CONFIG.TEMP_CHECKPOINT_DIR
+        temp_path = "%sFILEPATHS" % self.dir["temp"]
         if os.path.isfile(temp_path):
             with open(temp_path, 'r') as protected_fd:
                 protected_files = protected_fd.read().splitlines()
@@ -327,9 +334,9 @@ class AugeasConfigurator(configurator.Configurator):
 
         """
         if temporary:
-            cp_dir = CONFIG.TEMP_CHECKPOINT_DIR
+            cp_dir = self.dir["temp"]
         else:
-            cp_dir = CONFIG.IN_PROGRESS_DIR
+            cp_dir = self.dir["progress"]
 
         le_util.make_or_verify_dir(cp_dir)
         try:
@@ -342,7 +349,7 @@ class AugeasConfigurator(configurator.Configurator):
     def recovery_routine(self):
         """Revert all previously modified files.
 
-        First, any changes found in CONFIG.TEMP_CHECKPOINT_DIR are removed,
+        First, any changes found in self.dir["temp"] are removed,
         then IN_PROGRESS changes are removed The order is important.
         IN_PROGRESS is unable to add files that are already added by a TEMP
         change.  Thus TEMP must be rolled back first because that will be the
@@ -350,14 +357,14 @@ class AugeasConfigurator(configurator.Configurator):
 
         """
         self.revert_challenge_config()
-        if os.path.isdir(CONFIG.IN_PROGRESS_DIR):
-            result = self._recover_checkpoint(CONFIG.IN_PROGRESS_DIR)
+        if os.path.isdir(self.dir["progress"]):
+            result = self._recover_checkpoint(self.dir["progress"])
             if result != 0:
                 # We have a partial or incomplete recovery
                 # Not as egregious
                 # TODO: Additional tests? recovery
                 logger.fatal("Incomplete or failed recovery for %s" %
-                             CONFIG.IN_PROGRESS_DIR)
+                             self.dir["progress"])
                 sys.exit(68)
 
             # Need to reload configuration after these changes take effect
@@ -411,7 +418,7 @@ class AugeasConfigurator(configurator.Configurator):
         :rtype: bool
 
         """
-        final_dir = os.path.join(CONFIG.BACKUP_DIR, str(time.time()))
+        final_dir = os.path.join(self.dir["backup"], str(time.time()))
         changes_since_path = os.path.join(cp_dir, "CHANGES_SINCE")
         changes_since_tmp_path = os.path.join(cp_dir, "CHANGES_SINCE.tmp")
 

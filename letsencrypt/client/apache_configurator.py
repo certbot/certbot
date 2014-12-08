@@ -124,9 +124,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     :ivar dict assoc: Mapping between domains and vhosts
 
     """
-    def __init__(self, server_root=CONFIG.SERVER_ROOT, version=None):
+    def __init__(self, server_root=CONFIG.SERVER_ROOT, save_dir=None, version=None):
         """Initialize an Apache Configurator."""
-        super(ApacheConfigurator, self).__init__()
+        if not save_dir:
+            save_dir={"backup": CONFIG.BACKUP_DIR,
+                      "temp": CONFIG.TEMP_CHECKPOINT_DIR,
+                      "progress": CONFIG.IN_PROGRESS_DIR}
+
+        super(ApacheConfigurator, self).__init__(save_dir)
 
         self.server_root = server_root
 
@@ -1210,13 +1215,6 @@ LogLevel warn \n\
             #                       self.httpd_incl, None, self.httpd_excl)
             self._add_httpd_transform(file_path)
             self.aug.load()
-
-    def save_apache_config(self):
-        """Backup complete Apache config. Not currently used."""
-        # Not currently used
-        # Should be safe because it is a protected directory
-        shutil.copytree(self.server_root,
-                        "%sapache2-%s" % (CONFIG.BACKUP_DIR, str(time.time())))
 
     def standardize_excl(self):
         """Standardize the excl arguments for the Httpd lens in Augeas.

@@ -34,6 +34,7 @@ def setUpModule():
     if not os.path.isdir(UBUNTU_CONFIGS):
         print "Please place the configuration directory: %s" % UBUNTU_CONFIGS
         sys.exit(1)
+
     shutil.copytree(UBUNTU_CONFIGS, TEMP_DIR, symlinks=True)
 
 
@@ -52,8 +53,11 @@ class TwoVhost80(unittest.TestCase):
 
         # Using a new configurator every time allows the Configurator to clean
         # up after itself
+        backup = os.path.join(TESTING_DIR, "backups")
+        temp = os.path.join(TESTING_DIR, "temp_checkpoint")
+        progress = os.path.join(backup, "IN_PROGRESS")
         self.config = apache_configurator.ApacheConfigurator(
-            self.config_path, (2, 4, 7))
+            self.config_path, {"backup": backup, "temp": temp, "progress": progress}, (2, 4, 7))
 
         self.aug_path = "/files" + self.config_path
 

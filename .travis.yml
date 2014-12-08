@@ -15,7 +15,7 @@ before_install: >
   python-virtualenv python-dev gcc swig dialog libaugeas0 libssl-dev
 
 install: travis_retry python setup.py dev  # installs tox
-script: travis_retry sudo tox
+script: travis_retry tox
 
 env:
   - TOXENV=py${TRAVIS_PYTHON_VERSION//[.]/}
