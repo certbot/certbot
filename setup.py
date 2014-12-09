@@ -6,6 +6,7 @@ install_requires = [
     'argparse',
     'jsonschema',
     'M2Crypto',
+    'mock',
     'pycrypto',
     'python-augeas',
     'python2-pythondialog',
