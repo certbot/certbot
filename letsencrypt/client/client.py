@@ -209,7 +209,7 @@ class Client(object):
         cert_der = M2Crypto.X509.load_cert(cert["backup_cert_file"]).as_der()
 
         revocation = self.send_and_receive_expected(
-            acme.revocation_request(cert["backup_key_file"], cert_der),
+            acme.revocation_request(cert_der, cert["backup_key_file"]),
             "revocation")
 
         display.generic_notification(
