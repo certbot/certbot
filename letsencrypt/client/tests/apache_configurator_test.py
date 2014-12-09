@@ -13,12 +13,14 @@ import unittest
 
 from letsencrypt.client import apache_configurator
 from letsencrypt.client import display
+from letsencrypt.client import errors
 from letsencrypt.client import logger
 
 # Some of these will likely go into a letsencrypt.tests.CONFIG file
 TESTING_DIR = os.path.dirname(os.path.realpath(__file__))
 UBUNTU_CONFIGS = os.path.join(TESTING_DIR, "debian_apache_2_4/")
 TEMP_DIR = os.path.join(TESTING_DIR, "temp")
+
 
 # pylint: disable=invalid-name
 def setUpModule():
@@ -32,6 +34,7 @@ def setUpModule():
         sys.exit(1)
 
     shutil.copytree(UBUNTU_CONFIGS, TEMP_DIR, symlinks=True)
+
 
 # pylint: disable=invalid-name
 def tearDownModule():
@@ -48,7 +51,7 @@ class TwoVhost80(unittest.TestCase):
         """Run before each and every test."""
 
         # This just states that the ssl module is already loaded
-        mock_popen.return_value = MyPopen()
+        mock_popen.return_value = MyPopen(("ssl_module", ""))
 
         # Final slash is currently important
         self.config_path = os.path.join(TEMP_DIR, "two_vhost_80/apache2/")
@@ -244,6 +247,32 @@ class TwoVhost80(unittest.TestCase):
 
         self.assertTrue(len(self.config.vhosts) == 5)
 
+    @mock.patch("letsencrypt.client.apache_configurator."
+                "subprocess.Popen")
+    def test_get_version(self, mock_popen):
+        """test get_version."""
+        mock_popen.return_value = MyPopen(
+            ("Server Version: Apache/2.4.2 (Debian)", ""))
+        self.assertTrue(self.config.get_version() == (2, 4, 2))
+
+        mock_popen.return_value = MyPopen(
+            ("Server Version: Apache/2 (Linux)", ""))
+        self.assertTrue(self.config.get_version() == tuple([2]))
+
+        mock_popen.return_value = MyPopen(
+            ("Server Version: Apache (Debian)", ""))
+        self.assertRaises(
+            errors.LetsEncryptConfiguratorError, self.config.get_version)
+
+        mock_popen.return_value = MyPopen(
+            ("Server Version: Apache/2.3\n Apache/2.4.7", ""))
+        self.assertRaises(
+            errors.LetsEncryptConfiguratorError, self.config.get_version)
+
+        mock_popen.side_effect = OSError("Can't find program")
+        self.assertRaises(
+            errors.LetsEncryptConfiguratorError, self.config.get_version)
+
     # def _verify_redirect(self, config_path):
     #     """Verifies that the vhost contains the REWRITE."""
     #     with open(config_path, 'r') as config_fd:
@@ -262,9 +291,12 @@ def debug_file(filepath):
 # pylint: disable=too-few-public-methods
 class MyPopen(object):
     """Made for mock popen object."""
-    def communicate(self):  #pylint: disable=no-self-use
+    def __init__(self, tup):
+        self.tup = tup
+
+    def communicate(self):  # pylint: disable=no-self-use
         """Simply return that ssl_module is in output."""
-        return "ssl_module", ""
+        return self.tup
 
 if __name__ == '__main__':
     unittest.main()

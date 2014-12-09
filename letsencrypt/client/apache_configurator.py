@@ -1320,13 +1320,13 @@ LogLevel warn \n\
         """
         try:
             proc = subprocess.Popen(
-                ['/usr/sbin/apache2ctl', '-v'],
+                [CONFIG.APACHE_CTL, '-v'],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
             text = proc.communicate()[0]
         except (OSError, ValueError):
             raise errors.LetsEncryptConfiguratorError(
-                "Unable to run /usr/sbin/apache2ctl -v")
+                "Unable to run %s -v" % CONFIG.APACHE_CTL)
 
         regex = re.compile(r"Apache/([0-9\.]*)", re.IGNORECASE)
         matches = regex.findall(text)
@@ -1335,7 +1335,7 @@ LogLevel warn \n\
             raise errors.LetsEncryptConfiguratorError(
                 "Unable to find Apache version")
 
-        return tuple(matches[0].split('.'))
+        return tuple([int(i) for i in matches[0].split('.')])
 
     def verify_setup(self):
         """Verify the setup to ensure safe operating environment.
