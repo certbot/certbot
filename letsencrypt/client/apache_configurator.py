@@ -7,7 +7,6 @@ import shutil
 import socket
 import subprocess
 import sys
-import time
 
 from Crypto import Random
 
@@ -585,12 +584,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         if_mods = self.aug.match(("%s/IfModule/*[self::arg='%s']" %
-                                 (aug_conf_path, mod)))
+                                  (aug_conf_path, mod)))
         if len(if_mods) == 0:
             self.aug.set("%s/IfModule[last() + 1]" % aug_conf_path, "")
             self.aug.set("%s/IfModule[last()]/arg" % aug_conf_path, mod)
             if_mods = self.aug.match(("%s/IfModule/*[self::arg='%s']" %
-                                     (aug_conf_path, mod)))
+                                      (aug_conf_path, mod)))
         # Strip off "arg" at end of first ifmod path
         return if_mods[0][:len(if_mods[0]) - 3]
 
@@ -1463,6 +1462,7 @@ LogLevel warn \n\
         # SHOWING A NICE ERROR MESSAGE ABOUT THE PROBLEM
 
         # Check to make sure options-ssl.conf is installed
+        # pylint: disable=no-member
         if not os.path.isfile(CONFIG.OPTIONS_SSL_CONF):
             dist_conf = pkg_resources.resource_filename(
                 __name__, os.path.basename(CONFIG.OPTIONS_SSL_CONF))

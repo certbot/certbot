@@ -12,7 +12,6 @@ import sys
 import unittest
 
 from letsencrypt.client import apache_configurator
-from letsencrypt.client import CONFIG
 from letsencrypt.client import display
 from letsencrypt.client import logger
 
@@ -21,7 +20,7 @@ TESTING_DIR = os.path.dirname(os.path.realpath(__file__))
 UBUNTU_CONFIGS = os.path.join(TESTING_DIR, "debian_apache_2_4/")
 TEMP_DIR = os.path.join(TESTING_DIR, "temp")
 
-
+# pylint: disable=invalid-name
 def setUpModule():
     """Run once before all unittests."""
     logger.setLogger(logger.FileLogger(sys.stdout))
@@ -34,7 +33,7 @@ def setUpModule():
 
     shutil.copytree(UBUNTU_CONFIGS, TEMP_DIR, symlinks=True)
 
-
+# pylint: disable=invalid-name
 def tearDownModule():
     """Run once after all unittests."""
     shutil.rmtree(TEMP_DIR)
@@ -45,11 +44,11 @@ class TwoVhost80(unittest.TestCase):
 
     @mock.patch("letsencrypt.client.apache_configurator."
                 "subprocess.Popen")
-    def setUp(self, mock_Popen):
+    def setUp(self, mock_popen):  # pylint: disable=invalid-name
         """Run before each and every test."""
 
         # This just states that the ssl module is already loaded
-        mock_Popen.return_value = my_Popen()
+        mock_popen.return_value = MyPopen()
 
         # Final slash is currently important
         self.config_path = os.path.join(TEMP_DIR, "two_vhost_80/apache2/")
@@ -91,6 +90,7 @@ class TwoVhost80(unittest.TestCase):
         self.vh_truth[2].add_name("ip-172-30-0-17")
         self.vh_truth[3].add_name("letsencrypt.demo")
 
+    # pylint: disable=protected-access
     def test_parse_file(self):
         """test parse_file.
 
@@ -201,6 +201,7 @@ class TwoVhost80(unittest.TestCase):
         self.assertTrue(self.config.find_directive(
             "NameVirtualHost", re.escape("*:443")))
 
+    # pylint: disable=protected-access
     def test_add_dir_to_ifmodssl(self):
         """test _add_dir_to_ifmodssl.
 
@@ -258,8 +259,11 @@ def debug_file(filepath):
 
 
 # I am sure there is a cleaner way to do this... but it works
-class my_Popen(object):
-    def communicate(self):
+# pylint: disable=too-few-public-methods
+class MyPopen(object):
+    """Made for mock popen object."""
+    def communicate(self):  #pylint: disable=no-self-use
+        """Simply return that ssl_module is in output."""
         return "ssl_module", ""
 
 if __name__ == '__main__':

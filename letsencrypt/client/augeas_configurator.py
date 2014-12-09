@@ -87,7 +87,7 @@ class AugeasConfigurator(configurator.Configurator):
         try:
             # This is a noop save
             self.aug.save()
-        except:
+        except (RuntimeError, IOError):
             # Check for the root of save problems
             new_errs = self.aug.match("/augeas//error")
             # logger.error("During Save - " + mod_conf)
@@ -167,7 +167,7 @@ class AugeasConfigurator(configurator.Configurator):
         """
         try:
             rollback = int(rollback)
-        except:
+        except ValueError:
             logger.error("Rollback argument must be a positive integer")
         # Sanity check input
         if rollback < 1:
@@ -179,7 +179,7 @@ class AugeasConfigurator(configurator.Configurator):
 
         if len(backups) < rollback:
             logger.error(("Unable to rollback %d checkpoints, only "
-                         "%d exist") % (rollback, len(backups)))
+                          "%d exist") % (rollback, len(backups)))
 
         while rollback > 0 and backups:
             cp_dir = self.direc["backup"] + backups.pop()
@@ -212,31 +212,29 @@ class AugeasConfigurator(configurator.Configurator):
         try:
             for bkup in backups:
                 float(bkup)
-        except:
+        except ValueError:
             assert False, "Invalid files in %s" % self.direc["backup"]
 
         for bkup in backups:
             print time.ctime(float(bkup))
-            with open(os.path.join(self.direc["backup"] + bkup,
-                                   "CHANGES_SINCE")) as changes_fd:
+            cur_dir = self.direc["backup"] + bkup
+            with open(os.path.join(cur_dir, "CHANGES_SINCE")) as changes_fd:
                 print changes_fd.read()
 
             print "Affected files:"
-            with open(
-                    self.direc["backup"] + bkup + "/FILEPATHS") as paths_fd:
+            with open(os.path.join(cur_dir, "FILEPATHS")) as paths_fd:
                 filepaths = paths_fd.read().splitlines()
                 for path in filepaths:
                     print "  %s" % path
 
             try:
-                with open(
-                        self.direc["backup"] + bkup + "/NEW_FILES") as new_fd:
+                with open(os.path.join(cur_dir, "NEW_FILES")) as new_fd:
                     print "New Configuration Files:"
                     filepaths = new_fd.read().splitlines()
                     for path in filepaths:
                         print "  %s" % path
-            except:
-                pass
+            except (IOError, OSError) as exc:
+                print exc
             print ""
 
     def add_to_checkpoint(self, cp_dir, save_files):
@@ -294,8 +292,8 @@ class AugeasConfigurator(configurator.Configurator):
                         shutil.copy2(os.path.join(
                             cp_dir,
                             os.path.basename(path) + '_' + str(idx)),
-                            path)
-            except:
+                                     path)
+            except (IOError, OSError):
                 # This file is required in all checkpoints.
                 logger.error("Unable to recover files from %s" % cp_dir)
                 return 1
@@ -305,7 +303,7 @@ class AugeasConfigurator(configurator.Configurator):
 
         try:
             shutil.rmtree(cp_dir)
-        except:
+        except OSError:
             logger.error("Unable to remove directory: %s" % cp_dir)
             return -1
 
@@ -355,7 +353,7 @@ class AugeasConfigurator(configurator.Configurator):
             with open(os.path.join(cp_dir, "NEW_FILES"), 'a') as new_fd:
                 for file_path in files:
                     new_fd.write("%s\n" % file_path)
-        except:
+        except (IOError, OSError):
             logger.error("ERROR: Unable to register file creation")
 
     def recovery_routine(self):
@@ -409,7 +407,7 @@ class AugeasConfigurator(configurator.Configurator):
                             "File: %s - Could not be found to be deleted\n"
                             "Program was probably shut down unexpectedly, "
                             "in which case this is not a problem") % path)
-        except IOError:
+        except (IOError, OSError):
             logger.fatal(
                 "Unable to remove filepaths contained within %s" % file_list)
             sys.exit(41)
@@ -442,12 +440,12 @@ class AugeasConfigurator(configurator.Configurator):
 
             shutil.move(changes_since_tmp_path, changes_since_path)
 
-        except:
+        except (IOError, OSError):
             logger.error("Unable to finalize checkpoint - adding title")
             return False
         try:
             os.rename(cp_dir, final_dir)
-        except:
+        except OSError:
             logger.error("Unable to finalize checkpoint, %s -> %s" %
                          (cp_dir, final_dir))
             return False
