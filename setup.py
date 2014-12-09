@@ -5,8 +5,8 @@ from setuptools import setup
 install_requires = [
     'argparse',
     'jsonschema',
-    'mock',
     'M2Crypto',
+    'mock',
     'pycrypto',
     'python-augeas',
     'python2-pythondialog',
