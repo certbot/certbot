@@ -47,7 +47,7 @@ from letsencrypt.client import logger
 class VH(object):
     """Represents an Apache Virtualhost.
 
-    :ivar str file: filename path of VH
+    :ivar str filep: file path of VH
     :ivar str path: Augeas path to virtual host
     :ivar list addrs: Virtual Host addresses (:class:`list` of :class:`str`)
     :ivar list names: Server names/aliases of vhost
@@ -58,9 +58,9 @@ class VH(object):
 
     """
 
-    def __init__(self, filename, path, addrs, ssl, enabled):
+    def __init__(self, filep, path, addrs, ssl, enabled):
         """Initialize a VH."""
-        self.file = filename
+        self.filep = filep
         self.path = path
         self.addrs = addrs
         self.names = []
@@ -76,17 +76,17 @@ class VH(object):
         self.names.append(name)
 
     def __str__(self):
-        return ("file: %s\n"
+        return ("filep: %s\n"
                 "vh_path: %s\n"
                 "addrs: %s\n"
                 "names: %s\n"
                 "ssl: %s\n"
-                "enabled: %s" % (self.file, self.path, self.addrs,
+                "enabled: %s" % (self.filep, self.path, self.addrs,
                                  self.names, self.ssl, self.enabled))
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
-            return (self.file == other.file and self.path == other.path and
+            return (self.filep == other.filep and self.path == other.path and
                     set(self.addrs) == set(other.addrs) and
                     set(self.names) == set(other.names) and
                     self.ssl == other.ssl and self.enabled == other.enabled)
@@ -116,24 +116,36 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     needs of client's are clarified with the new and developing protocol.
 
     :ivar str server_root: Path to Apache root directory
+    :ivar dict location: Path to various files associated
+        with the configuration
     :ivar float version: version of Apache
-    :ivar str user_config_file: Path to the user's configuration file
     :ivar list vhosts: All vhosts found in the configuration
         (:class:`list` of :class:`VH`)
 
     :ivar dict assoc: Mapping between domains and vhosts
 
     """
-    def __init__(self, server_root=CONFIG.SERVER_ROOT, dir=None, version=None):
-        """Initialize an Apache Configurator."""
-        if not dir:
-            dir = {"backup": CONFIG.BACKUP_DIR,
-                   "temp": CONFIG.TEMP_CHECKPOINT_DIR,
-                   "progress": CONFIG.IN_PROGRESS_DIR,
-                   "config": CONFIG.CONFIG_DIR,
-                   "work": CONFIG.WORK_DIR}
+    def __init__(self, server_root=CONFIG.SERVER_ROOT, direc=None,
+                 ssl_options=CONFIG.OPTIONS_SSL_CONF, version=None):
+        """Initialize an Apache Configurator.
 
-        super(ApacheConfigurator, self).__init__(dir)
+        :param str server_root: the apache server root directory
+        :param dict direc: locations of various config directories
+            (used mostly for unittesting)
+        :param str ssl_options: path of options-ssl.conf
+            (used mostly for unittesting)
+        :param tup version: version of Apache as a tuple (2, 4, 7)
+            (used mostly for unittesting)
+
+        """
+        if not direc:
+            direc = {"backup": CONFIG.BACKUP_DIR,
+                     "temp": CONFIG.TEMP_CHECKPOINT_DIR,
+                     "progress": CONFIG.IN_PROGRESS_DIR,
+                     "config": CONFIG.CONFIG_DIR,
+                     "work": CONFIG.WORK_DIR}
+
+        super(ApacheConfigurator, self).__init__(direc)
 
         self.server_root = server_root
 
@@ -144,7 +156,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.recovery_routine()
 
         # Find configuration root and make sure augeas can parse it.
-        self.location = self._set_locations()
+        self.location = self._set_locations(ssl_options)
         self._parse_file(self.location["root"])
 
         # Must also attempt to parse sites-available or equivalent
@@ -162,9 +174,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # This problem has been fixed in Augeas 1.0
         self.standardize_excl()
 
-        # Determine user's main config file
-        self.user_config_file = self._set_user_config_file()
-
+        # Get all of the available vhosts
         self.vhosts = self.get_virtual_hosts()
         # Add name_server association dict
         self.assoc = dict()
@@ -231,7 +241,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # Presumably break here so that the virtualhost is not modified
             return False
 
-        logger.info("Deploying Certificate to VirtualHost %s" % vhost.file)
+        logger.info("Deploying Certificate to VirtualHost %s" % vhost.filep)
 
         self.aug.set(path["cert_file"][0], cert)
         self.aug.set(path["cert_key"][0], key)
@@ -242,7 +252,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 self.aug.set(path["cert_chain"][0], cert_chain)
 
         self.save_notes += ("Changed vhost at %s with addresses of %s\n" %
-                            (vhost.file, vhost.addrs))
+                            (vhost.filep, vhost.addrs))
         self.save_notes += "\tSSLCertificateFile %s\n" % cert
         self.save_notes += "\tSSLCertificateKeyFile %s\n" % key
         if cert_chain:
@@ -339,7 +349,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         return all_names
 
-    def _set_locations(self):
+    def _set_locations(self, ssl_options):
         """Set default location for directives.
 
         Locations are given as file_paths
@@ -349,6 +359,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         root = self._find_config_root()
         default = self._set_user_config_file()
+
         temp = os.path.join(self.server_root, "ports.conf")
         if os.path.isfile(temp):
             listen = temp
@@ -360,7 +371,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         return {"root": root,
                 "default": default,
                 "listen": listen,
-                "name": name}
+                "name": name,
+                "ssl_options": ssl_options}
 
     def _find_config_root(self):
         """Find the Apache Configuration Root file."""
@@ -430,8 +442,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             addrs.append(self.aug.get(arg))
         is_ssl = False
 
-        if len(self.find_directive(
-                case_i("SSLEngine"), case_i("on"), path)) > 0:
+        if self.find_directive(
+                case_i("SSLEngine"), case_i("on"), path):
             is_ssl = True
 
         filename = get_file_path(path)
@@ -485,9 +497,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     def add_name_vhost(self, addr):
         """Adds NameVirtualHost directive for given address.
-
-        Directive is added to ports.conf unless the file doesn't exist
-        It is added to user_config_file as a backup
 
         :param str addr: Address that will be added as NameVirtualHost directive
 
@@ -753,7 +762,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: :class:`VH`
 
         """
-        avail_fp = nonssl_vhost.file
+        avail_fp = nonssl_vhost.filep
         # Copy file
         if avail_fp.endswith(".conf"):
             ssl_fp = avail_fp[:-(len(".conf"))] + CONFIG.LE_VHOST_EXT
@@ -791,8 +800,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             addr_match % (avail_fp, case_i('VirtualHost')))
 
         for i in range(len(avail_addr_p)):
-            avail_old_arg = self.aug.get(avail_addr_p[i])
-            ssl_old_arg = self.aug.get(ssl_addr_p[i])
+            avail_old_arg = str(self.aug.get(avail_addr_p[i]))
+            ssl_old_arg = str(self.aug.get(ssl_addr_p[i]))
             avail_tup = avail_old_arg.partition(":")
             ssl_tup = ssl_old_arg.partition(":")
             avail_new_addr = avail_tup[0] + ":80"
@@ -813,7 +822,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                      "/etc/ssl/certs/ssl-cert-snakeoil.pem")
         self.add_dir(vh_p[0], "SSLCertificateKeyFile",
                      "/etc/ssl/private/ssl-cert-snakeoil.key")
-        self.add_dir(vh_p[0], "Include", CONFIG.OPTIONS_SSL_CONF)
+        self.add_dir(vh_p[0], "Include", self.location["ssl_options"])
 
         # Log actions and create save notes
         logger.info("Created an SSL vhost at %s" % ssl_fp)
@@ -883,7 +892,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.add_dir(general_v.path,
                          "RewriteRule", CONFIG.REWRITE_HTTPS_ARGS)
             self.save_notes += ('Redirecting host in %s to ssl vhost in %s\n' %
-                                (general_v.file, ssl_vhost.file))
+                                (general_v.filep, ssl_vhost.filep))
             self.save()
             return True, general_v
 
@@ -1000,7 +1009,7 @@ LogLevel warn \n\
         # Finally create documentation for the change
         self.save_notes += ('Created a port 80 vhost, %s, for redirection to '
                             'ssl vhost %s\n' %
-                            (new_vhost.file, ssl_vhost.file))
+                            (new_vhost.filep, ssl_vhost.filep))
 
         return True, new_vhost
 
@@ -1119,7 +1128,7 @@ LogLevel warn \n\
                 # Can be removed once find directive can return ordered results
                 if len(cert_path) != 1 or len(key_path) != 1:
                     logger.error(("Too many cert or key directives in vhost "
-                                  "%s" % vhost.file))
+                                  "%s" % vhost.filep))
                     sys.exit(40)
 
                 cert = os.path.abspath(self.aug.get(cert_path[0]))
@@ -1160,17 +1169,17 @@ LogLevel warn \n\
         :rtype: bool
 
         """
-        if self.is_site_enabled(vhost.file):
+        if self.is_site_enabled(vhost.filep):
             return True
 
-        if "/sites-available/" in vhost.file:
+        if "/sites-available/" in vhost.filep:
             enabled_path = ("%ssites-enabled/%s" %
-                            (self.server_root, os.path.basename(vhost.file)))
+                            (self.server_root, os.path.basename(vhost.filep)))
             self.register_file_creation(False, enabled_path)
-            os.symlink(vhost.file, enabled_path)
+            os.symlink(vhost.filep, enabled_path)
             vhost.enabled = True
-            logger.info("Enabling available site: %s" % vhost.file)
-            self.save_notes += 'Enabled site %s\n' % vhost.file
+            logger.info("Enabling available site: %s" % vhost.filep)
+            self.save_notes += 'Enabled site %s\n' % vhost.filep
             return True
         return False
 
@@ -1338,9 +1347,9 @@ LogLevel warn \n\
 
         """
         uid = os.geteuid()
-        le_util.make_or_verify_dir(self.dir["config"], 0o755, uid)
-        le_util.make_or_verify_dir(self.dir["work"], 0o755, uid)
-        le_util.make_or_verify_dir(self.dir["backup"], 0o755, uid)
+        le_util.make_or_verify_dir(self.direc["config"], 0o755, uid)
+        le_util.make_or_verify_dir(self.direc["work"], 0o755, uid)
+        le_util.make_or_verify_dir(self.direc["backup"], 0o755, uid)
 
     ###########################################################################
     # Challenges Section
@@ -1462,7 +1471,7 @@ LogLevel warn \n\
         # TODO: Use ip address of existing vhost instead of relying on FQDN
         config_text = "<IfModule mod_ssl.c> \n"
         for idx, lis in enumerate(ll_addrs):
-            config_text += get_config_text(
+            config_text += self.get_config_text(
                 list_sni_tuple[idx][2], lis, dvsni_key.file)
         config_text += "</IfModule> \n"
 
@@ -1490,7 +1499,7 @@ LogLevel warn \n\
     def dvsni_create_chall_cert(self, name, ext, nonce, dvsni_key):
         """Creates DVSNI challenge certifiate.
 
-        Certificate created at dvsni_get_cert_file(nonce)
+        Certificate created at self.dvsni_get_cert_file(nonce)
 
         :param str nonce: hex form of nonce
 
@@ -1498,13 +1507,49 @@ LogLevel warn \n\
         :type dvsni_key: `client.Client.Key`
 
         """
-        self.register_file_creation(True, dvsni_get_cert_file(nonce))
+        self.register_file_creation(True, self.dvsni_get_cert_file(nonce))
 
         cert_pem = crypto_util.make_ss_cert(
             dvsni_key.pem, [nonce + CONFIG.INVALID_EXT, name, ext])
 
-        with open(dvsni_get_cert_file(nonce), 'w') as chall_cert_file:
+        with open(self.dvsni_get_cert_file(nonce), 'w') as chall_cert_file:
             chall_cert_file.write(cert_pem)
+
+    def get_config_text(self, nonce, ip_addrs, dvsni_key_file):
+        """Chocolate virtual server configuration text
+
+        :param str nonce: hex form of nonce
+        :param str ip_addrs: addresses of challenged domain
+        :param str dvsni_key_file: Path to key file
+
+        :returns: virtual host configuration text
+        :rtype: str
+
+        """
+        return ("<VirtualHost " + " ".join(ip_addrs) + "> \n"
+                "ServerName " + nonce + CONFIG.INVALID_EXT + " \n"
+                "UseCanonicalName on \n"
+                "SSLStrictSNIVHostCheck on \n"
+                "\n"
+                "LimitRequestBody 1048576 \n"
+                "\n"
+                "Include " + self.location["ssl_options"] + " \n"
+                "SSLCertificateFile " + self.dvsni_get_cert_file(nonce) + " \n"
+                "SSLCertificateKeyFile " + dvsni_key_file + " \n"
+                "\n"
+                "DocumentRoot " + self.direc["config"] + "challenge_page/ \n"
+                "</VirtualHost> \n\n")
+
+    def dvsni_get_cert_file(self, nonce):
+        """Returns standardized name for challenge certificate.
+
+        :param str nonce: hex form of nonce
+
+        :returns: certificate file name
+        :rtype: str
+
+        """
+        return self.direc["work"] + nonce + ".crt"
 
 
 def enable_mod(mod_name):
@@ -1553,8 +1598,6 @@ def check_ssl_loaded():
             "Error accessing %s for loaded modules!" % CONFIG.APACHE_CTL)
         logger.error("This may be caused by an Apache Configuration Error")
         return False
-
-    print "%%%%%%%% PROC:", proc
 
     if "ssl_module" in proc:
         return True
@@ -1661,44 +1704,6 @@ def strip_dir(path):
     return ""
 
 
-def dvsni_get_cert_file(nonce):
-    """Returns standardized name for challenge certificate.
-
-    :param str nonce: hex form of nonce
-
-    :returns: certificate file name
-    :rtype: str
-
-    """
-    return CONFIG.WORK_DIR + nonce + ".crt"
-
-
-def get_config_text(nonce, ip_addrs, dvsni_key_file):
-    """Chocolate virtual server configuration text
-
-    :param str nonce: hex form of nonce
-    :param str ip_addrs: addresses of challenged domain
-    :param str dvsni_key_file: Path to key file
-
-    :returns: virtual host configuration text
-    :rtype: str
-
-    """
-    return ("<VirtualHost " + " ".join(ip_addrs) + "> \n"
-            "ServerName " + nonce + CONFIG.INVALID_EXT + " \n"
-            "UseCanonicalName on \n"
-            "SSLStrictSNIVHostCheck on \n"
-            "\n"
-            "LimitRequestBody 1048576 \n"
-            "\n"
-            "Include " + CONFIG.OPTIONS_SSL_CONF + " \n"
-            "SSLCertificateFile " + dvsni_get_cert_file(nonce) + " \n"
-            "SSLCertificateKeyFile " + dvsni_key_file + " \n"
-            "\n"
-            "DocumentRoot " + CONFIG.CONFIG_DIR + "challenge_page/ \n"
-            "</VirtualHost> \n\n")
-
-
 def dvsni_gen_ext(dvsni_r, dvsni_s):
     """Generates z extension to be placed in certificate extension.
 
@@ -1724,7 +1729,7 @@ def main():
     logger.setLogLevel(logger.DEBUG)
 
     # for v in config.vhosts:
-    #     print v.file
+    #     print v.filep
     #     print v.addrs
     #     for name in v.names:
     #         print name
@@ -1762,7 +1767,7 @@ def main():
     # for vh in config.vhosts:
     #     if not vh.addrs:
     #         print vh.names
-    #         print vh.file
+    #         print vh.filep
     #     if vh.addrs[0] == "23.20.47.131:80":
     #         print "Here we go"
     #         ssl_vh = config.make_vhost_ssl(vh)
