@@ -75,7 +75,7 @@ class VH(object):
         self.names.append(name)
 
     def __str__(self):
-        return ("filep: %s\n"
+        return ("file: %s\n"
                 "vh_path: %s\n"
                 "addrs: %s\n"
                 "names: %s\n"
