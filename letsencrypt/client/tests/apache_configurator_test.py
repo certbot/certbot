@@ -1,8 +1,4 @@
-"""apache_configurator_test - unittests
-
-A series of unit tests for the Apache Configurator.
-
-"""
+"""A series of unit tests for the Apache Configurator."""
 
 import mock
 import re
@@ -114,7 +110,7 @@ class TwoVhost80(unittest.TestCase):
     def test_get_all_names(self):
         """test get_all_names."""
         names = self.config.get_all_names()
-        self.assertTrue(set(names) == set(
+        self.assertEqual(set(names), set(
             ['letsencrypt.demo', 'encryption-example.demo', 'ip-172-30-0-17']))
 
     def test_find_directive(self):
@@ -124,8 +120,8 @@ class TwoVhost80(unittest.TestCase):
         # This will only look in enabled hosts
         test2 = self.config.find_directive(
             apache_configurator.case_i("documentroot"))
-        self.assertTrue(len(test) == 2)
-        self.assertTrue(len(test2) == 3)
+        self.assertEqual(len(test), 2)
+        self.assertEqual(len(test2), 3)
 
     def test_get_virtual_hosts(self):
         """inefficient get_virtual_hosts check."""
@@ -138,7 +134,7 @@ class TwoVhost80(unittest.TestCase):
                     found += 1
                     break
 
-        self.assertTrue(found == 4)
+        self.assertEqual(found, 4)
 
     def test_is_site_enabled(self):
         """test is_site_enabled"""
@@ -179,16 +175,16 @@ class TwoVhost80(unittest.TestCase):
         # debug_file(self.vh_truth[1].filep)
 
         # Verify one directive was found in the correct file
-        self.assertTrue(len(loc_cert) == 1 and
-                        apache_configurator.get_file_path(loc_cert[0]) ==
-                        self.vh_truth[1].filep)
+        self.assertEqual(len(loc_cert), 1)
+        self.assertEqual(apache_configurator.get_file_path(loc_cert[0]),
+                         self.vh_truth[1].filep)
 
-        self.assertTrue(len(loc_key) == 1 and
-                        apache_configurator.get_file_path(loc_key[0]) ==
-                        self.vh_truth[1].filep)
+        self.assertEqual(len(loc_key), 1)
+        self.assertEqual(apache_configurator.get_file_path(loc_key[0]),
+                         self.vh_truth[1].filep)
 
-        self.assertTrue(len(loc_chain) == 1 and
-                        apache_configurator.get_file_path(loc_chain[0]) ==
+        self.assertTrue(len(loc_chain), 1)
+        self.assertTrue(apache_configurator.get_file_path(loc_chain[0]),
                         self.vh_truth[1].filep)
 
     def test_is_name_vhost(self):
@@ -216,7 +212,7 @@ class TwoVhost80(unittest.TestCase):
 
         matches = self.config.find_directive("FakeDirective", "123")
 
-        self.assertTrue(len(matches) == 1)
+        self.assertEqual(len(matches), 1)
         self.assertTrue("IfModule" in matches[0])
 
     def test_make_vhost_ssl(self):
@@ -242,10 +238,10 @@ class TwoVhost80(unittest.TestCase):
         self.assertTrue(self.config.find_directive(
             "Include", self.ssl_options, ssl_vhost.path))
 
-        self.assertTrue(self.config.is_name_vhost(self.vh_truth[0]) ==
+        self.assertEqual(self.config.is_name_vhost(self.vh_truth[0]),
                         self.config.is_name_vhost(ssl_vhost))
 
-        self.assertTrue(len(self.config.vhosts) == 5)
+        self.assertEqual(len(self.config.vhosts), 5)
 
     @mock.patch("letsencrypt.client.apache_configurator."
                 "subprocess.Popen")
@@ -253,11 +249,11 @@ class TwoVhost80(unittest.TestCase):
         """test get_version."""
         mock_popen.return_value = MyPopen(
             ("Server Version: Apache/2.4.2 (Debian)", ""))
-        self.assertTrue(self.config.get_version() == (2, 4, 2))
+        self.assertEqual(self.config.get_version(), (2, 4, 2))
 
         mock_popen.return_value = MyPopen(
             ("Server Version: Apache/2 (Linux)", ""))
-        self.assertTrue(self.config.get_version() == tuple([2]))
+        self.assertEqual(self.config.get_version(), tuple([2]))
 
         mock_popen.return_value = MyPopen(
             ("Server Version: Apache (Debian)", ""))
