@@ -19,6 +19,7 @@ docs_extras = [
 
 testing_extras = [
     'coverage',
+    'mock',
     'nose',
     'nosexcover',
     'pylint<1.4',  # py2.6 compat, c.f #97

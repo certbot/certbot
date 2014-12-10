@@ -419,7 +419,7 @@ class Client(object):
                                     cert_chain_abspath)
             # Enable any vhost that was issued to, but not enabled
             if not host.enabled:
-                logger.info("Enabling Site " + host.file)
+                logger.info("Enabling Site " + host.filep)
                 self.config.enable_site(host)
 
         # sites may have been enabled / final cleanup
@@ -565,7 +565,8 @@ class Client(object):
         """
         for ssl_vh in vhost:
             success, redirect_vhost = self.config.enable_redirect(ssl_vh)
-            logger.info("\nRedirect vhost: " + redirect_vhost.file +
+            # pylint: disable=maybe-no-member
+            logger.info("\nRedirect vhost: " + redirect_vhost.filep +
                         " - " + str(success))
             # If successful, make sure redirect site is enabled
             if success:

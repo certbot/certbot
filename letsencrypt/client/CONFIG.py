@@ -10,6 +10,7 @@ If you create your own server... change this line
 Note: the server certificate must be trusted in order to avoid
 further modifications to the client."""
 
+# Directories
 SERVER_ROOT = "/etc/apache2/"
 """Apache server root directory"""
 
@@ -39,6 +40,7 @@ KEY_DIR = os.path.join(SERVER_ROOT, "ssl/")
 CERT_DIR = os.path.join(SERVER_ROOT, "certs/")
 """Certificate storage"""
 
+# Files and extensions
 OPTIONS_SSL_CONF = os.path.join(CONFIG_DIR, "options-ssl.conf")
 """Contains standard Apache SSL directives"""
 
@@ -47,18 +49,6 @@ LE_VHOST_EXT = "-le-ssl.conf"
 
 APACHE_CHALLENGE_CONF = os.path.join(CONFIG_DIR, "le_dvsni_cert_challenge.conf")
 """Temporary file for challenge virtual hosts"""
-
-S_SIZE = 32
-"""Byte size of S"""
-
-NONCE_SIZE = 16
-"""byte size of Nonce"""
-
-RSA_KEY_SIZE = 2048
-"""Key size"""
-
-DIFFICULTY = 23
-"""bits of hashcash to generate"""
 
 CERT_PATH = CERT_DIR + "cert-letsencrypt.pem"
 """Let's Encrypt cert file."""
@@ -69,6 +59,7 @@ CHAIN_PATH = CERT_DIR + "chain-letsencrypt.pem"
 INVALID_EXT = ".acme.invalid"
 """Invalid Extension"""
 
+# Challenge Information
 CHALLENGE_PREFERENCES = ["dvsni", "recoveryToken"]
 """Challenge Preferences Dict for currently supported challenges"""
 
@@ -78,6 +69,25 @@ EXCLUSIVE_CHALLENGES = [frozenset(["dvsni", "simpleHttps"])]
 CONFIG_CHALLENGES = frozenset(["dvsni", "simpleHttps"])
 """These are challenges that must be solved by a Configurator object"""
 
+# Challenge Constants
+S_SIZE = 32
+"""Byte size of S"""
+
+NONCE_SIZE = 16
+"""byte size of Nonce"""
+
+# Key Sizes
+RSA_KEY_SIZE = 2048
+"""Key size"""
+
+# Config Optimizations
 REWRITE_HTTPS_ARGS = [
     "^.*$", "https://%{SERVER_NAME}%{REQUEST_URI}", "[L,R=permanent]"]
 """Rewrite rule arguments used for redirections to https vhost"""
+
+# Apache Interaction
+APACHE_CTL = "/usr/sbin/apache2ctl"
+"""Command used for configtest and version number."""
+
+APACHE2 = "/etc/init.d/apache2"
+"""Command used for reload and restart."""

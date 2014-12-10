@@ -17,10 +17,29 @@ class AugeasConfigurator(configurator.Configurator):
 
     .. todo:: Fix generic exception handling.
 
+    :ivar aug: Augeas object
+    :type aug: :class:`augeas.Augeas`
+
+    :ivar str save_notes: Human-readable configuration change notes
+    :ivar dict direc: dictionary containing save directory paths
+
     """
 
-    def __init__(self):
+    def __init__(self, direc=None):
+        """Initialize Augeas Configurator.
+
+        :param dict direc: location of save directories
+            (used mostly for testing)
+
+        """
         super(AugeasConfigurator, self).__init__()
+
+        if not direc:
+            direc = {"backup": CONFIG.BACKUP_DIR,
+                     "temp": CONFIG.TEMP_CHECKPOINT_DIR,
+                     "progress": CONFIG.IN_PROGRESS_DIR}
+
+        self.direc = direc
         # TODO: this instantiation can be optimized to only load
         #       relevant files - I believe -> NO_MODL_AUTOLOAD
         # Set Augeas flags to save backup
@@ -68,7 +87,7 @@ class AugeasConfigurator(configurator.Configurator):
         try:
             # This is a noop save
             self.aug.save()
-        except:
+        except (RuntimeError, IOError):
             # Check for the root of save problems
             new_errs = self.aug.match("/augeas//error")
             # logger.error("During Save - " + mod_conf)
@@ -105,12 +124,12 @@ class AugeasConfigurator(configurator.Configurator):
 
             # Create Checkpoint
             if temporary:
-                self.add_to_checkpoint(CONFIG.TEMP_CHECKPOINT_DIR, save_files)
+                self.add_to_checkpoint(self.direc["temp"], save_files)
             else:
-                self.add_to_checkpoint(CONFIG.IN_PROGRESS_DIR, save_files)
+                self.add_to_checkpoint(self.direc["progress"], save_files)
 
-        if title and not temporary and os.path.isdir(CONFIG.IN_PROGRESS_DIR):
-            success = self._finalize_checkpoint(CONFIG.IN_PROGRESS_DIR, title)
+        if title and not temporary and os.path.isdir(self.direc["progress"]):
+            success = self._finalize_checkpoint(self.direc["progress"], title)
             if not success:
                 # This should never happen
                 # This will be hopefully be cleaned up on the recovery
@@ -130,12 +149,12 @@ class AugeasConfigurator(configurator.Configurator):
         for all saves with temporary=True
 
         """
-        if os.path.isdir(CONFIG.TEMP_CHECKPOINT_DIR):
-            result = self._recover_checkpoint(CONFIG.TEMP_CHECKPOINT_DIR)
+        if os.path.isdir(self.direc["temp"]):
+            result = self._recover_checkpoint(self.direc["temp"])
             if result != 0:
                 # We have a partial or incomplete recovery
                 logger.fatal("Incomplete or failed recovery for "
-                             "%s" % CONFIG.TEMP_CHECKPOINT_DIR)
+                             "%s" % self.direc["temp"])
                 sys.exit(67)
             # Remember to reload Augeas
             self.aug.load()
@@ -148,22 +167,22 @@ class AugeasConfigurator(configurator.Configurator):
         """
         try:
             rollback = int(rollback)
-        except:
+        except ValueError:
             logger.error("Rollback argument must be a positive integer")
         # Sanity check input
         if rollback < 1:
             logger.error("Rollback argument must be a positive integer")
             return
 
-        backups = os.listdir(CONFIG.BACKUP_DIR)
+        backups = os.listdir(self.direc["backup"])
         backups.sort()
 
         if len(backups) < rollback:
             logger.error(("Unable to rollback %d checkpoints, only "
-                         "%d exist") % (rollback, len(backups)))
+                          "%d exist") % (rollback, len(backups)))
 
         while rollback > 0 and backups:
-            cp_dir = CONFIG.BACKUP_DIR + backups.pop()
+            cp_dir = self.direc["backup"] + backups.pop()
             result = self._recover_checkpoint(cp_dir)
             if result != 0:
                 logger.fatal("Failed to load checkpoint during rollback")
@@ -182,7 +201,7 @@ class AugeasConfigurator(configurator.Configurator):
         called.
 
         """
-        backups = os.listdir(CONFIG.BACKUP_DIR)
+        backups = os.listdir(self.direc["backup"])
         backups.sort(reverse=True)
 
         if not backups:
@@ -193,31 +212,29 @@ class AugeasConfigurator(configurator.Configurator):
         try:
             for bkup in backups:
                 float(bkup)
-        except:
-            assert False, "Invalid files in %s" % CONFIG.BACKUP_DIR
+        except ValueError:
+            assert False, "Invalid files in %s" % self.direc["backup"]
 
         for bkup in backups:
             print time.ctime(float(bkup))
-            with open(
-                    CONFIG.BACKUP_DIR + bkup + "/CHANGES_SINCE") as changes_fd:
+            cur_dir = self.direc["backup"] + bkup
+            with open(os.path.join(cur_dir, "CHANGES_SINCE")) as changes_fd:
                 print changes_fd.read()
 
             print "Affected files:"
-            with open(
-                    CONFIG.BACKUP_DIR + bkup + "/FILEPATHS") as paths_fd:
+            with open(os.path.join(cur_dir, "FILEPATHS")) as paths_fd:
                 filepaths = paths_fd.read().splitlines()
                 for path in filepaths:
                     print "  %s" % path
 
             try:
-                with open(
-                        CONFIG.BACKUP_DIR + bkup + "/NEW_FILES") as new_fd:
+                with open(os.path.join(cur_dir, "NEW_FILES")) as new_fd:
                     print "New Configuration Files:"
                     filepaths = new_fd.read().splitlines()
                     for path in filepaths:
                         print "  %s" % path
-            except:
-                pass
+            except (IOError, OSError) as exc:
+                print exc
             print ""
 
     def add_to_checkpoint(self, cp_dir, save_files):
@@ -227,7 +244,7 @@ class AugeasConfigurator(configurator.Configurator):
         :param set save_files: set of files to save
 
         """
-        le_util.make_or_verify_dir(cp_dir, 0o755)
+        le_util.make_or_verify_dir(cp_dir, 0o755, os.geteuid())
 
         existing_filepaths = []
         op_fd = None
@@ -275,8 +292,8 @@ class AugeasConfigurator(configurator.Configurator):
                         shutil.copy2(os.path.join(
                             cp_dir,
                             os.path.basename(path) + '_' + str(idx)),
-                            path)
-            except:
+                                     path)
+            except (IOError, OSError):
                 # This file is required in all checkpoints.
                 logger.error("Unable to recover files from %s" % cp_dir)
                 return 1
@@ -286,7 +303,7 @@ class AugeasConfigurator(configurator.Configurator):
 
         try:
             shutil.rmtree(cp_dir)
-        except:
+        except OSError:
             logger.error("Unable to remove directory: %s" % cp_dir)
             return -1
 
@@ -301,7 +318,7 @@ class AugeasConfigurator(configurator.Configurator):
         :rtype: bool, str
 
         """
-        temp_path = "%sFILEPATHS" % CONFIG.TEMP_CHECKPOINT_DIR
+        temp_path = "%sFILEPATHS" % self.direc["temp"]
         if os.path.isfile(temp_path):
             with open(temp_path, 'r') as protected_fd:
                 protected_files = protected_fd.read().splitlines()
@@ -327,22 +344,22 @@ class AugeasConfigurator(configurator.Configurator):
 
         """
         if temporary:
-            cp_dir = CONFIG.TEMP_CHECKPOINT_DIR
+            cp_dir = self.direc["temp"]
         else:
-            cp_dir = CONFIG.IN_PROGRESS_DIR
+            cp_dir = self.direc["progress"]
 
         le_util.make_or_verify_dir(cp_dir)
         try:
             with open(os.path.join(cp_dir, "NEW_FILES"), 'a') as new_fd:
                 for file_path in files:
                     new_fd.write("%s\n" % file_path)
-        except:
+        except (IOError, OSError):
             logger.error("ERROR: Unable to register file creation")
 
     def recovery_routine(self):
         """Revert all previously modified files.
 
-        First, any changes found in CONFIG.TEMP_CHECKPOINT_DIR are removed,
+        First, any changes found in self.direc["temp"] are removed,
         then IN_PROGRESS changes are removed The order is important.
         IN_PROGRESS is unable to add files that are already added by a TEMP
         change.  Thus TEMP must be rolled back first because that will be the
@@ -350,14 +367,14 @@ class AugeasConfigurator(configurator.Configurator):
 
         """
         self.revert_challenge_config()
-        if os.path.isdir(CONFIG.IN_PROGRESS_DIR):
-            result = self._recover_checkpoint(CONFIG.IN_PROGRESS_DIR)
+        if os.path.isdir(self.direc["progress"]):
+            result = self._recover_checkpoint(self.direc["progress"])
             if result != 0:
                 # We have a partial or incomplete recovery
                 # Not as egregious
                 # TODO: Additional tests? recovery
                 logger.fatal("Incomplete or failed recovery for %s" %
-                             CONFIG.IN_PROGRESS_DIR)
+                             self.direc["progress"])
                 sys.exit(68)
 
             # Need to reload configuration after these changes take effect
@@ -390,7 +407,7 @@ class AugeasConfigurator(configurator.Configurator):
                             "File: %s - Could not be found to be deleted\n"
                             "Program was probably shut down unexpectedly, "
                             "in which case this is not a problem") % path)
-        except IOError:
+        except (IOError, OSError):
             logger.fatal(
                 "Unable to remove filepaths contained within %s" % file_list)
             sys.exit(41)
@@ -411,7 +428,7 @@ class AugeasConfigurator(configurator.Configurator):
         :rtype: bool
 
         """
-        final_dir = os.path.join(CONFIG.BACKUP_DIR, str(time.time()))
+        final_dir = os.path.join(self.direc["backup"], str(time.time()))
         changes_since_path = os.path.join(cp_dir, "CHANGES_SINCE")
         changes_since_tmp_path = os.path.join(cp_dir, "CHANGES_SINCE.tmp")
 
@@ -423,12 +440,12 @@ class AugeasConfigurator(configurator.Configurator):
 
             shutil.move(changes_since_tmp_path, changes_since_path)
 
-        except:
+        except (IOError, OSError):
             logger.error("Unable to finalize checkpoint - adding title")
             return False
         try:
             os.rename(cp_dir, final_dir)
-        except:
+        except OSError:
             logger.error("Unable to finalize checkpoint, %s -> %s" %
                          (cp_dir, final_dir))
             return False
