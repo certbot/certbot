@@ -144,7 +144,7 @@ class TwoVhost80(unittest.TestCase):
     def test_get_virtual_hosts(self):
         """inefficient get_virtual_hosts check."""
         vhs = self.config.get_virtual_hosts()
-        self.assertTrue(len(vhs) == 4)
+        self.assertEqual(len(vhs), 4)
         found = 0
         for vhost in vhs:
             for truth in self.vh_truth:
@@ -157,7 +157,7 @@ class TwoVhost80(unittest.TestCase):
     def test_is_site_enabled(self):
         """test is_site_enabled"""
         self.assertTrue(self.config.is_site_enabled(self.vh_truth[0].filep))
-        self.assertTrue(not self.config.is_site_enabled(self.vh_truth[1].filep))
+        self.assertFalse(self.config.is_site_enabled(self.vh_truth[1].filep))
         self.assertTrue(self.config.is_site_enabled(self.vh_truth[2].filep))
         self.assertTrue(self.config.is_site_enabled(self.vh_truth[3].filep))
 
@@ -195,8 +195,8 @@ class TwoVhost80(unittest.TestCase):
         self.assertEqual(apache_configurator.get_file_path(loc_key[0]),
                          self.vh_truth[1].filep)
 
-        self.assertTrue(len(loc_chain), 1)
-        self.assertTrue(apache_configurator.get_file_path(loc_chain[0]),
+        self.assertEqual(len(loc_chain), 1)
+        self.assertEqual(apache_configurator.get_file_path(loc_chain[0]),
                         self.vh_truth[1].filep)
 
     def test_is_name_vhost(self):
@@ -231,15 +231,15 @@ class TwoVhost80(unittest.TestCase):
         """test make_vhost_ssl."""
         ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[0])
 
-        self.assertTrue(
-            ssl_vhost.filep ==
+        self.assertEqual(
+            ssl_vhost.filep,
             os.path.join(self.config_path, "sites-available",
                          "encryption-example-le-ssl.conf"))
 
-        self.assertTrue(ssl_vhost.path ==
-                        "/files" + ssl_vhost.filep + "/IfModule/VirtualHost")
-        self.assertTrue(ssl_vhost.addrs == ["*:443"])
-        self.assertTrue(ssl_vhost.names == ["encryption-example.demo"])
+        self.assertEqual(ssl_vhost.path,
+                         "/files" + ssl_vhost.filep + "/IfModule/VirtualHost")
+        self.assertEqual(ssl_vhost.addrs, ["*:443"])
+        self.assertEqual(ssl_vhost.names, ["encryption-example.demo"])
         self.assertTrue(ssl_vhost.ssl)
         self.assertFalse(ssl_vhost.enabled)
 
