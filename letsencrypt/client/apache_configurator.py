@@ -354,7 +354,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         .. todo:: Make sure that files are included
 
         """
-
         root = self._find_config_root()
         default = self._set_user_config_file()
 
@@ -371,7 +370,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     def _find_config_root(self):
         """Find the Apache Configuration Root file."""
-
         location = ["apache2.conf", "httpd.conf"]
 
         for name in location:
