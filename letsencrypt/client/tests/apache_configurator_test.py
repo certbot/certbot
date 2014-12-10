@@ -48,7 +48,7 @@ class TwoVhost80Test(unittest.TestCase):
         with mock.patch("letsencrypt.client.apache_configurator."
                         "subprocess.Popen") as mock_popen:
             # This just states that the ssl module is already loaded
-            mock_popen.return_value = MyPopen(("ssl_module", ""))
+            mock_popen().communicate.return_value = ("ssl_module", "")
             self.config = apache_configurator.ApacheConfigurator(
                 self.config_path,
                 {
@@ -230,37 +230,27 @@ class TwoVhost80Test(unittest.TestCase):
     @mock.patch("letsencrypt.client.apache_configurator."
                 "subprocess.Popen")
     def test_get_version(self, mock_popen):
-        mock_popen.return_value = MyPopen(
-            ("Server Version: Apache/2.4.2 (Debian)", ""))
+        mock_popen().communicate.return_value = (
+            "Server Version: Apache/2.4.2 (Debian)", "")
         self.assertEqual(self.config.get_version(), (2, 4, 2))
 
-        mock_popen.return_value = MyPopen(
-            ("Server Version: Apache/2 (Linux)", ""))
-        self.assertEqual(self.config.get_version(), tuple([2]))
+        mock_popen().communicate.return_value = (
+            "Server Version: Apache/2 (Linux)", "")
+        self.assertEqual(self.config.get_version(), (2,))
 
-        mock_popen.return_value = MyPopen(
-            ("Server Version: Apache (Debian)", ""))
+        mock_popen().communicate.return_value = (
+            "Server Version: Apache (Debian)", "")
         self.assertRaises(
             errors.LetsEncryptConfiguratorError, self.config.get_version)
 
-        mock_popen.return_value = MyPopen(
-            ("Server Version: Apache/2.3\n Apache/2.4.7", ""))
+        mock_popen().communicate.return_value = (
+            "Server Version: Apache/2.3\n Apache/2.4.7", "")
         self.assertRaises(
             errors.LetsEncryptConfiguratorError, self.config.get_version)
 
         mock_popen.side_effect = OSError("Can't find program")
         self.assertRaises(
             errors.LetsEncryptConfiguratorError, self.config.get_version)
-
-
-class MyPopen(object):
-    """Made for mock popen object."""
-    def __init__(self, tup):
-        self.tup = tup
-
-    def communicate(self):  # pylint: disable=no-self-use
-        """Simply return that ssl_module is in output."""
-        return self.tup
 
 
 if __name__ == '__main__':
