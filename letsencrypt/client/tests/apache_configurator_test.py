@@ -1,6 +1,4 @@
-"""A series of unit tests for the Apache Configurator."""
-
-import mock
+"""Test for letsencrypt.client.apache_configurator."""
 import os
 import pkg_resources
 import re
@@ -9,86 +7,66 @@ import sys
 import tempfile
 import unittest
 
+import mock
+
 from letsencrypt.client import apache_configurator
 from letsencrypt.client import CONFIG
 from letsencrypt.client import display
 from letsencrypt.client import errors
 from letsencrypt.client import logger
 
-# pylint: disable=no-member
+
 UBUNTU_CONFIGS = pkg_resources.resource_filename(
-    "letsencrypt.client.tests", "testdata/debian_apache_2_4")
-
-TEMP_DIR = ""
-CONFIG_DIR = ""
-WORK_DIR = ""
+    __name__, "testdata/debian_apache_2_4")
 
 
-# pylint: disable=invalid-name
-def setUpModule():
-    """Run once before all unittests."""
+class TwoVhost80Test(unittest.TestCase):
+    """Test two standard well configured HTTP vhosts."""
 
-    global TEMP_DIR, CONFIG_DIR, WORK_DIR
+    def setUp(self):
+        logger.setLogger(logger.FileLogger(sys.stdout))
+        logger.setLogLevel(logger.INFO)
+        display.set_display(display.NcursesDisplay())
 
-    logger.setLogger(logger.FileLogger(sys.stdout))
-    logger.setLogLevel(logger.INFO)
-    display.set_display(display.NcursesDisplay())
+        self.temp_dir = os.path.join(
+            tempfile.mkdtemp("temp"), "debian_apache_2_4")
+        self.config_dir = tempfile.mkdtemp("config")
+        self.work_dir = tempfile.mkdtemp("work")
 
-    TEMP_DIR = tempfile.mkdtemp("temp")
-    CONFIG_DIR = tempfile.mkdtemp("config")
-    WORK_DIR = tempfile.mkdtemp("work")
+        shutil.copytree(UBUNTU_CONFIGS, self.temp_dir, symlinks=True)
 
-    shutil.copytree(UBUNTU_CONFIGS,
-                    os.path.join(TEMP_DIR, "debian_apache_2_4"), symlinks=True)
-    TEMP_DIR = os.path.join(TEMP_DIR, "debian_apache_2_4")
+        temp_options = pkg_resources.resource_filename(
+            "letsencrypt.client", os.path.basename(CONFIG.OPTIONS_SSL_CONF))
+        shutil.copyfile(
+            temp_options, os.path.join(self.config_dir, "options-ssl.conf"))
 
-    temp_options = pkg_resources.resource_filename(
-        "letsencrypt.client", os.path.basename(CONFIG.OPTIONS_SSL_CONF))
-    shutil.copyfile(temp_options, os.path.join(CONFIG_DIR, "options-ssl.conf"))
-
-
-# pylint: disable=invalid-name
-def tearDownModule():
-    """Run once after all unittests."""
-
-    shutil.rmtree(TEMP_DIR)
-    shutil.rmtree(CONFIG_DIR)
-    shutil.rmtree(WORK_DIR)
-
-
-class TwoVhost80(unittest.TestCase):
-    """Standard two http vhosts that are well configured."""
-
-    def setUp(self):  # pylint: disable=invalid-name
-        """Run before each and every test."""
+        # Final slash is currently important
+        self.config_path = os.path.join(self.temp_dir, "two_vhost_80/apache2/")
+        self.ssl_options = os.path.join(self.config_dir, "options-ssl.conf")
+        backups = os.path.join(self.work_dir, "backups")
 
         with mock.patch("letsencrypt.client.apache_configurator."
                         "subprocess.Popen") as mock_popen:
             # This just states that the ssl module is already loaded
             mock_popen.return_value = MyPopen(("ssl_module", ""))
-
-            # Final slash is currently important
-            self.config_path = os.path.join(TEMP_DIR, "two_vhost_80/apache2/")
-            self.ssl_options = os.path.join(CONFIG_DIR, "options-ssl.conf")
-            backups = os.path.join(WORK_DIR, "backups")
-
             self.config = apache_configurator.ApacheConfigurator(
                 self.config_path,
-                {"backup": backups,
-                 "temp": os.path.join(WORK_DIR, "temp_checkpoint"),
-                 "progress": os.path.join(backups, "IN_PROGRESS"),
-                 "config": CONFIG_DIR,
-                 "work": WORK_DIR},
+                {
+                    "backup": backups,
+                    "temp": os.path.join(self.work_dir, "temp_checkpoint"),
+                    "progress": os.path.join(backups, "IN_PROGRESS"),
+                    "config": self.config_dir,
+                    "work": self.work_dir,
+                },
                 self.ssl_options,
                 (2, 4, 7))
 
-        self.aug_path = "/files" + self.config_path
-
-        prefix = os.path.join(TEMP_DIR, "two_vhost_80/apache2/sites-available/")
+        prefix = os.path.join(
+            self.temp_dir, "two_vhost_80/apache2/sites-available")
         aug_pre = "/files" + prefix
         self.vh_truth = []
         self.vh_truth.append(apache_configurator.VH(
-            os.path.join(prefix + "encryption-example.conf"),
+            os.path.join(prefix, "encryption-example.conf"),
             os.path.join(aug_pre, "encryption-example.conf/VirtualHost"),
             ["*:80"], False, True))
         self.vh_truth.append(apache_configurator.VH(
@@ -107,9 +85,13 @@ class TwoVhost80(unittest.TestCase):
         self.vh_truth[2].add_name("ip-172-30-0-17")
         self.vh_truth[3].add_name("letsencrypt.demo")
 
-    # pylint: disable=protected-access
+    def tearDown(self):
+        shutil.rmtree(self.temp_dir)
+        shutil.rmtree(self.config_dir)
+        shutil.rmtree(self.work_dir)
+
     def test_parse_file(self):
-        """test parse_file.
+        """Test parse_file.
 
         letsencrypt.conf is chosen as the test file as it will not be
         included during the normal course of execution.
@@ -117,7 +99,7 @@ class TwoVhost80(unittest.TestCase):
         """
         file_path = os.path.join(
             self.config_path, "sites-available", "letsencrypt.conf")
-        self.config._parse_file(file_path)
+        self.config._parse_file(file_path)  # pylint: disable=protected-access
 
         # search for the httpd incl
         matches = self.config.aug.match(
@@ -126,13 +108,11 @@ class TwoVhost80(unittest.TestCase):
         self.assertTrue(matches)
 
     def test_get_all_names(self):
-        """test get_all_names."""
         names = self.config.get_all_names()
         self.assertEqual(set(names), set(
             ['letsencrypt.demo', 'encryption-example.demo', 'ip-172-30-0-17']))
 
     def test_find_directive(self):
-        """test find_directive."""
         test = self.config.find_directive(
             apache_configurator.case_i("Listen"), "443")
         # This will only look in enabled hosts
@@ -142,7 +122,6 @@ class TwoVhost80(unittest.TestCase):
         self.assertEqual(len(test2), 3)
 
     def test_get_virtual_hosts(self):
-        """inefficient get_virtual_hosts check."""
         vhs = self.config.get_virtual_hosts()
         self.assertEqual(len(vhs), 4)
         found = 0
@@ -155,14 +134,12 @@ class TwoVhost80(unittest.TestCase):
         self.assertEqual(found, 4)
 
     def test_is_site_enabled(self):
-        """test is_site_enabled"""
         self.assertTrue(self.config.is_site_enabled(self.vh_truth[0].filep))
         self.assertFalse(self.config.is_site_enabled(self.vh_truth[1].filep))
         self.assertTrue(self.config.is_site_enabled(self.vh_truth[2].filep))
         self.assertTrue(self.config.is_site_enabled(self.vh_truth[3].filep))
 
     def test_add_dir(self):
-        """test add_dir."""
         aug_default = "/files" + self.config.location["default"]
         self.config.add_dir(
             aug_default, "AddDirective", "test")
@@ -171,7 +148,6 @@ class TwoVhost80(unittest.TestCase):
             self.config.find_directive("AddDirective", "test", aug_default))
 
     def test_deploy_cert(self):
-        """This test modifies the default-ssl vhost SSL directives."""
         self.config.deploy_cert(
             self.vh_truth[1],
             "example/cert.pem", "example/key.pem", "example/cert_chain.pem")
@@ -197,29 +173,26 @@ class TwoVhost80(unittest.TestCase):
 
         self.assertEqual(len(loc_chain), 1)
         self.assertEqual(apache_configurator.get_file_path(loc_chain[0]),
-                        self.vh_truth[1].filep)
+                         self.vh_truth[1].filep)
 
     def test_is_name_vhost(self):
-        """test is_name_vhost."""
         self.assertTrue(self.config.is_name_vhost("*:80"))
         self.config.version = (2, 2)
         self.assertFalse(self.config.is_name_vhost("*:80"))
 
     def test_add_name_vhost(self):
-        """test add_name_vhost."""
         self.config.add_name_vhost("*:443")
         # self.config.save(temporary=True)
         self.assertTrue(self.config.find_directive(
             "NameVirtualHost", re.escape("*:443")))
 
-    # pylint: disable=protected-access
     def test_add_dir_to_ifmodssl(self):
         """test _add_dir_to_ifmodssl.
 
         Path must be valid before attempting to add to augeas
 
         """
-        self.config._add_dir_to_ifmodssl(
+        self.config._add_dir_to_ifmodssl(  # pylint: disable=protected-access
             "/files" + self.config.location["default"], "FakeDirective", "123")
 
         matches = self.config.find_directive("FakeDirective", "123")
@@ -228,7 +201,6 @@ class TwoVhost80(unittest.TestCase):
         self.assertTrue("IfModule" in matches[0])
 
     def test_make_vhost_ssl(self):
-        """test make_vhost_ssl."""
         ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[0])
 
         self.assertEqual(
@@ -258,7 +230,6 @@ class TwoVhost80(unittest.TestCase):
     @mock.patch("letsencrypt.client.apache_configurator."
                 "subprocess.Popen")
     def test_get_version(self, mock_popen):
-        """test get_version."""
         mock_popen.return_value = MyPopen(
             ("Server Version: Apache/2.4.2 (Debian)", ""))
         self.assertEqual(self.config.get_version(), (2, 4, 2))
@@ -281,22 +252,7 @@ class TwoVhost80(unittest.TestCase):
         self.assertRaises(
             errors.LetsEncryptConfiguratorError, self.config.get_version)
 
-    # def _verify_redirect(self, config_path):
-    #     """Verifies that the vhost contains the REWRITE."""
-    #     with open(config_path, 'r') as config_fd:
-    #         conf = config_fd.read()
 
-    #     return CONFIG.REWRITE_HTTPS_ARGS[1] in conf
-
-
-# def debug_file(filepath):
-#     """Print out the file."""
-#     with open(filepath, 'r')as file_d:
-#         print file_d.read()
-
-
-# I am sure there is a cleaner way to do this... but it works
-# pylint: disable=too-few-public-methods
 class MyPopen(object):
     """Made for mock popen object."""
     def __init__(self, tup):
@@ -305,6 +261,7 @@ class MyPopen(object):
     def communicate(self):  # pylint: disable=no-self-use
         """Simply return that ssl_module is in output."""
         return self.tup
+
 
 if __name__ == '__main__':
     unittest.main()
