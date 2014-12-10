@@ -1,6 +1,5 @@
 """Let's Encrypt client crypto utility functions"""
 import binascii
-import hashlib
 import logging
 import time
 
@@ -14,8 +13,6 @@ import M2Crypto
 from letsencrypt.client import CONFIG
 from letsencrypt.client import le_util
 
-
-# TODO: All of these functions need unit tests
 
 def b64_cert_to_pem(b64_der_cert):
     return M2Crypto.X509.load_cert_der_string(
@@ -76,27 +73,32 @@ def leading_zeros(arg):
     return arg
 
 
-def sha256(arg):
-    return hashlib.sha256(arg).hexdigest()
-
-
 # based on M2Crypto unit test written by Toby Allsopp
 def make_key(bits=CONFIG.RSA_KEY_SIZE):
+    """Generate PEM encoded RSA key.
+
+    :param int bits: Number of bits.
+
+    :returns: new RSA key in PEM form with specified number of bits
+    :rtype: str
+
     """
-    Returns new RSA key in PEM form with specified bits
-    """
-    # Python Crypto module doesn't produce any stdout
-    key = Crypto.PublicKey.RSA.generate(bits)
     # rsa = M2Crypto.RSA.gen_key(bits, 65537)
     # key_pem = rsa.as_pem(cipher=None)
     # rsa = None # should not be freed here
-
-    return key.exportKey(format='PEM')
+    # Python Crypto module doesn't produce any stdout
+    return Crypto.PublicKey.RSA.generate(bits).exportKey(format='PEM')
 
 
 def make_csr(key_str, domains):
-    """
-    Returns new CSR in PEM and DER form using key_file containing all domains
+    """Generate a CSR.
+
+    :param str key_str: RSA key.
+    :param list domains: Domains included in the certificate.
+
+    :returns: new CSR in PEM and DER form containing all domains
+    :rtype: tuple
+
     """
     assert domains, "Must provide one or more hostnames for the CSR."
     rsa_key = M2Crypto.RSA.load_key_string(key_str)
@@ -115,7 +117,7 @@ def make_csr(key_str, domains):
 
     extstack = M2Crypto.X509.X509_Extension_Stack()
     ext = M2Crypto.X509.new_extension(
-        'subjectAltName', ", ".join(["DNS:%s" % d for d in domains]))
+        'subjectAltName', ", ".join("DNS:%s" % d for d in domains))
 
     extstack.push(ext)
     csr.add_extensions(extstack)
@@ -210,7 +212,7 @@ def valid_csr(csr):
 
     Check if `csr` is a valid CSR for the given domains.
 
-    :param str csr: CSR file contents
+    :param str csr: CSR in PEM.
 
     :returns: Validity of CSR.
     :rtype: bool
@@ -229,7 +231,7 @@ def csr_matches_names(csr, domains):
     M2Crypto currently does not expose the OpenSSL interface to
     also check the SAN extension. This is insufficient for full testing
 
-    :param str csr: CSR file contents
+    :param str csr: CSR in DER.
 
     :param list domains: Domains the CSR should contain.
 
@@ -242,6 +244,21 @@ def csr_matches_names(csr, domains):
         return csr_obj.get_subject().CN in domains
     except M2Crypto.X509.X509Error:
         return False
+
+
+def csr_matches_pubkey(csr, privkey):
+    """Does private key correspond to the subject public key in the CSR?
+
+    :param str csr: CSR in PEM.
+    :param str privkey: Private key file contents
+
+    :returns: Correspondence of private key to CSR subject public key.
+    :rtype: bool
+
+    """
+    csr_obj = M2Crypto.X509.load_request_string(csr)
+    privkey_obj = M2Crypto.RSA.load_key_string(privkey)
+    return csr_obj.get_pubkey().get_rsa().pub() == privkey_obj.pub()
 
 
 def valid_privkey(privkey):
@@ -257,18 +274,3 @@ def valid_privkey(privkey):
         return bool(M2Crypto.RSA.load_key_string(privkey).check_key())
     except M2Crypto.RSA.RSAError:
         return False
-
-
-def csr_matches_pubkey(csr, privkey):
-    """Does private key correspond to the subject public key in the CSR?
-
-    :param str csr: CSR file contents
-    :param str privkey: Private key file contents
-
-    :returns: Correspondence of private key to CSR subject public key.
-    :rtype: bool
-
-    """
-    csr_obj = M2Crypto.X509.load_request_string(csr)
-    privkey_obj = M2Crypto.RSA.load_key_string(privkey)
-    return csr_obj.get_pubkey().get_rsa().pub() == privkey_obj.pub()
