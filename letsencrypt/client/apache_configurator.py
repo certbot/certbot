@@ -57,18 +57,14 @@ class VH(object):
 
     """
 
-    def __init__(self, filep, path, addrs, ssl, enabled):
+    def __init__(self, filep, path, addrs, ssl, enabled, names=None):
         """Initialize a VH."""
         self.filep = filep
         self.path = path
         self.addrs = addrs
-        self.names = []
+        self.names = [] if names is None else names
         self.ssl = ssl
         self.enabled = enabled
-
-    def set_names(self, list_of_names):
-        """Set names."""
-        self.names = list_of_names
 
     def add_name(self, name):
         """Add name to vhost."""
@@ -354,7 +350,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         .. todo:: Make sure that files are included
 
         """
-
         root = self._find_config_root()
         default = self._set_user_config_file()
 
@@ -371,7 +366,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     def _find_config_root(self):
         """Find the Apache Configuration Root file."""
-
         location = ["apache2.conf", "httpd.conf"]
 
         for name in location:
