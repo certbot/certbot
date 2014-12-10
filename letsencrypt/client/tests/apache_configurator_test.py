@@ -17,7 +17,7 @@ from letsencrypt.client import logger
 
 # pylint: disable=no-member
 UBUNTU_CONFIGS = pkg_resources.resource_filename(
-    __name__, "debian_apache_2_4")
+    "letsencrypt.client.tests", "testdata/debian_apache_2_4")
 
 TEMP_DIR = ""
 CONFIG_DIR = ""
@@ -33,10 +33,6 @@ def setUpModule():
     logger.setLogger(logger.FileLogger(sys.stdout))
     logger.setLogLevel(logger.INFO)
     display.set_display(display.NcursesDisplay())
-
-    if not os.path.isdir(UBUNTU_CONFIGS):
-        print "Please place the configuration directory: %s" % UBUNTU_CONFIGS
-        sys.exit(1)
 
     TEMP_DIR = tempfile.mkdtemp("temp")
     CONFIG_DIR = tempfile.mkdtemp("config")
