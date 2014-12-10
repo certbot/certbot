@@ -1,4 +1,5 @@
 """Tests for letsencrypt.client.acme."""
+import pkg_resources
 import unittest
 
 import jsonschema
@@ -58,15 +59,8 @@ class MessageFactoriesTest(unittest.TestCase):
     """Tests for ACME message factories from letsencrypt.client.acme."""
 
     def setUp(self):
-        self.privkey = """-----BEGIN RSA PRIVATE KEY-----
-MIIBOgIBAAJBAKx1c7RR7R/drnBSQ/zfx1vQLHUbFLh1AQQQ5R8DZUXd36efNK79
-vukFhN9HFoHZiUvOjm0c+pVE6K+EdE/twuUCAwEAAQJAMbrEnJCrQe8YqAbw1/Bn
-elAzIamndfE3U8bTavf9sgFpS4HL83rhd6PDbvx81ucaJAT/5x048fM/nFl4fzAc
-mQIhAOF/a9o3EIsDKEmUl+Z1OaOiUxDF3kqWSmALEsmvDhwXAiEAw8ljV5RO/rUp
-Zu2YMDFq3MKpyyMgBIJ8CxmGRc6gCmMCIGRQzkcmhfqBrhOFwkmozrqIBRIKJIjj
-8TRm2LXWZZ2DAiAqVO7PztdNpynugUy4jtbGKKjBrTSNBRGA7OHlUgm0dQIhALQq
-6oGU29Vxlvt3k0vmiRKU4AVfLyNXIGtcWcNG46h/
------END RSA PRIVATE KEY-----"""
+        self.privkey = pkg_resources.resource_string(
+            __name__, 'testdata/rsa256_key.pem')
         self.nonce = '\xec\xd6\xf2oYH\xeb\x13\xd5#q\xe0\xdd\xa2\x92\xa9'
         self.b64nonce = '7Nbyb1lI6xPVI3Hg3aKSqQ'
 
