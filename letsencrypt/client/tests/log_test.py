@@ -25,12 +25,12 @@ class DialogHandlerTest(unittest.TestCase):
 
     def test_wraps_nospace_is_greedy(self):
         assert len('1234567') > self.handler.width
-        self.handler.emit(mock.MagicMock(msg='1234%s', args=(567,)))
+        self.handler.emit(mock.MagicMock(msg='1234567'))
         self.d.infobox.assert_called_once_with('123456\n7', mock.ANY, mock.ANY)
 
     def test_wraps_at_whitespace(self):
         assert len('123 567') > self.handler.width
-        self.handler.emit(mock.MagicMock(msg='123 %s', args=(567,)))
+        self.handler.emit(mock.MagicMock(msg='123 567'))
         self.d.infobox.assert_called_once_with('123\n567', mock.ANY, mock.ANY)
 
     def test_only_last_lines_are_printed(self):
