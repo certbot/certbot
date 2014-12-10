@@ -154,6 +154,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # vhosts
         self.recovery_routine()
 
+        # Verify that all directories and files exist with proper permissions
+        if os.geteuid() == 0:
+            self.verify_setup()
+
         # Find configuration root and make sure augeas can parse it.
         self.location = self._set_locations(ssl_options)
         self._parse_file(self.location["root"])
@@ -174,8 +178,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.vhosts = self.get_virtual_hosts()
         # Add name_server association dict
         self.assoc = dict()
-        # Verify that all directories and files exist with proper permissions
-        self.verify_setup()
 
         # Enable mod_ssl if it isn't already enabled
         # This is Let's Encrypt... we enable mod_ssl on initialization :)
@@ -347,7 +349,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     def _set_locations(self, ssl_options):
         """Set default location for directives.
-        
+
         Locations are given as file_paths
         .. todo:: Make sure that files are included
 
@@ -464,6 +466,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         return vhs
 
+    # pylint: disable=anomalous-backslash-in-string
     def is_name_vhost(self, target_addr):
         """Returns if vhost is a name based vhost
 
@@ -1590,7 +1593,7 @@ def check_ssl_loaded():
             "Error accessing %s for loaded modules!" % CONFIG.APACHE_CTL)
         logger.error("This may be caused by an Apache Configuration Error")
         return False
-    
+
     if "ssl_module" in proc:
         return True
     return False

@@ -1,27 +1,35 @@
 """A series of unit tests for the Apache Configurator."""
 
 import mock
-import re
 import os
+import pkg_resources
+import re
 import shutil
-import subprocess
 import sys
+import tempfile
 import unittest
 
 from letsencrypt.client import apache_configurator
+from letsencrypt.client import CONFIG
 from letsencrypt.client import display
 from letsencrypt.client import errors
 from letsencrypt.client import logger
 
-# Some of these will likely go into a letsencrypt.tests.CONFIG file
-TESTING_DIR = os.path.dirname(os.path.realpath(__file__))
-UBUNTU_CONFIGS = os.path.join(TESTING_DIR, "debian_apache_2_4/")
-TEMP_DIR = os.path.join(TESTING_DIR, "temp")
+# pylint: disable=no-member
+UBUNTU_CONFIGS = pkg_resources.resource_filename(
+    __name__, "debian_apache_2_4")
+
+TEMP_DIR = ""
+CONFIG_DIR = ""
+WORK_DIR = ""
 
 
 # pylint: disable=invalid-name
 def setUpModule():
     """Run once before all unittests."""
+
+    global TEMP_DIR, CONFIG_DIR, WORK_DIR
+
     logger.setLogger(logger.FileLogger(sys.stdout))
     logger.setLogLevel(logger.INFO)
     display.set_display(display.NcursesDisplay())
@@ -30,40 +38,53 @@ def setUpModule():
         print "Please place the configuration directory: %s" % UBUNTU_CONFIGS
         sys.exit(1)
 
-    shutil.copytree(UBUNTU_CONFIGS, TEMP_DIR, symlinks=True)
+    TEMP_DIR = tempfile.mkdtemp("temp")
+    CONFIG_DIR = tempfile.mkdtemp("config")
+    WORK_DIR = tempfile.mkdtemp("work")
+
+    shutil.copytree(UBUNTU_CONFIGS,
+                    os.path.join(TEMP_DIR, "debian_apache_2_4"), symlinks=True)
+    TEMP_DIR = os.path.join(TEMP_DIR, "debian_apache_2_4")
+
+    temp_options = pkg_resources.resource_filename(
+        "letsencrypt.client", os.path.basename(CONFIG.OPTIONS_SSL_CONF))
+    shutil.copyfile(temp_options, os.path.join(CONFIG_DIR, "options-ssl.conf"))
 
 
 # pylint: disable=invalid-name
 def tearDownModule():
     """Run once after all unittests."""
+
     shutil.rmtree(TEMP_DIR)
+    shutil.rmtree(CONFIG_DIR)
+    shutil.rmtree(WORK_DIR)
 
 
 class TwoVhost80(unittest.TestCase):
     """Standard two http vhosts that are well configured."""
 
-    @mock.patch("letsencrypt.client.apache_configurator."
-                "subprocess.Popen")
-    def setUp(self, mock_popen):  # pylint: disable=invalid-name
+    def setUp(self):  # pylint: disable=invalid-name
         """Run before each and every test."""
 
-        # This just states that the ssl module is already loaded
-        mock_popen.return_value = MyPopen(("ssl_module", ""))
+        with mock.patch("letsencrypt.client.apache_configurator."
+                        "subprocess.Popen") as mock_popen:
+            # This just states that the ssl module is already loaded
+            mock_popen.return_value = MyPopen(("ssl_module", ""))
 
-        # Final slash is currently important
-        self.config_path = os.path.join(TEMP_DIR, "two_vhost_80/apache2/")
-        self.ssl_options = os.path.join(
-            os.path.dirname(TESTING_DIR), "options-ssl.conf")
+            # Final slash is currently important
+            self.config_path = os.path.join(TEMP_DIR, "two_vhost_80/apache2/")
+            self.ssl_options = os.path.join(CONFIG_DIR, "options-ssl.conf")
+            backups = os.path.join(WORK_DIR, "backups")
 
-        self.config = apache_configurator.ApacheConfigurator(
-            self.config_path,
-            {"backup": os.path.join(TESTING_DIR, "backups"),
-             "temp": os.path.join(TESTING_DIR, "temp_checkpoint"),
-             "progress": os.path.join(TESTING_DIR, "backups", "IN_PROGRESS"),
-             "config": os.path.join(TESTING_DIR, "config"),
-             "work": os.path.join(TESTING_DIR, "work")},
-            self.ssl_options,
-            (2, 4, 7))
+            self.config = apache_configurator.ApacheConfigurator(
+                self.config_path,
+                {"backup": backups,
+                 "temp": os.path.join(WORK_DIR, "temp_checkpoint"),
+                 "progress": os.path.join(backups, "IN_PROGRESS"),
+                 "config": CONFIG_DIR,
+                 "work": WORK_DIR},
+                self.ssl_options,
+                (2, 4, 7))
 
         self.aug_path = "/files" + self.config_path
 
@@ -154,11 +175,7 @@ class TwoVhost80(unittest.TestCase):
             self.config.find_directive("AddDirective", "test", aug_default))
 
     def test_deploy_cert(self):
-        """test deploy_cert.
-
-        This test modifies the default-ssl vhost SSL directives.
-
-        """
+        """This test modifies the default-ssl vhost SSL directives."""
         self.config.deploy_cert(
             self.vh_truth[1],
             "example/cert.pem", "example/key.pem", "example/cert_chain.pem")
@@ -172,8 +189,6 @@ class TwoVhost80(unittest.TestCase):
         loc_chain = self.config.find_directive(
             apache_configurator.case_i("SSLCertificateChainFile"),
             re.escape("example/cert_chain.pem"), self.vh_truth[1].path)
-
-        # debug_file(self.vh_truth[1].filep)
 
         # Verify one directive was found in the correct file
         self.assertEqual(len(loc_cert), 1)
@@ -240,7 +255,7 @@ class TwoVhost80(unittest.TestCase):
             "Include", self.ssl_options, ssl_vhost.path))
 
         self.assertEqual(self.config.is_name_vhost(self.vh_truth[0]),
-                        self.config.is_name_vhost(ssl_vhost))
+                         self.config.is_name_vhost(ssl_vhost))
 
         self.assertEqual(len(self.config.vhosts), 5)
 
@@ -278,10 +293,10 @@ class TwoVhost80(unittest.TestCase):
     #     return CONFIG.REWRITE_HTTPS_ARGS[1] in conf
 
 
-def debug_file(filepath):
-    """Print out the file."""
-    with open(filepath, 'r')as file_d:
-        print file_d.read()
+# def debug_file(filepath):
+#     """Print out the file."""
+#     with open(filepath, 'r')as file_d:
+#         print file_d.read()
 
 
 # I am sure there is a cleaner way to do this... but it works
