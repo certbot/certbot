@@ -3,7 +3,7 @@
 .. note:: This challenge has not been implemented into the project yet
 
 """
-import dialog
+import display
 
 from letsencrypt.client import challenge
 
@@ -20,7 +20,7 @@ class RecoveryToken(challenge.Challenge):
         self.token = ""
 
     def perform(self, quiet=True):
-        cancel, self.token = dialog.generic_input(
+        cancel, self.token = display.generic_input(
             "Please Input Recovery Token: ")
         return cancel != 1
 
