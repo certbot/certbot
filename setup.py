@@ -6,6 +6,7 @@ install_requires = [
     'argparse',
     'jsonschema',
     'M2Crypto',
+    'mock',
     'pycrypto',
     'python-augeas',
     'python2-pythondialog',
@@ -21,7 +22,7 @@ testing_extras = [
     'mock',
     'nose',
     'nosexcover',
-    'pylint',
+    'pylint<1.4',  # py2.6 compat, c.f #97
     'tox',
 ]
 
