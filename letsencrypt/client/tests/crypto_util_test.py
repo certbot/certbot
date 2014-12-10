@@ -93,7 +93,7 @@ class ValidCSRTest(unittest.TestCase):
     def test_empty_false(self):
         self.assertFalse(self._call(''))
 
-    def test_rubbis_false(self):
+    def test_random_false(self):
         self.assertFalse(self._call('foo bar'))
 
 
@@ -150,7 +150,7 @@ class ValidPrivkeyTest(unittest.TestCase):
     def test_empty_false(self):
         self.assertFalse(self._call(''))
 
-    def test_rubbish_false(self):
+    def test_random_false(self):
         self.assertFalse(self._call('foo bar'))
 
 
