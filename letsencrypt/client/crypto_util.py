@@ -1,6 +1,7 @@
 """Let's Encrypt client crypto utility functions"""
 import binascii
 import hashlib
+import logging
 import time
 
 from Crypto import Random
@@ -12,7 +13,6 @@ import M2Crypto
 
 from letsencrypt.client import CONFIG
 from letsencrypt.client import le_util
-from letsencrypt.client import logger
 
 
 # TODO: All of these functions need unit tests
@@ -53,7 +53,7 @@ def create_sig(msg, key_str, nonce=None, nonce_len=CONFIG.NONCE_SIZE):
     hashed = Crypto.Hash.SHA256.new(msg_with_nonce)
     signature = Crypto.Signature.PKCS1_v1_5.new(key).sign(hashed)
 
-    logger.debug('%s signed as %s' % (msg_with_nonce, signature))
+    logging.debug('%s signed as %s', msg_with_nonce, signature)
 
     n_bytes = binascii.unhexlify(leading_zeros(hex(key.n)[2:].rstrip("L")))
     e_bytes = binascii.unhexlify(leading_zeros(hex(key.e)[2:].rstrip("L")))

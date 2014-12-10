@@ -13,7 +13,6 @@ from letsencrypt.client import apache_configurator
 from letsencrypt.client import CONFIG
 from letsencrypt.client import display
 from letsencrypt.client import errors
-from letsencrypt.client import logger
 
 # pylint: disable=no-member
 UBUNTU_CONFIGS = pkg_resources.resource_filename(
@@ -30,8 +29,6 @@ def setUpModule():
 
     global TEMP_DIR, CONFIG_DIR, WORK_DIR
 
-    logger.setLogger(logger.FileLogger(sys.stdout))
-    logger.setLogLevel(logger.INFO)
     display.set_display(display.NcursesDisplay())
 
     TEMP_DIR = tempfile.mkdtemp("temp")

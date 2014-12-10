@@ -1,8 +1,8 @@
 """ACME challenge."""
+import logging
 import sys
 
 from letsencrypt.client import CONFIG
-from letsencrypt.client import logger
 
 
 class Challenge(object):
@@ -93,8 +93,8 @@ def _find_smart_path(challenges, combos):
         combo_total = 0
 
     if not best_combo:
-        logger.fatal("Client does not support any combination of "
-                     "challenges to satisfy ACME server")
+        logging.fatal("Client does not support any combination of "
+                      "challenges to satisfy ACME server")
         sys.exit(22)
 
     return best_combo

@@ -1,4 +1,5 @@
 """Class of Augeas Configurators."""
+import logging
 import os
 import sys
 import shutil
@@ -9,7 +10,6 @@ import augeas
 from letsencrypt.client import CONFIG
 from letsencrypt.client import configurator
 from letsencrypt.client import le_util
-from letsencrypt.client import logger
 
 
 class AugeasConfigurator(configurator.Configurator):
@@ -61,9 +61,9 @@ class AugeasConfigurator(configurator.Configurator):
             # As aug.get may return null
             if lens_path and lens in lens_path:
                 # Strip off /augeas/files and /error
-                logger.error('There has been an error in parsing the file: '
-                             '%s' % path[13:len(path) - 6])
-                logger.error(self.aug.get(path + '/message'))
+                logging.error('There has been an error in parsing the file: %s',
+                              path[13:len(path) - 6])
+                logging.error(self.aug.get(path + '/message'))
 
     def save(self, title=None, temporary=False):
         """Saves all changes to the configuration files.
@@ -90,14 +90,14 @@ class AugeasConfigurator(configurator.Configurator):
         except (RuntimeError, IOError):
             # Check for the root of save problems
             new_errs = self.aug.match("/augeas//error")
-            # logger.error("During Save - " + mod_conf)
+            # logging.error("During Save - %s", mod_conf)
             # Only print new errors caused by recent save
             for err in new_errs:
                 if err not in ex_errs:
-                    logger.error("Unable to save file - "
-                                 "%s" % err[13:len(err)-6])
-            logger.error("Attempted Save Notes")
-            logger.error(self.save_notes)
+                    logging.error(
+                        "Unable to save file - %s", err[13:len(err) - 6])
+            logging.error("Attempted Save Notes")
+            logging.error(self.save_notes)
             # Erase Save Notes
             self.save_notes = ""
             return False
@@ -117,7 +117,7 @@ class AugeasConfigurator(configurator.Configurator):
             valid, message = self.check_tempfile_saves(save_files)
 
             if not valid:
-                logger.fatal(message)
+                logging.fatal(message)
                 # What is the protocol in this situation?
                 # This shouldn't happen if the challenge codebase is correct
                 return False
@@ -153,8 +153,8 @@ class AugeasConfigurator(configurator.Configurator):
             result = self._recover_checkpoint(self.direc["temp"])
             if result != 0:
                 # We have a partial or incomplete recovery
-                logger.fatal("Incomplete or failed recovery for "
-                             "%s" % self.direc["temp"])
+                logging.fatal("Incomplete or failed recovery for %s",
+                              self.direc["temp"])
                 sys.exit(67)
             # Remember to reload Augeas
             self.aug.load()
@@ -168,24 +168,24 @@ class AugeasConfigurator(configurator.Configurator):
         try:
             rollback = int(rollback)
         except ValueError:
-            logger.error("Rollback argument must be a positive integer")
+            logging.error("Rollback argument must be a positive integer")
         # Sanity check input
         if rollback < 1:
-            logger.error("Rollback argument must be a positive integer")
+            logging.error("Rollback argument must be a positive integer")
             return
 
         backups = os.listdir(self.direc["backup"])
         backups.sort()
 
         if len(backups) < rollback:
-            logger.error(("Unable to rollback %d checkpoints, only "
-                          "%d exist") % (rollback, len(backups)))
+            logging.error("Unable to rollback %d checkpoints, only %d exist",
+                          rollback, len(backups))
 
         while rollback > 0 and backups:
             cp_dir = self.direc["backup"] + backups.pop()
             result = self._recover_checkpoint(cp_dir)
             if result != 0:
-                logger.fatal("Failed to load checkpoint during rollback")
+                logging.fatal("Failed to load checkpoint during rollback")
                 sys.exit(39)
             rollback -= 1
 
@@ -262,7 +262,7 @@ class AugeasConfigurator(configurator.Configurator):
             if filename not in existing_filepaths:
                 # Tag files with index so multiple files can
                 # have the same filename
-                logger.debug("Creating backup of %s" % filename)
+                logging.debug("Creating backup of %s", filename)
                 shutil.copy2(filename, os.path.join(
                     cp_dir, os.path.basename(filename) + "_" + str(idx)))
                 op_fd.write(filename + '\n')
@@ -295,7 +295,7 @@ class AugeasConfigurator(configurator.Configurator):
                                      path)
             except (IOError, OSError):
                 # This file is required in all checkpoints.
-                logger.error("Unable to recover files from %s" % cp_dir)
+                logging.error("Unable to recover files from %s", cp_dir)
                 return 1
 
         # Remove any newly added files if they exist
@@ -304,7 +304,7 @@ class AugeasConfigurator(configurator.Configurator):
         try:
             shutil.rmtree(cp_dir)
         except OSError:
-            logger.error("Unable to remove directory: %s" % cp_dir)
+            logging.error("Unable to remove directory: %s", cp_dir)
             return -1
 
         return 0
@@ -354,7 +354,7 @@ class AugeasConfigurator(configurator.Configurator):
                 for file_path in files:
                     new_fd.write("%s\n" % file_path)
         except (IOError, OSError):
-            logger.error("ERROR: Unable to register file creation")
+            logging.error("ERROR: Unable to register file creation")
 
     def recovery_routine(self):
         """Revert all previously modified files.
@@ -373,8 +373,8 @@ class AugeasConfigurator(configurator.Configurator):
                 # We have a partial or incomplete recovery
                 # Not as egregious
                 # TODO: Additional tests? recovery
-                logger.fatal("Incomplete or failed recovery for %s" %
-                             self.direc["progress"])
+                logging.fatal("Incomplete or failed recovery for %s",
+                              self.direc["progress"])
                 sys.exit(68)
 
             # Need to reload configuration after these changes take effect
@@ -403,13 +403,12 @@ class AugeasConfigurator(configurator.Configurator):
                     if os.path.lexists(path):
                         os.remove(path)
                     else:
-                        logger.warn((
+                        logging.warn(
                             "File: %s - Could not be found to be deleted\n"
-                            "Program was probably shut down unexpectedly, "
-                            "in which case this is not a problem") % path)
+                            "Program was probably shut down unexpectedly, ")
         except (IOError, OSError):
-            logger.fatal(
-                "Unable to remove filepaths contained within %s" % file_list)
+            logging.fatal(
+                "Unable to remove filepaths contained within %s", file_list)
             sys.exit(41)
 
         return True
@@ -441,12 +440,12 @@ class AugeasConfigurator(configurator.Configurator):
             shutil.move(changes_since_tmp_path, changes_since_path)
 
         except (IOError, OSError):
-            logger.error("Unable to finalize checkpoint - adding title")
+            logging.error("Unable to finalize checkpoint - adding title")
             return False
         try:
             os.rename(cp_dir, final_dir)
         except OSError:
-            logger.error("Unable to finalize checkpoint, %s -> %s" %
-                         (cp_dir, final_dir))
+            logging.error(
+                "Unable to finalize checkpoint, %s -> %s", cp_dir, final_dir)
             return False
         return True
