@@ -207,10 +207,11 @@ class Client(object):
 
         """
         cert_der = M2Crypto.X509.load_cert(cert["backup_cert_file"]).as_der()
+        with open(cert["backup_key_file"], 'rU') as backup_key_file:
+            key = backup_key_file.read()
 
         revocation = self.send_and_receive_expected(
-            acme.revocation_request(cert["backup_key_file"], cert_der),
-            "revocation")
+            acme.revocation_request(cert_der, key), "revocation")
 
         display.generic_notification(
             "You have successfully revoked the certificate for "
