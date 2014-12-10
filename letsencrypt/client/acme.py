@@ -7,7 +7,7 @@ import jsonschema
 from letsencrypt.client import crypto_util
 from letsencrypt.client import le_util
 
-# pylint: disable=no-member
+
 SCHEMATA = dict([
     (schema, json.load(open(pkg_resources.resource_filename(
         __name__, "schemata/%s.json" % schema)))) for schema in [
