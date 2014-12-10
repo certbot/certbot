@@ -373,14 +373,15 @@ class Client(object):
 
         """
         code, tag = display.display_certs(certs)
-        cert = certs[tag]
-
+        
         if code == display.OK:
+            cert = certs[tag]
             if display.confirm_revocation(cert):
                 self.acme_revocation(cert)
             else:
                 self.choose_certs(certs)
         elif code == display.HELP:
+            cert = certs[tag]
             display.more_info_cert(cert)
             self.choose_certs(certs)
         else:
