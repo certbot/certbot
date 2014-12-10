@@ -64,26 +64,24 @@ class TwoVhost80Test(unittest.TestCase):
         prefix = os.path.join(
             self.temp_dir, "two_vhost_80/apache2/sites-available")
         aug_pre = "/files" + prefix
-        self.vh_truth = []
-        self.vh_truth.append(apache_configurator.VH(
-            os.path.join(prefix, "encryption-example.conf"),
-            os.path.join(aug_pre, "encryption-example.conf/VirtualHost"),
-            ["*:80"], False, True))
-        self.vh_truth.append(apache_configurator.VH(
-            os.path.join(prefix, "default-ssl.conf"),
-            os.path.join(aug_pre, "default-ssl.conf/IfModule/VirtualHost"),
-            ["_default_:443"], True, False))
-        self.vh_truth.append(apache_configurator.VH(
-            os.path.join(prefix, "000-default.conf"),
-            os.path.join(aug_pre, "000-default.conf/VirtualHost"),
-            ["*:80"], False, True))
-        self.vh_truth.append(apache_configurator.VH(
-            os.path.join(prefix, "letsencrypt.conf"),
-            os.path.join(aug_pre, "letsencrypt.conf/VirtualHost"),
-            ["*:80"], False, True))
-        self.vh_truth[0].add_name("encryption-example.demo")
-        self.vh_truth[2].add_name("ip-172-30-0-17")
-        self.vh_truth[3].add_name("letsencrypt.demo")
+        self.vh_truth = [
+            apache_configurator.VH(
+                os.path.join(prefix, "encryption-example.conf"),
+                os.path.join(aug_pre, "encryption-example.conf/VirtualHost"),
+                ["*:80"], False, True, ["encryption-example.demo"]),
+            apache_configurator.VH(
+                os.path.join(prefix, "default-ssl.conf"),
+                os.path.join(aug_pre, "default-ssl.conf/IfModule/VirtualHost"),
+                ["_default_:443"], True, False),
+            apache_configurator.VH(
+                os.path.join(prefix, "000-default.conf"),
+                os.path.join(aug_pre, "000-default.conf/VirtualHost"),
+                ["*:80"], False, True, ["ip-172-30-0-17"]),
+            apache_configurator.VH(
+                os.path.join(prefix, "letsencrypt.conf"),
+                os.path.join(aug_pre, "letsencrypt.conf/VirtualHost"),
+                ["*:80"], False, True, ["letsencrypt.demo"]),
+        ]
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
