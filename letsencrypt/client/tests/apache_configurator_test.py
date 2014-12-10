@@ -4,6 +4,7 @@ import mock
 import re
 import os
 import shutil
+import subprocess
 import sys
 import unittest
 

@@ -137,7 +137,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             (used mostly for unittesting)
 
         """
-        if not direc:
+        if direc is None:
             direc = {"backup": CONFIG.BACKUP_DIR,
                      "temp": CONFIG.TEMP_CHECKPOINT_DIR,
                      "progress": CONFIG.IN_PROGRESS_DIR,
@@ -163,10 +163,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self._parse_file(os.path.join(self.server_root, "sites-available/*"))
 
         # Set Version
-        if not version:
-            self.version = self.get_version()
-        else:
-            self.version = version
+        self.version = self.get_version() if version is None else version
 
         # Check for errors in parsing files with Augeas
         self.check_parsing_errors("httpd.aug")
@@ -350,7 +347,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     def _set_locations(self, ssl_options):
         """Set default location for directives.
-
+        
         Locations are given as file_paths
         .. todo:: Make sure that files are included
 
@@ -367,11 +364,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             listen = default
             name = default
 
-        return {"root": root,
-                "default": default,
-                "listen": listen,
-                "name": name,
-                "ssl_options": ssl_options}
+        return {"root": root, "default": default, "listen": listen,
+                "name": name, "ssl_options": ssl_options}
 
     def _find_config_root(self):
         """Find the Apache Configuration Root file."""
@@ -488,11 +482,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         # search for NameVirtualHost directive for ip_addr
         # note ip_addr can be FQDN although Apache does not recommend it
-        if (self.version >= (2, 4) or
+        return (self.version >= (2, 4) or
                 self.find_directive(
-                    case_i("NameVirtualHost"), case_i(target_addr))):
-            return True
-        return False
+                    case_i("NameVirtualHost"), case_i(target_addr)))
 
     def add_name_vhost(self, addr):
         """Adds NameVirtualHost directive for given address.
@@ -1598,7 +1590,7 @@ def check_ssl_loaded():
             "Error accessing %s for loaded modules!" % CONFIG.APACHE_CTL)
         logger.error("This may be caused by an Apache Configuration Error")
         return False
-
+    
     if "ssl_module" in proc:
         return True
     return False
