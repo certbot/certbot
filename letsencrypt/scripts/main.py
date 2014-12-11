@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """Parse command line and call the appropriate functions."""
 import argparse
+import logging
 import os
 import sys
 
@@ -8,10 +9,7 @@ from letsencrypt.client import apache_configurator
 from letsencrypt.client import CONFIG
 from letsencrypt.client import client
 from letsencrypt.client import display
-from letsencrypt.client import logger
-
-logger.setLogger(logger.FileLogger(sys.stdout))
-logger.setLogLevel(logger.INFO)
+from letsencrypt.client import log
 
 
 def main():
@@ -55,12 +53,18 @@ def main():
                              "HTTP and HTTPS.")
     parser.add_argument("-e", "--agree-eula", dest="eula", action="store_true",
                         help="Skip the end user license agreement screen.")
-    parser.add_argument("-t", "--text", dest="curses", action="store_false",
+    parser.add_argument("-t", "--text", dest="use_curses", action="store_false",
                         help="Use the text output instead of the curses UI.")
     parser.add_argument("--test", dest="test", action="store_true",
                         help="Run in test mode.")
 
     args = parser.parse_args()
+
+    # Set up logging
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)  # TODO: --log
+    if args.use_curses:
+        logger.addHandler(log.DialogHandler())
 
     # Enforce '--privkey' is set along with '--csr'.
     if args.csr and not args.privkey:
@@ -68,7 +72,7 @@ def main():
                      "with the certificate signing request file (--csr)"
                      .format(os.linesep))
 
-    if args.curses:
+    if args.use_curses:
         display.set_display(display.NcursesDisplay())
     else:
         display.set_display(display.FileDisplay(sys.stdout))
@@ -93,7 +97,7 @@ def main():
     else:
         csr = client.Client.CSR(args.csr[0], args.csr[1], "pem")
 
-    acme = client.Client(server, csr, privkey, args.curses)
+    acme = client.Client(server, csr, privkey, args.use_curses)
     if args.revoke:
         acme.list_certs_keys()
     else:

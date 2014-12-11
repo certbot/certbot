@@ -13,7 +13,6 @@ from letsencrypt.client import apache_configurator
 from letsencrypt.client import CONFIG
 from letsencrypt.client import display
 from letsencrypt.client import errors
-from letsencrypt.client import logger
 
 
 UBUNTU_CONFIGS = pkg_resources.resource_filename(
@@ -24,8 +23,6 @@ class TwoVhost80Test(unittest.TestCase):
     """Test two standard well configured HTTP vhosts."""
 
     def setUp(self):
-        logger.setLogger(logger.FileLogger(sys.stdout))
-        logger.setLogLevel(logger.INFO)
         display.set_display(display.NcursesDisplay())
 
         self.temp_dir = os.path.join(

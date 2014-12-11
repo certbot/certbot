@@ -2,6 +2,7 @@
 import collections
 import csv
 import json
+import logging
 import os
 import shutil
 import socket
@@ -21,7 +22,6 @@ from letsencrypt.client import crypto_util
 from letsencrypt.client import display
 from letsencrypt.client import errors
 from letsencrypt.client import le_util
-from letsencrypt.client import logger
 
 
 # it's weird to point to chocolate servers via raw IPv6 addresses, and
@@ -64,9 +64,6 @@ class Client(object):
         self.csr = csr
         self.privkey = privkey
         self._validate_csr_key_cli()  # TODO: catch exceptions
-
-        # Logger needs to be initialized before Configurator
-        self.init_logger()
 
         # TODO: Can probably figure out which configurator to use
         #       without special packaging based on system info Command
@@ -178,8 +175,8 @@ class Client(object):
         try:
             return self.is_expected_msg(auth_dict, "authorization")
         except:
-            logger.fatal("Failed Authorization procedure - "
-                         "cleaning up challenges")
+            logging.fatal(
+                "Failed Authorization procedure - cleaning up challenges")
             sys.exit(1)
         finally:
             self.cleanup_challenges(chal_objs)
@@ -193,7 +190,7 @@ class Client(object):
         :rtype: dict
 
         """
-        logger.info("Preparing and sending CSR..")
+        logging.info("Preparing and sending CSR...")
         return self.send_and_receive_expected(
             acme.certificate_request(csr_der, self.privkey.pem), "certificate")
 
@@ -303,24 +300,23 @@ class Client(object):
                 return response
 
             elif response["type"] == "error":
-                logger.error("%s: %s - More Info: %s" %
-                             (response["error"],
-                              response.get("message", ""),
-                              response.get("moreInfo", "")))
+                logging.error(
+                    "%s: %s - More Info: %s", response["error"],
+                    response.get("message", ""), response.get("moreInfo", ""))
                 raise errors.LetsEncryptClientError(response["error"])
 
             elif response["type"] == "defer":
-                logger.info("Waiting for %d seconds..." % delay)
+                logging.info("Waiting for %d seconds...", delay)
                 time.sleep(delay)
                 response = self.send(acme.status_request(response["token"]))
             else:
-                logger.fatal("Received unexpected message")
-                logger.fatal("Expected: %s" % expected)
-                logger.fatal("Received: " + response)
+                logging.fatal("Received unexpected message")
+                logging.fatal("Expected: %s" % expected)
+                logging.fatal("Received: " + response)
                 sys.exit(33)
 
-        logger.error("Server has deferred past the max of %d seconds" %
-                     (rounds * delay))
+        logging.error(
+            "Server has deferred past the max of %d seconds", rounds * delay)
 
     def list_certs_keys(self):
         """List trusted Let's Encrypt certificates."""
@@ -328,7 +324,7 @@ class Client(object):
         certs = []
 
         if not os.path.isfile(list_file):
-            logger.info(
+            logging.info(
                 "You don't have any certificates saved from letsencrypt")
             return
 
@@ -399,8 +395,8 @@ class Client(object):
         cert_fd.write(
             crypto_util.b64_cert_to_pem(certificate_dict["certificate"]))
         cert_fd.close()
-        logger.info("Server issued certificate; certificate written to %s" %
-                    cert_file)
+        logging.info(
+            "Server issued certificate; certificate written to %s", cert_file)
 
         if certificate_dict.get("chain", None):
             chain_fd, chain_fn = le_util.unique_file(CONFIG.CHAIN_PATH, 0o644)
@@ -408,7 +404,7 @@ class Client(object):
                 chain_fd.write(crypto_util.b64_cert_to_pem(cert))
             chain_fd.close()
 
-            logger.info("Cert chain written to %s" % chain_fn)
+            logging.info("Cert chain written to %s", chain_fn)
 
             # This expects a valid chain file
             cert_chain_abspath = os.path.abspath(chain_fn)
@@ -420,7 +416,7 @@ class Client(object):
                                     cert_chain_abspath)
             # Enable any vhost that was issued to, but not enabled
             if not host.enabled:
-                logger.info("Enabling Site " + host.filep)
+                logging.info("Enabling Site %s", host.filep)
                 self.config.enable_site(host)
 
         # sites may have been enabled / final cleanup
@@ -464,7 +460,7 @@ class Client(object):
         :param dict challenges: challenges from a challenge message
 
         """
-        logger.info("Cleaning up challenges...")
+        logging.info("Cleaning up challenges...")
         for chall in challenges:
             if chall["type"] in CONFIG.CONFIG_CHALLENGES:
                 self.config.cleanup()
@@ -484,7 +480,7 @@ class Client(object):
         path = challenge.gen_challenge_path(
             challenge_msg["challenges"], challenge_msg.get("combinations", []))
 
-        logger.info("Performing the following challenges:")
+        logging.info("Performing the following challenges:")
 
         # Every indices element is a list of integers referring to which
         # challenges in the master list the challenge object satisfies
@@ -507,8 +503,8 @@ class Client(object):
             for index in indices[i]:
                 responses[index] = response
 
-        logger.info("Configured Apache for challenges; " +
-                    "waiting for verification...")
+        logging.info(
+            "Configured Apache for challenges; waiting for verification...")
 
         return responses, challenge_objs
 
@@ -528,9 +524,10 @@ class Client(object):
         idx = 0
 
         if encrypt:
-            logger.error("Unfortunately securely storing the certificates/"
-                         "keys is not yet available. Stay tuned for the "
-                         "next update!")
+            logging.error(
+                "Unfortunately securely storing the certificates/"
+                "keys is not yet available. Stay tuned for the "
+                "next update!")
             return False
 
         if os.path.isfile(list_file):
@@ -566,9 +563,8 @@ class Client(object):
         """
         for ssl_vh in vhost:
             success, redirect_vhost = self.config.enable_redirect(ssl_vh)
-            # pylint: disable=maybe-no-member
-            logger.info("\nRedirect vhost: " + redirect_vhost.filep +
-                        " - " + str(success))
+            logging.info(
+                "\nRedirect vhost: %s - %s ", redirect_vhost.filep, success)
             # If successful, make sure redirect site is enabled
             if success:
                 self.config.enable_site(redirect_vhost)
@@ -615,20 +611,20 @@ class Client(object):
             chall = challenges[index]
 
             if chall["type"] == "dvsni":
-                logger.info("  DVSNI challenge for name %s." % name)
+                logging.info("  DVSNI challenge for name %s.", name)
                 sni_satisfies.append(index)
                 sni_todo.append((str(name), str(chall["r"]),
                                  str(chall["nonce"])))
 
             elif chall["type"] == "recoveryToken":
-                logger.info("\tRecovery Token Challenge for name: %s." % name)
+                logging.info("\tRecovery Token Challenge for name: %s.", name)
                 challenge_obj_indices.append(index)
                 challenge_objs.append({
                     type: "recoveryToken",
                 })
 
             else:
-                logger.fatal("Challenge not currently supported")
+                logging.fatal("Challenge not currently supported")
                 sys.exit(82)
 
         if sni_todo:
@@ -640,7 +636,7 @@ class Client(object):
                 "dvsni_key": self.privkey,
             })
             challenge_obj_indices.append(sni_satisfies)
-            logger.debug(sni_todo)
+            logging.debug(sni_todo)
 
         return challenge_objs, challenge_obj_indices
 
@@ -663,7 +659,7 @@ class Client(object):
             key_f.write(key_pem)
             key_f.close()
 
-            logger.info("Generating key: %s" % key_filename)
+            logging.info("Generating key: %s", key_filename)
 
             self.privkey = Client.Key(key_filename, key_pem)
 
@@ -678,7 +674,7 @@ class Client(object):
             csr_f.write(csr_pem)
             csr_f.close()
 
-            logger.info("Creating CSR: %s" % csr_filename)
+            logging.info("Creating CSR: %s", csr_filename)
 
             self.csr = Client.CSR(csr_filename, csr_der, "der")
         elif self.csr.type != "der":
@@ -726,21 +722,13 @@ class Client(object):
         sanity_check_names(names)
 
         if not names:
-            logger.fatal("No domain names were found in your apache config")
-            logger.fatal("Either specify which names you would like "
-                         "letsencrypt to validate or add server names "
-                         "to your virtual hosts")
+            logging.fatal("No domain names were found in your apache config")
+            logging.fatal("Either specify which names you would like "
+                          "letsencrypt to validate or add server names "
+                          "to your virtual hosts")
             sys.exit(1)
 
         return names
-
-    def init_logger(self):
-        if self.use_curses:
-            logger.setLogger(logger.NcursesLogger())
-            logger.setLogLevel(logger.INFO)
-        else:
-            logger.setLogger(logger.FileLogger(sys.stdout))
-            logger.setLogLevel(logger.INFO)
 
 
 def remove_cert_key(cert):
@@ -778,7 +766,7 @@ def sanity_check_names(names):
     """
     for name in names:
         if not is_hostname_sane(name):
-            logger.fatal(repr(name) + " is an impossible hostname")
+            logging.fatal("%r is an impossible hostname", name)
             sys.exit(81)
 
 
