@@ -1,16 +1,20 @@
 """Tests for letsencrypt.client.crypto_util."""
+import datetime
 import os
 import pkg_resources
-import tempfile
 import unittest
+
+import M2Crypto
+
+
+RSA256_KEY = pkg_resources.resource_string(__name__, 'testdata/rsa256_key.pem')
+RSA512_KEY = pkg_resources.resource_string(__name__, 'testdata/rsa512_key.pem')
 
 
 class CreateSigTest(unittest.TestCase):
     """Tests for letsencrypt.client.crypto_util.create_sig."""
 
     def setUp(self):
-        self.privkey = pkg_resources.resource_string(
-            __name__, 'testdata/rsa256_key.pem')
         self.nonce = '\xec\xd6\xf2oYH\xeb\x13\xd5#q\xe0\xdd\xa2\x92\xa9'
         self.b64nonce = '7Nbyb1lI6xPVI3Hg3aKSqQ'
         self.signature = {
@@ -32,12 +36,12 @@ class CreateSigTest(unittest.TestCase):
 
     def test_it(self):
         self.assertEqual(
-            self._call('message', self.privkey, self.nonce), self.signature)
+            self._call('message', RSA256_KEY, self.nonce), self.signature)
 
     def test_random_nonce(self):
-        signature = self._call('message', self.privkey)
-        sig = signature.pop('sig')
-        nonce = signature.pop('nonce')
+        signature = self._call('message', RSA256_KEY)
+        signature.pop('sig')
+        signature.pop('nonce')
         del self.signature['sig']
         del self.signature['nonce']
         self.assertEqual(signature, self.signature)
@@ -46,13 +50,9 @@ class CreateSigTest(unittest.TestCase):
 class MakeCSRTest(unittest.TestCase):
     """Tests for letsencrypt.client.crypto_util.make_csr."""
 
-    def setUp(self):
-        self.key = pkg_resources.resource_string(
-            __name__, 'testdata/rsa256_key.pem')
-
     def test_single_domain(self):
         from letsencrypt.client.crypto_util import make_csr
-        pem, der = make_csr(self.key, ['example.com'])
+        pem, der = make_csr(RSA256_KEY, ['example.com'])
         self.assertEqual(pem, pkg_resources.resource_string(
             __name__, 'testdata/csr.pem'))
         self.assertEqual(der, pkg_resources.resource_string(
@@ -60,7 +60,7 @@ class MakeCSRTest(unittest.TestCase):
 
     def test_san(self):
         from letsencrypt.client.crypto_util import make_csr
-        pem, der = make_csr(self.key, ['example.com', 'www.example.com'])
+        pem, der = make_csr(RSA256_KEY, ['example.com', 'www.example.com'])
         self.assertEqual(pem, pkg_resources.resource_string(
             __name__, 'testdata/csr-san.pem'))
         self.assertEqual(der, pkg_resources.resource_string(
@@ -108,7 +108,7 @@ class CSRMatchesNamesTest(unittest.TestCase):
         return self._call(pkg_resources.resource_string(
             __name__, os.path.join('testdata', name)), domains)
 
-    def test_it(self):
+    def test_single_domain(self):
         self.assertTrue(self._call_testdata('csr.der', ['example.com']))
         self.assertFalse(self._call_testdata('csr.der', ['www.example.com']))
         self.assertFalse(self._call_testdata('csr.der', ['example']))
@@ -128,30 +128,73 @@ class CSRMatchesPubkeyTest(unittest.TestCase):
             __name__, os.path.join('testdata', name)), privkey)
 
     def test_valid_true(self):
-        key = pkg_resources.resource_string(__name__, 'testdata/rsa256_key.pem')
-        self.assertTrue(self._call_testdata('csr.pem', key))
+        self.assertTrue(self._call_testdata('csr.pem', RSA256_KEY))
 
     def test_invalid_false(self):
-        key = pkg_resources.resource_string(__name__, 'testdata/rsa512_key.pem')
-        self.assertFalse(self._call_testdata('csr.pem', key))
+        self.assertFalse(self._call_testdata('csr.pem', RSA512_KEY))
 
 
 class ValidPrivkeyTest(unittest.TestCase):
-    """Tests fro letsencrypt.client.crypto_util.valid_privkey."""
+    """Tests for letsencrypt.client.crypto_util.valid_privkey."""
 
     def _call(self, privkey):
         from letsencrypt.client.crypto_util import valid_privkey
         return valid_privkey(privkey)
 
     def test_valid_true(self):
-        self.assertTrue(self._call(pkg_resources.resource_string(
-            __name__, 'testdata/rsa256_key.pem')))
+        self.assertTrue(self._call(RSA256_KEY))
 
     def test_empty_false(self):
         self.assertFalse(self._call(''))
 
     def test_random_false(self):
         self.assertFalse(self._call('foo bar'))
+
+
+class MakeSSCertTest(unittest.TestCase):
+    """Tests for letsencrypt.client.crypto_util.make_ss_cert."""
+
+    def test_it(self):
+        from letsencrypt.client.crypto_util import make_ss_cert
+        make_ss_cert(RSA256_KEY, ['example.com', 'www.example.com'])
+
+
+class GetCertInfoTest(unittest.TestCase):
+    """Tests for letsencrypt.client.crypto_util.get_cert_info."""
+
+    def setUp(self):
+        self.cert_info = {
+            'not_before': datetime.datetime(
+                2014, 12, 11, 22, 34, 45, tzinfo=M2Crypto.ASN1.UTC),
+            'not_after': datetime.datetime(
+                2014, 12, 18, 22, 34, 45, tzinfo=M2Crypto.ASN1.UTC),
+            'subject': 'C=US, ST=Michigan, L=Ann Arbor, O=University '
+                       'of Michigan and the EFF, CN=example.com',
+            'cn': 'example.com',
+            'issuer': 'C=US, ST=Michigan, L=Ann Arbor, O=University '
+                      'of Michigan and the EFF, CN=example.com',
+            'serial': 1337L,
+            'pub_key': 'RSA 512',
+        }
+
+    def _call(self, name):
+        from letsencrypt.client.crypto_util import get_cert_info
+        self.assertEqual(get_cert_info(pkg_resources.resource_filename(
+            __name__, os.path.join('testdata', name))), self.cert_info)
+
+    def test_single_domain(self):
+        self.cert_info.update({
+            'san': '',
+            'fingerprint': '9F8CE01450D288467C3326AC0457E351939C72E',
+        })
+        self._call('cert.pem')
+
+    def test_san(self):
+        self.cert_info.update({
+            'san': 'DNS:example.com, DNS:www.example.com',
+            'fingerprint': '62F7110431B8E8F55905DBE5592518F9634AC50A',
+        })
+        self._call('cert-san.pem')
 
 
 if __name__ == '__main__':
