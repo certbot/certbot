@@ -493,20 +493,40 @@ class Client(object):
 
         # Perform challenges
         for i, c_obj in enumerate(challenge_objs):
-            response = "null"
+            resp = "null"
             if c_obj["type"] in CONFIG.CONFIG_CHALLENGES:
-                response = self.config.perform(c_obj)
+                resp = self.config.perform(c_obj)
             else:
                 # Handle RecoveryToken type challenges
                 pass
-
-            for index in indices[i]:
-                responses[index] = response
+            
+            self._assign_responses(resp, indices[i], responses)
 
         logging.info(
             "Configured Apache for challenges; waiting for verification...")
 
+        print responses
+
         return responses, challenge_objs
+
+    def _assign_responses(self, resp, index_list, responses):
+        """Assign chall_response to appropriate places in response list.
+
+        :param resp: responses from a challenge
+        :type resp: list of dicts or dict
+
+        :param list index_list: respective challenges resp satisfies
+        :param list responses: master list of responses
+
+        """
+        if isinstance(resp, list):
+            assert(len(resp) == len(index_list))
+            for j, index in enumerate(index_list):
+                responses[index] = resp[j]
+        else:        
+            for index in index_list:
+                responses[index] = resp
+
 
     def store_cert_key(self, cert_file, encrypt=False):
         """Store certificate key.
