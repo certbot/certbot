@@ -148,7 +148,7 @@ def csr_matches_pubkey(csr, privkey):
 def make_key(bits=CONFIG.RSA_KEY_SIZE):
     """Generate PEM encoded RSA key.
 
-    :param int bits: Number of bits.
+    :param int bits: Number of bits, at least 1024.
 
     :returns: new RSA key in PEM form with specified number of bits
     :rtype: str

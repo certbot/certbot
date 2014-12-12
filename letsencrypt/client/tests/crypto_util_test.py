@@ -112,6 +112,14 @@ class CSRMatchesPubkeyTest(unittest.TestCase):
         self.assertFalse(self._call_testdata('csr.pem', RSA512_KEY))
 
 
+class MakeKeyTest(unittest.TestCase):
+    """Tests for letsencrypt.client.crypto_util.make_key."""
+
+    def test_it(self):
+        from letsencrypt.client.crypto_util import make_key
+        M2Crypto.RSA.load_key_string(make_key(1024))
+
+
 class ValidPrivkeyTest(unittest.TestCase):
     """Tests for letsencrypt.client.crypto_util.valid_privkey."""
 
