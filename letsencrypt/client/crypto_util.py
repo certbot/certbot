@@ -129,27 +129,6 @@ def valid_csr(csr):
         return False
 
 
-def csr_matches_names(csr, domains):
-    """Check if CSR contains the subject of one of the domains.
-
-    M2Crypto currently does not expose the OpenSSL interface to
-    also check the SAN extension. This is insufficient for full testing
-
-    :param str csr: CSR in DER.
-
-    :param list domains: Domains the CSR should contain.
-
-    :returns: If the CSR subject contains one of the domains
-    :rtype: bool
-
-    """
-    try:
-        csr_obj = M2Crypto.X509.load_request_der_string(csr)
-        return csr_obj.get_subject().CN in domains
-    except M2Crypto.X509.X509Error:
-        return False
-
-
 def csr_matches_pubkey(csr, privkey):
     """Does private key correspond to the subject public key in the CSR?
 

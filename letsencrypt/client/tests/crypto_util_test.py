@@ -97,28 +97,6 @@ class ValidCSRTest(unittest.TestCase):
         self.assertFalse(self._call('foo bar'))
 
 
-class CSRMatchesNamesTest(unittest.TestCase):
-    """Tests for letsencrypt.client.crypto_util.csr_matches_names."""
-
-    def _call(self, csr, domains):
-        from letsencrypt.client.crypto_util import csr_matches_names
-        return csr_matches_names(csr, domains)
-
-    def _call_testdata(self, name, domains):
-        return self._call(pkg_resources.resource_string(
-            __name__, os.path.join('testdata', name)), domains)
-
-    def test_single_domain(self):
-        self.assertTrue(self._call_testdata('csr.der', ['example.com']))
-        self.assertFalse(self._call_testdata('csr.der', ['www.example.com']))
-        self.assertFalse(self._call_testdata('csr.der', ['example']))
-
-    def test_san(self):
-        self.assertTrue(self._call_testdata('csr-san.der', ['example.com']))
-        self.assertTrue(self._call_testdata('csr-san.der', ['www.example.com']))
-        self.assertFalse(self._call_testdata('csr-san.der', ['example']))
-
-
 class CSRMatchesPubkeyTest(unittest.TestCase):
     """Tests for letsencrypt.client.crypto_util.csr_matches_pubkey."""
 
