@@ -505,8 +505,6 @@ class Client(object):
         logging.info(
             "Configured Apache for challenges; waiting for verification...")
 
-        print responses
-
         return responses, challenge_objs
 
     def _assign_responses(self, resp, index_list, responses):
