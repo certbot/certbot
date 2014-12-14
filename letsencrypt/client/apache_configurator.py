@@ -12,6 +12,7 @@ import sys
 from Crypto import Random
 
 from letsencrypt.client import augeas_configurator
+from letsencrypt.client import challenge_util
 from letsencrypt.client import CONFIG
 from letsencrypt.client import crypto_util
 from letsencrypt.client import errors
@@ -1403,24 +1404,27 @@ LogLevel warn \n\
             else:
                 addresses.append(vhost.addrs)
 
-        # Generate S
-        dvsni_s = Random.get_random_bytes(CONFIG.S_SIZE)
+        responses = []
+
         # Create all of the challenge certs
         for tup in chall_dict["list_sni_tuple"]:
-            # Need to decode from base64
-            dvsni_r = le_util.jose_b64decode(tup[1])
-            ext = dvsni_gen_ext(dvsni_r, dvsni_s)
-            self.dvsni_create_chall_cert(
-                tup[0], ext, tup[2], chall_dict["dvsni_key"])
+            cert_path = self.dvsni_get_cert_file(tup[2])
+            self.register_file_creation(cert_path)
+            s_b64 = challenge_util.dvsni_gen_cert(
+                cert_path, tup[0], tup[1], tup[2], chall_dict["dvsni_key"])
 
+            responses.append({"type": "dvsni", "s": s_b64})
+
+        # Setup the configuration
         self.dvsni_mod_config(chall_dict["list_sni_tuple"],
                               chall_dict["dvsni_key"],
                               addresses)
+
         # Save reversible changes and restart the server
         self.save("SNI Challenge", True)
         self.restart(True)
 
-        return {"type": "dvsni", "s": le_util.jose_b64encode(dvsni_s)}
+        return responses
 
     def cleanup(self):
         """Revert all challenges."""
@@ -1484,25 +1488,6 @@ LogLevel warn \n\
             # print "Including challenge virtual host(s)"
             self.add_dir(get_aug_path(main_config),
                          "Include", CONFIG.APACHE_CHALLENGE_CONF)
-
-    def dvsni_create_chall_cert(self, name, ext, nonce, dvsni_key):
-        """Creates DVSNI challenge certifiate.
-
-        Certificate created at self.dvsni_get_cert_file(nonce)
-
-        :param str nonce: hex form of nonce
-
-        :param dvsni_key: absolute path to key file
-        :type dvsni_key: `client.Client.Key`
-
-        """
-        self.register_file_creation(True, self.dvsni_get_cert_file(nonce))
-
-        cert_pem = crypto_util.make_ss_cert(
-            dvsni_key.pem, [nonce + CONFIG.INVALID_EXT, name, ext])
-
-        with open(self.dvsni_get_cert_file(nonce), 'w') as chall_cert_file:
-            chall_cert_file.write(cert_pem)
 
     def get_config_text(self, nonce, ip_addrs, dvsni_key_file):
         """Chocolate virtual server configuration text
@@ -1691,23 +1676,6 @@ def strip_dir(path):
         return path[:index+1]
     # No directory
     return ""
-
-
-def dvsni_gen_ext(dvsni_r, dvsni_s):
-    """Generates z extension to be placed in certificate extension.
-
-    :param bytearray dvsni_r: DVSNI r value
-    :param bytearray dvsni_s: DVSNI s value
-
-    :returns: z + CONFIG.INVALID_EXT
-    :rtype: str
-
-    """
-    z_base = hashlib.new('sha256')
-    z_base.update(dvsni_r)
-    z_base.update(dvsni_s)
-
-    return z_base.hexdigest() + CONFIG.INVALID_EXT
 
 
 def main():
