@@ -21,12 +21,6 @@ persistent=yes
 # usually to register additional checkers.
 load-plugins=
 
-# DEPRECATED
-include-ids=no
-
-# DEPRECATED
-symbols=no
-
 # Use multiple processes to speed up Pylint.
 jobs=1
 
