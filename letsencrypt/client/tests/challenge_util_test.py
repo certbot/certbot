@@ -1,10 +1,11 @@
 """Tests for challenge_util."""
-import M2Crypto
-import mock
 import os
 import pkg_resources
 import re
 import unittest
+
+import M2Crypto
+import mock
 
 from letsencrypt.client import challenge_util
 from letsencrypt.client import client
