@@ -118,11 +118,6 @@ class Client(object):
         # Make sure we have key and csr to perform challenges
         self.init_key_csr()
 
-        # TODO: Handle this exception/problem
-        if not crypto_util.csr_matches_names(self.csr.data, self.names):
-            raise errors.LetsEncryptClientError(
-                "CSR subject does not contain one of the specified names")
-
         # Perform Challenges
         responses, challenge_objs = self.verify_identity(challenge_msg)
         # Get Authorization
