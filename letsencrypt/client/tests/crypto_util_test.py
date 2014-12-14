@@ -47,26 +47,6 @@ class CreateSigTest(unittest.TestCase):
         self.assertEqual(signature, self.signature)
 
 
-class MakeCSRTest(unittest.TestCase):
-    """Tests for letsencrypt.client.crypto_util.make_csr."""
-
-    def test_single_domain(self):
-        from letsencrypt.client.crypto_util import make_csr
-        pem, der = make_csr(RSA256_KEY, ['example.com'])
-        self.assertEqual(pem, pkg_resources.resource_string(
-            __name__, 'testdata/csr.pem'))
-        self.assertEqual(der, pkg_resources.resource_string(
-            __name__, 'testdata/csr.der'))
-
-    def test_san(self):
-        from letsencrypt.client.crypto_util import make_csr
-        pem, der = make_csr(RSA256_KEY, ['example.com', 'www.example.com'])
-        self.assertEqual(pem, pkg_resources.resource_string(
-            __name__, 'testdata/csr-san.pem'))
-        self.assertEqual(der, pkg_resources.resource_string(
-            __name__, 'testdata/csr-san.der'))
-
-
 class ValidCSRTest(unittest.TestCase):
     """Tests for letsencrypt.client.crypto_util.valid_csr."""
 
