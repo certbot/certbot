@@ -171,7 +171,7 @@ method-name-hint=[a-z_][a-z0-9_]{2,30}$
 
 # Regular expression which should only match function or class names that do
 # not require a docstring.
-no-docstring-rgx=(__.*__)|(test_[A-Za-z0-9_]*)|(_*)
+no-docstring-rgx=(__.*__)|(test_[A-Za-z0-9_]*)|(_.*)
 
 # Minimum line length for functions/classes that require docstrings, shorter
 # ones are exempt.
