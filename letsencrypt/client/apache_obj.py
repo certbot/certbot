@@ -1,11 +1,12 @@
 """Module contains classes used by the Apache Configurator."""
 
+
 class Addr(object):
     """Represents an Apache VirtualHost address."""
     def __init__(self, addr):
         """:param tuple addr: tuple of strings (ip, port)"""
         self.tup = addr
-        
+
     @classmethod
     def fromstring(cls, str_addr):
         """Initialize Addr from string."""
@@ -13,12 +14,17 @@ class Addr(object):
         return cls((tup[0], tup[2]))
 
     def __str__(self):
-        return ':'.join(self.tup)
+        if self.tup[1] != "":
+            return ':'.join(self.tup)
+        return str(self.tup[0])
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
             return self.tup == other.tup
         return False
+
+    def __hash__(self):
+        return hash(self.tup)
 
     def set_port(self, port):
         """Set the port of the address.
@@ -35,14 +41,9 @@ class Addr(object):
         """Return port."""
         return self.tup[1]
 
-    def get_ssl_addr_obj(self):
-        return cls((self.tup[0], "443"))
-
-    def get_80_addr_obj(self):
-        return cls((self.tup[0], "80"))
-
     def get_addr_obj(self, port):
-        return cls((self.tup[0], port))
+        return self.__class__((self.tup[0], port))
+
 
 class VH(object):
     """Represents an Apache Virtualhost.

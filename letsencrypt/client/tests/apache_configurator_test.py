@@ -3,12 +3,12 @@ import os
 import pkg_resources
 import re
 import shutil
-import sys
 import tempfile
 import unittest
 
 import mock
 
+from letsencrypt.client import apache_obj
 from letsencrypt.client import apache_configurator
 from letsencrypt.client import CONFIG
 from letsencrypt.client import display
@@ -62,22 +62,25 @@ class TwoVhost80Test(unittest.TestCase):
             self.temp_dir, "two_vhost_80/apache2/sites-available")
         aug_pre = "/files" + prefix
         self.vh_truth = [
-            apache_configurator.VH(
+            apache_obj.VH(
                 os.path.join(prefix, "encryption-example.conf"),
                 os.path.join(aug_pre, "encryption-example.conf/VirtualHost"),
-                ["*:80"], False, True, ["encryption-example.demo"]),
-            apache_configurator.VH(
+                set([apache_obj.Addr.fromstring("*:80")]),
+                False, True, set(["encryption-example.demo"])),
+            apache_obj.VH(
                 os.path.join(prefix, "default-ssl.conf"),
                 os.path.join(aug_pre, "default-ssl.conf/IfModule/VirtualHost"),
-                ["_default_:443"], True, False),
-            apache_configurator.VH(
+                set([apache_obj.Addr.fromstring("_default_:443")]), True, False),
+            apache_obj.VH(
                 os.path.join(prefix, "000-default.conf"),
                 os.path.join(aug_pre, "000-default.conf/VirtualHost"),
-                ["*:80"], False, True, ["ip-172-30-0-17"]),
-            apache_configurator.VH(
+                set([apache_obj.Addr.fromstring("*:80")]), False, True,
+                set(["ip-172-30-0-17"])),
+            apache_obj.VH(
                 os.path.join(prefix, "letsencrypt.conf"),
                 os.path.join(aug_pre, "letsencrypt.conf/VirtualHost"),
-                ["*:80"], False, True, ["letsencrypt.demo"]),
+                set([apache_obj.Addr.fromstring("*:80")]), False, True,
+                set(["letsencrypt.demo"])),
         ]
 
     def tearDown(self):
@@ -104,7 +107,7 @@ class TwoVhost80Test(unittest.TestCase):
 
     def test_get_all_names(self):
         names = self.config.get_all_names()
-        self.assertEqual(set(names), set(
+        self.assertEqual(names, set(
             ['letsencrypt.demo', 'encryption-example.demo', 'ip-172-30-0-17']))
 
     def test_find_directive(self):
@@ -120,6 +123,7 @@ class TwoVhost80Test(unittest.TestCase):
         vhs = self.config.get_virtual_hosts()
         self.assertEqual(len(vhs), 4)
         found = 0
+
         for vhost in vhs:
             for truth in self.vh_truth:
                 if vhost == truth:
@@ -171,9 +175,10 @@ class TwoVhost80Test(unittest.TestCase):
                          self.vh_truth[1].filep)
 
     def test_is_name_vhost(self):
-        self.assertTrue(self.config.is_name_vhost("*:80"))
+        addr = apache_obj.Addr.fromstring("*:80")
+        self.assertTrue(self.config.is_name_vhost(addr))
         self.config.version = (2, 2)
-        self.assertFalse(self.config.is_name_vhost("*:80"))
+        self.assertFalse(self.config.is_name_vhost(addr))
 
     def test_add_name_vhost(self):
         self.config.add_name_vhost("*:443")
@@ -205,8 +210,8 @@ class TwoVhost80Test(unittest.TestCase):
 
         self.assertEqual(ssl_vhost.path,
                          "/files" + ssl_vhost.filep + "/IfModule/VirtualHost")
-        self.assertEqual(ssl_vhost.addrs, ["*:443"])
-        self.assertEqual(ssl_vhost.names, ["encryption-example.demo"])
+        self.assertEqual(ssl_vhost.addrs, set([apache_obj.Addr.fromstring("*:443")]))
+        self.assertEqual(ssl_vhost.names, set(["encryption-example.demo"]))
         self.assertTrue(ssl_vhost.ssl)
         self.assertFalse(ssl_vhost.enabled)
 
