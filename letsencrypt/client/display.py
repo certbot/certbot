@@ -1,46 +1,20 @@
 import textwrap
 
 import dialog
+import zope.interface
+
+from letsencrypt.client import interfaces
 
 
 WIDTH = 72
 HEIGHT = 20
 
 
-class Display(object):
-    """Generic display."""
-
-    def generic_notification(self, message):
-        raise NotImplementedError()
-
-    def generic_menu(self, message, choices, input_text=""):
-        raise NotImplementedError()
-
-    def generic_input(self, message):
-        raise NotImplementedError()
-
-    def generic_yesno(self, message, yes_label="Yes", no_label="No"):
-        raise NotImplementedError()
-
-    def filter_names(self, names):
-        raise NotImplementedError()
-
-    def success_installation(self, domains):
-        raise NotImplementedError()
-
-    def display_certs(self, certs):
-        raise NotImplementedError()
-
-    def confirm_revocation(self, cert):
-        raise NotImplementedError()
-
-    def more_info_cert(self, cert):
-        raise NotImplementedError()
-
-
-class NcursesDisplay(Display):
+class NcursesDisplay(object):
+    zope.interface.implements(interfaces.IDisplay)
 
     def __init__(self, width=WIDTH, height=HEIGHT):
+        super(NcursesDisplay, self).__init__()
         self.dialog = dialog.Dialog()
         self.width = width
         self.height = height
@@ -112,9 +86,11 @@ class NcursesDisplay(Display):
         self.dialog.msgbox(text, width=self.width, height=self.height)
 
 
-class FileDisplay(Display):
+class FileDisplay(object):
+    zope.interface.implements(interfaces.IDisplay)
 
     def __init__(self, outfile):
+        super(FileDisplay, self).__init__()
         self.outfile = outfile
 
     def generic_notification(self, message):
