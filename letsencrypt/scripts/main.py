@@ -116,7 +116,7 @@ def read_file(filename):
 
     """
     try:
-        return filename, file(filename, 'rU').read()
+        return filename, open(filename, 'rU').read()
     except IOError as exc:
         raise argparse.ArgumentTypeError(exc.strerror)
 

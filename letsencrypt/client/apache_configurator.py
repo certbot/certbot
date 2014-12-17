@@ -1,5 +1,4 @@
 """Apache Configuration based off of Augeas Configurator."""
-import hashlib
 import logging
 import os
 import pkg_resources
@@ -9,12 +8,9 @@ import socket
 import subprocess
 import sys
 
-from Crypto import Random
-
 from letsencrypt.client import augeas_configurator
 from letsencrypt.client import challenge_util
 from letsencrypt.client import CONFIG
-from letsencrypt.client import crypto_util
 from letsencrypt.client import errors
 from letsencrypt.client import le_util
 

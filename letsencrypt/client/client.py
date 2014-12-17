@@ -306,8 +306,8 @@ class Client(object):
                 response = self.send(acme.status_request(response["token"]))
             else:
                 logging.fatal("Received unexpected message")
-                logging.fatal("Expected: %s" % expected)
-                logging.fatal("Received: " + response)
+                logging.fatal("Expected: %s", expected)
+                logging.fatal("Received: %s", response)
                 sys.exit(33)
 
         logging.error(
@@ -364,7 +364,7 @@ class Client(object):
 
         """
         code, tag = display.display_certs(certs)
-        
+
         if code == display.OK:
             cert = certs[tag]
             if display.confirm_revocation(cert):
@@ -494,7 +494,7 @@ class Client(object):
             else:
                 # Handle RecoveryToken type challenges
                 pass
-            
+
             self._assign_responses(resp, indices[i], responses)
 
         logging.info(
@@ -513,10 +513,10 @@ class Client(object):
 
         """
         if isinstance(resp, list):
-            assert(len(resp) == len(index_list))
+            assert len(resp) == len(index_list)
             for j, index in enumerate(index_list):
                 responses[index] = resp[j]
-        else:        
+        else:
             for index in index_list:
                 responses[index] = resp
 

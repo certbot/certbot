@@ -3,7 +3,6 @@ import os
 import pkg_resources
 import re
 import shutil
-import sys
 import tempfile
 import unittest
 
