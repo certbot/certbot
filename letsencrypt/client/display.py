@@ -7,17 +7,7 @@ WIDTH = 72
 HEIGHT = 20
 
 
-class SingletonD(object):
-    _instance = None
-
-    def __new__(cls, *args, **kwargs):
-        if not cls._instance:
-            cls._instance = super(SingletonD, cls).__new__(
-                cls, *args, **kwargs)
-        return cls._instance
-
-
-class Display(SingletonD):
+class Display(object):
     """Generic display."""
 
     def generic_notification(self, message):
