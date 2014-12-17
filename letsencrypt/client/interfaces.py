@@ -1,16 +1,36 @@
-"""Configurator."""
+"""Let's Encrypt client interfaces."""
+import zope.interface
+
+# pylint: disable=no-self-argument,no-method-argument
+
+class IChallenge(zope.interface.Interface):
+    """Let's Encrypt challenge."""
+
+    def perform(quiet=True):
+        """Perform the challenge.
+
+        :param bool quiet: TODO
+
+        """
+
+    def generate_response():
+        """Generate response."""
+
+    def cleanup():
+        """Cleanup."""
 
 
-class Configurator(object):
+class IConfigurator(zope.interface.Interface):
     """Generic Let's Encrypt configurator.
 
     Class represents all possible webservers and configuration editors
     This includes the generic webserver which wont have configuration
     files at all, but instead create a new process to handle the DVSNI
     and other challenges.
+
     """
 
-    def deploy_cert(self, vhost, cert, key, cert_chain=None):
+    def deploy_cert(vhost, cert, key, cert_chain=None):
         """Deploy certificate.
 
         :param vhost
@@ -18,42 +38,34 @@ class Configurator(object):
         :param str key: Private key
 
         """
-        raise NotImplementedError()
 
-    def choose_virtual_host(self, name):
+    def choose_virtual_host(name):
         """Chooses a virtual host based on a given domain name."""
-        raise NotImplementedError()
 
-    def get_all_names(self):
+    def get_all_names():
         """Returns all names found in the configuration."""
-        raise NotImplementedError()
 
-    def enable_redirect(self, ssl_vhost):
+    def enable_redirect(ssl_vhost):
         """Redirect all traffic to the given ssl_vhost (port 80 => 443)."""
-        raise NotImplementedError()
 
-    def enable_hsts(self, ssl_vhost):
+    def enable_hsts(ssl_vhost):
         """Enable HSTS on the given ssl_vhost."""
-        raise NotImplementedError()
 
-    def enable_ocsp_stapling(self, ssl_vhost):
+    def enable_ocsp_stapling(ssl_vhost):
         """Enable OCSP stapling on given ssl_vhost."""
-        raise NotImplementedError()
 
-    def get_all_certs_keys(self):
+    def get_all_certs_keys():
         """Retrieve all certs and keys set in configuration.
 
         :returns: List of tuples with form [(cert, key, path)].
         :rtype: list
 
         """
-        raise NotImplementedError()
 
-    def enable_site(self, vhost):
+    def enable_site(vhost):
         """Enable the site at the given vhost."""
-        raise NotImplementedError()
 
-    def save(self, title=None, temporary=False):
+    def save(title=None, temporary=False):
         """Saves all changes to the configuration files.
 
         Both title and temporary are needed because a save may be
@@ -66,33 +78,42 @@ class Configurator(object):
 
         :param bool temporary: Indicates whether the changes made will
             be quickly reversed in the future (challenges)
+
         """
-        raise NotImplementedError()
 
-    def revert_challenge_config(self):
+    def revert_challenge_config():
         """Reload the users original configuration files."""
-        raise NotImplementedError()
 
-    def rollback_checkpoints(self, rollback=1):
+    def rollback_checkpoints(rollback=1):
         """Revert `rollback` number of configuration checkpoints."""
-        raise NotImplementedError()
 
-    def display_checkpoints(self):
+    def display_checkpoints():
         """Display the saved configuration checkpoints."""
-        raise NotImplementedError()
 
-    def config_test(self):
+    def config_test():
         """Make sure the configuration is valid."""
-        raise NotImplementedError()
 
-    def restart(self, quiet=False):
+    def restart(quiet=False):
         """Restart or refresh the server content."""
-        raise NotImplementedError()
 
-    def perform(self, chall_dict):
+    def perform(chall_dict):
         """Perform the given challenge"""
-        raise NotImplementedError()
 
-    def cleanup(self):
+    def cleanup():
         """Cleanup configuration changes from challenge."""
-        raise NotImplementedError()
+
+
+class IValidator(object):
+    """Configuration validator."""
+
+    def redirect(name):
+        pass
+
+    def ocsp_stapling(name):
+        pass
+
+    def https(names):
+        pass
+
+    def hsts(name):
+        pass

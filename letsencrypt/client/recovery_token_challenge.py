@@ -3,20 +3,22 @@
 .. note:: This challenge has not been implemented into the project yet
 
 """
-import display
+import zope.interface
 
-from letsencrypt.client import challenge
+from letsencrypt.client import display
+from letsencrypt.client import interfaces
 
 
-class RecoveryToken(challenge.Challenge):
+class RecoveryToken(object):
     """Recovery Token Identifier Validation Challenge.
 
     Based on draft-barnes-acme, section 6.4.
 
     """
+    zope.interface.implements(interfaces.IChallenge)
 
-    def __init__(self, configurator):
-        super(RecoveryToken, self).__init__(configurator)
+    def __init__(self):
+        super(RecoveryToken, self).__init__()
         self.token = ""
 
     def perform(self, quiet=True):

@@ -6,13 +6,14 @@ import shutil
 import time
 
 import augeas
+import zope.interface
 
 from letsencrypt.client import CONFIG
-from letsencrypt.client import configurator
+from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
 
 
-class AugeasConfigurator(configurator.Configurator):
+class AugeasConfigurator(object):
     """Base Augeas Configurator class.
 
     .. todo:: Fix generic exception handling.
@@ -24,6 +25,7 @@ class AugeasConfigurator(configurator.Configurator):
     :ivar dict direc: dictionary containing save directory paths
 
     """
+    zope.interface.implements(interfaces.IConfigurator)
 
     def __init__(self, direc=None):
         """Initialize Augeas Configurator.

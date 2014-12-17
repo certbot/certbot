@@ -1,12 +1,13 @@
 import textwrap
 
 import dialog
+import zope.interface
 
-from letsencrypt.client import challenge
+from letsencrypt.client import interfaces
 
 
-class InteractiveChallenge(challenge.Challenge):
-    """Interactive challange.
+class InteractiveChallenge(object):
+    """Interactive challenge.
 
     Interactive challenge displays the string sent by the CA formatted
     to fit on the screen of the client. The Challenge also adds proper
@@ -14,9 +15,12 @@ class InteractiveChallenge(challenge.Challenge):
     process.
 
     """
+    zope.interface.implements(interfaces.IChallenge)
+
     BOX_SIZE = 70
 
     def __init__(self, string):
+        super(InteractiveChallenge, self).__init__()
         self.string = string
 
     def perform(self, quiet=True):
