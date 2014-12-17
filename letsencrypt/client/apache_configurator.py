@@ -8,20 +8,17 @@ import socket
 import subprocess
 import sys
 
+import zope.interface
+
 from letsencrypt.client import augeas_configurator
 from letsencrypt.client import challenge_util
 from letsencrypt.client import CONFIG
 from letsencrypt.client import errors
+from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
 
 from letsencrypt.client.apache import obj
 from letsencrypt.client.apache import parser
-
-# Configurator should be turned into a Singleton
-
-# Note: Apache 2.4 NameVirtualHost directive is deprecated... all vhost twins
-# are considered name based vhosts by default. The use of the directive will
-# emit a warning.
 
 # TODO: Augeas sections ie. <VirtualHost>, <IfModule> beginning and closing
 # tags need to be the same case, otherwise Augeas doesn't recognize them.
@@ -75,6 +72,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     :ivar dict assoc: Mapping between domains and vhosts
 
     """
+    zope.interface.implements(interfaces.IAuthenticator, interfaces.IInstaller)
+
     def __init__(self, server_root=CONFIG.SERVER_ROOT, direc=None,
                  ssl_options=CONFIG.OPTIONS_SSL_CONF, version=None):
         """Initialize an Apache Configurator.
@@ -131,9 +130,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # if it is desired. There may be instances where correct configuration
         # isn't required on startup.
 
-    # TODO: This function can be improved to ensure that the final directives
-    # are being modified whether that be in the include files or in the
-    # virtualhost declaration - these directives can be overwritten
     def deploy_cert(self, vhost, cert, key, cert_chain=None):
         """Deploys certificate to specified virtual host.
 
@@ -765,11 +761,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     return vhost
         return None
 
-    # TODO - both of these
+    # TODO: Handle ths as outlined in Interfaces.
     def enable_ocsp_stapling(self, ssl_vhost):
+        """Enable OCSP Stapling."""
         return False
 
     def enable_hsts(self, ssl_vhost):
+        """Enable HSTS."""
         return False
 
     def get_all_certs_keys(self):
@@ -848,7 +846,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             return True
         return False
 
-    def restart(self, quiet=False):  # pylint: disable=no-self-use
+    def restart(self):  # pylint: disable=no-self-use
         """Restarts apache server.
 
         :returns: Success
@@ -1009,7 +1007,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         # Save reversible changes and restart the server
         self.save("SNI Challenge", True)
-        self.restart(True)
+        self.restart()
 
         return responses
 
@@ -1017,7 +1015,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """Revert all challenges."""
 
         self.revert_challenge_config()
-        self.restart(True)
+        self.restart()
 
     # TODO: Variable names
     def dvsni_mod_config(self, list_sni_tuple, dvsni_key,

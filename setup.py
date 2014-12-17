@@ -11,6 +11,7 @@ install_requires = [
     'python-augeas',
     'python2-pythondialog',
     'requests',
+    'zope.interface',
 ]
 
 docs_extras = [

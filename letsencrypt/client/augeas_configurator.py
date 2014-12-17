@@ -8,11 +8,10 @@ import time
 import augeas
 
 from letsencrypt.client import CONFIG
-from letsencrypt.client import configurator
 from letsencrypt.client import le_util
 
 
-class AugeasConfigurator(configurator.Configurator):
+class AugeasConfigurator(object):
     """Base Augeas Configurator class.
 
     :ivar aug: Augeas object
@@ -289,8 +288,7 @@ class AugeasConfigurator(configurator.Configurator):
                     for idx, path in enumerate(filepaths):
                         shutil.copy2(os.path.join(
                             cp_dir,
-                            os.path.basename(path) + '_' + str(idx)),
-                                     path)
+                            os.path.basename(path) + '_' + str(idx)), path)
             except (IOError, OSError):
                 # This file is required in all checkpoints.
                 logging.error("Unable to recover files from %s", cp_dir)
@@ -327,7 +325,7 @@ class AugeasConfigurator(configurator.Configurator):
 
         return True, ""
 
-    # pylint: disable=no-self-use
+    # pylint: disable=no-self-use, anomalous-backslash-in-string
     def register_file_creation(self, temporary, *files):
         """Register the creation of all files during letsencrypt execution.
 

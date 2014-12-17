@@ -15,8 +15,6 @@ from letsencrypt.client import CONFIG
 from letsencrypt.client import le_util
 
 
-# TODO: All of these functions need unit tests
-
 def b64_cert_to_pem(b64_der_cert):
     return M2Crypto.X509.load_cert_der_string(
         le_util.jose_b64decode(b64_der_cert)).as_pem()
@@ -55,8 +53,8 @@ def create_sig(msg, key_str, nonce=None, nonce_len=CONFIG.NONCE_SIZE):
 
     logging.debug('%s signed as %s', msg_with_nonce, signature)
 
-    n_bytes = binascii.unhexlify(leading_zeros(hex(key.n)[2:].rstrip("L")))
-    e_bytes = binascii.unhexlify(leading_zeros(hex(key.e)[2:].rstrip("L")))
+    n_bytes = binascii.unhexlify(_leading_zeros(hex(key.n)[2:].rstrip("L")))
+    e_bytes = binascii.unhexlify(_leading_zeros(hex(key.e)[2:].rstrip("L")))
 
     return {
         "nonce": le_util.jose_b64encode(nonce),
@@ -70,7 +68,7 @@ def create_sig(msg, key_str, nonce=None, nonce_len=CONFIG.NONCE_SIZE):
     }
 
 
-def leading_zeros(arg):
+def _leading_zeros(arg):
     if len(arg) % 2:
         return "0" + arg
     return arg
@@ -82,9 +80,8 @@ def sha256(arg):
 
 # based on M2Crypto unit test written by Toby Allsopp
 def make_key(bits=CONFIG.RSA_KEY_SIZE):
-    """
-    Returns new RSA key in PEM form with specified bits
-    """
+    """Returns new RSA key in PEM form with specified bits."""
+
     # Python Crypto module doesn't produce any stdout
     key = Crypto.PublicKey.RSA.generate(bits)
     # rsa = M2Crypto.RSA.gen_key(bits, 65537)
@@ -229,7 +226,7 @@ def csr_matches_names(csr, domains):
     M2Crypto currently does not expose the OpenSSL interface to
     also check the SAN extension. This is insufficient for full testing
 
-    :param str csr: CSR file contents
+    :param str csr: CSR file contents in pem form
 
     :param list domains: Domains the CSR should contain.
 
@@ -238,7 +235,7 @@ def csr_matches_names(csr, domains):
 
     """
     try:
-        csr_obj = M2Crypto.X509.load_request_der_string(csr)
+        csr_obj = M2Crypto.X509.load_request_string(csr)
         return csr_obj.get_subject().CN in domains
     except M2Crypto.X509.X509Error:
         return False
