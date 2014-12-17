@@ -42,9 +42,11 @@ class Addr(object):
         return self.tup[1]
 
     def get_addr_obj(self, port):
+        """Return new address object with same addr and new port."""
         return self.__class__((self.tup[0], port))
 
 
+# pylint: disable=too-few-public-methods
 class VH(object):
     """Represents an Apache Virtualhost.
 

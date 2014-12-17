@@ -15,8 +15,6 @@ from letsencrypt.client import le_util
 class AugeasConfigurator(configurator.Configurator):
     """Base Augeas Configurator class.
 
-    .. todo:: Fix generic exception handling.
-
     :ivar aug: Augeas object
     :type aug: :class:`augeas.Augeas`
 

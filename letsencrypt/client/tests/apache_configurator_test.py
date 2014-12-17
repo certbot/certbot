@@ -8,12 +8,12 @@ import unittest
 
 import mock
 
-from letsencrypt.client import apache_obj
 from letsencrypt.client import apache_configurator
 from letsencrypt.client import CONFIG
 from letsencrypt.client import display
 from letsencrypt.client import errors
-
+from letsencrypt.client.apache import obj
+from letsencrypt.client.apache import parser
 
 UBUNTU_CONFIGS = pkg_resources.resource_filename(
     __name__, "testdata/debian_apache_2_4")
@@ -62,24 +62,24 @@ class TwoVhost80Test(unittest.TestCase):
             self.temp_dir, "two_vhost_80/apache2/sites-available")
         aug_pre = "/files" + prefix
         self.vh_truth = [
-            apache_obj.VH(
+            obj.VH(
                 os.path.join(prefix, "encryption-example.conf"),
                 os.path.join(aug_pre, "encryption-example.conf/VirtualHost"),
-                set([apache_obj.Addr.fromstring("*:80")]),
+                set([obj.Addr.fromstring("*:80")]),
                 False, True, set(["encryption-example.demo"])),
-            apache_obj.VH(
+            obj.VH(
                 os.path.join(prefix, "default-ssl.conf"),
                 os.path.join(aug_pre, "default-ssl.conf/IfModule/VirtualHost"),
-                set([apache_obj.Addr.fromstring("_default_:443")]), True, False),
-            apache_obj.VH(
+                set([obj.Addr.fromstring("_default_:443")]), True, False),
+            obj.VH(
                 os.path.join(prefix, "000-default.conf"),
                 os.path.join(aug_pre, "000-default.conf/VirtualHost"),
-                set([apache_obj.Addr.fromstring("*:80")]), False, True,
+                set([obj.Addr.fromstring("*:80")]), False, True,
                 set(["ip-172-30-0-17"])),
-            apache_obj.VH(
+            obj.VH(
                 os.path.join(prefix, "letsencrypt.conf"),
                 os.path.join(aug_pre, "letsencrypt.conf/VirtualHost"),
-                set([apache_obj.Addr.fromstring("*:80")]), False, True,
+                set([obj.Addr.fromstring("*:80")]), False, True,
                 set(["letsencrypt.demo"])),
         ]
 
@@ -97,7 +97,9 @@ class TwoVhost80Test(unittest.TestCase):
         """
         file_path = os.path.join(
             self.config_path, "sites-available", "letsencrypt.conf")
-        self.config._parse_file(file_path)  # pylint: disable=protected-access
+
+        # pylint: disable=protected-access
+        self.config.parser._parse_file(file_path)
 
         # search for the httpd incl
         matches = self.config.aug.match(
@@ -110,12 +112,12 @@ class TwoVhost80Test(unittest.TestCase):
         self.assertEqual(names, set(
             ['letsencrypt.demo', 'encryption-example.demo', 'ip-172-30-0-17']))
 
-    def test_find_directive(self):
-        test = self.config.find_directive(
-            apache_configurator.case_i("Listen"), "443")
+    def test_find_dir(self):
+        test = self.config.parser.find_dir(
+            parser.case_i("Listen"), "443")
         # This will only look in enabled hosts
-        test2 = self.config.find_directive(
-            apache_configurator.case_i("documentroot"))
+        test2 = self.config.parser.find_dir(
+            parser.case_i("documentroot"))
         self.assertEqual(len(test), 2)
         self.assertEqual(len(test2), 3)
 
@@ -139,26 +141,26 @@ class TwoVhost80Test(unittest.TestCase):
         self.assertTrue(self.config.is_site_enabled(self.vh_truth[3].filep))
 
     def test_add_dir(self):
-        aug_default = "/files" + self.config.location["default"]
-        self.config.add_dir(
+        aug_default = "/files" + self.config.parser.loc["default"]
+        self.config.parser.add_dir(
             aug_default, "AddDirective", "test")
 
         self.assertTrue(
-            self.config.find_directive("AddDirective", "test", aug_default))
+            self.config.parser.find_dir("AddDirective", "test", aug_default))
 
     def test_deploy_cert(self):
         self.config.deploy_cert(
             self.vh_truth[1],
             "example/cert.pem", "example/key.pem", "example/cert_chain.pem")
 
-        loc_cert = self.config.find_directive(
-            apache_configurator.case_i("sslcertificatefile"),
+        loc_cert = self.config.parser.find_dir(
+            parser.case_i("sslcertificatefile"),
             re.escape("example/cert.pem"), self.vh_truth[1].path)
-        loc_key = self.config.find_directive(
-            apache_configurator.case_i("sslcertificateKeyfile"),
+        loc_key = self.config.parser.find_dir(
+            parser.case_i("sslcertificateKeyfile"),
             re.escape("example/key.pem"), self.vh_truth[1].path)
-        loc_chain = self.config.find_directive(
-            apache_configurator.case_i("SSLCertificateChainFile"),
+        loc_chain = self.config.parser.find_dir(
+            parser.case_i("SSLCertificateChainFile"),
             re.escape("example/cert_chain.pem"), self.vh_truth[1].path)
 
         # Verify one directive was found in the correct file
@@ -175,27 +177,27 @@ class TwoVhost80Test(unittest.TestCase):
                          self.vh_truth[1].filep)
 
     def test_is_name_vhost(self):
-        addr = apache_obj.Addr.fromstring("*:80")
+        addr = obj.Addr.fromstring("*:80")
         self.assertTrue(self.config.is_name_vhost(addr))
         self.config.version = (2, 2)
         self.assertFalse(self.config.is_name_vhost(addr))
 
     def test_add_name_vhost(self):
         self.config.add_name_vhost("*:443")
-        # self.config.save(temporary=True)
-        self.assertTrue(self.config.find_directive(
+        self.assertTrue(self.config.parser.find_dir(
             "NameVirtualHost", re.escape("*:443")))
 
     def test_add_dir_to_ifmodssl(self):
-        """test _add_dir_to_ifmodssl.
+        """test add_dir_to_ifmodssl.
 
         Path must be valid before attempting to add to augeas
 
         """
-        self.config._add_dir_to_ifmodssl(  # pylint: disable=protected-access
-            "/files" + self.config.location["default"], "FakeDirective", "123")
+        self.config.parser.add_dir_to_ifmodssl(
+            parser.get_aug_path(self.config.parser.loc["default"]),
+            "FakeDirective", "123")
 
-        matches = self.config.find_directive("FakeDirective", "123")
+        matches = self.config.parser.find_dir("FakeDirective", "123")
 
         self.assertEqual(len(matches), 1)
         self.assertTrue("IfModule" in matches[0])
@@ -210,16 +212,16 @@ class TwoVhost80Test(unittest.TestCase):
 
         self.assertEqual(ssl_vhost.path,
                          "/files" + ssl_vhost.filep + "/IfModule/VirtualHost")
-        self.assertEqual(ssl_vhost.addrs, set([apache_obj.Addr.fromstring("*:443")]))
+        self.assertEqual(ssl_vhost.addrs, set([obj.Addr.fromstring("*:443")]))
         self.assertEqual(ssl_vhost.names, set(["encryption-example.demo"]))
         self.assertTrue(ssl_vhost.ssl)
         self.assertFalse(ssl_vhost.enabled)
 
-        self.assertTrue(self.config.find_directive(
+        self.assertTrue(self.config.parser.find_dir(
             "SSLCertificateFile", None, ssl_vhost.path))
-        self.assertTrue(self.config.find_directive(
+        self.assertTrue(self.config.parser.find_dir(
             "SSLCertificateKeyFile", None, ssl_vhost.path))
-        self.assertTrue(self.config.find_directive(
+        self.assertTrue(self.config.parser.find_dir(
             "Include", self.ssl_options, ssl_vhost.path))
 
         self.assertEqual(self.config.is_name_vhost(self.vh_truth[0]),
