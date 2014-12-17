@@ -5,6 +5,8 @@ import logging
 import os
 import sys
 
+import zope.component
+
 from letsencrypt.client import apache_configurator
 from letsencrypt.client import CONFIG
 from letsencrypt.client import client
@@ -73,9 +75,10 @@ def main():
                      .format(os.linesep))
 
     if args.use_curses:
-        display.set_display(display.NcursesDisplay())
+        displayer = display.NcursesDisplay()
     else:
-        display.set_display(display.FileDisplay(sys.stdout))
+        displayer = display.FileDisplay(sys.stdout)
+    zope.component.provideUtility(displayer)
 
     if args.rollback > 0:
         rollback(apache_configurator.ApacheConfigurator(), args.rollback)

@@ -133,6 +133,9 @@ class IDisplay(zope.interface.Interface):
     def more_info_cert(cert):
         pass
 
+    def redirect_by_default():
+        pass
+
 
 class IValidator(object):
     """Configuration validator."""

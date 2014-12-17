@@ -8,6 +8,7 @@ import tempfile
 import unittest
 
 import mock
+import zope.component
 
 from letsencrypt.client import apache_configurator
 from letsencrypt.client import CONFIG
@@ -23,7 +24,7 @@ class TwoVhost80Test(unittest.TestCase):
     """Test two standard well configured HTTP vhosts."""
 
     def setUp(self):
-        display.set_display(display.NcursesDisplay())
+        zope.component.provideUtility(display.NcursesDisplay())
 
         self.temp_dir = os.path.join(
             tempfile.mkdtemp("temp"), "debian_apache_2_4")

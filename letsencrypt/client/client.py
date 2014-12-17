@@ -13,6 +13,7 @@ import time
 import jsonschema
 import M2Crypto
 import requests
+import zope.component
 
 from letsencrypt.client import acme
 from letsencrypt.client import apache_configurator
@@ -21,6 +22,7 @@ from letsencrypt.client import CONFIG
 from letsencrypt.client import crypto_util
 from letsencrypt.client import display
 from letsencrypt.client import errors
+from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
 
 
@@ -90,11 +92,13 @@ class Client(object):
         if not self.config.config_test():
             sys.exit(1)
 
+        displayer = zope.component.getUtility(interfaces.IDisplay)
+
         # Display preview warning
         if not eula:
             with open('EULA') as eula_file:
-                if not display.generic_yesno(eula_file.read(),
-                                             "Agree", "Cancel"):
+                if not displayer.generic_yesno(
+                        eula_file.read(), "Agree", "Cancel"):
                     sys.exit(0)
 
         # Display screen to select domains to validate
@@ -105,7 +109,7 @@ class Client(object):
             # This function adds all names
             # found within the config to self.names
             # Then filters them based on user selection
-            code, self.names = display.filter_names(self.get_all_names())
+            code, self.names = displayer.filter_names(self.get_all_names())
             if code == display.OK and self.names:
                 # TODO: Allow multiple names once it is setup
                 self.names = [self.names[0]]
@@ -205,7 +209,7 @@ class Client(object):
         revocation = self.send_and_receive_expected(
             acme.revocation_request(cert_der, key), "revocation")
 
-        display.generic_notification(
+        zope.component.getUtility(interface.IDisplay).generic_notification(
             "You have successfully revoked the certificate for %s" % cert["cn"])
 
         remove_cert_key(cert)
@@ -352,7 +356,7 @@ class Client(object):
         if certs:
             self.choose_certs(certs)
         else:
-            display.generic_notification(
+            zope.component.getUtility(interfaces.IDisplay).generic_notification(
                 "There are not any trusted Let's Encrypt "
                 "certificates for this server.")
 
@@ -363,16 +367,18 @@ class Client(object):
 
         """
         code, tag = display.display_certs(certs)
+
+        displayer = zope.component.getUtility(interfaces.IDisplay)
         
         if code == display.OK:
             cert = certs[tag]
-            if display.confirm_revocation(cert):
+            if displayer.confirm_revocation(cert):
                 self.acme_revocation(cert)
             else:
                 self.choose_certs(certs)
         elif code == display.HELP:
             cert = certs[tag]
-            display.more_info_cert(cert)
+            displayer.more_info_cert(cert)
             self.choose_certs(certs)
         else:
             exit(0)
@@ -416,7 +422,8 @@ class Client(object):
         # sites may have been enabled / final cleanup
         self.config.restart(quiet=self.use_curses)
 
-        display.success_installation(self.names)
+        zope.component.getUtility(
+            interfaces.IDisplay).success_installation(self.names)
 
         return cert_file
 
@@ -432,7 +439,8 @@ class Client(object):
         """
         # TODO: this should most definitely be moved to __init__
         if redirect is None:
-            redirect = display.redirect_by_default()
+            redirect = zope.component.getUtility(
+                intefaces.IDisplay).redirect_by_default()
 
         if redirect:
             self.redirect_to_ssl(vhost)

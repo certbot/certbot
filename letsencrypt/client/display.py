@@ -85,6 +85,21 @@ class NcursesDisplay(object):
         print text
         self.dialog.msgbox(text, width=self.width, height=self.height)
 
+    def redirect_by_default(self):
+        choices = [
+            ("Easy", "Allow both HTTP and HTTPS access to these sites"),
+            ("Secure", "Make all requests redirect to secure HTTPS access")]
+
+        result = self.generic_menu(
+            "Please choose whether HTTPS access is required or optional.",
+            choices, "Please enter the appropriate number")
+
+        if result[0] != OK:
+            return False
+
+        # different answer for each type of display
+        return str(result[1]) == "Secure" or result[1] == 1
+
 
 class FileDisplay(object):
     zope.interface.implements(interfaces.IDisplay)
@@ -197,39 +212,9 @@ class FileDisplay(object):
         self.outfile.write("\nCertificate Information:\n")
         self.outfile.write(cert_info_frame(cert))
 
-display = None
 OK = "ok"
 CANCEL = "cancel"
 HELP = "help"
-
-
-def set_display(display_inst):
-    global display
-    display = display_inst
-
-
-def generic_notification(message):
-    display.generic_notification(message)
-
-
-def generic_menu(message, choices, input_text=""):
-    return display.generic_menu(message, choices, input_text)
-
-
-def generic_input(message):
-    return display.generic_message(message)
-
-
-def generic_yesno(message, yes_label="Yes", no_label="No"):
-    return display.generic_yesno(message, yes_label, no_label)
-
-
-def filter_names(names):
-    return display.filter_names(names)
-
-
-def display_certs(certs):
-    return display.display_certs(certs)
 
 
 def cert_info_frame(cert):
@@ -268,33 +253,3 @@ def gen_https_names(domains):
         result = result + "https://" + domains[len(domains)-1]
 
     return result
-
-
-def success_installation(domains):
-    return display.success_installation(domains)
-
-
-def redirect_by_default():
-    choices = [
-        ("Easy", "Allow both HTTP and HTTPS access to these sites"),
-        ("Secure", "Make all requests redirect to secure HTTPS access")]
-
-    result = display.generic_menu("Please choose whether HTTPS access " +
-                                  "is required or optional.",
-                                  choices,
-                                  "Please enter the appropriate number",
-                                  width=WIDTH)
-
-    if result[0] != OK:
-        return False
-
-    # different answer for each type of display
-    return str(result[1]) == "Secure" or result[1] == 1
-
-
-def confirm_revocation(cert):
-    return display.confirm_revocation(cert)
-
-
-def more_info_cert(cert):
-    return display.more_info_cert(cert)
