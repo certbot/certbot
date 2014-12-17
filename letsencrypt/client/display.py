@@ -20,11 +20,10 @@ class SingletonD(object):
 class Display(SingletonD):
     """Generic display."""
 
-    def generic_notification(self, message, width=WIDTH, height=HEIGHT):
+    def generic_notification(self, message):
         raise NotImplementedError()
 
-    def generic_menu(self, message, choices, input_text="",
-                     width=WIDTH, height=HEIGHT):
+    def generic_menu(self, message, choices, input_text=""):
         raise NotImplementedError()
 
     def generic_input(self, message):
@@ -51,23 +50,24 @@ class Display(SingletonD):
 
 class NcursesDisplay(Display):
 
-    def __init__(self):
+    def __init__(self, width=WIDTH, height=HEIGHT):
         self.dialog = dialog.Dialog()
+        self.width = width
+        self.height = height
 
-    def generic_notification(self, message, w=WIDTH, h=HEIGHT):
-        self.dialog.msgbox(message, width=w, height=h)
+    def generic_notification(self, message):
+        self.dialog.msgbox(message, width=self.width, height=self.height)
 
-    def generic_menu(self, message, choices, input_text="", width=WIDTH,
-                     height=HEIGHT):
+    def generic_menu(self, message, choices, input_text=""):
         # Can accept either tuples or just the actual choices
         if choices and isinstance(choices[0], tuple):
             code, selection = self.dialog.menu(
-                message, choices=choices, width=WIDTH, height=HEIGHT)
+                message, choices=choices, width=self.width, height=self.height)
             return code, str(selection)
         else:
             choices = list(enumerate(choices, 1))
             code, tag = self.dialog.menu(
-                message, choices=choices, width=WIDTH, height=HEIGHT)
+                message, choices=choices, width=self.width, height=self.height)
 
             return code(int(tag) - 1)
 
@@ -76,7 +76,7 @@ class NcursesDisplay(Display):
 
     def generic_yesno(self, message, yes="Yes", no="No"):
         return self.dialog.DIALOG_OK == self.dialog.yesno(
-            message, HEIGHT, WIDTH, yes_label=yes, no_label=no)
+            message, self.height, self.width, yes_label=yes, no_label=no)
 
     def filter_names(self, names):
         choices = [(n, "", 0) for n in names]
@@ -88,12 +88,12 @@ class NcursesDisplay(Display):
     def success_installation(self, domains):
         self.dialog.msgbox(
             "\nCongratulations! You have successfully enabled "
-            + gen_https_names(domains) + "!", width=WIDTH)
+            + gen_https_names(domains) + "!", width=self.width)
 
     def display_certs(self, certs):
         list_choices = [
             (str(i+1), "%s | %s | %s" %
-             (str(c["cn"].ljust(WIDTH - 39)),
+             (str(c["cn"].ljust(self.width - 39)),
               c["not_before"].strftime("%m-%d-%y"),
               "Installed" if c["installed"] else ""))
             for i, c in enumerate(certs)]
@@ -102,7 +102,7 @@ class NcursesDisplay(Display):
             "Which certificates would you like to revoke?",
             choices=list_choices, help_button=True,
             help_label="More Info", ok_label="Revoke",
-            width=WIDTH, height=HEIGHT)
+            width=self.width, height=self.height)
         if not tag:
             tag = -1
         return code, (int(tag) - 1)
@@ -113,13 +113,13 @@ class NcursesDisplay(Display):
         text += cert_info_frame(cert)
         text += "This action cannot be reversed!"
         return self.dialog.DIALOG_OK == self.dialog.yesno(
-            text, width=WIDTH, height=HEIGHT)
+            text, width=self.width, height=self.height)
 
     def more_info_cert(self, cert):
         text = "Certificate Information:\n"
         text += cert_info_frame(cert)
         print text
-        self.dialog.msgbox(text, width=WIDTH, height=HEIGHT)
+        self.dialog.msgbox(text, width=self.width, height=self.height)
 
 
 class FileDisplay(Display):
@@ -127,15 +127,14 @@ class FileDisplay(Display):
     def __init__(self, outfile):
         self.outfile = outfile
 
-    def generic_notification(self, message, width=WIDTH, height=HEIGHT):
+    def generic_notification(self, message):
         side_frame = '-' * (79)
         wm = textwrap.fill(message, 80)
         text = "\n%s\n%s\n%s\n" % (side_frame, wm, side_frame)
         self.outfile.write(text)
         raw_input("Press Enter to Continue")
 
-    def generic_menu(self, message, choices, input_text="",
-                     width=WIDTH, height=HEIGHT):
+    def generic_menu(self, message, choices, input_text=""):
         # Can take either tuples or single items in choices list
         if choices and isinstance(choices[0], tuple):
             choices = ["%s - %s" % (c[0], c[1]) for c in choices]
@@ -243,12 +242,12 @@ def set_display(display_inst):
     display = display_inst
 
 
-def generic_notification(message, width=WIDTH, height=HEIGHT):
-    display.generic_notification(message, width, height)
+def generic_notification(message):
+    display.generic_notification(message)
 
 
-def generic_menu(message, choices, input_text="", width=WIDTH, height=HEIGHT):
-    return display.generic_menu(message, choices, input_text, width, height)
+def generic_menu(message, choices, input_text=""):
+    return display.generic_menu(message, choices, input_text)
 
 
 def generic_input(message):
