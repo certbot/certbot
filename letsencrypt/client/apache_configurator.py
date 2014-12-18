@@ -352,7 +352,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         root = self._find_config_root()
-        default = self._set_user_config_file()
+        default = self._set_user_config_file(root)
 
         temp = os.path.join(self.server_root, "ports.conf")
         if os.path.isfile(temp):
@@ -376,7 +376,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         raise errors.LetsEncryptConfiguratorError(
             "Could not find configuration root")
 
-    def _set_user_config_file(self, filename=''):
+    def _set_user_config_file(self, root, filename=''):
         """Set the appropriate user configuration file
 
         .. todo:: This will have to be updated for other distros versions
@@ -393,7 +393,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # httpd.conf was very common as a user file in Apache 2.2
             if (os.path.isfile(self.server_root + 'httpd.conf') and
                     self.find_directive(
-                        case_i("Include"), case_i("httpd.conf"))):
+                        case_i("Include"), case_i("httpd.conf"),
+                        get_aug_path(root))):
                 return os.path.join(self.server_root, 'httpd.conf')
             else:
                 return os.path.join(self.server_root + 'apache2.conf')
