@@ -59,18 +59,13 @@ class Client(object):
         self.auth = auth
         self.installer = installer
 
-    def obtain_certificate(self, privkey, csr,
+    def obtain_certificate(self, csr,
                            cert_path=CONFIG.CERT_PATH,
                            chain_path=CONFIG.CHAIN_PATH):
         """Obtains a certificate from the ACME server.
 
-        .. todo:: Check for case when privkey is not authkey and adjust
-            this function accordingly.
-
-        :param privkey: A valid private key that corresponds to the csr
-        :type privkey: :class:`Key`
-
-        :param csr: A valid CSR in der format that corresponds to privkey
+        :param csr: A valid CSR in DER format for the certificate the client
+            intends to receive.
         :type csr: :class:`CSR`
 
         :param str cert_path: Full desired path to end certificate.
@@ -699,8 +694,7 @@ def init_key():
 def init_csr(privkey, names):
     """Initialize a CSR with the given private key."""
 
-    csr_pem, csr_der = crypto_util.make_csr(
-        privkey.pem, names)
+    csr_pem, csr_der = crypto_util.make_csr(privkey.pem, names)
 
     # Save CSR
     le_util.make_or_verify_dir(CONFIG.CERT_DIR, 0o755)

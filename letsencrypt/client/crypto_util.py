@@ -81,7 +81,6 @@ def sha256(arg):
 # based on M2Crypto unit test written by Toby Allsopp
 def make_key(bits=CONFIG.RSA_KEY_SIZE):
     """Returns new RSA key in PEM form with specified bits."""
-
     # Python Crypto module doesn't produce any stdout
     key = Crypto.PublicKey.RSA.generate(bits)
     # rsa = M2Crypto.RSA.gen_key(bits, 65537)

@@ -2,10 +2,14 @@
 
 
 class Addr(object):
-    """Represents an Apache VirtualHost address."""
-    def __init__(self, addr):
-        """:param tuple addr: tuple of strings (ip, port)"""
-        self.tup = addr
+    """Represents an Apache VirtualHost address.
+
+    :param str addr: addr part of vhost address
+    :param str port: port number or *, or ""
+
+    """
+    def __init__(self, tup):
+        self.tup = tup
 
     @classmethod
     def fromstring(cls, str_addr):
@@ -14,24 +18,17 @@ class Addr(object):
         return cls((tup[0], tup[2]))
 
     def __str__(self):
-        if self.tup[1] != "":
-            return ':'.join(self.tup)
-        return str(self.tup[0])
+        if self.tup[1]:
+            return "%s:%s" % self.tup
+        return self.tup[0]
 
     def __eq__(self, other):
-        if isinstance(other, self.__class__):
-            return self.tup == other.tup
+        if type(other) is type(self):
+            return self.__dict__ == other.__dict__
         return False
 
     def __hash__(self):
         return hash(self.tup)
-
-    def set_port(self, port):
-        """Set the port of the address.
-
-        :param str port: new port
-        """
-        self.tup = (self.tup[0], port)
 
     def get_addr(self):
         """Return addr part of Addr object."""
@@ -47,7 +44,7 @@ class Addr(object):
 
 
 # pylint: disable=too-few-public-methods
-class VH(object):
+class VirtualHost(object):
     """Represents an Apache Virtualhost.
 
     :ivar str filep: file path of VH
@@ -66,7 +63,7 @@ class VH(object):
         self.filep = filep
         self.path = path
         self.addrs = addrs
-        self.names = set() if names is None else names
+        self.names = set() if names is None else set(names)
         self.ssl = ssl
         self.enabled = enabled
 
@@ -75,12 +72,13 @@ class VH(object):
         self.names.add(name)
 
     def __str__(self):
+        addr_str = ", ".join(str(addr) for addr in self.addrs)
         return ("file: %s\n"
                 "vh_path: %s\n"
                 "addrs: %s\n"
                 "names: %s\n"
                 "ssl: %s\n"
-                "enabled: %s" % (self.filep, self.path, self.addrs,
+                "enabled: %s" % (self.filep, self.path, addr_str,
                                  self.names, self.ssl, self.enabled))
 
     def __eq__(self, other):

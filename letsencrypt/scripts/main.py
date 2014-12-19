@@ -5,15 +5,14 @@ import logging
 import os
 import sys
 
-import zope.interface
-
-from letsencrypt.client import apache_configurator
 from letsencrypt.client import CONFIG
 from letsencrypt.client import client
 from letsencrypt.client import display
 from letsencrypt.client import interfaces
 from letsencrypt.client import errors
 from letsencrypt.client import log
+
+from letsencrypt.client.apache import configurator
 
 
 def main():
@@ -82,11 +81,11 @@ def main():
         display.set_display(display.FileDisplay(sys.stdout))
 
     if args.rollback > 0:
-        rollback(apache_configurator.ApacheConfigurator(), args.rollback)
+        rollback(configurator.ApacheConfigurator(), args.rollback)
         sys.exit()
 
     if args.view_checkpoints:
-        view_checkpoints(apache_configurator.ApacheConfigurator())
+        view_checkpoints(configurator.ApacheConfigurator())
         sys.exit()
 
     server = args.server is None and CONFIG.ACME_SERVER or args.server
@@ -122,7 +121,7 @@ def main():
         # Validate the key and csr
         client.validate_key_csr(privkey, csr, domains)
 
-        cert_file, chain_file = acme.obtain_certificate(privkey, csr)
+        cert_file, chain_file = acme.obtain_certificate(csr)
         vhost = acme.deploy_certificate(privkey, cert_file, chain_file)
         acme.optimize_config(vhost, args.redirect)
 
@@ -176,20 +175,19 @@ def get_all_names(installer):
 # This should be controlled by commandline parameters
 def determine_authenticator():
     """Returns a valid authenticator."""
-
     try:
-        return apache_configurator.ApacheConfigurator()
+        return configurator.ApacheConfigurator()
     except errors.LetsEncryptConfiguratorError:
-        log.info("Unable to find a way to authenticate.")
+        logging.info("Unable to find a way to authenticate.")
 
 
 def determine_installer():
     """Returns a valid installer if one exists."""
-
     try:
-        return apache_configurator.ApacheConfigurator()
+        print "shouldn't ha;ppppen!!!!!!!!!!!!!!!!!!!"
+        return configurator.ApacheConfigurator()
     except errors.LetsEncryptConfiguratorError:
-        log.info("Unable to find a way to install the certificate.")
+        logging.info("Unable to find a way to install the certificate.")
 
 
 def read_file(filename):

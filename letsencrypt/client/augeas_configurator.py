@@ -29,7 +29,6 @@ class AugeasConfigurator(object):
             (used mostly for testing)
 
         """
-        super(AugeasConfigurator, self).__init__()
 
         if not direc:
             direc = {"backup": CONFIG.BACKUP_DIR,

@@ -2,6 +2,8 @@
 import os
 import re
 
+from letsencrypt.client import errors
+
 
 class ApacheParser(object):
     """Class handles the fine details of parsing the Apache Configuration."""
@@ -311,7 +313,7 @@ class ApacheParser(object):
 
         """
         root = self._find_config_root()
-        default = self._set_user_config_file()
+        default = self._set_user_config_file(root)
 
         temp = os.path.join(self.root, "ports.conf")
         if os.path.isfile(temp):
@@ -335,7 +337,7 @@ class ApacheParser(object):
         raise errors.LetsEncryptConfiguratorError(
             "Could not find configuration root")
 
-    def _set_user_config_file(self, filename=''):
+    def _set_user_config_file(self, root):
         """Set the appropriate user configuration file
 
         .. todo:: This will have to be updated for other distros versions
@@ -344,18 +346,15 @@ class ApacheParser(object):
             user config
 
         """
-        if filename:
-            return filename
+        # Basic check to see if httpd.conf exists and
+        # in heirarchy via direct include
+        # httpd.conf was very common as a user file in Apache 2.2
+        if (os.path.isfile(self.root + 'httpd.conf') and
+                self.find_dir(
+                    case_i("Include"), case_i("httpd.conf"), root)):
+            return os.path.join(self.root, 'httpd.conf')
         else:
-            # Basic check to see if httpd.conf exists and
-            # in heirarchy via direct include
-            # httpd.conf was very common as a user file in Apache 2.2
-            if (os.path.isfile(self.root + 'httpd.conf') and
-                    self.find_dir(
-                        case_i("Include"), case_i("httpd.conf"))):
-                return os.path.join(self.root, 'httpd.conf')
-            else:
-                return os.path.join(self.root + 'apache2.conf')
+            return os.path.join(self.root + 'apache2.conf')
 
 
 def case_i(string):

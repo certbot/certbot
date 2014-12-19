@@ -1,5 +1,4 @@
 """Interfaces."""
-
 import zope.interface
 
 

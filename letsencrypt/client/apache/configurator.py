@@ -67,7 +67,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         with the configuration
     :ivar float version: version of Apache
     :ivar list vhosts: All vhosts found in the configuration
-        (:class:`list` of :class:`letsencrypt.client.apache.obj.VH`)
+        (:class:`list` of :class:`letsencrypt.client.apache.obj.VirtualHost`)
 
     :ivar dict assoc: Mapping between domains and vhosts
 
@@ -97,7 +97,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         super(ApacheConfigurator, self).__init__(direc)
 
         # See if any temporary changes need to be recovered
-        # This needs to occur before VH objects are setup...
+        # This needs to occur before VirtualHost objects are setup...
         # because this will change the underlying configuration and potential
         # vhosts
         self.recovery_routine()
@@ -145,7 +145,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                   This shouldn't happen within letsencrypt though
 
         :param vhost: ssl vhost to deploy certificate
-        :type vhost: :class:`letsencrypt.client.apache.obj.VH`
+        :type vhost: :class:`letsencrypt.client.apache.obj.VirtualHost`
 
         :param str cert: certificate filename
         :param str key: private key filename
@@ -204,7 +204,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :param str name: domain name
 
         :returns: ssl vhost associated with name
-        :rtype: :class:`letsencrypt.client.apache.obj.VH`
+        :rtype: :class:`letsencrypt.client.apache.obj.VirtualHost`
 
         """
         # Allows for domain names to be associated with a virtual host
@@ -242,7 +242,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :param str domain: domain name to associate
 
         :param vhost: virtual host to associate with domain
-        :type vhost: :class:`letsencrypt.client.apache.obj.VH`
+        :type vhost: :class:`letsencrypt.client.apache.obj.VirtualHost`
 
         """
         self.assoc[domain] = vhost
@@ -279,7 +279,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """Helper function for get_virtual_hosts().
 
         :param host: In progress vhost whose names will be added
-        :type host: :class:`letsencrypt.client.apache.obj.VH`
+        :type host: :class:`letsencrypt.client.apache.obj.VirtualHost`
 
         """
         name_match = self.aug.match(("%s//*[self::directive=~regexp('%s')] | "
@@ -300,7 +300,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :param str path: Augeas path to virtual host
 
         :returns: newly created vhost
-        :rtype: :class:`letsencrypt.client.apache.obj.VH`
+        :rtype: :class:`letsencrypt.client.apache.obj.VirtualHost`
 
         """
         addrs = set()
@@ -315,7 +315,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         filename = get_file_path(path)
         is_enabled = self.is_site_enabled(filename)
-        vhost = obj.VH(filename, path, addrs, is_ssl, is_enabled)
+        vhost = obj.VirtualHost(filename, path, addrs, is_ssl, is_enabled)
         self._add_servernames(vhost)
         return vhost
 
@@ -323,7 +323,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     def get_virtual_hosts(self):
         """Returns list of virtual hosts found in the Apache configuration.
 
-        :returns: List of :class:`letsencrypt.client.apache.obj.VH` objects
+        :returns: List of
+            :class:`letsencrypt.client.apache.obj.VirtualHost` objects
             found in configuration
         :rtype: list
 
@@ -400,8 +401,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     def make_server_sni_ready(self, vhost, default_addr="*:443"):
         """Checks to see if the server is ready for SNI challenges.
 
-        :param vhost: VHost to check SNI compatibility
-        :type vhost: :class:`letsencrypt.client.apache.obj.VH`
+        :param vhost: VirtualHostost to check SNI compatibility
+        :type vhost: :class:`letsencrypt.client.apache.obj.VirtualHost`
 
         :param str default_addr: TODO - investigate function further
 
@@ -431,10 +432,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         New vhost will reside as (nonssl_vhost.path) + CONFIG.LE_VHOST_EXT
 
         :param nonssl_vhost: Valid VH that doesn't have SSLEngine on
-        :type nonssl_vhost: :class:`letsencrypt.client.apache.obj.VH`
+        :type nonssl_vhost: :class:`letsencrypt.client.apache.obj.VirtualHost`
 
         :returns: SSL vhost
-        :rtype: :class:`letsencrypt.client.apache.obj.VH`
+        :rtype: :class:`letsencrypt.client.apache.obj.VirtualHost`
 
         """
         avail_fp = nonssl_vhost.filep
@@ -472,11 +473,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             addr_match % (ssl_fp, parser.case_i('VirtualHost')))
 
         for i in range(len(ssl_addr_p)):
-            ssl_addr_arg = obj.Addr.fromstring(
+            old_addr = obj.Addr.fromstring(
                 str(self.aug.get(ssl_addr_p[i])))
-            ssl_addr_arg.set_port("443")
-            self.aug.set(ssl_addr_p[i], str(ssl_addr_arg))
-            ssl_addrs.add(ssl_addr_arg)
+            ssl_addr = old_addr.get_addr_obj("443")
+            self.aug.set(ssl_addr_p[i], str(ssl_addr))
+            ssl_addrs.add(ssl_addr)
 
         # Add directives
         vh_p = self.aug.match(("/files%s//* [label()=~regexp('%s')]" %
@@ -528,10 +529,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         The function then adds the directive
 
         :param ssl_vhost: Destination of traffic, an ssl enabled vhost
-        :type ssl_vhost: :class:`letsencrypt.client.apache.obj.VH`
+        :type ssl_vhost: :class:`letsencrypt.client.apache.obj.VirtualHost`
 
         :returns: Success, general_vhost (HTTP vhost)
-        :rtype: (bool, :class:`letsencrypt.client.apache.obj.VH`)
+        :rtype: (bool, :class:`letsencrypt.client.apache.obj.VirtualHost`)
 
         """
         # TODO: Enable check to see if it is already there
@@ -577,7 +578,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         -1 is also returned in case of no redirection/rewrite directives
 
         :param vhost: vhost to check
-        :type vhost: :class:`letsencrypt.client.apache.obj.VH`
+        :type vhost: :class:`letsencrypt.client.apache.obj.VirtualHost`
 
         :returns: Success, code value... see documentation
         :rtype: bool, int
@@ -608,10 +609,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """Creates an http_vhost specifically to redirect for the ssl_vhost.
 
         :param ssl_vhost: ssl vhost
-        :type ssl_vhost: :class:`letsencrypt.client.apache.obj.VH`
+        :type ssl_vhost: :class:`letsencrypt.client.apache.obj.VirtualHost`
 
         :returns: Success, vhost
-        :rtype: (bool, :class:`letsencrypt.client.apache.obj.VH`)
+        :rtype: (bool, :class:`letsencrypt.client.apache.obj.VirtualHost`)
 
         """
         # Consider changing this to a dictionary check
@@ -694,7 +695,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if not conflict: returns space separated list of new host addrs
 
         :param ssl_vhost: SSL Vhost to check for possible port 80 redirection
-        :type ssl_vhost: :class:`letsencrypt.client.apache.obj.VH`
+        :type ssl_vhost: :class:`letsencrypt.client.apache.obj.VirtualHost`
 
         :returns: TODO
         :rtype: TODO
@@ -727,10 +728,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         Consider changing this into a dict check
 
         :param ssl_vhost: ssl vhost to check
-        :type ssl_vhost: :class:`letsencrypt.client.apache.obj.VH`
+        :type ssl_vhost: :class:`letsencrypt.client.apache.obj.VirtualHost`
 
         :returns: HTTP vhost or None if unsuccessful
-        :rtype: :class:`letsencrypt.client.apache.obj.VH` or None
+        :rtype: :class:`letsencrypt.client.apache.obj.VirtualHost` or None
 
         """
         # _default_:443 check
@@ -826,7 +827,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         .. todo:: Make sure link is not broken...
 
         :param vhost: vhost to enable
-        :type vhost: :class:`letsencrypt.client.apache.obj.VH`
+        :type vhost: :class:`letsencrypt.client.apache.obj.VirtualHost`
 
         :returns: Success
         :rtype: bool
@@ -1048,11 +1049,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             shutil.copyfile(dist_conf, CONFIG.OPTIONS_SSL_CONF)
 
         # TODO: Use ip address of existing vhost instead of relying on FQDN
-        config_text = "<IfModule mod_ssl.c> \n"
+        config_text = "<IfModule mod_ssl.c>\n"
         for idx, lis in enumerate(ll_addrs):
             config_text += self.get_config_text(
                 list_sni_tuple[idx][2], lis, dvsni_key.file)
-        config_text += "</IfModule> \n"
+        config_text += "</IfModule>\n"
 
         self.dvsni_conf_include_check(self.parser.loc["default"])
         self.register_file_creation(True, CONFIG.APACHE_CHALLENGE_CONF)
