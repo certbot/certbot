@@ -480,8 +480,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             ssl_addrs.add(ssl_addr)
 
         # Add directives
-        vh_p = self.aug.match(("/files%s//* [label()=~regexp('%s')]" %
-                               (ssl_fp, parser.case_i('VirtualHost'))))
+        vh_p = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
+                               (ssl_fp, parser.case_i('VirtualHost')))
         if len(vh_p) != 1:
             logging.error("Error: should only be one vhost in %s", avail_fp)
             sys.exit(1)

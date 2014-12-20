@@ -23,8 +23,8 @@ class Addr(object):
         return self.tup[0]
 
     def __eq__(self, other):
-        if type(other) is type(self):
-            return self.__dict__ == other.__dict__
+        if isinstance(other, self.__class__):
+            return self.tup == other.tup
         return False
 
     def __hash__(self):

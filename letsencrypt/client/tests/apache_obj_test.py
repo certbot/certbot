@@ -41,7 +41,6 @@ class AddrTest(unittest.TestCase):
         addr2b = obj.Addr.fromstring("192.168.1.1:*")
         set_b = set([addr1b, addr2b])
 
-        self.assertTrue(addr1b in set_a)
         self.assertEqual(set_a, set_b)
 
 
@@ -59,4 +58,4 @@ class VirtualHostTest(unittest.TestCase):
 
         self.assertEqual(vhost1b, self.vhost1)
         self.assertEqual(str(vhost1b), str(self.vhost1))
-        self.assertTrue(vhost1b != 1234)
+        self.assertNotEqual(vhost1b, 1234)

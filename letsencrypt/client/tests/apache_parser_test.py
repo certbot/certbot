@@ -12,7 +12,7 @@ from letsencrypt.client.apache import parser
 from letsencrypt.client.tests import config_util
 
 
-class BasicParseTests(unittest.TestCase):
+class ApacheParserTest(unittest.TestCase):
 
     def setUp(self):
         display.set_display(display.FileDisplay(sys.stdout))
@@ -55,8 +55,7 @@ class BasicParseTests(unittest.TestCase):
         self.assertTrue(matches)
 
     def test_find_dir(self):
-        test = self.parser.find_dir(
-            parser.case_i("Listen"), "443")
+        test = self.parser.find_dir(parser.case_i("Listen"), "443")
         # This will only look in enabled hosts
         test2 = self.parser.find_dir(
             parser.case_i("documentroot"))
@@ -65,8 +64,7 @@ class BasicParseTests(unittest.TestCase):
 
     def test_add_dir(self):
         aug_default = "/files" + self.parser.loc["default"]
-        self.parser.add_dir(
-            aug_default, "AddDirective", "test")
+        self.parser.add_dir(aug_default, "AddDirective", "test")
 
         self.assertTrue(
             self.parser.find_dir("AddDirective", "test", aug_default))

@@ -116,7 +116,7 @@ class TwoVhost80Test(unittest.TestCase):
         self.assertEqual(ssl_vhost.path,
                          "/files" + ssl_vhost.filep + "/IfModule/VirtualHost")
         self.assertEqual(len(ssl_vhost.addrs), 1)
-        self.assertTrue(set([obj.Addr.fromstring("*:443")]) == ssl_vhost.addrs)
+        self.assertEqual(set([obj.Addr.fromstring("*:443")]), ssl_vhost.addrs)
         self.assertEqual(ssl_vhost.names, set(["encryption-example.demo"]))
         self.assertTrue(ssl_vhost.ssl)
         self.assertFalse(ssl_vhost.enabled)

@@ -184,7 +184,6 @@ def determine_authenticator():
 def determine_installer():
     """Returns a valid installer if one exists."""
     try:
-        print "shouldn't ha;ppppen!!!!!!!!!!!!!!!!!!!"
         return configurator.ApacheConfigurator()
     except errors.LetsEncryptConfiguratorError:
         logging.info("Unable to find a way to install the certificate.")
