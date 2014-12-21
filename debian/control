@@ -3,14 +3,13 @@ Section: python
 Priority: optional
 Maintainer: Debian letsencrypt <letsencrypt-devel@lists.alioth.debian.org>
 Uploaders: Francois Marier <francois@debian.org>
-Build-Depends: debhelper (>= 9), python-all (>= 2.5), python-setuptools, dh-python
+Build-Depends: debhelper (>= 9), python-all, dh-python
 Standards-Version: 3.9.6
-XS-Python-Version: >= 2.6
 Homepage: https://www.letsencrypt.org/
 
 Package: letsencrypt
 Architecture: all
-Depends: ${misc:Depends}, ${python:Depends}, python-setuptools, apache2, openssl, hashcash
+Depends: ${misc:Depends}, ${python:Depends}, apache2, openssl, hashcash
 Description: Let's Encrypt client that can update Apache configurations
  The objective of Let’s Encrypt and the ACME (Automated Certificate Management
  Environment) protocol is to make it possible to set up an HTTPS server and have
