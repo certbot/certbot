@@ -11,7 +11,7 @@ from letsencrypt.client import display
 from letsencrypt.client import interfaces
 from letsencrypt.client import errors
 from letsencrypt.client import log
-
+from letsencrypt.client import revoker
 from letsencrypt.client.apache import configurator
 
 
@@ -65,43 +65,45 @@ def main():
 
     # Set up logging
     logger = logging.getLogger()
-    logger.setLevel(logging.INFO)  # TODO: --log
+    logger.setLevel(logging.INFO)
     if args.use_curses:
         logger.addHandler(log.DialogHandler())
+        display.set_display(display.NcursesDisplay())
+    else:
+        display.set_display(display.FileDisplay(sys.stdout))
+
+    installer = determine_installer()
+    server = args.server is None and CONFIG.ACME_SERVER or args.server
+
+    if args.revoke:
+        revoc = revoker.Revoker(server, installer)
+        revoc.list_certs_keys()
+        sys.exit()
+
+    if args.rollback > 0:
+        rollback(installer, args.rollback)
+        sys.exit()
+
+    if args.view_checkpoints:
+        view_checkpoints(installer)
+        sys.exit()
+
+    # Use the same object if possible
+    if interfaces.IAuthenticator.providedBy(installer):
+        auth = installer
+    else:
+        auth = determine_authenticator()
+
+    if not args.eula:
+        display_eula()
+
+    domains = choose_names(installer) if args.domains is None else args.domains
 
     # Enforce '--privkey' is set along with '--csr'.
     if args.csr and not args.privkey:
         parser.error("private key file (--privkey) must be specified along{0} "
                      "with the certificate signing request file (--csr)"
                      .format(os.linesep))
-
-    if args.use_curses:
-        display.set_display(display.NcursesDisplay())
-    else:
-        display.set_display(display.FileDisplay(sys.stdout))
-
-    if args.rollback > 0:
-        rollback(configurator.ApacheConfigurator(), args.rollback)
-        sys.exit()
-
-    if args.view_checkpoints:
-        view_checkpoints(configurator.ApacheConfigurator())
-        sys.exit()
-
-    server = args.server is None and CONFIG.ACME_SERVER or args.server
-
-    if not args.eula:
-        display_eula()
-
-    auth = determine_authenticator()
-
-    # Use the same object if possible
-    if interfaces.IInstaller.providedBy(auth):
-        installer = auth
-    else:
-        installer = determine_installer()
-
-    domains = choose_names(installer) if args.domains is None else args.domains
 
     # Prepare for init of Client
     if args.privkey is None:
@@ -115,15 +117,13 @@ def main():
             client.Client.CSR(args.csr[0], args.csr[1], "pem"))
 
     acme = client.Client(server, domains, privkey, auth, installer)
-    if args.revoke:
-        acme.list_certs_keys()
-    else:
-        # Validate the key and csr
-        client.validate_key_csr(privkey, csr, domains)
 
-        cert_file, chain_file = acme.obtain_certificate(csr)
-        vhost = acme.deploy_certificate(privkey, cert_file, chain_file)
-        acme.optimize_config(vhost, args.redirect)
+    # Validate the key and csr
+    client.validate_key_csr(privkey, csr, domains)
+
+    cert_file, chain_file = acme.obtain_certificate(csr)
+    vhost = acme.deploy_certificate(privkey, cert_file, chain_file)
+    acme.optimize_config(vhost, args.redirect)
 
 
 def display_eula():

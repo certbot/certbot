@@ -1,18 +1,14 @@
 """ACME protocol client class and helper functions."""
 import collections
 import csv
-import json
 import logging
 import os
 import shutil
 import socket
 import string
 import sys
-import time
 
-import jsonschema
 import M2Crypto
-import requests
 
 from letsencrypt.client import acme
 from letsencrypt.client import challenge
@@ -21,6 +17,7 @@ from letsencrypt.client import crypto_util
 from letsencrypt.client import display
 from letsencrypt.client import errors
 from letsencrypt.client import le_util
+from letsencrypt.client import network
 
 
 # it's weird to point to chocolate servers via raw IPv6 addresses, and
@@ -33,8 +30,9 @@ ALLOW_RAW_IPV6_SERVER = False
 class Client(object):
     """ACME protocol client.
 
-    :ivar str server: Certificate authority server
-    :ivar str server_url: Full URL of the CSR server
+    :ivar network: Network object for sending and receiving messages
+    :type network: :class:`letsencrypt.client.network.Network`
+
     :ivar list names: Domain names (:class:`list` of :class:`str`).
 
     :ivar auth: Object that supports the IAuthenticator interface.
@@ -49,8 +47,7 @@ class Client(object):
 
     def __init__(self, server, names, authkey, auth, installer):
         """Initialize a client."""
-        self.server = server
-        self.server_url = "https://%s/acme/" % self.server
+        self.network = network.Network(server)
         self.names = names
         self.authkey = authkey
 
@@ -104,7 +101,7 @@ class Client(object):
         :rtype: dict
 
         """
-        return self.send_and_receive_expected(
+        return self.network.send_and_receive_expected(
             acme.challenge_request(self.names[0]), "challenge")
 
     def acme_authorization(self, challenge_msg, chal_objs, responses):
@@ -119,13 +116,14 @@ class Client(object):
         :rtype: dict
 
         """
-        auth_dict = self.send(acme.authorization_request(
-            challenge_msg["sessionID"], self.names[0],
-            challenge_msg["nonce"], responses, self.authkey.pem))
-
         try:
-            return self.is_expected_msg(auth_dict, "authorization")
-        except:
+            return self.network.send_and_receive_expected(
+                acme.authorization_request(
+                    challenge_msg["sessionID"], self.names[0],
+                    challenge_msg["nonce"], responses, self.authkey.pem),
+                "authorization")
+        except errors.LetsEncryptClientError as err:
+            logging.fatal(str(err))
             logging.fatal(
                 "Failed Authorization procedure - cleaning up challenges")
             sys.exit(1)
@@ -142,195 +140,10 @@ class Client(object):
 
         """
         logging.info("Preparing and sending CSR...")
-        return self.send_and_receive_expected(
+        return self.network.send_and_receive_expected(
             acme.certificate_request(csr_der, self.authkey.pem), "certificate")
 
-    def acme_revocation(self, cert):
-        """Handle ACME "revocation" phase.
-
-        :param dict cert: TODO
-
-        :returns: ACME "revocation" message.
-        :rtype: dict
-
-        """
-        cert_der = M2Crypto.X509.load_cert(cert["backup_cert_file"]).as_der()
-        with open(cert["backup_key_file"], 'rU') as backup_key_file:
-            key = backup_key_file.read()
-
-        revocation = self.send_and_receive_expected(
-            acme.revocation_request(cert_der, key), "revocation")
-
-        display.generic_notification(
-            "You have successfully revoked the certificate for "
-            "%s" % cert["cn"], width=70, height=9)
-
-        remove_cert_key(cert)
-        self.list_certs_keys()
-
-        return revocation
-
-    def send(self, msg):
-        """Send ACME message to server.
-
-        :param dict msg: ACME message (JSON serializable).
-
-        :returns: Server response message.
-        :rtype: dict
-
-        :raises TypeError: if `msg` is not JSON serializable
-        :raises jsonschema.ValidationError: if not valid ACME message
-        :raises errors.LetsEncryptClientError: in case of connection error
-            or if response from server is not a valid ACME message.
-
-        """
-        json_encoded = json.dumps(msg)
-        acme.acme_object_validate(json_encoded)
-
-        try:
-            response = requests.post(
-                self.server_url,
-                data=json_encoded,
-                headers={"Content-Type": "application/json"},
-            )
-        except requests.exceptions.RequestException as error:
-            raise errors.LetsEncryptClientError(
-                'Sending ACME message to server has failed: %s' % error)
-
-        try:
-            acme.acme_object_validate(response.content)
-        except ValueError:
-            raise errors.LetsEncryptClientError(
-                'Server did not send JSON serializable message')
-        except jsonschema.ValidationError as error:
-            raise errors.LetsEncryptClientError(
-                'Response from server is not a valid ACME message')
-
-        return response.json()
-
-    def send_and_receive_expected(self, msg, expected):
-        """Send ACME message to server and return expected message.
-
-        :param dict msg: ACME message (JSON serializable).
-        :param str expected: Name of the expected response ACME message type.
-
-        :returns: ACME response message of expected type.
-        :rtype: dict
-
-        :raises errors.LetsEncryptClientError: An exception is thrown
-
-        """
-        response = self.send(msg)
-        try:
-            return self.is_expected_msg(response, expected)
-        except:  # TODO: too generic exception
-            raise errors.LetsEncryptClientError(
-                'Expected message (%s) not received' % expected)
-
-    def is_expected_msg(self, response, expected, delay=3, rounds=20):
-        """Is reponse expected ACME message?
-
-        :param dict response: ACME response message from server.
-        :param str expected: Name of the expected response ACME message type.
-        :param int delay: Number of seconds to delay before next round
-            in case of ACME "defer" response message.
-        :param int rounds: Number of resend attempts in case of ACME "defer"
-            reponse message.
-
-        :returns: ACME response message from server.
-        :rtype: dict
-
-        :raises LetsEncryptClientError: if server sent ACME "error" message
-
-        """
-        for _ in xrange(rounds):
-            if response["type"] == expected:
-                return response
-
-            elif response["type"] == "error":
-                logging.error(
-                    "%s: %s - More Info: %s", response["error"],
-                    response.get("message", ""), response.get("moreInfo", ""))
-                raise errors.LetsEncryptClientError(response["error"])
-
-            elif response["type"] == "defer":
-                logging.info("Waiting for %d seconds...", delay)
-                time.sleep(delay)
-                response = self.send(acme.status_request(response["token"]))
-            else:
-                logging.fatal("Received unexpected message")
-                logging.fatal("Expected: %s" % expected)
-                logging.fatal("Received: %s" % response)
-                sys.exit(33)
-
-        logging.error(
-            "Server has deferred past the max of %d seconds", rounds * delay)
-
-    def list_certs_keys(self):
-        """List trusted Let's Encrypt certificates."""
-        list_file = os.path.join(CONFIG.CERT_KEY_BACKUP, "LIST")
-        certs = []
-
-        if not os.path.isfile(list_file):
-            logging.info(
-                "You don't have any certificates saved from letsencrypt")
-            return
-
-        c_sha1_vh = {}
-        for (cert, _, path) in self.installer.get_all_certs_keys():
-            try:
-                c_sha1_vh[M2Crypto.X509.load_cert(
-                    cert).get_fingerprint(md='sha1')] = path
-            except:
-                continue
-
-        with open(list_file, 'rb') as csvfile:
-            csvreader = csv.reader(csvfile)
-            for row in csvreader:
-                cert = crypto_util.get_cert_info(row[1])
-
-                b_k = os.path.join(CONFIG.CERT_KEY_BACKUP,
-                                   os.path.basename(row[2]) + "_" + row[0])
-                b_c = os.path.join(CONFIG.CERT_KEY_BACKUP,
-                                   os.path.basename(row[1]) + "_" + row[0])
-
-                cert.update({
-                    "orig_key_file": row[2],
-                    "orig_cert_file": row[1],
-                    "idx": int(row[0]),
-                    "backup_key_file": b_k,
-                    "backup_cert_file": b_c,
-                    "installed": c_sha1_vh.get(cert["fingerprint"], ""),
-                })
-                certs.append(cert)
-        if certs:
-            self.choose_certs(certs)
-        else:
-            display.generic_notification(
-                "There are not any trusted Let's Encrypt "
-                "certificates for this server.")
-
-    def choose_certs(self, certs):
-        """Display choose certificates menu.
-
-        :param list certs: List of cert dicts.
-
-        """
-        code, tag = display.display_certs(certs)
-
-        if code == display.OK:
-            cert = certs[tag]
-            if display.confirm_revocation(cert):
-                self.acme_revocation(cert)
-            else:
-                self.choose_certs(certs)
-        elif code == display.HELP:
-            cert = certs[tag]
-            display.more_info_cert(cert)
-            self.choose_certs(certs)
-        else:
-            exit(0)
-
+    # pylint: disable=no-self-use
     def save_certificate(self, certificate_dict, cert_path, chain_path):
         """Saves the certificate received from the ACME server.
 
@@ -477,6 +290,7 @@ class Client(object):
 
         return responses, challenge_objs
 
+    # pylint: disable=no-self-use
     def _assign_responses(self, resp, index_list, responses):
         """Assign chall_response to appropriate places in response list.
 
@@ -715,33 +529,6 @@ def csr_pem_to_der(csr):
     return Client.CSR(csr.file, csr_obj.as_der(), "der")
 
 
-def remove_cert_key(cert):
-    """Remove certificate and key.
-
-    :param dict cert: Cert dict used throughout revocation
-
-    """
-    list_file = os.path.join(CONFIG.CERT_KEY_BACKUP, "LIST")
-    list_file2 = os.path.join(CONFIG.CERT_KEY_BACKUP, "LIST.tmp")
-
-    with open(list_file, 'rb') as orgfile:
-        csvreader = csv.reader(orgfile)
-
-        with open(list_file2, 'wb') as newfile:
-            csvwriter = csv.writer(newfile)
-
-            for row in csvreader:
-                if not (row[0] == str(cert["idx"]) and
-                        row[1] == cert["orig_cert_file"] and
-                        row[2] == cert["orig_key_file"]):
-                    csvwriter.writerow(row)
-
-    shutil.copy2(list_file2, list_file)
-    os.remove(list_file2)
-    os.remove(cert["backup_cert_file"])
-    os.remove(cert["backup_key_file"])
-
-
 def sanity_check_names(names):
     """Make sure host names are valid.
 
@@ -779,5 +566,5 @@ def is_hostname_sane(hostname):
         # is this a valid IPv6 address?
         socket.getaddrinfo(hostname, 443, socket.AF_INET6)
         return True
-    except:
+    except socket.error:
         return False
