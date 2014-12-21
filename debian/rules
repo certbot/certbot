@@ -3,19 +3,13 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
-PYVERS :=  $(shell pyversions -r)
+export PYBUILD_NAME=letsencrypt
 
 %:
-	dh $@ --with python2
-
-.PHONY: override_dh_auto_clean
-override_dh_auto_clean:
-	set -e; \
-	for py in $(PYVERS); do \
-		$$py -B setup.py clean; \
-		rm -rf build; \
-	done
+	dh $@ --with python2 --buildsystem=pybuild
 
 override_dh_auto_install:
 	dh_auto_install
+	 
+	# Don't install the tests 
 	rm -rf $(CURDIR)/debian/letsencrypt/usr/lib/python2.7/dist-packages/letsencrypt/client/tests/
