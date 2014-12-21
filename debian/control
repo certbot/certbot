@@ -3,7 +3,7 @@ Section: python
 Priority: optional
 Maintainer: Debian letsencrypt <letsencrypt-devel@lists.alioth.debian.org>
 Uploaders: Francois Marier <francois@debian.org>
-Build-Depends: debhelper (>= 9), python-all (>= 2.5), python-setuptools
+Build-Depends: debhelper (>= 9), python-all (>= 2.5), python-setuptools, dh-python
 Standards-Version: 3.9.6
 XS-Python-Version: >= 2.6
 Homepage: https://www.letsencrypt.org/
