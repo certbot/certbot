@@ -1,62 +1,93 @@
+"""Config for Let's Encrypt."""
 import os.path
 
-# CA hostname
-# If you create your own server... change this line
-# Note: the server certificate must be trusted in order to avoid
-# further modifications to the client
+
 ACME_SERVER = "letsencrypt-demo.org"
-# Apache server root directory
+"""CA hostname.
+
+If you create your own server... change this line
+
+Note: the server certificate must be trusted in order to avoid
+further modifications to the client."""
+
+# Directories
 SERVER_ROOT = "/etc/apache2/"
-# Configuration file directory for letsencrypt
+"""Apache server root directory"""
+
 CONFIG_DIR = "/etc/letsencrypt/"
-# Working directory for letsencrypt
+"""Configuration file directory for letsencrypt"""
+
 WORK_DIR = "/var/lib/letsencrypt/"
-# Directory where configuration backups are stored
+"""Working directory for letsencrypt"""
+
 BACKUP_DIR = os.path.join(WORK_DIR, "backups/")
-# Replaces MODIFIED_FILES, directory where temp checkpoint is created
+"""Directory where configuration backups are stored"""
+
 TEMP_CHECKPOINT_DIR = os.path.join(WORK_DIR, "temp_checkpoint/")
-# Directory used before a permanent checkpoint is finalized
+"""Replaces MODIFIED_FILES, directory where temp checkpoint is created"""
+
 IN_PROGRESS_DIR = os.path.join(BACKUP_DIR, "IN_PROGRESS/")
-# Directory where all certificates/keys are stored - used for easy revocation
+"""Directory used before a permanent checkpoint is finalized"""
+
 CERT_KEY_BACKUP = os.path.join(WORK_DIR, "keys-certs/")
-# Where all keys should be stored
+"""Directory where all certificates/keys are stored.
+
+Used for easy revocation"""
+
 KEY_DIR = os.path.join(SERVER_ROOT, "ssl/")
-# Certificate storage
+"""Where all keys should be stored"""
+
 CERT_DIR = os.path.join(SERVER_ROOT, "certs/")
+"""Certificate storage"""
 
-# Contains standard Apache SSL directives
+# Files and extensions
 OPTIONS_SSL_CONF = os.path.join(CONFIG_DIR, "options-ssl.conf")
-# Let's Encrypt SSL vhost configuration extension
-LE_VHOST_EXT = "-le-ssl.conf"
-# Temporary file for challenge virtual hosts
-APACHE_CHALLENGE_CONF = os.path.join(CONFIG_DIR, "le_dvsni_cert_challenge.conf")
+"""Contains standard Apache SSL directives"""
 
-# Byte size of S and Nonce
+LE_VHOST_EXT = "-le-ssl.conf"
+"""Let's Encrypt SSL vhost configuration extension"""
+
+APACHE_CHALLENGE_CONF = os.path.join(CONFIG_DIR, "le_dvsni_cert_challenge.conf")
+"""Temporary file for challenge virtual hosts"""
+
+CERT_PATH = CERT_DIR + "cert-letsencrypt.pem"
+"""Let's Encrypt cert file."""
+
+CHAIN_PATH = CERT_DIR + "chain-letsencrypt.pem"
+"""Let's Encrypt chain file."""
+
+INVALID_EXT = ".acme.invalid"
+"""Invalid Extension"""
+
+# Challenge Information
+CHALLENGE_PREFERENCES = ["dvsni", "recoveryToken"]
+"""Challenge Preferences Dict for currently supported challenges"""
+
+EXCLUSIVE_CHALLENGES = [frozenset(["dvsni", "simpleHttps"])]
+"""Mutually Exclusive Challenges - only solve 1"""
+
+CONFIG_CHALLENGES = frozenset(["dvsni", "simpleHttps"])
+"""These are challenges that must be solved by a Configurator object"""
+
+# Challenge Constants
 S_SIZE = 32
+"""Byte size of S"""
+
 NONCE_SIZE = 16
+"""byte size of Nonce"""
 
 # Key Sizes
 RSA_KEY_SIZE = 2048
+"""Key size"""
 
-# bits of hashcash to generate
-DIFFICULTY = 23
-
-# Let's Encrypt cert and chain files
-CERT_PATH = CERT_DIR + "cert-letsencrypt.pem"
-CHAIN_PATH = CERT_DIR + "chain-letsencrypt.pem"
-
-# Invalid Extension
-INVALID_EXT = ".acme.invalid"
-
-# Challenge Preferences Dict for currently supported challenges
-CHALLENGE_PREFERENCES = ["dvsni", "recoveryToken"]
-
-# Mutually Exclusive Challenges - only solve 1
-EXCLUSIVE_CHALLENGES = [frozenset(["dvsni", "simpleHttps"])]
-
-# These are challenges that must be solved by a Configurator object
-CONFIG_CHALLENGES = frozenset(["dvsni", "simpleHttps"])
-
-# Rewrite rule arguments used for redirections to https vhost
+# Config Optimizations
 REWRITE_HTTPS_ARGS = [
     "^.*$", "https://%{SERVER_NAME}%{REQUEST_URI}", "[L,R=permanent]"]
+"""Rewrite rule arguments used for redirections to https vhost"""
+
+# Apache Interaction
+APACHE_CTL = "/usr/sbin/apache2ctl"
+"""Command used for configtest and version number."""
+
+APACHE2 = "/etc/init.d/apache2"
+"""Command used for reload and restart."""

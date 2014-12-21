@@ -4,20 +4,22 @@ import errno
 import os
 import stat
 
+from letsencrypt.client import errors
 
-def make_or_verify_dir(directory, mode=0755, uid=0):
+
+def make_or_verify_dir(directory, mode=0o755, uid=0):
     """Make sure directory exists with proper permissions.
 
-    :param directory: Path to a directry.
-    :type directory: str
+    :param str directory: Path to a directry.
+    :param int mode: Diretory mode.
+    :param int uid: Directory owner.
 
-    :param mode: Diretory mode.
-    :type mode: int
+    :raises LetsEncryptClientError: if a directory already exists,
+        but has wrong permissions or owner
 
-    :param uid: Directory owner.
-    :type uid: int
-
-    :raises: Exception -- TODO
+    :raises OSError: if invalid or inaccessible file names and
+        paths, or other arguments that have the correct type,
+        but are not accepted by the operating system.
 
     """
     try:
@@ -25,8 +27,9 @@ def make_or_verify_dir(directory, mode=0755, uid=0):
     except OSError as exception:
         if exception.errno == errno.EEXIST:
             if not check_permissions(directory, mode, uid):
-                raise Exception('%s exists and does not contain the proper '
-                                'permissions or owner' % directory)
+                raise errors.LetsEncryptClientError(
+                    '%s exists and does not contain the proper '
+                    'permissions or owner' % directory)
         else:
             raise
 
@@ -34,24 +37,27 @@ def make_or_verify_dir(directory, mode=0755, uid=0):
 def check_permissions(filepath, mode, uid=0):
     """Check file or directory permissions.
 
-    :param filepath: Path to the tested file (or directory).
-    :type filepath: str
+    :param str filepath: Path to the tested file (or directory).
+    :param int mode: Expected file mode.
+    :param int uid: Expected file owner.
 
-    :param mode: Expected file mode.
-    :type mode: int
-
-    :param uid: Expected file owner.
-    :type uid: int
-
-    :returns: bool -- True if `mode` and `uid` match, False otherwise.
+    :returns: True if `mode` and `uid` match, False otherwise.
+    :rtype: bool
 
     """
     file_stat = os.stat(filepath)
     return stat.S_IMODE(file_stat.st_mode) == mode and file_stat.st_uid == uid
 
 
-def unique_file(default_name, mode=0777):
-    """Safely finds a unique file for writing only (by default)."""
+def unique_file(default_name, mode=0o777):
+    """Safely finds a unique file for writing only (by default).
+
+    :param str default_name: Default file name
+    :param int mode: File mode
+
+    :return: tuple of file object and file name
+
+    """
     count = 1
     f_parsed = os.path.splitext(default_name)
     while 1:
@@ -80,10 +86,10 @@ def jose_b64encode(data):
     :param data: Data to be encoded.
     :type data: str or bytearray
 
-    :raises: TypeError
-
     :returns: JOSE Base64 string.
     :rtype: str
+
+    :raises TypeError: if `data` is of incorrect type
 
     """
     if not isinstance(data, str):
@@ -98,9 +104,10 @@ def jose_b64decode(data):
                  only ASCII characters are allowed.
     :type data: str or unicode
 
-    :raises: ValueError, TypeError
-
     :returns: Decoded data.
+
+    :raises TypeError: if input is of incorrect type
+    :raises ValueError: if unput is unicode with non-ASCII characters
 
     """
     if isinstance(data, unicode):

@@ -1,40 +1,46 @@
 """ACME challenge."""
+import logging
 import sys
 
 from letsencrypt.client import CONFIG
-from letsencrypt.client import logger
 
 
 class Challenge(object):
+    """Let's Encrypt challenge."""
 
     def __init__(self, configurator):
         self.config = configurator
 
     def perform(self, quiet=True):
+        """Perform the challange.
+
+        :param bool quiet: TODO
+
+        """
         raise NotImplementedError()
 
     def generate_response(self):
+        """Generate response."""
         raise NotImplementedError()
 
     def cleanup(self):
+        """Cleanup."""
         raise NotImplementedError()
 
 
 def gen_challenge_path(challenges, combos=None):
     """Generate a plan to get authority over the identity.
 
-    TODO: Make sure that the challenges are feasible...
-          Example: Do you have the recovery key?
+    .. todo:: Make sure that the challenges are feasible...
+        Example: Do you have the recovery key?
 
-    :param challenges: A list of challenges from ACME "challenge"
-                       server message to be fulfilled by the client
-                       in order to prove possession of the identifier.
-    :type challenges: list
+    :param list challenges: A list of challenges from ACME "challenge"
+        server message to be fulfilled by the client in order to prove
+        possession of the identifier.
 
     :param combos:  A collection of sets of challenges from ACME
-                    "challenge" server message ("combinations"),
-                    each of which would be sufficient to prove
-                    possession of the identifier.
+        "challenge" server message ("combinations"), each of which would
+        be sufficient to prove possession of the identifier.
     :type combos: list or None
 
     :returns: List of indices from `challenges`.
@@ -48,20 +54,18 @@ def gen_challenge_path(challenges, combos=None):
 
 
 def _find_smart_path(challenges, combos):
-    """
-    Can be called if combinations  is included
-    Function uses a simple ranking system to choose the combo with the
-    lowest cost
+    """Find challenge path with server hints.
 
-    :param challenges: A list of challenges from ACME "challenge"
-                       server message to be fulfilled by the client
-                       in order to prove possession of the identifier.
-    :type challenges: list
+    Can be called if combinations is included. Function uses a simple
+    ranking system to choose the combo with the lowest cost.
+
+    :param list challenges: A list of challenges from ACME "challenge"
+        server message to be fulfilled by the client in order to prove
+        possession of the identifier.
 
     :param combos:  A collection of sets of challenges from ACME
-                    "challenge" server message ("combinations"),
-                    each of which would be sufficient to prove
-                    possession of the identifier.
+        "challenge" server message ("combinations"), each of which would
+        be sufficient to prove possession of the identifier.
     :type combos: list or None
 
     :returns: List of indices from `challenges`.
@@ -89,23 +93,23 @@ def _find_smart_path(challenges, combos):
         combo_total = 0
 
     if not best_combo:
-        logger.fatal("Client does not support any combination of "
-                     "challenges to satisfy ACME server")
+        logging.fatal("Client does not support any combination of "
+                      "challenges to satisfy ACME server")
         sys.exit(22)
 
     return best_combo
 
 
 def _find_dumb_path(challenges):
-    """
-    Should be called if the combinations hint is not included by the server
-    This function returns the best path that does not contain multiple
-    mutually exclusive challenges
+    """Find challange path without server hints.
 
-    :param challanges: A list of challenges from ACME "challenge"
-                       server message to be fulfilled by the client
-                       in order to prove possession of the identifier.
-    :type challenges: list
+    Should be called if the combinations hint is not included by the
+    server. This function returns the best path that does not contain
+    multiple mutually exclusive challenges.
+
+    :param list challanges: A list of challenges from ACME "challenge"
+        server message to be fulfilled by the client in order to prove
+        possession of the identifier.
 
     :returns: List of indices from `challenges`.
     :rtype: list
