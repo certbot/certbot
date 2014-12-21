@@ -1,33 +1,46 @@
+"""Recovery Contact Identifier Validation Challenge.
+
+.. note:: This class is not complete and is not included in the project
+    currently.
+
+"""
+import time
+
 import dialog
 import requests
-import time
 
 from letsencrypt.client import challenge
 
 
 class RecoveryContact(challenge.Challenge):
+    """Recovery Contact Identitifier Validation Challange.
 
-    def __init__(self, activationURL = "", successURL = "", contact = "", poll_delay = 3):
+    Based on draft-barnes-acme, section 6.3.
+
+    """
+
+    def __init__(self, activation_url="", success_url="", contact="",
+                 poll_delay=3):
         self.token = ""
-        self.activationURL = activationURL
-        self.successURL = successURL
+        self.activation_url = activation_url
+        self.success_url = success_url
         self.contact = contact
         self.poll_delay = poll_delay
 
-    def perform(self, quiet = True):
+    def perform(self, quiet=True):
         d = dialog.Dialog()
         if quiet:
-            if self.successURL:
+            if self.success_url:
                 d.infobox(self.get_display_string())
                 return self.poll(10, quiet)
             else:
-                exit, self.token  = d.inputbox(self.get_display_string())
-                if exit != d.OK:
+                code, self.token = d.inputbox(self.get_display_string())
+                if code != d.OK:
                     return False
 
         else:
             print self.get_display_string()
-            if self.successURL:
+            if self.success_url:
                 return self.poll(10, quiet)
             else:
                 self.token = raw_input("Enter the recovery token:")
@@ -38,18 +51,35 @@ class RecoveryContact(challenge.Challenge):
         return
 
     def get_display_string(self):
-        string = "Recovery Contact Challenge: "
-        if self.activationURL:
-            string += "Proceed to the URL to continue " + self.activationURL
+        """Create information message for the user.
 
-        if self.activationURL and self.contact:
-            string += " or respond to the recovery email sent to " + self.contact
+        :returns: Message to be displayed to the user.
+        :rtype: str
+
+        """
+        msg = "Recovery Contact Challenge: "
+        if self.activation_url:
+            msg += "Proceed to the URL to continue " + self.activation_url
+
+        if self.activation_url and self.contact:
+            msg += " or respond to the recovery email sent to " + self.contact
         elif self.contact:
-            string += "Recovery email sent to" + self.contact
+            msg += "Recovery email sent to" + self.contact
 
-    def poll(self, rounds = 10, quiet = True):
-        for i in range(rounds):
-            if requests.get(self.successURL).status_code != 200:
+        return msg
+
+    def poll(self, rounds=10, quiet=True):
+        """Poll the server.
+
+        :param int rounds: Number of poll attempts.
+        :param bool quiet: Display dialog box if True, raw prompt otherwise.
+
+        :returns:
+        :rtype: bool
+
+        """
+        for _ in xrange(rounds):
+            if requests.get(self.success_url).status_code != 200:
                 time.sleep(self.poll_delay)
             else:
                 return True
@@ -57,8 +87,18 @@ class RecoveryContact(challenge.Challenge):
             return self.poll(rounds, quiet)
         else:
             return False
-    def prompt_continue(self, quiet = True):
-        prompt = "You have not completed the challenge yet, would you like to continue?"
+
+    def prompt_continue(self, quiet=True):
+        """Prompt user for continuation.
+
+        :param bool quiet: Display dialog box if True, raw prompt otherwise.
+
+        :returns: True if user agreed, False otherwise.
+        :rtype: bool
+
+        """
+        prompt = ("You have not completed the challenge yet, "
+                  "would you like to continue?")
         if quiet:
             ans = dialog.Dialog().yesno(prompt, width=70)
         else:
@@ -66,8 +106,10 @@ class RecoveryContact(challenge.Challenge):
 
         return ans.startswith('y') or ans.startswith('Y')
 
-
     def generate_response(self):
-        if self.token == "":
-            return {"type":"recoveryContact"}
-        return {"type":"recoveryContact", "token":self.token}
+        if not self.token:
+            return {"type": "recoveryContact"}
+        return {
+            "type": "recoveryContact",
+            "token": self.token,
+        }

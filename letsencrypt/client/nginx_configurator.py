@@ -66,7 +66,7 @@ class NginxConfigurator(augeas_configurator.AugeasConfigurator):
     #     # validChars = re.compile("[a-zA-Z0-9.*?_-/]*")
     #     # matchObj = validChars.match(arg)
     #     # if matchObj.group() != arg:
-    #     #     logger.error("Error: Invalid regexp characters in %s" % arg)
+    #     #     logging.error("Error: Invalid regexp characters in %s", arg)
     #     #     return []
 
     #     # Standardize the include argument based on server root
@@ -174,9 +174,9 @@ class NginxConfigurator(augeas_configurator.AugeasConfigurator):
     #     permissions. Aim for defensive coding... make sure all input files
     #     have permissions of root
     #     """
-    #     le_util.make_or_verify_dir(CONFIG.CONFIG_DIR, 0755)
-    #     le_util.make_or_verify_dir(CONFIG.WORK_DIR, 0755)
-    #     le_util.make_or_verify_dir(CONFIG.BACKUP_DIR, 0755)
+    #     le_util.make_or_verify_dir(CONFIG.CONFIG_DIR, 0o755)
+    #     le_util.make_or_verify_dir(CONFIG.WORK_DIR, 0o755)
+    #     le_util.make_or_verify_dir(CONFIG.BACKUP_DIR, 0o755)
 
     def restart(self, quiet=False):
         """Restarts nginx server"""

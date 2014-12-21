@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """Parse command line and call the appropriate functions."""
-import getopt
+import argparse
+import logging
 import os
 import sys
 
@@ -8,113 +9,140 @@ from letsencrypt.client import apache_configurator
 from letsencrypt.client import CONFIG
 from letsencrypt.client import client
 from letsencrypt.client import display
-from letsencrypt.client import logger
+from letsencrypt.client import log
 
 
 def main():
-    # Check to make sure user is root
+    """Command line argument parsing and main script execution."""
     if not os.geteuid() == 0:
-        sys.exit("\nOnly root can run letsencrypt.\n")
-    # Parse options
-    try:
-        opts, args = getopt.getopt(sys.argv[1:], "", ["text", "test",
-                                                      "view-checkpoints",
-                                                      "privkey=", "csr=",
-                                                      "server=", "rollback=",
-                                                      "revoke", "agree-eula",
-                                                      "redirect",
-                                                      "no-redirect",
-                                                      "help"])
-    except getopt.GetoptError as err:
-        # print help info and exit
-        print str(err)
-        usage()
-        sys.exit(2)
+        sys.exit(
+            "{0}Root is required to run letsencrypt.  Please use sudo.{0}"
+            .format(os.linesep))
 
-    server = None
-    csr = None
-    privkey = None
-    curses = True
-    names = args
-    flag_revoke = False
-    redirect = None
-    eula = False
+    parser = argparse.ArgumentParser(
+        description="An ACME client that can update Apache configurations.")
 
-    for o, a in opts:
-        if o == "--text":
-            curses = False
-        elif o == "--csr":
-            csr = a
-        elif o == "--privkey":
-            privkey = a
-        elif o == "--server":
-            server = a
-        elif o == "--rollback":
-            logger.setLogger(logger.FileLogger(sys.stdout))
-            logger.setLogLevel(logger.INFO)
-            config = apache_configurator.ApacheConfigurator()
-            config.rollback_checkpoints(a)
-            config.restart()
-            sys.exit(0)
-        elif o == "--view-checkpoints":
-            logger.setLogger(logger.FileLogger(sys.stdout))
-            logger.setLogLevel(logger.INFO)
-            config = apache_configurator.ApacheConfigurator()
-            config.display_checkpoints()
-            sys.exit(0)
-        elif o == "--revoke":
-            # Do Stuff
-            flag_revoke = True
-        elif o == "--redirect":
-            redirect = True
-        elif o == "--no-redirect":
-            redirect = False
-        elif o == "--agree-eula":
-            eula = True
-        elif o == "--help":
-            print_options()
-        elif o == "--test":
-            #put any temporary tests in here
-            continue
+    parser.add_argument("-d", "--domains", dest="domains", metavar="DOMAIN",
+                        nargs="+")
+    parser.add_argument("-s", "--server", dest="server",
+                        help="The ACME CA server address.")
+    parser.add_argument("-p", "--privkey", dest="privkey", type=read_file,
+                        help="Path to the private key file for certificate "
+                             "generation.")
+    parser.add_argument("-c", "--csr", dest="csr", type=read_file,
+                        help="Path to the certificate signing request file "
+                             "corresponding to the private key file. The "
+                             "private key file argument is required if this "
+                             "argument is specified.")
+    parser.add_argument("-b", "--rollback", dest="rollback", type=int,
+                        default=0, metavar="N",
+                        help="Revert configuration N number of checkpoints.")
+    parser.add_argument("-k", "--revoke", dest="revoke", action="store_true",
+                        help="Revoke a certificate.")
+    parser.add_argument("-v", "--view-checkpoints", dest="view_checkpoints",
+                        action="store_true",
+                        help="View checkpoints and associated configuration "
+                             "changes.")
+    parser.add_argument("-r", "--redirect", dest="redirect",
+                        action="store_const", const=True,
+                        help="Automatically redirect all HTTP traffic to HTTPS "
+                             "for the newly authenticated vhost.")
+    parser.add_argument("-n", "--no-redirect", dest="redirect",
+                        action="store_const", const=False,
+                        help="Skip the HTTPS redirect question, allowing both "
+                             "HTTP and HTTPS.")
+    parser.add_argument("-e", "--agree-eula", dest="eula", action="store_true",
+                        help="Skip the end user license agreement screen.")
+    parser.add_argument("-t", "--text", dest="use_curses", action="store_false",
+                        help="Use the text output instead of the curses UI.")
+    parser.add_argument("--test", dest="test", action="store_true",
+                        help="Run in test mode.")
 
-    if curses:
+    args = parser.parse_args()
+
+    # Set up logging
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)  # TODO: --log
+    if args.use_curses:
+        logger.addHandler(log.DialogHandler())
+
+    # Enforce '--privkey' is set along with '--csr'.
+    if args.csr and not args.privkey:
+        parser.error("private key file (--privkey) must be specified along{0} "
+                     "with the certificate signing request file (--csr)"
+                     .format(os.linesep))
+
+    if args.use_curses:
         display.set_display(display.NcursesDisplay())
     else:
         display.set_display(display.FileDisplay(sys.stdout))
 
-    if not server:
-        server = CONFIG.ACME_SERVER
+    if args.rollback > 0:
+        rollback(apache_configurator.ApacheConfigurator(), args.rollback)
+        sys.exit()
 
-    c = client.Client(server, csr, privkey, curses)
-    if flag_revoke:
-        c.list_certs_keys()
+    if args.view_checkpoints:
+        view_checkpoints(apache_configurator.ApacheConfigurator())
+        sys.exit()
+
+    server = args.server is None and CONFIG.ACME_SERVER or args.server
+
+    # Prepare for init of Client
+    if args.privkey is None:
+        privkey = client.Client.Key(None, None)
     else:
-        c.authenticate(args, redirect, eula)
+        privkey = client.Client.Key(args.privkey[0], args.privkey[1])
+    if args.csr is None:
+        csr = client.Client.CSR(None, None, None)
+    else:
+        csr = client.Client.CSR(args.csr[0], args.csr[1], "pem")
 
-def usage():
-    s = "Available options: --text, --privkey=, --csr=, --server=, "
-    s += "--rollback=, --view-checkpoints, --revoke, --agree-eula, --redirect,"
-    s += " --no-redirect, --help"
-    print s
+    acme = client.Client(server, csr, privkey, args.use_curses)
+    if args.revoke:
+        acme.list_certs_keys()
+    else:
+        acme.authenticate(args.domains, args.eula, args.redirect)
 
-def print_options():
-    print "\nsudo ./letsencrypt.py (default authentication mode using pythondialog)"
-    options = [ "privkey= (specify privatekey file to use to generate the certificate)",
-                "csr= (Use a specific CSR. If this is specified, privkey " +
-                "must also be specified with the correct private key for the CSR)",
-                "server (list the ACME CA server address)",
-                "revoke (revoke a certificate)",
-                "view-checkpoints (Used to view available checkpoints and " +
-                "see what configuration changes have been made)",
-                "rollback=X (Revert the configuration X number of checkpoints)",
-                "redirect (Automatically redirect all HTTP traffic to " +
-                "HTTPS for the newly authenticated vhost)",
-                "no-redirect (Skip the HTTPS redirect question, " +
-                "allowing both HTTP and HTTPS)",
-                "agree-eula (Skip the end user agreement screen)" ]
-    for o in options:
-        print "    --%s" % o
-    sys.exit(0)
+
+def read_file(filename):
+    """Returns the given file's contents with universal new line support.
+
+    :param str filename: Filename
+
+    :returns: A tuple of filename and its contents
+    :rtype: tuple
+
+    :raises argparse.ArgumentTypeError: File does not exist or is not readable.
+
+    """
+    try:
+        return filename, file(filename, 'rU').read()
+    except IOError as exc:
+        raise argparse.ArgumentTypeError(exc.strerror)
+
+
+def rollback(config, checkpoints):
+    """Revert configuration the specified number of checkpoints.
+
+    :param config: Configurator object
+    :type config: :class:`ApacheConfigurator`
+
+    :param int checkpoints: Number of checkpoints to revert.
+
+    """
+    config.rollback_checkpoints(checkpoints)
+    config.restart()
+
+
+def view_checkpoints(config):
+    """View checkpoints and associated configuration changes.
+
+    :param config: Configurator object
+    :type config: :class:`ApacheConfigurator`
+
+    """
+    config.display_checkpoints()
+
 
 if __name__ == "__main__":
     main()

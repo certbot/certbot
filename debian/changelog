@@ -1,5 +1,5 @@
-letsencrypt (0.20141127-1) UNRELEASED; urgency=low
+letsencrypt (0.20141217-1) UNRELEASED; urgency=low
 
   * Initial version
 
- -- Francois Marier <francois@debian.org>  Fri, 28 Nov 2014 20:54:22 +1300
+ -- Francois Marier <francois@debian.org>  Sun, 21 Dec 2014 13:54:45 +1300

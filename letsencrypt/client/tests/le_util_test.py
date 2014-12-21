@@ -4,6 +4,8 @@ import shutil
 import tempfile
 import unittest
 
+import mock
+
 
 class MakeOrVerifyDirTest(unittest.TestCase):
     """Tests for letsencrypt.client.le_util.make_or_verify_dir.
@@ -16,7 +18,7 @@ class MakeOrVerifyDirTest(unittest.TestCase):
     def setUp(self):
         self.root_path = tempfile.mkdtemp()
         self.path = os.path.join(self.root_path, 'foo')
-        os.mkdir(self.path, 0400)
+        os.mkdir(self.path, 0o400)
 
         self.uid = os.getuid()
 
@@ -29,16 +31,21 @@ class MakeOrVerifyDirTest(unittest.TestCase):
 
     def test_creates_dir_when_missing(self):
         path = os.path.join(self.root_path, 'bar')
-        self._call(path, 0650)
+        self._call(path, 0o650)
         self.assertTrue(os.path.isdir(path))
         # TODO: check mode
 
     def test_existing_correct_mode_does_not_fail(self):
-        self._call(self.path, 0400)
+        self._call(self.path, 0o400)
         # TODO: check mode
 
     def test_existing_wrong_mode_fails(self):
-        self.assertRaises(Exception, self._call, self.path, 0600)
+        self.assertRaises(Exception, self._call, self.path, 0o600)
+
+    def test_reraises_os_error(self):
+        with mock.patch.object(os, 'makedirs') as makedirs:
+            makedirs.side_effect = OSError()
+            self.assertRaises(OSError, self._call, 'bar', 12312312)
 
 
 class CheckPermissionsTest(unittest.TestCase):
@@ -61,12 +68,55 @@ class CheckPermissionsTest(unittest.TestCase):
         return check_permissions(self.path, mode, self.uid)
 
     def test_ok_mode(self):
-        os.chmod(self.path, 0600)
-        self.assertTrue(self._call(0600))
+        os.chmod(self.path, 0o600)
+        self.assertTrue(self._call(0o600))
 
     def test_wrong_mode(self):
-        os.chmod(self.path, 0400)
-        self.assertFalse(self._call(0600))
+        os.chmod(self.path, 0o400)
+        self.assertFalse(self._call(0o600))
+
+
+class UniqueFileTest(unittest.TestCase):
+    """Tests for letsencrypt.class.le_util.unique_file."""
+
+    def setUp(self):
+        self.root_path = tempfile.mkdtemp()
+        self.default_name = os.path.join(self.root_path, 'foo.txt')
+
+    def _call(self, mode=0o600):
+        from letsencrypt.client.le_util import unique_file
+        return unique_file(self.default_name, mode)
+
+    def test_returns_fd_for_writing(self):
+        fd, name = self._call()
+        fd.write('bar')
+        fd.close()
+        self.assertEqual(open(name).read(), 'bar')
+
+    def test_right_mode(self):
+        self.assertEqual(0o700, os.stat(self._call(0o700)[1]).st_mode & 0o777)
+        self.assertEqual(0o100, os.stat(self._call(0o100)[1]).st_mode & 0o777)
+
+    def test_default_not_exists(self):
+        self.assertEqual(self._call()[1], self.default_name)
+
+    def test_default_exists(self):
+        name1 = self._call()[1]  # create foo.txt
+        name2 = self._call()[1]
+        name3 = self._call()[1]
+
+        self.assertNotEqual(name1, name2)
+        basename2 = os.path.basename(name2)
+        self.assertEqual(os.path.dirname(name2), self.root_path)
+        self.assertTrue(basename2.startswith('foo'))
+        self.assertTrue(basename2.endswith('.txt'))
+
+        self.assertNotEqual(name1, name3)
+        self.assertNotEqual(name2, name3)
+        basename3 = os.path.basename(name3)
+        self.assertEqual(os.path.dirname(name3), self.root_path)
+        self.assertTrue(basename3.startswith('foo'))
+        self.assertTrue(basename3.endswith('.txt'))
 
 
 # https://en.wikipedia.org/wiki/Base64#Examples
@@ -128,6 +178,9 @@ class JOSEB64DecodeTest(unittest.TestCase):
 
     def test_non_ascii_unicode_fails(self):
         self.assertRaises(ValueError, self._call, u'\u0105')
+
+    def test_type_error_no_unicode_or_str(self):
+        self.assertRaises(TypeError, self._call, object())
 
 
 if __name__ == '__main__':

@@ -3,18 +3,25 @@ from setuptools import setup
 
 
 install_requires = [
+    'argparse',
     'jsonschema',
     'M2Crypto',
+    'mock',
     'pycrypto',
     'python-augeas',
     'python2-pythondialog',
     'requests',
 ]
 
+docs_extras = [
+    'Sphinx',
+]
+
 testing_extras = [
     'coverage',
     'nose',
-    'pylint',
+    'nosexcover',
+    'pylint<1.4',  # py2.6 compat, c.f #97
     'tox',
 ]
 
@@ -28,11 +35,14 @@ setup(
     packages=[
         'letsencrypt',
         'letsencrypt.client',
+        'letsencrypt.client.tests',
         'letsencrypt.scripts',
     ],
     install_requires=install_requires,
     tests_require=install_requires,
+    test_suite='letsencrypt',
     extras_require={
+        'docs': docs_extras,
         'testing': testing_extras,
     },
     entry_points={

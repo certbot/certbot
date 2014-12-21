@@ -4,6 +4,7 @@ build/
 dist/
 venv/
 .tox/
+.coverage
 m3
 *.egg-info/
 build/
