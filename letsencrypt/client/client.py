@@ -26,7 +26,6 @@ from letsencrypt.client import network
 ALLOW_RAW_IPV6_SERVER = False
 
 
-# TODO: Look up sphinx doc for an interface
 class Client(object):
     """ACME protocol client.
 
