@@ -15,3 +15,7 @@ override_dh_auto_clean:
 		$$py -B setup.py clean; \
 		rm -rf build; \
 	done
+
+override_dh_auto_install:
+	dh_auto_install
+	rm -rf $(CURDIR)/debian/letsencrypt/usr/lib/python2.7/dist-packages/letsencrypt/client/tests/
