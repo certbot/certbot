@@ -34,6 +34,9 @@ class Client(object):
 
     :ivar list names: Domain names (:class:`list` of :class:`str`).
 
+    :ivar authkey: Authorization Key
+    :type authkey: :class:`letsencrypt.client.client.Client.Key`
+
     :ivar auth: Object that supports the IAuthenticator interface.
     :type auth: :class:`letsencrypt.client.interfaces.IAuthenticator`
 
@@ -213,7 +216,7 @@ class Client(object):
         .. todo:: Handle multiple vhosts
 
         :param vhost: vhost to optimize
-        :type vhost: :class:`apache_configurator.VH`
+        :type vhost: :class:`letsencrypt.client.apache.obj.VirtualHost`
 
         :param redirect: If traffic should be forwarded from HTTP to HTTPS.
         :type redirect: bool or None
@@ -358,7 +361,7 @@ class Client(object):
         """Redirect all traffic from HTTP to HTTPS
 
         :param vhost: list of ssl_vhosts
-        :type vhost: :class:`letsencrypt.client.apache.obj.VH`
+        :type vhost: :class:`letsencrypt.client.interfaces.IInstaller`
 
         """
         for ssl_vh in vhost:
@@ -375,7 +378,7 @@ class Client(object):
         :param list domains: Domains to find ssl vhosts for
 
         :returns: associated vhosts
-        :rtype: :class:`apache_configurator.VH`
+        :rtype: :class:`letsencrypt.client.apache.obj.VirtualHost`
 
         """
         vhost = set()
@@ -475,10 +478,6 @@ def validate_key_csr(privkey, csr, names):
                 csr.data, privkey.pem):
             raise errors.LetsEncryptClientError(
                 "The key and CSR do not match")
-
-    if not crypto_util.csr_matches_names(csr.data, names):
-        raise errors.LetsEncryptClientError(
-            "CSR subject does not contain one of the specified names")
 
 
 def init_key():
