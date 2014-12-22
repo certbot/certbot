@@ -949,12 +949,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         `chall_dict` composed of:
 
-        list_sni_tuple:
-            List of tuples with form `(name, r, nonce)`, where
-            `name` (`str`), `r` (base64 `str`), `nonce` (hex `str`)
+        `type`: `dvsni` (`str`)
 
-        dvsni_key:
-            DVSNI key (:class:`letsencrypt.client.client.Client.Key`)
+        `dvsni_chall`:
+            List of DVSNI_Chall namedtuples
+            (:class:`letsencrypt.client.client.Client.DVSNI_Chall`)
+            where DVSNI_Chall tuples have the following fields
+            `domain` (`str`), `r_b64` (base64 `str`), `nonce` (hex `str`)
+            `key` (:class:`letsencrypt.client.client.Client.Key`)
 
         :param dict chall_dict: dvsni challenge - see documentation
 
@@ -964,18 +966,19 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.save()
 
         # Do weak validation that challenge is of expected type
-        if not ("list_sni_tuple" in chall_dict and "dvsni_key" in chall_dict):
+        if "dvsni_chall" not in chall_dict:
             logging.fatal("Incorrect parameter given to Apache DVSNI challenge")
             logging.fatal("Chall dict: %s", chall_dict)
             sys.exit(1)
 
         addresses = []
         default_addr = "*:443"
-        for tup in chall_dict["list_sni_tuple"]:
-            vhost = self.choose_virtual_host(tup[0])
+        for chall in chall_dict["dvsni_chall"]:
+            vhost = self.choose_virtual_host(chall.domain)
             if vhost is None:
                 logging.error(
-                    "No vhost exists with servername or alias of: %s", tup[0])
+                    "No vhost exists with servername or alias of: %s",
+                    chall.domain)
                 logging.error("No _default_:443 vhost exists")
                 logging.error("Please specify servernames in the Apache config")
                 return None
@@ -993,18 +996,16 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         responses = []
 
         # Create all of the challenge certs
-        for tup in chall_dict["list_sni_tuple"]:
-            cert_path = self.dvsni_get_cert_file(tup[2])
+        for chall in chall_dict["dvsni_chall"]:
+            cert_path = self.dvsni_get_cert_file(chall.nonce)
             self.register_file_creation(cert_path)
             s_b64 = challenge_util.dvsni_gen_cert(
-                cert_path, tup[0], tup[1], tup[2], chall_dict["dvsni_key"])
+                cert_path, chall.domain, chall.r_b64, chall.nonce, chall.key)
 
             responses.append({"type": "dvsni", "s": s_b64})
 
         # Setup the configuration
-        self.dvsni_mod_config(chall_dict["list_sni_tuple"],
-                              chall_dict["dvsni_key"],
-                              addresses)
+        self.dvsni_mod_config(chall_dict["dvsni_chall"], addresses)
 
         # Save reversible changes and restart the server
         self.save("SNI Challenge", True)
@@ -1019,18 +1020,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.restart()
 
     # TODO: Variable names
-    def dvsni_mod_config(self, list_sni_tuple, dvsni_key,
-                         ll_addrs):
+    def dvsni_mod_config(self, dvsni_chall, ll_addrs):
         """Modifies Apache config files to include challenge vhosts.
 
         Result: Apache config includes virtual servers for issued challs
 
-        :param list list_sni_tuple: list of tuples with the form
-            `(addr, y, nonce)`, where `addr` is `str`, `y` is `bytearray`,
-            and nonce is hex `str`
-
-        :param dvsni_key: DVSNI key
-        :type dvsni_key: :class:`letsencrypt.client.client.Client.Key`
+        :param list dvsni_chall: list of
+            :class:`letsencrypt.client.client.Client.DVSNI_Chall`
 
         :param list ll_addrs: list of list of
             :class:`letsencrypt.client.apache.obj.Addr` to apply
@@ -1052,7 +1048,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         config_text = "<IfModule mod_ssl.c>\n"
         for idx, lis in enumerate(ll_addrs):
             config_text += self.get_config_text(
-                list_sni_tuple[idx][2], lis, dvsni_key.file)
+                dvsni_chall[idx].nonce, lis, dvsni_chall[idx].key.file)
         config_text += "</IfModule>\n"
 
         self.dvsni_conf_include_check(self.parser.loc["default"])

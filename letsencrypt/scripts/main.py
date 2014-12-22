@@ -122,7 +122,7 @@ def main():
     acme = client.Client(server, domains, privkey, auth, installer)
 
     # Validate the key and csr
-    client.validate_key_csr(privkey, csr, domains)
+    client.validate_key_csr(privkey, csr)
 
     cert_file, chain_file = acme.obtain_certificate(csr)
     vhost = acme.deploy_certificate(privkey, cert_file, chain_file)

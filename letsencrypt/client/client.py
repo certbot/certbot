@@ -47,6 +47,7 @@ class Client(object):
     """
     Key = collections.namedtuple("Key", "file pem")
     CSR = collections.namedtuple("CSR", "file data form")
+    DVSNI_Chall = collections.namedtuple("DVSNI_Chall", "domain, r_b64, nonce, key")
 
     def __init__(self, server, names, authkey, auth, installer):
         """Initialize a client."""
@@ -419,8 +420,9 @@ class Client(object):
             if chall["type"] == "dvsni":
                 logging.info("  DVSNI challenge for name %s.", name)
                 sni_satisfies.append(index)
-                sni_todo.append((str(name), str(chall["r"]),
-                                 str(chall["nonce"])))
+                sni_todo.append(Client.DVSNI_Chall(
+                    str(name), str(chall["r"]),
+                    str(chall["nonce"]), self.authkey))
 
             elif chall["type"] == "recoveryToken":
                 logging.info("\tRecovery Token Challenge for name: %s.", name)
@@ -438,8 +440,7 @@ class Client(object):
             # one "challenge object" is issued for all sni_challenges
             challenge_objs.append({
                 "type": "dvsni",
-                "list_sni_tuple": sni_todo,
-                "dvsni_key": self.authkey,
+                "dvsni_chall": sni_todo
             })
             challenge_obj_indices.append(sni_satisfies)
             logging.debug(sni_todo)
@@ -447,11 +448,17 @@ class Client(object):
         return challenge_objs, challenge_obj_indices
 
 
-def validate_key_csr(privkey, csr, names):
+def validate_key_csr(privkey, csr):
     """Validate CSR and key files.
 
-    Verifies that the client key and csr arguments are valid and
-    correspond to one another.
+    Verifies that the client key and csr arguments are valid and correspond to
+    one another. This does not currently check the names in the CSR.
+
+    :param privkey: Key associated with CSR
+    :type privkey: :class:`letsencrypt.client.client.Client.Key`
+
+    :param csr: CSR
+    :type csr: :class:`letsencrypt.client.client.Client.CSR`
 
     :raises LetsEncryptClientError: if validation fails
 
