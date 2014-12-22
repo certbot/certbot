@@ -73,7 +73,7 @@ def main():
         display.set_display(display.FileDisplay(sys.stdout))
 
     installer = determine_installer()
-    server = args.server is None and CONFIG.ACME_SERVER or args.server
+    server = CONFIG.ACME_SERVER if args.server is None else args.server
 
     if args.revoke:
         revoc = revoker.Revoker(server, installer)

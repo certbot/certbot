@@ -8,7 +8,6 @@ import mock
 from letsencrypt.client import CONFIG
 from letsencrypt.client.apache import configurator
 from letsencrypt.client.apache import obj
-from letsencrypt.client.apache import parser
 
 
 def dir_setup(test_dir="debian_apache_2_4/two_vhost_80"):
