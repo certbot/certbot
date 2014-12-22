@@ -39,7 +39,7 @@ class Revoker(object):
 
         zope.component.getUtility(interfaces.IDisplay).generic_notification(
             "You have successfully revoked the certificate for "
-            "%s" % cert["cn"], width=70, height=9)
+            "%s" % cert["cn"])
 
         self.remove_cert_key(cert)
         self.list_certs_keys()

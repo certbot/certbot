@@ -9,7 +9,6 @@ import string
 import sys
 
 import M2Crypto
-import requests
 import zope.component
 
 from letsencrypt.client import acme
@@ -227,7 +226,7 @@ class Client(object):
         """
         if redirect is None:
             redirect = zope.component.getUtility(
-                intefaces.IDisplay).redirect_by_default()
+                interfaces.IDisplay).redirect_by_default()
 
         if redirect:
             self.redirect_to_ssl(vhost)

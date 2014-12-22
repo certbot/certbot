@@ -20,7 +20,7 @@ class NcursesDisplay(object):
         self.height = height
 
     def generic_notification(self, message):
-        self.dialog.msgbox(message, width=self.width, height=self.height)
+        self.dialog.msgbox(message, width=self.width)
 
     def generic_menu(self, message, choices, input_text=""):
         # Can accept either tuples or just the actual choices

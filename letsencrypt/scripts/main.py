@@ -132,7 +132,7 @@ def main():
 def display_eula():
     """Displays the end user agreement."""
     with open('EULA') as eula_file:
-        if not zope_component.getUtility(interfaces.IDisplay).generic_yesno(
+        if not zope.component.getUtility(interfaces.IDisplay).generic_yesno(
                 eula_file.read(), "Agree", "Cancel"):
             sys.exit(0)
 
@@ -147,7 +147,7 @@ def choose_names(installer):
     # This function adds all names
     # found within the config to self.names
     # Then filters them based on user selection
-    code, names = zope_component.getUtility(
+    code, names = zope.component.getUtility(
         interfaces.IDisplay).filter_names(get_all_names(installer))
     if code == display.OK and names:
         # TODO: Allow multiple names once it is setup
