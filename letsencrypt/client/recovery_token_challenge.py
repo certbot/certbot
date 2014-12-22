@@ -3,9 +3,8 @@
 .. note:: This challenge has not been implemented into the project yet
 
 """
-import display
-
 from letsencrypt.client import challenge
+from letsencrypt.client import display
 
 
 class RecoveryToken(challenge.Challenge):
