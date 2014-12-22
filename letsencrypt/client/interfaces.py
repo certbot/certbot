@@ -1,5 +1,7 @@
-"""Interfaces."""
+"""Let's Encrypt client interfaces."""
 import zope.interface
+
+# pylint: disable=no-self-argument,no-method-argument
 
 
 class IAuthenticator(zope.interface.Interface):
@@ -14,6 +16,23 @@ class IAuthenticator(zope.interface.Interface):
 
     def cleanup():
         """Revert changes and shutdown after challenges complete."""
+
+
+class IChallenge(zope.interface.Interface):
+    """Let's Encrypt challenge."""
+
+    def perform(quiet=True):
+        """Perform the challenge.
+
+        :param bool quiet: TODO
+
+        """
+
+    def generate_response():
+        """Generate response."""
+
+    def cleanup():
+        """Cleanup."""
 
 
 class IInstaller(zope.interface.Interface):
@@ -89,3 +108,19 @@ class IInstaller(zope.interface.Interface):
 
     def restart():
         """Restart or refresh the server content."""
+
+
+class IValidator(object):
+    """Configuration validator."""
+
+    def redirect(name):
+        pass
+
+    def ocsp_stapling(name):
+        pass
+
+    def https(names):
+        pass
+
+    def hsts(name):
+        pass
