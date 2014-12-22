@@ -36,6 +36,7 @@ setup(
     packages=[
         'letsencrypt',
         'letsencrypt.client',
+        'letsencrypt.client.apache',
         'letsencrypt.client.tests',
         'letsencrypt.scripts',
     ],

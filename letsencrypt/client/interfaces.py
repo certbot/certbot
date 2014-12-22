@@ -3,6 +3,21 @@ import zope.interface
 
 # pylint: disable=no-self-argument,no-method-argument
 
+
+class IAuthenticator(zope.interface.Interface):
+    """Generic Let's Encrypt Authenticator.
+
+    Class represents all possible tools processes that have the
+    ability to perform challenges and attain a certificate.
+
+    """
+    def perform(chall_dict):
+        """Perform the given challenge"""
+
+    def cleanup():
+        """Revert changes and shutdown after challenges complete."""
+
+
 class IChallenge(zope.interface.Interface):
     """Let's Encrypt challenge."""
 
@@ -20,15 +35,20 @@ class IChallenge(zope.interface.Interface):
         """Cleanup."""
 
 
-class IConfigurator(zope.interface.Interface):
-    """Generic Let's Encrypt configurator.
+class IInstaller(zope.interface.Interface):
+    """Generic Let's Encrypt Installer Interface.
 
-    Class represents all possible webservers and configuration editors
-    This includes the generic webserver which wont have configuration
-    files at all, but instead create a new process to handle the DVSNI
-    and other challenges.
+    Represents any server that an X509 certificate can be placed.
+    With a focus on HTTPS optimizations.
+
+    .. todo:: All optimizations should be of the form .enable("hsts")
+        This will make it general towards any optimization... we should also
+        define a function to glean what optimizations are available.
+        Perhaps with text that describes the optimizations...
 
     """
+    def get_all_names():
+        """Returns all names that may be authenticated."""
 
     def deploy_cert(vhost, cert, key, cert_chain=None):
         """Deploy certificate.
@@ -41,9 +61,6 @@ class IConfigurator(zope.interface.Interface):
 
     def choose_virtual_host(name):
         """Chooses a virtual host based on a given domain name."""
-
-    def get_all_names():
-        """Returns all names found in the configuration."""
 
     def enable_redirect(ssl_vhost):
         """Redirect all traffic to the given ssl_vhost (port 80 => 443)."""
@@ -78,11 +95,7 @@ class IConfigurator(zope.interface.Interface):
 
         :param bool temporary: Indicates whether the changes made will
             be quickly reversed in the future (challenges)
-
         """
-
-    def revert_challenge_config():
-        """Reload the users original configuration files."""
 
     def rollback_checkpoints(rollback=1):
         """Revert `rollback` number of configuration checkpoints."""
@@ -93,14 +106,8 @@ class IConfigurator(zope.interface.Interface):
     def config_test():
         """Make sure the configuration is valid."""
 
-    def restart(quiet=False):
+    def restart():
         """Restart or refresh the server content."""
-
-    def perform(chall_dict):
-        """Perform the given challenge"""
-
-    def cleanup():
-        """Cleanup configuration changes from challenge."""
 
 
 class IValidator(object):

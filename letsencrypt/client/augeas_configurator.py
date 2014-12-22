@@ -6,17 +6,13 @@ import shutil
 import time
 
 import augeas
-import zope.interface
 
 from letsencrypt.client import CONFIG
-from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
 
 
 class AugeasConfigurator(object):
     """Base Augeas Configurator class.
-
-    .. todo:: Fix generic exception handling.
 
     :ivar aug: Augeas object
     :type aug: :class:`augeas.Augeas`
@@ -25,7 +21,6 @@ class AugeasConfigurator(object):
     :ivar dict direc: dictionary containing save directory paths
 
     """
-    zope.interface.implements(interfaces.IConfigurator)
 
     def __init__(self, direc=None):
         """Initialize Augeas Configurator.
@@ -34,7 +29,6 @@ class AugeasConfigurator(object):
             (used mostly for testing)
 
         """
-        super(AugeasConfigurator, self).__init__()
 
         if not direc:
             direc = {"backup": CONFIG.BACKUP_DIR,
@@ -293,8 +287,7 @@ class AugeasConfigurator(object):
                     for idx, path in enumerate(filepaths):
                         shutil.copy2(os.path.join(
                             cp_dir,
-                            os.path.basename(path) + '_' + str(idx)),
-                                     path)
+                            os.path.basename(path) + '_' + str(idx)), path)
             except (IOError, OSError):
                 # This file is required in all checkpoints.
                 logging.error("Unable to recover files from %s", cp_dir)
@@ -331,7 +324,7 @@ class AugeasConfigurator(object):
 
         return True, ""
 
-    # pylint: disable=no-self-use
+    # pylint: disable=no-self-use, anomalous-backslash-in-string
     def register_file_creation(self, temporary, *files):
         """Register the creation of all files during letsencrypt execution.
 
