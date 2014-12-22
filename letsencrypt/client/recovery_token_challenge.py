@@ -3,9 +3,9 @@
 .. note:: This challenge has not been implemented into the project yet
 
 """
+import zope.component
 import zope.interface
 
-from letsencrypt.client import display
 from letsencrypt.client import interfaces
 
 
@@ -22,8 +22,9 @@ class RecoveryToken(object):
         self.token = ""
 
     def perform(self, quiet=True):
-        cancel, self.token = display.generic_input(
-            "Please Input Recovery Token: ")
+        cancel, self.token = zope.component.getUtility(
+            interfaces.IDisplay).generic_input(
+                "Please Input Recovery Token: ")
         return cancel != 1
 
     def cleanup(self):
