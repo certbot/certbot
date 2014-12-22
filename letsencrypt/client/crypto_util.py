@@ -47,8 +47,8 @@ def create_sig(msg, key_str, nonce=None, nonce_len=CONFIG.NONCE_SIZE):
 
     logging.debug('%s signed as %s', msg_with_nonce, signature)
 
-    n_bytes = binascii.unhexlify(leading_zeros(hex(key.n)[2:].rstrip("L")))
-    e_bytes = binascii.unhexlify(leading_zeros(hex(key.e)[2:].rstrip("L")))
+    n_bytes = binascii.unhexlify(_leading_zeros(hex(key.n)[2:].rstrip("L")))
+    e_bytes = binascii.unhexlify(_leading_zeros(hex(key.e)[2:].rstrip("L")))
 
     return {
         "nonce": le_util.jose_b64encode(nonce),
@@ -62,7 +62,7 @@ def create_sig(msg, key_str, nonce=None, nonce_len=CONFIG.NONCE_SIZE):
     }
 
 
-def leading_zeros(arg):
+def _leading_zeros(arg):
     if len(arg) % 2:
         return "0" + arg
     return arg

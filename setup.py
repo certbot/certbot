@@ -11,6 +11,7 @@ install_requires = [
     'python-augeas',
     'python2-pythondialog',
     'requests',
+    'zope.interface',
 ]
 
 docs_extras = [
@@ -35,6 +36,7 @@ setup(
     packages=[
         'letsencrypt',
         'letsencrypt.client',
+        'letsencrypt.client.apache',
         'letsencrypt.client.tests',
         'letsencrypt.scripts',
     ],
