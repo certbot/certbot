@@ -5,11 +5,13 @@ import os
 import shutil
 
 import M2Crypto
+import zope.component
 
 from letsencrypt.client import acme
 from letsencrypt.client import CONFIG
 from letsencrypt.client import crypto_util
 from letsencrypt.client import display
+from letsencrypt.client import interfaces
 from letsencrypt.client import network
 
 
@@ -35,7 +37,7 @@ class Revoker(object):
         revocation = self.network.send_and_receive_expected(
             acme.revocation_request(cert_der, key), "revocation")
 
-        display.generic_notification(
+        zope.component.getUtility(interfaces.IDisplay).generic_notification(
             "You have successfully revoked the certificate for "
             "%s" % cert["cn"], width=70, height=9)
 
@@ -84,7 +86,7 @@ class Revoker(object):
         if certs:
             self.choose_certs(certs)
         else:
-            display.generic_notification(
+            zope.component.getUtility(interfaces.IDisplay).generic_notification(
                 "There are not any trusted Let's Encrypt "
                 "certificates for this server.")
 
@@ -94,17 +96,18 @@ class Revoker(object):
         :param list certs: List of cert dicts.
 
         """
-        code, tag = display.display_certs(certs)
+        displayer = zope.component.getUtility(interfaces.IDisplay)
+        code, tag = displayer.display_certs(certs)
 
         if code == display.OK:
             cert = certs[tag]
-            if display.confirm_revocation(cert):
+            if displayer.confirm_revocation(cert):
                 self.acme_revocation(cert)
             else:
                 self.choose_certs(certs)
         elif code == display.HELP:
             cert = certs[tag]
-            display.more_info_cert(cert)
+            displayer.more_info_cert(cert)
             self.choose_certs(certs)
         else:
             exit(0)

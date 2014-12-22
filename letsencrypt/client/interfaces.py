@@ -110,6 +110,40 @@ class IInstaller(zope.interface.Interface):
         """Restart or refresh the server content."""
 
 
+class IDisplay(zope.interface.Interface):
+    """Generic display."""
+
+    def generic_notification(message):
+        pass
+
+    def generic_menu(message, choices, input_text=""):
+        pass
+
+    def generic_input(message):
+        pass
+
+    def generic_yesno(message, yes_label="Yes", no_label="No"):
+        pass
+
+    def filter_names(names):
+        pass
+
+    def success_installation(domains):
+        pass
+
+    def display_certs(certs):
+        pass
+
+    def confirm_revocation(cert):
+        pass
+
+    def more_info_cert(cert):
+        pass
+
+    def redirect_by_default():
+        pass
+
+
 class IValidator(object):
     """Configuration validator."""
 

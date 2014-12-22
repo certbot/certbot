@@ -1,73 +1,37 @@
 import textwrap
 
 import dialog
+import zope.interface
+
+from letsencrypt.client import interfaces
 
 
 WIDTH = 72
 HEIGHT = 20
 
 
-class SingletonD(object):
-    _instance = None
+class NcursesDisplay(object):
+    zope.interface.implements(interfaces.IDisplay)
 
-    def __new__(cls, *args, **kwargs):
-        if not cls._instance:
-            cls._instance = super(SingletonD, cls).__new__(
-                cls, *args, **kwargs)
-        return cls._instance
-
-
-class Display(SingletonD):
-    """Generic display."""
-
-    def generic_notification(self, message, width=WIDTH, height=HEIGHT):
-        raise NotImplementedError()
-
-    def generic_menu(self, message, choices, input_text="",
-                     width=WIDTH, height=HEIGHT):
-        raise NotImplementedError()
-
-    def generic_input(self, message):
-        raise NotImplementedError()
-
-    def generic_yesno(self, message, yes_label="Yes", no_label="No"):
-        raise NotImplementedError()
-
-    def filter_names(self, names):
-        raise NotImplementedError()
-
-    def success_installation(self, domains):
-        raise NotImplementedError()
-
-    def display_certs(self, certs):
-        raise NotImplementedError()
-
-    def confirm_revocation(self, cert):
-        raise NotImplementedError()
-
-    def more_info_cert(self, cert):
-        raise NotImplementedError()
-
-
-class NcursesDisplay(Display):
-
-    def __init__(self):
+    def __init__(self, width=WIDTH, height=HEIGHT):
+        super(NcursesDisplay, self).__init__()
         self.dialog = dialog.Dialog()
+        self.width = width
+        self.height = height
 
-    def generic_notification(self, message, w=WIDTH, h=HEIGHT):
-        self.dialog.msgbox(message, width=w, height=h)
+    def generic_notification(self, message):
+        self.dialog.msgbox(message, width=self.width, height=self.height)
 
-    def generic_menu(self, message, choices, input_text="", width=WIDTH,
-                     height=HEIGHT):
+    def generic_menu(self, message, choices, input_text=""):
         # Can accept either tuples or just the actual choices
         if choices and isinstance(choices[0], tuple):
             code, selection = self.dialog.menu(
-                message, choices=choices, width=WIDTH, height=HEIGHT)
+                message, choices=choices, width=self.width, height=self.height)
             return code, str(selection)
         else:
             choices = list(enumerate(choices, 1))
             code, tag = self.dialog.menu(
-                message, choices=choices, width=WIDTH, height=HEIGHT)
+                message, choices=choices, width=self.width, height=self.height)
 
             return code(int(tag) - 1)
 
@@ -76,7 +40,7 @@ class NcursesDisplay(Display):
 
     def generic_yesno(self, message, yes="Yes", no="No"):
         return self.dialog.DIALOG_OK == self.dialog.yesno(
-            message, HEIGHT, WIDTH, yes_label=yes, no_label=no)
+            message, self.height, self.width, yes_label=yes, no_label=no)
 
     def filter_names(self, names):
         choices = [(n, "", 0) for n in names]
@@ -88,12 +52,12 @@ class NcursesDisplay(Display):
     def success_installation(self, domains):
         self.dialog.msgbox(
             "\nCongratulations! You have successfully enabled "
-            + gen_https_names(domains) + "!", width=WIDTH)
+            + gen_https_names(domains) + "!", width=self.width)
 
     def display_certs(self, certs):
         list_choices = [
             (str(i+1), "%s | %s | %s" %
-             (str(c["cn"].ljust(WIDTH - 39)),
+             (str(c["cn"].ljust(self.width - 39)),
               c["not_before"].strftime("%m-%d-%y"),
               "Installed" if c["installed"] else ""))
             for i, c in enumerate(certs)]
@@ -102,7 +66,7 @@ class NcursesDisplay(Display):
             "Which certificates would you like to revoke?",
             choices=list_choices, help_button=True,
             help_label="More Info", ok_label="Revoke",
-            width=WIDTH, height=HEIGHT)
+            width=self.width, height=self.height)
         if not tag:
             tag = -1
         return code, (int(tag) - 1)
@@ -113,29 +77,45 @@ class NcursesDisplay(Display):
         text += cert_info_frame(cert)
         text += "This action cannot be reversed!"
         return self.dialog.DIALOG_OK == self.dialog.yesno(
-            text, width=WIDTH, height=HEIGHT)
+            text, width=self.width, height=self.height)
 
     def more_info_cert(self, cert):
         text = "Certificate Information:\n"
         text += cert_info_frame(cert)
         print text
-        self.dialog.msgbox(text, width=WIDTH, height=HEIGHT)
+        self.dialog.msgbox(text, width=self.width, height=self.height)
+
+    def redirect_by_default(self):
+        choices = [
+            ("Easy", "Allow both HTTP and HTTPS access to these sites"),
+            ("Secure", "Make all requests redirect to secure HTTPS access")]
+
+        result = self.generic_menu(
+            "Please choose whether HTTPS access is required or optional.",
+            choices, "Please enter the appropriate number")
+
+        if result[0] != OK:
+            return False
+
+        # different answer for each type of display
+        return str(result[1]) == "Secure" or result[1] == 1
 
 
-class FileDisplay(Display):
+class FileDisplay(object):
+    zope.interface.implements(interfaces.IDisplay)
 
     def __init__(self, outfile):
+        super(FileDisplay, self).__init__()
         self.outfile = outfile
 
-    def generic_notification(self, message, width=WIDTH, height=HEIGHT):
+    def generic_notification(self, message):
         side_frame = '-' * (79)
         wm = textwrap.fill(message, 80)
         text = "\n%s\n%s\n%s\n" % (side_frame, wm, side_frame)
         self.outfile.write(text)
         raw_input("Press Enter to Continue")
 
-    def generic_menu(self, message, choices, input_text="",
-                     width=WIDTH, height=HEIGHT):
+    def generic_menu(self, message, choices, input_text=""):
         # Can take either tuples or single items in choices list
         if choices and isinstance(choices[0], tuple):
             choices = ["%s - %s" % (c[0], c[1]) for c in choices]
@@ -232,39 +212,9 @@ class FileDisplay(Display):
         self.outfile.write("\nCertificate Information:\n")
         self.outfile.write(cert_info_frame(cert))
 
-display = None
 OK = "ok"
 CANCEL = "cancel"
 HELP = "help"
-
-
-def set_display(display_inst):
-    global display
-    display = display_inst
-
-
-def generic_notification(message, width=WIDTH, height=HEIGHT):
-    display.generic_notification(message, width, height)
-
-
-def generic_menu(message, choices, input_text="", width=WIDTH, height=HEIGHT):
-    return display.generic_menu(message, choices, input_text, width, height)
-
-
-def generic_input(message):
-    return display.generic_message(message)
-
-
-def generic_yesno(message, yes_label="Yes", no_label="No"):
-    return display.generic_yesno(message, yes_label, no_label)
-
-
-def filter_names(names):
-    return display.filter_names(names)
-
-
-def display_certs(certs):
-    return display.display_certs(certs)
 
 
 def cert_info_frame(cert):
@@ -303,33 +253,3 @@ def gen_https_names(domains):
         result = result + "https://" + domains[len(domains)-1]
 
     return result
-
-
-def success_installation(domains):
-    return display.success_installation(domains)
-
-
-def redirect_by_default():
-    choices = [
-        ("Easy", "Allow both HTTP and HTTPS access to these sites"),
-        ("Secure", "Make all requests redirect to secure HTTPS access")]
-
-    result = display.generic_menu("Please choose whether HTTPS access " +
-                                  "is required or optional.",
-                                  choices,
-                                  "Please enter the appropriate number",
-                                  width=WIDTH)
-
-    if result[0] != OK:
-        return False
-
-    # different answer for each type of display
-    return str(result[1]) == "Secure" or result[1] == 1
-
-
-def confirm_revocation(cert):
-    return display.confirm_revocation(cert)
-
-
-def more_info_cert(cert):
-    return display.more_info_cert(cert)

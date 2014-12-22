@@ -5,6 +5,7 @@ import shutil
 import unittest
 
 import mock
+import zope.component
 
 from letsencrypt.client import display
 from letsencrypt.client import errors
@@ -20,7 +21,7 @@ class TwoVhost80Test(unittest.TestCase):
     """Test two standard well configured HTTP vhosts."""
 
     def setUp(self):
-        display.set_display(display.NcursesDisplay())
+        zope.component.provideUtility(display.NcursesDisplay())
 
         self.temp_dir, self.config_dir, self.work_dir = config_util.dir_setup(
             "debian_apache_2_4/two_vhost_80")

@@ -5,6 +5,7 @@ import unittest
 
 import augeas
 import mock
+import zope.component
 
 from letsencrypt.client import display
 from letsencrypt.client import errors
@@ -15,7 +16,7 @@ from letsencrypt.client.tests import config_util
 class ApacheParserTest(unittest.TestCase):
 
     def setUp(self):
-        display.set_display(display.FileDisplay(sys.stdout))
+        zope.component.provideUtility(display.FileDisplay(sys.stdout))
 
         self.temp_dir, self.config_dir, self.work_dir = config_util.dir_setup(
             "debian_apache_2_4/two_vhost_80")
