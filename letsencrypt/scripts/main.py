@@ -5,6 +5,8 @@ import logging
 import os
 import sys
 
+import zope.component
+
 from letsencrypt.client import CONFIG
 from letsencrypt.client import client
 from letsencrypt.client import display
@@ -68,9 +70,10 @@ def main():
     logger.setLevel(logging.INFO)
     if args.use_curses:
         logger.addHandler(log.DialogHandler())
-        display.set_display(display.NcursesDisplay())
+        displayer = display.NcursesDisplay()
     else:
-        display.set_display(display.FileDisplay(sys.stdout))
+        displayer = display.FileDisplay(sys.stdout)
+    zope.component.provideUtility(displayer)
 
     installer = determine_installer()
     server = CONFIG.ACME_SERVER if args.server is None else args.server
@@ -129,7 +132,7 @@ def main():
 def display_eula():
     """Displays the end user agreement."""
     with open('EULA') as eula_file:
-        if not display.generic_yesno(
+        if not zope.component.getUtility(interfaces.IDisplay).generic_yesno(
                 eula_file.read(), "Agree", "Cancel"):
             sys.exit(0)
 
@@ -144,7 +147,8 @@ def choose_names(installer):
     # This function adds all names
     # found within the config to self.names
     # Then filters them based on user selection
-    code, names = display.filter_names(get_all_names(installer))
+    code, names = zope.component.getUtility(
+        interfaces.IDisplay).filter_names(get_all_names(installer))
     if code == display.OK and names:
         # TODO: Allow multiple names once it is setup
         return [names[0]]

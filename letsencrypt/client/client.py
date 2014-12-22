@@ -9,13 +9,14 @@ import string
 import sys
 
 import M2Crypto
+import zope.component
 
 from letsencrypt.client import acme
 from letsencrypt.client import challenge
 from letsencrypt.client import CONFIG
 from letsencrypt.client import crypto_util
-from letsencrypt.client import display
 from letsencrypt.client import errors
+from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
 from letsencrypt.client import network
 
@@ -206,7 +207,8 @@ class Client(object):
         # sites may have been enabled / final cleanup
         self.installer.restart()
 
-        display.success_installation(self.names)
+        zope.component.getUtility(
+            interfaces.IDisplay).success_installation(self.names)
 
         return vhost
 
@@ -223,7 +225,8 @@ class Client(object):
 
         """
         if redirect is None:
-            redirect = display.redirect_by_default()
+            redirect = zope.component.getUtility(
+                interfaces.IDisplay).redirect_by_default()
 
         if redirect:
             self.redirect_to_ssl(vhost)
