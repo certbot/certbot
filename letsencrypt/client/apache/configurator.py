@@ -1,5 +1,4 @@
 """Apache Configuration based off of Augeas Configurator."""
-import hashlib
 import logging
 import os
 import pkg_resources
@@ -9,21 +8,17 @@ import socket
 import subprocess
 import sys
 
-from Crypto import Random
+import zope.interface
 
 from letsencrypt.client import augeas_configurator
 from letsencrypt.client import challenge_util
 from letsencrypt.client import CONFIG
-from letsencrypt.client import crypto_util
 from letsencrypt.client import errors
+from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
 
-
-# Configurator should be turned into a Singleton
-
-# Note: Apache 2.4 NameVirtualHost directive is deprecated... all vhost twins
-# are considered name based vhosts by default. The use of the directive will
-# emit a warning.
+from letsencrypt.client.apache import obj
+from letsencrypt.client.apache import parser
 
 # TODO: Augeas sections ie. <VirtualHost>, <IfModule> beginning and closing
 # tags need to be the same case, otherwise Augeas doesn't recognize them.
@@ -31,7 +26,7 @@ from letsencrypt.client import le_util
 # Augeas views <VirtualHost> </Virtualhost> as an error. This will just
 # require another check_parsing_errors() after all files are included...
 # (after a find_directive search is executed currently). It can be a one
-# time check however because all of Trustifies transactions will ensure
+# time check however because all of LE's transactions will ensure
 # only properly formed sections are added.
 
 # Note: This protocol works for filenames with spaces in it, the sites are
@@ -43,51 +38,6 @@ from letsencrypt.client import le_util
 # Note: FILEPATHS and changes to files are transactional.  They are copied
 # over before the updates are made to the existing files. NEW_FILES is
 # transactional due to the use of register_file_creation()
-
-class VH(object):
-    """Represents an Apache Virtualhost.
-
-    :ivar str filep: file path of VH
-    :ivar str path: Augeas path to virtual host
-    :ivar list addrs: Virtual Host addresses (:class:`list` of :class:`str`)
-    :ivar list names: Server names/aliases of vhost
-        (:class:`list` of :class:`str`)
-
-    :ivar bool ssl: SSLEngine on in vhost
-    :ivar bool enabled: Virtual host is enabled
-
-    """
-
-    def __init__(self, filep, path, addrs, ssl, enabled, names=None):
-        """Initialize a VH."""
-        self.filep = filep
-        self.path = path
-        self.addrs = addrs
-        self.names = [] if names is None else names
-        self.ssl = ssl
-        self.enabled = enabled
-
-    def add_name(self, name):
-        """Add name to vhost."""
-        self.names.append(name)
-
-    def __str__(self):
-        return ("file: %s\n"
-                "vh_path: %s\n"
-                "addrs: %s\n"
-                "names: %s\n"
-                "ssl: %s\n"
-                "enabled: %s" % (self.filep, self.path, self.addrs,
-                                 self.names, self.ssl, self.enabled))
-
-    def __eq__(self, other):
-        if isinstance(other, self.__class__):
-            return (self.filep == other.filep and self.path == other.path and
-                    set(self.addrs) == set(other.addrs) and
-                    set(self.names) == set(other.names) and
-                    self.ssl == other.ssl and self.enabled == other.enabled)
-
-        return False
 
 
 class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
@@ -107,6 +57,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     parser automatically.
 
     .. todo:: Add support for config file variables Define rootDir /var/www/
+    .. todo:: Add proper support for module configuration
 
     The API of this class will change in the coming weeks as the exact
     needs of client's are clarified with the new and developing protocol.
@@ -116,11 +67,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         with the configuration
     :ivar float version: version of Apache
     :ivar list vhosts: All vhosts found in the configuration
-        (:class:`list` of :class:`VH`)
+        (:class:`list` of :class:`letsencrypt.client.apache.obj.VirtualHost`)
 
     :ivar dict assoc: Mapping between domains and vhosts
 
     """
+    zope.interface.implements(interfaces.IAuthenticator, interfaces.IInstaller)
+
     def __init__(self, server_root=CONFIG.SERVER_ROOT, direc=None,
                  ssl_options=CONFIG.OPTIONS_SSL_CONF, version=None):
         """Initialize an Apache Configurator.
@@ -143,10 +96,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         super(ApacheConfigurator, self).__init__(direc)
 
-        self.server_root = server_root
-
         # See if any temporary changes need to be recovered
-        # This needs to occur before VH objects are setup...
+        # This needs to occur before VirtualHost objects are setup...
         # because this will change the underlying configuration and potential
         # vhosts
         self.recovery_routine()
@@ -155,21 +106,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if os.geteuid() == 0:
             self.verify_setup()
 
-        # Find configuration root and make sure augeas can parse it.
-        self.location = self._set_locations(ssl_options)
-        self._parse_file(self.location["root"])
-
-        # Must also attempt to parse sites-available or equivalent
-        # Sites-available is not included naturally in configuration
-        self._parse_file(os.path.join(self.server_root, "sites-available/*"))
+        self.parser = parser.ApacheParser(self.aug, server_root, ssl_options)
+        # Check for errors in parsing files with Augeas
+        self.check_parsing_errors("httpd.aug")
 
         # Set Version
         self.version = self.get_version() if version is None else version
-
-        # Check for errors in parsing files with Augeas
-        self.check_parsing_errors("httpd.aug")
-        # This problem has been fixed in Augeas 1.0
-        self.standardize_excl()
 
         # Get all of the available vhosts
         self.vhosts = self.get_virtual_hosts()
@@ -188,9 +130,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # if it is desired. There may be instances where correct configuration
         # isn't required on startup.
 
-    # TODO: This function can be improved to ensure that the final directives
-    # are being modified whether that be in the include files or in the
-    # virtualhost declaration - these directives can be overwritten
     def deploy_cert(self, vhost, cert, key, cert_chain=None):
         """Deploys certificate to specified virtual host.
 
@@ -206,7 +145,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                   This shouldn't happen within letsencrypt though
 
         :param vhost: ssl vhost to deploy certificate
-        :type vhost: :class:`VH`
+        :type vhost: :class:`letsencrypt.client.apache.obj.VirtualHost`
 
         :param str cert: certificate filename
         :param str key: private key filename
@@ -218,15 +157,15 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         path = {}
 
-        path["cert_file"] = self.find_directive(case_i(
+        path["cert_file"] = self.parser.find_dir(parser.case_i(
             "SSLCertificateFile"), None, vhost.path)
-        path["cert_key"] = self.find_directive(case_i(
+        path["cert_key"] = self.parser.find_dir(parser.case_i(
             "SSLCertificateKeyFile"), None, vhost.path)
 
         # Only include if a certificate chain is specified
         if cert_chain is not None:
-            path["cert_chain"] = self.find_directive(
-                case_i("SSLCertificateChainFile"), None, vhost.path)
+            path["cert_chain"] = self.parser.find_dir(
+                parser.case_i("SSLCertificateChainFile"), None, vhost.path)
 
         if len(path["cert_file"]) == 0 or len(path["cert_key"]) == 0:
             # Throw some "can't find all of the directives error"
@@ -242,7 +181,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.aug.set(path["cert_key"][0], key)
         if cert_chain is not None:
             if len(path["cert_chain"]) == 0:
-                self.add_dir(vhost.path, "SSLCertificateChainFile", cert_chain)
+                self.parser.add_dir(
+                    vhost.path, "SSLCertificateChainFile", cert_chain)
             else:
                 self.aug.set(path["cert_chain"][0], cert_chain)
 
@@ -264,7 +204,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :param str name: domain name
 
         :returns: ssl vhost associated with name
-        :rtype: :class:`VH`
+        :rtype: :class:`letsencrypt.client.apache.obj.VirtualHost`
 
         """
         # Allows for domain names to be associated with a virtual host
@@ -274,31 +214,24 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 return vhost
         # Check for servernames/aliases for ssl hosts
         for vhost in self.vhosts:
-            if vhost.ssl:
-                for name in vhost.names:
-                    if name == target_name:
-                        return vhost
+            if vhost.ssl and target_name in vhost.names:
+                return vhost
         # Checking for domain name in vhost address
         # This technique is not recommended by Apache but is technically valid
+        target_addr = obj.Addr((target_name, "443"))
         for vhost in self.vhosts:
-            for addr in vhost.addrs:
-                tup = addr.partition(":")
-                if tup[0] == target_name and tup[2] == "443":
-                    return vhost
+            if target_addr in vhost.addrs:
+                return vhost
 
         # Check for non ssl vhosts with servernames/aliases == 'name'
         for vhost in self.vhosts:
-            if not vhost.ssl:
-                for name in vhost.names:
-                    if name == target_name:
-                        # When do we need to self.make_vhost_ssl(v)
-                        return self.make_vhost_ssl(vhost)
+            if not vhost.ssl and target_name in vhost.names:
+                return self.make_vhost_ssl(vhost)
 
         # No matches, search for the default
         for vhost in self.vhosts:
-            for addr in vhost.addrs:
-                if addr == "_default_:443":
-                    return vhost
+            if "_defualt_:443" in vhost.addrs:
+                return vhost
         return None
 
     def create_dn_server_assoc(self, domain, vhost):
@@ -309,7 +242,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :param str domain: domain name to associate
 
         :param vhost: virtual host to associate with domain
-        :type vhost: :class:`VH`
+        :type vhost: :class:`letsencrypt.client.apache.obj.VirtualHost`
 
         """
         self.assoc[domain] = vhost
@@ -332,86 +265,29 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         for vhost in self.vhosts:
             all_names.update(vhost.names)
             for addr in vhost.addrs:
-                a_tup = addr.partition(":")
-
                 # If it isn't a private IP, do a reverse DNS lookup
-                if not private_ips.match(a_tup[0]):
+                if not private_ips.match(addr.get_addr()):
                     try:
-                        socket.inet_aton(a_tup[0])
-                        all_names.add(socket.gethostbyaddr(a_tup[0])[0])
+                        socket.inet_aton(addr.get_addr())
+                        all_names.add(socket.gethostbyaddr(addr.get_addr())[0])
                     except (socket.error, socket.herror, socket.timeout):
                         continue
 
         return all_names
 
-    def _set_locations(self, ssl_options):
-        """Set default location for directives.
-
-        Locations are given as file_paths
-        .. todo:: Make sure that files are included
-
-        """
-        root = self._find_config_root()
-        default = self._set_user_config_file(root)
-
-        temp = os.path.join(self.server_root, "ports.conf")
-        if os.path.isfile(temp):
-            listen = temp
-            name = temp
-        else:
-            listen = default
-            name = default
-
-        return {"root": root, "default": default, "listen": listen,
-                "name": name, "ssl_options": ssl_options}
-
-    def _find_config_root(self):
-        """Find the Apache Configuration Root file."""
-        location = ["apache2.conf", "httpd.conf"]
-
-        for name in location:
-            if os.path.isfile(os.path.join(self.server_root, name)):
-                return os.path.join(self.server_root, name)
-
-        raise errors.LetsEncryptConfiguratorError(
-            "Could not find configuration root")
-
-    def _set_user_config_file(self, root, filename=''):
-        """Set the appropriate user configuration file
-
-        .. todo:: This will have to be updated for other distros versions
-
-        :param str filename: optional filename that will be used as the
-            user config
-
-        """
-        if filename:
-            return filename
-        else:
-            # Basic check to see if httpd.conf exists and
-            # in heirarchy via direct include
-            # httpd.conf was very common as a user file in Apache 2.2
-            if (os.path.isfile(self.server_root + 'httpd.conf') and
-                    self.find_directive(
-                        case_i("Include"), case_i("httpd.conf"),
-                        get_aug_path(root))):
-                return os.path.join(self.server_root, 'httpd.conf')
-            else:
-                return os.path.join(self.server_root + 'apache2.conf')
-
     def _add_servernames(self, host):
         """Helper function for get_virtual_hosts().
 
         :param host: In progress vhost whose names will be added
-        :type host: :class:`VH`
+        :type host: :class:`letsencrypt.client.apache.obj.VirtualHost`
 
         """
         name_match = self.aug.match(("%s//*[self::directive=~regexp('%s')] | "
                                      "%s//*[self::directive=~regexp('%s')]" %
                                      (host.path,
-                                      case_i('ServerName'),
+                                      parser.case_i('ServerName'),
                                       host.path,
-                                      case_i('ServerAlias'))))
+                                      parser.case_i('ServerAlias'))))
 
         for name in name_match:
             args = self.aug.match(name + "/*")
@@ -424,22 +300,22 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :param str path: Augeas path to virtual host
 
         :returns: newly created vhost
-        :rtype: :class:`VH`
+        :rtype: :class:`letsencrypt.client.apache.obj.VirtualHost`
 
         """
-        addrs = []
+        addrs = set()
         args = self.aug.match(path + "/arg")
         for arg in args:
-            addrs.append(self.aug.get(arg))
+            addrs.add(obj.Addr.fromstring(self.aug.get(arg)))
         is_ssl = False
 
-        if self.find_directive(
-                case_i("SSLEngine"), case_i("on"), path):
+        if self.parser.find_dir(
+                parser.case_i("SSLEngine"), parser.case_i("on"), path):
             is_ssl = True
 
         filename = get_file_path(path)
         is_enabled = self.is_site_enabled(filename)
-        vhost = VH(filename, path, addrs, is_ssl, is_enabled)
+        vhost = obj.VirtualHost(filename, path, addrs, is_ssl, is_enabled)
         self._add_servernames(vhost)
         return vhost
 
@@ -447,14 +323,16 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     def get_virtual_hosts(self):
         """Returns list of virtual hosts found in the Apache configuration.
 
-        :returns: List of :class:`VH` objects found in configuration
+        :returns: List of
+            :class:`letsencrypt.client.apache.obj.VirtualHost` objects
+            found in configuration
         :rtype: list
 
         """
         # Search sites-available, httpd.conf for possible virtual hosts
         paths = self.aug.match(
             ("/files%ssites-available//*[label()=~regexp('%s')]" %
-             (self.server_root, case_i('VirtualHost'))))
+             (self.parser.root, parser.case_i('VirtualHost'))))
         vhs = []
 
         for path in paths:
@@ -482,8 +360,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # search for NameVirtualHost directive for ip_addr
         # note ip_addr can be FQDN although Apache does not recommend it
         return (self.version >= (2, 4) or
-                self.find_directive(
-                    case_i("NameVirtualHost"), case_i(target_addr)))
+                self.parser.find_dir(
+                    parser.case_i("NameVirtualHost"),
+                    parser.case_i(str(target_addr))))
 
     def add_name_vhost(self, addr):
         """Adds NameVirtualHost directive for given address.
@@ -491,32 +370,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :param str addr: Address that will be added as NameVirtualHost directive
 
         """
-        path = self._add_dir_to_ifmodssl(
-            get_aug_path(self.location["name"]), "NameVirtualHost", addr)
+        path = self.parser.add_dir_to_ifmodssl(
+            parser.get_aug_path(
+                self.parser.loc["name"]), "NameVirtualHost", str(addr))
 
         self.save_notes += "Setting %s to be NameBasedVirtualHost\n" % addr
         self.save_notes += "\tDirective added to %s\n" % path
-
-    def _add_dir_to_ifmodssl(self, aug_conf_path, directive, val):
-        """Adds directive and value to IfMod ssl block.
-
-        Adds given directive and value along configuration path within
-        an IfMod mod_ssl.c block.  If the IfMod block does not exist in
-        the file, it is created.
-
-        :param str aug_conf_path: Desired Augeas config path to add directive
-        :param str directive: Directive you would like to add
-        :param str val: Value of directive ie. Listen 443, 443 is the value
-
-        """
-        # TODO: Add error checking code... does the path given even exist?
-        #       Does it throw exceptions?
-        if_mod_path = self._get_ifmod(aug_conf_path, "mod_ssl.c")
-        # IfModule can have only one valid argument, so append after
-        self.aug.insert(if_mod_path + "arg", "directive", False)
-        nvh_path = if_mod_path + "directive[1]"
-        self.aug.set(nvh_path, directive)
-        self.aug.set(nvh_path + "/arg", val)
 
     def _prepare_server_https(self):
         """Prepare the server for HTTPS.
@@ -532,18 +391,18 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Check for Listen 443
         # Note: This could be made to also look for ip:443 combo
         # TODO: Need to search only open directives and IfMod mod_ssl.c
-        if len(self.find_directive(case_i("Listen"), "443")) == 0:
+        if len(self.parser.find_dir(parser.case_i("Listen"), "443")) == 0:
             logging.debug("No Listen 443 directive found")
             logging.debug("Setting the Apache Server to Listen on port 443")
-            path = self._add_dir_to_ifmodssl(
-                get_aug_path(self.location["listen"]), "Listen", "443")
+            path = self.parser.add_dir_to_ifmodssl(
+                parser.get_aug_path(self.parser.loc["listen"]), "Listen", "443")
             self.save_notes += "Added Listen 443 directive to %s\n" % path
 
     def make_server_sni_ready(self, vhost, default_addr="*:443"):
         """Checks to see if the server is ready for SNI challenges.
 
-        :param vhost: VHost to check SNI compatibility
-        :type vhost: :class:`VH`
+        :param vhost: VirtualHostost to check SNI compatibility
+        :type vhost: :class:`letsencrypt.client.apache.obj.VirtualHost`
 
         :param str default_addr: TODO - investigate function further
 
@@ -553,8 +412,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Check for NameVirtualHost
         # First see if any of the vhost addresses is a _default_ addr
         for addr in vhost.addrs:
-            tup = addr.partition(":")
-            if tup[0] == "_default_":
+            if addr.get_addr() == "_default_":
                 if not self.is_name_vhost(default_addr):
                     logging.debug("Setting all VirtualHosts on %s to be "
                                   "name based vhosts", default_addr)
@@ -567,178 +425,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                               "based virtual host", addr)
                 self.add_name_vhost(addr)
 
-    def _get_ifmod(self, aug_conf_path, mod):
-        """Returns the path to <IfMod mod> and creates one if it doesn't exist.
-
-        :param str aug_conf_path: Augeas configuration path
-        :param str mod: module ie. mod_ssl.c
-
-        """
-        if_mods = self.aug.match(("%s/IfModule/*[self::arg='%s']" %
-                                  (aug_conf_path, mod)))
-        if len(if_mods) == 0:
-            self.aug.set("%s/IfModule[last() + 1]" % aug_conf_path, "")
-            self.aug.set("%s/IfModule[last()]/arg" % aug_conf_path, mod)
-            if_mods = self.aug.match(("%s/IfModule/*[self::arg='%s']" %
-                                      (aug_conf_path, mod)))
-        # Strip off "arg" at end of first ifmod path
-        return if_mods[0][:len(if_mods[0]) - 3]
-
-    def add_dir(self, aug_conf_path, directive, arg):
-        """Appends directive to the end fo the file given by aug_conf_path.
-
-        .. note:: Not added to AugeasConfigurator because it may depend
-            on the lens
-
-        :param str aug_conf_path: Augeas configuration path to add directive
-        :param str directive: Directive to add
-        :param str arg: Value of the directive. ie. Listen 443, 443 is arg
-
-        """
-        self.aug.set(aug_conf_path + "/directive[last() + 1]", directive)
-        if type(arg) is not list:
-            self.aug.set(aug_conf_path + "/directive[last()]/arg", arg)
-        else:
-            for i in range(len(arg)):
-                self.aug.set("%s/directive[last()]/arg[%d]" %
-                             (aug_conf_path, (i+1)),
-                             arg[i])
-
-    def find_directive(self, directive, arg=None, start=None):
-        """Finds directive in the configuration.
-
-        Recursively searches through config files to find directives
-        Directives should be in the form of a case insensitive regex currently
-
-        .. todo:: arg should probably be a list
-
-        Note: Augeas is inherently case sensitive while Apache is case
-        insensitive.  Augeas 1.0 allows case insensitive regexes like
-        regexp(/Listen/, 'i'), however the version currently supported
-        by Ubuntu 0.10 does not.  Thus I have included my own case insensitive
-        transformation by calling case_i() on everything to maintain
-        compatibility.
-
-        :param str directive: Directive to look for
-
-        :param arg: Specific value direcitve must have, None if all should
-                    be considered
-        :type arg: str or None
-
-        :param str start: Beginning Augeas path to begin looking
-
-        """
-        # Cannot place member variable in the definition of the function so...
-        if not start:
-            start = get_aug_path(self.location["root"])
-
-        # Debug code
-        # print "find_dir:", directive, "arg:", arg, " | Looking in:", start
-        # No regexp code
-        # if arg is None:
-        #     matches = self.aug.match(start +
-        # "//*[self::directive='"+directive+"']/arg")
-        # else:
-        #     matches = self.aug.match(start +
-        # "//*[self::directive='" + directive+"']/* [self::arg='" + arg + "']")
-
-        # includes = self.aug.match(start +
-        # "//* [self::directive='Include']/* [label()='arg']")
-
-        if arg is None:
-            matches = self.aug.match(("%s//*[self::directive=~regexp('%s')]/arg"
-                                      % (start, directive)))
-        else:
-            matches = self.aug.match(("%s//*[self::directive=~regexp('%s')]/*"
-                                      "[self::arg=~regexp('%s')]" %
-                                      (start, directive, arg)))
-
-        incl_regex = "(%s)|(%s)" % (case_i('Include'),
-                                    case_i('IncludeOptional'))
-
-        includes = self.aug.match(("%s//* [self::directive=~regexp('%s')]/* "
-                                   "[label()='arg']" % (start, incl_regex)))
-
-        # for inc in includes:
-        #    print inc, self.aug.get(inc)
-
-        for include in includes:
-            # start[6:] to strip off /files
-            matches.extend(self.find_directive(
-                directive, arg, self._get_include_path(strip_dir(start[6:]),
-                                                       self.aug.get(include))))
-
-        return matches
-
-    def _get_include_path(self, cur_dir, arg):
-        """Converts an Apache Include directive into Augeas path.
-
-        Converts an Apache Include directive argument into an Augeas
-        searchable path
-
-        .. todo:: convert to use os.path.join()
-
-        :param str cur_dir: current working directory
-
-        :param str arg: Argument of Include directive
-
-        :returns: Augeas path string
-        :rtype: str
-
-        """
-        # Sanity check argument - maybe
-        # Question: what can the attacker do with control over this string
-        # Effect parse file... maybe exploit unknown errors in Augeas
-        # If the attacker can Include anything though... and this function
-        # only operates on Apache real config data... then the attacker has
-        # already won.
-        # Perhaps it is better to simply check the permissions on all
-        # included files?
-        # check_config to validate apache config doesn't work because it
-        # would create a race condition between the check and this input
-
-        # TODO: Maybe... although I am convinced we have lost if
-        # Apache files can't be trusted.  The augeas include path
-        # should be made to be exact.
-
-        # Check to make sure only expected characters are used <- maybe remove
-        # validChars = re.compile("[a-zA-Z0-9.*?_-/]*")
-        # matchObj = validChars.match(arg)
-        # if matchObj.group() != arg:
-        #     logging.error("Error: Invalid regexp characters in %s", arg)
-        #     return []
-
-        # Standardize the include argument based on server root
-        if not arg.startswith("/"):
-            arg = cur_dir + arg
-        # conf/ is a special variable for ServerRoot in Apache
-        elif arg.startswith("conf/"):
-            arg = self.server_root + arg[5:]
-        # TODO: Test if Apache allows ../ or ~/ for Includes
-
-        # Attempts to add a transform to the file if one does not already exist
-        self._parse_file(arg)
-
-        # Argument represents an fnmatch regular expression, convert it
-        # Split up the path and convert each into an Augeas accepted regex
-        # then reassemble
-        if "*" in arg or "?" in arg:
-            split_arg = arg.split("/")
-            for idx, split in enumerate(split_arg):
-                # * and ? are the two special fnmatch characters
-                if "*" in split or "?" in split:
-                    # Turn it into a augeas regex
-                    # TODO: Can this instead be an augeas glob instead of regex
-                    split_arg[idx] = ("* [label()=~regexp('%s')]" %
-                                      self.fnmatch_to_re(split))
-            # Reassemble the argument
-            arg = "/".join(split_arg)
-
-        # If the include is a directory, just return the directory as a file
-        if arg.endswith("/"):
-            return get_aug_path(arg[:len(arg)-1])
-        return get_aug_path(arg)
-
     def make_vhost_ssl(self, nonssl_vhost):
         """Makes an ssl_vhost version of a nonssl_vhost.
 
@@ -746,14 +432,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         New vhost will reside as (nonssl_vhost.path) + CONFIG.LE_VHOST_EXT
 
         :param nonssl_vhost: Valid VH that doesn't have SSLEngine on
-        :type nonssl_vhost: :class:`VH`
+        :type nonssl_vhost: :class:`letsencrypt.client.apache.obj.VirtualHost`
 
         :returns: SSL vhost
-        :rtype: :class:`VH`
+        :rtype: :class:`letsencrypt.client.apache.obj.VirtualHost`
 
         """
         avail_fp = nonssl_vhost.filep
-        # Copy file
+        # Get filepath of new ssl_vhost
         if avail_fp.endswith(".conf"):
             ssl_fp = avail_fp[:-(len(".conf"))] + CONFIG.LE_VHOST_EXT
         else:
@@ -778,41 +464,33 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             new_file.close()
 
         self.aug.load()
-        # Delete the VH addresses because they may change here
-        del nonssl_vhost.addrs[:]
-        ssl_addrs = []
 
-        # change address to address:443, address:80
+        ssl_addrs = set()
+
+        # change address to address:443
         addr_match = "/files%s//* [label()=~regexp('%s')]/arg"
         ssl_addr_p = self.aug.match(
-            addr_match % (ssl_fp, case_i('VirtualHost')))
-        avail_addr_p = self.aug.match(
-            addr_match % (avail_fp, case_i('VirtualHost')))
+            addr_match % (ssl_fp, parser.case_i('VirtualHost')))
 
-        for i in range(len(avail_addr_p)):
-            avail_old_arg = str(self.aug.get(avail_addr_p[i]))
-            ssl_old_arg = str(self.aug.get(ssl_addr_p[i]))
-            avail_tup = avail_old_arg.partition(":")
-            ssl_tup = ssl_old_arg.partition(":")
-            avail_new_addr = avail_tup[0] + ":80"
-            ssl_new_addr = ssl_tup[0] + ":443"
-            self.aug.set(avail_addr_p[i], avail_new_addr)
-            self.aug.set(ssl_addr_p[i], ssl_new_addr)
-            nonssl_vhost.addrs.append(avail_new_addr)
-            ssl_addrs.append(ssl_new_addr)
+        for i in range(len(ssl_addr_p)):
+            old_addr = obj.Addr.fromstring(
+                str(self.aug.get(ssl_addr_p[i])))
+            ssl_addr = old_addr.get_addr_obj("443")
+            self.aug.set(ssl_addr_p[i], str(ssl_addr))
+            ssl_addrs.add(ssl_addr)
 
         # Add directives
-        vh_p = self.aug.match(("/files%s//* [label()=~regexp('%s')]" %
-                               (ssl_fp, case_i('VirtualHost'))))
+        vh_p = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
+                              (ssl_fp, parser.case_i('VirtualHost')))
         if len(vh_p) != 1:
             logging.error("Error: should only be one vhost in %s", avail_fp)
             sys.exit(1)
 
-        self.add_dir(vh_p[0], "SSLCertificateFile",
-                     "/etc/ssl/certs/ssl-cert-snakeoil.pem")
-        self.add_dir(vh_p[0], "SSLCertificateKeyFile",
-                     "/etc/ssl/private/ssl-cert-snakeoil.key")
-        self.add_dir(vh_p[0], "Include", self.location["ssl_options"])
+        self.parser.add_dir(vh_p[0], "SSLCertificateFile",
+                            "/etc/ssl/certs/ssl-cert-snakeoil.pem")
+        self.parser.add_dir(vh_p[0], "SSLCertificateKeyFile",
+                            "/etc/ssl/private/ssl-cert-snakeoil.key")
+        self.parser.add_dir(vh_p[0], "Include", self.parser.loc["ssl_options"])
 
         # Log actions and create save notes
         logging.info("Created an SSL vhost at %s", ssl_fp)
@@ -823,19 +501,19 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         ssl_vhost = self._create_vhost(vh_p[0])
         self.vhosts.append(ssl_vhost)
 
-        # Check if nonssl_vhost's address was NameVirtualHost
         # NOTE: Searches through Augeas seem to ruin changes to directives
         #       The configuration must also be saved before being searched
         #       for the new directives; For these reasons... this is tacked
         #       on after fully creating the new vhost
         need_to_save = False
-        for i in range(len(nonssl_vhost.addrs)):
-
-            if (self.is_name_vhost(nonssl_vhost.addrs[i]) and
-                    not self.is_name_vhost(ssl_addrs[i])):
-                self.add_name_vhost(ssl_addrs[i])
-                logging.info("Enabling NameVirtualHosts on %s", ssl_addrs[i])
-                need_to_save = True
+        # See if the exact address appears in any other vhost
+        for addr in ssl_addrs:
+            for vhost in self.vhosts:
+                if (ssl_vhost.filep != vhost.filep and addr in vhost.addrs and
+                        not self.is_name_vhost(addr)):
+                    self.add_name_vhost(addr)
+                    logging.info("Enabling NameVirtualHosts on %s", addr)
+                    need_to_save = True
 
         if need_to_save:
             self.save()
@@ -851,10 +529,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         The function then adds the directive
 
         :param ssl_vhost: Destination of traffic, an ssl enabled vhost
-        :type ssl_vhost: :class:`VH`
+        :type ssl_vhost: :class:`letsencrypt.client.apache.obj.VirtualHost`
 
         :returns: Success, general_vhost (HTTP vhost)
-        :rtype: (bool, :class:`VH`)
+        :rtype: (bool, :class:`letsencrypt.client.apache.obj.VirtualHost`)
 
         """
         # TODO: Enable check to see if it is already there
@@ -878,9 +556,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     logging.debug("Unknown redirect exists for this vhost")
                     return False, general_v
             # Add directives to server
-            self.add_dir(general_v.path, "RewriteEngine", "On")
-            self.add_dir(general_v.path,
-                         "RewriteRule", CONFIG.REWRITE_HTTPS_ARGS)
+            self.parser.add_dir(general_v.path, "RewriteEngine", "On")
+            self.parser.add_dir(
+                general_v.path, "RewriteRule", CONFIG.REWRITE_HTTPS_ARGS)
             self.save_notes += ('Redirecting host in %s to ssl vhost in %s\n' %
                                 (general_v.filep, ssl_vhost.filep))
             self.save()
@@ -900,16 +578,16 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         -1 is also returned in case of no redirection/rewrite directives
 
         :param vhost: vhost to check
-        :type vhost: :class:`VH`
+        :type vhost: :class:`letsencrypt.client.apache.obj.VirtualHost`
 
         :returns: Success, code value... see documentation
         :rtype: bool, int
 
         """
-        rewrite_path = self.find_directive(
-            case_i("RewriteRule"), None, vhost.path)
-        redirect_path = self.find_directive(
-            case_i("Redirect"), None, vhost.path)
+        rewrite_path = self.parser.find_dir(
+            parser.case_i("RewriteRule"), None, vhost.path)
+        redirect_path = self.parser.find_dir(
+            parser.case_i("Redirect"), None, vhost.path)
 
         if redirect_path:
             # "Existing Redirect directive for virtualhost"
@@ -931,10 +609,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """Creates an http_vhost specifically to redirect for the ssl_vhost.
 
         :param ssl_vhost: ssl vhost
-        :type ssl_vhost: :class:`VH`
+        :type ssl_vhost: :class:`letsencrypt.client.apache.obj.VirtualHost`
 
         :returns: Success, vhost
-        :rtype: (bool, :class:`VH`)
+        :rtype: (bool, :class:`letsencrypt.client.apache.obj.VirtualHost`)
 
         """
         # Consider changing this to a dictionary check
@@ -954,17 +632,19 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             if size_n > 1:
                 serveralias = " ".join(ssl_vhost.names[1:size_n])
                 serveralias = "ServerAlias " + serveralias
-        redirect_file = "<VirtualHost" + redirect_addrs + "> \n\
-" + servername + "\n\
-" + serveralias + " \n\
-ServerSignature Off \n\
-\n\
-RewriteEngine On \n\
-RewriteRule ^.*$ https://%{SERVER_NAME}%{REQUEST_URI} [L,R=permanent]\n\
-\n\
-ErrorLog /var/log/apache2/redirect.error.log \n\
-LogLevel warn \n\
-</VirtualHost>\n"
+        redirect_file = ("<VirtualHost" + redirect_addrs + ">\n"
+                         "%s \n"
+                         "%s \n"
+                         "ServerSignature Off\n"
+                         "\n"
+                         "RewriteEngine On\n"
+                         "RewriteRule %s\n"
+                         "\n"
+                         "ErrorLog /var/log/apache2/redirect.error.log\n"
+                         "LogLevel warn\n"
+                         "</VirtualHost>\n"
+                         % (servername, serveralias,
+                            " ".join(CONFIG.REWRITE_HTTPS_ARGS)))
 
         # Write out the file
         # This is the default name
@@ -978,7 +658,7 @@ LogLevel warn \n\
                 redirect_filename = "le-redirect-%s.conf" % ssl_vhost.names[0]
 
         redirect_filepath = ("%ssites-available/%s" %
-                             (self.server_root, redirect_filename))
+                             (self.parser.root, redirect_filename))
 
         # Register the new file that will be created
         # Note: always register the creation before writing to ensure file will
@@ -992,8 +672,8 @@ LogLevel warn \n\
 
         self.aug.load()
         # Make a new vhost data structure and add it to the lists
-        new_fp = self.server_root + "sites-available/" + redirect_filename
-        new_vhost = self._create_vhost(get_aug_path(new_fp))
+        new_fp = self.parser.root + "sites-available/" + redirect_filename
+        new_vhost = self._create_vhost(parser.get_aug_path(new_fp))
         self.vhosts.append(new_vhost)
 
         # Finally create documentation for the change
@@ -1015,7 +695,7 @@ LogLevel warn \n\
         if not conflict: returns space separated list of new host addrs
 
         :param ssl_vhost: SSL Vhost to check for possible port 80 redirection
-        :type ssl_vhost: :class:`VH`
+        :type ssl_vhost: :class:`letsencrypt.client.apache.obj.VirtualHost`
 
         :returns: TODO
         :rtype: TODO
@@ -1026,21 +706,15 @@ LogLevel warn \n\
         for ssl_a in ssl_vhost.addrs:
             # Add space on each new addr, combine "VirtualHost"+redirect_addrs
             redirect_addrs = redirect_addrs + " "
-            ssl_tup = ssl_a.partition(":")
-            ssl_a_vhttp = ssl_tup[0] + ":80"
+            ssl_a_vhttp = ssl_a.get_addr_obj("80")
             # Search for a conflicting host...
             for vhost in self.vhosts:
                 if vhost.enabled:
-                    for addr in vhost.addrs:
-                        # Convert :* to standard ip address
-                        if addr.endswith(":*"):
-                            addr = addr[:len(addr)-2]
-                        # Would require NameBasedVirtualHosts,too complicated?
-                        # Maybe do later... right now just return false
-                        # or overlapping addresses... order matters
-                        if addr == ssl_a_vhttp or addr == ssl_tup[0]:
-                            # We have found a conflicting host... just return
-                            return True, vhost
+                    if (ssl_a_vhttp in vhost.addrs or
+                            ssl_a.get_addr_obj("") in vhost.addrs or
+                            ssl_a.get_addr_obj("*") in vhost.addrs):
+                        # We have found a conflicting host... just return
+                        return True, vhost
 
             redirect_addrs = redirect_addrs + ssl_a_vhttp
 
@@ -1054,18 +728,18 @@ LogLevel warn \n\
         Consider changing this into a dict check
 
         :param ssl_vhost: ssl vhost to check
-        :type ssl_vhost: :class:`VH`
+        :type ssl_vhost: :class:`letsencrypt.client.apache.obj.VirtualHost`
 
         :returns: HTTP vhost or None if unsuccessful
-        :rtype: :class:`VH` or None
+        :rtype: :class:`letsencrypt.client.apache.obj.VirtualHost` or None
 
         """
         # _default_:443 check
         # Instead... should look for vhost of the form *:80
         # Should we prompt the user?
         ssl_addrs = ssl_vhost.addrs
-        if ssl_addrs == ["_default_:443"]:
-            ssl_addrs = ["*:443"]
+        if ssl_addrs == obj.Addr.fromstring("_default_:443"):
+            ssl_addrs = [obj.Addr.fromstring("*:443")]
 
         for vhost in self.vhosts:
             found = 0
@@ -1073,28 +747,28 @@ LogLevel warn \n\
             if vhost != ssl_vhost and len(vhost.addrs) == len(ssl_vhost.addrs):
                 # Find each address in ssl_host in test_host
                 for ssl_a in ssl_addrs:
-                    ssl_tup = ssl_a.partition(":")
                     for test_a in vhost.addrs:
-                        test_tup = test_a.partition(":")
-                        if test_tup[0] == ssl_tup[0]:
+                        if test_a.get_addr() == ssl_a.get_addr():
                             # Check if found...
-                            if (test_tup[2] == "80" or
-                                    test_tup[2] == "" or
-                                    test_tup[2] == "*"):
+                            if (test_a.get_port() == "80" or
+                                    test_a.get_port() == "" or
+                                    test_a.get_port() == "*"):
                                 found += 1
                                 break
                 # Check to make sure all addresses were found
                 # and names are equal
                 if (found == len(ssl_vhost.addrs) and
-                        set(vhost.names) == set(ssl_vhost.names)):
+                        vhost.names == ssl_vhost.names):
                     return vhost
         return None
 
-    # TODO - both of these
+    # TODO: Handle ths as outlined in Interfaces.
     def enable_ocsp_stapling(self, ssl_vhost):
+        """Enable OCSP Stapling."""
         return False
 
     def enable_hsts(self, ssl_vhost):
+        """Enable HSTS."""
         return False
 
     def get_all_certs_keys(self):
@@ -1110,10 +784,10 @@ LogLevel warn \n\
 
         for vhost in self.vhosts:
             if vhost.ssl:
-                cert_path = self.find_directive(
-                    case_i("SSLCertificateFile"), None, vhost.path)
-                key_path = self.find_directive(
-                    case_i("SSLCertificateKeyFile"), None, vhost.path)
+                cert_path = self.parser.find_dir(
+                    parser.case_i("SSLCertificateFile"), None, vhost.path)
+                key_path = self.parser.find_dir(
+                    parser.case_i("SSLCertificateKeyFile"), None, vhost.path)
 
                 # Can be removed once find directive can return ordered results
                 if len(cert_path) != 1 or len(key_path) != 1:
@@ -1138,7 +812,7 @@ LogLevel warn \n\
         :rtype: bool
 
         """
-        enabled_dir = os.path.join(self.server_root, "sites-enabled/")
+        enabled_dir = os.path.join(self.parser.root, "sites-enabled/")
         for entry in os.listdir(enabled_dir):
             if os.path.realpath(enabled_dir + entry) == avail_fp:
                 return True
@@ -1153,7 +827,7 @@ LogLevel warn \n\
         .. todo:: Make sure link is not broken...
 
         :param vhost: vhost to enable
-        :type vhost: :class:`VH`
+        :type vhost: :class:`letsencrypt.client.apache.obj.VirtualHost`
 
         :returns: Success
         :rtype: bool
@@ -1164,7 +838,7 @@ LogLevel warn \n\
 
         if "/sites-available/" in vhost.filep:
             enabled_path = ("%ssites-enabled/%s" %
-                            (self.server_root, os.path.basename(vhost.filep)))
+                            (self.parser.root, os.path.basename(vhost.filep)))
             self.register_file_creation(False, enabled_path)
             os.symlink(vhost.filep, enabled_path)
             vhost.enabled = True
@@ -1173,83 +847,7 @@ LogLevel warn \n\
             return True
         return False
 
-    def fnmatch_to_re(self, clean_fn_match):  # pylint: disable=no-self-use
-        """Method converts Apache's basic fnmatch to regular expression.
-
-        :param str clean_fn_match: Apache style filename match, similar to globs
-
-        :returns: regex suitable for augeas
-        :rtype: str
-
-        """
-        regex = ""
-        for letter in clean_fn_match:
-            if letter == '.':
-                regex = regex + r"\."
-            elif letter == '*':
-                regex = regex + ".*"
-            # According to apache.org ? shouldn't appear
-            # but in case it is valid...
-            elif letter == '?':
-                regex = regex + "."
-            else:
-                regex = regex + letter
-        return regex
-
-    def _parse_file(self, file_path):
-        """Parse file with Augeas
-
-        Checks to see if file_path is parsed by Augeas
-        If file_path isn't parsed, the file is added and Augeas is reloaded
-
-        :param str file_path: Apache config file path
-
-        """
-        # Test if augeas included file for Httpd.lens
-        # Note: This works for augeas globs, ie. *.conf
-        inc_test = self.aug.match(
-            "/augeas/load/Httpd/incl [. ='%s']" % file_path)
-        if not inc_test:
-            # Load up files
-            # self.httpd_incl.append(file_path)
-            # self.aug.add_transform("Httpd.lns",
-            #                       self.httpd_incl, None, self.httpd_excl)
-            self._add_httpd_transform(file_path)
-            self.aug.load()
-
-    def standardize_excl(self):
-        """Standardize the excl arguments for the Httpd lens in Augeas.
-
-        Note: Hack!
-        Standardize the excl arguments for the Httpd lens in Augeas
-        Servers sometimes give incorrect defaults
-        Note: This problem should be fixed in Augeas 1.0.  Unfortunately,
-        Augeas 0.10 appears to be the most popular version currently.
-
-        """
-        # attempt to protect against augeas error in 0.10.0 - ubuntu
-        # *.augsave -> /*.augsave upon augeas.load()
-        # Try to avoid bad httpd files
-        # There has to be a better way... but after a day and a half of testing
-        # I had no luck
-        # This is a hack... work around... submit to augeas if still not fixed
-
-        excl = ["*.augnew", "*.augsave", "*.dpkg-dist", "*.dpkg-bak",
-                "*.dpkg-new", "*.dpkg-old", "*.rpmsave", "*.rpmnew",
-                "*~",
-                self.server_root + "*.augsave",
-                self.server_root + "*~",
-                self.server_root + "*/*augsave",
-                self.server_root + "*/*~",
-                self.server_root + "*/*/*.augsave",
-                self.server_root + "*/*/*~"]
-
-        for i in range(len(excl)):
-            self.aug.set("/augeas/load/Httpd/excl[%d]" % (i+1), excl[i])
-
-        self.aug.load()
-
-    def restart(self, quiet=False):  # pylint: disable=no-self-use
+    def restart(self):  # pylint: disable=no-self-use
         """Restarts apache server.
 
         :returns: Success
@@ -1257,19 +855,6 @@ LogLevel warn \n\
 
         """
         return apache_restart()
-
-    def _add_httpd_transform(self, incl):
-        """Add a transform to Augeas.
-
-        This function will correctly add a transform to augeas
-        The existing augeas.add_transform in python is broken.
-
-        :param str incl: TODO
-
-        """
-        last_include = self.aug.match("/augeas/load/Httpd/incl [last()]")
-        self.aug.insert(last_include[0], "incl", False)
-        self.aug.set("/augeas/load/Httpd/incl[last()]", incl)
 
     def config_test(self):
         """Check the configuration of Apache for errors.
@@ -1365,8 +950,8 @@ LogLevel warn \n\
         `chall_dict` composed of:
 
         list_sni_tuple:
-            List of tuples with form `(addr, r, nonce)`, where
-            `addr` (`str`), `r` (base64 `str`), `nonce` (hex `str`)
+            List of tuples with form `(name, r, nonce)`, where
+            `name` (`str`), `r` (base64 `str`), `nonce` (hex `str`)
 
         dvsni_key:
             DVSNI key (:class:`letsencrypt.client.client.Client.Key`)
@@ -1399,11 +984,11 @@ LogLevel warn \n\
             self.make_server_sni_ready(vhost, default_addr)
 
             for addr in vhost.addrs:
-                if "_default_" in addr:
+                if "_default_" == addr.get_addr():
                     addresses.append([default_addr])
                     break
             else:
-                addresses.append(vhost.addrs)
+                addresses.append(list(vhost.addrs))
 
         responses = []
 
@@ -1423,7 +1008,7 @@ LogLevel warn \n\
 
         # Save reversible changes and restart the server
         self.save("SNI Challenge", True)
-        self.restart(True)
+        self.restart()
 
         return responses
 
@@ -1431,7 +1016,7 @@ LogLevel warn \n\
         """Revert all challenges."""
 
         self.revert_challenge_config()
-        self.restart(True)
+        self.restart()
 
     # TODO: Variable names
     def dvsni_mod_config(self, list_sni_tuple, dvsni_key,
@@ -1447,7 +1032,8 @@ LogLevel warn \n\
         :param dvsni_key: DVSNI key
         :type dvsni_key: :class:`letsencrypt.client.client.Client.Key`
 
-        :param list ll_addrs: list of list of addresses to apply
+        :param list ll_addrs: list of list of
+            :class:`letsencrypt.client.apache.obj.Addr` to apply
 
         """
         # WARNING: THIS IS A POTENTIAL SECURITY VULNERABILITY
@@ -1463,13 +1049,13 @@ LogLevel warn \n\
             shutil.copyfile(dist_conf, CONFIG.OPTIONS_SSL_CONF)
 
         # TODO: Use ip address of existing vhost instead of relying on FQDN
-        config_text = "<IfModule mod_ssl.c> \n"
+        config_text = "<IfModule mod_ssl.c>\n"
         for idx, lis in enumerate(ll_addrs):
             config_text += self.get_config_text(
                 list_sni_tuple[idx][2], lis, dvsni_key.file)
-        config_text += "</IfModule> \n"
+        config_text += "</IfModule>\n"
 
-        self.dvsni_conf_include_check(self.location["default"])
+        self.dvsni_conf_include_check(self.parser.loc["default"])
         self.register_file_creation(True, CONFIG.APACHE_CHALLENGE_CONF)
 
         with open(CONFIG.APACHE_CHALLENGE_CONF, 'w') as new_conf:
@@ -1484,36 +1070,38 @@ LogLevel warn \n\
         :param str main_config: file path to main user apache config file
 
         """
-        if len(self.find_directive(
-                case_i("Include"), CONFIG.APACHE_CHALLENGE_CONF)) == 0:
+        if len(self.parser.find_dir(
+                parser.case_i("Include"), CONFIG.APACHE_CHALLENGE_CONF)) == 0:
             # print "Including challenge virtual host(s)"
-            self.add_dir(get_aug_path(main_config),
-                         "Include", CONFIG.APACHE_CHALLENGE_CONF)
+            self.parser.add_dir(parser.get_aug_path(main_config),
+                                "Include", CONFIG.APACHE_CHALLENGE_CONF)
 
     def get_config_text(self, nonce, ip_addrs, dvsni_key_file):
         """Chocolate virtual server configuration text
 
         :param str nonce: hex form of nonce
-        :param str ip_addrs: addresses of challenged domain
+        :param list ip_addrs: addresses of challenged domain
+            :class:`list` of type :class:`letsencrypt.client.apache.obj.Addr`
         :param str dvsni_key_file: Path to key file
 
         :returns: virtual host configuration text
         :rtype: str
 
         """
-        return ("<VirtualHost " + " ".join(ip_addrs) + "> \n"
-                "ServerName " + nonce + CONFIG.INVALID_EXT + " \n"
-                "UseCanonicalName on \n"
-                "SSLStrictSNIVHostCheck on \n"
+        ips = " ".join(str(i) for i in ip_addrs)
+        return ("<VirtualHost " + ips + ">\n"
+                "ServerName " + nonce + CONFIG.INVALID_EXT + "\n"
+                "UseCanonicalName on\n"
+                "SSLStrictSNIVHostCheck on\n"
                 "\n"
-                "LimitRequestBody 1048576 \n"
+                "LimitRequestBody 1048576\n"
                 "\n"
-                "Include " + self.location["ssl_options"] + " \n"
-                "SSLCertificateFile " + self.dvsni_get_cert_file(nonce) + " \n"
-                "SSLCertificateKeyFile " + dvsni_key_file + " \n"
+                "Include " + self.parser.loc["ssl_options"] + "\n"
+                "SSLCertificateFile " + self.dvsni_get_cert_file(nonce) + "\n"
+                "SSLCertificateKeyFile " + dvsni_key_file + "\n"
                 "\n"
-                "DocumentRoot " + self.direc["config"] + "challenge_page/ \n"
-                "</VirtualHost> \n\n")
+                "DocumentRoot " + self.direc["config"] + "challenge_page/\n"
+                "</VirtualHost>\n\n")
 
     def dvsni_get_cert_file(self, nonce):
         """Returns standardized name for challenge certificate.
@@ -1607,22 +1195,6 @@ def apache_restart():
     return True
 
 
-def case_i(string):
-    """Returns case insensitive regex.
-
-    Returns a sloppy, but necessary version of a case insensitive regex.
-    Any string should be able to be submitted and the string is
-    escaped and then made case insensitive.
-    May be replaced by a more proper /i once augeas 1.0 is widely
-    supported.
-
-    :param str string: string to make case i regex
-
-    """
-    return "".join(["["+c.upper()+c.lower()+"]"
-                    if c.isalpha() else c for c in re.escape(string)])
-
-
 def get_file_path(vhost_path):
     """Get file path from augeas_vhost_path.
 
@@ -1649,94 +1221,3 @@ def get_file_path(vhost_path):
             continue
         break
     return avail_fp
-
-
-def get_aug_path(file_path):
-    """Return augeas path for full filepath.
-
-    :param str file_path: Full filepath
-
-    """
-    return "/files%s" % file_path
-
-
-def strip_dir(path):
-    """Returns directory of file path.
-
-    .. todo:: Replace this with Python standard function
-
-    :param str path: path is a file path. not an augeas section or
-        directive path
-
-    :returns: directory
-    :rtype: str
-
-    """
-    index = path.rfind("/")
-    if index > 0:
-        return path[:index+1]
-    # No directory
-    return ""
-
-
-def main():
-    """Main function used for quick testing purposes"""
-
-    config = ApacheConfigurator()
-
-    # for v in config.vhosts:
-    #     print v.filep
-    #     print v.addrs
-    #     for name in v.names:
-    #         print name
-
-    print config.find_directive(
-        case_i("NameVirtualHost"), case_i("holla:443"))
-
-    # for m in config.find_directive("Listen", "443"):
-    #     print "Directive Path:", m, "Value:", config.aug.get(m)
-
-    # for v in config.vhosts:
-    #     for a in v.addrs:
-    #         print "Address:",a, "- Is name vhost?", config.is_name_vhost(a)
-
-    # print config.get_all_names()
-
-    # test_file = "/home/james/Desktop/ports_test.conf"
-    # config._parse_file(test_file)
-
-    # config.aug.insert("/files"+test_file+"/IfModule[1]/arg","directive",False)
-    # config.aug.set("/files"+test_file+"/IfModule[1]/directive[1]", "Listen")
-    # config.aug.set(
-    #     "/files" +test_file+ "/IfModule[1]/directive[1]/arg", "556")
-
-    # #config.save_notes = "Added listen 431 for test"
-    # #config.register_file_creation("/home/james/Desktop/new_file.txt")
-    # #config.save("Testing Saves", False)
-    # #config.recover_checkpoint(1)
-
-    # # config.display_checkpoints()
-    config.config_test()
-
-    # # Testing redirection and make_vhost_ssl
-    # ssl_vh = None
-    # for vh in config.vhosts:
-    #     if not vh.addrs:
-    #         print vh.names
-    #         print vh.filep
-    #     if vh.addrs[0] == "23.20.47.131:80":
-    #         print "Here we go"
-    #         ssl_vh = config.make_vhost_ssl(vh)
-
-    # config.enable_redirect(ssl_vh)
-
-    # for vh in config.vhosts:
-    #     if len(vh.names) > 0:
-    #         config.deploy_cert(
-    #             vh,
-    #             "/home/james/Documents/apache_choc/req.pem",
-    #             "/home/james/Documents/apache_choc/key.pem",
-    #             "/home/james/Downloads/sub.class1.server.ca.pem")
-
-if __name__ == "__main__":
-    main()
