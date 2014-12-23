@@ -1,9 +1,7 @@
 """Apache Configuration based off of Augeas Configurator."""
 import logging
 import os
-import pkg_resources
 import re
-import shutil
 import socket
 import subprocess
 import sys
@@ -17,6 +15,7 @@ from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
 
+from letsencrypt.client.apache import dvsni
 from letsencrypt.client.apache import obj
 from letsencrypt.client.apache import parser
 
@@ -117,6 +116,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.vhosts = self.get_virtual_hosts()
         # Add name_server association dict
         self.assoc = dict()
+        # Add number of outstanding challenges
+        self.chall_out = 0
 
         # Enable mod_ssl if it isn't already enabled
         # This is Let's Encrypt... we enable mod_ssl on initialization :)
@@ -124,11 +125,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         #       be asynchronous as it shouldn't be that time sensitive
         #       on initialization
         self._prepare_server_https()
-
-        # Note: initialization doesn't check to see if the config is correct
-        # by Apache's standards. This should be done by the client (client.py)
-        # if it is desired. There may be instances where correct configuration
-        # isn't required on startup.
 
     def deploy_cert(self, vhost, cert, key, cert_chain=None):
         """Deploys certificate to specified virtual host.
@@ -929,186 +925,41 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     ###########################################################################
     # Challenges Section
     ###########################################################################
-
-    # TODO: Change list_sni_tuple to namedtuple. Also include key within tuple.
-    #       This allows the keys to be different for each SNI challenge
-
-    def perform(self, chall_dict):
+    def perform(self, chall_list):
         """Perform the configuration related challenge.
 
-        :param dict chall_dict: Dictionary representing a challenge.
+        This function currently assumes all challenges will be fulfilled.
+        If this turns out not to be the case in the future. Cleanup and
+        outstanding challenges will have to be designed better.
+
+        :param list chall_list: List of challenges to be
+            fulfilled by configurator.
 
         """
+        self.chall_out += len(chall_list)
+        responses = [None] * len(chall_list)
+        apache_dvsni = dvsni.ApacheDVSNI(self)
 
-        if chall_dict.get("type", "") == 'dvsni':
-            return self.dvsni_perform(chall_dict)
-        return None
+        for i, chall in enumerate(chall_list):
+            if isinstance(chall, challenge_util.DVSNI_Chall):
+                apache_dvsni.add_chall(chall, i)
 
-    def dvsni_perform(self, chall_dict):
-        """Perform a DVSNI challenge.
-
-        `chall_dict` composed of:
-
-        `type`: `dvsni` (`str`)
-
-        `dvsni_chall`:
-            List of DVSNI_Chall namedtuples
-            (:class:`letsencrypt.client.client.Client.DVSNI_Chall`)
-            where DVSNI_Chall tuples have the following fields
-            `domain` (`str`), `r_b64` (base64 `str`), `nonce` (hex `str`)
-            `key` (:class:`letsencrypt.client.client.Client.Key`)
-
-        :param dict chall_dict: dvsni challenge - see documentation
-
-        """
-        # Save any changes to the configuration as a precaution
-        # About to make temporary changes to the config
-        self.save()
-
-        # Do weak validation that challenge is of expected type
-        if "dvsni_chall" not in chall_dict:
-            logging.fatal("Incorrect parameter given to Apache DVSNI challenge")
-            logging.fatal("Chall dict: %s", chall_dict)
-            sys.exit(1)
-
-        addresses = []
-        default_addr = "*:443"
-        for chall in chall_dict["dvsni_chall"]:
-            vhost = self.choose_virtual_host(chall.domain)
-            if vhost is None:
-                logging.error(
-                    "No vhost exists with servername or alias of: %s",
-                    chall.domain)
-                logging.error("No _default_:443 vhost exists")
-                logging.error("Please specify servernames in the Apache config")
-                return None
-
-            # TODO - @jdkasten review this code to make sure it makes sense
-            self.make_server_sni_ready(vhost, default_addr)
-
-            for addr in vhost.addrs:
-                if "_default_" == addr.get_addr():
-                    addresses.append([default_addr])
-                    break
-            else:
-                addresses.append(list(vhost.addrs))
-
-        responses = []
-
-        # Create all of the challenge certs
-        for chall in chall_dict["dvsni_chall"]:
-            cert_path = self.dvsni_get_cert_file(chall.nonce)
-            self.register_file_creation(cert_path)
-            s_b64 = challenge_util.dvsni_gen_cert(
-                cert_path, chall.domain, chall.r_b64, chall.nonce, chall.key)
-
-            responses.append({"type": "dvsni", "s": s_b64})
-
-        # Setup the configuration
-        self.dvsni_mod_config(chall_dict["dvsni_chall"], addresses)
-
-        # Save reversible changes and restart the server
-        self.save("SNI Challenge", True)
+        sni_response = apache_dvsni.perform()
+        # Must restart in order to activate the challenges.
+        # Handled here because we may be able to load up other challenge types
         self.restart()
+
+        for i, resp in enumerate(sni_response):
+            responses[apache_dvsni.indices[i]] = resp
 
         return responses
 
-    def cleanup(self):
+    def cleanup(self, chall_list):
         """Revert all challenges."""
-
-        self.revert_challenge_config()
-        self.restart()
-
-    # TODO: Variable names
-    def dvsni_mod_config(self, dvsni_chall, ll_addrs):
-        """Modifies Apache config files to include challenge vhosts.
-
-        Result: Apache config includes virtual servers for issued challs
-
-        :param list dvsni_chall: list of
-            :class:`letsencrypt.client.client.Client.DVSNI_Chall`
-
-        :param list ll_addrs: list of list of
-            :class:`letsencrypt.client.apache.obj.Addr` to apply
-
-        """
-        # WARNING: THIS IS A POTENTIAL SECURITY VULNERABILITY
-        # THIS SHOULD BE HANDLED BY THE PACKAGE MANAGER
-        # AND TAKEN OUT BEFORE RELEASE, INSTEAD
-        # SHOWING A NICE ERROR MESSAGE ABOUT THE PROBLEM
-
-        # Check to make sure options-ssl.conf is installed
-        # pylint: disable=no-member
-        if not os.path.isfile(CONFIG.OPTIONS_SSL_CONF):
-            dist_conf = pkg_resources.resource_filename(
-                __name__, os.path.basename(CONFIG.OPTIONS_SSL_CONF))
-            shutil.copyfile(dist_conf, CONFIG.OPTIONS_SSL_CONF)
-
-        # TODO: Use ip address of existing vhost instead of relying on FQDN
-        config_text = "<IfModule mod_ssl.c>\n"
-        for idx, lis in enumerate(ll_addrs):
-            config_text += self.get_config_text(
-                dvsni_chall[idx].nonce, lis, dvsni_chall[idx].key.file)
-        config_text += "</IfModule>\n"
-
-        self.dvsni_conf_include_check(self.parser.loc["default"])
-        self.register_file_creation(True, CONFIG.APACHE_CHALLENGE_CONF)
-
-        with open(CONFIG.APACHE_CHALLENGE_CONF, 'w') as new_conf:
-            new_conf.write(config_text)
-
-    def dvsni_conf_include_check(self, main_config):
-        """Adds DVSNI challenge conf file into configuration.
-
-        Adds DVSNI challenge include file if it does not already exist
-        within mainConfig
-
-        :param str main_config: file path to main user apache config file
-
-        """
-        if len(self.parser.find_dir(
-                parser.case_i("Include"), CONFIG.APACHE_CHALLENGE_CONF)) == 0:
-            # print "Including challenge virtual host(s)"
-            self.parser.add_dir(parser.get_aug_path(main_config),
-                                "Include", CONFIG.APACHE_CHALLENGE_CONF)
-
-    def get_config_text(self, nonce, ip_addrs, dvsni_key_file):
-        """Chocolate virtual server configuration text
-
-        :param str nonce: hex form of nonce
-        :param list ip_addrs: addresses of challenged domain
-            :class:`list` of type :class:`letsencrypt.client.apache.obj.Addr`
-        :param str dvsni_key_file: Path to key file
-
-        :returns: virtual host configuration text
-        :rtype: str
-
-        """
-        ips = " ".join(str(i) for i in ip_addrs)
-        return ("<VirtualHost " + ips + ">\n"
-                "ServerName " + nonce + CONFIG.INVALID_EXT + "\n"
-                "UseCanonicalName on\n"
-                "SSLStrictSNIVHostCheck on\n"
-                "\n"
-                "LimitRequestBody 1048576\n"
-                "\n"
-                "Include " + self.parser.loc["ssl_options"] + "\n"
-                "SSLCertificateFile " + self.dvsni_get_cert_file(nonce) + "\n"
-                "SSLCertificateKeyFile " + dvsni_key_file + "\n"
-                "\n"
-                "DocumentRoot " + self.direc["config"] + "challenge_page/\n"
-                "</VirtualHost>\n\n")
-
-    def dvsni_get_cert_file(self, nonce):
-        """Returns standardized name for challenge certificate.
-
-        :param str nonce: hex form of nonce
-
-        :returns: certificate file name
-        :rtype: str
-
-        """
-        return self.direc["work"] + nonce + ".crt"
+        self.chall_out -= len(chall_list)
+        if self.chall_out <= 0:
+            self.revert_challenge_config()
+            self.restart()
 
 
 def enable_mod(mod_name):
