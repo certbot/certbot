@@ -13,6 +13,7 @@ import zope.component
 
 from letsencrypt.client import acme
 from letsencrypt.client import challenge
+from letsencrypt.client import challenge_util
 from letsencrypt.client import CONFIG
 from letsencrypt.client import crypto_util
 from letsencrypt.client import errors
@@ -47,7 +48,6 @@ class Client(object):
     """
     Key = collections.namedtuple("Key", "file pem")
     CSR = collections.namedtuple("CSR", "file data form")
-    DVSNI_Chall = collections.namedtuple("DVSNI_Chall", "domain, r_b64, nonce, key")
 
     def __init__(self, server, names, authkey, auth, installer):
         """Initialize a client."""
@@ -80,10 +80,10 @@ class Client(object):
         challenge_msg = self.acme_challenge()
 
         # Perform Challenges
-        responses, challenge_objs = self.verify_identity(challenge_msg)
+        responses, auth_c, client_c = self.verify_identity(challenge_msg)
 
         # Get Authorization
-        self.acme_authorization(challenge_msg, challenge_objs, responses)
+        self.acme_authorization(challenge_msg, auth_c, client_c, responses)
 
         # Retrieve certificate
         certificate_dict = self.acme_certificate(csr.data)
@@ -108,7 +108,7 @@ class Client(object):
         return self.network.send_and_receive_expected(
             acme.challenge_request(self.names[0]), "challenge")
 
-    def acme_authorization(self, challenge_msg, chal_objs, responses):
+    def acme_authorization(self, challenge_msg, auth_c, client_c, responses):
         """Handle ACME "authorization" phase.
 
         :param dict challenge_msg: ACME "challenge" message.
@@ -132,7 +132,7 @@ class Client(object):
                 "Failed Authorization procedure - cleaning up challenges")
             sys.exit(1)
         finally:
-            self.cleanup_challenges(chal_objs)
+            self.cleanup_challenges(auth_c, client_c)
 
     def acme_certificate(self, csr_der):
         """Handle ACME "certificate" phase.
@@ -243,19 +243,16 @@ class Client(object):
         #    # TODO enable OCSP Stapling
         #    continue
 
-    def cleanup_challenges(self, challenges):
+    def cleanup_challenges(self, auth_c, client_c):
         """Cleanup configuration challenges
 
         :param dict challenges: challenges from a challenge message
 
         """
         logging.info("Cleaning up challenges...")
-        for chall in challenges:
-            if chall["type"] in CONFIG.CONFIG_CHALLENGES:
-                self.auth.cleanup()
-            else:
-                # Handle other cleanup if needed
-                pass
+        self.auth.cleanup(auth_c)
+        # should cleanup client_c
+        assert not client_c
 
     def verify_identity(self, challenge_msg):
         """Verify identity.
@@ -275,45 +272,37 @@ class Client(object):
         # challenges in the master list the challenge object satisfies
         # Single Challenge objects that can satisfy multiple server challenges
         # mess up the order of the challenges, thus requiring the indices
-        challenge_objs, indices = self.challenge_factory(
+        auth_c, auth_i, client_c, client_i = self.challenge_factory(
             self.names[0], challenge_msg["challenges"], path)
 
         responses = ["null"] * len(challenge_msg["challenges"])
 
-        # Perform challenges
-        for i, c_obj in enumerate(challenge_objs):
-            resp = "null"
-            if c_obj["type"] in CONFIG.CONFIG_CHALLENGES:
-                resp = self.auth.perform(c_obj)
-            else:
-                # Handle RecoveryToken type challenges
-                pass
-
-            self._assign_responses(resp, indices[i], responses)
+        # Do client centric challenges here...
+        # Since this isn't implemented yet...
+        assert not client_i
+        auth_resp = self.auth.perform(auth_c)
+        self._assign_responses(auth_resp, auth_i, responses)
 
         logging.info(
             "Configured Apache for challenges; waiting for verification...")
 
-        return responses, challenge_objs
+        return responses, auth_c, client_c
 
     # pylint: disable=no-self-use
     def _assign_responses(self, resp, index_list, responses):
         """Assign chall_response to appropriate places in response list.
 
         :param resp: responses from a challenge
-        :type resp: list of dicts or dict
+        :type resp: list of dicts
 
         :param list index_list: respective challenges resp satisfies
         :param list responses: master list of responses
 
         """
-        if isinstance(resp, list):
-            assert len(resp) == len(index_list)
-            for j, index in enumerate(index_list):
-                responses[index] = resp[j]
-        else:
-            for index in index_list:
-                responses[index] = resp
+        assert len(resp) == len(index_list)
+        for j, index in enumerate(index_list):
+            responses[index] = resp[j]
+
 
     def store_cert_key(self, cert_file, encrypt=False):
         """Store certificate key.
@@ -392,10 +381,10 @@ class Client(object):
                 vhost.add(host)
         return vhost
 
-    def challenge_factory(self, name, challenges, path):
+    def challenge_factory(self, domain, challenges, path):
         """
 
-        :param name: TODO
+        :param str domain: domain of the enrollee
 
         :param list challenges: A list of challenges from ACME "challenge"
             server message to be fulfilled by the client in order to prove
@@ -407,27 +396,27 @@ class Client(object):
         :rtype: tuple
 
         """
-        sni_todo = []
+        auth_chall = []
         # Since a single invocation of SNI challenge can satisfy multiple
         # challenges. We must keep track of all the challenges it satisfies
-        sni_satisfies = []
+        auth_satisfies = []
 
-        challenge_objs = []
-        challenge_obj_indices = []
+        client_chall = []
+        client_satisfies = []
         for index in path:
             chall = challenges[index]
 
             if chall["type"] == "dvsni":
-                logging.info("  DVSNI challenge for name %s.", name)
-                sni_satisfies.append(index)
-                sni_todo.append(Client.DVSNI_Chall(
-                    str(name), str(chall["r"]),
+                logging.info("  DVSNI challenge for name %s.", domain)
+                auth_satisfies.append(index)
+                auth_chall.append(challenge_util.DVSNI_Chall(
+                    str(domain), str(chall["r"]),
                     str(chall["nonce"]), self.authkey))
 
             elif chall["type"] == "recoveryToken":
-                logging.info("\tRecovery Token Challenge for name: %s.", name)
-                challenge_obj_indices.append(index)
-                challenge_objs.append({
+                logging.info("  Recovery Token Challenge for name: %s.", domain)
+                client_satisfies.append(index)
+                client_chall.append({
                     type: "recoveryToken",
                 })
 
@@ -435,17 +424,7 @@ class Client(object):
                 logging.fatal("Challenge not currently supported")
                 sys.exit(82)
 
-        if sni_todo:
-            # SNI_Challenge can satisfy many sni challenges at once so only
-            # one "challenge object" is issued for all sni_challenges
-            challenge_objs.append({
-                "type": "dvsni",
-                "dvsni_chall": sni_todo
-            })
-            challenge_obj_indices.append(sni_satisfies)
-            logging.debug(sni_todo)
-
-        return challenge_objs, challenge_obj_indices
+        return auth_chall, auth_satisfies, client_chall, client_satisfies
 
 
 def validate_key_csr(privkey, csr):

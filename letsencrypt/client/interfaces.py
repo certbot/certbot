@@ -11,17 +11,26 @@ class IAuthenticator(zope.interface.Interface):
     ability to perform challenges and attain a certificate.
 
     """
-    def perform(chall_dict):
-        """Perform the given challenge"""
+    def perform(chall_list):
+        """Perform the given challenge.
 
-    def cleanup():
+        :param list chall_list: List of challenge types defined in client.py
+        
+        :returns: List of responses
+            If the challenge cant be completed...
+            None - Authenticator can perform challenge, but can't at this time
+            False - Authenticator will never be able to perform (error)
+        :rtype: `list` of dicts
+
+        """
+    def cleanup(chall_list):
         """Revert changes and shutdown after challenges complete."""
 
 
 class IChallenge(zope.interface.Interface):
     """Let's Encrypt challenge."""
 
-    def perform(quiet=True):
+    def perform():
         """Perform the challenge.
 
         :param bool quiet: TODO

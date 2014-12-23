@@ -1,4 +1,5 @@
 """Challenge specific utility functions."""
+import collections
 import hashlib
 
 from Crypto import Random
@@ -6,6 +7,9 @@ from Crypto import Random
 from letsencrypt.client import CONFIG
 from letsencrypt.client import crypto_util
 from letsencrypt.client import le_util
+
+
+DVSNI_Chall = collections.namedtuple("DVSNI_Chall", "domain, r_b64, nonce, key")
 
 
 # DVSNI Challenge functions
