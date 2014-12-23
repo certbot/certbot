@@ -5,7 +5,7 @@ class Addr(object):
     """Represents an Apache VirtualHost address.
 
     :param str addr: addr part of vhost address
-    :param str port: port number or *, or ""
+    :param str port: port number or \*, or ""
 
     """
     def __init__(self, tup):
