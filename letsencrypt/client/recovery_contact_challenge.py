@@ -14,7 +14,7 @@ from letsencrypt.client import interfaces
 
 
 class RecoveryContact(object):
-    """Recovery Contact Identitifier Validation Challenge.
+    """Recovery Contact Identifier Validation Challenge.
 
     Based on draft-barnes-acme, section 6.3.
 

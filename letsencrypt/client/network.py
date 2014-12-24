@@ -80,14 +80,14 @@ class Network(object):
                 'Expected message (%s) not received' % expected)
 
     def is_expected_msg(self, response, expected, delay=3, rounds=20):
-        """Is reponse expected ACME message?
+        """Is response expected ACME message?
 
         :param dict response: ACME response message from server.
         :param str expected: Name of the expected response ACME message type.
         :param int delay: Number of seconds to delay before next round
             in case of ACME "defer" response message.
         :param int rounds: Number of resend attempts in case of ACME "defer"
-            reponse message.
+            response message.
 
         :returns: ACME response message from server.
         :rtype: dict
