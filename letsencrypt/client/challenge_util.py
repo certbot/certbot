@@ -15,7 +15,7 @@ def dvsni_gen_cert(filepath, name, r_b64, nonce, key):
     :param str filepath: destination to save certificate. This will overwrite
         any file that is currently at the location.
     :param str name: domain to validate
-    :param str dvsni_r: jose base64 encoded dvsni r value
+    :param str r_b64: jose base64 encoded dvsni r value
     :param str nonce: hex value of nonce
 
     :param key: Key to perform challenge

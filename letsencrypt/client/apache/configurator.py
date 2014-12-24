@@ -201,7 +201,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         .. todo:: This should maybe return list if no obvious answer
             is presented.
 
-        :param str name: domain name
+        :param str target_name: domain name
 
         :returns: ssl vhost associated with name
         :rtype: :class:`letsencrypt.client.apache.obj.VirtualHost`
@@ -348,7 +348,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         now NameVirtualHosts. If version is earlier than 2.4, check if addr
         has a NameVirtualHost directive in the Apache config
 
-        :param str addr: vhost address ie. \*:443
+        :param str target_addr: vhost address ie. \*:443
 
         :returns: Success
         :rtype: bool
