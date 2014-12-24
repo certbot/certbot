@@ -342,8 +342,7 @@ class ApacheParser(object):
 
         .. todo:: This will have to be updated for other distros versions
 
-        :param str filename: optional filename that will be used as the
-            user config
+        :param str root: pathname which contains the user config
 
         """
         # Basic check to see if httpd.conf exists and
