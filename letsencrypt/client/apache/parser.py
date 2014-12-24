@@ -346,14 +346,14 @@ class ApacheParser(object):
 
         """
         # Basic check to see if httpd.conf exists and
-        # in heirarchy via direct include
+        # in hierarchy via direct include
         # httpd.conf was very common as a user file in Apache 2.2
         if (os.path.isfile(os.path.join(self.root, 'httpd.conf')) and
                 self.find_dir(
                     case_i("Include"), case_i("httpd.conf"), root)):
             return os.path.join(self.root, 'httpd.conf')
         else:
-            return os.path.join(self.root + 'apache2.conf')
+            return os.path.join(self.root, 'apache2.conf')
 
 
 def case_i(string):

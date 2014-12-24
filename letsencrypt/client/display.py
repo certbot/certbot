@@ -182,7 +182,7 @@ class FileDisplay(object):
             else:
                 try:
                     selection = int(ans)
-                    # TODO add check to make sure it is liess than max
+                    # TODO add check to make sure it is less than max
                     if selection < 0:
                         self.outfile.write(e_msg)
                         continue
