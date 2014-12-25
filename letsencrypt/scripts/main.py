@@ -92,10 +92,10 @@ def main():
         sys.exit()
 
     # Use the same object if possible
-    '''if interfaces.IAuthenticator.providedBy(installer):
-        auth = installer
-    else:
-        auth = determine_authenticator()'''
+    #if interfaces.IAuthenticator.providedBy(installer):
+    #    auth = installer
+    #else:
+    #    auth = determine_authenticator()
     auth = determine_authenticator()
 
     if not args.eula:
