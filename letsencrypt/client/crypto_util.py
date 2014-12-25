@@ -28,10 +28,10 @@ def create_sig(msg, key_str, nonce=None, nonce_len=CONFIG.NONCE_SIZE):
     :param str msg: Message to be signed
 
     :param nonce: Nonce to be used. If None, nonce of `nonce_len` size
-                  will be randomly genereted.
+                  will be randomly generated.
     :type nonce: str or None
 
-    :param int nonce_len: Size of the automaticaly generated nonce.
+    :param int nonce_len: Size of the automatically generated nonce.
 
     :returns: Signature.
     :rtype: dict

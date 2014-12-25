@@ -98,7 +98,7 @@ class ApacheParser(object):
 
         :param str directive: Directive to look for
 
-        :param arg: Specific value direcitve must have, None if all should
+        :param arg: Specific value directive must have, None if all should
                     be considered
         :type arg: str or None
 

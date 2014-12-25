@@ -10,8 +10,8 @@ from letsencrypt.client import errors
 def make_or_verify_dir(directory, mode=0o755, uid=0):
     """Make sure directory exists with proper permissions.
 
-    :param str directory: Path to a directry.
-    :param int mode: Diretory mode.
+    :param str directory: Path to a directory.
+    :param int mode: Directory mode.
     :param int uid: Directory owner.
 
     :raises LetsEncryptClientError: if a directory already exists,
@@ -28,7 +28,7 @@ def make_or_verify_dir(directory, mode=0o755, uid=0):
         if exception.errno == errno.EEXIST:
             if not check_permissions(directory, mode, uid):
                 raise errors.LetsEncryptClientError(
-                    '%s exists and does not contain the proper '
+                    '%s exists, but does not have the proper '
                     'permissions or owner' % directory)
         else:
             raise
@@ -107,7 +107,7 @@ def jose_b64decode(data):
     :returns: Decoded data.
 
     :raises TypeError: if input is of incorrect type
-    :raises ValueError: if unput is unicode with non-ASCII characters
+    :raises ValueError: if input is unicode with non-ASCII characters
 
     """
     if isinstance(data, unicode):

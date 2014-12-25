@@ -60,7 +60,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     .. todo:: Add proper support for module configuration
 
     The API of this class will change in the coming weeks as the exact
-    needs of client's are clarified with the new and developing protocol.
+    needs of clients are clarified with the new and developing protocol.
 
     :ivar str server_root: Path to Apache root directory
     :ivar dict location: Path to various files associated
@@ -230,7 +230,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         # No matches, search for the default
         for vhost in self.vhosts:
-            if "_defualt_:443" in vhost.addrs:
+            if "_default_:443" in vhost.addrs:
                 return vhost
         return None
 
@@ -762,7 +762,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     return vhost
         return None
 
-    # TODO: Handle ths as outlined in Interfaces.
+    # TODO: Handle this as outlined in Interfaces.
     def enable_ocsp_stapling(self, ssl_vhost):
         """Enable OCSP Stapling."""
         return False
@@ -772,7 +772,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         return False
 
     def get_all_certs_keys(self):
-        """ Find all existing keys, certs from configuration.
+        """Find all existing keys, certs from configuration.
 
         Retrieve all certs and keys set in VirtualHosts on the Apache server
 
@@ -945,7 +945,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         return None
 
     def dvsni_perform(self, chall_dict):
-        """Peform a DVSNI challenge.
+        """Perform a DVSNI challenge.
 
         `chall_dict` composed of:
 
