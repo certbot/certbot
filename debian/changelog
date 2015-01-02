@@ -1,5 +1,5 @@
 letsencrypt (0.20141217-1) UNRELEASED; urgency=low
 
-  * Initial version
+  * Initial version (closes: #774387)
 
  -- Francois Marier <francois@debian.org>  Sun, 21 Dec 2014 13:54:45 +1300
