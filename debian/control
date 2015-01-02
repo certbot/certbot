@@ -9,7 +9,7 @@ Homepage: https://www.letsencrypt.org/
 
 Package: letsencrypt
 Architecture: all
-Depends: ${misc:Depends}, ${python:Depends}, apache2, openssl, hashcash
+Depends: ${misc:Depends}, ${python:Depends}, apache2, openssl
 Description: Let's Encrypt client that can update Apache configurations
  The objective of Let’s Encrypt and the ACME (Automated Certificate Management
  Environment) protocol is to make it possible to set up an HTTPS server and have
