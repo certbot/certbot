@@ -29,7 +29,7 @@ def setup_apache_ssl_options(config_dir):
     """Move the ssl_options into position and return the path."""
     option_path = os.path.join(config_dir, "options-ssl.conf")
     temp_options = pkg_resources.resource_filename(
-        "letsencrypt.client", os.path.basename(CONFIG.OPTIONS_SSL_CONF))
+        "letsencrypt.client.apache", os.path.basename(CONFIG.OPTIONS_SSL_CONF))
     shutil.copyfile(
         temp_options, option_path)
 
