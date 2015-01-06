@@ -1,8 +1,6 @@
 """ApacheDVSNI"""
 import logging
 import os
-import pkg_resources
-import shutil
 
 from letsencrypt.client import challenge_util
 from letsencrypt.client import CONFIG
@@ -27,6 +25,8 @@ class ApacheDVSNI(object):
         self.config = config
         self.dvsni_chall = []
         self.indices = []
+        self.challenge_conf = os.path.join(
+            config.direc["config"], "le_dvsni_cert_challenge.conf")
         # self.completed = 0
 
     def add_chall(self, chall, idx=None):
@@ -120,10 +120,10 @@ class ApacheDVSNI(object):
 
         # Check to make sure options-ssl.conf is installed
         # pylint: disable=no-member
-        if not os.path.isfile(CONFIG.OPTIONS_SSL_CONF):
-            dist_conf = pkg_resources.resource_filename(
-                __name__, os.path.basename(CONFIG.OPTIONS_SSL_CONF))
-            shutil.copyfile(dist_conf, CONFIG.OPTIONS_SSL_CONF)
+        # if not os.path.isfile(CONFIG.OPTIONS_SSL_CONF):
+        #     dist_conf = pkg_resources.resource_filename(
+        #         __name__, os.path.basename(CONFIG.OPTIONS_SSL_CONF))
+        #     shutil.copyfile(dist_conf, CONFIG.OPTIONS_SSL_CONF)
 
         # TODO: Use ip address of existing vhost instead of relying on FQDN
         config_text = "<IfModule mod_ssl.c>\n"
@@ -134,9 +134,9 @@ class ApacheDVSNI(object):
         config_text += "</IfModule>\n"
 
         self.conf_include_check(self.config.parser.loc["default"])
-        self.config.register_file_creation(True, CONFIG.APACHE_CHALLENGE_CONF)
+        self.config.register_file_creation(True, self.challenge_conf)
 
-        with open(CONFIG.APACHE_CHALLENGE_CONF, 'w') as new_conf:
+        with open(self.challenge_conf, 'w') as new_conf:
             new_conf.write(config_text)
 
     def conf_include_check(self, main_config):
@@ -149,10 +149,10 @@ class ApacheDVSNI(object):
 
         """
         if len(self.config.parser.find_dir(
-                parser.case_i("Include"), CONFIG.APACHE_CHALLENGE_CONF)) == 0:
+                parser.case_i("Include"), self.challenge_conf)) == 0:
             # print "Including challenge virtual host(s)"
             self.config.parser.add_dir(parser.get_aug_path(main_config),
-                                       "Include", CONFIG.APACHE_CHALLENGE_CONF)
+                                       "Include", self.challenge_conf)
 
     def get_config_text(self, nonce, ip_addrs, dvsni_key_file):
         """Chocolate virtual server configuration text

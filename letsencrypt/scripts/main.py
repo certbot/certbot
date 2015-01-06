@@ -150,8 +150,7 @@ def choose_names(installer):
     code, names = zope.component.getUtility(
         interfaces.IDisplay).filter_names(get_all_names(installer))
     if code == display.OK and names:
-        # TODO: Allow multiple names once it is setup
-        return [names[0]]
+        return names
     else:
         sys.exit(0)
 

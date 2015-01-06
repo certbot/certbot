@@ -15,8 +15,10 @@ from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
 
+from letsencrypt.client.apache import dvsni
 from letsencrypt.client.apache import obj
 from letsencrypt.client.apache import parser
+
 
 # TODO: Augeas sections ie. <VirtualHost>, <IfModule> beginning and closing
 # tags need to be the same case, otherwise Augeas doesn't recognize them.
@@ -924,6 +926,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     ###########################################################################
     # Challenges Section
     ###########################################################################
+    def get_chall_pref(self): # pylint: disable=no-self-use
+        """Return list of challenge preferences."""
+
+        return ["dvsni"]
+
     def perform(self, chall_list):
         """Perform the configuration related challenge.
 
@@ -933,6 +940,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         :param dict chall_list: List of challenges to be
             fulfilled by configurator.
+
+        :returns: list of responses. A None response indicates the challenge
+            was not perfromed.
+        :rtype: list
 
         """
         self.chall_out += len(chall_list)
@@ -1067,6 +1078,3 @@ def get_file_path(vhost_path):
             continue
         break
     return avail_fp
-
-
-from letsencrypt.client.apache import dvsni

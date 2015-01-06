@@ -11,6 +11,13 @@ class IAuthenticator(zope.interface.Interface):
     ability to perform challenges and attain a certificate.
 
     """
+    def get_chall_pref():
+        """Return list of challenge preferences.
+        
+        :returns: list of strings with the most preferred challenges first.
+        :rtype: list
+
+        """
     def perform(chall_list):
         """Perform the given challenge.
 
@@ -31,11 +38,7 @@ class IChallenge(zope.interface.Interface):
     """Let's Encrypt challenge."""
 
     def perform():
-        """Perform the challenge.
-
-        :param bool quiet: TODO
-
-        """
+        """Perform the challenge."""
 
     def generate_response():
         """Generate response."""

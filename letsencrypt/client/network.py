@@ -11,6 +11,9 @@ from letsencrypt.client import acme
 from letsencrypt.client import errors
 
 
+logging.getLogger("requests").setLevel(logging.WARNING)
+
+
 class Network(object):
     """Class for communicating with ACME servers.
 
