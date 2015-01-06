@@ -5,7 +5,7 @@ import sys
 from letsencrypt.client import CONFIG
 
 
-def gen_challenge_path(challenges, combos=None):
+def gen_challenge_path(challenges, preferences, combos=None):
     """Generate a plan to get authority over the identity.
 
     .. todo:: Make sure that the challenges are feasible...
@@ -25,12 +25,12 @@ def gen_challenge_path(challenges, combos=None):
 
     """
     if combos:
-        return _find_smart_path(challenges, combos)
+        return _find_smart_path(challenges, preferences, combos)
     else:
-        return _find_dumb_path(challenges)
+        return _find_dumb_path(challenges, preferences)
 
 
-def _find_smart_path(challenges, combos):
+def _find_smart_path(challenges, preferences, combos):
     """Find challenge path with server hints.
 
     Can be called if combinations is included. Function uses a simple
@@ -51,7 +51,7 @@ def _find_smart_path(challenges, combos):
     """
     chall_cost = {}
     max_cost = 0
-    for i, chall in enumerate(CONFIG.CHALLENGE_PREFERENCES):
+    for i, chall in enumerate(preferences):
         chall_cost[chall] = i
         max_cost += i
 
@@ -77,7 +77,7 @@ def _find_smart_path(challenges, combos):
     return best_combo
 
 
-def _find_dumb_path(challenges):
+def _find_dumb_path(challenges, preferences):
     """Find challenge path without server hints.
 
     Should be called if the combinations hint is not included by the
@@ -95,7 +95,7 @@ def _find_dumb_path(challenges):
     # Add logic for a crappy server
     # Choose a DV
     path = []
-    for pref_c in CONFIG.CHALLENGE_PREFERENCES:
+    for pref_c in preferences:
         for i, offered_challenge in enumerate(challenges):
             if (pref_c == offered_challenge["type"] and
                     is_preferred(offered_challenge["type"], path)):

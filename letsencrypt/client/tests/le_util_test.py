@@ -83,6 +83,9 @@ class UniqueFileTest(unittest.TestCase):
         self.root_path = tempfile.mkdtemp()
         self.default_name = os.path.join(self.root_path, 'foo.txt')
 
+    def tearDown(self):
+        shutil.rmtree(self.root_path, ignore_errors=True)
+
     def _call(self, mode=0o600):
         from letsencrypt.client.le_util import unique_file
         return unique_file(self.default_name, mode)

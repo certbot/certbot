@@ -60,6 +60,15 @@ class Client(object):
         self.auth = auth
         self.installer = installer
 
+        # Client challenges and Authenticator challenges should be separate
+        # and really should not be conflicting along the same path.
+        # I have chosen to make client challenges preferred
+        # as the client challenges should be able to be completely handled
+        # by this module and does not require outside config changes.
+        # (which may be costly)
+        self.preferences = ["recoveryToken"]
+        self.preferences.extend(auth.get_chall_pref())
+
     def obtain_certificate(self, csr,
                            cert_path=CONFIG.CERT_PATH,
                            chain_path=CONFIG.CHAIN_PATH):
@@ -76,14 +85,45 @@ class Client(object):
         :rtype: `tuple` of `str`
 
         """
+        challenge_msgs = []
         # Request Challenges
-        challenge_msg = self.acme_challenge()
+        for name in self.names:
+            # Maintaining order of challenge_msgs to names is important
+            challenge_msgs.append(self.acme_challenge(name))
 
         # Perform Challenges
-        responses, auth_c, client_c = self.verify_identity(challenge_msg)
+        # Make sure at least one challenge is solved every round
+        progress = True
+        # This outer loop handles cases where the Authenticator cannot solve
+        # all challenge_msgs at once
+        while challenge_msgs and progress:
+            responses, auth_c, client_c = self.verify_identities(challenge_msgs)
+            progress = False
 
-        # Get Authorization
-        self.acme_authorization(challenge_msg, auth_c, client_c, responses)
+            i = 0
+            while i < len(responses):
+                # Get Authorization
+                if responses[i] is not None:
+                    print "client chall_msgs:", challenge_msgs[i]
+                    print "client responses:", responses[i]
+                    print "client auth_c:", auth_c[i]
+                    print "client client_c:", client_c[i]
+                    self.acme_authorization(
+                        challenge_msgs[i], auth_c[i], client_c[i], responses[i])
+                    # Received authorization, remove challenge from list
+                    # We have also cleaned up challenges... keep index
+                    # in sync
+                    del challenge_msgs[i]
+                    del auth_c[i]
+                    del client_c[i]
+                    del responses[i]
+                    progress = True
+                else:
+                    i += 1
+
+        if not progress:
+            raise errors.LetsEncryptClientError(
+                "Unable to solve challenges for requested names.")
 
         # Retrieve certificate
         certificate_dict = self.acme_certificate(csr.data)
@@ -96,17 +136,15 @@ class Client(object):
 
         return cert_file, chain_file
 
-    def acme_challenge(self):
+    def acme_challenge(self, domain):
         """Handle ACME "challenge" phase.
-
-        .. todo:: Handle more than one domain name in self.names
 
         :returns: ACME "challenge" message.
         :rtype: dict
 
         """
         return self.network.send_and_receive_expected(
-            acme.challenge_request(self.names[0]), "challenge")
+            acme.challenge_request(domain), "challenge")
 
     def acme_authorization(self, challenge_msg, auth_c, client_c, responses):
         """Handle ACME "authorization" phase.
@@ -254,55 +292,101 @@ class Client(object):
         # should cleanup client_c
         assert not client_c
 
-    def verify_identity(self, challenge_msg):
-        """Verify identity.
+    def verify_identities(self, challenge_msgs):
+        """Verify identities.
 
-        :param dict challenge_msg: ACME "challenge" message.
+        This is greatly complicated by the fact that the Authenticator can
+        oftentimes solve many challenges at once. The strategy is to give
+        the authenticator all of the appropriate challenges at once to
+        speed up the process. This creates indexing issues as the challenges
+        can come from many different messages and are not in an exact order
+        because of the optimal path decision. All of this complicated indexing
+        will be completely hidden from the authenticator and all the
+        authenticator must do is return a list of responses in the same order
+        the challenges were given.
+
+        :param list challenge_msgs: List of ACME "challenge" messages.
 
         :returns: TODO
-        :rtype: dict
+        :rtype: TODO
 
         """
-        path = challenge.gen_challenge_path(
-            challenge_msg["challenges"], challenge_msg.get("combinations", []))
+        # Every msg's responses are a list within this list
+        responses = []
+        # Every msg's desired path
+        paths = []
 
-        logging.info("Performing the following challenges:")
+        auth_chall = []
+        client_chall = []
 
-        # Every indices element is a list of integers referring to which
-        # challenges in the master list the challenge object satisfies
-        # Single Challenge objects that can satisfy multiple server challenges
-        # mess up the order of the challenges, thus requiring the indices
-        auth_c, auth_i, client_c, client_i = self.challenge_factory(
-            self.names[0], challenge_msg["challenges"], path)
+        auth_idx = []
+        client_idx = []
 
-        responses = ["null"] * len(challenge_msg["challenges"])
+        for i, msg in enumerate(challenge_msgs):
+            paths.append(challenge.gen_challenge_path(
+                msg["challenges"],
+                self.preferences,
+                msg.get("combinations", [])))
+
+            logging.info("Performing the following challenges:")
+
+            auth_c, auth_i, client_c, client_i = self.challenge_factory(
+                self.names[i], msg["challenges"], paths[-1])
+
+            auth_chall.append(auth_c)
+            auth_idx.append(auth_i)
+            client_chall.append(client_c)
+            client_idx.append(client_i)
+
+            responses.append(["null"] * len(msg["challenges"]))
 
         # Do client centric challenges here...
         # Since this isn't implemented yet...
+        # Client challenge responses should be cached...
+        # The client should be able to solve all challenges the first time
         assert not client_i
-        auth_resp = self.auth.perform(auth_c)
-        self._assign_responses(auth_resp, auth_i, responses)
+        # Flatten list for authenticator
+        auth_resp = self.auth.perform(
+            [chall for sublist in auth_chall for chall in sublist])
+        self._assign_responses(auth_resp, auth_idx, responses)
+
+        print 'auth_resp:', auth_resp
+        print 'auth_idx:', auth_idx
+        print 'auth_responses:', responses
+
+        for i in range(len(paths)):
+            # If challenges failed to complete... zero them out
+            if not self._path_satisfied(responses[i], paths[i]):
+                responses[i] = None
+                auth_chall[i] = None
+                client_chall[i] = None
 
         logging.info(
             "Configured Apache for challenges; waiting for verification...")
 
-        return responses, auth_c, client_c
+        return responses, auth_chall, client_chall
 
     # pylint: disable=no-self-use
-    def _assign_responses(self, resp, index_list, responses):
+    def _assign_responses(self, flat_resp, idx_list, responses):
         """Assign chall_response to appropriate places in response list.
 
         :param resp: responses from a challenge
         :type resp: list of dicts
 
-        :param list index_list: respective challenges resp satisfies
+        :param list idx_list: respective challenges flat_resp satisfies
         :param list responses: master list of responses
 
         """
-        assert len(resp) == len(index_list)
-        for j, index in enumerate(index_list):
-            responses[index] = resp[j]
+        flat_index = 0
+        # Every authorization_request message
+        for msg_num in range(len(responses)):
+            for idx in idx_list[msg_num]:
+                responses[msg_num][idx] = flat_resp[flat_index]
+                flat_index += 1
 
+    def _path_satisfied(self, responses, path):
+        """Returns whether a path has been completely satisfied."""
+        return all("null" != responses[i] for i in path)
 
     def store_cert_key(self, cert_file, encrypt=False):
         """Store certificate key.

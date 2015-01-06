@@ -47,9 +47,6 @@ OPTIONS_SSL_CONF = os.path.join(CONFIG_DIR, "options-ssl.conf")
 LE_VHOST_EXT = "-le-ssl.conf"
 """Let's Encrypt SSL vhost configuration extension"""
 
-APACHE_CHALLENGE_CONF = os.path.join(CONFIG_DIR, "le_dvsni_cert_challenge.conf")
-"""Temporary file for challenge virtual hosts"""
-
 CERT_PATH = CERT_DIR + "cert-letsencrypt.pem"
 """Let's Encrypt cert file."""
 
@@ -60,7 +57,7 @@ INVALID_EXT = ".acme.invalid"
 """Invalid Extension"""
 
 # Challenge Information
-CHALLENGE_PREFERENCES = ["dvsni", "recoveryToken"]
+#CHALLENGE_PREFERENCES = ["dvsni", "recoveryToken"]
 """Challenge Preferences Dict for currently supported challenges"""
 
 EXCLUSIVE_CHALLENGES = [frozenset(["dvsni", "simpleHttps"])]
