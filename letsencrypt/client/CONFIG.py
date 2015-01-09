@@ -30,9 +30,10 @@ IN_PROGRESS_DIR = os.path.join(BACKUP_DIR, "IN_PROGRESS/")
 """Directory used before a permanent checkpoint is finalized"""
 
 CERT_KEY_BACKUP = os.path.join(WORK_DIR, "keys-certs/")
-"""Directory where all certificates/keys are stored.
+"""Directory where all certificates/keys are stored. Used for easy revocation"""
 
-Used for easy revocation"""
+REV_TOKENS_DIR = os.path.join(WORK_DIR, "revocation_tokens/")
+"""Directory where all revocation tokens are saved."""
 
 KEY_DIR = os.path.join(SERVER_ROOT, "ssl/")
 """Where all keys should be stored"""
@@ -56,15 +57,15 @@ CHAIN_PATH = CERT_DIR + "chain-letsencrypt.pem"
 INVALID_EXT = ".acme.invalid"
 """Invalid Extension"""
 
-# Challenge Information
-#CHALLENGE_PREFERENCES = ["dvsni", "recoveryToken"]
-"""Challenge Preferences Dict for currently supported challenges"""
-
 EXCLUSIVE_CHALLENGES = [frozenset(["dvsni", "simpleHttps"])]
 """Mutually Exclusive Challenges - only solve 1"""
 
-CONFIG_CHALLENGES = frozenset(["dvsni", "simpleHttps"])
-"""These are challenges that must be solved by a Configurator object"""
+AUTH_CHALLENGES = frozenset(["dvsni", "simpleHttps", "dns"])
+"""These are challenges that must be solved by an Authenticator object"""
+
+CLIENT_CHALLENGES = frozenset(
+    ["recoveryToken", "recoveryContact", "proofOfPossession"])
+"""These are challenges that are handled by client.py"""
 
 # Challenge Constants
 S_SIZE = 32

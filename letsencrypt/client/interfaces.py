@@ -11,9 +11,11 @@ class IAuthenticator(zope.interface.Interface):
     ability to perform challenges and attain a certificate.
 
     """
-    def get_chall_pref():
+    def get_chall_pref(domain):
         """Return list of challenge preferences.
-        
+
+        :param str domain: Domain for which challenge preferences are sought.
+
         :returns: list of strings with the most preferred challenges first.
         :rtype: list
 
@@ -22,7 +24,7 @@ class IAuthenticator(zope.interface.Interface):
         """Perform the given challenge.
 
         :param list chall_list: List of challenge types defined in client.py
-        
+
         :returns: List of responses
             If the challenge cant be completed...
             None - Authenticator can perform challenge, but can't at this time

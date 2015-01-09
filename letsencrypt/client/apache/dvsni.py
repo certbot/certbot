@@ -7,18 +7,19 @@ from letsencrypt.client import CONFIG
 
 from letsencrypt.client.apache import parser
 
-class ApacheDVSNI(object):
+
+class ApacheDvsni(object):
     """Class performs DVSNI challenges within the Apache configurator.
 
     :ivar config: ApacheConfigurator object
     :type config: :class:`letsencrypt.client.apache.configurator`
 
     :ivar dvsni_chall: Data required for challenges.
-       where DVSNI_Chall tuples have the following fields
+       where DvsniChall tuples have the following fields
        `domain` (`str`), `r_b64` (base64 `str`), `nonce` (hex `str`)
         `key` (:class:`letsencrypt.client.client.Client.Key`)
     :type dvsni_chall: `list` of
-        :class:`letsencrypt.client.challenge_util.DVSNI_Chall`
+        :class:`letsencrypt.client.challenge_util.DvsniChall`
 
     """
     def __init__(self, config):
@@ -33,7 +34,7 @@ class ApacheDVSNI(object):
         """Add challenge to DVSNI object to perform at once.
 
         :param chall: DVSNI challenge info
-        :type chall: :class:`letsencrypt.client.challenge_util.DVSNI_Chall`
+        :type chall: :class:`letsencrypt.client.challenge_util.DvsniChall`
 
         :param int idx: index to challenge in a larger array
 
@@ -91,19 +92,6 @@ class ApacheDVSNI(object):
 
         return responses
 
-    # def chall_complete(self, chall):
-    #     """Used by Authenticator to notify the DVSNI challenge.
-
-    #     :param chall: Challenge info
-    #     :type chall: :class:`letsencrypt.client.client.Client.DVSNI_Chall`
-
-    #     """
-    #     self.completed += 1
-    #     if self.completed < len(self.dvsni_chall):
-    #         return False
-    #     return True
-
-    # TODO: Variable names
     def mod_config(self, ll_addrs):
         """Modifies Apache config files to include challenge vhosts.
 

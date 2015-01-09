@@ -162,8 +162,11 @@ class TwoVhost80Test(unittest.TestCase):
         self.assertRaises(
             errors.LetsEncryptConfiguratorError, self.config.get_version)
 
-    @mock.patch("letsencrypt.client.apache.dvsni")
-    def test_perform(self, mock_dvsni, mock_restart):
+    @mock.patch("letsencrypt.client.apache.configurator."
+                "dvsni.ApacheDvsni.perform")
+    @mock.patch("letsencrypt.client.apache.configurator."
+                "ApacheConfigurator.restart")
+    def test_perform(self, mock_restart, mock_dvsni_perform):
         # Only tests functionality specific to configurator.perform
         # Note: As more challenges are offered this will have to be expanded
         rsa256_file = pkg_resources.resource_filename(
@@ -172,12 +175,12 @@ class TwoVhost80Test(unittest.TestCase):
             __name__, 'testdata/rsa256_key.pem')
 
         auth_key = client.Client.Key(rsa256_file, rsa256_pem)
-        chall1 = challenge_util.DVSNI_Chall(
+        chall1 = challenge_util.DvsniChall(
             "encryption-example.demo",
             "jIq_Xy1mXGN37tb4L6Xj_es58fW571ZNyXekdZzhh7Q",
             "37bc5eb75d3e00a19b4f6355845e5a18",
             auth_key)
-        chall2 = challenge_util.DVSNI_Chall(
+        chall2 = challenge_util.DvsniChall(
             "letsencrypt.demo",
             "uqnaPzxtrndteOqtrXb0Asl5gOJfWAnnx6QJyvcmlDU",
             "59ed014cac95f77057b1d7a1b2c596ba",
@@ -188,11 +191,13 @@ class TwoVhost80Test(unittest.TestCase):
             {"type": "dvsni", "s": "randomS2"}
         ]
 
-        mock_dvsni().perform.return_value = dvsni_ret_val
+        mock_dvsni_perform.return_value = dvsni_ret_val
         responses = self.config.perform([chall1, chall2])
 
-        self.assertEqual(mock_dvsni.perform.call_count, 1)
+        self.assertEqual(mock_dvsni_perform.call_count, 1)
         self.assertEqual(responses, dvsni_ret_val)
+
+        self.assertEqual(mock_restart.call_count, 1)
 
 if __name__ == '__main__':
     unittest.main()

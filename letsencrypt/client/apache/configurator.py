@@ -811,7 +811,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         enabled_dir = os.path.join(self.parser.root, "sites-enabled/")
         for entry in os.listdir(enabled_dir):
-            if os.path.realpath(enabled_dir + entry) == avail_fp:
+            if os.path.realpath(os.path.join(enabled_dir, entry)) == avail_fp:
                 return True
 
         return False
@@ -926,7 +926,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     ###########################################################################
     # Challenges Section
     ###########################################################################
-    def get_chall_pref(self): # pylint: disable=no-self-use
+    # pylint: disable=no-self-use, unused-argument
+    def get_chall_pref(self, domain):
         """Return list of challenge preferences."""
 
         return ["dvsni"]
@@ -948,10 +949,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         self.chall_out += len(chall_list)
         responses = [None] * len(chall_list)
-        apache_dvsni = dvsni.ApacheDVSNI(self)
+        apache_dvsni = dvsni.ApacheDvsni(self)
 
         for i, chall in enumerate(chall_list):
-            if isinstance(chall, challenge_util.DVSNI_Chall):
+            if isinstance(chall, challenge_util.DvsniChall):
                 apache_dvsni.add_chall(chall, i)
 
         sni_response = apache_dvsni.perform()

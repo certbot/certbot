@@ -105,6 +105,7 @@ def _find_dumb_path(challenges, preferences):
 
 
 def is_preferred(offered_challenge_type, path):
+    """Return whether or not the challenge is preferred in path."""
     for _, challenge_type in path:
         for mutually_exclusive in CONFIG.EXCLUSIVE_CHALLENGES:
             # Second part is in case we eventually allow multiple names

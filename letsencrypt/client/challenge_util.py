@@ -8,8 +8,17 @@ from letsencrypt.client import CONFIG
 from letsencrypt.client import crypto_util
 from letsencrypt.client import le_util
 
+# Authenticator Challenges
+DvsniChall = collections.namedtuple("DvsniChall", "domain, r_b64, nonce, key")
+SimpleHttpsChall = collections.namedtuple(
+    "SimpleHttpsChall", "domain, token, key")
+DnsChall = collections.namedtuple("DnsChall", "domain, token, key")
 
-DVSNI_Chall = collections.namedtuple("DVSNI_Chall", "domain, r_b64, nonce, key")
+# Client Challenges
+RecContactChall = collections.namedtuple(
+    "RecContactChall", "domain, a_url, s_url, contact")
+RecTokenChall = collections.namedtuple("RecTokenChall", "domain")
+PopChall = collections.namedtuple("PopChall", "domain, alg, nonce, hints")
 
 
 # DVSNI Challenge functions
