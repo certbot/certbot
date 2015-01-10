@@ -21,6 +21,16 @@ class ApacheDvsni(object):
     :type dvsni_chall: `list` of
         :class:`letsencrypt.client.challenge_util.DvsniChall`
 
+    :param list indicies: Meant to hold indices of challenges in a
+        larger array. ApacheDvsni is capable of solving many challenges
+        at once which causes an indexing issue within ApacheConfigurator
+        who must return all responses in order.  Imagine ApacheConfigurator
+        maintaining state about where all of the SimpleHttps Challenges,
+        Dvsni Challenges belong in the response array.  This is an optional
+        utility.
+
+    :param str challenge_conf: location of the challenge config file
+
     """
     def __init__(self, config):
         self.config = config
@@ -46,7 +56,7 @@ class ApacheDvsni(object):
     def perform(self):
         """Peform a DVSNI challenge."""
         if not self.dvsni_chall:
-            return dict()
+            return None
         # Save any changes to the configuration as a precaution
         # About to make temporary changes to the config
         self.config.save()
@@ -85,14 +95,14 @@ class ApacheDvsni(object):
             responses.append({"type": "dvsni", "s": s_b64})
 
         # Setup the configuration
-        self.mod_config(addresses)
+        self._mod_config(addresses)
 
         # Save reversible changes
         self.config.save("SNI Challenge", True)
 
         return responses
 
-    def mod_config(self, ll_addrs):
+    def _mod_config(self, ll_addrs):
         """Modifies Apache config files to include challenge vhosts.
 
         Result: Apache config includes virtual servers for issued challs
@@ -116,18 +126,18 @@ class ApacheDvsni(object):
         # TODO: Use ip address of existing vhost instead of relying on FQDN
         config_text = "<IfModule mod_ssl.c>\n"
         for idx, lis in enumerate(ll_addrs):
-            config_text += self.get_config_text(
+            config_text += self._get_config_text(
                 self.dvsni_chall[idx].nonce, lis,
                 self.dvsni_chall[idx].key.file)
         config_text += "</IfModule>\n"
 
-        self.conf_include_check(self.config.parser.loc["default"])
+        self._conf_include_check(self.config.parser.loc["default"])
         self.config.register_file_creation(True, self.challenge_conf)
 
         with open(self.challenge_conf, 'w') as new_conf:
             new_conf.write(config_text)
 
-    def conf_include_check(self, main_config):
+    def _conf_include_check(self, main_config):
         """Adds DVSNI challenge conf file into configuration.
 
         Adds DVSNI challenge include file if it does not already exist
@@ -142,7 +152,7 @@ class ApacheDvsni(object):
             self.config.parser.add_dir(parser.get_aug_path(main_config),
                                        "Include", self.challenge_conf)
 
-    def get_config_text(self, nonce, ip_addrs, dvsni_key_file):
+    def _get_config_text(self, nonce, ip_addrs, dvsni_key_file):
         """Chocolate virtual server configuration text
 
         :param str nonce: hex form of nonce

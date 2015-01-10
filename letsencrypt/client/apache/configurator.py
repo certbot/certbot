@@ -801,7 +801,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     def is_site_enabled(self, avail_fp):
         """Checks to see if the given site is enabled.
 
-        .. todo:: fix hardcoded sites-enabled
+        .. todo:: fix hardcoded sites-enabled, check os.path.samefile
 
         :param str avail_fp: Complete file path of available site
 

@@ -57,7 +57,7 @@ class RecoveryTokenTest(unittest.TestCase):
         self.assertEqual(response, {"type": "recoveryToken", "token": "555"})
 
         response = self.rec_token.perform(RecTokenChall("example6.com"))
-        self.assertEqual(response, None)
+        self.assertIs(response, None)
 
 
 if __name__ == '__main__':

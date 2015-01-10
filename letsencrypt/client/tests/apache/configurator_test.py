@@ -10,21 +10,20 @@ import zope.component
 
 from letsencrypt.client import challenge_util
 from letsencrypt.client import client
-from letsencrypt.client import display
 from letsencrypt.client import errors
 
 from letsencrypt.client.apache import configurator
 from letsencrypt.client.apache import obj
 from letsencrypt.client.apache import parser
 
-from letsencrypt.client.tests import config_util
+from letsencrypt.client.tests.apache import config_util
 
 
 class TwoVhost80Test(unittest.TestCase):
     """Test two standard well configured HTTP vhosts."""
 
     def setUp(self):
-        zope.component.provideUtility(display.NcursesDisplay())
+        #zope.component.provideUtility(display.NcursesDisplay())
 
         self.temp_dir, self.config_dir, self.work_dir = config_util.dir_setup(
             "debian_apache_2_4/two_vhost_80")
@@ -170,9 +169,9 @@ class TwoVhost80Test(unittest.TestCase):
         # Only tests functionality specific to configurator.perform
         # Note: As more challenges are offered this will have to be expanded
         rsa256_file = pkg_resources.resource_filename(
-            __name__, 'testdata/rsa256_key.pem')
+            "letsencrypt.client.tests", 'testdata/rsa256_key.pem')
         rsa256_pem = pkg_resources.resource_string(
-            __name__, 'testdata/rsa256_key.pem')
+            "letsencrypt.client.tests", 'testdata/rsa256_key.pem')
 
         auth_key = client.Client.Key(rsa256_file, rsa256_pem)
         chall1 = challenge_util.DvsniChall(

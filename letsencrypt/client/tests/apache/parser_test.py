@@ -10,7 +10,7 @@ import zope.component
 from letsencrypt.client import display
 from letsencrypt.client import errors
 from letsencrypt.client.apache import parser
-from letsencrypt.client.tests import config_util
+from letsencrypt.client.tests.apache import config_util
 
 
 class ApacheParserTest(unittest.TestCase):
