@@ -12,8 +12,9 @@ import M2Crypto
 import zope.component
 
 from letsencrypt.client import acme
-from letsencrypt.client import challenge
+from letsencrypt.client import auth_handler
 from letsencrypt.client import challenge_util
+from letsencrypt.client import client_authenticator
 from letsencrypt.client import CONFIG
 from letsencrypt.client import crypto_util
 from letsencrypt.client import errors
@@ -40,9 +41,9 @@ class Client(object):
     :ivar authkey: Authorization Key
     :type authkey: :class:`letsencrypt.client.client.Client.Key`
 
-    :ivar auth: Object that supports the IAuthenticator interface.
-        `auth` is used specifically for CONFIG.AUTH_CHALLENGES
-    :type auth: :class:`letsencrypt.client.interfaces.IAuthenticator`
+    :ivar auth_handler: Object that supports the IAuthenticator interface.
+        auth_handler contains both a dv_authenticator and a client_authenticator
+    :type auth_handler: :class:`letsencrypt.client.auth_handler.AuthHandler`
 
     :ivar installer: Object supporting the IInstaller interface.
     :type installer: :class:`letsencrypt.client.interfaces.IInstraller`
@@ -53,18 +54,26 @@ class Client(object):
     Key = collections.namedtuple("Key", "file pem")
     CSR = collections.namedtuple("CSR", "file data form")
 
-    def __init__(self, server, names, authkey, auth, installer):
-        """Initialize a client."""
+    def __init__(self, server, names, authkey, dv_auth, installer):
+        """Initialize a client.
+
+        :param str server: CA server to contact
+        :param dv_auth: IAuthenticator Interface that can solve the
+            CONFIG.DV_CHALLENGES
+        :type dv_auth: :class:`letsencrypt.client.interfaces.IAuthenticator`
+
+        """
         self.network = network.Network(server)
         self.names = names
         self.authkey = authkey
 
         sanity_check_names([server] + names)
 
-        self.auth = auth
         self.installer = installer
 
-        self.rec_token = recovery_token.RecoveryToken(server)
+        client_auth = client_authenticator.ClientAuthenticator(server)
+        self.auth_handler = auth_handler.AuthHandler(
+            dv_auth, client_auth, self.network)
 
     def obtain_certificate(self, csr,
                            cert_path=CONFIG.CERT_PATH,
@@ -82,42 +91,13 @@ class Client(object):
         :rtype: `tuple` of `str`
 
         """
-        challenge_msgs = []
         # Request Challenges
         for name in self.names:
-            # Maintaining order of challenge_msgs to names is important
-            challenge_msgs.append(self.acme_challenge(name))
+            self.auth_handler.add_chall_msg(
+                name, self.acme_challenge(name), self.authkey)
 
-        # Perform Challenges
-        # Make sure at least one challenge is solved every round
-        progress = True
-        # This outer loop handles cases where the Authenticator cannot solve
-        # all challenge_msgs at once
-        while challenge_msgs and progress:
-            responses, auth_c, client_c = self.verify_identities(challenge_msgs)
-            progress = False
-
-            i = 0
-            while i < len(responses):
-                # Get Authorization
-                if responses[i] is not None:
-                    self.acme_authorization(
-                        challenge_msgs[i], self.names[i],
-                        auth_c[i], client_c[i], responses[i])
-                    # Received authorization, remove challenge from list
-                    # We have also cleaned up challenges... keep index
-                    # in sync
-                    del challenge_msgs[i]
-                    del auth_c[i]
-                    del client_c[i]
-                    del responses[i]
-                    progress = True
-                else:
-                    i += 1
-
-        if not progress:
-            raise errors.LetsEncryptClientError(
-                "Unable to solve challenges for requested names.")
+        # Perform Challenges/Get Authorizations
+        self.auth_handler.get_authorizations()
 
         # Retrieve certificate
         certificate_dict = self.acme_certificate(csr.data)
@@ -139,34 +119,6 @@ class Client(object):
         """
         return self.network.send_and_receive_expected(
             acme.challenge_request(domain), "challenge")
-
-    def acme_authorization(
-            self, challenge_msg, domain, auth_c, client_c, responses):
-        """Handle ACME "authorization" phase.
-
-        :param dict challenge_msg: ACME "challenge" message.
-        :param str domain: domain that is requesting authorization
-        :param list auth_c: auth challenges
-        :param list client_c: client challenges
-        :param list responses: Responses to all challenges in challenge_msg
-
-        :returns: ACME "authorization" message.
-        :rtype: dict
-
-        """
-        try:
-            return self.network.send_and_receive_expected(
-                acme.authorization_request(
-                    challenge_msg["sessionID"], domain,
-                    challenge_msg["nonce"], responses, self.authkey.pem),
-                "authorization")
-        except errors.LetsEncryptClientError as err:
-            logging.fatal(str(err))
-            logging.fatal(
-                "Failed Authorization procedure - cleaning up challenges")
-            sys.exit(1)
-        finally:
-            self.cleanup_challenges(auth_c, client_c)
 
     def acme_certificate(self, csr_der):
         """Handle ACME "certificate" phase.
@@ -277,17 +229,6 @@ class Client(object):
         #    # TODO enable OCSP Stapling
         #    continue
 
-    def cleanup_challenges(self, auth_c, client_c):
-        """Cleanup configuration challenges
-
-        :param dict challenges: challenges from a challenge message
-
-        """
-        logging.info("Cleaning up challenges...")
-        self.auth.cleanup(auth_c)
-        # should cleanup client_c
-        assert not client_c
-
     def verify_identities(self, challenge_msgs):
         """Verify identities.
 
@@ -386,10 +327,6 @@ class Client(object):
                 responses[msg_num][idx] = flat_resp[flat_index]
                 flat_index += 1
 
-    def _path_satisfied(self, responses, path):
-        """Returns whether a path has been completely satisfied."""
-        return all("null" != responses[i] for i in path)
-
     def store_cert_key(self, cert_file, encrypt=False):
         """Store certificate key.
 
@@ -466,136 +403,6 @@ class Client(object):
             if host is not None:
                 vhost.add(host)
         return vhost
-
-    def challenge_factory(self, domain, challenges, path):
-        """
-
-        :param str domain: domain of the enrollee
-
-        :param list challenges: A list of challenges from ACME "challenge"
-            server message to be fulfilled by the client in order to prove
-            possession of the identifier.
-
-        :param list path: List of indices from `challenges`.
-
-        :returns: auth_chall, list of `collections.namedtuples`
-            auth_satisfies, list of indices, each associated auth_chall
-            satisfieswithin the challenge_msg
-            client_chall, list of `collections.namedtuples`
-            client_satisfies, list of indices each associated client_chall
-            satisfies within the challenge_msg
-        :rtype: tuple
-
-        :raises errors.LetsEncryptClientError: If Challenge type is not
-            recognized
-
-        """
-        auth_chall = []
-        # Since a single invocation of SNI challenge can satisfy multiple
-        # challenges. We must keep track of all the challenges it satisfies
-        auth_satisfies = []
-
-        client_chall = []
-        client_satisfies = []
-        domain = str(domain)
-
-        for index in path:
-            chall = challenges[index]
-
-            # Authenticator Challenges
-            if chall["type"] in CONFIG.AUTH_CHALLENGES:
-                auth_chall.append(self._construct_auth_chall(chall, domain))
-                auth_satisfies.append(index)
-
-            # Client Challenges
-            elif chall["type"] in CONFIG.CLIENT_CHALLENGES:
-                client_chall.append(self._construct_client_chall(chall, domain))
-                client_satisfies.append(index)
-
-            else:
-                raise errors.LetsEncryptClientError(
-                    "Received unrecognized challenge of type: "
-                    "%s" % chall["type"])
-
-        return auth_chall, auth_satisfies, client_chall, client_satisfies
-
-    def _construct_auth_chall(self, chall, domain):
-        """Construct Auth Type Challenges.
-
-        :param dict chall: Single challenge
-
-        :returns: challenge_util named tuple Chall object
-        :rtype: `collections.namedtuple`
-
-        :raises errors.LetsEncryptClientError: If unimplemented challenge exists
-
-        """
-        if chall["type"] == "dvsni":
-            logging.info("  DVSNI challenge for name %s.", domain)
-            return challenge_util.DvsniChall(
-                domain, str(chall["r"]), str(chall["nonce"]), self.authkey)
-
-        elif chall["type"] == "simpleHttps":
-            logging.info("  SimpleHTTPS challenge for name %s.", domain)
-            return challenge_util.SimpleHttpsChall(
-                domain, str(chall["token"]), self.authkey)
-
-        elif chall["type"] == "dns":
-            logging.info("  DNS challenge for name %s.", domain)
-            return challenge_util.DnsChall(
-                domain, str(chall["token"]), self.authkey)
-
-        else:
-            raise errors.LetsEncryptClientError(
-                "Unimplemented Auth Challenge: %s" % chall["type"])
-
-    def _construct_client_chall(self, chall, domain):
-        """Construct Client Type Challenges.
-
-        :param dict chall: Single challenge
-
-        :returns: challenge_util named tuple Chall object
-        :rtype: `collections.namedtuple`
-
-        :raises errors.LetsEncryptClientError: If unimplemented challenge exists
-
-        """
-        if chall["type"] == "recoveryToken":
-            logging.info("  Recovery Token Challenge for name: %s.", domain)
-            return challenge_util.RecTokenChall(domain)
-
-        elif chall["type"] == "recoveryContact":
-            logging.info("  Recovery Contact Challenge for name: %s.", domain)
-            return challenge_util.RecContactChall(
-                domain,
-                chall.get("activationURL", None),
-                chall.get("successURL", None),
-                chall.get("contact", None))
-
-        elif chall["type"] == "proofOfPossession":
-            logging.info("  Proof-of-Possession Challenge for name: "
-                         "%s", domain)
-            return challenge_util.PopChall(
-                domain, chall["alg"], chall["nonce"], chall["hints"])
-
-        else:
-            raise errors.LetsEncryptClientError(
-                "Unimplemented Client Challenge: %s" % chall["type"])
-
-    # pylint: disable=unused-argument
-    def get_chall_pref(self, domain):
-        """Return list of challenge preferences."""
-        return ["recoveryToken"]
-
-    def perform(self, chall_list):
-        """Perform client specific challenges."""
-        responses = []
-        for chall in chall_list:
-            if isinstance(chall, challenge_util.RecTokenChall):
-                responses.append(self.rec_token.perform(chall))
-            else:
-                raise errors.LetsEncryptClientError("Unexpected Challenge")
-        return responses
 
 
 def validate_key_csr(privkey, csr):

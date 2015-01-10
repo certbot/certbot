@@ -20,6 +20,9 @@ RecContactChall = collections.namedtuple(
 RecTokenChall = collections.namedtuple("RecTokenChall", "domain")
 PopChall = collections.namedtuple("PopChall", "domain, alg, nonce, hints")
 
+# Helper Challenge Wrapper - Can be used to maintain the proper position of 
+# the response within a larger challenge list
+IndexedChall = collections.namedtuple("IndexedChall", "chall, index")
 
 # DVSNI Challenge functions
 def dvsni_gen_cert(filepath, name, r_b64, nonce, key):

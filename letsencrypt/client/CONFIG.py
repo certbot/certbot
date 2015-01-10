@@ -60,7 +60,7 @@ INVALID_EXT = ".acme.invalid"
 EXCLUSIVE_CHALLENGES = [frozenset(["dvsni", "simpleHttps"])]
 """Mutually Exclusive Challenges - only solve 1"""
 
-AUTH_CHALLENGES = frozenset(["dvsni", "simpleHttps", "dns"])
+DV_CHALLENGES = frozenset(["dvsni", "simpleHttps", "dns"])
 """These are challenges that must be solved by an Authenticator object"""
 
 CLIENT_CHALLENGES = frozenset(
