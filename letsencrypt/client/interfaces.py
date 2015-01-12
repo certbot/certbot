@@ -144,7 +144,7 @@ class IDisplay(zope.interface.Interface):
         pass
 
 
-class IValidator(object):
+class IValidator(zope.interface.Interface):
     """Configuration validator."""
 
     def redirect(name):
