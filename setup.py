@@ -42,7 +42,7 @@ setup(
         'letsencrypt.scripts',
     ],
     install_requires=install_requires,
-    tests_require=install_requires,
+    tests_require=install_requires + ['pylint<1.4',],
     test_suite='letsencrypt',
     extras_require={
         'docs': docs_extras,
