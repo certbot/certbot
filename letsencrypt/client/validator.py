@@ -21,7 +21,7 @@ class Validator(object):
             raise ValidationError("Server did not redirect with permanent code.")
 
         redirect_location = response.headers.get("location", "")
-        if redirect_location.startswith("https://"):
+        if not redirect_location.startswith("https://"):
             raise ValidationError("Server did not redirect to HTTPS connection.")
 
         return True
