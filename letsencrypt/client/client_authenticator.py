@@ -1,5 +1,6 @@
 import zope.interface
 
+from letsencrypt.client import challenge_util
 from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 from letsencrypt.client import recovery_token
@@ -27,7 +28,7 @@ class ClientAuthenticator(object):
         return ["recoveryToken"]
 
     def perform(self, chall_list):
-        """Perform client specific challenges."""
+        """Perform client specific challenges for IAuthenticator"""
         responses = []
         for chall in chall_list:
             if isinstance(chall, challenge_util.RecTokenChall):
@@ -37,6 +38,7 @@ class ClientAuthenticator(object):
         return responses
 
     def cleanup(self, chall_list):
+        """Cleanup call for IAuthenticator."""
         for chall in chall_list:
             if isinstance(chall, challenge_util.RecTokenChall):
                 self.rec_token.cleanup(chall)

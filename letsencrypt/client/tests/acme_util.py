@@ -59,10 +59,10 @@ CHALLENGES = {
 }
 
 
-def get_auth_challenges():
+def get_dv_challenges():
     """Returns all auth challenges."""
     return [chall for typ, chall in CHALLENGES.iteritems()
-            if typ in CONFIG.AUTH_CHALLENGES]
+            if typ in CONFIG.DV_CHALLENGES]
 
 
 def get_client_challenges():
@@ -83,7 +83,7 @@ def gen_combos(challs):
     combos = []
 
     for i, chall in enumerate(challs):
-        if chall["type"] in CONFIG.AUTH_CHALLENGES:
+        if chall["type"] in CONFIG.DV_CHALLENGES:
             dv_chall.append(i)
         else:
             renewal_chall.append(i)

@@ -61,7 +61,8 @@ class AuthHandler(object):
         """
         if domain in self.domains:
             raise errors.LetsEncryptAuthHandlerError(
-                "Multiple Challenges for the same domain is not supported.")
+                "Multiple ACMEChallengeMessages for the same domain "
+                "is not supported.")
         self.domains.append(domain)
         self.responses[domain] = ["null"] * len(msg["challenges"])
         self.msgs[domain] = msg
@@ -121,12 +122,6 @@ class AuthHandler(object):
         finally:
             self._cleanup_challenges(domain)
 
-    def _path_satisfied(self, dom):
-        """Returns whether a path has been completely satisfied."""
-        return all(
-            None != self.responses[dom][i] and "null" != self.responses[dom][i]
-            for i in self.paths[dom])
-
     def _satisfy_challenges(self):
         """Attempt to satisfy all saved challenge messages."""
         logging.info("Performing the following challenges:")
@@ -151,6 +146,8 @@ class AuthHandler(object):
         client_resp = self.client_auth.perform(flat_client)
         dv_resp = self.dv_auth.perform(flat_auth)
 
+        logging.info("Ready for verification...")
+
         # Assemble Responses
         self._assign_responses(client_resp, self.client_c)
         self._assign_responses(dv_resp, self.dv_c)
@@ -163,9 +160,16 @@ class AuthHandler(object):
                 self.responses[dom][ichall.index] = flat_list[flat_index]
                 flat_index += 1
 
+    def _path_satisfied(self, dom):
+        """Returns whether a path has been completely satisfied."""
+        return all(
+            None != self.responses[dom][i] and "null" != self.responses[dom][i]
+            for i in self.paths[dom])
+
     def _get_chall_pref(self, domain):
         """Return list of challenge preferences."""
-        chall_prefs = self.client_auth.get_chall_pref(domain)
+        chall_prefs = []
+        chall_prefs.extend(self.client_auth.get_chall_pref(domain))
         chall_prefs.extend(self.dv_auth.get_chall_pref(domain))
         return chall_prefs
 
@@ -389,6 +393,10 @@ def _find_dumb_path(challenges, preferences):
         server message to be fulfilled by the client in order to prove
         possession of the identifier.
 
+    :param list preferences: A list of preferences representing the
+        challenge type found within the ACME spec. Each challenge type
+        can only be listed once.
+
     :returns: List of indices from `challenges`.
     :rtype: list
 
@@ -396,6 +404,7 @@ def _find_dumb_path(challenges, preferences):
     # Add logic for a crappy server
     # Choose a DV
     path = []
+    assert(len(preferences) == len(set(preferences)))
     for pref_c in preferences:
         for i, offered_challenge in enumerate(challenges):
             if (pref_c == offered_challenge["type"] and
