@@ -59,7 +59,7 @@ class DvsniPerformTest(unittest.TestCase):
 
     def test_perform0(self):
         resp = self.sni.perform()
-        self.assertIs(resp, None)
+        self.assertTrue(resp is None)
 
     @mock.patch("letsencrypt.client.apache.configurator."
                 "ApacheConfigurator.restart")
