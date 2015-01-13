@@ -42,7 +42,7 @@ class Client(object):
     :type auth: :class:`letsencrypt.client.interfaces.IAuthenticator`
 
     :ivar installer: Object supporting the IInstaller interface.
-    :type installer: :class:`letsencrypt.client.interfaces.IInstraller`
+    :type installer: :class:`letsencrypt.client.interfaces.IInstaller`
 
     """
     Key = collections.namedtuple("Key", "file pem")
