@@ -243,7 +243,6 @@ class AugeasConfigurator(object):
         le_util.make_or_verify_dir(cp_dir, 0o755, os.geteuid())
 
         existing_filepaths = []
-        op_fd = None
         filepaths_path = os.path.join(cp_dir, "FILEPATHS")
 
         # Open up FILEPATHS differently depending on if it already exists
