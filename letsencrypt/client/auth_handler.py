@@ -151,7 +151,14 @@ class AuthHandler(object):
         self._assign_responses(dv_resp, self.dv_c)
 
     def _assign_responses(self, flat_list, ichall_dict):
-        """Assign responses from flat_list back to the IndexedChall dicts."""
+        """Assign responses from flat_list back to the IndexedChall dicts.
+
+        :param list flat_list: flat_list of responses from an IAuthenticator
+        :param dict ichall_dict: Master dict mapping all domains to a list of
+            their associated 'client' and 'dv' IndexedChallenges, or their
+            :class:`letsencrypt.client.challenge_util.IndexedChall` list
+
+        """
         flat_index = 0
         for dom in self.domains:
             for ichall in ichall_dict[dom]:
@@ -165,7 +172,11 @@ class AuthHandler(object):
             for i in self.paths[dom])
 
     def _get_chall_pref(self, domain):
-        """Return list of challenge preferences."""
+        """Return list of challenge preferences.
+
+        :param str domain: domain for which you are requesting preferences
+        
+        """
         chall_prefs = []
         chall_prefs.extend(self.client_auth.get_chall_pref(domain))
         chall_prefs.extend(self.dv_auth.get_chall_pref(domain))

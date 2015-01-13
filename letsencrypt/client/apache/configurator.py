@@ -942,8 +942,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :param list chall_list: List of challenges to be
             fulfilled by configurator.
 
-        :returns: list of responses. A None response indicates the challenge
-            was not perfromed.
+        :returns: list of responses. All responses are returned in the same
+           order as received by the perform function.  A None response 
+            indicates the challenge was not perfromed.
         :rtype: list
 
         """
@@ -953,6 +954,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         for i, chall in enumerate(chall_list):
             if isinstance(chall, challenge_util.DvsniChall):
+                # Currently also have dvsni hold associated index
+                # of the challenge. This helps to put all of the responses back
+                # together when they are all complete.
                 apache_dvsni.add_chall(chall, i)
 
         sni_response = apache_dvsni.perform()
@@ -960,6 +964,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Handled here because we may be able to load up other challenge types
         self.restart()
 
+        # Go through all of the challenges and assign them to the proper place
+        # in the responses return value. All responses must be in the same order
+        # as the original challenges.
         for i, resp in enumerate(sni_response):
             responses[apache_dvsni.indices[i]] = resp
 
@@ -968,6 +975,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     def cleanup(self, chall_list):
         """Revert all challenges."""
         self.chall_out -= len(chall_list)
+
+        # If all of the challenges have been finished, clean up everything
         if self.chall_out <= 0:
             self.revert_challenge_config()
             self.restart()

@@ -16,10 +16,7 @@ class RecoveryToken(object):
     Based on draft-barnes-acme, section 6.4.
 
     """
-    # zope.interface.implements(interfaces.IChallenge)
-
     def __init__(self, server, direc=CONFIG.REV_TOKENS_DIR):
-        # super(RecoveryToken, self).__init__()
         self.token_dir = os.path.join(direc, server)
 
     def perform(self, chall):
