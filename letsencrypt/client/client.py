@@ -13,7 +13,6 @@ import zope.component
 
 from letsencrypt.client import acme
 from letsencrypt.client import auth_handler
-from letsencrypt.client import challenge_util
 from letsencrypt.client import client_authenticator
 from letsencrypt.client import CONFIG
 from letsencrypt.client import crypto_util
@@ -21,7 +20,6 @@ from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
 from letsencrypt.client import network
-from letsencrypt.client import recovery_token
 
 
 # it's weird to point to chocolate servers via raw IPv6 addresses, and

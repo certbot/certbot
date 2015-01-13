@@ -62,9 +62,9 @@ def unique_file(default_name, mode=0o777):
     f_parsed = os.path.splitext(default_name)
     while 1:
         try:
-            fd = os.open(
+            file_d = os.open(
                 default_name, os.O_CREAT | os.O_EXCL | os.O_RDWR, mode)
-            return os.fdopen(fd, 'w'), default_name
+            return os.fdopen(file_d, 'w'), default_name
         except OSError:
             pass
         default_name = f_parsed[0] + '_' + str(count) + f_parsed[1]

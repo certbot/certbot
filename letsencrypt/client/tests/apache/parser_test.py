@@ -1,3 +1,4 @@
+"""Tests the ApacheParser class."""
 import os
 import shutil
 import sys
@@ -14,7 +15,7 @@ from letsencrypt.client.tests.apache import config_util
 
 
 class ApacheParserTest(unittest.TestCase):
-
+    """Apache Parser Test."""
     def setUp(self):
         zope.component.provideUtility(display.FileDisplay(sys.stdout))
 

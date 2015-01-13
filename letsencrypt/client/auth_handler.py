@@ -2,8 +2,6 @@
 import logging
 import sys
 
-import zope.component
-
 from letsencrypt.client import acme
 from letsencrypt.client import CONFIG
 from letsencrypt.client import challenge_util
@@ -404,7 +402,7 @@ def _find_dumb_path(challenges, preferences):
     # Add logic for a crappy server
     # Choose a DV
     path = []
-    assert(len(preferences) == len(set(preferences)))
+    assert len(preferences) == len(set(preferences))
     for pref_c in preferences:
         for i, offered_challenge in enumerate(challenges):
             if (pref_c == offered_challenge["type"] and

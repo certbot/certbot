@@ -1,3 +1,4 @@
+"""Client Authenticator"""
 import zope.interface
 
 from letsencrypt.client import challenge_util
@@ -6,7 +7,7 @@ from letsencrypt.client import interfaces
 from letsencrypt.client import recovery_token
 
 class ClientAuthenticator(object):
-    """Authenticator for CONFIG.CLIENT_CHALLENGES.
+    """IAuthenticator for CONFIG.CLIENT_CHALLENGES.
 
     :ivar rec_token: Performs "recoveryToken" challenges
     :type rec_token: :class:`letsencrypt.client.recovery_token.RecoveryToken`
@@ -23,7 +24,8 @@ class ClientAuthenticator(object):
         """
         self.rec_token = recovery_token.RecoveryToken(server)
 
-    def get_chall_pref(self, domain):  # pylint: disable=no-member-use
+    # pylint: disable=unused-argument,no-self-use
+    def get_chall_pref(self, domain):
         """Return list of challenge preferences."""
         return ["recoveryToken"]
 

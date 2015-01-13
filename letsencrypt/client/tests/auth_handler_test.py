@@ -1,9 +1,16 @@
 """Test auth_handler.py."""
 import unittest
 import mock
-import pkg_resources
 
 from letsencrypt.client.tests import acme_util
+
+
+TRANSLATE = {"dvsni": "DvsniChall",
+             "simpleHttps": "SimpleHttpsChall",
+             "dns": "DnsChall",
+             "recoveryToken": "RecTokenChall",
+             "recoveryContact": "RecContactChall",
+             "proofOfPossession": "PopChall"}
 
 
 # pylint: disable=protected-access
@@ -129,7 +136,6 @@ class SatisfyChallengesTest(unittest.TestCase):
     def test_name5_all(self, mock_chall_path):
         challenges = acme_util.get_challenges()
         combos = acme_util.gen_combos(challenges)
-        msgs = []
         for i in range(5):
             self.handler.add_chall_msg(
                 str(i),
@@ -166,7 +172,6 @@ class SatisfyChallengesTest(unittest.TestCase):
     @mock.patch("letsencrypt.client.auth_handler.gen_challenge_path")
     def test_name5_mix(self, mock_chall_path):
         paths = []
-        msgs = []
         chosen_chall = [["dns"],
                         ["dvsni"],
                         ["simpleHttps", "proofOfPossession"],
@@ -201,7 +206,8 @@ class SatisfyChallengesTest(unittest.TestCase):
             resp = self._get_exp_response(i, paths[i], challenge_list[i])
             self.assertEqual(self.handler.responses[dom], resp)
             self.assertEqual(len(self.handler.dv_c[dom]), 1)
-            self.assertEqual(len(self.handler.client_c[dom]), len(chosen_chall[i]) - 1)
+            self.assertEqual(
+                len(self.handler.client_c[dom]), len(chosen_chall[i]) - 1)
 
         self.assertEqual(
             type(self.handler.dv_c["0"][0].chall).__name__, "DnsChall")
@@ -222,29 +228,12 @@ class SatisfyChallengesTest(unittest.TestCase):
     def _get_exp_response(self, domain, path, challenges):
         exp_resp = ["null"] * len(challenges)
         for i in path:
-            exp_resp[i] = translate[challenges[i]["type"]] + str(domain)
+            exp_resp[i] = TRANSLATE[challenges[i]["type"]] + str(domain)
 
         return exp_resp
 
-    def printout_handler(self):
-        print "***** Test Printout *****"
-        for dom in self.handler.domains:
-            print "Domain:", dom
-            print "***Challenge Messages***"
-            print self.handler.msgs[dom]
-            print "**responses**"
-            print self.handler.responses[dom]
-            print "**path**"
-            print self.handler.paths[dom]
-            print "**dv_c**"
-            for item in self.handler.dv_c[dom]:
-                print item
-            print "**client_c**"
-            for item in self.handler.client_c[dom]:
-                print item
 
-
-# pylint: diable=protected-access
+# pylint: disable=protected-access
 class GetAuthorizationsTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.client.auth_handler import AuthHandler
@@ -416,14 +405,6 @@ class PathSatisfiedTest(unittest.TestCase):
 
         for i in range(4):
             self.assertFalse(self.handler._path_satisfied(dom[i]))
-
-
-translate = {"dvsni": "DvsniChall",
-             "simpleHttps": "SimpleHttpsChall",
-             "dns": "DnsChall",
-             "recoveryToken": "RecTokenChall",
-             "recoveryContact": "RecContactChall",
-             "proofOfPossession": "PopChall"}
 
 
 def gen_auth_resp(chall_list):
