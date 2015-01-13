@@ -10,6 +10,12 @@
 .. automodule:: letsencrypt.client.apache.configurator
    :members:
 
+:mod:`letsencrypt.client.apache.dvsni`
+=============================================
+
+.. automodule:: letsencrypt.client.apache.dvsni
+   :members:
+
 :mod:`letsencrypt.client.apache.obj`
 ====================================
 

@@ -17,7 +17,7 @@ def dir_setup(test_dir="debian_apache_2_4/two_vhost_80"):
     work_dir = tempfile.mkdtemp("work")
 
     test_configs = pkg_resources.resource_filename(
-        __name__, "testdata/%s" % test_dir)
+        "letsencrypt.client.tests", "testdata/%s" % test_dir)
 
     shutil.copytree(
         test_configs, os.path.join(temp_dir, test_dir), symlinks=True)

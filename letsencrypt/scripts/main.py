@@ -122,7 +122,7 @@ def main():
     acme = client.Client(server, domains, privkey, auth, installer)
 
     # Validate the key and csr
-    client.validate_key_csr(privkey, csr, domains)
+    client.validate_key_csr(privkey, csr)
 
     cert_file, chain_file = acme.obtain_certificate(csr)
     vhost = acme.deploy_certificate(privkey, cert_file, chain_file)
@@ -150,8 +150,7 @@ def choose_names(installer):
     code, names = zope.component.getUtility(
         interfaces.IDisplay).filter_names(get_all_names(installer))
     if code == display.OK and names:
-        # TODO: Allow multiple names once it is setup
-        return [names[0]]
+        return names
     else:
         sys.exit(0)
 

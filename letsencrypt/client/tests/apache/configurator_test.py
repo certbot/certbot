@@ -1,5 +1,6 @@
-"""Test for letsencrypt.client.apache_configurator."""
+"""Test for letsencrypt.client.apache.configurator."""
 import os
+import pkg_resources
 import re
 import shutil
 import unittest
@@ -7,21 +8,22 @@ import unittest
 import mock
 import zope.component
 
-from letsencrypt.client import display
+from letsencrypt.client import challenge_util
+from letsencrypt.client import client
 from letsencrypt.client import errors
 
 from letsencrypt.client.apache import configurator
 from letsencrypt.client.apache import obj
 from letsencrypt.client.apache import parser
 
-from letsencrypt.client.tests import config_util
+from letsencrypt.client.tests.apache import config_util
 
 
 class TwoVhost80Test(unittest.TestCase):
     """Test two standard well configured HTTP vhosts."""
 
     def setUp(self):
-        zope.component.provideUtility(display.NcursesDisplay())
+        #zope.component.provideUtility(display.NcursesDisplay())
 
         self.temp_dir, self.config_dir, self.work_dir = config_util.dir_setup(
             "debian_apache_2_4/two_vhost_80")
@@ -158,6 +160,43 @@ class TwoVhost80Test(unittest.TestCase):
         mock_popen.side_effect = OSError("Can't find program")
         self.assertRaises(
             errors.LetsEncryptConfiguratorError, self.config.get_version)
+
+    @mock.patch("letsencrypt.client.apache.configurator."
+                "dvsni.ApacheDvsni.perform")
+    @mock.patch("letsencrypt.client.apache.configurator."
+                "ApacheConfigurator.restart")
+    def test_perform(self, mock_restart, mock_dvsni_perform):
+        # Only tests functionality specific to configurator.perform
+        # Note: As more challenges are offered this will have to be expanded
+        rsa256_file = pkg_resources.resource_filename(
+            "letsencrypt.client.tests", 'testdata/rsa256_key.pem')
+        rsa256_pem = pkg_resources.resource_string(
+            "letsencrypt.client.tests", 'testdata/rsa256_key.pem')
+
+        auth_key = client.Client.Key(rsa256_file, rsa256_pem)
+        chall1 = challenge_util.DvsniChall(
+            "encryption-example.demo",
+            "jIq_Xy1mXGN37tb4L6Xj_es58fW571ZNyXekdZzhh7Q",
+            "37bc5eb75d3e00a19b4f6355845e5a18",
+            auth_key)
+        chall2 = challenge_util.DvsniChall(
+            "letsencrypt.demo",
+            "uqnaPzxtrndteOqtrXb0Asl5gOJfWAnnx6QJyvcmlDU",
+            "59ed014cac95f77057b1d7a1b2c596ba",
+            auth_key)
+
+        dvsni_ret_val = [
+            {"type": "dvsni", "s": "randomS1"},
+            {"type": "dvsni", "s": "randomS2"}
+        ]
+
+        mock_dvsni_perform.return_value = dvsni_ret_val
+        responses = self.config.perform([chall1, chall2])
+
+        self.assertEqual(mock_dvsni_perform.call_count, 1)
+        self.assertEqual(responses, dvsni_ret_val)
+
+        self.assertEqual(mock_restart.call_count, 1)
 
 if __name__ == '__main__':
     unittest.main()
