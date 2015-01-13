@@ -20,9 +20,8 @@ docs_extras = [
 ]
 
 testing_extras = [
-    'coverage',
-    'nose',
-    'nosexcover',
+    'pytest',
+    'pytest-cov',
     'pylint<1.4',  # py2.6 compat, c.f #97
     'tox',
 ]

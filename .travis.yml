@@ -20,7 +20,6 @@ script: travis_retry tox
 env:
   - TOXENV=py${TRAVIS_PYTHON_VERSION//[.]/}
   - TOXENV=lint
-  - TOXENV=cover
 
 notifications:
   email: false
