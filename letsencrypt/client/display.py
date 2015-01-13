@@ -109,7 +109,7 @@ class FileDisplay(object):
         self.outfile = outfile
 
     def generic_notification(self, message):
-        side_frame = '-' * (79)
+        side_frame = '-' * 79
         wm = textwrap.fill(message, 80)
         text = "\n%s\n%s\n%s\n" % (side_frame, wm, side_frame)
         self.outfile.write(text)
@@ -121,7 +121,7 @@ class FileDisplay(object):
             choices = ["%s - %s" % (c[0], c[1]) for c in choices]
 
         self.outfile.write("\n%s\n" % message)
-        side_frame = '-' * (79)
+        side_frame = '-' * 79
         self.outfile.write("%s\n" % side_frame)
 
         for i, choice in enumerate(choices, 1):
@@ -194,7 +194,7 @@ class FileDisplay(object):
         return code, selection
 
     def success_installation(self, domains):
-        s_f = '*' * (79)
+        s_f = '*' * 79
         wm = textwrap.fill(("Congratulations! You have successfully " +
                             "enabled %s!") % gen_https_names(domains))
         msg = "%s\n%s\n%s\n"
