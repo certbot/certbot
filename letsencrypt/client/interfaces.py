@@ -153,7 +153,7 @@ class IValidator(zope.interface.Interface):
     def ocsp_stapling(name):
         pass
 
-    def https(names):
+    def https(name):
         pass
 
     def hsts(name):

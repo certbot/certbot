@@ -1,19 +1,16 @@
 """Validators to determine the current webserver configuration"""
-import subprocess
+from subprocess import PIPE, Popen
 import zope.interface
+
 import requests
 
 from letsencrypt.client import interfaces
-from subprocess import PIPE
+from letsencrypt.client.errors import LetsEncryptValidationError
 
 
 OCSP_OPENSSL_CMD = "openssl s_client -connect {hostname}:443 -tls1 -tlsextdebug -status"
 OCSP_OPENSSL_DELIMITER = "OCSP response:"
 OCSP_OPENSSL_NO_RESPONSE = "no response sent"
-
-
-class ValidationError(Exception):
-    pass
 
 
 class Validator(object):
@@ -30,13 +27,12 @@ class Validator(object):
             return False
 
         if response.status_code != 301:
-            raise ValidationError("Server did not redirect with permanent code.")
+            raise LetsEncryptValidationError("Server did not redirect with permanent code.")
 
         return True
 
-    def https(self, names):
-        for name in names:
-            requests.get("https://" + name, verify=True)
+    def https(self, name):
+        requests.get("https://" + name, verify=True)
         return True
 
     def hsts(self, name):
@@ -54,17 +50,17 @@ class Validator(object):
             max_age_name, max_age_value = max_age
             max_age_value = int(max_age_value)
         except ValueError:
-            raise ValidationError("Server responded with invalid HSTS header field.")
+            raise LetsEncryptValidationError("Server responded with invalid HSTS header field.")
 
         return True
 
     def ocsp_stapling(self, name):
         command = OCSP_OPENSSL_CMD.format(hostname=name).split(" ")
-        openssl = subprocess.Popen(command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        openssl = Popen(command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
         stdout, stderr = openssl.communicate("QUIT\n")
 
         if openssl.returncode != 0:
-            raise ValidationError("OpenSSL quit with error-code: {openssl.returncode}.".format(openssl=openssl))
+            raise LetsEncryptValidationError("OpenSSL quit with error-code: {openssl.returncode}.".format(openssl=openssl))
 
         ocsp_status = next(line for line in stdout.split("\n") if line.startswith(OCSP_OPENSSL_DELIMITER))
         return OCSP_OPENSSL_NO_RESPONSE not in ocsp_status
@@ -74,13 +70,13 @@ if __name__ == '__main__':
     print("letsencrypt.org:")
     print(Validator().ocsp_stapling("letsencrypt.org"))
     print(Validator().hsts("letsencrypt.org"))
-    print(Validator().https(["letsencrypt.org"]))
+    print(Validator().https("letsencrypt.org"))
     print(Validator().redirect("letsencrypt.org"))
     print(Validator().ocsp_stapling("letsencrypt.org"))
 
     print("\ntweakers.net:")
     print(Validator().hsts("tweakers.net"))
-    print(Validator().https(["tweakers.net"]))
+    print(Validator().https("tweakers.net"))
     print(Validator().redirect("tweakers.net"))
     print(Validator().ocsp_stapling("tweakers.net"))
 
