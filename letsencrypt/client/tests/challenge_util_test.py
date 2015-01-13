@@ -13,7 +13,7 @@ from letsencrypt.client import CONFIG
 from letsencrypt.client import le_util
 
 # pylint: disable=too-few-public-methods
-class DvnsiGenCertTest(unittest.TestCase):
+class DvsniGenCertTest(unittest.TestCase):
     """Tests for letsencrypt.client.challenge_util.dvsni_gen_cert."""
 
     def test_standard(self):

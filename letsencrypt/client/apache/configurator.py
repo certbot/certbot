@@ -401,7 +401,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     def make_server_sni_ready(self, vhost, default_addr="*:443"):
         """Checks to see if the server is ready for SNI challenges.
 
-        :param vhost: VirtualHostost to check SNI compatibility
+        :param vhost: VirtualHost to check SNI compatibility
         :type vhost: :class:`letsencrypt.client.apache.obj.VirtualHost`
 
         :param str default_addr: TODO - investigate function further
