@@ -1,16 +1,44 @@
 """Validators to determine the current webserver configuration"""
 from subprocess import PIPE, Popen
-import zope.interface
+import logging
 
 import requests
+import zope.interface
 
 from letsencrypt.client import interfaces
 from letsencrypt.client.errors import LetsEncryptValidationError
 
+log = logging.getLogger(__name__)
 
-OCSP_OPENSSL_CMD = "openssl s_client -connect {hostname}:443 -tls1 -tlsextdebug -status"
+OCSP_OPENSSL_CMD = "openssl s_client -connect {hostname}:443"
 OCSP_OPENSSL_DELIMITER = "OCSP response:"
 OCSP_OPENSSL_NO_RESPONSE = "no response sent"
+PROTOCOLS_OPENSSL_DELIMITER = "Protocols advertised by server:"
+SPDY_PROTOCOLS = {"spdy/3.1", "spdy/3"}
+
+def _openssl(hostname, args, input=None):
+    """
+    Call openssl binary in client mode.
+
+    :raises LetsEncryptValidationError if openssl exits with error-code
+    :param hostname: server to connect to (on port 443)
+    :param args: arguments (list) to append to default ones
+    :param input: stdin to binary
+    :return: (stdout, stderr)
+    """
+    openssl_cmd = OCSP_OPENSSL_CMD.format(hostname=hostname).split(" ") + list(args)
+
+    log.debug("Calling openssl binary with arguments: " + str(openssl_cmd[1:]))
+    openssl = Popen(openssl_cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+
+    stdout, stderr = openssl.communicate(input=input)
+    log.debug("OpenSSL stdout: " + stdout)
+    log.debug("OpenSSL stderr: " + stderr)
+
+    if openssl.returncode != 0:
+        raise LetsEncryptValidationError("OpenSSL quit with error-code: {openssl.returncode}.".format(openssl=openssl))
+
+    return stdout, stderr
 
 
 class Validator(object):
@@ -55,15 +83,25 @@ class Validator(object):
         return True
 
     def ocsp_stapling(self, name):
-        command = OCSP_OPENSSL_CMD.format(hostname=name).split(" ")
-        openssl = Popen(command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
-        stdout, stderr = openssl.communicate("QUIT\n")
-
-        if openssl.returncode != 0:
-            raise LetsEncryptValidationError("OpenSSL quit with error-code: {openssl.returncode}.".format(openssl=openssl))
-
+        stdout, stderr = _openssl(name, ["-tls1", "-tlsextdebug", "-status"], input="QUIT\n")
         ocsp_status = next(line for line in stdout.split("\n") if line.startswith(OCSP_OPENSSL_DELIMITER))
         return OCSP_OPENSSL_NO_RESPONSE not in ocsp_status
+
+    def _get_nextgen_protocols(self, name):
+        """Return a set with all 'nextgen' protocols supported by server (reported by openssl)."""
+        stdout, stderr = _openssl(name, ["-nextprotoneg", "''"], input="QUIT\n")
+        delimiter_line = list(line for line in stdout.split("\n") if line.startswith(PROTOCOLS_OPENSSL_DELIMITER))
+
+        if not delimiter_line:
+            return set()
+
+        protocols = delimiter_line[0].split(PROTOCOLS_OPENSSL_DELIMITER)[1]
+        return {p.strip() for p in protocols.split(",")}
+
+    def spdy(self, name):
+        # SPDY is supported if we recognise at least one protocol
+        return bool(self._get_nextgen_protocols(name) & SPDY_PROTOCOLS)
+
 
 
 if __name__ == '__main__':
@@ -73,12 +111,16 @@ if __name__ == '__main__':
     print(Validator().https("letsencrypt.org"))
     print(Validator().redirect("letsencrypt.org"))
     print(Validator().ocsp_stapling("letsencrypt.org"))
+    print(Validator().spdy("letsencrypt.org"))
+    print(Validator()._get_nextgen_protocols("letsencrypt.org"))
 
     print("\ntweakers.net:")
     print(Validator().hsts("tweakers.net"))
     print(Validator().https("tweakers.net"))
     print(Validator().redirect("tweakers.net"))
     print(Validator().ocsp_stapling("tweakers.net"))
+    print(Validator().spdy("tweakers.net"))
+    print(Validator()._get_nextgen_protocols("tweakers.net"))
 
     print("\nnon-existing-domain.net:")
     print(Validator().ocsp_stapling("non-existing-domain.net"))
