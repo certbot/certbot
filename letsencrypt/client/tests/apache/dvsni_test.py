@@ -18,7 +18,6 @@ class DvsniPerformTest(unittest.TestCase):
 
     def setUp(self):
         from letsencrypt.client.apache import dvsni
-        #zope.component.provideUtility(display.NcursesDisplay())
 
         self.temp_dir, self.config_dir, self.work_dir = config_util.dir_setup(
             "debian_apache_2_4/two_vhost_80")
@@ -105,7 +104,7 @@ class DvsniPerformTest(unittest.TestCase):
         for chall in self.challs:
             expected_call_list.append(
                 (self.sni.get_cert_file(chall.nonce), chall.domain,
-                chall.r_b64, chall.nonce, chall.key))
+                 chall.r_b64, chall.nonce, chall.key))
 
         for i in range(len(expected_call_list)):
             for j in range(len(expected_call_list[0])):

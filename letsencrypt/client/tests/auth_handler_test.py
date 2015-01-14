@@ -363,6 +363,7 @@ class GetAuthorizationsTest(unittest.TestCase):
         self.assertFalse(self.handler.paths)
         self.assertFalse(self.handler.domains)
 
+
 # pylint: disable=protected-access
 class PathSatisfiedTest(unittest.TestCase):
     def setUp(self):
@@ -410,6 +411,7 @@ class PathSatisfiedTest(unittest.TestCase):
 def gen_auth_resp(chall_list):
     return ["%s%s" % (type(chall).__name__, chall.domain)
             for chall in chall_list]
+
 
 def gen_path(str_list, challenges):
     path = []

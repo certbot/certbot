@@ -1,6 +1,7 @@
 """Test the helper objects in apache.obj.py."""
 import unittest
 
+
 class AddrTest(unittest.TestCase):
     """Test the Addr class."""
     def setUp(self):

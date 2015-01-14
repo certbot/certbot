@@ -24,6 +24,7 @@ PopChall = collections.namedtuple("PopChall", "domain, alg, nonce, hints")
 # the response within a larger challenge list
 IndexedChall = collections.namedtuple("IndexedChall", "chall, index")
 
+
 # DVSNI Challenge functions
 def dvsni_gen_cert(filepath, name, r_b64, nonce, key):
     """Generate a DVSNI cert and save it to filepath.

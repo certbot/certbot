@@ -175,7 +175,7 @@ class AuthHandler(object):
         """Return list of challenge preferences.
 
         :param str domain: domain for which you are requesting preferences
-        
+
         """
         chall_prefs = []
         chall_prefs.extend(self.client_auth.get_chall_pref(domain))
@@ -318,6 +318,7 @@ class AuthHandler(object):
             raise errors.LetsEncryptClientError(
                 "Unimplemented Client Challenge: %s" % chall["type"])
 
+
 def gen_challenge_path(challenges, preferences, combos=None):
     """Generate a plan to get authority over the identity.
 
@@ -391,6 +392,7 @@ def _find_smart_path(challenges, preferences, combos):
 
     return best_combo
 
+
 def _find_dumb_path(challenges, preferences):
     """Find challenge path without server hints.
 
@@ -421,6 +423,7 @@ def _find_dumb_path(challenges, preferences):
                 path.append((i, offered_challenge["type"]))
 
     return [i for (i, _) in path]
+
 
 def is_preferred(offered_challenge_type, path):
     """Return whether or not the challenge is preferred in path."""

@@ -6,6 +6,7 @@ from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 from letsencrypt.client import recovery_token
 
+
 class ClientAuthenticator(object):
     """IAuthenticator for CONFIG.CLIENT_CHALLENGES.
 
