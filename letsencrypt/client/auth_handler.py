@@ -232,7 +232,7 @@ class AuthHandler(object):
         dv_chall = []
         client_chall = []
 
-        for index in self.paths[domain]:
+        for index in path:
             chall = challenges[index]
 
             # Authenticator Challenges
