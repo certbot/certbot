@@ -104,7 +104,7 @@ class AuthHandler(object):
 
         """
         try:
-            return self.network.send_and_receive_expected(
+            auth = self.network.send_and_receive_expected(
                 acme.authorization_request(
                     self.msgs[domain]["sessionID"],
                     domain,
@@ -112,6 +112,7 @@ class AuthHandler(object):
                     self.responses[domain],
                     self.authkey[domain].pem),
                 "authorization")
+            logging.info("Received Authorization for %s", domain)
         except errors.LetsEncryptClientError as err:
             logging.fatal(str(err))
             logging.fatal(
@@ -188,7 +189,7 @@ class AuthHandler(object):
         :param str domain: domain for which to clean up challenges
 
         """
-        logging.info("Cleaning up challenges...")
+        logging.info("Cleaning up challenges for %s", domain)
         self.dv_auth.cleanup(self.dv_c[domain])
         self.client_auth.cleanup(self.client_c[domain])
 
