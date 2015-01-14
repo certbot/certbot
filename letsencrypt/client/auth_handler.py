@@ -113,6 +113,7 @@ class AuthHandler(object):
                     self.authkey[domain].pem),
                 "authorization")
             logging.info("Received Authorization for %s", domain)
+            return auth
         except errors.LetsEncryptClientError as err:
             logging.fatal(str(err))
             logging.fatal(
