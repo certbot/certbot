@@ -34,17 +34,18 @@ def main():
     parser.add_argument("-p", "--privkey", dest="privkey", type=read_file,
                         help="Path to the private key file for certificate "
                              "generation.")
-    parser.add_argument("-c", "--csr", dest="csr", type=read_file,
-                        help="Path to the certificate signing request file "
-                             "corresponding to the private key file. The "
-                             "private key file argument is required if this "
-                             "argument is specified.")
+    # parser.add_argument("-c", "--csr", dest="csr", type=read_file,
+    #                     help="Path to the certificate signing request file "
+    #                          "corresponding to the private key file. The "
+    #                          "private key file argument is required if this "
+    #                          "argument is specified.")
     parser.add_argument("-b", "--rollback", dest="rollback", type=int,
                         default=0, metavar="N",
                         help="Revert configuration N number of checkpoints.")
     parser.add_argument("-k", "--revoke", dest="revoke", action="store_true",
                         help="Revoke a certificate.")
-    parser.add_argument("-v", "--view-checkpoints", dest="view_checkpoints",
+    parser.add_argument("-v", "--view-config-changes",
+                        dest="view_config_changes",
                         action="store_true",
                         help="View checkpoints and associated configuration "
                              "changes.")
@@ -56,7 +57,7 @@ def main():
                         action="store_const", const=False,
                         help="Skip the HTTPS redirect question, allowing both "
                              "HTTP and HTTPS.")
-    parser.add_argument("-e", "--agree-eula", dest="eula", action="store_true",
+    parser.add_argument("-e", "--agree-tos", dest="eula", action="store_true",
                         help="Skip the end user license agreement screen.")
     parser.add_argument("-t", "--text", dest="use_curses", action="store_false",
                         help="Use the text output instead of the curses UI.")
@@ -87,9 +88,12 @@ def main():
         rollback(installer, args.rollback)
         sys.exit()
 
-    if args.view_checkpoints:
-        view_checkpoints(installer)
+    if args.view_config_changes:
+        view_config_changes(installer)
         sys.exit()
+
+    if not args.eula:
+        display_eula()
 
     # Use the same object if possible
     if interfaces.IAuthenticator.providedBy(installer):
@@ -97,36 +101,33 @@ def main():
     else:
         auth = determine_authenticator()
 
-    if not args.eula:
-        display_eula()
-
     domains = choose_names(installer) if args.domains is None else args.domains
 
     # Enforce '--privkey' is set along with '--csr'.
-    if args.csr and not args.privkey:
-        parser.error("private key file (--privkey) must be specified along{0} "
-                     "with the certificate signing request file (--csr)"
-                     .format(os.linesep))
+    # if args.csr and not args.privkey:
+    #     parser.error("private key file (--privkey) must be specified along{0} "
+    #                  "with the certificate signing request file (--csr)"
+    #                  .format(os.linesep))
 
     # Prepare for init of Client
     if args.privkey is None:
         privkey = client.init_key()
     else:
         privkey = client.Client.Key(args.privkey[0], args.privkey[1])
-    if args.csr is None:
-        csr = client.init_csr(privkey, domains)
-    else:
-        csr = client.csr_pem_to_der(
-            client.Client.CSR(args.csr[0], args.csr[1], "pem"))
+    # if args.csr is None:
+    #     csr = client.init_csr(privkey, domains)
+    # else:
+    #     csr = client.csr_pem_to_der(
+    #         client.Client.CSR(args.csr[0], args.csr[1], "pem"))
 
-    acme = client.Client(server, domains, privkey, auth, installer)
+    acme = client.Client(server, privkey, auth, installer)
 
     # Validate the key and csr
-    client.validate_key_csr(privkey, csr)
+    client.validate_key_csr(privkey)
 
-    cert_file, chain_file = acme.obtain_certificate(csr)
-    vhost = acme.deploy_certificate(privkey, cert_file, chain_file)
-    acme.optimize_config(vhost, args.redirect)
+    cert_file, chain_file = acme.obtain_certificate(domains)
+    acme.deploy_certificate(domains, privkey, cert_file, chain_file)
+    acme.enhance_config(domains, args.redirect)
 
 
 def display_eula():
@@ -177,17 +178,21 @@ def get_all_names(installer):
 
 # This should be controlled by commandline parameters
 def determine_authenticator():
-    """Returns a valid authenticator."""
+    """Returns a valid IAuthenticator."""
     try:
-        return configurator.ApacheConfigurator()
+        if interfaces.IAuthenticator.implementedBy(
+                configurator.ApacheConfigurator):
+            return configurator.ApacheConfigurator()
     except errors.LetsEncryptConfiguratorError:
-        logging.info("Unable to find a way to authenticate.")
+        logging.info("Unable to determine a way to authenticate the server")
 
 
 def determine_installer():
     """Returns a valid installer if one exists."""
     try:
-        return configurator.ApacheConfigurator()
+        if interfaces.IInstaller.implementedBy(
+                configurator.ApacheConfigurator):
+            return configurator.ApacheConfigurator()
     except errors.LetsEncryptConfiguratorError:
         logging.info("Unable to find a way to install the certificate.")
 
@@ -209,27 +214,27 @@ def read_file(filename):
         raise argparse.ArgumentTypeError(exc.strerror)
 
 
-def rollback(config, checkpoints):
+def rollback(installer, checkpoints):
     """Revert configuration the specified number of checkpoints.
 
-    :param config: Configurator object
-    :type config: :class:`ApacheConfigurator`
+    :param installer: Installer object
+    :type installer: :class:`letsencrypt.client.interfaces.IInstaller`
 
     :param int checkpoints: Number of checkpoints to revert.
 
     """
-    config.rollback_checkpoints(checkpoints)
-    config.restart()
+    installer.rollback_checkpoints(checkpoints)
+    installer.restart()
 
 
-def view_checkpoints(config):
+def view_config_changes(installer):
     """View checkpoints and associated configuration changes.
 
-    :param config: Configurator object
-    :type config: :class:`ApacheConfigurator`
+    :param installer: Installer object
+    :type installer: :class:`letsencrypt.client.interfaces.IInstaller`
 
     """
-    config.display_checkpoints()
+    installer.view_config_changes()
 
 if __name__ == "__main__":
     main()

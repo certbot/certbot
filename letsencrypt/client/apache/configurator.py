@@ -127,7 +127,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         #       on initialization
         self._prepare_server_https()
 
-    def deploy_cert(self, vhost, cert, key, cert_chain=None):
+        self.enhance_func = {"redirect": self._enable_redirect}
+
+    def deploy_cert(self, domain, cert, key, cert_chain=None):
         """Deploys certificate to specified virtual host.
 
         Currently tries to find the last directives to deploy the cert in
@@ -141,17 +143,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         .. todo:: Might be nice to remove chain directive if none exists
                   This shouldn't happen within letsencrypt though
 
-        :param vhost: ssl vhost to deploy certificate
-        :type vhost: :class:`letsencrypt.client.apache.obj.VirtualHost`
-
+        :param str domain: domain to deploy certificate
         :param str cert: certificate filename
         :param str key: private key filename
         :param str cert_chain: certificate chain filename
 
-        :returns: Success
-        :rtype: bool
-
         """
+        vhost = self.choose_vhost(domain)
         path = {}
 
         path["cert_file"] = self.parser.find_dir(parser.case_i(
@@ -190,9 +188,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if cert_chain:
             self.save_notes += "\tSSLCertificateChainFile %s\n" % cert_chain
         # This is a significant operation, make a checkpoint
-        return self.save()
+        # return self.save()
 
-    def choose_virtual_host(self, target_name):
+    def choose_vhost(self, target_name):
         """ Chooses a virtual host based on the given domain name.
 
         .. todo:: This should maybe return list if no obvious answer
@@ -206,24 +204,27 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         # Allows for domain names to be associated with a virtual host
         # Client isn't using create_dn_server_assoc(self, dn, vh) yet
-        for domain, vhost in self.assoc:
-            if domain == target_name:
-                return vhost
+        if target_name in self.assoc:
+            return self.assoc[target_name]
         # Check for servernames/aliases for ssl hosts
         for vhost in self.vhosts:
             if vhost.ssl and target_name in vhost.names:
+                self.assoc[target_name] = vhost
                 return vhost
         # Checking for domain name in vhost address
         # This technique is not recommended by Apache but is technically valid
         target_addr = obj.Addr((target_name, "443"))
         for vhost in self.vhosts:
             if target_addr in vhost.addrs:
+                self.assoc[target_name] = vhost
                 return vhost
 
         # Check for non ssl vhosts with servernames/aliases == 'name'
         for vhost in self.vhosts:
             if not vhost.ssl and target_name in vhost.names:
-                return self.make_vhost_ssl(vhost)
+                vhost = self.make_vhost_ssl(vhost)
+                self.assoc[target_name] = vhost
+                return vhost
 
         # No matches, search for the default
         for vhost in self.vhosts:
@@ -381,7 +382,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         is appropriately listening on port 443.
 
         """
-        if not check_ssl_loaded():
+        if not mod_loaded("ssl_module"):
             logging.info("Loading mod_ssl into Apache Server")
             enable_mod("ssl")
 
@@ -427,6 +428,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         Duplicates vhost and adds default ssl options
         New vhost will reside as (nonssl_vhost.path) + CONFIG.LE_VHOST_EXT
+        .. note:: This function saves the configuration
 
         :param nonssl_vhost: Valid VH that doesn't have SSLEngine on
         :type nonssl_vhost: :class:`letsencrypt.client.apache.obj.VirtualHost`
@@ -517,24 +519,54 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         return ssl_vhost
 
-    def enable_redirect(self, ssl_vhost):
+    def supported_enhancements():
+        """Returns currently supported enhancements."""
+        return ["redirect"]
+
+    def enhance(self, domain, enhancement, options=None):
+        """Enhance configuration.
+
+        :param str domain: domain to enhance
+        :param str enhancement: enhancement type defined in
+            :class:`letsencrypt.client.CONFIG.ENHANCEMENTS
+        :param options: options for the enhancement
+        :type options: See :class:`letsencrypt.client.CONFIG.ENHANCEMENTS`
+            documentation for appropriate parameter.
+
+        """
+        try:
+            return self.enhance_func[enhancement](
+                self.choose_vhost(domain), options)
+        except ValueError:
+            raise errors.LetsEncryptConfiguratorError(
+                "Unsupported enhancement: {}".format(enhancement))
+        except errors.LetsEncryptConfiguratorError:
+            logging.warn("Failed %s for %s", enhancement, domain)
+
+    def _enable_redirect(self, ssl_vhost, options):
         """Redirect all equivalent HTTP traffic to ssl_vhost.
 
+        .. todo:: This enhancement should be rewritten and will unfortunately
+            require lots of debugging by hand.
         Adds Redirect directive to the port 80 equivalent of ssl_vhost
         First the function attempts to find the vhost with equivalent
         ip addresses that serves on non-ssl ports
         The function then adds the directive
 
+        .. note:: This function saves the configuration
+
         :param ssl_vhost: Destination of traffic, an ssl enabled vhost
         :type ssl_vhost: :class:`letsencrypt.client.apache.obj.VirtualHost`
+
+        :param options: Not currently used
+        :type options: Not Available
 
         :returns: Success, general_vhost (HTTP vhost)
         :rtype: (bool, :class:`letsencrypt.client.apache.obj.VirtualHost`)
 
         """
-        # TODO: Enable check to see if it is already there
-        #       to avoid the extra restart
-        enable_mod("rewrite")
+        if not mod_loaded("rewrite_module"):
+            enable_mod("rewrite")
 
         general_v = self._general_vhost(ssl_vhost)
         if general_v is None:
@@ -544,14 +576,18 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             return self.create_redirect_vhost(ssl_vhost)
         else:
             # Check if redirection already exists
-            exists, code = self.existing_redirect(general_v)
+            exists, code = self._existing_redirect(general_v)
             if exists:
                 if code == 0:
                     logging.debug("Redirect already added")
-                    return True, general_v
+                    logging.info(
+                        "Configuration is already redirecting traffic to HTTPS")
+                    return
                 else:
-                    logging.debug("Unknown redirect exists for this vhost")
-                    return False, general_v
+                    logging.info("Unknown redirect exists for this vhost")
+                    raise errors.LetsEncryptConfiguratorError(
+                        "Unknown redirect already exists "
+                        "in {}".format(general_v.filep))
             # Add directives to server
             self.parser.add_dir(general_v.path, "RewriteEngine", "On")
             self.parser.add_dir(
@@ -559,9 +595,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.save_notes += ('Redirecting host in %s to ssl vhost in %s\n' %
                                 (general_v.filep, ssl_vhost.filep))
             self.save()
-            return True, general_v
 
-    def existing_redirect(self, vhost):
+            logging.info("Redirecting vhost in %s to ssl vhost in %s",
+                         general_v.filep, ssl_vhost.filep)
+
+    def _existing_redirect(self, vhost):
         """Checks to see if existing redirect is in place.
 
         Checks to see if virtualhost already contains a rewrite or redirect
@@ -616,7 +654,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Make sure adding the vhost will be safe
         conflict, host_or_addrs = self._conflicting_host(ssl_vhost)
         if conflict:
-            return False, host_or_addrs
+            raise errors.LetsEncryptConfiguratorError(
+                "Unable to create a redirection vhost "
+                "- {}".format(host_or_addrs))
 
         redirect_addrs = host_or_addrs
 
@@ -677,8 +717,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.save_notes += ('Created a port 80 vhost, %s, for redirection to '
                             'ssl vhost %s\n' %
                             (new_vhost.filep, ssl_vhost.filep))
-
-        return True, new_vhost
 
     def _conflicting_host(self, ssl_vhost):
         """Checks for conflicting HTTP vhost for ssl_vhost.
@@ -759,21 +797,15 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     return vhost
         return None
 
-    # TODO: Handle this as outlined in Interfaces.
-    def enable_ocsp_stapling(self, ssl_vhost):
-        """Enable OCSP Stapling."""
-        return False
-
-    def enable_hsts(self, ssl_vhost):
-        """Enable HSTS."""
-        return False
-
     def get_all_certs_keys(self):
         """Find all existing keys, certs from configuration.
 
         Retrieve all certs and keys set in VirtualHosts on the Apache server
 
         :returns: list of tuples with form [(cert, key, path)]
+            cert - str path to certificate file
+            key - str path to associated key file
+            path - File path to configuration file.
         :rtype: list
 
         """
@@ -865,7 +897,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 ['sudo', '/usr/sbin/apache2ctl', 'configtest'],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
-            text = proc.communicate()
+            stdout, stderr = proc.communicate()
         except (OSError, ValueError):
             logging.fatal("Unable to run /usr/sbin/apache2ctl configtest")
             sys.exit(1)
@@ -873,8 +905,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if proc.returncode != 0:
             # Enter recovery routine...
             logging.error("Configtest failed")
-            logging.error(text[0])
-            logging.error(text[1])
+            logging.error(stdout)
+            logging.error(stderr)
             return False
 
         return True
@@ -992,6 +1024,7 @@ def enable_mod(mod_name):
     """
     try:
         # Use check_output so the command will finish before reloading
+        # TODO: a2enmod is debian specific...
         subprocess.check_call(["sudo", "a2enmod", mod_name],
                               stdout=open("/dev/null", 'w'),
                               stderr=open("/dev/null", 'w'))
@@ -1005,31 +1038,28 @@ def enable_mod(mod_name):
         sys.exit(1)
 
 
-def check_ssl_loaded():
+def mod_loaded(module):
     """Checks to see if mod_ssl is loaded
 
-    Currently uses apache2ctl to get loaded module list
-
-    .. todo:: This function is likely fragile to versions/distros
+    Uses CONFIG.APACHE_CTL to get loaded module list
 
     :returns: If ssl_module is included and active in Apache
     :rtype: bool
 
     """
     try:
-        # p=subprocess.check_output(['sudo', '/usr/sbin/apache2ctl', '-M'],
-        #                            stderr=open("/dev/null", 'w'))
-        proc = subprocess.Popen([CONFIG.APACHE_CTL, '-M'],
-                                stdout=subprocess.PIPE,
-                                stderr=open(
-                                    "/dev/null", 'w')).communicate()[0]
+        proc = subprocess.Popen(
+            [CONFIG.APACHE_CTL, '-M'],
+            stdout=subprocess.PIPE,
+            stderr=open("/dev/null", 'w')).communicate()[0]
+
     except (OSError, ValueError):
         logging.error(
             "Error accessing %s for loaded modules!", CONFIG.APACHE_CTL)
         logging.error("This may be caused by an Apache Configuration Error")
         return False
 
-    if "ssl_module" in proc:
+    if module in proc:
         return True
     return False
 

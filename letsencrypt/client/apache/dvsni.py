@@ -64,7 +64,7 @@ class ApacheDvsni(object):
         addresses = []
         default_addr = "*:443"
         for chall in self.dvsni_chall:
-            vhost = self.config.choose_virtual_host(chall.domain)
+            vhost = self.config.choose_vhost(chall.domain)
             if vhost is None:
                 logging.error(
                     "No vhost exists with servername or alias of: %s",

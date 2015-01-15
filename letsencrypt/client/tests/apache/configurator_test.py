@@ -68,9 +68,12 @@ class TwoVhost80Test(unittest.TestCase):
         self.assertTrue(self.config.is_site_enabled(self.vh_truth[3].filep))
 
     def test_deploy_cert(self):
+        # Get the default 443 vhost
+        self.config.assoc["random.demo"] = self.vh_truth[1]
         self.config.deploy_cert(
-            self.vh_truth[1],
+            "random.demo",
             "example/cert.pem", "example/key.pem", "example/cert_chain.pem")
+        self.config.save()
 
         loc_cert = self.config.parser.find_dir(
             parser.case_i("sslcertificatefile"),
