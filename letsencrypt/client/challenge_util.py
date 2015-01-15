@@ -1,4 +1,5 @@
 """Challenge specific utility functions."""
+import collections
 import hashlib
 
 from Crypto import Random
@@ -6,6 +7,22 @@ from Crypto import Random
 from letsencrypt.client import CONFIG
 from letsencrypt.client import crypto_util
 from letsencrypt.client import le_util
+
+# Authenticator Challenges
+DvsniChall = collections.namedtuple("DvsniChall", "domain, r_b64, nonce, key")
+SimpleHttpsChall = collections.namedtuple(
+    "SimpleHttpsChall", "domain, token, key")
+DnsChall = collections.namedtuple("DnsChall", "domain, token, key")
+
+# Client Challenges
+RecContactChall = collections.namedtuple(
+    "RecContactChall", "domain, a_url, s_url, contact")
+RecTokenChall = collections.namedtuple("RecTokenChall", "domain")
+PopChall = collections.namedtuple("PopChall", "domain, alg, nonce, hints")
+
+# Helper Challenge Wrapper - Can be used to maintain the proper position of
+# the response within a larger challenge list
+IndexedChall = collections.namedtuple("IndexedChall", "chall, index")
 
 
 # DVSNI Challenge functions

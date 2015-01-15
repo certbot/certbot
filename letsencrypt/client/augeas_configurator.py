@@ -342,7 +342,7 @@ class AugeasConfigurator(object):
         else:
             cp_dir = self.direc["progress"]
 
-        le_util.make_or_verify_dir(cp_dir)
+        le_util.make_or_verify_dir(cp_dir, 0o755, os.geteuid())
         try:
             with open(os.path.join(cp_dir, "NEW_FILES"), 'a') as new_fd:
                 for file_path in files:
@@ -399,7 +399,7 @@ class AugeasConfigurator(object):
                     else:
                         logging.warn(
                             "File: %s - Could not be found to be deleted\n"
-                            "Program was probably shut down unexpectedly, ")
+                            "LE probably shut down unexpectedly", path)
         except (IOError, OSError):
             logging.fatal(
                 "Unable to remove filepaths contained within %s", file_list)

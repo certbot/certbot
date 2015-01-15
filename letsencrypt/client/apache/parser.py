@@ -225,6 +225,7 @@ class ApacheParser(object):
         :rtype: str
 
         """
+        # Checkout fnmatch.py in venv/local/lib/python2.7/fnmatch.py
         regex = ""
         for letter in clean_fn_match:
             if letter == '.':

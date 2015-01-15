@@ -1,14 +1,14 @@
+"""Test the helper objects in apache.obj.py."""
 import unittest
-
-from letsencrypt.client.apache import obj
 
 
 class AddrTest(unittest.TestCase):
     """Test the Addr class."""
     def setUp(self):
-        self.addr1 = obj.Addr.fromstring("192.168.1.1")
-        self.addr2 = obj.Addr.fromstring("192.168.1.1:*")
-        self.addr3 = obj.Addr.fromstring("192.168.1.1:80")
+        from letsencrypt.client.apache.obj import Addr
+        self.addr1 = Addr.fromstring("192.168.1.1")
+        self.addr2 = Addr.fromstring("192.168.1.1:*")
+        self.addr3 = Addr.fromstring("192.168.1.1:80")
 
     def test_fromstring(self):
         self.assertEqual(self.addr1.get_addr(), "192.168.1.1")
@@ -36,9 +36,10 @@ class AddrTest(unittest.TestCase):
         self.assertNotEqual(self.addr1, 3333)
 
     def test_set_inclusion(self):
+        from letsencrypt.client.apache.obj import Addr
         set_a = set([self.addr1, self.addr2])
-        addr1b = obj.Addr.fromstring("192.168.1.1")
-        addr2b = obj.Addr.fromstring("192.168.1.1:*")
+        addr1b = Addr.fromstring("192.168.1.1")
+        addr2b = Addr.fromstring("192.168.1.1:*")
         set_b = set([addr1b, addr2b])
 
         self.assertEqual(set_a, set_b)
@@ -47,14 +48,18 @@ class AddrTest(unittest.TestCase):
 class VirtualHostTest(unittest.TestCase):
     """Test the VirtualHost class."""
     def setUp(self):
-        self.vhost1 = obj.VirtualHost(
+        from letsencrypt.client.apache.obj import VirtualHost
+        from letsencrypt.client.apache.obj import Addr
+        self.vhost1 = VirtualHost(
             "filep", "vh_path",
-            set([obj.Addr.fromstring("localhost")]), False, False)
+            set([Addr.fromstring("localhost")]), False, False)
 
     def test_eq(self):
-        vhost1b = obj.VirtualHost(
+        from letsencrypt.client.apache.obj import Addr
+        from letsencrypt.client.apache.obj import VirtualHost
+        vhost1b = VirtualHost(
             "filep", "vh_path",
-            set([obj.Addr.fromstring("localhost")]), False, False)
+            set([Addr.fromstring("localhost")]), False, False)
 
         self.assertEqual(vhost1b, self.vhost1)
         self.assertEqual(str(vhost1b), str(self.vhost1))
