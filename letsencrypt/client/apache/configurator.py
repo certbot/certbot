@@ -1,7 +1,9 @@
 """Apache Configuration based off of Augeas Configurator."""
 import logging
 import os
+import pkg_resources
 import re
+import shutil
 import socket
 import subprocess
 import sys
@@ -127,6 +129,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         #       on initialization
         self._prepare_server_https()
 
+        # Move temporary files before release to reduce developer
+        # problems.
+        temp_install(ssl_options)
+
     def deploy_cert(self, vhost, cert, key, cert_chain=None):
         """Deploys certificate to specified virtual host.
 
@@ -206,9 +212,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         # Allows for domain names to be associated with a virtual host
         # Client isn't using create_dn_server_assoc(self, dn, vh) yet
-        for domain, vhost in self.assoc:
-            if domain == target_name:
-                return vhost
+        if target_name in self.assoc:
+            return self.assoc[target_name]
         # Check for servernames/aliases for ssl hosts
         for vhost in self.vhosts:
             if vhost.ssl and target_name in vhost.names:
@@ -1088,3 +1093,17 @@ def get_file_path(vhost_path):
             continue
         break
     return avail_fp
+
+
+def temp_install(options_ssl):
+    """Temporary install for convenience."""
+    # WARNING: THIS IS A POTENTIAL SECURITY VULNERABILITY
+    # THIS SHOULD BE HANDLED BY THE PACKAGE MANAGER
+    # AND TAKEN OUT BEFORE RELEASE, INSTEAD
+    # SHOWING A NICE ERROR MESSAGE ABOUT THE PROBLEM.
+
+    # Check to make sure options-ssl.conf is installed
+    if not os.path.isfile(options_ssl):
+        dist_conf = pkg_resources.resource_filename(
+            __name__, os.path.basename(options_ssl))
+        shutil.copyfile(dist_conf, options_ssl)

@@ -111,18 +111,6 @@ class ApacheDvsni(object):
             :class:`letsencrypt.client.apache.obj.Addr` to apply
 
         """
-        # WARNING: THIS IS A POTENTIAL SECURITY VULNERABILITY
-        # THIS SHOULD BE HANDLED BY THE PACKAGE MANAGER
-        # AND TAKEN OUT BEFORE RELEASE, INSTEAD
-        # SHOWING A NICE ERROR MESSAGE ABOUT THE PROBLEM
-
-        # Check to make sure options-ssl.conf is installed
-        # pylint: disable=no-member
-        # if not os.path.isfile(CONFIG.OPTIONS_SSL_CONF):
-        #     dist_conf = pkg_resources.resource_filename(
-        #         __name__, os.path.basename(CONFIG.OPTIONS_SSL_CONF))
-        #     shutil.copyfile(dist_conf, CONFIG.OPTIONS_SSL_CONF)
-
         # TODO: Use ip address of existing vhost instead of relying on FQDN
         config_text = "<IfModule mod_ssl.c>\n"
         for idx, lis in enumerate(ll_addrs):
