@@ -67,7 +67,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     :ivar str server_root: Path to Apache root directory
     :ivar dict location: Path to various files associated
         with the configuration
-    :ivar float version: version of Apache
+    :ivar tup version: version of Apache
     :ivar list vhosts: All vhosts found in the configuration
         (:class:`list` of :class:`letsencrypt.client.apache.obj.VirtualHost`)
 
