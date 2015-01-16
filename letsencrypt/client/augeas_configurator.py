@@ -8,14 +8,11 @@ import time
 import augeas
 
 from letsencrypt.client import CONFIG
-from letsencrypt.client import configurator
 from letsencrypt.client import le_util
 
 
-class AugeasConfigurator(configurator.Configurator):
+class AugeasConfigurator(object):
     """Base Augeas Configurator class.
-
-    .. todo:: Fix generic exception handling.
 
     :ivar aug: Augeas object
     :type aug: :class:`augeas.Augeas`
@@ -32,7 +29,6 @@ class AugeasConfigurator(configurator.Configurator):
             (used mostly for testing)
 
         """
-        super(AugeasConfigurator, self).__init__()
 
         if not direc:
             direc = {"backup": CONFIG.BACKUP_DIR,
@@ -247,7 +243,6 @@ class AugeasConfigurator(configurator.Configurator):
         le_util.make_or_verify_dir(cp_dir, 0o755, os.geteuid())
 
         existing_filepaths = []
-        op_fd = None
         filepaths_path = os.path.join(cp_dir, "FILEPATHS")
 
         # Open up FILEPATHS differently depending on if it already exists
@@ -291,8 +286,7 @@ class AugeasConfigurator(configurator.Configurator):
                     for idx, path in enumerate(filepaths):
                         shutil.copy2(os.path.join(
                             cp_dir,
-                            os.path.basename(path) + '_' + str(idx)),
-                                     path)
+                            os.path.basename(path) + '_' + str(idx)), path)
             except (IOError, OSError):
                 # This file is required in all checkpoints.
                 logging.error("Unable to recover files from %s", cp_dir)
@@ -329,7 +323,7 @@ class AugeasConfigurator(configurator.Configurator):
 
         return True, ""
 
-    # pylint: disable=no-self-use
+    # pylint: disable=no-self-use, anomalous-backslash-in-string
     def register_file_creation(self, temporary, *files):
         """Register the creation of all files during letsencrypt execution.
 
@@ -348,7 +342,7 @@ class AugeasConfigurator(configurator.Configurator):
         else:
             cp_dir = self.direc["progress"]
 
-        le_util.make_or_verify_dir(cp_dir)
+        le_util.make_or_verify_dir(cp_dir, 0o755, os.geteuid())
         try:
             with open(os.path.join(cp_dir, "NEW_FILES"), 'a') as new_fd:
                 for file_path in files:
@@ -405,7 +399,7 @@ class AugeasConfigurator(configurator.Configurator):
                     else:
                         logging.warn(
                             "File: %s - Could not be found to be deleted\n"
-                            "Program was probably shut down unexpectedly, ")
+                            "LE probably shut down unexpectedly", path)
         except (IOError, OSError):
             logging.fatal(
                 "Unable to remove filepaths contained within %s", file_list)

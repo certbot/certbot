@@ -8,19 +8,22 @@ import time
 
 import dialog
 import requests
+import zope.interface
 
-from letsencrypt.client import challenge
+from letsencrypt.client import interfaces
 
 
-class RecoveryContact(challenge.Challenge):
-    """Recovery Contact Identitifier Validation Challange.
+class RecoveryContact(object):
+    """Recovery Contact Identifier Validation Challenge.
 
     Based on draft-barnes-acme, section 6.3.
 
     """
+    zope.interface.implements(interfaces.IChallenge)
 
     def __init__(self, activation_url="", success_url="", contact="",
                  poll_delay=3):
+        super(RecoveryContact, self).__init__()
         self.token = ""
         self.activation_url = activation_url
         self.success_url = success_url

@@ -21,24 +21,14 @@ persistent=yes
 # usually to register additional checkers.
 load-plugins=
 
-# Use multiple processes to speed up Pylint.
-jobs=1
+# DEPRECATED
+include-ids=no
 
-# Allow loading of arbitrary C extensions. Extensions are imported into the
-# active Python interpreter and may run arbitrary code.
-unsafe-load-any-extension=no
-
-# A comma-separated list of package or module names from where C extensions may
-# be loaded. Extensions are loading into the active Python interpreter and may
-# run arbitrary code
-extension-pkg-whitelist=
+# DEPRECATED
+symbols=no
 
 
 [MESSAGES CONTROL]
-
-# Only show warnings with the listed confidence levels. Leave empty to show
-# all. Valid levels: HIGH, INFERENCE, INFERENCE_FAILURE, UNDEFINED
-confidence=
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
@@ -94,7 +84,7 @@ comment=no
 required-attributes=
 
 # List of builtins function names that should not be used, separated by a comma
-bad-functions=map,filter,input
+bad-functions=map,filter,apply,input,file
 
 # Good variable names which should always be accepted, separated by a comma
 good-names=i,j,k,ex,Run,_
@@ -191,23 +181,6 @@ notes=FIXME,XXX,TODO
 logging-modules=logging
 
 
-[SPELLING]
-
-# Spelling dictionary name. Available dictionaries: none. To make it working
-# install python-enchant package.
-spelling-dict=
-
-# List of comma separated words that should not be checked.
-spelling-ignore-words=
-
-# A path to a file that contains private dictionary; one word per line.
-spelling-private-dict-file=
-
-# Tells whether to store unknown words to indicated private dictionary in
-# --spelling-private-dict-file option instead of raising a message.
-spelling-store-unknown-words=no
-
-
 [VARIABLES]
 
 # Tells whether we should check for unused import in __init__ files.
@@ -220,10 +193,6 @@ dummy-variables-rgx=_$|dummy
 # List of additional names supposed to be defined in builtins. Remember that
 # you should avoid to define new builtins when possible.
 additional-builtins=
-
-# List of strings which can identify a callback function by name. A callback
-# name must start or end with one of those strings.
-callbacks=cb_,_cb
 
 
 [SIMILARITIES]
@@ -257,7 +226,7 @@ single-line-if-stmt=no
 no-space-check=trailing-comma,dict-separator
 
 # Maximum number of lines in a module
-max-module-lines=2000
+max-module-lines=1250
 
 # String used as indentation unit. This is usually " " (4 spaces) or "\t" (1
 # tab).
@@ -265,9 +234,6 @@ indent-string='    '
 
 # Number of spaces of indent required inside a hanging or continued line.
 indent-after-paren=4
-
-# Expected format of line ending, e.g. empty (any line ending), LF or CRLF.
-expected-line-ending-format=
 
 
 [TYPECHECK]
@@ -279,7 +245,9 @@ ignore-mixin-members=yes
 # List of module names for which member attributes should not be checked
 # (useful for modules/projects where namespaces are manipulated during runtime
 # and thus existing member attributes cannot be deduced by static analysis
-ignored-modules=
+
+# Get rid of the spurious no-member errors in pkg_resources
+ignored-modules=pkg_resources
 
 # List of classes names for which member attributes should not be checked
 # (useful for classes with attributes dynamically set).
@@ -287,7 +255,7 @@ ignored-classes=SQLObject
 
 # When zope mode is activated, add a predefined set of Zope acquired attributes
 # to generated-members.
-zope=no
+zope=yes
 
 # List of members which are set dynamically and missed by pylint inference
 # system, and so shouldn't trigger E0201 when accessed. Python regular
@@ -328,10 +296,6 @@ valid-classmethod-first-arg=cls
 # List of valid names for the first argument in a metaclass class method.
 valid-metaclass-classmethod-first-arg=mcs
 
-# List of member names, which should be excluded from the protected access
-# warning.
-exclude-protected=_asdict,_fields,_replace,_source,_make
-
 
 [DESIGN]
 
@@ -364,7 +328,7 @@ max-attributes=7
 min-public-methods=2
 
 # Maximum number of public methods for a class (see R0904).
-max-public-methods=30
+max-public-methods=20
 
 
 [EXCEPTIONS]

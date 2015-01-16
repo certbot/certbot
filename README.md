@@ -46,7 +46,7 @@ sudo apt-get install python python-setuptools python-virtualenv \
 ### Installation
 
 ```
-virtualenv --no-site-packages venv
+virtualenv --no-site-packages -p python2 venv
 ./venv/bin/python setup.py install
 sudo ./venv/bin/letsencrypt
 ```
