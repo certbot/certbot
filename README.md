@@ -77,7 +77,7 @@ In order to generate the sphinx documentation, run the following commands.
 ```
 ./venv/bin/python setup.py docs
 cd docs
-make SPHINXBUILD='../venv/bin/python ../venv/bin/sphinx-build'
+make html SPHINXBUILD='../venv/bin/python ../venv/bin/sphinx-build'
 ```
 
 This should generate documentation in the /lets-encrypt-preview/docs/_build/html
