@@ -1,7 +1,7 @@
 """Let's Encrypt client interfaces."""
 import zope.interface
 
-# pylint: disable=no-self-argument,no-method-argument
+# pylint: disable=no-self-argument,no-method-argument,no-init
 
 
 class IAuthenticator(zope.interface.Interface):
@@ -133,7 +133,6 @@ class IInstaller(zope.interface.Interface):
             be quickly reversed in the future (challenges)
 
         """
-
     def rollback_checkpoints(rollback=1):
         """Revert `rollback` number of configuration checkpoints."""
 
@@ -151,47 +150,55 @@ class IDisplay(zope.interface.Interface):
     """Generic display."""
 
     def generic_notification(message):
-        pass
+        """Displays a string message
 
+        :param str message: Message to display
+
+        """
     def generic_menu(message, choices, input_text=""):
-        pass
+        """Displays a generic menu.
 
+        :param str message: message to display
+        :param tup choices: choices formated as a `list` of `tup`
+        :param str input_text: instructions on how to make a selection
+
+        """
     def generic_input(message):
-        pass
+        """Accept input from the user."""
 
     def generic_yesno(message, yes_label="Yes", no_label="No"):
-        pass
+        """A yes/no dialog."""
 
     def filter_names(names):
-        pass
+        """Allow the user to select which names they would like to activate."""
 
     def success_installation(domains):
-        pass
+        """Display a congratulations message for new https domains."""
 
     def display_certs(certs):
-        pass
+        """Display a list of certificates."""
 
     def confirm_revocation(cert):
-        pass
+        """Confirmation of revocation screen."""
 
     def more_info_cert(cert):
-        pass
+        """Print out all information for a given certificate dict."""
 
     def redirect_by_default():
-        pass
+        """Ask the user whether they would like to redirect to HTTPS."""
 
 
 class IValidator(object):
     """Configuration validator."""
 
     def redirect(name):
-        pass
+        """Verify redirect to HTTPS."""
 
     def ocsp_stapling(name):
-        pass
+        """Verify ocsp stapling for domain."""
 
     def https(names):
-        pass
+        """Verifiy HTTPS is enabled for domain."""
 
     def hsts(name):
-        pass
+        """Verify HSTS header is enabled."""
