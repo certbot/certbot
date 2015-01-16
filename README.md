@@ -68,7 +68,7 @@ style](#coding-style)**. The following tools are there to help you:
 - `./venv/bin/tox -e cover` checks the test coverage only.
 
 - `./venv/bin/tox -e lint` checks the style of the whole project,
-  while `./venv/bin/pylint file` will check a single `file` only.
+  while `./venv/bin/pylint --rcfile=.pylintrc file` will check a single `file` only.
 
 ### Coding style
 
