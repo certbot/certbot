@@ -1,7 +1,9 @@
 """Apache Configuration based off of Augeas Configurator."""
 import logging
 import os
+import pkg_resources
 import re
+import shutil
 import socket
 import subprocess
 import sys
@@ -65,7 +67,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     :ivar str server_root: Path to Apache root directory
     :ivar dict location: Path to various files associated
         with the configuration
-    :ivar float version: version of Apache
+    :ivar tup version: version of Apache
     :ivar list vhosts: All vhosts found in the configuration
         (:class:`list` of :class:`letsencrypt.client.apache.obj.VirtualHost`)
 
@@ -128,6 +130,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self._prepare_server_https()
 
         self.enhance_func = {"redirect": self._enable_redirect}
+        temp_install(ssl_options)
 
     def deploy_cert(self, domain, cert, key, cert_chain=None):
         """Deploys certificate to specified virtual host.
@@ -1118,3 +1121,17 @@ def get_file_path(vhost_path):
             continue
         break
     return avail_fp
+
+
+def temp_install(options_ssl):
+    """Temporary install for convenience."""
+    # WARNING: THIS IS A POTENTIAL SECURITY VULNERABILITY
+    # THIS SHOULD BE HANDLED BY THE PACKAGE MANAGER
+    # AND TAKEN OUT BEFORE RELEASE, INSTEAD
+    # SHOWING A NICE ERROR MESSAGE ABOUT THE PROBLEM.
+
+    # Check to make sure options-ssl.conf is installed
+    if not os.path.isfile(options_ssl):
+        dist_conf = pkg_resources.resource_filename(
+            __name__, os.path.basename(options_ssl))
+        shutil.copyfile(dist_conf, options_ssl)

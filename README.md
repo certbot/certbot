@@ -68,7 +68,20 @@ style](#coding-style)**. The following tools are there to help you:
 - `./venv/bin/tox -e cover` checks the test coverage only.
 
 - `./venv/bin/tox -e lint` checks the style of the whole project,
-  while `./venv/bin/pylint file` will check a single `file` only.
+  while `./venv/bin/pylint --rcfile=.pylintrc file` will check a single `file` only.
+
+## Documentation
+
+In order to generate the sphinx documentation, run the following commands.
+
+```
+./venv/bin/python setup.py docs
+cd docs
+make html SPHINXBUILD='../venv/bin/python ../venv/bin/sphinx-build'
+```
+
+This should generate documentation in the /lets-encrypt-preview/docs/_build/html
+directory.
 
 ### Coding style
 
