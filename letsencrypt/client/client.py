@@ -59,10 +59,9 @@ class Client(object):
         :type dv_auth: :class:`letsencrypt.client.interfaces.IAuthenticator`
 
         """
+        sanity_check_names([server])
         self.network = network.Network(server)
         self.authkey = authkey
-
-        # sanity_check_names([server] + names)
 
         self.installer = installer
 
@@ -70,12 +69,15 @@ class Client(object):
         self.auth_handler = auth_handler.AuthHandler(
             dv_auth, client_auth, self.network)
 
-    def obtain_certificate(self, domains,
+    def obtain_certificate(self, domains, csr=None,
                            cert_path=CONFIG.CERT_PATH,
                            chain_path=CONFIG.CHAIN_PATH):
         """Obtains a certificate from the ACME server.
 
         :param str domains: list of domains to get a certificate
+        :param csr: CSR must contain requested domains, the key used to generate
+            this CSR can be different than self.authkey
+        :type csr: :class:`CSR`
 
         :param str cert_path: Full desired path to end certificate.
         :param str chain_path: Full desired path to end chain file.
@@ -84,6 +86,7 @@ class Client(object):
         :rtype: `tuple` of `str`
 
         """
+        sanity_check_names(domains)
         # Request Challenges
         for name in domains:
             self.auth_handler.add_chall_msg(
@@ -93,7 +96,8 @@ class Client(object):
         self.auth_handler.get_authorizations()
 
         # Create CSR from names
-        csr = init_csr(self.authkey, domains)
+        if csr is None:
+            csr = init_csr(self.authkey, domains)
 
         # Retrieve certificate
         certificate_dict = self.acme_certificate(csr.data)
@@ -176,9 +180,6 @@ class Client(object):
         :param str chain_file: chain file path
 
         """
-        # Find set of virtual hosts to deploy certificates to
-        # vhost = self.get_virtual_hosts(self.names)
-
         chain = None if chain_file is None else os.path.abspath(chain_file)
 
         for dom in domains:
@@ -186,10 +187,6 @@ class Client(object):
                                        os.path.abspath(cert_file),
                                        os.path.abspath(privkey.file),
                                        chain)
-            # Enable any vhost that was issued to, but not enabled
-            # if not host.enabled:
-            #     logging.info("Enabling Site %s", host.filep)
-            #     self.installer.enable_site(host)
 
         self.installer.save("Deployed Let's Encrypt Certificate")
         # sites may have been enabled / final cleanup
@@ -278,31 +275,13 @@ class Client(object):
 
         """
         for dom in domains:
-            # TODO: change this to try/catch
-            self.installer.enhance(dom, "redirect")
+            try:
+                self.installer.enhance(dom, "redirect")
+            except errors.LetsEncryptConfiguratorError:
+                logging.warn('Unable to perform redirect for %s', dom)
 
         self.installer.save("Add Redirects")
         self.installer.restart()
-
-            # If successful, make sure redirect site is enabled
-            # if success:
-            #    self.installer.enable_site(redirect_vhost)
-
-    # def get_virtual_hosts(self, domains):
-    #     """Retrieve the appropriate virtual host for the domain
-
-    #     :param list domains: Domains to find ssl vhosts for
-
-    #     :returns: associated vhosts
-    #     :rtype: :class:`letsencrypt.client.apache.obj.VirtualHost`
-
-    #     """
-    #     vhost = set()
-    #     for name in domains:
-    #         host = self.installer.choose_virtual_host(name)
-    #         if host is not None:
-    #             vhost.add(host)
-    #     return vhost
 
 
 def validate_key_csr(privkey, csr=None):

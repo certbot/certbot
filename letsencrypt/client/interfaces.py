@@ -1,7 +1,7 @@
 """Let's Encrypt client interfaces."""
 import zope.interface
 
-# pylint: disable=no-self-argument,no-method-argument,no-init
+# pylint: disable=no-self-argument,no-method-argument,no-init,too-many-public-methods
 
 
 class IAuthenticator(zope.interface.Interface):
@@ -114,7 +114,7 @@ class IInstaller(zope.interface.Interface):
     # def enable_site(vhost):
     #     """Enable the site at the given vhost.
 
-    #     :param vhost: domain 
+    #     :param vhost: domain
 
     #     """
 

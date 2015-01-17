@@ -34,11 +34,6 @@ def main():
     parser.add_argument("-p", "--privkey", dest="privkey", type=read_file,
                         help="Path to the private key file for certificate "
                              "generation.")
-    # parser.add_argument("-c", "--csr", dest="csr", type=read_file,
-    #                     help="Path to the certificate signing request file "
-    #                          "corresponding to the private key file. The "
-    #                          "private key file argument is required if this "
-    #                          "argument is specified.")
     parser.add_argument("-b", "--rollback", dest="rollback", type=int,
                         default=0, metavar="N",
                         help="Revert configuration N number of checkpoints.")
@@ -103,22 +98,11 @@ def main():
 
     domains = choose_names(installer) if args.domains is None else args.domains
 
-    # Enforce '--privkey' is set along with '--csr'.
-    # if args.csr and not args.privkey:
-    #     parser.error("private key file (--privkey) must be specified along{0} "
-    #                  "with the certificate signing request file (--csr)"
-    #                  .format(os.linesep))
-
     # Prepare for init of Client
     if args.privkey is None:
         privkey = client.init_key()
     else:
         privkey = client.Client.Key(args.privkey[0], args.privkey[1])
-    # if args.csr is None:
-    #     csr = client.init_csr(privkey, domains)
-    # else:
-    #     csr = client.csr_pem_to_der(
-    #         client.Client.CSR(args.csr[0], args.csr[1], "pem"))
 
     acme = client.Client(server, privkey, auth, installer)
 

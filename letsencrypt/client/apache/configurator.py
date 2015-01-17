@@ -49,14 +49,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     Apache 2.2 and this code works for Ubuntu 14.04 Apache 2.4. Further
     notes below.
 
-    This class was originally developed for Apache 2.2 and has not seen a
-    an overhaul to include proper setup of new Apache configurations.
+    This class was originally developed for Apache 2.2 and I have been slowly
+    transitioning the codebase to work with all of the 2.4 features.
     I have implemented most of the changes... the missing ones are
     mod_ssl.c vs ssl_mod, and I need to account for configuration variables.
-    That being said, this class can still adequately configure most typical
-    Apache 2.4 servers as the deprecated NameVirtualHost has no effect
-    and the typical directories are parsed by the Augeas configuration
-    parser automatically.
+    This class can adequately configure most typical configurations but
+    is not ready to handle very complex configurations.
 
     .. todo:: Add support for config file variables Define rootDir /var/www/
     .. todo:: Add proper support for module configuration
@@ -125,8 +123,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Enable mod_ssl if it isn't already enabled
         # This is Let's Encrypt... we enable mod_ssl on initialization :)
         # TODO: attempt to make the check faster... this enable should
-        #       be asynchronous as it shouldn't be that time sensitive
-        #       on initialization
+        #     be asynchronous as it shouldn't be that time sensitive
+        #     on initialization
         self._prepare_server_https()
 
         self.enhance_func = {"redirect": self._enable_redirect}
@@ -136,10 +134,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """Deploys certificate to specified virtual host.
 
         Currently tries to find the last directives to deploy the cert in
-        the given virtualhost. If it can't find the directives, it searches
-        the "included" confs. The function verifies that it has located
-        the three directives and finally modifies them to point to the correct
-        destination
+        the VHost associated with the given domain. If it can't find the
+        directives, it searches the "included" confs. The function verifies that
+        it has located the three directives and finally modifies them to point
+        to the correct destination. After the certificate is installed, the
+        VirtualHost is enabled if it isn't already.
 
         .. todo:: Make sure last directive is changed
 
@@ -190,11 +189,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.save_notes += "\tSSLCertificateKeyFile %s\n" % key
         if cert_chain:
             self.save_notes += "\tSSLCertificateChainFile %s\n" % cert_chain
-        # This is a significant operation, make a checkpoint
-        # return self.save()
+
+        # Make sure vhost is enabled
+        if not vhost.enabled:
+            self.enable_site(vhost)
 
     def choose_vhost(self, target_name):
-        """ Chooses a virtual host based on the given domain name.
+        """Chooses a virtual host based on the given domain name.
 
         .. todo:: This should maybe return list if no obvious answer
             is presented.
@@ -576,7 +577,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # Add virtual_server with redirect
             logging.debug(
                 "Did not find http version of ssl virtual host... creating")
-            return self.create_redirect_vhost(ssl_vhost)
+            return self._create_redirect_vhost(ssl_vhost)
         else:
             # Check if redirection already exists
             exists, code = self._existing_redirect(general_v)
@@ -643,7 +644,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Rewrite path exists but is not a letsencrypt https rule
         return True, 2
 
-    def create_redirect_vhost(self, ssl_vhost):
+    def _create_redirect_vhost(self, ssl_vhost):
         """Creates an http_vhost specifically to redirect for the ssl_vhost.
 
         :param ssl_vhost: ssl vhost

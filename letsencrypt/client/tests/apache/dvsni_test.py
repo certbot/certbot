@@ -5,7 +5,6 @@ import unittest
 import shutil
 
 import mock
-import zope.component
 
 from letsencrypt.client import challenge_util
 from letsencrypt.client import client
@@ -15,7 +14,7 @@ from letsencrypt.client.tests.apache import config_util
 
 
 class DvsniPerformTest(unittest.TestCase):
-
+    """Test the ApacheDVSNI challenge."""
     def setUp(self):
         from letsencrypt.client.apache import dvsni
 
@@ -60,10 +59,8 @@ class DvsniPerformTest(unittest.TestCase):
         resp = self.sni.perform()
         self.assertTrue(resp is None)
 
-    @mock.patch("letsencrypt.client.apache.configurator."
-                "ApacheConfigurator.restart")
     @mock.patch("letsencrypt.client.challenge_util.dvsni_gen_cert")
-    def test_perform1(self, mock_dvsni_gen_cert, mock_restart):
+    def test_perform1(self, mock_dvsni_gen_cert):
         chall = self.challs[0]
         self.sni.add_chall(chall)
         mock_dvsni_gen_cert.return_value = "randomS1"
@@ -87,10 +84,8 @@ class DvsniPerformTest(unittest.TestCase):
         self.assertEqual(len(responses), 1)
         self.assertEqual(responses[0]["s"], "randomS1")
 
-    @mock.patch("letsencrypt.client.apache.configurator."
-                "ApacheConfigurator.restart")
     @mock.patch("letsencrypt.client.challenge_util.dvsni_gen_cert")
-    def test_perform2(self, mock_dvsni_gen_cert, mock_restart):
+    def test_perform2(self, mock_dvsni_gen_cert):
         for chall in self.challs:
             self.sni.add_chall(chall)
 

@@ -6,7 +6,6 @@ import shutil
 import unittest
 
 import mock
-import zope.component
 
 from letsencrypt.client import challenge_util
 from letsencrypt.client import client

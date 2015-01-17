@@ -39,6 +39,7 @@ setup(
         'letsencrypt.client',
         'letsencrypt.client.apache',
         'letsencrypt.client.tests',
+        'letsencrypt.client.tests.apache',
         'letsencrypt.scripts',
     ],
     install_requires=install_requires,

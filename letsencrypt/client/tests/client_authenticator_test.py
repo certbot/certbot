@@ -1,3 +1,4 @@
+"""Test the ClientAuthenticator dispatcher."""
 import unittest
 
 import mock
@@ -43,6 +44,7 @@ class PerformTest(unittest.TestCase):
 
 
 class CleanupTest(unittest.TestCase):
+    """Test the Authenticator cleanup function."""
     def setUp(self):
         from letsencrypt.client.client_authenticator import ClientAuthenticator
 
@@ -73,6 +75,7 @@ class CleanupTest(unittest.TestCase):
 
 
 def gen_client_resp(chall):
+    """Generate a dummy response."""
     return "%s%s" % (type(chall).__name__, chall.domain)
 
 
