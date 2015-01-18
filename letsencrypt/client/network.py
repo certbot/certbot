@@ -47,6 +47,7 @@ class Network(object):
                 self.server_url,
                 data=json_encoded,
                 headers={"Content-Type": "application/json"},
+                verify=True
             )
         except requests.exceptions.RequestException as error:
             raise errors.LetsEncryptClientError(
