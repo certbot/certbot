@@ -147,14 +147,17 @@ class IDisplay(zope.interface.Interface):
 class IValidator(zope.interface.Interface):
     """Configuration validator."""
 
-    def redirect(name):
+    def redirect(hostname):
         pass
 
-    def ocsp_stapling(name):
+    def ocsp_stapling(hostname):
         pass
 
-    def https(name):
+    def https(hostname):
         pass
 
-    def hsts(name):
+    def hsts(hostname):
+        pass
+
+    def spdy(hostname):
         pass
