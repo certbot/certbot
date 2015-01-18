@@ -78,6 +78,33 @@ NONCE_SIZE = 16
 RSA_KEY_SIZE = 2048
 """Key size"""
 
+# Enhancements
+ENHANCEMENTS = ["redirect", "http-header", "ocsp-stapling", "spdy"]
+"""List of possible IInstaller enhancements.
+
+List of expected options parameters:
+redirect, None
+http-header, TODO
+ocsp-stapling, TODO
+spdy, TODO
+
+"""
+
+# ENHANCEMENTS = [
+#     {
+#         "type": "redirect",
+#         "description": ("Please choose whether HTTPS access is required or "
+#                         "optional."),
+#         "options": [
+#             ("Easy", "Allow both HTTP and HTTPS access to thses sites"),
+#             ("Secure", "Make all requests redirect to secure HTTPS access"),
+#         ],
+#     },
+#     {
+#         "type": ""
+#     }
+# ]
+
 # Config Optimizations
 REWRITE_HTTPS_ARGS = [
     "^.*$", "https://%{SERVER_NAME}%{REQUEST_URI}", "[L,R=permanent]"]

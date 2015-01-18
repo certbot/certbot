@@ -34,8 +34,6 @@ class Client(object):
     :ivar network: Network object for sending and receiving messages
     :type network: :class:`letsencrypt.client.network.Network`
 
-    :ivar list names: Domain names (:class:`list` of :class:`str`).
-
     :ivar authkey: Authorization Key
     :type authkey: :class:`letsencrypt.client.client.Client.Key`
 
@@ -52,7 +50,7 @@ class Client(object):
     Key = collections.namedtuple("Key", "file pem")
     CSR = collections.namedtuple("CSR", "file data form")
 
-    def __init__(self, server, names, authkey, dv_auth, installer):
+    def __init__(self, server, authkey, dv_auth, installer):
         """Initialize a client.
 
         :param str server: CA server to contact
@@ -61,11 +59,9 @@ class Client(object):
         :type dv_auth: :class:`letsencrypt.client.interfaces.IAuthenticator`
 
         """
+        sanity_check_names([server])
         self.network = network.Network(server)
-        self.names = names
         self.authkey = authkey
-
-        sanity_check_names([server] + names)
 
         self.installer = installer
 
@@ -73,13 +69,14 @@ class Client(object):
         self.auth_handler = auth_handler.AuthHandler(
             dv_auth, client_auth, self.network)
 
-    def obtain_certificate(self, csr,
+    def obtain_certificate(self, domains, csr=None,
                            cert_path=CONFIG.CERT_PATH,
                            chain_path=CONFIG.CHAIN_PATH):
         """Obtains a certificate from the ACME server.
 
-        :param csr: A valid CSR in DER format for the certificate the client
-            intends to receive.
+        :param str domains: list of domains to get a certificate
+        :param csr: CSR must contain requested domains, the key used to generate
+            this CSR can be different than self.authkey
         :type csr: :class:`CSR`
 
         :param str cert_path: Full desired path to end certificate.
@@ -89,13 +86,18 @@ class Client(object):
         :rtype: `tuple` of `str`
 
         """
+        sanity_check_names(domains)
         # Request Challenges
-        for name in self.names:
+        for name in domains:
             self.auth_handler.add_chall_msg(
                 name, self.acme_challenge(name), self.authkey)
 
         # Perform Challenges/Get Authorizations
         self.auth_handler.get_authorizations()
+
+        # Create CSR from names
+        if csr is None:
+            csr = init_csr(self.authkey, domains)
 
         # Retrieve certificate
         certificate_dict = self.acme_certificate(csr.data)
@@ -166,44 +168,37 @@ class Client(object):
 
         return os.path.abspath(cert_file), cert_chain_abspath
 
-    def deploy_certificate(self, privkey, cert_file, chain_file):
+    def deploy_certificate(self, domains, privkey, cert_file, chain_file=None):
         """Install certificate
 
-        :returns: Path to a certificate file.
-        :rtype: str
+        :param list domains: list of domains to install the certificate
+
+        :param privkey: private key for certificate
+        :type privkey: :class:`Key`
+
+        :param str cert_file: certificate file path
+        :param str chain_file: chain file path
 
         """
-        # Find set of virtual hosts to deploy certificates to
-        vhost = self.get_virtual_hosts(self.names)
-
         chain = None if chain_file is None else os.path.abspath(chain_file)
 
-        for host in vhost:
-            self.installer.deploy_cert(host,
+        for dom in domains:
+            self.installer.deploy_cert(dom,
                                        os.path.abspath(cert_file),
                                        os.path.abspath(privkey.file),
                                        chain)
-            # Enable any vhost that was issued to, but not enabled
-            if not host.enabled:
-                logging.info("Enabling Site %s", host.filep)
-                self.installer.enable_site(host)
 
         self.installer.save("Deployed Let's Encrypt Certificate")
         # sites may have been enabled / final cleanup
         self.installer.restart()
 
         zope.component.getUtility(
-            interfaces.IDisplay).success_installation(self.names)
+            interfaces.IDisplay).success_installation(domains)
 
-        return vhost
+    def enhance_config(self, domains, redirect=None):
+        """Enhance the configuration.
 
-    def optimize_config(self, vhost, redirect=None):
-        """Optimize the configuration.
-
-        .. todo:: Handle multiple vhosts
-
-        :param vhost: vhost to optimize
-        :type vhost: :class:`letsencrypt.client.apache.obj.VirtualHost`
+        :param list domains: list of domains to configure
 
         :param redirect: If traffic should be forwarded from HTTP to HTTPS.
         :type redirect: bool or None
@@ -214,8 +209,7 @@ class Client(object):
                 interfaces.IDisplay).redirect_by_default()
 
         if redirect:
-            self.redirect_to_ssl(vhost)
-            self.installer.restart()
+            self.redirect_to_ssl(domains)
 
         # if self.ocsp_stapling is None:
         #     q = ("Would you like to protect the privacy of your users "
@@ -228,7 +222,7 @@ class Client(object):
         #    continue
 
     def store_cert_key(self, cert_file, encrypt=False):
-        """Store certificate key.
+        """Store certificate key. (Used to allow quick revocation)
 
         :param str cert_file: Path to a certificate file.
 
@@ -273,43 +267,31 @@ class Client(object):
 
         return True
 
-    def redirect_to_ssl(self, vhost):
+    def redirect_to_ssl(self, domains):
         """Redirect all traffic from HTTP to HTTPS
 
         :param vhost: list of ssl_vhosts
         :type vhost: :class:`letsencrypt.client.interfaces.IInstaller`
 
         """
-        for ssl_vh in vhost:
-            success, redirect_vhost = self.installer.enable_redirect(ssl_vh)
-            logging.info(
-                "\nRedirect vhost: %s - %s ", redirect_vhost.filep, success)
-            # If successful, make sure redirect site is enabled
-            if success:
-                self.installer.enable_site(redirect_vhost)
+        for dom in domains:
+            try:
+                self.installer.enhance(dom, "redirect")
+            except errors.LetsEncryptConfiguratorError:
+                logging.warn('Unable to perform redirect for %s', dom)
 
-    def get_virtual_hosts(self, domains):
-        """Retrieve the appropriate virtual host for the domain
-
-        :param list domains: Domains to find ssl vhosts for
-
-        :returns: associated vhosts
-        :rtype: :class:`letsencrypt.client.apache.obj.VirtualHost`
-
-        """
-        vhost = set()
-        for name in domains:
-            host = self.installer.choose_virtual_host(name)
-            if host is not None:
-                vhost.add(host)
-        return vhost
+        self.installer.save("Add Redirects")
+        self.installer.restart()
 
 
-def validate_key_csr(privkey, csr):
-    """Validate CSR and key files.
+def validate_key_csr(privkey, csr=None):
+    """Validate Key and CSR files.
 
     Verifies that the client key and csr arguments are valid and correspond to
-    one another. This does not currently check the names in the CSR.
+    one another. This does not currently check the names in the CSR due to
+    the inability to read SANs from CSRs in python crypto libraries.
+
+    If csr is left as None, only the key will be validated.
 
     :param privkey: Key associated with CSR
     :type privkey: :class:`letsencrypt.client.client.Client.Key`
@@ -324,27 +306,28 @@ def validate_key_csr(privkey, csr):
     # The client can eventually do things like prompt the user
     # and allow the user to take more appropriate actions
 
-    if csr.form == "der":
-        csr_obj = M2Crypto.X509.load_request_der_string(csr.data)
-        csr = Client.CSR(csr.file, csr_obj.as_pem(), "der")
-
-    # If CSR is provided, it must be readable and valid.
-    if csr.data and not crypto_util.valid_csr(csr.data):
-        raise errors.LetsEncryptClientError(
-            "The provided CSR is not a valid CSR")
-
-    # If key is provided, it must be readable and valid.
+    # Key must be readable and valid.
     if privkey.pem and not crypto_util.valid_privkey(privkey.pem):
         raise errors.LetsEncryptClientError(
             "The provided key is not a valid key")
 
-    # If CSR and key are provided, the key must be the same key used
-    # in the CSR.
-    if csr.data and privkey.pem:
-        if not crypto_util.csr_matches_pubkey(
-                csr.data, privkey.pem):
+    if csr:
+        if csr.form == "der":
+            csr_obj = M2Crypto.X509.load_request_der_string(csr.data)
+            csr = Client.CSR(csr.file, csr_obj.as_pem(), "der")
+
+        # If CSR is provided, it must be readable and valid.
+        if csr.data and not crypto_util.valid_csr(csr.data):
             raise errors.LetsEncryptClientError(
-                "The key and CSR do not match")
+                "The provided CSR is not a valid CSR")
+
+        # If both CSR and key are provided, the key must be the same key used
+        # in the CSR.
+        if csr.data and privkey.pem:
+            if not crypto_util.csr_matches_pubkey(
+                    csr.data, privkey.pem):
+                raise errors.LetsEncryptClientError(
+                    "The key and CSR do not match")
 
 
 def init_key():

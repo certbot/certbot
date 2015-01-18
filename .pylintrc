@@ -322,7 +322,11 @@ max-attributes=7
 min-public-methods=2
 
 # Maximum number of public methods for a class (see R0904).
-max-public-methods=20
+# Pylint counts all of the public methods that you also inherit.
+# This has been reported/fixed as a bug, but until our version is fixed,
+# I think this will only cause us headaches. (Unittests are automatically over)
+# https://bitbucket.org/logilab/pylint/issue/248/too-many-public-methods-triggered-from
+max-public-methods=100
 
 
 [EXCEPTIONS]

@@ -127,13 +127,9 @@ optional arguments:
   -p PRIVKEY, --privkey PRIVKEY
                         Path to the private key file for certificate
                         generation.
-  -c CSR, --csr CSR     Path to the certificate signing request file
-                        corresponding to the private key file. The private key
-                        file argument is required if this argument is
-                        specified.
   -b N, --rollback N    Revert configuration N number of checkpoints.
   -k, --revoke          Revoke a certificate.
-  -v, --view-checkpoints
+  -v, --view-config-changes
                         View checkpoints and associated configuration changes.
   -r, --redirect        Automatically redirect all HTTP traffic to HTTPS for
                         the newly authenticated vhost.
