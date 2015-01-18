@@ -1,7 +1,7 @@
 """Let's Encrypt client interfaces."""
 import zope.interface
 
-# pylint: disable=no-self-argument,no-method-argument,no-init,too-many-public-methods
+# pylint: disable=no-self-argument,no-method-argument,no-init
 
 
 class IAuthenticator(zope.interface.Interface):
@@ -66,19 +66,6 @@ class IInstaller(zope.interface.Interface):
         :param str key: private key filename
 
         """
-
-    # def choose_virtual_host(domain):
-    #    """Chooses a virtual host based on a given domain name."""
-
-    # def enable_redirect(ssl_vhost):
-    #    """Redirect all traffic to the given ssl_vhost (port 80 => 443)."""
-
-    # def enable_hsts(ssl_vhost):
-    #    """Enable HSTS on the given ssl_vhost."""
-
-    # def enable_ocsp_stapling(ssl_vhost):
-    #    """Enable OCSP stapling on given ssl_vhost."""
-
     def enhance(domain, enhancment, options=None):
         """Peform a configuration enhancment.
 
@@ -90,7 +77,6 @@ class IInstaller(zope.interface.Interface):
             for each enhancement.
 
         """
-
     def supported_enhancements():
         """Returns a list of supported enhancments.
 
@@ -99,7 +85,6 @@ class IInstaller(zope.interface.Interface):
         :rtype: `list` of `str`
 
         """
-
     def get_all_certs_keys():
         """Retrieve all certs and keys set in configuration.
 
@@ -110,14 +95,6 @@ class IInstaller(zope.interface.Interface):
         :rtype: list
 
         """
-
-    # def enable_site(vhost):
-    #     """Enable the site at the given vhost.
-
-    #     :param vhost: domain
-
-    #     """
-
     def save(title=None, temporary=False):
         """Saves all changes to the configuration files.
 
