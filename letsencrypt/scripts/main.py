@@ -13,6 +13,7 @@ from letsencrypt.client import display
 from letsencrypt.client import interfaces
 from letsencrypt.client import errors
 from letsencrypt.client import log
+from letsencrypt.client import reverter
 from letsencrypt.client import revoker
 from letsencrypt.client.apache import configurator
 
@@ -71,24 +72,31 @@ def main():
         displayer = display.FileDisplay(sys.stdout)
     zope.component.provideUtility(displayer)
 
-    installer = determine_installer()
     server = CONFIG.ACME_SERVER if args.server is None else args.server
 
+    if args.view_config_changes:
+        view_config_changes()
+        sys.exit()
+
     if args.revoke:
-        revoc = revoker.Revoker(server, installer)
-        revoc.list_certs_keys()
+        revoke(server)
         sys.exit()
 
     if args.rollback > 0:
-        rollback(installer, args.rollback)
-        sys.exit()
-
-    if args.view_config_changes:
-        view_config_changes(installer)
+        rollback(args.rollback)
         sys.exit()
 
     if not args.eula:
         display_eula()
+
+    # Make sure we actually get an installer that is functioning properly
+    # before we begin to try to use it.
+    try:
+        installer = determine_installer()
+    except errors.LetsEncryptMisconfigurationError as err:
+        logging.fatal("Please fix your configuration before proceeding.  "
+                      "The Installer exited with the following message: "
+                      "%s", str(err))
 
     # Use the same object if possible
     if interfaces.IAuthenticator.providedBy(installer):
@@ -198,27 +206,52 @@ def read_file(filename):
         raise argparse.ArgumentTypeError(exc.strerror)
 
 
-def rollback(installer, checkpoints):
+def rollback(checkpoints):
     """Revert configuration the specified number of checkpoints.
-
-    :param installer: Installer object
-    :type installer: :class:`letsencrypt.client.interfaces.IInstaller`
 
     :param int checkpoints: Number of checkpoints to revert.
 
     """
-    installer.rollback_checkpoints(checkpoints)
-    installer.restart()
+    # Misconfigurations are only a slight problems... allow the user to rollback
+    try:
+        installer = determine_installer()
+        installer.rollback_checkpoints(checkpoints)
+        installer.restart()
+    except errors.LetsEncryptMisconfigurationError:
+        logging.warn("Installer is misconfigured before rollback.")
+        logging.info("Rolling back using Reverter module")
+        # recovery routine has already been run by installer __init__ attempt
+        reverter.Reverter().rollback_checkpoints(checkpoints)
+        try:
+            installer = determine_installer()
+            installer.restart()
+            logging.info("Rollback solved misconfiguration!")
+        except errors.LetsEncryptMisconfigurationError:
+            logging.warn("Rollback was unable to solve misconfiguration issues")
 
 
-def view_config_changes(installer):
-    """View checkpoints and associated configuration changes.
+def revoke(server):
+    """Revoke certificates.
 
-    :param installer: Installer object
-    :type installer: :class:`letsencrypt.client.interfaces.IInstaller`
+    :param str server: ACME server client wishes to revoke certificates from
 
     """
-    installer.view_config_changes()
+    # Misconfigurations don't really matter. Determine installer better choose
+    # correctly though.
+    try:
+        installer = determine_installer()
+    except errors.LetsEncryptMisconfigurationError:
+        logging.warn("Installer is currently misconfigured.")
+
+    revoc = revoker.Revoker(server, installer)
+    revoc.list_certs_keys()
+
+
+def view_config_changes():
+    """View checkpoints and associated configuration changes."""
+    rev = reverter.Reverter()
+    rev.recovery_routine()
+    rev.view_config_changes()
 
 if __name__ == "__main__":
     main()

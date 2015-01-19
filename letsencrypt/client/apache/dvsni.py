@@ -88,7 +88,7 @@ class ApacheDvsni(object):
         # Create all of the challenge certs
         for chall in self.dvsni_chall:
             cert_path = self.get_cert_file(chall.nonce)
-            self.config.register_file_creation(cert_path)
+            self.config.reverter.register_file_creation(cert_path)
             s_b64 = challenge_util.dvsni_gen_cert(
                 cert_path, chall.domain, chall.r_b64, chall.nonce, chall.key)
 
@@ -120,7 +120,7 @@ class ApacheDvsni(object):
         config_text += "</IfModule>\n"
 
         self._conf_include_check(self.config.parser.loc["default"])
-        self.config.register_file_creation(True, self.challenge_conf)
+        self.config.reverter.register_file_creation(True, self.challenge_conf)
 
         with open(self.challenge_conf, 'w') as new_conf:
             new_conf.write(config_text)
