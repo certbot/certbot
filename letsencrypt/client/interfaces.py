@@ -17,13 +17,16 @@ class IAuthenticator(zope.interface.Interface):
         :param str domain: Domain for which challenge preferences are sought.
 
         :returns: list of strings with the most preferred challenges first.
+            If a type is not specified, it means the Authenticator cannot
+            perform the challenge.
         :rtype: list
 
         """
     def perform(chall_list):
         """Perform the given challenge.
 
-        :param list chall_list: List of challenge types defined in client.py
+        :param list chall_list: List of namedtuple types defined in
+            challenge_util.py. DvsniChall...ect..
 
         :returns: List of responses
             If the challenge cant be completed...
