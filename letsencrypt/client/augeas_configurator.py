@@ -38,8 +38,10 @@ class AugeasConfigurator(object):
         self.direc = direc
         # TODO: this instantiation can be optimized to only load
         #       relevant files - I believe -> NO_MODL_AUTOLOAD
-        # Set Augeas flags to save backup
-        self.aug = augeas.Augeas(flags=augeas.Augeas.NONE)
+        # Set Augeas flags to not save backup (we do it ourselves)
+        # Set Augeas to not load anything by default
+        my_flags = augeas.Augeas.NONE | augeas.Augeas.NO_MODL_AUTOLOAD
+        self.aug = augeas.Augeas(flags=my_flags)
         self.save_notes = ""
 
     def check_parsing_errors(self, lens):

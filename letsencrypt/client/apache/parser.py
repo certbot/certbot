@@ -240,11 +240,11 @@ class ApacheParser(object):
                 regex = regex + letter
         return regex
 
-    def _parse_file(self, file_path):
+    def _parse_file(self, filepath):
         """Parse file with Augeas
 
         Checks to see if file_path is parsed by Augeas
-        If file_path isn't parsed, the file is added and Augeas is reloaded
+        If filepath isn't parsed, the file is added and Augeas is reloaded
 
         :param str file_path: Apache config file path
 
@@ -252,13 +252,10 @@ class ApacheParser(object):
         # Test if augeas included file for Httpd.lens
         # Note: This works for augeas globs, ie. *.conf
         inc_test = self.aug.match(
-            "/augeas/load/Httpd/incl [. ='%s']" % file_path)
+            "/augeas/load/Httpd/incl [. ='%s']" % filepath)
         if not inc_test:
             # Load up files
-            # self.httpd_incl.append(file_path)
-            # self.aug.add_transform("Httpd.lns",
-            #                       self.httpd_incl, None, self.httpd_excl)
-            self._add_httpd_transform(file_path)
+            self.aug.add_transform("Httpd.lns", filepath)
             self.aug.load()
 
     def standardize_excl(self):
@@ -292,20 +289,7 @@ class ApacheParser(object):
             self.aug.set("/augeas/load/Httpd/excl[%d]" % (i+1), excl[i])
 
         self.aug.load()
-
-    def _add_httpd_transform(self, incl):
-        """Add a transform to Augeas.
-
-        This function will correctly add a transform to augeas
-        The existing augeas.add_transform in python is broken.
-
-        :param str incl: TODO
-
-        """
-        last_include = self.aug.match("/augeas/load/Httpd/incl [last()]")
-        self.aug.insert(last_include[0], "incl", False)
-        self.aug.set("/augeas/load/Httpd/incl[last()]", incl)
-
+        
     def _set_locations(self, ssl_options):
         """Set default location for directives.
 
