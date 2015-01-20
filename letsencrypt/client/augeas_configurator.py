@@ -36,10 +36,16 @@ class AugeasConfigurator(object):
                      "progress": CONFIG.IN_PROGRESS_DIR}
 
         self.direc = direc
-        # TODO: this instantiation can be optimized to only load
-        #       relevant files - I believe -> NO_MODL_AUTOLOAD
-        # Set Augeas flags to save backup
-        self.aug = augeas.Augeas(flags=augeas.Augeas.NONE)
+        # TODO improve this, if possible:
+        # incl should not be given here in this form as the files to look for are defined in httpd.aug
+        # same for excl (and also, excl seems not to work, it will still read stuff from .old files)
+        # but at least the stuff below does NOT read all the files in /etc/* - if you change stuff,
+        # be careful not to reintroduce this bad behaviour!
+        self.aug = augeas.Augeas(flags=augeas.Augeas.NO_MODL_AUTOLOAD | augeas.Augeas.SAVE_BACKUP)
+        self.aug.add_transform('Httpd',
+                               incl=['/etc/apache2/*', '/etc/httpd/*', ],
+                               excl=['*.old', ])
+        self.aug.load()
         self.save_notes = ""
 
     def check_parsing_errors(self, lens):
@@ -399,7 +405,7 @@ class AugeasConfigurator(object):
                     else:
                         logging.warn(
                             "File: %s - Could not be found to be deleted\n"
-                            "Program was probably shut down unexpectedly, ")
+                            "Program was probably shut down unexpectedly, " % path)
         except (IOError, OSError):
             logging.fatal(
                 "Unable to remove filepaths contained within %s", file_list)
