@@ -289,7 +289,7 @@ class ApacheParser(object):
             self.aug.set("/augeas/load/Httpd/excl[%d]" % (i+1), excl[i])
 
         self.aug.load()
-        
+
     def _set_locations(self, ssl_options):
         """Set default location for directives.
 
