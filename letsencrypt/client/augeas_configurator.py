@@ -188,7 +188,7 @@ class AugeasConfigurator(object):
 
         self.aug.load()
 
-    def show_config_changes(self):
+    def view_config_changes(self):
         """Displays all saved checkpoints.
 
         All checkpoints are printed to the console.

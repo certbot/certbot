@@ -246,7 +246,7 @@ class ApacheParser(object):
         Checks to see if file_path is parsed by Augeas
         If filepath isn't parsed, the file is added and Augeas is reloaded
 
-        :param str file_path: Apache config file path
+        :param str filepath: Apache config file path
 
         """
         # Test if augeas included file for Httpd.lens
