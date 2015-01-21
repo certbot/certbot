@@ -255,7 +255,7 @@ class ApacheParser(object):
             "/augeas/load/Httpd/incl [. ='%s']" % filepath)
         if not inc_test:
             # Load up files
-            self.aug.add_transform("Httpd.lns", filepath)
+            self.aug.add_transform("Httpd.lns", [filepath])
             self.aug.load()
 
     def standardize_excl(self):
