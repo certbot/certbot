@@ -45,20 +45,20 @@ def create_sig(msg, key_str, nonce=None, nonce_len=CONFIG.NONCE_SIZE):
     hashed = Crypto.Hash.SHA256.new(msg_with_nonce)
     signature = Crypto.Signature.PKCS1_v1_5.new(key).sign(hashed)
 
-    logging.debug('%s signed as %s', msg_with_nonce, signature)
+    logging.debug("%s signed as %s", msg_with_nonce, signature)
 
     n_bytes = binascii.unhexlify(_leading_zeros(hex(key.n)[2:].rstrip("L")))
     e_bytes = binascii.unhexlify(_leading_zeros(hex(key.e)[2:].rstrip("L")))
 
     return {
-        "nonce": le_util.jose_b64encode(nonce),
-        "alg": "RS256",
-        "jwk": {
-            "kty": "RSA",
-            "n": le_util.jose_b64encode(n_bytes),
-            "e": le_util.jose_b64encode(e_bytes),
+        'nonce': le_util.jose_b64encode(nonce),
+        'alg': "RS256",
+        'jwk': {
+            'kty': "RSA",
+            'n': le_util.jose_b64encode(n_bytes),
+            'e': le_util.jose_b64encode(e_bytes),
         },
-        "sig": le_util.jose_b64encode(signature),
+        'sig': le_util.jose_b64encode(signature),
     }
 
 
@@ -144,7 +144,6 @@ def csr_matches_pubkey(csr, privkey):
     return csr_obj.get_pubkey().get_rsa().pub() == privkey_obj.pub()
 
 
-# based on M2Crypto unit test written by Toby Allsopp
 def make_key(bits=CONFIG.RSA_KEY_SIZE):
     """Generate PEM encoded RSA key.
 
@@ -154,10 +153,6 @@ def make_key(bits=CONFIG.RSA_KEY_SIZE):
     :rtype: str
 
     """
-    # rsa = M2Crypto.RSA.gen_key(bits, 65537)
-    # key_pem = rsa.as_pem(cipher=None)
-    # rsa = None # should not be freed here
-    # Python Crypto module doesn't produce any stdout
     return Crypto.PublicKey.RSA.generate(bits).exportKey(format='PEM')
 
 
@@ -228,8 +223,9 @@ def make_ss_cert(key_str, domains, not_before=None,
 def get_cert_info(filename):
     """Get certificate info.
 
-    :param str filename: Name of file containing certificate in PEM format.
+    .. todo:: Pub key is assumed to be RSA... find a good solution to allow EC.
 
+    :param str filename: Name of file containing certificate in PEM format.
     :rtype: dict
 
     """
@@ -237,20 +233,20 @@ def get_cert_info(filename):
     cert = M2Crypto.X509.load_cert(filename)
 
     try:
-        san = cert.get_ext("subjectAltName").get_value()
+        san = cert.get_ext('subjectAltName').get_value()
     except:
         san = ""
 
     return {
-        "not_before": cert.get_not_before().get_datetime(),
-        "not_after": cert.get_not_after().get_datetime(),
-        "subject": cert.get_subject().as_text(),
-        "cn": cert.get_subject().CN,
-        "issuer": cert.get_issuer().as_text(),
-        "fingerprint": cert.get_fingerprint(md='sha1'),
-        "san": san,
-        "serial": cert.get_serial_number(),
-        "pub_key": "RSA " + str(cert.get_pubkey().size() * 8),
+        'not_before': cert.get_not_before().get_datetime(),
+        'not_after': cert.get_not_after().get_datetime(),
+        'subject': cert.get_subject().as_text(),
+        'cn': cert.get_subject().CN,
+        'issuer': cert.get_issuer().as_text(),
+        'fingerprint': cert.get_fingerprint(md='sha1'),
+        'san': san,
+        'serial': cert.get_serial_number(),
+        'pub_key': "RSA " + str(cert.get_pubkey().size() * 8),
     }
 
 

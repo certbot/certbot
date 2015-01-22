@@ -3,6 +3,7 @@ import textwrap
 import dialog
 import zope.interface
 
+from letsencrypt.client import CONFIG
 from letsencrypt.client import interfaces
 
 
@@ -55,12 +56,20 @@ class NcursesDisplay(object):
             + gen_https_names(domains) + "!", width=self.width)
 
     def display_certs(self, certs):
-        list_choices = [
-            (str(i+1), "%s | %s | %s" %
-             (str(c["cn"].ljust(self.width - 39)),
-              c["not_before"].strftime("%m-%d-%y"),
-              "Installed" if c["installed"] else ""))
-            for i, c in enumerate(certs)]
+        list_choices = []
+        for i, c in enumerate(certs):
+            if c['installed']:
+                if c['installed'] == CONFIG.CERT_DELETE_MSG:
+                    status = "Deleted/Moved"
+                else:
+                    status = "Installed"
+            else:
+                status = ""
+
+            list_choices.append((str(i+1), "{0} | {1} | {2}".format(
+                str(c['cn'].ljust(self.width-39)),
+                c['not_before'].strftime("%m-%d-%y"),
+                status)))
 
         code, tag = self.dialog.menu(
             "Which certificates would you like to revoke?",

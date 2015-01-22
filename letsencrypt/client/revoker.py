@@ -30,16 +30,16 @@ class Revoker(object):
         :rtype: dict
 
         """
-        cert_der = M2Crypto.X509.load_cert(cert["backup_cert_file"]).as_der()
-        with open(cert["backup_key_file"], 'rU') as backup_key_file:
+        cert_der = M2Crypto.X509.load_cert(cert['backup_cert_file']).as_der()
+        with open(cert['backup_key_file'], 'rU') as backup_key_file:
             key = backup_key_file.read()
 
         revocation = self.network.send_and_receive_expected(
-            acme.revocation_request(cert_der, key), "revocation")
+            acme.revocation_request(cert_der, key), 'revocation')
 
         zope.component.getUtility(interfaces.IDisplay).generic_notification(
             "You have successfully revoked the certificate for "
-            "%s" % cert["cn"])
+            "%s" % cert['cn'])
 
         self.remove_cert_key(cert)
         self.list_certs_keys()
@@ -57,30 +57,35 @@ class Revoker(object):
             return
 
         c_sha1_vh = {}
-        for (cert, _, path) in self.installer.get_all_certs_keys():
-            try:
-                c_sha1_vh[M2Crypto.X509.load_cert(
-                    cert).get_fingerprint(md='sha1')] = path
-            except:
-                continue
+        if self.installer is not None:
+            for (cert, _, path) in self.installer.get_all_certs_keys():
+                try:
+                    c_sha1_vh[M2Crypto.X509.load_cert(
+                        cert).get_fingerprint(md='sha1')] = path
+                except:
+                    continue
 
         with open(list_file, 'rb') as csvfile:
             csvreader = csv.reader(csvfile)
             for row in csvreader:
-                cert = crypto_util.get_cert_info(row[1])
-
+                # Generate backup key/cert names
                 b_k = os.path.join(CONFIG.CERT_KEY_BACKUP,
-                                   os.path.basename(row[2]) + "_" + row[0])
+                                   os.path.basename(row[2]) + '_' + row[0])
                 b_c = os.path.join(CONFIG.CERT_KEY_BACKUP,
-                                   os.path.basename(row[1]) + "_" + row[0])
+                                   os.path.basename(row[1]) + '_' + row[0])
+
+                cert = crypto_util.get_cert_info(b_c)
+                if not os.path.isfile(row[1]):
+                    cert['installed'] = CONFIG.CERT_DELETE_MSG
 
                 cert.update({
-                    "orig_key_file": row[2],
-                    "orig_cert_file": row[1],
-                    "idx": int(row[0]),
-                    "backup_key_file": b_k,
-                    "backup_cert_file": b_c,
-                    "installed": c_sha1_vh.get(cert["fingerprint"], ""),
+                    'orig_key_file': row[2],
+                    'orig_cert_file': row[1],
+                    'idx': int(row[0]),
+                    'backup_key_file': b_k,
+                    'backup_cert_file': b_c,
+                    'installed': c_sha1_vh.get(
+                        cert['fingerprint'], cert.get('installed', "")),
                 })
                 certs.append(cert)
         if certs:
@@ -129,12 +134,12 @@ class Revoker(object):
                 csvwriter = csv.writer(newfile)
 
                 for row in csvreader:
-                    if not (row[0] == str(cert["idx"]) and
-                            row[1] == cert["orig_cert_file"] and
-                            row[2] == cert["orig_key_file"]):
+                    if not (row[0] == str(cert['idx']) and
+                            row[1] == cert['orig_cert_file'] and
+                            row[2] == cert['orig_key_file']):
                         csvwriter.writerow(row)
 
         shutil.copy2(list_file2, list_file)
         os.remove(list_file2)
-        os.remove(cert["backup_cert_file"])
-        os.remove(cert["backup_key_file"])
+        os.remove(cert['backup_cert_file'])
+        os.remove(cert['backup_key_file'])

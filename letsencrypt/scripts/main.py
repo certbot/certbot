@@ -209,6 +209,10 @@ def read_file(filename):
 def rollback(checkpoints):
     """Revert configuration the specified number of checkpoints.
 
+    .. note:: If another installer uses something other than the reverter class
+        to do their configuration changes, the correct reverter will have to be
+        determined.
+
     :param int checkpoints: Number of checkpoints to revert.
 
     """
@@ -248,7 +252,11 @@ def revoke(server):
 
 
 def view_config_changes():
-    """View checkpoints and associated configuration changes."""
+    """View checkpoints and associated configuration changes.
+
+    .. note:: This assumes that the installation is using a Reverter object.
+
+    """
     rev = reverter.Reverter()
     rev.recovery_routine()
     rev.view_config_changes()

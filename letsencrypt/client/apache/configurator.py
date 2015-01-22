@@ -1028,7 +1028,6 @@ def enable_mod(mod_name):
         subprocess.check_call(["sudo", "a2enmod", mod_name],
                               stdout=open("/dev/null", 'w'),
                               stderr=open("/dev/null", 'w'))
-        # Hopefully this waits for output
         apache_restart()
     except (OSError, subprocess.CalledProcessError) as err:
         logging.error("Error enabling mod_%s", mod_name)

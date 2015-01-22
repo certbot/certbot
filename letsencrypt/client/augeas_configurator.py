@@ -40,7 +40,10 @@ class AugeasConfigurator(object):
         # TODO: this instantiation can be optimized to only load
         #       relevant files - I believe -> NO_MODL_AUTOLOAD
         # Set Augeas flags to save backup
-        self.aug = augeas.Augeas(flags=augeas.Augeas.NONE)
+        my_flags = augeas.Augeas.NONE | augeas.Augeas.NO_MODL_AUTOLOAD
+        self.aug = augeas.Augeas(flags=my_flags)
+        self.aug.add_transform("Httpd.lns", "/etc/apache2/apache2.conf")
+
         self.save_notes = ""
 
         # See if any temporary changes need to be recovered
@@ -61,13 +64,13 @@ class AugeasConfigurator(object):
         for path in error_files:
             # Check to see if it was an error resulting from the use of
             # the httpd lens
-            lens_path = self.aug.get(path + '/lens')
+            lens_path = self.aug.get(path + "/lens")
             # As aug.get may return null
             if lens_path and lens in lens_path:
                 # Strip off /augeas/files and /error
-                logging.error('There has been an error in parsing the file: %s',
+                logging.error("There has been an error in parsing the file: %s",
                               path[13:len(path) - 6])
-                logging.error(self.aug.get(path + '/message'))
+                logging.error(self.aug.get(path + "/message"))
 
     def save(self, title=None, temporary=False):
         """Saves all changes to the configuration files.
@@ -92,7 +95,7 @@ class AugeasConfigurator(object):
             # This is a noop save
             self.aug.save()
         except (RuntimeError, IOError):
-            self._log_save_errors()
+            self._log_save_errors(ex_errs)
             # Erase Save Notes
             self.save_notes = ""
             return False
@@ -125,8 +128,12 @@ class AugeasConfigurator(object):
 
         return True
 
-    def _log_save_errors(self):
-        """Log errors due to bad Augeas save."""
+    def _log_save_errors(self, ex_errs):
+        """Log errors due to bad Augeas save.
+
+        :param list ex_errs: Existing errors before save
+
+        """
         # Check for the root of save problems
         new_errs = self.aug.match("/augeas//error")
         # logging.error("During Save - %s", mod_conf)

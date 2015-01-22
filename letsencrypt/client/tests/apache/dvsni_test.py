@@ -27,8 +27,12 @@ class DvsniPerformTest(unittest.TestCase):
         self.config_path = os.path.join(
             self.temp_dir, "debian_apache_2_4/two_vhost_80/apache2/")
 
-        config = config_util.get_apache_configurator(
-            self.config_path, self.config_dir, self.work_dir, self.ssl_options)
+        with mock.patch("letsencrypt.client.apache.configurator."
+                        "mod_loaded") as mock_load:
+            mock_load.return_value = True
+            config = config_util.get_apache_configurator(
+                self.config_path, self.config_dir, self.work_dir,
+                self.ssl_options)
 
         self.sni = dvsni.ApacheDvsni(config)
 

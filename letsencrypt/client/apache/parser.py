@@ -240,25 +240,24 @@ class ApacheParser(object):
                 regex = regex + letter
         return regex
 
-    def _parse_file(self, file_path):
+    def _parse_file(self, filepath):
         """Parse file with Augeas
 
         Checks to see if file_path is parsed by Augeas
-        If file_path isn't parsed, the file is added and Augeas is reloaded
+        If filepath isn't parsed, the file is added and Augeas is reloaded
 
-        :param str file_path: Apache config file path
+        :param str filepath: Apache config file path
 
         """
         # Test if augeas included file for Httpd.lens
         # Note: This works for augeas globs, ie. *.conf
         inc_test = self.aug.match(
-            "/augeas/load/Httpd/incl [. ='%s']" % file_path)
+            "/augeas/load/Httpd/incl [. ='%s']" % filepath)
         if not inc_test:
             # Load up files
-            # self.httpd_incl.append(file_path)
             # self.aug.add_transform("Httpd.lns",
             #                       self.httpd_incl, None, self.httpd_excl)
-            self._add_httpd_transform(file_path)
+            self._add_httpd_transform(filepath)
             self.aug.load()
 
     def standardize_excl(self):
