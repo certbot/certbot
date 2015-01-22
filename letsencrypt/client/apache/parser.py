@@ -255,10 +255,31 @@ class ApacheParser(object):
             "/augeas/load/Httpd/incl [. ='%s']" % filepath)
         if not inc_test:
             # Load up files
-            # self.aug.add_transform("Httpd.lns",
-            #                       self.httpd_incl, None, self.httpd_excl)
+            # This doesn't seem to work on TravisCI
+            # self.aug.add_transform("Httpd.lns", [filepath])
             self._add_httpd_transform(filepath)
             self.aug.load()
+
+    def _add_httpd_transform(self, incl):
+        """Add a transform to Augeas.
+
+        This function will correctly add a transform to augeas
+        The existing augeas.add_transform in python doesn't seem to work for
+        Travis CI as it loads in libaugeas.so.0.10.0
+
+        :param str incl: filepath to include for transform
+
+        """
+        last_include = self.aug.match("/augeas/load/Httpd/incl [last()]")
+        if last_include:
+            # Insert a new node immediately after the last incl
+            self.aug.insert(last_include[0], "incl", False)
+            self.aug.set("/augeas/load/Httpd/incl[last()]", incl)
+        # On first use... must load lens and add file to incl
+        else:
+            # Augeas uses base 1 indexing... insert at beginning...
+            self.aug.set("/augeas/load/Httpd/lens", "Httpd.lns")
+            self.aug.set("/augeas/load/Httpd/incl", incl)
 
     def standardize_excl(self):
         """Standardize the excl arguments for the Httpd lens in Augeas.
@@ -291,19 +312,6 @@ class ApacheParser(object):
             self.aug.set("/augeas/load/Httpd/excl[%d]" % (i+1), excl[i])
 
         self.aug.load()
-
-    def _add_httpd_transform(self, incl):
-        """Add a transform to Augeas.
-
-        This function will correctly add a transform to augeas
-        The existing augeas.add_transform in python is broken.
-
-        :param str incl: TODO
-
-        """
-        last_include = self.aug.match("/augeas/load/Httpd/incl [last()]")
-        self.aug.insert(last_include[0], "incl", False)
-        self.aug.set("/augeas/load/Httpd/incl[last()]", incl)
 
     def _set_locations(self, ssl_options):
         """Set default location for directives.
