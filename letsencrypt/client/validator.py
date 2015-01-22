@@ -28,7 +28,8 @@ def _openssl(hostname, args, input=None):
     :param input: stdin to binary
     :return: (stdout, stderr)
     """
-    openssl_cmd = OCSP_OPENSSL_CMD.format(**locals()).split(" ") + list(args)
+    openssl_cmd = OCSP_OPENSSL_CMD.format(hostname=hostname)
+    openssl_cmd = openssl_cmd.split(" ") + list(args)
 
     log.debug("Calling openssl binary with arguments: %s", openssl_cmd[1:])
     openssl = Popen(openssl_cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
