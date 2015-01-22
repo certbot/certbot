@@ -87,13 +87,22 @@ class Validator(object):
 
         # Split directives following RFC6797, section 6.1
         directives = [d.split("=") for d in hsts_header.split(";")]
-        max_age = [d for d in directives if d[0] == "max-age"][0]
+        max_age = [d for d in directives if d[0] == "max-age"]
+
+        if not max_age:
+            error_msg = "Server responded with invalid HSTS header field."
+            raise LetsEncryptValidationError(error_msg)
 
         try:
-            max_age_name, max_age_value = max_age
+            max_age_name, max_age_value = max_age[0]
             max_age_value = int(max_age_value)
         except ValueError:
             error_msg = "Server responded with invalid HSTS header field."
+            raise LetsEncryptValidationError(error_msg)
+
+        # Test whether HSTS does not expire for at least two weeks.
+        if max_age_value <= (2 * 7 * 24 * 3600):
+            error_msg = "HSTS should not expire in less than two weeks."
             raise LetsEncryptValidationError(error_msg)
 
         return True
