@@ -519,6 +519,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         return ssl_vhost
 
+    # pylint: disable=no-method-argument,no-self-use,unused-argument
     def supported_enhancements():
         """Returns currently supported enhancements."""
         return ["redirect"]

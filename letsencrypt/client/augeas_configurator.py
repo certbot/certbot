@@ -1,9 +1,5 @@
 """Class of Augeas Configurators."""
 import logging
-import os
-import sys
-import shutil
-import time
 
 import augeas
 
@@ -117,7 +113,7 @@ class AugeasConfigurator(object):
                 self.reverter.add_to_checkpoint(save_files, self.save_notes)
 
         if title and not temporary:
-            success = self.reverter.finalize_checkpoint(title)
+            self.reverter.finalize_checkpoint(title)
 
         self.aug.set("/augeas/save", save_state)
         self.save_notes = ""
@@ -169,4 +165,4 @@ class AugeasConfigurator(object):
 
     def view_config_changes(self):
         """Show all of the configuration changes that have taken place."""
-        self.reverter.show_config_changes()
+        self.reverter.view_config_changes()

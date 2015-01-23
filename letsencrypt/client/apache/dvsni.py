@@ -88,7 +88,7 @@ class ApacheDvsni(object):
         # Create all of the challenge certs
         for chall in self.dvsni_chall:
             cert_path = self.get_cert_file(chall.nonce)
-            self.config.reverter.register_file_creation(cert_path)
+            self.config.reverter.register_file_creation(True, cert_path)
             s_b64 = challenge_util.dvsni_gen_cert(
                 cert_path, chall.domain, chall.r_b64, chall.nonce, chall.key)
 
