@@ -10,7 +10,26 @@ WIDTH = 72
 HEIGHT = 20
 
 
-class NcursesDisplay(object):
+class CommonDisplayMixin(object):
+    """methods common to both NcursesDisplay and FileDisplay"""
+
+    def redirect_by_default(self):
+        choices = [
+            ("Easy", "Allow both HTTP and HTTPS access to these sites"),
+            ("Secure", "Make all requests redirect to secure HTTPS access")]
+
+        result = self.generic_menu(
+            "Please choose whether HTTPS access is required or optional.",
+            choices, "Please enter the appropriate number")
+
+        if result[0] != OK:
+            return False
+
+        # different answer for each type of display
+        return str(result[1]) == "Secure" or result[1] == 1
+
+
+class NcursesDisplay(CommonDisplayMixin):
     zope.interface.implements(interfaces.IDisplay)
 
     def __init__(self, width=WIDTH, height=HEIGHT):
@@ -85,23 +104,8 @@ class NcursesDisplay(object):
         print text
         self.dialog.msgbox(text, width=self.width, height=self.height)
 
-    def redirect_by_default(self):
-        choices = [
-            ("Easy", "Allow both HTTP and HTTPS access to these sites"),
-            ("Secure", "Make all requests redirect to secure HTTPS access")]
 
-        result = self.generic_menu(
-            "Please choose whether HTTPS access is required or optional.",
-            choices, "Please enter the appropriate number")
-
-        if result[0] != OK:
-            return False
-
-        # different answer for each type of display
-        return str(result[1]) == "Secure" or result[1] == 1
-
-
-class FileDisplay(object):
+class FileDisplay(CommonDisplayMixin):
     zope.interface.implements(interfaces.IDisplay)
 
     def __init__(self, outfile):
