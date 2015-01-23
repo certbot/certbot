@@ -339,10 +339,12 @@ def init_key(key_size):
     the namedtuple to easily work with the protocol.
 
     """
-    if key_size < CONFIG.RSA_KEY_SIZE:
-        logging.warning("Generating keys smaller than %d bits is NOT recommended!", CONFIG.RSA_KEY_SIZE)
-
-    key_pem = crypto_util.make_key(key_size)
+    try:
+        key_pem = crypto_util.make_key(key_size)
+    except ValueError as err:
+        logging.fatal(str(err))
+        logging.info("Note: The default RSA key size is %d bits." % CONFIG.RSA_KEY_SIZE)
+        sys.exit(1)
 
     # Save file
     le_util.make_or_verify_dir(CONFIG.KEY_DIR, 0o700)
