@@ -17,13 +17,12 @@ logging.getLogger("requests").setLevel(logging.WARNING)
 class Network(object):
     """Class for communicating with ACME servers.
 
-    :ivar str server: Certificate authority server
+    :ivar str server: Certificate authority server (server[:port])
     :ivar str server_url: Full URL of the CSR server
 
     """
     def __init__(self, server):
-        self.server = server
-        self.server_url = "https://%s/acme/" % self.server
+        self.server_url = "https://%s/acme/" % server
 
     def send(self, msg):
         """Send ACME message to server.

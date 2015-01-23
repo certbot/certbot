@@ -59,7 +59,6 @@ class Client(object):
         :type dv_auth: :class:`letsencrypt.client.interfaces.IAuthenticator`
 
         """
-        sanity_check_names([server])
         self.network = network.Network(server)
         self.authkey = authkey
 
