@@ -145,7 +145,7 @@ def csr_matches_pubkey(csr, privkey):
 
 
 # based on M2Crypto unit test written by Toby Allsopp
-def make_key(bits=CONFIG.RSA_KEY_SIZE):
+def make_key(bits):
     """Generate PEM encoded RSA key.
 
     :param int bits: Number of bits, at least 1024.

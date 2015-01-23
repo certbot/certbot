@@ -98,6 +98,8 @@ class MakeKeyTest(unittest.TestCase):
     def test_it(self):
         from letsencrypt.client.crypto_util import make_key
         M2Crypto.RSA.load_key_string(make_key(1024))
+        M2Crypto.RSA.load_key_string(make_key(2048))
+        M2Crypto.RSA.load_key_string(make_key(4096))
 
 
 class ValidPrivkeyTest(unittest.TestCase):
