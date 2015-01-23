@@ -330,7 +330,7 @@ def validate_key_csr(privkey, csr=None):
                     "The key and CSR do not match")
 
 
-def init_key():
+def init_key(key_size):
     """Initializes privkey.
 
     Inits key and CSR using provided files or generating new files
@@ -339,7 +339,10 @@ def init_key():
     the namedtuple to easily work with the protocol.
 
     """
-    key_pem = crypto_util.make_key(CONFIG.RSA_KEY_SIZE)
+    if key_size < CONFIG.RSA_KEY_SIZE:
+        logging.warning("Generating keys smaller than %d bits is NOT recommended!", CONFIG.RSA_KEY_SIZE)
+
+    key_pem = crypto_util.make_key(key_size)
 
     # Save file
     le_util.make_or_verify_dir(CONFIG.KEY_DIR, 0o700)
@@ -348,7 +351,7 @@ def init_key():
     key_f.write(key_pem)
     key_f.close()
 
-    logging.info("Generating key: %s", key_filename)
+    logging.info("Generating key (%d bits): %s", key_size, key_filename)
 
     return Client.Key(key_filename, key_pem)
 
