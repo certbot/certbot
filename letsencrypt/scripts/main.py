@@ -30,7 +30,8 @@ def main():
     parser.add_argument("-d", "--domains", dest="domains", metavar="DOMAIN",
                         nargs="+")
     parser.add_argument("-s", "--server", dest="server",
-                        help="The ACME CA server [%s]." % CONFIG.ACME_SERVER)
+                        default=CONFIG.ACME_SERVER,
+                        help="The ACME CA server. [%(default)s]")
     parser.add_argument("-p", "--privkey", dest="privkey", type=read_file,
                         help="Path to the private key file for certificate "
                              "generation.")
@@ -72,10 +73,9 @@ def main():
     zope.component.provideUtility(displayer)
 
     installer = determine_installer()
-    server = CONFIG.ACME_SERVER if args.server is None else args.server
 
     if args.revoke:
-        revoc = revoker.Revoker(server, installer)
+        revoc = revoker.Revoker(args.server, installer)
         revoc.list_certs_keys()
         sys.exit()
 
@@ -104,7 +104,7 @@ def main():
     else:
         privkey = client.Client.Key(args.privkey[0], args.privkey[1])
 
-    acme = client.Client(server, privkey, auth, installer)
+    acme = client.Client(args.server, privkey, auth, installer)
 
     # Validate the key and csr
     client.validate_key_csr(privkey)
