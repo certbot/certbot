@@ -30,7 +30,7 @@ def main():
     parser.add_argument("-d", "--domains", dest="domains", metavar="DOMAIN",
                         nargs="+")
     parser.add_argument("-s", "--server", dest="server",
-                        help="The ACME CA server address.")
+                        help="The ACME CA server [%s]." % CONFIG.ACME_SERVER)
     parser.add_argument("-p", "--privkey", dest="privkey", type=read_file,
                         help="Path to the private key file for certificate "
                              "generation.")
