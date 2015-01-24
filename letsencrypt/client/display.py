@@ -10,8 +10,8 @@ WIDTH = 72
 HEIGHT = 20
 
 
-class CommonDisplayMixin(object):
-    """methods common to both NcursesDisplay and FileDisplay"""
+class CommonDisplayMixin(object):  # pylint: disable=too-few-public-methods
+    """Mixin with methods common to classes implementing IDisplay."""
 
     def redirect_by_default(self):
         choices = [
@@ -41,7 +41,7 @@ class NcursesDisplay(CommonDisplayMixin):
     def generic_notification(self, message):
         self.dialog.msgbox(message, width=self.width)
 
-    def generic_menu(self, message, choices, input_text=""):
+    def generic_menu(self, message, choices, unused_input_text=""):
         # Can accept either tuples or just the actual choices
         if choices and isinstance(choices[0], tuple):
             code, selection = self.dialog.menu(
@@ -57,9 +57,10 @@ class NcursesDisplay(CommonDisplayMixin):
     def generic_input(self, message):
         return self.dialog.inputbox(message)
 
-    def generic_yesno(self, message, yes="Yes", no="No"):
+    def generic_yesno(self, message, yes_label="Yes", no_label="No"):
         return self.dialog.DIALOG_OK == self.dialog.yesno(
-            message, self.height, self.width, yes_label=yes, no_label=no)
+            message, self.height, self.width,
+            yes_label=yes_label, no_label=no_label)
 
     def filter_names(self, names):
         choices = [(n, "", 0) for n in names]
@@ -114,9 +115,8 @@ class FileDisplay(CommonDisplayMixin):
 
     def generic_notification(self, message):
         side_frame = '-' * 79
-        wm = textwrap.fill(message, 80)
-        text = "\n%s\n%s\n%s\n" % (side_frame, wm, side_frame)
-        self.outfile.write(text)
+        msg = textwrap.fill(message, 80)
+        self.outfile.write("\n%s\n%s\n%s\n" % (side_frame, msg, side_frame))
         raw_input("Press Enter to Continue")
 
     def generic_menu(self, message, choices, input_text=""):
@@ -139,7 +139,7 @@ class FileDisplay(CommonDisplayMixin):
 
         return code, (selection - 1)
 
-    def generic_input(self, message):
+    def generic_input(self, message):  # pylint: disable=no-self-use
         ans = raw_input("%s (Enter c to cancel)\n" % message)
 
         if ans.startswith('c') or ans.startswith('C'):
@@ -147,7 +147,7 @@ class FileDisplay(CommonDisplayMixin):
         else:
             return OK, ans
 
-    def generic_yesno(self, message, yes_label="Yes", no_label="No"):
+    def generic_yesno(self, message, unused_yes_label="", unused_no_label=""):
         self.outfile.write("\n%s\n" % textwrap.fill(message, 80))
         ans = raw_input("y/n: ")
         return ans.startswith('y') or ans.startswith('Y')
@@ -198,11 +198,10 @@ class FileDisplay(CommonDisplayMixin):
         return code, selection
 
     def success_installation(self, domains):
-        s_f = '*' * 79
-        wm = textwrap.fill(("Congratulations! You have successfully " +
-                            "enabled %s!") % gen_https_names(domains))
-        msg = "%s\n%s\n%s\n"
-        self.outfile.write(msg % (s_f, wm, s_f))
+        side_frame = '*' * 79
+        msg = textwrap.fill("Congratulations! You have successfully "
+                            "enabled %s!" % gen_https_names(domains))
+        self.outfile.write("%s\n%s\n%s\n" % (side_frame, msg, side_frame))
 
     def confirm_revocation(self, cert):
         self.outfile.write("Are you sure you would like to revoke "

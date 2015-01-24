@@ -141,7 +141,8 @@ B64_URL_UNSAFE_EXAMPLES = {
 class JOSEB64EncodeTest(unittest.TestCase):
     """Tests for letsencrypt.client.le_util.jose_b64encode."""
 
-    def _call(self, data):
+    @classmethod
+    def _call(cls, data):
         from letsencrypt.client.le_util import jose_b64encode
         return jose_b64encode(data)
 
@@ -160,7 +161,8 @@ class JOSEB64EncodeTest(unittest.TestCase):
 class JOSEB64DecodeTest(unittest.TestCase):
     """Tests for letsencrypt.client.le_util.jose_b64decode."""
 
-    def _call(self, data):
+    @classmethod
+    def _call(cls, data):
         from letsencrypt.client.le_util import jose_b64decode
         return jose_b64decode(data)
 

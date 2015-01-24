@@ -31,7 +31,7 @@ class RecoveryContact(object):
         self.poll_delay = poll_delay
 
     def perform(self, quiet=True):
-        d = dialog.Dialog()
+        d = dialog.Dialog()  # pylint: disable=invalid-name
         if quiet:
             if self.success_url:
                 d.infobox(self.get_display_string())
@@ -50,7 +50,7 @@ class RecoveryContact(object):
 
         return True
 
-    def cleanup(self):
+    def cleanup(self):  # pylint: disable=no-self-use
         return
 
     def get_display_string(self):
@@ -91,7 +91,7 @@ class RecoveryContact(object):
         else:
             return False
 
-    def prompt_continue(self, quiet=True):
+    def prompt_continue(self, quiet=True):  # pylint: disable=no-self-use
         """Prompt user for continuation.
 
         :param bool quiet: Display dialog box if True, raw prompt otherwise.

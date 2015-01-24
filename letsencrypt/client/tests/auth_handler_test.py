@@ -1,21 +1,26 @@
-"""Test auth_handler.py."""
+"""Tests for letsencrypt.client.auth_handler."""
 import unittest
+
 import mock
 
+from letsencrypt.client import errors
 from letsencrypt.client.tests import acme_util
 
 
-TRANSLATE = {"dvsni": "DvsniChall",
-             "simpleHttps": "SimpleHttpsChall",
-             "dns": "DnsChall",
-             "recoveryToken": "RecTokenChall",
-             "recoveryContact": "RecContactChall",
-             "proofOfPossession": "PopChall"}
+TRANSLATE = {
+    "dvsni": "DvsniChall",
+    "simpleHttps": "SimpleHttpsChall",
+    "dns": "DnsChall",
+    "recoveryToken": "RecTokenChall",
+    "recoveryContact": "RecContactChall",
+    "proofOfPossession": "PopChall",
+}
 
 
 # pylint: disable=protected-access
 class SatisfyChallengesTest(unittest.TestCase):
     """verify_identities test."""
+
     def setUp(self):
         from letsencrypt.client.auth_handler import AuthHandler
 
@@ -225,7 +230,7 @@ class SatisfyChallengesTest(unittest.TestCase):
         self.assertEqual(
             type(self.handler.client_c["4"][0].chall).__name__, "RecTokenChall")
 
-    def _get_exp_response(self, domain, path, challenges):
+    def _get_exp_response(self, domain, path, challenges):  # pylint: disable=no-self-use
         exp_resp = ["null"] * len(challenges)
         for i in path:
             exp_resp[i] = TRANSLATE[challenges[i]["type"]] + str(domain)
@@ -283,7 +288,6 @@ class GetAuthorizationsTest(unittest.TestCase):
             self.handler.dv_c[dom], self.handler.client_c[dom] = dv_c, c_c
 
     def test_progress_failure(self):
-        from letsencrypt.client.errors import LetsEncryptAuthHandlerError
         challenges = acme_util.get_challenges()
         self.handler.add_chall_msg(
             "0",
@@ -294,7 +298,7 @@ class GetAuthorizationsTest(unittest.TestCase):
         self.mock_sat_chall.side_effect = self._sat_failure
 
         self.assertRaises(
-            LetsEncryptAuthHandlerError, self.handler.get_authorizations)
+            errors.LetsEncryptAuthHandlerError, self.handler.get_authorizations)
 
         # Check to make sure program didn't loop
         self.assertEqual(self.mock_sat_chall.call_count, 1)
@@ -327,8 +331,6 @@ class GetAuthorizationsTest(unittest.TestCase):
                          [mock.call("1"), mock.call("0")])
 
     def _sat_incremental(self):
-        from letsencrypt.client.errors import LetsEncryptAuthHandlerError
-
         # Exact responses don't matter, just path/response match
         if self.iteration == 0:
             # Only solve one of "0" required challs
@@ -353,7 +355,7 @@ class GetAuthorizationsTest(unittest.TestCase):
             self.handler.responses["0"][3] = "finally!"
 
         else:
-            raise LetsEncryptAuthHandlerError(
+            raise errors.LetsEncryptAuthHandlerError(
                 "Failed incremental test: too many invocations")
 
     def _test_finished(self):

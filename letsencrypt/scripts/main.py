@@ -6,18 +6,18 @@ import os
 import sys
 
 import zope.component
+import zope.interface
 
 from letsencrypt.client import CONFIG
 from letsencrypt.client import client
 from letsencrypt.client import display
 from letsencrypt.client import interfaces
-from letsencrypt.client import errors
 from letsencrypt.client import log
 from letsencrypt.client import revoker
 from letsencrypt.client.apache import configurator
 
 
-def main():
+def main():  # pylint: disable=too-many-statements
     """Command line argument parsing and main script execution."""
     if not os.geteuid() == 0:
         sys.exit(
@@ -163,22 +163,12 @@ def get_all_names(installer):
 # This should be controlled by commandline parameters
 def determine_authenticator():
     """Returns a valid IAuthenticator."""
-    try:
-        if interfaces.IAuthenticator.implementedBy(
-                configurator.ApacheConfigurator):
-            return configurator.ApacheConfigurator()
-    except errors.LetsEncryptConfiguratorError:
-        logging.info("Unable to determine a way to authenticate the server")
+    return configurator.ApacheConfigurator()
 
 
 def determine_installer():
-    """Returns a valid installer if one exists."""
-    try:
-        if interfaces.IInstaller.implementedBy(
-                configurator.ApacheConfigurator):
-            return configurator.ApacheConfigurator()
-    except errors.LetsEncryptConfiguratorError:
-        logging.info("Unable to find a way to install the certificate.")
+    """Returns a valid IInstaller."""
+    return configurator.ApacheConfigurator()
 
 
 def read_file(filename):

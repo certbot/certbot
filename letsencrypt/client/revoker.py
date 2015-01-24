@@ -61,7 +61,7 @@ class Revoker(object):
             try:
                 c_sha1_vh[M2Crypto.X509.load_cert(
                     cert).get_fingerprint(md='sha1')] = path
-            except:
+            except M2Crypto.X509.X509Error:
                 continue
 
         with open(list_file, 'rb') as csvfile:

@@ -30,7 +30,8 @@ class CreateSigTest(unittest.TestCase):
                    'AX9AFJHk-bCMQPJbSzXKjG6H1IWbvxjS2Ew',
         }
 
-    def _call(self, *args, **kwargs):
+    @classmethod
+    def _call(cls, *args, **kwargs):
         from letsencrypt.client.crypto_util import create_sig
         return create_sig(*args, **kwargs)
 
@@ -50,7 +51,8 @@ class CreateSigTest(unittest.TestCase):
 class ValidCSRTest(unittest.TestCase):
     """Tests for letsencrypt.client.crypto_util.valid_csr."""
 
-    def _call(self, csr):
+    @classmethod
+    def _call(cls, csr):
         from letsencrypt.client.crypto_util import valid_csr
         return valid_csr(csr)
 
@@ -80,7 +82,8 @@ class ValidCSRTest(unittest.TestCase):
 class CSRMatchesPubkeyTest(unittest.TestCase):
     """Tests for letsencrypt.client.crypto_util.csr_matches_pubkey."""
 
-    def _call_testdata(self, name, privkey):
+    @classmethod
+    def _call_testdata(cls, name, privkey):
         from letsencrypt.client.crypto_util import csr_matches_pubkey
         return csr_matches_pubkey(pkg_resources.resource_string(
             __name__, os.path.join('testdata', name)), privkey)
@@ -95,7 +98,7 @@ class CSRMatchesPubkeyTest(unittest.TestCase):
 class MakeKeyTest(unittest.TestCase):
     """Tests for letsencrypt.client.crypto_util.make_key."""
 
-    def test_it(self):
+    def test_it(self):  # pylint: disable=no-self-use
         from letsencrypt.client.crypto_util import make_key
         M2Crypto.RSA.load_key_string(make_key(1024))
 
@@ -103,7 +106,8 @@ class MakeKeyTest(unittest.TestCase):
 class ValidPrivkeyTest(unittest.TestCase):
     """Tests for letsencrypt.client.crypto_util.valid_privkey."""
 
-    def _call(self, privkey):
+    @classmethod
+    def _call(cls, privkey):
         from letsencrypt.client.crypto_util import valid_privkey
         return valid_privkey(privkey)
 
@@ -120,7 +124,7 @@ class ValidPrivkeyTest(unittest.TestCase):
 class MakeSSCertTest(unittest.TestCase):
     """Tests for letsencrypt.client.crypto_util.make_ss_cert."""
 
-    def test_it(self):
+    def test_it(self):  # pylint: disable=no-self-use
         from letsencrypt.client.crypto_util import make_ss_cert
         make_ss_cert(RSA256_KEY, ['example.com', 'www.example.com'])
 

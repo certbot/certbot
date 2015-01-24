@@ -8,7 +8,7 @@ from letsencrypt.client import challenge_util
 from letsencrypt.client import errors
 
 
-class AuthHandler(object):
+class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
     """ACME Authorization Handler for a client.
 
     :ivar dv_auth: Authenticator capable of solving CONFIG.DV_CHALLENGES
@@ -286,7 +286,7 @@ class AuthHandler(object):
             raise errors.LetsEncryptClientError(
                 "Unimplemented Auth Challenge: %s" % chall["type"])
 
-    def _construct_client_chall(self, chall, domain):
+    def _construct_client_chall(self, chall, domain):  # pylint: disable=no-self-use
         """Construct Client Type Challenges.
 
         :param dict chall: Single challenge

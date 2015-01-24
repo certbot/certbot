@@ -238,7 +238,7 @@ def get_cert_info(filename):
 
     try:
         san = cert.get_ext("subjectAltName").get_value()
-    except:
+    except LookupError:
         san = ""
 
     return {

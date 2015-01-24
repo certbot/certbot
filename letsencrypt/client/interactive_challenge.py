@@ -1,3 +1,4 @@
+"""Interactive challenge."""
 import textwrap
 
 import dialog
