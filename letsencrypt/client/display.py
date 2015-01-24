@@ -1,3 +1,4 @@
+"""Lets Encrypt display."""
 import textwrap
 
 import dialog
@@ -30,6 +31,8 @@ class CommonDisplayMixin(object):  # pylint: disable=too-few-public-methods
 
 
 class NcursesDisplay(CommonDisplayMixin):
+    """Ncurses-based display."""
+
     zope.interface.implements(interfaces.IDisplay)
 
     def __init__(self, width=WIDTH, height=HEIGHT):
@@ -107,6 +110,8 @@ class NcursesDisplay(CommonDisplayMixin):
 
 
 class FileDisplay(CommonDisplayMixin):
+    """File-based display."""
+
     zope.interface.implements(interfaces.IDisplay)
 
     def __init__(self, outfile):
