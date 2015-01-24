@@ -2,8 +2,8 @@
 import os.path
 
 
-ACME_SERVER = "letsencrypt-demo.org"
-"""CA hostname.
+ACME_SERVER = "letsencrypt-demo.org:443"
+"""CA hostname (and optionally :port).
 
 If you create your own server... change this line
 
