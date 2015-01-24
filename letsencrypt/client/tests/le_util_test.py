@@ -100,26 +100,25 @@ class UniqueFileTest(unittest.TestCase):
         self.assertEqual(0o700, os.stat(self._call(0o700)[1]).st_mode & 0o777)
         self.assertEqual(0o100, os.stat(self._call(0o100)[1]).st_mode & 0o777)
 
-    def test_default_not_exists(self):
-        self.assertEqual(self._call()[1], self.default_name)
-
     def test_default_exists(self):
-        name1 = self._call()[1]  # create foo.txt
+        name1 = self._call()[1]  # create 0000_foo.txt
         name2 = self._call()[1]
         name3 = self._call()[1]
 
         self.assertNotEqual(name1, name2)
-        basename2 = os.path.basename(name2)
-        self.assertEqual(os.path.dirname(name2), self.root_path)
-        self.assertTrue(basename2.startswith('foo'))
-        self.assertTrue(basename2.endswith('.txt'))
-
         self.assertNotEqual(name1, name3)
         self.assertNotEqual(name2, name3)
-        basename3 = os.path.basename(name3)
+
+        self.assertEqual(os.path.dirname(name1), self.root_path)
+        self.assertEqual(os.path.dirname(name2), self.root_path)
         self.assertEqual(os.path.dirname(name3), self.root_path)
-        self.assertTrue(basename3.startswith('foo'))
-        self.assertTrue(basename3.endswith('.txt'))
+
+        basename1 = os.path.basename(name2)
+        self.assertTrue(basename1.endswith('foo.txt'))
+        basename2 = os.path.basename(name2)
+        self.assertTrue(basename2.endswith('foo.txt'))
+        basename3 = os.path.basename(name3)
+        self.assertTrue(basename3.endswith('foo.txt'))
 
 
 # https://en.wikipedia.org/wiki/Base64#Examples
