@@ -36,7 +36,7 @@ In general:
 
 ```
 sudo apt-get install python python-setuptools python-virtualenv \
-  python-dev gcc swig dialog libaugeas0 openssl libssl-dev ca-certificates
+  python-dev gcc swig dialog libaugeas0 libssl-dev ca-certificates
 ```
 
 #### Mac OSX
