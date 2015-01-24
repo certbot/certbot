@@ -30,13 +30,17 @@ def main():  # pylint: disable=too-many-statements
     parser.add_argument("-d", "--domains", dest="domains", metavar="DOMAIN",
                         nargs="+")
     parser.add_argument("-s", "--server", dest="server",
-                        help="The ACME CA server address.")
+                        default=CONFIG.ACME_SERVER,
+                        help="The ACME CA server. [%(default)s]")
     parser.add_argument("-p", "--privkey", dest="privkey", type=read_file,
                         help="Path to the private key file for certificate "
                              "generation.")
     parser.add_argument("-b", "--rollback", dest="rollback", type=int,
                         default=0, metavar="N",
                         help="Revert configuration N number of checkpoints.")
+    parser.add_argument("-B", "--keysize", dest="key_size", type=int,
+                        default=CONFIG.RSA_KEY_SIZE, metavar="N",
+                        help="RSA key shall be sized N bits. [%d]" % CONFIG.RSA_KEY_SIZE)
     parser.add_argument("-k", "--revoke", dest="revoke", action="store_true",
                         help="Revoke a certificate.")
     parser.add_argument("-v", "--view-config-changes",
@@ -72,10 +76,9 @@ def main():  # pylint: disable=too-many-statements
     zope.component.provideUtility(displayer)
 
     installer = determine_installer()
-    server = CONFIG.ACME_SERVER if args.server is None else args.server
 
     if args.revoke:
-        revoc = revoker.Revoker(server, installer)
+        revoc = revoker.Revoker(args.server, installer)
         revoc.list_certs_keys()
         sys.exit()
 
@@ -100,11 +103,11 @@ def main():  # pylint: disable=too-many-statements
 
     # Prepare for init of Client
     if args.privkey is None:
-        privkey = client.init_key()
+        privkey = client.init_key(args.key_size)
     else:
         privkey = client.Client.Key(args.privkey[0], args.privkey[1])
 
-    acme = client.Client(server, privkey, auth, installer)
+    acme = client.Client(args.server, privkey, auth, installer)
 
     # Validate the key and csr
     client.validate_key_csr(privkey)
