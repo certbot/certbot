@@ -1039,7 +1039,8 @@ def enable_mod(mod_name):
 def mod_loaded(module):
     """Checks to see if mod_ssl is loaded
 
-    Uses CONFIG.APACHE_CTL to get loaded module list
+    Uses CONFIG.APACHE_CTL to get loaded module list. This also effectively
+    serves as a config_test.
 
     :returns: If ssl_module is included and active in Apache
     :rtype: bool
@@ -1073,7 +1074,13 @@ def apache_restart():
     """Restarts the Apache Server.
 
     .. todo:: Try to use reload instead. (This caused timing problems before)
-    .. todo:: This should be written to use the process return code.
+
+    .. todo:: On failure, this should be a recovery_routine call with another
+       restart.  This will confuse and inhibit developers from testing code
+       though.  This change should happen after
+       the ApacheConfigurator has been thoroughly tested.  The function will
+       need to be moved into the class again.  Perhaps
+       this version can live on... for testing purposes.
 
     """
     try:
@@ -1084,7 +1091,7 @@ def apache_restart():
 
         if proc.returncode != 0:
             # Enter recovery routine...
-            logging.error("Configtest failed")
+            logging.error("Apache Restart Failed!")
             logging.error(stdout)
             logging.error(stderr)
             return False

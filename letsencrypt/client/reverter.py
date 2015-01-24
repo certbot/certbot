@@ -8,6 +8,7 @@ from letsencrypt.client import CONFIG
 from letsencrypt.client import errors
 from letsencrypt.client import le_util
 
+
 class Reverter(object):
     """Reverter Class - save and revert configuration checkpoints"""
     def __init__(self, direc=None):
@@ -76,9 +77,6 @@ class Reverter(object):
 
         All checkpoints are printed to the console.
 
-        .. note:: Any 'IN_PROGRESS' checkpoints will be removed by the cleanup
-        script found in the constructor, before this function would ever be
-        called.
         .. todo:: Decide on a policy for error handling, OSError IOError...
 
         """
@@ -86,8 +84,8 @@ class Reverter(object):
         backups.sort(reverse=True)
 
         if not backups:
-            logging.info("Letsencrypt has not saved any backups of your "
-                         "configuration")
+            logging.info("The Let's Encrypt client has not saved any backups "
+                         "of your configuration")
             return
         # Make sure there isn't anything unexpected in the backup folder
         # There should only be timestamped (float) directories
@@ -154,17 +152,11 @@ class Reverter(object):
         """
         le_util.make_or_verify_dir(cp_dir, 0o755, os.geteuid())
 
-        existing_filepaths = []
-        filepaths_path = os.path.join(cp_dir, "FILEPATHS")
-
-        # Open up FILEPATHS differently depending on if it already exists
-        if os.path.isfile(filepaths_path):
-            op_fd = open(filepaths_path, 'r+')
-            existing_filepaths = op_fd.read().splitlines()
-        else:
-            op_fd = open(filepaths_path, 'w')
+        op_fd, existing_filepaths = self._read_and_append(
+            os.path.join(cp_dir, "FILEPATHS"))
 
         idx = len(existing_filepaths)
+
         for filename in save_files:
             # No need to copy/index already existing files
             # The oldest copy already exists in the directory...
@@ -190,6 +182,22 @@ class Reverter(object):
 
         with open(os.path.join(cp_dir, "CHANGES_SINCE"), 'a') as notes_fd:
             notes_fd.write(save_notes)
+
+    def _read_and_append(self, filepath):  # pylint: disable=no-self-use
+        """Reads the file lines and returns a fd.
+
+        Read the file returning the lines, and a pointer to the end of the file.
+
+        """
+        # Open up filepath differently depending on if it already exists
+        if os.path.isfile(filepath):
+            op_fd = open(filepath, 'r+')
+            lines = op_fd.read().splitlines()
+        else:
+            lines = []
+            op_fd = open(filepath, 'w')
+
+        return op_fd, lines
 
     def _recover_checkpoint(self, cp_dir):
         """Recover a specific checkpoint.
@@ -237,13 +245,13 @@ class Reverter(object):
         """
         protected_files = []
 
-        # Check modified files
+        # Get temp modified files
         temp_path = os.path.join(self.direc['temp'], "FILEPATHS")
         if os.path.isfile(temp_path):
             with open(temp_path, 'r') as protected_fd:
                 protected_files.extend(protected_fd.read().splitlines())
 
-        # Check new files
+        # Get temp new files
         new_path = os.path.join(self.direc['temp'], "NEW_FILES")
         if os.path.isfile(new_path):
             with open(new_path, 'r') as protected_fd:
@@ -285,14 +293,23 @@ class Reverter(object):
             cp_dir = self.direc['progress']
 
         le_util.make_or_verify_dir(cp_dir, 0o755, os.geteuid())
+
+        # Append all new files (that aren't already registered)
+        new_fd = None
         try:
-            with open(os.path.join(cp_dir, "NEW_FILES"), 'a') as new_fd:
-                for file_path in files:
-                    new_fd.write("{0}{1}".format(file_path, os.linesep))
+            new_fd, ex_files = self._read_and_append(
+                os.path.join(cp_dir, "NEW_FILES"))
+
+            for path in files:
+                if path not in ex_files:
+                    new_fd.write("{0}{1}".format(path, os.linesep))
         except (IOError, OSError):
             logging.error("Unable to register file creation(s) - %s", files)
             raise errors.LetsEncryptReverterError(
                 "Unable to register file creation(s) - {0}".format(files))
+        finally:
+            if new_fd is not None:
+                new_fd.close()
 
     def recovery_routine(self):
         """Revert all previously modified files.
@@ -397,14 +414,15 @@ class Reverter(object):
         # It is possible save checkpoints faster than 1 per second resulting in
         # collisions in the naming convention.
         cur_time = time.time()
-        for i in range(10):
+        for _ in range(10):
             final_dir = os.path.join(self.direc['backup'], str(cur_time))
             try:
                 os.rename(self.direc['progress'], final_dir)
                 return
             except OSError:
-                # It is possible if the checkpoints are made extremely quickly that
-                # There will be a naming collision, increment and try again
+                # It is possible if the checkpoints are made extremely quickly
+                # that will result in a name collision.
+                # If so, increment and try again
                 cur_time += .01
 
         # After 10 attempts... something is probably wrong here...

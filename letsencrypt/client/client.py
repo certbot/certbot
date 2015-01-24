@@ -22,7 +22,7 @@ from letsencrypt.client import le_util
 from letsencrypt.client import network
 
 
-# it's weird to point to chocolate servers via raw IPv6 addresses, and
+# it's weird to point to ACME servers via raw IPv6 addresses, and
 # such addresses can be %SCARY in some contexts, so out of paranoia
 # let's disable them by default
 ALLOW_RAW_IPV6_SERVER = False
@@ -48,6 +48,7 @@ class Client(object):
     zope.interface.implements(interfaces.IAuthenticator)
 
     Key = collections.namedtuple("Key", "file pem")
+    # Note: form is the type of data, "pem" or "der"
     CSR = collections.namedtuple("CSR", "file data form")
 
     def __init__(self, server, authkey, dv_auth, installer):
@@ -65,9 +66,12 @@ class Client(object):
 
         self.installer = installer
 
-        client_auth = client_authenticator.ClientAuthenticator(server)
-        self.auth_handler = auth_handler.AuthHandler(
-            dv_auth, client_auth, self.network)
+        if dv_auth is not None:
+            client_auth = client_authenticator.ClientAuthenticator(server)
+            self.auth_handler = auth_handler.AuthHandler(
+                dv_auth, client_auth, self.network)
+        else:
+            self.auth_handler = None
 
     def obtain_certificate(self, domains, csr=None,
                            cert_path=CONFIG.CERT_PATH,
@@ -86,7 +90,12 @@ class Client(object):
         :rtype: `tuple` of `str`
 
         """
+        if self.auth_handler is None:
+            logging.warning("Unable to obtain a certificate, because client "
+                            "does not have a valid auth handler.")
+
         sanity_check_names(domains)
+
         # Request Challenges
         for name in domains:
             self.auth_handler.add_chall_msg(
@@ -180,6 +189,11 @@ class Client(object):
         :param str chain_file: chain file path
 
         """
+        if self.installer is None:
+            logging.warning("No installer specified, client is unable to deploy"
+                            "the certificate")
+            raise errors.LetsEncryptClientError("No installer available")
+
         chain = None if chain_file is None else os.path.abspath(chain_file)
 
         for dom in domains:
@@ -203,7 +217,15 @@ class Client(object):
         :param redirect: If traffic should be forwarded from HTTP to HTTPS.
         :type redirect: bool or None
 
+        :raises :class:`letsencrypt.client.errors.LetsEncryptClientError`: if
+            no installer is specified in the client.
+
         """
+        if self.installer is None:
+            logging.warning("No installer is specified, there isn't any "
+                            "configuration to enhance.")
+            raise errors.LetsEncryptClientError("No installer available")
+
         if redirect is None:
             redirect = zope.component.getUtility(
                 interfaces.IDisplay).redirect_by_default()

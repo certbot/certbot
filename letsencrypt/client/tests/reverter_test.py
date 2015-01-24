@@ -7,6 +7,7 @@ import unittest
 
 import mock
 
+
 # pylint: disable=invalid-name,protected-access,too-many-instance-attributes
 class ReverterCheckpointLocalTest(unittest.TestCase):
     """Test the Reverter Class."""
@@ -104,6 +105,16 @@ class ReverterCheckpointLocalTest(unittest.TestCase):
         self.assertFalse(os.path.isfile(self.config2))
         self.assertFalse(os.path.isfile(config3))
         self.assertFalse(os.path.isfile(config4))
+
+    def test_multiple_registration_same_file(self):
+        self.reverter.register_file_creation(True, self.config1)
+        self.reverter.register_file_creation(True, self.config1)
+        self.reverter.register_file_creation(True, self.config1)
+        self.reverter.register_file_creation(True, self.config1)
+
+        files = get_new_files(self.direc['temp'])
+
+        self.assertEqual(len(files), 1)
 
     def test_register_file_creation_write_error(self):
         from letsencrypt.client.errors import LetsEncryptReverterError
@@ -425,6 +436,11 @@ def get_save_notes(dire):
 def get_filepaths(dire):
     """Get Filepaths"""
     return read_in(os.path.join(dire, 'FILEPATHS'))
+
+
+def get_new_files(dire):
+    """Get new files."""
+    return read_in(os.path.join(dire, 'NEW_FILES')).splitlines()
 
 
 def read_in(path):
