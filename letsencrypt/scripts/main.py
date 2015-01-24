@@ -94,7 +94,8 @@ def main():  # pylint: disable=too-many-statements
         display_eula()
 
     # Use the same object if possible
-    if interfaces.IAuthenticator.providedBy(installer):
+    if interfaces.IAuthenticator.providedBy(installer):  # pylint: disable=no-member
+
         auth = installer
     else:
         auth = determine_authenticator()
