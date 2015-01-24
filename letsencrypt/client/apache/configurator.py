@@ -532,7 +532,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         :param str domain: domain to enhance
         :param str enhancement: enhancement type defined in
-            :class:`letsencrypt.client.CONFIG.ENHANCEMENTS
+            :class:`letsencrypt.client.CONFIG.ENHANCEMENTS`
         :param options: options for the enhancement
         :type options: See :class:`letsencrypt.client.CONFIG.ENHANCEMENTS`
             documentation for appropriate parameter.
@@ -979,7 +979,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             fulfilled by configurator.
 
         :returns: list of responses. All responses are returned in the same
-           order as received by the perform function.  A None response
+            order as received by the perform function. A None response
             indicates the challenge was not perfromed.
         :rtype: list
 
