@@ -30,7 +30,7 @@ class RecoveryContact(object):
         self.contact = contact
         self.poll_delay = poll_delay
 
-    def perform(self, quiet=True):
+    def perform(self, quiet=True):  # pylint: disable=missing-docstring
         d = dialog.Dialog()  # pylint: disable=invalid-name
         if quiet:
             if self.success_url:
@@ -50,7 +50,7 @@ class RecoveryContact(object):
 
         return True
 
-    def cleanup(self):  # pylint: disable=no-self-use
+    def cleanup(self):  # pylint: disable=no-self-use,missing-docstring
         return
 
     def get_display_string(self):
@@ -109,7 +109,7 @@ class RecoveryContact(object):
 
         return ans.startswith('y') or ans.startswith('Y')
 
-    def generate_response(self):
+    def generate_response(self):  # pylint: disable=missing-docstring
         if not self.token:
             return {"type": "recoveryContact"}
         return {

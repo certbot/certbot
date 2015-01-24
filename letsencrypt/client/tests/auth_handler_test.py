@@ -410,12 +410,12 @@ class PathSatisfiedTest(unittest.TestCase):
             self.assertFalse(self.handler._path_satisfied(dom[i]))
 
 
-def gen_auth_resp(chall_list):
+def gen_auth_resp(chall_list):  # pylint: disable=missing-docstring
     return ["%s%s" % (type(chall).__name__, chall.domain)
             for chall in chall_list]
 
 
-def gen_path(str_list, challenges):
+def gen_path(str_list, challenges):  # pylint: disable=missing-docstring
     path = []
     for i, chall in enumerate(challenges):
         for str_chall in str_list:
