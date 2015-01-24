@@ -41,7 +41,7 @@ def main():
                         help="Revert configuration N number of checkpoints.")
     parser.add_argument("-B", "--keysize", dest="key_size", type=int,
                         default=CONFIG.RSA_KEY_SIZE, metavar="N",
-                        help="RSA key shall be sized N bits. [%d]" % CONFIG.RSA_KEY_SIZE)
+                        help="RSA key shall be sized N bits. [%(default)s]")
     parser.add_argument("-k", "--revoke", dest="revoke", action="store_true",
                         help="Revoke a certificate.")
     parser.add_argument("-v", "--view-config-changes",
@@ -244,7 +244,7 @@ def rollback(checkpoints):
         if not yes:
             logging.info("The error message is above.")
             logging.info(
-                "Configuration was not rolled back.".format(os.linesep))
+                "Configuration was not rolled back.")
             return
 
         logging.info("Rolling back using the Reverter module")

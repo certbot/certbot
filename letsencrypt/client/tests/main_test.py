@@ -8,9 +8,9 @@ import zope.component
 class RollbackTest(unittest.TestCase):
     """Test the rollback function."""
     def setUp(self):
-       self.m_install = mock.MagicMock()
-       self.m_input = mock.MagicMock()
-       zope.component.getUtility = self.m_input
+        self.m_install = mock.MagicMock()
+        self.m_input = mock.MagicMock()
+        zope.component.getUtility = self.m_input
 
     def _call(self, checkpoints):
         from letsencrypt.scripts.main import rollback
