@@ -12,8 +12,9 @@ from letsencrypt.client import client
 from letsencrypt.client import CONFIG
 from letsencrypt.client import le_util
 
-# pylint: disable=too-few-public-methods
+
 class DvsniGenCertTest(unittest.TestCase):
+    # pylint: disable=too-few-public-methods
     """Tests for letsencrypt.client.challenge_util.dvsni_gen_cert."""
 
     def test_standard(self):

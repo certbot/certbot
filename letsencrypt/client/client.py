@@ -132,8 +132,8 @@ class Client(object):
         return self.network.send_and_receive_expected(
             acme.certificate_request(csr_der, self.authkey.pem), "certificate")
 
-    # pylint: disable=no-self-use
     def save_certificate(self, certificate_dict, cert_path, chain_path):
+        # pylint: disable=no-self-use
         """Saves the certificate received from the ACME server.
 
         :param dict certificate_dict: certificate message from server

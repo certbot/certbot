@@ -41,10 +41,12 @@ class NcursesDisplay(CommonDisplayMixin):
         self.width = width
         self.height = height
 
-    def generic_notification(self, message):  # pylint: disable=missing-docstring
+    def generic_notification(self, message):
+        # pylint: disable=missing-docstring
         self.dialog.msgbox(message, width=self.width)
 
-    def generic_menu(self, message, choices, unused_input_text=""):  # pylint: disable=missing-docstring
+    def generic_menu(self, message, choices, unused_input_text=""):
+        # pylint: disable=missing-docstring
         # Can accept either tuples or just the actual choices
         if choices and isinstance(choices[0], tuple):
             code, selection = self.dialog.menu(
@@ -60,7 +62,8 @@ class NcursesDisplay(CommonDisplayMixin):
     def generic_input(self, message):  # pylint: disable=missing-docstring
         return self.dialog.inputbox(message)
 
-    def generic_yesno(self, message, yes_label="Yes", no_label="No"):  # pylint: disable=missing-docstring
+    def generic_yesno(self, message, yes_label="Yes", no_label="No"):
+        # pylint: disable=missing-docstring
         return self.dialog.DIALOG_OK == self.dialog.yesno(
             message, self.height, self.width,
             yes_label=yes_label, no_label=no_label)
@@ -72,7 +75,8 @@ class NcursesDisplay(CommonDisplayMixin):
             choices=choices)
         return code, [str(s) for s in names]
 
-    def success_installation(self, domains):  # pylint: disable=missing-docstring
+    def success_installation(self, domains):
+        # pylint: disable=missing-docstring
         self.dialog.msgbox(
             "\nCongratulations! You have successfully enabled "
             + gen_https_names(domains) + "!", width=self.width)
@@ -118,13 +122,15 @@ class FileDisplay(CommonDisplayMixin):
         super(FileDisplay, self).__init__()
         self.outfile = outfile
 
-    def generic_notification(self, message):  # pylint: disable=missing-docstring
+    def generic_notification(self, message):
+        # pylint: disable=missing-docstring
         side_frame = '-' * 79
         msg = textwrap.fill(message, 80)
         self.outfile.write("\n%s\n%s\n%s\n" % (side_frame, msg, side_frame))
         raw_input("Press Enter to Continue")
 
-    def generic_menu(self, message, choices, input_text=""):  # pylint: disable=missing-docstring
+    def generic_menu(self, message, choices, input_text=""):
+        # pylint: disable=missing-docstring
         # Can take either tuples or single items in choices list
         if choices and isinstance(choices[0], tuple):
             choices = ["%s - %s" % (c[0], c[1]) for c in choices]
@@ -144,7 +150,8 @@ class FileDisplay(CommonDisplayMixin):
 
         return code, (selection - 1)
 
-    def generic_input(self, message):  # pylint: disable=no-self-use,missing-docstring
+    def generic_input(self, message):
+        # pylint: disable=no-self-use,missing-docstring
         ans = raw_input("%s (Enter c to cancel)\n" % message)
 
         if ans.startswith('c') or ans.startswith('C'):
@@ -152,7 +159,8 @@ class FileDisplay(CommonDisplayMixin):
         else:
             return OK, ans
 
-    def generic_yesno(self, message, unused_yes_label="", unused_no_label=""):  # pylint: disable=missing-docstring
+    def generic_yesno(self, message, unused_yes_label="", unused_no_label=""):
+        # pylint: disable=missing-docstring
         self.outfile.write("\n%s\n" % textwrap.fill(message, 80))
         ans = raw_input("y/n: ")
         return ans.startswith('y') or ans.startswith('Y')
@@ -202,7 +210,8 @@ class FileDisplay(CommonDisplayMixin):
 
         return code, selection
 
-    def success_installation(self, domains):  # pylint: disable=missing-docstring
+    def success_installation(self, domains):
+        # pylint: disable=missing-docstring
         side_frame = '*' * 79
         msg = textwrap.fill("Congratulations! You have successfully "
                             "enabled %s!" % gen_https_names(domains))

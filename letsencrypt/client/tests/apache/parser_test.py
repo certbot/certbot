@@ -42,8 +42,7 @@ class ApacheParserTest(util.ApacheTest):
         file_path = os.path.join(
             self.config_path, "sites-available", "letsencrypt.conf")
 
-        # pylint: disable=protected-access
-        self.parser._parse_file(file_path)
+        self.parser._parse_file(file_path)  # pylint: disable=protected-access
 
         # search for the httpd incl
         matches = self.parser.aug.match(

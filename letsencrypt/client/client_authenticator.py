@@ -25,8 +25,7 @@ class ClientAuthenticator(object):
         """
         self.rec_token = recovery_token.RecoveryToken(server)
 
-    # pylint: disable=unused-argument,no-self-use
-    def get_chall_pref(self, domain):
+    def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use
         """Return list of challenge preferences."""
         return ["recoveryToken"]
 

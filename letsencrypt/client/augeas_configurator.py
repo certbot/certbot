@@ -324,9 +324,9 @@ class AugeasConfigurator(object):
 
         return True, ""
 
-    # pylint: disable=no-self-use, anomalous-backslash-in-string
     def register_file_creation(self, temporary, *files):
-        """Register the creation of all files during letsencrypt execution.
+        # pylint: disable=no-self-use
+        r"""Register the creation of all files during letsencrypt execution.
 
         Call this method before writing to the file to make sure that the
         file will be cleaned up if the program exits unexpectedly.
@@ -375,8 +375,7 @@ class AugeasConfigurator(object):
             # Need to reload configuration after these changes take effect
             self.aug.load()
 
-    # pylint: disable=no-self-use
-    def _remove_contained_files(self, file_list):
+    def _remove_contained_files(self, file_list):  # pylint: disable=no-self-use
         """Erase all files contained within file_list.
 
         :param str file_list: file containing list of file paths to be deleted
@@ -408,8 +407,8 @@ class AugeasConfigurator(object):
 
         return True
 
-    # pylint: disable=no-self-use
     def _finalize_checkpoint(self, cp_dir, title):
+        # pylint: disable=no-self-use
         """Move IN_PROGRESS checkpoint to timestamped checkpoint.
 
         Adds title to cp_dir CHANGES_SINCE
