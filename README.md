@@ -72,7 +72,11 @@ style](#coding-style)**. The following tools are there to help you:
 
 ## Documentation
 
-In order to generate the sphinx documentation, run the following commands.
+The official documentation is available at
+https://letsencrypt.readthedocs.org.
+
+In order to generate the Sphinx documentation, run the following
+commands.
 
 ```
 ./venv/bin/python setup.py docs
@@ -80,7 +84,7 @@ cd docs
 make clean html SPHINXBUILD=../venv/bin/sphinx-build
 ```
 
-This should generate documentation in the /lets-encrypt-preview/docs/_build/html
+This should generate documentation in the `docs/_build/html`
 directory.
 
 ### Coding style
