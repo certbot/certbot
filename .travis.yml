@@ -1,4 +1,4 @@
-# To mimic README.md installation and hacking instructions as much as
+# To mimic README.rst installation and hacking instructions as much as
 # possible, this config file instructs Travis CI to create a build
 # environment for each supported Python version, and then for each of
 # those it runs tox with two environments: lint and pyXX corresponding
