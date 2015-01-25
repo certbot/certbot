@@ -36,7 +36,7 @@ In general:
 
 ```
 sudo apt-get install python python-setuptools python-virtualenv \
-  python-dev gcc swig dialog libaugeas0 libssl-dev
+  python-dev gcc swig dialog libaugeas0 libssl-dev ca-certificates
 ```
 
 #### Mac OSX
@@ -77,7 +77,7 @@ In order to generate the sphinx documentation, run the following commands.
 ```
 ./venv/bin/python setup.py docs
 cd docs
-make html SPHINXBUILD='../venv/bin/python ../venv/bin/sphinx-build'
+make clean html SPHINXBUILD=../venv/bin/sphinx-build
 ```
 
 This should generate documentation in the /lets-encrypt-preview/docs/_build/html

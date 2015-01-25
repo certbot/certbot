@@ -5,7 +5,6 @@ from setuptools import setup
 install_requires = [
     'argparse',
     'jsonschema',
-    'M2Crypto',
     'mock',
     'pycrypto',
     'python-augeas',
@@ -13,6 +12,9 @@ install_requires = [
     'requests',
     'zope.component',
     'zope.interface',
+    # order of items in install_requires DOES matter and M2Crypto has
+    # to go last, see #152
+    'M2Crypto',
 ]
 
 docs_extras = [
@@ -24,6 +26,7 @@ testing_extras = [
     'nose',
     'nosexcover',
     'pylint<1.4',  # py2.6 compat, c.f #97
+    'astroid<1.3.0',  # py2.6 compat, c.f. #187
     'tox',
 ]
 

@@ -1,13 +1,35 @@
+"""Common utilities for letsencrypt.client.apache."""
 import os
 import pkg_resources
 import shutil
 import tempfile
+import unittest
 
 import mock
 
 from letsencrypt.client import CONFIG
 from letsencrypt.client.apache import configurator
 from letsencrypt.client.apache import obj
+
+
+class ApacheTest(unittest.TestCase):
+
+    def setUp(self):
+        super(ApacheTest, self).setUp()
+
+        self.temp_dir, self.config_dir, self.work_dir = dir_setup(
+            "debian_apache_2_4/two_vhost_80")
+
+        self.ssl_options = setup_apache_ssl_options(self.config_dir)
+
+        # Final slash is currently important
+        self.config_path = os.path.join(
+            self.temp_dir, "debian_apache_2_4/two_vhost_80/apache2/")
+
+        self.rsa256_file = pkg_resources.resource_filename(
+            "letsencrypt.client.tests", 'testdata/rsa256_key.pem')
+        self.rsa256_pem = pkg_resources.resource_string(
+            "letsencrypt.client.tests", 'testdata/rsa256_key.pem')
 
 
 def dir_setup(test_dir="debian_apache_2_4/two_vhost_80"):

@@ -226,6 +226,7 @@ def get_cert_info(filename):
     .. todo:: Pub key is assumed to be RSA... find a good solution to allow EC.
 
     :param str filename: Name of file containing certificate in PEM format.
+
     :rtype: dict
 
     """
@@ -233,8 +234,8 @@ def get_cert_info(filename):
     cert = M2Crypto.X509.load_cert(filename)
 
     try:
-        san = cert.get_ext('subjectAltName').get_value()
-    except:
+        san = cert.get_ext("subjectAltName").get_value()
+    except LookupError:
         san = ""
 
     return {
@@ -251,5 +252,6 @@ def get_cert_info(filename):
 
 
 def b64_cert_to_pem(b64_der_cert):
+    """Convert JOSE Base-64 encoded DER cert to PEM."""
     return M2Crypto.X509.load_cert_der_string(
         le_util.jose_b64decode(b64_der_cert)).as_pem()

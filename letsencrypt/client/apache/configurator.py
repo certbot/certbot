@@ -423,7 +423,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                               "based virtual host", addr)
                 self.add_name_vhost(addr)
 
-    def make_vhost_ssl(self, nonssl_vhost):
+    def make_vhost_ssl(self, nonssl_vhost):  # pylint: disable=too-many-locals
         """Makes an ssl_vhost version of a nonssl_vhost.
 
         Duplicates vhost and adds default ssl options
@@ -519,8 +519,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         return ssl_vhost
 
-    # pylint: disable=no-method-argument,no-self-use,unused-argument
-    def supported_enhancements():
+    def supported_enhancements(self):  # pylint: disable=no-self-use
         """Returns currently supported enhancements."""
         return ["redirect"]
 
@@ -529,7 +528,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         :param str domain: domain to enhance
         :param str enhancement: enhancement type defined in
-            :class:`letsencrypt.client.CONFIG.ENHANCEMENTS
+            :class:`letsencrypt.client.CONFIG.ENHANCEMENTS`
         :param options: options for the enhancement
         :type options: See :class:`letsencrypt.client.CONFIG.ENHANCEMENTS`
             documentation for appropriate parameter.
@@ -544,7 +543,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         except errors.LetsEncryptConfiguratorError:
             logging.warn("Failed %s for %s", enhancement, domain)
 
-    def _enable_redirect(self, ssl_vhost, options):
+    def _enable_redirect(self, ssl_vhost, unused_options):
         """Redirect all equivalent HTTP traffic to ssl_vhost.
 
         .. todo:: This enhancement should be rewritten and will unfortunately
@@ -559,8 +558,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :param ssl_vhost: Destination of traffic, an ssl enabled vhost
         :type ssl_vhost: :class:`letsencrypt.client.apache.obj.VirtualHost`
 
-        :param options: Not currently used
-        :type options: Not Available
+        :param unused_options: Not currently used
+        :type unused_options: Not Available
 
         :returns: Success, general_vhost (HTTP vhost)
         :rtype: (bool, :class:`letsencrypt.client.apache.obj.VirtualHost`)
@@ -886,7 +885,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         return apache_restart()
 
-    def config_test(self):
+    def config_test(self):  # pylint: disable=no-self-use
         """Check the configuration of Apache for errors.
 
         :returns: Success
@@ -976,7 +975,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             fulfilled by configurator.
 
         :returns: list of responses. All responses are returned in the same
-           order as received by the perform function.  A None response
+            order as received by the perform function. A None response
             indicates the challenge was not perfromed.
         :rtype: list
 

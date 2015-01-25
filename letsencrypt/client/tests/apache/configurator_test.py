@@ -1,6 +1,5 @@
 """Test for letsencrypt.client.apache.configurator."""
 import os
-import pkg_resources
 import re
 import shutil
 import unittest
@@ -15,30 +14,19 @@ from letsencrypt.client.apache import configurator
 from letsencrypt.client.apache import obj
 from letsencrypt.client.apache import parser
 
-from letsencrypt.client.tests.apache import config_util
+from letsencrypt.client.tests.apache import util
 
 
-class TwoVhost80Test(unittest.TestCase):
+class TwoVhost80Test(util.ApacheTest):
     """Test two standard well configured HTTP vhosts."""
 
     def setUp(self):
-        self.temp_dir, self.config_dir, self.work_dir = config_util.dir_setup(
-            "debian_apache_2_4/two_vhost_80")
+        super(TwoVhost80Test, self).setUp()
 
-        self.ssl_options = config_util.setup_apache_ssl_options(self.config_dir)
+        self.config = util.get_apache_configurator(
+            self.config_path, self.config_dir, self.work_dir, self.ssl_options)
 
-        # Final slash is currently important
-        self.config_path = os.path.join(
-            self.temp_dir, "debian_apache_2_4/two_vhost_80/apache2/")
-
-        with mock.patch("letsencrypt.client.apache.configurator."
-                        "mod_loaded") as mock_load:
-            mock_load.return_value = True
-            self.config = config_util.get_apache_configurator(
-                self.config_path, self.config_dir, self.work_dir,
-                self.ssl_options)
-
-        self.vh_truth = config_util.get_vh_truth(
+        self.vh_truth = util.get_vh_truth(
             self.temp_dir, "debian_apache_2_4/two_vhost_80")
 
     def tearDown(self):
@@ -172,12 +160,7 @@ class TwoVhost80Test(unittest.TestCase):
     def test_perform(self, mock_restart, mock_dvsni_perform):
         # Only tests functionality specific to configurator.perform
         # Note: As more challenges are offered this will have to be expanded
-        rsa256_file = pkg_resources.resource_filename(
-            "letsencrypt.client.tests", 'testdata/rsa256_key.pem')
-        rsa256_pem = pkg_resources.resource_string(
-            "letsencrypt.client.tests", 'testdata/rsa256_key.pem')
-
-        auth_key = client.Client.Key(rsa256_file, rsa256_pem)
+        auth_key = client.Client.Key(self.rsa256_file, self.rsa256_pem)
         chall1 = challenge_util.DvsniChall(
             "encryption-example.demo",
             "jIq_Xy1mXGN37tb4L6Xj_es58fW571ZNyXekdZzhh7Q",

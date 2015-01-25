@@ -2,7 +2,7 @@
 
 
 class Addr(object):
-    """Represents an Apache VirtualHost address.
+    r"""Represents an Apache VirtualHost address.
 
     :param str addr: addr part of vhost address
     :param str port: port number or \*, or ""
@@ -58,7 +58,7 @@ class VirtualHost(object):
 
     """
 
-    def __init__(self, filep, path, addrs, ssl, enabled, names=None):
+    def __init__(self, filep, path, addrs, ssl, enabled, names=None):  # pylint: disable=too-many-arguments
         """Initialize a VH."""
         self.filep = filep
         self.path = path

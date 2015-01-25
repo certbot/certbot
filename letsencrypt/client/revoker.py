@@ -57,12 +57,13 @@ class Revoker(object):
             return
 
         c_sha1_vh = {}
+
         if self.installer is not None:
             for (cert, _, path) in self.installer.get_all_certs_keys():
                 try:
                     c_sha1_vh[M2Crypto.X509.load_cert(
                         cert).get_fingerprint(md='sha1')] = path
-                except:
+                except M2Crypto.X509.X509Error:
                     continue
 
         with open(list_file, 'rb') as csvfile:

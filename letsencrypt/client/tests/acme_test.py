@@ -45,7 +45,8 @@ class ACMEObjectValidateTest(unittest.TestCase):
 class PrettyTest(unittest.TestCase):
     """Tests for letsencrypt.client.acme.pretty."""
 
-    def _call(self, json_string):
+    @classmethod
+    def _call(cls, json_string):
         from letsencrypt.client.acme import pretty
         return pretty(json_string)
 
@@ -64,31 +65,19 @@ class MessageFactoriesTest(unittest.TestCase):
         self.nonce = '\xec\xd6\xf2oYH\xeb\x13\xd5#q\xe0\xdd\xa2\x92\xa9'
         self.b64nonce = '7Nbyb1lI6xPVI3Hg3aKSqQ'
 
-    def _validate(self, msg):
+    @classmethod
+    def _validate(cls, msg):
         from letsencrypt.client.acme import SCHEMATA
         jsonschema.validate(msg, SCHEMATA[msg['type']])
-
-    def _signature(self, sig):
-        return {
-            'nonce': self.b64nonce,
-            'alg': 'RS256',
-            'jwk': {
-                'kty': 'RSA',
-                'e': 'AQAB',
-                'n': 'rHVztFHtH92ucFJD_N_HW9AsdRsUuHUBBBDlHwNlRd3fp5'
-                     '80rv2-6QWE30cWgdmJS86ObRz6lUTor4R0T-3C5Q',
-            },
-            'sig': sig,
-        }
 
     def test_challenge_request(self):
         from letsencrypt.client.acme import challenge_request
         msg = challenge_request('example.com')
+        self._validate(msg)
         self.assertEqual(msg, {
             'type': 'challengeRequest',
             'identifier': 'example.com',
         })
-        self._validate(msg)
 
     def test_authorization_request(self):
         from letsencrypt.client.acme import authorization_request
@@ -112,51 +101,57 @@ class MessageFactoriesTest(unittest.TestCase):
             self.nonce,
         )
 
+        self._validate(msg)
+        self.assertEqual(
+            msg.pop('signature')['sig'],
+            'VkpReso87ogwGul2MGck96TkYs4QoblIgNthgrm9O7EBGlzCRCnTHnx'
+            'bj6loqaC4f5bn1rgS927Gp1Kvbqnmqg'
+        )
         self.assertEqual(msg, {
             'type': 'authorizationRequest',
             'sessionID': 'aefoGaavieG9Wihuk2aufai3aeZ5EeW4',
             'nonce': 'czpsrF0KMH6dgajig3TGHw',
-            'signature': self._signature(
-                'VkpReso87ogwGul2MGck96TkYs4QoblIgNthgrm9O7EBGlzCRCnTHnx'
-                'bj6loqaC4f5bn1rgS927Gp1Kvbqnmqg'),
             'responses': responses,
         })
-        self._validate(msg)
 
     def test_certificate_request(self):
         from letsencrypt.client.acme import certificate_request
         msg = certificate_request(
             'TODO: real DER CSR?', self.privkey, self.nonce)
+        self._validate(msg)
+        self.assertEqual(
+            msg.pop('signature')['sig'],
+            'HEQVN4MU1yDrArP2T7WZQ12XlHCn5DgTPgb5eWT5_vjRPppLSNe6uWE'
+            'x9SFwG9d9umqn49nZCSW7uskA2lcW6Q'
+        )
         self.assertEqual(msg, {
             'type': 'certificateRequest',
             'csr': 'VE9ETzogcmVhbCBERVIgQ1NSPw',
-            'signature': self._signature(
-                'HEQVN4MU1yDrArP2T7WZQ12XlHCn5DgTPgb5eWT5_vjRPppLSNe6uWE'
-                'x9SFwG9d9umqn49nZCSW7uskA2lcW6Q'),
         })
-        self._validate(msg)
 
     def test_revocation_request(self):
         from letsencrypt.client.acme import revocation_request
         msg = revocation_request(
             'TODO: real DER cert?', self.privkey, self.nonce)
+        self._validate(msg)
+        self.assertEqual(
+            msg.pop('signature')['sig'],
+            'ABXA1IsyTalTXIojxmGnIUGyZASmvqEvTQ98jJ5KFs2FTswLEmsoqFX'
+            'fU6l5_fous-tsbXOfLN-7PjfZ5XWPvg'
+        )
         self.assertEqual(msg, {
             'type': 'revocationRequest',
             'certificate': 'VE9ETzogcmVhbCBERVIgY2VydD8',
-            'signature': self._signature(
-                'ABXA1IsyTalTXIojxmGnIUGyZASmvqEvTQ98jJ5KFs2FTswLEmsoqFX'
-                'fU6l5_fous-tsbXOfLN-7PjfZ5XWPvg'),
         })
-        self._validate(msg)
 
     def test_status_request(self):
         from letsencrypt.client.acme import status_request
         msg = status_request(u'O7-s9MNq1siZHlgrMzi9_A')
+        self._validate(msg)
         self.assertEqual(msg, {
             'type': 'statusRequest',
             'token': u'O7-s9MNq1siZHlgrMzi9_A',
         })
-        self._validate(msg)
 
 
 if __name__ == '__main__':
