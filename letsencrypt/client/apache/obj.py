@@ -43,8 +43,7 @@ class Addr(object):
         return self.__class__((self.tup[0], port))
 
 
-# pylint: disable=too-few-public-methods
-class VirtualHost(object):
+class VirtualHost(object):  # pylint: disable=too-few-public-methods
     """Represents an Apache Virtualhost.
 
     :ivar str filep: file path of VH
@@ -58,7 +57,8 @@ class VirtualHost(object):
 
     """
 
-    def __init__(self, filep, path, addrs, ssl, enabled, names=None):  # pylint: disable=too-many-arguments
+    def __init__(self, filep, path, addrs, ssl, enabled, names=None):
+        # pylint: disable=too-many-arguments
         """Initialize a VH."""
         self.filep = filep
         self.path = path

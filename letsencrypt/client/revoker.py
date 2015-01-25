@@ -118,8 +118,7 @@ class Revoker(object):
         else:
             exit(0)
 
-    # pylint: disable=no-self-use
-    def remove_cert_key(self, cert):
+    def remove_cert_key(self, cert):  # pylint: disable=no-self-use
         """Remove certificate and key.
 
         :param dict cert: Cert dict used throughout revocation

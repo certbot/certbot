@@ -338,9 +338,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         return vhs
 
-    # pylint: disable=anomalous-backslash-in-string
     def is_name_vhost(self, target_addr):
-        """Returns if vhost is a name based vhost
+        r"""Returns if vhost is a name based vhost
 
         NameVirtualHost was deprecated in Apache 2.4 as all VirtualHosts are
         now NameVirtualHosts. If version is earlier than 2.4, check if addr
@@ -958,10 +957,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     ###########################################################################
     # Challenges Section
     ###########################################################################
-    # pylint: disable=no-self-use, unused-argument
-    def get_chall_pref(self, domain):
+    def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use
         """Return list of challenge preferences."""
-
         return ["dvsni"]
 
     def perform(self, chall_list):
