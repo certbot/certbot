@@ -35,7 +35,7 @@ CERT_KEY_BACKUP = os.path.join(WORK_DIR, "keys-certs/")
 REV_TOKENS_DIR = os.path.join(WORK_DIR, "revocation_tokens/")
 """Directory where all revocation tokens are saved."""
 
-KEY_DIR = os.path.join(SERVER_ROOT, "ssl/")
+KEY_DIR = os.path.join(SERVER_ROOT, "keys/")
 """Where all keys should be stored"""
 
 CERT_DIR = os.path.join(SERVER_ROOT, "certs/")
