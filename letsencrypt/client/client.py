@@ -342,7 +342,8 @@ def init_key(key_size):
         key_pem = crypto_util.make_key(key_size)
     except ValueError as err:
         logging.fatal(str(err))
-        logging.info("Note: The default RSA key size is %d bits.", CONFIG.RSA_KEY_SIZE)
+        logging.info("Note: The default RSA key size is %d bits.",
+                     CONFIG.RSA_KEY_SIZE)
         sys.exit(1)
 
     # Save file

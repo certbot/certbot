@@ -11,22 +11,17 @@ import zope.component
 from letsencrypt.client import display
 from letsencrypt.client import errors
 from letsencrypt.client.apache import parser
-from letsencrypt.client.tests.apache import config_util
+
+from letsencrypt.client.tests.apache import util
 
 
-class ApacheParserTest(unittest.TestCase):
+class ApacheParserTest(util.ApacheTest):
     """Apache Parser Test."""
+
     def setUp(self):
+        super(ApacheParserTest, self).setUp()
+
         zope.component.provideUtility(display.FileDisplay(sys.stdout))
-
-        self.temp_dir, self.config_dir, self.work_dir = config_util.dir_setup(
-            "debian_apache_2_4/two_vhost_80")
-
-        self.ssl_options = config_util.setup_apache_ssl_options(self.config_dir)
-
-        # Final slash is currently important
-        self.config_path = os.path.join(
-            self.temp_dir, "debian_apache_2_4/two_vhost_80/apache2/")
 
         self.parser = parser.ApacheParser(
             augeas.Augeas(flags=augeas.Augeas.NONE),
@@ -112,3 +107,7 @@ class ApacheParserTest(unittest.TestCase):
 
             self.assertEqual(results["default"], results["listen"])
             self.assertEqual(results["default"], results["name"])
+
+
+if __name__ == '__main__':
+    unittest.main()

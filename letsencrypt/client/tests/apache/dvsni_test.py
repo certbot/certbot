@@ -1,5 +1,4 @@
 """Test for letsencrypt.client.apache.dvsni."""
-import os
 import pkg_resources
 import unittest
 import shutil
@@ -10,26 +9,19 @@ from letsencrypt.client import challenge_util
 from letsencrypt.client import client
 from letsencrypt.client import CONFIG
 
-from letsencrypt.client.tests.apache import config_util
+from letsencrypt.client.tests.apache import util
 
 
-class DvsniPerformTest(unittest.TestCase):
+class DvsniPerformTest(util.ApacheTest):
     """Test the ApacheDVSNI challenge."""
+
     def setUp(self):
-        from letsencrypt.client.apache import dvsni
+        super(DvsniPerformTest, self).setUp()
 
-        self.temp_dir, self.config_dir, self.work_dir = config_util.dir_setup(
-            "debian_apache_2_4/two_vhost_80")
-
-        self.ssl_options = config_util.setup_apache_ssl_options(self.config_dir)
-
-        # Final slash is currently important
-        self.config_path = os.path.join(
-            self.temp_dir, "debian_apache_2_4/two_vhost_80/apache2/")
-
-        config = config_util.get_apache_configurator(
+        config = util.get_apache_configurator(
             self.config_path, self.config_dir, self.work_dir, self.ssl_options)
 
+        from letsencrypt.client.apache import dvsni
         self.sni = dvsni.ApacheDvsni(config)
 
         rsa256_file = pkg_resources.resource_filename(
@@ -144,3 +136,7 @@ class DvsniPerformTest(unittest.TestCase):
                 self.assertEqual(
                     vhost.names,
                     set([str(self.challs[1].nonce + CONFIG.INVALID_EXT)]))
+
+
+if __name__ == '__main__':
+    unittest.main()

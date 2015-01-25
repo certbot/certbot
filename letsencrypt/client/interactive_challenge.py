@@ -1,3 +1,4 @@
+"""Interactive challenge."""
 import textwrap
 
 import dialog
@@ -23,7 +24,7 @@ class InteractiveChallenge(object):
         super(InteractiveChallenge, self).__init__()
         self.string = string
 
-    def perform(self, quiet=True):
+    def perform(self, quiet=True):  # pylint: disable=missing-docstring
         if quiet:
             dialog.Dialog().msgbox(
                 self.get_display_string(), width=self.BOX_SIZE)
@@ -33,7 +34,7 @@ class InteractiveChallenge(object):
 
         return True
 
-    def get_display_string(self):
+    def get_display_string(self):  # pylint: disable=missing-docstring
         return (textwrap.fill(self.string, width=self.BOX_SIZE) +
                 "\n\nPlease Press Enter to Continue")
 

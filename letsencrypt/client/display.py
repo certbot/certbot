@@ -1,3 +1,4 @@
+"""Lets Encrypt display."""
 import textwrap
 
 import dialog
@@ -10,10 +11,10 @@ WIDTH = 72
 HEIGHT = 20
 
 
-class CommonDisplayMixin(object):
-    """methods common to both NcursesDisplay and FileDisplay"""
+class CommonDisplayMixin(object):  # pylint: disable=too-few-public-methods
+    """Mixin with methods common to classes implementing IDisplay."""
 
-    def redirect_by_default(self):
+    def redirect_by_default(self):  # pylint: disable=missing-docstring
         choices = [
             ("Easy", "Allow both HTTP and HTTPS access to these sites"),
             ("Secure", "Make all requests redirect to secure HTTPS access")]
@@ -30,6 +31,8 @@ class CommonDisplayMixin(object):
 
 
 class NcursesDisplay(CommonDisplayMixin):
+    """Ncurses-based display."""
+
     zope.interface.implements(interfaces.IDisplay)
 
     def __init__(self, width=WIDTH, height=HEIGHT):
@@ -38,10 +41,10 @@ class NcursesDisplay(CommonDisplayMixin):
         self.width = width
         self.height = height
 
-    def generic_notification(self, message):
+    def generic_notification(self, message):  # pylint: disable=missing-docstring
         self.dialog.msgbox(message, width=self.width)
 
-    def generic_menu(self, message, choices, input_text=""):
+    def generic_menu(self, message, choices, unused_input_text=""):  # pylint: disable=missing-docstring
         # Can accept either tuples or just the actual choices
         if choices and isinstance(choices[0], tuple):
             code, selection = self.dialog.menu(
@@ -54,26 +57,27 @@ class NcursesDisplay(CommonDisplayMixin):
 
             return code(int(tag) - 1)
 
-    def generic_input(self, message):
+    def generic_input(self, message):  # pylint: disable=missing-docstring
         return self.dialog.inputbox(message)
 
-    def generic_yesno(self, message, yes="Yes", no="No"):
+    def generic_yesno(self, message, yes_label="Yes", no_label="No"):  # pylint: disable=missing-docstring
         return self.dialog.DIALOG_OK == self.dialog.yesno(
-            message, self.height, self.width, yes_label=yes, no_label=no)
+            message, self.height, self.width,
+            yes_label=yes_label, no_label=no_label)
 
-    def filter_names(self, names):
+    def filter_names(self, names):  # pylint: disable=missing-docstring
         choices = [(n, "", 0) for n in names]
         code, names = self.dialog.checklist(
             "Which names would you like to activate HTTPS for?",
             choices=choices)
         return code, [str(s) for s in names]
 
-    def success_installation(self, domains):
+    def success_installation(self, domains):  # pylint: disable=missing-docstring
         self.dialog.msgbox(
             "\nCongratulations! You have successfully enabled "
             + gen_https_names(domains) + "!", width=self.width)
 
-    def display_certs(self, certs):
+    def display_certs(self, certs):  # pylint: disable=missing-docstring
         list_choices = [
             (str(i+1), "%s | %s | %s" %
              (str(c["cn"].ljust(self.width - 39)),
@@ -90,7 +94,7 @@ class NcursesDisplay(CommonDisplayMixin):
             tag = -1
         return code, (int(tag) - 1)
 
-    def confirm_revocation(self, cert):
+    def confirm_revocation(self, cert):  # pylint: disable=missing-docstring
         text = ("Are you sure you would like to revoke the following "
                 "certificate:\n")
         text += cert_info_frame(cert)
@@ -98,7 +102,7 @@ class NcursesDisplay(CommonDisplayMixin):
         return self.dialog.DIALOG_OK == self.dialog.yesno(
             text, width=self.width, height=self.height)
 
-    def more_info_cert(self, cert):
+    def more_info_cert(self, cert):  # pylint: disable=missing-docstring
         text = "Certificate Information:\n"
         text += cert_info_frame(cert)
         print text
@@ -106,20 +110,21 @@ class NcursesDisplay(CommonDisplayMixin):
 
 
 class FileDisplay(CommonDisplayMixin):
+    """File-based display."""
+
     zope.interface.implements(interfaces.IDisplay)
 
     def __init__(self, outfile):
         super(FileDisplay, self).__init__()
         self.outfile = outfile
 
-    def generic_notification(self, message):
+    def generic_notification(self, message):  # pylint: disable=missing-docstring
         side_frame = '-' * 79
-        wm = textwrap.fill(message, 80)
-        text = "\n%s\n%s\n%s\n" % (side_frame, wm, side_frame)
-        self.outfile.write(text)
+        msg = textwrap.fill(message, 80)
+        self.outfile.write("\n%s\n%s\n%s\n" % (side_frame, msg, side_frame))
         raw_input("Press Enter to Continue")
 
-    def generic_menu(self, message, choices, input_text=""):
+    def generic_menu(self, message, choices, input_text=""):  # pylint: disable=missing-docstring
         # Can take either tuples or single items in choices list
         if choices and isinstance(choices[0], tuple):
             choices = ["%s - %s" % (c[0], c[1]) for c in choices]
@@ -139,7 +144,7 @@ class FileDisplay(CommonDisplayMixin):
 
         return code, (selection - 1)
 
-    def generic_input(self, message):
+    def generic_input(self, message):  # pylint: disable=no-self-use,missing-docstring
         ans = raw_input("%s (Enter c to cancel)\n" % message)
 
         if ans.startswith('c') or ans.startswith('C'):
@@ -147,12 +152,12 @@ class FileDisplay(CommonDisplayMixin):
         else:
             return OK, ans
 
-    def generic_yesno(self, message, yes_label="Yes", no_label="No"):
+    def generic_yesno(self, message, unused_yes_label="", unused_no_label=""):  # pylint: disable=missing-docstring
         self.outfile.write("\n%s\n" % textwrap.fill(message, 80))
         ans = raw_input("y/n: ")
         return ans.startswith('y') or ans.startswith('Y')
 
-    def filter_names(self, names):
+    def filter_names(self, names):  # pylint: disable=missing-docstring
         code, tag = self.generic_menu(
             "Choose the names would you like to upgrade to HTTPS?",
             names, "Select the number of the name: ")
@@ -160,7 +165,7 @@ class FileDisplay(CommonDisplayMixin):
         # Make sure to return a list...
         return code, [names[tag]]
 
-    def display_certs(self, certs):
+    def display_certs(self, certs):  # pylint: disable=missing-docstring
         menu_choices = [(str(i+1), str(c["cn"]) + " - " + c["pub_key"] +
                          " - " + str(c["not_before"])[:-6])
                         for i, c in enumerate(certs)]
@@ -197,14 +202,13 @@ class FileDisplay(CommonDisplayMixin):
 
         return code, selection
 
-    def success_installation(self, domains):
-        s_f = '*' * 79
-        wm = textwrap.fill(("Congratulations! You have successfully " +
-                            "enabled %s!") % gen_https_names(domains))
-        msg = "%s\n%s\n%s\n"
-        self.outfile.write(msg % (s_f, wm, s_f))
+    def success_installation(self, domains):  # pylint: disable=missing-docstring
+        side_frame = '*' * 79
+        msg = textwrap.fill("Congratulations! You have successfully "
+                            "enabled %s!" % gen_https_names(domains))
+        self.outfile.write("%s\n%s\n%s\n" % (side_frame, msg, side_frame))
 
-    def confirm_revocation(self, cert):
+    def confirm_revocation(self, cert):  # pylint: disable=missing-docstring
         self.outfile.write("Are you sure you would like to revoke "
                            "the following certificate:\n")
         self.outfile.write(cert_info_frame(cert))
@@ -212,7 +216,7 @@ class FileDisplay(CommonDisplayMixin):
         ans = raw_input("y/n")
         return ans.startswith('y') or ans.startswith('Y')
 
-    def more_info_cert(self, cert):
+    def more_info_cert(self, cert):  # pylint: disable=missing-docstring
         self.outfile.write("\nCertificate Information:\n")
         self.outfile.write(cert_info_frame(cert))
 
@@ -221,14 +225,14 @@ CANCEL = "cancel"
 HELP = "help"
 
 
-def cert_info_frame(cert):
+def cert_info_frame(cert):  # pylint: disable=missing-docstring
     text = "-" * (WIDTH - 4) + "\n"
     text += cert_info_string(cert)
     text += "-" * (WIDTH - 4)
     return text
 
 
-def cert_info_string(cert):
+def cert_info_string(cert):  # pylint: disable=missing-docstring
     text = "Subject: %s\n" % cert["subject"]
     text += "SAN: %s\n" % cert["san"]
     text += "Issuer: %s\n" % cert["issuer"]
