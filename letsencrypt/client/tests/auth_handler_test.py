@@ -17,7 +17,6 @@ TRANSLATE = {
 }
 
 
-# pylint: disable=protected-access
 class SatisfyChallengesTest(unittest.TestCase):
     """verify_identities test."""
 
@@ -42,7 +41,7 @@ class SatisfyChallengesTest(unittest.TestCase):
         msg = acme_util.get_chall_msg(dom, "nonce0", challenge)
         self.handler.add_chall_msg(dom, msg, "dummy_key")
 
-        self.handler._satisfy_challenges()
+        self.handler._satisfy_challenges()  # pylint: disable=protected-access
 
         self.assertEqual(len(self.handler.responses), 1)
         self.assertEqual(len(self.handler.responses[dom]), 1)
@@ -61,7 +60,7 @@ class SatisfyChallengesTest(unittest.TestCase):
                 acme_util.get_chall_msg(str(i), "nonce%d" % i, challenge),
                 "dummy_key")
 
-        self.handler._satisfy_challenges()
+        self.handler._satisfy_challenges()  # pylint: disable=protected-access
 
         self.assertEqual(len(self.handler.responses), 5)
         self.assertEqual(len(self.handler.dv_c), 5)
@@ -90,7 +89,7 @@ class SatisfyChallengesTest(unittest.TestCase):
 
         path = gen_path(["simpleHttps"], challenges)
         mock_chall_path.return_value = path
-        self.handler._satisfy_challenges()
+        self.handler._satisfy_challenges()  # pylint: disable=protected-access
 
         self.assertEqual(len(self.handler.responses), 1)
         self.assertEqual(len(self.handler.responses[dom]), len(challenges))
@@ -120,7 +119,7 @@ class SatisfyChallengesTest(unittest.TestCase):
         path = gen_path(["simpleHttps", "recoveryToken"], challenges)
         mock_chall_path.return_value = path
 
-        self.handler._satisfy_challenges()
+        self.handler._satisfy_challenges()  # pylint: disable=protected-access
 
         self.assertEqual(len(self.handler.responses), 1)
         self.assertEqual(len(self.handler.responses[dom]), len(challenges))
@@ -151,7 +150,7 @@ class SatisfyChallengesTest(unittest.TestCase):
         path = gen_path(["dvsni", "recoveryContact"], challenges)
         mock_chall_path.return_value = path
 
-        self.handler._satisfy_challenges()
+        self.handler._satisfy_challenges()  # pylint: disable=protected-access
 
         self.assertEqual(len(self.handler.responses), 5)
         for i in range(5):
@@ -200,7 +199,7 @@ class SatisfyChallengesTest(unittest.TestCase):
 
         mock_chall_path.side_effect = paths
 
-        self.handler._satisfy_challenges()
+        self.handler._satisfy_challenges()  # pylint: disable=protected-access
 
         self.assertEqual(len(self.handler.responses), 5)
         self.assertEqual(len(self.handler.dv_c), 5)
