@@ -8,8 +8,8 @@ import unittest
 import mock
 
 
-# pylint: disable=invalid-name,protected-access,too-many-instance-attributes
 class ReverterCheckpointLocalTest(unittest.TestCase):
+    # pylint: disable=too-many-instance-attributes
     """Test the Reverter Class."""
     def setUp(self):
         from letsencrypt.client.reverter import Reverter
@@ -88,6 +88,7 @@ class ReverterCheckpointLocalTest(unittest.TestCase):
         self.assertEqual(read_in(self.config1), "directive-dir1")
 
     def test_multiple_registration_fail_and_revert(self):
+        # pylint: disable=invalid-name
         config3 = os.path.join(self.dir1, "config3.txt")
         update_file(config3, "Config3")
         config4 = os.path.join(self.dir2, "config4.txt")
@@ -138,15 +139,18 @@ class ReverterCheckpointLocalTest(unittest.TestCase):
         from letsencrypt.client.errors import LetsEncryptReverterError
         self.reverter.add_to_checkpoint(self.sets[0], "perm save")
 
+        # pylint: disable=protected-access
         self.reverter._recover_checkpoint = mock.MagicMock(
             side_effect=LetsEncryptReverterError)
         self.assertRaises(LetsEncryptReverterError,
                           self.reverter.recovery_routine)
 
     def test_recover_checkpoint_revert_temp_failures(self):
+        # pylint: disable=invalid-name
         from letsencrypt.client.errors import LetsEncryptReverterError
 
         mock_recover = mock.MagicMock(side_effect=LetsEncryptReverterError("e"))
+        # pylint: disable=protected-access
         self.reverter._recover_checkpoint = mock_recover
 
         self.reverter.add_to_temp_checkpoint(self.sets[0], "config1 save")
@@ -158,6 +162,7 @@ class ReverterCheckpointLocalTest(unittest.TestCase):
         from letsencrypt.client.errors import LetsEncryptReverterError
 
         mock_recover = mock.MagicMock(side_effect=LetsEncryptReverterError("e"))
+        # pylint: disable=protected-access
         self.reverter._recover_checkpoint = mock_recover
 
         self.reverter.add_to_checkpoint(self.sets[0], "config1 save")
@@ -237,8 +242,9 @@ class ReverterCheckpointLocalTest(unittest.TestCase):
         self.assertEqual(read_in(self.config1), "directive-dir1")
         self.assertEqual(read_in(self.config2), "directive-dir2")
 
-# pylint: disable=invalid-name,protected-access,too-many-instance-attributes
+
 class TestFullCheckpointsReverter(unittest.TestCase):
+    # pylint: disable=too-many-instance-attributes
     """Tests functions having to deal with full checkpoints."""
     def setUp(self):
         from letsencrypt.client.reverter import Reverter
@@ -269,6 +275,7 @@ class TestFullCheckpointsReverter(unittest.TestCase):
             self.reverter.rollback_checkpoints, "one")
 
     def test_rollback_finalize_checkpoint_valid_inputs(self):
+        # pylint: disable=invalid-name
         config3 = self._setup_three_checkpoints()
 
         # Check resulting backup directory
@@ -315,6 +322,7 @@ class TestFullCheckpointsReverter(unittest.TestCase):
 
     @mock.patch("letsencrypt.client.reverter.os.rename")
     def test_finalize_checkpoint_no_rename_directory(self, mock_rename):
+        # pylint: disable=invalid-name
         from letsencrypt.client.errors import LetsEncryptReverterError
 
         self.reverter.add_to_checkpoint(self.sets[0], "perm save")

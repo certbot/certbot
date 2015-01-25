@@ -80,9 +80,9 @@ class NcursesDisplay(CommonDisplayMixin):
 
     def display_certs(self, certs):  # pylint: disable=missing-docstring
         list_choices = []
-        for i, c in enumerate(certs):
-            if c['installed']:
-                if c['installed'] == CONFIG.CERT_DELETE_MSG:
+        for i, cert in enumerate(certs):
+            if cert["installed"]:
+                if cert["installed"] == CONFIG.CERT_DELETE_MSG:
                     status = "Deleted/Moved"
                 else:
                     status = "Installed"
@@ -90,8 +90,8 @@ class NcursesDisplay(CommonDisplayMixin):
                 status = ""
 
             list_choices.append((str(i+1), "{0} | {1} | {2}".format(
-                str(c['cn'].ljust(self.width-39)),
-                c['not_before'].strftime("%m-%d-%y"),
+                str(cert["cn"].ljust(self.width-39)),
+                cert["not_before"].strftime("%m-%d-%y"),
                 status)))
 
         code, tag = self.dialog.menu(

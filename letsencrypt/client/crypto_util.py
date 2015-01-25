@@ -51,14 +51,14 @@ def create_sig(msg, key_str, nonce=None, nonce_len=CONFIG.NONCE_SIZE):
     e_bytes = binascii.unhexlify(_leading_zeros(hex(key.e)[2:].rstrip("L")))
 
     return {
-        'nonce': le_util.jose_b64encode(nonce),
-        'alg': "RS256",
-        'jwk': {
-            'kty': "RSA",
-            'n': le_util.jose_b64encode(n_bytes),
-            'e': le_util.jose_b64encode(e_bytes),
+        "nonce": le_util.jose_b64encode(nonce),
+        "alg": "RS256",
+        "jwk": {
+            "kty": "RSA",
+            "n": le_util.jose_b64encode(n_bytes),
+            "e": le_util.jose_b64encode(e_bytes),
         },
-        'sig': le_util.jose_b64encode(signature),
+        "sig": le_util.jose_b64encode(signature),
     }
 
 
@@ -95,7 +95,7 @@ def make_csr(key_str, domains):
 
     extstack = M2Crypto.X509.X509_Extension_Stack()
     ext = M2Crypto.X509.new_extension(
-        'subjectAltName', ", ".join("DNS:%s" % d for d in domains))
+        "subjectAltName", ", ".join("DNS:%s" % d for d in domains))
 
     extstack.push(ext)
     csr.add_extensions(extstack)
@@ -239,15 +239,15 @@ def get_cert_info(filename):
         san = ""
 
     return {
-        'not_before': cert.get_not_before().get_datetime(),
-        'not_after': cert.get_not_after().get_datetime(),
-        'subject': cert.get_subject().as_text(),
-        'cn': cert.get_subject().CN,
-        'issuer': cert.get_issuer().as_text(),
-        'fingerprint': cert.get_fingerprint(md='sha1'),
-        'san': san,
-        'serial': cert.get_serial_number(),
-        'pub_key': "RSA " + str(cert.get_pubkey().size() * 8),
+        "not_before": cert.get_not_before().get_datetime(),
+        "not_after": cert.get_not_after().get_datetime(),
+        "subject": cert.get_subject().as_text(),
+        "cn": cert.get_subject().CN,
+        "issuer": cert.get_issuer().as_text(),
+        "fingerprint": cert.get_fingerprint(md='sha1'),
+        "san": san,
+        "serial": cert.get_serial_number(),
+        "pub_key": "RSA " + str(cert.get_pubkey().size() * 8),
     }
 
 

@@ -234,7 +234,7 @@ class Reverter(object):
             raise errors.LetsEncryptReverterError(
                 "Unable to remove directory: %s" % cp_dir)
 
-    def _check_tempfile_saves(self, save_files):  # pylint: disable=no-self-use
+    def _check_tempfile_saves(self, save_files):
         """Verify save isn't overwriting any temporary files.
 
         :param set save_files: Set of files about to be saved.
@@ -264,9 +264,8 @@ class Reverter(object):
                     "Attempting to overwrite challenge "
                     "file - %s" % filename)
 
-    # pylint: disable=no-self-use, anomalous-backslash-in-string
     def register_file_creation(self, temporary, *files):
-        """Register the creation of all files during letsencrypt execution.
+        r"""Register the creation of all files during letsencrypt execution.
 
         Call this method before writing to the file to make sure that the
         file will be cleaned up if the program exits unexpectedly.
@@ -334,8 +333,7 @@ class Reverter(object):
                     "Incomplete or failed recovery for IN_PROGRESS checkpoint "
                     "- %s" % self.direc['progress'])
 
-    # pylint: disable=no-self-use
-    def _remove_contained_files(self, file_list):
+    def _remove_contained_files(self, file_list):  # pylint: disable=no-self-use
         """Erase all files contained within file_list.
 
         :param str file_list: file containing list of file paths to be deleted
@@ -373,7 +371,6 @@ class Reverter(object):
 
         return True
 
-    # pylint: disable=no-self-use
     def finalize_checkpoint(self, title):
         """Move IN_PROGRESS checkpoint to timestamped checkpoint.
 

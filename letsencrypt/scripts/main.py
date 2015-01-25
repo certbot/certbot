@@ -14,12 +14,9 @@ from letsencrypt.client import display
 from letsencrypt.client import interfaces
 from letsencrypt.client import errors
 from letsencrypt.client import log
-from letsencrypt.client import reverter
-from letsencrypt.client import revoker
-from letsencrypt.client.apache import configurator
 
 
-def main():  # pylint: disable=too-many-statements
+def main():  # pylint: disable=too-many-statements,too-many-branches
     """Command line argument parsing and main script execution."""
     if not os.geteuid() == 0:
         sys.exit(
@@ -78,15 +75,15 @@ def main():  # pylint: disable=too-many-statements
     zope.component.provideUtility(displayer)
 
     if args.view_config_changes:
-        view_config_changes()
+        client.view_config_changes()
         sys.exit()
 
     if args.revoke:
-        revoke(args.server)
+        client.revoke(args.server)
         sys.exit()
 
     if args.rollback > 0:
-        rollback(args.rollback)
+        client.rollback(args.rollback)
         sys.exit()
 
     if not args.eula:
@@ -95,7 +92,7 @@ def main():  # pylint: disable=too-many-statements
     # Make sure we actually get an installer that is functioning properly
     # before we begin to try to use it.
     try:
-        installer = determine_installer()
+        installer = client.determine_installer()
     except errors.LetsEncryptMisconfigurationError as err:
         logging.fatal("Please fix your configuration before proceeding.  "
                       "The Installer exited with the following message: "
@@ -106,7 +103,7 @@ def main():  # pylint: disable=too-many-statements
     if interfaces.IAuthenticator.providedBy(installer):  # pylint: disable=no-member
         auth = installer
     else:
-        auth = determine_authenticator()
+        auth = client.determine_authenticator()
 
     domains = choose_names(installer) if args.domains is None else args.domains
 
@@ -178,22 +175,6 @@ def get_all_names(installer):
     return names
 
 
-# This should be controlled by commandline parameters
-def determine_authenticator():
-    """Returns a valid IAuthenticator."""
-    try:
-        return configurator.ApacheConfigurator()
-    except errors.LetsEncryptNoInstallationError:
-        logging.info("Unable to determine a way to authenticate the server")
-
-
-def determine_installer():
-    """Returns a valid installer if one exists."""
-    try:
-        return configurator.ApacheConfigurator()
-    except errors.LetsEncryptNoInstallationError:
-        logging.info("Unable to find a way to install the certificate.")
-
 
 def read_file(filename):
     """Returns the given file's contents with universal new line support.
@@ -211,96 +192,6 @@ def read_file(filename):
     except IOError as exc:
         raise argparse.ArgumentTypeError(exc.strerror)
 
-
-def rollback(checkpoints):
-    """Revert configuration the specified number of checkpoints.
-
-    .. note:: If another installer uses something other than the reverter class
-        to do their configuration changes, the correct reverter will have to be
-        determined.
-
-    .. note:: This function restarts the server even if there weren't any
-        rollbacks.  The user may be confused or made an error and simply needs
-        to restart the server.
-
-    .. todo:: This function will have to change depending on the functionality
-        of future installers.  Perhaps the interface should define errors that
-        are thrown for the various functions.
-
-    :param int checkpoints: Number of checkpoints to revert.
-
-    """
-    # Misconfigurations are only a slight problems... allow the user to rollback
-    try:
-        installer = determine_installer()
-    except errors.LetsEncryptMisconfigurationError:
-        yes = zope.component.getUtility(interfaces.IDisplay).generic_yesno(
-            "Oh, no! The web server is currently misconfigured.{0}{0}"
-            "Would you still like to rollback the "
-            "configuration?".format(os.linesep))
-        if not yes:
-            logging.info("The error message is above.")
-            logging.info(
-                "Configuration was not rolled back.")
-            return
-
-        logging.info("Rolling back using the Reverter module")
-        # recovery routine has probably already been run by installer
-        # in the__init__ attempt, run it again for safety... it shouldn't hurt
-        # Also... not sure how future installers will handle recovery.
-        rev = reverter.Reverter()
-        rev.recovery_routine()
-        rev.rollback_checkpoints(checkpoints)
-
-        # We should try to restart the server
-        try:
-            installer = determine_installer()
-            installer.restart()
-            logging.info("Hooray!  Rollback solved the misconfiguration!")
-            logging.info("Your web server is back up and running.")
-        except errors.LetsEncryptMisconfigurationError:
-            logging.warning("Rollback was unable to solve the "
-                            "misconfiguration issues")
-        finally:
-            return
-    # No Errors occurred during init... proceed normally
-    # If installer is None... couldn't find an installer... there shouldn't be
-    # anything to rollback
-    if installer is not None:
-        installer.rollback_checkpoints(checkpoints)
-        installer.restart()
-
-
-def revoke(server):
-    """Revoke certificates.
-
-    :param str server: ACME server the client wishes to revoke certificates from
-
-    """
-    # Misconfigurations don't really matter. Determine installer better choose
-    # correctly though.
-    try:
-        installer = determine_installer()
-    except errors.LetsEncryptMisconfigurationError:
-        zope.component.getUtility(interfaces.IDisplay).generic_notification(
-            "The web server is currently misconfigured. Some "
-            "abilities like seeing which certificates are currently"
-            " installed may not be available at this time.")
-        installer = None
-
-    revoc = revoker.Revoker(server, installer)
-    revoc.list_certs_keys()
-
-
-def view_config_changes():
-    """View checkpoints and associated configuration changes.
-
-    .. note:: This assumes that the installation is using a Reverter object.
-
-    """
-    rev = reverter.Reverter()
-    rev.recovery_routine()
-    rev.view_config_changes()
 
 if __name__ == "__main__":
     main()
