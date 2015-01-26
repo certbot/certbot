@@ -2,17 +2,15 @@
 import unittest
 
 import mock
-import zope.component
 
 
 class RollbackTest(unittest.TestCase):
     """Test the rollback function."""
     def setUp(self):
         self.m_install = mock.MagicMock()
-        self.m_input = mock.MagicMock()
-        zope.component.getUtility = self.m_input
 
-    def _call(self, checkpoints):  # pylint: disable=no-self-use
+    @classmethod
+    def _call(cls, checkpoints):
         from letsencrypt.client.client import rollback
         rollback(checkpoints)
 
@@ -25,13 +23,14 @@ class RollbackTest(unittest.TestCase):
         self.assertEqual(self.m_install().rollback_checkpoints.call_count, 1)
         self.assertEqual(self.m_install().restart.call_count, 1)
 
+    @mock.patch("letsencrypt.client.client.zope.component.getUtility")
     @mock.patch("letsencrypt.client.reverter.Reverter")
     @mock.patch("letsencrypt.client.client.determine_installer")
-    def test_misconfiguration_fixed(self, mock_det, mock_rev):
+    def test_misconfiguration_fixed(self, mock_det, mock_rev, mock_input):
         from letsencrypt.client.errors import LetsEncryptMisconfigurationError
         mock_det.side_effect = [LetsEncryptMisconfigurationError,
                                 self.m_install]
-        self.m_input().generic_yesno.return_value = True
+        mock_input().generic_yesno.return_value = True
 
         self._call(1)
 
@@ -42,14 +41,16 @@ class RollbackTest(unittest.TestCase):
         # Only restart once
         self.assertEqual(self.m_install.restart.call_count, 1)
 
+    @mock.patch("letsencrypt.client.client.zope.component.getUtility")
     @mock.patch("letsencrypt.client.client.logging.warning")
     @mock.patch("letsencrypt.client.reverter.Reverter")
     @mock.patch("letsencrypt.client.client.determine_installer")
-    def test_misconfiguration_remains(self, mock_det, mock_rev, mock_warn):
+    def test_misconfiguration_remains(
+            self, mock_det, mock_rev, mock_warn, mock_input):
         from letsencrypt.client.errors import LetsEncryptMisconfigurationError
         mock_det.side_effect = LetsEncryptMisconfigurationError
 
-        self.m_input().generic_yesno.return_value = True
+        mock_input().generic_yesno.return_value = True
 
         self._call(1)
 
@@ -62,13 +63,15 @@ class RollbackTest(unittest.TestCase):
         # There should be a warning about the remaining problem
         self.assertEqual(mock_warn.call_count, 1)
 
+    @mock.patch("letsencrypt.client.client.zope.component.getUtility")
     @mock.patch("letsencrypt.client.reverter.Reverter")
     @mock.patch("letsencrypt.client.client.determine_installer")
-    def test_user_decides_to_manually_investigate(self, mock_det, mock_rev):
+    def test_user_decides_to_manually_investigate(
+            self, mock_det, mock_rev, mock_input):
         from letsencrypt.client.errors import LetsEncryptMisconfigurationError
         mock_det.side_effect = LetsEncryptMisconfigurationError
 
-        self.m_input().generic_yesno.return_value = False
+        mock_input().generic_yesno.return_value = False
 
         self._call(1)
 

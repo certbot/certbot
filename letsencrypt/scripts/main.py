@@ -11,8 +11,8 @@ import zope.interface
 from letsencrypt.client import CONFIG
 from letsencrypt.client import client
 from letsencrypt.client import display
-from letsencrypt.client import interfaces
 from letsencrypt.client import errors
+from letsencrypt.client import interfaces
 from letsencrypt.client import log
 
 
@@ -98,7 +98,7 @@ def main():  # pylint: disable=too-many-statements,too-many-branches
     except errors.LetsEncryptMisconfigurationError as err:
         logging.fatal("Please fix your configuration before proceeding.  "
                       "The Installer exited with the following message: "
-                      "%s", str(err))
+                      "%s", err)
         sys.exit(1)
 
     # Use the same object if possible

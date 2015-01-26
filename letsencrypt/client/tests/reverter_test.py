@@ -31,6 +31,8 @@ class ReverterCheckpointLocalTest(unittest.TestCase):
         shutil.rmtree(self.dir1)
         shutil.rmtree(self.dir2)
 
+        logging.disable(logging.NOTSET)
+
     def test_basic_add_to_temp_checkpoint(self):
         # These shouldn't conflict even though they are both named config.txt
         self.reverter.add_to_temp_checkpoint(self.sets[0], "save1")
@@ -245,6 +247,7 @@ class TestFullCheckpointsReverter(unittest.TestCase):
         self.config1, self.config2, self.dir1, self.dir2, self.sets = tup
 
     def tearDown(self):
+
         shutil.rmtree(self.work_dir)
         shutil.rmtree(self.dir1)
         shutil.rmtree(self.dir2)
