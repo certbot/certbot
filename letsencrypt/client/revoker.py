@@ -57,27 +57,22 @@ class Revoker(object):
             return
 
         c_sha1_vh = {}
-
-        if self.installer is not None:
-            for (cert, _, path) in self.installer.get_all_certs_keys():
-                try:
-                    c_sha1_vh[M2Crypto.X509.load_cert(
-                        cert).get_fingerprint(md='sha1')] = path
-                except M2Crypto.X509.X509Error:
-                    continue
+        for (cert, _, path) in self.installer.get_all_certs_keys():
+            try:
+                c_sha1_vh[M2Crypto.X509.load_cert(
+                    cert).get_fingerprint(md='sha1')] = path
+            except M2Crypto.X509.X509Error:
+                continue
 
         with open(list_file, 'rb') as csvfile:
             csvreader = csv.reader(csvfile)
             for row in csvreader:
-                # Generate backup key/cert names
+                cert = crypto_util.get_cert_info(row[1])
+
                 b_k = os.path.join(CONFIG.CERT_KEY_BACKUP,
                                    os.path.basename(row[2]) + "_" + row[0])
                 b_c = os.path.join(CONFIG.CERT_KEY_BACKUP,
                                    os.path.basename(row[1]) + "_" + row[0])
-
-                cert = crypto_util.get_cert_info(b_c)
-                if not os.path.isfile(row[1]):
-                    cert["installed"] = CONFIG.CERT_DELETE_MSG
 
                 cert.update({
                     "orig_key_file": row[2],
@@ -85,8 +80,7 @@ class Revoker(object):
                     "idx": int(row[0]),
                     "backup_key_file": b_k,
                     "backup_cert_file": b_c,
-                    "installed": c_sha1_vh.get(
-                        cert["fingerprint"], cert.get("installed", "")),
+                    "installed": c_sha1_vh.get(cert["fingerprint"], ""),
                 })
                 certs.append(cert)
         if certs:

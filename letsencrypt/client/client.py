@@ -535,10 +535,18 @@ def revoke(server):
     except errors.LetsEncryptMisconfigurationError:
         zope.component.getUtility(interfaces.IDisplay).generic_notification(
             "The web server is currently misconfigured. Some "
-            "abilities like seeing which certificates are currently"
-            " installed may not be available at this time.")
+            "abilities like seeing which certificates are currently "
+            "installed may not be available.")
         installer = None
 
+    # This is a temporary fix to avoid errors. The Revoker is not fully
+    # developed.
+    if installer is None:
+        zope.component.getUtility(interfaces.IDisplay).generic_notification(
+            "The Let's Encrypt Revoker module does not currently support "
+            "revocation without a valid installer.  This feature should come "
+            "soon.")
+        return
     revoc = revoker.Revoker(server, installer)
     revoc.list_certs_keys()
 
