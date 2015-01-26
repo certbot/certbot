@@ -310,7 +310,6 @@ class FileDisplay(CommonDisplayMixin):
                             "enabled %s!" % gen_https_names(domains))
         self.outfile.write("%s\n%s\n%s\n" % (side_frame, msg, side_frame))
 
-
     def display_certs(self, certs):
         """Display certificates for revocation.
 
