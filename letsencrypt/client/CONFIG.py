@@ -101,11 +101,3 @@ APACHE_CTL = "/usr/sbin/apache2ctl"
 
 APACHE2 = "/etc/init.d/apache2"
 """Command used for reload and restart."""
-
-# Static Strings/Messages
-CERT_DELETE_MSG = "This certificate has either been deleted or moved"
-"""Used in revocation cert dict for 'installed'.
-
-Indicates that the original certificate has been moved/deleted.
-
-"""
