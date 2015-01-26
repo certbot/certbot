@@ -3,6 +3,8 @@ import unittest
 
 import mock
 
+from letsencrypt.client import errors
+
 
 class RollbackTest(unittest.TestCase):
     """Test the rollback function."""
@@ -27,8 +29,7 @@ class RollbackTest(unittest.TestCase):
     @mock.patch("letsencrypt.client.reverter.Reverter")
     @mock.patch("letsencrypt.client.client.determine_installer")
     def test_misconfiguration_fixed(self, mock_det, mock_rev, mock_input):
-        from letsencrypt.client.errors import LetsEncryptMisconfigurationError
-        mock_det.side_effect = [LetsEncryptMisconfigurationError,
+        mock_det.side_effect = [errors.LetsEncryptMisconfigurationError,
                                 self.m_install]
         mock_input().generic_yesno.return_value = True
 
@@ -47,8 +48,7 @@ class RollbackTest(unittest.TestCase):
     @mock.patch("letsencrypt.client.client.determine_installer")
     def test_misconfiguration_remains(
             self, mock_det, mock_rev, mock_warn, mock_input):
-        from letsencrypt.client.errors import LetsEncryptMisconfigurationError
-        mock_det.side_effect = LetsEncryptMisconfigurationError
+        mock_det.side_effect = errors.LetsEncryptMisconfigurationError
 
         mock_input().generic_yesno.return_value = True
 
@@ -68,8 +68,7 @@ class RollbackTest(unittest.TestCase):
     @mock.patch("letsencrypt.client.client.determine_installer")
     def test_user_decides_to_manually_investigate(
             self, mock_det, mock_rev, mock_input):
-        from letsencrypt.client.errors import LetsEncryptMisconfigurationError
-        mock_det.side_effect = LetsEncryptMisconfigurationError
+        mock_det.side_effect = errors.LetsEncryptMisconfigurationError
 
         mock_input().generic_yesno.return_value = False
 

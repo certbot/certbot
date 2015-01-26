@@ -61,7 +61,7 @@ class NcursesDisplay(CommonDisplayMixin):
         """Display a menu.
 
         :param str message: title of menu
-        :param choices: Menu lines
+        :param choices: menu lines
         :type choices: list of tuples (tag, item) or
             list of items (tags will be enumerated)
 
@@ -392,10 +392,16 @@ class FileDisplay(CommonDisplayMixin):
         self.outfile.write("\nCertificate Information:\n")
         self.outfile.write(cert_info_frame(cert))
 
+
 # Display exit codes
 OK = "ok"
+"""Display exit code indicating user acceptance"""
+
 CANCEL = "cancel"
+"""Display exit code for a user canceling the display"""
+
 HELP = "help"
+"""Display exit code when for when the user requests more help."""
 
 
 def cert_info_frame(cert):
@@ -425,6 +431,7 @@ def gen_https_names(domains):
     """Returns a string of the https domains.
 
     Domains are formatted nicely with https:// prepended to each.
+    .. todo:: This should not use +=, rewrite this with unittests
 
     """
     result = ""
