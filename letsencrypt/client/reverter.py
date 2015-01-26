@@ -44,6 +44,10 @@ class Reverter(object):
         :param int rollback: Number of checkpoints to reverse. A str num will be
            cast to an integer. So '2' is also acceptable.
 
+        :raises :class:`letsencrypt.client.errors.LetsEncryptReverterError`: If
+            there is a problem with the input or if the function is unable to
+            correctly revert the configuration checkpoints.
+
         """
         try:
             rollback = int(rollback)
