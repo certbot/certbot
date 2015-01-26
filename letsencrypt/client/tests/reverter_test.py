@@ -247,10 +247,11 @@ class TestFullCheckpointsReverter(unittest.TestCase):
         self.config1, self.config2, self.dir1, self.dir2, self.sets = tup
 
     def tearDown(self):
-
         shutil.rmtree(self.work_dir)
         shutil.rmtree(self.dir1)
         shutil.rmtree(self.dir2)
+
+        logging.disable(logging.NOTSET)
 
     def test_rollback_improper_inputs(self):
         self.assertRaises(
