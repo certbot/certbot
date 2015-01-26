@@ -18,11 +18,6 @@ from letsencrypt.client import log
 
 def main():  # pylint: disable=too-many-statements,too-many-branches
     """Command line argument parsing and main script execution."""
-    if not os.geteuid() == 0:
-        sys.exit(
-            "{0}Root is required to run letsencrypt.  Please use sudo.{0}"
-            .format(os.linesep))
-
     parser = argparse.ArgumentParser(
         description="An ACME client that can update Apache configurations.")
 
@@ -62,7 +57,14 @@ def main():  # pylint: disable=too-many-statements,too-many-branches
     parser.add_argument("--test", dest="test", action="store_true",
                         help="Run in test mode.")
 
+    # note: arg parser internally handles --help (and exits afterwards)
     args = parser.parse_args()
+
+    # note: check is done after arg parsing as --help should work w/o root also.
+    if not os.geteuid() == 0:
+        sys.exit(
+            "{0}Root is required to run letsencrypt.  Please use sudo.{0}"
+            .format(os.linesep))
 
     # Set up logging
     logger = logging.getLogger()

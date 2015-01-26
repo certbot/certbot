@@ -116,32 +116,10 @@ documentation:
 
 ## Command line usage
 
+The letsencrypt commandline tool has a builtin help:
+
 ```
-usage: sudo letsencrypt.py [-h] [-d DOMAIN [DOMAIN ...]] [-s SERVER] [-p PRIVKEY]
-                      [-c CSR] [-b ROLLBACK] [-k] [-v] [-r] [-n] [-e] [-t]
-                      [--test]
-
-An ACME client that can update Apache configurations.
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -d DOMAIN [DOMAIN ...], --domains DOMAIN [DOMAIN ...]
-  -s SERVER, --server SERVER
-                        The ACME CA server address.
-  -p PRIVKEY, --privkey PRIVKEY
-                        Path to the private key file for certificate
-                        generation.
-  -b N, --rollback N    Revert configuration N number of checkpoints.
-  -k, --revoke          Revoke a certificate.
-  -v, --view-config-changes
-                        View checkpoints and associated configuration changes.
-  -r, --redirect        Automatically redirect all HTTP traffic to HTTPS for
-                        the newly authenticated vhost.
-  -n, --no-redirect     Skip the HTTPS redirect question, allowing both HTTP
-                        and HTTPS.
-  -e, --agree-eula      Skip the end user license agreement screen.
-  -t, --text            Use the text output instead of the curses UI.
-  --test                Run in test mode.
+letsencrypt --help
 ```
 
 ## More Information
