@@ -1,7 +1,7 @@
 About the Let's Encrypt Client
 ==============================
 
-In short: getting and installing SSL/TLS certificates made easy.
+In short: getting and installing SSL/TLS certificates made easy (`watch demo video`_).
 
 The Let's Encrypt Client is a tool that talks to the Let's Encrypt CA
 so you can comfortably and quickly get trusted TLS certificates that just
@@ -27,6 +27,8 @@ All you need to do is:
 .. image:: https://travis-ci.org/letsencrypt/lets-encrypt-preview.svg?branch=master
     :target: https://travis-ci.org/letsencrypt/lets-encrypt-preview
 
+.. _watch demo video: https://www.youtube.com/watch?v=Gas_sSB-5SU
+
 
 Disclaimer
 ----------
@@ -37,8 +39,8 @@ This is a **DEVELOPER PREVIEW** intended for developers and testers only.
 SIGNED BY A TEST CA, AND WILL CAUSE CERT WARNINGS FOR USERS.**
 
 
-Features
-========
+Current Features
+----------------
 
 * web servers supported:
 
@@ -53,7 +55,7 @@ Features
 * optionally can install a http->https redirect, so your site effectively
   runs https only
 * fully automated
-* configuration changes can be rolled back N checkpoints
+* configuration changes are logged and can be reverted using the CLI
 * text and ncurses UI
 * Free and Open Source Software, made with Python.
 
@@ -70,9 +72,7 @@ Main Website: https://letsencrypt.org/
 IRC Channel: #letsencrypt on `Freenode`_
 
 Mailing list: `client-dev`_ (to subscribe without a Google account, send an
-              email to client-dev+subscribe@letsencrypt.org)
+email to client-dev+subscribe@letsencrypt.org)
 
 .. _Freenode: https://freenode.net
 .. _client-dev: https://groups.google.com/a/letsencrypt.org/forum/#!forum/client-dev
-
-

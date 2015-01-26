@@ -8,6 +8,11 @@ Welcome to the Let's Encrypt client documentation!
    using
    project
 
+.. toctree::
+   :maxdepth: 1
+
+   api
+
 
 Indices and tables
 ==================
