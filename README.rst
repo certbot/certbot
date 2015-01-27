@@ -3,9 +3,10 @@ About the Let's Encrypt Client
 
 In short: getting and installing SSL/TLS certificates made easy (`watch demo video`_).
 
-The Let's Encrypt Client is a tool that talks to the Let's Encrypt CA
-so you can comfortably and quickly get trusted TLS certificates that just
-work without warnings in every browser.
+The Let's Encrypt Client is a tool to automatically receive and install
+X.509 certificates to enable TLS on servers. The client will
+interoperate with the Let's Encrypt CA which will be issuing browser-trusted
+certificates for free beginning the summer of 2015.
 
 It's all automated:
 
