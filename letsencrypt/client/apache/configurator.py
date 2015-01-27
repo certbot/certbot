@@ -43,6 +43,7 @@ from letsencrypt.client.apache import parser
 
 
 class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
+    # pylint: disable=too-many-instance-attributes
     """Apache configurator.
 
     State of Configurator: This code has been tested under Ubuntu 12.04
@@ -95,12 +96,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                      "work": CONFIG.WORK_DIR}
 
         super(ApacheConfigurator, self).__init__(direc)
-
-        # See if any temporary changes need to be recovered
-        # This needs to occur before VirtualHost objects are setup...
-        # because this will change the underlying configuration and potential
-        # vhosts
-        self.recovery_routine()
+        self.direc = direc
 
         # Verify that all directories and files exist with proper permissions
         if os.geteuid() == 0:
@@ -184,7 +180,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 self.aug.set(path["cert_chain"][0], cert_chain)
 
         self.save_notes += ("Changed vhost at %s with addresses of %s\n" %
-                            (vhost.filep, vhost.addrs))
+                            (vhost.filep,
+                             ", ".join(str(addr) for addr in vhost.addrs)))
         self.save_notes += "\tSSLCertificateFile %s\n" % cert
         self.save_notes += "\tSSLCertificateKeyFile %s\n" % key
         if cert_chain:
@@ -449,7 +446,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         # First register the creation so that it is properly removed if
         # configuration is rolled back
-        self.register_file_creation(False, ssl_fp)
+        self.reverter.register_file_creation(False, ssl_fp)
 
         try:
             orig_file = open(avail_fp, 'r')
@@ -703,7 +700,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Register the new file that will be created
         # Note: always register the creation before writing to ensure file will
         # be removed in case of unexpected program exit
-        self.register_file_creation(False, redirect_filepath)
+        self.reverter.register_file_creation(False, redirect_filepath)
 
         # Write out file
         with open(redirect_filepath, 'w') as redirect_fd:
@@ -871,7 +868,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if "/sites-available/" in vhost.filep:
             enabled_path = ("%ssites-enabled/%s" %
                             (self.parser.root, os.path.basename(vhost.filep)))
-            self.register_file_creation(False, enabled_path)
+            self.reverter.register_file_creation(False, enabled_path)
             os.symlink(vhost.filep, enabled_path)
             vhost.enabled = True
             logging.info("Enabling available site: %s", vhost.filep)
@@ -1029,10 +1026,7 @@ def enable_mod(mod_name):
         subprocess.check_call(["sudo", "a2enmod", mod_name],
                               stdout=open("/dev/null", 'w'),
                               stderr=open("/dev/null", 'w'))
-        # Hopefully this waits for output
-        subprocess.check_call(["sudo", CONFIG.APACHE2, "restart"],
-                              stdout=open("/dev/null", 'w'),
-                              stderr=open("/dev/null", 'w'))
+        apache_restart()
     except (OSError, subprocess.CalledProcessError) as err:
         logging.error("Error enabling mod_%s", mod_name)
         logging.error("Exception: %s", err)
@@ -1042,7 +1036,8 @@ def enable_mod(mod_name):
 def mod_loaded(module):
     """Checks to see if mod_ssl is loaded
 
-    Uses CONFIG.APACHE_CTL to get loaded module list
+    Uses CONFIG.APACHE_CTL to get loaded module list. This also effectively
+    serves as a config_test.
 
     :returns: If ssl_module is included and active in Apache
     :rtype: bool
@@ -1052,15 +1047,22 @@ def mod_loaded(module):
         proc = subprocess.Popen(
             [CONFIG.APACHE_CTL, '-M'],
             stdout=subprocess.PIPE,
-            stderr=open("/dev/null", 'w')).communicate()[0]
+            stderr=subprocess.PIPE)
+        stdout, stderr = proc.communicate()
 
     except (OSError, ValueError):
         logging.error(
             "Error accessing %s for loaded modules!", CONFIG.APACHE_CTL)
-        logging.error("This may be caused by an Apache Configuration Error")
-        return False
+        raise errors.LetsEncryptConfiguratorError(
+            "Error accessing loaded modules")
+    # Small errors that do not impede
+    if proc.returncode != 0:
+        logging.warn("Error in checking loaded module list: %s", stderr)
+        raise errors.LetsEncryptMisconfigurationError(
+            "Apache is unable to check whether or not the module is "
+            "loaded because Apache is misconfigured.")
 
-    if module in proc:
+    if module in stdout:
         return True
     return False
 
@@ -1069,20 +1071,26 @@ def apache_restart():
     """Restarts the Apache Server.
 
     .. todo:: Try to use reload instead. (This caused timing problems before)
-    .. todo:: This should be written to use the process return code.
+
+    .. todo:: On failure, this should be a recovery_routine call with another
+       restart.  This will confuse and inhibit developers from testing code
+       though.  This change should happen after
+       the ApacheConfigurator has been thoroughly tested.  The function will
+       need to be moved into the class again.  Perhaps
+       this version can live on... for testing purposes.
 
     """
     try:
         proc = subprocess.Popen([CONFIG.APACHE2, 'restart'],
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
-        text = proc.communicate()
+        stdout, stderr = proc.communicate()
 
         if proc.returncode != 0:
             # Enter recovery routine...
-            logging.error("Configtest failed")
-            logging.error(text[0])
-            logging.error(text[1])
+            logging.error("Apache Restart Failed!")
+            logging.error(stdout)
+            logging.error(stderr)
             return False
 
     except (OSError, ValueError):

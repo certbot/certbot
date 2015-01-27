@@ -8,6 +8,7 @@ from letsencrypt.client import CONFIG
 from letsencrypt.client import crypto_util
 from letsencrypt.client import le_util
 
+
 # Authenticator Challenges
 DvsniChall = collections.namedtuple("DvsniChall", "domain, r_b64, nonce, key")
 SimpleHttpsChall = collections.namedtuple(

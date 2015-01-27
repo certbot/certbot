@@ -11,13 +11,12 @@ import zope.interface
 from letsencrypt.client import CONFIG
 from letsencrypt.client import client
 from letsencrypt.client import display
+from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 from letsencrypt.client import log
-from letsencrypt.client import revoker
-from letsencrypt.client.apache import configurator
 
 
-def main():  # pylint: disable=too-many-statements
+def main():  # pylint: disable=too-many-statements,too-many-branches
     """Command line argument parsing and main script execution."""
     parser = argparse.ArgumentParser(
         description="An ACME client that can update Apache configurations.")
@@ -77,29 +76,36 @@ def main():  # pylint: disable=too-many-statements
         displayer = display.FileDisplay(sys.stdout)
     zope.component.provideUtility(displayer)
 
-    installer = determine_installer()
+    if args.view_config_changes:
+        client.view_config_changes()
+        sys.exit()
 
     if args.revoke:
-        revoc = revoker.Revoker(args.server, installer)
-        revoc.list_certs_keys()
+        client.revoke(args.server)
         sys.exit()
 
     if args.rollback > 0:
-        rollback(installer, args.rollback)
-        sys.exit()
-
-    if args.view_config_changes:
-        view_config_changes(installer)
+        client.rollback(args.rollback)
         sys.exit()
 
     if not args.eula:
         display_eula()
 
+    # Make sure we actually get an installer that is functioning properly
+    # before we begin to try to use it.
+    try:
+        installer = client.determine_installer()
+    except errors.LetsEncryptMisconfigurationError as err:
+        logging.fatal("Please fix your configuration before proceeding.  "
+                      "The Installer exited with the following message: "
+                      "%s", err)
+        sys.exit(1)
+
     # Use the same object if possible
     if interfaces.IAuthenticator.providedBy(installer):  # pylint: disable=no-member
         auth = installer
     else:
-        auth = determine_authenticator()
+        auth = client.determine_authenticator()
 
     domains = choose_names(installer) if args.domains is None else args.domains
 
@@ -114,9 +120,16 @@ def main():  # pylint: disable=too-many-statements
     # Validate the key and csr
     client.validate_key_csr(privkey)
 
-    cert_file, chain_file = acme.obtain_certificate(domains)
-    acme.deploy_certificate(domains, privkey, cert_file, chain_file)
-    acme.enhance_config(domains, args.redirect)
+    # This more closely mimics the capabilities of the CLI
+    # It should be possible for reconfig only, install-only, no-install
+    # I am not sure the best way to handle all of the unimplemented abilities,
+    # but this code should be safe on all environments.
+    if auth is not None:
+        cert_file, chain_file = acme.obtain_certificate(domains)
+    if installer is not None and cert_file is not None:
+        acme.deploy_certificate(domains, privkey, cert_file, chain_file)
+    if installer is not None:
+        acme.enhance_config(domains, args.redirect)
 
 
 def display_eula():
@@ -134,8 +147,7 @@ def choose_names(installer):
     :type installer: :class:`letsencrypt.client.interfaces.IInstaller`
 
     """
-    # This function adds all names
-    # found within the config to self.names
+    # This function adds all names found in the installer configuration
     # Then filters them based on user selection
     code, names = zope.component.getUtility(
         interfaces.IDisplay).filter_names(get_all_names(installer))
@@ -165,16 +177,6 @@ def get_all_names(installer):
     return names
 
 
-# This should be controlled by commandline parameters
-def determine_authenticator():
-    """Returns a valid IAuthenticator."""
-    return configurator.ApacheConfigurator()
-
-
-def determine_installer():
-    """Returns a valid IInstaller."""
-    return configurator.ApacheConfigurator()
-
 
 def read_file(filename):
     """Returns the given file's contents with universal new line support.
@@ -192,28 +194,6 @@ def read_file(filename):
     except IOError as exc:
         raise argparse.ArgumentTypeError(exc.strerror)
 
-
-def rollback(installer, checkpoints):
-    """Revert configuration the specified number of checkpoints.
-
-    :param installer: Installer object
-    :type installer: :class:`letsencrypt.client.interfaces.IInstaller`
-
-    :param int checkpoints: Number of checkpoints to revert.
-
-    """
-    installer.rollback_checkpoints(checkpoints)
-    installer.restart()
-
-
-def view_config_changes(installer):
-    """View checkpoints and associated configuration changes.
-
-    :param installer: Installer object
-    :type installer: :class:`letsencrypt.client.interfaces.IInstaller`
-
-    """
-    installer.view_config_changes()
 
 if __name__ == "__main__":
     main()

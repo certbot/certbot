@@ -45,7 +45,7 @@ def create_sig(msg, key_str, nonce=None, nonce_len=CONFIG.NONCE_SIZE):
     hashed = Crypto.Hash.SHA256.new(msg_with_nonce)
     signature = Crypto.Signature.PKCS1_v1_5.new(key).sign(hashed)
 
-    logging.debug('%s signed as %s', msg_with_nonce, signature)
+    logging.debug("%s signed as %s", msg_with_nonce, signature)
 
     n_bytes = binascii.unhexlify(_leading_zeros(hex(key.n)[2:].rstrip("L")))
     e_bytes = binascii.unhexlify(_leading_zeros(hex(key.e)[2:].rstrip("L")))
@@ -95,7 +95,7 @@ def make_csr(key_str, domains):
 
     extstack = M2Crypto.X509.X509_Extension_Stack()
     ext = M2Crypto.X509.new_extension(
-        'subjectAltName', ", ".join("DNS:%s" % d for d in domains))
+        "subjectAltName", ", ".join("DNS:%s" % d for d in domains))
 
     extstack.push(ext)
     csr.add_extensions(extstack)
@@ -144,7 +144,6 @@ def csr_matches_pubkey(csr, privkey):
     return csr_obj.get_pubkey().get_rsa().pub() == privkey_obj.pub()
 
 
-# based on M2Crypto unit test written by Toby Allsopp
 def make_key(bits):
     """Generate PEM encoded RSA key.
 
@@ -154,10 +153,6 @@ def make_key(bits):
     :rtype: str
 
     """
-    # rsa = M2Crypto.RSA.gen_key(bits, 65537)
-    # key_pem = rsa.as_pem(cipher=None)
-    # rsa = None # should not be freed here
-    # Python Crypto module doesn't produce any stdout
     return Crypto.PublicKey.RSA.generate(bits).exportKey(format='PEM')
 
 
@@ -227,6 +222,8 @@ def make_ss_cert(key_str, domains, not_before=None,
 
 def get_cert_info(filename):
     """Get certificate info.
+
+    .. todo:: Pub key is assumed to be RSA... find a good solution to allow EC.
 
     :param str filename: Name of file containing certificate in PEM format.
 

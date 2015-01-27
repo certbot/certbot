@@ -20,9 +20,12 @@ from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
 from letsencrypt.client import network
+from letsencrypt.client import reverter
+from letsencrypt.client import revoker
 
+from letsencrypt.client.apache import configurator
 
-# it's weird to point to chocolate servers via raw IPv6 addresses, and
+# it's weird to point to ACME servers via raw IPv6 addresses, and
 # such addresses can be %SCARY in some contexts, so out of paranoia
 # let's disable them by default
 ALLOW_RAW_IPV6_SERVER = False
@@ -48,6 +51,7 @@ class Client(object):
     zope.interface.implements(interfaces.IAuthenticator)
 
     Key = collections.namedtuple("Key", "file pem")
+    # Note: form is the type of data, "pem" or "der"
     CSR = collections.namedtuple("CSR", "file data form")
 
     def __init__(self, server, authkey, dv_auth, installer):
@@ -64,9 +68,12 @@ class Client(object):
 
         self.installer = installer
 
-        client_auth = client_authenticator.ClientAuthenticator(server)
-        self.auth_handler = auth_handler.AuthHandler(
-            dv_auth, client_auth, self.network)
+        if dv_auth is not None:
+            client_auth = client_authenticator.ClientAuthenticator(server)
+            self.auth_handler = auth_handler.AuthHandler(
+                dv_auth, client_auth, self.network)
+        else:
+            self.auth_handler = None
 
     def obtain_certificate(self, domains, csr=None,
                            cert_path=CONFIG.CERT_PATH,
@@ -85,7 +92,12 @@ class Client(object):
         :rtype: `tuple` of `str`
 
         """
+        if self.auth_handler is None:
+            logging.warning("Unable to obtain a certificate, because client "
+                            "does not have a valid auth handler.")
+
         sanity_check_names(domains)
+
         # Request Challenges
         for name in domains:
             self.auth_handler.add_chall_msg(
@@ -179,6 +191,11 @@ class Client(object):
         :param str chain_file: chain file path
 
         """
+        if self.installer is None:
+            logging.warning("No installer specified, client is unable to deploy"
+                            "the certificate")
+            raise errors.LetsEncryptClientError("No installer available")
+
         chain = None if chain_file is None else os.path.abspath(chain_file)
 
         for dom in domains:
@@ -197,28 +214,30 @@ class Client(object):
     def enhance_config(self, domains, redirect=None):
         """Enhance the configuration.
 
+        .. todo:: This needs to handle the specific enhancements offered by the
+            installer. We will also have to find a method to pass in the chosen
+            values efficiently.
+
         :param list domains: list of domains to configure
 
         :param redirect: If traffic should be forwarded from HTTP to HTTPS.
         :type redirect: bool or None
 
+        :raises :class:`letsencrypt.client.errors.LetsEncryptClientError`: if
+            no installer is specified in the client.
+
         """
+        if self.installer is None:
+            logging.warning("No installer is specified, there isn't any "
+                            "configuration to enhance.")
+            raise errors.LetsEncryptClientError("No installer available")
+
         if redirect is None:
             redirect = zope.component.getUtility(
                 interfaces.IDisplay).redirect_by_default()
 
         if redirect:
             self.redirect_to_ssl(domains)
-
-        # if self.ocsp_stapling is None:
-        #     q = ("Would you like to protect the privacy of your users "
-        #         "by enabling OCSP stapling? If so, your users will not have "
-        #         "to query the Let's Encrypt CA separately about the current "
-        #         "revocation status of your certificate.")
-        #    self.ocsp_stapling = self.ocsp_stapling = display.ocsp_stapling(q)
-        # if self.ocsp_stapling:
-        #    # TODO enable OCSP Stapling
-        #    continue
 
     def store_cert_key(self, cert_file, encrypt=False):
         """Store certificate key. (Used to allow quick revocation)
@@ -421,3 +440,123 @@ def is_hostname_sane(hostname):
         return True
     except socket.error:
         return False
+
+
+# This should be controlled by commandline parameters
+def determine_authenticator():
+    """Returns a valid IAuthenticator."""
+    try:
+        return configurator.ApacheConfigurator()
+    except errors.LetsEncryptNoInstallationError:
+        logging.info("Unable to determine a way to authenticate the server")
+
+
+def determine_installer():
+    """Returns a valid installer if one exists."""
+    try:
+        return configurator.ApacheConfigurator()
+    except errors.LetsEncryptNoInstallationError:
+        logging.info("Unable to find a way to install the certificate.")
+
+
+def rollback(checkpoints):
+    """Revert configuration the specified number of checkpoints.
+
+    .. note:: If another installer uses something other than the reverter class
+        to do their configuration changes, the correct reverter will have to be
+        determined.
+
+    .. note:: This function restarts the server even if there weren't any
+        rollbacks.  The user may be confused or made an error and simply needs
+        to restart the server.
+
+    .. todo:: This function will have to change depending on the functionality
+        of future installers.  Perhaps the interface should define errors that
+        are thrown for the various functions.
+
+    :param int checkpoints: Number of checkpoints to revert.
+
+    """
+    # Misconfigurations are only a slight problems... allow the user to rollback
+    try:
+        installer = determine_installer()
+    except errors.LetsEncryptMisconfigurationError:
+        _misconfigured_rollback(checkpoints)
+        return
+
+    # No Errors occurred during init... proceed normally
+    # If installer is None... couldn't find an installer... there shouldn't be
+    # anything to rollback
+    if installer is not None:
+        installer.rollback_checkpoints(checkpoints)
+        installer.restart()
+
+
+def _misconfigured_rollback(checkpoints):
+    """Handles the case where the Installer is misconfigured."""
+    yes = zope.component.getUtility(interfaces.IDisplay).generic_yesno(
+        "Oh, no! The web server is currently misconfigured.{0}{0}"
+        "Would you still like to rollback the "
+        "configuration?".format(os.linesep))
+    if not yes:
+        logging.info("The error message is above.")
+        logging.info("Configuration was not rolled back.")
+        return
+
+    logging.info("Rolling back using the Reverter module")
+    # recovery routine has probably already been run by installer
+    # in the__init__ attempt, run it again for safety... it shouldn't hurt
+    # Also... not sure how future installers will handle recovery.
+    rev = reverter.Reverter()
+    rev.recovery_routine()
+    rev.rollback_checkpoints(checkpoints)
+
+    # We should try to restart the server
+    try:
+        installer = determine_installer()
+        installer.restart()
+        logging.info("Hooray!  Rollback solved the misconfiguration!")
+        logging.info("Your web server is back up and running.")
+    except errors.LetsEncryptMisconfigurationError:
+        logging.warning(
+            "Rollback was unable to solve the misconfiguration issues")
+
+
+def revoke(server):
+    """Revoke certificates.
+
+    :param str server: ACME server the client wishes to revoke certificates from
+
+    """
+    # Misconfigurations don't really matter. Determine installer better choose
+    # correctly though.
+    try:
+        installer = determine_installer()
+    except errors.LetsEncryptMisconfigurationError:
+        zope.component.getUtility(interfaces.IDisplay).generic_notification(
+            "The web server is currently misconfigured. Some "
+            "abilities like seeing which certificates are currently "
+            "installed may not be available.")
+        installer = None
+
+    # This is a temporary fix to avoid errors. The Revoker is not fully
+    # developed.
+    if installer is None:
+        zope.component.getUtility(interfaces.IDisplay).generic_notification(
+            "The Let's Encrypt Revoker module does not currently support "
+            "revocation without a valid installer.  This feature should come "
+            "soon.")
+        return
+    revoc = revoker.Revoker(server, installer)
+    revoc.list_certs_keys()
+
+
+def view_config_changes():
+    """View checkpoints and associated configuration changes.
+
+    .. note:: This assumes that the installation is using a Reverter object.
+
+    """
+    rev = reverter.Reverter()
+    rev.recovery_routine()
+    rev.view_config_changes()

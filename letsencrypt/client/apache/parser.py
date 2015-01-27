@@ -342,7 +342,7 @@ class ApacheParser(object):
             if os.path.isfile(os.path.join(self.root, name)):
                 return os.path.join(self.root, name)
 
-        raise errors.LetsEncryptConfiguratorError(
+        raise errors.LetsEncryptNoInstallationError(
             "Could not find configuration root")
 
     def _set_user_config_file(self, root):

@@ -18,8 +18,12 @@ class DvsniPerformTest(util.ApacheTest):
     def setUp(self):
         super(DvsniPerformTest, self).setUp()
 
-        config = util.get_apache_configurator(
-            self.config_path, self.config_dir, self.work_dir, self.ssl_options)
+        with mock.patch("letsencrypt.client.apache.configurator."
+                        "mod_loaded") as mock_load:
+            mock_load.return_value = True
+            config = util.get_apache_configurator(
+                self.config_path, self.config_dir, self.work_dir,
+                self.ssl_options)
 
         from letsencrypt.client.apache import dvsni
         self.sni = dvsni.ApacheDvsni(config)

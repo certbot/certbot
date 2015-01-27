@@ -24,7 +24,7 @@ BACKUP_DIR = os.path.join(WORK_DIR, "backups/")
 """Directory where configuration backups are stored"""
 
 TEMP_CHECKPOINT_DIR = os.path.join(WORK_DIR, "temp_checkpoint/")
-"""Replaces MODIFIED_FILES, directory where temp checkpoint is created"""
+"""Directory where temp checkpoint is created"""
 
 IN_PROGRESS_DIR = os.path.join(BACKUP_DIR, "IN_PROGRESS/")
 """Directory used before a permanent checkpoint is finalized"""
@@ -57,6 +57,7 @@ CHAIN_PATH = CERT_DIR + "chain-letsencrypt.pem"
 INVALID_EXT = ".acme.invalid"
 """Invalid Extension"""
 
+# Challenge Sets
 EXCLUSIVE_CHALLENGES = [frozenset(["dvsni", "simpleHttps"])]
 """Mutually Exclusive Challenges - only solve 1"""
 
@@ -89,23 +90,7 @@ ocsp-stapling, TODO
 spdy, TODO
 
 """
-
-# ENHANCEMENTS = [
-#     {
-#         "type": "redirect",
-#         "description": ("Please choose whether HTTPS access is required or "
-#                         "optional."),
-#         "options": [
-#             ("Easy", "Allow both HTTP and HTTPS access to thses sites"),
-#             ("Secure", "Make all requests redirect to secure HTTPS access"),
-#         ],
-#     },
-#     {
-#         "type": ""
-#     }
-# ]
-
-# Config Optimizations
+# Apache Enhancement Arguments
 REWRITE_HTTPS_ARGS = [
     "^.*$", "https://%{SERVER_NAME}%{REQUEST_URI}", "[L,R=permanent]"]
 """Rewrite rule arguments used for redirections to https vhost"""
