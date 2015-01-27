@@ -1,15 +1,9 @@
 """Test for letsencrypt.client.ddns."""
-import pkg_resources
 import unittest
-import shutil
 
 import mock
 
 from letsencrypt.client import challenge_util
-from letsencrypt.client import client
-from letsencrypt.client import CONFIG
-
-from letsencrypt.client.tests.apache import util
 
 
 class DDNSPerformTest(unittest.TestCase):
@@ -47,8 +41,10 @@ class DDNSPerformTest(unittest.TestCase):
         self.assertEqual(mock_nsupdate.call_count, 2)
         calls = mock_nsupdate.call_args_list
         expected_call_list = [
-            ("update add _acme-challenge.encryption-example.demo. TXT 17817c66b60ce2e4012dfad92657527a", ),
-            ("update add _acme-challenge.letsencrypt.demo. TXT 27817c66b60ce2e4012dfad92657527a", ),
+            ("add", "encryption-example.demo",
+             "17817c66b60ce2e4012dfad92657527a", ),
+            ("add", "letsencrypt.demo",
+             "27817c66b60ce2e4012dfad92657527a", ),
         ]
 
         for i in range(len(expected_call_list)):
@@ -66,8 +62,10 @@ class DDNSPerformTest(unittest.TestCase):
         self.assertEqual(mock_nsupdate.call_count, 2)
         calls = mock_nsupdate.call_args_list
         expected_call_list = [
-            ("update del _acme-challenge.encryption-example.demo. TXT 17817c66b60ce2e4012dfad92657527a", ),
-            ("update del _acme-challenge.letsencrypt.demo. TXT 27817c66b60ce2e4012dfad92657527a", ),
+            ("del", "encryption-example.demo",
+             "17817c66b60ce2e4012dfad92657527a", ),
+            ("del", "letsencrypt.demo",
+             "27817c66b60ce2e4012dfad92657527a", ),
         ]
 
         for i in range(len(expected_call_list)):

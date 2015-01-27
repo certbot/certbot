@@ -2,12 +2,10 @@
 
 import logging
 import subprocess
-import StringIO
 
 import zope.interface
 
 from letsencrypt.client import challenge_util
-from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 
 
@@ -21,7 +19,7 @@ class DDNS(object):
         """Return list of challenge preferences."""
         return ["dns"]
 
-    def perform(self, chall_list):
+    def perform(self, chall_list):  # pylint: disable=no-self-use
         """Perform the configuration related challenge.
 
         :param list chall_list: List of challenges to be
@@ -38,8 +36,8 @@ class DDNS(object):
         for chall in chall_list:
             if isinstance(chall, challenge_util.DnsChall):
                 try:
-                    nsupdate("update add _acme-challenge.%s. TXT %s" % (chall.domain, chall.token))
-                except:  # XXX
+                    nsupdate("add", chall.domain, chall.token)
+                except subprocess.CalledProcessError:
                     responses.append(None)
                 else:
                     responses.append({"type": "dns"})
@@ -48,18 +46,40 @@ class DDNS(object):
 
         return responses
 
-    def cleanup(self, chall_list):
+    def cleanup(self, chall_list):  # pylint: disable=no-self-use
         """Revert all challenges."""
         for chall in chall_list:
             if isinstance(chall, challenge_util.DnsChall):
-                nsupdate("update del _acme-challenge.%s. TXT %s" % (chall.domain, chall.token))
+                nsupdate("del", chall.domain, chall.token)
 
 
-def nsupdate(cmd):
-    """Invoke the nsupdate commandline tool to send a single DNS update"""
-    logging.debug("nsupdate %s", cmd)
-    cmd = "%s\nsend\n" % cmd
-    subprocess.check_call(["nsupdate", "-k", "nsupdate.key"],
-                          stdin=StringIO.StringIO(cmd),
-                          stdout=open("/dev/null", 'w'),
-                          stderr=open("/dev/null", 'w'))
+# TODO: make this user-configurable.
+NSUPDATE_CMD = "nsupdate -k le-nsupdate.key"
+
+
+def nsupdate(action, domain, token):
+    """Invoke the nsupdate commandline tool to send a single DNS update
+
+    :param str action: desired nameserver update operation, "add" or "del"
+    :param str domain: domain to verify (no "." at the end, no acme prefix)
+    :param str token: token to put into the TXT record
+
+    :raises: subprocess.CalledProcessError if the call to nsupdate resulted
+             in a non-zero return code
+
+    """
+    logging.debug("nsupdate cmd: %s", NSUPDATE_CMD)
+    stdin = "update %s _acme-challenge.%s. 60 TXT %s\nsend\n" % (
+        action, domain, token)
+    logging.debug("nsupdate stdin: %s", stdin)
+    process = subprocess.Popen(
+        NSUPDATE_CMD.split(),
+        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = process.communicate(input=stdin)
+    retcode = process.poll()
+    logging.debug("nsupdate rc: %d", retcode)
+    logging.debug("nsupdate stdout: %s", stdout)
+    logging.debug("nsupdate stderr: %s", stderr)
+    if retcode != 0:
+        raise subprocess.CalledProcessError(retcode, NSUPDATE_CMD,
+                                            output=stderr)
