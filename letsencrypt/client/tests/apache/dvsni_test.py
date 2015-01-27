@@ -56,23 +56,49 @@ class DvsniPerformTest(util.ApacheTest):
         self.assertTrue(resp is None)
 
     @mock.patch("letsencrypt.client.challenge_util.dvsni_gen_cert")
-    def test_perform1(self, mock_dvsni_gen_cert):
+    def test_setup_challenge_cert(self, mock_dvsni_gen_cert):
+        # This is a helper function that can be used for handling
+        # open context managers more elegantly. It avoids dealing with
+        # __enter__ and __exit__ calls.
+        # http://www.voidspace.org.uk/python/mock/helpers.html#mock.mock_open
         chall = self.challs[0]
-        self.sni.add_chall(chall)
-        mock_dvsni_gen_cert.return_value = "randomS1"
-        responses = self.sni.perform()
+        m_open = mock.mock_open()
+        mock_dvsni_gen_cert.return_value = ("pem", "randomS1")
+
+        with mock.patch("letsencrypt.client.apache.dvsni.open",
+                        m_open, create=True):
+            # pylint: disable=protected-access
+            s_b64 = self.sni._setup_challenge_cert(chall)
+
+            self.assertEqual(s_b64, "randomS1")
+
+            self.assertTrue(m_open.called)
+            self.assertEqual(
+                m_open.call_args[0], (self.sni.get_cert_file(chall.nonce), 'w'))
+            self.assertEqual(m_open().write.call_args[0][0], "pem")
 
         self.assertEqual(mock_dvsni_gen_cert.call_count, 1)
         calls = mock_dvsni_gen_cert.call_args_list
         expected_call_list = [
-            (self.sni.get_cert_file(chall.nonce), chall.domain,
-             chall.r_b64, chall.nonce, chall.key)
+            (chall.domain, chall.r_b64, chall.nonce, chall.key)
         ]
 
         for i in range(len(expected_call_list)):
             for j in range(len(expected_call_list[0])):
                 self.assertEqual(calls[i][0][j], expected_call_list[i][j])
 
+    def test_perform1(self):
+        chall = self.challs[0]
+        self.sni.add_chall(chall)
+        mock_setup_cert = mock.MagicMock(return_value="randomS1")
+        # pylint: disable=protected-access
+        self.sni._setup_challenge_cert = mock_setup_cert
+
+        responses = self.sni.perform()
+
+        mock_setup_cert.assert_called_once_with(chall)
+
+        # Check to make sure challenge config path is included in apache config.
         self.assertEqual(
             len(self.sni.config.parser.find_dir(
                 "Include", self.sni.challenge_conf)),
@@ -80,26 +106,23 @@ class DvsniPerformTest(util.ApacheTest):
         self.assertEqual(len(responses), 1)
         self.assertEqual(responses[0]["s"], "randomS1")
 
-    @mock.patch("letsencrypt.client.challenge_util.dvsni_gen_cert")
-    def test_perform2(self, mock_dvsni_gen_cert):
+    def test_perform2(self):
         for chall in self.challs:
             self.sni.add_chall(chall)
 
-        mock_dvsni_gen_cert.side_effect = ["randomS0", "randomS1"]
+        mock_setup_cert = mock.MagicMock(side_effect=["randomS0", "randomS1"])
+        # pylint: disable=protected-access
+        self.sni._setup_challenge_cert = mock_setup_cert
+
         responses = self.sni.perform()
 
-        self.assertEqual(mock_dvsni_gen_cert.call_count, 2)
-        calls = mock_dvsni_gen_cert.call_args_list
-        expected_call_list = []
+        self.assertEqual(mock_setup_cert.call_count, 2)
 
-        for chall in self.challs:
-            expected_call_list.append(
-                (self.sni.get_cert_file(chall.nonce), chall.domain,
-                 chall.r_b64, chall.nonce, chall.key))
-
-        for i in range(len(expected_call_list)):
-            for j in range(len(expected_call_list[0])):
-                self.assertEqual(calls[i][0][j], expected_call_list[i][j])
+        # Make sure calls made to mocked function were correct
+        self.assertEqual(
+            mock_setup_cert.call_args_list[0], mock.call(self.challs[0]))
+        self.assertEqual(
+            mock_setup_cert.call_args_list[1], mock.call(self.challs[1]))
 
         self.assertEqual(
             len(self.sni.config.parser.find_dir(
