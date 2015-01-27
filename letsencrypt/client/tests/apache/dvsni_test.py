@@ -83,8 +83,8 @@ class DvsniPerformTest(util.ApacheTest):
             (chall.domain, chall.r_b64, chall.nonce, chall.key)
         ]
 
-        for i in range(len(expected_call_list)):
-            for j in range(len(expected_call_list[0])):
+        for i in xrange(len(expected_call_list)):
+            for j in xrange(len(expected_call_list[0])):
                 self.assertEqual(calls[i][0][j], expected_call_list[i][j])
 
     def test_perform1(self):
@@ -129,7 +129,7 @@ class DvsniPerformTest(util.ApacheTest):
                 "Include", self.sni.challenge_conf)),
             1)
         self.assertEqual(len(responses), 2)
-        for i in range(2):
+        for i in xrange(2):
             self.assertEqual(responses[i]["s"], "randomS%d" % i)
 
     def test_mod_config(self):
