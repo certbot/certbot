@@ -25,8 +25,7 @@ testing_extras = [
     'coverage',
     'nose',
     'nosexcover',
-    'pylint<1.4',  # py2.6 compat, c.f #97
-    'astroid<1.3.0',  # py2.6 compat, c.f. #187
+    'pylint',
     'tox',
 ]
 
