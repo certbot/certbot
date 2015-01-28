@@ -385,6 +385,7 @@ class TestFullCheckpointsReverter(unittest.TestCase):
 
 
 class QuickInitReverterTest(unittest.TestCase):
+    # pylint: disable=too-few-public-methods
     """Quick test of init."""
     def test_init(self):
         from letsencrypt.client.reverter import Reverter

@@ -12,7 +12,7 @@ from letsencrypt.client.apache import configurator
 from letsencrypt.client.apache import obj
 
 
-class ApacheTest(unittest.TestCase):
+class ApacheTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
 
     def setUp(self):
         super(ApacheTest, self).setUp()

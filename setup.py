@@ -25,7 +25,7 @@ testing_extras = [
     'coverage',
     'nose',
     'nosexcover',
-    'pylint',
+    'pylint>=1.4.0',  # upstream #248
     'tox',
 ]
 
