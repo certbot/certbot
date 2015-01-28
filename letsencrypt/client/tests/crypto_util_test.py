@@ -95,7 +95,7 @@ class CSRMatchesPubkeyTest(unittest.TestCase):
         self.assertFalse(self._call_testdata('csr.pem', RSA512_KEY))
 
 
-class MakeKeyTest(unittest.TestCase):
+class MakeKeyTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
     """Tests for letsencrypt.client.crypto_util.make_key."""
 
     def test_it(self):  # pylint: disable=no-self-use
@@ -124,6 +124,7 @@ class ValidPrivkeyTest(unittest.TestCase):
 
 
 class MakeSSCertTest(unittest.TestCase):
+    # pylint: disable=too-few-public-methods
     """Tests for letsencrypt.client.crypto_util.make_ss_cert."""
 
     def test_it(self):  # pylint: disable=no-self-use
@@ -170,6 +171,7 @@ class GetCertInfoTest(unittest.TestCase):
 
 
 class B64CertToPEMTest(unittest.TestCase):
+    # pylint: disable=too-few-public-methods
     """Tests for letsencrypt.client.crypto_util.b64_cert_to_pem."""
 
     def test_it(self):

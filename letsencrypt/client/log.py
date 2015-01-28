@@ -6,7 +6,7 @@ import dialog
 from letsencrypt.client import display
 
 
-class DialogHandler(logging.Handler):
+class DialogHandler(logging.Handler):  # pylint: disable=too-few-public-methods
     """Logging handler using dialog info box.
 
     :ivar int height: Height of the info box (without padding).
