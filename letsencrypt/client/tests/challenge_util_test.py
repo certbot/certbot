@@ -5,7 +5,6 @@ import re
 import unittest
 
 import M2Crypto
-import mock
 
 from letsencrypt.client import challenge_util
 from letsencrypt.client import client
@@ -19,32 +18,19 @@ class DvsniGenCertTest(unittest.TestCase):
 
     def test_standard(self):
         """Basic test for straightline code."""
-        # This is a helper function that can be used for handling
-        # open context managers more elegantly. It avoids dealing with
-        # __enter__ and __exit__ calls.
-        # http://www.voidspace.org.uk/python/mock/helpers.html#mock.mock_open
-        m_open = mock.mock_open()
-        with mock.patch("letsencrypt.client.challenge_util.open",
-                        m_open, create=True):
+        domain = "example.com"
+        dvsni_r = "r_value"
+        r_b64 = le_util.jose_b64encode(dvsni_r)
+        pem = pkg_resources.resource_string(
+            __name__, os.path.join("testdata", "rsa256_key.pem"))
+        key = client.Client.Key("path", pem)
+        nonce = "12345ABCDE"
+        cert_pem, s_b64 = self._call(domain, r_b64, nonce, key)
 
-            domain = "example.com"
-            dvsni_r = "r_value"
-            r_b64 = le_util.jose_b64encode(dvsni_r)
-            pem = pkg_resources.resource_string(
-                __name__, os.path.join("testdata", "rsa256_key.pem"))
-            key = client.Client.Key("path", pem)
-            nonce = "12345ABCDE"
-            s_b64 = self._call("tmp.crt", domain, r_b64, nonce, key)
-
-            self.assertTrue(m_open.called)
-            self.assertEqual(m_open.call_args[0], ("tmp.crt", 'w'))
-            self.assertEqual(m_open().write.call_count, 1)
-
-            # pylint: disable=protected-access
-            ext = challenge_util._dvsni_gen_ext(
-                dvsni_r, le_util.jose_b64decode(s_b64))
-            self._standard_check_cert(
-                m_open().write.call_args[0][0], domain, nonce, ext)
+        # pylint: disable=protected-access
+        ext = challenge_util._dvsni_gen_ext(
+            dvsni_r, le_util.jose_b64decode(s_b64))
+        self._standard_check_cert(cert_pem, domain, nonce, ext)
 
     def _standard_check_cert(self, pem, domain, nonce, ext):
         """Check the certificate fields."""
@@ -60,7 +46,7 @@ class DvsniGenCertTest(unittest.TestCase):
 
         self.assertEqual(exp_sans, act_sans)
 
-    # pylint: disable= no-self-use
-    def _call(self, filepath, name, r_b64, nonce, key):
+    @classmethod
+    def _call(cls, name, r_b64, nonce, key):
         from letsencrypt.client.challenge_util import dvsni_gen_cert
-        return dvsni_gen_cert(filepath, name, r_b64, nonce, key)
+        return dvsni_gen_cert(name, r_b64, nonce, key)
