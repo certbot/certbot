@@ -47,8 +47,8 @@ class DDNSPerformTest(unittest.TestCase):
              "27817c66b60ce2e4012dfad92657527a", ),
         ]
 
-        for i in range(len(expected_call_list)):
-            for j in range(len(expected_call_list[0])):
+        for i in xrange(len(expected_call_list)):
+            for j in xrange(len(expected_call_list[0])):
                 self.assertEqual(calls[i][0][j], expected_call_list[i][j])
 
         self.assertEqual(len(responses), 2)
@@ -68,8 +68,8 @@ class DDNSPerformTest(unittest.TestCase):
              "27817c66b60ce2e4012dfad92657527a", ),
         ]
 
-        for i in range(len(expected_call_list)):
-            for j in range(len(expected_call_list[0])):
+        for i in xrange(len(expected_call_list)):
+            for j in xrange(len(expected_call_list[0])):
                 self.assertEqual(calls[i][0][j], expected_call_list[i][j])
 
 

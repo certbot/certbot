@@ -1,5 +1,4 @@
 """generic DDNS authenticator (RFC 2136)"""
-
 import logging
 import subprocess
 
