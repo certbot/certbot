@@ -11,11 +11,15 @@ def read_file(filename, encoding='utf8'):
     with codecs.open(filename, encoding=encoding) as fd:
         return fd.read()
 
+
 here = os.path.abspath(os.path.dirname(__file__))
 
 # read version number (and other metadata) from package init
 init_fn = os.path.join(here, 'letsencrypt', '__init__.py')
 meta = dict(re.findall(r"""__([a-z]+)__ = "([^"]+)""", read_file(init_fn)))
+
+readme = read_file(os.path.join(here, 'README.rst'))
+changes = read_file(os.path.join(here, 'CHANGES.rst'))
 
 install_requires = [
     'argparse',
@@ -48,6 +52,7 @@ setup(
     name="letsencrypt",
     version=meta['version'],
     description="Let's Encrypt",
+    long_description=readme,  # later: + '\n\n' + changes
     author="Let's Encrypt Project",
     license="",
     url="https://letsencrypt.org",
