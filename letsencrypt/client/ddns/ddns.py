@@ -8,6 +8,7 @@ from letsencrypt.client import challenge_util
 from letsencrypt.client import interfaces
 
 
+# TODO: make practical use of this, nothing uses DDNS yet
 class DDNS(object):
     """DDNS authenticator.
 
@@ -52,6 +53,7 @@ class DDNS(object):
                 nsupdate("del", chall.domain, chall.token)
 
 
+# TODO: add dnsutils to required/suggested packages
 # TODO: make this user-configurable.
 NSUPDATE_CMD = "nsupdate -k le-nsupdate.key"
 

@@ -23,16 +23,13 @@ class DDNSPerformTest(unittest.TestCase):
         self.challs.append(challenge_util.DnsChall(
             "letsencrypt.demo", "27817c66b60ce2e4012dfad92657527a", key))
 
-    def tearDown(self):
-        pass
-
     def test_pref(self):
         result = self.ddns.get_chall_pref("example.org")
         self.assertEqual(result, ["dns"])
 
     def test_perform0(self):
         resp = self.ddns.perform([])
-        self.assertTrue(resp == [])
+        self.assertEqual(resp, [])
 
     @mock.patch("letsencrypt.client.ddns.ddns.nsupdate")
     def test_perform2(self, mock_nsupdate):
