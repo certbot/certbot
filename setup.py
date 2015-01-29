@@ -1,13 +1,13 @@
 #!/usr/bin/env python
+import codecs
 import os
 import re
-import codecs
 
 from setuptools import setup
 
 
 def read_file(filename, encoding='utf8'):
-    """read unicode from given file"""
+    """Read unicode from given file."""
     with codecs.open(filename, encoding=encoding) as fd:
         return fd.read()
 
