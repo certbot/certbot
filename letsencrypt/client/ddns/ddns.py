@@ -4,6 +4,7 @@ import subprocess
 
 import zope.interface
 
+from letsencrypt.client import CONFIG
 from letsencrypt.client import challenge_util
 from letsencrypt.client import interfaces
 
@@ -53,11 +54,6 @@ class DDNS(object):
                 nsupdate("del", chall.domain, chall.token)
 
 
-# TODO: add dnsutils to required/suggested packages
-# TODO: make this user-configurable.
-NSUPDATE_CMD = "nsupdate -k le-nsupdate.key"
-
-
 def nsupdate(action, domain, token):
     """Invoke the nsupdate commandline tool to send a single DNS update
 
@@ -69,12 +65,13 @@ def nsupdate(action, domain, token):
              in a non-zero return code
 
     """
-    logging.debug("nsupdate cmd: %s", NSUPDATE_CMD)
+    cmd = CONFIG.NSUPDATE_CMD
+    logging.debug("nsupdate cmd: %s", cmd)
     stdin = "update %s _acme-challenge.%s. 60 TXT %s\nsend\n" % (
         action, domain, token)
     logging.debug("nsupdate stdin: %s", stdin)
     process = subprocess.Popen(
-        NSUPDATE_CMD.split(),
+        cmd.split(),
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = process.communicate(input=stdin)
     retcode = process.poll()
@@ -82,5 +79,4 @@ def nsupdate(action, domain, token):
     logging.debug("nsupdate stdout: %s", stdout)
     logging.debug("nsupdate stderr: %s", stderr)
     if retcode != 0:
-        raise subprocess.CalledProcessError(retcode, NSUPDATE_CMD,
-                                            output=stderr)
+        raise subprocess.CalledProcessError(retcode, cmd, output=stderr)
