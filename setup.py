@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from setuptools import setup
 
+from letsencrypt import VERSION
 
 install_requires = [
     'argparse',
@@ -31,7 +32,7 @@ testing_extras = [
 
 setup(
     name="letsencrypt",
-    version="0.1",
+    version=VERSION,
     description="Let's Encrypt",
     author="Let's Encrypt Project",
     license="",

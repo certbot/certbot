@@ -8,6 +8,7 @@ import sys
 import zope.component
 import zope.interface
 
+from letsencrypt import VERSION
 from letsencrypt.client import CONFIG
 from letsencrypt.client import client
 from letsencrypt.client import display
@@ -19,7 +20,7 @@ from letsencrypt.client import log
 def main():  # pylint: disable=too-many-statements,too-many-branches
     """Command line argument parsing and main script execution."""
     parser = argparse.ArgumentParser(
-        description="An ACME client that can update Apache configurations.")
+        description="letsencrypt client %s" % VERSION)
 
     parser.add_argument("-d", "--domains", dest="domains", metavar="DOMAIN",
                         nargs="+")
