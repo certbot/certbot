@@ -5,13 +5,17 @@ import codecs
 
 from setuptools import setup
 
+
+def read_file(filename, encoding='utf8'):
+    """read unicode from given file"""
+    with codecs.open(filename, encoding=encoding) as fd:
+        return fd.read()
+
 here = os.path.abspath(os.path.dirname(__file__))
 
 # read version number (and other metadata) from package init
 init_fn = os.path.join(here, 'letsencrypt', '__init__.py')
-with codecs.open(init_fn, encoding='utf8') as meta_file:
-    content = meta_file.read()
-meta = dict(re.findall(r"""__([a-z]+)__ = "([^"]+)""", content))
+meta = dict(re.findall(r"""__([a-z]+)__ = "([^"]+)""", read_file(init_fn)))
 
 install_requires = [
     'argparse',
