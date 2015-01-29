@@ -1,7 +1,17 @@
 #!/usr/bin/env python
+import os
+import re
+import codecs
+
 from setuptools import setup
 
-from letsencrypt import VERSION
+here = os.path.abspath(os.path.dirname(__file__))
+
+# read version number (and other metadata) from package init
+init_fn = os.path.join(here, 'letsencrypt', '__init__.py')
+with codecs.open(init_fn, encoding='utf8') as meta_file:
+    content = meta_file.read()
+meta = dict(re.findall(r"""__([a-z]+)__ = "([^"]+)""", content))
 
 install_requires = [
     'argparse',
@@ -32,7 +42,7 @@ testing_extras = [
 
 setup(
     name="letsencrypt",
-    version=VERSION,
+    version=meta['version'],
     description="Let's Encrypt",
     author="Let's Encrypt Project",
     license="",
