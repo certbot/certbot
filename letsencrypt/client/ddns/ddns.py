@@ -1,4 +1,4 @@
-"""generic DDNS authenticator (RFC 2136)"""
+"""Generic DDNS authenticator (RFC 2136)"""
 import logging
 import subprocess
 
@@ -11,9 +11,7 @@ from letsencrypt.client import interfaces
 
 # TODO: make practical use of this, nothing uses DDNS yet
 class DDNS(object):
-    """DDNS authenticator.
-
-    """
+    """DDNS authenticator"""
     zope.interface.implements(interfaces.IAuthenticator)
 
     def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use
@@ -55,7 +53,7 @@ class DDNS(object):
 
 
 def nsupdate(action, domain, token):
-    """Invoke the nsupdate commandline tool to send a single DNS update
+    """Invoke the nsupdate commandline tool to send a single DNS update.
 
     :param str action: desired nameserver update operation, "add" or "del"
     :param str domain: domain to verify (no "." at the end, no acme prefix)
