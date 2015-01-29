@@ -1,3 +1,4 @@
+responses==0.3.0
 M2Crypto==0.22.3
 python2-pythondialog
 jsonschema==2.4.0
