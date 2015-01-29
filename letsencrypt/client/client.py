@@ -4,8 +4,6 @@ import csv
 import logging
 import os
 import shutil
-import socket
-import string
 import sys
 
 import M2Crypto
@@ -24,11 +22,6 @@ from letsencrypt.client import reverter
 from letsencrypt.client import revoker
 
 from letsencrypt.client.apache import configurator
-
-# it's weird to point to ACME servers via raw IPv6 addresses, and
-# such addresses can be %SCARY in some contexts, so out of paranoia
-# let's disable them by default
-ALLOW_RAW_IPV6_SERVER = False
 
 
 class Client(object):
@@ -95,8 +88,6 @@ class Client(object):
         if self.auth_handler is None:
             logging.warning("Unable to obtain a certificate, because client "
                             "does not have a valid auth handler.")
-
-        sanity_check_names(domains)
 
         # Request Challenges
         for name in domains:
@@ -399,47 +390,6 @@ def csr_pem_to_der(csr):
 
     csr_obj = M2Crypto.X509.load_request_string(csr.data)
     return Client.CSR(csr.file, csr_obj.as_der(), "der")
-
-
-def sanity_check_names(names):
-    """Make sure host names are valid.
-
-    :param list names: List of host names
-
-    """
-    for name in names:
-        if not is_hostname_sane(name):
-            logging.fatal("%r is an impossible hostname", name)
-            sys.exit(81)
-
-
-def is_hostname_sane(hostname):
-    """Make sure the given host name is sane.
-
-    Do enough to avoid shellcode from the environment.  There's
-    no need to do more.
-
-    :param str hostname: Host name to validate
-
-    :returns: True if hostname is valid, otherwise false.
-    :rtype: bool
-
-    """
-    # hostnames & IPv4
-    allowed = string.ascii_letters + string.digits + "-."
-    if all([c in allowed for c in hostname]):
-        return True
-
-    if not ALLOW_RAW_IPV6_SERVER:
-        return False
-
-    # ipv6 is messy and complicated, can contain %zoneindex etc.
-    try:
-        # is this a valid IPv6 address?
-        socket.getaddrinfo(hostname, 443, socket.AF_INET6)
-        return True
-    except socket.error:
-        return False
 
 
 # This should be controlled by commandline parameters
