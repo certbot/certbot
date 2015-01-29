@@ -31,3 +31,7 @@ class LetsEncryptMisconfigurationError(LetsEncryptConfiguratorError):
 
 class LetsEncryptDvsniError(LetsEncryptConfiguratorError):
     """Let's Encrypt DVSNI error."""
+
+
+class LetsEncryptValidationError(LetsEncryptClientError):
+    pass

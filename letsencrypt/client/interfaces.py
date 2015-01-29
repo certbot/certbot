@@ -168,7 +168,7 @@ class IDisplay(zope.interface.Interface):
         """Ask the user whether they would like to redirect to HTTPS."""
 
 
-class IValidator(object):
+class IValidator(zope.interface.Interface):
     """Configuration validator."""
 
     def redirect(name):
@@ -177,8 +177,11 @@ class IValidator(object):
     def ocsp_stapling(name):
         """Verify ocsp stapling for domain."""
 
-    def https(names):
+    def https(name):
         """Verifiy HTTPS is enabled for domain."""
 
     def hsts(name):
         """Verify HSTS header is enabled."""
+
+    def spdy(name):
+        """Verify SPDY is enabled."""
