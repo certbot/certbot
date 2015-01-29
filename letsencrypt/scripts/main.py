@@ -180,7 +180,6 @@ def get_all_names(installer):
     return names
 
 
-
 def read_file(filename):
     """Returns the given file's contents with universal new line support.
 
