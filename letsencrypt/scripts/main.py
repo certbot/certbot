@@ -1,5 +1,9 @@
 #!/usr/bin/env python
-"""Parse command line and call the appropriate functions."""
+"""Parse command line and call the appropriate functions.
+
+..todo:: Sanity check all input.  Be sure to avoid shell code etc...
+
+"""
 import argparse
 import logging
 import os
@@ -165,7 +169,6 @@ def get_all_names(installer):
 
     """
     names = list(installer.get_all_names())
-    client.sanity_check_names(names)
 
     if not names:
         logging.fatal("No domain names were found in your installation")
@@ -175,7 +178,6 @@ def get_all_names(installer):
         sys.exit(1)
 
     return names
-
 
 
 def read_file(filename):
