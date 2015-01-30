@@ -208,9 +208,11 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         """
         logging.info("Cleaning up challenges for %s", domain)
         # These are indexed challenges... give just the challenges to the auth
-        self.dv_auth.cleanup(ichall.chall for ichall in self.dv_c[domain])
+        # Chose to make these lists instead of a generator to make it easier to
+        # work with...
+        self.dv_auth.cleanup([ichall.chall for ichall in self.dv_c[domain]])
         self.client_auth.cleanup(
-            ichall.chall for ichall in self.client_c[domain])
+            [ichall.chall for ichall in self.client_c[domain]])
 
     def _cleanup_state(self, delete_list):
         """Cleanup state after an authorization is received.
