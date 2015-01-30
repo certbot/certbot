@@ -123,7 +123,12 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
             self._cleanup_challenges(domain)
 
     def _satisfy_challenges(self):
-        """Attempt to satisfy all saved challenge messages."""
+        """Attempt to satisfy all saved challenge messages.
+
+        .. todo:: It might be worth it to try different challenges to
+            find one that doesn't throw an exception
+
+        """
         logging.info("Performing the following challenges:")
         for dom in self.domains:
             self.paths[dom] = gen_challenge_path(
@@ -143,8 +148,19 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
             flat_client.extend(ichall.chall for ichall in self.client_c[dom])
             flat_auth.extend(ichall.chall for ichall in self.dv_c[dom])
 
-        client_resp = self.client_auth.perform(flat_client)
-        dv_resp = self.dv_auth.perform(flat_auth)
+        try:
+            client_resp = self.client_auth.perform(flat_client)
+            dv_resp = self.dv_auth.perform(flat_auth)
+        # This will catch both specific types of errors.
+        except errors.LetsEncryptAuthHandlerError as err:
+            logging.critical("Failure in setting up challenges:")
+            logging.critical(str(err))
+            logging.info("Attempting to clean up outstanding challenges...")
+            for dom in self.domains:
+                self._cleanup_challenges(dom)
+
+            raise errors.LetsEncryptAuthHandlerError(
+                "Unable to perform challenges")
 
         logging.info("Ready for verification...")
 
@@ -191,8 +207,10 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
 
         """
         logging.info("Cleaning up challenges for %s", domain)
-        self.dv_auth.cleanup(self.dv_c[domain])
-        self.client_auth.cleanup(self.client_c[domain])
+        # These are indexed challenges... give just the challenges to the auth
+        self.dv_auth.cleanup(ichall.chall for ichall in self.dv_c[domain])
+        self.client_auth.cleanup(
+            ichall.chall for ichall in self.client_c[domain])
 
     def _cleanup_state(self, delete_list):
         """Cleanup state after an authorization is received.
