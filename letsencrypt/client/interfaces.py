@@ -11,6 +11,7 @@ class IAuthenticator(zope.interface.Interface):
     ability to perform challenges and attain a certificate.
 
     """
+
     def get_chall_pref(domain):
         """Return list of challenge preferences.
 
@@ -22,6 +23,7 @@ class IAuthenticator(zope.interface.Interface):
         :rtype: list
 
         """
+
     def perform(chall_list):
         """Perform the given challenge.
 
@@ -35,6 +37,7 @@ class IAuthenticator(zope.interface.Interface):
         :rtype: `list` of dicts
 
         """
+
     def cleanup(chall_list):
         """Revert changes and shutdown after challenges complete."""
 
@@ -58,6 +61,7 @@ class IInstaller(zope.interface.Interface):
     Represents any server that an X509 certificate can be placed.
 
     """
+
     def get_all_names():
         """Returns all names that may be authenticated."""
 
@@ -69,8 +73,9 @@ class IInstaller(zope.interface.Interface):
         :param str key: private key filename
 
         """
-    def enhance(domain, enhancment, options=None):
-        """Peform a configuration enhancment.
+
+    def enhance(domain, enhancement, options=None):
+        """Peform a configuration enhancement.
 
         :param str domain: domain for which to provide enhancement
         :param str enhancement: An enhancement as defined in CONFIG.ENHANCEMENTS
@@ -80,14 +85,16 @@ class IInstaller(zope.interface.Interface):
             for each enhancement.
 
         """
-    def supported_enhancements():
-        """Returns a list of supported enhancments.
 
-        :returns: supported enhancments which should be a subset of the
-        enhancments in :class:`letsencrypt.client.CONFIG.ENHANCEMENTS`
-        :rtype: `list` of `str`
+    def supported_enhancements():
+        """Returns a list of supported enhancements.
+
+        :returns: supported enhancements which should be a subset of the
+            enhancements in :class:`letsencrypt.client.CONFIG.ENHANCEMENTS`
+            :rtype: `list` of `str`
 
         """
+
     def get_all_certs_keys():
         """Retrieve all certs and keys set in configuration.
 
@@ -98,6 +105,7 @@ class IInstaller(zope.interface.Interface):
         :rtype: list
 
         """
+
     def save(title=None, temporary=False):
         """Saves all changes to the configuration files.
 
@@ -113,6 +121,7 @@ class IInstaller(zope.interface.Interface):
             be quickly reversed in the future (challenges)
 
         """
+
     def rollback_checkpoints(rollback=1):
         """Revert `rollback` number of configuration checkpoints."""
 
@@ -135,6 +144,7 @@ class IDisplay(zope.interface.Interface):
         :param str message: Message to display
 
         """
+
     def generic_menu(message, choices, input_text=""):
         """Displays a generic menu.
 
@@ -143,6 +153,7 @@ class IDisplay(zope.interface.Interface):
         :param str input_text: instructions on how to make a selection
 
         """
+
     def generic_input(message):
         """Accept input from the user."""
 
@@ -168,7 +179,7 @@ class IDisplay(zope.interface.Interface):
         """Ask the user whether they would like to redirect to HTTPS."""
 
 
-class IValidator(object):
+class IValidator(zope.interface.Interface):
     """Configuration validator."""
 
     def redirect(name):
