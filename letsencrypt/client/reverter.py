@@ -6,7 +6,6 @@ import time
 
 import zope.component
 
-from letsencrypt.client import CONFIG
 from letsencrypt.client import display
 from letsencrypt.client import errors
 from letsencrypt.client import interfaces
@@ -14,12 +13,19 @@ from letsencrypt.client import le_util
 
 
 class Reverter(object):
-    """Reverter Class - save and revert configuration checkpoints"""
-    def __init__(self, direc=None):
-        if not direc:
-            direc = {'backup': CONFIG.BACKUP_DIR,
-                     'temp': CONFIG.TEMP_CHECKPOINT_DIR,
-                     'progress': CONFIG.IN_PROGRESS_DIR}
+    """Reverter Class - save and revert configuration checkpoints."""
+
+    def __init__(self, config, direc=None):
+        """Initialize Reverter.
+
+        :param config: Configuration.
+        :type config: :class:`letsencrypt.client.interfaces.IConfig`
+
+        """
+        if direc is None:
+            direc = {'backup': config.BACKUP_DIR,
+                     'temp': config.TEMP_CHECKPOINT_DIR,
+                     'progress': config.IN_PROGRESS_DIR}
         self.direc = direc
 
     def revert_temporary_config(self):

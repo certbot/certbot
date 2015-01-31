@@ -7,7 +7,7 @@ import unittest
 
 import mock
 
-from letsencrypt.client import CONFIG
+from letsencrypt.client import constants
 from letsencrypt.client.apache import configurator
 from letsencrypt.client.apache import obj
 
@@ -50,11 +50,7 @@ def dir_setup(test_dir="debian_apache_2_4/two_vhost_80"):
 def setup_apache_ssl_options(config_dir):
     """Move the ssl_options into position and return the path."""
     option_path = os.path.join(config_dir, "options-ssl.conf")
-    temp_options = pkg_resources.resource_filename(
-        "letsencrypt.client.apache", os.path.basename(CONFIG.OPTIONS_SSL_CONF))
-    shutil.copyfile(
-        temp_options, option_path)
-
+    shutil.copyfile(constants.APACHE_MOD_SSL_CONF, option_path)
     return option_path
 
 
@@ -69,7 +65,9 @@ def get_apache_configurator(
         # This just states that the ssl module is already loaded
         mock_popen().communicate.return_value = ("ssl_module", "")
         config = configurator.ApacheConfigurator(
-            config_path,
+            mock.MagicMock(APACHE_SERVER_ROOT=config_path,
+                           APACHE_MOD_SSL_CONF=ssl_options,
+                           LE_VHOST_EXT="-le-ssl.conf"),
             {
                 "backup": backups,
                 "temp": os.path.join(work_dir, "temp_checkpoint"),
@@ -77,7 +75,6 @@ def get_apache_configurator(
                 "config": config_dir,
                 "work": work_dir,
             },
-            ssl_options,
             version)
 
     return config

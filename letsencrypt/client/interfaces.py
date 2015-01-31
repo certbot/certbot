@@ -2,6 +2,7 @@
 import zope.interface
 
 # pylint: disable=no-self-argument,no-method-argument,no-init,inherit-non-class
+# pylint: disable=too-few-public-methods
 
 
 class IAuthenticator(zope.interface.Interface):
@@ -56,6 +57,10 @@ class IChallenge(zope.interface.Interface):
 
     def cleanup():
         """Cleanup."""
+
+
+class IConfig(zope.interface.Interface):
+    """Marker interface for Let's Encrypt config."""
 
 
 class IInstaller(zope.interface.Interface):

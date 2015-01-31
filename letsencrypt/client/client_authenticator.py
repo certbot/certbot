@@ -8,7 +8,8 @@ from letsencrypt.client import recovery_token
 
 
 class ClientAuthenticator(object):
-    """IAuthenticator for CONFIG.CLIENT_CHALLENGES.
+    """IAuthenticator for
+    :const:`~letsencrypt.client.constants.CLIENT_CHALLENGES`.
 
     :ivar rec_token: Performs "recoveryToken" challenges
     :type rec_token: :class:`letsencrypt.client.recovery_token.RecoveryToken`
@@ -17,13 +18,17 @@ class ClientAuthenticator(object):
     zope.interface.implements(interfaces.IAuthenticator)
 
     # This will have an installer soon for get_key/cert purposes
-    def __init__(self, server):
+    def __init__(self, server, config):
         """Initialize Client Authenticator.
 
         :param str server: ACME CA Server
 
+        :param config: Configuration.
+        :type config: :class:`letsencrypt.client.interfaces.IConfig`
+
         """
-        self.rec_token = recovery_token.RecoveryToken(server)
+        self.rec_token = recovery_token.RecoveryToken(
+            server, config.REV_TOKEN_DIRS)
 
     def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use
         """Return list of challenge preferences."""

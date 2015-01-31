@@ -82,15 +82,15 @@ def main():  # pylint: disable=too-many-statements,too-many-branches
     zope.component.provideUtility(displayer)
 
     if args.view_config_changes:
-        client.view_config_changes()
+        client.view_config_changes(CONFIG)
         sys.exit()
 
     if args.revoke:
-        client.revoke(args.server)
+        client.revoke(args.server, CONFIG)
         sys.exit()
 
     if args.rollback > 0:
-        client.rollback(args.rollback)
+        client.rollback(args.rollback, CONFIG)
         sys.exit()
 
     if not args.eula:
@@ -99,7 +99,7 @@ def main():  # pylint: disable=too-many-statements,too-many-branches
     # Make sure we actually get an installer that is functioning properly
     # before we begin to try to use it.
     try:
-        installer = client.determine_installer()
+        installer = client.determine_installer(CONFIG)
     except errors.LetsEncryptMisconfigurationError as err:
         logging.fatal("Please fix your configuration before proceeding.  "
                       "The Installer exited with the following message: "
@@ -110,17 +110,17 @@ def main():  # pylint: disable=too-many-statements,too-many-branches
     if interfaces.IAuthenticator.providedBy(installer):  # pylint: disable=no-member
         auth = installer
     else:
-        auth = client.determine_authenticator()
+        auth = client.determine_authenticator(CONFIG)
 
     domains = choose_names(installer) if args.domains is None else args.domains
 
     # Prepare for init of Client
     if args.privkey is None:
-        privkey = client.init_key(args.key_size)
+        privkey = client.init_key(args.key_size, CONFIG.KEY_DIR)
     else:
         privkey = client.Client.Key(args.privkey[0], args.privkey[1])
 
-    acme = client.Client(args.server, privkey, auth, installer)
+    acme = client.Client(args.server, privkey, auth, installer, CONFIG)
 
     # Validate the key and csr
     client.validate_key_csr(privkey)

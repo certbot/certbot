@@ -6,8 +6,8 @@ import shutil
 import mock
 
 from letsencrypt.client import challenge_util
+from letsencrypt.client import constants
 from letsencrypt.client import client
-from letsencrypt.client import CONFIG
 
 from letsencrypt.client.tests.apache import util
 
@@ -157,12 +157,14 @@ class DvsniPerformTest(util.ApacheTest):
             if vhost.addrs == set(v_addr1):
                 self.assertEqual(
                     vhost.names,
-                    set([str(self.challs[0].nonce + CONFIG.INVALID_EXT)]))
+                    set([str(self.challs[0].nonce +
+                             constants.DVSNI_DOMAIN_SUFFIX)]))
             else:
                 self.assertEqual(vhost.addrs, set(v_addr2))
                 self.assertEqual(
                     vhost.names,
-                    set([str(self.challs[1].nonce + CONFIG.INVALID_EXT)]))
+                    set([str(self.challs[1].nonce +
+                             constants.DVSNI_DOMAIN_SUFFIX)]))
 
 
 if __name__ == '__main__':

@@ -21,7 +21,7 @@ class ReverterCheckpointLocalTest(unittest.TestCase):
 
         self.work_dir, self.direc = setup_work_direc()
 
-        self.reverter = Reverter(self.direc)
+        self.reverter = Reverter(mock.MagicMock(), self.direc)
 
         tup = setup_test_files()
         self.config1, self.config2, self.dir1, self.dir2, self.sets = tup
@@ -241,7 +241,7 @@ class TestFullCheckpointsReverter(unittest.TestCase):
         logging.disable(logging.CRITICAL)
 
         self.work_dir, self.direc = setup_work_direc()
-        self.reverter = Reverter(self.direc)
+        self.reverter = Reverter(mock.MagicMock(), self.direc)
 
         tup = setup_test_files()
         self.config1, self.config2, self.dir1, self.dir2, self.sets = tup
@@ -387,14 +387,14 @@ class TestFullCheckpointsReverter(unittest.TestCase):
 class QuickInitReverterTest(unittest.TestCase):
     # pylint: disable=too-few-public-methods
     """Quick test of init."""
+
     def test_init(self):
         from letsencrypt.client.reverter import Reverter
-        rev = Reverter()
-
-        # Verify direc is set
-        self.assertTrue(rev.direc['backup'])
-        self.assertTrue(rev.direc['temp'])
-        self.assertTrue(rev.direc['progress'])
+        config = mock.MagicMock()
+        rev = Reverter(config)
+        self.assertEqual(rev.direc['backup'], config.BACKUP_DIR)
+        self.assertEqual(rev.direc['temp'], config.TEMP_CHECKPOINT_DIR)
+        self.assertEqual(rev.direc['progress'], config.IN_PROGRESS_DIR)
 
 
 def setup_work_direc():

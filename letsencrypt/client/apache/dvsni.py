@@ -3,7 +3,7 @@ import logging
 import os
 
 from letsencrypt.client import challenge_util
-from letsencrypt.client import CONFIG
+from letsencrypt.client import constants
 
 from letsencrypt.client.apache import parser
 
@@ -12,7 +12,8 @@ class ApacheDvsni(object):
     """Class performs DVSNI challenges within the Apache configurator.
 
     :ivar config: ApacheConfigurator object
-    :type config: :class:`letsencrypt.client.apache.configurator`
+    :type config:
+        :class:`letsencrypt.client.apache.configurator.ApacheConfigurator`
 
     :ivar dvsni_chall: Data required for challenges.
        where DvsniChall tuples have the following fields
@@ -165,7 +166,7 @@ class ApacheDvsni(object):
         """
         ips = " ".join(str(i) for i in ip_addrs)
         return ("<VirtualHost " + ips + ">\n"
-                "ServerName " + nonce + CONFIG.INVALID_EXT + "\n"
+                "ServerName " + nonce + constants.DVSNI_DOMAIN_SUFFIX + "\n"
                 "UseCanonicalName on\n"
                 "SSLStrictSNIVHostCheck on\n"
                 "\n"
