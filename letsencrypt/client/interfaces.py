@@ -28,13 +28,16 @@ class IAuthenticator(zope.interface.Interface):
         """Perform the given challenge.
 
         :param list chall_list: List of namedtuple types defined in
-            challenge_util.py. DvsniChall...ect..
+            :mod:`letsencrypt.client.challenge_util` (``DvsniChall``, etc.).
 
-        :returns: List of responses
-            If the challenge cant be completed...
-            None - Authenticator can perform challenge, but can't at this time
-            False - Authenticator will never be able to perform (error)
-        :rtype: `list` of dicts
+        :returns: Challenge responses or if it cannot be completed then:
+
+            ``None``
+              Authenticator can perform challenge, but can't at this time
+            ``False``
+              Authenticator will never be able to perform (error)
+
+        :rtype: :class:`list` of :class:`dict`
 
         """
 
@@ -75,33 +78,36 @@ class IInstaller(zope.interface.Interface):
         """
 
     def enhance(domain, enhancement, options=None):
-        """Peform a configuration enhancement.
+        """Perform a configuration enhancement.
 
         :param str domain: domain for which to provide enhancement
-        :param str enhancement: An enhancement as defined in CONFIG.ENHANCEMENTS
-        :param options: flexible options parameter for enhancement
-        :type options: Check documentation of
-            :class:`letsencrypt.client.CONFIG.ENHANCEMENTS` for expected options
-            for each enhancement.
+        :param str enhancement: An enhancement as defined in
+            :const:`~letsencrypt.client.CONFIG.ENHANCEMENTS`
+        :param options: Flexible options parameter for enhancement.
+            Check documentation of
+            :const:`~letsencrypt.client.CONFIG.ENHANCEMENTS`
+            for expected options for each enhancement.
 
         """
 
     def supported_enhancements():
         """Returns a list of supported enhancements.
 
-        :returns: supported enhancements which should be a subset of the
-            enhancements in :class:`letsencrypt.client.CONFIG.ENHANCEMENTS`
-            :rtype: `list` of `str`
+        :returns: supported enhancements which should be a subset of
+            :const:`~letsencrypt.client.CONFIG.ENHANCEMENTS`
+        :rtype: :class:`list` of :class:`str`
 
         """
 
     def get_all_certs_keys():
         """Retrieve all certs and keys set in configuration.
 
-        :returns: list of tuples with form [(cert, key, path)]
-            cert - str path to certificate file
-            key - str path to associated key file
-            path - file path to configuration file
+        :returns: tuples with form `[(cert, key, path)]`, where:
+
+            - `cert` - str path to certificate file
+            - `key` - str path to associated key file
+            - `path` - file path to configuration file
+
         :rtype: list
 
         """
@@ -149,7 +155,10 @@ class IDisplay(zope.interface.Interface):
         """Displays a generic menu.
 
         :param str message: message to display
-        :param tup choices: choices formated as a `list` of `tup`
+
+        :param choices: choices
+        :type choices: :class:`list` of :func:`tuple`
+
         :param str input_text: instructions on how to make a selection
 
         """
@@ -189,7 +198,7 @@ class IValidator(zope.interface.Interface):
         """Verify ocsp stapling for domain."""
 
     def https(names):
-        """Verifiy HTTPS is enabled for domain."""
+        """Verify HTTPS is enabled for domain."""
 
     def hsts(name):
         """Verify HSTS header is enabled."""
