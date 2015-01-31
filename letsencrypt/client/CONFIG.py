@@ -75,6 +75,9 @@ S_SIZE = 32
 NONCE_SIZE = 16
 """byte size of Nonce"""
 
+PORT = 443
+"""TCP port on which to perform (standalone) challenge"""
+
 # Key Sizes
 RSA_KEY_SIZE = 2048
 """Key size"""
