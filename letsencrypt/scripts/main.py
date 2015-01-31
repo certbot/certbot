@@ -83,7 +83,7 @@ def create_parser():
     add("--chain-path", default="/etc/letsencrypt/certs/chain-letsencrypt.pem",
         help="Let's Encrypt chain file.")
 
-    add("--apache-ctl", default="/usr/bin/apache2ctl",
+    add("--apache-ctl", default="apache2ctl",
         help="Path to the 'apache2ctl' binary, used for 'configtest' and "
              "retrieving Apache2 version number.")
     add("--apache-enmod", default="a2enmod",
