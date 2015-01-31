@@ -9,6 +9,7 @@ import logging
 import os
 import sys
 
+import confargparse
 import zope.component
 import zope.interface
 
@@ -22,7 +23,7 @@ from letsencrypt.client import log
 
 def create_parser():
     """Create parser."""
-    parser = argparse.ArgumentParser(
+    parser = confargparse.ConfArgParser(
         description="letsencrypt client %s" % letsencrypt.__version__)
 
     add = parser.add_argument
