@@ -87,15 +87,15 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         self.config = config
-        server_root = self.config.APACHE_SERVER_ROOT
-        ssl_options = self.config.APACHE_MOD_SSL_CONF
+        server_root = self.config.apache_server_root
+        ssl_options = self.config.apache_mod_ssl_conf
 
         if direc is None:
-            direc = {"backup": self.config.BACKUP_DIR,
-                     "temp": self.config.TEMP_CHECKPOINT_DIR,
-                     "progress": self.config.IN_PROGRESS_DIR,
-                     "config": self.config.CONFIG_DIR,
-                     "work": self.config.WORK_DIR}
+            direc = {"backup": self.config.backup_dir,
+                     "temp": self.config.temp_checkpoint_dir,
+                     "progress": self.config.in_progress_dir,
+                     "config": self.config.config_dir,
+                     "work": self.config.work_dir}
 
         super(ApacheConfigurator, self).__init__(config, direc)
         self.direc = direc
@@ -384,10 +384,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         is appropriately listening on port 443.
 
         """
-        if not mod_loaded("ssl_module", self.config.APACHE_CTL):
+        if not mod_loaded("ssl_module", self.config.apache_ctl):
             logging.info("Loading mod_ssl into Apache Server")
-            enable_mod("ssl", self.config.APACHE_INIT_SCRIPT,
-                       self.config.APACHE_ENMOD)
+            enable_mod("ssl", self.config.apache_init_script,
+                       self.config.apache_enmod)
 
         # Check for Listen 443
         # Note: This could be made to also look for ip:443 combo
@@ -430,7 +430,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """Makes an ssl_vhost version of a nonssl_vhost.
 
         Duplicates vhost and adds default ssl options
-        New vhost will reside as (nonssl_vhost.path) + ``IConfig.LE_VHOST_EXT``
+        New vhost will reside as (nonssl_vhost.path) + ``IConfig.le_vhost_ext``
 
         .. note:: This function saves the configuration
 
@@ -444,9 +444,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         avail_fp = nonssl_vhost.filep
         # Get filepath of new ssl_vhost
         if avail_fp.endswith(".conf"):
-            ssl_fp = avail_fp[:-(len(".conf"))] + self.config.LE_VHOST_EXT
+            ssl_fp = avail_fp[:-(len(".conf"))] + self.config.le_vhost_ext
         else:
-            ssl_fp = avail_fp + self.config.LE_VHOST_EXT
+            ssl_fp = avail_fp + self.config.le_vhost_ext
 
         # First register the creation so that it is properly removed if
         # configuration is rolled back
@@ -566,9 +566,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: (bool, :class:`letsencrypt.client.apache.obj.VirtualHost`)
 
         """
-        if not mod_loaded("rewrite_module", self.config.APACHE_CTL):
-            enable_mod("rewrite", self.config.APACHE_INIT_SCRIPT,
-                       self.config.APACHE_ENMOD)
+        if not mod_loaded("rewrite_module", self.config.apache_ctl):
+            enable_mod("rewrite", self.config.apache_init_script,
+                       self.config.apache_enmod)
 
         general_v = self._general_vhost(ssl_vhost)
         if general_v is None:
@@ -593,7 +593,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # Add directives to server
             self.parser.add_dir(general_v.path, "RewriteEngine", "On")
             self.parser.add_dir(general_v.path, "RewriteRule",
-                                self.config.APACHE_REWRITE_HTTPS_ARGS)
+                                constants.APACHE_REWRITE_HTTPS_ARGS)
             self.save_notes += ('Redirecting host in %s to ssl vhost in %s\n' %
                                 (general_v.filep, ssl_vhost.filep))
             self.save()
@@ -632,10 +632,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if not rewrite_path:
             # "No existing redirection for virtualhost"
             return False, -1
-        if len(rewrite_path) == len(self.config.APACHE_REWRITE_HTTPS_ARGS):
+        if len(rewrite_path) == len(constants.APACHE_REWRITE_HTTPS_ARGS):
             for idx, match in enumerate(rewrite_path):
                 if (self.aug.get(match) !=
-                        self.config.APACHE_REWRITE_HTTPS_ARGS[idx]):
+                        constants.APACHE_REWRITE_HTTPS_ARGS[idx]):
                     # Not a letsencrypt https rewrite
                     return True, 2
             # Existing letsencrypt https rewrite rule is in place
@@ -684,7 +684,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                          "LogLevel warn\n"
                          "</VirtualHost>\n"
                          % (servername, serveralias,
-                            " ".join(self.config.APACHE_REWRITE_HTTPS_ARGS)))
+                            " ".join(constants.APACHE_REWRITE_HTTPS_ARGS)))
 
         # Write out the file
         # This is the default name
@@ -886,7 +886,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: bool
 
         """
-        return apache_restart(self.config.APACHE_INIT_SCRIPT)
+        return apache_restart(self.config.apache_init_script)
 
     def config_test(self):  # pylint: disable=no-self-use
         """Check the configuration of Apache for errors.
@@ -897,7 +897,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         try:
             proc = subprocess.Popen(
-                ['sudo', self.config.APACHE_CTL, 'configtest'], # TODO: sudo?
+                ['sudo', self.config.apache_ctl, 'configtest'], # TODO: sudo?
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
             stdout, stderr = proc.communicate()
@@ -928,13 +928,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         try:
             proc = subprocess.Popen(
-                [self.config.APACHE_CTL, '-v'],
+                [self.config.apache_ctl, '-v'],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
             text = proc.communicate()[0]
         except (OSError, ValueError):
             raise errors.LetsEncryptConfiguratorError(
-                "Unable to run %s -v" % self.config.APACHE_CTL)
+                "Unable to run %s -v" % self.config.apache_ctl)
 
         regex = re.compile(r"Apache/([0-9\.]*)", re.IGNORECASE)
         matches = regex.findall(text)

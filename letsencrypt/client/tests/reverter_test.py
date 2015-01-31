@@ -392,9 +392,9 @@ class QuickInitReverterTest(unittest.TestCase):
         from letsencrypt.client.reverter import Reverter
         config = mock.MagicMock()
         rev = Reverter(config)
-        self.assertEqual(rev.direc['backup'], config.BACKUP_DIR)
-        self.assertEqual(rev.direc['temp'], config.TEMP_CHECKPOINT_DIR)
-        self.assertEqual(rev.direc['progress'], config.IN_PROGRESS_DIR)
+        self.assertEqual(rev.direc['backup'], config.backup_dir)
+        self.assertEqual(rev.direc['temp'], config.temp_checkpoint_dir)
+        self.assertEqual(rev.direc['progress'], config.in_progress_dir)
 
 
 def setup_work_direc():

@@ -23,9 +23,9 @@ class Reverter(object):
 
         """
         if direc is None:
-            direc = {'backup': config.BACKUP_DIR,
-                     'temp': config.TEMP_CHECKPOINT_DIR,
-                     'progress': config.IN_PROGRESS_DIR}
+            direc = {'backup': config.backup_dir,
+                     'temp': config.temp_checkpoint_dir,
+                     'progress': config.in_progress_dir}
         self.direc = direc
 
     def revert_temporary_config(self):

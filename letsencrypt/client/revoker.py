@@ -54,7 +54,7 @@ class Revoker(object):
 
     def list_certs_keys(self):
         """List trusted Let's Encrypt certificates."""
-        list_file = os.path.join(self.config.CERT_KEY_BACKUP, "LIST")
+        list_file = os.path.join(self.config.cert_key_backup, "LIST")
         certs = []
 
         if not os.path.isfile(list_file):
@@ -75,9 +75,9 @@ class Revoker(object):
             for row in csvreader:
                 cert = crypto_util.get_cert_info(row[1])
 
-                b_k = os.path.join(self.config.CERT_KEY_BACKUP,
+                b_k = os.path.join(self.config.cert_key_backup,
                                    os.path.basename(row[2]) + "_" + row[0])
-                b_c = os.path.join(self.config.CERT_KEY_BACKUP,
+                b_c = os.path.join(self.config.cert_key_backup,
                                    os.path.basename(row[1]) + "_" + row[0])
 
                 cert.update({
@@ -124,8 +124,8 @@ class Revoker(object):
         :param dict cert: Cert dict used throughout revocation
 
         """
-        list_file = os.path.join(self.config.CERT_KEY_BACKUP, "LIST")
-        list_file2 = os.path.join(self.config.CERT_KEY_BACKUP, "LIST.tmp")
+        list_file = os.path.join(self.config.cert_key_backup, "LIST")
+        list_file2 = os.path.join(self.config.cert_key_backup, "LIST.tmp")
 
         with open(list_file, 'rb') as orgfile:
             csvreader = csv.reader(orgfile)

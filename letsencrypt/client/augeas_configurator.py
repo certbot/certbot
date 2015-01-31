@@ -30,9 +30,9 @@ class AugeasConfigurator(object):
 
         """
         if not direc:
-            direc = {"backup": config.BACKUP_DIR,
-                     "temp": config.TEMP_CHECKPOINT_DIR,
-                     "progress": config.IN_PROGRESS_DIR}
+            direc = {"backup": config.backup_dir,
+                     "temp": config.temp_checkpoint_dir,
+                     "progress": config.in_progress_dir}
 
         # Set Augeas flags to not save backup (we do it ourselves)
         # Set Augeas to not load anything by default

@@ -13,57 +13,95 @@ import zope.component
 import zope.interface
 
 import letsencrypt
-from letsencrypt.client import CONFIG
+
 from letsencrypt.client import client
 from letsencrypt.client import display
 from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 from letsencrypt.client import log
 
-
-def main():  # pylint: disable=too-many-statements,too-many-branches
-    """Command line argument parsing and main script execution."""
+def create_parser():
+    """Create parser."""
     parser = argparse.ArgumentParser(
         description="letsencrypt client %s" % letsencrypt.__version__)
 
-    parser.add_argument("-d", "--domains", dest="domains", metavar="DOMAIN",
-                        nargs="+")
-    parser.add_argument("-s", "--server", dest="server",
-                        default=CONFIG.ACME_SERVER,
-                        help="The ACME CA server. [%(default)s]")
-    parser.add_argument("-p", "--privkey", dest="privkey", type=read_file,
-                        help="Path to the private key file for certificate "
-                             "generation.")
-    parser.add_argument("-b", "--rollback", dest="rollback", type=int,
-                        default=0, metavar="N",
-                        help="Revert configuration N number of checkpoints.")
-    parser.add_argument("-B", "--keysize", dest="key_size", type=int,
-                        default=CONFIG.RSA_KEY_SIZE, metavar="N",
-                        help="RSA key shall be sized N bits. [%(default)d]")
-    parser.add_argument("-k", "--revoke", dest="revoke", action="store_true",
-                        help="Revoke a certificate.")
-    parser.add_argument("-v", "--view-config-changes",
-                        dest="view_config_changes",
-                        action="store_true",
-                        help="View checkpoints and associated configuration "
-                             "changes.")
-    parser.add_argument("-r", "--redirect", dest="redirect",
-                        action="store_const", const=True,
-                        help="Automatically redirect all HTTP traffic to HTTPS "
-                             "for the newly authenticated vhost.")
-    parser.add_argument("-n", "--no-redirect", dest="redirect",
-                        action="store_const", const=False,
-                        help="Skip the HTTPS redirect question, allowing both "
-                             "HTTP and HTTPS.")
-    parser.add_argument("-e", "--agree-tos", dest="eula", action="store_true",
-                        help="Skip the end user license agreement screen.")
-    parser.add_argument("-t", "--text", dest="use_curses", action="store_false",
-                        help="Use the text output instead of the curses UI.")
-    parser.add_argument("--test", dest="test", action="store_true",
-                        help="Run in test mode.")
+    add = parser.add_argument
+
+    add("-d", "--domains", metavar="DOMAIN", nargs="+")
+    add("-s", "--acme-server", "--server", default="letsencrypt-demo.org:443",
+        help="CA hostname (and optionally :port). The server certificate must "
+             "be trusted in order to avoid further modifications to the "
+             "client.")
+
+    add("-p", "--privkey", type=read_file,
+        help="Path to the private key file for certificate generation.")
+    add("-B", "--rsa-key-size", "--keysize", type=int, default=2048,
+        metavar="N", help="RSA key shall be sized N bits.")
+
+    add("-k", "--revoke", action="store_true", help="Revoke a certificate.")
+    add("-b", "--rollback", type=int, default=0, metavar="N",
+        help="Revert configuration N number of checkpoints.")
+    add("-v", "--view-config-changes", action="store_true",
+        help="View checkpoints and associated configuration changes.")
+    add("-r", "--redirect", action="store_true",
+        help="Automatically redirect all HTTP traffic to HTTPS for the newly "
+             "authenticated vhost.")
+
+    add("-e", "--agree-tos", dest="eula", action="store_true",
+        help="Skip the end user license agreement screen.")
+    add("-t", "--text", dest="use_curses", action="store_false",
+        help="Use the text output instead of the curses UI.")
+    add("--test", action="store_true", help="Run in test mode.")
+
+    # TODO: trailing slashes might be important! check and remove
+    add("--config-dir", default="/etc/letsencrypt/",
+        help="Configuration directory.")
+    add("--work-dir", default="/var/lib/letsencrypt/",
+        help="Working directory.")
+    add("--backup-dir", default="/var/lib/letsencrypt/backups/",
+        help="Configuration backups directory.")
+    add("--temp-checkpoint-dir",
+        default="/var/lib/letsencrypt/temp_checkpoint/",
+        help="Temporary checkpoint directory.")
+    add("--in-progress-dir",
+        default="/var/lib/letsencrypt/backups/IN_PROGRESS/",
+        help="Directory used before a permanent checkpoint is finalized")
+    add("--cert-key-backup", default="/var/lib/letsencrypt/keys-certs/",
+        help="Directory where all certificates and keys are stored. "
+             "Used for easy revocation.")
+    add("--rev-tokens-dir", default="/var/lib/letsencrypt/revocation_tokens/",
+        help="Directory where all revocation tokens are saved.")
+    add("--key-dir", default="/etc/letsencrypt/keys/", help="Keys storage.")
+    add("--cert-dir", default="/etc/letsencrypt/certs/",
+        help="Certificates storage.")
+
+    add("--le-vhost-ext", default="-le-ssl.conf",
+        help="SSL vhost configuration extension.")
+    add("--cert-path", default="/etc/letsencrypt/certs/cert-letsencrypt.pem",
+        help="Let's Encrypt certificate file.")
+    add("--chain-path", default="/etc/letsencrypt/certs/chain-letsencrypt.pem",
+        help="Let's Encrypt chain file.")
+
+    add("--apache-ctl", default="/usr/bin/apache2ctl",
+        help="Path to the 'apache2ctl' binary, used for 'configtest' and "
+             "retrieving Apache2 version number.")
+    add("--apache-enmod", default="a2enmod",
+        help="Path to the Apache 'a2enmod' binary.")
+    add("--apache-init-script", default="/etc/init.d/apache2",
+        help="Path to the Apache init script (used for server reload/restart).")
+    add("--apache-server-root", default="/etc/apache2",
+        help="Apache server root directory.")
+    add("--apache-mod-ssl-conf", default="/etc/letsencrypt/options-ssl.conf",
+        help="Contains standard Apache SSL directives.")
+
+    return parser
+
+def main():  # pylint: disable=too-many-branches
+    """Command line argument parsing and main script execution."""
 
     # note: arg parser internally handles --help (and exits afterwards)
-    args = parser.parse_args()
+    config = create_parser().parse_args()
+    zope.interface.directlyProvides(config, interfaces.IConfig)
 
     # note: check is done after arg parsing as --help should work w/o root also.
     if not os.geteuid() == 0:
@@ -74,32 +112,32 @@ def main():  # pylint: disable=too-many-statements,too-many-branches
     # Set up logging
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
-    if args.use_curses:
+    if config.use_curses:
         logger.addHandler(log.DialogHandler())
         displayer = display.NcursesDisplay()
     else:
         displayer = display.FileDisplay(sys.stdout)
     zope.component.provideUtility(displayer)
 
-    if args.view_config_changes:
-        client.view_config_changes(CONFIG)
+    if config.view_config_changes:
+        client.view_config_changes(config)
         sys.exit()
 
-    if args.revoke:
-        client.revoke(args.server, CONFIG)
+    if config.revoke:
+        client.revoke(config.acme_server, config)
         sys.exit()
 
-    if args.rollback > 0:
-        client.rollback(args.rollback, CONFIG)
+    if config.rollback > 0:
+        client.rollback(config.rollback, config)
         sys.exit()
 
-    if not args.eula:
+    if not config.eula:
         display_eula()
 
     # Make sure we actually get an installer that is functioning properly
     # before we begin to try to use it.
     try:
-        installer = client.determine_installer(CONFIG)
+        installer = client.determine_installer(config)
     except errors.LetsEncryptMisconfigurationError as err:
         logging.fatal("Please fix your configuration before proceeding.  "
                       "The Installer exited with the following message: "
@@ -110,17 +148,18 @@ def main():  # pylint: disable=too-many-statements,too-many-branches
     if interfaces.IAuthenticator.providedBy(installer):  # pylint: disable=no-member
         auth = installer
     else:
-        auth = client.determine_authenticator(CONFIG)
+        auth = client.determine_authenticator(config)
 
-    domains = choose_names(installer) if args.domains is None else args.domains
+    if config.domains is None:
+        domains = choose_names(installer)
 
     # Prepare for init of Client
-    if args.privkey is None:
-        privkey = client.init_key(args.key_size, CONFIG.KEY_DIR)
+    if config.privkey is None:
+        privkey = client.init_key(config.key_size, config.key_dir)
     else:
-        privkey = client.Client.Key(args.privkey[0], args.privkey[1])
+        privkey = client.Client.Key(config.privkey[0], config.privkey[1])
 
-    acme = client.Client(args.server, privkey, auth, installer, CONFIG)
+    acme = client.Client(config.acme_server, privkey, auth, installer, config)
 
     # Validate the key and csr
     client.validate_key_csr(privkey)
@@ -134,7 +173,7 @@ def main():  # pylint: disable=too-many-statements,too-many-branches
     if installer is not None and cert_file is not None:
         acme.deploy_certificate(domains, privkey, cert_file, chain_file)
     if installer is not None:
-        acme.enhance_config(domains, args.redirect)
+        acme.enhance_config(domains, config.redirect)
 
 
 def display_eula():

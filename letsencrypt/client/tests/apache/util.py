@@ -65,9 +65,9 @@ def get_apache_configurator(
         # This just states that the ssl module is already loaded
         mock_popen().communicate.return_value = ("ssl_module", "")
         config = configurator.ApacheConfigurator(
-            mock.MagicMock(APACHE_SERVER_ROOT=config_path,
-                           APACHE_MOD_SSL_CONF=ssl_options,
-                           LE_VHOST_EXT="-le-ssl.conf"),
+            mock.MagicMock(apache_server_root=config_path,
+                           apache_mod_ssl_conf=ssl_options,
+                           le_vhost_ext="-le-ssl.conf"),
             {
                 "backup": backups,
                 "temp": os.path.join(work_dir, "temp_checkpoint"),

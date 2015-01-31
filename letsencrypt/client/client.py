@@ -86,8 +86,8 @@ class Client(object):
         :rtype: `tuple` of `str`
 
         """
-        cert_path = self.config.CERT_PATH
-        chain_path = self.config.CHAIN_PATH
+        cert_path = self.config.cert_path
+        chain_path = self.config.chain_path
 
         if self.auth_handler is None:
             logging.warning("Unable to obtain a certificate, because client "
@@ -103,7 +103,7 @@ class Client(object):
 
         # Create CSR from names
         if csr is None:
-            csr = init_csr(self.authkey, domains, self.config.CERT_DIR)
+            csr = init_csr(self.authkey, domains, self.config.cert_dir)
 
         # Retrieve certificate
         certificate_dict = self.acme_certificate(csr.data)
@@ -245,8 +245,8 @@ class Client(object):
         :rtype: bool
 
         """
-        list_file = os.path.join(self.config.CERT_KEY_BACKUP, "LIST")
-        le_util.make_or_verify_dir(self.config.CERT_KEY_BACKUP, 0o700)
+        list_file = os.path.join(self.config.cert_key_backup, "LIST")
+        le_util.make_or_verify_dir(self.config.cert_key_backup, 0o700)
         idx = 0
 
         if encrypt:
@@ -271,11 +271,11 @@ class Client(object):
 
         shutil.copy2(self.authkey.file,
                      os.path.join(
-                         self.config.CERT_KEY_BACKUP,
+                         self.config.cert_key_backup,
                          os.path.basename(self.authkey.file) + "_" + str(idx)))
         shutil.copy2(cert_file,
                      os.path.join(
-                         self.config.CERT_KEY_BACKUP,
+                         self.config.cert_key_backup,
                          os.path.basename(cert_file) + "_" + str(idx)))
 
         return True
