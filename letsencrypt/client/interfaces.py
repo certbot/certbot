@@ -1,7 +1,7 @@
 """Let's Encrypt client interfaces."""
 import zope.interface
 
-# pylint: disable=no-self-argument,no-method-argument,no-init
+# pylint: disable=no-self-argument,no-method-argument,no-init,inherit-non-class
 
 
 class IAuthenticator(zope.interface.Interface):
