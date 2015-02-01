@@ -2,11 +2,17 @@
 import pkg_resources
 import unittest
 
-import jsonschema
+import Crypto.PublicKey.RSA
+import mock
+
+from letsencrypt.acme import errors
+
+KEY = Crypto.PublicKey.RSA.importKey(pkg_resources.resource_string(
+    'letsencrypt.client.tests', 'testdata/rsa256_key.pem'))
 
 
-class ACMEObjectValidateTest(unittest.TestCase):
-    """Tests for letsencrypt.acme.messages.acme_object_validate."""
+class MessageTest(unittest.TestCase):
+    """Tests for letsencrypt.acme.messages.Message."""
 
     def setUp(self):
         self.schemata = {
@@ -19,68 +25,59 @@ class ACMEObjectValidateTest(unittest.TestCase):
             },
         }
 
-    def _call(self, json_string):
-        from letsencrypt.acme.messages import acme_object_validate
-        return acme_object_validate(json_string, self.schemata)
 
-    def _test_fails(self, json_string):
-        self.assertRaises(jsonschema.ValidationError, self._call, json_string)
+    def _validate(self, json_object):
+        from letsencrypt.acme.messages import Message
+        return Message.validate(json_object, self.schemata)
 
-    def test_non_dictionary_fails(self):
-        self._test_fails('[]')
+    def test_validate_non_dictionary_fails(self):
+        self.assertRaises(errors.ValidationError, self._validate, [])
 
-    def test_dict_without_type_fails(self):
-        self._test_fails('{}')
+    def test_validate_dict_without_type_fails(self):
+        self.assertRaises(errors.ValidationError, self._validate, {})
 
-    def test_unknown_type_fails(self):
-        self._test_fails('{"type": "bar"}')
+    def test_validate_unknown_type_fails(self):
+        self.assertRaises(errors.UnrecognnizedMessageTypeError,
+                          self._validate, {"type": "bar"})
 
-    def test_valid_returns_none(self):
-        self.assertTrue(self._call('{"type": "foo"}') is None)
+    def test_validate_unregistered_type_fails(self):
+        self.assertRaises(errors.UnrecognnizedMessageTypeError,
+                          self._validate, {"type": "foo"})
 
-    def test_invalid_fails(self):
-        self._test_fails('{"type": "foo", "price": "asd"}')
+    @mock.patch("letsencrypt.acme.messages.Message.TYPES")
+    def test_validate_invalid_fails(self, types):
+        types.__getitem__.side_effect = lambda x: {"foo": "bar"}[x]
+        self.assertRaises(errors.SchemaValidationError,
+                          self._validate, {"type": "foo", "price": "asd"})
+
+    @mock.patch("letsencrypt.acme.messages.Message.TYPES")
+    def test_validate_valid_returns_cls(self, types):
+        types.__getitem__.side_effect = lambda x: {"foo": "bar"}[x]
+        self.assertEqual(self._validate({"type": "foo"}), "bar")
 
 
-class PrettyTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
-    """Tests for letsencrypt.acme.messages.pretty."""
-
-    @classmethod
-    def _call(cls, json_string):
-        from letsencrypt.acme.messages import pretty
-        return pretty(json_string)
+class ChallengeRequestTest(unittest.TestCase):
+    # pylint: disable=too-few-public-methods
 
     def test_it(self):
-        self.assertEqual(
-            self._call('{"foo": {"bar": "baz"}}'),
-            '{\n    "foo": {\n        "bar": "baz"\n    }\n}')
+        from letsencrypt.acme.messages import ChallengeRequest
+        msg = ChallengeRequest('example.com')
 
-
-class MessageFactoriesTest(unittest.TestCase):
-    """Tests for ACME message factories from letsencrypt.acme.messages."""
-
-    def setUp(self):
-        self.privkey = pkg_resources.resource_string(
-            'letsencrypt.client.tests', 'testdata/rsa256_key.pem')
-        self.nonce = '\xec\xd6\xf2oYH\xeb\x13\xd5#q\xe0\xdd\xa2\x92\xa9'
-        self.b64nonce = '7Nbyb1lI6xPVI3Hg3aKSqQ'
-
-    @classmethod
-    def _validate(cls, msg):
-        from letsencrypt.acme.messages import SCHEMATA
-        jsonschema.validate(msg, SCHEMATA[msg['type']])
-
-    def test_challenge_request(self):
-        from letsencrypt.acme.messages import challenge_request
-        msg = challenge_request('example.com')
-        self._validate(msg)
-        self.assertEqual(msg, {
-            'type': 'challengeRequest',
+        jmsg = msg._fields_to_json()  # pylint: disable=protected-access
+        self.assertEqual(jmsg, {
             'identifier': 'example.com',
         })
 
+
+class AuthorizationRequestTest(unittest.TestCase):
+
+    def setUp(self):
+        self.nonce = '\xec\xd6\xf2oYH\xeb\x13\xd5#q\xe0\xdd\xa2\x92\xa9'
+        self.b64nonce = '7Nbyb1lI6xPVI3Hg3aKSqQ'
+        self.csr = 'TODO: real DER CSR?'
+
     def test_authorization_request(self):
-        from letsencrypt.acme.messages import authorization_request
+        from letsencrypt.acme.messages import AuthorizationRequest
         responses = [
             {
                 'type': 'simpleHttps',
@@ -92,66 +89,84 @@ class MessageFactoriesTest(unittest.TestCase):
                 'token': '23029d88d9e123e',
             }
         ]
-        msg = authorization_request(
+        msg = AuthorizationRequest.create(
             'aefoGaavieG9Wihuk2aufai3aeZ5EeW4',
-            'example.com',
             'czpsrF0KMH6dgajig3TGHw',
             responses,
-            self.privkey,
+            'example.com',
+            KEY,
             self.nonce,
         )
+        msg.verify('example.com')
 
-        self._validate(msg)
-        self.assertEqual(
-            msg.pop('signature')['sig'],
-            'VkpReso87ogwGul2MGck96TkYs4QoblIgNthgrm9O7EBGlzCRCnTHnx'
-            'bj6loqaC4f5bn1rgS927Gp1Kvbqnmqg'
-        )
-        self.assertEqual(msg, {
-            'type': 'authorizationRequest',
+        jmsg = msg._fields_to_json()  # pylint: disable=protected-access
+        jmsg.pop('signature')
+        self.assertEqual(jmsg, {
             'sessionID': 'aefoGaavieG9Wihuk2aufai3aeZ5EeW4',
             'nonce': 'czpsrF0KMH6dgajig3TGHw',
             'responses': responses,
         })
 
-    def test_certificate_request(self):
-        from letsencrypt.acme.messages import certificate_request
-        msg = certificate_request(
-            'TODO: real DER CSR?', self.privkey, self.nonce)
-        self._validate(msg)
-        self.assertEqual(
-            msg.pop('signature')['sig'],
-            'HEQVN4MU1yDrArP2T7WZQ12XlHCn5DgTPgb5eWT5_vjRPppLSNe6uWE'
-            'x9SFwG9d9umqn49nZCSW7uskA2lcW6Q'
-        )
-        self.assertEqual(msg, {
-            'type': 'certificateRequest',
+
+class CertificateRequestTest(unittest.TestCase):
+
+    def setUp(self):
+        self.nonce = '\xec\xd6\xf2oYH\xeb\x13\xd5#q\xe0\xdd\xa2\x92\xa9'
+        self.b64nonce = '7Nbyb1lI6xPVI3Hg3aKSqQ'
+        self.csr = 'TODO: real DER CSR?'
+
+    def test_it(self):
+        from letsencrypt.acme.messages import CertificateRequest
+        msg = CertificateRequest.create(self.csr, KEY, self.nonce)
+        self.assertTrue(msg.verify())
+
+        jmsg = msg._fields_to_json()  # pylint: disable=protected-access
+        jmsg.pop('signature')
+        self.assertEqual(jmsg, {
             'csr': 'VE9ETzogcmVhbCBERVIgQ1NSPw',
         })
 
-    def test_revocation_request(self):
-        from letsencrypt.acme.messages import revocation_request
-        msg = revocation_request(
-            'TODO: real DER cert?', self.privkey, self.nonce)
-        self._validate(msg)
-        self.assertEqual(
-            msg.pop('signature')['sig'],
-            'ABXA1IsyTalTXIojxmGnIUGyZASmvqEvTQ98jJ5KFs2FTswLEmsoqFX'
-            'fU6l5_fous-tsbXOfLN-7PjfZ5XWPvg'
-        )
-        self.assertEqual(msg, {
-            'type': 'revocationRequest',
+
+class RevocationRequestTest(unittest.TestCase):
+
+    def setUp(self):
+        self.nonce = '\xec\xd6\xf2oYH\xeb\x13\xd5#q\xe0\xdd\xa2\x92\xa9'
+        self.b64nonce = '7Nbyb1lI6xPVI3Hg3aKSqQ'
+        self.certificate = 'TODO: real DER cert?'
+
+    def test_it(self):
+        from letsencrypt.acme.messages import RevocationRequest
+        msg = RevocationRequest.create(self.certificate, KEY, self.nonce)
+        self.assertTrue(msg.verify())
+
+        jmsg = msg._fields_to_json()  # pylint: disable=protected-access
+        jmsg.pop('signature')
+        self.assertEqual(jmsg, {
             'certificate': 'VE9ETzogcmVhbCBERVIgY2VydD8',
         })
 
-    def test_status_request(self):
-        from letsencrypt.acme.messages import status_request
-        msg = status_request(u'O7-s9MNq1siZHlgrMzi9_A')
-        self._validate(msg)
-        self.assertEqual(msg, {
-            'type': 'statusRequest',
-            'token': u'O7-s9MNq1siZHlgrMzi9_A',
-        })
+
+class StatusRequestTest(unittest.TestCase):
+
+    def setUp(self):
+        from letsencrypt.acme.messages import StatusRequest
+        self.token = u'O7-s9MNq1siZHlgrMzi9_A'
+        self.msg = StatusRequest(self.token)
+        self.jmsg = {
+            'token': self.token,
+        }
+
+    def test_attributes(self):
+        self.assertEqual(self.msg.token, self.token)
+
+    def test_json(self):
+        jmsg = self.msg._fields_to_json()  # pylint: disable=protected-access
+        self.assertEqual(jmsg, self.jmsg)
+
+        from letsencrypt.acme.messages import StatusRequest
+        # pylint: disable=protected-access
+        msg = StatusRequest._valid_from_json(self.jmsg)
+        self.assertEqual(msg.token, self.msg.token)
 
 
 if __name__ == '__main__':

@@ -1,71 +1,13 @@
 """Let's Encrypt client crypto utility functions"""
-import binascii
-import logging
 import time
 
-from Crypto import Random
 import Crypto.Hash.SHA256
 import Crypto.PublicKey.RSA
 import Crypto.Signature.PKCS1_v1_5
 
 import M2Crypto
 
-from letsencrypt.client import CONFIG
 from letsencrypt.client import le_util
-
-
-def create_sig(msg, key_str, nonce=None, nonce_len=CONFIG.NONCE_SIZE):
-    """Create signature with nonce prepended to the message.
-
-    .. todo:: Change this over to M2Crypto... PKey
-
-    .. todo:: Protect against crypto unicode errors... is this sufficient?
-        Do I need to escape?
-
-    :param str key_str: Key in string form. Accepted formats
-        are the same as for `Crypto.PublicKey.RSA.importKey`.
-
-    :param str msg: Message to be signed
-
-    :param nonce: Nonce to be used. If None, nonce of `nonce_len` size
-                  will be randomly generated.
-    :type nonce: str or None
-
-    :param int nonce_len: Size of the automatically generated nonce.
-
-    :returns: Signature.
-    :rtype: dict
-
-    """
-    msg = str(msg)
-    key = Crypto.PublicKey.RSA.importKey(key_str)
-    nonce = Random.get_random_bytes(nonce_len) if nonce is None else nonce
-
-    msg_with_nonce = nonce + msg
-    hashed = Crypto.Hash.SHA256.new(msg_with_nonce)
-    signature = Crypto.Signature.PKCS1_v1_5.new(key).sign(hashed)
-
-    logging.debug("%s signed as %s", msg_with_nonce, signature)
-
-    n_bytes = binascii.unhexlify(_leading_zeros(hex(key.n)[2:].rstrip("L")))
-    e_bytes = binascii.unhexlify(_leading_zeros(hex(key.e)[2:].rstrip("L")))
-
-    return {
-        "nonce": le_util.jose_b64encode(nonce),
-        "alg": "RS256",
-        "jwk": {
-            "kty": "RSA",
-            "n": le_util.jose_b64encode(n_bytes),
-            "e": le_util.jose_b64encode(e_bytes),
-        },
-        "sig": le_util.jose_b64encode(signature),
-    }
-
-
-def _leading_zeros(arg):
-    if len(arg) % 2:
-        return "0" + arg
-    return arg
 
 
 def make_csr(key_str, domains):

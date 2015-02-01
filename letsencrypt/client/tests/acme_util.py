@@ -94,19 +94,3 @@ def gen_combos(challs):
             combos.append([i, j])
 
     return combos
-
-
-def get_chall_msg(iden, nonce, challenges, combos=None):
-    """Produce an ACME challenge message."""
-    chall_msg = {
-        "type": "challenge",
-        "sessionID": iden,
-        "nonce": nonce,
-        "challenges": challenges
-    }
-
-    if combos is None:
-        return chall_msg
-
-    chall_msg["combinations"] = combos
-    return chall_msg

@@ -3,8 +3,11 @@ import unittest
 
 import mock
 
+from letsencrypt import acme
+
 from letsencrypt.client import errors
 from letsencrypt.client.tests import acme_util
+
 
 
 TRANSLATE = {
@@ -38,7 +41,7 @@ class SatisfyChallengesTest(unittest.TestCase):
     def test_name1_dvsni1(self):
         dom = "0"
         challenge = [acme_util.CHALLENGES["dvsni"]]
-        msg = acme_util.get_chall_msg(dom, "nonce0", challenge)
+        msg = acme.messages.Challenge(dom, "nonce0", challenge)
         self.handler.add_chall_msg(dom, msg, "dummy_key")
 
         self.handler._satisfy_challenges()  # pylint: disable=protected-access
@@ -57,7 +60,7 @@ class SatisfyChallengesTest(unittest.TestCase):
         for i in range(5):
             self.handler.add_chall_msg(
                 str(i),
-                acme_util.get_chall_msg(str(i), "nonce%d" % i, challenge),
+                acme.messages.Challenge(str(i), "nonce%d" % i, challenge),
                 "dummy_key")
 
         self.handler._satisfy_challenges()  # pylint: disable=protected-access
@@ -84,7 +87,7 @@ class SatisfyChallengesTest(unittest.TestCase):
         combos = acme_util.gen_combos(challenges)
         self.handler.add_chall_msg(
             dom,
-            acme_util.get_chall_msg("0", "nonce0", challenges, combos),
+            acme.messages.Challenge("0", "nonce0", challenges, combos),
             "dummy_key")
 
         path = gen_path(["simpleHttps"], challenges)
@@ -113,7 +116,7 @@ class SatisfyChallengesTest(unittest.TestCase):
         combos = acme_util.gen_combos(challenges)
         self.handler.add_chall_msg(
             dom,
-            acme_util.get_chall_msg(dom, "nonce0", challenges, combos),
+            acme.messages.Challenge(dom, "nonce0", challenges, combos),
             "dummy_key")
 
         path = gen_path(["simpleHttps", "recoveryToken"], challenges)
@@ -143,7 +146,7 @@ class SatisfyChallengesTest(unittest.TestCase):
         for i in range(5):
             self.handler.add_chall_msg(
                 str(i),
-                acme_util.get_chall_msg(
+                acme.messages.Challenge(
                     str(i), "nonce%d" % i, challenges, combos),
                 "dummy_key")
 
@@ -193,7 +196,7 @@ class SatisfyChallengesTest(unittest.TestCase):
             paths.append(gen_path(chosen_chall[i], challenge_list[i]))
             self.handler.add_chall_msg(
                 dom,
-                acme_util.get_chall_msg(
+                acme.messages.Challenge(
                     dom, "nonce%d" % i, challenge_list[i]),
                 "dummy_key")
 
@@ -229,7 +232,8 @@ class SatisfyChallengesTest(unittest.TestCase):
         self.assertEqual(
             type(self.handler.client_c["4"][0].chall).__name__, "RecTokenChall")
 
-    def _get_exp_response(self, domain, path, challenges):  # pylint: disable=no-self-use
+    def _get_exp_response(self, domain, path, challenges):
+        # pylint: disable=no-self-use
         exp_resp = ["null"] * len(challenges)
         for i in path:
             exp_resp[i] = TRANSLATE[challenges[i]["type"]] + str(domain)
@@ -262,7 +266,7 @@ class GetAuthorizationsTest(unittest.TestCase):
         for i in range(3):
             self.handler.add_chall_msg(
                 str(i),
-                acme_util.get_chall_msg(str(i), "nonce%d" % i, challenge),
+                acme.messages.Challenge(str(i), "nonce%d" % i, challenge),
                 "dummy_key")
 
         self.mock_sat_chall.side_effect = self._sat_solved_at_once
@@ -290,7 +294,7 @@ class GetAuthorizationsTest(unittest.TestCase):
         challenges = acme_util.get_challenges()
         self.handler.add_chall_msg(
             "0",
-            acme_util.get_chall_msg("0", "nonce0", challenges),
+            acme.messages.Challenge("0", "nonce0", challenges),
             "dummy_key")
 
         # Don't do anything to satisfy challenges
@@ -305,7 +309,7 @@ class GetAuthorizationsTest(unittest.TestCase):
     def _sat_failure(self):
         dom = "0"
         self.handler.paths[dom] = gen_path(
-            ["dns", "recoveryToken"], self.handler.msgs[dom]["challenges"])
+            ["dns", "recoveryToken"], self.handler.msgs[dom].challenges)
         dv_c, c_c = self.handler._challenge_factory(
             dom, self.handler.paths[dom])
         self.handler.dv_c[dom], self.handler.client_c[dom] = dv_c, c_c
@@ -318,7 +322,7 @@ class GetAuthorizationsTest(unittest.TestCase):
             dom = str(i)
             self.handler.add_chall_msg(
                 dom,
-                acme_util.get_chall_msg(dom, "nonce%d" % i, challs[i]),
+                acme.messages.Challenge(dom, "nonce%d" % i, challs[i]),
                 "dummy_key")
 
         self.mock_sat_chall.side_effect = self._sat_incremental

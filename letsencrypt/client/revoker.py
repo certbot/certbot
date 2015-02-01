@@ -4,6 +4,7 @@ import logging
 import os
 import shutil
 
+import Crypto.PublicKey.RSA
 import M2Crypto
 import zope.component
 
@@ -28,7 +29,7 @@ class Revoker(object):
         :param dict cert: TODO
 
         :returns: ACME "revocation" message.
-        :rtype: dict
+        :rtype: :class:`letsencrypt.acme.message.Revocation`
 
         """
         cert_der = M2Crypto.X509.load_cert(cert["backup_cert_file"]).as_der()
@@ -36,7 +37,9 @@ class Revoker(object):
             key = backup_key_file.read()
 
         revocation = self.network.send_and_receive_expected(
-            acme.messages.revocation_request(cert_der, key), "revocation")
+            acme.messages.RevocationRequest.create(
+                cert_der, Crypto.PublicKey.RSA.importKey(key)),
+            acme.messages.Revocation)
 
         zope.component.getUtility(interfaces.IDisplay).generic_notification(
             "You have successfully revoked the certificate for "
