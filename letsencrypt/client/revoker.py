@@ -7,7 +7,8 @@ import shutil
 import M2Crypto
 import zope.component
 
-from letsencrypt.client import acme
+from letsencrypt import acme
+
 from letsencrypt.client import CONFIG
 from letsencrypt.client import crypto_util
 from letsencrypt.client import display
@@ -35,7 +36,7 @@ class Revoker(object):
             key = backup_key_file.read()
 
         revocation = self.network.send_and_receive_expected(
-            acme.revocation_request(cert_der, key), "revocation")
+            acme.messages.revocation_request(cert_der, key), "revocation")
 
         zope.component.getUtility(interfaces.IDisplay).generic_notification(
             "You have successfully revoked the certificate for "

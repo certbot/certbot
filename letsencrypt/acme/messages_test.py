@@ -1,4 +1,4 @@
-"""Tests for letsencrypt.client.acme."""
+"""Tests for letsencrypt.acme.messages."""
 import pkg_resources
 import unittest
 
@@ -6,7 +6,7 @@ import jsonschema
 
 
 class ACMEObjectValidateTest(unittest.TestCase):
-    """Tests for letsencrypt.client.acme.acme_object_validate."""
+    """Tests for letsencrypt.acme.messages.acme_object_validate."""
 
     def setUp(self):
         self.schemata = {
@@ -20,7 +20,7 @@ class ACMEObjectValidateTest(unittest.TestCase):
         }
 
     def _call(self, json_string):
-        from letsencrypt.client.acme import acme_object_validate
+        from letsencrypt.acme.messages import acme_object_validate
         return acme_object_validate(json_string, self.schemata)
 
     def _test_fails(self, json_string):
@@ -43,11 +43,11 @@ class ACMEObjectValidateTest(unittest.TestCase):
 
 
 class PrettyTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
-    """Tests for letsencrypt.client.acme.pretty."""
+    """Tests for letsencrypt.acme.messages.pretty."""
 
     @classmethod
     def _call(cls, json_string):
-        from letsencrypt.client.acme import pretty
+        from letsencrypt.acme.messages import pretty
         return pretty(json_string)
 
     def test_it(self):
@@ -57,21 +57,21 @@ class PrettyTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
 
 
 class MessageFactoriesTest(unittest.TestCase):
-    """Tests for ACME message factories from letsencrypt.client.acme."""
+    """Tests for ACME message factories from letsencrypt.acme.messages."""
 
     def setUp(self):
         self.privkey = pkg_resources.resource_string(
-            __name__, 'testdata/rsa256_key.pem')
+            'letsencrypt.client.tests', 'testdata/rsa256_key.pem')
         self.nonce = '\xec\xd6\xf2oYH\xeb\x13\xd5#q\xe0\xdd\xa2\x92\xa9'
         self.b64nonce = '7Nbyb1lI6xPVI3Hg3aKSqQ'
 
     @classmethod
     def _validate(cls, msg):
-        from letsencrypt.client.acme import SCHEMATA
+        from letsencrypt.acme.messages import SCHEMATA
         jsonschema.validate(msg, SCHEMATA[msg['type']])
 
     def test_challenge_request(self):
-        from letsencrypt.client.acme import challenge_request
+        from letsencrypt.acme.messages import challenge_request
         msg = challenge_request('example.com')
         self._validate(msg)
         self.assertEqual(msg, {
@@ -80,7 +80,7 @@ class MessageFactoriesTest(unittest.TestCase):
         })
 
     def test_authorization_request(self):
-        from letsencrypt.client.acme import authorization_request
+        from letsencrypt.acme.messages import authorization_request
         responses = [
             {
                 'type': 'simpleHttps',
@@ -115,7 +115,7 @@ class MessageFactoriesTest(unittest.TestCase):
         })
 
     def test_certificate_request(self):
-        from letsencrypt.client.acme import certificate_request
+        from letsencrypt.acme.messages import certificate_request
         msg = certificate_request(
             'TODO: real DER CSR?', self.privkey, self.nonce)
         self._validate(msg)
@@ -130,7 +130,7 @@ class MessageFactoriesTest(unittest.TestCase):
         })
 
     def test_revocation_request(self):
-        from letsencrypt.client.acme import revocation_request
+        from letsencrypt.acme.messages import revocation_request
         msg = revocation_request(
             'TODO: real DER cert?', self.privkey, self.nonce)
         self._validate(msg)
@@ -145,7 +145,7 @@ class MessageFactoriesTest(unittest.TestCase):
         })
 
     def test_status_request(self):
-        from letsencrypt.client.acme import status_request
+        from letsencrypt.acme.messages import status_request
         msg = status_request(u'O7-s9MNq1siZHlgrMzi9_A')
         self._validate(msg)
         self.assertEqual(msg, {

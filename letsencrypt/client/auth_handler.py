@@ -2,7 +2,8 @@
 import logging
 import sys
 
-from letsencrypt.client import acme
+from letsencrypt import acme
+
 from letsencrypt.client import CONFIG
 from letsencrypt.client import challenge_util
 from letsencrypt.client import errors
@@ -105,7 +106,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         """
         try:
             auth = self.network.send_and_receive_expected(
-                acme.authorization_request(
+                acme.messages.authorization_request(
                     self.msgs[domain]["sessionID"],
                     domain,
                     self.msgs[domain]["nonce"],

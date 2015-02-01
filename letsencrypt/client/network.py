@@ -7,7 +7,8 @@ import time
 import jsonschema
 import requests
 
-from letsencrypt.client import acme
+from letsencrypt import acme
+
 from letsencrypt.client import errors
 
 
@@ -43,7 +44,7 @@ class Network(object):
 
         """
         json_encoded = json.dumps(msg)
-        acme.acme_object_validate(json_encoded)
+        acme.messages.acme_object_validate(json_encoded)
 
         try:
             response = requests.post(
@@ -57,7 +58,7 @@ class Network(object):
                 'Sending ACME message to server has failed: %s' % error)
 
         try:
-            acme.acme_object_validate(response.content)
+            acme.messages.acme_object_validate(response.content)
         except ValueError:
             raise errors.LetsEncryptClientError(
                 'Server did not send JSON serializable message')
@@ -115,7 +116,8 @@ class Network(object):
             elif response["type"] == "defer":
                 logging.info("Waiting for %d seconds...", delay)
                 time.sleep(delay)
-                response = self.send(acme.status_request(response["token"]))
+                response = self.send(
+                    acme.messages.status_request(response["token"]))
             else:
                 logging.fatal("Received unexpected message")
                 logging.fatal("Expected: %s", expected)

@@ -9,7 +9,8 @@ import sys
 import M2Crypto
 import zope.component
 
-from letsencrypt.client import acme
+from letsencrypt import acme
+
 from letsencrypt.client import auth_handler
 from letsencrypt.client import client_authenticator
 from letsencrypt.client import CONFIG
@@ -120,7 +121,7 @@ class Client(object):
 
         """
         return self.network.send_and_receive_expected(
-            acme.challenge_request(domain), "challenge")
+            acme.messages.challenge_request(domain), "challenge")
 
     def acme_certificate(self, csr_der):
         """Handle ACME "certificate" phase.
@@ -133,7 +134,8 @@ class Client(object):
         """
         logging.info("Preparing and sending CSR...")
         return self.network.send_and_receive_expected(
-            acme.certificate_request(csr_der, self.authkey.pem), "certificate")
+            acme.messages.certificate_request(
+                csr_der, self.authkey.pem), "certificate")
 
     def save_certificate(self, certificate_dict, cert_path, chain_path):
         # pylint: disable=no-self-use
