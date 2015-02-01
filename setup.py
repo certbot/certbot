@@ -53,8 +53,8 @@ setup(
     version=meta['version'],
     description="Let's Encrypt",
     long_description=readme,  # later: + '\n\n' + changes
-    author="Let's Encrypt Project",
-    license="",
+    author="The Let's Encrypt Team",
+    license="Apache License 2.0",
     url="https://letsencrypt.org",
     packages=[
         'letsencrypt',

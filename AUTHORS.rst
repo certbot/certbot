@@ -1,6 +1,8 @@
 Authors / Contributors
 ======================
 
+The Let's Encrypt Team:
+
 * Aaron Zuehlke <azuehlke22+github@gmail.com>
 * Adam Woodbeck <adam+github@woodbeck.net>
 * Alex Gaynor <alex.gaynor@gmail.com>
