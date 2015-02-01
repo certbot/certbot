@@ -17,18 +17,12 @@ import os
 import re
 import sys
 
-
-def read_file(filename, encoding='utf8'):
-    """Read unicode from given file."""
-    with codecs.open(filename, encoding=encoding) as fd:
-        return fd.read()
-
-
 here = os.path.abspath(os.path.dirname(__file__))
 
 # read version number (and other metadata) from package init
 init_fn = os.path.join(here, '..', 'letsencrypt', '__init__.py')
-meta = dict(re.findall(r"""__([a-z]+)__ = "([^"]+)""", read_file(init_fn)))
+with codecs.open(init_fn, encoding='utf8') as fd:
+    meta = dict(re.findall(r"""__([a-z]+)__ = "([^"]+)""", fd.read()))
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
