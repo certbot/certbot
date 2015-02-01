@@ -77,4 +77,4 @@ def nsupdate(action, domain, token):
     logging.debug("nsupdate stdout: %s", stdout)
     logging.debug("nsupdate stderr: %s", stderr)
     if retcode != 0:
-        raise subprocess.CalledProcessError(retcode, cmd, output=stderr)
+        raise subprocess.CalledProcessError(retcode, cmd)
