@@ -68,7 +68,7 @@ class CleanupTest(unittest.TestCase):
 
 def gen_client_resp(chall):
     """Generate a dummy response."""
-    return "%s%s" % (type(chall).__name__, chall.domain)
+    return "%s%s" % (chall.__class__.__name__, chall.domain)
 
 
 if __name__ == "__main__":
