@@ -462,7 +462,7 @@ class PathSatisfiedTest(unittest.TestCase):
 
 def gen_auth_resp(chall_list):
     """Generate a dummy authorization response."""
-    return ["%s%s" % (type(chall).__name__, chall.domain)
+    return ["%s%s" % (chall.__class__.__name__, chall.domain)
             for chall in chall_list]
 
 
