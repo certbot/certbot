@@ -54,26 +54,25 @@ def create_parser():
         help="Use the text output instead of the curses UI.")
     add("--test", action="store_true", help="Run in test mode.")
 
-    # TODO: trailing slashes might be important! check and remove
-    add("--config-dir", default="/etc/letsencrypt/",
+    add("--config-dir", default="/etc/letsencrypt",
         help="Configuration directory.")
-    add("--work-dir", default="/var/lib/letsencrypt/",
+    add("--work-dir", default="/var/lib/letsencrypt",
         help="Working directory.")
-    add("--backup-dir", default="/var/lib/letsencrypt/backups/",
+    add("--backup-dir", default="/var/lib/letsencrypt/backups",
         help="Configuration backups directory.")
     add("--temp-checkpoint-dir",
-        default="/var/lib/letsencrypt/temp_checkpoint/",
+        default="/var/lib/letsencrypt/temp_checkpoint",
         help="Temporary checkpoint directory.")
     add("--in-progress-dir",
-        default="/var/lib/letsencrypt/backups/IN_PROGRESS/",
+        default="/var/lib/letsencrypt/backups/IN_PROGRESS",
         help="Directory used before a permanent checkpoint is finalized")
-    add("--cert-key-backup", default="/var/lib/letsencrypt/keys-certs/",
+    add("--cert-key-backup", default="/var/lib/letsencrypt/keys-certs",
         help="Directory where all certificates and keys are stored. "
              "Used for easy revocation.")
-    add("--rev-tokens-dir", default="/var/lib/letsencrypt/revocation_tokens/",
+    add("--rev-tokens-dir", default="/var/lib/letsencrypt/revocation_tokens",
         help="Directory where all revocation tokens are saved.")
-    add("--key-dir", default="/etc/letsencrypt/keys/", help="Keys storage.")
-    add("--cert-dir", default="/etc/letsencrypt/certs/",
+    add("--key-dir", default="/etc/letsencrypt/keys", help="Keys storage.")
+    add("--cert-dir", default="/etc/letsencrypt/certs",
         help="Certificates storage.")
 
     add("--le-vhost-ext", default="-le-ssl.conf",

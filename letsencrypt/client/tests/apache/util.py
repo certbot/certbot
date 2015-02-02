@@ -22,9 +22,8 @@ class ApacheTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
 
         self.ssl_options = setup_apache_ssl_options(self.config_dir)
 
-        # Final slash is currently important
         self.config_path = os.path.join(
-            self.temp_dir, "debian_apache_2_4/two_vhost_80/apache2/")
+            self.temp_dir, "debian_apache_2_4/two_vhost_80/apache2")
 
         self.rsa256_file = pkg_resources.resource_filename(
             "letsencrypt.client.tests", 'testdata/rsa256_key.pem')

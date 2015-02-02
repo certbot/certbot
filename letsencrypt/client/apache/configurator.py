@@ -317,7 +317,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         # Search sites-available, httpd.conf for possible virtual hosts
         paths = self.aug.match(
-            ("/files%ssites-available//*[label()=~regexp('%s')]" %
+            ("/files%s/sites-available//*[label()=~regexp('%s')]" %
              (self.parser.root, parser.case_i('VirtualHost'))))
         vhs = []
 
@@ -682,8 +682,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             if ssl_vhost.names[0] < (255-23):
                 redirect_filename = "le-redirect-%s.conf" % ssl_vhost.names[0]
 
-        redirect_filepath = ("%ssites-available/%s" %
-                             (self.parser.root, redirect_filename))
+        redirect_filepath = os.path.join(
+            self.parser.root, 'sites-available', redirect_filename)
 
         # Register the new file that will be created
         # Note: always register the creation before writing to ensure file will
@@ -697,8 +697,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         self.aug.load()
         # Make a new vhost data structure and add it to the lists
-        new_fp = self.parser.root + "sites-available/" + redirect_filename
-        new_vhost = self._create_vhost(parser.get_aug_path(new_fp))
+        new_vhost = self._create_vhost(parser.get_aug_path(redirect_filepath))
         self.vhosts.append(new_vhost)
 
         # Finally create documentation for the change
@@ -829,7 +828,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: bool
 
         """
-        enabled_dir = os.path.join(self.parser.root, "sites-enabled/")
+        enabled_dir = os.path.join(self.parser.root, "sites-enabled")
         for entry in os.listdir(enabled_dir):
             if os.path.realpath(os.path.join(enabled_dir, entry)) == avail_fp:
                 return True
@@ -854,7 +853,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             return True
 
         if "/sites-available/" in vhost.filep:
-            enabled_path = ("%ssites-enabled/%s" %
+            enabled_path = ("%s/sites-enabled/%s" %
                             (self.parser.root, os.path.basename(vhost.filep)))
             self.reverter.register_file_creation(False, enabled_path)
             os.symlink(vhost.filep, enabled_path)

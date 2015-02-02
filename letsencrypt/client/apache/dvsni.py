@@ -167,6 +167,8 @@ class ApacheDvsni(object):
 
         """
         ips = " ".join(str(i) for i in ip_addrs)
+        document_root = os.path.join(
+            self.configurator.config.config_dir, "dvsni_page/")
         return ("<VirtualHost " + ips + ">\n"
                 "ServerName " + nonce + constants.DVSNI_DOMAIN_SUFFIX + "\n"
                 "UseCanonicalName on\n"
@@ -178,8 +180,7 @@ class ApacheDvsni(object):
                 "SSLCertificateFile " + self.get_cert_file(nonce) + "\n"
                 "SSLCertificateKeyFile " + dvsni_key_file + "\n"
                 "\n"
-                "DocumentRoot " +
-                self.configurator.config.config_dir + "dvsni_page/\n"
+                "DocumentRoot " + document_root + "\n"
                 "</VirtualHost>\n\n")
 
     def get_cert_file(self, nonce):
@@ -191,4 +192,4 @@ class ApacheDvsni(object):
         :rtype: str
 
         """
-        return self.configurator.config.work_dir + nonce + ".crt"
+        return os.path.join(self.configurator.config.work_dir, nonce + ".crt")
