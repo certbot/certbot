@@ -166,7 +166,7 @@ class SatisfyChallengesTest(unittest.TestCase):
         self.assertEqual(len(self.handler.dv_c), 5)
         self.assertEqual(len(self.handler.client_c), 5)
 
-        for i in range(5):
+        for i in xrange(5):
             dom = str(i)
             self.assertEqual(
                 self.handler.responses[dom],

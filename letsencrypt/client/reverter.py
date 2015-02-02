@@ -423,7 +423,7 @@ class Reverter(object):
         # It is possible save checkpoints faster than 1 per second resulting in
         # collisions in the naming convention.
         cur_time = time.time()
-        for _ in range(10):
+        for _ in xrange(10):
             final_dir = os.path.join(self.direc["backup"], str(cur_time))
             try:
                 os.rename(self.direc["progress"], final_dir)

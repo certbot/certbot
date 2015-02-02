@@ -471,11 +471,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         ssl_addr_p = self.aug.match(
             addr_match % (ssl_fp, parser.case_i("VirtualHost")))
 
-        for i in range(len(ssl_addr_p)):
+        for addr in ssl_addr_p:
             old_addr = obj.Addr.fromstring(
-                str(self.aug.get(ssl_addr_p[i])))
+                str(self.aug.get(addr)))
             ssl_addr = old_addr.get_addr_obj("443")
-            self.aug.set(ssl_addr_p[i], str(ssl_addr))
+            self.aug.set(addr, str(ssl_addr))
             ssl_addrs.add(ssl_addr)
 
         # Add directives
