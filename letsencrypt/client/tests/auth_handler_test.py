@@ -4,6 +4,7 @@ import unittest
 
 import mock
 
+from letsencrypt.client import challenge_util
 from letsencrypt.client import errors
 from letsencrypt.client.tests import acme_util
 
@@ -79,8 +80,8 @@ class SatisfyChallengesTest(unittest.TestCase):
             self.assertEqual(self.handler.responses[dom][0], "DvsniChall%d" % i)
             self.assertEqual(len(self.handler.dv_c[dom]), 1)
             self.assertEqual(len(self.handler.client_c[dom]), 0)
-            self.assertEqual(
-                type(self.handler.dv_c[dom][0].chall).__name__, "DvsniChall")
+            self.assertTrue(isinstance(self.handler.dv_c[dom][0].chall,
+                                       challenge_util.DvsniChall))
 
     @mock.patch("letsencrypt.client.auth_handler.gen_challenge_path")
     def test_name1_auth(self, mock_chall_path):
@@ -108,8 +109,8 @@ class SatisfyChallengesTest(unittest.TestCase):
 
         self.assertEqual(len(self.handler.dv_c[dom]), 1)
         self.assertEqual(len(self.handler.client_c[dom]), 0)
-        self.assertEqual(
-            type(self.handler.dv_c[dom][0].chall).__name__, "SimpleHttpsChall")
+        self.assertTrue(isinstance(self.handler.dv_c[dom][0].chall,
+                                   challenge_util.SimpleHttpsChall))
 
     @mock.patch("letsencrypt.client.auth_handler.gen_challenge_path")
     def test_name1_all(self, mock_chall_path):
@@ -122,7 +123,7 @@ class SatisfyChallengesTest(unittest.TestCase):
             acme_util.get_chall_msg(dom, "nonce0", challenges, combos),
             "dummy_key")
 
-        path = gen_path(["simpleHttps", "recoveryToken"], challenges)
+        path =gen_path(["simpleHttps", "recoveryToken"], challenges)
         mock_chall_path.return_value = path
 
         self.handler._satisfy_challenges()  # pylint: disable=protected-access
@@ -137,10 +138,10 @@ class SatisfyChallengesTest(unittest.TestCase):
         self.assertEqual(
             self.handler.responses[dom],
             self._get_exp_response(dom, path, challenges))
-        self.assertEqual(
-            type(self.handler.dv_c[dom][0].chall).__name__, "SimpleHttpsChall")
-        self.assertEqual(
-            type(self.handler.client_c[dom][0].chall).__name__, "RecTokenChall")
+        self.assertTrue(isinstance(self.handler.dv_c[dom][0].chall,
+                                   challenge_util.SimpleHttpsChall))
+        self.assertTrue(isinstance(self.handler.client_c[dom][0].chall,
+                                    challenge_util.RecTokenChall))
 
     @mock.patch("letsencrypt.client.auth_handler.gen_challenge_path")
     def test_name5_all(self, mock_chall_path):
@@ -173,11 +174,10 @@ class SatisfyChallengesTest(unittest.TestCase):
             self.assertEqual(len(self.handler.dv_c[dom]), 1)
             self.assertEqual(len(self.handler.client_c[dom]), 1)
 
-            self.assertEqual(
-                type(self.handler.dv_c[dom][0].chall).__name__, "DvsniChall")
-            self.assertEqual(
-                type(self.handler.client_c[dom][0].chall).__name__,
-                "RecContactChall")
+            self.assertTrue(isinstance(self.handler.dv_c[dom][0].chall,
+                                        challenge_util.DvsniChall))
+            self.assertTrue(isinstance(self.handler.client_c[dom][0].chall,
+                                        challenge_util.RecContactChall))
 
     @mock.patch("letsencrypt.client.auth_handler.gen_challenge_path")
     def test_name5_mix(self, mock_chall_path):
@@ -219,21 +219,21 @@ class SatisfyChallengesTest(unittest.TestCase):
             self.assertEqual(
                 len(self.handler.client_c[dom]), len(chosen_chall[i]) - 1)
 
-        self.assertEqual(
-            type(self.handler.dv_c["0"][0].chall).__name__, "DnsChall")
-        self.assertEqual(
-            type(self.handler.dv_c["1"][0].chall).__name__, "DvsniChall")
-        self.assertEqual(
-            type(self.handler.dv_c["2"][0].chall).__name__, "SimpleHttpsChall")
-        self.assertEqual(
-            type(self.handler.dv_c["3"][0].chall).__name__, "SimpleHttpsChall")
-        self.assertEqual(
-            type(self.handler.dv_c["4"][0].chall).__name__, "DnsChall")
+        self.assertTrue(isinstance(self.handler.dv_c["0"][0].chall,
+                        challenge_util.DnsChall))
+        self.assertTrue(isinstance(self.handler.dv_c["1"][0].chall,
+                                   challenge_util.DvsniChall))
+        self.assertTrue(isinstance(self.handler.dv_c["2"][0].chall,
+                                   challenge_util.SimpleHttpsChall))
+        self.assertTrue(isinstance(self.handler.dv_c["3"][0].chall,
+                                   challenge_util.SimpleHttpsChall))
+        self.assertTrue(isinstance(self.handler.dv_c["4"][0].chall,
+                                   challenge_util.DnsChall))
 
-        self.assertEqual(
-            type(self.handler.client_c["2"][0].chall).__name__, "PopChall")
-        self.assertEqual(
-            type(self.handler.client_c["4"][0].chall).__name__, "RecTokenChall")
+        self.assertTrue(isinstance(self.handler.client_c["2"][0].chall,
+                                   challenge_util.PopChall))
+        self.assertTrue(isinstance(self.handler.client_c["4"][0].chall,
+                                   challenge_util.RecTokenChall))
 
     @mock.patch("letsencrypt.client.auth_handler.gen_challenge_path")
     def test_perform_exception_cleanup(self, mock_chall_path):
@@ -251,8 +251,8 @@ class SatisfyChallengesTest(unittest.TestCase):
                     str(i), "nonce%d" % i, challenges, combos),
                 "dummy_key")
 
-        path = gen_path(["dvsni", "proofOfPossession"], challenges)
-        mock_chall_path.return_value = path
+        mock_chall_path.return_value = gen_path(
+            ["dvsni", "proofOfPossession"], challenges)
 
         # This may change in the future... but for now catch the error
         self.assertRaises(errors.LetsEncryptAuthHandlerError,
@@ -268,14 +268,16 @@ class SatisfyChallengesTest(unittest.TestCase):
             # Assert length of arg list was 1
             arg_chall_list = mock_cleanup_args[i][0][0]
             self.assertEqual(len(arg_chall_list), 1)
-            self.assertEqual(type(arg_chall_list[0]).__name__, "DvsniChall")
+            self.assertTrue(isinstance(arg_chall_list[0],
+                                       challenge_util.DvsniChall))
 
         # Check Auth cleanup
         mock_cleanup_args = self.mock_client_auth.cleanup.call_args_list
         for i in xrange(3):
             arg_chall_list = mock_cleanup_args[i][0][0]
             self.assertEqual(len(arg_chall_list), 1)
-            self.assertEqual(type(arg_chall_list[0]).__name__, "PopChall")
+            self.assertTrue(isinstance(arg_chall_list[0],
+                                       challenge_util.PopChall))
 
 
     def _get_exp_response(self, domain, path, challenges):  # pylint: disable=no-self-use
@@ -467,10 +469,10 @@ def gen_auth_resp(chall_list):
 def gen_path(str_list, challenges):
     """Generate a path for challenge messages
 
-    :param list str_list: list of str, challenge message types
+    :param list str_list: challenge message types (:class:`str`)
     :param dict challenges: ACME challenge messages
 
-    :return: list of int
+    :return: :class:`list` of :class:`int`
 
     """
     path = []
