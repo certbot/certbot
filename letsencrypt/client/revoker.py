@@ -31,7 +31,7 @@ class Revoker(object):
 
         """
         cert_der = M2Crypto.X509.load_cert(cert["backup_cert_file"]).as_der()
-        with open(cert["backup_key_file"], 'rU') as backup_key_file:
+        with open(cert["backup_key_file"], "rU") as backup_key_file:
             key = backup_key_file.read()
 
         revocation = self.network.send_and_receive_expected(
@@ -60,11 +60,11 @@ class Revoker(object):
         for (cert, _, path) in self.installer.get_all_certs_keys():
             try:
                 c_sha1_vh[M2Crypto.X509.load_cert(
-                    cert).get_fingerprint(md='sha1')] = path
+                    cert).get_fingerprint(md="sha1")] = path
             except M2Crypto.X509.X509Error:
                 continue
 
-        with open(list_file, 'rb') as csvfile:
+        with open(list_file, "rb") as csvfile:
             csvreader = csv.reader(csvfile)
             for row in csvreader:
                 cert = crypto_util.get_cert_info(row[1])
@@ -121,10 +121,10 @@ class Revoker(object):
         list_file = os.path.join(CONFIG.CERT_KEY_BACKUP, "LIST")
         list_file2 = os.path.join(CONFIG.CERT_KEY_BACKUP, "LIST.tmp")
 
-        with open(list_file, 'rb') as orgfile:
+        with open(list_file, "rb") as orgfile:
             csvreader = csv.reader(orgfile)
 
-            with open(list_file2, 'wb') as newfile:
+            with open(list_file2, "wb") as newfile:
                 csvwriter = csv.writer(newfile)
 
                 for row in csvreader:

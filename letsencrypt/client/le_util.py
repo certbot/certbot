@@ -28,8 +28,8 @@ def make_or_verify_dir(directory, mode=0o755, uid=0):
         if exception.errno == errno.EEXIST:
             if not check_permissions(directory, mode, uid):
                 raise errors.LetsEncryptClientError(
-                    '%s exists, but does not have the proper '
-                    'permissions or owner' % directory)
+                    "%s exists, but does not have the proper "
+                    "permissions or owner" % directory)
         else:
             raise
 
@@ -64,7 +64,7 @@ def unique_file(path, mode=0o777):
         fname = os.path.join(path, "%04d_%s" % (count, tail))
         try:
             file_d = os.open(fname, os.O_CREAT | os.O_EXCL | os.O_RDWR, mode)
-            return os.fdopen(file_d, 'w'), fname
+            return os.fdopen(file_d, "w"), fname
         except OSError:
             pass
         count += 1
@@ -92,8 +92,8 @@ def jose_b64encode(data):
 
     """
     if not isinstance(data, str):
-        raise TypeError('argument should be str or bytearray')
-    return base64.urlsafe_b64encode(data).rstrip('=')
+        raise TypeError("argument should be str or bytearray")
+    return base64.urlsafe_b64encode(data).rstrip("=")
 
 
 def jose_b64decode(data):
@@ -111,11 +111,11 @@ def jose_b64decode(data):
     """
     if isinstance(data, unicode):
         try:
-            data = data.encode('ascii')
+            data = data.encode("ascii")
         except UnicodeEncodeError:
             raise ValueError(
-                'unicode argument should contain only ASCII characters')
+                "unicode argument should contain only ASCII characters")
     elif not isinstance(data, str):
-        raise TypeError('argument should be a str or unicode')
+        raise TypeError("argument should be a str or unicode")
 
-    return base64.urlsafe_b64decode(data + '=' * (4 - (len(data) % 4)))
+    return base64.urlsafe_b64decode(data + "=" * (4 - (len(data) % 4)))

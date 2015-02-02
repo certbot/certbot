@@ -38,13 +38,13 @@ class ReverterCheckpointLocalTest(unittest.TestCase):
         self.reverter.add_to_temp_checkpoint(self.sets[0], "save1")
         self.reverter.add_to_temp_checkpoint(self.sets[1], "save2")
 
-        self.assertTrue(os.path.isdir(self.reverter.direc['temp']))
-        self.assertEqual(get_save_notes(self.direc['temp']), "save1save2")
+        self.assertTrue(os.path.isdir(self.reverter.direc["temp"]))
+        self.assertEqual(get_save_notes(self.direc["temp"]), "save1save2")
         self.assertFalse(os.path.isfile(
-            os.path.join(self.direc['temp'], "NEW_FILES")))
+            os.path.join(self.direc["temp"], "NEW_FILES")))
 
         self.assertEqual(
-            get_filepaths(self.direc['temp']),
+            get_filepaths(self.direc["temp"]),
             "{0}\n{1}\n".format(self.config1, self.config2))
 
     def test_add_to_checkpoint_copy_failure(self):
@@ -113,7 +113,7 @@ class ReverterCheckpointLocalTest(unittest.TestCase):
         self.reverter.register_file_creation(True, self.config1)
         self.reverter.register_file_creation(True, self.config1)
 
-        files = get_new_files(self.direc['temp'])
+        files = get_new_files(self.direc["temp"])
 
         self.assertEqual(len(files), 1)
 
@@ -269,7 +269,7 @@ class TestFullCheckpointsReverter(unittest.TestCase):
         config3 = self._setup_three_checkpoints()
 
         # Check resulting backup directory
-        self.assertEqual(len(os.listdir(self.direc['backup'])), 3)
+        self.assertEqual(len(os.listdir(self.direc["backup"])), 3)
         # Check rollbacks
         # First rollback
         self.reverter.rollback_checkpoints(1)
@@ -285,11 +285,11 @@ class TestFullCheckpointsReverter(unittest.TestCase):
         self.assertFalse(os.path.isfile(config3))
 
         # One dir left... check title
-        all_dirs = os.listdir(self.direc['backup'])
+        all_dirs = os.listdir(self.direc["backup"])
         self.assertEqual(len(all_dirs), 1)
         self.assertTrue(
             "First Checkpoint" in get_save_notes(
-                os.path.join(self.direc['backup'], all_dirs[0])))
+                os.path.join(self.direc["backup"], all_dirs[0])))
         # Final rollback
         self.reverter.rollback_checkpoints(1)
         self.assertEqual(read_in(self.config1), "directive-dir1")
@@ -350,7 +350,7 @@ class TestFullCheckpointsReverter(unittest.TestCase):
     def test_view_config_changes_bad_backups_dir(self):
         # There shouldn't be any "in progess directories when this is called
         # It must just be clean checkpoints
-        os.makedirs(os.path.join(self.direc['backup'], "in_progress"))
+        os.makedirs(os.path.join(self.direc["backup"], "in_progress"))
 
         self.assertRaises(errors.LetsEncryptReverterError,
                           self.reverter.view_config_changes)
@@ -392,9 +392,9 @@ class QuickInitReverterTest(unittest.TestCase):
         rev = Reverter()
 
         # Verify direc is set
-        self.assertTrue(rev.direc['backup'])
-        self.assertTrue(rev.direc['temp'])
-        self.assertTrue(rev.direc['progress'])
+        self.assertTrue(rev.direc["backup"])
+        self.assertTrue(rev.direc["temp"])
+        self.assertTrue(rev.direc["progress"])
 
 
 def setup_work_direc():
@@ -402,9 +402,9 @@ def setup_work_direc():
     work_dir = tempfile.mkdtemp("work")
     backup = os.path.join(work_dir, "backup")
     os.makedirs(backup)
-    direc = {'backup': backup,
-             'temp': os.path.join(work_dir, "temp"),
-             'progress': os.path.join(backup, "progress")}
+    direc = {"backup": backup,
+             "temp": os.path.join(work_dir, "temp"),
+             "progress": os.path.join(backup, "progress")}
 
     return work_dir, direc
 
@@ -415,9 +415,9 @@ def setup_test_files():
     dir2 = tempfile.mkdtemp("dir2")
     config1 = os.path.join(dir1, "config.txt")
     config2 = os.path.join(dir2, "config.txt")
-    with open(config1, 'w') as file_fd:
+    with open(config1, "w") as file_fd:
         file_fd.write("directive-dir1")
-    with open(config2, 'w') as file_fd:
+    with open(config2, "w") as file_fd:
         file_fd.write("directive-dir2")
 
     sets = [set([config1]),
@@ -429,30 +429,30 @@ def setup_test_files():
 
 def get_save_notes(dire):
     """Read save notes"""
-    return read_in(os.path.join(dire, 'CHANGES_SINCE'))
+    return read_in(os.path.join(dire, "CHANGES_SINCE"))
 
 
 def get_filepaths(dire):
     """Get Filepaths"""
-    return read_in(os.path.join(dire, 'FILEPATHS'))
+    return read_in(os.path.join(dire, "FILEPATHS"))
 
 
 def get_new_files(dire):
     """Get new files."""
-    return read_in(os.path.join(dire, 'NEW_FILES')).splitlines()
+    return read_in(os.path.join(dire, "NEW_FILES")).splitlines()
 
 
 def read_in(path):
     """Read in a file, return the str"""
-    with open(path, 'r') as file_fd:
+    with open(path, "r") as file_fd:
         return file_fd.read()
 
 
 def update_file(filename, string):
     """Update a file with a new value."""
-    with open(filename, 'w') as file_fd:
+    with open(filename, "w") as file_fd:
         file_fd.write(string)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

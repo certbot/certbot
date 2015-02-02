@@ -130,8 +130,8 @@ class ApacheParser(object):
                                       "[self::arg=~regexp('%s')]" %
                                       (start, directive, arg)))
 
-        incl_regex = "(%s)|(%s)" % (case_i('Include'),
-                                    case_i('IncludeOptional'))
+        incl_regex = "(%s)|(%s)" % (case_i("Include"),
+                                    case_i("IncludeOptional"))
 
         includes = self.aug.match(("%s//* [self::directive=~regexp('%s')]/* "
                                    "[label()='arg']" % (start, incl_regex)))
@@ -228,13 +228,13 @@ class ApacheParser(object):
         # Checkout fnmatch.py in venv/local/lib/python2.7/fnmatch.py
         regex = ""
         for letter in clean_fn_match:
-            if letter == '.':
+            if letter == ".":
                 regex = regex + r"\."
-            elif letter == '*':
+            elif letter == "*":
                 regex = regex + ".*"
             # According to apache.org ? shouldn't appear
             # but in case it is valid...
-            elif letter == '?':
+            elif letter == "?":
                 regex = regex + "."
             else:
                 regex = regex + letter
@@ -356,12 +356,12 @@ class ApacheParser(object):
         # Basic check to see if httpd.conf exists and
         # in hierarchy via direct include
         # httpd.conf was very common as a user file in Apache 2.2
-        if (os.path.isfile(os.path.join(self.root, 'httpd.conf')) and
+        if (os.path.isfile(os.path.join(self.root, "httpd.conf")) and
                 self.find_dir(
                     case_i("Include"), case_i("httpd.conf"), root)):
-            return os.path.join(self.root, 'httpd.conf')
+            return os.path.join(self.root, "httpd.conf")
         else:
-            return os.path.join(self.root, 'apache2.conf')
+            return os.path.join(self.root, "apache2.conf")
 
 
 def case_i(string):

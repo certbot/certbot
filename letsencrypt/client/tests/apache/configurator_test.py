@@ -41,7 +41,7 @@ class TwoVhost80Test(util.ApacheTest):
     def test_get_all_names(self):
         names = self.config.get_all_names()
         self.assertEqual(names, set(
-            ['letsencrypt.demo', 'encryption-example.demo', 'ip-172-30-0-17']))
+            ["letsencrypt.demo", "encryption-example.demo", "ip-172-30-0-17"]))
 
     def test_get_virtual_hosts(self):
         vhs = self.config.get_virtual_hosts()
@@ -189,5 +189,5 @@ class TwoVhost80Test(util.ApacheTest):
 
         self.assertEqual(mock_restart.call_count, 1)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

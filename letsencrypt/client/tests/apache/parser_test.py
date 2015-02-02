@@ -108,5 +108,5 @@ class ApacheParserTest(util.ApacheTest):
             self.assertEqual(results["default"], results["name"])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

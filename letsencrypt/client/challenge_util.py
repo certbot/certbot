@@ -66,7 +66,7 @@ def _dvsni_gen_ext(dvsni_r, dvsni_s):
     :rtype: str
 
     """
-    z_base = hashlib.new('sha256')
+    z_base = hashlib.new("sha256")
     z_base.update(dvsni_r)
     z_base.update(dvsni_s)
 

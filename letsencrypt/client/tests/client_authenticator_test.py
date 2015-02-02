@@ -71,5 +71,5 @@ def gen_client_resp(chall):
     return "%s%s" % (type(chall).__name__, chall.domain)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

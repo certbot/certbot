@@ -31,9 +31,9 @@ class DvsniPerformTest(util.ApacheTest):
         self.sni = dvsni.ApacheDvsni(config)
 
         rsa256_file = pkg_resources.resource_filename(
-            "letsencrypt.client.tests", 'testdata/rsa256_key.pem')
+            "letsencrypt.client.tests", "testdata/rsa256_key.pem")
         rsa256_pem = pkg_resources.resource_string(
-            "letsencrypt.client.tests", 'testdata/rsa256_key.pem')
+            "letsencrypt.client.tests", "testdata/rsa256_key.pem")
 
         auth_key = client.Client.Key(rsa256_file, rsa256_pem)
         self.challs = []
@@ -76,7 +76,7 @@ class DvsniPerformTest(util.ApacheTest):
 
             self.assertTrue(m_open.called)
             self.assertEqual(
-                m_open.call_args[0], (self.sni.get_cert_file(chall.nonce), 'w'))
+                m_open.call_args[0], (self.sni.get_cert_file(chall.nonce), "w"))
             self.assertEqual(m_open().write.call_args[0][0], "pem")
 
         self.assertEqual(mock_dvsni_gen_cert.call_count, 1)
@@ -166,5 +166,5 @@ class DvsniPerformTest(util.ApacheTest):
                     set([str(self.challs[1].nonce + CONFIG.INVALID_EXT)]))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
