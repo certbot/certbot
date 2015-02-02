@@ -299,8 +299,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
 
         elif chall["type"] == "dns":
             logging.info("  DNS challenge for name %s.", domain)
-            return challenge_util.DnsChall(
-                domain, str(chall["token"]), self.authkey[domain])
+            return challenge_util.DnsChall(domain, str(chall["token"]))
 
         else:
             raise errors.LetsEncryptClientError(
