@@ -52,15 +52,6 @@ def acme_object_validate(json_string, schemata=None):
     jsonschema.validate(json_object, schemata[json_object["type"]])
 
 
-def pretty(json_string):
-    """Return a pretty-printed version of any JSON string.
-
-    Useful when printing out protocol messages for debugging purposes.
-
-    """
-    return json.dumps(json.loads(json_string), indent=4)
-
-
 def challenge_request(name):
     """Create ACME "challengeRequest message.
 
