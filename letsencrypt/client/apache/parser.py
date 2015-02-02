@@ -77,13 +77,12 @@ class ApacheParser(object):
 
         """
         self.aug.set(aug_conf_path + "/directive[last() + 1]", directive)
-        if type(arg) is not list:
-            self.aug.set(aug_conf_path + "/directive[last()]/arg", arg)
+        if isinstance(arg, list):
+            for i, x in enumerate(arg, 1):
+                self.aug.set(
+                    "%s/directive[last()]/arg[%d]" % (aug_conf_path, i), x)
         else:
-            for i in range(len(arg)):
-                self.aug.set("%s/directive[last()]/arg[%d]" %
-                             (aug_conf_path, (i+1)),
-                             arg[i])
+            self.aug.set(aug_conf_path + "/directive[last()]/arg", arg)
 
     def find_dir(self, directive, arg=None, start=None):
         """Finds directive in the configuration.
@@ -313,8 +312,8 @@ class ApacheParser(object):
                 self.root + "/*/*/*.augsave",
                 self.root + "/*/*/*~"]
 
-        for i in range(len(excl)):
-            self.aug.set("/augeas/load/Httpd/excl[%d]" % (i+1), excl[i])
+        for i, excluded in enumerate(excl, 1):
+            self.aug.set("/augeas/load/Httpd/excl[%d]" % i, excluded)
 
         self.aug.load()
 

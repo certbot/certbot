@@ -25,13 +25,13 @@ class PerformTest(unittest.TestCase):
 
     def test_rec_token5(self):
         tokens = []
-        for i in range(5):
+        for i in xrange(5):
             tokens.append(challenge_util.RecTokenChall(str(i)))
 
         responses = self.auth.perform(tokens)
 
         self.assertEqual(len(responses), 5)
-        for i in range(5):
+        for i in xrange(5):
             self.assertEqual(responses[i], "RecTokenChall%d" % i)
 
     def test_unexpected(self):
