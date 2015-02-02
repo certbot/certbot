@@ -64,3 +64,7 @@ class VirtualHostTest(unittest.TestCase):
         self.assertEqual(vhost1b, self.vhost1)
         self.assertEqual(str(vhost1b), str(self.vhost1))
         self.assertNotEqual(vhost1b, 1234)
+
+
+if __name__ == "__main__":
+    unittest.main()
