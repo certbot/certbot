@@ -3,6 +3,9 @@ import unittest
 
 import mock
 
+from letsencrypt.client import challenge_util
+from letsencrypt.client import errors
+
 
 class PerformTest(unittest.TestCase):
     """Test client perform function."""
@@ -16,18 +19,14 @@ class PerformTest(unittest.TestCase):
             name="rec_token_perform", side_effect=gen_client_resp)
 
     def test_rec_token1(self):
-        from letsencrypt.client.challenge_util import RecTokenChall
-        token = RecTokenChall("0")
-
+        token = challenge_util.RecTokenChall("0")
         responses = self.auth.perform([token])
-
         self.assertEqual(responses, ["RecTokenChall0"])
 
     def test_rec_token5(self):
-        from letsencrypt.client.challenge_util import RecTokenChall
         tokens = []
         for i in range(5):
-            tokens.append(RecTokenChall(str(i)))
+            tokens.append(challenge_util.RecTokenChall(str(i)))
 
         responses = self.auth.perform(tokens)
 
@@ -36,13 +35,11 @@ class PerformTest(unittest.TestCase):
             self.assertEqual(responses[i], "RecTokenChall%d" % i)
 
     def test_unexpected(self):
-        from letsencrypt.client.challenge_util import DvsniChall
-        from letsencrypt.client.errors import LetsEncryptClientAuthError
-
-        unexpected = DvsniChall("0", "rb64", "123", "invalid_key")
+        unexpected = challenge_util.DvsniChall(
+            "0", "rb64", "123", "invalid_key")
 
         self.assertRaises(
-            LetsEncryptClientAuthError, self.auth.perform, [unexpected])
+            errors.LetsEncryptClientAuthError, self.auth.perform, [unexpected])
 
 
 class CleanupTest(unittest.TestCase):
@@ -57,9 +54,8 @@ class CleanupTest(unittest.TestCase):
         self.auth.rec_token.cleanup = self.mock_cleanup
 
     def test_rec_token2(self):
-        from letsencrypt.client.challenge_util import RecTokenChall
-        token1 = RecTokenChall("0")
-        token2 = RecTokenChall("1")
+        token1 = challenge_util.RecTokenChall("0")
+        token2 = challenge_util.RecTokenChall("1")
 
         self.auth.cleanup([token1, token2])
 
@@ -67,15 +63,11 @@ class CleanupTest(unittest.TestCase):
                          [mock.call(token1), mock.call(token2)])
 
     def test_unexpected(self):
-        from letsencrypt.client.challenge_util import DvsniChall
-        from letsencrypt.client.challenge_util import RecTokenChall
-        from letsencrypt.client.errors import LetsEncryptClientAuthError
+        token = challenge_util.RecTokenChall("0")
+        unexpected = challenge_util.DvsniChall("0", "rb64", "123", "dummy_key")
 
-        token = RecTokenChall("0")
-        unexpected = DvsniChall("0", "rb64", "123", "dummy_key")
-
-        self.assertRaises(
-            LetsEncryptClientAuthError, self.auth.cleanup, [token, unexpected])
+        self.assertRaises(errors.LetsEncryptClientAuthError,
+                          self.auth.cleanup, [token, unexpected])
 
 
 def gen_client_resp(chall):
