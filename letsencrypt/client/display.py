@@ -430,17 +430,11 @@ def gen_https_names(domains):
     """Returns a string of the https domains.
 
     Domains are formatted nicely with https:// prepended to each.
-    .. todo:: This should not use +=, rewrite this with unittests
+
+    :param list domains: Domains (:class:`str`)
 
     """
-    result = ""
-    if len(domains) > 2:
-        for i in range(len(domains)-1):
-            result = result + "https://" + domains[i] + ", "
-        result = result + "and "
     if len(domains) == 2:
-        return "https://" + domains[0] + " and https://" + domains[1]
-    if domains:
-        result = result + "https://" + domains[len(domains)-1]
-
-    return result
+        return "https://{0} and https://{1}".format(domains[0], domains[1])
+    else:
+        return ", ".join("https://{0}".format(domain) for domain in domains)
