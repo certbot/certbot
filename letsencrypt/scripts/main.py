@@ -36,7 +36,7 @@ def create_parser():
 
     add("-p", "--privkey", type=read_file,
         help="Path to the private key file for certificate generation.")
-    add("-B", "--rsa-key-size", "--keysize", type=int, default=2048,
+    add("-B", "--rsa-key-size", type=int, default=2048,
         metavar="N", help="RSA key shall be sized N bits.")
 
     add("-k", "--revoke", action="store_true", help="Revoke a certificate.")
@@ -156,7 +156,7 @@ def main():  # pylint: disable=too-many-branches
 
     # Prepare for init of Client
     if config.privkey is None:
-        privkey = client.init_key(config.key_size, config.key_dir)
+        privkey = client.init_key(config.rsa_key_size, config.key_dir)
     else:
         privkey = client.Client.Key(config.privkey[0], config.privkey[1])
 
