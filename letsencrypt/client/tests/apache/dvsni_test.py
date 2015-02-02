@@ -9,6 +9,8 @@ from letsencrypt.client import challenge_util
 from letsencrypt.client import client
 from letsencrypt.client import CONFIG
 
+from letsencrypt.client.apache.obj import Addr
+
 from letsencrypt.client.tests.apache import util
 
 
@@ -133,7 +135,6 @@ class DvsniPerformTest(util.ApacheTest):
             self.assertEqual(responses[i]["s"], "randomS%d" % i)
 
     def test_mod_config(self):
-        from letsencrypt.client.apache.obj import Addr
         for chall in self.challs:
             self.sni.add_chall(chall)
         v_addr1 = [Addr(("1.2.3.4", "443")), Addr(("5.6.7.8", "443"))]
