@@ -65,9 +65,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     :ivar config: Configuration.
     :type config: :class:`~letsencrypt.client.interfaces.IConfig`
 
-    :ivar str server_root: Path to Apache root directory
-    :ivar dict location: Path to various files associated
-        with the configuration
     :ivar tup version: version of Apache
     :ivar list vhosts: All vhosts found in the configuration
         (:class:`list` of :class:`letsencrypt.client.apache.obj.VirtualHost`)
@@ -77,34 +74,22 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     """
     zope.interface.implements(interfaces.IAuthenticator, interfaces.IInstaller)
 
-    def __init__(self, config, direc=None, version=None):
+    def __init__(self, config, version=None):
         """Initialize an Apache Configurator.
 
-        :param dict direc: locations of various config directories
-            (used mostly for unittesting)
         :param tup version: version of Apache as a tuple (2, 4, 7)
             (used mostly for unittesting)
 
         """
-        self.config = config
-        server_root = self.config.apache_server_root
-        ssl_options = self.config.apache_mod_ssl_conf
-
-        if direc is None:
-            direc = {"backup": self.config.backup_dir,
-                     "temp": self.config.temp_checkpoint_dir,
-                     "progress": self.config.in_progress_dir,
-                     "config": self.config.config_dir,
-                     "work": self.config.work_dir}
-
-        super(ApacheConfigurator, self).__init__(config, direc)
-        self.direc = direc
+        super(ApacheConfigurator, self).__init__(config)
 
         # Verify that all directories and files exist with proper permissions
         if os.geteuid() == 0:
             self.verify_setup()
 
-        self.parser = parser.ApacheParser(self.aug, server_root, ssl_options)
+        self.parser = parser.ApacheParser(
+            self.aug, self.config.apache_server_root,
+            self.config.apache_mod_ssl_conf)
         # Check for errors in parsing files with Augeas
         self.check_parsing_errors("httpd.aug")
 
@@ -126,7 +111,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self._prepare_server_https()
 
         self.enhance_func = {"redirect": self._enable_redirect}
-        temp_install(ssl_options)
+        temp_install(self.config.apache_mod_ssl_conf)
 
     def deploy_cert(self, domain, cert, key, cert_chain=None):
         """Deploys certificate to specified virtual host.
@@ -954,9 +939,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         uid = os.geteuid()
-        le_util.make_or_verify_dir(self.direc["config"], 0o755, uid)
-        le_util.make_or_verify_dir(self.direc["work"], 0o755, uid)
-        le_util.make_or_verify_dir(self.direc["backup"], 0o755, uid)
+        le_util.make_or_verify_dir(self.config.config_dir, 0o755, uid)
+        le_util.make_or_verify_dir(self.config.work_dir, 0o755, uid)
+        le_util.make_or_verify_dir(self.config.backup_dir, 0o755, uid)
 
     ###########################################################################
     # Challenges Section

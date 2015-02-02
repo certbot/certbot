@@ -9,30 +9,20 @@ from letsencrypt.client import reverter
 class AugeasConfigurator(object):
     """Base Augeas Configurator class.
 
+    :ivar config: Configuration.
+    :type config: :class:`~letsencrypt.client.interfaces.IConfig`
+
     :ivar aug: Augeas object
     :type aug: :class:`augeas.Augeas`
 
     :ivar str save_notes: Human-readable configuration change notes
-    :ivar dict direc: dictionary containing save directory paths
     :ivar reverter: saves and reverts checkpoints
     :type reverter: :class:`letsencrypt.client.reverter.Reverter`
 
     """
 
-    def __init__(self, config, direc=None):
-        """Initialize Augeas Configurator.
-
-        :param config: Configuration.
-        :type config: :class:`~letsencrypt.client.interfaces.IConfig`
-
-        :param dict direc: location of save directories
-            (used mostly for testing)
-
-        """
-        if not direc:
-            direc = {"backup": config.backup_dir,
-                     "temp": config.temp_checkpoint_dir,
-                     "progress": config.in_progress_dir}
+    def __init__(self, config):
+        self.config = config
 
         # Set Augeas flags to not save backup (we do it ourselves)
         # Set Augeas to not load anything by default
@@ -44,7 +34,7 @@ class AugeasConfigurator(object):
         # This needs to occur before VirtualHost objects are setup...
         # because this will change the underlying configuration and potential
         # vhosts
-        self.reverter = reverter.Reverter(config, direc)
+        self.reverter = reverter.Reverter(config)
         self.reverter.recovery_routine()
 
     def check_parsing_errors(self, lens):

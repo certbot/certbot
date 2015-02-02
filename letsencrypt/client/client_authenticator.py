@@ -18,17 +18,15 @@ class ClientAuthenticator(object):
     zope.interface.implements(interfaces.IAuthenticator)
 
     # This will have an installer soon for get_key/cert purposes
-    def __init__(self, server, config):
+    def __init__(self, config):
         """Initialize Client Authenticator.
-
-        :param str server: ACME CA Server
 
         :param config: Configuration.
         :type config: :class:`letsencrypt.client.interfaces.IConfig`
 
         """
         self.rec_token = recovery_token.RecoveryToken(
-            server, config.rev_token_dirs)
+            config.acme_server, config.rev_token_dirs)
 
     def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use
         """Return list of challenge preferences."""

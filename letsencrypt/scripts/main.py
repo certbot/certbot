@@ -125,11 +125,11 @@ def main():  # pylint: disable=too-many-branches
         sys.exit()
 
     if config.revoke:
-        client.revoke(config.acme_server, config)
+        client.revoke(config)
         sys.exit()
 
     if config.rollback > 0:
-        client.rollback(config.rollback, config)
+        client.rollback(config)
         sys.exit()
 
     if not config.eula:
@@ -160,7 +160,7 @@ def main():  # pylint: disable=too-many-branches
     else:
         privkey = client.Client.Key(config.privkey[0], config.privkey[1])
 
-    acme = client.Client(config.acme_server, privkey, auth, installer, config)
+    acme = client.Client(config, privkey, auth, installer)
 
     # Validate the key and csr
     client.validate_key_csr(privkey)

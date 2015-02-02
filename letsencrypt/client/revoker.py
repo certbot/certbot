@@ -17,13 +17,13 @@ from letsencrypt.client import network
 class Revoker(object):
     """A revocation class for LE.
 
-    :param config: Configuration.
+    :ivar config: Configuration.
     :type config: :class:`letsencrypt.client.interfaces.IConfig`
 
     """
 
-    def __init__(self, server, installer, config):
-        self.network = network.Network(server)
+    def __init__(self, installer, config):
+        self.network = network.Network(config.acme_server)
         self.installer = installer
         self.config = config
 

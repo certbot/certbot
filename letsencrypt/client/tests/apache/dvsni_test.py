@@ -100,7 +100,7 @@ class DvsniPerformTest(util.ApacheTest):
 
         # Check to make sure challenge config path is included in apache config.
         self.assertEqual(
-            len(self.sni.config.parser.find_dir(
+            len(self.sni.configurator.parser.find_dir(
                 "Include", self.sni.challenge_conf)),
             1)
         self.assertEqual(len(responses), 1)
@@ -125,7 +125,7 @@ class DvsniPerformTest(util.ApacheTest):
             mock_setup_cert.call_args_list[1], mock.call(self.challs[1]))
 
         self.assertEqual(
-            len(self.sni.config.parser.find_dir(
+            len(self.sni.configurator.parser.find_dir(
                 "Include", self.sni.challenge_conf)),
             1)
         self.assertEqual(len(responses), 2)
@@ -142,16 +142,17 @@ class DvsniPerformTest(util.ApacheTest):
         ll_addr.append(v_addr1)
         ll_addr.append(v_addr2)
         self.sni._mod_config(ll_addr)  # pylint: disable=protected-access
-        self.sni.config.save()
+        self.sni.configurator.save()
 
-        self.sni.config.parser.find_dir("Include", self.sni.challenge_conf)
-        vh_match = self.sni.config.aug.match(
+        self.sni.configurator.parser.find_dir(
+            "Include", self.sni.challenge_conf)
+        vh_match = self.sni.configurator.aug.match(
             "/files" + self.sni.challenge_conf + "//VirtualHost")
 
         vhs = []
         for match in vh_match:
             # pylint: disable=protected-access
-            vhs.append(self.sni.config._create_vhost(match))
+            vhs.append(self.sni.configurator._create_vhost(match))
         self.assertEqual(len(vhs), 2)
         for vhost in vhs:
             if vhost.addrs == set(v_addr1):

@@ -19,15 +19,14 @@ class ReverterCheckpointLocalTest(unittest.TestCase):
         # Disable spurious errors... we are trying to test for them
         logging.disable(logging.CRITICAL)
 
-        self.work_dir, self.direc = setup_work_direc()
-
-        self.reverter = Reverter(mock.MagicMock(), self.direc)
+        self.config = setup_work_direc()
+        self.reverter = Reverter(self.config)
 
         tup = setup_test_files()
         self.config1, self.config2, self.dir1, self.dir2, self.sets = tup
 
     def tearDown(self):
-        shutil.rmtree(self.work_dir)
+        shutil.rmtree(self.config.work_dir)
         shutil.rmtree(self.dir1)
         shutil.rmtree(self.dir2)
 
@@ -38,13 +37,14 @@ class ReverterCheckpointLocalTest(unittest.TestCase):
         self.reverter.add_to_temp_checkpoint(self.sets[0], "save1")
         self.reverter.add_to_temp_checkpoint(self.sets[1], "save2")
 
-        self.assertTrue(os.path.isdir(self.reverter.direc['temp']))
-        self.assertEqual(get_save_notes(self.direc['temp']), "save1save2")
+        self.assertTrue(os.path.isdir(self.config.temp_checkpoint_dir))
+        self.assertEqual(get_save_notes(
+            self.config.temp_checkpoint_dir), "save1save2")
         self.assertFalse(os.path.isfile(
-            os.path.join(self.direc['temp'], "NEW_FILES")))
+            os.path.join(self.config.temp_checkpoint_dir, "NEW_FILES")))
 
         self.assertEqual(
-            get_filepaths(self.direc['temp']),
+            get_filepaths(self.config.temp_checkpoint_dir),
             "{0}\n{1}\n".format(self.config1, self.config2))
 
     def test_add_to_checkpoint_copy_failure(self):
@@ -113,7 +113,7 @@ class ReverterCheckpointLocalTest(unittest.TestCase):
         self.reverter.register_file_creation(True, self.config1)
         self.reverter.register_file_creation(True, self.config1)
 
-        files = get_new_files(self.direc['temp'])
+        files = get_new_files(self.config.temp_checkpoint_dir)
 
         self.assertEqual(len(files), 1)
 
@@ -240,14 +240,14 @@ class TestFullCheckpointsReverter(unittest.TestCase):
         # Disable spurious errors...
         logging.disable(logging.CRITICAL)
 
-        self.work_dir, self.direc = setup_work_direc()
-        self.reverter = Reverter(mock.MagicMock(), self.direc)
+        self.config = setup_work_direc()
+        self.reverter = Reverter(self.config)
 
         tup = setup_test_files()
         self.config1, self.config2, self.dir1, self.dir2, self.sets = tup
 
     def tearDown(self):
-        shutil.rmtree(self.work_dir)
+        shutil.rmtree(self.config.work_dir)
         shutil.rmtree(self.dir1)
         shutil.rmtree(self.dir2)
 
@@ -269,7 +269,7 @@ class TestFullCheckpointsReverter(unittest.TestCase):
         config3 = self._setup_three_checkpoints()
 
         # Check resulting backup directory
-        self.assertEqual(len(os.listdir(self.direc['backup'])), 3)
+        self.assertEqual(len(os.listdir(self.config.backup_dir)), 3)
         # Check rollbacks
         # First rollback
         self.reverter.rollback_checkpoints(1)
@@ -285,11 +285,11 @@ class TestFullCheckpointsReverter(unittest.TestCase):
         self.assertFalse(os.path.isfile(config3))
 
         # One dir left... check title
-        all_dirs = os.listdir(self.direc['backup'])
+        all_dirs = os.listdir(self.config.backup_dir)
         self.assertEqual(len(all_dirs), 1)
         self.assertTrue(
             "First Checkpoint" in get_save_notes(
-                os.path.join(self.direc['backup'], all_dirs[0])))
+                os.path.join(self.config.backup_dir, all_dirs[0])))
         # Final rollback
         self.reverter.rollback_checkpoints(1)
         self.assertEqual(read_in(self.config1), "directive-dir1")
@@ -350,7 +350,7 @@ class TestFullCheckpointsReverter(unittest.TestCase):
     def test_view_config_changes_bad_backups_dir(self):
         # There shouldn't be any "in progess directories when this is called
         # It must just be clean checkpoints
-        os.makedirs(os.path.join(self.direc['backup'], "in_progress"))
+        os.makedirs(os.path.join(self.config.backup_dir, "in_progress"))
 
         self.assertRaises(errors.LetsEncryptReverterError,
                           self.reverter.view_config_changes)
@@ -384,29 +384,20 @@ class TestFullCheckpointsReverter(unittest.TestCase):
         return config3
 
 
-class QuickInitReverterTest(unittest.TestCase):
-    # pylint: disable=too-few-public-methods
-    """Quick test of init."""
-
-    def test_init(self):
-        from letsencrypt.client.reverter import Reverter
-        config = mock.MagicMock()
-        rev = Reverter(config)
-        self.assertEqual(rev.direc['backup'], config.backup_dir)
-        self.assertEqual(rev.direc['temp'], config.temp_checkpoint_dir)
-        self.assertEqual(rev.direc['progress'], config.in_progress_dir)
-
-
 def setup_work_direc():
-    """Setup directories."""
-    work_dir = tempfile.mkdtemp("work")
-    backup = os.path.join(work_dir, "backup")
-    os.makedirs(backup)
-    direc = {'backup': backup,
-             'temp': os.path.join(work_dir, "temp"),
-             'progress': os.path.join(backup, "progress")}
+    """Setup directories.
 
-    return work_dir, direc
+    :returns: Mocked :class:`letsencrypt.client.interfaces.IConfig`
+
+    """
+    work_dir = tempfile.mkdtemp("work")
+    backup_dir = os.path.join(work_dir, "backup")
+    os.makedirs(backup_dir)
+
+    return mock.MagicMock(
+        work_dir=work_dir, backup_dir=backup_dir,
+        temp_checkpoint_dir=os.path.join(work_dir, "temp"),
+        in_progress_dir=os.path.join(backup_dir, "in_progress_dir"))
 
 
 def setup_test_files():

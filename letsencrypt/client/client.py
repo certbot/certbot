@@ -49,16 +49,15 @@ class Client(object):
     # Note: form is the type of data, "pem" or "der"
     CSR = collections.namedtuple("CSR", "file data form")
 
-    def __init__(self, server, authkey, dv_auth, installer, config):
+    def __init__(self, config, authkey, dv_auth, installer):
         """Initialize a client.
 
-        :param str server: CA server to contact
         :param dv_auth: IAuthenticator that can solve the
             :const:`letsencrypt.client.constants.DV_CHALLENGES`
         :type dv_auth: :class:`letsencrypt.client.interfaces.IAuthenticator`
 
         """
-        self.network = network.Network(server)
+        self.network = network.Network(config.server)
         self.authkey = authkey
 
         self.installer = installer
@@ -66,8 +65,7 @@ class Client(object):
         self.config = config
 
         if dv_auth is not None:
-            client_auth = client_authenticator.ClientAuthenticator(
-                server, config)
+            client_auth = client_authenticator.ClientAuthenticator(config)
             self.auth_handler = auth_handler.AuthHandler(
                 dv_auth, client_auth, self.network)
         else:
@@ -86,9 +84,6 @@ class Client(object):
         :rtype: `tuple` of `str`
 
         """
-        cert_path = self.config.cert_path
-        chain_path = self.config.chain_path
-
         if self.auth_handler is None:
             logging.warning("Unable to obtain a certificate, because client "
                             "does not have a valid auth handler.")
@@ -110,7 +105,7 @@ class Client(object):
 
         # Save Certificate
         cert_file, chain_file = self.save_certificate(
-            certificate_dict, cert_path, chain_path)
+            certificate_dict, self.config.cert_path, self.config.chain_path)
 
         self.store_cert_key(cert_file, False)
 
@@ -426,7 +421,7 @@ def determine_installer(config):
         logging.info("Unable to find a way to install the certificate.")
 
 
-def rollback(checkpoints, config):
+def rollback(config):
     """Revert configuration the specified number of checkpoints.
 
     .. note:: If another installer uses something other than the reverter class
@@ -441,8 +436,6 @@ def rollback(checkpoints, config):
         of future installers.  Perhaps the interface should define errors that
         are thrown for the various functions.
 
-    :param int checkpoints: Number of checkpoints to revert.
-
     :param config: Configuration.
     :type config: :class:`letsencrypt.client.interfaces.IConfig`
 
@@ -451,18 +444,18 @@ def rollback(checkpoints, config):
     try:
         installer = determine_installer(config)
     except errors.LetsEncryptMisconfigurationError:
-        _misconfigured_rollback(checkpoints, config)
+        _misconfigured_rollback(config)
         return
 
     # No Errors occurred during init... proceed normally
     # If installer is None... couldn't find an installer... there shouldn't be
     # anything to rollback
     if installer is not None:
-        installer.rollback_checkpoints(checkpoints)
+        installer.rollback_checkpoints(config.rollback)
         installer.restart()
 
 
-def _misconfigured_rollback(checkpoints, config):
+def _misconfigured_rollback(config):
     """Handles the case where the Installer is misconfigured.
 
     :param config: Configuration.
@@ -484,7 +477,7 @@ def _misconfigured_rollback(checkpoints, config):
     # Also... not sure how future installers will handle recovery.
     rev = reverter.Reverter(config)
     rev.recovery_routine()
-    rev.rollback_checkpoints(checkpoints)
+    rev.rollback_checkpoints(config.rollback)
 
     # We should try to restart the server
     try:
@@ -497,10 +490,8 @@ def _misconfigured_rollback(checkpoints, config):
             "Rollback was unable to solve the misconfiguration issues")
 
 
-def revoke(server, config):
+def revoke(config):
     """Revoke certificates.
-
-    :param str server: ACME server the client wishes to revoke certificates from
 
     :param config: Configuration.
     :type config: :class:`letsencrypt.client.interfaces.IConfig`
@@ -525,7 +516,7 @@ def revoke(server, config):
             "revocation without a valid installer.  This feature should come "
             "soon.")
         return
-    revoc = revoker.Revoker(server, installer, config)
+    revoc = revoker.Revoker(installer, config)
     revoc.list_certs_keys()
 
 

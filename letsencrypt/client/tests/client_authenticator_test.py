@@ -10,7 +10,8 @@ class PerformTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.client.client_authenticator import ClientAuthenticator
 
-        self.auth = ClientAuthenticator("demo_server.org", mock.MagicMock())
+        self.auth = ClientAuthenticator(
+            mock.MagicMock(acme_server="demo_server.org"))
         self.auth.rec_token.perform = mock.MagicMock(
             name="rec_token_perform", side_effect=gen_client_resp)
 
@@ -50,7 +51,8 @@ class CleanupTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.client.client_authenticator import ClientAuthenticator
 
-        self.auth = ClientAuthenticator("demo_server.org", mock.MagicMock())
+        self.auth = ClientAuthenticator(mock.MagicMock(
+            acme_server="demo_server.org"))
         self.mock_cleanup = mock.MagicMock(name="rec_token_cleanup")
         self.auth.rec_token.cleanup = self.mock_cleanup
 
