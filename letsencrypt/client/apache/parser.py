@@ -73,9 +73,9 @@ class ApacheParser(object):
         """
         self.aug.set(aug_conf_path + "/directive[last() + 1]", directive)
         if isinstance(arg, list):
-            for i, x in enumerate(arg, 1):
+            for i, value in enumerate(arg, 1):
                 self.aug.set(
-                    "%s/directive[last()]/arg[%d]" % (aug_conf_path, i), x)
+                    "%s/directive[last()]/arg[%d]" % (aug_conf_path, i), value)
         else:
             self.aug.set(aug_conf_path + "/directive[last()]/arg", arg)
 
