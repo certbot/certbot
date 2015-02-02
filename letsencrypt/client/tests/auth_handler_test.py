@@ -123,7 +123,7 @@ class SatisfyChallengesTest(unittest.TestCase):
             acme_util.get_chall_msg(dom, "nonce0", challenges, combos),
             "dummy_key")
 
-        path =gen_path(["simpleHttps", "recoveryToken"], challenges)
+        path = gen_path(["simpleHttps", "recoveryToken"], challenges)
         mock_chall_path.return_value = path
 
         self.handler._satisfy_challenges()  # pylint: disable=protected-access
@@ -141,7 +141,7 @@ class SatisfyChallengesTest(unittest.TestCase):
         self.assertTrue(isinstance(self.handler.dv_c[dom][0].chall,
                                    challenge_util.SimpleHttpsChall))
         self.assertTrue(isinstance(self.handler.client_c[dom][0].chall,
-                                    challenge_util.RecTokenChall))
+                                   challenge_util.RecTokenChall))
 
     @mock.patch("letsencrypt.client.auth_handler.gen_challenge_path")
     def test_name5_all(self, mock_chall_path):
@@ -175,9 +175,9 @@ class SatisfyChallengesTest(unittest.TestCase):
             self.assertEqual(len(self.handler.client_c[dom]), 1)
 
             self.assertTrue(isinstance(self.handler.dv_c[dom][0].chall,
-                                        challenge_util.DvsniChall))
+                                       challenge_util.DvsniChall))
             self.assertTrue(isinstance(self.handler.client_c[dom][0].chall,
-                                        challenge_util.RecContactChall))
+                                       challenge_util.RecContactChall))
 
     @mock.patch("letsencrypt.client.auth_handler.gen_challenge_path")
     def test_name5_mix(self, mock_chall_path):
@@ -220,7 +220,7 @@ class SatisfyChallengesTest(unittest.TestCase):
                 len(self.handler.client_c[dom]), len(chosen_chall[i]) - 1)
 
         self.assertTrue(isinstance(self.handler.dv_c["0"][0].chall,
-                        challenge_util.DnsChall))
+                                   challenge_util.DnsChall))
         self.assertTrue(isinstance(self.handler.dv_c["1"][0].chall,
                                    challenge_util.DvsniChall))
         self.assertTrue(isinstance(self.handler.dv_c["2"][0].chall,
