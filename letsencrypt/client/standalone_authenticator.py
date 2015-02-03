@@ -238,7 +238,6 @@ class StandaloneAuthenticator(object):
         self.subproc_inuse = False
         self.subproc_cantbind = False
         self.tasks = {}
-        self.which = None
         self.sock = None
         self.connection = None
         self.private_key = None
@@ -311,6 +310,109 @@ class StandaloneAuthenticator(object):
         new_ctx.use_privatekey(self.private_key)
         connection.set_context(new_ctx)
 
+    def do_parent_process(self, port):
+        """Perform the parent process side of the TCP listener task.  This
+        should only be called by start_listener()."""
+
+        signal.signal(signal.SIGIO, self.client_signal_handler)
+        signal.signal(signal.SIGUSR1, self.client_signal_handler)
+        signal.signal(signal.SIGUSR2, self.client_signal_handler)
+        display = zope.component.getUtility(interfaces.IDisplay)
+        start_time = time.time()
+        while time.time() < start_time + 5:
+            if self.subproc_ready:
+                return True
+            if self.subproc_inuse:
+                display.generic_notification(
+                    "Could not bind TCP port {} because it is already in "
+                    "use it is already in use by another process on this "
+                    "system (such as a web server).".format(CONFIG.PORT))
+                return False
+            if self.subproc_cantbind:
+                display.generic_notification(
+                    "Could not bind TCP port {} because you don't have "
+                    "the appropriate permissions (for example, you "
+                    "aren't running this program as "
+                    "root).".format(CONFIG.PORT))
+                return False
+            time.sleep(0.1)
+        display.generic_notification(
+            "Subprocess unexpectedly timed out while trying to bind TCP "
+            "port {}.".format(CONFIG.PORT))
+        return False
+
+    def do_child_process(self, port, key):
+        """Perform the child process side of the TCP listener task.  This
+        should only be called by start_listener()."""
+        signal.signal(signal.SIGINT, self.subproc_signal_handler)
+        self.sock = socket.socket()
+        try:
+            self.sock.bind(("0.0.0.0", port))
+        except socket.error, error:
+            if error.errno == socket.errno.EACCES:
+                # Signal permissions denied to bind TCP port
+                os.kill(self.parent_pid, signal.SIGUSR2)
+            elif error.errno == socket.errno.EADDRINUSE:
+                # Signal TCP port is already in use
+                os.kill(self.parent_pid, signal.SIGUSR1)
+            else:
+                # XXX: How to handle unknown errors in binding?
+                raise error
+            sys.exit(1)
+        # XXX: We could use poll mechanism to handle simultaneous
+        # XXX: rather than sequential inbound TCP connections here
+        self.sock.listen(1)
+        # Signal that we've successfully bound TCP port
+        os.kill(self.parent_pid, signal.SIGIO)
+        self.private_key = OpenSSL.crypto.load_privatekey(
+            OpenSSL.crypto.FILETYPE_PEM, key.pem)
+
+        while True:
+            self.connection, _ = self.sock.accept()
+
+            # The code below uses the PyOpenSSL bindings to respond to
+            # the client.  This may expose us to bugs and vulnerabilities
+            # in OpenSSL (and creates additional dependencies).
+            ctx = OpenSSL.SSL.Context(OpenSSL.SSL.TLSv1_METHOD)
+            ctx.set_verify(OpenSSL.SSL.VERIFY_NONE, lambda: False)
+            pem_cert = self.tasks.values()[0]
+            first_cert = OpenSSL.crypto.load_certificate(
+                OpenSSL.crypto.FILETYPE_PEM, pem_cert)
+            ctx.use_certificate(first_cert)
+            ctx.use_privatekey(self.private_key)
+            ctx.set_cipher_list("HIGH")
+            ctx.set_tlsext_servername_callback(self.sni_callback)
+            self.ssl_conn = OpenSSL.SSL.Connection(ctx, self.connection)
+            self.ssl_conn.set_accept_state()
+            self.ssl_conn.do_handshake()
+            self.ssl_conn.shutdown()
+            self.ssl_conn.close()
+
+            # The code below uses the minimal pure Python implementation
+            # of TLS ClientHello, ServerHello, and Certificate messages
+            # (as an alternative to a full TLS implementation).  It will
+            # not reach Finished state with a compliant TLS implementation.
+            #
+            # client_hello = self.connection.recv(65536)
+            # result = tls_parse_client_hello(client_hello)
+            # if result is None:
+            #    print "No SNI found in ClientHello, dropping connection"
+            #    self.connection.close()
+            #    continue
+            # ciphersuite, sni = result
+            # if sni in self.tasks:
+            #     pem_cert = self.tasks[sni]
+            # else:
+            #     # We don't know which cert to send!
+            #     print "Unexpected SNI value", sni
+            #     # Choose the "first" cert and send it (but maybe we
+            #     # should just disconnect instead?)
+            #     pem_cert = self.tasks.values()[0]
+            # self.connection.send(tls_generate_server_hello(ciphersuite))
+            # self.connection.send(tls_generate_cert_msg(pem_cert))
+            # self.connection.send(tls_generate_server_hello_done())
+            # self.connection.close()
+
     def start_listener(self, port, key):
         """Create a child process which will start a TCP listener on the
         specified port to perform the specified DVSNI challenges.
@@ -322,106 +424,12 @@ class StandaloneAuthenticator(object):
         Crypto.Random.atfork()
         if fork_result:
             # PARENT process (still the Let's Encrypt client process)
-            self.which = "parent"
             self.child_pid = fork_result
-            signal.signal(signal.SIGIO, self.client_signal_handler)
-            signal.signal(signal.SIGUSR1, self.client_signal_handler)
-            signal.signal(signal.SIGUSR2, self.client_signal_handler)
-            display = zope.component.getUtility(interfaces.IDisplay)
-            start_time = time.time()
-            while time.time() < start_time + 5:
-                if self.subproc_ready:
-                    return True
-                if self.subproc_inuse:
-                    display.generic_notification(
-                        "Could not bind TCP port {} because it is already in "
-                        "use it is already in use by another process on this "
-                        "system (such as a web server).".format(CONFIG.PORT))
-                    return False
-                if self.subproc_cantbind:
-                    display.generic_notification(
-                        "Could not bind TCP port {} because you don't have "
-                        "the appropriate permissions (for example, you "
-                        "aren't running this program as "
-                        "root).".format(CONFIG.PORT))
-                    return False
-                time.sleep(0.1)
-            display.generic_notification(
-                "Subprocess unexpectedly timed out while trying to bind TCP "
-                "port {}.".format(CONFIG.PORT))
-            return False
+            self.do_parent_process(port)
         else:
             # CHILD process (the TCP listener subprocess)
-            self.which = "child"
             self.child_pid = os.getpid()
-            signal.signal(signal.SIGINT, self.subproc_signal_handler)
-            self.sock = socket.socket()
-            try:
-                self.sock.bind(("0.0.0.0", port))
-            except socket.error, error:
-                if error.errno == socket.errno.EACCES:
-                    # Signal permissions denied to bind TCP port
-                    os.kill(self.parent_pid, signal.SIGUSR2)
-                elif error.errno == socket.errno.EADDRINUSE:
-                    # Signal TCP port is already in use
-                    os.kill(self.parent_pid, signal.SIGUSR1)
-                else:
-                    # XXX: How to handle unknown errors in binding?
-                    raise error
-                sys.exit(1)
-            # XXX: We could use poll mechanism to handle simultaneous
-            # XXX: rather than sequential inbound TCP connections here
-            self.sock.listen(1)
-            # Signal that we've successfully bound TCP port
-            os.kill(self.parent_pid, signal.SIGIO)
-            self.private_key = OpenSSL.crypto.load_privatekey(
-                OpenSSL.crypto.FILETYPE_PEM, key.pem)
-
-            while True:
-                self.connection, _ = self.sock.accept()
-
-                # The code below uses the PyOpenSSL bindings to respond to
-                # the client.  This may expose us to bugs and vulnerabilities
-                # in OpenSSL (and creates additional dependencies).
-                ctx = OpenSSL.SSL.Context(OpenSSL.SSL.TLSv1_METHOD)
-                ctx.set_verify(OpenSSL.SSL.VERIFY_NONE, lambda: False)
-                pem_cert = self.tasks.values()[0]
-                first_cert = OpenSSL.crypto.load_certificate(
-                    OpenSSL.crypto.FILETYPE_PEM, pem_cert)
-                ctx.use_certificate(first_cert)
-                ctx.use_privatekey(self.private_key)
-                ctx.set_cipher_list("HIGH")
-                ctx.set_tlsext_servername_callback(self.sni_callback)
-                self.ssl_conn = OpenSSL.SSL.Connection(ctx, self.connection)
-                self.ssl_conn.set_accept_state()
-                self.ssl_conn.do_handshake()
-                self.ssl_conn.shutdown()
-                self.ssl_conn.close()
-
-                # The code below uses the minimal pure Python implementation
-                # of TLS ClientHello, ServerHello, and Certificate messages
-                # (as an alternative to a full TLS implementation).  It will
-                # not reach Finished state with a compliant TLS implementation.
-                #
-                # client_hello = self.connection.recv(65536)
-                # result = tls_parse_client_hello(client_hello)
-                # if result is None:
-                #    print "No SNI found in ClientHello, dropping connection"
-                #    self.connection.close()
-                #    continue
-                # ciphersuite, sni = result
-                # if sni in self.tasks:
-                #     pem_cert = self.tasks[sni]
-                # else:
-                #     # We don't know which cert to send!
-                #     print "Unexpected SNI value", sni
-                #     # Choose the "first" cert and send it (but maybe we
-                #     # should just disconnect instead?)
-                #     pem_cert = self.tasks.values()[0]
-                # self.connection.send(tls_generate_server_hello(ciphersuite))
-                # self.connection.send(tls_generate_cert_msg(pem_cert))
-                # self.connection.send(tls_generate_server_hello_done())
-                # self.connection.close()
+            self.do_child_process(port, key)
 
     # IAuthenticator method implementations follow
 
