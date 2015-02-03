@@ -23,7 +23,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
 
     :ivar list domains: list of str domains to get authorization
     :ivar dict authkey: Authorized Keys for each domain.
-        values are of type :class:`letsencrypt.client.client.Client.Key`
+        values are of type :class:`letsencrypt.client.le_util.Key`
     :ivar dict responses: keys: domain, values: list of dict responses
     :ivar dict msgs: ACME Challenge messages with domain as a key
     :ivar dict paths: optimal path for authorization. eg. paths[domain]
@@ -54,7 +54,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         :param dict msg: ACME challenge message
 
         :param authkey: authorized key for the challenge
-        :type authkey: :class:`letsencrypt.client.client.Client.Key`
+        :type authkey: :class:`letsencrypt.client.le_util.Key`
 
         """
         if domain in self.domains:

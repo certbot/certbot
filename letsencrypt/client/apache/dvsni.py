@@ -17,7 +17,7 @@ class ApacheDvsni(object):
     :ivar dvsni_chall: Data required for challenges.
        where DvsniChall tuples have the following fields
        `domain` (`str`), `r_b64` (base64 `str`), `nonce` (hex `str`)
-       `key` (:class:`letsencrypt.client.client.Client.Key`)
+       `key` (:class:`letsencrypt.client.le_util.Key`)
     :type dvsni_chall: `list` of
         :class:`letsencrypt.client.challenge_util.DvsniChall`
 

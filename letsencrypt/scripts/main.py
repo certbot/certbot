@@ -11,8 +11,9 @@ import zope.interface
 from letsencrypt.client import CONFIG
 from letsencrypt.client import client
 from letsencrypt.client import display
-from letsencrypt.client import interfaces
 from letsencrypt.client import errors
+from letsencrypt.client import interfaces
+from letsencrypt.client import le_util
 from letsencrypt.client import log
 
 
@@ -113,7 +114,7 @@ def main():  # pylint: disable=too-many-statements,too-many-branches
     if args.privkey is None:
         privkey = client.init_key(args.key_size)
     else:
-        privkey = client.Client.Key(args.privkey[0], args.privkey[1])
+        privkey = le_util.Key(args.privkey[0], args.privkey[1])
 
     acme = client.Client(args.server, privkey, auth, installer)
 

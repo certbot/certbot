@@ -7,8 +7,8 @@ import unittest
 import mock
 
 from letsencrypt.client import challenge_util
-from letsencrypt.client import client
 from letsencrypt.client import errors
+from letsencrypt.client import le_util
 
 from letsencrypt.client.apache import configurator
 from letsencrypt.client.apache import obj
@@ -164,7 +164,7 @@ class TwoVhost80Test(util.ApacheTest):
     def test_perform(self, mock_restart, mock_dvsni_perform):
         # Only tests functionality specific to configurator.perform
         # Note: As more challenges are offered this will have to be expanded
-        auth_key = client.Client.Key(self.rsa256_file, self.rsa256_pem)
+        auth_key = le_util.Key(self.rsa256_file, self.rsa256_pem)
         chall1 = challenge_util.DvsniChall(
             "encryption-example.demo",
             "jIq_Xy1mXGN37tb4L6Xj_es58fW571ZNyXekdZzhh7Q",

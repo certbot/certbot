@@ -1,5 +1,4 @@
 """ACME protocol client class and helper functions."""
-import collections
 import csv
 import logging
 import os
@@ -38,7 +37,7 @@ class Client(object):
     :type network: :class:`letsencrypt.client.network.Network`
 
     :ivar authkey: Authorization Key
-    :type authkey: :class:`letsencrypt.client.client.Client.Key`
+    :type authkey: :class:`letsencrypt.client.le_util.Key`
 
     :ivar auth_handler: Object that supports the IAuthenticator interface.
         auth_handler contains both a dv_authenticator and a client_authenticator
@@ -49,10 +48,6 @@ class Client(object):
 
     """
     zope.interface.implements(interfaces.IAuthenticator)
-
-    Key = collections.namedtuple("Key", "file pem")
-    # Note: form is the type of data, "pem" or "der"
-    CSR = collections.namedtuple("CSR", "file data form")
 
     def __init__(self, server, authkey, dv_auth, installer):
         """Initialize a client.
@@ -185,7 +180,7 @@ class Client(object):
         :param list domains: list of domains to install the certificate
 
         :param privkey: private key for certificate
-        :type privkey: :class:`Key`
+        :type privkey: :class:`letsencrypt.client.le_util.Key`
 
         :param str cert_file: certificate file path
         :param str chain_file: chain file path
@@ -312,7 +307,7 @@ def validate_key_csr(privkey, csr=None):
     If csr is left as None, only the key will be validated.
 
     :param privkey: Key associated with CSR
-    :type privkey: :class:`letsencrypt.client.client.Client.Key`
+    :type privkey: :class:`letsencrypt.client.le_util.Key`
 
     :param csr: CSR
     :type csr: :class:`letsencrypt.client.client.Client.CSR`
@@ -374,7 +369,7 @@ def init_key(key_size):
 
     logging.info("Generating key (%d bits): %s", key_size, key_filename)
 
-    return Client.Key(key_filename, key_pem)
+    return le_util.Key(key_filename, key_pem)
 
 
 def init_csr(privkey, names):
@@ -390,14 +385,14 @@ def init_csr(privkey, names):
 
     logging.info("Creating CSR: %s", csr_filename)
 
-    return Client.CSR(csr_filename, csr_der, "der")
+    return le_util.CSR(csr_filename, csr_der, "der")
 
 
 def csr_pem_to_der(csr):
     """Convert pem CSR to der."""
 
     csr_obj = M2Crypto.X509.load_request_string(csr.data)
-    return Client.CSR(csr.file, csr_obj.as_der(), "der")
+    return le_util.CSR(csr.file, csr_obj.as_der(), "der")
 
 
 def sanity_check_names(names):
