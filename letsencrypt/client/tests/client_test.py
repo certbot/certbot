@@ -14,7 +14,7 @@ class RollbackTest(unittest.TestCase):
     @classmethod
     def _call(cls, checkpoints):
         from letsencrypt.client.client import rollback
-        rollback(mock.MagicMock(rollback=checkpoints))
+        rollback(checkpoints, mock.MagicMock())
 
     @mock.patch("letsencrypt.client.client.determine_installer")
     def test_no_problems(self, mock_det):

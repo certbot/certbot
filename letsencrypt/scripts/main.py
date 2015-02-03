@@ -14,7 +14,6 @@ import zope.component
 
 import letsencrypt
 
-from letsencrypt.client import constants
 from letsencrypt.client import configuration
 from letsencrypt.client import client
 from letsencrypt.client import display
@@ -28,17 +27,16 @@ def create_parser():
         description="letsencrypt client %s" % letsencrypt.__version__)
 
     add = parser.add_argument
+    config_help = lambda name: interfaces.IConfig[name].__doc__
 
     add("-d", "--domains", metavar="DOMAIN", nargs="+")
     add("-s", "--acme-server", "--server", default="letsencrypt-demo.org:443",
-        help="CA hostname (and optionally :port). The server certificate must "
-             "be trusted in order to avoid further modifications to the "
-             "client.")
+        help=config_help("acme_server"))
 
     add("-p", "--privkey", type=read_file,
         help="Path to the private key file for certificate generation.")
-    add("-B", "--rsa-key-size", type=int, default=2048,
-        metavar="N", help="RSA key shall be sized N bits.")
+    add("-B", "--rsa-key-size", type=int, default=2048, metavar="N",
+        help=config_help("rsa_key_size"))
 
     add("-k", "--revoke", action="store_true", help="Revoke a certificate.")
     add("-b", "--rollback", type=int, default=0, metavar="N",
@@ -56,33 +54,31 @@ def create_parser():
     add("--test", action="store_true", help="Run in test mode.")
 
     add("--config-dir", default="/etc/letsencrypt",
-        help="Configuration directory.")
+        help=config_help("config_dir"))
     add("--work-dir", default="/var/lib/letsencrypt",
-        help="Working directory.")
+        help=config_help("work_dir"))
     add("--backup-dir", default="/var/lib/letsencrypt/backups",
-        help="Configuration backups directory.")
-    add("--key-dir", default="/etc/letsencrypt/keys", help="Keys storage.")
+        help=config_help("backup_dir"))
+    add("--key-dir", default="/etc/letsencrypt/keys",
+        help=config_help("key_dir"))
     add("--cert-dir", default="/etc/letsencrypt/certs",
-        help="Certificates storage.")
+        help=config_help("cert_dir"))
 
     add("--le-vhost-ext", default="-le-ssl.conf",
-        help="SSL vhost configuration extension.")
+        help=config_help("le_vhost_ext"))
     add("--cert-path", default="/etc/letsencrypt/certs/cert-letsencrypt.pem",
-        help="Let's Encrypt certificate file.")
+        help=config_help("cert_path"))
     add("--chain-path", default="/etc/letsencrypt/certs/chain-letsencrypt.pem",
-        help="Let's Encrypt chain file.")
+        help=config_help("chain_path"))
 
-    add("--apache-ctl", default="apache2ctl",
-        help="Path to the 'apache2ctl' binary, used for 'configtest' and "
-             "retrieving Apache2 version number.")
-    add("--apache-enmod", default="a2enmod",
-        help="Path to the Apache 'a2enmod' binary.")
-    add("--apache-init-script", default="/etc/init.d/apache2",
-        help="Path to the Apache init script (used for server reload/restart).")
     add("--apache-server-root", default="/etc/apache2",
-        help="Apache server root directory.")
+        help=config_help("apache_server_root"))
     add("--apache-mod-ssl-conf", default="/etc/letsencrypt/options-ssl.conf",
-        help="Contains standard Apache SSL directives.")
+        help=config_help("apache_mod_ssl_conf"))
+    add("--apache-ctl", default="apache2ctl", help=config_help("apache_ctl"))
+    add("--apache-enmod", default="a2enmod", help=config_help("apache_enmod"))
+    add("--apache-init-script", default="/etc/init.d/apache2",
+        help=config_help("apache_init_script"))
 
     return parser
 
@@ -102,26 +98,26 @@ def main():  # pylint: disable=too-many-branches
     # Set up logging
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
-    if config.use_curses:
+    if args.use_curses:
         logger.addHandler(log.DialogHandler())
         displayer = display.NcursesDisplay()
     else:
         displayer = display.FileDisplay(sys.stdout)
     zope.component.provideUtility(displayer)
 
-    if config.view_config_changes:
+    if args.view_config_changes:
         client.view_config_changes(config)
         sys.exit()
 
-    if config.revoke:
+    if args.revoke:
         client.revoke(config)
         sys.exit()
 
-    if config.rollback > 0:
-        client.rollback(config)
+    if args.rollback > 0:
+        client.rollback(args.rollback, config)
         sys.exit()
 
-    if not config.eula:
+    if not args.eula:
         display_eula()
 
     # Make sure we actually get an installer that is functioning properly
@@ -140,14 +136,14 @@ def main():  # pylint: disable=too-many-branches
     else:
         auth = client.determine_authenticator(config)
 
-    if config.domains is None:
+    if args.domains is None:
         domains = choose_names(installer)
 
     # Prepare for init of Client
-    if config.privkey is None:
-        privkey = client.init_key(config.rsa_key_size, config.key_dir)
+    if args.privkey is None:
+        privkey = client.init_key(args.rsa_key_size, config.key_dir)
     else:
-        privkey = client.Client.Key(config.privkey[0], config.privkey[1])
+        privkey = client.Client.Key(args.privkey[0], args.privkey[1])
 
     acme = client.Client(config, privkey, auth, installer)
 
@@ -163,7 +159,7 @@ def main():  # pylint: disable=too-many-branches
     if installer is not None and cert_file is not None:
         acme.deploy_certificate(domains, privkey, cert_file, chain_file)
     if installer is not None:
-        acme.enhance_config(domains, config.redirect)
+        acme.enhance_config(domains, args.redirect)
 
 
 def display_eula():

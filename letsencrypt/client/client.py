@@ -421,7 +421,7 @@ def determine_installer(config):
         logging.info("Unable to find a way to install the certificate.")
 
 
-def rollback(config):
+def rollback(checkpoints, config):
     """Revert configuration the specified number of checkpoints.
 
     .. note:: If another installer uses something other than the reverter class
@@ -436,6 +436,8 @@ def rollback(config):
         of future installers.  Perhaps the interface should define errors that
         are thrown for the various functions.
 
+    :param int checkpoints: Number of checkpoints to revert.
+
     :param config: Configuration.
     :type config: :class:`letsencrypt.client.interfaces.IConfig`
 
@@ -444,19 +446,21 @@ def rollback(config):
     try:
         installer = determine_installer(config)
     except errors.LetsEncryptMisconfigurationError:
-        _misconfigured_rollback(config)
+        _misconfigured_rollback(checkpoints, config)
         return
 
     # No Errors occurred during init... proceed normally
     # If installer is None... couldn't find an installer... there shouldn't be
     # anything to rollback
     if installer is not None:
-        installer.rollback_checkpoints(config.rollback)
+        installer.rollback_checkpoints(checkpoints)
         installer.restart()
 
 
-def _misconfigured_rollback(config):
+def _misconfigured_rollback(checkpoints, config):
     """Handles the case where the Installer is misconfigured.
+
+    :param int checkpoints: Number of checkpoints to revert.
 
     :param config: Configuration.
     :type config: :class:`letsencrypt.client.interfaces.IConfig`
@@ -477,7 +481,7 @@ def _misconfigured_rollback(config):
     # Also... not sure how future installers will handle recovery.
     rev = reverter.Reverter(config)
     rev.recovery_routine()
-    rev.rollback_checkpoints(config.rollback)
+    rev.rollback_checkpoints(checkpoints)
 
     # We should try to restart the server
     try:
