@@ -57,6 +57,33 @@ class TLSGenerateServerHelloTest(unittest.TestCase):
         self.assertEqual(server_hello[43:], chr(0) + 'Q!' + chr(0))
 
 
+class TLSGenerateCertMsgTest(unittest.TestCase):
+    def test_tls_generate_cert_msg(self):
+        from letsencrypt.client.standalone_authenticator import \
+            tls_generate_cert_msg
+        cert = pkg_resources.resource_string(__name__,
+            'testdata/cert.pem')
+        cert_msg = tls_generate_cert_msg(cert)
+        self.assertEqual(cert_msg.encode("hex"),
+            "16030301ec0b0001e80001e50001e2308201de30820188a0030201020202"
+            "0539300d06092a864886f70d01010b05003077310b300906035504061302"
+            "55533111300f06035504080c084d6963686967616e311230100603550407"
+            "0c09416e6e204172626f72312b3029060355040a0c22556e697665727369"
+            "7479206f66204d6963686967616e20616e64207468652045464631143012"
+            "06035504030c0b6578616d706c652e636f6d301e170d3134313231313232"
+            "333434355a170d3134313231383232333434355a3077310b300906035504"
+            "06130255533111300f06035504080c084d6963686967616e311230100603"
+            "5504070c09416e6e204172626f72312b3029060355040a0c22556e697665"
+            "7273697479206f66204d6963686967616e20616e64207468652045464631"
+            "14301206035504030c0b6578616d706c652e636f6d305c300d06092a8648"
+            "86f70d0101010500034b003048024100ac7573b451ed1fddae705243fcdf"
+            "c75bd02c751b14b875010410e51f036545dddfa79f34aefdbee90584df47"
+            "1681d9894bce8e6d1cfa9544e8af84744fedc2e50203010001300d06092a"
+            "864886f70d01010b05000341002db8cf421dc0854a4a59ed92c965bebeb3"
+            "25ea411f97cc9dd7e4dd7269d748d3e9513ed7828db63874d9ae7a1a8ada"
+            "02f2404f9fc7ebb13c1af27fa1c36707fa")
+
+
 class TLSServerHelloDoneTest(unittest.TestCase):
     def test_tls_generate_server_hello_done(self):
         from letsencrypt.client.standalone_authenticator import \
@@ -185,6 +212,5 @@ if __name__ == '__main__':
 
 
 # TODO: Unit tests for the following functions
-# def tls_generate_cert_msg(cert_pem):
 # def start_listener(self, port, key):
 # def perform(self, chall_list):
