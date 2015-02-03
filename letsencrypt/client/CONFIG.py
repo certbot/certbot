@@ -101,3 +101,6 @@ APACHE_CTL = "/usr/sbin/apache2ctl"
 
 APACHE2 = "/etc/init.d/apache2"
 """Command used for reload and restart."""
+
+# TODO: add dnsutils to required/suggested packages
+NSUPDATE_CMD = "nsupdate -k le-nsupdate.key"  # see "man nsupdate"
