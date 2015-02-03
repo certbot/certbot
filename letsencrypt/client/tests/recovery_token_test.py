@@ -52,7 +52,7 @@ class RecoveryTokenTest(unittest.TestCase):
     def test_perform_not_stored(self, mock_input):
         from letsencrypt.client.challenge_util import RecTokenChall
 
-        mock_input().generic_input.side_effect = [(0, "555"), (1, "000")]
+        mock_input().input.side_effect = [(0, "555"), (1, "000")]
         response = self.rec_token.perform(RecTokenChall("example5.com"))
         self.assertEqual(response, {"type": "recoveryToken", "token": "555"})
 

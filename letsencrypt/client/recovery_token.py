@@ -35,7 +35,7 @@ class RecoveryToken(object):
                 return self.generate_response(token_fd.read())
 
         cancel, token = zope.component.getUtility(
-            interfaces.IDisplay).generic_input(
+            interfaces.IDisplay).input(
                 "%s - Input Recovery Token: " % chall.domain)
         if cancel != 1:
             return self.generate_response(token)

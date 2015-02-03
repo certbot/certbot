@@ -135,7 +135,7 @@ def main():  # pylint: disable=too-many-statements,too-many-branches
 def display_eula():
     """Displays the end user agreement."""
     with open('EULA') as eula_file:
-        if not zope.component.getUtility(interfaces.IDisplay).generic_yesno(
+        if not zope.component.getUtility(interfaces.IDisplay).yesno(
                 eula_file.read(), "Agree", "Cancel"):
             sys.exit(0)
 

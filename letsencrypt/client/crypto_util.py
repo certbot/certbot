@@ -1,4 +1,9 @@
-"""Let's Encrypt client crypto utility functions"""
+"""Let's Encrypt client crypto utility functions
+
+.. todo:: Make the transition to use PSS rather than PKCS1_v1_5 when the server
+    is capable of handling the signatures.
+
+"""
 import binascii
 import logging
 import time
@@ -17,15 +22,13 @@ from letsencrypt.client import le_util
 def create_sig(msg, key_str, nonce=None, nonce_len=CONFIG.NONCE_SIZE):
     """Create signature with nonce prepended to the message.
 
-    .. todo:: Change this over to M2Crypto... PKey
-
     .. todo:: Protect against crypto unicode errors... is this sufficient?
         Do I need to escape?
 
+    :param str msg: Message to be signed
+
     :param str key_str: Key in string form. Accepted formats
         are the same as for `Crypto.PublicKey.RSA.importKey`.
-
-    :param str msg: Message to be signed
 
     :param nonce: Nonce to be used. If None, nonce of `nonce_len` size
                   will be randomly generated.
@@ -184,71 +187,38 @@ def make_ss_cert(key_str, domains, not_before=None,
     pubkey = M2Crypto.EVP.PKey()
     pubkey.assign_rsa(rsa_key)
 
-    cert = M2Crypto.X509.X509()
-    cert.set_pubkey(pubkey)
-    cert.set_serial_number(1337)
-    cert.set_version(2)
+    m2_cert = M2Crypto.X509.X509()
+    m2_cert.set_pubkey(pubkey)
+    m2_cert.set_serial_number(1337)
+    m2_cert.set_version(2)
 
     current_ts = long(time.time() if not_before is None else not_before)
     current = M2Crypto.ASN1.ASN1_UTCTIME()
     current.set_time(current_ts)
     expire = M2Crypto.ASN1.ASN1_UTCTIME()
     expire.set_time(current_ts + validity)
-    cert.set_not_before(current)
-    cert.set_not_after(expire)
+    m2_cert.set_not_before(current)
+    m2_cert.set_not_after(expire)
 
-    subject = cert.get_subject()
+    subject = m2_cert.get_subject()
     subject.C = "US"
     subject.ST = "Michigan"
     subject.L = "Ann Arbor"
     subject.O = "University of Michigan and the EFF"
     subject.CN = domains[0]
-    cert.set_issuer(cert.get_subject())
+    m2_cert.set_issuer(m2_cert.get_subject())
 
     if len(domains) > 1:
-        cert.add_ext(M2Crypto.X509.new_extension(
+        m2_cert.add_ext(M2Crypto.X509.new_extension(
             'basicConstraints', 'CA:FALSE'))
-        # cert.add_ext(M2Crypto.X509.new_extension(
-        #    'extendedKeyUsage', 'TLS Web Server Authentication'))
-        cert.add_ext(M2Crypto.X509.new_extension(
+        m2_cert.add_ext(M2Crypto.X509.new_extension(
             'subjectAltName', ", ".join(["DNS:%s" % d for d in domains])))
 
-    cert.sign(pubkey, 'sha256')
-    assert cert.verify(pubkey)
-    assert cert.verify()
+    m2_cert.sign(pubkey, 'sha256')
+    assert m2_cert.verify(pubkey)
+    assert m2_cert.verify()
     # print check_purpose(,0
-    return cert.as_pem()
-
-
-def get_cert_info(filename):
-    """Get certificate info.
-
-    .. todo:: Pub key is assumed to be RSA... find a good solution to allow EC.
-
-    :param str filename: Name of file containing certificate in PEM format.
-
-    :rtype: dict
-
-    """
-    # M2Crypto Library only supports RSA right now
-    cert = M2Crypto.X509.load_cert(filename)
-
-    try:
-        san = cert.get_ext("subjectAltName").get_value()
-    except LookupError:
-        san = ""
-
-    return {
-        "not_before": cert.get_not_before().get_datetime(),
-        "not_after": cert.get_not_after().get_datetime(),
-        "subject": cert.get_subject().as_text(),
-        "cn": cert.get_subject().CN,
-        "issuer": cert.get_issuer().as_text(),
-        "fingerprint": cert.get_fingerprint(md='sha1'),
-        "san": san,
-        "serial": cert.get_serial_number(),
-        "pub_key": "RSA " + str(cert.get_pubkey().size() * 8),
-    }
+    return m2_cert.as_pem()
 
 
 def b64_cert_to_pem(b64_der_cert):

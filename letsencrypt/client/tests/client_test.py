@@ -31,7 +31,7 @@ class RollbackTest(unittest.TestCase):
         from letsencrypt.client.errors import LetsEncryptMisconfigurationError
         mock_det.side_effect = [LetsEncryptMisconfigurationError,
                                 self.m_install]
-        self.m_input().generic_yesno.return_value = True
+        self.m_input().yesno.return_value = True
 
         self._call(1)
 
@@ -49,7 +49,7 @@ class RollbackTest(unittest.TestCase):
         from letsencrypt.client.errors import LetsEncryptMisconfigurationError
         mock_det.side_effect = LetsEncryptMisconfigurationError
 
-        self.m_input().generic_yesno.return_value = True
+        self.m_input().yesno.return_value = True
 
         self._call(1)
 
@@ -68,7 +68,7 @@ class RollbackTest(unittest.TestCase):
         from letsencrypt.client.errors import LetsEncryptMisconfigurationError
         mock_det.side_effect = LetsEncryptMisconfigurationError
 
-        self.m_input().generic_yesno.return_value = False
+        self.m_input().yesno.return_value = False
 
         self._call(1)
 

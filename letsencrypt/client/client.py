@@ -379,7 +379,6 @@ def init_key(key_size):
 
 def init_csr(privkey, names):
     """Initialize a CSR with the given private key."""
-
     csr_pem, csr_der = crypto_util.make_csr(privkey.pem, names)
 
     # Save CSR
@@ -494,7 +493,7 @@ def rollback(checkpoints):
 
 def _misconfigured_rollback(checkpoints):
     """Handles the case where the Installer is misconfigured."""
-    yes = zope.component.getUtility(interfaces.IDisplay).generic_yesno(
+    yes = zope.component.getUtility(interfaces.IDisplay).yesno(
         "Oh, no! The web server is currently misconfigured.{0}{0}"
         "Would you still like to rollback the "
         "configuration?".format(os.linesep))
@@ -533,20 +532,12 @@ def revoke(server):
     try:
         installer = determine_installer()
     except errors.LetsEncryptMisconfigurationError:
-        zope.component.getUtility(interfaces.IDisplay).generic_notification(
+        zope.component.getUtility(interfaces.IDisplay).notification(
             "The web server is currently misconfigured. Some "
             "abilities like seeing which certificates are currently "
             "installed may not be available.")
         installer = None
 
-    # This is a temporary fix to avoid errors. The Revoker is not fully
-    # developed.
-    if installer is None:
-        zope.component.getUtility(interfaces.IDisplay).generic_notification(
-            "The Let's Encrypt Revoker module does not currently support "
-            "revocation without a valid installer.  This feature should come "
-            "soon.")
-        return
     revoc = revoker.Revoker(server, installer)
     revoc.list_certs_keys()
 
