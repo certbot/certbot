@@ -35,7 +35,7 @@ def dvsni_gen_cert(name, r_b64, nonce, key):
     :param str nonce: hex value of nonce
 
     :param key: Key to perform challenge
-    :type key: :class:`letsencrypt.client.client.Client.Key`
+    :type key: :class:`letsencrypt.client.le_util.Key`
 
     :returns: tuple of (cert_pem, s) where
         cert_pem is the certificate in pem form
