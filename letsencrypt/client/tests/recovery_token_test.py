@@ -60,5 +60,5 @@ class RecoveryTokenTest(unittest.TestCase):
         self.assertTrue(response is None)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

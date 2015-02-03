@@ -53,7 +53,7 @@ def dvsni_gen_cert(filepath, name, r_b64, nonce, key):
     cert_pem = crypto_util.make_ss_cert(
         key.pem, [nonce + CONFIG.INVALID_EXT, name, ext])
 
-    with open(filepath, 'w') as chall_cert_file:
+    with open(filepath, "w") as chall_cert_file:
         chall_cert_file.write(cert_pem)
 
     return le_util.jose_b64encode(dvsni_s)
@@ -69,7 +69,7 @@ def _dvsni_gen_ext(dvsni_r, dvsni_s):
     :rtype: str
 
     """
-    z_base = hashlib.new('sha256')
+    z_base = hashlib.new("sha256")
     z_base.update(dvsni_r)
     z_base.update(dvsni_s)
 

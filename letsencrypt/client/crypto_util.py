@@ -102,7 +102,7 @@ def make_csr(key_str, domains):
 
     extstack.push(ext)
     csr.add_extensions(extstack)
-    csr.sign(pubkey, 'sha256')
+    csr.sign(pubkey, "sha256")
     assert csr.verify(pubkey)
     pubkey2 = csr.get_pubkey()
     assert csr.verify(pubkey2)
@@ -156,7 +156,7 @@ def make_key(bits):
     :rtype: str
 
     """
-    return Crypto.PublicKey.RSA.generate(bits).exportKey(format='PEM')
+    return Crypto.PublicKey.RSA.generate(bits).exportKey(format="PEM")
 
 
 def valid_privkey(privkey):
@@ -210,11 +210,11 @@ def make_ss_cert(key_str, domains, not_before=None,
 
     if len(domains) > 1:
         m2_cert.add_ext(M2Crypto.X509.new_extension(
-            'basicConstraints', 'CA:FALSE'))
+            "basicConstraints", "CA:FALSE"))
         m2_cert.add_ext(M2Crypto.X509.new_extension(
-            'subjectAltName', ", ".join(["DNS:%s" % d for d in domains])))
+            "subjectAltName", ", ".join(["DNS:%s" % d for d in domains])))
 
-    m2_cert.sign(pubkey, 'sha256')
+    m2_cert.sign(pubkey, "sha256")
     assert m2_cert.verify(pubkey)
     assert m2_cert.verify()
     # print check_purpose(,0

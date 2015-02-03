@@ -75,5 +75,5 @@ class RecoveryToken(object):
         """
         le_util.make_or_verify_dir(self.token_dir, 0o700, os.geteuid())
 
-        with open(os.path.join(self.token_dir, domain), 'w') as token_fd:
+        with open(os.path.join(self.token_dir, domain), "w") as token_fd:
             token_fd.write(str(token))

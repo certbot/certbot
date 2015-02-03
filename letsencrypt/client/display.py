@@ -85,8 +85,8 @@ class NcursesDisplay(object):
         """Display a Yes/No dialog box
 
         :param str message: message to display to user
-        :param str yes_label: label on the 'yes' button
-        :param str no_label: label on the 'no' button
+        :param str yes_label: label on the "yes" button
+        :param str no_label: label on the "no" button
 
         :returns: if yes_label was selected
         :rtype: bool
@@ -139,7 +139,7 @@ class FileDisplay(object):
         :param str message: Message to display
 
         """
-        side_frame = '-' * 79
+        side_frame = "-" * 79
         lines = message.splitlines()
         fixed_l = []
         for line in lines:
@@ -169,12 +169,12 @@ class FileDisplay(object):
             choices = ["%s - %s" % (c[0], c[1]) for c in choices]
 
         self.outfile.write("\n%s\n" % message)
-        side_frame = '-' * 79
+        side_frame = "-" * 79
         self.outfile.write("%s\n" % side_frame)
 
         for i, choice in enumerate(choices, 1):
             self.outfile.write(textwrap.fill(
-                "%d: %s" % (i, choice), 80) + '\n')
+                "%d: %s" % (i, choice), 80) + "\n")
 
         self.outfile.write("%s\n" % side_frame)
 
@@ -197,7 +197,7 @@ class FileDisplay(object):
         """
         ans = raw_input("%s (Enter c to cancel)\n" % message)
 
-        if ans == 'c' or ans == 'C':
+        if ans == "c" or ans == "C":
             return CANCEL, "-1"
         else:
             return OK, ans
@@ -207,13 +207,13 @@ class FileDisplay(object):
 
         :param str message: question for the user
 
-        :returns: True for 'Yes', False for 'No"
+        :returns: True for "Yes", False for "No"
         :rtype: bool
 
         """
         self.outfile.write("\n%s\n" % textwrap.fill(message, 80))
         ans = raw_input("y/n: ")
-        return ans.startswith('y') or ans.startswith('Y')
+        return ans.startswith("y") or ans.startswith("Y")
 
     def filter_names(self, names):
         """Determine which names the user would like to select from a list.
@@ -252,7 +252,7 @@ class FileDisplay(object):
 
         :returns: tuple of the form (code, selection) where
             code is a display exit code
-            selection is the user's int selection
+            selection is the user"s int selection
         :rtype: tuple
 
         """
@@ -261,7 +261,7 @@ class FileDisplay(object):
         while not valid_ans:
 
             ans = raw_input(input_string)
-            if ans.startswith('c') or ans.startswith('C'):
+            if ans.startswith("c") or ans.startswith("C"):
                 code = CANCEL
                 selection = -1
                 valid_ans = True

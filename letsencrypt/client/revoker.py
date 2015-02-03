@@ -32,7 +32,7 @@ class Revoker(object):
 
         """
         cert_der = M2Crypto.X509.load_cert(cert["backup_cert_file"]).as_der()
-        with open(cert["backup_key_file"], 'rU') as backup_key_file:
+        with open(cert["backup_key_file"], "rU") as backup_key_file:
             key = backup_key_file.read()
 
         revocation = self.network.send_and_receive_expected(
@@ -59,7 +59,7 @@ class Revoker(object):
 
         csha1_vhlist = self._get_installed_locations()
 
-        with open(list_file, 'rb') as csvfile:
+        with open(list_file, "rb") as csvfile:
             csvreader = csv.reader(csvfile)
             # idx, orig_cert, orig_key
             for row in csvreader:
@@ -96,7 +96,7 @@ class Revoker(object):
         for (cert_path, _, path) in self.installer.get_all_certs_keys():
             try:
                 cert_sha1 = M2Crypto.X509.load_cert(
-                    cert_path).get_fingerprint(md='sha1')
+                    cert_path).get_fingerprint(md="sha1")
                 if cert_sha1 in csha1_vhlist:
                     csha1_vhlist[cert_sha1].append(path)
                 else:
@@ -136,10 +136,10 @@ class Revoker(object):
         list_file = os.path.join(CONFIG.CERT_KEY_BACKUP, "LIST")
         list_file2 = os.path.join(CONFIG.CERT_KEY_BACKUP, "LIST.tmp")
 
-        with open(list_file, 'rb') as orgfile:
+        with open(list_file, "rb") as orgfile:
             csvreader = csv.reader(orgfile)
 
-            with open(list_file2, 'wb') as newfile:
+            with open(list_file2, "wb") as newfile:
                 csvwriter = csv.writer(newfile)
 
                 for row in csvreader:
@@ -274,16 +274,16 @@ class Cert(object):
             status = DELETED_MSG
         else:
             o_cert = M2Crypto.X509.load_cert(orig)
-            if self.get_fingerprint() != o_cert.get_fingerprint(md='sha1'):
+            if self.get_fingerprint() != o_cert.get_fingerprint(md="sha1"):
                 status = CHANGED_MSG
 
         # Verify original key path
         if not os.path.isfile(orig_key):
             key_status = DELETED_MSG
         else:
-            with open(orig_key, 'r') as fd:
+            with open(orig_key, "r") as fd:
                 key_pem = fd.read()
-            with open(backup_key, 'r') as fd:
+            with open(backup_key, "r") as fd:
                 backup_key_pem = fd.read()
             if key_pem != backup_key_pem:
                 key_status = CHANGED_MSG
@@ -307,7 +307,7 @@ class Cert(object):
         return self.cert.get_issuer().as_text()
 
     def get_fingerprint(self):
-        return self.cert.get_fingerprint(md='sha1')
+        return self.cert.get_fingerprint(md="sha1")
 
     def get_not_before(self):
         return self.cert.get_not_before().get_datetime()
