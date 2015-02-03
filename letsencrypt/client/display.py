@@ -297,7 +297,11 @@ class FileDisplay(CommonDisplayMixin):
             names, "Select the number of the name: ")
 
         # Make sure to return a list...
-        return code, [names[tag]]
+        if tag < 0:
+            names = []
+        else:
+            names = [names[tag]]
+        return code, names
 
     def success_installation(self, domains):
         """Display a box confirming the installation of HTTPS.
