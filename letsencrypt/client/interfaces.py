@@ -60,7 +60,7 @@ class IChallenge(zope.interface.Interface):
 
 
 class IConfig(zope.interface.Interface):
-    """Marker interface for Let's Encrypt config."""
+    """Let's Encrypt uesr-supplied configuration."""
 
 
 class IInstaller(zope.interface.Interface):

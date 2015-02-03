@@ -47,3 +47,19 @@ APACHE_REWRITE_HTTPS_ARGS = [
 
 DVSNI_DOMAIN_SUFFIX = ".acme.invalid"
 """Suffix appended to domains in DVSNI validation."""
+
+
+TEMP_CHECKPOINT_DIR_NAME = "temp_checkpoint"
+"""Temporary checkpoint directory (relative to IConfig.work_dir)."""
+
+IN_PROGRESS_DIR_NAME = "IN_PROGRESS"
+"""Directory used before a permanent checkpoint is finalized (relative to
+IConfig.work_dir)."""
+
+CERT_KEY_BACKUP_DIR_NAME = "keys-certs"
+"""Directory where all certificates and keys are stored (relative to
+IConfig.work_dir. Used for easy revocation."""
+
+REV_TOKENS_DIR_NAME = "revocation_tokens"
+"""Directory where all revocation tokens are saved (relative to
+IConfig.work_dir)."""

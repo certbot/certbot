@@ -11,10 +11,11 @@ import sys
 
 import confargparse
 import zope.component
-import zope.interface
 
 import letsencrypt
 
+from letsencrypt.client import constants
+from letsencrypt.client import configuration
 from letsencrypt.client import client
 from letsencrypt.client import display
 from letsencrypt.client import errors
@@ -60,17 +61,6 @@ def create_parser():
         help="Working directory.")
     add("--backup-dir", default="/var/lib/letsencrypt/backups",
         help="Configuration backups directory.")
-    add("--temp-checkpoint-dir",
-        default="/var/lib/letsencrypt/temp_checkpoint",
-        help="Temporary checkpoint directory.")
-    add("--in-progress-dir",
-        default="/var/lib/letsencrypt/backups/IN_PROGRESS",
-        help="Directory used before a permanent checkpoint is finalized")
-    add("--cert-key-backup", default="/var/lib/letsencrypt/keys-certs",
-        help="Directory where all certificates and keys are stored. "
-             "Used for easy revocation.")
-    add("--rev-tokens-dir", default="/var/lib/letsencrypt/revocation_tokens",
-        help="Directory where all revocation tokens are saved.")
     add("--key-dir", default="/etc/letsencrypt/keys", help="Keys storage.")
     add("--cert-dir", default="/etc/letsencrypt/certs",
         help="Certificates storage.")
@@ -96,12 +86,12 @@ def create_parser():
 
     return parser
 
+
 def main():  # pylint: disable=too-many-branches
     """Command line argument parsing and main script execution."""
-
     # note: arg parser internally handles --help (and exits afterwards)
-    config = create_parser().parse_args()
-    zope.interface.directlyProvides(config, interfaces.IConfig)
+    args = create_parser().parse_args()
+    config = configuration.NamespaceConfig(args)
 
     # note: check is done after arg parsing as --help should work w/o root also.
     if not os.geteuid() == 0:
