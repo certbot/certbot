@@ -22,6 +22,7 @@ from letsencrypt.client import reverter
 from letsencrypt.client import revoker
 
 from letsencrypt.client.apache import configurator
+from letsencrypt.le_util import Key
 
 
 class Client(object):
@@ -43,7 +44,6 @@ class Client(object):
     """
     zope.interface.implements(interfaces.IAuthenticator)
 
-    Key = collections.namedtuple("Key", "file pem")
     # Note: form is the type of data, "pem" or "der"
     CSR = collections.namedtuple("CSR", "file data form")
 
@@ -365,7 +365,7 @@ def init_key(key_size):
 
     logging.info("Generating key (%d bits): %s", key_size, key_filename)
 
-    return Client.Key(key_filename, key_pem)
+    return Key(key_filename, key_pem)
 
 
 def init_csr(privkey, names):

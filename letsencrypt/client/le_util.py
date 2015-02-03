@@ -3,8 +3,11 @@ import base64
 import errno
 import os
 import stat
+import collections
 
 from letsencrypt.client import errors
+
+Key = collections.namedtuple("Key", "file pem")
 
 
 def make_or_verify_dir(directory, mode=0o755, uid=0):
