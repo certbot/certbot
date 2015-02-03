@@ -135,7 +135,7 @@ def tls_parse_client_hello(tls_record):
             if first_sn_type != "\0":
                 # SNI extension referenced something other than a
                 # hostname
-                return False
+                return None
             first_sn_length = unpack_2bytes(handshake[i+3:i+5])
             first_sn = handshake[i+5:i+5+first_sn_length]
             return best_ciphersuite, first_sn
@@ -491,7 +491,7 @@ class StandaloneAuthenticator(object):
                 del self.tasks[nonce + CONFIG.INVALID_EXT]
             else:
                 # Could not find the challenge to remove!
-                assert False
+                raise ValueError("could not find the challenge to remove")
         if self.child_pid and not self.tasks:
             # There are no remaining challenges, so
             # try to shutdown self.child_pid cleanly.
