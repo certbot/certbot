@@ -1,14 +1,4 @@
-# To mimic README.md installation and hacking instructions as much as
-# possible, this config file instructs Travis CI to create a build
-# environment for each supported Python version, and then for each of
-# those it runs tox with two environments: lint and pyXX corresponding
-# to the currently used Travis CI build Python version.
-
 language: python
-
-python:
-  - "2.6"
-  - "2.7"
 
 before_install: >
   travis_retry sudo apt-get install python python-setuptools
@@ -18,7 +8,8 @@ install: travis_retry python setup.py dev  # installs tox
 script: travis_retry tox
 
 env:
-  - TOXENV=py${TRAVIS_PYTHON_VERSION//[.]/}
+  - TOXENV=py26
+  - TOXENV=py27
   - TOXENV=lint
   - TOXENV=cover
 

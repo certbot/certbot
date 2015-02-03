@@ -1,5 +1,9 @@
 #!/usr/bin/env python
-"""Parse command line and call the appropriate functions."""
+"""Parse command line and call the appropriate functions.
+
+..todo:: Sanity check all input.  Be sure to avoid shell code etc...
+
+"""
 import argparse
 import logging
 import os
@@ -8,6 +12,7 @@ import sys
 import zope.component
 import zope.interface
 
+import letsencrypt
 from letsencrypt.client import CONFIG
 from letsencrypt.client import client
 from letsencrypt.client import display
@@ -20,7 +25,7 @@ from letsencrypt.client import log
 def main():  # pylint: disable=too-many-statements,too-many-branches
     """Command line argument parsing and main script execution."""
     parser = argparse.ArgumentParser(
-        description="An ACME client that can update Apache configurations.")
+        description="letsencrypt client %s" % letsencrypt.__version__)
 
     parser.add_argument("-d", "--domains", dest="domains", metavar="DOMAIN",
                         nargs="+")
@@ -99,7 +104,7 @@ def main():  # pylint: disable=too-many-statements,too-many-branches
     except errors.LetsEncryptMisconfigurationError as err:
         logging.fatal("Please fix your configuration before proceeding.  "
                       "The Installer exited with the following message: "
-                      "%s", str(err))
+                      "%s", err)
         sys.exit(1)
 
     # Use the same object if possible
@@ -166,7 +171,6 @@ def get_all_names(installer):
 
     """
     names = list(installer.get_all_names())
-    client.sanity_check_names(names)
 
     if not names:
         logging.fatal("No domain names were found in your installation")
@@ -176,7 +180,6 @@ def get_all_names(installer):
         sys.exit(1)
 
     return names
-
 
 
 def read_file(filename):

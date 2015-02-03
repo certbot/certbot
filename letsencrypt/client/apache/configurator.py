@@ -43,7 +43,7 @@ from letsencrypt.client.apache import parser
 
 
 class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
-    # pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-instance-attributes,too-many-public-methods
     """Apache configurator.
 
     State of Configurator: This code has been tested under Ubuntu 12.04

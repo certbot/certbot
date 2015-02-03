@@ -4,8 +4,12 @@ import os
 import shutil
 import time
 
+import zope.component
+
 from letsencrypt.client import CONFIG
+from letsencrypt.client import display
 from letsencrypt.client import errors
+from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
 
 
@@ -43,6 +47,10 @@ class Reverter(object):
 
         :param int rollback: Number of checkpoints to reverse. A str num will be
            cast to an integer. So '2' is also acceptable.
+
+        :raises :class:`letsencrypt.client.errors.LetsEncryptReverterError`: If
+            there is a problem with the input or if the function is unable to
+            correctly revert the configuration checkpoints.
 
         """
         try:
@@ -96,26 +104,30 @@ class Reverter(object):
             raise errors.LetsEncryptReverterError(
                 "Invalid directories in {0}".format(self.direc['backup']))
 
+        output = []
         for bkup in backups:
-            print time.ctime(float(bkup))
+            output.append(time.ctime(float(bkup)))
             cur_dir = os.path.join(self.direc['backup'], bkup)
             with open(os.path.join(cur_dir, "CHANGES_SINCE")) as changes_fd:
-                print changes_fd.read()
+                output.append(changes_fd.read())
 
-            print "Affected files:"
+            output.append("Affected files:")
             with open(os.path.join(cur_dir, "FILEPATHS")) as paths_fd:
                 filepaths = paths_fd.read().splitlines()
                 for path in filepaths:
-                    print "  {0}".format(path)
+                    output.append("  {0}".format(path))
 
             if os.path.isfile(os.path.join(cur_dir, "NEW_FILES")):
                 with open(os.path.join(cur_dir, "NEW_FILES")) as new_fd:
-                    print "New Configuration Files:"
+                    output.append("New Configuration Files:")
                     filepaths = new_fd.read().splitlines()
                     for path in filepaths:
-                        print "  {0}".format(path)
+                        output.append("  {0}".format(path))
 
-            print "{0}".format(os.linesep)
+            output.append(os.linesep)
+
+        zope.component.getUtility(interfaces.IDisplay).generic_notification(
+            os.linesep.join(output), display.HEIGHT)
 
     def add_to_temp_checkpoint(self, save_files, save_notes):
         """Add files to temporary checkpoint

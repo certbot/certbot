@@ -42,7 +42,7 @@ class ACMEObjectValidateTest(unittest.TestCase):
         self._test_fails('{"type": "foo", "price": "asd"}')
 
 
-class PrettyTest(unittest.TestCase):
+class PrettyTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
     """Tests for letsencrypt.client.acme.pretty."""
 
     @classmethod

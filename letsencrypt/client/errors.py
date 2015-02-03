@@ -9,6 +9,7 @@ class LetsEncryptReverterError(LetsEncryptClientError):
     """Let's Encrypt Reverter error."""
 
 
+# Auth Handler Errors
 class LetsEncryptAuthHandlerError(LetsEncryptClientError):
     """Let's Encrypt Auth Handler error."""
 
@@ -17,6 +18,16 @@ class LetsEncryptClientAuthError(LetsEncryptAuthHandlerError):
     """Let's Encrypt Client Authenticator error."""
 
 
+class LetsEncryptDvAuthError(LetsEncryptAuthHandlerError):
+    """Let's Encrypt DV Authenticator error."""
+
+
+# Authenticator - Challenge specific errors
+class LetsEncryptDvsniError(LetsEncryptDvAuthError):
+    """Let's Encrypt DVSNI error."""
+
+
+# Configurator Errors
 class LetsEncryptConfiguratorError(LetsEncryptClientError):
     """Let's Encrypt Configurator error."""
 
@@ -28,6 +39,3 @@ class LetsEncryptNoInstallationError(LetsEncryptConfiguratorError):
 class LetsEncryptMisconfigurationError(LetsEncryptConfiguratorError):
     """Let's Encrypt Misconfiguration error."""
 
-
-class LetsEncryptDvsniError(LetsEncryptConfiguratorError):
-    """Let's Encrypt DVSNI error."""

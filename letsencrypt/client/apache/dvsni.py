@@ -87,11 +87,7 @@ class ApacheDvsni(object):
 
         # Create all of the challenge certs
         for chall in self.dvsni_chall:
-            cert_path = self.get_cert_file(chall.nonce)
-            self.config.reverter.register_file_creation(True, cert_path)
-            s_b64 = challenge_util.dvsni_gen_cert(
-                cert_path, chall.domain, chall.r_b64, chall.nonce, chall.key)
-
+            s_b64 = self._setup_challenge_cert(chall)
             responses.append({"type": "dvsni", "s": s_b64})
 
         # Setup the configuration
@@ -101,6 +97,21 @@ class ApacheDvsni(object):
         self.config.save("SNI Challenge", True)
 
         return responses
+
+    def _setup_challenge_cert(self, chall):
+        """Generate and write out challenge certificate."""
+        cert_path = self.get_cert_file(chall.nonce)
+        # Register the path before you write out the file
+        self.config.reverter.register_file_creation(True, cert_path)
+
+        cert_pem, s_b64 = challenge_util.dvsni_gen_cert(
+            chall.domain, chall.r_b64, chall.nonce, chall.key)
+
+        # Write out challenge cert
+        with open(cert_path, 'w') as cert_chall_fd:
+            cert_chall_fd.write(cert_pem)
+
+        return s_b64
 
     def _mod_config(self, ll_addrs):
         """Modifies Apache config files to include challenge vhosts.

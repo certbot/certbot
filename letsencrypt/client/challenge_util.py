@@ -13,7 +13,7 @@ from letsencrypt.client import le_util
 DvsniChall = collections.namedtuple("DvsniChall", "domain, r_b64, nonce, key")
 SimpleHttpsChall = collections.namedtuple(
     "SimpleHttpsChall", "domain, token, key")
-DnsChall = collections.namedtuple("DnsChall", "domain, token, key")
+DnsChall = collections.namedtuple("DnsChall", "domain, token")
 
 # Client Challenges
 RecContactChall = collections.namedtuple(
@@ -27,11 +27,9 @@ IndexedChall = collections.namedtuple("IndexedChall", "chall, index")
 
 
 # DVSNI Challenge functions
-def dvsni_gen_cert(filepath, name, r_b64, nonce, key):
+def dvsni_gen_cert(name, r_b64, nonce, key):
     """Generate a DVSNI cert and save it to filepath.
 
-    :param str filepath: destination to save certificate. This will overwrite
-        any file that is currently at the location.
     :param str name: domain to validate
     :param str r_b64: jose base64 encoded dvsni r value
     :param str nonce: hex value of nonce
@@ -39,8 +37,10 @@ def dvsni_gen_cert(filepath, name, r_b64, nonce, key):
     :param key: Key to perform challenge
     :type key: :class:`letsencrypt.client.le_util.Key`
 
-    :returns: dvsni s value jose base64 encoded
-    :rtype: str
+    :returns: tuple of (cert_pem, s) where
+        cert_pem is the certificate in pem form
+        s is the dvsni s value, jose base64 encoded
+    :rtype: tuple
 
     """
     # Generate S
@@ -53,10 +53,7 @@ def dvsni_gen_cert(filepath, name, r_b64, nonce, key):
     cert_pem = crypto_util.make_ss_cert(
         key.pem, [nonce + CONFIG.INVALID_EXT, name, ext])
 
-    with open(filepath, "w") as chall_cert_file:
-        chall_cert_file.write(cert_pem)
-
-    return le_util.jose_b64encode(dvsni_s)
+    return cert_pem, le_util.jose_b64encode(dvsni_s)
 
 
 def _dvsni_gen_ext(dvsni_r, dvsni_s):
