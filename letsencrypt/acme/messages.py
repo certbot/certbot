@@ -304,7 +304,7 @@ class AuthorizationRequest(Message):
     def _fields_to_json(self):
         fields = {
             "sessionID": self.session_id,
-            "nonce": self.nonce,
+            "nonce": jose.b64encode(self.nonce),
             "responses": self.responses,
             "signature": self.signature,
         }
@@ -314,7 +314,8 @@ class AuthorizationRequest(Message):
 
     @classmethod
     def _valid_from_json(cls, json_object):
-        return cls(json_object["sessionID"], json_object["nonce"],
+        return cls(json_object["sessionID"],
+                   jose.b64decode(json_object["nonce"]),
                    json_object["responses"],
                    other.Signature.from_json(json_object["signature"]),
                    json_object.get("contact"))

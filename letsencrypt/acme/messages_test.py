@@ -103,7 +103,7 @@ class AuthorizationRequestTest(unittest.TestCase):
         jmsg.pop('signature')
         self.assertEqual(jmsg, {
             'sessionID': 'aefoGaavieG9Wihuk2aufai3aeZ5EeW4',
-            'nonce': 'czpsrF0KMH6dgajig3TGHw',
+            'nonce': 'Y3pwc3JGMEtNSDZkZ2FqaWczVEdIdw',
             'responses': responses,
         })
 
