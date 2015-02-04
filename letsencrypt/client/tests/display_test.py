@@ -2,7 +2,7 @@
 import unittest
 
 
-class GetHTTPSNamesTest(unittest.TestCase):
+class GenHTTPSNamesTest(unittest.TestCase):
     """Tests for letsencrypt.client.display.gen_https_names."""
 
     @classmethod
@@ -13,13 +13,8 @@ class GetHTTPSNamesTest(unittest.TestCase):
     def test_none_returns_empty_str(self):
         self.assertEqual("", self._call([]))
 
-    def test_one_domain(self):
+    def test_one_domain_no_comma(self):
         self.assertEqual("https://example.com", self._call(["example.com"]))
-
-    def test_two_domains_sep_by_and(self):
-        self.assertEqual(
-            "https://a.example.com and https://b.example.com",
-            self._call(["a.example.com", "b.example.com"]))
 
     def test_multiple_sep_by_comma(self):
         self.assertEqual(

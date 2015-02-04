@@ -434,7 +434,4 @@ def gen_https_names(domains):
     :param list domains: Domains (:class:`str`)
 
     """
-    if len(domains) == 2:
-        return "https://{0} and https://{1}".format(domains[0], domains[1])
-    else:
-        return ", ".join("https://{0}".format(domain) for domain in domains)
+    return ", ".join("https://{0}".format(domain) for domain in domains)
