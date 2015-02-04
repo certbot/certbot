@@ -1,5 +1,4 @@
 """Tests for letsencrypt.client.configuration."""
-import functools
 import unittest
 
 import mock
