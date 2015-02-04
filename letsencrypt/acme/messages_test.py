@@ -26,9 +26,9 @@ class MessageTest(unittest.TestCase):
         }
 
 
-    def _validate(self, json_object):
+    def _validate(self, jobj):
         from letsencrypt.acme.messages import Message
-        return Message.validate(json_object, self.schemata)
+        return Message.validate(jobj, self.schemata)
 
     def test_validate_non_dictionary_fails(self):
         self.assertRaises(errors.ValidationError, self._validate, [])

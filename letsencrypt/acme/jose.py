@@ -60,12 +60,11 @@ class JWK(object):
         }
 
     @classmethod
-    def from_json(cls, json_object):
+    def from_json(cls, jobj):
         """Deserialize from JSON."""
-        assert 'RSA' == json_object['kty']  # TODO
+        assert 'RSA' == jobj['kty']  # TODO
         return cls(Crypto.PublicKey.RSA.construct(
-            (cls._decode_param(json_object['n']),
-             cls._decode_param(json_object['e']))))
+            (cls._decode_param(jobj['n']), cls._decode_param(jobj['e']))))
 
 
 # https://tools.ietf.org/html/draft-ietf-jose-json-web-signature-37#appendix-C

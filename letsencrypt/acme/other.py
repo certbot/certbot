@@ -92,8 +92,8 @@ class Signature(object):
         }
 
     @classmethod
-    def from_json(cls, json_object):
+    def from_json(cls, jobj):
         """Deserialize from JSON."""
-        return cls(json_object['alg'], jose.b64decode(json_object['sig']),
-                   jose.b64decode(json_object['nonce']),
-                   jose.JWK.from_json(json_object['jwk']))
+        return cls(jobj['alg'], jose.b64decode(jobj['sig']),
+                   jose.b64decode(jobj['nonce']),
+                   jose.JWK.from_json(jobj['jwk']))

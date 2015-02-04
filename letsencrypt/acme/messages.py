@@ -71,9 +71,9 @@ class Message(object):
         :rtype: dict
 
         """
-        json_object = self._fields_to_json()
-        json_object["type"] = self.acme_type
-        return json_object
+        jobj = self._fields_to_json()
+        jobj["type"] = self.acme_type
+        return jobj
 
     def _fields_to_json(self):
         """Prepare ACME message fields for JSON serialiazation.
@@ -97,10 +97,10 @@ class Message(object):
         return json.dumps(self, default=util.dump_ijsonserializable)
 
     @classmethod
-    def validate(cls, json_object, schemata=None):
+    def validate(cls, jobj, schemata=None):
         """Is JSON object a valid ACME message?
 
-        :param str json_object: JSON object
+        :param str jobj: JSON object
 
         :param dict schemata: Mapping from type name to JSON Schema
             definition. Useful for testing.
@@ -113,11 +113,11 @@ class Message(object):
         """
         schemata = SCHEMATA if schemata is None else schemata
 
-        if not isinstance(json_object, dict):
+        if not isinstance(jobj, dict):
             raise errors.ValidationError(
-                "{0} is not a dictionary object".format(json_object))
+                "{0} is not a dictionary object".format(jobj))
         try:
-            msg_type = json_object["type"]
+            msg_type = jobj["type"]
         except KeyError:
             raise errors.ValidationError("missing type field")
 
@@ -128,7 +128,7 @@ class Message(object):
             raise errors.UnrecognnizedMessageTypeError(msg_type)
 
         try:
-            jsonschema.validate(json_object, schema)
+            jsonschema.validate(jobj, schema)
         except jsonschema.ValidationError as error:
             raise errors.SchemaValidationError(error)
 
@@ -149,19 +149,19 @@ class Message(object):
         :rtype: subclass of :class:`Message`
 
         """
-        json_object = json.loads(json_string)
-        msg_cls = cls.validate(json_object, schemata)
+        jobj = json.loads(json_string)
+        msg_cls = cls.validate(jobj, schemata)
         # pylint: disable=protected-access
-        return msg_cls._valid_from_json(json_object)
+        return msg_cls._valid_from_json(jobj)
 
     @classmethod
-    def _valid_from_json(cls, json_object):
+    def _valid_from_json(cls, jobj):
         """Deserialize from valid ACME message JSON object.
 
         Subclasses must override.
 
-        :param json_object: Schema validated ACME message JSON object.
-        :type json_object: dict
+        :param jobj: Schema validated ACME message JSON object.
+        :type jobj: dict
 
         :returns: Valid ACME message.
         :rtype: subclass of :class:`Message`
@@ -192,10 +192,9 @@ class Challenge(Message):
         return fields
 
     @classmethod
-    def _valid_from_json(cls, json_object):
-        return cls(json_object["sessionID"],
-                   jose.b64decode(json_object["nonce"]),
-                   json_object["challenges"], json_object.get("combinations"))
+    def _valid_from_json(cls, jobj):
+        return cls(jobj["sessionID"], jose.b64decode(jobj["nonce"]),
+                   jobj["challenges"], jobj.get("combinations"))
 
 
 @Message.register  # pylint: disable=too-few-public-methods
@@ -241,13 +240,11 @@ class Authorization(Message):
         return fields
 
     @classmethod
-    def _valid_from_json(cls, json_object):
-        jwk = json_object.get("jwk")
+    def _valid_from_json(cls, jobj):
+        jwk = jobj.get("jwk")
         if jwk is not None:
             jwk = jose.JWK.from_json(jwk)
-        return cls(json_object.get("recoveryToken"),
-                   json_object.get("identifier"),
-                   jwk)
+        return cls(jobj.get("recoveryToken"), jobj.get("identifier"), jwk)
 
 
 @Message.register
@@ -313,12 +310,11 @@ class AuthorizationRequest(Message):
         return fields
 
     @classmethod
-    def _valid_from_json(cls, json_object):
-        return cls(json_object["sessionID"],
-                   jose.b64decode(json_object["nonce"]),
-                   json_object["responses"],
-                   other.Signature.from_json(json_object["signature"]),
-                   json_object.get("contact"))
+    def _valid_from_json(cls, jobj):
+        return cls(jobj["sessionID"], jose.b64decode(jobj["nonce"]),
+                   jobj["responses"],
+                   other.Signature.from_json(jobj["signature"]),
+                   jobj.get("contact"))
 
 
 @Message.register  # pylint: disable=too-few-public-methods
@@ -346,12 +342,10 @@ class Certificate(Message):
         return fields
 
     @classmethod
-    def _valid_from_json(cls, json_object):
+    def _valid_from_json(cls, jobj):
         certificate = M2Crypto.X509.load_cert_der_string(
-            jose.b64decode(json_object["certificate"]))
-        return cls(certificate,
-                   json_object.get("chain"),
-                   json_object.get("refresh"))
+            jose.b64decode(jobj["certificate"]))
+        return cls(certificate, jobj.get("chain"), jobj.get("refresh"))
 
 
 @Message.register
@@ -402,9 +396,9 @@ class CertificateRequest(Message):
         }
 
     @classmethod
-    def _valid_from_json(cls, json_object):
-        return cls(jose.b64decode(json_object["csr"]),
-                   other.Signature.from_json(json_object["signature"]))
+    def _valid_from_json(cls, jobj):
+        return cls(jose.b64decode(jobj["csr"]),
+                   other.Signature.from_json(jobj["signature"]))
 
 
 @Message.register  # pylint: disable=too-few-public-methods
@@ -426,9 +420,8 @@ class Defer(Message):
         return fields
 
     @classmethod
-    def _valid_from_json(cls, json_object):
-        return cls(json_object["token"], json_object.get("interval"),
-                   json_object.get("message"))
+    def _valid_from_json(cls, jobj):
+        return cls(jobj["token"], jobj.get("interval"), jobj.get("message"))
 
 
 @Message.register  # pylint: disable=too-few-public-methods
@@ -460,9 +453,8 @@ class Error(Message):
         return fields
 
     @classmethod
-    def _valid_from_json(cls, json_object):
-        return cls(json_object["error"], json_object.get("message"),
-                   json_object.get("more_info"))
+    def _valid_from_json(cls, jobj):
+        return cls(jobj["error"], jobj.get("message"), jobj.get("more_info"))
 
 
 @Message.register  # pylint: disable=too-few-public-methods
@@ -474,7 +466,7 @@ class Revocation(Message):
         return {}
 
     @classmethod
-    def _valid_from_json(cls, json_object):
+    def _valid_from_json(cls, jobj):
         return cls()
 
 
