@@ -62,9 +62,9 @@ class Signature(object):
         hashed = Crypto.Hash.SHA256.new(msg_with_nonce)
         sig = Crypto.Signature.PKCS1_v1_5.new(key).sign(hashed)
 
-        logging.debug("%s signed as %s", msg_with_nonce, sig)
+        logging.debug('%s signed as %s', msg_with_nonce, sig)
 
-        return cls("RS256", sig, nonce, jose.JWK(key))
+        return cls('RS256', sig, nonce, jose.JWK(key))
 
     def __eq__(self, other):
         if isinstance(other, Signature):
@@ -85,15 +85,15 @@ class Signature(object):
     def to_json(self):
         """Seriliaze to JSON."""
         return {
-            "alg": self.alg,
-            "sig": jose.b64encode(self.sig),
-            "nonce": jose.b64encode(self.nonce),
-            "jwk": self.jwk,
+            'alg': self.alg,
+            'sig': jose.b64encode(self.sig),
+            'nonce': jose.b64encode(self.nonce),
+            'jwk': self.jwk,
         }
 
     @classmethod
     def from_json(cls, json_object):
         """Deserialize from JSON."""
-        return cls(json_object["alg"], jose.b64decode(json_object["sig"]),
-                   jose.b64decode(json_object["nonce"]),
-                   jose.JWK.from_json(json_object["jwk"]))
+        return cls(json_object['alg'], jose.b64decode(json_object['sig']),
+                   jose.b64decode(json_object['nonce']),
+                   jose.JWK.from_json(json_object['jwk']))

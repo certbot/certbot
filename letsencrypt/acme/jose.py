@@ -10,7 +10,7 @@ from letsencrypt.acme import interfaces
 
 def _leading_zeros(arg):
     if len(arg) % 2:
-        return "0" + arg
+        return '0' + arg
     return arg
 
 
@@ -44,7 +44,7 @@ class JWK(object):
     def _encode_param(cls, param):
         """Encode numeric key parameter."""
         return b64encode(binascii.unhexlify(
-            _leading_zeros(hex(param)[2:].rstrip("L"))))
+            _leading_zeros(hex(param)[2:].rstrip('L'))))
 
     @classmethod
     def _decode_param(cls, param):
@@ -54,18 +54,18 @@ class JWK(object):
     def to_json(self):
         """Serialize to JSON."""
         return {
-            "kty": "RSA",  # TODO
-            "n": self._encode_param(self.key.n),
-            "e": self._encode_param(self.key.e),
+            'kty': 'RSA',  # TODO
+            'n': self._encode_param(self.key.n),
+            'e': self._encode_param(self.key.e),
         }
 
     @classmethod
     def from_json(cls, json_object):
         """Deserialize from JSON."""
-        assert "RSA" == json_object["kty"]  # TODO
+        assert 'RSA' == json_object['kty']  # TODO
         return cls(Crypto.PublicKey.RSA.construct(
-            (cls._decode_param(json_object["n"]),
-             cls._decode_param(json_object["e"]))))
+            (cls._decode_param(json_object['n']),
+             cls._decode_param(json_object['e']))))
 
 
 # https://tools.ietf.org/html/draft-ietf-jose-json-web-signature-37#appendix-C

@@ -38,22 +38,22 @@ class MessageTest(unittest.TestCase):
 
     def test_validate_unknown_type_fails(self):
         self.assertRaises(errors.UnrecognnizedMessageTypeError,
-                          self._validate, {"type": "bar"})
+                          self._validate, {'type': 'bar'})
 
     def test_validate_unregistered_type_fails(self):
         self.assertRaises(errors.UnrecognnizedMessageTypeError,
-                          self._validate, {"type": "foo"})
+                          self._validate, {'type': 'foo'})
 
-    @mock.patch("letsencrypt.acme.messages.Message.TYPES")
+    @mock.patch('letsencrypt.acme.messages.Message.TYPES')
     def test_validate_invalid_fails(self, types):
-        types.__getitem__.side_effect = lambda x: {"foo": "bar"}[x]
+        types.__getitem__.side_effect = lambda x: {'foo': 'bar'}[x]
         self.assertRaises(errors.SchemaValidationError,
-                          self._validate, {"type": "foo", "price": "asd"})
+                          self._validate, {'type': 'foo', 'price': 'asd'})
 
-    @mock.patch("letsencrypt.acme.messages.Message.TYPES")
+    @mock.patch('letsencrypt.acme.messages.Message.TYPES')
     def test_validate_valid_returns_cls(self, types):
-        types.__getitem__.side_effect = lambda x: {"foo": "bar"}[x]
-        self.assertEqual(self._validate({"type": "foo"}), "bar")
+        types.__getitem__.side_effect = lambda x: {'foo': 'bar'}[x]
+        self.assertEqual(self._validate({'type': 'foo'}), 'bar')
 
 
 class ChallengeRequestTest(unittest.TestCase):

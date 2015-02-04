@@ -123,5 +123,5 @@ class B64DecodeTest(unittest.TestCase):
         self.assertRaises(TypeError, self._call, object())
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()

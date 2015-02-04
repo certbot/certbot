@@ -52,5 +52,6 @@ class SigatureTest(unittest.TestCase):
         self.assertEqual(sig.alg, self.alg)
         self.assertEqual(sig.jwk, self.jwk)
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     unittest.main()
