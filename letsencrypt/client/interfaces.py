@@ -60,7 +60,12 @@ class IChallenge(zope.interface.Interface):
 
 
 class IConfig(zope.interface.Interface):
-    """Let's Encrypt user-supplied configuration."""
+    """Let's Encrypt user-supplied configuration.
+
+    .. warning:: The values stored in the configuration have not been
+        filtered, stripped or sanitized in any way!
+
+    """
 
     acme_server = zope.interface.Attribute(
         "CA hostname (and optionally :port). The server certificate must "

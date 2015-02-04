@@ -7,7 +7,24 @@ from letsencrypt.client import interfaces
 
 
 class NamespaceConfig(object):
-    """Configuration wrapper around `argparse.Namespace`."""
+    """Configuration wrapper around :class:`argparse.Namespace`.
+
+    For more documentation, including available attributes, please see
+    :class:`letsencrypt.client.interfaces.IConfig`. However, note that
+    the following attributes are dynamically resolved using
+    :attr:`~letsencrypt.client.interfaces.IConfig.work_dir` and relative
+    paths defined in :py:mod:`letsencrypt.client.constants`:
+
+      - ``temp_checkpoint_dir``
+      - ``in_progress_dir``
+      - ``cert_key_backup``
+      - ``rev_tokens_dir``
+
+    :ivar namespace: Namespace typically produced by
+        :meth:`argparse.ArgumentParser.parse_args`.
+    :type namespace: :class:`argparse.Namespace`
+
+    """
     zope.interface.implements(interfaces.IConfig)
 
     def __init__(self, namespace):
@@ -19,19 +36,17 @@ class NamespaceConfig(object):
     @property
     def temp_checkpoint_dir(self):  # pylint: disable=missing-docstring
         return os.path.join(
-            self.namespace.work_dir, constants.TEMP_CHECKPOINT_DIR_NAME)
+            self.namespace.work_dir, constants.TEMP_CHECKPOINT_DIR)
 
     @property
     def in_progress_dir(self):  # pylint: disable=missing-docstring
-        return os.path.join(
-            self.namespace.work_dir, constants.IN_PROGRESS_DIR_NAME)
+        return os.path.join(self.namespace.work_dir, constants.IN_PROGRESS_DIR)
 
     @property
     def cert_key_backup(self):  # pylint: disable=missing-docstring
         return os.path.join(
-            self.namespace.work_dir, constants.CERT_KEY_BACKUP_DIR_NAME)
+            self.namespace.work_dir, constants.CERT_KEY_BACKUP_DIR)
 
     @property
     def rev_tokens_dir(self):  # pylint: disable=missing-docstring
-        return os.path.join(
-            self.namespace.work_dir, constants.REV_TOKENS_DIR_NAME)
+        return os.path.join(self.namespace.work_dir, constants.REV_TOKENS_DIR)
