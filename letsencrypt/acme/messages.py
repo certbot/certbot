@@ -12,8 +12,6 @@ from letsencrypt.acme import jose
 from letsencrypt.acme import other
 from letsencrypt.acme import util
 
-from letsencrypt.client import le_util
-
 
 SCHEMATA = dict([
     (schema, json.load(open(pkg_resources.resource_filename(
@@ -186,7 +184,7 @@ class Challenge(Message):
     def _fields_to_json(self):
         fields = {
             "sessionID": self.session_id,
-            "nonce": le_util.jose_b64encode(self.nonce),
+            "nonce": jose.b64encode(self.nonce),
             "challenges": self.challenges,
         }
         if self.combinations:
@@ -196,7 +194,7 @@ class Challenge(Message):
     @classmethod
     def _valid_from_json(cls, json_object):
         return cls(json_object["sessionID"],
-                   le_util.jose_b64decode(json_object["nonce"]),
+                   jose.b64decode(json_object["nonce"]),
                    json_object["challenges"], json_object.get("combinations"))
 
 
@@ -339,7 +337,7 @@ class Certificate(Message):
 
     def _fields_to_json(self):
         fields = {
-            "certificate": le_util.jose_b64encode(self.certificate.as_der())}
+            "certificate": jose.b64encode(self.certificate.as_der())}
         if self.chain is not None:
             fields["chain"] = self.chain
         if self.refresh is not None:
@@ -349,7 +347,7 @@ class Certificate(Message):
     @classmethod
     def _valid_from_json(cls, json_object):
         certificate = M2Crypto.X509.load_cert_der_string(
-            le_util.jose_b64decode(json_object["certificate"]))
+            jose.b64decode(json_object["certificate"]))
         return cls(certificate,
                    json_object.get("chain"),
                    json_object.get("refresh"))
@@ -398,13 +396,13 @@ class CertificateRequest(Message):
 
     def _fields_to_json(self):
         return {
-            "csr": le_util.jose_b64encode(self.csr),
+            "csr": jose.b64encode(self.csr),
             "signature": self.signature,
         }
 
     @classmethod
     def _valid_from_json(cls, json_object):
-        return cls(le_util.jose_b64decode(json_object["csr"]),
+        return cls(jose.b64decode(json_object["csr"]),
                    other.Signature.from_json(json_object["signature"]))
 
 
@@ -524,13 +522,13 @@ class RevocationRequest(Message):
 
     def _fields_to_json(self):
         return {
-            "certificate": le_util.jose_b64encode(self.certificate),
+            "certificate": jose.b64encode(self.certificate),
             "signature": self.signature,
         }
 
     @classmethod
     def _valid_from_json(cls, json_string):
-        return cls(le_util.jose_b64decode(json_string["certificate"]),
+        return cls(jose.b64decode(json_string["certificate"]),
                    other.Signature.from_json(json_string["signature"]))
 
 

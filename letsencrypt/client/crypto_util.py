@@ -7,7 +7,7 @@ import Crypto.Signature.PKCS1_v1_5
 
 import M2Crypto
 
-from letsencrypt.client import le_util
+from letsencrypt.acme import jose
 
 
 def make_csr(key_str, domains):
@@ -196,4 +196,4 @@ def get_cert_info(filename):
 def b64_cert_to_pem(b64_der_cert):
     """Convert JOSE Base-64 encoded DER cert to PEM."""
     return M2Crypto.X509.load_cert_der_string(
-        le_util.jose_b64decode(b64_der_cert)).as_pem()
+        jose.b64decode(b64_der_cert)).as_pem()

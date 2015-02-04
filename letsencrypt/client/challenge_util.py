@@ -4,9 +4,10 @@ import hashlib
 
 from Crypto import Random
 
+from letsencrypt.acme import jose
+
 from letsencrypt.client import CONFIG
 from letsencrypt.client import crypto_util
-from letsencrypt.client import le_util
 
 
 # Authenticator Challenges
@@ -45,7 +46,7 @@ def dvsni_gen_cert(name, r_b64, nonce, key):
     """
     # Generate S
     dvsni_s = Random.get_random_bytes(CONFIG.S_SIZE)
-    dvsni_r = le_util.jose_b64decode(r_b64)
+    dvsni_r = jose.b64decode(r_b64)
 
     # Generate extension
     ext = _dvsni_gen_ext(dvsni_r, dvsni_s)
@@ -53,7 +54,7 @@ def dvsni_gen_cert(name, r_b64, nonce, key):
     cert_pem = crypto_util.make_ss_cert(
         key.pem, [nonce + CONFIG.INVALID_EXT, name, ext])
 
-    return cert_pem, le_util.jose_b64encode(dvsni_s)
+    return cert_pem, jose.b64encode(dvsni_s)
 
 
 def _dvsni_gen_ext(dvsni_r, dvsni_s):

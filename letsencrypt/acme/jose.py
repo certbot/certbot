@@ -1,11 +1,11 @@
 """JOSE."""
+import base64
 import binascii
-import zope.interface
 
 import Crypto.PublicKey.RSA
+import zope.interface
 
 from letsencrypt.acme import interfaces
-from letsencrypt.client import le_util
 
 
 def _leading_zeros(arg):
@@ -43,13 +43,13 @@ class JWK(object):
     @classmethod
     def _encode_param(cls, param):
         """Encode numeric key parameter."""
-        return le_util.jose_b64encode(binascii.unhexlify(
+        return b64encode(binascii.unhexlify(
             _leading_zeros(hex(param)[2:].rstrip("L"))))
 
     @classmethod
     def _decode_param(cls, param):
         """Decode numeric key parameter."""
-        return long(binascii.hexlify(le_util.jose_b64decode(param)), 16)
+        return long(binascii.hexlify(b64decode(param)), 16)
 
     def to_json(self):
         """Serialize to JSON."""
@@ -66,3 +66,54 @@ class JWK(object):
         return cls(Crypto.PublicKey.RSA.construct(
             (cls._decode_param(json_object["n"]),
              cls._decode_param(json_object["e"]))))
+
+
+# https://tools.ietf.org/html/draft-ietf-jose-json-web-signature-37#appendix-C
+#
+# Jose Base64:
+#
+#   - URL-safe Base64
+#
+#   - padding stripped
+
+
+def b64encode(data):
+    """JOSE Base64 encode.
+
+    :param data: Data to be encoded.
+    :type data: str or bytearray
+
+    :returns: JOSE Base64 string.
+    :rtype: str
+
+    :raises TypeError: if `data` is of incorrect type
+
+    """
+    if not isinstance(data, str):
+        raise TypeError('argument should be str or bytearray')
+    return base64.urlsafe_b64encode(data).rstrip('=')
+
+
+def b64decode(data):
+    """JOSE Base64 decode.
+
+    :param data: Base64 string to be decoded. If it's unicode, then
+                 only ASCII characters are allowed.
+    :type data: str or unicode
+
+    :returns: Decoded data.
+
+    :raises TypeError: if input is of incorrect type
+    :raises ValueError: if input is unicode with non-ASCII characters
+
+    """
+    if isinstance(data, unicode):
+        try:
+            data = data.encode('ascii')
+        except UnicodeEncodeError:
+            raise ValueError(
+                'unicode argument should contain only ASCII characters')
+    elif not isinstance(data, str):
+        raise TypeError('argument should be a str or unicode')
+
+    return base64.urlsafe_b64decode(data + '=' * (4 - (len(data) % 4)))

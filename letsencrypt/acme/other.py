@@ -11,7 +11,6 @@ from letsencrypt.acme import interfaces
 from letsencrypt.acme import jose
 
 from letsencrypt.client import CONFIG
-from letsencrypt.client import le_util
 
 
 class Signature(object):
@@ -88,15 +87,14 @@ class Signature(object):
         """Seriliaze to JSON."""
         return {
             "alg": self.alg,
-            "sig": le_util.jose_b64encode(self.sig),
-            "nonce": le_util.jose_b64encode(self.nonce),
+            "sig": jose.b64encode(self.sig),
+            "nonce": jose.b64encode(self.nonce),
             "jwk": self.jwk,
         }
 
     @classmethod
     def from_json(cls, json_object):
         """Deserialize from JSON."""
-        return cls(json_object["alg"],
-                   le_util.jose_b64decode(json_object["sig"]),
-                   le_util.jose_b64decode(json_object["nonce"]),
+        return cls(json_object["alg"], jose.b64decode(json_object["sig"]),
+                   jose.b64decode(json_object["nonce"]),
                    jose.JWK.from_json(json_object["jwk"]))
