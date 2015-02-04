@@ -10,8 +10,6 @@ import zope.interface
 from letsencrypt.acme import interfaces
 from letsencrypt.acme import jose
 
-from letsencrypt.client import CONFIG
-
 
 class Signature(object):
     """ACME signature.
@@ -28,7 +26,8 @@ class Signature(object):
     """
     zope.interface.implements(interfaces.IJSONSerializable)
 
-    NONCE_LEN = CONFIG.NONCE_SIZE
+    NONCE_LEN = 16
+    """Size of nonce in bytes, as specified in the ACME protocol."""
 
     def __init__(self, alg, sig, nonce, jwk):
         self.alg = alg

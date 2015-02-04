@@ -72,9 +72,6 @@ CLIENT_CHALLENGES = frozenset(
 S_SIZE = 32
 """Byte size of S"""
 
-NONCE_SIZE = 16
-"""byte size of Nonce"""
-
 # Key Sizes
 RSA_KEY_SIZE = 2048
 """Key size"""
