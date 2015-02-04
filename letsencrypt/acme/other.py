@@ -80,10 +80,12 @@ class Signature(object):
         :param str msg: Message that was used in signing.
 
         """
-        return self == self.from_msg(msg, self.jwk.key, self.nonce)
+        hashed = Crypto.Hash.SHA256.new(self.nonce + msg)
+        return Crypto.Signature.PKCS1_v1_5.new(self.jwk.key).verify(
+            hashed, self.sig)
 
     def to_json(self):
-        """Seriliaze to JSON."""
+        """Prepare JSON serializable object."""
         return {
             'alg': self.alg,
             'sig': jose.b64encode(self.sig),
