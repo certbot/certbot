@@ -329,7 +329,7 @@ class DoParentProcessTest(unittest.TestCase):
     @mock.patch("letsencrypt.client.standalone_authenticator.zope.component.getUtility")
     def test_do_parent_process_timeout(self, mock_getUtility, mock_signal):
         # Times out in 5 seconds and returns False.
-        result = self.authenticator.do_parent_process(1717)
+        result = self.authenticator.do_parent_process(1717, delay_amount=1)
         self.assertFalse(result)
         self.assertEqual(mock_signal.call_count, 3)
 

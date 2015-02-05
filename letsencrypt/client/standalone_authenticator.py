@@ -310,16 +310,17 @@ class StandaloneAuthenticator(object):
         new_ctx.use_privatekey(self.private_key)
         connection.set_context(new_ctx)
 
-    def do_parent_process(self, port):
+    def do_parent_process(self, port, delay_amount=5):
         """Perform the parent process side of the TCP listener task.  This
-        should only be called by start_listener()."""
+        should only be called by start_listener().  We will wait up to
+        delay_amount seconds to hear from the child process via a signal."""
 
         signal.signal(signal.SIGIO, self.client_signal_handler)
         signal.signal(signal.SIGUSR1, self.client_signal_handler)
         signal.signal(signal.SIGUSR2, self.client_signal_handler)
         display = zope.component.getUtility(interfaces.IDisplay)
         start_time = time.time()
-        while time.time() < start_time + 5:
+        while time.time() < start_time + delay_amount:
             if self.subproc_ready:
                 return True
             if self.subproc_inuse:
