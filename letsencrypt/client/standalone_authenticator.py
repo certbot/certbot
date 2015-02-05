@@ -508,4 +508,4 @@ class StandaloneAuthenticator(object):
             time.sleep(1)
             # TODO: restore original signal handlers in parent process
             #       by resetting their actions to SIG_DFL
-            print "TCP listener subprocess has been told to shut down"
+            # print "TCP listener subprocess has been told to shut down"
