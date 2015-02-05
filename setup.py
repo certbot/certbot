@@ -38,6 +38,7 @@ install_requires = [
 ]
 
 docs_extras = [
+    'repoze.sphinx.autointerface',
     'Sphinx',
 ]
 

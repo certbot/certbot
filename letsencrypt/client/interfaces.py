@@ -1,7 +1,7 @@
 """Let's Encrypt client interfaces."""
 import zope.interface
 
-# pylint: disable=no-self-argument,no-method-argument,no-init
+# pylint: disable=no-self-argument,no-method-argument,no-init,inherit-non-class
 
 
 class IAuthenticator(zope.interface.Interface):
@@ -11,6 +11,7 @@ class IAuthenticator(zope.interface.Interface):
     ability to perform challenges and attain a certificate.
 
     """
+
     def get_chall_pref(domain):
         """Return list of challenge preferences.
 
@@ -22,19 +23,24 @@ class IAuthenticator(zope.interface.Interface):
         :rtype: list
 
         """
+
     def perform(chall_list):
         """Perform the given challenge.
 
         :param list chall_list: List of namedtuple types defined in
-            challenge_util.py. DvsniChall...ect..
+            :mod:`letsencrypt.client.challenge_util` (``DvsniChall``, etc.).
 
-        :returns: List of responses
-            If the challenge cant be completed...
-            None - Authenticator can perform challenge, but can't at this time
-            False - Authenticator will never be able to perform (error)
-        :rtype: `list` of dicts
+        :returns: Challenge responses or if it cannot be completed then:
+
+            ``None``
+              Authenticator can perform challenge, but can't at this time
+            ``False``
+              Authenticator will never be able to perform (error)
+
+        :rtype: :class:`list` of :class:`dict`
 
         """
+
     def cleanup(chall_list):
         """Revert changes and shutdown after challenges complete."""
 
@@ -58,6 +64,7 @@ class IInstaller(zope.interface.Interface):
     Represents any server that an X509 certificate can be placed.
 
     """
+
     def get_all_names():
         """Returns all names that may be authenticated."""
 
@@ -69,35 +76,42 @@ class IInstaller(zope.interface.Interface):
         :param str key: private key filename
 
         """
-    def enhance(domain, enhancment, options=None):
-        """Peform a configuration enhancment.
+
+    def enhance(domain, enhancement, options=None):
+        """Perform a configuration enhancement.
 
         :param str domain: domain for which to provide enhancement
-        :param str enhancement: An enhancement as defined in CONFIG.ENHANCEMENTS
-        :param options: flexible options parameter for enhancement
-        :type options: Check documentation of
-            :class:`letsencrypt.client.CONFIG.ENHANCEMENTS` for expected options
-            for each enhancement.
+        :param str enhancement: An enhancement as defined in
+            :const:`~letsencrypt.client.CONFIG.ENHANCEMENTS`
+        :param options: Flexible options parameter for enhancement.
+            Check documentation of
+            :const:`~letsencrypt.client.CONFIG.ENHANCEMENTS`
+            for expected options for each enhancement.
 
         """
+
     def supported_enhancements():
-        """Returns a list of supported enhancments.
+        """Returns a list of supported enhancements.
 
-        :returns: supported enhancments which should be a subset of the
-        enhancments in :class:`letsencrypt.client.CONFIG.ENHANCEMENTS`
-        :rtype: `list` of `str`
+        :returns: supported enhancements which should be a subset of
+            :const:`~letsencrypt.client.CONFIG.ENHANCEMENTS`
+        :rtype: :class:`list` of :class:`str`
 
         """
+
     def get_all_certs_keys():
         """Retrieve all certs and keys set in configuration.
 
-        :returns: list of tuples with form [(cert, key, path)]
-            cert - str path to certificate file
-            key - str path to associated key file
-            path - file path to configuration file
+        :returns: tuples with form `[(cert, key, path)]`, where:
+
+            - `cert` - str path to certificate file
+            - `key` - str path to associated key file
+            - `path` - file path to configuration file
+
         :rtype: list
 
         """
+
     def save(title=None, temporary=False):
         """Saves all changes to the configuration files.
 
@@ -113,6 +127,7 @@ class IInstaller(zope.interface.Interface):
             be quickly reversed in the future (challenges)
 
         """
+
     def rollback_checkpoints(rollback=1):
         """Revert `rollback` number of configuration checkpoints."""
 
@@ -135,14 +150,19 @@ class IDisplay(zope.interface.Interface):
         :param str message: Message to display
 
         """
+
     def generic_menu(message, choices, input_text=""):
         """Displays a generic menu.
 
         :param str message: message to display
-        :param tup choices: choices formated as a `list` of `tup`
+
+        :param choices: choices
+        :type choices: :class:`list` of :func:`tuple`
+
         :param str input_text: instructions on how to make a selection
 
         """
+
     def generic_input(message):
         """Accept input from the user."""
 
@@ -168,7 +188,7 @@ class IDisplay(zope.interface.Interface):
         """Ask the user whether they would like to redirect to HTTPS."""
 
 
-class IValidator(object):
+class IValidator(zope.interface.Interface):
     """Configuration validator."""
 
     def redirect(name):
@@ -178,7 +198,7 @@ class IValidator(object):
         """Verify ocsp stapling for domain."""
 
     def https(names):
-        """Verifiy HTTPS is enabled for domain."""
+        """Verify HTTPS is enabled for domain."""
 
     def hsts(name):
         """Verify HSTS header is enabled."""
