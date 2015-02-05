@@ -207,8 +207,9 @@ class SubprocSignalHandlerTest(unittest.TestCase):
         #       raising an exception of some kind (since they're likely to
         #       do so in practice if there's no live TLS connection at the
         #       time the subprocess is told to clean up).
-        self.assertEquals(mock_kill.call_count, 1)
-        self.assertEquals(mock_exit.call_count, 1)
+        mock_kill.assert_called_once_with(self.authenticator.parent_pid,
+            signal.SIGUSR1)
+        mock_exit.assert_called_once_with(0)
 
 
 class PerformTest(unittest.TestCase):
@@ -241,7 +242,7 @@ class PerformTest(unittest.TestCase):
         self.assertFalse(result[2])
         self.assertTrue(result[0].has_key("s"))
         self.assertTrue(result[1].has_key("s"))
-        self.assertEqual(self.authenticator.start_listener.call_count, 1)
+        self.authenticator.start_listener.assert_called_once_with(443, key)
 
     def test_cannot_perform(self):
         """What happens if start_listener() returns False."""
@@ -263,7 +264,7 @@ class PerformTest(unittest.TestCase):
         self.assertIsInstance(result, list)
         self.assertEqual(len(result), 3)
         self.assertEqual(result, [None, None, False])
-        self.assertEqual(self.authenticator.start_listener.call_count, 1)
+        self.authenticator.start_listener.assert_called_once_with(443, key)
 
 class StartListenerTest(unittest.TestCase):
     def setUp(self):
@@ -278,8 +279,8 @@ class StartListenerTest(unittest.TestCase):
         mock_fork.return_value = 22222
         self.authenticator.start_listener(1717, "key")
         self.assertEqual(self.authenticator.child_pid, 22222)
-        self.assertEqual(self.authenticator.do_parent_process.call_count, 1)
-        self.assertEqual(mock_atfork.call_count, 1)
+        self.authenticator.do_parent_process.assert_called_once_with(1717)
+        mock_atfork.assert_called_once_with()
 
     @mock.patch("letsencrypt.client.standalone_authenticator.Crypto.Random.atfork")
     @mock.patch("letsencrypt.client.standalone_authenticator.os.fork")
@@ -290,8 +291,9 @@ class StartListenerTest(unittest.TestCase):
         mock_fork.return_value = 0
         self.authenticator.start_listener(1717, "key")
         self.assertEqual(self.authenticator.child_pid, os.getpid())
-        self.assertEqual(self.authenticator.do_child_process.call_count, 1)
-        self.assertEqual(mock_atfork.call_count, 1)
+        self.authenticator.do_child_process.assert_called_once_with(1717,
+            "key")
+        mock_atfork.assert_called_once_with()
 
 class DoParentProcessTest(unittest.TestCase):
     def setUp(self):
@@ -370,7 +372,7 @@ class DoChildProcessTest(unittest.TestCase):
         # cause subsequent code not to be executed.)
         with self.assertRaises(IndentationError):
             result = self.authenticator.do_child_process(1717, self.key)
-        self.assertEqual(mock_exit.call_count, 1)
+        mock_exit.assert_called_once_with(1)
         mock_kill.assert_called_once_with(12345, signal.SIGUSR2)
 
     @mock.patch("letsencrypt.client.standalone_authenticator.socket.socket")
@@ -385,7 +387,7 @@ class DoChildProcessTest(unittest.TestCase):
         mock_socket.return_value = sample_socket
         with self.assertRaises(IndentationError):
             result = self.authenticator.do_child_process(1717, self.key)
-        self.assertEqual(mock_exit.call_count, 1)
+        mock_exit.assert_called_once_with(1)
         mock_kill.assert_called_once_with(12345, signal.SIGUSR1)
 
     @mock.patch("letsencrypt.client.standalone_authenticator.OpenSSL.SSL.Connection")
@@ -420,12 +422,13 @@ class CleanupTest(unittest.TestCase):
     @mock.patch("letsencrypt.client.standalone_authenticator.os.kill")
     @mock.patch("letsencrypt.client.standalone_authenticator.time.sleep")
     def test_cleanup(self, mock_sleep, mock_kill):
+        import signal
         mock_sleep.return_value = None
         mock_kill.return_value = None
         chall = DvsniChall("foo.example.com", "whee", "foononce", "key")
         self.authenticator.cleanup([chall])
-        self.assertEqual(mock_kill.call_count, 1)
-        self.assertEqual(mock_sleep.call_count, 1)
+        mock_kill.assert_called_once_with(12345, signal.SIGINT)
+        mock_sleep.assert_called_once_with(1)
 
     def test_bad_cleanup(self):
         chall = DvsniChall("bad.example.com", "whee", "badnonce", "key")
