@@ -55,6 +55,18 @@ class PackAndUnpackTests(unittest.TestCase):
         self.assertEqual(pack_3bytes(0), chr(0)*3)
         self.assertEqual(pack_3bytes(12345678), chr(0xbc) + "aN")
 
+    def test_invalid_pack_and_unpack(self):
+        from letsencrypt.client.standalone_authenticator import \
+            unpack_2bytes, unpack_3bytes, pack_2bytes, pack_3bytes
+        with self.assertRaises(AssertionError):
+            pack_2bytes(65537)
+        with self.assertRaises(AssertionError):
+            pack_3bytes(500000000)
+        with self.assertRaises(AssertionError):
+            unpack_2bytes("foo")
+        with self.assertRaises(AssertionError):
+            unpack_3bytes("food")
+
 
 class TLSParseClientHelloTest(unittest.TestCase):
     """Test for tls_parse_client_hello() function."""
