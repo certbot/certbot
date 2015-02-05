@@ -1,6 +1,4 @@
 """Tests for letsencrypt.acme.sig."""
-import functools
-import operator
 import pkg_resources
 import unittest
 
@@ -11,8 +9,6 @@ from letsencrypt.acme import jose
 
 RSA256_KEY = Crypto.PublicKey.RSA.importKey(pkg_resources.resource_string(
     'letsencrypt.client.tests', 'testdata/rsa256_key.pem'))
-RSA512_KEY = Crypto.PublicKey.RSA.importKey(pkg_resources.resource_string(
-    'letsencrypt.client.tests', 'testdata/rsa512_key.pem'))
 
 
 class SigatureTest(unittest.TestCase):
@@ -27,7 +23,7 @@ class SigatureTest(unittest.TestCase):
                     '\xb9X\xc3w\xaa\xc0_\xd0\x05$y>l#\x10<\x96\xd2\xcdr\xa3'
                     '\x1b\xa1\xf5!f\xef\xc64\xb6\x13')
         self.nonce = '\xec\xd6\xf2oYH\xeb\x13\xd5#q\xe0\xdd\xa2\x92\xa9'
-        self.jwk = jose.JWK(RSA256_KEY.publickey())
+        self.jwk = jose.JWK(key=RSA256_KEY.publickey())
 
         b64sig = ('SUPYKucUnhlTt8_sMxLiigOYdf_wlOLXPI-o7aRLTsOquVjDd6r'
                   'AX9AFJHk-bCMQPJbSzXKjG6H1IWbvxjS2Ew')
@@ -47,7 +43,8 @@ class SigatureTest(unittest.TestCase):
         }
 
         from letsencrypt.acme.other import Signature
-        self.signature = Signature(self.alg, self.sig, self.nonce, self.jwk)
+        self.signature = Signature(
+            alg=self.alg, sig=self.sig, nonce=self.nonce, jwk=self.jwk)
 
     def test_attributes(self):
         self.assertEqual(self.signature.nonce, self.nonce)
@@ -81,11 +78,9 @@ class SigatureTest(unittest.TestCase):
 
     def test_from_json(self):
         from letsencrypt.acme.other import Signature
-        self.assertEqual(self.signature, Signature.from_json(self.jsig_from))
-
-    def test_eq_raises_type_error(self):
-        self.assertRaises(
-            TypeError, functools.partial(operator.eq, self.signature), 'foo')
+        # pylint: disable=protected-access
+        self.assertEqual(
+            self.signature, Signature._from_valid_json(self.jsig_from))
 
 
 if __name__ == '__main__':

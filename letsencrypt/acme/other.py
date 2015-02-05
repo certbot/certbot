@@ -5,13 +5,11 @@ from Crypto import Random
 import Crypto.Hash.SHA256
 import Crypto.Signature.PKCS1_v1_5
 
-import zope.interface
-
-from letsencrypt.acme import interfaces
 from letsencrypt.acme import jose
+from letsencrypt.acme import util
 
 
-class Signature(object):
+class Signature(util.JSONDeSerializable, util.ImmutableMap):
     """ACME signature.
 
     :ivar str alg: Signature algorithm.
@@ -24,16 +22,11 @@ class Signature(object):
     .. todo:: Currently works for RSA keys only.
 
     """
-    zope.interface.implements(interfaces.IJSONSerializable)
+    __slots__ = ('alg', 'sig', 'nonce', 'jwk')
+    schema = util.load_schema('signature')
 
     NONCE_LEN = 16
     """Size of nonce in bytes, as specified in the ACME protocol."""
-
-    def __init__(self, alg, sig, nonce, jwk):
-        self.alg = alg
-        self.sig = sig
-        self.nonce = nonce
-        self.jwk = jwk
 
     @classmethod
     def from_msg(cls, msg, key, nonce=None):
@@ -64,15 +57,8 @@ class Signature(object):
 
         logging.debug('%s signed as %s', msg_with_nonce, sig)
 
-        return cls('RS256', sig, nonce, jose.JWK(key.publickey()))
-
-    def __eq__(self, other):
-        if isinstance(other, Signature):
-            return ((self.alg, self.sig, self.nonce, self.jwk) ==
-                    (other.alg, other.sig, other.nonce, other.jwk))
-        else:
-            raise TypeError(
-                'Unable to compare Signature object with: {0}'.format(other))
+        return cls(alg='RS256', sig=sig, nonce=nonce,
+                   jwk=jose.JWK(key=key.publickey()))
 
     def verify(self, msg):
         """Verify the signature.
@@ -94,8 +80,7 @@ class Signature(object):
         }
 
     @classmethod
-    def from_json(cls, jobj):
-        """Deserialize from JSON."""
-        return cls(jobj['alg'], jose.b64decode(jobj['sig']),
-                   jose.b64decode(jobj['nonce']),
-                   jose.JWK.from_json(jobj['jwk']))
+    def _from_valid_json(cls, jobj):
+        return cls(alg=jobj['alg'], sig=jose.b64decode(jobj['sig']),
+                   nonce=jose.b64decode(jobj['nonce']),
+                   jwk=jose.JWK.from_json(jobj['jwk'], validate=False))

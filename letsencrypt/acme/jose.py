@@ -3,9 +3,8 @@ import base64
 import binascii
 
 import Crypto.PublicKey.RSA
-import zope.interface
 
-from letsencrypt.acme import interfaces
+from letsencrypt.acme import util
 
 
 def _leading_zeros(arg):
@@ -14,23 +13,15 @@ def _leading_zeros(arg):
     return arg
 
 
-class JWK(object):
+class JWK(util.JSONDeSerializable, util.ImmutableMap):
+    # pylint: disable=too-few-public-methods
     """JSON Web Key.
 
     .. todo:: Currently works for RSA public keys only.
 
     """
-    zope.interface.implements(interfaces.IJSONSerializable)
-
-    def __init__(self, key):
-        self.key = key
-
-    def __eq__(self, other):
-        if isinstance(other, JWK):
-            return self.key == other.key
-        else:
-            raise TypeError(
-                'Unable to compare JWK object with: {0}'.format(other))
+    __slots__ = ('key',)
+    schema = util.load_schema('jwk')
 
     @classmethod
     def _encode_param(cls, param):
@@ -52,10 +43,9 @@ class JWK(object):
         }
 
     @classmethod
-    def from_json(cls, jobj):
-        """Deserialize from JSON."""
+    def _from_valid_json(cls, jobj):
         assert 'RSA' == jobj['kty']  # TODO
-        return cls(Crypto.PublicKey.RSA.construct(
+        return cls(key=Crypto.PublicKey.RSA.construct(
             (cls._decode_param(jobj['n']), cls._decode_param(jobj['e']))))
 
 
