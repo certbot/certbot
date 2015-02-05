@@ -27,7 +27,7 @@ class SigatureTest(unittest.TestCase):
                     '\xb9X\xc3w\xaa\xc0_\xd0\x05$y>l#\x10<\x96\xd2\xcdr\xa3'
                     '\x1b\xa1\xf5!f\xef\xc64\xb6\x13')
         self.nonce = '\xec\xd6\xf2oYH\xeb\x13\xd5#q\xe0\xdd\xa2\x92\xa9'
-        self.jwk = jose.JWK(RSA256_KEY)
+        self.jwk = jose.JWK(RSA256_KEY.publickey())
 
         b64sig = ('SUPYKucUnhlTt8_sMxLiigOYdf_wlOLXPI-o7aRLTsOquVjDd6r'
                   'AX9AFJHk-bCMQPJbSzXKjG6H1IWbvxjS2Ew')
@@ -39,60 +39,53 @@ class SigatureTest(unittest.TestCase):
             'sig': b64sig,
         }
 
-        self.pub_jwk = jose.JWK(RSA256_KEY.publickey())
         self.jsig_from = {
             'nonce': b64nonce,
             'alg': self.alg,
-            'jwk': self.pub_jwk.to_json(),
+            'jwk': self.jwk.to_json(),
             'sig': b64sig,
         }
 
-        self.signature = self._from_msg(self.msg, RSA256_KEY, self.nonce)
         from letsencrypt.acme.other import Signature
-        self.pub_signature = Signature(
-            self.alg, self.sig, self.nonce, self.pub_jwk)
+        self.signature = Signature(self.alg, self.sig, self.nonce, self.jwk)
+
+    def test_attributes(self):
+        self.assertEqual(self.signature.nonce, self.nonce)
+        self.assertEqual(self.signature.alg, self.alg)
+        self.assertEqual(self.signature.sig, self.sig)
+        self.assertEqual(self.signature.jwk, self.jwk)
+
+    def test_verify_good_succeeds(self):
+        self.assertTrue(self.signature.verify(self.msg))
+
+    def test_verify_bad_fails(self):
+        self.assertFalse(self.signature.verify(self.msg + 'x'))
 
     @classmethod
     def _from_msg(cls, *args, **kwargs):
         from letsencrypt.acme.other import Signature
         return Signature.from_msg(*args, **kwargs)
 
-    def test_verify_with_private_key(self):
-        self.assertTrue(self.signature.verify(self.msg))
-
-    def test_verify_without_private_key(self):
-        self.assertTrue(self.pub_signature.verify(self.msg))
-
-    def test_verify_bad_fails(self):
-        self.signature.sig = self.sig + "foo"
-        self.assertFalse(self.signature.verify(self.msg))
-
     def test_create_from_msg(self):
-        self.assertEqual(self.signature.nonce, self.nonce)
-        self.assertEqual(self.signature.alg, self.alg)
-        self.assertEqual(self.signature.sig, self.sig)
-        self.assertEqual(self.signature.jwk, self.jwk)
+        signature = self._from_msg(self.msg, RSA256_KEY, self.nonce)
+        self.assertEqual(self.signature, signature)
 
     def test_create_from_msg_random_nonce(self):
-        sig = self._from_msg(self.msg, RSA256_KEY)
-        self.assertEqual(sig.alg, self.alg)
-        self.assertEqual(sig.jwk, self.jwk)
-        self.assertTrue(sig.verify(self.msg))
+        signature = self._from_msg(self.msg, RSA256_KEY)
+        self.assertEqual(signature.alg, self.alg)
+        self.assertEqual(signature.jwk, self.jwk)
+        self.assertTrue(signature.verify(self.msg))
 
     def test_to_json(self):
         self.assertEqual(self.signature.to_json(), self.jsig_to)
 
     def test_from_json(self):
         from letsencrypt.acme.other import Signature
-        signature = Signature.from_json(self.jsig_from)
-        self.assertEqual(self.pub_signature, signature)
-
-    def test_sig_and_pub_sig_not_equal(self):
-        self.assertNotEqual(self.pub_signature, self.signature)
+        self.assertEqual(self.signature, Signature.from_json(self.jsig_from))
 
     def test_eq_raises_type_error(self):
         self.assertRaises(
-            TypeError, functools.partial(operator.eq, self.signature), "foo")
+            TypeError, functools.partial(operator.eq, self.signature), 'foo')
 
 
 if __name__ == '__main__':

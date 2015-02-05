@@ -17,7 +17,7 @@ def _leading_zeros(arg):
 class JWK(object):
     """JSON Web Key.
 
-    .. todo:: Currently works for RSA keys only.
+    .. todo:: Currently works for RSA public keys only.
 
     """
     zope.interface.implements(interfaces.IJSONSerializable)
@@ -28,14 +28,6 @@ class JWK(object):
     def __eq__(self, other):
         if isinstance(other, JWK):
             return self.key == other.key
-        else:
-            raise TypeError(
-                'Unable to compare JWK object with: {0}'.format(other))
-
-    def same_public_key(self, other):
-        """Does ``other`` have the same public key?"""
-        if isinstance(other, JWK):
-            return self.key.publickey() == other.key.publickey()
         else:
             raise TypeError(
                 'Unable to compare JWK object with: {0}'.format(other))

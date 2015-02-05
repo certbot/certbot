@@ -5,26 +5,31 @@ import unittest
 import Crypto.PublicKey.RSA
 
 
-RSA256_KEY_PATH = pkg_resources.resource_string(
-    'letsencrypt.client.tests', 'testdata/rsa256_key.pem')
-RSA256_KEY = Crypto.PublicKey.RSA.importKey(RSA256_KEY_PATH)
-RSA512_KEY_PATH = pkg_resources.resource_string(
-    'letsencrypt.client.tests', 'testdata/rsa512_key.pem')
-RSA512_KEY = Crypto.PublicKey.RSA.importKey(RSA512_KEY_PATH)
+RSA256_KEY = Crypto.PublicKey.RSA.importKey(pkg_resources.resource_string(
+    'letsencrypt.client.tests', 'testdata/rsa256_key.pem'))
+RSA512_KEY = Crypto.PublicKey.RSA.importKey(pkg_resources.resource_string(
+    'letsencrypt.client.tests', 'testdata/rsa512_key.pem'))
 
 
 class JWKTest(unittest.TestCase):
+    """Tests fro letsencrypt.acme.jose.JWK."""
 
     def setUp(self):
         from letsencrypt.acme.jose import JWK
-        self.jwk256 = JWK(RSA256_KEY)
+        self.jwk256 = JWK(RSA256_KEY.publickey())
         self.jwk256json = {
             'kty': 'RSA',
             'e': 'AQAB',
             'n': 'rHVztFHtH92ucFJD_N_HW9AsdRsUuHUBBBDlHwNlRd3fp5'
                  '80rv2-6QWE30cWgdmJS86ObRz6lUTor4R0T-3C5Q',
         }
-        self.jwk512 = JWK(RSA512_KEY)
+        self.jwk512 = JWK(RSA512_KEY.publickey())
+        self.jwk512json = {
+            'kty': 'RSA',
+            'e': 'AQAB',
+            'n': '9LYRcVE3Nr-qleecEcX8JwVDnjeG1X7ucsCasuuZM0e09c'
+                 'mYuUzxIkMjO_9x4AVcvXXRXPEV-LzWWkfkTlzRMw',
+        }
 
     def test_equals(self):
         self.assertEqual(self.jwk256, self.jwk256)
@@ -37,24 +42,14 @@ class JWKTest(unittest.TestCase):
     def test_equals_raises_type_error(self):
         self.assertRaises(TypeError, self.jwk256.__eq__, 123)
 
-    def test_same_public_key(self):
-        from letsencrypt.acme.jose import JWK
-        self.assertTrue(self.jwk256.same_public_key(
-            JWK(Crypto.PublicKey.RSA.importKey(RSA256_KEY_PATH))))
-
-    def test_not_same_public_key(self):
-        self.assertFalse(self.jwk256.same_public_key(self.jwk512))
-
-    def test_same_public_key_raises_type_error(self):
-        self.assertRaises(TypeError, self.jwk256.same_public_key, 5)
-
     def test_to_json(self):
         self.assertEqual(self.jwk256.to_json(), self.jwk256json)
+        self.assertEqual(self.jwk512.to_json(), self.jwk512json)
 
     def test_from_json(self):
         from letsencrypt.acme.jose import JWK
-        self.assertTrue(self.jwk256.same_public_key(
-            JWK.from_json(self.jwk256json)))
+        self.assertEqual(self.jwk256, JWK.from_json(self.jwk256json))
+        self.assertEqual(self.jwk512, JWK.from_json(self.jwk512json))
 
 
 # https://en.wikipedia.org/wiki/Base64#Examples

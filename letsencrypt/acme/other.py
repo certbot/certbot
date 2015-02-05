@@ -64,7 +64,7 @@ class Signature(object):
 
         logging.debug('%s signed as %s', msg_with_nonce, sig)
 
-        return cls('RS256', sig, nonce, jose.JWK(key))
+        return cls('RS256', sig, nonce, jose.JWK(key.publickey()))
 
     def __eq__(self, other):
         if isinstance(other, Signature):
