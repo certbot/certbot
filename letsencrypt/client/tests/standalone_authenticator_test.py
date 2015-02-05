@@ -36,6 +36,8 @@ class CallableExhausted(Exception):
 
 
 class PackAndUnpackTests(unittest.TestCase):
+    """Tests for byte packing and unpacking routines used for TLS
+    parsing."""
     def test_pack_and_unpack_bytes(self):
         from letsencrypt.client.standalone_authenticator import \
             unpack_2bytes, unpack_3bytes, pack_2bytes, pack_3bytes
@@ -55,6 +57,7 @@ class PackAndUnpackTests(unittest.TestCase):
 
 
 class TLSParseClientHelloTest(unittest.TestCase):
+    """Test for tls_parse_client_hello() function."""
     def test_tls_parse_client_hello(self):
         from letsencrypt.client.standalone_authenticator import \
             tls_parse_client_hello
@@ -76,6 +79,7 @@ class TLSParseClientHelloTest(unittest.TestCase):
 
 
 class TLSGenerateServerHelloTest(unittest.TestCase):
+    """Tests for tls_generate_server_hello() function."""
     def test_tls_generate_server_hello(self):
         from letsencrypt.client.standalone_authenticator import \
             tls_generate_server_hello
@@ -86,6 +90,7 @@ class TLSGenerateServerHelloTest(unittest.TestCase):
 
 
 class TLSGenerateCertMsgTest(unittest.TestCase):
+    """Tests for tls_generate_cert_msg() function."""
     def test_tls_generate_cert_msg(self):
         from letsencrypt.client.standalone_authenticator import \
             tls_generate_cert_msg
@@ -113,6 +118,7 @@ class TLSGenerateCertMsgTest(unittest.TestCase):
 
 
 class TLSServerHelloDoneTest(unittest.TestCase):
+    """Tests for tls_generate_server_hello_done() function."""
     def test_tls_generate_server_hello_done(self):
         from letsencrypt.client.standalone_authenticator import \
             tls_generate_server_hello_done
@@ -121,6 +127,7 @@ class TLSServerHelloDoneTest(unittest.TestCase):
 
 
 class ChallPrefTest(unittest.TestCase):
+    """Tests for chall_pref() method."""
     def setUp(self):
         from letsencrypt.client.standalone_authenticator import \
             StandaloneAuthenticator
@@ -132,6 +139,7 @@ class ChallPrefTest(unittest.TestCase):
 
 
 class SNICallbackTest(unittest.TestCase):
+    """Tests for sni_callback() method."""
     def setUp(self):
         from letsencrypt.client.standalone_authenticator import \
             StandaloneAuthenticator
@@ -161,6 +169,7 @@ class SNICallbackTest(unittest.TestCase):
 
 
 class ClientSignalHandlerTest(unittest.TestCase):
+    """Tests for client_signal_handler() method."""
     def setUp(self):
         from letsencrypt.client.standalone_authenticator import \
             StandaloneAuthenticator
@@ -183,6 +192,7 @@ class ClientSignalHandlerTest(unittest.TestCase):
         self.assertTrue(self.authenticator.subproc_cantbind)
 
 class SubprocSignalHandlerTest(unittest.TestCase):
+    """Tests for subproc_signal_handler() method."""
     def setUp(self):
         from letsencrypt.client.standalone_authenticator import \
             StandaloneAuthenticator
@@ -213,6 +223,7 @@ class SubprocSignalHandlerTest(unittest.TestCase):
 
 
 class PerformTest(unittest.TestCase):
+    """Tests for perform() method."""
     def setUp(self):
         from letsencrypt.client.standalone_authenticator import \
             StandaloneAuthenticator
@@ -267,6 +278,7 @@ class PerformTest(unittest.TestCase):
         self.authenticator.start_listener.assert_called_once_with(443, key)
 
 class StartListenerTest(unittest.TestCase):
+    """Tests for start_listener() method."""
     def setUp(self):
         from letsencrypt.client.standalone_authenticator import \
             StandaloneAuthenticator
@@ -296,6 +308,7 @@ class StartListenerTest(unittest.TestCase):
         mock_atfork.assert_called_once_with()
 
 class DoParentProcessTest(unittest.TestCase):
+    """Tests for do_parent_process() method."""
     def setUp(self):
         from letsencrypt.client.standalone_authenticator import \
             StandaloneAuthenticator
@@ -328,13 +341,16 @@ class DoParentProcessTest(unittest.TestCase):
     @mock.patch("letsencrypt.client.standalone_authenticator.signal.signal")
     @mock.patch("letsencrypt.client.standalone_authenticator.zope.component.getUtility")
     def test_do_parent_process_timeout(self, mock_getUtility, mock_signal):
-        # Times out in 5 seconds and returns False.
+        # Normally times out in 5 seconds and returns False.  We can
+        # now set delay_amount to a lower value so that it times out
+        # faster than it would under normal use.
         result = self.authenticator.do_parent_process(1717, delay_amount=1)
         self.assertFalse(result)
         self.assertEqual(mock_signal.call_count, 3)
 
 
 class DoChildProcessTest(unittest.TestCase):
+    """Tests for do_child_process() method."""
     def setUp(self):
         from letsencrypt.client.standalone_authenticator import \
             StandaloneAuthenticator
@@ -412,6 +428,7 @@ class DoChildProcessTest(unittest.TestCase):
 
 
 class CleanupTest(unittest.TestCase):
+    """Tests for cleanup() method."""
     def setUp(self):
         from letsencrypt.client.standalone_authenticator import \
             StandaloneAuthenticator
