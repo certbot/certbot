@@ -458,7 +458,9 @@ class StandaloneAuthenticator(object):
             raise Exception(".perform() was called with pending tasks!")
         results_if_success = []
         results_if_failure = []
-        assert chall_list
+        if not chall_list or not isinstance(chall_list, list):
+            # TODO: Specify a correct exception subclass.
+            raise Exception(".perform() was called without challenge list")
         for chall in chall_list:
             if isinstance(chall, DvsniChall):
                 # We will attempt to do it
@@ -473,7 +475,9 @@ class StandaloneAuthenticator(object):
                 # is not a type we can handle
                 results_if_success.append(False)
                 results_if_failure.append(False)
-        assert self.tasks
+        if not self.tasks:
+            # TODO: Specify a correct exception subclass.
+            raise Exception("nothing for .perform() to do")
         # Try to do the authentication; note that this creates
         # the listener subprocess via os.fork()
         if self.start_listener(CONFIG.PORT, key):
