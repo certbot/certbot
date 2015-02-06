@@ -97,7 +97,7 @@ class TLSGenerateServerHelloTest(unittest.TestCase):
             tls_generate_server_hello
         server_hello = tls_generate_server_hello("Q!")
         self.assertEqual(server_hello[:11].encode("hex"),
-            '160303002a020000260303')
+                         '160303002a020000260303')
         self.assertEqual(server_hello[43:], chr(0) + 'Q!' + chr(0))
 
 
@@ -107,26 +107,29 @@ class TLSGenerateCertMsgTest(unittest.TestCase):
         from letsencrypt.client.standalone_authenticator import \
             tls_generate_cert_msg
         cert = pkg_resources.resource_string(__name__,
-            'testdata/cert.pem')
+                                             'testdata/cert.pem')
         cert_msg = tls_generate_cert_msg(cert)
         self.assertEqual(cert_msg.encode("hex"),
-            "16030301ec0b0001e80001e50001e2308201de30820188a0030201020202"
-            "0539300d06092a864886f70d01010b05003077310b300906035504061302"
-            "55533111300f06035504080c084d6963686967616e311230100603550407"
-            "0c09416e6e204172626f72312b3029060355040a0c22556e697665727369"
-            "7479206f66204d6963686967616e20616e64207468652045464631143012"
-            "06035504030c0b6578616d706c652e636f6d301e170d3134313231313232"
-            "333434355a170d3134313231383232333434355a3077310b300906035504"
-            "06130255533111300f06035504080c084d6963686967616e311230100603"
-            "5504070c09416e6e204172626f72312b3029060355040a0c22556e697665"
-            "7273697479206f66204d6963686967616e20616e64207468652045464631"
-            "14301206035504030c0b6578616d706c652e636f6d305c300d06092a8648"
-            "86f70d0101010500034b003048024100ac7573b451ed1fddae705243fcdf"
-            "c75bd02c751b14b875010410e51f036545dddfa79f34aefdbee90584df47"
-            "1681d9894bce8e6d1cfa9544e8af84744fedc2e50203010001300d06092a"
-            "864886f70d01010b05000341002db8cf421dc0854a4a59ed92c965bebeb3"
-            "25ea411f97cc9dd7e4dd7269d748d3e9513ed7828db63874d9ae7a1a8ada"
-            "02f2404f9fc7ebb13c1af27fa1c36707fa")
+                         "16030301ec0b0001e80001e50001e2308201de30820188a003"
+                         "02010202020539300d06092a864886f70d01010b0500307731"
+                         "0b30090603550406130255533111300f06035504080c084d69"
+                         "63686967616e3112301006035504070c09416e6e204172626f"
+                         "72312b3029060355040a0c22556e6976657273697479206f66"
+                         "204d6963686967616e20616e64207468652045464631143012"
+                         "06035504030c0b6578616d706c652e636f6d301e170d313431"
+                         "3231313232333434355a170d3134313231383232333434355a"
+                         "3077310b30090603550406130255533111300f06035504080c"
+                         "084d6963686967616e3112301006035504070c09416e6e2041"
+                         "72626f72312b3029060355040a0c22556e6976657273697479"
+                         "206f66204d6963686967616e20616e64207468652045464631"
+                         "14301206035504030c0b6578616d706c652e636f6d305c300d"
+                         "06092a864886f70d0101010500034b003048024100ac7573b4"
+                         "51ed1fddae705243fcdfc75bd02c751b14b875010410e51f03"
+                         "6545dddfa79f34aefdbee90584df471681d9894bce8e6d1cfa"
+                         "9544e8af84744fedc2e50203010001300d06092a864886f70d"
+                         "01010b05000341002db8cf421dc0854a4a59ed92c965bebeb3"
+                         "25ea411f97cc9dd7e4dd7269d748d3e9513ed7828db63874d9"
+                         "ae7a1a8ada02f2404f9fc7ebb13c1af27fa1c36707fa")
 
 
 class TLSServerHelloDoneTest(unittest.TestCase):
@@ -147,7 +150,7 @@ class ChallPrefTest(unittest.TestCase):
 
     def test_chall_pref(self):
         self.assertEqual(self.authenticator.get_chall_pref("example.com"),
-                    ["dvsni"])
+                         ["dvsni"])
 
 
 class SNICallbackTest(unittest.TestCase):
@@ -158,15 +161,16 @@ class SNICallbackTest(unittest.TestCase):
         from letsencrypt.client.challenge_util import dvsni_gen_cert
         from letsencrypt.client import le_util
         import OpenSSL.crypto
+        from OpenSSL.crypto import FILETYPE_PEM
         self.authenticator = StandaloneAuthenticator()
         r = "x" * 32
         name, r_b64 = "example.com", le_util.jose_b64encode(r)
         RSA256_KEY = pkg_resources.resource_string(__name__,
-            'testdata/rsa256_key.pem')
+                                                   'testdata/rsa256_key.pem')
         nonce, key = "abcdef", le_util.Key("foo", RSA256_KEY)
         self.cert = dvsni_gen_cert(name, r_b64, nonce, key)[0]
-        self.authenticator.private_key = OpenSSL.crypto.load_privatekey(
-                OpenSSL.crypto.FILETYPE_PEM, key.pem)
+        private_key = OpenSSL.crypto.load_privatekey(FILETYPE_PEM, key.pem)
+        self.authenticator.private_key = private_key
         self.authenticator.tasks = {"abcdef.acme.invalid": self.cert}
         self.authenticator.child_pid = 12345
 
@@ -230,7 +234,7 @@ class SubprocSignalHandlerTest(unittest.TestCase):
         #       do so in practice if there's no live TLS connection at the
         #       time the subprocess is told to clean up).
         mock_kill.assert_called_once_with(self.authenticator.parent_pid,
-            signal.SIGUSR1)
+                                          signal.SIGUSR1)
         mock_exit.assert_called_once_with(0)
 
 
@@ -245,7 +249,7 @@ class PerformTest(unittest.TestCase):
         """What happens if start_listener() returns True."""
         from letsencrypt.client import le_util
         RSA256_KEY = pkg_resources.resource_string(__name__,
-            'testdata/rsa256_key.pem')
+                                                   'testdata/rsa256_key.pem')
         key = le_util.Key("something", RSA256_KEY)
         chall1 = DvsniChall("foo.example.com", "whee", "foononce", key)
         chall2 = DvsniChall("bar.example.com", "whee", "barnonce", key)
@@ -271,7 +275,7 @@ class PerformTest(unittest.TestCase):
         """What happens if start_listener() returns False."""
         from letsencrypt.client import le_util
         RSA256_KEY = pkg_resources.resource_string(__name__,
-            'testdata/rsa256_key.pem')
+                                                   'testdata/rsa256_key.pem')
         key = le_util.Key("something", RSA256_KEY)
         chall1 = DvsniChall("foo.example.com", "whee", "foononce", key)
         chall2 = DvsniChall("bar.example.com", "whee", "barnonce", key)
@@ -316,7 +320,7 @@ class StartListenerTest(unittest.TestCase):
         self.authenticator.start_listener(1717, "key")
         self.assertEqual(self.authenticator.child_pid, os.getpid())
         self.authenticator.do_child_process.assert_called_once_with(1717,
-            "key")
+                                                                    "key")
         mock_atfork.assert_called_once_with()
 
 class DoParentProcessTest(unittest.TestCase):
@@ -369,23 +373,25 @@ class DoChildProcessTest(unittest.TestCase):
         from letsencrypt.client.challenge_util import dvsni_gen_cert
         from letsencrypt.client import le_util
         import OpenSSL.crypto
+        from OpenSSL.crypto import FILETYPE_PEM
         self.authenticator = StandaloneAuthenticator()
         r = "x" * 32
         name, r_b64 = "example.com", le_util.jose_b64encode(r)
         RSA256_KEY = pkg_resources.resource_string(__name__,
-            'testdata/rsa256_key.pem')
+                                                   'testdata/rsa256_key.pem')
         nonce, key = "abcdef", le_util.Key("foo", RSA256_KEY)
         self.key = key
         self.cert = dvsni_gen_cert(name, r_b64, nonce, key)[0]
-        self.authenticator.private_key = OpenSSL.crypto.load_privatekey(
-                OpenSSL.crypto.FILETYPE_PEM, key.pem)
+        private_key = OpenSSL.crypto.load_privatekey(FILETYPE_PEM, key.pem)
+        self.authenticator.private_key = private_key
         self.authenticator.tasks = {"abcdef.acme.invalid": self.cert}
         self.authenticator.parent_pid = 12345
 
     @mock.patch("letsencrypt.client.standalone_authenticator.socket.socket")
     @mock.patch("letsencrypt.client.standalone_authenticator.os.kill")
     @mock.patch("letsencrypt.client.standalone_authenticator.sys.exit")
-    def test_do_child_process_cantbind1(self, mock_exit, mock_kill, mock_socket):
+    def test_do_child_process_cantbind1(self, mock_exit, mock_kill,
+                                        mock_socket):
         import socket, signal
         mock_exit.side_effect = IndentationError("subprocess would exit here")
         eaccess = socket.error(socket.errno.EACCES, "Permission denied")
@@ -406,7 +412,8 @@ class DoChildProcessTest(unittest.TestCase):
     @mock.patch("letsencrypt.client.standalone_authenticator.socket.socket")
     @mock.patch("letsencrypt.client.standalone_authenticator.os.kill")
     @mock.patch("letsencrypt.client.standalone_authenticator.sys.exit")
-    def test_do_child_process_cantbind2(self, mock_exit, mock_kill, mock_socket):
+    def test_do_child_process_cantbind2(self, mock_exit, mock_kill,
+                                        mock_socket):
         import socket, signal
         mock_exit.side_effect = IndentationError("subprocess would exit here")
         eaccess = socket.error(socket.errno.EADDRINUSE, "Port already in use")
