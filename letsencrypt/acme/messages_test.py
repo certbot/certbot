@@ -38,9 +38,15 @@ class MessageTest(unittest.TestCase):
                 return jobj
 
             def _fields_to_json(self):
-                pass
+                return {'foo': 'bar'}
 
         self.msg_cls = TestMessage
+
+    def test_to_json(self):
+        self.assertEqual(self.msg_cls().to_json(), {
+            'type': 'test',
+            'foo': 'bar',
+        })
 
     def test_fields_to_json_not_implemented(self):
         from letsencrypt.acme.messages import Message
@@ -106,6 +112,15 @@ class ChallengeTest(unittest.TestCase):
         from letsencrypt.acme.messages import Challenge
         self.assertEqual(Challenge.from_json(self.jmsg), self.msg)
 
+    def test_json_without_optionals(self):
+        del self.jmsg['combinations']
+
+        from letsencrypt.acme.messages import Challenge
+        msg = Challenge.from_json(self.jmsg)
+
+        self.assertEqual(msg.combinations, [])
+        self.assertEqual(msg.to_json(), self.jmsg)
+
 
 class ChallengeRequestTest(unittest.TestCase):
 
@@ -146,9 +161,23 @@ class AuthorizationTest(unittest.TestCase):
         self.assertEqual(self.msg.to_json(), self.jmsg)
 
     def test_from_json(self):
-        from letsencrypt.acme.messages import Authorization
         self.jmsg['jwk'] = self.jmsg['jwk'].to_json()
+
+        from letsencrypt.acme.messages import Authorization
         self.assertEqual(Authorization.from_json(self.jmsg), self.msg)
+
+    def test_json_without_optionals(self):
+        del self.jmsg['recoveryToken']
+        del self.jmsg['identifier']
+        del self.jmsg['jwk']
+
+        from letsencrypt.acme.messages import Authorization
+        msg = Authorization.from_json(self.jmsg)
+
+        self.assertTrue(msg.recovery_token is None)
+        self.assertTrue(msg.identifier is None)
+        self.assertTrue(msg.jwk is None)
+        self.assertEqual(self.jmsg, msg.to_json())
 
 
 class AuthorizationRequestTest(unittest.TestCase):
@@ -177,7 +206,7 @@ class AuthorizationRequestTest(unittest.TestCase):
             contact=self.contact,
         )
 
-        self.jmsg = {
+        self.jmsg_to = {
             'type': 'authorizationRequest',
             'sessionID': 'aefoGaavieG9Wihuk2aufai3aeZ5EeW4',
             'nonce': '7Nbyb1lI6xPVI3Hg3aKSqQ',
@@ -185,6 +214,16 @@ class AuthorizationRequestTest(unittest.TestCase):
             'signature': signature,
             'contact': self.contact,
         }
+        self.jmsg_from = {
+            'type': 'authorizationRequest',
+            'sessionID': 'aefoGaavieG9Wihuk2aufai3aeZ5EeW4',
+            'nonce': '7Nbyb1lI6xPVI3Hg3aKSqQ',
+            'responses': self.responses,
+            'signature': signature.to_json(),
+            'contact': self.contact,
+        }
+        self.jmsg_from['signature']['jwk'] = self.jmsg_from[
+            'signature']['jwk'].to_json()
 
     def test_create(self):
         from letsencrypt.acme.messages import AuthorizationRequest
@@ -199,13 +238,22 @@ class AuthorizationRequestTest(unittest.TestCase):
         self.assertTrue(self.msg.verify('example.com'))
 
     def test_to_json(self):
-        self.assertEqual(self.msg.to_json(), self.jmsg)
+        self.assertEqual(self.msg.to_json(), self.jmsg_to)
 
     def test_from_json(self):
         from letsencrypt.acme.messages import AuthorizationRequest
-        self.jmsg['signature'] = self.jmsg['signature'].to_json()
-        self.jmsg['signature']['jwk'] = self.jmsg['signature']['jwk'].to_json()
-        self.assertEqual(self.msg, AuthorizationRequest.from_json(self.jmsg))
+        self.assertEqual(
+            self.msg, AuthorizationRequest.from_json(self.jmsg_from))
+
+    def test_json_without_optionals(self):
+        del self.jmsg_from['contact']
+        del self.jmsg_to['contact']
+
+        from letsencrypt.acme.messages import AuthorizationRequest
+        msg = AuthorizationRequest.from_json(self.jmsg_from)
+
+        self.assertEqual(msg.contact, [])
+        self.assertEqual(self.jmsg_to, msg.to_json())
 
 
 class CertificateTest(unittest.TestCase):
@@ -230,6 +278,17 @@ class CertificateTest(unittest.TestCase):
     def test_from_json(self):
         from letsencrypt.acme.messages import Certificate
         self.assertEqual(Certificate.from_json(self.jmsg), self.msg)
+
+    def test_json_without_optionals(self):
+        del self.jmsg['chain']
+        del self.jmsg['refresh']
+
+        from letsencrypt.acme.messages import Certificate
+        msg = Certificate.from_json(self.jmsg)
+
+        self.assertEqual(msg.chain, [])
+        self.assertTrue(msg.refresh is None)
+        self.assertEqual(self.jmsg, msg.to_json())
 
 
 class CertificateRequestTest(unittest.TestCase):
@@ -294,6 +353,17 @@ class DeferTest(unittest.TestCase):
         from letsencrypt.acme.messages import Defer
         self.assertEqual(Defer.from_json(self.jmsg), self.msg)
 
+    def test_json_without_optionals(self):
+        del self.jmsg['interval']
+        del self.jmsg['message']
+
+        from letsencrypt.acme.messages import Defer
+        msg = Defer.from_json(self.jmsg)
+
+        self.assertTrue(msg.interval is None)
+        self.assertTrue(msg.message is None)
+        self.assertEqual(self.jmsg, msg.to_json())
+
 
 class ErrorTest(unittest.TestCase):
 
@@ -316,6 +386,17 @@ class ErrorTest(unittest.TestCase):
     def test_from_json(self):
         from letsencrypt.acme.messages import Error
         self.assertEqual(Error.from_json(self.jmsg), self.msg)
+
+    def test_json_without_optionals(self):
+        del self.jmsg['message']
+        del self.jmsg['moreInfo']
+
+        from letsencrypt.acme.messages import Error
+        msg = Error.from_json(self.jmsg)
+
+        self.assertTrue(msg.message is None)
+        self.assertTrue(msg.more_info is None)
+        self.assertEqual(self.jmsg, msg.to_json())
 
 
 class RevocationTest(unittest.TestCase):

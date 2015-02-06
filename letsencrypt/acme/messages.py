@@ -244,7 +244,7 @@ class Certificate(Message):
 
     def _fields_to_json(self):
         fields = {"certificate": self._encode_cert(self.certificate)}
-        if self.chain is not None:
+        if self.chain:
             fields["chain"] = [self._encode_cert(cert) for cert in self.chain]
         if self.refresh is not None:
             fields["refresh"] = self.refresh
