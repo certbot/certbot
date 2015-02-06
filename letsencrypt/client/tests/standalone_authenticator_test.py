@@ -338,6 +338,13 @@ class PerformTest(unittest.TestCase):
         self.assertEqual(result, [None, None, False])
         self.authenticator.start_listener.assert_called_once_with(443, key)
 
+    def test_perform_with_pending_tasks(self):
+        self.authenticator.tasks = {"foononce.acme.invalid": "cert_data"}
+        extra_challenge = DvsniChall("a", "b", "c", "d")
+        with self.assertRaises(Exception):
+            self.authenticator.perform([extra_challenge])
+
+
 class StartListenerTest(unittest.TestCase):
     """Tests for start_listener() method."""
     def setUp(self):
