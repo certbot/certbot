@@ -183,6 +183,21 @@ class SNICallbackTest(unittest.TestCase):
         called_ctx = connection.set_context.call_args[0][0]
         self.assertIsInstance(called_ctx, OpenSSL.SSL.Context)
 
+    def test_fake_servername(self):
+        """Test the behavior of the SNI callback when an unexpected SNI
+        name is received.  (Currently the expected behavior in this case
+        is to return the "first" certificate with which the listener
+        was configured, although they are stored in an unordered data
+        structure so this might not be the one that was first in the
+        challenge list passed to the perform method.  In the future, this
+        might result in dropping the connection instead.)"""
+        import OpenSSL.SSL
+        connection = mock.MagicMock()
+        connection.get_servername.return_value = "example.com"
+        self.authenticator.sni_callback(connection)
+        self.assertEqual(connection.set_context.call_count, 1)
+        called_ctx = connection.set_context.call_args[0][0]
+        self.assertIsInstance(called_ctx, OpenSSL.SSL.Context)
 
 class ClientSignalHandlerTest(unittest.TestCase):
     """Tests for client_signal_handler() method."""
@@ -454,6 +469,20 @@ class DoChildProcessTest(unittest.TestCase):
             result = self.authenticator.do_child_process(1717, self.key)
         mock_exit.assert_called_once_with(1)
         mock_kill.assert_called_once_with(12345, signal.SIGUSR1)
+
+    @mock.patch("letsencrypt.client.standalone_authenticator.socket.socket")
+    def test_do_child_process_cantbind3(self, mock_socket):
+        """Test case where attempt to bind socket results in an unhandled
+        socket error.  (The expected behavior is arguably wrong because it
+        will crash the program; the reason for the expected behavior is
+        that we don't have a way to report arbitrary socket errors.)"""
+        import socket, signal
+        eio = socket.error(socket.errno.EIO, "Imaginary unhandled error")
+        sample_socket = mock.MagicMock()
+        sample_socket.bind.side_effect = eio
+        mock_socket.return_value = sample_socket
+        with self.assertRaises(socket.error):
+            result = self.authenticator.do_child_process(1717, self.key)
 
     @mock.patch("letsencrypt.client.standalone_authenticator.OpenSSL.SSL.Connection")
     @mock.patch("letsencrypt.client.standalone_authenticator.socket.socket")
