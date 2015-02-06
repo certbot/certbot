@@ -344,6 +344,18 @@ class PerformTest(unittest.TestCase):
         with self.assertRaises(Exception):
             self.authenticator.perform([extra_challenge])
 
+    def test_perform_without_challenge_list(self):
+        extra_challenge = DvsniChall("a", "b", "c", "d")
+        # This is wrong because a challenge must be specified.
+        with self.assertRaises(Exception):
+            self.authenticator.perform([])
+        # This is wrong because it must be a list, not a bare challenge.
+        with self.assertRaises(Exception):
+            self.authenticator.perform(extra_challenge)
+        # This is wrong because the list must contain at least one challenge.
+        with self.assertRaises(Exception):
+            self.authenticator.perform(range(20))
+
 
 class StartListenerTest(unittest.TestCase):
     """Tests for start_listener() method."""
