@@ -207,6 +207,14 @@ class ClientSignalHandlerTest(unittest.TestCase):
         self.authenticator.client_signal_handler(signal.SIGUSR2, None)
         self.assertTrue(self.authenticator.subproc_cantbind)
 
+        # Testing the unreached path for a signal other than these
+        # specified (which can't occur in normal use because this
+        # function is only set as a signal handler for the above three
+        # signals).
+        with self.assertRaises(AssertionError):
+            self.authenticator.client_signal_handler(signal.SIGPIPE, None)
+
+
 class SubprocSignalHandlerTest(unittest.TestCase):
     """Tests for subproc_signal_handler() method."""
     def setUp(self):
@@ -229,10 +237,32 @@ class SubprocSignalHandlerTest(unittest.TestCase):
         self.assertEquals(self.authenticator.ssl_conn.close.call_count, 1)
         self.assertEquals(self.authenticator.connection.close.call_count, 1)
         self.assertEquals(self.authenticator.sock.close.call_count, 1)
-        # TODO: We should test that we correctly survive each of the above
-        #       raising an exception of some kind (since they're likely to
-        #       do so in practice if there's no live TLS connection at the
-        #       time the subprocess is told to clean up).
+        mock_kill.assert_called_once_with(self.authenticator.parent_pid,
+                                          signal.SIGUSR1)
+        mock_exit.assert_called_once_with(0)
+
+    @mock.patch("letsencrypt.client.standalone_authenticator.os.kill")
+    @mock.patch("letsencrypt.client.standalone_authenticator.sys.exit")
+    def test_subproc_signal_handler_trouble(self, mock_exit, mock_kill):
+        """Test how the signal handler survives attempting to shut down
+        a non-existent connection (because none was established or active
+        at the time the signal handler tried to perform the cleanup)."""
+        import signal
+        self.authenticator.ssl_conn = mock.MagicMock()
+        self.authenticator.connection = mock.MagicMock()
+        self.authenticator.sock = mock.MagicMock()
+        # AttributeError simulates the case where one of these properties
+        # is None because no connection exists.  We raise it for
+        # ssl_conn.close() instead of ssl_conn.shutdown() for better code
+        # coverage.
+        self.authenticator.ssl_conn.close.side_effect = AttributeError("!")
+        self.authenticator.connection.close.side_effect = AttributeError("!")
+        self.authenticator.sock.close.side_effect = AttributeError("!")
+        self.authenticator.subproc_signal_handler(signal.SIGINT, None)
+        self.assertEquals(self.authenticator.ssl_conn.shutdown.call_count, 1)
+        self.assertEquals(self.authenticator.ssl_conn.close.call_count, 1)
+        self.assertEquals(self.authenticator.connection.close.call_count, 1)
+        self.assertEquals(self.authenticator.sock.close.call_count, 1)
         mock_kill.assert_called_once_with(self.authenticator.parent_pid,
                                           signal.SIGUSR1)
         mock_exit.assert_called_once_with(0)
