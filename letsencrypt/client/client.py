@@ -22,7 +22,7 @@ from letsencrypt.client import reverter
 from letsencrypt.client import revoker
 
 from letsencrypt.client.apache import configurator
-from letsencrypt.le_util import Key
+from letsencrypt.client.le_util import Key
 
 
 class Client(object):

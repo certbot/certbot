@@ -15,6 +15,7 @@ from letsencrypt.client.apache import obj
 from letsencrypt.client.apache import parser
 
 from letsencrypt.client.tests.apache import util
+from letsencrypt.client.le_util import Key
 
 
 class TwoVhost80Test(util.ApacheTest):
@@ -164,7 +165,7 @@ class TwoVhost80Test(util.ApacheTest):
     def test_perform(self, mock_restart, mock_dvsni_perform):
         # Only tests functionality specific to configurator.perform
         # Note: As more challenges are offered this will have to be expanded
-        auth_key = client.Client.Key(self.rsa256_file, self.rsa256_pem)
+        auth_key = Key(self.rsa256_file, self.rsa256_pem)
         chall1 = challenge_util.DvsniChall(
             "encryption-example.demo",
             "jIq_Xy1mXGN37tb4L6Xj_es58fW571ZNyXekdZzhh7Q",

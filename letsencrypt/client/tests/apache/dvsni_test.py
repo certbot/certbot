@@ -10,7 +10,7 @@ from letsencrypt.client import client
 from letsencrypt.client import CONFIG
 
 from letsencrypt.client.tests.apache import util
-
+from letsencrypt.client.le_util import Key
 
 class DvsniPerformTest(util.ApacheTest):
     """Test the ApacheDVSNI challenge."""
@@ -33,7 +33,7 @@ class DvsniPerformTest(util.ApacheTest):
         rsa256_pem = pkg_resources.resource_string(
             "letsencrypt.client.tests", 'testdata/rsa256_key.pem')
 
-        auth_key = client.Client.Key(rsa256_file, rsa256_pem)
+        auth_key = Key(rsa256_file, rsa256_pem)
         self.challs = []
         self.challs.append(challenge_util.DvsniChall(
             "encryption-example.demo",
