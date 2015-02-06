@@ -1,6 +1,7 @@
 """Tests for letsencrypt.client.le_util."""
 import os
 import shutil
+import stat
 import tempfile
 import unittest
 
@@ -33,11 +34,11 @@ class MakeOrVerifyDirTest(unittest.TestCase):
         path = os.path.join(self.root_path, 'bar')
         self._call(path, 0o650)
         self.assertTrue(os.path.isdir(path))
-        # TODO: check mode
+        self.assertEqual(stat.S_IMODE(os.stat(path).st_mode), 0o650)
 
     def test_existing_correct_mode_does_not_fail(self):
         self._call(self.path, 0o400)
-        # TODO: check mode
+        self.assertEqual(stat.S_IMODE(os.stat(self.path).st_mode), 0o400)
 
     def test_existing_wrong_mode_fails(self):
         self.assertRaises(Exception, self._call, self.path, 0o600)
