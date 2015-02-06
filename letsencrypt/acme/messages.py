@@ -243,19 +243,34 @@ class Certificate(Message):
     __slots__ = ("certificate", "chain", "refresh")
 
     def _fields_to_json(self):
-        fields = {
-            "certificate": jose.b64encode(self.certificate.as_der())}
+        fields = {"certificate": self._encode_cert(self.certificate)}
         if self.chain is not None:
-            fields["chain"] = self.chain
+            fields["chain"] = [self._encode_cert(cert) for cert in self.chain]
         if self.refresh is not None:
             fields["refresh"] = self.refresh
         return fields
 
+    def __eq__(self, other):
+        # pylint: disable=redefined-outer-name
+        # M2Crypto.X509 does not implement __eq__, do it manually
+        return isinstance(other, Certificate) and self.certificate.as_der(
+            ) == other.certificate.as_der() and [
+                cert.as_der() for cert in self.chain] == [
+                    cert.as_der() for cert in other.chain]
+
+    @classmethod
+    def _decode_cert(cls, b64der):
+        return M2Crypto.X509.load_cert_der_string(jose.b64decode(b64der))
+
+    @classmethod
+    def _encode_cert(cls, cert):
+        return jose.b64encode(cert.as_der())
+
     @classmethod
     def _from_valid_json(cls, jobj):
-        certificate = M2Crypto.X509.load_cert_der_string(
-            jose.b64decode(jobj["certificate"]))
-        return cls(certificate=certificate, chain=jobj.get("chain", []),
+        return cls(certificate=cls._decode_cert(jobj["certificate"]),
+                   chain=[cls._decode_cert(cert) for cert in
+                          jobj.get("chain", [])],
                    refresh=jobj.get("refresh"))
 
 
@@ -360,7 +375,7 @@ class Error(Message):
     @classmethod
     def _from_valid_json(cls, jobj):
         return cls(error=jobj["error"], message=jobj.get("message"),
-                   more_info=jobj.get("more_info"))
+                   more_info=jobj.get("moreInfo"))
 
 
 @Message.register  # pylint: disable=too-few-public-methods

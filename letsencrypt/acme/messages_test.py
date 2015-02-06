@@ -3,6 +3,7 @@ import pkg_resources
 import unittest
 
 import Crypto.PublicKey.RSA
+import M2Crypto.X509
 import mock
 
 from letsencrypt.acme import errors
@@ -12,6 +13,8 @@ from letsencrypt.acme import other
 
 KEY = Crypto.PublicKey.RSA.importKey(pkg_resources.resource_string(
     'letsencrypt.client.tests', 'testdata/rsa256_key.pem'))
+CERT = M2Crypto.X509.load_cert_string(pkg_resources.resource_string(
+    'letsencrypt.client.tests', 'testdata/cert.pem'))
 
 
 class MessageTest(unittest.TestCase):
@@ -38,6 +41,11 @@ class MessageTest(unittest.TestCase):
                 pass
 
         self.msg_cls = TestMessage
+
+    def test_fields_to_json_not_implemented(self):
+        from letsencrypt.acme.messages import Message
+        # pylint: disable=protected-access
+        self.assertRaises(NotImplementedError, Message()._fields_to_json)
 
     @classmethod
     def _from_json(cls, jobj, validate=True):
@@ -67,6 +75,38 @@ class MessageTest(unittest.TestCase):
                          {'type': 'foo'})
 
 
+class ChallengeTest(unittest.TestCase):
+
+    def setUp(self):
+        challenges = [
+            {'type': 'simpleHttps', 'token': 'IlirfxKKXAsHtmzK29Pj8A'},
+            {'type': 'dns', 'token': 'DGyRejmCefe7v4NfDGDKfA'},
+            {'type': 'recoveryToken'},
+        ]
+        combinations = [[0, 2], [1, 2]]
+
+        from letsencrypt.acme.messages import Challenge
+        self.msg = Challenge(
+            session_id='aefoGaavieG9Wihuk2aufai3aeZ5EeW4',
+            nonce='\xec\xd6\xf2oYH\xeb\x13\xd5#q\xe0\xdd\xa2\x92\xa9',
+            challenges=challenges, combinations=combinations)
+
+        self.jmsg = {
+            'type': 'challenge',
+            'sessionID': 'aefoGaavieG9Wihuk2aufai3aeZ5EeW4',
+            'nonce': '7Nbyb1lI6xPVI3Hg3aKSqQ',
+            'challenges': challenges,
+            'combinations': combinations,
+        }
+
+    def test_to_json(self):
+        self.assertEqual(self.msg.to_json(), self.jmsg)
+
+    def test_from_json(self):
+        from letsencrypt.acme.messages import Challenge
+        self.assertEqual(Challenge.from_json(self.jmsg), self.msg)
+
+
 class ChallengeRequestTest(unittest.TestCase):
 
     def setUp(self):
@@ -86,6 +126,31 @@ class ChallengeRequestTest(unittest.TestCase):
         self.assertEqual(ChallengeRequest.from_json(self.jmsg), self.msg)
 
 
+class AuthorizationTest(unittest.TestCase):
+
+    def setUp(self):
+        jwk = jose.JWK(key=KEY.publickey())
+
+        from letsencrypt.acme.messages import Authorization
+        self.msg = Authorization(recovery_token='tok', jwk=jwk,
+                                 identifier='example.com')
+
+        self.jmsg = {
+            'type': 'authorization',
+            'recoveryToken': 'tok',
+            'identifier': 'example.com',
+            'jwk': jwk,
+        }
+
+    def test_to_json(self):
+        self.assertEqual(self.msg.to_json(), self.jmsg)
+
+    def test_from_json(self):
+        from letsencrypt.acme.messages import Authorization
+        self.jmsg['jwk'] = self.jmsg['jwk'].to_json()
+        self.assertEqual(Authorization.from_json(self.jmsg), self.msg)
+
+
 class AuthorizationRequestTest(unittest.TestCase):
 
     def setUp(self):
@@ -94,6 +159,7 @@ class AuthorizationRequestTest(unittest.TestCase):
             None,  # null
             {'type': 'recoveryToken', 'token': '23029d88d9e123e'},
         ]
+        self.contact = ["mailto:cert-admin@example.com", "tel:+12025551212"]
         signature = other.Signature(
             alg='RS256', jwk=jose.JWK(key=KEY.publickey()),
             sig='-v\xd8\xc2\xa3\xba0\xd6\x92\x16\xb5.\xbe\xa1[\x04\xbe'
@@ -108,7 +174,7 @@ class AuthorizationRequestTest(unittest.TestCase):
             nonce='\xec\xd6\xf2oYH\xeb\x13\xd5#q\xe0\xdd\xa2\x92\xa9',
             responses=self.responses,
             signature=signature,
-            contact=[],
+            contact=self.contact,
         )
 
         self.jmsg = {
@@ -117,6 +183,7 @@ class AuthorizationRequestTest(unittest.TestCase):
             'nonce': '7Nbyb1lI6xPVI3Hg3aKSqQ',
             'responses': self.responses,
             'signature': signature,
+            'contact': self.contact,
         }
 
     def test_create(self):
@@ -125,7 +192,8 @@ class AuthorizationRequestTest(unittest.TestCase):
             name='example.com', key=KEY, responses=self.responses,
             nonce='\xec\xd6\xf2oYH\xeb\x13\xd5#q\xe0\xdd\xa2\x92\xa9',
             session_id='aefoGaavieG9Wihuk2aufai3aeZ5EeW4',
-            sig_nonce='\xab?\x08o\xe6\x81$\x9f\xa1\xc9\x025\x1c\x1b\xa5+'))
+            sig_nonce='\xab?\x08o\xe6\x81$\x9f\xa1\xc9\x025\x1c\x1b\xa5+',
+            contact=self.contact))
 
     def test_verify(self):
         self.assertTrue(self.msg.verify('example.com'))
@@ -138,6 +206,30 @@ class AuthorizationRequestTest(unittest.TestCase):
         self.jmsg['signature'] = self.jmsg['signature'].to_json()
         self.jmsg['signature']['jwk'] = self.jmsg['signature']['jwk'].to_json()
         self.assertEqual(self.msg, AuthorizationRequest.from_json(self.jmsg))
+
+
+class CertificateTest(unittest.TestCase):
+
+    def setUp(self):
+        refresh = 'https://example.com/refresh/Dr8eAwTVQfSS/'
+
+        from letsencrypt.acme.messages import Certificate
+        self.msg = Certificate(
+            certificate=CERT, chain=[CERT], refresh=refresh)
+
+        self.jmsg = {
+            'type': 'certificate',
+            'certificate': jose.b64encode(CERT.as_der()),
+            'chain': [jose.b64encode(CERT.as_der())],
+            'refresh': refresh,
+        }
+
+    def test_to_json(self):
+        self.assertEqual(self.msg.to_json(), self.jmsg)
+
+    def test_from_json(self):
+        from letsencrypt.acme.messages import Certificate
+        self.assertEqual(Certificate.from_json(self.jmsg), self.msg)
 
 
 class CertificateRequestTest(unittest.TestCase):
@@ -178,6 +270,70 @@ class CertificateRequestTest(unittest.TestCase):
         self.jmsg['signature'] = self.jmsg['signature'].to_json()
         self.jmsg['signature']['jwk'] = self.jmsg['signature']['jwk'].to_json()
         self.assertEqual(self.msg, CertificateRequest.from_json(self.jmsg))
+
+
+class DeferTest(unittest.TestCase):
+
+    def setUp(self):
+        from letsencrypt.acme.messages import Defer
+        self.msg = Defer(
+            token='O7-s9MNq1siZHlgrMzi9_A', interval=60,
+            message='Warming up the HSM')
+
+        self.jmsg = {
+            'type': 'defer',
+            'token': 'O7-s9MNq1siZHlgrMzi9_A',
+            'interval': 60,
+            'message': 'Warming up the HSM',
+        }
+
+    def test_to_json(self):
+        self.assertEqual(self.msg.to_json(), self.jmsg)
+
+    def test_from_json(self):
+        from letsencrypt.acme.messages import Defer
+        self.assertEqual(Defer.from_json(self.jmsg), self.msg)
+
+
+class ErrorTest(unittest.TestCase):
+
+    def setUp(self):
+        from letsencrypt.acme.messages import Error
+        self.msg = Error(
+            error='badCSR', message='RSA keys must be at least 2048 bits long',
+            more_info='https://ca.example.com/documentation/csr-requirements')
+
+        self.jmsg = {
+            'type': 'error',
+            'error': 'badCSR',
+            'message':'RSA keys must be at least 2048 bits long',
+            'moreInfo': 'https://ca.example.com/documentation/csr-requirements',
+        }
+
+    def test_to_json(self):
+        self.assertEqual(self.msg.to_json(), self.jmsg)
+
+    def test_from_json(self):
+        from letsencrypt.acme.messages import Error
+        self.assertEqual(Error.from_json(self.jmsg), self.msg)
+
+
+class RevocationTest(unittest.TestCase):
+
+    def setUp(self):
+        from letsencrypt.acme.messages import Revocation
+        self.msg = Revocation()
+
+        self.jmsg = {
+            'type': 'revocation',
+        }
+
+    def test_to_json(self):
+        self.assertEqual(self.msg.to_json(), self.jmsg)
+
+    def test_from_json(self):
+        from letsencrypt.acme.messages import Error
+        self.assertEqual(Error.from_json(self.jmsg), self.msg)
 
 
 class RevocationRequestTest(unittest.TestCase):
