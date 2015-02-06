@@ -41,7 +41,8 @@ class SatisfyChallengesTest(unittest.TestCase):
     def test_name1_dvsni1(self):
         dom = "0"
         challenge = [acme_util.CHALLENGES["dvsni"]]
-        msg = acme.messages.Challenge(dom, "nonce0", challenge)
+        msg = acme.messages.Challenge(session_id=dom, nonce="nonce0",
+                                      challenges=challenge, combinations=[])
         self.handler.add_chall_msg(dom, msg, "dummy_key")
 
         self.handler._satisfy_challenges()  # pylint: disable=protected-access
@@ -60,7 +61,8 @@ class SatisfyChallengesTest(unittest.TestCase):
         for i in range(5):
             self.handler.add_chall_msg(
                 str(i),
-                acme.messages.Challenge(str(i), "nonce%d" % i, challenge),
+                acme.messages.Challenge(session_id=str(i), nonce="nonce%d" % i,
+                                        challenges=challenge, combinations=[]),
                 "dummy_key")
 
         self.handler._satisfy_challenges()  # pylint: disable=protected-access
@@ -87,7 +89,8 @@ class SatisfyChallengesTest(unittest.TestCase):
         combos = acme_util.gen_combos(challenges)
         self.handler.add_chall_msg(
             dom,
-            acme.messages.Challenge("0", "nonce0", challenges, combos),
+            acme.messages.Challenge(session_id="0", nonce="nonce0",
+                                    challenges=challenges, combinations=combos),
             "dummy_key")
 
         path = gen_path(["simpleHttps"], challenges)
@@ -116,7 +119,8 @@ class SatisfyChallengesTest(unittest.TestCase):
         combos = acme_util.gen_combos(challenges)
         self.handler.add_chall_msg(
             dom,
-            acme.messages.Challenge(dom, "nonce0", challenges, combos),
+            acme.messages.Challenge(session_id=dom, nonce="nonce0",
+                                    challenges=challenges, combinations=combos),
             "dummy_key")
 
         path = gen_path(["simpleHttps", "recoveryToken"], challenges)
@@ -147,7 +151,8 @@ class SatisfyChallengesTest(unittest.TestCase):
             self.handler.add_chall_msg(
                 str(i),
                 acme.messages.Challenge(
-                    str(i), "nonce%d" % i, challenges, combos),
+                    session_id=str(i), nonce="nonce%d" % i,
+                    challenges=challenges, combinations=combos),
                 "dummy_key")
 
         path = gen_path(["dvsni", "recoveryContact"], challenges)
@@ -197,7 +202,8 @@ class SatisfyChallengesTest(unittest.TestCase):
             self.handler.add_chall_msg(
                 dom,
                 acme.messages.Challenge(
-                    dom, "nonce%d" % i, challenge_list[i]),
+                    session_id=dom, nonce="nonce%d" % i,
+                    challenges=challenge_list[i], combinations=[]),
                 "dummy_key")
 
         mock_chall_path.side_effect = paths
@@ -266,7 +272,8 @@ class GetAuthorizationsTest(unittest.TestCase):
         for i in range(3):
             self.handler.add_chall_msg(
                 str(i),
-                acme.messages.Challenge(str(i), "nonce%d" % i, challenge),
+                acme.messages.Challenge(session_id=str(i), nonce="nonce%d" % i,
+                                        challenges=challenge, combinations=[]),
                 "dummy_key")
 
         self.mock_sat_chall.side_effect = self._sat_solved_at_once
@@ -294,7 +301,8 @@ class GetAuthorizationsTest(unittest.TestCase):
         challenges = acme_util.get_challenges()
         self.handler.add_chall_msg(
             "0",
-            acme.messages.Challenge("0", "nonce0", challenges),
+            acme.messages.Challenge(session_id="0", nonce="nonce0",
+                                    challenges=challenges, combinations=[]),
             "dummy_key")
 
         # Don't do anything to satisfy challenges
@@ -322,7 +330,8 @@ class GetAuthorizationsTest(unittest.TestCase):
             dom = str(i)
             self.handler.add_chall_msg(
                 dom,
-                acme.messages.Challenge(dom, "nonce%d" % i, challs[i]),
+                acme.messages.Challenge(session_id=dom, nonce="nonce%d" % i,
+                                        challenges=challs[i], combinations=[]),
                 "dummy_key")
 
         self.mock_sat_chall.side_effect = self._sat_incremental

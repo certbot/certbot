@@ -111,11 +111,12 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         try:
             auth = self.network.send_and_receive_expected(
                 acme.messages.AuthorizationRequest.create(
-                    self.msgs[domain].session_id,
-                    self.msgs[domain].nonce,
-                    self.responses[domain],
-                    domain,
-                    Crypto.PublicKey.RSA.importKey(self.authkey[domain].pem)),
+                    session_id=self.msgs[domain].session_id,
+                    nonce=self.msgs[domain].nonce,
+                    responses=self.responses[domain],
+                    name=domain,
+                    key=Crypto.PublicKey.RSA.importKey(
+                        self.authkey[domain].pem)),
                 acme.messages.Authorization)
             logging.info("Received Authorization for %s", domain)
             return auth

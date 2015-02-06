@@ -38,7 +38,7 @@ class Revoker(object):
 
         revocation = self.network.send_and_receive_expected(
             acme.messages.RevocationRequest.create(
-                cert_der, Crypto.PublicKey.RSA.importKey(key)),
+                certificate=cert_der, key=Crypto.PublicKey.RSA.importKey(key)),
             acme.messages.Revocation)
 
         zope.component.getUtility(interfaces.IDisplay).generic_notification(

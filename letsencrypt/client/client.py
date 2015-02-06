@@ -122,7 +122,8 @@ class Client(object):
 
         """
         return self.network.send_and_receive_expected(
-            acme.messages.ChallengeRequest(domain), acme.messages.Challenge)
+            acme.messages.ChallengeRequest(identifier=domain),
+            acme.messages.Challenge)
 
     def acme_certificate(self, csr_der):
         """Handle ACME "certificate" phase.
@@ -136,7 +137,8 @@ class Client(object):
         logging.info("Preparing and sending CSR...")
         return self.network.send_and_receive_expected(
             acme.messages.CertificateRequest.create(
-                csr_der, Crypto.PublicKey.RSA.importKey(self.authkey.pem)),
+                csr=csr_der, key=Crypto.PublicKey.RSA.importKey(
+                    self.authkey.pem)),
             acme.messages.Certificate)
 
     def save_certificate(self, certificate_msg, cert_path, chain_path):
