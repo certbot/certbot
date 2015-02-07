@@ -13,7 +13,7 @@ from letsencrypt.client import le_util
 DvsniChall = collections.namedtuple("DvsniChall", "domain, r_b64, nonce, key")
 SimpleHttpsChall = collections.namedtuple(
     "SimpleHttpsChall", "domain, token, key")
-DnsChall = collections.namedtuple("DnsChall", "domain, token, key")
+DnsChall = collections.namedtuple("DnsChall", "domain, token")
 
 # Client Challenges
 RecContactChall = collections.namedtuple(
