@@ -69,7 +69,6 @@ In order to generate the Sphinx documentation, run the following commands.
 
 ::
 
-    ./venv/bin/python setup.py docs
     cd docs
     make clean html SPHINXBUILD=../venv/bin/sphinx-build
 
