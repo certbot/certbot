@@ -38,7 +38,7 @@ class Network(object):
 
         :raises TypeError: if `msg` is not JSON serializable
         :raises jsonschema.ValidationError: if not valid ACME message
-        :raises errors.LetsEncryptClientError: in case of connection error
+        :raises errors.ClientError: in case of connection error
             or if response from server is not a valid ACME message.
 
         """
@@ -53,16 +53,16 @@ class Network(object):
                 verify=True
             )
         except requests.exceptions.RequestException as error:
-            raise errors.LetsEncryptClientError(
+            raise errors.ClientError(
                 'Sending ACME message to server has failed: %s' % error)
 
         try:
             acme.acme_object_validate(response.content)
         except ValueError:
-            raise errors.LetsEncryptClientError(
+            raise errors.ClientError(
                 'Server did not send JSON serializable message')
         except jsonschema.ValidationError as error:
-            raise errors.LetsEncryptClientError(
+            raise errors.ClientError(
                 'Response from server is not a valid ACME message')
 
         return response.json()
@@ -76,14 +76,14 @@ class Network(object):
         :returns: ACME response message of expected type.
         :rtype: dict
 
-        :raises errors.LetsEncryptClientError: An exception is thrown
+        :raises errors.ClientError: An exception is thrown
 
         """
         response = self.send(msg)
         try:
             return self.is_expected_msg(response, expected)
         except:  # TODO: too generic exception
-            raise errors.LetsEncryptClientError(
+            raise errors.ClientError(
                 'Expected message (%s) not received' % expected)
 
     def is_expected_msg(self, response, expected, delay=3, rounds=20):
@@ -99,7 +99,7 @@ class Network(object):
         :returns: ACME response message from server.
         :rtype: dict
 
-        :raises LetsEncryptClientError: if server sent ACME "error" message
+        :raises ClientError: if server sent ACME "error" message
 
         """
         for _ in xrange(rounds):
@@ -110,7 +110,7 @@ class Network(object):
                 logging.error(
                     "%s: %s - More Info: %s", response["error"],
                     response.get("message", ""), response.get("moreInfo", ""))
-                raise errors.LetsEncryptClientError(response["error"])
+                raise errors.ClientError(response["error"])
 
             elif response["type"] == "defer":
                 logging.info("Waiting for %d seconds...", delay)

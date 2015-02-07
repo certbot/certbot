@@ -36,7 +36,7 @@ class ClientAuthenticator(object):
             if isinstance(chall, challenge_util.RecTokenChall):
                 responses.append(self.rec_token.perform(chall))
             else:
-                raise errors.LetsEncryptClientAuthError("Unexpected Challenge")
+                raise errors.ClientAuthError("Unexpected Challenge")
         return responses
 
     def cleanup(self, chall_list):
@@ -45,4 +45,4 @@ class ClientAuthenticator(object):
             if isinstance(chall, challenge_util.RecTokenChall):
                 self.rec_token.cleanup(chall)
             else:
-                raise errors.LetsEncryptClientAuthError("Unexpected Challenge")
+                raise errors.ClientAuthError("Unexpected Challenge")

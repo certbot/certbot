@@ -28,19 +28,17 @@ class Reverter(object):
         This function should reinstall the users original configuration files
         for all saves with temporary=True
 
-        :raises :class:`errors.LetsEncryptReverterError`:
-            Unable to revert config
+        :raises :class:`errors.ReverterError`: Unable to revert config
 
         """
         if os.path.isdir(self.direc['temp']):
             try:
                 self._recover_checkpoint(self.direc['temp'])
-            except errors.LetsEncryptReverterError:
+            except errors.ReverterError:
                 # We have a partial or incomplete recovery
                 logging.fatal("Incomplete or failed recovery for %s",
                               self.direc['temp'])
-                raise errors.LetsEncryptReverterError(
-                    "Unable to revert temporary config")
+                raise errors.ReverterError("Unable to revert temporary config")
 
     def rollback_checkpoints(self, rollback=1):
         """Revert 'rollback' number of configuration checkpoints.
@@ -48,7 +46,7 @@ class Reverter(object):
         :param int rollback: Number of checkpoints to reverse. A str num will be
            cast to an integer. So '2' is also acceptable.
 
-        :raises :class:`letsencrypt.client.errors.LetsEncryptReverterError`: If
+        :raises :class:`letsencrypt.client.errors.ReverterError`: If
             there is a problem with the input or if the function is unable to
             correctly revert the configuration checkpoints.
 
@@ -57,11 +55,11 @@ class Reverter(object):
             rollback = int(rollback)
         except ValueError:
             logging.error("Rollback argument must be a positive integer")
-            raise errors.LetsEncryptReverterError("Invalid Input")
+            raise errors.ReverterError("Invalid Input")
         # Sanity check input
         if rollback < 0:
             logging.error("Rollback argument must be a positive integer")
-            raise errors.LetsEncryptReverterError("Invalid Input")
+            raise errors.ReverterError("Invalid Input")
 
         backups = os.listdir(self.direc['backup'])
         backups.sort()
@@ -74,9 +72,9 @@ class Reverter(object):
             cp_dir = os.path.join(self.direc['backup'], backups.pop())
             try:
                 self._recover_checkpoint(cp_dir)
-            except errors.LetsEncryptReverterError:
+            except errors.ReverterError:
                 logging.fatal("Failed to load checkpoint during rollback")
-                raise errors.LetsEncryptReverterError(
+                raise errors.ReverterError(
                     "Unable to load checkpoint during rollback")
             rollback -= 1
 
@@ -101,7 +99,7 @@ class Reverter(object):
             for bkup in backups:
                 float(bkup)
         except ValueError:
-            raise errors.LetsEncryptReverterError(
+            raise errors.ReverterError(
                 "Invalid directories in {0}".format(self.direc['backup']))
 
         output = []
@@ -158,7 +156,7 @@ class Reverter(object):
         :param str save_notes: notes about changes made during the save
 
         :raises IOError: If unable to open cp_dir + FILEPATHS file
-        :raises :class:`letsencrypt.client.errors.LetsEncryptReverterError: If
+        :raises :class:`letsencrypt.client.errors.ReverterError: If
             unable to add checkpoint
 
         """
@@ -186,9 +184,9 @@ class Reverter(object):
                     logging.error(
                         "Unable to add file %s to checkpoint %s",
                         filename, cp_dir)
-                    raise errors.LetsEncryptReverterError(
-                        "Unable to add file {0} to checkpoint "
-                        "{1}".format(filename, cp_dir))
+                    raise errors.ReverterError(
+                        "Unable to add file {0} to checkpoint {1}".format(
+                            filename, cp_dir))
                 idx += 1
         op_fd.close()
 
@@ -219,7 +217,7 @@ class Reverter(object):
 
         :param str cp_dir: checkpoint directory file path
 
-        :raises errors.LetsEncryptReverterError: If unable to recover checkpoint
+        :raises errors.ReverterError: If unable to recover checkpoint
 
         """
         if os.path.isfile(os.path.join(cp_dir, "FILEPATHS")):
@@ -233,7 +231,7 @@ class Reverter(object):
             except (IOError, OSError):
                 # This file is required in all checkpoints.
                 logging.error("Unable to recover files from %s", cp_dir)
-                raise errors.LetsEncryptReverterError(
+                raise errors.ReverterError(
                     "Unable to recover files from %s" % cp_dir)
 
         # Remove any newly added files if they exist
@@ -243,7 +241,7 @@ class Reverter(object):
             shutil.rmtree(cp_dir)
         except OSError:
             logging.error("Unable to remove directory: %s", cp_dir)
-            raise errors.LetsEncryptReverterError(
+            raise errors.ReverterError(
                 "Unable to remove directory: %s" % cp_dir)
 
     def _check_tempfile_saves(self, save_files):
@@ -251,7 +249,7 @@ class Reverter(object):
 
         :param set save_files: Set of files about to be saved.
 
-        :raises :class:`letsencrypt.client.errors.LetsEncryptReverterError`:
+        :raises :class:`letsencrypt.client.errors.ReverterError`:
             when save is attempting to overwrite a temporary file.
 
         """
@@ -272,7 +270,7 @@ class Reverter(object):
         # Verify no save_file is in protected_files
         for filename in protected_files:
             if filename in save_files:
-                raise errors.LetsEncryptReverterError(
+                raise errors.ReverterError(
                     "Attempting to overwrite challenge "
                     "file - %s" % filename)
 
@@ -287,7 +285,7 @@ class Reverter(object):
             a temp or permanent save.
         :param \*files: file paths (str) to be registered
 
-        :raises :class:`letsencrypt.client.errors.LetsEncryptReverterError`: If
+        :raises :class:`letsencrypt.client.errors.ReverterError`: If
             call does not contain necessary parameters or if the file creation
             is unable to be registered.
 
@@ -295,7 +293,7 @@ class Reverter(object):
         # Make sure some files are provided... as this is an error
         # Made this mistake in my initial implementation of apache.dvsni.py
         if not files:
-            raise errors.LetsEncryptReverterError(
+            raise errors.ReverterError(
                 "Forgot to provide files to registration call")
 
         if temporary:
@@ -316,7 +314,7 @@ class Reverter(object):
                     new_fd.write("{0}{1}".format(path, os.linesep))
         except (IOError, OSError):
             logging.error("Unable to register file creation(s) - %s", files)
-            raise errors.LetsEncryptReverterError(
+            raise errors.ReverterError(
                 "Unable to register file creation(s) - {0}".format(files))
         finally:
             if new_fd is not None:
@@ -336,12 +334,12 @@ class Reverter(object):
         if os.path.isdir(self.direc['progress']):
             try:
                 self._recover_checkpoint(self.direc['progress'])
-            except errors.LetsEncryptReverterError:
+            except errors.ReverterError:
                 # We have a partial or incomplete recovery
                 logging.fatal("Incomplete or failed recovery for IN_PROGRESS "
                               "checkpoint - %s",
                               self.direc['progress'])
-                raise errors.LetsEncryptReverterError(
+                raise errors.ReverterError(
                     "Incomplete or failed recovery for IN_PROGRESS checkpoint "
                     "- %s" % self.direc['progress'])
 
@@ -353,7 +351,7 @@ class Reverter(object):
         :returns: Success
         :rtype: bool
 
-        :raises :class:`letsencrypt.client.errors.LetsEncryptReverterError`: If
+        :raises :class:`letsencrypt.client.errors.ReverterError`: If
             all files within file_list cannot be removed
 
         """
@@ -377,9 +375,9 @@ class Reverter(object):
         except (IOError, OSError):
             logging.fatal(
                 "Unable to remove filepaths contained within %s", file_list)
-            raise errors.LetsEncryptReverterError(
-                "Unable to remove filepaths contained within "
-                "{0}".format(file_list))
+            raise errors.ReverterError(
+                "Unable to remove filepaths contained within {0}".format(
+                    file_list))
 
         return True
 
@@ -392,7 +390,7 @@ class Reverter(object):
 
         :param str title: Title describing checkpoint
 
-        :raises :class:`letsencrypt.client.errors.LetsEncryptReverterError`
+        :raises :class:`letsencrypt.client.errors.ReverterError`
 
         """
         # Check to make sure an "in progress" directory exists
@@ -414,7 +412,7 @@ class Reverter(object):
             shutil.move(changes_since_tmp_path, changes_since_path)
         except (IOError, OSError):
             logging.error("Unable to finalize checkpoint - adding title")
-            raise errors.LetsEncryptReverterError("Unable to add title")
+            raise errors.ReverterError("Unable to add title")
 
         self._timestamp_progress_dir()
 
@@ -438,5 +436,4 @@ class Reverter(object):
         logging.error(
             "Unable to finalize checkpoint, %s -> %s",
             self.direc['progress'], final_dir)
-        raise errors.LetsEncryptReverterError(
-            "Unable to finalize checkpoint renaming")
+        raise errors.ReverterError("Unable to finalize checkpoint renaming")

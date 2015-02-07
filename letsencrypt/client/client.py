@@ -185,7 +185,7 @@ class Client(object):
         if self.installer is None:
             logging.warning("No installer specified, client is unable to deploy"
                             "the certificate")
-            raise errors.LetsEncryptClientError("No installer available")
+            raise errors.ClientError("No installer available")
 
         chain = None if chain_file is None else os.path.abspath(chain_file)
 
@@ -214,14 +214,14 @@ class Client(object):
         :param redirect: If traffic should be forwarded from HTTP to HTTPS.
         :type redirect: bool or None
 
-        :raises :class:`letsencrypt.client.errors.LetsEncryptClientError`: if
+        :raises :class:`letsencrypt.client.errors.ClientError`: if
             no installer is specified in the client.
 
         """
         if self.installer is None:
             logging.warning("No installer is specified, there isn't any "
                             "configuration to enhance.")
-            raise errors.LetsEncryptClientError("No installer available")
+            raise errors.ClientError("No installer available")
 
         if redirect is None:
             redirect = zope.component.getUtility(
@@ -286,7 +286,7 @@ class Client(object):
         for dom in domains:
             try:
                 self.installer.enhance(dom, "redirect")
-            except errors.LetsEncryptConfiguratorError:
+            except errors.ConfiguratorError:
                 logging.warn('Unable to perform redirect for %s', dom)
 
         self.installer.save("Add Redirects")
@@ -317,8 +317,7 @@ def validate_key_csr(privkey, csr=None):
 
     # Key must be readable and valid.
     if privkey.pem and not crypto_util.valid_privkey(privkey.pem):
-        raise errors.LetsEncryptClientError(
-            "The provided key is not a valid key")
+        raise errors.ClientError("The provided key is not a valid key")
 
     if csr:
         if csr.form == "der":
@@ -327,16 +326,14 @@ def validate_key_csr(privkey, csr=None):
 
         # If CSR is provided, it must be readable and valid.
         if csr.data and not crypto_util.valid_csr(csr.data):
-            raise errors.LetsEncryptClientError(
-                "The provided CSR is not a valid CSR")
+            raise errors.ClientError("The provided CSR is not a valid CSR")
 
         # If both CSR and key are provided, the key must be the same key used
         # in the CSR.
         if csr.data and privkey.pem:
             if not crypto_util.csr_matches_pubkey(
                     csr.data, privkey.pem):
-                raise errors.LetsEncryptClientError(
-                    "The key and CSR do not match")
+                raise errors.ClientError("The key and CSR do not match")
 
 
 def init_key(key_size):
@@ -397,7 +394,7 @@ def determine_authenticator():
     """Returns a valid IAuthenticator."""
     try:
         return configurator.ApacheConfigurator()
-    except errors.LetsEncryptNoInstallationError:
+    except errors.NoInstallationError:
         logging.info("Unable to determine a way to authenticate the server")
 
 
@@ -405,7 +402,7 @@ def determine_installer():
     """Returns a valid installer if one exists."""
     try:
         return configurator.ApacheConfigurator()
-    except errors.LetsEncryptNoInstallationError:
+    except errors.NoInstallationError:
         logging.info("Unable to find a way to install the certificate.")
 
 
@@ -430,7 +427,7 @@ def rollback(checkpoints):
     # Misconfigurations are only a slight problems... allow the user to rollback
     try:
         installer = determine_installer()
-    except errors.LetsEncryptMisconfigurationError:
+    except errors.MisconfigurationError:
         _misconfigured_rollback(checkpoints)
         return
 
@@ -467,7 +464,7 @@ def _misconfigured_rollback(checkpoints):
         installer.restart()
         logging.info("Hooray!  Rollback solved the misconfiguration!")
         logging.info("Your web server is back up and running.")
-    except errors.LetsEncryptMisconfigurationError:
+    except errors.MisconfigurationError:
         logging.warning(
             "Rollback was unable to solve the misconfiguration issues")
 
@@ -482,7 +479,7 @@ def revoke(server):
     # correctly though.
     try:
         installer = determine_installer()
-    except errors.LetsEncryptMisconfigurationError:
+    except errors.MisconfigurationError:
         zope.component.getUtility(interfaces.IDisplay).generic_notification(
             "The web server is currently misconfigured. Some "
             "abilities like seeing which certificates are currently "

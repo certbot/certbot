@@ -29,8 +29,8 @@ class RollbackTest(unittest.TestCase):
     @mock.patch("letsencrypt.client.reverter.Reverter")
     @mock.patch("letsencrypt.client.client.determine_installer")
     def test_misconfiguration_fixed(self, mock_det, mock_rev, mock_input):
-        mock_det.side_effect = [errors.LetsEncryptMisconfigurationError,
-                                self.m_install]
+        mock_det.side_effect = [
+            errors.MisconfigurationError, self.m_install]
         mock_input().generic_yesno.return_value = True
 
         self._call(1)
@@ -48,7 +48,7 @@ class RollbackTest(unittest.TestCase):
     @mock.patch("letsencrypt.client.client.determine_installer")
     def test_misconfiguration_remains(
             self, mock_det, mock_rev, mock_warn, mock_input):
-        mock_det.side_effect = errors.LetsEncryptMisconfigurationError
+        mock_det.side_effect = errors.MisconfigurationError
 
         mock_input().generic_yesno.return_value = True
 
@@ -68,7 +68,7 @@ class RollbackTest(unittest.TestCase):
     @mock.patch("letsencrypt.client.client.determine_installer")
     def test_user_decides_to_manually_investigate(
             self, mock_det, mock_rev, mock_input):
-        mock_det.side_effect = errors.LetsEncryptMisconfigurationError
+        mock_det.side_effect = errors.MisconfigurationError
 
         mock_input().generic_yesno.return_value = False
 

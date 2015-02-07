@@ -51,10 +51,9 @@ class ReverterCheckpointLocalTest(unittest.TestCase):
         with mock.patch("letsencrypt.client.reverter."
                         "shutil.copy2") as mock_copy2:
             mock_copy2.side_effect = IOError("bad copy")
-            self.assertRaises(errors.LetsEncryptReverterError,
-                              self.reverter.add_to_checkpoint,
-                              self.sets[0],
-                              "save1")
+            self.assertRaises(
+                errors.ReverterError, self.reverter.add_to_checkpoint,
+                self.sets[0], "save1")
 
     def test_checkpoint_conflict(self):
         """Make sure that checkpoint errors are thrown appropriately."""
@@ -67,15 +66,14 @@ class ReverterCheckpointLocalTest(unittest.TestCase):
         self.reverter.add_to_temp_checkpoint(self.sets[0], "save2")
         # Raise error
         self.assertRaises(
-            errors.LetsEncryptReverterError, self.reverter.add_to_checkpoint,
+            errors.ReverterError, self.reverter.add_to_checkpoint,
             self.sets[2], "save3")
         # Should not cause an error
         self.reverter.add_to_checkpoint(self.sets[1], "save4")
 
         # Check to make sure new files are also checked...
         self.assertRaises(
-            errors.LetsEncryptReverterError,
-            self.reverter.add_to_checkpoint,
+            errors.ReverterError, self.reverter.add_to_checkpoint,
             set([config3]), "invalid save")
 
     def test_multiple_saves_and_temp_revert(self):
@@ -122,49 +120,49 @@ class ReverterCheckpointLocalTest(unittest.TestCase):
         with mock.patch("letsencrypt.client.reverter.open",
                         m_open, create=True):
             m_open.side_effect = OSError("bad open")
-            self.assertRaises(errors.LetsEncryptReverterError,
-                              self.reverter.register_file_creation,
-                              True, self.config1)
+            self.assertRaises(
+                errors.ReverterError, self.reverter.register_file_creation,
+                True, self.config1)
 
     def test_bad_registration(self):
         # Made this mistake and want to make sure it doesn't happen again...
-        self.assertRaises(errors.LetsEncryptReverterError,
-                          self.reverter.register_file_creation,
-                          "filepath")
+        self.assertRaises(
+            errors.ReverterError, self.reverter.register_file_creation,
+            "filepath")
 
     def test_recovery_routine_in_progress_failure(self):
         self.reverter.add_to_checkpoint(self.sets[0], "perm save")
 
         # pylint: disable=protected-access
         self.reverter._recover_checkpoint = mock.MagicMock(
-            side_effect=errors.LetsEncryptReverterError)
-        self.assertRaises(errors.LetsEncryptReverterError,
-                          self.reverter.recovery_routine)
+            side_effect=errors.ReverterError)
+        self.assertRaises(
+            errors.ReverterError, self.reverter.recovery_routine)
 
     def test_recover_checkpoint_revert_temp_failures(self):
         # pylint: disable=invalid-name
         mock_recover = mock.MagicMock(
-            side_effect=errors.LetsEncryptReverterError("e"))
+            side_effect=errors.ReverterError("e"))
 
         # pylint: disable=protected-access
         self.reverter._recover_checkpoint = mock_recover
 
         self.reverter.add_to_temp_checkpoint(self.sets[0], "config1 save")
 
-        self.assertRaises(errors.LetsEncryptReverterError,
-                          self.reverter.revert_temporary_config)
+        self.assertRaises(
+            errors.ReverterError, self.reverter.revert_temporary_config)
 
     def test_recover_checkpoint_rollback_failure(self):
         mock_recover = mock.MagicMock(
-            side_effect=errors.LetsEncryptReverterError("e"))
+            side_effect=errors.ReverterError("e"))
         # pylint: disable=protected-access
         self.reverter._recover_checkpoint = mock_recover
 
         self.reverter.add_to_checkpoint(self.sets[0], "config1 save")
         self.reverter.finalize_checkpoint("Title")
 
-        self.assertRaises(errors.LetsEncryptReverterError,
-                          self.reverter.rollback_checkpoints, 1)
+        self.assertRaises(
+            errors.ReverterError, self.reverter.rollback_checkpoints, 1)
 
     def test_recover_checkpoint_copy_failure(self):
         self.reverter.add_to_temp_checkpoint(self.sets[0], "save1")
@@ -172,8 +170,8 @@ class ReverterCheckpointLocalTest(unittest.TestCase):
         with mock.patch("letsencrypt.client.reverter.shutil."
                         "copy2") as mock_copy2:
             mock_copy2.side_effect = OSError("bad copy")
-            self.assertRaises(errors.LetsEncryptReverterError,
-                              self.reverter.revert_temporary_config)
+            self.assertRaises(
+                errors.ReverterError, self.reverter.revert_temporary_config)
 
     def test_recover_checkpoint_rm_failure(self):
         self.reverter.add_to_temp_checkpoint(self.sets[0], "temp save")
@@ -181,8 +179,8 @@ class ReverterCheckpointLocalTest(unittest.TestCase):
         with mock.patch("letsencrypt.client.reverter.shutil."
                         "rmtree") as mock_rmtree:
             mock_rmtree.side_effect = OSError("Cannot remove tree")
-            self.assertRaises(errors.LetsEncryptReverterError,
-                              self.reverter.revert_temporary_config)
+            self.assertRaises(
+                errors.ReverterError, self.reverter.revert_temporary_config)
 
     @mock.patch("letsencrypt.client.reverter.logging.warning")
     def test_recover_checkpoint_missing_new_files(self, mock_warn):
@@ -195,8 +193,8 @@ class ReverterCheckpointLocalTest(unittest.TestCase):
     def test_recover_checkpoint_remove_failure(self, mock_remove):
         self.reverter.register_file_creation(True, self.config1)
         mock_remove.side_effect = OSError("Can't remove")
-        self.assertRaises(errors.LetsEncryptReverterError,
-                          self.reverter.revert_temporary_config)
+        self.assertRaises(
+            errors.ReverterError, self.reverter.revert_temporary_config)
 
     def test_recovery_routine_temp_and_perm(self):
         # Register a new perm checkpoint file
@@ -255,14 +253,11 @@ class TestFullCheckpointsReverter(unittest.TestCase):
 
     def test_rollback_improper_inputs(self):
         self.assertRaises(
-            errors.LetsEncryptReverterError,
-            self.reverter.rollback_checkpoints, "-1")
+            errors.ReverterError, self.reverter.rollback_checkpoints, "-1")
         self.assertRaises(
-            errors.LetsEncryptReverterError,
-            self.reverter.rollback_checkpoints, -1000)
+            errors.ReverterError, self.reverter.rollback_checkpoints, -1000)
         self.assertRaises(
-            errors.LetsEncryptReverterError,
-            self.reverter.rollback_checkpoints, "one")
+            errors.ReverterError, self.reverter.rollback_checkpoints, "one")
 
     def test_rollback_finalize_checkpoint_valid_inputs(self):
         # pylint: disable=invalid-name
@@ -304,9 +299,8 @@ class TestFullCheckpointsReverter(unittest.TestCase):
         self.reverter.add_to_checkpoint(self.sets[0], "perm save")
         mock_move.side_effect = OSError("cannot move")
 
-        self.assertRaises(errors.LetsEncryptReverterError,
-                          self.reverter.finalize_checkpoint,
-                          "Title")
+        self.assertRaises(
+            errors.ReverterError, self.reverter.finalize_checkpoint, "Title")
 
     @mock.patch("letsencrypt.client.reverter.os.rename")
     def test_finalize_checkpoint_no_rename_directory(self, mock_rename):
@@ -314,9 +308,8 @@ class TestFullCheckpointsReverter(unittest.TestCase):
         self.reverter.add_to_checkpoint(self.sets[0], "perm save")
         mock_rename.side_effect = OSError
 
-        self.assertRaises(errors.LetsEncryptReverterError,
-                          self.reverter.finalize_checkpoint,
-                          "Title")
+        self.assertRaises(
+            errors.ReverterError, self.reverter.finalize_checkpoint, "Title")
 
     @mock.patch("letsencrypt.client.reverter.logging")
     def test_rollback_too_many(self, mock_logging):
@@ -352,8 +345,8 @@ class TestFullCheckpointsReverter(unittest.TestCase):
         # It must just be clean checkpoints
         os.makedirs(os.path.join(self.direc['backup'], "in_progress"))
 
-        self.assertRaises(errors.LetsEncryptReverterError,
-                          self.reverter.view_config_changes)
+        self.assertRaises(
+            errors.ReverterError, self.reverter.view_config_changes)
 
     def _setup_three_checkpoints(self):
         """Generate some finalized checkpoints."""

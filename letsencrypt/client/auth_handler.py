@@ -58,7 +58,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
 
         """
         if domain in self.domains:
-            raise errors.LetsEncryptAuthHandlerError(
+            raise errors.AuthHandlerError(
                 "Multiple ACMEChallengeMessages for the same domain "
                 "is not supported.")
         self.domains.append(domain)
@@ -91,7 +91,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
                 progress = True
 
         if not progress:
-            raise errors.LetsEncryptAuthHandlerError(
+            raise errors.AuthHandlerError(
                 "Unable to solve challenges for requested names.")
 
     def acme_authorization(self, domain):
@@ -114,7 +114,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
                 "authorization")
             logging.info("Received Authorization for %s", domain)
             return auth
-        except errors.LetsEncryptClientError as err:
+        except errors.ClientError as err:
             logging.fatal(str(err))
             logging.fatal(
                 "Failed Authorization procedure - cleaning up challenges")
@@ -152,15 +152,14 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
             client_resp = self.client_auth.perform(flat_client)
             dv_resp = self.dv_auth.perform(flat_auth)
         # This will catch both specific types of errors.
-        except errors.LetsEncryptAuthHandlerError as err:
+        except errors.AuthHandlerError as err:
             logging.critical("Failure in setting up challenges:")
             logging.critical(str(err))
             logging.info("Attempting to clean up outstanding challenges...")
             for dom in self.domains:
                 self._cleanup_challenges(dom)
 
-            raise errors.LetsEncryptAuthHandlerError(
-                "Unable to perform challenges")
+            raise errors.AuthHandlerError("Unable to perform challenges")
 
         logging.info("Ready for verification...")
 
@@ -245,7 +244,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
             :class:`letsencrypt.client.challenge_util.IndexedChall`
         :rtype: tuple
 
-        :raises errors.LetsEncryptClientError: If Challenge type is not
+        :raises errors.ClientError: If Challenge type is not
             recognized
 
         """
@@ -268,7 +267,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
                     self._construct_client_chall(chall, domain), index))
 
             else:
-                raise errors.LetsEncryptClientError(
+                raise errors.ClientError(
                     "Received unrecognized challenge of type: "
                     "%s" % chall["type"])
 
@@ -283,7 +282,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         :returns: challenge_util named tuple Chall object
         :rtype: `collections.namedtuple`
 
-        :raises errors.LetsEncryptClientError: If unimplemented challenge exists
+        :raises errors.ClientError: If unimplemented challenge exists
 
         """
         if chall["type"] == "dvsni":
@@ -302,7 +301,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
             return challenge_util.DnsChall(domain, str(chall["token"]))
 
         else:
-            raise errors.LetsEncryptClientError(
+            raise errors.ClientError(
                 "Unimplemented Auth Challenge: %s" % chall["type"])
 
     def _construct_client_chall(self, chall, domain):  # pylint: disable=no-self-use
@@ -314,7 +313,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         :returns: challenge_util named tuple Chall object
         :rtype: `collections.namedtuple`
 
-        :raises errors.LetsEncryptClientError: If unimplemented challenge exists
+        :raises errors.ClientError: If unimplemented challenge exists
 
         """
         if chall["type"] == "recoveryToken":
@@ -336,7 +335,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
                 domain, chall["alg"], chall["nonce"], chall["hints"])
 
         else:
-            raise errors.LetsEncryptClientError(
+            raise errors.ClientError(
                 "Unimplemented Client Challenge: %s" % chall["type"])
 
 

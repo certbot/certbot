@@ -100,7 +100,7 @@ def main():  # pylint: disable=too-many-statements,too-many-branches
     # before we begin to try to use it.
     try:
         installer = client.determine_installer()
-    except errors.LetsEncryptMisconfigurationError as err:
+    except errors.MisconfigurationError as err:
         logging.fatal("Please fix your configuration before proceeding.  "
                       "The Installer exited with the following message: "
                       "%s", err)
