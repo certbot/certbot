@@ -50,7 +50,9 @@ def pack_3bytes(value):
     return struct.pack(">I", value)[1:]
 
 
-def tls_parse_client_hello(tls_record):
+# Exclude this function from coverage testing because it is currently
+# not used.
+def tls_parse_client_hello(tls_record):  # pragma: no cover
     # pylint: disable=too-many-return-statements
     """If possible, parse the specified TLS record as a ClientHello and
     return the first host_name indicated in a Server Name Indication
