@@ -160,6 +160,7 @@ class ImmutableMapTest(unittest.TestCase):
         self.assertEqual('A(x=1, y=2)', repr(self.a1))
         self.assertEqual('A(x=1, y=2)', repr(self.a1_swap))
         self.assertEqual('B(x=1, y=2)', repr(self.b))
+        self.assertEqual("B(x='foo', y='bar')", repr(self.B(x='foo', y='bar')))
 
 
 if __name__ == '__main__':

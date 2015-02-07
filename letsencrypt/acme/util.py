@@ -123,5 +123,5 @@ class ImmutableMap(object):  # pylint: disable=too-few-public-methods
 
     def __repr__(self):
         return '{0}({1})'.format(self.__class__.__name__, ', '.join(
-            '{0}={1}'.format(slot, getattr(self, slot))
+            '{0}={1!r}'.format(slot, getattr(self, slot))
             for slot in self.__slots__))
