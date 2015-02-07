@@ -129,10 +129,10 @@ class IInstaller(zope.interface.Interface):
 
         :param str domain: domain for which to provide enhancement
         :param str enhancement: An enhancement as defined in
-            :const:`~letsencrypt.client.CONFIG.ENHANCEMENTS`
+            :const:`~letsencrypt.client.constants.ENHANCEMENTS`
         :param options: Flexible options parameter for enhancement.
             Check documentation of
-            :const:`~letsencrypt.client.CONFIG.ENHANCEMENTS`
+            :const:`~letsencrypt.client.constants.ENHANCEMENTS`
             for expected options for each enhancement.
 
         """
@@ -141,7 +141,7 @@ class IInstaller(zope.interface.Interface):
         """Returns a list of supported enhancements.
 
         :returns: supported enhancements which should be a subset of
-            :const:`~letsencrypt.client.CONFIG.ENHANCEMENTS`
+            :const:`~letsencrypt.client.constants.ENHANCEMENTS`
         :rtype: :class:`list` of :class:`str`
 
         """
