@@ -8,12 +8,11 @@ import pkg_resources
 from letsencrypt.client.challenge_util import DvsniChall
 
 
-# ErrorAfter/CallableExhausted from
+# Classes based on to allow interrupting infinite loop under test
+# after one iteration, based on.
 # http://igorsobreira.com/2013/03/17/testing-infinite-loops.html
-# to allow interrupting infinite loop under test after one
-# iteration.
 
-class ErrorAfter_socket_accept(object):
+class SocketAcceptOnlyNTimes(object):
     """
     Callable that will raise `CallableExhausted`
     exception after `limit` calls, modified to also return
@@ -32,6 +31,8 @@ class ErrorAfter_socket_accept(object):
         return (mock.MagicMock(), "ignored")
 
 class CallableExhausted(Exception):
+    """Exception raised when a method is called more than the
+    specified number of times."""
     pass
 
 
@@ -396,36 +397,40 @@ class DoParentProcessTest(unittest.TestCase):
 
     @mock.patch("letsencrypt.client.standalone_authenticator.signal.signal")
     @mock.patch("letsencrypt.client.standalone_authenticator.zope.component.getUtility")
-    def test_do_parent_process_ok(self, mock_getUtility, mock_signal):
+    def test_do_parent_process_ok(self, mock_get_utility, mock_signal):
         self.authenticator.subproc_ready = True
         result = self.authenticator.do_parent_process(1717)
         self.assertTrue(result)
+        self.assertEqual(mock_get_utility.call_count, 1)
         self.assertEqual(mock_signal.call_count, 3)
 
     @mock.patch("letsencrypt.client.standalone_authenticator.signal.signal")
     @mock.patch("letsencrypt.client.standalone_authenticator.zope.component.getUtility")
-    def test_do_parent_process_inuse(self, mock_getUtility, mock_signal):
+    def test_do_parent_process_inuse(self, mock_get_utility, mock_signal):
         self.authenticator.subproc_inuse = True
         result = self.authenticator.do_parent_process(1717)
         self.assertFalse(result)
+        self.assertEqual(mock_get_utility.call_count, 1)
         self.assertEqual(mock_signal.call_count, 3)
 
     @mock.patch("letsencrypt.client.standalone_authenticator.signal.signal")
     @mock.patch("letsencrypt.client.standalone_authenticator.zope.component.getUtility")
-    def test_do_parent_process_cantbind(self, mock_getUtility, mock_signal):
+    def test_do_parent_process_cantbind(self, mock_get_utility, mock_signal):
         self.authenticator.subproc_cantbind = True
         result = self.authenticator.do_parent_process(1717)
         self.assertFalse(result)
+        self.assertEqual(mock_get_utility.call_count, 1)
         self.assertEqual(mock_signal.call_count, 3)
 
     @mock.patch("letsencrypt.client.standalone_authenticator.signal.signal")
     @mock.patch("letsencrypt.client.standalone_authenticator.zope.component.getUtility")
-    def test_do_parent_process_timeout(self, mock_getUtility, mock_signal):
+    def test_do_parent_process_timeout(self, mock_get_utility, mock_signal):
         # Normally times out in 5 seconds and returns False.  We can
         # now set delay_amount to a lower value so that it times out
         # faster than it would under normal use.
         result = self.authenticator.do_parent_process(1717, delay_amount=1)
         self.assertFalse(result)
+        self.assertEqual(mock_get_utility.call_count, 1)
         self.assertEqual(mock_signal.call_count, 3)
 
 
@@ -469,7 +474,7 @@ class DoChildProcessTest(unittest.TestCase):
         # do_child_process code assumes that calling sys.exit() will
         # cause subsequent code not to be executed.)
         with self.assertRaises(IndentationError):
-            result = self.authenticator.do_child_process(1717, self.key)
+            self.authenticator.do_child_process(1717, self.key)
         mock_exit.assert_called_once_with(1)
         mock_kill.assert_called_once_with(12345, signal.SIGUSR2)
 
@@ -485,7 +490,7 @@ class DoChildProcessTest(unittest.TestCase):
         sample_socket.bind.side_effect = eaccess
         mock_socket.return_value = sample_socket
         with self.assertRaises(IndentationError):
-            result = self.authenticator.do_child_process(1717, self.key)
+            self.authenticator.do_child_process(1717, self.key)
         mock_exit.assert_called_once_with(1)
         mock_kill.assert_called_once_with(12345, signal.SIGUSR1)
 
@@ -495,25 +500,25 @@ class DoChildProcessTest(unittest.TestCase):
         socket error.  (The expected behavior is arguably wrong because it
         will crash the program; the reason for the expected behavior is
         that we don't have a way to report arbitrary socket errors.)"""
-        import socket, signal
+        import socket
         eio = socket.error(socket.errno.EIO, "Imaginary unhandled error")
         sample_socket = mock.MagicMock()
         sample_socket.bind.side_effect = eio
         mock_socket.return_value = sample_socket
         with self.assertRaises(socket.error):
-            result = self.authenticator.do_child_process(1717, self.key)
+            self.authenticator.do_child_process(1717, self.key)
 
     @mock.patch("letsencrypt.client.standalone_authenticator.OpenSSL.SSL.Connection")
     @mock.patch("letsencrypt.client.standalone_authenticator.socket.socket")
     @mock.patch("letsencrypt.client.standalone_authenticator.os.kill")
-    def test_do_child_process_success(self, mock_kill, mock_socket, mock_Connection):
-        import socket, signal
+    def test_do_child_process_success(self, mock_kill, mock_socket, mock_connection):
+        import signal
         sample_socket = mock.MagicMock()
-        sample_socket.accept.side_effect = ErrorAfter_socket_accept(2)
+        sample_socket.accept.side_effect = SocketAcceptOnlyNTimes(2)
         mock_socket.return_value = sample_socket
-        mock_Connection.return_value = mock.MagicMock()
+        mock_connection.return_value = mock.MagicMock()
         with self.assertRaises(CallableExhausted):
-            result = self.authenticator.do_child_process(1717, self.key)
+            self.authenticator.do_child_process(1717, self.key)
         mock_socket.assert_called_once_with()
         sample_socket.bind.assert_called_once_with(("0.0.0.0", 1717))
         sample_socket.listen.assert_called_once_with(1)
