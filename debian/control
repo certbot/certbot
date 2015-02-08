@@ -1,5 +1,5 @@
 Source: letsencrypt
-Section: python
+Section: web
 Priority: optional
 Maintainer: Debian letsencrypt <letsencrypt-devel@lists.alioth.debian.org>
 Uploaders: Francois Marier <francois@debian.org>
