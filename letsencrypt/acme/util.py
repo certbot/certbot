@@ -89,6 +89,7 @@ def dump_ijsonserializable(python_object):
     argument.
 
     """
+    # providedBy | pylint: disable=no-member
     if interfaces.IJSONSerializable.providedBy(python_object):
         return python_object.to_json()
     else:
