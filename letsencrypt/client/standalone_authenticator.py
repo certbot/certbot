@@ -53,7 +53,8 @@ def pack_3bytes(value):
 # Exclude this function from coverage testing because it is currently
 # not used.
 def tls_parse_client_hello(tls_record):  # pragma: no cover
-    # pylint: disable=too-many-return-statements
+    # pylint: disable=too-many-return-statements,too-many-locals,bad-builtin
+    # pylint: disable=too-many-branches
     """If possible, parse the specified TLS record as a ClientHello and
     return the first host_name indicated in a Server Name Indication
     extension within that ClientHello.  If the TLS record could not
@@ -228,6 +229,7 @@ def tls_generate_server_hello_done():
 
 
 class StandaloneAuthenticator(object):
+    # pylint: disable=too-many-instance-attributes
     """The StandaloneAuthenticator class itself, which can be invoked
     by the Let's Encrypt client according to the IAuthenticator API
     interface."""
@@ -236,9 +238,7 @@ class StandaloneAuthenticator(object):
     def __init__(self):
         self.child_pid = None
         self.parent_pid = os.getpid()
-        self.subproc_ready = False
-        self.subproc_inuse = False
-        self.subproc_cantbind = False
+        self.subproc_state = None
         self.tasks = {}
         self.sock = None
         self.connection = None
@@ -254,11 +254,11 @@ class StandaloneAuthenticator(object):
         # subprocess → client INUSE   : SIGUSR1
         # subprocess → client CANTBIND: SIGUSR2
         if sig == signal.SIGIO:
-            self.subproc_ready = True
+            self.subproc_state = "ready"
         elif sig == signal.SIGUSR1:
-            self.subproc_inuse = True
+            self.subproc_state = "inuse"
         elif sig == signal.SIGUSR2:
-            self.subproc_cantbind = True
+            self.subproc_state = "cantbind"
         else:
             # NOTREACHED
             assert False
@@ -323,15 +323,15 @@ class StandaloneAuthenticator(object):
         display = zope.component.getUtility(interfaces.IDisplay)
         start_time = time.time()
         while time.time() < start_time + delay_amount:
-            if self.subproc_ready:
+            if self.subproc_state == "ready":
                 return True
-            if self.subproc_inuse:
+            if self.subproc_state == "inuse":
                 display.generic_notification(
                     "Could not bind TCP port {} because it is already in "
                     "use it is already in use by another process on this "
                     "system (such as a web server).".format(port))
                 return False
-            if self.subproc_cantbind:
+            if self.subproc_state == "cantbind":
                 display.generic_notification(
                     "Could not bind TCP port {} because you don't have "
                     "the appropriate permissions (for example, you "
@@ -437,6 +437,7 @@ class StandaloneAuthenticator(object):
     # IAuthenticator method implementations follow
 
     def get_chall_pref(self, unused_domain):
+        # pylint: disable=no-self-use
         """IAuthenticator interface method: Return a list of challenge
         types that this authenticator can perform for this domain.  In
         the case of the StandaloneAuthenticator, the only challenge

@@ -13,6 +13,7 @@ from letsencrypt.client.challenge_util import DvsniChall
 # http://igorsobreira.com/2013/03/17/testing-infinite-loops.html
 
 class SocketAcceptOnlyNTimes(object):
+    # pylint: disable=too-few-public-methods
     """
     Callable that will raise `CallableExhausted`
     exception after `limit` calls, modified to also return
@@ -31,6 +32,7 @@ class SocketAcceptOnlyNTimes(object):
         return (mock.MagicMock(), "ignored")
 
 class CallableExhausted(Exception):
+    # pylint: disable=too-few-public-methods
     """Exception raised when a method is called more than the
     specified number of times."""
     pass
@@ -70,6 +72,7 @@ class PackAndUnpackTests(unittest.TestCase):
 
 
 class TLSParseClientHelloTest(unittest.TestCase):
+    # pylint: disable=too-few-public-methods
     """Test for tls_parse_client_hello() function."""
     def test_tls_parse_client_hello(self):
         from letsencrypt.client.standalone_authenticator import \
@@ -92,6 +95,7 @@ class TLSParseClientHelloTest(unittest.TestCase):
 
 
 class TLSGenerateServerHelloTest(unittest.TestCase):
+    # pylint: disable=too-few-public-methods
     """Tests for tls_generate_server_hello() function."""
     def test_tls_generate_server_hello(self):
         from letsencrypt.client.standalone_authenticator import \
@@ -103,6 +107,7 @@ class TLSGenerateServerHelloTest(unittest.TestCase):
 
 
 class TLSGenerateCertMsgTest(unittest.TestCase):
+    # pylint: disable=too-few-public-methods
     """Tests for tls_generate_cert_msg() function."""
     def test_tls_generate_cert_msg(self):
         from letsencrypt.client.standalone_authenticator import \
@@ -134,6 +139,7 @@ class TLSGenerateCertMsgTest(unittest.TestCase):
 
 
 class TLSServerHelloDoneTest(unittest.TestCase):
+    # pylint: disable=too-few-public-methods
     """Tests for tls_generate_server_hello_done() function."""
     def test_tls_generate_server_hello_done(self):
         from letsencrypt.client.standalone_authenticator import \
@@ -164,11 +170,10 @@ class SNICallbackTest(unittest.TestCase):
         import OpenSSL.crypto
         from OpenSSL.crypto import FILETYPE_PEM
         self.authenticator = StandaloneAuthenticator()
-        r = "x" * 32
-        name, r_b64 = "example.com", le_util.jose_b64encode(r)
-        RSA256_KEY = pkg_resources.resource_string(__name__,
-                                                   'testdata/rsa256_key.pem')
-        nonce, key = "abcdef", le_util.Key("foo", RSA256_KEY)
+        name, r_b64 = "example.com", le_util.jose_b64encode("x" * 32)
+        test_key = pkg_resources.resource_string(__name__,
+                                                 'testdata/rsa256_key.pem')
+        nonce, key = "abcdef", le_util.Key("foo", test_key)
         self.cert = dvsni_gen_cert(name, r_b64, nonce, key)[0]
         private_key = OpenSSL.crypto.load_privatekey(FILETYPE_PEM, key.pem)
         self.authenticator.private_key = private_key
@@ -294,9 +299,9 @@ class PerformTest(unittest.TestCase):
     def test_can_perform(self):
         """What happens if start_listener() returns True."""
         from letsencrypt.client import le_util
-        RSA256_KEY = pkg_resources.resource_string(__name__,
-                                                   'testdata/rsa256_key.pem')
-        key = le_util.Key("something", RSA256_KEY)
+        test_key = pkg_resources.resource_string(__name__,
+                                                 'testdata/rsa256_key.pem')
+        key = le_util.Key("something", test_key)
         chall1 = DvsniChall("foo.example.com", "whee", "foononce", key)
         chall2 = DvsniChall("bar.example.com", "whee", "barnonce", key)
         bad_chall = ("This", "Represents", "A Non-DVSNI", "Challenge")
@@ -320,9 +325,9 @@ class PerformTest(unittest.TestCase):
     def test_cannot_perform(self):
         """What happens if start_listener() returns False."""
         from letsencrypt.client import le_util
-        RSA256_KEY = pkg_resources.resource_string(__name__,
-                                                   'testdata/rsa256_key.pem')
-        key = le_util.Key("something", RSA256_KEY)
+        test_key = pkg_resources.resource_string(__name__,
+                                                 'testdata/rsa256_key.pem')
+        key = le_util.Key("something", test_key)
         chall1 = DvsniChall("foo.example.com", "whee", "foononce", key)
         chall2 = DvsniChall("bar.example.com", "whee", "barnonce", key)
         bad_chall = ("This", "Represents", "A Non-DVSNI", "Challenge")
@@ -365,7 +370,8 @@ class StartListenerTest(unittest.TestCase):
             StandaloneAuthenticator
         self.authenticator = StandaloneAuthenticator()
 
-    @mock.patch("letsencrypt.client.standalone_authenticator.Crypto.Random.atfork")
+    @mock.patch("letsencrypt.client.standalone_authenticator."
+                "Crypto.Random.atfork")
     @mock.patch("letsencrypt.client.standalone_authenticator.os.fork")
     def test_start_listener_fork_parent(self, mock_fork, mock_atfork):
         self.authenticator.do_parent_process = mock.Mock()
@@ -375,7 +381,8 @@ class StartListenerTest(unittest.TestCase):
         self.authenticator.do_parent_process.assert_called_once_with(1717)
         mock_atfork.assert_called_once_with()
 
-    @mock.patch("letsencrypt.client.standalone_authenticator.Crypto.Random.atfork")
+    @mock.patch("letsencrypt.client.standalone_authenticator."
+                "Crypto.Random.atfork")
     @mock.patch("letsencrypt.client.standalone_authenticator.os.fork")
     def test_start_listener_fork_child(self, mock_fork, mock_atfork):
         import os
@@ -396,7 +403,8 @@ class DoParentProcessTest(unittest.TestCase):
         self.authenticator = StandaloneAuthenticator()
 
     @mock.patch("letsencrypt.client.standalone_authenticator.signal.signal")
-    @mock.patch("letsencrypt.client.standalone_authenticator.zope.component.getUtility")
+    @mock.patch("letsencrypt.client.standalone_authenticator."
+                "zope.component.getUtility")
     def test_do_parent_process_ok(self, mock_get_utility, mock_signal):
         self.authenticator.subproc_ready = True
         result = self.authenticator.do_parent_process(1717)
@@ -405,7 +413,8 @@ class DoParentProcessTest(unittest.TestCase):
         self.assertEqual(mock_signal.call_count, 3)
 
     @mock.patch("letsencrypt.client.standalone_authenticator.signal.signal")
-    @mock.patch("letsencrypt.client.standalone_authenticator.zope.component.getUtility")
+    @mock.patch("letsencrypt.client.standalone_authenticator."
+                "zope.component.getUtility")
     def test_do_parent_process_inuse(self, mock_get_utility, mock_signal):
         self.authenticator.subproc_inuse = True
         result = self.authenticator.do_parent_process(1717)
@@ -414,7 +423,8 @@ class DoParentProcessTest(unittest.TestCase):
         self.assertEqual(mock_signal.call_count, 3)
 
     @mock.patch("letsencrypt.client.standalone_authenticator.signal.signal")
-    @mock.patch("letsencrypt.client.standalone_authenticator.zope.component.getUtility")
+    @mock.patch("letsencrypt.client.standalone_authenticator."
+                "zope.component.getUtility")
     def test_do_parent_process_cantbind(self, mock_get_utility, mock_signal):
         self.authenticator.subproc_cantbind = True
         result = self.authenticator.do_parent_process(1717)
@@ -423,7 +433,8 @@ class DoParentProcessTest(unittest.TestCase):
         self.assertEqual(mock_signal.call_count, 3)
 
     @mock.patch("letsencrypt.client.standalone_authenticator.signal.signal")
-    @mock.patch("letsencrypt.client.standalone_authenticator.zope.component.getUtility")
+    @mock.patch("letsencrypt.client.standalone_authenticator."
+                "zope.component.getUtility")
     def test_do_parent_process_timeout(self, mock_get_utility, mock_signal):
         # Normally times out in 5 seconds and returns False.  We can
         # now set delay_amount to a lower value so that it times out
@@ -444,11 +455,10 @@ class DoChildProcessTest(unittest.TestCase):
         import OpenSSL.crypto
         from OpenSSL.crypto import FILETYPE_PEM
         self.authenticator = StandaloneAuthenticator()
-        r = "x" * 32
-        name, r_b64 = "example.com", le_util.jose_b64encode(r)
-        RSA256_KEY = pkg_resources.resource_string(__name__,
-                                                   'testdata/rsa256_key.pem')
-        nonce, key = "abcdef", le_util.Key("foo", RSA256_KEY)
+        name, r_b64 = "example.com", le_util.jose_b64encode("x" * 32)
+        test_key = pkg_resources.resource_string(__name__,
+                                                 'testdata/rsa256_key.pem')
+        nonce, key = "abcdef", le_util.Key("foo", test_key)
         self.key = key
         self.cert = dvsni_gen_cert(name, r_b64, nonce, key)[0]
         private_key = OpenSSL.crypto.load_privatekey(FILETYPE_PEM, key.pem)
@@ -508,10 +518,12 @@ class DoChildProcessTest(unittest.TestCase):
         with self.assertRaises(socket.error):
             self.authenticator.do_child_process(1717, self.key)
 
-    @mock.patch("letsencrypt.client.standalone_authenticator.OpenSSL.SSL.Connection")
+    @mock.patch("letsencrypt.client.standalone_authenticator."
+                "OpenSSL.SSL.Connection")
     @mock.patch("letsencrypt.client.standalone_authenticator.socket.socket")
     @mock.patch("letsencrypt.client.standalone_authenticator.os.kill")
-    def test_do_child_process_success(self, mock_kill, mock_socket, mock_connection):
+    def test_do_child_process_success(self, mock_kill, mock_socket,
+                                      mock_connection):
         import signal
         sample_socket = mock.MagicMock()
         sample_socket.accept.side_effect = SocketAcceptOnlyNTimes(2)
