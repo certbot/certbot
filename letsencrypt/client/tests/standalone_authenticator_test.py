@@ -216,17 +216,15 @@ class ClientSignalHandlerTest(unittest.TestCase):
 
     def test_client_signal_handler(self):
         import signal
-        self.assertFalse(self.authenticator.subproc_ready)
-        self.assertFalse(self.authenticator.subproc_inuse)
-        self.assertFalse(self.authenticator.subproc_cantbind)
+        self.assertEqual(self.authenticator.subproc_state, None)
         self.authenticator.client_signal_handler(signal.SIGIO, None)
-        self.assertTrue(self.authenticator.subproc_ready)
+        self.assertEqual(self.authenticator.subproc_state, "ready")
 
         self.authenticator.client_signal_handler(signal.SIGUSR1, None)
-        self.assertTrue(self.authenticator.subproc_inuse)
+        self.assertEqual(self.authenticator.subproc_state, "inuse")
 
         self.authenticator.client_signal_handler(signal.SIGUSR2, None)
-        self.assertTrue(self.authenticator.subproc_cantbind)
+        self.assertEqual(self.authenticator.subproc_state, "cantbind")
 
         # Testing the unreached path for a signal other than these
         # specified (which can't occur in normal use because this
@@ -406,7 +404,7 @@ class DoParentProcessTest(unittest.TestCase):
     @mock.patch("letsencrypt.client.standalone_authenticator."
                 "zope.component.getUtility")
     def test_do_parent_process_ok(self, mock_get_utility, mock_signal):
-        self.authenticator.subproc_ready = True
+        self.authenticator.subproc_state = "ready"
         result = self.authenticator.do_parent_process(1717)
         self.assertTrue(result)
         self.assertEqual(mock_get_utility.call_count, 1)
@@ -416,7 +414,7 @@ class DoParentProcessTest(unittest.TestCase):
     @mock.patch("letsencrypt.client.standalone_authenticator."
                 "zope.component.getUtility")
     def test_do_parent_process_inuse(self, mock_get_utility, mock_signal):
-        self.authenticator.subproc_inuse = True
+        self.authenticator.subproc_state = "inuse"
         result = self.authenticator.do_parent_process(1717)
         self.assertFalse(result)
         self.assertEqual(mock_get_utility.call_count, 1)
@@ -426,7 +424,7 @@ class DoParentProcessTest(unittest.TestCase):
     @mock.patch("letsencrypt.client.standalone_authenticator."
                 "zope.component.getUtility")
     def test_do_parent_process_cantbind(self, mock_get_utility, mock_signal):
-        self.authenticator.subproc_cantbind = True
+        self.authenticator.subproc_state = "cantbind"
         result = self.authenticator.do_parent_process(1717)
         self.assertFalse(result)
         self.assertEqual(mock_get_utility.call_count, 1)
