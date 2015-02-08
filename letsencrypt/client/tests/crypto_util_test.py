@@ -1,5 +1,4 @@
 """Tests for letsencrypt.client.crypto_util."""
-import datetime
 import os
 import pkg_resources
 import unittest
@@ -132,42 +131,42 @@ class MakeSSCertTest(unittest.TestCase):
         make_ss_cert(RSA256_KEY, ['example.com', 'www.example.com'])
 
 
-class GetCertInfoTest(unittest.TestCase):
-    """Tests for letsencrypt.client.crypto_util.get_cert_info."""
-
-    def setUp(self):
-        self.cert_info = {
-            'not_before': datetime.datetime(
-                2014, 12, 11, 22, 34, 45, tzinfo=M2Crypto.ASN1.UTC),
-            'not_after': datetime.datetime(
-                2014, 12, 18, 22, 34, 45, tzinfo=M2Crypto.ASN1.UTC),
-            'subject': 'C=US, ST=Michigan, L=Ann Arbor, O=University '
-                       'of Michigan and the EFF, CN=example.com',
-            'cn': 'example.com',
-            'issuer': 'C=US, ST=Michigan, L=Ann Arbor, O=University '
-                      'of Michigan and the EFF, CN=example.com',
-            'serial': 1337L,
-            'pub_key': 'RSA 512',
-        }
-
-    def _call(self, name):
-        from letsencrypt.client.crypto_util import get_cert_info
-        self.assertEqual(get_cert_info(pkg_resources.resource_filename(
-            __name__, os.path.join('testdata', name))), self.cert_info)
-
-    def test_single_domain(self):
-        self.cert_info.update({
-            'san': '',
-            'fingerprint': '9F8CE01450D288467C3326AC0457E351939C72E',
-        })
-        self._call('cert.pem')
-
-    def test_san(self):
-        self.cert_info.update({
-            'san': 'DNS:example.com, DNS:www.example.com',
-            'fingerprint': '62F7110431B8E8F55905DBE5592518F9634AC50A',
-        })
-        self._call('cert-san.pem')
+# class GetCertInfoTest(unittest.TestCase):
+#     """Tests for letsencrypt.client.crypto_util.get_cert_info."""
+#
+#     def setUp(self):
+#         self.cert_info = {
+#             'not_before': datetime.datetime(
+#                 2014, 12, 11, 22, 34, 45, tzinfo=M2Crypto.ASN1.UTC),
+#             'not_after': datetime.datetime(
+#                 2014, 12, 18, 22, 34, 45, tzinfo=M2Crypto.ASN1.UTC),
+#             'subject': 'C=US, ST=Michigan, L=Ann Arbor, O=University '
+#                        'of Michigan and the EFF, CN=example.com',
+#             'cn': 'example.com',
+#             'issuer': 'C=US, ST=Michigan, L=Ann Arbor, O=University '
+#                       'of Michigan and the EFF, CN=example.com',
+#             'serial': 1337L,
+#             'pub_key': 'RSA 512',
+#         }
+#
+#     def _call(self, name):
+#         from letsencrypt.client.crypto_util import get_cert_info
+#         self.assertEqual(get_cert_info(pkg_resources.resource_filename(
+#             __name__, os.path.join('testdata', name))), self.cert_info)
+#
+#     def test_single_domain(self):
+#         self.cert_info.update({
+#             'san': '',
+#             'fingerprint': '9F8CE01450D288467C3326AC0457E351939C72E',
+#         })
+#         self._call('cert.pem')
+#
+#     def test_san(self):
+#         self.cert_info.update({
+#             'san': 'DNS:example.com, DNS:www.example.com',
+#             'fingerprint': '62F7110431B8E8F55905DBE5592518F9634AC50A',
+#         })
+#         self._call('cert-san.pem')
 
 
 class B64CertToPEMTest(unittest.TestCase):

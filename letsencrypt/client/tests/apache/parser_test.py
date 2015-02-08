@@ -8,7 +8,7 @@ import augeas
 import mock
 import zope.component
 
-from letsencrypt.client import display
+from letsencrypt.client.display import display_util
 from letsencrypt.client import errors
 from letsencrypt.client.apache import parser
 
@@ -21,7 +21,7 @@ class ApacheParserTest(util.ApacheTest):
     def setUp(self):
         super(ApacheParserTest, self).setUp()
 
-        zope.component.provideUtility(display.FileDisplay(sys.stdout))
+        zope.component.provideUtility(display_util.FileDisplay(sys.stdout))
 
         self.parser = parser.ApacheParser(
             augeas.Augeas(flags=augeas.Augeas.NONE),

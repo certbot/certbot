@@ -45,19 +45,6 @@ class IAuthenticator(zope.interface.Interface):
         """Revert changes and shutdown after challenges complete."""
 
 
-class IChallenge(zope.interface.Interface):
-    """Let's Encrypt challenge."""
-
-    def perform():
-        """Perform the challenge."""
-
-    def generate_response():
-        """Generate response."""
-
-    def cleanup():
-        """Cleanup."""
-
-
 class IInstaller(zope.interface.Interface):
     """Generic Let's Encrypt Installer Interface.
 
@@ -144,14 +131,17 @@ class IInstaller(zope.interface.Interface):
 class IDisplay(zope.interface.Interface):
     """Generic display."""
 
-    def generic_notification(message):
+    def notification(message, height, pause):
         """Displays a string message
 
         :param str message: Message to display
+        :param int height: Height of dialog box if applicable
+        :param bool pause: Whether or not the application should pause for
+            confirmation (if available)
 
         """
 
-    def generic_menu(message, choices, input_text=""):
+    def menu(message, choices, input_text="", ok_label="OK", help_label=""):
         """Displays a generic menu.
 
         :param str message: message to display
@@ -163,29 +153,37 @@ class IDisplay(zope.interface.Interface):
 
         """
 
-    def generic_input(message):
-        """Accept input from the user."""
+    def input(message):
+        """Accept input from the user
 
-    def generic_yesno(message, yes_label="Yes", no_label="No"):
-        """A yes/no dialog."""
+        :param str message: message to display to the user
 
-    def filter_names(names):
-        """Allow the user to select which names they would like to activate."""
+        :returns: tuple of (`code`, `input`) where
+            `code` - str display exit code
+            `input` - str of the user's input
+        :rtype: tuple
 
-    def success_installation(domains):
-        """Display a congratulations message for new https domains."""
+        """
 
-    def display_certs(certs):
-        """Display a list of certificates."""
+    def yesno(message, yes_label="Yes", no_label="No"):
+        """Query the user with a yes/no question.
 
-    def confirm_revocation(cert):
-        """Confirmation of revocation screen."""
+        :param str message: question for the user
 
-    def more_info_cert(cert):
-        """Print out all information for a given certificate dict."""
+        :returns: True for "Yes", False for "No"
+        :rtype: bool
 
-    def redirect_by_default():
-        """Ask the user whether they would like to redirect to HTTPS."""
+        """
+
+    def checkbox(message, choices):
+        """Allow for multiple selections from a menu.
+
+        :param str message: message to display to the user
+
+        :param choices: :param choices: choices
+        :type choices: :class:`list` of :func:`tuple`
+
+        """
 
 
 class IValidator(zope.interface.Interface):

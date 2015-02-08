@@ -3,7 +3,7 @@ import logging
 
 import dialog
 
-from letsencrypt.client import display
+from letsencrypt.client.display import display_util
 
 
 class DialogHandler(logging.Handler):  # pylint: disable=too-few-public-methods
@@ -19,8 +19,8 @@ class DialogHandler(logging.Handler):  # pylint: disable=too-few-public-methods
     PADDING_HEIGHT = 2
     PADDING_WIDTH = 4
 
-    def __init__(self, level=logging.NOTSET, height=display.HEIGHT,
-                 width=display.WIDTH - 4, d=None):
+    def __init__(self, level=logging.NOTSET, height=display_util.HEIGHT,
+                 width=display_util.WIDTH - 4, d=None):
         # Handler not new-style -> no super
         logging.Handler.__init__(self, level)
         self.height = height

@@ -31,7 +31,7 @@ class RollbackTest(unittest.TestCase):
     def test_misconfiguration_fixed(self, mock_det, mock_rev, mock_input):
         mock_det.side_effect = [errors.LetsEncryptMisconfigurationError,
                                 self.m_install]
-        self.m_input().yesno.return_value = True
+        mock_input().yesno.return_value = True
 
         self._call(1)
 
@@ -50,7 +50,7 @@ class RollbackTest(unittest.TestCase):
             self, mock_det, mock_rev, mock_warn, mock_input):
         mock_det.side_effect = errors.LetsEncryptMisconfigurationError
 
-        self.m_input().yesno.return_value = True
+        mock_input().yesno.return_value = True
 
         self._call(1)
 
@@ -70,7 +70,7 @@ class RollbackTest(unittest.TestCase):
             self, mock_det, mock_rev, mock_input):
         mock_det.side_effect = errors.LetsEncryptMisconfigurationError
 
-        self.m_input().yesno.return_value = False
+        mock_input().yesno.return_value = False
 
         self._call(1)
 

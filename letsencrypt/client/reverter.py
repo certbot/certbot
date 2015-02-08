@@ -7,10 +7,10 @@ import time
 import zope.component
 
 from letsencrypt.client import CONFIG
-from letsencrypt.client import display
 from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
+from letsencrypt.client.display import display_util
 
 
 class Reverter(object):
@@ -127,7 +127,7 @@ class Reverter(object):
             output.append(os.linesep)
 
         zope.component.getUtility(interfaces.IDisplay).generic_notification(
-            os.linesep.join(output), display.HEIGHT)
+            os.linesep.join(output), display_util.HEIGHT)
 
     def add_to_temp_checkpoint(self, save_files, save_notes):
         """Add files to temporary checkpoint

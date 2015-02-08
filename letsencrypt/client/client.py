@@ -1,8 +1,6 @@
 """ACME protocol client class and helper functions."""
-import csv
 import logging
 import os
-import shutil
 import sys
 
 import M2Crypto
@@ -21,6 +19,7 @@ from letsencrypt.client import reverter
 from letsencrypt.client import revoker
 
 from letsencrypt.client.apache import configurator
+from letsencrypt.client.display import ops
 
 
 class Client(object):
@@ -103,7 +102,7 @@ class Client(object):
         cert_file, chain_file = self.save_certificate(
             certificate_dict, cert_path, chain_path)
 
-        self.store_cert_key(cert_file, False)
+        revoker.Revoker.store_cert_key(cert_file, False)
 
         return cert_file, chain_file
 
@@ -194,8 +193,7 @@ class Client(object):
         # sites may have been enabled / final cleanup
         self.installer.restart()
 
-        zope.component.getUtility(
-            interfaces.IDisplay).success_installation(domains)
+        ops.success_installation(domains)
 
     def enhance_config(self, domains, redirect=None):
         """Enhance the configuration.
@@ -224,52 +222,6 @@ class Client(object):
 
         if redirect:
             self.redirect_to_ssl(domains)
-
-    def store_cert_key(self, cert_file, encrypt=False):
-        """Store certificate key. (Used to allow quick revocation)
-
-        :param str cert_file: Path to a certificate file.
-
-        :param bool encrypt: Should the certificate key be encrypted?
-
-        :returns: True if key file was stored successfully, False otherwise.
-        :rtype: bool
-
-        """
-        list_file = os.path.join(CONFIG.CERT_KEY_BACKUP, "LIST")
-        le_util.make_or_verify_dir(CONFIG.CERT_KEY_BACKUP, 0o700)
-        idx = 0
-
-        if encrypt:
-            logging.error(
-                "Unfortunately securely storing the certificates/"
-                "keys is not yet available. Stay tuned for the "
-                "next update!")
-            return False
-
-        if os.path.isfile(list_file):
-            with open(list_file, 'r+b') as csvfile:
-                csvreader = csv.reader(csvfile)
-                for row in csvreader:
-                    idx = int(row[0]) + 1
-                csvwriter = csv.writer(csvfile)
-                csvwriter.writerow([str(idx), cert_file, self.authkey.file])
-
-        else:
-            with open(list_file, 'wb') as csvfile:
-                csvwriter = csv.writer(csvfile)
-                csvwriter.writerow(["0", cert_file, self.authkey.file])
-
-        shutil.copy2(self.authkey.file,
-                     os.path.join(
-                         CONFIG.CERT_KEY_BACKUP,
-                         os.path.basename(self.authkey.file) + "_" + str(idx)))
-        shutil.copy2(cert_file,
-                     os.path.join(
-                         CONFIG.CERT_KEY_BACKUP,
-                         os.path.basename(cert_file) + "_" + str(idx)))
-
-        return True
 
     def redirect_to_ssl(self, domains):
         """Redirect all traffic from HTTP to HTTPS
@@ -389,10 +341,13 @@ def csr_pem_to_der(csr):
 # This should be controlled by commandline parameters
 def determine_authenticator():
     """Returns a valid IAuthenticator."""
+    auths = []
     try:
-        return configurator.ApacheConfigurator()
+        auths.append(configurator.ApacheConfigurator())
     except errors.LetsEncryptNoInstallationError:
         logging.info("Unable to determine a way to authenticate the server")
+    if len(auths) > 1:
+        return ops.choose_authenticator(auths)
 
 
 def determine_installer():
@@ -484,7 +439,7 @@ def revoke(server):
         installer = None
 
     revoc = revoker.Revoker(server, installer)
-    revoc.list_certs_keys()
+    revoc.display_menu()
 
 
 def view_config_changes():

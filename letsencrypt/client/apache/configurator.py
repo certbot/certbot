@@ -107,7 +107,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.check_parsing_errors("httpd.aug")
 
         # Set Version
-        self.version = self.get_version() if version is None else version
+        self.version = get_version() if version is None else version
 
         # Get all of the available vhosts
         self.vhosts = self.get_virtual_hosts()
@@ -911,37 +911,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         return True
 
-    def get_version(self):  # pylint: disable=no-self-use
-        """Return version of Apache Server.
-
-        Version is returned as tuple. (ie. 2.4.7 = (2, 4, 7))
-
-        :returns: version
-        :rtype: tuple
-
-        :raises errors.LetsEncryptConfiguratorError:
-            Unable to find Apache version
-
-        """
-        try:
-            proc = subprocess.Popen(
-                [CONFIG.APACHE_CTL, '-v'],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE)
-            text = proc.communicate()[0]
-        except (OSError, ValueError):
-            raise errors.LetsEncryptConfiguratorError(
-                "Unable to run %s -v" % CONFIG.APACHE_CTL)
-
-        regex = re.compile(r"Apache/([0-9\.]*)", re.IGNORECASE)
-        matches = regex.findall(text)
-
-        if len(matches) != 1:
-            raise errors.LetsEncryptConfiguratorError(
-                "Unable to find Apache version")
-
-        return tuple([int(i) for i in matches[0].split('.')])
-
     def verify_setup(self):
         """Verify the setup to ensure safe operating environment.
 
@@ -954,6 +923,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         le_util.make_or_verify_dir(self.direc["config"], 0o755, uid)
         le_util.make_or_verify_dir(self.direc["work"], 0o755, uid)
         le_util.make_or_verify_dir(self.direc["backup"], 0o755, uid)
+
+    @classmethod
+    def __str__(cls):
+        return "Apache version %s" % ".".join(get_version())
 
     ###########################################################################
     # Challenges Section
@@ -1010,6 +983,38 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if self.chall_out <= 0:
             self.revert_challenge_config()
             self.restart()
+
+
+def get_version(self):
+    """Return version of Apache Server.
+
+    Version is returned as tuple. (ie. 2.4.7 = (2, 4, 7))
+
+    :returns: version
+    :rtype: tuple
+
+    :raises errors.LetsEncryptConfiguratorError:
+        Unable to find Apache version
+
+    """
+    try:
+        proc = subprocess.Popen(
+            [CONFIG.APACHE_CTL, '-v'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
+        text = proc.communicate()[0]
+    except (OSError, ValueError):
+        raise errors.LetsEncryptConfiguratorError(
+            "Unable to run %s -v" % CONFIG.APACHE_CTL)
+
+    regex = re.compile(r"Apache/([0-9\.]*)", re.IGNORECASE)
+    matches = regex.findall(text)
+
+    if len(matches) != 1:
+        raise errors.LetsEncryptConfiguratorError(
+            "Unable to find Apache version")
+
+    return tuple([int(i) for i in matches[0].split('.')])
 
 
 def enable_mod(mod_name):

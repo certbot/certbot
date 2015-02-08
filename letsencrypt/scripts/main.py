@@ -15,11 +15,12 @@ import zope.interface
 import letsencrypt
 from letsencrypt.client import CONFIG
 from letsencrypt.client import client
-from letsencrypt.client import display
 from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
 from letsencrypt.client import log
+from letsencrypt.client.display import display_util
+from letsencrypt.client.display import ops
 
 
 def main():  # pylint: disable=too-many-statements,too-many-branches
@@ -77,9 +78,9 @@ def main():  # pylint: disable=too-many-statements,too-many-branches
     logger.setLevel(logging.INFO)
     if args.use_curses:
         logger.addHandler(log.DialogHandler())
-        displayer = display.NcursesDisplay()
+        displayer = display_util.NcursesDisplay()
     else:
-        displayer = display.FileDisplay(sys.stdout)
+        displayer = display_util.FileDisplay(sys.stdout)
     zope.component.provideUtility(displayer)
 
     if args.view_config_changes:
@@ -100,11 +101,11 @@ def main():  # pylint: disable=too-many-statements,too-many-branches
     # Make sure we actually get an installer that is functioning properly
     # before we begin to try to use it.
     try:
-        installer = client.determine_installer()
+        installer = client.determine_authenticator()
     except errors.LetsEncryptMisconfigurationError as err:
-        logging.fatal("Please fix your configuration before proceeding.  "
-                      "The Installer exited with the following message: "
-                      "%s", err)
+        logging.fatal("Please fix your configuration before proceeding.{0}"
+                      "The Authenticator exited with the following message: "
+                      "{1}".format(os.linesep, err))
         sys.exit(1)
 
     # Use the same object if possible
@@ -113,7 +114,7 @@ def main():  # pylint: disable=too-many-statements,too-many-branches
     else:
         auth = client.determine_authenticator()
 
-    domains = choose_names(installer) if args.domains is None else args.domains
+    domains = ops.choose_names(installer) if args.domains is None else args.domains
 
     # Prepare for init of Client
     if args.privkey is None:
@@ -144,42 +145,6 @@ def display_eula():
         if not zope.component.getUtility(interfaces.IDisplay).yesno(
                 eula_file.read(), "Agree", "Cancel"):
             sys.exit(0)
-
-
-def choose_names(installer):
-    """Display screen to select domains to validate.
-
-    :param installer: An installer object
-    :type installer: :class:`letsencrypt.client.interfaces.IInstaller`
-
-    """
-    # This function adds all names found in the installer configuration
-    # Then filters them based on user selection
-    code, names = zope.component.getUtility(
-        interfaces.IDisplay).filter_names(get_all_names(installer))
-    if code == display.OK and names:
-        return names
-    else:
-        sys.exit(0)
-
-
-def get_all_names(installer):
-    """Return all valid names in the configuration.
-
-    :param installer: An installer object
-    :type installer: :class:`letsencrypt.client.interfaces.IInstaller`
-
-    """
-    names = list(installer.get_all_names())
-
-    if not names:
-        logging.fatal("No domain names were found in your installation")
-        logging.fatal("Either specify which names you would like "
-                      "letsencrypt to validate or add server names "
-                      "to your virtual hosts")
-        sys.exit(1)
-
-    return names
 
 
 def read_file(filename):
