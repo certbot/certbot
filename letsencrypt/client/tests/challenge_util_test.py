@@ -7,7 +7,6 @@ import unittest
 import M2Crypto
 
 from letsencrypt.client import challenge_util
-from letsencrypt.client import client
 from letsencrypt.client import CONFIG
 from letsencrypt.client import le_util
 

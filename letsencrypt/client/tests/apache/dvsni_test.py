@@ -6,7 +6,6 @@ import shutil
 import mock
 
 from letsencrypt.client import challenge_util
-from letsencrypt.client import client
 from letsencrypt.client import CONFIG
 
 from letsencrypt.client.tests.apache import util

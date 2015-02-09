@@ -7,7 +7,6 @@ import unittest
 import mock
 
 from letsencrypt.client import challenge_util
-from letsencrypt.client import client
 from letsencrypt.client import errors
 
 from letsencrypt.client.apache import configurator
