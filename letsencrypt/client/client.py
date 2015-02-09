@@ -22,7 +22,6 @@ from letsencrypt.client import reverter
 from letsencrypt.client import revoker
 
 from letsencrypt.client.apache import configurator
-from letsencrypt.client.le_util import Key
 
 
 class Client(object):
@@ -365,7 +364,7 @@ def init_key(key_size):
 
     logging.info("Generating key (%d bits): %s", key_size, key_filename)
 
-    return Key(key_filename, key_pem)
+    return le_util.Key(key_filename, key_pem)
 
 
 def init_csr(privkey, names):
