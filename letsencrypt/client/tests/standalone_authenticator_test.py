@@ -2,10 +2,19 @@
 
 """Tests for standalone_authenticator.py."""
 
-import unittest
 import mock
-import pkg_resources
+import unittest
+
 from letsencrypt.client.challenge_util import DvsniChall
+from letsencrypt.client.challenge_util import dvsni_gen_cert
+from letsencrypt.client import le_util
+from OpenSSL.crypto import FILETYPE_PEM
+import OpenSSL.crypto
+import OpenSSL.SSL
+import os
+import pkg_resources
+import signal
+import socket
 
 
 # Classes based on to allow interrupting infinite loop under test
@@ -55,10 +64,6 @@ class SNICallbackTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.client.standalone_authenticator import \
             StandaloneAuthenticator
-        from letsencrypt.client.challenge_util import dvsni_gen_cert
-        from letsencrypt.client import le_util
-        import OpenSSL.crypto
-        from OpenSSL.crypto import FILETYPE_PEM
         self.authenticator = StandaloneAuthenticator()
         name, r_b64 = "example.com", le_util.jose_b64encode("x" * 32)
         test_key = pkg_resources.resource_string(__name__,
@@ -71,7 +76,6 @@ class SNICallbackTest(unittest.TestCase):
         self.authenticator.child_pid = 12345
 
     def test_real_servername(self):
-        import OpenSSL.SSL
         connection = mock.MagicMock()
         connection.get_servername.return_value = "abcdef.acme.invalid"
         self.authenticator.sni_callback(connection)
@@ -87,7 +91,6 @@ class SNICallbackTest(unittest.TestCase):
         structure so this might not be the one that was first in the
         challenge list passed to the perform method.  In the future, this
         might result in dropping the connection instead.)"""
-        import OpenSSL.SSL
         connection = mock.MagicMock()
         connection.get_servername.return_value = "example.com"
         self.authenticator.sni_callback(connection)
@@ -105,7 +108,6 @@ class ClientSignalHandlerTest(unittest.TestCase):
         self.authenticator.child_pid = 12345
 
     def test_client_signal_handler(self):
-        import signal
         self.assertEqual(self.authenticator.subproc_state, None)
         self.authenticator.client_signal_handler(signal.SIGIO, None)
         self.assertEqual(self.authenticator.subproc_state, "ready")
@@ -138,7 +140,6 @@ class SubprocSignalHandlerTest(unittest.TestCase):
     @mock.patch("letsencrypt.client.standalone_authenticator.os.kill")
     @mock.patch("letsencrypt.client.standalone_authenticator.sys.exit")
     def test_subproc_signal_handler(self, mock_exit, mock_kill):
-        import signal
         self.authenticator.ssl_conn = mock.MagicMock()
         self.authenticator.connection = mock.MagicMock()
         self.authenticator.sock = mock.MagicMock()
@@ -157,7 +158,6 @@ class SubprocSignalHandlerTest(unittest.TestCase):
         """Test how the signal handler survives attempting to shut down
         a non-existent connection (because none was established or active
         at the time the signal handler tried to perform the cleanup)."""
-        import signal
         self.authenticator.ssl_conn = mock.MagicMock()
         self.authenticator.connection = mock.MagicMock()
         self.authenticator.sock = mock.MagicMock()
@@ -187,7 +187,6 @@ class PerformTest(unittest.TestCase):
 
     def test_can_perform(self):
         """What happens if start_listener() returns True."""
-        from letsencrypt.client import le_util
         test_key = pkg_resources.resource_string(__name__,
                                                  'testdata/rsa256_key.pem')
         key = le_util.Key("something", test_key)
@@ -213,7 +212,6 @@ class PerformTest(unittest.TestCase):
 
     def test_cannot_perform(self):
         """What happens if start_listener() returns False."""
-        from letsencrypt.client import le_util
         test_key = pkg_resources.resource_string(__name__,
                                                  'testdata/rsa256_key.pem')
         key = le_util.Key("something", test_key)
@@ -273,7 +271,6 @@ class StartListenerTest(unittest.TestCase):
                 "Crypto.Random.atfork")
     @mock.patch("letsencrypt.client.standalone_authenticator.os.fork")
     def test_start_listener_fork_child(self, mock_fork, mock_atfork):
-        import os
         self.authenticator.do_parent_process = mock.Mock()
         self.authenticator.do_child_process = mock.Mock()
         mock_fork.return_value = 0
@@ -338,10 +335,6 @@ class DoChildProcessTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.client.standalone_authenticator import \
             StandaloneAuthenticator
-        from letsencrypt.client.challenge_util import dvsni_gen_cert
-        from letsencrypt.client import le_util
-        import OpenSSL.crypto
-        from OpenSSL.crypto import FILETYPE_PEM
         self.authenticator = StandaloneAuthenticator()
         name, r_b64 = "example.com", le_util.jose_b64encode("x" * 32)
         test_key = pkg_resources.resource_string(__name__,
@@ -359,7 +352,6 @@ class DoChildProcessTest(unittest.TestCase):
     @mock.patch("letsencrypt.client.standalone_authenticator.sys.exit")
     def test_do_child_process_cantbind1(self, mock_exit, mock_kill,
                                         mock_socket):
-        import socket, signal
         mock_exit.side_effect = IndentationError("subprocess would exit here")
         eaccess = socket.error(socket.errno.EACCES, "Permission denied")
         sample_socket = mock.MagicMock()
@@ -381,7 +373,6 @@ class DoChildProcessTest(unittest.TestCase):
     @mock.patch("letsencrypt.client.standalone_authenticator.sys.exit")
     def test_do_child_process_cantbind2(self, mock_exit, mock_kill,
                                         mock_socket):
-        import socket, signal
         mock_exit.side_effect = IndentationError("subprocess would exit here")
         eaccess = socket.error(socket.errno.EADDRINUSE, "Port already in use")
         sample_socket = mock.MagicMock()
@@ -398,7 +389,6 @@ class DoChildProcessTest(unittest.TestCase):
         socket error.  (The expected behavior is arguably wrong because it
         will crash the program; the reason for the expected behavior is
         that we don't have a way to report arbitrary socket errors.)"""
-        import socket
         eio = socket.error(socket.errno.EIO, "Imaginary unhandled error")
         sample_socket = mock.MagicMock()
         sample_socket.bind.side_effect = eio
@@ -412,7 +402,6 @@ class DoChildProcessTest(unittest.TestCase):
     @mock.patch("letsencrypt.client.standalone_authenticator.os.kill")
     def test_do_child_process_success(self, mock_kill, mock_socket,
                                       mock_connection):
-        import signal
         sample_socket = mock.MagicMock()
         sample_socket.accept.side_effect = SocketAcceptOnlyNTimes(2)
         mock_socket.return_value = sample_socket
@@ -441,7 +430,6 @@ class CleanupTest(unittest.TestCase):
     @mock.patch("letsencrypt.client.standalone_authenticator.os.kill")
     @mock.patch("letsencrypt.client.standalone_authenticator.time.sleep")
     def test_cleanup(self, mock_sleep, mock_kill):
-        import signal
         mock_sleep.return_value = None
         mock_kill.return_value = None
         chall = DvsniChall("foo.example.com", "whee", "foononce", "key")
