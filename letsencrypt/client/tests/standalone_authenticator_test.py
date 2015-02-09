@@ -53,8 +53,8 @@ class ChallPrefTest(unittest.TestCase):
         self.authenticator = StandaloneAuthenticator()
 
     def test_chall_pref(self):
-        self.assertEqual(self.authenticator.get_chall_pref("example.com"),
-                         ["dvsni"])
+        self.assertEqual(
+            self.authenticator.get_chall_pref("example.com"), ["dvsni"])
 
 
 class SNICallbackTest(unittest.TestCase):
@@ -64,8 +64,8 @@ class SNICallbackTest(unittest.TestCase):
             StandaloneAuthenticator
         self.authenticator = StandaloneAuthenticator()
         name, r_b64 = "example.com", le_util.jose_b64encode("x" * 32)
-        test_key = pkg_resources.resource_string(__name__,
-                                                 'testdata/rsa256_key.pem')
+        test_key = pkg_resources.resource_string(
+            __name__, 'testdata/rsa256_key.pem')
         nonce, key = "abcdef", le_util.Key("foo", test_key)
         self.cert = dvsni_gen_cert(name, r_b64, nonce, key)[0]
         private_key = OpenSSL.crypto.load_privatekey(FILETYPE_PEM, key.pem)
@@ -82,13 +82,14 @@ class SNICallbackTest(unittest.TestCase):
         self.assertTrue(isinstance(called_ctx, OpenSSL.SSL.Context))
 
     def test_fake_servername(self):
-        """Test the behavior of the SNI callback when an unexpected SNI
-        name is received.  (Currently the expected behavior in this case
-        is to return the "first" certificate with which the listener
-        was configured, although they are stored in an unordered data
-        structure so this might not be the one that was first in the
-        challenge list passed to the perform method.  In the future, this
-        might result in dropping the connection instead.)"""
+        """Test behavior of SNI callback when an unexpected name is received.
+
+        (Currently the expected behavior in this case is to return the
+        "first" certificate with which the listener was configured,
+        although they are stored in an unordered data structure so
+        this might not be the one that was first in the challenge list
+        passed to the perform method.  In the future, this might result
+        in dropping the connection instead.)"""
         connection = mock.MagicMock()
         connection.get_servername.return_value = "example.com"
         self.authenticator.sni_callback(connection)
@@ -120,9 +121,9 @@ class ClientSignalHandlerTest(unittest.TestCase):
         # specified (which can't occur in normal use because this
         # function is only set as a signal handler for the above three
         # signals).
-        self.assertRaises(AssertionError,
-                          self.authenticator.client_signal_handler,
-                          signal.SIGPIPE, None)
+        self.assertRaises(
+            AssertionError, self.authenticator.client_signal_handler,
+            signal.SIGPIPE, None)
 
 
 class SubprocSignalHandlerTest(unittest.TestCase):
@@ -146,16 +147,17 @@ class SubprocSignalHandlerTest(unittest.TestCase):
         self.assertEquals(self.authenticator.ssl_conn.close.call_count, 1)
         self.assertEquals(self.authenticator.connection.close.call_count, 1)
         self.assertEquals(self.authenticator.sock.close.call_count, 1)
-        mock_kill.assert_called_once_with(self.authenticator.parent_pid,
-                                          signal.SIGUSR1)
+        mock_kill.assert_called_once_with(
+            self.authenticator.parent_pid, signal.SIGUSR1)
         mock_exit.assert_called_once_with(0)
 
     @mock.patch("letsencrypt.client.standalone_authenticator.os.kill")
     @mock.patch("letsencrypt.client.standalone_authenticator.sys.exit")
     def test_subproc_signal_handler_trouble(self, mock_exit, mock_kill):
-        """Test how the signal handler survives attempting to shut down
-        a non-existent connection (because none was established or active
-        at the time the signal handler tried to perform the cleanup)."""
+        """Test attempting to shut down a non-existent connection.
+
+        (This could occur because none was established or active at the
+        time the signal handler tried to perform the cleanup)."""
         self.authenticator.ssl_conn = mock.MagicMock()
         self.authenticator.connection = mock.MagicMock()
         self.authenticator.sock = mock.MagicMock()
@@ -171,8 +173,8 @@ class SubprocSignalHandlerTest(unittest.TestCase):
         self.assertEquals(self.authenticator.ssl_conn.close.call_count, 1)
         self.assertEquals(self.authenticator.connection.close.call_count, 1)
         self.assertEquals(self.authenticator.sock.close.call_count, 1)
-        mock_kill.assert_called_once_with(self.authenticator.parent_pid,
-                                          signal.SIGUSR1)
+        mock_kill.assert_called_once_with(
+            self.authenticator.parent_pid, signal.SIGUSR1)
         mock_exit.assert_called_once_with(0)
 
 
@@ -185,8 +187,8 @@ class PerformTest(unittest.TestCase):
 
     def test_can_perform(self):
         """What happens if start_listener() returns True."""
-        test_key = pkg_resources.resource_string(__name__,
-                                                 'testdata/rsa256_key.pem')
+        test_key = pkg_resources.resource_string(
+            __name__, 'testdata/rsa256_key.pem')
         key = le_util.Key("something", test_key)
         chall1 = DvsniChall("foo.example.com", "whee", "foononce", key)
         chall2 = DvsniChall("bar.example.com", "whee", "barnonce", key)
@@ -210,8 +212,8 @@ class PerformTest(unittest.TestCase):
 
     def test_cannot_perform(self):
         """What happens if start_listener() returns False."""
-        test_key = pkg_resources.resource_string(__name__,
-                                                 'testdata/rsa256_key.pem')
+        test_key = pkg_resources.resource_string(
+            __name__, 'testdata/rsa256_key.pem')
         key = le_util.Key("something", test_key)
         chall1 = DvsniChall("foo.example.com", "whee", "foononce", key)
         chall2 = DvsniChall("bar.example.com", "whee", "barnonce", key)
@@ -232,19 +234,19 @@ class PerformTest(unittest.TestCase):
     def test_perform_with_pending_tasks(self):
         self.authenticator.tasks = {"foononce.acme.invalid": "cert_data"}
         extra_challenge = DvsniChall("a", "b", "c", "d")
-        self.assertRaises(Exception, self.authenticator.perform,
-                          [extra_challenge])
+        self.assertRaises(
+            Exception, self.authenticator.perform, [extra_challenge])
 
     def test_perform_without_challenge_list(self):
         extra_challenge = DvsniChall("a", "b", "c", "d")
         # This is wrong because a challenge must be specified.
         self.assertRaises(Exception, self.authenticator.perform, [])
         # This is wrong because it must be a list, not a bare challenge.
-        self.assertRaises(Exception, self.authenticator.perform,
-                          extra_challenge)
+        self.assertRaises(
+            Exception, self.authenticator.perform, extra_challenge)
         # This is wrong because the list must contain at least one challenge.
-        self.assertRaises(Exception, self.authenticator.perform,
-                          range(20))
+        self.assertRaises(
+            Exception, self.authenticator.perform, range(20))
 
 
 class StartListenerTest(unittest.TestCase):
@@ -278,8 +280,8 @@ class StartListenerTest(unittest.TestCase):
         mock_fork.return_value = 0
         self.authenticator.start_listener(1717, "key")
         self.assertEqual(self.authenticator.child_pid, os.getpid())
-        self.authenticator.do_child_process.assert_called_once_with(1717,
-                                                                    "key")
+        self.authenticator.do_child_process.assert_called_once_with(
+            1717, "key")
         mock_atfork.assert_called_once_with()
 
 class DoParentProcessTest(unittest.TestCase):
@@ -339,8 +341,8 @@ class DoChildProcessTest(unittest.TestCase):
             StandaloneAuthenticator
         self.authenticator = StandaloneAuthenticator()
         name, r_b64 = "example.com", le_util.jose_b64encode("x" * 32)
-        test_key = pkg_resources.resource_string(__name__,
-                                                 'testdata/rsa256_key.pem')
+        test_key = pkg_resources.resource_string(
+            __name__, 'testdata/rsa256_key.pem')
         nonce, key = "abcdef", le_util.Key("foo", test_key)
         self.key = key
         self.cert = dvsni_gen_cert(name, r_b64, nonce, key)[0]
@@ -352,8 +354,8 @@ class DoChildProcessTest(unittest.TestCase):
     @mock.patch("letsencrypt.client.standalone_authenticator.socket.socket")
     @mock.patch("letsencrypt.client.standalone_authenticator.os.kill")
     @mock.patch("letsencrypt.client.standalone_authenticator.sys.exit")
-    def test_do_child_process_cantbind1(self, mock_exit, mock_kill,
-                                        mock_socket):
+    def test_do_child_process_cantbind1(
+            self, mock_exit, mock_kill, mock_socket):
         mock_exit.side_effect = IndentationError("subprocess would exit here")
         eaccess = socket.error(socket.errno.EACCES, "Permission denied")
         sample_socket = mock.MagicMock()
@@ -365,8 +367,9 @@ class DoChildProcessTest(unittest.TestCase):
         # (Just replacing it with a no-op causes logic errors because the
         # do_child_process code assumes that calling sys.exit() will
         # cause subsequent code not to be executed.)
-        self.assertRaises(IndentationError,
-                          self.authenticator.do_child_process, 1717, self.key)
+        self.assertRaises(
+            IndentationError, self.authenticator.do_child_process, 1717,
+            self.key)
         mock_exit.assert_called_once_with(1)
         mock_kill.assert_called_once_with(12345, signal.SIGUSR2)
 
@@ -380,8 +383,9 @@ class DoChildProcessTest(unittest.TestCase):
         sample_socket = mock.MagicMock()
         sample_socket.bind.side_effect = eaccess
         mock_socket.return_value = sample_socket
-        self.assertRaises(IndentationError,
-                          self.authenticator.do_child_process, 1717, self.key)
+        self.assertRaises(
+            IndentationError, self.authenticator.do_child_process, 1717,
+            self.key)
         mock_exit.assert_called_once_with(1)
         mock_kill.assert_called_once_with(12345, signal.SIGUSR1)
 
@@ -395,8 +399,8 @@ class DoChildProcessTest(unittest.TestCase):
         sample_socket = mock.MagicMock()
         sample_socket.bind.side_effect = eio
         mock_socket.return_value = sample_socket
-        self.assertRaises(socket.error,
-                          self.authenticator.do_child_process, 1717, self.key)
+        self.assertRaises(
+            socket.error, self.authenticator.do_child_process, 1717, self.key)
 
     @mock.patch("letsencrypt.client.standalone_authenticator."
                 "OpenSSL.SSL.Connection")
@@ -408,8 +412,9 @@ class DoChildProcessTest(unittest.TestCase):
         sample_socket.accept.side_effect = SocketAcceptOnlyNTimes(2)
         mock_socket.return_value = sample_socket
         mock_connection.return_value = mock.MagicMock()
-        self.assertRaises(CallableExhausted,
-                          self.authenticator.do_child_process, 1717, self.key)
+        self.assertRaises(
+            CallableExhausted, self.authenticator.do_child_process, 1717,
+            self.key)
         mock_socket.assert_called_once_with()
         sample_socket.bind.assert_called_once_with(("0.0.0.0", 1717))
         sample_socket.listen.assert_called_once_with(1)
