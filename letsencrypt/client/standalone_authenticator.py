@@ -327,13 +327,13 @@ class StandaloneAuthenticator(object):
                 return True
             if self.subproc_state == "inuse":
                 display.generic_notification(
-                    "Could not bind TCP port {} because it is already in "
+                    "Could not bind TCP port {0} because it is already in "
                     "use it is already in use by another process on this "
                     "system (such as a web server).".format(port))
                 return False
             if self.subproc_state == "cantbind":
                 display.generic_notification(
-                    "Could not bind TCP port {} because you don't have "
+                    "Could not bind TCP port {0} because you don't have "
                     "the appropriate permissions (for example, you "
                     "aren't running this program as "
                     "root).".format(port))
@@ -341,7 +341,7 @@ class StandaloneAuthenticator(object):
             time.sleep(0.1)
         display.generic_notification(
             "Subprocess unexpectedly timed out while trying to bind TCP "
-            "port {}.".format(port))
+            "port {0}.".format(port))
         return False
 
     def do_child_process(self, port, key):
