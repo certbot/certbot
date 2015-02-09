@@ -50,7 +50,7 @@ class RecoveryToken(object):
 
         """
         try:
-            os.remove(os.path.join(self.token_dir, chall.domain))
+            le_util.safely_remove(os.path.join(self.token_dir, chall.domain))
         except OSError as err:
             if err.errno != errno.ENOENT:
                 raise

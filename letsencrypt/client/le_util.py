@@ -76,6 +76,14 @@ def unique_file(path, mode=0o777):
         count += 1
 
 
+def safely_remove(path):
+    """Remove a file that may not exist."""
+    try:
+        os.remove(path)
+    except OSError as err:
+        if err.errno != errno.ENOENT:
+            raise
+
 # https://tools.ietf.org/html/draft-ietf-jose-json-web-signature-37#appendix-C
 #
 # Jose Base64:

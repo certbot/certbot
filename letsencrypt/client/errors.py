@@ -39,3 +39,6 @@ class LetsEncryptNoInstallationError(LetsEncryptConfiguratorError):
 class LetsEncryptMisconfigurationError(LetsEncryptConfiguratorError):
     """Let's Encrypt Misconfiguration error."""
 
+
+class LetsEncryptRevokerError(LetsEncryptClientError):
+    """Let's Encrypt Revoker error."""

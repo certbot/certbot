@@ -65,7 +65,7 @@ def display_certs(certs):
     return code, (int(tag) - 1)
 
 
-def confirm_revocation(self, cert):
+def confirm_revocation(cert):
     """Confirm revocation screen.
 
     :param cert: certificate object
