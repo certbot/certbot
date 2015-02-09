@@ -294,8 +294,7 @@ class TestFullCheckpointsReverter(unittest.TestCase):
         self.reverter.rollback_checkpoints(1)
         self.assertEqual(read_in(self.config1), "directive-dir1")
 
-    @mock.patch("letsencrypt.client.reverter.logging.warning")
-    def test_finalize_checkpoint_no_in_progress(self, mock_warn):
+    def test_finalize_checkpoint_no_in_progress(self):
         # No need to warn for this... just make sure there are no errors.
         self.reverter.finalize_checkpoint("No checkpoint...")
 
