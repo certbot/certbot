@@ -197,11 +197,15 @@ class StandaloneAuthenticator(object):
         if fork_result:
             # PARENT process (still the Let's Encrypt client process)
             self.child_pid = fork_result
-            self.do_parent_process(port)
+            # do_parent_process() can return True or False to indicate
+            # reported success or failure creating the listener.
+            return self.do_parent_process(port)
         else:
             # CHILD process (the TCP listener subprocess)
             self.child_pid = os.getpid()
-            self.do_child_process(port, key)
+            # do_child_process() is normally not expected to return but
+            # should terminate via sys.exit().
+            return self.do_child_process(port, key)
 
     # IAuthenticator method implementations follow
 
