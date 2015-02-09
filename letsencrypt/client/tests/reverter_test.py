@@ -296,8 +296,8 @@ class TestFullCheckpointsReverter(unittest.TestCase):
 
     @mock.patch("letsencrypt.client.reverter.logging.warning")
     def test_finalize_checkpoint_no_in_progress(self, mock_warn):
-        self.reverter.finalize_checkpoint("No checkpoint... should warn")
-        self.assertEqual(mock_warn.call_count, 1)
+        # No need to warn for this... just make sure there are no errors.
+        self.reverter.finalize_checkpoint("No checkpoint...")
 
     @mock.patch("letsencrypt.client.reverter.shutil.move")
     def test_finalize_checkpoint_cannot_title(self, mock_move):
