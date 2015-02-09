@@ -8,9 +8,9 @@ import augeas
 import mock
 import zope.component
 
-from letsencrypt.client.display import display_util
 from letsencrypt.client import errors
 from letsencrypt.client.apache import parser
+from letsencrypt.client.display import display_util
 
 from letsencrypt.client.tests.apache import util
 

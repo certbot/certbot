@@ -73,10 +73,9 @@ def _filter_names(names):
     :rtype: tuple
 
     """
-    choices = [(n, "", 0) for n in names]
     code, names = util(interfaces.IDisplay).checklist(
         "Which names would you like to activate HTTPS for?",
-        choices=choices)
+        tags=names)
     return code, [str(s) for s in names]
 
 

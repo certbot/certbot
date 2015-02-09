@@ -22,7 +22,7 @@ class DvsniGenCertTest(unittest.TestCase):
         r_b64 = le_util.jose_b64encode(dvsni_r)
         pem = pkg_resources.resource_string(
             __name__, os.path.join("testdata", "rsa256_key.pem"))
-        key = le_util.Client.Key("path", pem)
+        key = le_util.Key("path", pem)
         nonce = "12345ABCDE"
         cert_pem, s_b64 = self._call(domain, r_b64, nonce, key)
 
@@ -49,3 +49,7 @@ class DvsniGenCertTest(unittest.TestCase):
     def _call(cls, name, r_b64, nonce, key):
         from letsencrypt.client.challenge_util import dvsni_gen_cert
         return dvsni_gen_cert(name, r_b64, nonce, key)
+
+
+if __name__ == "__main__":
+    unittest.main()

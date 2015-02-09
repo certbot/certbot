@@ -20,6 +20,7 @@ from letsencrypt.client import revoker
 
 from letsencrypt.client.apache import configurator
 from letsencrypt.client.display import ops
+from letsencrypt.client.display import enhancements
 
 
 class Client(object):
@@ -102,7 +103,9 @@ class Client(object):
         cert_file, chain_file = self.save_certificate(
             certificate_dict, cert_path, chain_path)
 
-        revoker.Revoker.store_cert_key(cert_file, False)
+        print cert_file
+
+        revoker.Revoker.store_cert_key(cert_file, self.authkey.file, False)
 
         return cert_file, chain_file
 
@@ -217,8 +220,7 @@ class Client(object):
             raise errors.LetsEncryptClientError("No installer available")
 
         if redirect is None:
-            redirect = zope.component.getUtility(
-                interfaces.IDisplay).redirect_by_default()
+            redirect = enhancements.ask("redirect")
 
         if redirect:
             self.redirect_to_ssl(domains)
@@ -348,6 +350,8 @@ def determine_authenticator():
         logging.info("Unable to determine a way to authenticate the server")
     if len(auths) > 1:
         return ops.choose_authenticator(auths)
+    elif len(auths) == 1:
+        return auths[0]
 
 
 def determine_installer():

@@ -985,7 +985,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.restart()
 
 
-def get_version(self):
+def get_version():
     """Return version of Apache Server.
 
     Version is returned as tuple. (ie. 2.4.7 = (2, 4, 7))

@@ -101,18 +101,18 @@ def main():  # pylint: disable=too-many-statements,too-many-branches
     # Make sure we actually get an installer that is functioning properly
     # before we begin to try to use it.
     try:
-        installer = client.determine_authenticator()
+        auth = client.determine_authenticator()
     except errors.LetsEncryptMisconfigurationError as err:
-        logging.fatal("Please fix your configuration before proceeding.{0}"
+        logging.fatal("Please fix your configuration before proceeding.%s"
                       "The Authenticator exited with the following message: "
-                      "{1}".format(os.linesep, err))
+                      "%s", (os.linesep, err))
         sys.exit(1)
 
     # Use the same object if possible
-    if interfaces.IAuthenticator.providedBy(installer):  # pylint: disable=no-member
-        auth = installer
+    if interfaces.IInstaller.providedBy(auth):  # pylint: disable=no-member
+        installer = auth
     else:
-        auth = client.determine_authenticator()
+        installer = client.determine_installer()
 
     domains = ops.choose_names(installer) if args.domains is None else args.domains
 
@@ -131,6 +131,7 @@ def main():  # pylint: disable=too-many-statements,too-many-branches
     # It should be possible for reconfig only, install-only, no-install
     # I am not sure the best way to handle all of the unimplemented abilities,
     # but this code should be safe on all environments.
+    cert_file = None
     if auth is not None:
         cert_file, chain_file = acme.obtain_certificate(domains)
     if installer is not None and cert_file is not None:

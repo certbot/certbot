@@ -14,18 +14,16 @@ class DisplayT(unittest.TestCase):
         self.tags_choices = [("1", "tag1"), ("2", "tag2"), ("3", "tag3")]
 
 
-def test_visual(displayer, choices):
+def visual(displayer, choices):
     """Visually test all of the display functions."""
     displayer.notification("Random notification!")
     displayer.menu("Question?", choices,
-                        ok_label="O", cancel_label="Can", help_label="??")
+                   ok_label="O", cancel_label="Can", help_label="??")
     displayer.menu("Question?", [choice[1] for choice in choices],
-                        ok_label="O", cancel_label="Can", help_label="??")
+                   ok_label="O", cancel_label="Can", help_label="??")
     displayer.input("Input Message")
-    displayer.yesno(
-        "YesNo Message", yes_label="Yessir", no_label="Nosir")
-    displayer.checklist(
-        "Checklist Message", [choice[0] for choice in choices])
+    displayer.yesno("YesNo Message", yes_label="Yessir", no_label="Nosir")
+    displayer.checklist("Checklist Message", [choice[0] for choice in choices])
 
 
 class NcursesDisplayTest(DisplayT):
@@ -122,7 +120,7 @@ class NcursesDisplayTest(DisplayT):
             choices=choices)
 
     # def test_visual(self):
-    #    test_visual(self.displayer, self.choices)
+    #    visual(self.displayer, self.choices)
 
 
 class FileOutputDisplayTest(DisplayT):
@@ -144,8 +142,7 @@ class FileOutputDisplayTest(DisplayT):
         self.assertTrue("message" in string)
 
     def test_notification_pause(self):
-        # Attempt to mock raw_input
-        with mock_raw_input(["enter"]):
+        with mock.patch("__builtin__.raw_input", return_value="enter"):
             self.displayer.notification("message")
 
         self.assertTrue("message" in self.mock_stdout.write.call_args[0][0])
@@ -158,28 +155,26 @@ class FileOutputDisplayTest(DisplayT):
         self.assertEqual(ret, (display_util.OK, 0))
 
     def test_input_cancel(self):
-        # Attempt to mock raw_input
-        with mock_raw_input(["c"]):
+        with mock.patch("__builtin__.raw_input", return_value="c"):
             code, _ = self.displayer.input("message")
 
         self.assertTrue(code, display_util.CANCEL)
 
     def test_input_normal(self):
-        with mock_raw_input(["domain.com"]):
+        with mock.patch("__builtin__.raw_input", return_value="domain.com"):
             code, input_ = self.displayer.input("message")
 
         self.assertEqual(code, display_util.OK)
         self.assertEqual(input_, "domain.com")
 
     def test_yesno(self):
-        with mock_raw_input(["Yes"]):
+        with mock.patch("__builtin__.raw_input", return_value="Yes"):
             self.assertTrue(self.displayer.yesno("message"))
-        with mock_raw_input(["y"]):
+        with mock.patch("__builtin__.raw_input", return_value="y"):
             self.assertTrue(self.displayer.yesno("message"))
-        with mock_raw_input(["cancel"]):
+        with mock.patch("__builtin__.raw_input", return_value="cancel"):
             self.assertFalse(self.displayer.yesno("message"))
-
-        with mock_raw_input(["a"]):
+        with mock.patch("__builtin__.raw_input", return_value="a"):
             self.assertTrue(self.displayer.yesno("msg", yes_label="Agree"))
 
     @mock.patch("letsencrypt.client.display.display_util.FileDisplay.input")
@@ -252,11 +247,11 @@ class FileOutputDisplayTest(DisplayT):
         self.assertEqual(text.count(os.linesep), 3)
 
     def test_get_valid_int_ans_valid(self):
-        with mock_raw_input(["1"]):
+        with mock.patch("__builtin__.raw_input", return_value="1"):
             self.assertEqual(
                 self.displayer._get_valid_int_ans(1), (display_util.OK, 1))
         ans = "2"
-        with mock_raw_input([ans]):
+        with mock.patch("__builtin__.raw_input", return_value=ans):
             self.assertEqual(
                 self.displayer._get_valid_int_ans(3),
                 (display_util.OK, int(ans)))
@@ -268,14 +263,14 @@ class FileOutputDisplayTest(DisplayT):
             ["c"],
         ]
         for ans in answers:
-            with mock_raw_input(ans):
+            with mock.patch("__builtin__.raw_input", side_effect=ans):
                 self.assertEqual(
                     self.displayer._get_valid_int_ans(3),
                     (display_util.CANCEL, -1))
 
     # def test_visual(self):
     #    self.displayer = display_util.FileDisplay(sys.stdout)
-    #    test_visual(self.displayer, self.choices)
+    #    visual(self.displayer, self.choices)
 
 
 class SeparateListInputTest(unittest.TestCase):
@@ -321,16 +316,6 @@ class PlaceParensTest(unittest.TestCase):
     def test_multiple(self):
         ret = self._call("Label")
         self.assertEqual("(L)abel", ret)
-
-
-# https://stackoverflow.com/a/25275926
-@contextlib.contextmanager
-def mock_raw_input(values):
-    func = mock.MagicMock(side_effect=values)
-    original_raw_input = __builtins__.raw_input
-    __builtins__.raw_input = func
-    yield
-    __builtins__.raw_input = original_raw_input
 
 
 if __name__ == "__main__":

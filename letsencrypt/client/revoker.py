@@ -61,8 +61,7 @@ class Revoker(object):
         certs = self._populate_saved_certs(csha1_vhlist)
 
         if certs:
-            self._insert_installed_status(certs)
-            cert = self.choose_certs(certs)
+            cert = revocation.choose_certs(certs)
             self.acme_revocation(cert)
         else:
             logging.info(
