@@ -5,6 +5,7 @@ import textwrap
 import dialog
 import zope.interface
 
+from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 
 
@@ -49,8 +50,8 @@ class NcursesDisplay(object):
 
         :param str message: title of menu
 
-        :param choices: menu lines
-        :type choices: list of tuples (tag, item) or
+        :param choices: menu lines, len must be > 0
+        :type choices: list of tuples (`tag`, `item`) tags must be unique or
             list of items (tags will be enumerated)
 
         :param str ok_label: label of the OK button
@@ -58,7 +59,7 @@ class NcursesDisplay(object):
 
         :returns: tuple of the form (`code`, `tag`) where
             `code` - `str` display_util exit code
-            `tag` - `str` or `int` index corresponding to the item chosen
+            `tag` - `int` index corresponding to the item chosen
         :rtype: tuple
 
         """
@@ -75,7 +76,13 @@ class NcursesDisplay(object):
                 help_button=help_button, help_label=help_label,
                 width=self.width, height=self.height)
 
-            return code, str(selection)
+            # Return the selection index
+            for i, choice in enumerate(choices):
+                if choice[0] == selection:
+                    return code, i
+
+            return code, -1
+
         else:
             choices = [
                 (str(i), choice) for i, choice in enumerate(choices, 1)
@@ -103,6 +110,8 @@ class NcursesDisplay(object):
     def yesno(self, message, yes_label="Yes", no_label="No"):
         """Display a Yes/No dialog box
 
+        Yes and No label must begin with different letters.
+
         :param str message: message to display to user
         :param str yes_label: label on the "yes" button
         :param str no_label: label on the "no" button
@@ -120,6 +129,7 @@ class NcursesDisplay(object):
 
         :param message: Message to display before choices
         :param list tags: where each is of type :class:`str`
+            len(tags) > 0
 
         :returns: tuple of the form (code, list_tags) where
             `code` - int display exit code
@@ -161,7 +171,7 @@ class FileDisplay(object):
         """Display a menu.
 
         :param str message: title of menu
-        :param choices: Menu lines
+        :param choices: Menu lines, len must be > 0
         :type choices: list of tuples (tag, item) or
             list of descriptions (tags will be enumerated)
 
@@ -175,7 +185,7 @@ class FileDisplay(object):
 
         code, selection = self._get_valid_int_ans(len(choices))
 
-        return code, str(selection - 1)
+        return code, selection - 1
 
     def input(self, message):
         # pylint: disable=no-self-use
@@ -190,7 +200,7 @@ class FileDisplay(object):
 
         """
         ans = raw_input(
-            textwrap.fill("%s (Enter c to cancel): " % message, 80))
+            textwrap.fill("%s (Enter 'c' to cancel): " % message, 80))
 
         if ans == "c" or ans == "C":
             return CANCEL, "-1"
@@ -199,6 +209,8 @@ class FileDisplay(object):
 
     def yesno(self, message, yes_label="Yes", no_label="No"):
         """Query the user with a yes/no question.
+
+        Yes and No label must begin with different letters
 
         :param str message: question for the user
         :param str yes_label: Label of the "Yes" parameter
@@ -215,10 +227,9 @@ class FileDisplay(object):
         self.outfile.write("{0}{frame}{msg}{0}{frame}".format(
             os.linesep, frame=side_frame, msg=message))
 
-        yes_label = _parens_around_char(yes_label)
-        no_label = _parens_around_char(no_label)
-
-        ans = raw_input("{yes}/{no}: ".format(yes=yes_label, no=no_label))
+        ans = raw_input("{yes}/{no}: ".format(
+            yes=_parens_around_char(yes_label),
+            no=_parens_around_char(no_label)))
 
         return (ans.startswith(yes_label[0].lower()) or
                 ans.startswith(yes_label[0].upper()))
@@ -227,7 +238,7 @@ class FileDisplay(object):
         """Display a checklist.
 
         :param str message: Message to display to user
-        :param list tags: `str` tags to select
+        :param list tags: `str` tags to select, len(tags) > 0
 
         :returns: tuple of (`code`, `tags`) where
             `code` - str display exit code
@@ -255,7 +266,7 @@ class FileDisplay(object):
     def _scrub_checklist_input(self, indices, tags):
         """Validate input and transform indices to appropriate tags.
 
-        :param list indices: Checklist input
+        :param list indices: input
         :param list tags: Original tags of the checklist
 
         :returns: tags the user selected
@@ -265,7 +276,7 @@ class FileDisplay(object):
         # They should all be of type int
         try:
             indices = [int(index) for index in indices]
-        except TypeError:
+        except ValueError:
             return []
 
         # Remove duplicates
@@ -292,14 +303,16 @@ class FileDisplay(object):
         if choices and isinstance(choices[0], tuple):
             choices = ["%s - %s" % (c[0], c[1]) for c in choices]
 
+        # Write out the message to the user
         self.outfile.write(
             "{new}{msg}{new}".format(new=os.linesep, msg=message))
         side_frame = ("-" * 79) + os.linesep
         self.outfile.write(side_frame)
 
-        for i, tag in enumerate(choices, 1):
+        # Write out the menu choices
+        for i, desc in enumerate(choices, 1):
             self.outfile.write(
-                textwrap.fill("{num}: {tag}".format(num=i, tag=tag), 80))
+                textwrap.fill("{num}: {desc}".format(num=i, desc=desc), 80))
 
             # Keep this outside of the textwrap
             self.outfile.write(os.linesep)
@@ -311,7 +324,7 @@ class FileDisplay(object):
 
         :param str msg: Original message
 
-        :returns: Formatted message
+        :returns: Formatted message respecting newlines in message
         :rtype: str
 
         """
@@ -325,7 +338,7 @@ class FileDisplay(object):
     def _get_valid_int_ans(self, max):
         """Get a numerical selection.
 
-        :param int max: The maximum entry (len of choices)
+        :param int max: The maximum entry (len of choices), must be positive
 
         :returns: tuple of the form (`code`, `selection`) where
             `code` - str display exit code ('ok' or cancel')
@@ -337,10 +350,10 @@ class FileDisplay(object):
         if max > 1:
             input_msg = ("Select the appropriate number "
                          "[1-{max}] then [enter] (press 'c' to "
-                         "cancel){end}".format(max=max, end=os.linesep))
+                         "cancel): ".format(max=max))
         else:
             input_msg = ("Press 1 [enter] to confirm the selection "
-                         "(press 'c' to cancel){0}".format(os.linesep))
+                         "(press 'c' to cancel): ")
         while selection < 1:
             ans = raw_input(input_msg)
             if ans.startswith("c") or ans.startswith("C"):
@@ -348,6 +361,7 @@ class FileDisplay(object):
             try:
                 selection = int(ans)
                 if selection < 1 or selection > max:
+                    selection = -1
                     raise ValueError
 
             except ValueError:

@@ -141,15 +141,22 @@ class IDisplay(zope.interface.Interface):
 
         """
 
-    def menu(message, choices, input_text="", ok_label="OK", help_label=""):
+    def menu(message, choices,
+             ok_label="OK", cancel_label="Cancel", help_label=""):
         """Displays a generic menu.
 
         :param str message: message to display
 
         :param choices: choices
-        :type choices: :class:`list` of :func:`tuple`
+        :type choices: :class:`list` of :func:`tuple` or :class:`str`
 
-        :param str input_text: instructions on how to make a selection
+        :param str ok_label: label for OK button
+        :param str cancel_label: label for Cancel button
+        :param str help_label: label for Help button
+
+        :returns: tuple of (`code`, `index`) where
+            `code` - str display exit code
+            `index` - int index of the user's selection
 
         """
 
@@ -168,6 +175,8 @@ class IDisplay(zope.interface.Interface):
     def yesno(message, yes_label="Yes", no_label="No"):
         """Query the user with a yes/no question.
 
+        Yes and No label must begin with different letters.
+
         :param str message: question for the user
 
         :returns: True for "Yes", False for "No"
@@ -175,13 +184,13 @@ class IDisplay(zope.interface.Interface):
 
         """
 
-    def checkbox(message, choices):
+    def checklist(message, choices):
         """Allow for multiple selections from a menu.
 
         :param str message: message to display to the user
 
-        :param choices: :param choices: choices
-        :type choices: :class:`list` of :func:`tuple`
+        :param tags: tags
+        :type tags: :class:`list` of :class:`str`
 
         """
 
