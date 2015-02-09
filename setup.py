@@ -36,7 +36,8 @@ install_requires = [
     'M2Crypto',
 ]
 
-docs_extras = [
+dev_extras = [
+    'pylint>=1.4.0',  # upstream #248
     'repoze.sphinx.autointerface',
     'Sphinx',
 ]
@@ -45,7 +46,6 @@ testing_extras = [
     'coverage',
     'nose',
     'nosexcover',
-    'pylint>=1.4.0',  # upstream #248
     'tox',
 ]
 
@@ -71,7 +71,7 @@ setup(
     tests_require=install_requires,
     test_suite='letsencrypt',
     extras_require={
-        'docs': docs_extras,
+        'dev': dev_extras,
         'testing': testing_extras,
     },
     entry_points={
