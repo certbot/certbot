@@ -1,9 +1,9 @@
 """Utilities for all Let's Encrypt."""
 import base64
+import collections
 import errno
 import os
 import stat
-import collections
 
 from letsencrypt.client import errors
 
