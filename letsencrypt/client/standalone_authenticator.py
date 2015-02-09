@@ -47,8 +47,9 @@ class StandaloneAuthenticator(object):
         """Signal handler for the parent process.
 
         This handler receives inter-process communication from the
-        child process in the form of Unix signals."""
-        # signal handler for use in parent process
+        child process in the form of Unix signals.
+
+        :param int sig: Which signal the process received."""
         # subprocess → client READY   : SIGIO
         # subprocess → client INUSE   : SIGUSR1
         # subprocess → client CANTBIND: SIGUSR2
@@ -66,8 +67,9 @@ class StandaloneAuthenticator(object):
         """Signal handler for the child process.
 
         This handler receives inter-process communication from the parent
-        process in the form of Unix signals."""
-        # signal handler for use in subprocess
+        process in the form of Unix signals.
+
+        :param int sig: Which signal the process received."""
         # client → subprocess CLEANUP : SIGINT
         if sig == signal.SIGINT:
             try:
@@ -97,7 +99,10 @@ class StandaloneAuthenticator(object):
 
         This method will set a new OpenSSL context object for this
         connection when an incoming connection provides an SNI name
-        (in order to serve the appropriate certificate, if any)."""
+        (in order to serve the appropriate certificate, if any).
+
+        :param OpenSSL.Connection connection: The TLS connection object
+        on which the SNI extension was received."""
 
         sni_name = connection.get_servername()
         if sni_name in self.tasks:
@@ -120,6 +125,10 @@ class StandaloneAuthenticator(object):
         This should only be called by start_listener().  We will wait
         up to delay_amount seconds to hear from the child process via
         a signal.
+
+        :param int port: Which TCP port to bind.
+        :param float delay_amount: How long in seconds to wait for the
+        subprocess to notify us whether it succeeded.
 
         :returns: True or False according to whether we were notified
         that the child process succeeded or failed in binding the port."""
@@ -158,7 +167,11 @@ class StandaloneAuthenticator(object):
 
         Normally does not return; instead, the child process exits from
         within this function or from within the child process signal
-        handler."""
+        handler.
+
+        :param int port: Which TCP port to bind.
+        :param le_util.Key key: The private key to use to respond to
+        DVSNI challenge requests."""
         signal.signal(signal.SIGINT, self.subproc_signal_handler)
         self.sock = socket.socket()
         try:
@@ -208,7 +221,8 @@ class StandaloneAuthenticator(object):
         specified port to perform the specified DVSNI challenges.
 
         :param int port: The TCP port to bind.
-        :param str key: The private key to use (in PEM format).
+        :param le_util.Key key: The private key to use to respond to
+        DVSNI challenge requests.
         :returns: True or False to indicate success or failure creating
                   the subprocess.
         """
@@ -231,22 +245,31 @@ class StandaloneAuthenticator(object):
 
     def get_chall_pref(self, unused_domain):
         # pylint: disable=no-self-use
-        """IAuthenticator interface method: Return a list of challenge
-        types that this authenticator can perform for this domain.  In
-        the case of the StandaloneAuthenticator, the only challenge
-        type that can ever be performed is dvsni.
-        """
+        """IAuthenticator interface method get_chall_pref.
+
+        Return a list of challenge types that this authenticator
+        can perform for this domain.  In the case of the
+        StandaloneAuthenticator, the only challenge type that can ever
+        be performed is dvsni.
+
+        :returns: A list containing only 'dvsni'."""
         return ["dvsni"]
 
     def perform(self, chall_list):
-        """IAuthenticator interface method: Attempt to perform the
+        """IAuthenticator interface method perform.
+
+        Attempt to perform the
         specified challenges, returning the status of each.  For the
         StandaloneAuthenticator, because there is no convenient way to add
         additional requests, this should only be invoked once; subsequent
         invocations are an error.  To perform validations for multiple
         independent sets of domains, a separate StandaloneAuthenticator
         should be instantiated.
-        """
+
+        :param list chall_list: A list of the the challenge objects to
+        be attempted by this authenticator.
+        :returns: A list in the same order containing, in each position,
+        the successfully configured challenge, False, or None."""
         if self.child_pid or self.tasks:
             # We should not be willing to continue with perform
             # if there were existing pending challenges.
@@ -285,14 +308,17 @@ class StandaloneAuthenticator(object):
             return results_if_failure
 
     def cleanup(self, chall_list):
-        """IAuthenticator interface method: Remove each of the specified
-        challenges from the list of challenges that still need to be
-        performed.  (In the case of the StandaloneAuthenticator, if some
-        challenges are removed from the list, the authenticator socket
-        will still respond to those challenges.)  Once all challenges
-        have been removed from the list, the listener is deactivated and
-        stops listening.
-        """
+        """IAuthenticator interface method cleanup.
+
+        Remove each of the specified challenges from the list of
+        challenges that still need to be performed.  (In the case of
+        the StandaloneAuthenticator, if some challenges are removed
+        from the list, the authenticator socket will still respond to
+        those challenges.)  Once all challenges have been removed from
+        the list, the listener is deactivated and stops listening.
+
+        :param list chall_list: A list of the the challenge objects to
+        be deactivated."""
         # Remove this from pending tasks list
         for chall in chall_list:
             assert isinstance(chall, challenge_util.DvsniChall)
