@@ -30,8 +30,8 @@ def create_parser():
     config_help = lambda name: interfaces.IConfig[name].__doc__
 
     add("-d", "--domains", metavar="DOMAIN", nargs="+")
-    add("-s", "--acme-server", "--server", default="letsencrypt-demo.org:443",
-        help=config_help("acme_server"))
+    add("-s", "--server", default="letsencrypt-demo.org:443",
+        help=config_help("server"))
 
     add("-p", "--privkey", type=read_file,
         help="Path to the private key file for certificate generation.")
@@ -43,7 +43,7 @@ def create_parser():
         help="Revert configuration N number of checkpoints.")
     add("-v", "--view-config-changes", action="store_true",
         help="View checkpoints and associated configuration changes.")
-    add("-r", "--redirect", action="store_true",
+    add("-r", "--redirect", type=bool, default=None,
         help="Automatically redirect all HTTP traffic to HTTPS for the newly "
              "authenticated vhost.")
 
@@ -51,8 +51,7 @@ def create_parser():
         help="Skip the end user license agreement screen.")
     add("-t", "--text", dest="use_curses", action="store_false",
         help="Use the text output instead of the curses UI.")
-    add("--test", action="store_true", help="Run in test mode.")
-
+    
     add("--config-dir", default="/etc/letsencrypt",
         help=config_help("config_dir"))
     add("--work-dir", default="/var/lib/letsencrypt",

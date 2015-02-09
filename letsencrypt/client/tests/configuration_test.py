@@ -21,11 +21,11 @@ class NamespaceConfigTest(unittest.TestCase):
         constants.TEMP_CHECKPOINT_DIR = 't'
         constants.IN_PROGRESS_DIR = '../p'
         constants.CERT_KEY_BACKUP_DIR = 'c/'
-        constants.REV_TOKENS_DIR = '/r'
+        constants.REC_TOKEN_DIR = '/r'
         self.assertEqual(self.config.temp_checkpoint_dir, '/tmp/foo/t')
         self.assertEqual(self.config.in_progress_dir, '/tmp/foo/../p')
         self.assertEqual(self.config.cert_key_backup, '/tmp/foo/c/')
-        self.assertEqual(self.config.rev_tokens_dir, '/r')
+        self.assertEqual(self.config.rec_token_dir, '/r')
 
 
 if __name__ == '__main__':

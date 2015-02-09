@@ -18,7 +18,7 @@ class NamespaceConfig(object):
       - ``temp_checkpoint_dir``
       - ``in_progress_dir``
       - ``cert_key_backup``
-      - ``rev_tokens_dir``
+      - ``rec_token_dir``
 
     :ivar namespace: Namespace typically produced by
         :meth:`argparse.ArgumentParser.parse_args`.
@@ -48,5 +48,5 @@ class NamespaceConfig(object):
             self.namespace.work_dir, constants.CERT_KEY_BACKUP_DIR)
 
     @property
-    def rev_tokens_dir(self):  # pylint: disable=missing-docstring
-        return os.path.join(self.namespace.work_dir, constants.REV_TOKENS_DIR)
+    def rec_token_dir(self):  # pylint: disable=missing-docstring
+        return os.path.join(self.namespace.work_dir, constants.REC_TOKEN_DIR)

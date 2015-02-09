@@ -67,7 +67,7 @@ class IConfig(zope.interface.Interface):
 
     """
 
-    acme_server = zope.interface.Attribute(
+    server = zope.interface.Attribute(
         "CA hostname (and optionally :port). The server certificate must "
         "be trusted in order to avoid further modifications to the client.")
     rsa_key_size = zope.interface.Attribute("Size of the RSA key.")
@@ -82,8 +82,8 @@ class IConfig(zope.interface.Interface):
     cert_key_backup = zope.interface.Attribute(
         "Directory where all certificates and keys are stored. "
         "Used for easy revocation.")
-    rev_tokens_dir = zope.interface.Attribute(
-        "Directory where all revocation tokens are saved.")
+    rec_token_dir = zope.interface.Attribute(
+        "Directory where all recovery tokens are saved.")
     key_dir = zope.interface.Attribute("Keys storage.")
     cert_dir = zope.interface.Attribute("Certificates storage.")
 
