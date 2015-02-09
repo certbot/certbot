@@ -3,9 +3,7 @@ import errno
 import os
 
 import zope.component
-# import zope.interface
 
-from letsencrypt.client import CONFIG
 from letsencrypt.client import le_util
 from letsencrypt.client import interfaces
 
@@ -16,7 +14,7 @@ class RecoveryToken(object):
     Based on draft-barnes-acme, section 6.4.
 
     """
-    def __init__(self, server, direc=CONFIG.REV_TOKENS_DIR):
+    def __init__(self, server, direc):
         self.token_dir = os.path.join(direc, server)
 
     def perform(self, chall):

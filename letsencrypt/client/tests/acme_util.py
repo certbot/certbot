@@ -1,5 +1,5 @@
 """Class helps construct valid ACME messages for testing."""
-from letsencrypt.client import CONFIG
+from letsencrypt.client import constants
 
 
 CHALLENGES = {
@@ -62,13 +62,13 @@ CHALLENGES = {
 def get_dv_challenges():
     """Returns all auth challenges."""
     return [chall for typ, chall in CHALLENGES.iteritems()
-            if typ in CONFIG.DV_CHALLENGES]
+            if typ in constants.DV_CHALLENGES]
 
 
 def get_client_challenges():
     """Returns all client challenges."""
     return [chall for typ, chall in CHALLENGES.iteritems()
-            if typ in CONFIG.CLIENT_CHALLENGES]
+            if typ in constants.CLIENT_CHALLENGES]
 
 
 def get_challenges():
@@ -83,7 +83,7 @@ def gen_combos(challs):
     combos = []
 
     for i, chall in enumerate(challs):
-        if chall["type"] in CONFIG.DV_CHALLENGES:
+        if chall["type"] in constants.DV_CHALLENGES:
             dv_chall.append(i)
         else:
             renewal_chall.append(i)

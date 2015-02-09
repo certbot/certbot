@@ -23,6 +23,7 @@ changes = read_file(os.path.join(here, 'CHANGES.rst'))
 
 install_requires = [
     'argparse',
+    'ConfArgParse',
     'jsonschema',
     'mock',
     'pycrypto',
