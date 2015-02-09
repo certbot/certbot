@@ -26,10 +26,10 @@ install_requires = [
     'jsonschema',
     'mock',
     'pycrypto',
+    'PyOpenSSL',
     'python-augeas',
     'python2-pythondialog',
     'requests',
-    'PyOpenSSL',
     'zope.component',
     'zope.interface',
     # order of items in install_requires DOES matter and M2Crypto has

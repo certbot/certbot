@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 """Tests for standalone_authenticator.py."""
-
 import mock
 import unittest
 
@@ -44,7 +43,6 @@ class CallableExhausted(Exception):
     # pylint: disable=too-few-public-methods
     """Exception raised when a method is called more than the
     specified number of times."""
-    pass
 
 
 class ChallPrefTest(unittest.TestCase):
@@ -108,7 +106,7 @@ class ClientSignalHandlerTest(unittest.TestCase):
         self.authenticator.child_pid = 12345
 
     def test_client_signal_handler(self):
-        self.assertEqual(self.authenticator.subproc_state, None)
+        self.assertTrue(self.authenticator.subproc_state is None)
         self.authenticator.client_signal_handler(signal.SIGIO, None)
         self.assertEqual(self.authenticator.subproc_state, "ready")
 

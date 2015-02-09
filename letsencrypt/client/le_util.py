@@ -7,6 +7,7 @@ import stat
 
 from letsencrypt.client import errors
 
+
 Key = collections.namedtuple("Key", "file pem")
 
 

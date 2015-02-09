@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""An authenticator that doesn't rely on any existing server program,
-but instead creates its own ephemeral TCP listener on the specified port
-in order to respond to incoming DVSNI challenges from the certificate
-authority."""
+"""An authenticator that doesn't rely on any existing server program.
 
+This authenticator creates its own ephemeral TCP listener on the specified
+port in order to respond to incoming DVSNI challenges from the certificate
+authority."""
 from letsencrypt.client.challenge_util import DvsniChall
 from letsencrypt.client.challenge_util import dvsni_gen_cert
 from letsencrypt.client import CONFIG
@@ -24,9 +24,11 @@ import zope.interface
 
 class StandaloneAuthenticator(object):
     # pylint: disable=too-many-instance-attributes
-    """The StandaloneAuthenticator class itself, which can be invoked
-    by the Let's Encrypt client according to the IAuthenticator API
-    interface."""
+    """The StandaloneAuthenticator class itself.
+
+    This authenticator can be invoked by the Let's Encrypt client
+    according to the IAuthenticator API interface.  It creates a local
+    TCP listener on a specified port and satisfies DVSNI challenges."""
     zope.interface.implements(interfaces.IAuthenticator)
 
     def __init__(self):
@@ -40,9 +42,10 @@ class StandaloneAuthenticator(object):
         self.ssl_conn = None
 
     def client_signal_handler(self, sig, unused_frame):
-        """Signal handler for the parent process (to receive inter-process
-        communication from the child process in the form of Unix
-        signals."""
+        """Signal handler for the parent process.
+
+        This handler receives inter-process communication from the
+        child process in the form of Unix signals."""
         # signal handler for use in parent process
         # subprocess → client READY   : SIGIO
         # subprocess → client INUSE   : SIGUSR1
@@ -58,9 +61,10 @@ class StandaloneAuthenticator(object):
             assert False
 
     def subproc_signal_handler(self, sig, unused_frame):
-        """Signal handler for the child process (to receive inter-process
-        communication from the parent process in the form of Unix
-        signals."""
+        """Signal handler for the child process.
+
+        This handler receives inter-process communication from the parent
+        process in the form of Unix signals."""
         # signal handler for use in subprocess
         # client → subprocess CLEANUP : SIGINT
         if sig == signal.SIGINT:
@@ -87,9 +91,11 @@ class StandaloneAuthenticator(object):
             sys.exit(0)
 
     def sni_callback(self, connection):
-        """Used internally to set a new OpenSSL context object for this
-        connection when an incoming connection provides an SNI name (in
-        order to serve the appropriate certificate, if any)."""
+        """Used internally to respond to incoming SNI names.
+
+        This method will set a new OpenSSL context object for this
+        connection when an incoming connection provides an SNI name
+        (in order to serve the appropriate certificate, if any)."""
 
         sni_name = connection.get_servername()
         if sni_name in self.tasks:
@@ -107,9 +113,14 @@ class StandaloneAuthenticator(object):
         connection.set_context(new_ctx)
 
     def do_parent_process(self, port, delay_amount=5):
-        """Perform the parent process side of the TCP listener task.  This
-        should only be called by start_listener().  We will wait up to
-        delay_amount seconds to hear from the child process via a signal."""
+        """Perform the parent process side of the TCP listener task.
+
+        This should only be called by start_listener().  We will wait
+        up to delay_amount seconds to hear from the child process via
+        a signal.
+
+        :returns: True or False according to whether we were notified
+        that the child process succeeded or failed in binding the port."""
 
         signal.signal(signal.SIGIO, self.client_signal_handler)
         signal.signal(signal.SIGUSR1, self.client_signal_handler)
@@ -139,8 +150,13 @@ class StandaloneAuthenticator(object):
         return False
 
     def do_child_process(self, port, key):
-        """Perform the child process side of the TCP listener task.  This
-        should only be called by start_listener()."""
+        """Perform the child process side of the TCP listener task.
+
+        This should only be called by start_listener().
+
+        Normally does not return; instead, the child process exits from
+        within this function or from within the child process signal
+        handler."""
         signal.signal(signal.SIGINT, self.subproc_signal_handler)
         self.sock = socket.socket()
         try:
