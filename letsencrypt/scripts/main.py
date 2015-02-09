@@ -51,7 +51,7 @@ def create_parser():
         help="Skip the end user license agreement screen.")
     add("-t", "--text", dest="use_curses", action="store_false",
         help="Use the text output instead of the curses UI.")
-    
+
     add("--config-dir", default="/etc/letsencrypt",
         help=config_help("config_dir"))
     add("--work-dir", default="/var/lib/letsencrypt",
