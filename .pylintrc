@@ -239,9 +239,7 @@ ignore-mixin-members=yes
 # List of module names for which member attributes should not be checked
 # (useful for modules/projects where namespaces are manipulated during runtime
 # and thus existing member attributes cannot be deduced by static analysis
-
-# Get rid of the spurious no-member errors in pkg_resources
-ignored-modules=pkg_resources
+ignored-modules=pkg_resources,confargparse,argparse
 
 # List of classes names for which member attributes should not be checked
 # (useful for classes with attributes dynamically set).

@@ -2,6 +2,7 @@
 import zope.interface
 
 # pylint: disable=no-self-argument,no-method-argument,no-init,inherit-non-class
+# pylint: disable=too-few-public-methods
 
 
 class IAuthenticator(zope.interface.Interface):
@@ -58,6 +59,52 @@ class IChallenge(zope.interface.Interface):
         """Cleanup."""
 
 
+class IConfig(zope.interface.Interface):
+    """Let's Encrypt user-supplied configuration.
+
+    .. warning:: The values stored in the configuration have not been
+        filtered, stripped or sanitized in any way!
+
+    """
+
+    acme_server = zope.interface.Attribute(
+        "CA hostname (and optionally :port). The server certificate must "
+        "be trusted in order to avoid further modifications to the client.")
+    rsa_key_size = zope.interface.Attribute("Size of the RSA key.")
+
+    config_dir = zope.interface.Attribute("Configuration directory.")
+    work_dir = zope.interface.Attribute("Working directory.")
+    backup_dir = zope.interface.Attribute("Configuration backups directory.")
+    temp_checkpoint_dir = zope.interface.Attribute(
+        "Temporary checkpoint directory.")
+    in_progress_dir = zope.interface.Attribute(
+        "Directory used before a permanent checkpoint is finalized.")
+    cert_key_backup = zope.interface.Attribute(
+        "Directory where all certificates and keys are stored. "
+        "Used for easy revocation.")
+    rev_tokens_dir = zope.interface.Attribute(
+        "Directory where all revocation tokens are saved.")
+    key_dir = zope.interface.Attribute("Keys storage.")
+    cert_dir = zope.interface.Attribute("Certificates storage.")
+
+    le_vhost_ext = zope.interface.Attribute(
+        "SSL vhost configuration extension.")
+    cert_path = zope.interface.Attribute("Let's Encrypt certificate file.")
+    chain_path = zope.interface.Attribute("Let's Encrypt chain file.")
+
+    apache_server_root = zope.interface.Attribute(
+        "Apache server root directory.")
+    apache_ctl = zope.interface.Attribute(
+        "Path to the 'apache2ctl' binary, used for 'configtest' and "
+        "retrieving Apache2 version number.")
+    apache_enmod = zope.interface.Attribute(
+        "Path to the Apache 'a2enmod' binary.")
+    apache_init_script = zope.interface.Attribute(
+        "Path to the Apache init script (used for server reload/restart).")
+    apache_mod_ssl_conf = zope.interface.Attribute(
+        "Contains standard Apache SSL directives.")
+
+
 class IInstaller(zope.interface.Interface):
     """Generic Let's Encrypt Installer Interface.
 
@@ -82,10 +129,10 @@ class IInstaller(zope.interface.Interface):
 
         :param str domain: domain for which to provide enhancement
         :param str enhancement: An enhancement as defined in
-            :const:`~letsencrypt.client.CONFIG.ENHANCEMENTS`
+            :const:`~letsencrypt.client.constants.ENHANCEMENTS`
         :param options: Flexible options parameter for enhancement.
             Check documentation of
-            :const:`~letsencrypt.client.CONFIG.ENHANCEMENTS`
+            :const:`~letsencrypt.client.constants.ENHANCEMENTS`
             for expected options for each enhancement.
 
         """
@@ -94,7 +141,7 @@ class IInstaller(zope.interface.Interface):
         """Returns a list of supported enhancements.
 
         :returns: supported enhancements which should be a subset of
-            :const:`~letsencrypt.client.CONFIG.ENHANCEMENTS`
+            :const:`~letsencrypt.client.constants.ENHANCEMENTS`
         :rtype: :class:`list` of :class:`str`
 
         """

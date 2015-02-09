@@ -3,18 +3,20 @@ import logging
 import sys
 
 from letsencrypt.client import acme
-from letsencrypt.client import CONFIG
 from letsencrypt.client import challenge_util
+from letsencrypt.client import constants
 from letsencrypt.client import errors
 
 
 class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
     """ACME Authorization Handler for a client.
 
-    :ivar dv_auth: Authenticator capable of solving CONFIG.DV_CHALLENGES
+    :ivar dv_auth: Authenticator capable of solving
+        :const:`~letsencrypt.client.constants.DV_CHALLENGES`
     :type dv_auth: :class:`letsencrypt.client.interfaces.IAuthenticator`
 
-    :ivar client_auth: Authenticator capable of solving CONFIG.CLIENT_CHALLENGES
+    :ivar client_auth: Authenticator capable of solving
+        :const:`~letsencrypt.client_auth.constants.CLIENT_CHALLENGES`
     :type client_auth: :class:`letsencrypt.client.interfaces.IAuthenticator`
 
     :ivar network: Network object for sending and receiving authorization
@@ -258,12 +260,12 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
             chall = challenges[index]
 
             # Authenticator Challenges
-            if chall["type"] in CONFIG.DV_CHALLENGES:
+            if chall["type"] in constants.DV_CHALLENGES:
                 dv_chall.append(challenge_util.IndexedChall(
                     self._construct_dv_chall(chall, domain), index))
 
             # Client Challenges
-            elif chall["type"] in CONFIG.CLIENT_CHALLENGES:
+            elif chall["type"] in constants.CLIENT_CHALLENGES:
                 client_chall.append(challenge_util.IndexedChall(
                     self._construct_client_chall(chall, domain), index))
 
@@ -449,7 +451,7 @@ def _find_dumb_path(challenges, preferences):
 def is_preferred(offered_challenge_type, path):
     """Return whether or not the challenge is preferred in path."""
     for _, challenge_type in path:
-        for mutually_exclusive in CONFIG.EXCLUSIVE_CHALLENGES:
+        for mutually_exclusive in constants.EXCLUSIVE_CHALLENGES:
             # Second part is in case we eventually allow multiple names
             # to be challenges at the same time
             if (challenge_type in mutually_exclusive and
