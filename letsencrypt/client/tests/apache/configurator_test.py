@@ -166,6 +166,7 @@ class TwoVhost80Test(util.ApacheTest):
 
 
 class GetVersionTest(unittest.TestCase):
+    # pylint: disable=too-few-public-methods
     @classmethod
     def _call(cls):
         from letsencrypt.client.apache.configurator import get_version

@@ -105,7 +105,7 @@ def main():  # pylint: disable=too-many-statements,too-many-branches
     except errors.LetsEncryptMisconfigurationError as err:
         logging.fatal("Please fix your configuration before proceeding.%s"
                       "The Authenticator exited with the following message: "
-                      "%s", (os.linesep, err))
+                      "%s", os.linesep, err)
         sys.exit(1)
 
     # Use the same object if possible
@@ -114,7 +114,7 @@ def main():  # pylint: disable=too-many-statements,too-many-branches
     else:
         installer = client.determine_installer()
 
-    domains = ops.choose_names(installer) if args.domains is None else args.domains
+    doms = ops.choose_names(installer) if args.domains is None else args.domains
 
     # Prepare for init of Client
     if args.privkey is None:
@@ -133,11 +133,11 @@ def main():  # pylint: disable=too-many-statements,too-many-branches
     # but this code should be safe on all environments.
     cert_file = None
     if auth is not None:
-        cert_file, chain_file = acme.obtain_certificate(domains)
+        cert_file, chain_file = acme.obtain_certificate(doms)
     if installer is not None and cert_file is not None:
-        acme.deploy_certificate(domains, privkey, cert_file, chain_file)
+        acme.deploy_certificate(doms, privkey, cert_file, chain_file)
     if installer is not None:
-        acme.enhance_config(domains, args.redirect)
+        acme.enhance_config(doms, args.redirect)
 
 
 def display_eula():

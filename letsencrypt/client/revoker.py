@@ -95,7 +95,7 @@ class Revoker(object):
 
         self._remove_mark()
 
-    def _mark_for_revocation(self, cert):
+    def _mark_for_revocation(self, cert):  # pylint: disable=no-self-use
         """Marks a cert for revocation."""
         if os.path.isfile(Revoker.marked_path):
             raise errors.LetsEncryptRevokerError(
@@ -104,7 +104,7 @@ class Revoker(object):
             csvwriter = csv.writer(marked_file)
             csvwriter.writerow([cert.backup_path, cert.backup_key_path])
 
-    def _remove_mark(self):
+    def _remove_mark(self):  # pylint: disable=no-self-use
         """Remove the marked file."""
         os.remove(Revoker.marked_path)
 
@@ -128,6 +128,7 @@ class Revoker(object):
                 "certificates for this server.")
 
     def _populate_saved_certs(self, csha1_vhlist):
+        # pylint: disable=no-self-use
         """Populate a list of all the saved certs."""
         certs = []
         with open(Revoker.list_path, "rb") as csvfile:
@@ -188,7 +189,7 @@ class Revoker(object):
         os.remove(cert.backup_path)
         os.remove(cert.backup_key_path)
 
-    def _remove_cert_from_list(self, cert):
+    def _remove_cert_from_list(self, cert):  # pylint: disable=no-self-use
         """Remove a certificate from the LIST file."""
         list_path2 = os.path.join(CONFIG.CERT_KEY_BACKUP, "LIST.tmp")
 
@@ -346,34 +347,44 @@ class Cert(object):
         self.backup_key_path = backup_key
 
     def get_installed_msg(self):
+        """Access installed message."""
         return ", ".join(self.installed)
 
     def get_subject(self):
+        """Get subject."""
         return self.cert.get_subject().as_text()
 
     def get_cn(self):
+        """Get common name."""
         return self.cert.get_subject().CN
 
     def get_issuer(self):
+        """Get issuer."""
         return self.cert.get_issuer().as_text()
 
     def get_fingerprint(self):
+        """Get sha1 fingerprint."""
         return self.cert.get_fingerprint(md="sha1")
 
     def get_not_before(self):
+        """Get not_valid_before field."""
         return self.cert.get_not_before().get_datetime()
 
     def get_not_after(self):
+        """Get not_valid_after field."""
         return self.cert.get_not_after().get_datetime()
 
     def get_serial(self):
+        """Get serial number."""
         self.cert.get_serial_number()
 
     def get_pub_key(self):
+        """Get public key size."""
         # .. todo:: M2Crypto doesn't support ECC, this will have to be updated
         return "RSA " + str(self.cert.get_pubkey().size() * 8)
 
     def get_san(self):
+        """Get subject alternative name if available."""
         try:
             return self.cert.get_ext("subjectAltName").get_value()
         except LookupError:

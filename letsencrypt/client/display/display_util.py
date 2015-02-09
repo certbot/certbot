@@ -5,7 +5,6 @@ import textwrap
 import dialog
 import zope.interface
 
-from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 
 
@@ -35,6 +34,7 @@ class NcursesDisplay(object):
         self.height = height
 
     def notification(self, message, height=10, pause=False):
+        # pylint: disable=unused-argument
         """Display a notification to the user and wait for user acceptance.
 
         :param str message: Message to display
@@ -150,6 +150,7 @@ class FileDisplay(object):
         self.outfile = outfile
 
     def notification(self, message, height=10, pause=True):
+        # pylint: disable=unused-argument
         """Displays a notification and waits for user acceptance.
 
         :param str message: Message to display
@@ -166,8 +167,9 @@ class FileDisplay(object):
         if pause:
             raw_input("Press Enter to Continue")
 
-    def menu(
-        self, message, choices, ok_label="", cancel_label="", help_label=""):
+    def menu(self, message, choices,
+             ok_label="", cancel_label="", help_label=""):
+        # pylint: disable=unused-argument
         """Display a menu.
 
         :param str message: title of menu
@@ -264,6 +266,7 @@ class FileDisplay(object):
                 return code, []
 
     def _scrub_checklist_input(self, indices, tags):
+        # pylint: disable=no-self-use
         """Validate input and transform indices to appropriate tags.
 
         :param list indices: input
@@ -335,7 +338,7 @@ class FileDisplay(object):
 
         return os.linesep.join(fixed_l)
 
-    def _get_valid_int_ans(self, max):
+    def _get_valid_int_ans(self, max_):
         """Get a numerical selection.
 
         :param int max: The maximum entry (len of choices), must be positive
@@ -347,10 +350,10 @@ class FileDisplay(object):
 
         """
         selection = -1
-        if max > 1:
+        if max_ > 1:
             input_msg = ("Select the appropriate number "
-                         "[1-{max}] then [enter] (press 'c' to "
-                         "cancel): ".format(max=max))
+                         "[1-{max_}] then [enter] (press 'c' to "
+                         "cancel): ".format(max_=max_))
         else:
             input_msg = ("Press 1 [enter] to confirm the selection "
                          "(press 'c' to cancel): ")
@@ -360,7 +363,7 @@ class FileDisplay(object):
                 return CANCEL, -1
             try:
                 selection = int(ans)
-                if selection < 1 or selection > max:
+                if selection < 1 or selection > max_:
                     selection = -1
                     raise ValueError
 
@@ -371,16 +374,16 @@ class FileDisplay(object):
         return OK, selection
 
 
-def separate_list_input(input):
+def separate_list_input(input_):
     """Separate a comma or space separated list.
 
-    :param str input: input from the user
+    :param str input_: input from the user
 
     :returns: strings
     :rtype: list
 
     """
-    no_commas = input.replace(",", " ")
+    no_commas = input_.replace(",", " ")
     return [string for string in no_commas.split()]
 
 def _parens_around_char(label):

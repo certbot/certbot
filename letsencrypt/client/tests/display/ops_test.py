@@ -1,3 +1,4 @@
+"""Test display.ops."""
 import sys
 import unittest
 
@@ -129,13 +130,15 @@ class ChooseNamesTest(unittest.TestCase):
     @mock.patch("letsencrypt.client.display.ops.util")
     def test_filter_names_cancel(self, mock_util):
         self.mock_install.get_all_names.return_value = set(["example.com"])
-        mock_util().checklist.return_value = (display_util.CANCEL, ["example.com"])
+        mock_util().checklist.return_value = (
+            display_util.CANCEL, ["example.com"])
 
         self.assertRaises(SystemExit, self._call, self.mock_install)
 
 
 class SuccessInstallationTest(unittest.TestCase):
-
+    # pylint: disable=too-few-public-methods
+    """Test the success installation message."""
     @classmethod
     def _call(cls, names):
         from letsencrypt.client.display.ops import success_installation

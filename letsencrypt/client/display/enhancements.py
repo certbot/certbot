@@ -22,7 +22,7 @@ def ask(enhancement):
 
     """
     try:
-        return _dispatch[enhancement]()
+        return dispatch[enhancement]()
     except KeyError:
         logging.error("Unsupported enhancement given to ask()")
         raise errors.LetsEncryptClientError("Unsupported Enhancement")
@@ -40,19 +40,19 @@ def redirect_by_default():
         ("Secure", "Make all requests redirect to secure HTTPS access"),
     ]
 
-    result = _util(interfaces.IDisplay).menu(
+    code, selection = util(interfaces.IDisplay).menu(
         "Please choose whether HTTPS access is required or optional.",
         choices)
 
-    if result[0] != display_util.OK:
+    if code != display_util.OK:
         return False
 
-    return result[1] == 1
+    return selection == 1
 
 
-_util = zope.component.getUtility
+util = zope.component.getUtility  # pylint: disable=invalid-name
 
 
-_dispatch = {
+dispatch = {  # pylint: disable=invalid-name
     "redirect": redirect_by_default
 }

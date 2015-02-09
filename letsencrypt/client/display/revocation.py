@@ -1,3 +1,4 @@
+"""Revocation UI class."""
 import os
 
 import zope.component
@@ -5,7 +6,7 @@ import zope.component
 from letsencrypt.client import interfaces
 from letsencrypt.client.display import display_util
 
-util = zope.component.getUtility
+util = zope.component.getUtility  # pylint: disable=invalid-name
 
 
 def choose_certs(certs):
@@ -45,12 +46,13 @@ def display_certs(certs):
 
     """
     list_choices = [
-        ("%s | %s | %s" %
-        (str(cert.get_cn().ljust(display_util.WIDTH - 39)),
-        cert.get_not_before().strftime("%m-%d-%y"),
-        "Installed" if cert.installed and cert.installed != ["Unknown"]
-        else "")
-        for cert in enumerate(certs))
+        ("%s | %s | %s" % (
+            str(cert.get_cn().ljust(display_util.WIDTH - 39)),
+            cert.get_not_before().strftime("%m-%d-%y"),
+            "Installed" if cert.installed and cert.installed != ["Unknown"]
+            else "")
+         for cert in enumerate(certs)
+        )
     ]
 
     code, tag = util(interfaces.IDisplay).menu(

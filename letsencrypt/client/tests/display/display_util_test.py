@@ -1,4 +1,4 @@
-import contextlib
+"""Test the display utility."""
 import os
 import unittest
 
@@ -8,6 +8,8 @@ from letsencrypt.client.display import display_util
 
 
 class DisplayT(unittest.TestCase):
+    """Base class for both utility classes."""
+    # pylint: disable=too-few-public-methods
     def setUp(self):
         self.choices = [("First", "Description1"), ("Second", "Description2")]
         self.tags = ["tag1", "tag2", "tag3"]
@@ -205,6 +207,7 @@ class FileOutputDisplayTest(DisplayT):
         self.assertEqual(ret, (display_util.CANCEL, []))
 
     def test_scrub_checklist_input_valid(self):
+        # pylint: disable=protected-access
         indices = [
             ["1"],
             ["1", "2", "1"],
@@ -221,6 +224,7 @@ class FileOutputDisplayTest(DisplayT):
             self.assertEqual(set_tags, exp[i])
 
     def test_scrub_checklist_input_invalid(self):
+        # pylint: disable=protected-access
         indices = [
             ["0"],
             ["4"],
@@ -233,11 +237,13 @@ class FileOutputDisplayTest(DisplayT):
                 self.displayer._scrub_checklist_input(list_, self.tags), [])
 
     def test_print_menu(self):
+        # pylint: disable=protected-access
         # This is purely cosmetic... just make sure there aren't any exceptions
         self.displayer._print_menu("msg", self.choices)
         self.displayer._print_menu("msg", self.tags)
 
     def test_wrap_lines(self):
+        # pylint: disable=protected-access
         msg = ("This is just a weak test\n"
                "This function is only meant to be for easy viewing\n"
                "Test a really really really really really really really really "
@@ -247,6 +253,7 @@ class FileOutputDisplayTest(DisplayT):
         self.assertEqual(text.count(os.linesep), 3)
 
     def test_get_valid_int_ans_valid(self):
+        # pylint: disable=protected-access
         with mock.patch("__builtin__.raw_input", return_value="1"):
             self.assertEqual(
                 self.displayer._get_valid_int_ans(1), (display_util.OK, 1))
@@ -257,6 +264,7 @@ class FileOutputDisplayTest(DisplayT):
                 (display_util.OK, int(ans)))
 
     def test_get_valid_int_ans_invalid(self):
+        # pylint: disable=protected-access
         answers = [
             ["0", "c"],
             ["4", "one", "C"],
@@ -279,9 +287,9 @@ class SeparateListInputTest(unittest.TestCase):
         self.exp = ["a", "b", "c", "test"]
 
     @classmethod
-    def _call(cls, input):
+    def _call(cls, input_):
         from letsencrypt.client.display.display_util import separate_list_input
-        return separate_list_input(input)
+        return separate_list_input(input_)
 
     def test_commas(self):
         actual = self._call("a,b,c,test")
@@ -305,7 +313,7 @@ class SeparateListInputTest(unittest.TestCase):
 
 class PlaceParensTest(unittest.TestCase):
     @classmethod
-    def _call(cls, label):
+    def _call(cls, label):  # pylint: disable=protected-access
         from letsencrypt.client.display.display_util import _parens_around_char
         return _parens_around_char(label)
 

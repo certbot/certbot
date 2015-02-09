@@ -272,7 +272,7 @@ def validate_key_csr(privkey, csr=None):
     if csr:
         if csr.form == "der":
             csr_obj = M2Crypto.X509.load_request_der_string(csr.data)
-            csr = Client.CSR(csr.file, csr_obj.as_pem(), "der")
+            csr = le_util.CSR(csr.file, csr_obj.as_pem(), "der")
 
         # If CSR is provided, it must be readable and valid.
         if csr.data and not crypto_util.valid_csr(csr.data):

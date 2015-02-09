@@ -1,4 +1,4 @@
-import logging
+"""Contains UI methods for LE user operations."""
 import os
 import sys
 
@@ -8,7 +8,7 @@ from letsencrypt.client import interfaces
 from letsencrypt.client.display import display_util
 
 # Define a helper function to avoid verbose code
-util = zope.component.getUtility
+util = zope.component.getUtility  # pylint: disable=invalid-name
 
 
 def choose_authenticator(auths):
@@ -82,11 +82,11 @@ def _filter_names(names):
 def _choose_names_manually():
     """Manualy input names for those without an installer."""
 
-    code, input = util(interfaces.IDisplay).input(
+    code, input_ = util(interfaces.IDisplay).input(
         "Please enter in your domain name(s) (comma and/or space separated) ")
 
     if code == display_util.OK:
-        return display_util.separate_list_input(input)
+        return display_util.separate_list_input(input_)
 
     sys.exit(0)
 
