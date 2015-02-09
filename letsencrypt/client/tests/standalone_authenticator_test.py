@@ -261,8 +261,12 @@ class StartListenerTest(unittest.TestCase):
     @mock.patch("letsencrypt.client.standalone_authenticator.os.fork")
     def test_start_listener_fork_parent(self, mock_fork, mock_atfork):
         self.authenticator.do_parent_process = mock.Mock()
+        self.authenticator.do_parent_process.return_value = True
         mock_fork.return_value = 22222
-        self.authenticator.start_listener(1717, "key")
+        result = self.authenticator.start_listener(1717, "key")
+        # start_listener is expected to return the True or False return
+        # value from do_parent_process.
+        self.assertTrue(result)
         self.assertEqual(self.authenticator.child_pid, 22222)
         self.authenticator.do_parent_process.assert_called_once_with(1717)
         mock_atfork.assert_called_once_with()

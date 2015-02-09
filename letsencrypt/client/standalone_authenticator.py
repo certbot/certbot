@@ -191,6 +191,8 @@ class StandaloneAuthenticator(object):
 
         :param int port: The TCP port to bind.
         :param str key: The private key to use (in PEM format).
+        :returns: True or False to indicate success or failure creating
+                  the subprocess.
         """
         fork_result = os.fork()
         Crypto.Random.atfork()
