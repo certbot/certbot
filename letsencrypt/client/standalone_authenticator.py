@@ -60,7 +60,7 @@ class StandaloneAuthenticator(object):
             self.subproc_state = "cantbind"
         else:
             # NOTREACHED
-            assert False
+            raise ValueError("Unexpected signal in signal handler")
 
     def subproc_signal_handler(self, sig, unused_frame):
         """Signal handler for the child process.

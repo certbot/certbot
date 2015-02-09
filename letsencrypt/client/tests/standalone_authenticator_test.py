@@ -123,7 +123,7 @@ class ClientSignalHandlerTest(unittest.TestCase):
         # function is only set as a signal handler for the above three
         # signals).
         self.assertRaises(
-            AssertionError, self.authenticator.client_signal_handler,
+            ValueError, self.authenticator.client_signal_handler,
             signal.SIGPIPE, None)
 
 
