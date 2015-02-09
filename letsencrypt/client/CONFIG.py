@@ -75,7 +75,7 @@ S_SIZE = 32
 NONCE_SIZE = 16
 """byte size of Nonce"""
 
-PORT = 443
+STANDALONE_CHALLENGE_PORT = 443
 """TCP port on which to perform (standalone) challenge"""
 
 # Key Sizes

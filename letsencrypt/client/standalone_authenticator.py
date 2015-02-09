@@ -252,7 +252,7 @@ class StandaloneAuthenticator(object):
             raise Exception("nothing for .perform() to do")
         # Try to do the authentication; note that this creates
         # the listener subprocess via os.fork()
-        if self.start_listener(CONFIG.PORT, key):
+        if self.start_listener(CONFIG.STANDALONE_CHALLENGE_PORT, key):
             return results_if_success
         else:
             # TODO: This should probably raise a DVAuthError exception
