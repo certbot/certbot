@@ -6,20 +6,20 @@ but instead creates its own ephemeral TCP listener on the specified port
 in order to respond to incoming DVSNI challenges from the certificate
 authority."""
 
-import zope.interface
-import zope.component
-from letsencrypt.client import CONFIG
-from letsencrypt.client import interfaces
 from letsencrypt.client.challenge_util import DvsniChall
 from letsencrypt.client.challenge_util import dvsni_gen_cert
-import os
-import sys
-import signal
-import time
-import socket
+from letsencrypt.client import CONFIG
+from letsencrypt.client import interfaces
 import Crypto.Random
 import OpenSSL.crypto
 import OpenSSL.SSL
+import os
+import signal
+import socket
+import sys
+import time
+import zope.component
+import zope.interface
 
 
 class StandaloneAuthenticator(object):
