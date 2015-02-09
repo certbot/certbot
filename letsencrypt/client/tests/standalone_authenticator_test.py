@@ -4,16 +4,16 @@
 import mock
 import unittest
 
-from letsencrypt.client.challenge_util import DvsniChall
-from letsencrypt.client.challenge_util import dvsni_gen_cert
-from letsencrypt.client import le_util
-from OpenSSL.crypto import FILETYPE_PEM
-import OpenSSL.crypto
-import OpenSSL.SSL
 import os
 import pkg_resources
 import signal
 import socket
+
+import OpenSSL.crypto
+import OpenSSL.SSL
+
+from letsencrypt.client import challenge_util
+from letsencrypt.client import le_util
 
 
 # Classes based on to allow interrupting infinite loop under test
@@ -67,8 +67,9 @@ class SNICallbackTest(unittest.TestCase):
         test_key = pkg_resources.resource_string(
             __name__, 'testdata/rsa256_key.pem')
         nonce, key = "abcdef", le_util.Key("foo", test_key)
-        self.cert = dvsni_gen_cert(name, r_b64, nonce, key)[0]
-        private_key = OpenSSL.crypto.load_privatekey(FILETYPE_PEM, key.pem)
+        self.cert = challenge_util.dvsni_gen_cert(name, r_b64, nonce, key)[0]
+        private_key = OpenSSL.crypto.load_privatekey(
+            OpenSSL.crypto.FILETYPE_PEM, key.pem)
         self.authenticator.private_key = private_key
         self.authenticator.tasks = {"abcdef.acme.invalid": self.cert}
         self.authenticator.child_pid = 12345
@@ -190,8 +191,10 @@ class PerformTest(unittest.TestCase):
         test_key = pkg_resources.resource_string(
             __name__, 'testdata/rsa256_key.pem')
         key = le_util.Key("something", test_key)
-        chall1 = DvsniChall("foo.example.com", "whee", "foononce", key)
-        chall2 = DvsniChall("bar.example.com", "whee", "barnonce", key)
+        chall1 = challenge_util.DvsniChall(
+            "foo.example.com", "whee", "foononce", key)
+        chall2 = challenge_util.DvsniChall(
+            "bar.example.com", "whee", "barnonce", key)
         bad_chall = ("This", "Represents", "A Non-DVSNI", "Challenge")
         self.authenticator.start_listener = mock.Mock()
         self.authenticator.start_listener.return_value = True
@@ -215,8 +218,10 @@ class PerformTest(unittest.TestCase):
         test_key = pkg_resources.resource_string(
             __name__, 'testdata/rsa256_key.pem')
         key = le_util.Key("something", test_key)
-        chall1 = DvsniChall("foo.example.com", "whee", "foononce", key)
-        chall2 = DvsniChall("bar.example.com", "whee", "barnonce", key)
+        chall1 = challenge_util.DvsniChall(
+            "foo.example.com", "whee", "foononce", key)
+        chall2 = challenge_util.DvsniChall(
+            "bar.example.com", "whee", "barnonce", key)
         bad_chall = ("This", "Represents", "A Non-DVSNI", "Challenge")
         self.authenticator.start_listener = mock.Mock()
         self.authenticator.start_listener.return_value = False
@@ -233,12 +238,12 @@ class PerformTest(unittest.TestCase):
 
     def test_perform_with_pending_tasks(self):
         self.authenticator.tasks = {"foononce.acme.invalid": "cert_data"}
-        extra_challenge = DvsniChall("a", "b", "c", "d")
+        extra_challenge = challenge_util.DvsniChall("a", "b", "c", "d")
         self.assertRaises(
             Exception, self.authenticator.perform, [extra_challenge])
 
     def test_perform_without_challenge_list(self):
-        extra_challenge = DvsniChall("a", "b", "c", "d")
+        extra_challenge = challenge_util.DvsniChall("a", "b", "c", "d")
         # This is wrong because a challenge must be specified.
         self.assertRaises(Exception, self.authenticator.perform, [])
         # This is wrong because it must be a list, not a bare challenge.
@@ -345,8 +350,9 @@ class DoChildProcessTest(unittest.TestCase):
             __name__, 'testdata/rsa256_key.pem')
         nonce, key = "abcdef", le_util.Key("foo", test_key)
         self.key = key
-        self.cert = dvsni_gen_cert(name, r_b64, nonce, key)[0]
-        private_key = OpenSSL.crypto.load_privatekey(FILETYPE_PEM, key.pem)
+        self.cert = challenge_util.dvsni_gen_cert(name, r_b64, nonce, key)[0]
+        private_key = OpenSSL.crypto.load_privatekey(
+            OpenSSL.crypto.FILETYPE_PEM, key.pem)
         self.authenticator.private_key = private_key
         self.authenticator.tasks = {"abcdef.acme.invalid": self.cert}
         self.authenticator.parent_pid = 12345
@@ -439,13 +445,15 @@ class CleanupTest(unittest.TestCase):
     def test_cleanup(self, mock_sleep, mock_kill):
         mock_sleep.return_value = None
         mock_kill.return_value = None
-        chall = DvsniChall("foo.example.com", "whee", "foononce", "key")
+        chall = challenge_util.DvsniChall(
+            "foo.example.com", "whee", "foononce", "key")
         self.authenticator.cleanup([chall])
         mock_kill.assert_called_once_with(12345, signal.SIGINT)
         mock_sleep.assert_called_once_with(1)
 
     def test_bad_cleanup(self):
-        chall = DvsniChall("bad.example.com", "whee", "badnonce", "key")
+        chall = challenge_util.DvsniChall(
+            "bad.example.com", "whee", "badnonce", "key")
         self.assertRaises(ValueError, self.authenticator.cleanup, [chall])
 
 

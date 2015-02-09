@@ -6,20 +6,22 @@
 This authenticator creates its own ephemeral TCP listener on the specified
 port in order to respond to incoming DVSNI challenges from the certificate
 authority."""
-from letsencrypt.client.challenge_util import DvsniChall
-from letsencrypt.client.challenge_util import dvsni_gen_cert
-from letsencrypt.client import CONFIG
-from letsencrypt.client import interfaces
-import Crypto.Random
-import OpenSSL.crypto
-import OpenSSL.SSL
+
 import os
 import signal
 import socket
 import sys
 import time
+
+import Crypto.Random
+import OpenSSL.crypto
+import OpenSSL.SSL
 import zope.component
 import zope.interface
+
+from letsencrypt.client import challenge_util
+from letsencrypt.client import CONFIG
+from letsencrypt.client import interfaces
 
 
 class StandaloneAuthenticator(object):
@@ -256,11 +258,12 @@ class StandaloneAuthenticator(object):
             # TODO: Specify a correct exception subclass.
             raise Exception(".perform() was called without challenge list")
         for chall in chall_list:
-            if isinstance(chall, DvsniChall):
+            if isinstance(chall, challenge_util.DvsniChall):
                 # We will attempt to do it
                 name, r_b64 = chall.domain, chall.r_b64
                 nonce, key = chall.nonce, chall.key
-                cert, s_b64 = dvsni_gen_cert(name, r_b64, nonce, key)
+                cert, s_b64 = challenge_util.dvsni_gen_cert(
+                    name, r_b64, nonce, key)
                 self.tasks[nonce + CONFIG.INVALID_EXT] = cert
                 results_if_success.append({"type": "dvsni", "s": s_b64})
                 results_if_failure.append(None)
@@ -292,7 +295,7 @@ class StandaloneAuthenticator(object):
         """
         # Remove this from pending tasks list
         for chall in chall_list:
-            assert isinstance(chall, DvsniChall)
+            assert isinstance(chall, challenge_util.DvsniChall)
             nonce = chall.nonce
             if nonce + CONFIG.INVALID_EXT in self.tasks:
                 del self.tasks[nonce + CONFIG.INVALID_EXT]
