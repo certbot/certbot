@@ -20,7 +20,7 @@ import zope.component
 import zope.interface
 
 from letsencrypt.client import challenge_util
-from letsencrypt.client import CONFIG
+from letsencrypt.client import constants
 from letsencrypt.client import interfaces
 
 
@@ -287,7 +287,7 @@ class StandaloneAuthenticator(object):
                 nonce, key = chall.nonce, chall.key
                 cert, s_b64 = challenge_util.dvsni_gen_cert(
                     name, r_b64, nonce, key)
-                self.tasks[nonce + CONFIG.INVALID_EXT] = cert
+                self.tasks[nonce + constants.DVSNI_DOMAIN_SUFFIX] = cert
                 results_if_success.append({"type": "dvsni", "s": s_b64})
                 results_if_failure.append(None)
             else:
@@ -300,7 +300,7 @@ class StandaloneAuthenticator(object):
             raise Exception("nothing for .perform() to do")
         # Try to do the authentication; note that this creates
         # the listener subprocess via os.fork()
-        if self.start_listener(CONFIG.STANDALONE_CHALLENGE_PORT, key):
+        if self.start_listener(constants.DVSNI_CHALLENGE_PORT, key):
             return results_if_success
         else:
             # TODO: This should probably raise a DVAuthError exception
@@ -323,8 +323,8 @@ class StandaloneAuthenticator(object):
         for chall in chall_list:
             assert isinstance(chall, challenge_util.DvsniChall)
             nonce = chall.nonce
-            if nonce + CONFIG.INVALID_EXT in self.tasks:
-                del self.tasks[nonce + CONFIG.INVALID_EXT]
+            if nonce + constants.DVSNI_DOMAIN_SUFFIX in self.tasks:
+                del self.tasks[nonce + constants.DVSNI_DOMAIN_SUFFIX]
             else:
                 # Could not find the challenge to remove!
                 raise ValueError("could not find the challenge to remove")

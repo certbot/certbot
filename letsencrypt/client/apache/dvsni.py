@@ -3,7 +3,7 @@ import logging
 import os
 
 from letsencrypt.client import challenge_util
-from letsencrypt.client import CONFIG
+from letsencrypt.client import constants
 
 from letsencrypt.client.apache import parser
 
@@ -11,8 +11,9 @@ from letsencrypt.client.apache import parser
 class ApacheDvsni(object):
     """Class performs DVSNI challenges within the Apache configurator.
 
-    :ivar config: ApacheConfigurator object
-    :type config: :class:`letsencrypt.client.apache.configurator`
+    :ivar configurator: ApacheConfigurator object
+    :type configurator:
+        :class:`letsencrypt.client.apache.configurator.ApacheConfigurator`
 
     :ivar dvsni_chall: Data required for challenges.
        where DvsniChall tuples have the following fields
@@ -32,12 +33,12 @@ class ApacheDvsni(object):
     :param str challenge_conf: location of the challenge config file
 
     """
-    def __init__(self, config):
-        self.config = config
+    def __init__(self, configurator):
+        self.configurator = configurator
         self.dvsni_chall = []
         self.indices = []
         self.challenge_conf = os.path.join(
-            config.direc["config"], "le_dvsni_cert_challenge.conf")
+            configurator.config.config_dir, "le_dvsni_cert_challenge.conf")
         # self.completed = 0
 
     def add_chall(self, chall, idx=None):
@@ -59,12 +60,12 @@ class ApacheDvsni(object):
             return None
         # Save any changes to the configuration as a precaution
         # About to make temporary changes to the config
-        self.config.save()
+        self.configurator.save()
 
         addresses = []
         default_addr = "*:443"
         for chall in self.dvsni_chall:
-            vhost = self.config.choose_vhost(chall.domain)
+            vhost = self.configurator.choose_vhost(chall.domain)
             if vhost is None:
                 logging.error(
                     "No vhost exists with servername or alias of: %s",
@@ -74,7 +75,7 @@ class ApacheDvsni(object):
                 return None
 
             # TODO - @jdkasten review this code to make sure it makes sense
-            self.config.make_server_sni_ready(vhost, default_addr)
+            self.configurator.make_server_sni_ready(vhost, default_addr)
 
             for addr in vhost.addrs:
                 if "_default_" == addr.get_addr():
@@ -94,7 +95,7 @@ class ApacheDvsni(object):
         self._mod_config(addresses)
 
         # Save reversible changes
-        self.config.save("SNI Challenge", True)
+        self.configurator.save("SNI Challenge", True)
 
         return responses
 
@@ -102,7 +103,7 @@ class ApacheDvsni(object):
         """Generate and write out challenge certificate."""
         cert_path = self.get_cert_file(chall.nonce)
         # Register the path before you write out the file
-        self.config.reverter.register_file_creation(True, cert_path)
+        self.configurator.reverter.register_file_creation(True, cert_path)
 
         cert_pem, s_b64 = challenge_util.dvsni_gen_cert(
             chall.domain, chall.r_b64, chall.nonce, chall.key)
@@ -130,8 +131,9 @@ class ApacheDvsni(object):
                 self.dvsni_chall[idx].key.file)
         config_text += "</IfModule>\n"
 
-        self._conf_include_check(self.config.parser.loc["default"])
-        self.config.reverter.register_file_creation(True, self.challenge_conf)
+        self._conf_include_check(self.configurator.parser.loc["default"])
+        self.configurator.reverter.register_file_creation(
+            True, self.challenge_conf)
 
         with open(self.challenge_conf, 'w') as new_conf:
             new_conf.write(config_text)
@@ -145,11 +147,12 @@ class ApacheDvsni(object):
         :param str main_config: file path to main user apache config file
 
         """
-        if len(self.config.parser.find_dir(
+        if len(self.configurator.parser.find_dir(
                 parser.case_i("Include"), self.challenge_conf)) == 0:
             # print "Including challenge virtual host(s)"
-            self.config.parser.add_dir(parser.get_aug_path(main_config),
-                                       "Include", self.challenge_conf)
+            self.configurator.parser.add_dir(
+                parser.get_aug_path(main_config),
+                "Include", self.challenge_conf)
 
     def _get_config_text(self, nonce, ip_addrs, dvsni_key_file):
         """Chocolate virtual server configuration text
@@ -164,18 +167,20 @@ class ApacheDvsni(object):
 
         """
         ips = " ".join(str(i) for i in ip_addrs)
+        document_root = os.path.join(
+            self.configurator.config.config_dir, "dvsni_page/")
         return ("<VirtualHost " + ips + ">\n"
-                "ServerName " + nonce + CONFIG.INVALID_EXT + "\n"
+                "ServerName " + nonce + constants.DVSNI_DOMAIN_SUFFIX + "\n"
                 "UseCanonicalName on\n"
                 "SSLStrictSNIVHostCheck on\n"
                 "\n"
                 "LimitRequestBody 1048576\n"
                 "\n"
-                "Include " + self.config.parser.loc["ssl_options"] + "\n"
+                "Include " + self.configurator.parser.loc["ssl_options"] + "\n"
                 "SSLCertificateFile " + self.get_cert_file(nonce) + "\n"
                 "SSLCertificateKeyFile " + dvsni_key_file + "\n"
                 "\n"
-                "DocumentRoot " + self.config.direc["config"] + "dvsni_page/\n"
+                "DocumentRoot " + document_root + "\n"
                 "</VirtualHost>\n\n")
 
     def get_cert_file(self, nonce):
@@ -187,4 +192,4 @@ class ApacheDvsni(object):
         :rtype: str
 
         """
-        return self.config.direc["work"] + nonce + ".crt"
+        return os.path.join(self.configurator.config.work_dir, nonce + ".crt")
