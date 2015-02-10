@@ -23,7 +23,7 @@ class Revoker(object):
     """
 
     def __init__(self, installer, config):
-        self.network = network.Network(config.acme_server)
+        self.network = network.Network(config.server)
         self.installer = installer
         self.config = config
 
