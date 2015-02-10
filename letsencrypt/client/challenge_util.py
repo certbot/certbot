@@ -6,7 +6,7 @@ from Crypto import Random
 
 from letsencrypt.acme import jose
 
-from letsencrypt.client import CONFIG
+from letsencrypt.client import constants
 from letsencrypt.client import crypto_util
 
 
@@ -45,14 +45,14 @@ def dvsni_gen_cert(name, r_b64, nonce, key):
 
     """
     # Generate S
-    dvsni_s = Random.get_random_bytes(CONFIG.S_SIZE)
+    dvsni_s = Random.get_random_bytes(constants.S_SIZE)
     dvsni_r = jose.b64decode(r_b64)
 
     # Generate extension
     ext = _dvsni_gen_ext(dvsni_r, dvsni_s)
 
     cert_pem = crypto_util.make_ss_cert(
-        key.pem, [nonce + CONFIG.INVALID_EXT, name, ext])
+        key.pem, [nonce + constants.DVSNI_DOMAIN_SUFFIX, name, ext])
 
     return cert_pem, jose.b64encode(dvsni_s)
 
@@ -63,7 +63,7 @@ def _dvsni_gen_ext(dvsni_r, dvsni_s):
     :param bytearray dvsni_r: DVSNI r value
     :param bytearray dvsni_s: DVSNI s value
 
-    :returns: z + CONFIG.INVALID_EXT
+    :returns: z + :const:`~letsencrypt.client.constants.DVSNI_DOMAIN_SUFFIX`
     :rtype: str
 
     """
@@ -71,4 +71,4 @@ def _dvsni_gen_ext(dvsni_r, dvsni_s):
     z_base.update(dvsni_r)
     z_base.update(dvsni_s)
 
-    return z_base.hexdigest() + CONFIG.INVALID_EXT
+    return z_base.hexdigest() + constants.DVSNI_DOMAIN_SUFFIX
