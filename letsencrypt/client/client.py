@@ -420,7 +420,7 @@ def _misconfigured_rollback(checkpoints, config):
     :type config: :class:`letsencrypt.client.interfaces.IConfig`
 
     """
-    yes = zope.component.getUtility(interfaces.IDisplay).generic_yesno(
+    yes = zope.component.getUtility(interfaces.IDisplay).yesno(
         "Oh, no! The web server is currently misconfigured.{0}{0}"
         "Would you still like to rollback the "
         "configuration?".format(os.linesep))
@@ -466,7 +466,7 @@ def revoke(config):
             "installed may not be available.")
         installer = None
 
-    revoc = revoker.Revoker(server, installer)
+    revoc = revoker.Revoker(installer, config)
     revoc.display_menu()
 
 

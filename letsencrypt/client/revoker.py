@@ -104,7 +104,7 @@ class Revoker(object):
 
     def _mark_for_revocation(self, cert):  # pylint: disable=no-self-use
         """Marks a cert for revocation."""
-        if os.path.isfile(Revoker.marked_path):
+        if os.path.isfile(self.marked_path):
             raise errors.LetsEncryptRevokerError(
                 "MARKED file was never cleaned.")
         with open(self.marked_path, "w") as marked_file:
@@ -200,7 +200,7 @@ class Revoker(object):
         """Remove a certificate from the LIST file."""
         list_path2 = os.path.join(self.config.cert_key_backup, "LIST.tmp")
 
-        with open(Revoker.list_path, "rb") as orgfile:
+        with open(self.list_path, "rb") as orgfile:
             csvreader = csv.reader(orgfile)
 
             with open(list_path2, "wb") as newfile:
@@ -212,7 +212,7 @@ class Revoker(object):
                             row[2] == cert.orig_key.path):
                         csvwriter.writerow(row)
 
-        shutil.copy2(list_path2, Revoker.list_path)
+        shutil.copy2(list_path2, self.list_path)
         os.remove(list_path2)
 
     @classmethod

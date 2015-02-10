@@ -23,7 +23,7 @@ def choose_authenticator(auths):
     """
     code, index = util(interfaces.IDisplay).menu(
         "How would you like to authenticate with the Let's Encrypt CA?",
-        [str(auth.__class__) for auth in auths])
+        [str(auth) for auth in auths])
 
     if code == display_util.OK:
         return auths[index]

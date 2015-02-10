@@ -127,7 +127,7 @@ def main():  # pylint: disable=too-many-branches
     # Make sure we actually get an installer that is functioning properly
     # before we begin to try to use it.
     try:
-        auth = client.determine_authenticator()
+        auth = client.determine_authenticator(config)
     except errors.LetsEncryptMisconfigurationError as err:
         logging.fatal("Please fix your configuration before proceeding.%s"
                       "The Authenticator exited with the following message: "
@@ -138,7 +138,7 @@ def main():  # pylint: disable=too-many-branches
     if interfaces.IInstaller.providedBy(auth):  # pylint: disable=no-member
         installer = auth
     else:
-        installer = client.determine_installer()
+        installer = client.determine_installer(config)
 
     doms = ops.choose_names(installer) if args.domains is None else args.domains
 
