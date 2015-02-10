@@ -8,9 +8,9 @@ import shutil
 import M2Crypto
 
 from letsencrypt.client import acme
-from letsencrypt.client import CONFIG
 from letsencrypt.client import errors
 from letsencrypt.client import le_util
+
 from letsencrypt.client import network
 
 from letsencrypt.client.display import display_util
@@ -26,19 +26,26 @@ class Revoker(object):
     :type network: :class:`letsencrypt.client.network`
 
     :ivar installer: Installer object
-    :type installer: :class:`letsencrypt.client.interfaces.IInstaller`
+    :type installer: :class:`~letsencrypt.client.interfaces.IInstaller`
+
+    :ivar config: Configuration.
+    :type config: :class:`~letsencrypt.client.interfaces.IConfig`
 
     """
 
-    list_path = os.path.join(CONFIG.CERT_KEY_BACKUP, "LIST")
-    marked_path = os.path.join(CONFIG.CERT_KEY_BACKUP, "MARKED")
-
-    def __init__(self, server, installer):
-        self.network = network.Network(server)
+    def __init__(self, installer, config):
+        self.network = network.Network(config.server)
         self.installer = installer
+        self.config = config
+
         # This will go through and make sure that nothing almost got revoked...
         # but didn't quite make it... also, guarantees no orphan cert/key files
         self.recovery_routine()
+
+        # TODO: WTF do I do with these...
+        self.list_path = os.path.join(config.cert_key_backup, "LIST")
+        self.marked_path = os.path.join(config.cert_key_backup, "MARKED")
+
 
     def revoke_from_interface(self, cert):
         """Handle ACME "revocation" phase.
@@ -84,9 +91,9 @@ class Revoker(object):
 
     def recovery_routine(self):
         """Intended to make sure files aren't orphaned."""
-        if not os.path.isfile(Revoker.marked_path):
+        if not os.path.isfile(self.marked_path):
             return
-        with open(Revoker.marked_path, "r") as marked_file:
+        with open(self.marked_path, "r") as marked_file:
             csvreader = csv.reader(marked_file)
             for row in csvreader:
                 self.revoke(row[0], row[1])
@@ -100,18 +107,18 @@ class Revoker(object):
         if os.path.isfile(Revoker.marked_path):
             raise errors.LetsEncryptRevokerError(
                 "MARKED file was never cleaned.")
-        with open(Revoker.marked_path, "w") as marked_file:
+        with open(self.marked_path, "w") as marked_file:
             csvwriter = csv.writer(marked_file)
             csvwriter.writerow([cert.backup_path, cert.backup_key_path])
 
     def _remove_mark(self):  # pylint: disable=no-self-use
         """Remove the marked file."""
-        os.remove(Revoker.marked_path)
+        os.remove(self.marked_path)
 
     def display_menu(self):
         """List trusted Let's Encrypt certificates."""
 
-        if not os.path.isfile(Revoker.list_path):
+        if not os.path.isfile(self.list_path):
             logging.info(
                 "You don't have any certificates saved from letsencrypt")
             return
@@ -131,14 +138,14 @@ class Revoker(object):
         # pylint: disable=no-self-use
         """Populate a list of all the saved certs."""
         certs = []
-        with open(Revoker.list_path, "rb") as csvfile:
+        with open(self.list_path, "rb") as csvfile:
             csvreader = csv.reader(csvfile)
             # idx, orig_cert, orig_key
             for row in csvreader:
                 # Generate backup key/cert names
-                b_k = os.path.join(CONFIG.CERT_KEY_BACKUP,
+                b_k = os.path.join(self.config.cert_key_backup,
                                    os.path.basename(row[2]) + "_" + row[0])
-                b_c = os.path.join(CONFIG.CERT_KEY_BACKUP,
+                b_c = os.path.join(self.config.cert_key_backup,
                                    os.path.basename(row[1]) + "_" + row[0])
 
                 cert = Cert(b_c)
@@ -191,7 +198,7 @@ class Revoker(object):
 
     def _remove_cert_from_list(self, cert):  # pylint: disable=no-self-use
         """Remove a certificate from the LIST file."""
-        list_path2 = os.path.join(CONFIG.CERT_KEY_BACKUP, "LIST.tmp")
+        list_path2 = os.path.join(self.config.cert_key_backup, "LIST.tmp")
 
         with open(Revoker.list_path, "rb") as orgfile:
             csvreader = csv.reader(orgfile)
@@ -209,12 +216,14 @@ class Revoker(object):
         os.remove(list_path2)
 
     @classmethod
-    def store_cert_key(cls, cert_path, key_path, encrypt=False):
+    def store_cert_key(cls, cert_path, key_path, config, encrypt=False):
         """Store certificate key. (Used to allow quick revocation)
 
         :param str cert_path: Path to a certificate file.
         :param key_path: Authorized key for certificate
         :type key_path: :class:`letsencrypt.client.le_util.Key`
+        :ivar config: Configuration.
+        :type config: :class:`~letsencrypt.client.interfaces.IConfig`
 
         :param bool encrypt: Should the certificate key be encrypted?
 
@@ -222,7 +231,8 @@ class Revoker(object):
         :rtype: bool
 
         """
-        le_util.make_or_verify_dir(CONFIG.CERT_KEY_BACKUP, 0o700)
+        list_path = (config.cert_key_backup, "LIST")
+        le_util.make_or_verify_dir(config.cert_key_backup, 0o700)
         idx = 0
 
         if encrypt:
@@ -232,23 +242,23 @@ class Revoker(object):
                 "next update!")
             return False
 
-        cls._append_index_file(cert_path, key_path)
+        cls._append_index_file(cert_path, key_path, list_path)
 
         shutil.copy2(key_path,
                      os.path.join(
-                         CONFIG.CERT_KEY_BACKUP,
+                         config.cert_key_backup,
                          os.path.basename(key_path) + "_" + str(idx)))
         shutil.copy2(cert_path,
                      os.path.join(
-                         CONFIG.CERT_KEY_BACKUP,
+                         config.cert_key_backup,
                          os.path.basename(cert_path) + "_" + str(idx)))
 
         return True
 
     @classmethod
-    def _append_index_file(cls, cert_path, key_path):
-        if os.path.isfile(Revoker.list_path):
-            with open(Revoker.list_path, 'r+b') as csvfile:
+    def _append_index_file(cls, cert_path, key_path, list_path):
+        if os.path.isfile(list_path):
+            with open(list_path, 'r+b') as csvfile:
                 csvreader = csv.reader(csvfile)
 
                 # Find the highest index in the file
@@ -258,7 +268,7 @@ class Revoker(object):
                 csvwriter.writerow([str(idx), cert_path, key_path])
 
         else:
-            with open(Revoker.list_path, 'wb') as csvfile:
+            with open(list_path, 'wb') as csvfile:
                 csvwriter = csv.writer(csvfile)
                 csvwriter.writerow(["0", cert_path, key_path])
 

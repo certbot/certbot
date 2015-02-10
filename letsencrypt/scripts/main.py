@@ -9,11 +9,12 @@ import logging
 import os
 import sys
 
+import confargparse
 import zope.component
-import zope.interface
 
 import letsencrypt
-from letsencrypt.client import CONFIG
+
+from letsencrypt.client import configuration
 from letsencrypt.client import client
 from letsencrypt.client import errors
 from letsencrypt.client import interfaces
@@ -23,49 +24,74 @@ from letsencrypt.client.display import display_util
 from letsencrypt.client.display import ops
 
 
-def main():  # pylint: disable=too-many-statements,too-many-branches
-    """Command line argument parsing and main script execution."""
-    parser = argparse.ArgumentParser(
+def create_parser():
+    """Create parser."""
+    parser = confargparse.ConfArgParser(
         description="letsencrypt client %s" % letsencrypt.__version__)
 
-    parser.add_argument("-d", "--domains", dest="domains", metavar="DOMAIN",
-                        nargs="+")
-    parser.add_argument("-s", "--server", dest="server",
-                        default=CONFIG.ACME_SERVER,
-                        help="The ACME CA server. [%(default)s]")
-    parser.add_argument("-p", "--privkey", dest="privkey", type=read_file,
-                        help="Path to the private key file for certificate "
-                             "generation.")
-    parser.add_argument("-b", "--rollback", dest="rollback", type=int,
-                        default=0, metavar="N",
-                        help="Revert configuration N number of checkpoints.")
-    parser.add_argument("-B", "--keysize", dest="key_size", type=int,
-                        default=CONFIG.RSA_KEY_SIZE, metavar="N",
-                        help="RSA key shall be sized N bits. [%(default)d]")
-    parser.add_argument("-k", "--revoke", dest="revoke", action="store_true",
-                        help="Revoke a certificate.")
-    parser.add_argument("-v", "--view-config-changes",
-                        dest="view_config_changes",
-                        action="store_true",
-                        help="View checkpoints and associated configuration "
-                             "changes.")
-    parser.add_argument("-r", "--redirect", dest="redirect",
-                        action="store_const", const=True,
-                        help="Automatically redirect all HTTP traffic to HTTPS "
-                             "for the newly authenticated vhost.")
-    parser.add_argument("-n", "--no-redirect", dest="redirect",
-                        action="store_const", const=False,
-                        help="Skip the HTTPS redirect question, allowing both "
-                             "HTTP and HTTPS.")
-    parser.add_argument("-e", "--agree-tos", dest="eula", action="store_true",
-                        help="Skip the end user license agreement screen.")
-    parser.add_argument("-t", "--text", dest="use_curses", action="store_false",
-                        help="Use the text output instead of the curses UI.")
-    parser.add_argument("--test", dest="test", action="store_true",
-                        help="Run in test mode.")
+    add = parser.add_argument
+    config_help = lambda name: interfaces.IConfig[name].__doc__
 
+    add("-d", "--domains", metavar="DOMAIN", nargs="+")
+    add("-s", "--server", default="letsencrypt-demo.org:443",
+        help=config_help("server"))
+
+    add("-p", "--privkey", type=read_file,
+        help="Path to the private key file for certificate generation.")
+    add("-B", "--rsa-key-size", type=int, default=2048, metavar="N",
+        help=config_help("rsa_key_size"))
+
+    add("-k", "--revoke", action="store_true", help="Revoke a certificate.")
+    add("-b", "--rollback", type=int, default=0, metavar="N",
+        help="Revert configuration N number of checkpoints.")
+    add("-v", "--view-config-changes", action="store_true",
+        help="View checkpoints and associated configuration changes.")
+
+    # TODO: resolve - assumes binary logic while client.py assumes ternary.
+    add("-r", "--redirect", action="store_true",
+        help="Automatically redirect all HTTP traffic to HTTPS for the newly "
+             "authenticated vhost.")
+
+    add("-e", "--agree-tos", dest="eula", action="store_true",
+        help="Skip the end user license agreement screen.")
+    add("-t", "--text", dest="use_curses", action="store_false",
+        help="Use the text output instead of the curses UI.")
+
+    add("--config-dir", default="/etc/letsencrypt",
+        help=config_help("config_dir"))
+    add("--work-dir", default="/var/lib/letsencrypt",
+        help=config_help("work_dir"))
+    add("--backup-dir", default="/var/lib/letsencrypt/backups",
+        help=config_help("backup_dir"))
+    add("--key-dir", default="/etc/letsencrypt/keys",
+        help=config_help("key_dir"))
+    add("--cert-dir", default="/etc/letsencrypt/certs",
+        help=config_help("cert_dir"))
+
+    add("--le-vhost-ext", default="-le-ssl.conf",
+        help=config_help("le_vhost_ext"))
+    add("--cert-path", default="/etc/letsencrypt/certs/cert-letsencrypt.pem",
+        help=config_help("cert_path"))
+    add("--chain-path", default="/etc/letsencrypt/certs/chain-letsencrypt.pem",
+        help=config_help("chain_path"))
+
+    add("--apache-server-root", default="/etc/apache2",
+        help=config_help("apache_server_root"))
+    add("--apache-mod-ssl-conf", default="/etc/letsencrypt/options-ssl.conf",
+        help=config_help("apache_mod_ssl_conf"))
+    add("--apache-ctl", default="apache2ctl", help=config_help("apache_ctl"))
+    add("--apache-enmod", default="a2enmod", help=config_help("apache_enmod"))
+    add("--apache-init-script", default="/etc/init.d/apache2",
+        help=config_help("apache_init_script"))
+
+    return parser
+
+
+def main():  # pylint: disable=too-many-branches
+    """Command line argument parsing and main script execution."""
     # note: arg parser internally handles --help (and exits afterwards)
-    args = parser.parse_args()
+    args = create_parser().parse_args()
+    config = configuration.NamespaceConfig(args)
 
     # note: check is done after arg parsing as --help should work w/o root also.
     if not os.geteuid() == 0:
@@ -84,15 +110,15 @@ def main():  # pylint: disable=too-many-statements,too-many-branches
     zope.component.provideUtility(displayer)
 
     if args.view_config_changes:
-        client.view_config_changes()
+        client.view_config_changes(config)
         sys.exit()
 
     if args.revoke:
-        client.revoke(args.server)
+        client.revoke(config)
         sys.exit()
 
     if args.rollback > 0:
-        client.rollback(args.rollback)
+        client.rollback(args.rollback, config)
         sys.exit()
 
     if not args.eula:
@@ -118,11 +144,11 @@ def main():  # pylint: disable=too-many-statements,too-many-branches
 
     # Prepare for init of Client
     if args.privkey is None:
-        privkey = client.init_key(args.key_size)
+        privkey = client.init_key(args.rsa_key_size, config.key_dir)
     else:
         privkey = le_util.Key(args.privkey[0], args.privkey[1])
 
-    acme = client.Client(args.server, privkey, auth, installer)
+    acme = client.Client(config, privkey, auth, installer)
 
     # Validate the key and csr
     client.validate_key_csr(privkey)

@@ -15,11 +15,11 @@ import Crypto.Signature.PKCS1_v1_5
 
 import M2Crypto
 
-from letsencrypt.client import CONFIG
+from letsencrypt.client import constants
 from letsencrypt.client import le_util
 
 
-def create_sig(msg, key_str, nonce=None, nonce_len=CONFIG.NONCE_SIZE):
+def create_sig(msg, key_str, nonce=None):
     """Create signature with nonce prepended to the message.
 
     .. todo:: Protect against crypto unicode errors... is this sufficient?
@@ -30,19 +30,17 @@ def create_sig(msg, key_str, nonce=None, nonce_len=CONFIG.NONCE_SIZE):
     :param str key_str: Key in string form. Accepted formats
         are the same as for `Crypto.PublicKey.RSA.importKey`.
 
-    :param nonce: Nonce to be used. If None, nonce of `nonce_len` size
-                  will be randomly generated.
-    :type nonce: str or None
-
-    :param int nonce_len: Size of the automatically generated nonce.
+    :param str msg: Message to be signed
+    :param str nonce: Nonce to be used (required size)
 
     :returns: Signature.
     :rtype: dict
 
     """
-    msg = str(msg)
     key = Crypto.PublicKey.RSA.importKey(key_str)
-    nonce = Random.get_random_bytes(nonce_len) if nonce is None else nonce
+    if nonce is None:
+        nonce = Random.get_random_bytes(constants.NONCE_SIZE)
+    assert len(nonce) == constants.NONCE_SIZE
 
     msg_with_nonce = nonce + msg
     hashed = Crypto.Hash.SHA256.new(msg_with_nonce)
