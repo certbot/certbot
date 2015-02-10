@@ -33,7 +33,7 @@ class Message(util.JSONDeSerializable, util.ImmutableMap):
         """Get JSON serializable object.
 
         :returns: Serializable JSON object representing ACME message.
-            :meth:`validate` will almost certianly not work, due to reasons
+            :meth:`validate` will almost certainly not work, due to reasons
             explained in :class:`letsencrypt.acme.interfaces.IJSONSerializable`.
         :rtype: dict
 
@@ -80,7 +80,7 @@ class Message(util.JSONDeSerializable, util.ImmutableMap):
         try:
             msg_cls = cls.TYPES[msg_type]
         except KeyError:
-            raise errors.UnrecognnizedMessageTypeError(msg_type)
+            raise errors.UnrecognizedMessageTypeError(msg_type)
 
         if validate:
             msg_cls.validate_json(jobj)

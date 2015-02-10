@@ -65,7 +65,7 @@ class MessageTest(unittest.TestCase):
         self.assertRaises(errors.ValidationError, self._from_json, {})
 
     def test_from_json_unknown_type_fails(self):
-        self.assertRaises(errors.UnrecognnizedMessageTypeError,
+        self.assertRaises(errors.UnrecognizedMessageTypeError,
                           self._from_json, {'type': 'bar'})
 
     @mock.patch('letsencrypt.acme.messages.Message.TYPES')

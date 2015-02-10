@@ -6,7 +6,7 @@ class Error(Exception):
 class ValidationError(Error):
     """ACME message validation error."""
 
-class UnrecognnizedMessageTypeError(ValidationError):
+class UnrecognizedMessageTypeError(ValidationError):
     """Unrecognized ACME message type error."""
 
 class SchemaValidationError(ValidationError):
