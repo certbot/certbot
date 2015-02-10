@@ -43,7 +43,9 @@ def create_parser():
         help="Revert configuration N number of checkpoints.")
     add("-v", "--view-config-changes", action="store_true",
         help="View checkpoints and associated configuration changes.")
-    add("-r", "--redirect", type=bool, default=None,
+
+    # TODO: resolve - assumes binary logic while client.py assumes ternary.
+    add("-r", "--redirect", action="store_true",
         help="Automatically redirect all HTTP traffic to HTTPS for the newly "
              "authenticated vhost.")
 
