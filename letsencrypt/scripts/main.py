@@ -19,6 +19,7 @@ from letsencrypt.client import client
 from letsencrypt.client import display
 from letsencrypt.client import errors
 from letsencrypt.client import interfaces
+from letsencrypt.client import le_util
 from letsencrypt.client import log
 
 def create_parser():
@@ -144,7 +145,7 @@ def main():  # pylint: disable=too-many-branches
     if args.privkey is None:
         privkey = client.init_key(args.rsa_key_size, config.key_dir)
     else:
-        privkey = client.Client.Key(args.privkey[0], args.privkey[1])
+        privkey = le_util.Key(args.privkey[0], args.privkey[1])
 
     acme = client.Client(config, privkey, auth, installer)
 
