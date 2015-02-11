@@ -28,6 +28,9 @@ All you need to do is:
 .. image:: https://travis-ci.org/letsencrypt/lets-encrypt-preview.svg?branch=master
     :target: https://travis-ci.org/letsencrypt/lets-encrypt-preview
 
+.. image:: https://coveralls.io/repos/letsencrypt/lets-encrypt-preview/badge.png?branch=master
+    :target: https://coveralls.io/r/letsencrypt/lets-encrypt-preview
+
 .. _watch demo video: https://www.youtube.com/watch?v=Gas_sSB-5SU
 
 
