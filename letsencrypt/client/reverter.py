@@ -6,7 +6,6 @@ import time
 
 import zope.component
 
-from letsencrypt.client import CONFIG
 from letsencrypt.client import display
 from letsencrypt.client import errors
 from letsencrypt.client import interfaces
@@ -14,13 +13,14 @@ from letsencrypt.client import le_util
 
 
 class Reverter(object):
-    """Reverter Class - save and revert configuration checkpoints"""
-    def __init__(self, direc=None):
-        if not direc:
-            direc = {"backup": CONFIG.BACKUP_DIR,
-                     "temp": CONFIG.TEMP_CHECKPOINT_DIR,
-                     "progress": CONFIG.IN_PROGRESS_DIR}
-        self.direc = direc
+    """Reverter Class - save and revert configuration checkpoints.
+
+    :param config: Configuration.
+    :type config: :class:`letsencrypt.client.interfaces.IConfig`
+
+    """
+    def __init__(self, config):
+        self.config = config
 
     def revert_temporary_config(self):
         """Reload users original configuration files after a temporary save.
@@ -32,13 +32,13 @@ class Reverter(object):
             Unable to revert config
 
         """
-        if os.path.isdir(self.direc["temp"]):
+        if os.path.isdir(self.config.temp_checkpoint_dir):
             try:
-                self._recover_checkpoint(self.direc["temp"])
+                self._recover_checkpoint(self.config.temp_checkpoint_dir)
             except errors.LetsEncryptReverterError:
                 # We have a partial or incomplete recovery
                 logging.fatal("Incomplete or failed recovery for %s",
-                              self.direc["temp"])
+                              self.config.temp_checkpoint_dir)
                 raise errors.LetsEncryptReverterError(
                     "Unable to revert temporary config")
 
@@ -63,7 +63,7 @@ class Reverter(object):
             logging.error("Rollback argument must be a positive integer")
             raise errors.LetsEncryptReverterError("Invalid Input")
 
-        backups = os.listdir(self.direc["backup"])
+        backups = os.listdir(self.config.backup_dir)
         backups.sort()
 
         if len(backups) < rollback:
@@ -71,7 +71,7 @@ class Reverter(object):
                             rollback, len(backups))
 
         while rollback > 0 and backups:
-            cp_dir = os.path.join(self.direc["backup"], backups.pop())
+            cp_dir = os.path.join(self.config.backup_dir, backups.pop())
             try:
                 self._recover_checkpoint(cp_dir)
             except errors.LetsEncryptReverterError:
@@ -88,7 +88,7 @@ class Reverter(object):
         .. todo:: Decide on a policy for error handling, OSError IOError...
 
         """
-        backups = os.listdir(self.direc["backup"])
+        backups = os.listdir(self.config.backup_dir)
         backups.sort(reverse=True)
 
         if not backups:
@@ -102,12 +102,12 @@ class Reverter(object):
                 float(bkup)
         except ValueError:
             raise errors.LetsEncryptReverterError(
-                "Invalid directories in {0}".format(self.direc["backup"]))
+                "Invalid directories in {0}".format(self.config.backup_dir))
 
         output = []
         for bkup in backups:
             output.append(time.ctime(float(bkup)))
-            cur_dir = os.path.join(self.direc["backup"], bkup)
+            cur_dir = os.path.join(self.config.backup_dir, bkup)
             with open(os.path.join(cur_dir, "CHANGES_SINCE")) as changes_fd:
                 output.append(changes_fd.read())
 
@@ -136,7 +136,8 @@ class Reverter(object):
         param str save_notes: notes about changes during the save
 
         """
-        self._add_to_checkpoint_dir(self.direc["temp"], save_files, save_notes)
+        self._add_to_checkpoint_dir(
+            self.config.temp_checkpoint_dir, save_files, save_notes)
 
     def add_to_checkpoint(self, save_files, save_notes):
         """Add files to a permanent checkpoint
@@ -148,7 +149,7 @@ class Reverter(object):
         # Check to make sure we are not overwriting a temp file
         self._check_tempfile_saves(save_files)
         self._add_to_checkpoint_dir(
-            self.direc["progress"], save_files, save_notes)
+            self.config.in_progress_dir, save_files, save_notes)
 
     def _add_to_checkpoint_dir(self, cp_dir, save_files, save_notes):
         """Add save files to checkpoint directory.
@@ -258,13 +259,13 @@ class Reverter(object):
         protected_files = []
 
         # Get temp modified files
-        temp_path = os.path.join(self.direc["temp"], "FILEPATHS")
+        temp_path = os.path.join(self.config.temp_checkpoint_dir, "FILEPATHS")
         if os.path.isfile(temp_path):
             with open(temp_path, "r") as protected_fd:
                 protected_files.extend(protected_fd.read().splitlines())
 
         # Get temp new files
-        new_path = os.path.join(self.direc["temp"], "NEW_FILES")
+        new_path = os.path.join(self.config.temp_checkpoint_dir, "NEW_FILES")
         if os.path.isfile(new_path):
             with open(new_path, "r") as protected_fd:
                 protected_files.extend(protected_fd.read().splitlines())
@@ -299,9 +300,9 @@ class Reverter(object):
                 "Forgot to provide files to registration call")
 
         if temporary:
-            cp_dir = self.direc["temp"]
+            cp_dir = self.config.temp_checkpoint_dir
         else:
-            cp_dir = self.direc["progress"]
+            cp_dir = self.config.in_progress_dir
 
         le_util.make_or_verify_dir(cp_dir, 0o755, os.geteuid())
 
@@ -325,7 +326,7 @@ class Reverter(object):
     def recovery_routine(self):
         """Revert all previously modified files.
 
-        First, any changes found in self.direc["temp"] are removed,
+        First, any changes found in IConfig.temp_checkpoint_dir are removed,
         then IN_PROGRESS changes are removed The order is important.
         IN_PROGRESS is unable to add files that are already added by a TEMP
         change.  Thus TEMP must be rolled back first because that will be the
@@ -333,17 +334,17 @@ class Reverter(object):
 
         """
         self.revert_temporary_config()
-        if os.path.isdir(self.direc["progress"]):
+        if os.path.isdir(self.config.in_progress_dir):
             try:
-                self._recover_checkpoint(self.direc["progress"])
+                self._recover_checkpoint(self.config.in_progress_dir)
             except errors.LetsEncryptReverterError:
                 # We have a partial or incomplete recovery
                 logging.fatal("Incomplete or failed recovery for IN_PROGRESS "
                               "checkpoint - %s",
-                              self.direc["progress"])
+                              self.config.in_progress_dir)
                 raise errors.LetsEncryptReverterError(
                     "Incomplete or failed recovery for IN_PROGRESS checkpoint "
-                    "- %s" % self.direc["progress"])
+                    "- %s" % self.config.in_progress_dir)
 
     def _remove_contained_files(self, file_list):  # pylint: disable=no-self-use
         """Erase all files contained within file_list.
@@ -386,8 +387,8 @@ class Reverter(object):
     def finalize_checkpoint(self, title):
         """Move IN_PROGRESS checkpoint to timestamped checkpoint.
 
-        Adds title to self.direc["progress"] CHANGES_SINCE
-        Move self.direc["progress"] to Backups directory and
+        Adds title to self.config.in_progress_dir CHANGES_SINCE
+        Move self.config.in_progress_dir to Backups directory and
         rename the directory as a timestamp
 
         :param str title: Title describing checkpoint
@@ -396,14 +397,14 @@ class Reverter(object):
 
         """
         # Check to make sure an "in progress" directory exists
-        if not os.path.isdir(self.direc["progress"]):
+        if not os.path.isdir(self.config.in_progress_dir):
             logging.warning("No IN_PROGRESS checkpoint to finalize")
             return
 
         changes_since_path = os.path.join(
-            self.direc["progress"], "CHANGES_SINCE")
+            self.config.in_progress_dir, "CHANGES_SINCE")
         changes_since_tmp_path = os.path.join(
-            self.direc["progress"], "CHANGES_SINCE.tmp")
+            self.config.in_progress_dir, "CHANGES_SINCE.tmp")
 
         try:
             with open(changes_since_tmp_path, "w") as changes_tmp:
@@ -424,9 +425,9 @@ class Reverter(object):
         # collisions in the naming convention.
         cur_time = time.time()
         for _ in xrange(10):
-            final_dir = os.path.join(self.direc["backup"], str(cur_time))
+            final_dir = os.path.join(self.config.backup_dir, str(cur_time))
             try:
-                os.rename(self.direc["progress"], final_dir)
+                os.rename(self.config.in_progress_dir, final_dir)
                 return
             except OSError:
                 # It is possible if the checkpoints are made extremely quickly
@@ -437,6 +438,6 @@ class Reverter(object):
         # After 10 attempts... something is probably wrong here...
         logging.error(
             "Unable to finalize checkpoint, %s -> %s",
-            self.direc["progress"], final_dir)
+            self.config.in_progress_dir, final_dir)
         raise errors.LetsEncryptReverterError(
             "Unable to finalize checkpoint renaming")

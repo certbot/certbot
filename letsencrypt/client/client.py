@@ -1,5 +1,4 @@
 """ACME protocol client class and helper functions."""
-import collections
 import csv
 import logging
 import os
@@ -12,7 +11,6 @@ import zope.component
 from letsencrypt.client import acme
 from letsencrypt.client import auth_handler
 from letsencrypt.client import client_authenticator
-from letsencrypt.client import CONFIG
 from letsencrypt.client import crypto_util
 from letsencrypt.client import errors
 from letsencrypt.client import interfaces
@@ -31,7 +29,7 @@ class Client(object):
     :type network: :class:`letsencrypt.client.network.Network`
 
     :ivar authkey: Authorization Key
-    :type authkey: :class:`letsencrypt.client.client.Client.Key`
+    :type authkey: :class:`letsencrypt.client.le_util.Key`
 
     :ivar auth_handler: Object that supports the IAuthenticator interface.
         auth_handler contains both a dv_authenticator and a client_authenticator
@@ -40,46 +38,42 @@ class Client(object):
     :ivar installer: Object supporting the IInstaller interface.
     :type installer: :class:`letsencrypt.client.interfaces.IInstaller`
 
+    :ivar config: Configuration.
+    :type config: :class:`~letsencrypt.client.interfaces.IConfig`
+
     """
     zope.interface.implements(interfaces.IAuthenticator)
 
-    Key = collections.namedtuple("Key", "file pem")
-    # Note: form is the type of data, "pem" or "der"
-    CSR = collections.namedtuple("CSR", "file data form")
-
-    def __init__(self, server, authkey, dv_auth, installer):
+    def __init__(self, config, authkey, dv_auth, installer):
         """Initialize a client.
 
-        :param str server: CA server to contact
-        :param dv_auth: IAuthenticator Interface that can solve the
-            CONFIG.DV_CHALLENGES
+        :param dv_auth: IAuthenticator that can solve the
+            :const:`letsencrypt.client.constants.DV_CHALLENGES`
         :type dv_auth: :class:`letsencrypt.client.interfaces.IAuthenticator`
 
         """
-        self.network = network.Network(server)
+        self.network = network.Network(config.server)
         self.authkey = authkey
 
         self.installer = installer
 
+        self.config = config
+
         if dv_auth is not None:
-            client_auth = client_authenticator.ClientAuthenticator(server)
+            client_auth = client_authenticator.ClientAuthenticator(config)
             self.auth_handler = auth_handler.AuthHandler(
                 dv_auth, client_auth, self.network)
         else:
             self.auth_handler = None
 
-    def obtain_certificate(self, domains, csr=None,
-                           cert_path=CONFIG.CERT_PATH,
-                           chain_path=CONFIG.CHAIN_PATH):
+    def obtain_certificate(self, domains, csr=None):
         """Obtains a certificate from the ACME server.
 
         :param str domains: list of domains to get a certificate
+
         :param csr: CSR must contain requested domains, the key used to generate
             this CSR can be different than self.authkey
         :type csr: :class:`CSR`
-
-        :param str cert_path: Full desired path to end certificate.
-        :param str chain_path: Full desired path to end chain file.
 
         :returns: cert_file, chain_file (paths to respective files)
         :rtype: `tuple` of `str`
@@ -99,14 +93,14 @@ class Client(object):
 
         # Create CSR from names
         if csr is None:
-            csr = init_csr(self.authkey, domains)
+            csr = init_csr(self.authkey, domains, self.config.cert_dir)
 
         # Retrieve certificate
         certificate_dict = self.acme_certificate(csr.data)
 
         # Save Certificate
         cert_file, chain_file = self.save_certificate(
-            certificate_dict, cert_path, chain_path)
+            certificate_dict, self.config.cert_path, self.config.chain_path)
 
         self.store_cert_key(cert_file, False)
 
@@ -176,7 +170,7 @@ class Client(object):
         :param list domains: list of domains to install the certificate
 
         :param privkey: private key for certificate
-        :type privkey: :class:`Key`
+        :type privkey: :class:`letsencrypt.client.le_util.Key`
 
         :param str cert_file: certificate file path
         :param str chain_file: chain file path
@@ -241,8 +235,8 @@ class Client(object):
         :rtype: bool
 
         """
-        list_file = os.path.join(CONFIG.CERT_KEY_BACKUP, "LIST")
-        le_util.make_or_verify_dir(CONFIG.CERT_KEY_BACKUP, 0o700)
+        list_file = os.path.join(self.config.cert_key_backup, "LIST")
+        le_util.make_or_verify_dir(self.config.cert_key_backup, 0o700)
         idx = 0
 
         if encrypt:
@@ -267,11 +261,11 @@ class Client(object):
 
         shutil.copy2(self.authkey.file,
                      os.path.join(
-                         CONFIG.CERT_KEY_BACKUP,
+                         self.config.cert_key_backup,
                          os.path.basename(self.authkey.file) + "_" + str(idx)))
         shutil.copy2(cert_file,
                      os.path.join(
-                         CONFIG.CERT_KEY_BACKUP,
+                         self.config.cert_key_backup,
                          os.path.basename(cert_file) + "_" + str(idx)))
 
         return True
@@ -303,10 +297,10 @@ def validate_key_csr(privkey, csr=None):
     If csr is left as None, only the key will be validated.
 
     :param privkey: Key associated with CSR
-    :type privkey: :class:`letsencrypt.client.client.Client.Key`
+    :type privkey: :class:`letsencrypt.client.le_util.Key`
 
     :param csr: CSR
-    :type csr: :class:`letsencrypt.client.client.Client.CSR`
+    :type csr: :class:`letsencrypt.client.le_util.CSR`
 
     :raises LetsEncryptClientError: if validation fails
 
@@ -323,7 +317,7 @@ def validate_key_csr(privkey, csr=None):
     if csr:
         if csr.form == "der":
             csr_obj = M2Crypto.X509.load_request_der_string(csr.data)
-            csr = Client.CSR(csr.file, csr_obj.as_pem(), "der")
+            csr = le_util.CSR(csr.file, csr_obj.as_pem(), "der")
 
         # If CSR is provided, it must be readable and valid.
         if csr.data and not crypto_util.valid_csr(csr.data):
@@ -339,7 +333,7 @@ def validate_key_csr(privkey, csr=None):
                     "The key and CSR do not match")
 
 
-def init_key(key_size):
+def init_key(key_size, key_dir):
     """Initializes privkey.
 
     Inits key and CSR using provided files or generating new files
@@ -347,62 +341,75 @@ def init_key(key_size):
     filesystem. The CSR is placed into DER format to allow
     the namedtuple to easily work with the protocol.
 
+    :param str key_dir: Key save directory.
+
     """
     try:
         key_pem = crypto_util.make_key(key_size)
     except ValueError as err:
         logging.fatal(str(err))
-        logging.info("Note: The default RSA key size is %d bits.",
-                     CONFIG.RSA_KEY_SIZE)
         sys.exit(1)
 
     # Save file
-    le_util.make_or_verify_dir(CONFIG.KEY_DIR, 0o700)
+    le_util.make_or_verify_dir(key_dir, 0o700)
     key_f, key_filename = le_util.unique_file(
-        os.path.join(CONFIG.KEY_DIR, "key-letsencrypt.pem"), 0o600)
+        os.path.join(key_dir, "key-letsencrypt.pem"), 0o600)
     key_f.write(key_pem)
     key_f.close()
 
     logging.info("Generating key (%d bits): %s", key_size, key_filename)
 
-    return Client.Key(key_filename, key_pem)
+    return le_util.Key(key_filename, key_pem)
 
 
-def init_csr(privkey, names):
-    """Initialize a CSR with the given private key."""
+def init_csr(privkey, names, cert_dir):
+    """Initialize a CSR with the given private key.
 
+    :param str cert_dir: Certificate save directory.
+
+    """
     csr_pem, csr_der = crypto_util.make_csr(privkey.pem, names)
 
     # Save CSR
-    le_util.make_or_verify_dir(CONFIG.CERT_DIR, 0o755)
+    le_util.make_or_verify_dir(cert_dir, 0o755)
     csr_f, csr_filename = le_util.unique_file(
-        os.path.join(CONFIG.CERT_DIR, "csr-letsencrypt.pem"), 0o644)
+        os.path.join(cert_dir, "csr-letsencrypt.pem"), 0o644)
     csr_f.write(csr_pem)
     csr_f.close()
 
     logging.info("Creating CSR: %s", csr_filename)
 
-    return Client.CSR(csr_filename, csr_der, "der")
+    return le_util.CSR(csr_filename, csr_der, "der")
 
 
 # This should be controlled by commandline parameters
-def determine_authenticator():
-    """Returns a valid IAuthenticator."""
+def determine_authenticator(config):
+    """Returns a valid IAuthenticator.
+
+    :param config: Configuration.
+    :type config: :class:`letsencrypt.client.interfaces.IConfig`
+
+    """
     try:
-        return configurator.ApacheConfigurator()
+        return configurator.ApacheConfigurator(config)
     except errors.LetsEncryptNoInstallationError:
         logging.info("Unable to determine a way to authenticate the server")
 
 
-def determine_installer():
-    """Returns a valid installer if one exists."""
+def determine_installer(config):
+    """Returns a valid installer if one exists.
+
+    :param config: Configuration.
+    :type config: :class:`letsencrypt.client.interfaces.IConfig`
+
+    """
     try:
-        return configurator.ApacheConfigurator()
+        return configurator.ApacheConfigurator(config)
     except errors.LetsEncryptNoInstallationError:
         logging.info("Unable to find a way to install the certificate.")
 
 
-def rollback(checkpoints):
+def rollback(checkpoints, config):
     """Revert configuration the specified number of checkpoints.
 
     .. note:: If another installer uses something other than the reverter class
@@ -419,12 +426,15 @@ def rollback(checkpoints):
 
     :param int checkpoints: Number of checkpoints to revert.
 
+    :param config: Configuration.
+    :type config: :class:`letsencrypt.client.interfaces.IConfig`
+
     """
     # Misconfigurations are only a slight problems... allow the user to rollback
     try:
-        installer = determine_installer()
+        installer = determine_installer(config)
     except errors.LetsEncryptMisconfigurationError:
-        _misconfigured_rollback(checkpoints)
+        _misconfigured_rollback(checkpoints, config)
         return
 
     # No Errors occurred during init... proceed normally
@@ -435,8 +445,15 @@ def rollback(checkpoints):
         installer.restart()
 
 
-def _misconfigured_rollback(checkpoints):
-    """Handles the case where the Installer is misconfigured."""
+def _misconfigured_rollback(checkpoints, config):
+    """Handles the case where the Installer is misconfigured.
+
+    :param int checkpoints: Number of checkpoints to revert.
+
+    :param config: Configuration.
+    :type config: :class:`letsencrypt.client.interfaces.IConfig`
+
+    """
     yes = zope.component.getUtility(interfaces.IDisplay).generic_yesno(
         "Oh, no! The web server is currently misconfigured.{0}{0}"
         "Would you still like to rollback the "
@@ -450,13 +467,13 @@ def _misconfigured_rollback(checkpoints):
     # recovery routine has probably already been run by installer
     # in the__init__ attempt, run it again for safety... it shouldn't hurt
     # Also... not sure how future installers will handle recovery.
-    rev = reverter.Reverter()
+    rev = reverter.Reverter(config)
     rev.recovery_routine()
     rev.rollback_checkpoints(checkpoints)
 
     # We should try to restart the server
     try:
-        installer = determine_installer()
+        installer = determine_installer(config)
         installer.restart()
         logging.info("Hooray!  Rollback solved the misconfiguration!")
         logging.info("Your web server is back up and running.")
@@ -465,16 +482,17 @@ def _misconfigured_rollback(checkpoints):
             "Rollback was unable to solve the misconfiguration issues")
 
 
-def revoke(server):
+def revoke(config):
     """Revoke certificates.
 
-    :param str server: ACME server the client wishes to revoke certificates from
+    :param config: Configuration.
+    :type config: :class:`letsencrypt.client.interfaces.IConfig`
 
     """
     # Misconfigurations don't really matter. Determine installer better choose
     # correctly though.
     try:
-        installer = determine_installer()
+        installer = determine_installer(config)
     except errors.LetsEncryptMisconfigurationError:
         zope.component.getUtility(interfaces.IDisplay).generic_notification(
             "The web server is currently misconfigured. Some "
@@ -490,16 +508,19 @@ def revoke(server):
             "revocation without a valid installer.  This feature should come "
             "soon.")
         return
-    revoc = revoker.Revoker(server, installer)
+    revoc = revoker.Revoker(installer, config)
     revoc.list_certs_keys()
 
 
-def view_config_changes():
+def view_config_changes(config):
     """View checkpoints and associated configuration changes.
 
     .. note:: This assumes that the installation is using a Reverter object.
 
+    :param config: Configuration.
+    :type config: :class:`letsencrypt.client.interfaces.IConfig`
+
     """
-    rev = reverter.Reverter()
+    rev = reverter.Reverter(config)
     rev.recovery_routine()
     rev.view_config_changes()

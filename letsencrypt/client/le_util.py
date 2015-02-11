@@ -1,11 +1,16 @@
 """Utilities for all Let's Encrypt."""
 import base64
+import collections
 import errno
 import os
 import stat
 
 from letsencrypt.client import errors
 
+
+Key = collections.namedtuple("Key", "file pem")
+# Note: form is the type of data, "pem" or "der"
+CSR = collections.namedtuple("CSR", "file data form")
 
 def make_or_verify_dir(directory, mode=0o755, uid=0):
     """Make sure directory exists with proper permissions.

@@ -6,18 +6,23 @@ from letsencrypt.client import errors
 
 
 class ApacheParser(object):
-    """Class handles the fine details of parsing the Apache Configuration."""
+    """Class handles the fine details of parsing the Apache Configuration.
+
+    :ivar str root: Normalized abosulte path to the server root
+        directory. Without trailing slash.
+
+    """
 
     def __init__(self, aug, root, ssl_options):
         # Find configuration root and make sure augeas can parse it.
         self.aug = aug
-        self.root = root
+        self.root = os.path.abspath(root)
         self.loc = self._set_locations(ssl_options)
         self._parse_file(self.loc["root"])
 
         # Must also attempt to parse sites-available or equivalent
         # Sites-available is not included naturally in configuration
-        self._parse_file(os.path.join(self.root, "sites-available/*"))
+        self._parse_file(os.path.join(self.root, "sites-available") + "/*")
 
         # This problem has been fixed in Augeas 1.0
         self.standardize_excl()
@@ -189,7 +194,7 @@ class ApacheParser(object):
             arg = cur_dir + arg
         # conf/ is a special variable for ServerRoot in Apache
         elif arg.startswith("conf/"):
-            arg = self.root + arg[5:]
+            arg = self.root + arg[4:]
         # TODO: Test if Apache allows ../ or ~/ for Includes
 
         # Attempts to add a transform to the file if one does not already exist
@@ -300,12 +305,12 @@ class ApacheParser(object):
         excl = ["*.augnew", "*.augsave", "*.dpkg-dist", "*.dpkg-bak",
                 "*.dpkg-new", "*.dpkg-old", "*.rpmsave", "*.rpmnew",
                 "*~",
-                self.root + "*.augsave",
-                self.root + "*~",
-                self.root + "*/*augsave",
-                self.root + "*/*~",
-                self.root + "*/*/*.augsave",
-                self.root + "*/*/*~"]
+                self.root + "/*.augsave",
+                self.root + "/*~",
+                self.root + "/*/*augsave",
+                self.root + "/*/*~",
+                self.root + "/*/*/*.augsave",
+                self.root + "/*/*/*~"]
 
         for i, excluded in enumerate(excl, 1):
             self.aug.set("/augeas/load/Httpd/excl[%d]" % i, excluded)
