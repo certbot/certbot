@@ -55,6 +55,30 @@ class Message(util.JSONDeSerializable, util.ImmutableMap):
         raise NotImplementedError()
 
     @classmethod
+    def get_msg_cls(cls, jobj):
+        """Get the registered class for ``jobj``."""
+        if cls in cls.TYPES.itervalues():
+            # cls is already registered Message type, force to use it
+            # so that, e.g Revocation.from_json(jobj) fails if
+            # jobj["type"] != "revocation".
+            return cls
+
+        if not isinstance(jobj, dict):
+            raise errors.ValidationError(
+                "{0} is not a dictionary object".format(jobj))
+        try:
+            msg_type = jobj["type"]
+        except KeyError:
+            raise errors.ValidationError("missing type field")
+
+        try:
+            msg_cls = cls.TYPES[msg_type]
+        except KeyError:
+            raise errors.UnrecognizedMessageTypeError(msg_type)
+
+        return msg_cls
+
+    @classmethod
     def from_json(cls, jobj, validate=True):
         """Deserialize validated ACME message from JSON string.
 
@@ -69,19 +93,7 @@ class Message(util.JSONDeSerializable, util.ImmutableMap):
         :rtype: subclass of :class:`Message`
 
         """
-        if not isinstance(jobj, dict):
-            raise errors.ValidationError(
-                "{0} is not a dictionary object".format(jobj))
-        try:
-            msg_type = jobj["type"]
-        except KeyError:
-            raise errors.ValidationError("missing type field")
-
-        try:
-            msg_cls = cls.TYPES[msg_type]
-        except KeyError:
-            raise errors.UnrecognizedMessageTypeError(msg_type)
-
+        msg_cls = cls.get_msg_cls(jobj)
         if validate:
             msg_cls.validate_json(jobj)
         # pylint: disable=protected-access

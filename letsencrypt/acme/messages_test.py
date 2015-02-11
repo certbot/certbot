@@ -413,8 +413,8 @@ class RevocationTest(unittest.TestCase):
         self.assertEqual(self.msg.to_json(), self.jmsg)
 
     def test_from_json(self):
-        from letsencrypt.acme.messages import Error
-        self.assertEqual(Error.from_json(self.jmsg), self.msg)
+        from letsencrypt.acme.messages import Revocation
+        self.assertEqual(Revocation.from_json(self.jmsg), self.msg)
 
 
 class RevocationRequestTest(unittest.TestCase):
