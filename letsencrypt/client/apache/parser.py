@@ -95,7 +95,7 @@ class ApacheParser(object):
 
         Note: Augeas is inherently case sensitive while Apache is case
         insensitive.  Augeas 1.0 allows case insensitive regexes like
-        regexp(/Listen/, 'i'), however the version currently supported
+        regexp(/Listen/, "i"), however the version currently supported
         by Ubuntu 0.10 does not.  Thus I have included my own case insensitive
         transformation by calling case_i() on everything to maintain
         compatibility.
@@ -118,10 +118,11 @@ class ApacheParser(object):
         # No regexp code
         # if arg is None:
         #     matches = self.aug.match(start +
-        # "//*[self::directive='"+directive+"']/arg")
+        # "//*[self::directive='" + directive + "']/arg")
         # else:
         #     matches = self.aug.match(start +
-        # "//*[self::directive='" + directive+"']/* [self::arg='" + arg + "']")
+        # "//*[self::directive='" + directive +
+        #   "']/* [self::arg='" + arg + "']")
 
         # includes = self.aug.match(start +
         # "//* [self::directive='Include']/* [label()='arg']")
