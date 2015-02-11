@@ -11,8 +11,8 @@ import OpenSSL.SSL
 import zope.component
 import zope.interface
 
-from letsencrypt.client import constants
 from letsencrypt.client import challenge_util
+from letsencrypt.client import constants
 from letsencrypt.client import interfaces
 
 
