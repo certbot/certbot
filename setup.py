@@ -27,6 +27,7 @@ install_requires = [
     'jsonschema',
     'mock',
     'pycrypto',
+    'PyOpenSSL',
     'python-augeas',
     'python2-pythondialog',
     'requests',

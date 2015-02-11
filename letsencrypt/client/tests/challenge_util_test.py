@@ -8,7 +8,6 @@ import M2Crypto
 
 from letsencrypt.client import challenge_util
 from letsencrypt.client import constants
-from letsencrypt.client import client
 from letsencrypt.client import le_util
 
 
@@ -23,7 +22,7 @@ class DvsniGenCertTest(unittest.TestCase):
         r_b64 = le_util.jose_b64encode(dvsni_r)
         pem = pkg_resources.resource_string(
             __name__, os.path.join("testdata", "rsa256_key.pem"))
-        key = client.Client.Key("path", pem)
+        key = le_util.Key("path", pem)
         nonce = "12345ABCDE"
         cert_pem, s_b64 = self._call(domain, r_b64, nonce, key)
 
