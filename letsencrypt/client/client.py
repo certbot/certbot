@@ -381,14 +381,6 @@ def init_csr(privkey, names, cert_dir):
 
     return le_util.CSR(csr_filename, csr_der, "der")
 
-
-def csr_pem_to_der(csr):
-    """Convert pem CSR to der."""
-
-    csr_obj = M2Crypto.X509.load_request_string(csr.data)
-    return le_util.CSR(csr.file, csr_obj.as_der(), "der")
-
-
 # This should be controlled by commandline parameters
 def determine_authenticator(config):
     """Returns a valid IAuthenticator.

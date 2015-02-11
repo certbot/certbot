@@ -166,7 +166,7 @@ class SatisfyChallengesTest(unittest.TestCase):
         self.assertEqual(len(self.handler.dv_c), 5)
         self.assertEqual(len(self.handler.client_c), 5)
 
-        for i in range(5):
+        for i in xrange(5):
             dom = str(i)
             self.assertEqual(
                 self.handler.responses[dom],
@@ -462,7 +462,7 @@ class PathSatisfiedTest(unittest.TestCase):
 
 def gen_auth_resp(chall_list):
     """Generate a dummy authorization response."""
-    return ["%s%s" % (type(chall).__name__, chall.domain)
+    return ["%s%s" % (chall.__class__.__name__, chall.domain)
             for chall in chall_list]
 
 
