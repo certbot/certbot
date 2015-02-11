@@ -1,7 +1,6 @@
 """Apache Configuration based off of Augeas Configurator."""
 import logging
 import os
-import pkg_resources
 import re
 import shutil
 import socket
@@ -12,7 +11,7 @@ import zope.interface
 
 from letsencrypt.client import augeas_configurator
 from letsencrypt.client import challenge_util
-from letsencrypt.client import CONFIG
+from letsencrypt.client import constants
 from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
@@ -63,9 +62,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     The API of this class will change in the coming weeks as the exact
     needs of clients are clarified with the new and developing protocol.
 
-    :ivar str server_root: Path to Apache root directory
-    :ivar dict location: Path to various files associated
-        with the configuration
+    :ivar config: Configuration.
+    :type config: :class:`~letsencrypt.client.interfaces.IConfig`
+
     :ivar tup version: version of Apache
     :ivar list vhosts: All vhosts found in the configuration
         (:class:`list` of :class:`letsencrypt.client.apache.obj.VirtualHost`)
@@ -75,34 +74,22 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     """
     zope.interface.implements(interfaces.IAuthenticator, interfaces.IInstaller)
 
-    def __init__(self, server_root=CONFIG.SERVER_ROOT, direc=None,
-                 ssl_options=CONFIG.OPTIONS_SSL_CONF, version=None):
+    def __init__(self, config, version=None):
         """Initialize an Apache Configurator.
 
-        :param str server_root: the apache server root directory
-        :param dict direc: locations of various config directories
-            (used mostly for unittesting)
-        :param str ssl_options: path of options-ssl.conf
-            (used mostly for unittesting)
         :param tup version: version of Apache as a tuple (2, 4, 7)
             (used mostly for unittesting)
 
         """
-        if direc is None:
-            direc = {"backup": CONFIG.BACKUP_DIR,
-                     "temp": CONFIG.TEMP_CHECKPOINT_DIR,
-                     "progress": CONFIG.IN_PROGRESS_DIR,
-                     "config": CONFIG.CONFIG_DIR,
-                     "work": CONFIG.WORK_DIR}
-
-        super(ApacheConfigurator, self).__init__(direc)
-        self.direc = direc
+        super(ApacheConfigurator, self).__init__(config)
 
         # Verify that all directories and files exist with proper permissions
         if os.geteuid() == 0:
             self.verify_setup()
 
-        self.parser = parser.ApacheParser(self.aug, server_root, ssl_options)
+        self.parser = parser.ApacheParser(
+            self.aug, self.config.apache_server_root,
+            self.config.apache_mod_ssl_conf)
         # Check for errors in parsing files with Augeas
         self.check_parsing_errors("httpd.aug")
 
@@ -124,7 +111,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self._prepare_server_https()
 
         self.enhance_func = {"redirect": self._enable_redirect}
-        temp_install(ssl_options)
+        temp_install(self.config.apache_mod_ssl_conf)
 
     def deploy_cert(self, domain, cert, key, cert_chain=None):
         """Deploys certificate to specified virtual host.
@@ -330,7 +317,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         # Search sites-available, httpd.conf for possible virtual hosts
         paths = self.aug.match(
-            ("/files%ssites-available//*[label()=~regexp('%s')]" %
+            ("/files%s/sites-available//*[label()=~regexp('%s')]" %
              (self.parser.root, parser.case_i('VirtualHost'))))
         vhs = []
 
@@ -382,9 +369,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         is appropriately listening on port 443.
 
         """
-        if not mod_loaded("ssl_module"):
+        if not mod_loaded("ssl_module", self.config.apache_ctl):
             logging.info("Loading mod_ssl into Apache Server")
-            enable_mod("ssl")
+            enable_mod("ssl", self.config.apache_init_script,
+                       self.config.apache_enmod)
 
         # Check for Listen 443
         # Note: This could be made to also look for ip:443 combo
@@ -427,7 +415,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """Makes an ssl_vhost version of a nonssl_vhost.
 
         Duplicates vhost and adds default ssl options
-        New vhost will reside as (nonssl_vhost.path) + CONFIG.LE_VHOST_EXT
+        New vhost will reside as (nonssl_vhost.path) + ``IConfig.le_vhost_ext``
+
         .. note:: This function saves the configuration
 
         :param nonssl_vhost: Valid VH that doesn't have SSLEngine on
@@ -440,27 +429,24 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         avail_fp = nonssl_vhost.filep
         # Get filepath of new ssl_vhost
         if avail_fp.endswith(".conf"):
-            ssl_fp = avail_fp[:-(len(".conf"))] + CONFIG.LE_VHOST_EXT
+            ssl_fp = avail_fp[:-(len(".conf"))] + self.config.le_vhost_ext
         else:
-            ssl_fp = avail_fp + CONFIG.LE_VHOST_EXT
+            ssl_fp = avail_fp + self.config.le_vhost_ext
 
         # First register the creation so that it is properly removed if
         # configuration is rolled back
         self.reverter.register_file_creation(False, ssl_fp)
 
         try:
-            orig_file = open(avail_fp, 'r')
-            new_file = open(ssl_fp, 'w')
-            new_file.write("<IfModule mod_ssl.c>\n")
-            for line in orig_file:
-                new_file.write(line)
-            new_file.write("</IfModule>\n")
+            with open(avail_fp, 'r') as orig_file:
+                with open(ssl_fp, 'w') as new_file:
+                    new_file.write("<IfModule mod_ssl.c>\n")
+                    for line in orig_file:
+                        new_file.write(line)
+                    new_file.write("</IfModule>\n")
         except IOError:
             logging.fatal("Error writing/reading to file in make_vhost_ssl")
             sys.exit(49)
-        finally:
-            orig_file.close()
-            new_file.close()
 
         self.aug.load()
 
@@ -528,9 +514,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         :param str domain: domain to enhance
         :param str enhancement: enhancement type defined in
-            :class:`letsencrypt.client.CONFIG.ENHANCEMENTS`
+            :const:`~letsencrypt.client.constants.ENHANCEMENTS`
         :param options: options for the enhancement
-        :type options: See :class:`letsencrypt.client.CONFIG.ENHANCEMENTS`
+            See :const:`~letsencrypt.client.constants.ENHANCEMENTS`
             documentation for appropriate parameter.
 
         """
@@ -565,8 +551,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: (bool, :class:`letsencrypt.client.apache.obj.VirtualHost`)
 
         """
-        if not mod_loaded("rewrite_module"):
-            enable_mod("rewrite")
+        if not mod_loaded("rewrite_module", self.config.apache_ctl):
+            enable_mod("rewrite", self.config.apache_init_script,
+                       self.config.apache_enmod)
 
         general_v = self._general_vhost(ssl_vhost)
         if general_v is None:
@@ -590,8 +577,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                             general_v.filep))
             # Add directives to server
             self.parser.add_dir(general_v.path, "RewriteEngine", "On")
-            self.parser.add_dir(
-                general_v.path, "RewriteRule", CONFIG.REWRITE_HTTPS_ARGS)
+            self.parser.add_dir(general_v.path, "RewriteRule",
+                                constants.APACHE_REWRITE_HTTPS_ARGS)
             self.save_notes += ('Redirecting host in %s to ssl vhost in %s\n' %
                                 (general_v.filep, ssl_vhost.filep))
             self.save()
@@ -630,9 +617,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if not rewrite_path:
             # "No existing redirection for virtualhost"
             return False, -1
-        if len(rewrite_path) == len(CONFIG.REWRITE_HTTPS_ARGS):
+        if len(rewrite_path) == len(constants.APACHE_REWRITE_HTTPS_ARGS):
             for idx, match in enumerate(rewrite_path):
-                if self.aug.get(match) != CONFIG.REWRITE_HTTPS_ARGS[idx]:
+                if (self.aug.get(match) !=
+                        constants.APACHE_REWRITE_HTTPS_ARGS[idx]):
                     # Not a letsencrypt https rewrite
                     return True, 2
             # Existing letsencrypt https rewrite rule is in place
@@ -681,7 +669,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                          "LogLevel warn\n"
                          "</VirtualHost>\n"
                          % (servername, serveralias,
-                            " ".join(CONFIG.REWRITE_HTTPS_ARGS)))
+                            " ".join(constants.APACHE_REWRITE_HTTPS_ARGS)))
 
         # Write out the file
         # This is the default name
@@ -694,8 +682,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             if ssl_vhost.names[0] < (255-23):
                 redirect_filename = "le-redirect-%s.conf" % ssl_vhost.names[0]
 
-        redirect_filepath = ("%ssites-available/%s" %
-                             (self.parser.root, redirect_filename))
+        redirect_filepath = os.path.join(
+            self.parser.root, 'sites-available', redirect_filename)
 
         # Register the new file that will be created
         # Note: always register the creation before writing to ensure file will
@@ -709,8 +697,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         self.aug.load()
         # Make a new vhost data structure and add it to the lists
-        new_fp = self.parser.root + "sites-available/" + redirect_filename
-        new_vhost = self._create_vhost(parser.get_aug_path(new_fp))
+        new_vhost = self._create_vhost(parser.get_aug_path(redirect_filepath))
         self.vhosts.append(new_vhost)
 
         # Finally create documentation for the change
@@ -841,7 +828,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: bool
 
         """
-        enabled_dir = os.path.join(self.parser.root, "sites-enabled/")
+        enabled_dir = os.path.join(self.parser.root, "sites-enabled")
         for entry in os.listdir(enabled_dir):
             if os.path.realpath(os.path.join(enabled_dir, entry)) == avail_fp:
                 return True
@@ -866,7 +853,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             return True
 
         if "/sites-available/" in vhost.filep:
-            enabled_path = ("%ssites-enabled/%s" %
+            enabled_path = ("%s/sites-enabled/%s" %
                             (self.parser.root, os.path.basename(vhost.filep)))
             self.reverter.register_file_creation(False, enabled_path)
             os.symlink(vhost.filep, enabled_path)
@@ -876,14 +863,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             return True
         return False
 
-    def restart(self):  # pylint: disable=no-self-use
+    def restart(self):
         """Restarts apache server.
 
         :returns: Success
         :rtype: bool
 
         """
-        return apache_restart()
+        return apache_restart(self.config.apache_init_script)
 
     def config_test(self):  # pylint: disable=no-self-use
         """Check the configuration of Apache for errors.
@@ -894,7 +881,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         try:
             proc = subprocess.Popen(
-                ['sudo', '/usr/sbin/apache2ctl', 'configtest'],
+                ['sudo', self.config.apache_ctl, 'configtest'], # TODO: sudo?
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
             stdout, stderr = proc.communicate()
@@ -924,13 +911,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         try:
             proc = subprocess.Popen(
-                [CONFIG.APACHE_CTL, '-v'],
+                [self.config.apache_ctl, '-v'],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
             text = proc.communicate()[0]
         except (OSError, ValueError):
             raise errors.ConfiguratorError(
-                "Unable to run %s -v" % CONFIG.APACHE_CTL)
+                "Unable to run %s -v" % self.config.apache_ctl)
 
         regex = re.compile(r"Apache/([0-9\.]*)", re.IGNORECASE)
         matches = regex.findall(text)
@@ -949,9 +936,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         uid = os.geteuid()
-        le_util.make_or_verify_dir(self.direc["config"], 0o755, uid)
-        le_util.make_or_verify_dir(self.direc["work"], 0o755, uid)
-        le_util.make_or_verify_dir(self.direc["backup"], 0o755, uid)
+        le_util.make_or_verify_dir(self.config.config_dir, 0o755, uid)
+        le_util.make_or_verify_dir(self.config.work_dir, 0o755, uid)
+        le_util.make_or_verify_dir(self.config.backup_dir, 0o755, uid)
 
     ###########################################################################
     # Challenges Section
@@ -1010,32 +997,36 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.restart()
 
 
-def enable_mod(mod_name):
+def enable_mod(mod_name, apache_init_script, apache_enmod):
     """Enables module in Apache.
 
     Both enables and restarts Apache so module is active.
 
-    :param str mod_name: Name of the module to enable
+    :param str mod_name: Name of the module to enable.
+    :param str apache_init_script: Path to the Apache init script.
+    :param str apache_enmod: Path to the Apache a2enmod script.
 
     """
     try:
         # Use check_output so the command will finish before reloading
         # TODO: a2enmod is debian specific...
-        subprocess.check_call(["sudo", "a2enmod", mod_name],
+        subprocess.check_call(["sudo", apache_enmod, mod_name],  # TODO: sudo?
                               stdout=open("/dev/null", 'w'),
                               stderr=open("/dev/null", 'w'))
-        apache_restart()
+        apache_restart(apache_init_script)
     except (OSError, subprocess.CalledProcessError) as err:
         logging.error("Error enabling mod_%s", mod_name)
         logging.error("Exception: %s", err)
         sys.exit(1)
 
 
-def mod_loaded(module):
+def mod_loaded(module, apache_ctl):
     """Checks to see if mod_ssl is loaded
 
-    Uses CONFIG.APACHE_CTL to get loaded module list. This also effectively
+    Uses ``apache_ctl`` to get loaded module list. This also effectively
     serves as a config_test.
+
+    :param str apache_ctl: Path to apache2ctl binary.
 
     :returns: If ssl_module is included and active in Apache
     :rtype: bool
@@ -1043,15 +1034,16 @@ def mod_loaded(module):
     """
     try:
         proc = subprocess.Popen(
-            [CONFIG.APACHE_CTL, '-M'],
+            [apache_ctl, '-M'],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)
         stdout, stderr = proc.communicate()
 
     except (OSError, ValueError):
         logging.error(
-            "Error accessing %s for loaded modules!", CONFIG.APACHE_CTL)
+            "Error accessing %s for loaded modules!", apache_ctl)
         raise errors.ConfiguratorError("Error accessing loaded modules")
+
     # Small errors that do not impede
     if proc.returncode != 0:
         logging.warn("Error in checking loaded module list: %s", stderr)
@@ -1064,8 +1056,10 @@ def mod_loaded(module):
     return False
 
 
-def apache_restart():
+def apache_restart(apache_init_script):
     """Restarts the Apache Server.
+
+    :param str apache_init_script: Path to the Apache init script.
 
     .. todo:: Try to use reload instead. (This caused timing problems before)
 
@@ -1078,7 +1072,7 @@ def apache_restart():
 
     """
     try:
-        proc = subprocess.Popen([CONFIG.APACHE2, 'restart'],
+        proc = subprocess.Popen([apache_init_script, 'restart'],
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
         stdout, stderr = proc.communicate()
@@ -1135,6 +1129,4 @@ def temp_install(options_ssl):
 
     # Check to make sure options-ssl.conf is installed
     if not os.path.isfile(options_ssl):
-        dist_conf = pkg_resources.resource_filename(
-            __name__, os.path.basename(options_ssl))
-        shutil.copyfile(dist_conf, options_ssl)
+        shutil.copyfile(constants.APACHE_MOD_SSL_CONF, options_ssl)

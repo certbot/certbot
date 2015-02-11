@@ -7,7 +7,7 @@ import unittest
 
 import mock
 
-from letsencrypt.client import CONFIG
+from letsencrypt.client import constants
 from letsencrypt.client.apache import configurator
 from letsencrypt.client.apache import obj
 
@@ -22,9 +22,8 @@ class ApacheTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
 
         self.ssl_options = setup_apache_ssl_options(self.config_dir)
 
-        # Final slash is currently important
         self.config_path = os.path.join(
-            self.temp_dir, "debian_apache_2_4/two_vhost_80/apache2/")
+            self.temp_dir, "debian_apache_2_4/two_vhost_80/apache2")
 
         self.rsa256_file = pkg_resources.resource_filename(
             "letsencrypt.client.tests", 'testdata/rsa256_key.pem')
@@ -50,11 +49,7 @@ def dir_setup(test_dir="debian_apache_2_4/two_vhost_80"):
 def setup_apache_ssl_options(config_dir):
     """Move the ssl_options into position and return the path."""
     option_path = os.path.join(config_dir, "options-ssl.conf")
-    temp_options = pkg_resources.resource_filename(
-        "letsencrypt.client.apache", os.path.basename(CONFIG.OPTIONS_SSL_CONF))
-    shutil.copyfile(
-        temp_options, option_path)
-
+    shutil.copyfile(constants.APACHE_MOD_SSL_CONF, option_path)
     return option_path
 
 
@@ -69,15 +64,15 @@ def get_apache_configurator(
         # This just states that the ssl module is already loaded
         mock_popen().communicate.return_value = ("ssl_module", "")
         config = configurator.ApacheConfigurator(
-            config_path,
-            {
-                "backup": backups,
-                "temp": os.path.join(work_dir, "temp_checkpoint"),
-                "progress": os.path.join(backups, "IN_PROGRESS"),
-                "config": config_dir,
-                "work": work_dir,
-            },
-            ssl_options,
+            mock.MagicMock(
+                apache_server_root=config_path,
+                apache_mod_ssl_conf=ssl_options,
+                le_vhost_ext="-le-ssl.conf",
+                backup_dir=backups,
+                config_dir=config_dir,
+                temp_checkpoint_dir=os.path.join(work_dir, "temp_checkpoints"),
+                in_progress_dir=os.path.join(backups, "IN_PROGRESS"),
+                work_dir=work_dir),
             version)
 
     return config

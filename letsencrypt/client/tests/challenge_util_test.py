@@ -7,8 +7,7 @@ import unittest
 import M2Crypto
 
 from letsencrypt.client import challenge_util
-from letsencrypt.client import client
-from letsencrypt.client import CONFIG
+from letsencrypt.client import constants
 from letsencrypt.client import le_util
 
 
@@ -23,7 +22,7 @@ class DvsniGenCertTest(unittest.TestCase):
         r_b64 = le_util.jose_b64encode(dvsni_r)
         pem = pkg_resources.resource_string(
             __name__, os.path.join("testdata", "rsa256_key.pem"))
-        key = client.Client.Key("path", pem)
+        key = le_util.Key("path", pem)
         nonce = "12345ABCDE"
         cert_pem, s_b64 = self._call(domain, r_b64, nonce, key)
 
@@ -37,11 +36,11 @@ class DvsniGenCertTest(unittest.TestCase):
         dns_regex = r"DNS:([^, $]*)"
         cert = M2Crypto.X509.load_cert_string(pem)
         self.assertEqual(
-            cert.get_subject().CN, nonce + CONFIG.INVALID_EXT)
+            cert.get_subject().CN, nonce + constants.DVSNI_DOMAIN_SUFFIX)
 
         sans = cert.get_ext("subjectAltName").get_value()
 
-        exp_sans = set([nonce + CONFIG.INVALID_EXT, domain, ext])
+        exp_sans = set([nonce + constants.DVSNI_DOMAIN_SUFFIX, domain, ext])
         act_sans = set(re.findall(dns_regex, sans))
 
         self.assertEqual(exp_sans, act_sans)

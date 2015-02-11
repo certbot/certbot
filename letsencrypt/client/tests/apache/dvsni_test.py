@@ -6,8 +6,9 @@ import shutil
 import mock
 
 from letsencrypt.client import challenge_util
-from letsencrypt.client import client
-from letsencrypt.client import CONFIG
+
+from letsencrypt.client import constants
+from letsencrypt.client import le_util
 
 from letsencrypt.client.tests.apache import util
 
@@ -33,7 +34,7 @@ class DvsniPerformTest(util.ApacheTest):
         rsa256_pem = pkg_resources.resource_string(
             "letsencrypt.client.tests", 'testdata/rsa256_key.pem')
 
-        auth_key = client.Client.Key(rsa256_file, rsa256_pem)
+        auth_key = le_util.Key(rsa256_file, rsa256_pem)
         self.challs = []
         self.challs.append(challenge_util.DvsniChall(
             "encryption-example.demo",
@@ -100,7 +101,7 @@ class DvsniPerformTest(util.ApacheTest):
 
         # Check to make sure challenge config path is included in apache config.
         self.assertEqual(
-            len(self.sni.config.parser.find_dir(
+            len(self.sni.configurator.parser.find_dir(
                 "Include", self.sni.challenge_conf)),
             1)
         self.assertEqual(len(responses), 1)
@@ -125,7 +126,7 @@ class DvsniPerformTest(util.ApacheTest):
             mock_setup_cert.call_args_list[1], mock.call(self.challs[1]))
 
         self.assertEqual(
-            len(self.sni.config.parser.find_dir(
+            len(self.sni.configurator.parser.find_dir(
                 "Include", self.sni.challenge_conf)),
             1)
         self.assertEqual(len(responses), 2)
@@ -142,27 +143,30 @@ class DvsniPerformTest(util.ApacheTest):
         ll_addr.append(v_addr1)
         ll_addr.append(v_addr2)
         self.sni._mod_config(ll_addr)  # pylint: disable=protected-access
-        self.sni.config.save()
+        self.sni.configurator.save()
 
-        self.sni.config.parser.find_dir("Include", self.sni.challenge_conf)
-        vh_match = self.sni.config.aug.match(
+        self.sni.configurator.parser.find_dir(
+            "Include", self.sni.challenge_conf)
+        vh_match = self.sni.configurator.aug.match(
             "/files" + self.sni.challenge_conf + "//VirtualHost")
 
         vhs = []
         for match in vh_match:
             # pylint: disable=protected-access
-            vhs.append(self.sni.config._create_vhost(match))
+            vhs.append(self.sni.configurator._create_vhost(match))
         self.assertEqual(len(vhs), 2)
         for vhost in vhs:
             if vhost.addrs == set(v_addr1):
                 self.assertEqual(
                     vhost.names,
-                    set([str(self.challs[0].nonce + CONFIG.INVALID_EXT)]))
+                    set([str(self.challs[0].nonce +
+                             constants.DVSNI_DOMAIN_SUFFIX)]))
             else:
                 self.assertEqual(vhost.addrs, set(v_addr2))
                 self.assertEqual(
                     vhost.names,
-                    set([str(self.challs[1].nonce + CONFIG.INVALID_EXT)]))
+                    set([str(self.challs[1].nonce +
+                             constants.DVSNI_DOMAIN_SUFFIX)]))
 
 
 if __name__ == '__main__':

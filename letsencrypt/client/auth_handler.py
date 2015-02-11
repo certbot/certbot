@@ -3,18 +3,20 @@ import logging
 import sys
 
 from letsencrypt.client import acme
-from letsencrypt.client import CONFIG
 from letsencrypt.client import challenge_util
+from letsencrypt.client import constants
 from letsencrypt.client import errors
 
 
 class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
     """ACME Authorization Handler for a client.
 
-    :ivar dv_auth: Authenticator capable of solving CONFIG.DV_CHALLENGES
+    :ivar dv_auth: Authenticator capable of solving
+        :const:`~letsencrypt.client.constants.DV_CHALLENGES`
     :type dv_auth: :class:`letsencrypt.client.interfaces.IAuthenticator`
 
-    :ivar client_auth: Authenticator capable of solving CONFIG.CLIENT_CHALLENGES
+    :ivar client_auth: Authenticator capable of solving
+        :const:`~letsencrypt.client_auth.constants.CLIENT_CHALLENGES`
     :type client_auth: :class:`letsencrypt.client.interfaces.IAuthenticator`
 
     :ivar network: Network object for sending and receiving authorization
@@ -23,7 +25,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
 
     :ivar list domains: list of str domains to get authorization
     :ivar dict authkey: Authorized Keys for each domain.
-        values are of type :class:`letsencrypt.client.client.Client.Key`
+        values are of type :class:`letsencrypt.client.le_util.Key`
     :ivar dict responses: keys: domain, values: list of dict responses
     :ivar dict msgs: ACME Challenge messages with domain as a key
     :ivar dict paths: optimal path for authorization. eg. paths[domain]
@@ -54,7 +56,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         :param dict msg: ACME challenge message
 
         :param authkey: authorized key for the challenge
-        :type authkey: :class:`letsencrypt.client.client.Client.Key`
+        :type authkey: :class:`letsencrypt.client.le_util.Key`
 
         """
         if domain in self.domains:
@@ -257,12 +259,12 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
             chall = challenges[index]
 
             # Authenticator Challenges
-            if chall["type"] in CONFIG.DV_CHALLENGES:
+            if chall["type"] in constants.DV_CHALLENGES:
                 dv_chall.append(challenge_util.IndexedChall(
                     self._construct_dv_chall(chall, domain), index))
 
             # Client Challenges
-            elif chall["type"] in CONFIG.CLIENT_CHALLENGES:
+            elif chall["type"] in constants.CLIENT_CHALLENGES:
                 client_chall.append(challenge_util.IndexedChall(
                     self._construct_client_chall(chall, domain), index))
 
@@ -448,7 +450,7 @@ def _find_dumb_path(challenges, preferences):
 def is_preferred(offered_challenge_type, path):
     """Return whether or not the challenge is preferred in path."""
     for _, challenge_type in path:
-        for mutually_exclusive in CONFIG.EXCLUSIVE_CHALLENGES:
+        for mutually_exclusive in constants.EXCLUSIVE_CHALLENGES:
             # Second part is in case we eventually allow multiple names
             # to be challenges at the same time
             if (challenge_type in mutually_exclusive and
