@@ -247,7 +247,7 @@ class Client(object):
             return False
 
         if os.path.isfile(list_file):
-            with open(list_file, 'r+b') as csvfile:
+            with open(list_file, "r+b") as csvfile:
                 csvreader = csv.reader(csvfile)
                 for row in csvreader:
                     idx = int(row[0]) + 1
@@ -255,7 +255,7 @@ class Client(object):
                 csvwriter.writerow([str(idx), cert_file, self.authkey.file])
 
         else:
-            with open(list_file, 'wb') as csvfile:
+            with open(list_file, "wb") as csvfile:
                 csvwriter = csv.writer(csvfile)
                 csvwriter.writerow(["0", cert_file, self.authkey.file])
 
@@ -281,7 +281,7 @@ class Client(object):
             try:
                 self.installer.enhance(dom, "redirect")
             except errors.LetsEncryptConfiguratorError:
-                logging.warn('Unable to perform redirect for %s', dom)
+                logging.warn("Unable to perform redirect for %s", dom)
 
         self.installer.save("Add Redirects")
         self.installer.restart()
@@ -380,13 +380,6 @@ def init_csr(privkey, names, cert_dir):
     logging.info("Creating CSR: %s", csr_filename)
 
     return le_util.CSR(csr_filename, csr_der, "der")
-
-
-def csr_pem_to_der(csr):
-    """Convert pem CSR to der."""
-
-    csr_obj = M2Crypto.X509.load_request_string(csr.data)
-    return le_util.CSR(csr.file, csr_obj.as_der(), "der")
 
 
 # This should be controlled by commandline parameters

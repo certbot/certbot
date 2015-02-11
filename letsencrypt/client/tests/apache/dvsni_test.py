@@ -10,6 +10,8 @@ from letsencrypt.client import challenge_util
 from letsencrypt.client import constants
 from letsencrypt.client import le_util
 
+from letsencrypt.client.apache.obj import Addr
+
 from letsencrypt.client.tests.apache import util
 
 
@@ -30,9 +32,9 @@ class DvsniPerformTest(util.ApacheTest):
         self.sni = dvsni.ApacheDvsni(config)
 
         rsa256_file = pkg_resources.resource_filename(
-            "letsencrypt.client.tests", 'testdata/rsa256_key.pem')
+            "letsencrypt.client.tests", "testdata/rsa256_key.pem")
         rsa256_pem = pkg_resources.resource_string(
-            "letsencrypt.client.tests", 'testdata/rsa256_key.pem')
+            "letsencrypt.client.tests", "testdata/rsa256_key.pem")
 
         auth_key = le_util.Key(rsa256_file, rsa256_pem)
         self.challs = []
@@ -75,7 +77,7 @@ class DvsniPerformTest(util.ApacheTest):
 
             self.assertTrue(m_open.called)
             self.assertEqual(
-                m_open.call_args[0], (self.sni.get_cert_file(chall.nonce), 'w'))
+                m_open.call_args[0], (self.sni.get_cert_file(chall.nonce), "w"))
             self.assertEqual(m_open().write.call_args[0][0], "pem")
 
         self.assertEqual(mock_dvsni_gen_cert.call_count, 1)
@@ -134,7 +136,6 @@ class DvsniPerformTest(util.ApacheTest):
             self.assertEqual(responses[i]["s"], "randomS%d" % i)
 
     def test_mod_config(self):
-        from letsencrypt.client.apache.obj import Addr
         for chall in self.challs:
             self.sni.add_chall(chall)
         v_addr1 = [Addr(("1.2.3.4", "443")), Addr(("5.6.7.8", "443"))]
@@ -169,5 +170,5 @@ class DvsniPerformTest(util.ApacheTest):
                              constants.DVSNI_DOMAIN_SUFFIX)]))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

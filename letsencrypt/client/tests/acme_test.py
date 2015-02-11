@@ -42,20 +42,6 @@ class ACMEObjectValidateTest(unittest.TestCase):
         self._test_fails('{"type": "foo", "price": "asd"}')
 
 
-class PrettyTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
-    """Tests for letsencrypt.client.acme.pretty."""
-
-    @classmethod
-    def _call(cls, json_string):
-        from letsencrypt.client.acme import pretty
-        return pretty(json_string)
-
-    def test_it(self):
-        self.assertEqual(
-            self._call('{"foo": {"bar": "baz"}}'),
-            '{\n    "foo": {\n        "bar": "baz"\n    }\n}')
-
-
 class MessageFactoriesTest(unittest.TestCase):
     """Tests for ACME message factories from letsencrypt.client.acme."""
 

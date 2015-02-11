@@ -42,7 +42,7 @@ class DialogHandler(logging.Handler):  # pylint: disable=too-few-public-methods
             cur_out = line
             while len(cur_out) > self.width:
                 # find first space before self.width chars into cur_out
-                last_space_pos = cur_out.rfind(' ', 0, self.width)
+                last_space_pos = cur_out.rfind(" ", 0, self.width)
 
                 if last_space_pos == -1:
                     # no spaces, just cut them off at whatever
@@ -52,11 +52,11 @@ class DialogHandler(logging.Handler):  # pylint: disable=too-few-public-methods
                     # cut off at last space
                     self.lines.append(cur_out[0:last_space_pos])
                     cur_out = cur_out[last_space_pos + 1:]
-            if cur_out != '':
+            if cur_out != "":
                 self.lines.append(cur_out)
 
         # show last 16 lines
-        content = '\n'.join(self.lines[-self.height:])
+        content = "\n".join(self.lines[-self.height:])
 
         # add the padding around the box
         self.d.infobox(

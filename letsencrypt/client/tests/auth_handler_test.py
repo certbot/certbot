@@ -25,8 +25,8 @@ class SatisfyChallengesTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.client.auth_handler import AuthHandler
 
-        self.mock_dv_auth = mock.MagicMock(name='ApacheConfigurator')
-        self.mock_client_auth = mock.MagicMock(name='ClientAuthenticator')
+        self.mock_dv_auth = mock.MagicMock(name="ApacheConfigurator")
+        self.mock_client_auth = mock.MagicMock(name="ClientAuthenticator")
 
         self.mock_dv_auth.get_chall_pref.return_value = ["dvsni"]
         self.mock_client_auth.get_chall_pref.return_value = ["recoveryToken"]
@@ -166,7 +166,7 @@ class SatisfyChallengesTest(unittest.TestCase):
         self.assertEqual(len(self.handler.dv_c), 5)
         self.assertEqual(len(self.handler.client_c), 5)
 
-        for i in range(5):
+        for i in xrange(5):
             dom = str(i)
             self.assertEqual(
                 self.handler.responses[dom],
@@ -293,8 +293,8 @@ class GetAuthorizationsTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.client.auth_handler import AuthHandler
 
-        self.mock_dv_auth = mock.MagicMock(name='ApacheConfigurator')
-        self.mock_client_auth = mock.MagicMock(name='ClientAuthenticator')
+        self.mock_dv_auth = mock.MagicMock(name="ApacheConfigurator")
+        self.mock_client_auth = mock.MagicMock(name="ClientAuthenticator")
 
         self.mock_sat_chall = mock.MagicMock(name="_satisfy_challenges")
         self.mock_acme_auth = mock.MagicMock(name="acme_authorization")
@@ -462,7 +462,7 @@ class PathSatisfiedTest(unittest.TestCase):
 
 def gen_auth_resp(chall_list):
     """Generate a dummy authorization response."""
-    return ["%s%s" % (type(chall).__name__, chall.domain)
+    return ["%s%s" % (chall.__class__.__name__, chall.domain)
             for chall in chall_list]
 
 
@@ -484,5 +484,5 @@ def gen_path(str_list, challenges):
     return path
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

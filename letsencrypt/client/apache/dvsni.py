@@ -109,7 +109,7 @@ class ApacheDvsni(object):
             chall.domain, chall.r_b64, chall.nonce, chall.key)
 
         # Write out challenge cert
-        with open(cert_path, 'w') as cert_chall_fd:
+        with open(cert_path, "w") as cert_chall_fd:
             cert_chall_fd.write(cert_pem)
 
         return s_b64
@@ -135,7 +135,7 @@ class ApacheDvsni(object):
         self.configurator.reverter.register_file_creation(
             True, self.challenge_conf)
 
-        with open(self.challenge_conf, 'w') as new_conf:
+        with open(self.challenge_conf, "w") as new_conf:
             new_conf.write(config_text)
 
     def _conf_include_check(self, main_config):

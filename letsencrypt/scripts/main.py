@@ -166,7 +166,7 @@ def main():  # pylint: disable=too-many-branches
 
 def display_eula():
     """Displays the end user agreement."""
-    with open('EULA') as eula_file:
+    with open("EULA") as eula_file:
         if not zope.component.getUtility(interfaces.IDisplay).generic_yesno(
                 eula_file.read(), "Agree", "Cancel"):
             sys.exit(0)
@@ -220,7 +220,7 @@ def read_file(filename):
 
     """
     try:
-        return filename, open(filename, 'rU').read()
+        return filename, open(filename, "rU").read()
     except IOError as exc:
         raise argparse.ArgumentTypeError(exc.strerror)
 

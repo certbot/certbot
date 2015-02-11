@@ -49,3 +49,7 @@ class DvsniGenCertTest(unittest.TestCase):
     def _call(cls, name, r_b64, nonce, key):
         from letsencrypt.client.challenge_util import dvsni_gen_cert
         return dvsni_gen_cert(name, r_b64, nonce, key)
+
+
+if __name__ == "__main__":
+    unittest.main()

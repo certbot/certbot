@@ -406,9 +406,9 @@ def setup_test_files():
     dir2 = tempfile.mkdtemp("dir2")
     config1 = os.path.join(dir1, "config.txt")
     config2 = os.path.join(dir2, "config.txt")
-    with open(config1, 'w') as file_fd:
+    with open(config1, "w") as file_fd:
         file_fd.write("directive-dir1")
-    with open(config2, 'w') as file_fd:
+    with open(config2, "w") as file_fd:
         file_fd.write("directive-dir2")
 
     sets = [set([config1]),
@@ -420,30 +420,30 @@ def setup_test_files():
 
 def get_save_notes(dire):
     """Read save notes"""
-    return read_in(os.path.join(dire, 'CHANGES_SINCE'))
+    return read_in(os.path.join(dire, "CHANGES_SINCE"))
 
 
 def get_filepaths(dire):
     """Get Filepaths"""
-    return read_in(os.path.join(dire, 'FILEPATHS'))
+    return read_in(os.path.join(dire, "FILEPATHS"))
 
 
 def get_new_files(dire):
     """Get new files."""
-    return read_in(os.path.join(dire, 'NEW_FILES')).splitlines()
+    return read_in(os.path.join(dire, "NEW_FILES")).splitlines()
 
 
 def read_in(path):
     """Read in a file, return the str"""
-    with open(path, 'r') as file_fd:
+    with open(path, "r") as file_fd:
         return file_fd.read()
 
 
 def update_file(filename, string):
     """Update a file with a new value."""
-    with open(filename, 'w') as file_fd:
+    with open(filename, "w") as file_fd:
         file_fd.write(string)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

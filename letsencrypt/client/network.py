@@ -54,16 +54,16 @@ class Network(object):
             )
         except requests.exceptions.RequestException as error:
             raise errors.LetsEncryptClientError(
-                'Sending ACME message to server has failed: %s' % error)
+                "Sending ACME message to server has failed: %s" % error)
 
         try:
             acme.acme_object_validate(response.content)
         except ValueError:
             raise errors.LetsEncryptClientError(
-                'Server did not send JSON serializable message')
+                "Server did not send JSON serializable message")
         except jsonschema.ValidationError as error:
             raise errors.LetsEncryptClientError(
-                'Response from server is not a valid ACME message')
+                "Response from server is not a valid ACME message")
 
         return response.json()
 
@@ -84,7 +84,7 @@ class Network(object):
             return self.is_expected_msg(response, expected)
         except:  # TODO: too generic exception
             raise errors.LetsEncryptClientError(
-                'Expected message (%s) not received' % expected)
+                "Expected message (%s) not received" % expected)
 
     def is_expected_msg(self, response, expected, delay=3, rounds=20):
         """Is response expected ACME message?

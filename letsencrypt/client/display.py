@@ -206,7 +206,7 @@ class FileDisplay(CommonDisplayMixin):
         :param str message: Message to display
 
         """
-        side_frame = '-' * 79
+        side_frame = "-" * 79
         lines = message.splitlines()
         fixed_l = []
         for line in lines:
@@ -235,12 +235,12 @@ class FileDisplay(CommonDisplayMixin):
             choices = ["%s - %s" % (c[0], c[1]) for c in choices]
 
         self.outfile.write("\n%s\n" % message)
-        side_frame = '-' * 79
+        side_frame = "-" * 79
         self.outfile.write("%s\n" % side_frame)
 
         for i, choice in enumerate(choices, 1):
             self.outfile.write(textwrap.fill(
-                "%d: %s" % (i, choice), 80) + '\n')
+                "%d: %s" % (i, choice), 80) + "\n")
 
         self.outfile.write("%s\n" % side_frame)
 
@@ -263,7 +263,7 @@ class FileDisplay(CommonDisplayMixin):
         """
         ans = raw_input("%s (Enter c to cancel)\n" % message)
 
-        if ans == 'c' or ans == 'C':
+        if ans == "c" or ans == "C":
             return CANCEL, "-1"
         else:
             return OK, ans
@@ -279,7 +279,7 @@ class FileDisplay(CommonDisplayMixin):
         """
         self.outfile.write("\n%s\n" % textwrap.fill(message, 80))
         ans = raw_input("y/n: ")
-        return ans.startswith('y') or ans.startswith('Y')
+        return ans.startswith("y") or ans.startswith("Y")
 
     def filter_names(self, names):
         """Determine which names the user would like to select from a list.
@@ -305,7 +305,7 @@ class FileDisplay(CommonDisplayMixin):
         :param list domains: domain names which were enabled
 
         """
-        side_frame = '*' * 79
+        side_frame = "*" * 79
         msg = textwrap.fill("Congratulations! You have successfully "
                             "enabled %s!" % gen_https_names(domains))
         self.outfile.write("%s\n%s\n%s\n" % (side_frame, msg, side_frame))
@@ -348,7 +348,7 @@ class FileDisplay(CommonDisplayMixin):
         while not valid_ans:
 
             ans = raw_input(input_string)
-            if ans.startswith('c') or ans.startswith('C'):
+            if ans.startswith("c") or ans.startswith("C"):
                 code = CANCEL
                 selection = -1
                 valid_ans = True
@@ -380,7 +380,7 @@ class FileDisplay(CommonDisplayMixin):
         self.outfile.write(cert_info_frame(cert))
         self.outfile("This action cannot be reversed!\n")
         ans = raw_input("y/n")
-        return ans.startswith('y') or ans.startswith('Y')
+        return ans.startswith("y") or ans.startswith("Y")
 
     def more_info_cert(self, cert):
         """Displays more info about the cert.
@@ -430,17 +430,8 @@ def gen_https_names(domains):
     """Returns a string of the https domains.
 
     Domains are formatted nicely with https:// prepended to each.
-    .. todo:: This should not use +=, rewrite this with unittests
+
+    :param list domains: Domains (:class:`str`)
 
     """
-    result = ""
-    if len(domains) > 2:
-        for i in range(len(domains)-1):
-            result = result + "https://" + domains[i] + ", "
-        result = result + "and "
-    if len(domains) == 2:
-        return "https://" + domains[0] + " and https://" + domains[1]
-    if domains:
-        result = result + "https://" + domains[len(domains)-1]
-
-    return result
+    return ", ".join("https://{0}".format(domain) for domain in domains)

@@ -180,7 +180,7 @@ class Reverter(object):
                 try:
                     shutil.copy2(filename, os.path.join(
                         cp_dir, os.path.basename(filename) + "_" + str(idx)))
-                    op_fd.write(filename + '\n')
+                    op_fd.write(filename + "\n")
                 # http://stackoverflow.com/questions/4726260/effective-use-of-python-shutil-copy2
                 except IOError:
                     op_fd.close()
@@ -193,7 +193,7 @@ class Reverter(object):
                 idx += 1
         op_fd.close()
 
-        with open(os.path.join(cp_dir, "CHANGES_SINCE"), 'a') as notes_fd:
+        with open(os.path.join(cp_dir, "CHANGES_SINCE"), "a") as notes_fd:
             notes_fd.write(save_notes)
 
     def _read_and_append(self, filepath):  # pylint: disable=no-self-use
@@ -204,11 +204,11 @@ class Reverter(object):
         """
         # Open up filepath differently depending on if it already exists
         if os.path.isfile(filepath):
-            op_fd = open(filepath, 'r+')
+            op_fd = open(filepath, "r+")
             lines = op_fd.read().splitlines()
         else:
             lines = []
-            op_fd = open(filepath, 'w')
+            op_fd = open(filepath, "w")
 
         return op_fd, lines
 
@@ -230,7 +230,7 @@ class Reverter(object):
                     for idx, path in enumerate(filepaths):
                         shutil.copy2(os.path.join(
                             cp_dir,
-                            os.path.basename(path) + '_' + str(idx)), path)
+                            os.path.basename(path) + "_" + str(idx)), path)
             except (IOError, OSError):
                 # This file is required in all checkpoints.
                 logging.error("Unable to recover files from %s", cp_dir)
@@ -261,13 +261,13 @@ class Reverter(object):
         # Get temp modified files
         temp_path = os.path.join(self.config.temp_checkpoint_dir, "FILEPATHS")
         if os.path.isfile(temp_path):
-            with open(temp_path, 'r') as protected_fd:
+            with open(temp_path, "r") as protected_fd:
                 protected_files.extend(protected_fd.read().splitlines())
 
         # Get temp new files
         new_path = os.path.join(self.config.temp_checkpoint_dir, "NEW_FILES")
         if os.path.isfile(new_path):
-            with open(new_path, 'r') as protected_fd:
+            with open(new_path, "r") as protected_fd:
                 protected_files.extend(protected_fd.read().splitlines())
 
         # Verify no save_file is in protected_files
@@ -363,7 +363,7 @@ class Reverter(object):
         if not os.path.isfile(file_list):
             return False
         try:
-            with open(file_list, 'r') as list_fd:
+            with open(file_list, "r") as list_fd:
                 filepaths = list_fd.read().splitlines()
                 for path in filepaths:
                     # Files are registered before they are added... so
@@ -402,14 +402,14 @@ class Reverter(object):
             return
 
         changes_since_path = os.path.join(
-            self.config.in_progress_dir, 'CHANGES_SINCE')
+            self.config.in_progress_dir, "CHANGES_SINCE")
         changes_since_tmp_path = os.path.join(
-            self.config.in_progress_dir, 'CHANGES_SINCE.tmp')
+            self.config.in_progress_dir, "CHANGES_SINCE.tmp")
 
         try:
-            with open(changes_since_tmp_path, 'w') as changes_tmp:
+            with open(changes_since_tmp_path, "w") as changes_tmp:
                 changes_tmp.write("-- %s --\n" % title)
-                with open(changes_since_path, 'r') as changes_orig:
+                with open(changes_since_path, "r") as changes_orig:
                     changes_tmp.write(changes_orig.read())
 
             shutil.move(changes_since_tmp_path, changes_since_path)
@@ -424,7 +424,7 @@ class Reverter(object):
         # It is possible save checkpoints faster than 1 per second resulting in
         # collisions in the naming convention.
         cur_time = time.time()
-        for _ in range(10):
+        for _ in xrange(10):
             final_dir = os.path.join(self.config.backup_dir, str(cur_time))
             try:
                 os.rename(self.config.in_progress_dir, final_dir)
