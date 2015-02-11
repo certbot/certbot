@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Parse command line and call the appropriate functions.
 
-..todo:: Sanity check all input.  Be sure to avoid shell code etc...
+.. todo:: Sanity check all input.  Be sure to avoid shell code etc...
 
 """
 import argparse

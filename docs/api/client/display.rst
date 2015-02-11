@@ -21,3 +21,9 @@
 
 .. automodule:: letsencrypt.client.display.enhancements
    :members:
+
+:mod:`letsencrypt.client.display.revocation`
+============================================
+
+.. automodule:: letsencrypt.client.display.revocation
+   :members:

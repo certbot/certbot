@@ -250,7 +250,7 @@ def validate_key_csr(privkey, csr=None):
     :type privkey: :class:`letsencrypt.client.le_util.Key`
 
     :param csr: CSR
-    :type csr: :class:`letsencrypt.client.client.Client.CSR`
+    :type csr: :class:`letsencrypt.client.le_util.CSR`
 
     :raises LetsEncryptClientError: if validation fails
 

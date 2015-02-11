@@ -45,6 +45,9 @@ APACHE_REWRITE_HTTPS_ARGS = [
 """Apache rewrite rule arguments used for redirections to https vhost"""
 
 
+DVSNI_CHALLENGE_PORT = 443
+"""Port to perform DVSNI challenge."""
+
 DVSNI_DOMAIN_SUFFIX = ".acme.invalid"
 """Suffix appended to domains in DVSNI validation."""
 

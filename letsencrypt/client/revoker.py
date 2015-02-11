@@ -20,7 +20,7 @@ from letsencrypt.client.display import revocation
 class Revoker(object):
     """A revocation class for LE.
 
-    ..todo:: Add a method to specify your own certificate for revocation - CLI
+    .. todo:: Add a method to specify your own certificate for revocation - CLI
 
     :ivar network: Network object
     :type network: :class:`letsencrypt.client.network`
@@ -32,20 +32,15 @@ class Revoker(object):
     :type config: :class:`~letsencrypt.client.interfaces.IConfig`
 
     """
-
     def __init__(self, installer, config):
         self.network = network.Network(config.server)
         self.installer = installer
         self.config = config
 
-        # This will go through and make sure that nothing almost got revoked...
-        # but didn't quite make it... also, guarantees no orphan cert/key files
-        self.recovery_routine()
+        le_util.make_or_verify_dir(config.cert_key_backup, 0o700)
 
-        # TODO: WTF do I do with these...
+        # TODO: Find a better solution for this...
         self.list_path = os.path.join(config.cert_key_backup, "LIST")
-        self.marked_path = os.path.join(config.cert_key_backup, "MARKED")
-
 
     def revoke_from_interface(self, cert):
         """Handle ACME "revocation" phase.
@@ -54,12 +49,9 @@ class Revoker(object):
         :type cert: :class:`letsencrypt.client.revoker.Cert`
 
         """
-        self._mark_for_revocation(cert)
-
         revoc = self.revoke(cert.backup_path, cert.backup_key_path)
 
-        self.remove_cert_key(cert)
-        self._remove_mark()
+        self.remove_cert_key([cert.idx, cert.backup_path, cert.backup_key_path])
 
         if revoc is not None:
             revocation.success_revocation(cert)
@@ -68,6 +60,22 @@ class Revoker(object):
             pass
 
         self.display_menu()
+
+    def revoke_from_key(self, auth_key):
+        marked = []
+        with open(self.list_path, "r") as csvfile:
+            csvreader = csv.reader(csvfile)
+            for row in csvreader:
+                # idx, cert, key
+                # Add all keys that match to marked list
+                # TODO: This doesn't account for padding in file that might
+                #   differ. This should only consider the key material.
+                # Note: The key can be different than the pub key found in the
+                #    certificate.
+                if auth_key.pem == open(row[2]).read():
+                    marked.append(row)
+
+        self.remove_certs_keys(marked)
 
     def revoke(self, cert_path, key_path):
         """Revoke the certificate with the ACME server.
@@ -88,32 +96,6 @@ class Revoker(object):
         # TODO: Catch error associated with already revoked and proceed.
         return self.network.send_and_receive_expected(
             acme.revocation_request(cert_der, key), "revocation")
-
-    def recovery_routine(self):
-        """Intended to make sure files aren't orphaned."""
-        if not os.path.isfile(self.marked_path):
-            return
-        with open(self.marked_path, "r") as marked_file:
-            csvreader = csv.reader(marked_file)
-            for row in csvreader:
-                self.revoke(row[0], row[1])
-                le_util.safely_remove(row[0])
-                le_util.safely_remove(row[1])
-
-        self._remove_mark()
-
-    def _mark_for_revocation(self, cert):  # pylint: disable=no-self-use
-        """Marks a cert for revocation."""
-        if os.path.isfile(self.marked_path):
-            raise errors.LetsEncryptRevokerError(
-                "MARKED file was never cleaned.")
-        with open(self.marked_path, "w") as marked_file:
-            csvwriter = csv.writer(marked_file)
-            csvwriter.writerow([cert.backup_path, cert.backup_key_path])
-
-    def _remove_mark(self):  # pylint: disable=no-self-use
-        """Remove the marked file."""
-        os.remove(self.marked_path)
 
     def display_menu(self):
         """List trusted Let's Encrypt certificates."""
@@ -136,7 +118,15 @@ class Revoker(object):
 
     def _populate_saved_certs(self, csha1_vhlist):
         # pylint: disable=no-self-use
-        """Populate a list of all the saved certs."""
+        """Populate a list of all the saved certs.
+
+        It is important to read from the file rather than the directory.
+        We assume that the LIST file is the master record and depending on
+        program crashes, this may differ from what is actually in the directory.
+        Namely, additional certs/keys may exist.  There should never be any
+        certs/keys in the LIST that don't exist in the directory however.
+
+        """
         certs = []
         with open(self.list_path, "rb") as csvfile:
             csvreader = csv.reader(csvfile)
@@ -183,23 +173,32 @@ class Revoker(object):
 
         return csha1_vhlist
 
-    def remove_cert_key(self, cert):  # pylint: disable=no-self-use
+    def remove_certs_keys(self, del_list):  # pylint: disable=no-self-use
         """Remove certificate and key.
 
-        :param cert: cert object
-        :type cert: :class:`letsencrypt.client.revoker.Cert`
+        :param list del_list: each is a `list` in the form
+            [idx, cert_path, key_path] all entries must be in the original
+            LIST order
 
         """
-        self._remove_cert_from_list(cert)
+        # This must occur first, LIST is the official key
+        self._remove_certs_from_list(del_list)
 
         # Remove files
-        os.remove(cert.backup_path)
-        os.remove(cert.backup_key_path)
+        for row in del_list:
+            os.remove(row[1])
+            os.remove(row[2])
 
-    def _remove_cert_from_list(self, cert):  # pylint: disable=no-self-use
-        """Remove a certificate from the LIST file."""
+    def _remove_certs_from_list(self, del_list):  # pylint: disable=no-self-use
+        """Remove a certificate from the LIST file.
+
+        :param list del_list: each is a csv row, all items must be in the
+            proper file order.
+
+        """
         list_path2 = os.path.join(self.config.cert_key_backup, "LIST.tmp")
 
+        idx = 0
         with open(self.list_path, "rb") as orgfile:
             csvreader = csv.reader(orgfile)
 
@@ -207,10 +206,16 @@ class Revoker(object):
                 csvwriter = csv.writer(newfile)
 
                 for row in csvreader:
-                    if not (row[0] == str(cert.idx) and
-                            row[1] == cert.orig.path and
-                            row[2] == cert.orig_key.path):
+                    if not (row[0] == str(del_list[idx][0]) and
+                            row[1] == del_list[idx][1] and
+                            row[2] == del_list[idx][2]):
                         csvwriter.writerow(row)
+                    else:
+                        # Found one of the marked rows... on to the next
+                        idx += 1
+
+        if idx != len(del_list):
+            errors.LetsEncryptRevokerError("Did not find all items in del_list")
 
         shutil.copy2(list_path2, self.list_path)
         os.remove(list_path2)
