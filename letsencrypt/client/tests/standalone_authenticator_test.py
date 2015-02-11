@@ -1,14 +1,11 @@
-#!/usr/bin/env python
-
-"""Tests for standalone_authenticator.py."""
-import mock
-import unittest
-
+"""Tests for letsencrypt.client.standalone_authenticator."""
 import os
 import pkg_resources
 import signal
 import socket
+import unittest
 
+import mock
 import OpenSSL.crypto
 import OpenSSL.SSL
 
@@ -20,7 +17,7 @@ from letsencrypt.client import le_util
 # after one iteration, based on.
 # http://igorsobreira.com/2013/03/17/testing-infinite-loops.html
 
-class SocketAcceptOnlyNTimes(object):
+class _SocketAcceptOnlyNTimes(object):
     # pylint: disable=too-few-public-methods
     """
     Callable that will raise `CallableExhausted`
@@ -38,6 +35,7 @@ class SocketAcceptOnlyNTimes(object):
             raise CallableExhausted
         # Modified here for a single use as socket.accept()
         return (mock.MagicMock(), "ignored")
+
 
 class CallableExhausted(Exception):
     # pylint: disable=too-few-public-methods
@@ -65,7 +63,7 @@ class SNICallbackTest(unittest.TestCase):
         self.authenticator = StandaloneAuthenticator()
         name, r_b64 = "example.com", le_util.jose_b64encode("x" * 32)
         test_key = pkg_resources.resource_string(
-            __name__, 'testdata/rsa256_key.pem')
+            __name__, "testdata/rsa256_key.pem")
         nonce, key = "abcdef", le_util.Key("foo", test_key)
         self.cert = challenge_util.dvsni_gen_cert(name, r_b64, nonce, key)[0]
         private_key = OpenSSL.crypto.load_privatekey(
@@ -189,7 +187,7 @@ class PerformTest(unittest.TestCase):
     def test_can_perform(self):
         """What happens if start_listener() returns True."""
         test_key = pkg_resources.resource_string(
-            __name__, 'testdata/rsa256_key.pem')
+            __name__, "testdata/rsa256_key.pem")
         key = le_util.Key("something", test_key)
         chall1 = challenge_util.DvsniChall(
             "foo.example.com", "whee", "foononce", key)
@@ -216,7 +214,7 @@ class PerformTest(unittest.TestCase):
     def test_cannot_perform(self):
         """What happens if start_listener() returns False."""
         test_key = pkg_resources.resource_string(
-            __name__, 'testdata/rsa256_key.pem')
+            __name__, "testdata/rsa256_key.pem")
         key = le_util.Key("something", test_key)
         chall1 = challenge_util.DvsniChall(
             "foo.example.com", "whee", "foononce", key)
@@ -347,7 +345,7 @@ class DoChildProcessTest(unittest.TestCase):
         self.authenticator = StandaloneAuthenticator()
         name, r_b64 = "example.com", le_util.jose_b64encode("x" * 32)
         test_key = pkg_resources.resource_string(
-            __name__, 'testdata/rsa256_key.pem')
+            __name__, "testdata/rsa256_key.pem")
         nonce, key = "abcdef", le_util.Key("foo", test_key)
         self.key = key
         self.cert = challenge_util.dvsni_gen_cert(name, r_b64, nonce, key)[0]
@@ -412,10 +410,10 @@ class DoChildProcessTest(unittest.TestCase):
                 "OpenSSL.SSL.Connection")
     @mock.patch("letsencrypt.client.standalone_authenticator.socket.socket")
     @mock.patch("letsencrypt.client.standalone_authenticator.os.kill")
-    def test_do_child_process_success(self, mock_kill, mock_socket,
-                                      mock_connection):
+    def test_do_child_process_success(
+            self, mock_kill, mock_socket, mock_connection):
         sample_socket = mock.MagicMock()
-        sample_socket.accept.side_effect = SocketAcceptOnlyNTimes(2)
+        sample_socket.accept.side_effect = _SocketAcceptOnlyNTimes(2)
         mock_socket.return_value = sample_socket
         mock_connection.return_value = mock.MagicMock()
         self.assertRaises(
@@ -457,5 +455,5 @@ class CleanupTest(unittest.TestCase):
         self.assertRaises(ValueError, self.authenticator.cleanup, [chall])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
