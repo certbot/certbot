@@ -240,18 +240,18 @@ class PerformTest(unittest.TestCase):
         self.authenticator.tasks = {"foononce.acme.invalid": "cert_data"}
         extra_challenge = challenge_util.DvsniChall("a", "b", "c", "d")
         self.assertRaises(
-            Exception, self.authenticator.perform, [extra_challenge])
+            ValueError, self.authenticator.perform, [extra_challenge])
 
     def test_perform_without_challenge_list(self):
         extra_challenge = challenge_util.DvsniChall("a", "b", "c", "d")
         # This is wrong because a challenge must be specified.
-        self.assertRaises(Exception, self.authenticator.perform, [])
+        self.assertRaises(ValueError, self.authenticator.perform, [])
         # This is wrong because it must be a list, not a bare challenge.
         self.assertRaises(
-            Exception, self.authenticator.perform, extra_challenge)
+            ValueError, self.authenticator.perform, extra_challenge)
         # This is wrong because the list must contain at least one challenge.
         self.assertRaises(
-            Exception, self.authenticator.perform, range(20))
+            ValueError, self.authenticator.perform, range(20))
 
 
 class StartListenerTest(unittest.TestCase):

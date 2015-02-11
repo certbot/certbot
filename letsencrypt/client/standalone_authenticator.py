@@ -273,13 +273,11 @@ class StandaloneAuthenticator(object):
         if self.child_pid or self.tasks:
             # We should not be willing to continue with perform
             # if there were existing pending challenges.
-            # TODO: Specify a correct exception subclass.
-            raise Exception(".perform() was called with pending tasks!")
+            raise ValueError(".perform() was called with pending tasks!")
         results_if_success = []
         results_if_failure = []
         if not chall_list or not isinstance(chall_list, list):
-            # TODO: Specify a correct exception subclass.
-            raise Exception(".perform() was called without challenge list")
+            raise ValueError(".perform() was called without challenge list")
         for chall in chall_list:
             if isinstance(chall, challenge_util.DvsniChall):
                 # We will attempt to do it
@@ -296,8 +294,7 @@ class StandaloneAuthenticator(object):
                 results_if_success.append(False)
                 results_if_failure.append(False)
         if not self.tasks:
-            # TODO: Specify a correct exception subclass.
-            raise Exception("nothing for .perform() to do")
+            raise ValueError("nothing for .perform() to do")
         # Try to do the authentication; note that this creates
         # the listener subprocess via os.fork()
         if self.start_listener(constants.DVSNI_CHALLENGE_PORT, key):
