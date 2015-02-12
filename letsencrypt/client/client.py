@@ -130,8 +130,8 @@ class Client(object):
         logging.info("Preparing and sending CSR...")
         return self.network.send_and_receive_expected(
             acme.messages.CertificateRequest.create(
-                csr=csr_der, key=Crypto.PublicKey.RSA.importKey(
-                    self.authkey.pem)),
+                csr=M2Crypto.X509.load_request_der_string(csr_der),
+                key=Crypto.PublicKey.RSA.importKey(self.authkey.pem)),
             acme.messages.Certificate)
 
     def save_certificate(self, certificate_msg, cert_path, chain_path):

@@ -9,6 +9,25 @@ from letsencrypt.acme import errors
 from letsencrypt.acme import interfaces
 
 
+class ComparableX509(object):  # pylint: disable=too-few-public-methods
+    """Wrapper for M2Crypto.X509.* objects that supports __eq__.
+
+    Wraps around:
+
+      - :class:`M2Crypto.X509.X509`
+      - :class:`M2Crypto.X509.Request`
+
+    """
+    def __init__(self, wrapped):
+        self._wrapped = wrapped
+
+    def __getattr__(self, name):
+        return getattr(self._wrapped, name)
+
+    def __eq__(self, other):
+        return self.as_der() == other.as_der()
+
+
 def load_schema(name):
     """Load JSON schema from distribution."""
     return json.load(open(pkg_resources.resource_filename(

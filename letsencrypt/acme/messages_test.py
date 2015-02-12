@@ -13,8 +13,10 @@ from letsencrypt.acme import other
 
 KEY = Crypto.PublicKey.RSA.importKey(pkg_resources.resource_string(
     'letsencrypt.client.tests', 'testdata/rsa256_key.pem'))
-CERT = M2Crypto.X509.load_cert_string(pkg_resources.resource_string(
+CERT = M2Crypto.X509.load_cert(pkg_resources.resource_filename(
     'letsencrypt.client.tests', 'testdata/cert.pem'))
+CSR = M2Crypto.X509.load_request(pkg_resources.resource_filename(
+    'letsencrypt.client.tests', 'testdata/csr.pem'))
 
 
 class MessageTest(unittest.TestCase):
@@ -294,28 +296,27 @@ class CertificateTest(unittest.TestCase):
 class CertificateRequestTest(unittest.TestCase):
 
     def setUp(self):
-        self.csr = 'TODO: real DER CSR?'
         signature = other.Signature(
             alg='RS256', jwk=jose.JWK(key=KEY.publickey()),
-            sig='\x1cD\x157\x83\x14\xd7 \xeb\x02\xb3\xf6O\xb5\x99C]\x97'
-                '\x94p\xa7\xe48\x13>\x06\xf9yd\xf9\xfe\xf8\xd1>\x9aKH'
-                '\xd7\xba\xb9a1\xf5!p\x1b\xd7}\xbaj\xa7\xe3\xd9\xd9\t%'
-                '\xbb\xba\xc9\x00\xdaW\x16\xe9',
+            sig='\x15\xed\x84\xaa:\xf2DO\x0e9 \xbcg\xf8\xc0\xcf\x87\x9a'
+                '\x95\xeb\xffT[\x84[\xec\x85\x7f\x8eK\xe9\xc2\x12\xc8Q'
+                '\xafo\xc6h\x07\xba\xa6\xdf\xd1\xa7"$\xba=Z\x13n\x14\x0b'
+                'k\xfe\xee\xb4\xe4\xc8\x05\x9a\x08\xa7',
             nonce='\xec\xd6\xf2oYH\xeb\x13\xd5#q\xe0\xdd\xa2\x92\xa9')
 
         from letsencrypt.acme.messages import CertificateRequest
-        self.msg = CertificateRequest(csr=self.csr, signature=signature)
+        self.msg = CertificateRequest(csr=CSR, signature=signature)
 
         self.jmsg = {
             'type': 'certificateRequest',
-            'csr': 'VE9ETzogcmVhbCBERVIgQ1NSPw',
+            'csr': jose.b64encode(CSR.as_der()),
             'signature': signature,
         }
 
     def test_create(self):
         from letsencrypt.acme.messages import CertificateRequest
         self.assertEqual(self.msg, CertificateRequest.create(
-            csr=self.csr, key=KEY,
+            csr=CSR, key=KEY,
             sig_nonce='\xec\xd6\xf2oYH\xeb\x13\xd5#q\xe0\xdd\xa2\x92\xa9'))
 
     def test_verify(self):

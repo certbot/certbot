@@ -262,17 +262,10 @@ class Certificate(Message):
             fields["refresh"] = self.refresh
         return fields
 
-    def __eq__(self, other):
-        # pylint: disable=redefined-outer-name
-        # M2Crypto.X509 does not implement __eq__, do it manually
-        return isinstance(other, Certificate) and self.certificate.as_der(
-            ) == other.certificate.as_der() and [
-                cert.as_der() for cert in self.chain] == [
-                    cert.as_der() for cert in other.chain]
-
     @classmethod
     def _decode_cert(cls, b64der):
-        return M2Crypto.X509.load_cert_der_string(jose.b64decode(b64der))
+        return util.ComparableX509(M2Crypto.X509.load_cert_der_string(
+            jose.b64decode(b64der)))
 
     @classmethod
     def _encode_cert(cls, cert):
@@ -290,7 +283,7 @@ class Certificate(Message):
 class CertificateRequest(Message):
     """ACME "certificateRequest" message.
 
-    :ivar str csr: DER encoded CSR.
+    :ivar str csr: CSR.
     :ivar signature: Signature.
     :type signature: :class:`letsencrypt.acme.other.Signature`
 
@@ -313,7 +306,7 @@ class CertificateRequest(Message):
 
         """
         return cls(signature=other.Signature.from_msg(
-            kwargs["csr"], key, sig_nonce), **kwargs)
+            kwargs["csr"].as_der(), key, sig_nonce), **kwargs)
 
     def verify(self):
         """Verify signature.
@@ -324,17 +317,26 @@ class CertificateRequest(Message):
         """
         # TODO: must also check that the public key encoded in the JWK object
         # is the correct key for a given context.
-        return self.signature.verify(self.csr)
+        return self.signature.verify(self.csr.as_der())
+
+    @classmethod
+    def _decode_csr(cls, b64der):
+        return util.ComparableX509(M2Crypto.X509.load_request_der_string(
+            jose.b64decode(b64der)))
+
+    @classmethod
+    def _encode_csr(cls, csr):
+        return jose.b64encode(csr.as_der())
 
     def _fields_to_json(self):
         return {
-            "csr": jose.b64encode(self.csr),
+            "csr": self._encode_csr(self.csr),
             "signature": self.signature,
         }
 
     @classmethod
     def _from_valid_json(cls, jobj):
-        return cls(csr=jose.b64decode(jobj["csr"]),
+        return cls(csr=cls._decode_csr(jobj["csr"]),
                    signature=other.Signature.from_json(
                        jobj["signature"], validate=False))
 
