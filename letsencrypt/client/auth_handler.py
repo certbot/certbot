@@ -129,6 +129,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
 
         .. todo:: It might be worth it to try different challenges to
             find one that doesn't throw an exception
+        .. todo:: separate into more functions
 
         """
         logging.info("Performing the following challenges:")
