@@ -145,16 +145,19 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         # Order is important here as we will not expose the outside
         # Authenticator to our own indices.
         flat_client = []
-        flat_auth = []
+        flat_dv = []
+
         for dom in self.domains:
             flat_client.extend(ichall.chall for ichall in self.client_c[dom])
-            flat_auth.extend(ichall.chall for ichall in self.dv_c[dom])
+            flat_dv.extend(ichall.chall for ichall in self.dv_c[dom])
 
+        client_resp = []
+        dv_resp = []
         try:
             if flat_client:
                 client_resp = self.client_auth.perform(flat_client)
-            if flat_auth:
-                dv_resp = self.dv_auth.perform(flat_auth)
+            if flat_dv:
+                dv_resp = self.dv_auth.perform(flat_dv)
         # This will catch both specific types of errors.
         except errors.LetsEncryptAuthHandlerError as err:
             logging.critical("Failure in setting up challenges:")
@@ -169,8 +172,10 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         logging.info("Ready for verification...")
 
         # Assemble Responses
-        self._assign_responses(client_resp, self.client_c)
-        self._assign_responses(dv_resp, self.dv_c)
+        if client_resp:
+            self._assign_responses(client_resp, self.client_c)
+        if dv_resp:
+            self._assign_responses(dv_resp, self.dv_c)
 
     def _assign_responses(self, flat_list, ichall_dict):
         """Assign responses from flat_list back to the IndexedChall dicts.
