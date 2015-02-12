@@ -339,7 +339,7 @@ class TestFullCheckpointsReverter(unittest.TestCase):
         self.reverter.view_config_changes()
 
         # Make sure notification is output
-        self.assertEqual(mock_output().generic_notification.call_count, 1)
+        self.assertEqual(mock_output().notification.call_count, 1)
 
     @mock.patch("letsencrypt.client.reverter.logging")
     def test_view_config_changes_no_backups(self, mock_logging):

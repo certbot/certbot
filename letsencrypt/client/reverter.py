@@ -126,7 +126,7 @@ class Reverter(object):
 
             output.append(os.linesep)
 
-        zope.component.getUtility(interfaces.IDisplay).generic_notification(
+        zope.component.getUtility(interfaces.IDisplay).notification(
             os.linesep.join(output), display_util.HEIGHT)
 
     def add_to_temp_checkpoint(self, save_files, save_notes):
