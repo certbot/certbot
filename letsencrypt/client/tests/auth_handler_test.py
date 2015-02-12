@@ -4,12 +4,12 @@ import unittest
 
 import mock
 
-from letsencrypt import acme
+from letsencrypt.acme import messages
 
 from letsencrypt.client import challenge_util
 from letsencrypt.client import errors
-from letsencrypt.client.tests import acme_util
 
+from letsencrypt.client.tests import acme_util
 
 
 TRANSLATE = {
@@ -48,8 +48,8 @@ class SatisfyChallengesTest(unittest.TestCase):
     def test_name1_dvsni1(self):
         dom = "0"
         challenge = [acme_util.CHALLENGES["dvsni"]]
-        msg = acme.messages.Challenge(session_id=dom, nonce="nonce0",
-                                      challenges=challenge, combinations=[])
+        msg = messages.Challenge(session_id=dom, nonce="nonce0",
+                                 challenges=challenge, combinations=[])
         self.handler.add_chall_msg(dom, msg, "dummy_key")
 
         self.handler._satisfy_challenges()  # pylint: disable=protected-access
@@ -68,8 +68,8 @@ class SatisfyChallengesTest(unittest.TestCase):
         for i in xrange(5):
             self.handler.add_chall_msg(
                 str(i),
-                acme.messages.Challenge(session_id=str(i), nonce="nonce%d" % i,
-                                        challenges=challenge, combinations=[]),
+                messages.Challenge(session_id=str(i), nonce="nonce%d" % i,
+                                   challenges=challenge, combinations=[]),
                 "dummy_key")
 
         self.handler._satisfy_challenges()  # pylint: disable=protected-access
@@ -96,8 +96,8 @@ class SatisfyChallengesTest(unittest.TestCase):
         combos = acme_util.gen_combos(challenges)
         self.handler.add_chall_msg(
             dom,
-            acme.messages.Challenge(session_id="0", nonce="nonce0",
-                                    challenges=challenges, combinations=combos),
+            messages.Challenge(session_id="0", nonce="nonce0",
+                               challenges=challenges, combinations=combos),
             "dummy_key")
 
         path = gen_path(["simpleHttps"], challenges)
@@ -126,8 +126,8 @@ class SatisfyChallengesTest(unittest.TestCase):
         combos = acme_util.gen_combos(challenges)
         self.handler.add_chall_msg(
             dom,
-            acme.messages.Challenge(session_id=dom, nonce="nonce0",
-                                    challenges=challenges, combinations=combos),
+            messages.Challenge(session_id=dom, nonce="nonce0",
+                               challenges=challenges, combinations=combos),
             "dummy_key")
 
         path = gen_path(["simpleHttps", "recoveryToken"], challenges)
@@ -157,7 +157,7 @@ class SatisfyChallengesTest(unittest.TestCase):
         for i in xrange(5):
             self.handler.add_chall_msg(
                 str(i),
-                acme.messages.Challenge(
+                messages.Challenge(
                     session_id=str(i), nonce="nonce%d" % i,
                     challenges=challenges, combinations=combos),
                 "dummy_key")
@@ -207,7 +207,7 @@ class SatisfyChallengesTest(unittest.TestCase):
             paths.append(gen_path(chosen_chall[i], challenge_list[i]))
             self.handler.add_chall_msg(
                 dom,
-                acme.messages.Challenge(
+                messages.Challenge(
                     session_id=dom, nonce="nonce%d" % i,
                     challenges=challenge_list[i], combinations=[]),
                 "dummy_key")
@@ -256,7 +256,7 @@ class SatisfyChallengesTest(unittest.TestCase):
         for i in xrange(3):
             self.handler.add_chall_msg(
                 str(i),
-                acme.messages.Challenge(
+                messages.Challenge(
                     session_id=str(i), nonce="nonce%d" % i,
                     challenges=challenges, combinations=combos),
                 "dummy_key")
@@ -324,8 +324,8 @@ class GetAuthorizationsTest(unittest.TestCase):
         for i in xrange(3):
             self.handler.add_chall_msg(
                 str(i),
-                acme.messages.Challenge(session_id=str(i), nonce="nonce%d" % i,
-                                        challenges=challenge, combinations=[]),
+                messages.Challenge(session_id=str(i), nonce="nonce%d" % i,
+                                   challenges=challenge, combinations=[]),
                 "dummy_key")
 
         self.mock_sat_chall.side_effect = self._sat_solved_at_once
@@ -353,8 +353,8 @@ class GetAuthorizationsTest(unittest.TestCase):
         challenges = acme_util.get_challenges()
         self.handler.add_chall_msg(
             "0",
-            acme.messages.Challenge(session_id="0", nonce="nonce0",
-                                    challenges=challenges, combinations=[]),
+            messages.Challenge(session_id="0", nonce="nonce0",
+                               challenges=challenges, combinations=[]),
             "dummy_key")
 
         # Don't do anything to satisfy challenges
@@ -382,8 +382,8 @@ class GetAuthorizationsTest(unittest.TestCase):
             dom = str(i)
             self.handler.add_chall_msg(
                 dom,
-                acme.messages.Challenge(session_id=dom, nonce="nonce%d" % i,
-                                        challenges=challs[i], combinations=[]),
+                messages.Challenge(session_id=dom, nonce="nonce%d" % i,
+                                   challenges=challs[i], combinations=[]),
                 "dummy_key")
 
         self.mock_sat_chall.side_effect = self._sat_incremental

@@ -4,7 +4,7 @@ import sys
 
 import Crypto.PublicKey.RSA
 
-from letsencrypt import acme
+from letsencrypt.acme import messages
 
 from letsencrypt.client import challenge_util
 from letsencrypt.client import constants
@@ -112,14 +112,14 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         """
         try:
             auth = self.network.send_and_receive_expected(
-                acme.messages.AuthorizationRequest.create(
+                messages.AuthorizationRequest.create(
                     session_id=self.msgs[domain].session_id,
                     nonce=self.msgs[domain].nonce,
                     responses=self.responses[domain],
                     name=domain,
                     key=Crypto.PublicKey.RSA.importKey(
                         self.authkey[domain].pem)),
-                acme.messages.Authorization)
+                messages.Authorization)
             logging.info("Received Authorization for %s", domain)
             return auth
         except errors.LetsEncryptClientError as err:

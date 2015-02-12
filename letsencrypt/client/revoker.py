@@ -8,7 +8,7 @@ import Crypto.PublicKey.RSA
 import M2Crypto
 import zope.component
 
-from letsencrypt import acme
+from letsencrypt.acme import messages
 
 from letsencrypt.client import crypto_util
 from letsencrypt.client import display
@@ -43,9 +43,9 @@ class Revoker(object):
             key = Crypto.PublicKey.RSA.importKey(backup_key_file.read())
 
         revocation = self.network.send_and_receive_expected(
-            acme.messages.RevocationRequest.create(
+            messages.RevocationRequest.create(
                 certificate=certificate, key=key),
-            acme.messages.Revocation)
+            messages.Revocation)
 
         zope.component.getUtility(interfaces.IDisplay).generic_notification(
             "You have successfully revoked the certificate for "

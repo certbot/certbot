@@ -5,7 +5,7 @@ import time
 
 import requests
 
-from letsencrypt import acme
+from letsencrypt.acme import messages
 
 from letsencrypt.client import errors
 
@@ -53,7 +53,7 @@ class Network(object):
             raise errors.LetsEncryptClientError(
                 'Sending ACME message to server has failed: %s' % error)
 
-        return acme.messages.Message.from_json(response.json(), validate=True)
+        return messages.Message.from_json(response.json(), validate=True)
 
     def send_and_receive_expected(self, msg, expected):
         """Send ACME message to server and return expected message.
@@ -94,14 +94,14 @@ class Network(object):
         for _ in xrange(rounds):
             if isinstance(response, expected):
                 return response
-            elif isinstance(response, acme.messages.Error):
+            elif isinstance(response, messages.Error):
                 logging.error("%s", response)
                 raise errors.LetsEncryptClientError(response.error)
-            elif isinstance(response, acme.messages.Defer):
+            elif isinstance(response, messages.Defer):
                 logging.info("Waiting for %d seconds...", delay)
                 time.sleep(delay)
                 response = self.send(
-                    acme.messages.StatusRequest(token=response.token))
+                    messages.StatusRequest(token=response.token))
             else:
                 logging.fatal("Received unexpected message")
                 logging.fatal("Expected: %s", expected)
