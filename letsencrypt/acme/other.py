@@ -1,4 +1,4 @@
-"""JSON objects in ACME protocol other than messages."""
+"""Other ACME objects."""
 import logging
 
 from Crypto import Random
@@ -9,7 +9,7 @@ from letsencrypt.acme import jose
 from letsencrypt.acme import util
 
 
-class Signature(util.JSONDeSerializable, util.ImmutableMap):
+class Signature(util.ACMEObject):
     """ACME signature.
 
     :ivar str alg: Signature algorithm.
@@ -23,7 +23,6 @@ class Signature(util.JSONDeSerializable, util.ImmutableMap):
 
     """
     __slots__ = ('alg', 'sig', 'nonce', 'jwk')
-    schema = util.load_schema('signature')
 
     NONCE_LEN = 16
     """Size of nonce in bytes, as specified in the ACME protocol."""
@@ -68,7 +67,6 @@ class Signature(util.JSONDeSerializable, util.ImmutableMap):
             hashed, self.sig)
 
     def to_json(self):
-        """Prepare JSON serializable object."""
         return {
             'alg': self.alg,
             'sig': jose.b64encode(self.sig),
@@ -77,7 +75,7 @@ class Signature(util.JSONDeSerializable, util.ImmutableMap):
         }
 
     @classmethod
-    def _from_valid_json(cls, jobj):
+    def from_valid_json(cls, jobj):
         return cls(alg=jobj['alg'], sig=jose.b64decode(jobj['sig']),
                    nonce=jose.b64decode(jobj['nonce']),
-                   jwk=jose.JWK.from_json(jobj['jwk'], validate=False))
+                   jwk=jose.JWK.from_valid_json(jobj['jwk']))

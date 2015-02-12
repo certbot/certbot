@@ -2,7 +2,6 @@
 import json
 import pkg_resources
 
-import jsonschema
 import zope.interface
 
 from letsencrypt.acme import errors
@@ -32,73 +31,6 @@ def load_schema(name):
     """Load JSON schema from distribution."""
     return json.load(open(pkg_resources.resource_filename(
         __name__, "schemata/%s.json" % name)))
-
-
-class JSONDeSerializable(object):
-    """JSON (de)serializable object."""
-    zope.interface.implements(interfaces.IJSONSerializable)
-
-    schema = NotImplemented
-
-    @classmethod
-    def validate_json(cls, jobj):
-        """Validate JSON object against schema.
-
-        :raises letsencrypt.acme.errors.SchemaValidationError: if object
-            couldn't be validated.
-
-        """
-        try:
-            jsonschema.validate(jobj, cls.schema)
-        except jsonschema.ValidationError as error:
-            raise errors.SchemaValidationError(error)
-
-    @classmethod
-    def from_json(cls, jobj, validate=True):
-        """Deserialize from JSON.
-
-        Note that the input ``jobj`` has not been sanitized in any way.
-
-        :param jobj: JSON object.
-        :param bool validate: Validate against schema before deserializing.
-            Useful if :class:`JWK` is part of already validated json object.
-
-        :raises letsencrypt.acme.errors.SchemaValidationError: if ``validate``
-            was ``True`` and object couldn't be validated.
-
-        :returns: instance of the class
-
-        """
-        if validate:
-            cls.validate_json(jobj)
-        return cls._from_valid_json(jobj)
-
-    @classmethod
-    def _from_valid_json(cls, jobj):
-        """Deserializa from valid JSON object.
-
-        :param jobj: JSON object that has been validated against schema.
-
-        """
-        raise NotImplementedError()
-
-    @classmethod
-    def json_loads(cls, json_string, validate=True):
-        """Load JSON string."""
-        return cls.from_json(json.loads(json_string), validate)
-
-    def to_json(self):
-        """Prepare JSON serializable object."""
-        raise NotImplementedError()
-
-    def json_dumps(self):
-        """Dump to JSON string using proper serializer.
-
-        :returns: JSON serialized string.
-        :rtype: str
-
-        """
-        return json.dumps(self, default=dump_ijsonserializable)
 
 
 def dump_ijsonserializable(python_object):
@@ -145,3 +77,73 @@ class ImmutableMap(object):  # pylint: disable=too-few-public-methods
         return '{0}({1})'.format(self.__class__.__name__, ', '.join(
             '{0}={1!r}'.format(slot, getattr(self, slot))
             for slot in self.__slots__))
+
+
+class ACMEObject(ImmutableMap):  # pylint: disable=too-few-public-methods
+    """ACME object."""
+    zope.interface.implements(interfaces.IJSONSerializable)
+    zope.interface.classImplements(interfaces.IJSONDeserializable)
+
+    def to_json(self):  # pragma: no cover
+        """Serialize to JSON."""
+        raise NotImplementedError()
+
+    @classmethod
+    def from_valid_json(cls, jobj):  # pragma: no cover
+        """Deserialize from valid JSON object."""
+        raise NotImplementedError()
+
+
+class TypedACMEObject(ACMEObject):
+    """ACME object with type (immutable)."""
+
+    acme_type = NotImplemented
+    """ACME "type" field. Subclasses must override."""
+
+    TYPES = NotImplemented
+    """Types registered for JSON deserialization"""
+
+    @classmethod
+    def register(cls, msg_cls):
+        """Register class for JSON deserialization."""
+        cls.TYPES[msg_cls.acme_type] = msg_cls
+        return msg_cls
+
+    def to_json(self):
+        """Get JSON serializable object.
+
+        :returns: Serializable JSON object representing ACME typed object.
+            :meth:`validate` will almost certianly not work, due to reasons
+            explained in :class:`letsencrypt.acme.interfaces.IJSONSerializable`.
+        :rtype: dict
+
+        """
+        jobj = self._fields_to_json()
+        jobj["type"] = self.acme_type
+        return jobj
+
+    def _fields_to_json(self):  # pragma: no cover
+        """Prepare ACME object fields for JSON serialiazation.
+
+        Subclasses must override this method.
+
+        :returns: Serializable JSON object containg all ACME object fields
+            apart from "type".
+        :rtype: dict
+
+        """
+        raise NotImplementedError()
+
+    @classmethod
+    def from_valid_json(cls, jobj):
+        """Deserialize ACME object from valid JSON object.
+
+        :raises letsencrypt.acme.errors.UnrecognizedTypeError: if type
+            of the ACME object has not been registered.
+
+        """
+        try:
+            msg_cls = cls.TYPES[jobj["type"]]
+        except KeyError:
+            raise errors.UnrecognizedTypeError(jobj["type"])
+        return msg_cls.from_valid_json(jobj)

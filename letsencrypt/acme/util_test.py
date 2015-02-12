@@ -9,78 +9,15 @@ from letsencrypt.acme import errors
 from letsencrypt.acme import interfaces
 
 
-class MockJSONSerialiazable(object):
-    # pylint: disable=missing-docstring,too-few-public-methods,no-self-use
-    zope.interface.implements(interfaces.IJSONSerializable)
-
-    def to_json(self):
-        return [3, 2, 1]
-
-
-class JSONDeSerializableTest(unittest.TestCase):
-    """Tests for letsencrypt.acme.util.JSONDeSerializable."""
-
-    def setUp(self):
-        from letsencrypt.acme.util import JSONDeSerializable
-
-        class Tester(JSONDeSerializable):
-            # pylint: disable=missing-docstring,no-self-use,
-            # pylint: disable=too-few-public-methods
-            zope.interface.implements(interfaces.IJSONSerializable)
-
-            schema = {'type': 'integer'}
-
-            def __init__(self, jobj):
-                self.jobj = jobj
-
-            @classmethod
-            def _from_valid_json(cls, jobj):
-                return cls(jobj)
-
-            def to_json(self):
-                return {'foo': MockJSONSerialiazable()}
-
-        self.tester_cls = Tester
-
-    def test_validate_invalid_json(self):
-        self.assertRaises(errors.SchemaValidationError,
-                          self.tester_cls.validate_json, 'bang!')
-
-    def test_validate_valid_json(self):
-        self.tester_cls.validate_json(5)
-
-    def test_from_json(self):
-        self.assertEqual(5, self.tester_cls.from_json(5, validate=True).jobj)
-
-    def test_from_json_no_validation(self):
-        self.assertEqual(['1', 2], self.tester_cls.from_json(
-            ['1', 2], validate=False).jobj)
-
-    def test_from_valid_json_raises_error(self):
-        from letsencrypt.acme.util import JSONDeSerializable
-        # pylint: disable=protected-access
-        self.assertRaises(
-            NotImplementedError, JSONDeSerializable._from_valid_json, 'foo')
-
-    def test_json_loads(self):
-        tester = self.tester_cls.json_loads('5', validate=True)
-        self.assertEqual(tester.jobj, 5)
-
-    def test_json_loads_no_validation(self):
-        self.assertEqual(
-            'foo', self.tester_cls.json_loads('"foo"', validate=False).jobj)
-
-    def test_to_json_raises_error(self):
-        from letsencrypt.acme.util import JSONDeSerializable
-        self.assertRaises(NotImplementedError, JSONDeSerializable().to_json)
-
-    def test_json_dumps(self):
-        self.assertEqual(
-            self.tester_cls('foo').json_dumps(), '{"foo": [3, 2, 1]}')
-
-
 class DumpIJSONSerializableTest(unittest.TestCase):
     """Tests for letsencrypt.acme.util.dump_ijsonserializable."""
+
+    class MockJSONSerialiazable(object):
+        # pylint: disable=missing-docstring,too-few-public-methods,no-self-use
+        zope.interface.implements(interfaces.IJSONSerializable)
+
+        def to_json(self):
+            return [3, 2, 1]
 
     @classmethod
     def _call(cls, obj):
@@ -91,7 +28,7 @@ class DumpIJSONSerializableTest(unittest.TestCase):
         self.assertEqual('5', self._call(5))
 
     def test_ijsonserializable(self):
-        self.assertEqual('[3, 2, 1]', self._call(MockJSONSerialiazable()))
+        self.assertEqual('[3, 2, 1]', self._call(self.MockJSONSerialiazable()))
 
     def test_raises_type_error(self):
         self.assertRaises(TypeError, self._call, object())
@@ -161,6 +98,45 @@ class ImmutableMapTest(unittest.TestCase):
         self.assertEqual('A(x=1, y=2)', repr(self.a1_swap))
         self.assertEqual('B(x=1, y=2)', repr(self.b))
         self.assertEqual("B(x='foo', y='bar')", repr(self.B(x='foo', y='bar')))
+
+
+class TypedACMEObjectTest(unittest.TestCase):
+
+    def setUp(self):
+        from letsencrypt.acme.util import TypedACMEObject
+
+        # pylint: disable=missing-docstring,abstract-method
+        # pylint: disable=too-few-public-methods
+
+        class MockParentTypedACMEObject(TypedACMEObject):
+            TYPES = {}
+
+        @MockParentTypedACMEObject.register
+        class MockTypedACMEObject(MockParentTypedACMEObject):
+            acme_type = 'test'
+
+            @classmethod
+            def from_valid_json(cls, unused_obj):
+                return '!'
+
+            def _fields_to_json(self):
+                return {'foo': 'bar'}
+
+        self.parent_cls = MockParentTypedACMEObject
+        self.msg = MockTypedACMEObject()
+
+    def test_to_json(self):
+        self.assertEqual(self.msg.to_json(), {
+            'type': 'test',
+            'foo': 'bar',
+        })
+
+    def test_from_json_unknown_type_fails(self):
+        self.assertRaises(errors.UnrecognizedTypeError,
+                          self.parent_cls.from_valid_json, {'type': 'bar'})
+
+    def test_from_json_returns_obj(self):
+        self.assertEqual(self.parent_cls.from_valid_json({'type': 'test'}), '!')
 
 
 if __name__ == '__main__':

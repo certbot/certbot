@@ -13,7 +13,7 @@ def _leading_zeros(arg):
     return arg
 
 
-class JWK(util.JSONDeSerializable, util.ImmutableMap):
+class JWK(util.ACMEObject):
     # pylint: disable=too-few-public-methods
     """JSON Web Key.
 
@@ -21,7 +21,6 @@ class JWK(util.JSONDeSerializable, util.ImmutableMap):
 
     """
     __slots__ = ('key',)
-    schema = util.load_schema('jwk')
 
     @classmethod
     def _encode_param(cls, param):
@@ -35,7 +34,6 @@ class JWK(util.JSONDeSerializable, util.ImmutableMap):
         return long(binascii.hexlify(b64decode(param)), 16)
 
     def to_json(self):
-        """Serialize to JSON."""
         return {
             'kty': 'RSA',  # TODO
             'n': self._encode_param(self.key.n),
@@ -43,7 +41,7 @@ class JWK(util.JSONDeSerializable, util.ImmutableMap):
         }
 
     @classmethod
-    def _from_valid_json(cls, jobj):
+    def from_valid_json(cls, jobj):
         assert 'RSA' == jobj['kty']  # TODO
         return cls(key=Crypto.PublicKey.RSA.construct(
             (cls._decode_param(jobj['n']), cls._decode_param(jobj['e']))))

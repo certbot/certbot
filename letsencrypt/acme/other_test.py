@@ -78,9 +78,8 @@ class SigatureTest(unittest.TestCase):
 
     def test_from_json(self):
         from letsencrypt.acme.other import Signature
-        # pylint: disable=protected-access
         self.assertEqual(
-            self.signature, Signature._from_valid_json(self.jsig_from))
+            self.signature, Signature.from_valid_json(self.jsig_from))
 
 
 if __name__ == '__main__':

@@ -1,58 +1,21 @@
 """ACME protocol messages."""
+import json
+
+import jsonschema
 import M2Crypto
-import zope.interface
 
 from letsencrypt.acme import errors
-from letsencrypt.acme import interfaces
 from letsencrypt.acme import jose
 from letsencrypt.acme import other
 from letsencrypt.acme import util
 
 
-class Message(util.JSONDeSerializable, util.ImmutableMap):
-    """ACME message.
-
-    Messages are considered immutable.
-
-    """
-    zope.interface.implements(interfaces.IJSONSerializable)
-
-    acme_type = NotImplemented
-    """ACME message "type" field. Subclasses must override."""
-
+class Message(util.TypedACMEObject):
+    # _fields_to_json | pylint: disable=abstract-method
+    """ACME message."""
     TYPES = {}
-    """Message types registered for JSON deserialization"""
 
-    @classmethod
-    def register(cls, msg_cls):
-        """Register class for JSON deserialization."""
-        cls.TYPES[msg_cls.acme_type] = msg_cls
-        return msg_cls
-
-    def to_json(self):
-        """Get JSON serializable object.
-
-        :returns: Serializable JSON object representing ACME message.
-            :meth:`validate` will almost certainly not work, due to reasons
-            explained in :class:`letsencrypt.acme.interfaces.IJSONSerializable`.
-        :rtype: dict
-
-        """
-        jobj = self._fields_to_json()
-        jobj["type"] = self.acme_type
-        return jobj
-
-    def _fields_to_json(self):
-        """Prepare ACME message fields for JSON serialiazation.
-
-        Subclasses must override this method.
-
-        :returns: Serializable JSON object containg all ACME message fields
-            apart from "type".
-        :rtype: dict
-
-        """
-        raise NotImplementedError()
+    schema = NotImplemented
 
     @classmethod
     def get_msg_cls(cls, jobj):
@@ -74,30 +37,47 @@ class Message(util.JSONDeSerializable, util.ImmutableMap):
         try:
             msg_cls = cls.TYPES[msg_type]
         except KeyError:
-            raise errors.UnrecognizedMessageTypeError(msg_type)
+            raise errors.UnrecognizedTypeError(msg_type)
 
         return msg_cls
 
     @classmethod
-    def from_json(cls, jobj, validate=True):
-        """Deserialize validated ACME message from JSON string.
+    def from_json(cls, jobj):
+        """Deserialize from (possibly invalid) JSON object.
 
-        :param str jobj: JSON object.
-        :param bool validate: Validate against schema before deserializing.
-            Useful if :class:`JWK` is part of already validated json object.
+        Note that the input ``jobj`` has not been sanitized in any way.
 
-        :raises letsencrypt.acme.errors.ValidationError: if validation
-            was unsuccessful
+        :param jobj: JSON object.
 
-        :returns: Valid ACME message.
-        :rtype: subclass of :class:`Message`
+        :raises letsencrypt.acme.errors.SchemaValidationError: if ``validate``
+            was ``True`` and object couldn't be validated.
+
+        :returns: instance of the class
 
         """
         msg_cls = cls.get_msg_cls(jobj)
-        if validate:
-            msg_cls.validate_json(jobj)
-        # pylint: disable=protected-access
-        return msg_cls._from_valid_json(jobj)
+
+        try:
+            jsonschema.validate(jobj, msg_cls.schema)
+        except jsonschema.ValidationError as error:
+            raise errors.SchemaValidationError(error)
+
+        return cls.from_valid_json(jobj)
+
+    @classmethod
+    def json_loads(cls, json_string):
+        """Load JSON string."""
+        return cls.from_json(json.loads(json_string))
+
+    def json_dumps(self, *args, **kwargs):
+        """Dump to JSON string using proper serializer.
+
+        :returns: JSON serialized string.
+        :rtype: str
+
+        """
+        return json.dumps(
+            self, *args, default=util.dump_ijsonserializable, **kwargs)
 
 
 @Message.register  # pylint: disable=too-few-public-methods
@@ -118,7 +98,7 @@ class Challenge(Message):
         return fields
 
     @classmethod
-    def _from_valid_json(cls, jobj):
+    def from_valid_json(cls, jobj):
         return cls(session_id=jobj["sessionID"],
                    nonce=jose.b64decode(jobj["nonce"]),
                    challenges=jobj["challenges"],
@@ -142,7 +122,7 @@ class ChallengeRequest(Message):
         }
 
     @classmethod
-    def _from_valid_json(cls, jobj):
+    def from_valid_json(cls, jobj):
         return cls(identifier=jobj["identifier"])
 
 
@@ -164,10 +144,10 @@ class Authorization(Message):
         return fields
 
     @classmethod
-    def _from_valid_json(cls, jobj):
+    def from_valid_json(cls, jobj):
         jwk = jobj.get("jwk")
         if jwk is not None:
-            jwk = jose.JWK.from_json(jwk, validate=False)
+            jwk = jose.JWK.from_valid_json(jwk)
         return cls(recovery_token=jobj.get("recoveryToken"),
                    identifier=jobj.get("identifier"), jwk=jwk)
 
@@ -236,12 +216,11 @@ class AuthorizationRequest(Message):
         return fields
 
     @classmethod
-    def _from_valid_json(cls, jobj):
+    def from_valid_json(cls, jobj):
         return cls(session_id=jobj["sessionID"],
                    nonce=jose.b64decode(jobj["nonce"]),
                    responses=jobj["responses"],
-                   signature=other.Signature.from_json(
-                       jobj["signature"], validate=False),
+                   signature=other.Signature.from_valid_json(jobj["signature"]),
                    contact=jobj.get("contact", []))
 
 
@@ -278,7 +257,7 @@ class Certificate(Message):
         return jose.b64encode(cert.as_der())
 
     @classmethod
-    def _from_valid_json(cls, jobj):
+    def from_valid_json(cls, jobj):
         return cls(certificate=cls._decode_cert(jobj["certificate"]),
                    chain=[cls._decode_cert(cert) for cert in
                           jobj.get("chain", [])],
@@ -344,10 +323,9 @@ class CertificateRequest(Message):
         }
 
     @classmethod
-    def _from_valid_json(cls, jobj):
+    def from_valid_json(cls, jobj):
         return cls(csr=cls._decode_csr(jobj["csr"]),
-                   signature=other.Signature.from_json(
-                       jobj["signature"], validate=False))
+                   signature=other.Signature.from_valid_json(jobj["signature"]))
 
 
 @Message.register  # pylint: disable=too-few-public-methods
@@ -366,7 +344,7 @@ class Defer(Message):
         return fields
 
     @classmethod
-    def _from_valid_json(cls, jobj):
+    def from_valid_json(cls, jobj):
         return cls(token=jobj["token"], interval=jobj.get("interval"),
                    message=jobj.get("message"))
 
@@ -396,7 +374,7 @@ class Error(Message):
         return fields
 
     @classmethod
-    def _from_valid_json(cls, jobj):
+    def from_valid_json(cls, jobj):
         return cls(error=jobj["error"], message=jobj.get("message"),
                    more_info=jobj.get("moreInfo"))
 
@@ -412,7 +390,7 @@ class Revocation(Message):
         return {}
 
     @classmethod
-    def _from_valid_json(cls, jobj):
+    def from_valid_json(cls, jobj):
         return cls()
 
 
@@ -475,10 +453,9 @@ class RevocationRequest(Message):
         }
 
     @classmethod
-    def _from_valid_json(cls, jobj):
+    def from_valid_json(cls, jobj):
         return cls(certificate=cls._decode_cert(jobj["certificate"]),
-                   signature=other.Signature.from_json(
-                       jobj["signature"], validate=False))
+                   signature=other.Signature.from_valid_json(jobj["signature"]))
 
 
 @Message.register  # pylint: disable=too-few-public-methods
@@ -496,5 +473,5 @@ class StatusRequest(Message):
         return {"token": self.token}
 
     @classmethod
-    def _from_valid_json(cls, jobj):
+    def from_valid_json(cls, jobj):
         return cls(token=jobj["token"])

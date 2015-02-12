@@ -45,7 +45,7 @@ class JWKTest(unittest.TestCase):
 
     def test_from_json(self):
         from letsencrypt.acme.jose import JWK
-        self.assertEqual(self.jwk256, JWK.from_json(self.jwk256json))
+        self.assertEqual(self.jwk256, JWK.from_valid_json(self.jwk256json))
         # TODO: fix schemata to allow RSA512
         #self.assertEqual(self.jwk512, JWK.from_json(self.jwk512json))
 

@@ -4,7 +4,6 @@ import unittest
 
 import Crypto.PublicKey.RSA
 import M2Crypto.X509
-import mock
 
 from letsencrypt.acme import errors
 from letsencrypt.acme import jose
@@ -28,7 +27,13 @@ class MessageTest(unittest.TestCase):
     def setUp(self):
         # pylint: disable=missing-docstring,too-few-public-methods
         from letsencrypt.acme.messages import Message
-        class TestMessage(Message):
+
+        class MockParentMessage(Message):
+            # pylint: disable=abstract-method
+            TYPES = {}
+
+        @MockParentMessage.register
+        class MockMessage(MockParentMessage):
             acme_type = 'test'
             schema = {
                 'type': 'object',
@@ -37,53 +42,45 @@ class MessageTest(unittest.TestCase):
                     'name': {'type': 'string'},
                 },
             }
+            __slots__ = ('price', 'name')
 
             @classmethod
-            def _from_valid_json(cls, jobj):
-                return jobj
+            def from_valid_json(cls, jobj):
+                return cls(price=jobj.get('price'), name=jobj.get('name'))
 
             def _fields_to_json(self):
-                return {'foo': 'bar'}
+                # pylint: disable=no-member
+                return {'price': self.price, 'name': self.name}
 
-        self.msg_cls = TestMessage
-
-    def test_to_json(self):
-        self.assertEqual(self.msg_cls().to_json(), {
-            'type': 'test',
-            'foo': 'bar',
-        })
-
-    def test_fields_to_json_not_implemented(self):
-        from letsencrypt.acme.messages import Message
-        # pylint: disable=protected-access
-        self.assertRaises(NotImplementedError, Message()._fields_to_json)
-
-    @classmethod
-    def _from_json(cls, jobj, validate=True):
-        from letsencrypt.acme.messages import Message
-        return Message.from_json(jobj, validate)
+        self.parent_cls = MockParentMessage
+        self.msg = MockMessage(price=123, name='foo')
 
     def test_from_json_non_dict_fails(self):
-        self.assertRaises(errors.ValidationError, self._from_json, [])
+        self.assertRaises(errors.ValidationError, self.parent_cls.from_json, [])
 
     def test_from_json_dict_no_type_fails(self):
-        self.assertRaises(errors.ValidationError, self._from_json, {})
+        self.assertRaises(errors.ValidationError, self.parent_cls.from_json, {})
 
-    def test_from_json_unknown_type_fails(self):
-        self.assertRaises(errors.UnrecognizedMessageTypeError,
-                          self._from_json, {'type': 'bar'})
+    def test_from_json_unrecognized_type(self):
+        self.assertRaises(errors.UnrecognizedTypeError,
+                          self.parent_cls.from_json, {'type': 'foo'})
 
-    @mock.patch('letsencrypt.acme.messages.Message.TYPES')
-    def test_from_json_validate_errors(self, types):
-        types.__getitem__.side_effect = lambda x: {'foo': self.msg_cls}[x]
+    def test_from_json_validates(self):
         self.assertRaises(errors.SchemaValidationError,
-                          self._from_json, {'type': 'foo', 'price': 'asd'})
+                          self.parent_cls.from_json,
+                          {'type': 'test', 'price': 'asd'})
 
-    @mock.patch('letsencrypt.acme.messages.Message.TYPES')
-    def test_from_json_valid_returns_cls(self, types):
-        types.__getitem__.side_effect = lambda x: {'foo': self.msg_cls}[x]
-        self.assertEqual(self._from_json({'type': 'foo'}, validate=False),
-                         {'type': 'foo'})
+    def test_from_json(self):
+        self.assertEqual(self.msg, self.parent_cls.from_json(
+            {'type': 'test', 'name': 'foo', 'price': 123}))
+
+    def test_json_loads(self):
+        self.assertEqual(self.msg, self.parent_cls.json_loads(
+            '{"type": "test", "name": "foo", "price": 123}'))
+
+    def test_json_dumps(self):
+        self.assertEqual(self.msg.json_dumps(sort_keys=True),
+                         '{"name": "foo", "price": 123, "type": "test"}')
 
 
 class ChallengeTest(unittest.TestCase):
@@ -408,10 +405,7 @@ class RevocationTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.acme.messages import Revocation
         self.msg = Revocation()
-
-        self.jmsg = {
-            'type': 'revocation',
-        }
+        self.jmsg = {'type': 'revocation'}
 
     def test_to_json(self):
         self.assertEqual(self.msg.to_json(), self.jmsg)
