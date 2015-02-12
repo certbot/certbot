@@ -160,7 +160,7 @@ class Client(object):
         if certificate_msg.chain:
             chain_fd, chain_fn = le_util.unique_file(chain_path, 0o644)
             for cert in certificate_msg.chain:
-                chain_fd.write(crypto_util.b64_cert_to_pem(cert))
+                chain_fd.write(cert.to_pem())
             chain_fd.close()
 
             logging.info("Cert chain written to %s", chain_fn)

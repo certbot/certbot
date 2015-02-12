@@ -133,17 +133,5 @@ class GetCertInfoTest(unittest.TestCase):
         self._call('cert-san.pem')
 
 
-class B64CertToPEMTest(unittest.TestCase):
-    # pylint: disable=too-few-public-methods
-    """Tests for letsencrypt.client.crypto_util.b64_cert_to_pem."""
-
-    def test_it(self):
-        from letsencrypt.client.crypto_util import b64_cert_to_pem
-        self.assertEqual(
-            b64_cert_to_pem(pkg_resources.resource_string(
-                __name__, 'testdata/cert.b64jose')),
-            pkg_resources.resource_string(__name__, 'testdata/cert.pem'))
-
-
 if __name__ == '__main__':
     unittest.main()
