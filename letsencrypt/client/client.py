@@ -42,7 +42,6 @@ class Client(object):
     :type config: :class:`~letsencrypt.client.interfaces.IConfig`
 
     """
-    zope.interface.implements(interfaces.IAuthenticator)
 
     def __init__(self, config, authkey, dv_auth, installer):
         """Initialize a client.
