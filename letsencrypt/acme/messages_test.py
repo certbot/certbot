@@ -423,31 +423,27 @@ class RevocationRequestTest(unittest.TestCase):
     def setUp(self):
         self.sig_nonce = '\xec\xd6\xf2oYH\xeb\x13\xd5#q\xe0\xdd\xa2\x92\xa9'
 
-        self.nonce = '\xec\xd6\xf2oYH\xeb\x13\xd5#q\xe0\xdd\xa2\x92\xa9'
-        self.certificate = 'TODO: real DER cert?'
-
         signature = other.Signature(
             alg='RS256', jwk=jose.JWK(key=KEY.publickey()),
-            sig='\x00\x15\xc0\xd4\x8b2M\xa9S\\\x8a#\xc6a\xa7!A\xb2d\x04'
-                '\xa6\xbe\xa1/M\x0f|\x8c\x9eJ\x16\xcd\x85N\xcc\x0b\x12k('
-                '\xa8U\xdfS\xa9y\xfd\xfa.\xb3\xeblms\x9f,\xdf\xbb>7\xd9'
-                '\xe5u\x8f\xbe',
+            sig='eJ\xfe\x12"U\x87\x8b\xbf/ ,\xdeP\xb2\xdc1\xb00\xe5\x1dB'
+                '\xfch<\xc6\x9eH@!\x1c\x16\xb2\x0b_\xc4\xddP\x89\xc8\xce?'
+                '\x16g\x069I\xb9\xb3\x91\xb9\x0e$3\x9f\x87\x8e\x82\xca\xc5'
+                's\xd9\xd0\xe7',
             nonce=self.sig_nonce)
 
         from letsencrypt.acme.messages import RevocationRequest
-        self.msg = RevocationRequest(
-            certificate=self.certificate, signature=signature)
+        self.msg = RevocationRequest(certificate=CERT, signature=signature)
 
         self.jmsg = {
             'type': 'revocationRequest',
-            'certificate': 'VE9ETzogcmVhbCBERVIgY2VydD8',
+            'certificate': jose.b64encode(CERT.as_der()),
             'signature': signature,
         }
 
     def test_create(self):
         from letsencrypt.acme.messages import RevocationRequest
-        RevocationRequest.create(
-            certificate=self.certificate, key=KEY, sig_nonce=self.sig_nonce)
+        self.assertEqual(self.msg, RevocationRequest.create(
+            certificate=CERT, key=KEY, sig_nonce=self.sig_nonce))
 
     def test_verify(self):
         self.assertTrue(self.msg.verify())
@@ -456,9 +452,10 @@ class RevocationRequestTest(unittest.TestCase):
         self.assertEqual(self.msg.to_json(), self.jmsg)
 
     def test_from_json(self):
-        from letsencrypt.acme.messages import RevocationRequest
         self.jmsg['signature'] = self.jmsg['signature'].to_json()
         self.jmsg['signature']['jwk'] = self.jmsg['signature']['jwk'].to_json()
+
+        from letsencrypt.acme.messages import RevocationRequest
         self.assertEqual(self.msg, RevocationRequest.from_json(self.jmsg))
 
 

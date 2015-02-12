@@ -177,9 +177,9 @@ class AuthorizationRequest(Message):
     """ACME "authorizationRequest" message.
 
     :ivar str session_id: "sessionID" from the server challenge
-    :ivar str name: Hostname
     :ivar str nonce: Nonce from the server challenge
     :ivar list responses: List of completed challenges
+    :ivar signature: Signature (:class:`letsencrypt.acme.other.Signature`).
     :ivar contact: TODO
 
     """
@@ -191,7 +191,7 @@ class AuthorizationRequest(Message):
     def create(cls, name, key, sig_nonce=None, **kwargs):
         """Create signed "authorizationRequest".
 
-        :param str name: TODO
+        :param str name: Hostname
 
         :param key: Key used for signing.
         :type key: :class:`Crypto.PublicKey.RSA`
@@ -246,8 +246,11 @@ class AuthorizationRequest(Message):
 class Certificate(Message):
     """ACME "certificate" message.
 
-    :ivar certificate: TODO
-    :type certificate: :class:`M2Crypto.X509` TODO
+    :ivar certificate: The certificate (:class:`M2Crypto.X509.X509`
+        wrapped in :class:`letsencrypt.acme.util.ComparableX509`).
+
+    :ivar list chain: Chain of certificates (:class:`M2Crypto.X509.X509` wrapped
+        in :class:`letsencrypt.acme.util.ComparableX509` ).
 
     """
     acme_type = "certificate"
@@ -283,9 +286,9 @@ class Certificate(Message):
 class CertificateRequest(Message):
     """ACME "certificateRequest" message.
 
-    :ivar str csr: CSR.
-    :ivar signature: Signature.
-    :type signature: :class:`letsencrypt.acme.other.Signature`
+    :ivar csr: Certificate Signing Request (:class:`M2Crypto.X509.Request`
+        wrapped in :class:`letsencrypt.acme.util.ComparableX509`.
+    :ivar signature: Signature (:class:`letsencrypt.acme.other.Signature`).
 
     """
     acme_type = "certificateRequest"
@@ -411,10 +414,9 @@ class Revocation(Message):
 class RevocationRequest(Message):
     """ACME "revocationRequest" message.
 
-    :iver str certificate: DER encoded certificate.
-    :iver str key: Key in string form. Accepted formats
-        are the same as for `Crypto.PublicKey.RSA.importKey`.
-    :ivar str nonce: Nonce used for signature. Useful for testing.
+    :ivar certificate: Certificate (:class:`M2Crypto.X509.X509`
+        wrapped in :class:`letsencrypt.acme.util.ComparableX509`).
+    :ivar signature: Signature (:class:`letsencrypt.acme.other.Signature`).
 
     """
     acme_type = "revocationRequest"
