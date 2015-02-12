@@ -31,7 +31,7 @@ class IAuthenticator(zope.interface.Interface):
         :param list chall_list: List of namedtuple types defined in
             :mod:`letsencrypt.client.challenge_util` (``DvsniChall``, etc.).
 
-        :returns: Challenge responses or if it cannot be completed then:
+        :returns: ACME Challenge responses or if it cannot be completed then:
 
             ``None``
               Authenticator can perform challenge, but can't at this time
