@@ -38,13 +38,13 @@ class Revoker(object):
         :rtype: :class:`letsencrypt.acme.message.Revocation`
 
         """
-        cert_der = M2Crypto.X509.load_cert(cert["backup_cert_file"]).as_der()
+        certificate = M2Crypto.X509.load_cert(cert["backup_cert_file"])
         with open(cert["backup_key_file"], 'rU') as backup_key_file:
-            key = backup_key_file.read()
+            key = Crypto.PublicKey.RSA.importKey(backup_key_file.read())
 
         revocation = self.network.send_and_receive_expected(
             acme.messages.RevocationRequest.create(
-                certificate=cert_der, key=Crypto.PublicKey.RSA.importKey(key)),
+                certificate=certificate, key=key),
             acme.messages.Revocation)
 
         zope.component.getUtility(interfaces.IDisplay).generic_notification(

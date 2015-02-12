@@ -435,7 +435,7 @@ class RevocationRequest(Message):
 
         """
         return cls(signature=other.Signature.from_msg(
-            kwargs["certificate"], key, sig_nonce), **kwargs)
+            kwargs["certificate"].as_der(), key, sig_nonce), **kwargs)
 
     def verify(self):
         """Verify signature.
@@ -446,17 +446,26 @@ class RevocationRequest(Message):
         """
         # TODO: must also check that the public key encoded in the JWK object
         # is the correct key for a given context.
-        return self.signature.verify(self.certificate)
+        return self.signature.verify(self.certificate.as_der())
+
+    @classmethod
+    def _decode_cert(cls, b64der):
+        return util.ComparableX509(M2Crypto.X509.load_cert_der_string(
+            jose.b64decode(b64der)))
+
+    @classmethod
+    def _encode_cert(cls, cert):
+        return jose.b64encode(cert.as_der())
 
     def _fields_to_json(self):
         return {
-            "certificate": jose.b64encode(self.certificate),
+            "certificate": self._encode_cert(self.certificate),
             "signature": self.signature,
         }
 
     @classmethod
     def _from_valid_json(cls, jobj):
-        return cls(certificate=jose.b64decode(jobj["certificate"]),
+        return cls(certificate=cls._decode_cert(jobj["certificate"]),
                    signature=other.Signature.from_json(
                        jobj["signature"], validate=False))
 
