@@ -11,8 +11,8 @@ import OpenSSL.SSL
 import zope.component
 import zope.interface
 
-from letsencrypt.client import constants
 from letsencrypt.client import challenge_util
+from letsencrypt.client import constants
 from letsencrypt.client import interfaces
 
 
@@ -261,11 +261,21 @@ class StandaloneAuthenticator(object):
     # IAuthenticator method implementations follow
 
     def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use
-        """Get challenge preferences."""
+        """Get challenge preferences.
+
+        IAuthenticator interface method get_chall_pref.
+        Return a list of challenge types that this authenticator
+        can perform for this domain.  In the case of the
+        StandaloneAuthenticator, the only challenge type that can ever
+        be performed is dvsni.
+
+        :returns: A list containing only 'dvsni'.
+
+        """
         return ["dvsni"]
 
     def perform(self, chall_list):
-        """Perform the challege.
+        """Perform the challenge.
 
         .. warning::
             For the StandaloneAuthenticator, because there is no convenient
@@ -273,6 +283,13 @@ class StandaloneAuthenticator(object):
             once; subsequent invocations are an error. To perform
             validations for multiple independent sets of domains, a separate
             StandaloneAuthenticator should be instantiated.
+
+        :param list chall_list: List of namedtuple types defined in
+            :mod:`letsencrypt.client.challenge_util` (``DvsniChall``, etc.)
+
+        :returns: ACME Challenge DVSNI responses following IAuthenticator
+            interface.
+        :rtype: :class:`list` of :class`dict`
 
         """
         if self.child_pid or self.tasks:
