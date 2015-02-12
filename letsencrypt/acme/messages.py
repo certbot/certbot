@@ -3,6 +3,7 @@ import json
 
 import jsonschema
 
+from letsencrypt.acme import challenges
 from letsencrypt.acme import errors
 from letsencrypt.acme import jose
 from letsencrypt.acme import other
@@ -96,11 +97,23 @@ class Challenge(Message):
             fields["combinations"] = self.combinations
         return fields
 
+    @property
+    def resolved_combinations(self):
+        """Combinations with challenges instead of indices."""
+        return [[self.challenges[idx] for idx in combo]
+                for combo in self.combinations]
+
     @classmethod
     def from_valid_json(cls, jobj):
+        # TODO: can challenges contain two challenges of the same type?
+        # TODO: can challenges contain duplicates?
+        # TODO: check "combinations" indices are in valid range
+        # TODO: turn "combinations" elements into sets?
+        # TODO: turn "combinations" into set?
         return cls(session_id=jobj["sessionID"],
                    nonce=cls._decode_b64jose(jobj["nonce"]),
-                   challenges=jobj["challenges"],
+                   challenges=[challenges.Challenge.from_valid_json(chall)
+                               for chall in jobj["challenges"]],
                    combinations=jobj.get("combinations", []))
 
 
@@ -216,11 +229,13 @@ class AuthorizationRequest(Message):
 
     @classmethod
     def from_valid_json(cls, jobj):
-        return cls(session_id=jobj["sessionID"],
-                   nonce=cls._decode_b64jose(jobj["nonce"]),
-                   responses=jobj["responses"],
-                   signature=other.Signature.from_valid_json(jobj["signature"]),
-                   contact=jobj.get("contact", []))
+        return cls(
+            session_id=jobj["sessionID"],
+            nonce=cls._decode_b64jose(jobj["nonce"]),
+            responses=[challenges.ChallengeResponse.from_valid_json(chall)
+                       for chall in jobj["responses"]],
+            signature=other.Signature.from_valid_json(jobj["signature"]),
+            contact=jobj.get("contact", []))
 
 
 @Message.register  # pylint: disable=too-few-public-methods

@@ -5,6 +5,7 @@ import unittest
 import Crypto.PublicKey.RSA
 import M2Crypto.X509
 
+from letsencrypt.acme import challenges
 from letsencrypt.acme import errors
 from letsencrypt.acme import jose
 from letsencrypt.acme import other
@@ -86,10 +87,10 @@ class MessageTest(unittest.TestCase):
 class ChallengeTest(unittest.TestCase):
 
     def setUp(self):
-        challenges = [
-            {'type': 'simpleHttps', 'token': 'IlirfxKKXAsHtmzK29Pj8A'},
-            {'type': 'dns', 'token': 'DGyRejmCefe7v4NfDGDKfA'},
-            {'type': 'recoveryToken'},
+        challs = [
+            challenges.SimpleHTTPS(token='IlirfxKKXAsHtmzK29Pj8A'),
+            challenges.DNS(token='DGyRejmCefe7v4NfDGDKfA'),
+            challenges.RecoveryToken(),
         ]
         combinations = [[0, 2], [1, 2]]
 
@@ -97,31 +98,52 @@ class ChallengeTest(unittest.TestCase):
         self.msg = Challenge(
             session_id='aefoGaavieG9Wihuk2aufai3aeZ5EeW4',
             nonce='\xec\xd6\xf2oYH\xeb\x13\xd5#q\xe0\xdd\xa2\x92\xa9',
-            challenges=challenges, combinations=combinations)
+            challenges=challs, combinations=combinations)
 
-        self.jmsg = {
+        self.jmsg_to = {
             'type': 'challenge',
             'sessionID': 'aefoGaavieG9Wihuk2aufai3aeZ5EeW4',
             'nonce': '7Nbyb1lI6xPVI3Hg3aKSqQ',
-            'challenges': challenges,
+            'challenges': challs,
             'combinations': combinations,
         }
 
+        self.jmsg_from = {
+            'type': 'challenge',
+            'sessionID': 'aefoGaavieG9Wihuk2aufai3aeZ5EeW4',
+            'nonce': '7Nbyb1lI6xPVI3Hg3aKSqQ',
+            'challenges': [chall.to_json() for chall in challs],
+            'combinations': combinations,
+        }
+
+    def test_resolved_combinations(self):
+        self.assertEqual(self.msg.resolved_combinations, [
+            [
+                challenges.SimpleHTTPS(token='IlirfxKKXAsHtmzK29Pj8A'),
+                challenges.RecoveryToken()
+            ],
+            [
+                challenges.DNS(token='DGyRejmCefe7v4NfDGDKfA'),
+                challenges.RecoveryToken(),
+            ]
+        ])
+
     def test_to_json(self):
-        self.assertEqual(self.msg.to_json(), self.jmsg)
+        self.assertEqual(self.msg.to_json(), self.jmsg_to)
 
     def test_from_json(self):
         from letsencrypt.acme.messages import Challenge
-        self.assertEqual(Challenge.from_json(self.jmsg), self.msg)
+        self.assertEqual(Challenge.from_json(self.jmsg_from), self.msg)
 
     def test_json_without_optionals(self):
-        del self.jmsg['combinations']
+        del self.jmsg_from['combinations']
+        del self.jmsg_to['combinations']
 
         from letsencrypt.acme.messages import Challenge
-        msg = Challenge.from_json(self.jmsg)
+        msg = Challenge.from_json(self.jmsg_from)
 
         self.assertEqual(msg.combinations, [])
-        self.assertEqual(msg.to_json(), self.jmsg)
+        self.assertEqual(msg.to_json(), self.jmsg_to)
 
 
 class ChallengeRequestTest(unittest.TestCase):
@@ -186,9 +208,9 @@ class AuthorizationRequestTest(unittest.TestCase):
 
     def setUp(self):
         self.responses = [
-            {'type': 'simpleHttps', 'path': 'Hf5GrX4Q7EBax9hc2jJnfw'},
+            challenges.SimpleHTTPSResponse(path='Hf5GrX4Q7EBax9hc2jJnfw'),
             None,  # null
-            {'type': 'recoveryToken', 'token': '23029d88d9e123e'},
+            challenges.RecoveryTokenResponse(token='23029d88d9e123e'),
         ]
         self.contact = ["mailto:cert-admin@example.com", "tel:+12025551212"]
         signature = other.Signature(
@@ -220,7 +242,8 @@ class AuthorizationRequestTest(unittest.TestCase):
             'type': 'authorizationRequest',
             'sessionID': 'aefoGaavieG9Wihuk2aufai3aeZ5EeW4',
             'nonce': '7Nbyb1lI6xPVI3Hg3aKSqQ',
-            'responses': self.responses,
+            'responses': [None if response is None else response.to_json()
+                          for response in self.responses],
             'signature': signature.to_json(),
             'contact': self.contact,
         }
