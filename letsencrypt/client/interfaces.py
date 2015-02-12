@@ -30,6 +30,9 @@ class IAuthenticator(zope.interface.Interface):
 
         :param list chall_list: List of namedtuple types defined in
             :mod:`letsencrypt.client.challenge_util` (``DvsniChall``, etc.).
+            - chall_list will never be empty
+            - chall_list will only contain types found within
+                :func:`get_chall_pref`
 
         :returns: ACME Challenge responses or if it cannot be completed then:
 
@@ -43,20 +46,16 @@ class IAuthenticator(zope.interface.Interface):
         """
 
     def cleanup(chall_list):
-        """Revert changes and shutdown after challenges complete."""
+        """Revert changes and shutdown after challenges complete.
 
+        :param list chall_list: List of namedtuple types defined in
+            :mod:`letsencrypt.client.challenge_util` (``DvsniChall``, etc.)
 
-class IChallenge(zope.interface.Interface):
-    """Let's Encrypt challenge."""
+            - Only challenges given previously in the perform function will be
+            found in chall_list.
+            - chall_list will never be empty
 
-    def perform():
-        """Perform the challenge."""
-
-    def generate_response():
-        """Generate response."""
-
-    def cleanup():
-        """Cleanup."""
+        """
 
 
 class IConfig(zope.interface.Interface):

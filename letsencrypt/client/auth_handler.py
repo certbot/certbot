@@ -151,8 +151,10 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
             flat_auth.extend(ichall.chall for ichall in self.dv_c[dom])
 
         try:
-            client_resp = self.client_auth.perform(flat_client)
-            dv_resp = self.dv_auth.perform(flat_auth)
+            if flat_client:
+                client_resp = self.client_auth.perform(flat_client)
+            if flat_auth:
+                dv_resp = self.dv_auth.perform(flat_auth)
         # This will catch both specific types of errors.
         except errors.LetsEncryptAuthHandlerError as err:
             logging.critical("Failure in setting up challenges:")
@@ -212,9 +214,13 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         # These are indexed challenges... give just the challenges to the auth
         # Chose to make these lists instead of a generator to make it easier to
         # work with...
-        self.dv_auth.cleanup([ichall.chall for ichall in self.dv_c[domain]])
-        self.client_auth.cleanup(
-            [ichall.chall for ichall in self.client_c[domain]])
+        dv_list = [ichall.chall for ichall in self.dv_c[domain]]
+        client_list = [ichall.chall for ichall in self.client_c[domain]]
+        if dv_list:
+            self.dv_auth.cleanup(dv_list)
+        if client_list:
+            self.client_auth.cleanup(client_list)
+
 
     def _cleanup_state(self, delete_list):
         """Cleanup state after an authorization is received.
