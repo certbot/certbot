@@ -36,7 +36,7 @@ List of expected options parameters:
 
 
 APACHE_MOD_SSL_CONF = pkg_resources.resource_filename(
-    'letsencrypt.client.apache', 'options-ssl.conf')
+    "letsencrypt.client.apache", "options-ssl.conf")
 """Path to the Apache mod_ssl config file found in the Let's Encrypt
 distribution."""
 

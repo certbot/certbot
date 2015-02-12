@@ -80,7 +80,6 @@ def gen_combos(challs):
     """Generate natural combinations for challs."""
     dv_chall = []
     renewal_chall = []
-    combos = []
 
     for i, chall in enumerate(challs):
         if chall["type"] in constants.DV_CHALLENGES:
@@ -89,12 +88,8 @@ def gen_combos(challs):
             renewal_chall.append(i)
 
     # Gen combos for 1 of each type
-    for i in range(len(dv_chall)):
-        for j in range(len(renewal_chall)):
-            combos.append([i, j])
-
-    return combos
-
+    return [[i, j] for i in xrange(len(dv_chall))
+            for j in xrange(len(renewal_chall))]
 
 def get_chall_msg(iden, nonce, challenges, combos=None):
     """Produce an ACME challenge message."""
