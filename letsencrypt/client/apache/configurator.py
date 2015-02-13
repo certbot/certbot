@@ -9,8 +9,10 @@ import sys
 
 import zope.interface
 
+from letsencrypt.acme import challenges
+
+from letsencrypt.client import achallenges
 from letsencrypt.client import augeas_configurator
-from letsencrypt.client import challenge_util
 from letsencrypt.client import constants
 from letsencrypt.client import errors
 from letsencrypt.client import interfaces
@@ -971,34 +973,26 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     ###########################################################################
     def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use
         """Return list of challenge preferences."""
-        return ["dvsni"]
+        return [challenges.DVSNI]
 
-    def perform(self, chall_list):
+    def perform(self, achalls):
         """Perform the configuration related challenge.
 
         This function currently assumes all challenges will be fulfilled.
         If this turns out not to be the case in the future. Cleanup and
         outstanding challenges will have to be designed better.
 
-        :param list chall_list: List of challenges to be
-            fulfilled by configurator.
-
-        :returns: list of responses. All responses are returned in the same
-            order as received by the perform function. A None response
-            indicates the challenge was not perfromed.
-        :rtype: list
-
         """
-        self._chall_out += len(chall_list)
-        responses = [None] * len(chall_list)
+        self._chall_out += len(achalls)
+        responses = [None] * len(achalls)
         apache_dvsni = dvsni.ApacheDvsni(self)
 
-        for i, chall in enumerate(chall_list):
-            if isinstance(chall, challenge_util.DvsniChall):
+        for i, achall in enumerate(achalls):
+            if isinstance(achall, achallenges.DVSNI):
                 # Currently also have dvsni hold associated index
                 # of the challenge. This helps to put all of the responses back
                 # together when they are all complete.
-                apache_dvsni.add_chall(chall, i)
+                apache_dvsni.add_chall(achall, i)
 
         sni_response = apache_dvsni.perform()
         # Must restart in order to activate the challenges.
@@ -1013,9 +1007,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         return responses
 
-    def cleanup(self, chall_list):
+    def cleanup(self, achalls):
         """Revert all challenges."""
-        self._chall_out -= len(chall_list)
+        self._chall_out -= len(achalls)
 
         # If all of the challenges have been finished, clean up everything
         if self._chall_out <= 0:

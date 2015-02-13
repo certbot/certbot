@@ -4,6 +4,8 @@ import os
 
 import zope.component
 
+from letsencrypt.acme import challenges
+
 from letsencrypt.client import le_util
 from letsencrypt.client import interfaces
 
@@ -21,7 +23,7 @@ class RecoveryToken(object):
         """Perform the Recovery Token Challenge.
 
         :param chall: Recovery Token Challenge
-        :type chall: :class:`letsencrypt.client.challenge_util.RecTokenChall`
+        :type chall: :class:`letsencrypt.client.achallenges.RecoveryToken`
 
         :returns: response
         :rtype: dict
@@ -30,13 +32,13 @@ class RecoveryToken(object):
         token_fp = os.path.join(self.token_dir, chall.domain)
         if os.path.isfile(token_fp):
             with open(token_fp) as token_fd:
-                return self.generate_response(token_fd.read())
+                return challenges.RecoveryTokenResponse(token=token_fd.read())
 
         cancel, token = zope.component.getUtility(
             interfaces.IDisplay).input(
                 "%s - Input Recovery Token: " % chall.domain)
         if cancel != 1:
-            return self.generate_response(token)
+            return challenges.RecoveryTokenResponse(token=token)
 
         return None
 
@@ -44,7 +46,7 @@ class RecoveryToken(object):
         """Cleanup the saved recovery token if it exists.
 
         :param chall: Recovery Token Challenge
-        :type chall: :class:`letsencrypt.client.challenge_util.RecTokenChall`
+        :type chall: :class:`letsencrypt.client.achallenges.RecoveryToken`
 
         """
         try:
@@ -52,13 +54,6 @@ class RecoveryToken(object):
         except OSError as err:
             if err.errno != errno.ENOENT:
                 raise
-
-    def generate_response(self, token):  # pylint: disable=no-self-use
-        """Generate json response."""
-        return {
-            "type": "recoveryToken",
-            "token": token,
-        }
 
     def requires_human(self, domain):
         """Indicates whether or not domain can be auto solved."""

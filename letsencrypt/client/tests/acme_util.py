@@ -1,79 +1,53 @@
 """Class helps construct valid ACME messages for testing."""
-from letsencrypt.client import constants
+import os
+import pkg_resources
+
+import Crypto.PublicKey.RSA
+
+from letsencrypt.acme import challenges
+from letsencrypt.acme import other
 
 
-CHALLENGES = {
-    "simpleHttps":
-    {
-        "type": "simpleHttps",
-        "token": "evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ+PCt92wr+oA"
-    },
-    "dvsni":
-    {
-        "type": "dvsni",
-        "r": "Tyq0La3slT7tqQ0wlOiXnCY2vyez7Zo5blgPJ1xt5xI",
-        "nonce": "a82d5ff8ef740d12881f6d3c2277ab2e"
-    },
-    "dns":
-    {
-        "type": "dns",
-        "token": "17817c66b60ce2e4012dfad92657527a"
-    },
-    "recoveryContact":
-    {
-        "type": "recoveryContact",
-        "activationURL": "https://example.ca/sendrecovery/a5bd99383fb0",
-        "successURL": "https://example.ca/confirmrecovery/bb1b9928932",
-        "contact": "c********n@example.com"
-    },
-    "recoveryToken":
-    {
-        "type": "recoveryToken"
-    },
-    "proofOfPossession":
-    {
-        "type": "proofOfPossession",
-        "alg": "RS256",
-        "nonce": "eET5udtV7aoX8Xl8gYiZIA",
-        "hints": {
-            "jwk": {
-                "kty": "RSA",
-                "e": "AQAB",
-                "n": "KxITJ0rNlfDMAtfDr8eAw...fSSoehDFNZKQKzTZPtQ"
-            },
-            "certFingerprints": [
-                "93416768eb85e33adc4277f4c9acd63e7418fcfe",
-                "16d95b7b63f1972b980b14c20291f3c0d1855d95",
-                "48b46570d9fc6358108af43ad1649484def0debf"
-            ],
-            "subjectKeyIdentifiers":
-            ["d0083162dcc4c8a23ecb8aecbd86120e56fd24e5"],
-            "serialNumbers": [34234239832, 23993939911, 17],
-            "issuers": [
-                "C=US, O=SuperT LLC, CN=SuperTrustworthy Public CA",
-                "O=LessTrustworthy CA Inc, CN=LessTrustworthy But StillSecure"
-            ],
-            "authorizedFor": ["www.example.com", "example.net"]
-        }
-    }
-}
+KEY = Crypto.PublicKey.RSA.importKey(pkg_resources.resource_string(
+    "letsencrypt.client.tests", os.path.join("testdata", "rsa256_key.pem")))
 
+# Challenges
+SIMPLE_HTTPS = challenges.SimpleHTTPS(
+    token="evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ+PCt92wr+oA")
+DVSNI = challenges.DVSNI(
+    r="O*\xb4-\xad\xec\x95>\xed\xa9\r0\x94\xe8\x97\x9c&6\xbf'\xb3"
+      "\xed\x9a9nX\x0f'\\m\xe7\x12", nonce="a82d5ff8ef740d12881f6d3c2277ab2e")
+DNS = challenges.DNS(token="17817c66b60ce2e4012dfad92657527a")
+RECOVERY_CONTACT = challenges.RecoveryContact(
+    activation_url="https://example.ca/sendrecovery/a5bd99383fb0",
+    success_url="https://example.ca/confirmrecovery/bb1b9928932",
+    contact="c********n@example.com")
+RECOVERY_TOKEN = challenges.RecoveryToken()
+POP = challenges.ProofOfPossession(
+    alg="RS256", nonce="xD\xf9\xb9\xdbU\xed\xaa\x17\xf1y|\x81\x88\x99 ",
+    hints=challenges.ProofOfPossession.Hints(
+        jwk=other.JWK(key=KEY.publickey()),
+        cert_fingerprints=[
+            "93416768eb85e33adc4277f4c9acd63e7418fcfe",
+            "16d95b7b63f1972b980b14c20291f3c0d1855d95",
+            "48b46570d9fc6358108af43ad1649484def0debf"
+        ],
+        certs=[], # TODO
+        subject_key_identifiers=["d0083162dcc4c8a23ecb8aecbd86120e56fd24e5"],
+        serial_numbers=[34234239832, 23993939911, 17],
+        issuers=[
+            "C=US, O=SuperT LLC, CN=SuperTrustworthy Public CA",
+            "O=LessTrustworthy CA Inc, CN=LessTrustworthy But StillSecure",
+        ],
+        authorized_for=["www.example.com", "example.net"],
+    )
+)
 
-def get_dv_challenges():
-    """Returns all auth challenges."""
-    return [chall for typ, chall in CHALLENGES.iteritems()
-            if typ in constants.DV_CHALLENGES]
-
-
-def get_client_challenges():
-    """Returns all client challenges."""
-    return [chall for typ, chall in CHALLENGES.iteritems()
-            if typ in constants.CLIENT_CHALLENGES]
-
-
-def get_challenges():
-    """Returns all challenges."""
-    return [chall for chall in CHALLENGES.itervalues()]
+CHALLENGES = [SIMPLE_HTTPS, DVSNI, DNS, RECOVERY_CONTACT, RECOVERY_TOKEN, POP]
+DV_CHALLENGES = [chall for chall in CHALLENGES
+                 if isinstance(chall, challenges.DVChallenge)]
+CLIENT_CHALLENGES = [chall for chall in CHALLENGES
+                     if isinstance(chall, challenges.ClientChallenge)]
 
 
 def gen_combos(challs):
@@ -81,8 +55,8 @@ def gen_combos(challs):
     dv_chall = []
     renewal_chall = []
 
-    for i, chall in enumerate(challs):
-        if chall["type"] in constants.DV_CHALLENGES:
+    for i, chall in enumerate(challs):  # pylint: disable=redefined-outer-name
+        if isinstance(chall, challenges.DVChallenge):
             dv_chall.append(i)
         else:
             renewal_chall.append(i)

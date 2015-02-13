@@ -5,8 +5,9 @@ import shutil
 
 import mock
 
-from letsencrypt.client import challenge_util
-from letsencrypt.client import constants
+from letsencrypt.acme import challenges
+
+from letsencrypt.client import achallenges
 from letsencrypt.client import le_util
 
 from letsencrypt.client.apache.obj import Addr
@@ -36,17 +37,21 @@ class DvsniPerformTest(util.ApacheTest):
             "letsencrypt.client.tests", 'testdata/rsa256_key.pem')
 
         auth_key = le_util.Key(rsa256_file, rsa256_pem)
-        self.challs = []
-        self.challs.append(challenge_util.DvsniChall(
-            "encryption-example.demo",
-            "jIq_Xy1mXGN37tb4L6Xj_es58fW571ZNyXekdZzhh7Q",
-            "37bc5eb75d3e00a19b4f6355845e5a18",
-            auth_key))
-        self.challs.append(challenge_util.DvsniChall(
-            "letsencrypt.demo",
-            "uqnaPzxtrndteOqtrXb0Asl5gOJfWAnnx6QJyvcmlDU",
-            "59ed014cac95f77057b1d7a1b2c596ba",
-            auth_key))
+        self.achalls = [
+            achallenges.DVSNI(
+                chall=challenges.DVSNI(
+                    r="\x8c\x8a\xbf_-f\\cw\xee\xd6\xf8/\xa5\xe3\xfd\xeb9\xf1"
+                      "\xf5\xb9\xefVM\xc9w\xa4u\x9c\xe1\x87\xb4",
+                    nonce="7\xbc^\xb7]>\x00\xa1\x9bOcU\x84^Z\x18",
+                ), domain="encryption-example.demo", key=auth_key),
+            achallenges.DVSNI(
+                chall=challenges.DVSNI(
+                    r="\xba\xa9\xda?<m\xaewmx\xea\xad\xadv\xf4\x02\xc9y\x80"
+                      "\xe2_X\t\xe7\xc7\xa4\t\xca\xf7&\x945",
+                    nonce="Y\xed\x01L\xac\x95\xf7pW\xb1\xd7"
+                          "\xa1\xb2\xc5\x96\xba",
+                ), domain="letsencrypt.demo", key=auth_key),
+        ]
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
@@ -57,48 +62,40 @@ class DvsniPerformTest(util.ApacheTest):
         resp = self.sni.perform()
         self.assertTrue(resp is None)
 
-    @mock.patch("letsencrypt.client.challenge_util.dvsni_gen_cert")
-    def test_setup_challenge_cert(self, mock_dvsni_gen_cert):
+    def test_setup_challenge_cert(self):
         # This is a helper function that can be used for handling
         # open context managers more elegantly. It avoids dealing with
         # __enter__ and __exit__ calls.
         # http://www.voidspace.org.uk/python/mock/helpers.html#mock.mock_open
-        chall = self.challs[0]
         m_open = mock.mock_open()
-        mock_dvsni_gen_cert.return_value = ("pem", "randomS1")
+
+        response = challenges.DVSNIResponse(s="randomS1")
+        achall = mock.MagicMock(nonce=self.achalls[0].nonce,
+                                nonce_domain=self.achalls[0].nonce_domain)
+        achall.gen_cert_and_response.return_value = ("pem", response)
 
         with mock.patch("letsencrypt.client.apache.dvsni.open",
                         m_open, create=True):
             # pylint: disable=protected-access
-            s_b64 = self.sni._setup_challenge_cert(chall)
-
-            self.assertEqual(s_b64, "randomS1")
+            self.assertEqual(response, self.sni._setup_challenge_cert(
+                achall, "randomS1"))
 
             self.assertTrue(m_open.called)
             self.assertEqual(
-                m_open.call_args[0], (self.sni.get_cert_file(chall.nonce), 'w'))
+                m_open.call_args[0], (self.sni.get_cert_file(achall), 'w'))
             self.assertEqual(m_open().write.call_args[0][0], "pem")
 
-        self.assertEqual(mock_dvsni_gen_cert.call_count, 1)
-        calls = mock_dvsni_gen_cert.call_args_list
-        expected_call_list = [
-            (chall.domain, chall.r_b64, chall.nonce, chall.key)
-        ]
-
-        for i in xrange(len(expected_call_list)):
-            for j in xrange(len(expected_call_list[0])):
-                self.assertEqual(calls[i][0][j], expected_call_list[i][j])
-
     def test_perform1(self):
-        chall = self.challs[0]
-        self.sni.add_chall(chall)
-        mock_setup_cert = mock.MagicMock(return_value="randomS1")
+        achall = self.achalls[0]
+        self.sni.add_chall(achall)
+        mock_setup_cert = mock.MagicMock(
+            return_value=challenges.DVSNIResponse(s="randomS1"))
         # pylint: disable=protected-access
         self.sni._setup_challenge_cert = mock_setup_cert
 
         responses = self.sni.perform()
 
-        mock_setup_cert.assert_called_once_with(chall)
+        mock_setup_cert.assert_called_once_with(achall)
 
         # Check to make sure challenge config path is included in apache config.
         self.assertEqual(
@@ -106,13 +103,15 @@ class DvsniPerformTest(util.ApacheTest):
                 "Include", self.sni.challenge_conf)),
             1)
         self.assertEqual(len(responses), 1)
-        self.assertEqual(responses[0]["s"], "randomS1")
+        self.assertEqual(responses[0].s, "randomS1")
 
     def test_perform2(self):
-        for chall in self.challs:
-            self.sni.add_chall(chall)
+        for achall in self.achalls:
+            self.sni.add_chall(achall)
 
-        mock_setup_cert = mock.MagicMock(side_effect=["randomS0", "randomS1"])
+        mock_setup_cert = mock.MagicMock(side_effect=[
+            challenges.DVSNIResponse(s="randomS0"),
+            challenges.DVSNIResponse(s="randomS1")])
         # pylint: disable=protected-access
         self.sni._setup_challenge_cert = mock_setup_cert
 
@@ -122,9 +121,9 @@ class DvsniPerformTest(util.ApacheTest):
 
         # Make sure calls made to mocked function were correct
         self.assertEqual(
-            mock_setup_cert.call_args_list[0], mock.call(self.challs[0]))
+            mock_setup_cert.call_args_list[0], mock.call(self.achalls[0]))
         self.assertEqual(
-            mock_setup_cert.call_args_list[1], mock.call(self.challs[1]))
+            mock_setup_cert.call_args_list[1], mock.call(self.achalls[1]))
 
         self.assertEqual(
             len(self.sni.configurator.parser.find_dir(
@@ -132,11 +131,11 @@ class DvsniPerformTest(util.ApacheTest):
             1)
         self.assertEqual(len(responses), 2)
         for i in xrange(2):
-            self.assertEqual(responses[i]["s"], "randomS%d" % i)
+            self.assertEqual(responses[i].s, "randomS%d" % i)
 
     def test_mod_config(self):
-        for chall in self.challs:
-            self.sni.add_chall(chall)
+        for achall in self.achalls:
+            self.sni.add_chall(achall)
         v_addr1 = [Addr(("1.2.3.4", "443")), Addr(("5.6.7.8", "443"))]
         v_addr2 = [Addr(("127.0.0.1", "443"))]
         ll_addr = []
@@ -159,14 +158,12 @@ class DvsniPerformTest(util.ApacheTest):
             if vhost.addrs == set(v_addr1):
                 self.assertEqual(
                     vhost.names,
-                    set([str(self.challs[0].nonce +
-                             constants.DVSNI_DOMAIN_SUFFIX)]))
+                    set([self.achalls[0].nonce_domain]))
             else:
                 self.assertEqual(vhost.addrs, set(v_addr2))
                 self.assertEqual(
                     vhost.names,
-                    set([str(self.challs[1].nonce +
-                             constants.DVSNI_DOMAIN_SUFFIX)]))
+                    set([self.achalls[1].nonce_domain]))
 
 
 if __name__ == '__main__':

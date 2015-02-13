@@ -12,7 +12,9 @@ import OpenSSL.SSL
 import zope.component
 import zope.interface
 
-from letsencrypt.client import challenge_util
+from letsencrypt.acme import challenges
+
+from letsencrypt.client import achallenges
 from letsencrypt.client import constants
 from letsencrypt.client import interfaces
 
@@ -328,9 +330,9 @@ class StandaloneAuthenticator(object):
         :returns: A list containing only 'dvsni'.
 
         """
-        return ["dvsni"]
+        return [challenges.DVSNI]
 
-    def perform(self, chall_list):
+    def perform(self, achalls):
         """Perform the challenge.
 
         .. warning::
@@ -340,13 +342,6 @@ class StandaloneAuthenticator(object):
             validations for multiple independent sets of domains, a separate
             StandaloneAuthenticator should be instantiated.
 
-        :param list chall_list: List of namedtuple types defined in
-            :mod:`letsencrypt.client.challenge_util` (``DvsniChall``, etc.)
-
-        :returns: ACME Challenge DVSNI responses following IAuthenticator
-            interface.
-        :rtype: :class:`list` of :class`dict`
-
         """
         if self.child_pid or self.tasks:
             # We should not be willing to continue with perform
@@ -354,17 +349,15 @@ class StandaloneAuthenticator(object):
             raise ValueError(".perform() was called with pending tasks!")
         results_if_success = []
         results_if_failure = []
-        if not chall_list or not isinstance(chall_list, list):
+        if not achalls or not isinstance(achalls, list):
             raise ValueError(".perform() was called without challenge list")
-        for chall in chall_list:
-            if isinstance(chall, challenge_util.DvsniChall):
+        for achall in achalls:
+            if isinstance(achall, achallenges.DVSNI):
                 # We will attempt to do it
-                name, r_b64 = chall.domain, chall.r_b64
-                nonce, key = chall.nonce, chall.key
-                cert, s_b64 = challenge_util.dvsni_gen_cert(
-                    name, r_b64, nonce, key)
-                self.tasks[nonce + constants.DVSNI_DOMAIN_SUFFIX] = cert
-                results_if_success.append({"type": "dvsni", "s": s_b64})
+                key = achall.key  # TODO: bug; one key per start_listener
+                cert_pem, response = achall.gen_cert_and_response()
+                self.tasks[achall.nonce_domain] = cert_pem
+                results_if_success.append(response)
                 results_if_failure.append(None)
             else:
                 # We will not attempt to do this challenge because it
@@ -388,7 +381,7 @@ class StandaloneAuthenticator(object):
             #       rather than returning a list of None objects.
             return results_if_failure
 
-    def cleanup(self, chall_list):
+    def cleanup(self, achalls):
         """Clean up.
 
         If some challenges are removed from the list, the authenticator
@@ -398,11 +391,10 @@ class StandaloneAuthenticator(object):
 
         """
         # Remove this from pending tasks list
-        for chall in chall_list:
-            assert isinstance(chall, challenge_util.DvsniChall)
-            nonce = chall.nonce
-            if nonce + constants.DVSNI_DOMAIN_SUFFIX in self.tasks:
-                del self.tasks[nonce + constants.DVSNI_DOMAIN_SUFFIX]
+        for achall in achalls:
+            assert isinstance(achall, achallenges.DVSNI)
+            if achall.nonce_domain in self.tasks:
+                del self.tasks[achall.nonce_domain]
             else:
                 # Could not find the challenge to remove!
                 raise ValueError("could not find the challenge to remove")
