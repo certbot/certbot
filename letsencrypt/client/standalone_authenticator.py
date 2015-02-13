@@ -2,6 +2,7 @@
 import os
 import signal
 import socket
+import subprocess
 import sys
 import time
 
@@ -150,8 +151,9 @@ class StandaloneAuthenticator(object):
             elif self.subproc_state == "inuse":
                 display.generic_notification(
                     "Could not bind TCP port {0} because it is already in "
-                    "use it is already in use by another process on this "
-                    "system (such as a web server).".format(port))
+                    "use by another process on this system (such as a web "
+                    "server). Please stop the program in question and then "
+                    "try again.".format(port))
                 return False
             elif self.subproc_state == "cantbind":
                 display.generic_notification(
@@ -258,6 +260,47 @@ class StandaloneAuthenticator(object):
             # should terminate via sys.exit().
             return self.do_child_process(port, key)
 
+    def already_listening(self, port):  # pylint: disable=no-self-use
+        """Check if a process is already listening on the port.
+
+        If so, also tell the user via a display notification.
+
+        .. warning::
+            The current implementation is Linux-specific.  (On other
+            operating systems, it will simply not detect bound ports.)
+            This function can only usefully be run as root.
+
+        :param int port: The TCP port in question.
+        :returns: True or False."""
+
+        try:
+            proc = subprocess.Popen(
+                ["/bin/netstat", "-nta", "--program"],
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout, _ = proc.communicate()
+            if proc.wait() != 0:
+                raise OSError("netstat subprocess failed")
+            lines = [x.split() for x in stdout.split("\n")[2:] if x]
+            listeners = [L[6] for L in lines if L[0] == 'tcp' \
+                         and L[5] == 'LISTEN' \
+                         and L[3] == '0.0.0.0:{0}'.format(port)]
+            if listeners:
+                pid, name = listeners[0].split("/")
+                display = zope.component.getUtility(interfaces.IDisplay)
+                display.generic_notification(
+                    "The program {0} (process ID {1}) is already listening "
+                    "on TCP port {2}. This will prevent us from binding to "
+                    "that port. Please stop the {0} program temporarily "
+                    "and then try again.".format(name, pid, port))
+                return True
+        except (OSError, ValueError, IndexError):
+            # A sign that this command isn't available or usable this
+            # way on this operating system, or there was something
+            # unexpected about the format of the netstat output; we will
+            # not be able to recover from this condition.
+            pass
+        return False
+
     # IAuthenticator method implementations follow
 
     def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use
@@ -317,6 +360,12 @@ class StandaloneAuthenticator(object):
                 results_if_failure.append(False)
         if not self.tasks:
             raise ValueError("nothing for .perform() to do")
+        if self.already_listening(constants.DVSNI_CHALLENGE_PORT):
+            # If we know a process is already listening on this port,
+            # tell the user, and don't even attempt to bind it.  (This
+            # test is Linux-specific and won't indicate that the port
+            # if invoked on a different operating system.)
+            return results_if_failure
         # Try to do the authentication; note that this creates
         # the listener subprocess via os.fork()
         if self.start_listener(constants.DVSNI_CHALLENGE_PORT, key):
