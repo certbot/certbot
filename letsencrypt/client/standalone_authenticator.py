@@ -281,9 +281,13 @@ class StandaloneAuthenticator(object):
             if proc.wait() != 0:
                 raise OSError("netstat subprocess failed")
             lines = [x.split() for x in stdout.split("\n")[2:] if x]
-            listeners = [L[6] for L in lines if L[0] == 'tcp' \
-                         and L[5] == 'LISTEN' \
-                         and L[3] == '0.0.0.0:{0}'.format(port)]
+            listeners = [L[6] for L in lines if
+                         # IPv4 socket case
+                         (L[0] == 'tcp' and L[5] == 'LISTEN' \
+                         and L[3] == '0.0.0.0:{0}'.format(port)) or \
+                         # IPv6 socket case
+                         (L[0] == 'tcp6' and L[5] == 'LISTEN' \
+                         and L[3] == ':::{0}'.format(port))]
             if listeners:
                 pid, name = listeners[0].split("/")
                 display = zope.component.getUtility(interfaces.IDisplay)

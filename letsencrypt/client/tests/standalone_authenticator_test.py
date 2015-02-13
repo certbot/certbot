@@ -231,6 +231,25 @@ tcp        0      0 0.0.0.0:1728            0.0.0.0:*               LISTEN      
         self.assertTrue(result)
         self.assertEqual(mock_get_utility.call_count, 1)
 
+    @mock.patch("letsencrypt.client.standalone_authenticator.subprocess.Popen")
+    @mock.patch("letsencrypt.client.standalone_authenticator."
+                "zope.component.getUtility")
+    def test_has_relevant_ipv6_line(self, mock_get_utility, mock_popen):
+        # pylint: disable=line-too-long,trailing-whitespace
+        subprocess_object = mock.MagicMock()
+        subprocess_object.communicate.return_value = (
+            """Active Internet connections (servers and established)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name
+tcp        0      0 127.0.1.1:53            0.0.0.0:*               LISTEN      1234/foo        
+tcp        0      0 127.0.0.1:631           0.0.0.0:*               LISTEN      2345/bar        
+tcp6       0      0 :::17                   :::*                    LISTEN      11111/hello     
+tcp        0      0 0.0.0.0:1728            0.0.0.0:*               LISTEN      2345/bar        """,
+            "I am the standard error")
+        subprocess_object.wait.return_value = 0
+        mock_popen.return_value = subprocess_object
+        result = self.authenticator.already_listening(17)
+        self.assertTrue(result)
+        self.assertEqual(mock_get_utility.call_count, 1)
 
 class PerformTest(unittest.TestCase):
     """Tests for perform() method."""
