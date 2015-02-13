@@ -364,7 +364,7 @@ class StandaloneAuthenticator(object):
             # If we know a process is already listening on this port,
             # tell the user, and don't even attempt to bind it.  (This
             # test is Linux-specific and won't indicate that the port
-            # if invoked on a different operating system.)
+            # is bound if invoked on a different operating system.)
             return results_if_failure
         # Try to do the authentication; note that this creates
         # the listener subprocess via os.fork()
