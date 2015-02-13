@@ -96,6 +96,7 @@ class SNICallbackTest(unittest.TestCase):
         called_ctx = connection.set_context.call_args[0][0]
         self.assertTrue(isinstance(called_ctx, OpenSSL.SSL.Context))
 
+
 class ClientSignalHandlerTest(unittest.TestCase):
     """Tests for client_signal_handler() method."""
     def setUp(self):
@@ -177,12 +178,96 @@ class SubprocSignalHandlerTest(unittest.TestCase):
         mock_exit.assert_called_once_with(0)
 
 
+class AlreadyListeningTest(unittest.TestCase):
+    """Tests for already_listening() method."""
+    def setUp(self):
+        from letsencrypt.client.standalone_authenticator import \
+            StandaloneAuthenticator
+        self.authenticator = StandaloneAuthenticator()
+
+    @mock.patch("letsencrypt.client.standalone_authenticator.subprocess.Popen")
+    def test_subprocess_fails(self, mock_popen):
+        subprocess_object = mock.MagicMock()
+        subprocess_object.communicate.return_value = ("foo", "bar")
+        subprocess_object.wait.return_value = 1
+        mock_popen.return_value = subprocess_object
+        result = self.authenticator.already_listening(17)
+        self.assertFalse(result)
+        subprocess_object.wait.assert_called_once_with()
+
+    @mock.patch("letsencrypt.client.standalone_authenticator.subprocess.Popen")
+    def test_no_relevant_line(self, mock_popen):
+        # pylint: disable=line-too-long,trailing-whitespace
+        subprocess_object = mock.MagicMock()
+        subprocess_object.communicate.return_value = (
+            """Active Internet connections (servers and established)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name
+tcp        0      0 127.0.1.1:53            0.0.0.0:*               LISTEN      1234/foo        
+tcp        0      0 127.0.0.1:631           0.0.0.0:*               LISTEN      2345/bar        
+tcp        0      0 0.0.0.0:180             0.0.0.0:*               LISTEN      11111/hello     """,
+            "I am the standard error")
+        subprocess_object.wait.return_value = 0
+        mock_popen.return_value = subprocess_object
+        result = self.authenticator.already_listening(17)
+        self.assertFalse(result)
+
+    @mock.patch("letsencrypt.client.standalone_authenticator.subprocess.Popen")
+    @mock.patch("letsencrypt.client.standalone_authenticator."
+                "zope.component.getUtility")
+    def test_has_relevant_line(self, mock_get_utility, mock_popen):
+        # pylint: disable=line-too-long,trailing-whitespace
+        subprocess_object = mock.MagicMock()
+        subprocess_object.communicate.return_value = (
+            """Active Internet connections (servers and established)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name
+tcp        0      0 127.0.1.1:53            0.0.0.0:*               LISTEN      1234/foo        
+tcp        0      0 127.0.0.1:631           0.0.0.0:*               LISTEN      2345/bar        
+tcp        0      0 0.0.0.0:17              0.0.0.0:*               LISTEN      11111/hello     
+tcp        0      0 0.0.0.0:1728            0.0.0.0:*               LISTEN      2345/bar        """,
+            "I am the standard error")
+        subprocess_object.wait.return_value = 0
+        mock_popen.return_value = subprocess_object
+        result = self.authenticator.already_listening(17)
+        self.assertTrue(result)
+        self.assertEqual(mock_get_utility.call_count, 1)
+
+    @mock.patch("letsencrypt.client.standalone_authenticator.subprocess.Popen")
+    @mock.patch("letsencrypt.client.standalone_authenticator."
+                "zope.component.getUtility")
+    def test_has_relevant_ipv6_line(self, mock_get_utility, mock_popen):
+        # pylint: disable=line-too-long,trailing-whitespace
+        subprocess_object = mock.MagicMock()
+        subprocess_object.communicate.return_value = (
+            """Active Internet connections (servers and established)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name
+tcp        0      0 127.0.1.1:53            0.0.0.0:*               LISTEN      1234/foo        
+tcp        0      0 127.0.0.1:631           0.0.0.0:*               LISTEN      2345/bar        
+tcp6       0      0 :::17                   :::*                    LISTEN      11111/hello     
+tcp        0      0 0.0.0.0:1728            0.0.0.0:*               LISTEN      2345/bar        """,
+            "I am the standard error")
+        subprocess_object.wait.return_value = 0
+        mock_popen.return_value = subprocess_object
+        result = self.authenticator.already_listening(17)
+        self.assertTrue(result)
+        self.assertEqual(mock_get_utility.call_count, 1)
+
 class PerformTest(unittest.TestCase):
     """Tests for perform() method."""
     def setUp(self):
         from letsencrypt.client.standalone_authenticator import \
             StandaloneAuthenticator
         self.authenticator = StandaloneAuthenticator()
+
+    def test_perform_when_already_listening(self):
+        test_key = pkg_resources.resource_string(
+            __name__, "testdata/rsa256_key.pem")
+        key = le_util.Key("something", test_key)
+        chall1 = challenge_util.DvsniChall(
+            "foo.example.com", "whee", "foononce", key)
+        self.authenticator.already_listening = mock.Mock()
+        self.authenticator.already_listening.return_value = True
+        result = self.authenticator.perform([chall1])
+        self.assertEqual(result, [None])
 
     def test_can_perform(self):
         """What happens if start_listener() returns True."""
