@@ -1,11 +1,14 @@
 """ACME utilities."""
+import binascii
 import json
 import pkg_resources
 
+import M2Crypto.X509
 import zope.interface
 
 from letsencrypt.acme import errors
 from letsencrypt.acme import interfaces
+from letsencrypt.acme import jose
 
 
 class ComparableX509(object):  # pylint: disable=too-few-public-methods
@@ -92,6 +95,54 @@ class ACMEObject(ImmutableMap):  # pylint: disable=too-few-public-methods
     def from_valid_json(cls, jobj):  # pragma: no cover
         """Deserialize from valid JSON object."""
         raise NotImplementedError()
+
+    @classmethod
+    def _decode_b64jose(cls, data, size=None, minimum=False):
+        try:
+            decoded = jose.b64decode(data)
+        except TypeError:
+            raise errors.ValidationError()
+
+        if size is not None and ((not minimum and len(decoded) != size)
+                                 or (minimum and len(decoded) < size)):
+            raise errors.ValidationError()
+
+        return decoded
+
+    @classmethod
+    def _encode_hex16(cls, data):
+        return binascii.hexlify(data)
+
+    @classmethod
+    def _decode_hex16(cls, data, size=None, minimum=False):
+        if size is not None and ((not minimum and len(data) != size * 2)
+                                 or (minimum and len(data) < size * 2)):
+            raise errors.ValidationError()
+        return binascii.unhexlify(data)
+
+    @classmethod
+    def _encode_cert(cls, cert):
+        return jose.b64encode(cert.as_der())
+
+    @classmethod
+    def _decode_cert(cls, b64der):
+        try:
+            return ComparableX509(M2Crypto.X509.load_cert_der_string(
+                cls._decode_b64jose(b64der)))
+        except M2Crypto.X509.X509Error:
+            raise errors.ValidationError()
+
+    @classmethod
+    def _encode_csr(cls, csr):
+        return cls._encode_cert(csr)
+
+    @classmethod
+    def _decode_csr(cls, b64der):
+        try:
+            return ComparableX509(M2Crypto.X509.load_request_der_string(
+                cls._decode_b64jose(b64der)))
+        except M2Crypto.X509.X509Error:
+            raise errors.ValidationError()
 
 
 class TypedACMEObject(ACMEObject):

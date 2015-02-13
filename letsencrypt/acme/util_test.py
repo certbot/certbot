@@ -1,12 +1,21 @@
 """Tests for letsencrypt.acme.util."""
 import functools
 import json
+import os
+import pkg_resources
 import unittest
 
+import M2Crypto.X509
 import zope.interface
 
 from letsencrypt.acme import errors
 from letsencrypt.acme import interfaces
+
+
+CERT = M2Crypto.X509.load_cert(pkg_resources.resource_filename(
+    'letsencrypt.client.tests', os.path.join('testdata', 'cert.pem')))
+CSR = M2Crypto.X509.load_request(pkg_resources.resource_filename(
+    'letsencrypt.client.tests', os.path.join('testdata', 'csr.pem')))
 
 
 class DumpIJSONSerializableTest(unittest.TestCase):
@@ -98,6 +107,93 @@ class ImmutableMapTest(unittest.TestCase):
         self.assertEqual('A(x=1, y=2)', repr(self.a1_swap))
         self.assertEqual('B(x=1, y=2)', repr(self.b))
         self.assertEqual("B(x='foo', y='bar')", repr(self.B(x='foo', y='bar')))
+
+
+class ACMEObjectTest(unittest.TestCase):
+    """Tests for letsencrypt.acme.util.ACMEObject."""
+    # pylint: disable=protected-access
+
+    def setUp(self):
+        self.b64_cert = (
+            'MIIB3jCCAYigAwIBAgICBTkwDQYJKoZIhvcNAQELBQAwdzELMAkGA1UEBhM'
+            'CVVMxETAPBgNVBAgMCE1pY2hpZ2FuMRIwEAYDVQQHDAlBbm4gQXJib3IxKz'
+            'ApBgNVBAoMIlVuaXZlcnNpdHkgb2YgTWljaGlnYW4gYW5kIHRoZSBFRkYxF'
+            'DASBgNVBAMMC2V4YW1wbGUuY29tMB4XDTE0MTIxMTIyMzQ0NVoXDTE0MTIx'
+            'ODIyMzQ0NVowdzELMAkGA1UEBhMCVVMxETAPBgNVBAgMCE1pY2hpZ2FuMRI'
+            'wEAYDVQQHDAlBbm4gQXJib3IxKzApBgNVBAoMIlVuaXZlcnNpdHkgb2YgTW'
+            'ljaGlnYW4gYW5kIHRoZSBFRkYxFDASBgNVBAMMC2V4YW1wbGUuY29tMFwwD'
+            'QYJKoZIhvcNAQEBBQADSwAwSAJBAKx1c7RR7R_drnBSQ_zfx1vQLHUbFLh1'
+            'AQQQ5R8DZUXd36efNK79vukFhN9HFoHZiUvOjm0c-pVE6K-EdE_twuUCAwE'
+            'AATANBgkqhkiG9w0BAQsFAANBAC24z0IdwIVKSlntksllvr6zJepBH5fMnd'
+            'fk3XJp10jT6VE-14KNtjh02a56GoraAvJAT5_H67E8GvJ_ocNnB_o'
+        )
+        self.b64_csr = (
+            'MIIBXTCCAQcCAQAweTELMAkGA1UEBhMCVVMxETAPBgNVBAgMCE1pY2hpZ2F'
+            'uMRIwEAYDVQQHDAlBbm4gQXJib3IxDDAKBgNVBAoMA0VGRjEfMB0GA1UECw'
+            'wWVW5pdmVyc2l0eSBvZiBNaWNoaWdhbjEUMBIGA1UEAwwLZXhhbXBsZS5jb'
+            '20wXDANBgkqhkiG9w0BAQEFAANLADBIAkEArHVztFHtH92ucFJD_N_HW9As'
+            'dRsUuHUBBBDlHwNlRd3fp580rv2-6QWE30cWgdmJS86ObRz6lUTor4R0T-3'
+            'C5QIDAQABoCkwJwYJKoZIhvcNAQkOMRowGDAWBgNVHREEDzANggtleGFtcG'
+            'xlLmNvbTANBgkqhkiG9w0BAQsFAANBAHJH_O6BtC9aGzEVCMGOZ7z9iIRHW'
+            'Szr9x_bOzn7hLwsbXPAgO1QxEwL-X-4g20Gn9XBE1N9W6HCIEut2d8wACg'
+        )
+
+    def test_decode_b64_jose_padding_error(self):
+        from letsencrypt.acme.util import ACMEObject
+        self.assertRaises(
+            errors.ValidationError, ACMEObject._decode_b64jose, 'x')
+
+    def test_decode_b64_jose_size(self):
+        from letsencrypt.acme.util import ACMEObject
+        self.assertEqual('foo', ACMEObject._decode_b64jose('Zm9v', size=3))
+        self.assertRaises(
+            errors.ValidationError, ACMEObject._decode_b64jose, 'Zm9v', size=2)
+        self.assertRaises(
+            errors.ValidationError, ACMEObject._decode_b64jose, 'Zm9v', size=4)
+
+    def test_decode_b64_jose_minimum_size(self):
+        from letsencrypt.acme.util import ACMEObject
+        self.assertEqual(
+            'foo', ACMEObject._decode_b64jose('Zm9v', size=3, minimum=True))
+        self.assertEqual(
+            'foo', ACMEObject._decode_b64jose('Zm9v', size=2, minimum=True))
+        self.assertRaises(errors.ValidationError, ACMEObject._decode_b64jose,
+                          'Zm9v', size=4, minimum=True)
+
+    def test_encode_hex16(self):
+        from letsencrypt.acme.util import ACMEObject
+        self.assertEqual('666f6f', ACMEObject._encode_hex16('foo'))
+
+    def test_decode_hex16(self):
+        from letsencrypt.acme.util import ACMEObject
+        self.assertEqual('foo', ACMEObject._decode_hex16('666f6f'))
+
+    def test_decode_hex16_minimum_size(self):
+        from letsencrypt.acme.util import ACMEObject
+        self.assertEqual(
+            'foo', ACMEObject._decode_hex16('666f6f', size=3, minimum=True))
+        self.assertEqual(
+            'foo', ACMEObject._decode_hex16('666f6f', size=2, minimum=True))
+        self.assertRaises(errors.ValidationError, ACMEObject._decode_hex16,
+                          '666f6f', size=4, minimum=True)
+
+    def test_encode_cert(self):
+        from letsencrypt.acme.util import ACMEObject
+        self.assertEqual(self.b64_cert, ACMEObject._encode_cert(CERT))
+
+    def test_decode_cert(self):
+        from letsencrypt.acme.util import ACMEObject
+        self.assertEqual(CERT, ACMEObject._decode_cert(self.b64_cert))
+        self.assertRaises(errors.ValidationError, ACMEObject._decode_cert, '')
+
+    def test_encode_csr(self):
+        from letsencrypt.acme.util import ACMEObject
+        self.assertEqual(self.b64_csr, ACMEObject._encode_csr(CSR))
+
+    def test_decode_csr(self):
+        from letsencrypt.acme.util import ACMEObject
+        self.assertEqual(CSR, ACMEObject._decode_csr(self.b64_csr))
+        self.assertRaises(errors.ValidationError, ACMEObject._decode_csr, '')
 
 
 class TypedACMEObjectTest(unittest.TestCase):

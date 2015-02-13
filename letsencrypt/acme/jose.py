@@ -1,51 +1,5 @@
 """JOSE."""
 import base64
-import binascii
-
-import Crypto.PublicKey.RSA
-
-from letsencrypt.acme import util
-
-
-def _leading_zeros(arg):
-    if len(arg) % 2:
-        return '0' + arg
-    return arg
-
-
-class JWK(util.ACMEObject):
-    # pylint: disable=too-few-public-methods
-    """JSON Web Key.
-
-    .. todo:: Currently works for RSA public keys only.
-
-    """
-    __slots__ = ('key',)
-
-    @classmethod
-    def _encode_param(cls, param):
-        """Encode numeric key parameter."""
-        return b64encode(binascii.unhexlify(
-            _leading_zeros(hex(param)[2:].rstrip('L'))))
-
-    @classmethod
-    def _decode_param(cls, param):
-        """Decode numeric key parameter."""
-        return long(binascii.hexlify(b64decode(param)), 16)
-
-    def to_json(self):
-        return {
-            'kty': 'RSA',  # TODO
-            'n': self._encode_param(self.key.n),
-            'e': self._encode_param(self.key.e),
-        }
-
-    @classmethod
-    def from_valid_json(cls, jobj):
-        assert 'RSA' == jobj['kty']  # TODO
-        return cls(key=Crypto.PublicKey.RSA.construct(
-            (cls._decode_param(jobj['n']), cls._decode_param(jobj['e']))))
-
 
 # https://tools.ietf.org/html/draft-ietf-jose-json-web-signature-37#appendix-C
 #

@@ -146,7 +146,7 @@ class ChallengeRequestTest(unittest.TestCase):
 class AuthorizationTest(unittest.TestCase):
 
     def setUp(self):
-        jwk = jose.JWK(key=KEY.publickey())
+        jwk = other.JWK(key=KEY.publickey())
 
         from letsencrypt.acme.messages import Authorization
         self.msg = Authorization(recovery_token='tok', jwk=jwk,
@@ -192,7 +192,7 @@ class AuthorizationRequestTest(unittest.TestCase):
         ]
         self.contact = ["mailto:cert-admin@example.com", "tel:+12025551212"]
         signature = other.Signature(
-            alg='RS256', jwk=jose.JWK(key=KEY.publickey()),
+            alg='RS256', jwk=other.JWK(key=KEY.publickey()),
             sig='-v\xd8\xc2\xa3\xba0\xd6\x92\x16\xb5.\xbe\xa1[\x04\xbe'
                 '\x1b\xa1X\xd2)\x18\x94\x8f\xd7\xd0\xc0\xbbcI`W\xdf v'
                 '\xe4\xed\xe8\x03J\xe8\xc8<?\xc8W\x94\x94cj(\xe7\xaa$'
@@ -297,7 +297,7 @@ class CertificateRequestTest(unittest.TestCase):
 
     def setUp(self):
         signature = other.Signature(
-            alg='RS256', jwk=jose.JWK(key=KEY.publickey()),
+            alg='RS256', jwk=other.JWK(key=KEY.publickey()),
             sig='\x15\xed\x84\xaa:\xf2DO\x0e9 \xbcg\xf8\xc0\xcf\x87\x9a'
                 '\x95\xeb\xffT[\x84[\xec\x85\x7f\x8eK\xe9\xc2\x12\xc8Q'
                 '\xafo\xc6h\x07\xba\xa6\xdf\xd1\xa7"$\xba=Z\x13n\x14\x0b'
@@ -421,7 +421,7 @@ class RevocationRequestTest(unittest.TestCase):
         self.sig_nonce = '\xec\xd6\xf2oYH\xeb\x13\xd5#q\xe0\xdd\xa2\x92\xa9'
 
         signature = other.Signature(
-            alg='RS256', jwk=jose.JWK(key=KEY.publickey()),
+            alg='RS256', jwk=other.JWK(key=KEY.publickey()),
             sig='eJ\xfe\x12"U\x87\x8b\xbf/ ,\xdeP\xb2\xdc1\xb00\xe5\x1dB'
                 '\xfch<\xc6\x9eH@!\x1c\x16\xb2\x0b_\xc4\xddP\x89\xc8\xce?'
                 '\x16g\x069I\xb9\xb3\x91\xb9\x0e$3\x9f\x87\x8e\x82\xca\xc5'

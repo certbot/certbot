@@ -2,7 +2,6 @@
 import json
 
 import jsonschema
-import M2Crypto
 
 from letsencrypt.acme import errors
 from letsencrypt.acme import jose
@@ -100,7 +99,7 @@ class Challenge(Message):
     @classmethod
     def from_valid_json(cls, jobj):
         return cls(session_id=jobj["sessionID"],
-                   nonce=jose.b64decode(jobj["nonce"]),
+                   nonce=cls._decode_b64jose(jobj["nonce"]),
                    challenges=jobj["challenges"],
                    combinations=jobj.get("combinations", []))
 
@@ -147,7 +146,7 @@ class Authorization(Message):
     def from_valid_json(cls, jobj):
         jwk = jobj.get("jwk")
         if jwk is not None:
-            jwk = jose.JWK.from_valid_json(jwk)
+            jwk = other.JWK.from_valid_json(jwk)
         return cls(recovery_token=jobj.get("recoveryToken"),
                    identifier=jobj.get("identifier"), jwk=jwk)
 
@@ -218,7 +217,7 @@ class AuthorizationRequest(Message):
     @classmethod
     def from_valid_json(cls, jobj):
         return cls(session_id=jobj["sessionID"],
-                   nonce=jose.b64decode(jobj["nonce"]),
+                   nonce=cls._decode_b64jose(jobj["nonce"]),
                    responses=jobj["responses"],
                    signature=other.Signature.from_valid_json(jobj["signature"]),
                    contact=jobj.get("contact", []))
@@ -246,15 +245,6 @@ class Certificate(Message):
         if self.refresh is not None:
             fields["refresh"] = self.refresh
         return fields
-
-    @classmethod
-    def _decode_cert(cls, b64der):
-        return util.ComparableX509(M2Crypto.X509.load_cert_der_string(
-            jose.b64decode(b64der)))
-
-    @classmethod
-    def _encode_cert(cls, cert):
-        return jose.b64encode(cert.as_der())
 
     @classmethod
     def from_valid_json(cls, jobj):
@@ -306,15 +296,6 @@ class CertificateRequest(Message):
 
         """
         return self.signature.verify(self.csr.as_der())
-
-    @classmethod
-    def _decode_csr(cls, b64der):
-        return util.ComparableX509(M2Crypto.X509.load_request_der_string(
-            jose.b64decode(b64der)))
-
-    @classmethod
-    def _encode_csr(cls, csr):
-        return jose.b64encode(csr.as_der())
 
     def _fields_to_json(self):
         return {
@@ -436,15 +417,6 @@ class RevocationRequest(Message):
 
         """
         return self.signature.verify(self.certificate.as_der())
-
-    @classmethod
-    def _decode_cert(cls, b64der):
-        return util.ComparableX509(M2Crypto.X509.load_cert_der_string(
-            jose.b64decode(b64der)))
-
-    @classmethod
-    def _encode_cert(cls, cert):
-        return jose.b64encode(cert.as_der())
 
     def _fields_to_json(self):
         return {
