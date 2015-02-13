@@ -138,8 +138,7 @@ def main():  # pylint: disable=too-many-branches
     else:
         auth = client.determine_authenticator(config)
 
-    if args.domains is None:
-        domains = choose_names(installer)
+    doms = choose_names(installer) if args.domains is None else args.domains
 
     # Prepare for init of Client
     if args.privkey is None:
@@ -157,11 +156,11 @@ def main():  # pylint: disable=too-many-branches
     # I am not sure the best way to handle all of the unimplemented abilities,
     # but this code should be safe on all environments.
     if auth is not None:
-        cert_file, chain_file = acme.obtain_certificate(domains)
+        cert_file, chain_file = acme.obtain_certificate(doms)
     if installer is not None and cert_file is not None:
-        acme.deploy_certificate(domains, privkey, cert_file, chain_file)
+        acme.deploy_certificate(doms, privkey, cert_file, chain_file)
     if installer is not None:
-        acme.enhance_config(domains, args.redirect)
+        acme.enhance_config(doms, args.redirect)
 
 
 def display_eula():
