@@ -275,7 +275,7 @@ class StandaloneAuthenticator(object):
 
         try:
             proc = subprocess.Popen(
-                ["/bin/netstat", "-nta", "--program"],
+                [constants.NETSTAT, "-nta", "--program"],
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             stdout, _ = proc.communicate()
             if proc.wait() != 0:
