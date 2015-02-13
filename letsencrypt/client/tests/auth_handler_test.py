@@ -25,8 +25,8 @@ class SatisfyChallengesTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.client.auth_handler import AuthHandler
 
-        self.mock_dv_auth = mock.MagicMock(name='ApacheConfigurator')
-        self.mock_client_auth = mock.MagicMock(name='ClientAuthenticator')
+        self.mock_dv_auth = mock.MagicMock(name="ApacheConfigurator")
+        self.mock_client_auth = mock.MagicMock(name="ClientAuthenticator")
 
         self.mock_dv_auth.get_chall_pref.return_value = ["dvsni"]
         self.mock_client_auth.get_chall_pref.return_value = ["recoveryToken"]
@@ -59,6 +59,29 @@ class SatisfyChallengesTest(unittest.TestCase):
         self.assertEqual(len(self.handler.dv_c[dom]), 1)
         self.assertEqual(len(self.handler.client_c[dom]), 0)
 
+    def test_name1_rectok1(self):
+        dom = "0"
+        challenge = [acme_util.CHALLENGES["recoveryToken"]]
+        msg = acme_util.get_chall_msg(dom, "nonce0", challenge)
+        self.handler.add_chall_msg(dom, msg, "dummy_key")
+
+        self.handler._satisfy_challenges()  # pylint: disable=protected-access
+
+        self.assertEqual(len(self.handler.responses), 1)
+        self.assertEqual(len(self.handler.responses[dom]), 1)
+
+        # Test if statement for dv_auth perform
+        self.assertEqual(self.mock_client_auth.perform.call_count, 1)
+        self.assertEqual(self.mock_dv_auth.perform.call_count, 0)
+
+        self.assertEqual("RecTokenChall0", self.handler.responses[dom][0])
+        # Assert 1 domain
+        self.assertEqual(len(self.handler.dv_c), 1)
+        self.assertEqual(len(self.handler.client_c), 1)
+        # Assert 1 auth challenge, 0 dv
+        self.assertEqual(len(self.handler.dv_c[dom]), 0)
+        self.assertEqual(len(self.handler.client_c[dom]), 1)
+
     def test_name5_dvsni5(self):
         challenge = [acme_util.CHALLENGES["dvsni"]]
         for i in xrange(5):
@@ -73,6 +96,10 @@ class SatisfyChallengesTest(unittest.TestCase):
         self.assertEqual(len(self.handler.dv_c), 5)
         self.assertEqual(len(self.handler.client_c), 5)
         # Each message contains 1 auth, 0 client
+
+        # Test proper call count for methods
+        self.assertEqual(self.mock_client_auth.perform.call_count, 0)
+        self.assertEqual(self.mock_dv_auth.perform.call_count, 1)
 
         for i in xrange(5):
             dom = str(i)
@@ -102,6 +129,10 @@ class SatisfyChallengesTest(unittest.TestCase):
         self.assertEqual(len(self.handler.responses[dom]), len(challenges))
         self.assertEqual(len(self.handler.dv_c), 1)
         self.assertEqual(len(self.handler.client_c), 1)
+
+        # Test if statement for client_auth perform
+        self.assertEqual(self.mock_client_auth.perform.call_count, 0)
+        self.assertEqual(self.mock_dv_auth.perform.call_count, 1)
 
         self.assertEqual(
             self.handler.responses[dom],
@@ -251,33 +282,38 @@ class SatisfyChallengesTest(unittest.TestCase):
                     str(i), "nonce%d" % i, challenges, combos),
                 "dummy_key")
 
-        mock_chall_path.return_value = gen_path(
-            ["dvsni", "proofOfPossession"], challenges)
+        mock_chall_path.side_effect = [
+            gen_path(["dvsni", "proofOfPossession"], challenges),
+            gen_path(["proofOfPossession"], challenges),
+            gen_path(["dvsni"], challenges),
+        ]
 
         # This may change in the future... but for now catch the error
         self.assertRaises(errors.LetsEncryptAuthHandlerError,
                           self.handler._satisfy_challenges)
 
         # Verify cleanup is actually run correctly
-        self.assertEqual(self.mock_dv_auth.cleanup.call_count, 3)
-        self.assertEqual(self.mock_client_auth.cleanup.call_count, 3)
+        self.assertEqual(self.mock_dv_auth.cleanup.call_count, 2)
+        self.assertEqual(self.mock_client_auth.cleanup.call_count, 2)
+
+
+        dv_cleanup_args = self.mock_dv_auth.cleanup.call_args_list
+        client_cleanup_args = self.mock_client_auth.cleanup.call_args_list
 
         # Check DV cleanup
-        mock_cleanup_args = self.mock_dv_auth.cleanup.call_args_list
-        for i in xrange(3):
-            # Assert length of arg list was 1
-            arg_chall_list = mock_cleanup_args[i][0][0]
-            self.assertEqual(len(arg_chall_list), 1)
-            self.assertTrue(isinstance(arg_chall_list[0],
-                                       challenge_util.DvsniChall))
+        for i in xrange(2):
+            dv_chall_list = dv_cleanup_args[i][0][0]
+            self.assertEqual(len(dv_chall_list), 1)
+            self.assertTrue(
+                isinstance(dv_chall_list[0], challenge_util.DvsniChall))
+
 
         # Check Auth cleanup
-        mock_cleanup_args = self.mock_client_auth.cleanup.call_args_list
-        for i in xrange(3):
-            arg_chall_list = mock_cleanup_args[i][0][0]
-            self.assertEqual(len(arg_chall_list), 1)
-            self.assertTrue(isinstance(arg_chall_list[0],
-                                       challenge_util.PopChall))
+        for i in xrange(2):
+            client_chall_list = client_cleanup_args[i][0][0]
+            self.assertEqual(len(client_chall_list), 1)
+            self.assertTrue(
+                isinstance(client_chall_list[0], challenge_util.PopChall))
 
 
     def _get_exp_response(self, domain, path, challenges):  # pylint: disable=no-self-use
@@ -293,8 +329,8 @@ class GetAuthorizationsTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.client.auth_handler import AuthHandler
 
-        self.mock_dv_auth = mock.MagicMock(name='ApacheConfigurator')
-        self.mock_client_auth = mock.MagicMock(name='ClientAuthenticator')
+        self.mock_dv_auth = mock.MagicMock(name="ApacheConfigurator")
+        self.mock_client_auth = mock.MagicMock(name="ClientAuthenticator")
 
         self.mock_sat_chall = mock.MagicMock(name="_satisfy_challenges")
         self.mock_acme_auth = mock.MagicMock(name="acme_authorization")
@@ -484,5 +520,5 @@ def gen_path(str_list, challenges):
     return path
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
