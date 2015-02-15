@@ -45,7 +45,6 @@ class Signature(util.JSONDeSerializable, util.ImmutableMap):
         :type nonce: str or None
 
         """
-        msg = str(msg)  # TODO: ????
         if nonce is None:
             nonce = Random.get_random_bytes(cls.NONCE_LEN)
 
