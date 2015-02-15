@@ -211,14 +211,16 @@ class AuthorizationRequest(Message):
     def verify(self, name):
         """Verify signature.
 
+        .. warning:: Caller must check that the public key encoded in the
+            :attr:`signature`'s :class:`letsencrypt.acme.jose.JWK` object
+            is the correct key for a given context.
+
         :param str name: Hostname
 
         :returns: True iff ``signature`` can be verified, False otherwise.
         :rtype: bool
 
         """
-        # TODO: must also check that the public key encoded in the JWK object
-        # is the correct key for a given context.
         return self.signature.verify(name + self.nonce)
 
     def _fields_to_json(self):
@@ -314,12 +316,14 @@ class CertificateRequest(Message):
     def verify(self):
         """Verify signature.
 
+        .. warning:: Caller must check that the public key encoded in the
+            :attr:`signature`'s :class:`letsencrypt.acme.jose.JWK` object
+            is the correct key for a given context.
+
         :returns: True iff ``signature`` can be verified, False otherwise.
         :rtype: bool
 
         """
-        # TODO: must also check that the public key encoded in the JWK object
-        # is the correct key for a given context.
         return self.signature.verify(self.csr.as_der())
 
     @classmethod
@@ -442,12 +446,14 @@ class RevocationRequest(Message):
     def verify(self):
         """Verify signature.
 
+        .. warning:: Caller must check that the public key encoded in the
+            :attr:`signature`'s :class:`letsencrypt.acme.jose.JWK` object
+            is the correct key for a given context.
+
         :returns: True iff ``signature`` can be verified, False otherwise.
         :rtype: bool
 
         """
-        # TODO: must also check that the public key encoded in the JWK object
-        # is the correct key for a given context.
         return self.signature.verify(self.certificate.as_der())
 
     @classmethod
