@@ -66,7 +66,8 @@ class SatisfyChallengesTest(unittest.TestCase):
     def test_name1_rectok1(self):
         dom = "0"
         challenge = [acme_util.CHALLENGES["recoveryToken"]]
-        msg = acme_util.get_chall_msg(dom, "nonce0", challenge)
+        msg = messages.Challenge(session_id=dom, nonce="nonce0",
+                                 challenges=challenge, combinations=[])
         self.handler.add_chall_msg(dom, msg, "dummy_key")
 
         self.handler._satisfy_challenges()  # pylint: disable=protected-access
