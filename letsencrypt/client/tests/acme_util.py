@@ -26,7 +26,7 @@ CHALLENGES = {
         "successURL": "https://example.ca/confirmrecovery/bb1b9928932",
         "contact": "c********n@example.com"
     },
-    "recoveryTokent":
+    "recoveryToken":
     {
         "type": "recoveryToken"
     },
