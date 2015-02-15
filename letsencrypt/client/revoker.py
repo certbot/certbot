@@ -9,6 +9,7 @@ import M2Crypto
 import zope.component
 
 from letsencrypt.acme import messages
+from letsencrypt.acme import util as acme_util
 
 from letsencrypt.client import crypto_util
 from letsencrypt.client import display
@@ -38,7 +39,8 @@ class Revoker(object):
         :rtype: :class:`letsencrypt.acme.message.Revocation`
 
         """
-        certificate = M2Crypto.X509.load_cert(cert["backup_cert_file"])
+        certificate = acme_util.ComparableX509(
+            M2Crypto.X509.load_cert(cert["backup_cert_file"]))
         with open(cert["backup_key_file"], 'rU') as backup_key_file:
             key = Crypto.PublicKey.RSA.importKey(backup_key_file.read())
 
@@ -69,8 +71,8 @@ class Revoker(object):
         c_sha1_vh = {}
         for (cert, _, path) in self.installer.get_all_certs_keys():
             try:
-                c_sha1_vh[M2Crypto.X509.load_cert(
-                    cert).get_fingerprint(md='sha1')] = path
+                c_sha1_vh[acme_util.ComparableX509(M2Crypto.X509.load_cert(
+                    cert).get_fingerprint(md='sha1'))] = path
             except M2Crypto.X509.X509Error:
                 continue
 

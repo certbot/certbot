@@ -10,6 +10,7 @@ import M2Crypto
 import zope.component
 
 from letsencrypt.acme import messages
+from letsencrypt.acme import util as acme_util
 
 from letsencrypt.client import auth_handler
 from letsencrypt.client import client_authenticator
@@ -130,7 +131,8 @@ class Client(object):
         logging.info("Preparing and sending CSR...")
         return self.network.send_and_receive_expected(
             messages.CertificateRequest.create(
-                csr=M2Crypto.X509.load_request_der_string(csr_der),
+                csr=acme_util.ComparableX509(
+                    M2Crypto.X509.load_request_der_string(csr_der)),
                 key=Crypto.PublicKey.RSA.importKey(self.authkey.pem)),
             messages.Certificate)
 

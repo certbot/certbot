@@ -197,6 +197,7 @@ class AuthorizationRequest(Message):
         :type key: :class:`Crypto.PublicKey.RSA`
 
         :param str sig_nonce: Nonce used for signature. Useful for testing.
+        :kwargs: Any other arguments accepted by the class constructor.
 
         :returns: Signed "authorizationRequest" ACME message.
         :rtype: :class:`AuthorizationRequest`
@@ -251,8 +252,8 @@ class Certificate(Message):
     :ivar certificate: The certificate (:class:`M2Crypto.X509.X509`
         wrapped in :class:`letsencrypt.acme.util.ComparableX509`).
 
-    :ivar list chain: Chain of certificates (:class:`M2Crypto.X509.X509` wrapped
-        in :class:`letsencrypt.acme.util.ComparableX509` ).
+    :ivar list chain: Chain of certificates (:class:`M2Crypto.X509.X509`
+        wrapped in :class:`letsencrypt.acme.util.ComparableX509` ).
 
     """
     acme_type = "certificate"
@@ -305,6 +306,7 @@ class CertificateRequest(Message):
         :type key: :class:`Crypto.PublicKey.RSA`
 
         :param str sig_nonce: Nonce used for signature. Useful for testing.
+        :kwargs: Any other arguments accepted by the class constructor.
 
         :returns: Signed "certificateRequest" ACME message.
         :rtype: :class:`CertificateRequest`
@@ -435,6 +437,7 @@ class RevocationRequest(Message):
         :type key: :class:`Crypto.PublicKey.RSA`
 
         :param str sig_nonce: Nonce used for signature. Useful for testing.
+        :kwargs: Any other arguments accepted by the class constructor.
 
         :returns: Signed "revocationRequest" ACME message.
         :rtype: :class:`RevocationRequest`

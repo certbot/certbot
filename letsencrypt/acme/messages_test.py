@@ -9,14 +9,17 @@ import mock
 from letsencrypt.acme import errors
 from letsencrypt.acme import jose
 from letsencrypt.acme import other
+from letsencrypt.acme import util
 
 
 KEY = Crypto.PublicKey.RSA.importKey(pkg_resources.resource_string(
     'letsencrypt.client.tests', 'testdata/rsa256_key.pem'))
-CERT = M2Crypto.X509.load_cert(pkg_resources.resource_filename(
-    'letsencrypt.client.tests', 'testdata/cert.pem'))
-CSR = M2Crypto.X509.load_request(pkg_resources.resource_filename(
-    'letsencrypt.client.tests', 'testdata/csr.pem'))
+CERT = util.ComparableX509(M2Crypto.X509.load_cert(
+    pkg_resources.resource_filename(
+        'letsencrypt.client.tests', 'testdata/cert.pem')))
+CSR = util.ComparableX509(M2Crypto.X509.load_request(
+    pkg_resources.resource_filename(
+        'letsencrypt.client.tests', 'testdata/csr.pem')))
 
 
 class MessageTest(unittest.TestCase):
