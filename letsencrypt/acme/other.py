@@ -32,8 +32,6 @@ class Signature(util.JSONDeSerializable, util.ImmutableMap):
     def from_msg(cls, msg, key, nonce=None):
         """Create signature with nonce prepended to the message.
 
-        .. todo:: Change this over to M2Crypto... PKey
-
         .. todo:: Protect against crypto unicode errors... is this sufficient?
             Do I need to escape?
 
