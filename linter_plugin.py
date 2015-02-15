@@ -11,6 +11,9 @@ def register(unused_linter):
     """Register this module as PyLint plugin."""
 
 def _transform(cls):
+    # fix the "no-member" error on instances of
+    # letsencrypt.acme.util.ImmutableMap subclasses (instance
+    # attributes are initialized dynamically based on __slots__)
     if (('Message' in cls.basenames or 'ImmutableMap' in cls.basenames or
          'util.ImmutableMap' in cls.basenames) and (cls.slots() is not None)):
         for slot in cls.slots():
