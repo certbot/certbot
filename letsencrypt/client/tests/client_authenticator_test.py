@@ -41,6 +41,10 @@ class PerformTest(unittest.TestCase):
         self.assertRaises(
             errors.LetsEncryptClientAuthError, self.auth.perform, [unexpected])
 
+    def test_chall_pref(self):
+        self.assertEqual(
+            self.auth.get_chall_pref("example.com"), ["recoveryToken"])
+
 
 class CleanupTest(unittest.TestCase):
     """Test the Authenticator cleanup function."""
