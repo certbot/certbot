@@ -149,10 +149,11 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         for dom in self.domains:
             flat_client.extend(ichall.chall for ichall in self.client_c[dom])
             flat_auth.extend(ichall.chall for ichall in self.dv_c[dom])
-
         try:
-            client_resp = self.client_auth.perform(flat_client)
-            dv_resp = self.dv_auth.perform(flat_auth)
+            if flat_client:
+                client_resp = self.client_auth.perform(flat_client)
+            if flat_auth:
+                dv_resp = self.dv_auth.perform(flat_auth)
         # This will catch both specific types of errors.
         except errors.LetsEncryptAuthHandlerError as err:
             logging.critical("Failure in setting up challenges:")

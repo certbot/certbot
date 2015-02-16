@@ -231,7 +231,7 @@ class Client(object):
             try:
                 self.installer.enhance(dom, "redirect")
             except errors.LetsEncryptConfiguratorError:
-                logging.warn('Unable to perform redirect for %s', dom)
+                logging.warn("Unable to perform redirect for %s", dom)
 
         self.installer.save("Add Redirects")
         self.installer.restart()
@@ -448,7 +448,7 @@ def _misconfigured_rollback(checkpoints, config):
             "Rollback was unable to solve the misconfiguration issues")
 
 
-def revoke(config):
+def revoke(config, no_confirm, cert, authkey):
     """Revoke certificates.
 
     :param config: Configuration.
@@ -466,8 +466,14 @@ def revoke(config):
             "installed may not be available.")
         installer = None
 
-    revoc = revoker.Revoker(installer, config)
-    revoc.display_menu()
+    revoc = revoker.Revoker(installer, config, no_confirm)
+    # Cert is most selective, so it is chosen first.
+    if cert is not None:
+        revoc.revoke_from_cert(cert[0])
+    elif authkey is not None:
+        revoc.revoke_from_key(le_util.Key(authkey[0], authkey[1]))
+    else:
+        revoc.display_menu()
 
 
 def view_config_changes(config):

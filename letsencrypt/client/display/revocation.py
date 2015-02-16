@@ -46,20 +46,17 @@ def display_certs(certs):
 
     """
     list_choices = [
-        ("%s | %s | %s" % (
+        "%s | %s | %s" % (
             str(cert.get_cn().ljust(display_util.WIDTH - 39)),
             cert.get_not_before().strftime("%m-%d-%y"),
             "Installed" if cert.installed and cert.installed != ["Unknown"]
-            else "")
-         for cert in enumerate(certs)
-        )
+            else "") for cert in certs
     ]
 
+    print list_choices
     code, tag = util(interfaces.IDisplay).menu(
         "Which certificates would you like to revoke?",
-        "Revoke number (c to cancel): ",
-        choices=list_choices, help_button=True,
-        help_label="More Info", ok_label="Revoke",
+        list_choices, help_label="More Info", ok_label="Revoke",
         cancel_label="Exit")
     if not tag:
         tag = -1
@@ -81,8 +78,7 @@ def confirm_revocation(cert):
             "certificate:{0}".format(os.linesep))
     text += cert.pretty_print()
     text += "This action cannot be reversed!"
-    return display_util.OK == util(interfaces.IDisplay).yesno(
-        text, width=display_util.WIDTH, height=display_util.HEIGHT)
+    return display_util.OK == util(interfaces.IDisplay).yesno(text)
 
 
 def more_info_cert(cert):
