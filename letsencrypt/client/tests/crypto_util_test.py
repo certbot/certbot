@@ -11,43 +11,6 @@ RSA256_KEY = pkg_resources.resource_string(__name__, 'testdata/rsa256_key.pem')
 RSA512_KEY = pkg_resources.resource_string(__name__, 'testdata/rsa512_key.pem')
 
 
-class CreateSigTest(unittest.TestCase):
-    """Tests for letsencrypt.client.crypto_util.create_sig."""
-
-    def setUp(self):
-        self.nonce = '\xec\xd6\xf2oYH\xeb\x13\xd5#q\xe0\xdd\xa2\x92\xa9'
-        self.b64nonce = '7Nbyb1lI6xPVI3Hg3aKSqQ'
-        self.signature = {
-            'nonce': self.b64nonce,
-            'alg': 'RS256',
-            'jwk': {
-                'kty': 'RSA',
-                'e': 'AQAB',
-                'n': 'rHVztFHtH92ucFJD_N_HW9AsdRsUuHUBBBDlHwNlRd3fp5'
-                     '80rv2-6QWE30cWgdmJS86ObRz6lUTor4R0T-3C5Q',
-            },
-            'sig': 'SUPYKucUnhlTt8_sMxLiigOYdf_wlOLXPI-o7aRLTsOquVjDd6r'
-                   'AX9AFJHk-bCMQPJbSzXKjG6H1IWbvxjS2Ew',
-        }
-
-    @classmethod
-    def _call(cls, *args, **kwargs):
-        from letsencrypt.client.crypto_util import create_sig
-        return create_sig(*args, **kwargs)
-
-    def test_it(self):
-        self.assertEqual(
-            self._call('message', RSA256_KEY, self.nonce), self.signature)
-
-    def test_random_nonce(self):
-        signature = self._call('message', RSA256_KEY)
-        signature.pop('sig')
-        signature.pop('nonce')
-        del self.signature['sig']
-        del self.signature['nonce']
-        self.assertEqual(signature, self.signature)
-
-
 class ValidCSRTest(unittest.TestCase):
     """Tests for letsencrypt.client.crypto_util.valid_csr."""
 
@@ -168,18 +131,6 @@ class GetCertInfoTest(unittest.TestCase):
             'fingerprint': '62F7110431B8E8F55905DBE5592518F9634AC50A',
         })
         self._call('cert-san.pem')
-
-
-class B64CertToPEMTest(unittest.TestCase):
-    # pylint: disable=too-few-public-methods
-    """Tests for letsencrypt.client.crypto_util.b64_cert_to_pem."""
-
-    def test_it(self):
-        from letsencrypt.client.crypto_util import b64_cert_to_pem
-        self.assertEqual(
-            b64_cert_to_pem(pkg_resources.resource_string(
-                __name__, 'testdata/cert.b64jose')),
-            pkg_resources.resource_string(__name__, 'testdata/cert.pem'))
 
 
 if __name__ == '__main__':

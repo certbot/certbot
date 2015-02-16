@@ -4,10 +4,13 @@ import logging
 import os
 import shutil
 
+import Crypto.PublicKey.RSA
 import M2Crypto
 import zope.component
 
-from letsencrypt.client import acme
+from letsencrypt.acme import messages
+from letsencrypt.acme import util as acme_util
+
 from letsencrypt.client import crypto_util
 from letsencrypt.client import display
 from letsencrypt.client import interfaces
@@ -33,15 +36,18 @@ class Revoker(object):
         :param dict cert: TODO
 
         :returns: ACME "revocation" message.
-        :rtype: dict
+        :rtype: :class:`letsencrypt.acme.message.Revocation`
 
         """
-        cert_der = M2Crypto.X509.load_cert(cert["backup_cert_file"]).as_der()
+        certificate = acme_util.ComparableX509(
+            M2Crypto.X509.load_cert(cert["backup_cert_file"]))
         with open(cert["backup_key_file"], 'rU') as backup_key_file:
-            key = backup_key_file.read()
+            key = Crypto.PublicKey.RSA.importKey(backup_key_file.read())
 
         revocation = self.network.send_and_receive_expected(
-            acme.revocation_request(cert_der, key), "revocation")
+            messages.RevocationRequest.create(
+                certificate=certificate, key=key),
+            messages.Revocation)
 
         zope.component.getUtility(interfaces.IDisplay).generic_notification(
             "You have successfully revoked the certificate for "
@@ -65,8 +71,8 @@ class Revoker(object):
         c_sha1_vh = {}
         for (cert, _, path) in self.installer.get_all_certs_keys():
             try:
-                c_sha1_vh[M2Crypto.X509.load_cert(
-                    cert).get_fingerprint(md='sha1')] = path
+                c_sha1_vh[acme_util.ComparableX509(M2Crypto.X509.load_cert(
+                    cert).get_fingerprint(md='sha1'))] = path
             except M2Crypto.X509.X509Error:
                 continue
 

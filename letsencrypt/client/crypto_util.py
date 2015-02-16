@@ -1,66 +1,11 @@
 """Let's Encrypt client crypto utility functions"""
-import binascii
-import logging
 import time
 
-from Crypto import Random
 import Crypto.Hash.SHA256
 import Crypto.PublicKey.RSA
 import Crypto.Signature.PKCS1_v1_5
 
 import M2Crypto
-
-from letsencrypt.client import constants
-from letsencrypt.client import le_util
-
-
-def create_sig(msg, key_str, nonce=None):
-    """Create signature with nonce prepended to the message.
-
-    .. todo:: Change this over to M2Crypto... PKey
-
-    .. todo:: Protect against crypto unicode errors... is this sufficient?
-        Do I need to escape?
-
-    :param str key_str: Key in string form. Accepted formats
-        are the same as for `Crypto.PublicKey.RSA.importKey`.
-    :param str msg: Message to be signed
-    :param str nonce: Nonce to be used (required size
-
-    :returns: Signature.
-    :rtype: dict
-
-    """
-    key = Crypto.PublicKey.RSA.importKey(key_str)
-    if nonce is None:
-        nonce = Random.get_random_bytes(constants.NONCE_SIZE)
-    assert len(nonce) == constants.NONCE_SIZE
-
-    msg_with_nonce = nonce + msg
-    hashed = Crypto.Hash.SHA256.new(msg_with_nonce)
-    signature = Crypto.Signature.PKCS1_v1_5.new(key).sign(hashed)
-
-    logging.debug("%s signed as %s", msg_with_nonce, signature)
-
-    n_bytes = binascii.unhexlify(_leading_zeros(hex(key.n)[2:].rstrip("L")))
-    e_bytes = binascii.unhexlify(_leading_zeros(hex(key.e)[2:].rstrip("L")))
-
-    return {
-        "nonce": le_util.jose_b64encode(nonce),
-        "alg": "RS256",
-        "jwk": {
-            "kty": "RSA",
-            "n": le_util.jose_b64encode(n_bytes),
-            "e": le_util.jose_b64encode(e_bytes),
-        },
-        "sig": le_util.jose_b64encode(signature),
-    }
-
-
-def _leading_zeros(arg):
-    if len(arg) % 2:
-        return "0" + arg
-    return arg
 
 
 def make_csr(key_str, domains):
@@ -244,9 +189,3 @@ def get_cert_info(filename):
         "serial": cert.get_serial_number(),
         "pub_key": "RSA " + str(cert.get_pubkey().size() * 8),
     }
-
-
-def b64_cert_to_pem(b64_der_cert):
-    """Convert JOSE Base-64 encoded DER cert to PEM."""
-    return M2Crypto.X509.load_cert_der_string(
-        le_util.jose_b64decode(b64_der_cert)).as_pem()

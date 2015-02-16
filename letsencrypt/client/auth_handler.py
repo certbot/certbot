@@ -2,7 +2,10 @@
 import logging
 import sys
 
-from letsencrypt.client import acme
+import Crypto.PublicKey.RSA
+
+from letsencrypt.acme import messages
+
 from letsencrypt.client import challenge_util
 from letsencrypt.client import constants
 from letsencrypt.client import errors
@@ -53,7 +56,9 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         """Add a challenge message to the AuthHandler.
 
         :param str domain: domain for authorization
-        :param dict msg: ACME challenge message
+
+        :param msg: ACME "challenge" message
+        :type msg: :class:`letsencrypt.acme.message.Challenge`
 
         :param authkey: authorized key for the challenge
         :type authkey: :class:`letsencrypt.client.le_util.Key`
@@ -64,7 +69,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
                 "Multiple ACMEChallengeMessages for the same domain "
                 "is not supported.")
         self.domains.append(domain)
-        self.responses[domain] = ["null"] * len(msg["challenges"])
+        self.responses[domain] = ["null"] * len(msg.challenges)
         self.msgs[domain] = msg
         self.authkey[domain] = authkey
 
@@ -102,18 +107,19 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         :param str domain: domain that is requesting authorization
 
         :returns: ACME "authorization" message.
-        :rtype: dict
+        :rtype: :class:`letsencrypt.acme.messages.Authorization`
 
         """
         try:
             auth = self.network.send_and_receive_expected(
-                acme.authorization_request(
-                    self.msgs[domain]["sessionID"],
-                    domain,
-                    self.msgs[domain]["nonce"],
-                    self.responses[domain],
-                    self.authkey[domain].pem),
-                "authorization")
+                messages.AuthorizationRequest.create(
+                    session_id=self.msgs[domain].session_id,
+                    nonce=self.msgs[domain].nonce,
+                    responses=self.responses[domain],
+                    name=domain,
+                    key=Crypto.PublicKey.RSA.importKey(
+                        self.authkey[domain].pem)),
+                messages.Authorization)
             logging.info("Received Authorization for %s", domain)
             return auth
         except errors.LetsEncryptClientError as err:
@@ -135,9 +141,9 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         logging.info("Performing the following challenges:")
         for dom in self.domains:
             self.paths[dom] = gen_challenge_path(
-                self.msgs[dom]["challenges"],
+                self.msgs[dom].challenges,
                 self._get_chall_pref(dom),
-                self.msgs[dom].get("combinations", None))
+                self.msgs[dom].combinations)
 
             self.dv_c[dom], self.client_c[dom] = self._challenge_factory(
                 dom, self.paths[dom])
@@ -263,7 +269,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
             recognized
 
         """
-        challenges = self.msgs[domain]["challenges"]
+        challenges = self.msgs[domain].challenges
 
         dv_chall = []
         client_chall = []

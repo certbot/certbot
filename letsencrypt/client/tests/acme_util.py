@@ -90,18 +90,3 @@ def gen_combos(challs):
     # Gen combos for 1 of each type
     return [[i, j] for i in xrange(len(dv_chall))
             for j in xrange(len(renewal_chall))]
-
-def get_chall_msg(iden, nonce, challenges, combos=None):
-    """Produce an ACME challenge message."""
-    chall_msg = {
-        "type": "challenge",
-        "sessionID": iden,
-        "nonce": nonce,
-        "challenges": challenges
-    }
-
-    if combos is None:
-        return chall_msg
-
-    chall_msg["combinations"] = combos
-    return chall_msg

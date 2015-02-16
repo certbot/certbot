@@ -5,10 +5,13 @@ import os
 import shutil
 import sys
 
+import Crypto.PublicKey.RSA
 import M2Crypto
 import zope.component
 
-from letsencrypt.client import acme
+from letsencrypt.acme import messages
+from letsencrypt.acme import util as acme_util
+
 from letsencrypt.client import auth_handler
 from letsencrypt.client import client_authenticator
 from letsencrypt.client import crypto_util
@@ -95,11 +98,11 @@ class Client(object):
             csr = init_csr(self.authkey, domains, self.config.cert_dir)
 
         # Retrieve certificate
-        certificate_dict = self.acme_certificate(csr.data)
+        certificate_msg = self.acme_certificate(csr.data)
 
         # Save Certificate
         cert_file, chain_file = self.save_certificate(
-            certificate_dict, self.config.cert_path, self.config.chain_path)
+            certificate_msg, self.config.cert_path, self.config.chain_path)
 
         self.store_cert_key(cert_file, False)
 
@@ -109,11 +112,12 @@ class Client(object):
         """Handle ACME "challenge" phase.
 
         :returns: ACME "challenge" message.
-        :rtype: dict
+        :rtype: :class:`letsencrypt.acme.messages.Challenge`
 
         """
         return self.network.send_and_receive_expected(
-            acme.challenge_request(domain), "challenge")
+            messages.ChallengeRequest(identifier=domain),
+            messages.Challenge)
 
     def acme_certificate(self, csr_der):
         """Handle ACME "certificate" phase.
@@ -121,18 +125,24 @@ class Client(object):
         :param str csr_der: CSR in DER format.
 
         :returns: ACME "certificate" message.
-        :rtype: dict
+        :rtype: :class:`letsencrypt.acme.message.Certificate`
 
         """
         logging.info("Preparing and sending CSR...")
         return self.network.send_and_receive_expected(
-            acme.certificate_request(csr_der, self.authkey.pem), "certificate")
+            messages.CertificateRequest.create(
+                csr=acme_util.ComparableX509(
+                    M2Crypto.X509.load_request_der_string(csr_der)),
+                key=Crypto.PublicKey.RSA.importKey(self.authkey.pem)),
+            messages.Certificate)
 
-    def save_certificate(self, certificate_dict, cert_path, chain_path):
+    def save_certificate(self, certificate_msg, cert_path, chain_path):
         # pylint: disable=no-self-use
         """Saves the certificate received from the ACME server.
 
-        :param dict certificate_dict: certificate message from server
+        :param certificate_msg: ACME "certificate" message from server.
+        :type certificate_msg: :class:`letsencrypt.acme.messages.Certificate`
+
         :param str cert_path: Path to attempt to save the cert file
         :param str chain_path: Path to attempt to save the chain file
 
@@ -144,16 +154,15 @@ class Client(object):
         """
         cert_chain_abspath = None
         cert_fd, cert_file = le_util.unique_file(cert_path, 0o644)
-        cert_fd.write(
-            crypto_util.b64_cert_to_pem(certificate_dict["certificate"]))
+        cert_fd.write(certificate_msg.certificate.as_pem())
         cert_fd.close()
         logging.info(
             "Server issued certificate; certificate written to %s", cert_file)
 
-        if certificate_dict.get("chain", None):
+        if certificate_msg.chain:
             chain_fd, chain_fn = le_util.unique_file(chain_path, 0o644)
-            for cert in certificate_dict.get("chain", []):
-                chain_fd.write(crypto_util.b64_cert_to_pem(cert))
+            for cert in certificate_msg.chain:
+                chain_fd.write(cert.to_pem())
             chain_fd.close()
 
             logging.info("Cert chain written to %s", chain_fn)

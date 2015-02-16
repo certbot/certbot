@@ -61,6 +61,7 @@ setup(
     url="https://letsencrypt.org",
     packages=[
         'letsencrypt',
+        'letsencrypt.acme',
         'letsencrypt.client',
         'letsencrypt.client.apache',
         'letsencrypt.client.tests',

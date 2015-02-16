@@ -9,6 +9,8 @@ import mock
 import OpenSSL.crypto
 import OpenSSL.SSL
 
+from letsencrypt.acme import jose
+
 from letsencrypt.client import challenge_util
 from letsencrypt.client import le_util
 
@@ -61,7 +63,7 @@ class SNICallbackTest(unittest.TestCase):
         from letsencrypt.client.standalone_authenticator import \
             StandaloneAuthenticator
         self.authenticator = StandaloneAuthenticator()
-        name, r_b64 = "example.com", le_util.jose_b64encode("x" * 32)
+        name, r_b64 = "example.com", jose.b64encode("x" * 32)
         test_key = pkg_resources.resource_string(
             __name__, "testdata/rsa256_key.pem")
         nonce, key = "abcdef", le_util.Key("foo", test_key)
@@ -428,7 +430,7 @@ class DoChildProcessTest(unittest.TestCase):
         from letsencrypt.client.standalone_authenticator import \
             StandaloneAuthenticator
         self.authenticator = StandaloneAuthenticator()
-        name, r_b64 = "example.com", le_util.jose_b64encode("x" * 32)
+        name, r_b64 = "example.com", jose.b64encode("x" * 32)
         test_key = pkg_resources.resource_string(
             __name__, "testdata/rsa256_key.pem")
         nonce, key = "abcdef", le_util.Key("foo", test_key)

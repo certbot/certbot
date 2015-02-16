@@ -12,7 +12,7 @@
             "type" : "string" 
         },
         "signature" : {
-            "$ref": "file:letsencrypt/client/schemata/signature.json"
+            "$ref": "file:letsencrypt/acme/schemata/signature.json"
         }
     }
 }

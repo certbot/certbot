@@ -15,14 +15,14 @@
             "type": "string"
         },
         "signature" : {
-            "$ref": "file:letsencrypt/client/schemata/signature.json"
+            "$ref": "file:letsencrypt/acme/schemata/signature.json"
         },
         "responses": {
             "type": "array",
             "minItems": 1,
             "items": {
                 "anyOf": [
-                     { "$ref": "file:letsencrypt/client/schemata/responseobject.json" },
+                     { "$ref": "file:letsencrypt/acme/schemata/responseobject.json" },
                      { "type": "null" }
                 ]
             }
