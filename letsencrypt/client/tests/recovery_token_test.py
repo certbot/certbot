@@ -6,6 +6,8 @@ import tempfile
 
 import mock
 
+from letsencrypt.client import challenge_util
+
 
 class RecoveryTokenTest(unittest.TestCase):
     def setUp(self):
@@ -31,32 +33,32 @@ class RecoveryTokenTest(unittest.TestCase):
         self.assertTrue(self.rec_token.requires_human("example3.com"))
 
     def test_cleanup(self):
-        from letsencrypt.client.challenge_util import RecTokenChall
         self.rec_token.store_token("example3.com", 333)
         self.assertFalse(self.rec_token.requires_human("example3.com"))
 
-        self.rec_token.cleanup(RecTokenChall("example3.com"))
+        self.rec_token.cleanup(challenge_util.RecTokenChall("example3.com"))
         self.assertTrue(self.rec_token.requires_human("example3.com"))
 
         # Shouldn't throw an error
-        self.rec_token.cleanup(RecTokenChall("example4.com"))
+        self.rec_token.cleanup(challenge_util.RecTokenChall("example4.com"))
 
     def test_perform_stored(self):
-        from letsencrypt.client.challenge_util import RecTokenChall
         self.rec_token.store_token("example4.com", 444)
-        response = self.rec_token.perform(RecTokenChall("example4.com"))
+        response = self.rec_token.perform(
+            challenge_util.RecTokenChall("example4.com"))
 
         self.assertEqual(response, {"type": "recoveryToken", "token": "444"})
 
     @mock.patch("letsencrypt.client.recovery_token.zope.component.getUtility")
     def test_perform_not_stored(self, mock_input):
-        from letsencrypt.client.challenge_util import RecTokenChall
-
         mock_input().input.side_effect = [(0, "555"), (1, "000")]
-        response = self.rec_token.perform(RecTokenChall("example5.com"))
+        response = self.rec_token.perform(
+            challenge_util.RecTokenChall("example5.com"))
+
         self.assertEqual(response, {"type": "recoveryToken", "token": "555"})
 
-        response = self.rec_token.perform(RecTokenChall("example6.com"))
+        response = self.rec_token.perform(
+            challenge_util.RecTokenChall("example6.com"))
         self.assertTrue(response is None)
 
 

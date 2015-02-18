@@ -26,7 +26,7 @@ CHALLENGES = {
         "successURL": "https://example.ca/confirmrecovery/bb1b9928932",
         "contact": "c********n@example.com"
     },
-    "recoveryTokent":
+    "recoveryToken":
     {
         "type": "recoveryToken"
     },
@@ -80,7 +80,6 @@ def gen_combos(challs):
     """Generate natural combinations for challs."""
     dv_chall = []
     renewal_chall = []
-    combos = []
 
     for i, chall in enumerate(challs):
         if chall["type"] in constants.DV_CHALLENGES:
@@ -89,24 +88,5 @@ def gen_combos(challs):
             renewal_chall.append(i)
 
     # Gen combos for 1 of each type
-    for i in range(len(dv_chall)):
-        for j in range(len(renewal_chall)):
-            combos.append([i, j])
-
-    return combos
-
-
-def get_chall_msg(iden, nonce, challenges, combos=None):
-    """Produce an ACME challenge message."""
-    chall_msg = {
-        "type": "challenge",
-        "sessionID": iden,
-        "nonce": nonce,
-        "challenges": challenges
-    }
-
-    if combos is None:
-        return chall_msg
-
-    chall_msg["combinations"] = combos
-    return chall_msg
+    return [[i, j] for i in xrange(len(dv_chall))
+            for j in xrange(len(renewal_chall))]

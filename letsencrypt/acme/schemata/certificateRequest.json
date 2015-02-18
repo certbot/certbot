@@ -13,7 +13,7 @@
             "pattern": "^[-_=0-9A-Za-z]+$"
         },
         "signature" : {
-            "$ref": "file:letsencrypt/client/schemata/signature.json"
+            "$ref": "file:letsencrypt/acme/schemata/signature.json"
         }
     }
 }

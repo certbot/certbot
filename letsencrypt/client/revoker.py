@@ -12,12 +12,14 @@ import logging
 import os
 import shutil
 
+import Crypto.PublicKey.RSA
 import M2Crypto
 
-from letsencrypt.client import acme
+from letsencrypt.acme import messages
+from letsencrypt.acme import util as acme_util
+
 from letsencrypt.client import errors
 from letsencrypt.client import le_util
-
 from letsencrypt.client import network
 
 from letsencrypt.client.display import display_util
@@ -134,7 +136,9 @@ class Revoker(object):
 
         # TODO: Catch error associated with already revoked and proceed.
         return self.network.send_and_receive_expected(
-            acme.revocation_request(cert_der, key), "revocation")
+            messages.RevocationRequest.create(
+                certificate=certificate, key=key),
+            messages.Revocation)
 
     def display_menu(self):
         """List trusted Let's Encrypt certificates."""

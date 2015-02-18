@@ -1,13 +1,12 @@
 """Network Module."""
-import json
 import logging
 import sys
 import time
 
-import jsonschema
 import requests
 
-from letsencrypt.client import acme
+from letsencrypt.acme import messages
+
 from letsencrypt.client import errors
 
 
@@ -31,10 +30,11 @@ class Network(object):
     def send(self, msg):
         """Send ACME message to server.
 
-        :param dict msg: ACME message (JSON serializable).
+        :param msg: ACME message.
+        :type msg: :class:`letsencrypt.acme.messages.Message`
 
         :returns: Server response message.
-        :rtype: dict
+        :rtype: :class:`letsencrypt.acme.messages.Message`
 
         :raises TypeError: if `msg` is not JSON serializable
         :raises jsonschema.ValidationError: if not valid ACME message
@@ -42,13 +42,10 @@ class Network(object):
             or if response from server is not a valid ACME message.
 
         """
-        json_encoded = json.dumps(msg)
-        acme.acme_object_validate(json_encoded)
-
         try:
             response = requests.post(
                 self.server_url,
-                data=json_encoded,
+                data=msg.json_dumps(),
                 headers={"Content-Type": "application/json"},
                 verify=True
             )
@@ -56,66 +53,55 @@ class Network(object):
             raise errors.LetsEncryptClientError(
                 'Sending ACME message to server has failed: %s' % error)
 
-        try:
-            acme.acme_object_validate(response.content)
-        except ValueError:
-            raise errors.LetsEncryptClientError(
-                'Server did not send JSON serializable message')
-        except jsonschema.ValidationError as error:
-            raise errors.LetsEncryptClientError(
-                'Response from server is not a valid ACME message')
-
-        return response.json()
+        return messages.Message.from_json(response.json(), validate=True)
 
     def send_and_receive_expected(self, msg, expected):
         """Send ACME message to server and return expected message.
 
-        :param dict msg: ACME message (JSON serializable).
-        :param str expected: Name of the expected response ACME message type.
+        :param msg: ACME message.
+        :type msg: :class:`letsencrypt.acme.Message`
 
         :returns: ACME response message of expected type.
-        :rtype: dict
+        :rtype: :class:`letsencrypt.acme.messages.Message`
 
         :raises errors.LetsEncryptClientError: An exception is thrown
 
         """
         response = self.send(msg)
-        try:
-            return self.is_expected_msg(response, expected)
-        except:  # TODO: too generic exception
-            raise errors.LetsEncryptClientError(
-                'Expected message (%s) not received' % expected)
+        return self.is_expected_msg(response, expected)
+
 
     def is_expected_msg(self, response, expected, delay=3, rounds=20):
         """Is response expected ACME message?
 
-        :param dict response: ACME response message from server.
-        :param str expected: Name of the expected response ACME message type.
+        :param response: ACME response message from server.
+        :type response: :class:`letsencrypt.acme.messages.Message`
+
+        :param expected: Expected response type.
+        :type expected: subclass of :class:`letsencrypt.acme.messages.Message`
+
         :param int delay: Number of seconds to delay before next round
             in case of ACME "defer" response message.
         :param int rounds: Number of resend attempts in case of ACME "defer"
             response message.
 
         :returns: ACME response message from server.
-        :rtype: dict
+        :rtype: :class:`letsencrypt.acme.messages.Message`
 
         :raises LetsEncryptClientError: if server sent ACME "error" message
 
         """
         for _ in xrange(rounds):
-            if response["type"] == expected:
+            if isinstance(response, expected):
                 return response
-
-            elif response["type"] == "error":
-                logging.error(
-                    "%s: %s - More Info: %s", response["error"],
-                    response.get("message", ""), response.get("moreInfo", ""))
-                raise errors.LetsEncryptClientError(response["error"])
-
-            elif response["type"] == "defer":
+            elif isinstance(response, messages.Error):
+                logging.error("%s", response)
+                raise errors.LetsEncryptClientError(response.error)
+            elif isinstance(response, messages.Defer):
                 logging.info("Waiting for %d seconds...", delay)
                 time.sleep(delay)
-                response = self.send(acme.status_request(response["token"]))
+                response = self.send(
+                    messages.StatusRequest(token=response.token))
             else:
                 logging.fatal("Received unexpected message")
                 logging.fatal("Expected: %s", expected)
