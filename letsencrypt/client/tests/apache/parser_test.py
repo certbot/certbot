@@ -9,7 +9,7 @@ import mock
 import zope.component
 
 from letsencrypt.client import errors
-from letsencrypt.client.display import display_util
+from letsencrypt.client.display import util as display_util
 
 from letsencrypt.client.tests.apache import util
 

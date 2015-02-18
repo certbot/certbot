@@ -5,7 +5,7 @@ import sys
 import zope.component
 
 from letsencrypt.client import interfaces
-from letsencrypt.client.display import display_util
+from letsencrypt.client.display import util as display_util
 
 # Define a helper function to avoid verbose code
 util = zope.component.getUtility  # pylint: disable=invalid-name

@@ -3,7 +3,7 @@ import logging
 
 import dialog
 
-from letsencrypt.client.display import display_util
+from letsencrypt.client.display import util as display_util
 
 
 class DialogHandler(logging.Handler):  # pylint: disable=too-few-public-methods

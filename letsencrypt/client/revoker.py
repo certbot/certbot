@@ -22,7 +22,7 @@ from letsencrypt.client import errors
 from letsencrypt.client import le_util
 from letsencrypt.client import network
 
-from letsencrypt.client.display import display_util
+from letsencrypt.client.display import util as display_util
 from letsencrypt.client.display import revocation
 
 
@@ -47,33 +47,12 @@ class Revoker(object):
         self.config = config
         self.no_confirm = no_confirm
 
-        le_util.make_or_verify_dir(config.cert_key_backup, 0o700)
+        le_util.make_or_verify_dir(config.cert_key_backup, 0o700, os.geteuid())
 
         # TODO: Find a better solution for this...
         self.list_path = os.path.join(config.cert_key_backup, "LIST")
-
-    def safe_revoke(self, certs):
-        """Confirm and revoke certificates.
-
-        :param certs: certs intended to be revoked
-        :type certs: :class:`letsencrypt.client.revoker.Cert`
-
-        """
-        success_list = []
-        try:
-            for cert in certs:
-                if self.no_confirm or revocation.confirm_revocation(cert):
-                    revoc = self._acme_revoke(
-                        cert.backup_path, cert.backup_key_path)
-
-                    if revoc is not None:
-                        success_list.append(cert)
-                        revocation.success_revocation(cert)
-                    else:
-                        # TODO: Display a nice explanation
-                        pass
-        finally:
-            self._remove_certs_keys(success_list)
+        # Make sure that the file is available for use for rest of class
+        open(self.list_path, "a").close()
 
     def revoke_from_key(self, authkey):
         """Revoke all certificates under an authorized key.
@@ -83,7 +62,7 @@ class Revoker(object):
 
         """
         certs = []
-        with open(self.list_path, "r") as csvfile:
+        with open(self.list_path, "rb") as csvfile:
             csvreader = csv.reader(csvfile)
             for row in csvreader:
                 # idx, cert, key
@@ -94,9 +73,10 @@ class Revoker(object):
                 #    certificate.
                 _, b_k = self._row_to_backup(row)
                 if authkey.pem == open(b_k).read():
-                    certs.append(Cert.fromrow(row))
+                    certs.append(Cert.fromrow(row, self.config.cert_key_backup))
 
-        self.safe_revoke(certs)
+        if certs:
+            self._safe_revoke(certs)
 
     def revoke_from_cert(self, cert_path):
         """Revoke a certificate by specifying a file path.
@@ -107,59 +87,36 @@ class Revoker(object):
         # Locate the correct certificate (do not rely on filename)
         cert_to_revoke = Cert(cert_path)
 
-        with open(self.list_path, "r") as csvfile:
+        with open(self.list_path, "rb") as csvfile:
             csvreader = csv.reader(csvfile)
             for row in csvreader:
-                cert = Cert.fromrow(row)
+                cert = Cert.fromrow(row, self.config.cert_key_backup)
 
-                # This uses md5 but it doesn't matter and it is easier to read
-                if cert.get_fingerprint() == cert_to_revoke.get_fingerprint():
-                    self.safe_revoke([cert])
+                if cert == cert_to_revoke:
+                    self._safe_revoke([cert])
 
-    def _acme_revoke(self, cert_path, key_path):
-        """Revoke the certificate with the ACME server.
-
-        :param str cert_path: path to certificate file
-        :param str key_path: path to associated private key or authorized key
-
-        :returns: TODO
-
-        """
-        try:
-            cert_der = M2Crypto.X509.load_cert(cert_path).as_der()
-            with open(key_path, "rU") as backup_key_file:
-                key = backup_key_file.read()
-
-        # If either of the files don't exist... or are corrupted
-        except (OSError, IOError, M2Crypto.X509.X509Error):
-            return None
-
-        # TODO: Catch error associated with already revoked and proceed.
-        return self.network.send_and_receive_expected(
-            messages.RevocationRequest.create(
-                certificate=certificate, key=key),
-            messages.Revocation)
-
-    def display_menu(self):
+    def revoke_from_menu(self):
         """List trusted Let's Encrypt certificates."""
-
-        if not os.path.isfile(self.list_path):
-            logging.info(
-                "You don't have any certificates saved from letsencrypt")
-            return
 
         csha1_vhlist = self._get_installed_locations()
         certs = self._populate_saved_certs(csha1_vhlist)
 
-        if certs:
-            cert = revocation.choose_certs(certs)
-            self.revoke_from_interface(cert)
-            # Recursive...
-            self.display_menu()
-        else:
-            logging.info(
-                "There are not any trusted Let's Encrypt "
-                "certificates for this server.")
+        while True:
+            if certs:
+                selection = revocation.choose_certs(certs)
+
+                self._safe_revoke([certs[selection]])
+                # This is safer than using remove as Revoker.Certs only check
+                # the DER value of the cert. There could potentially be multiple
+                # backup certs with the same value.
+                del certs[selection]
+            else:
+                logging.info(
+                    "There are not any trusted Let's Encrypt "
+                    "certificates for this server.")
+                return
+
+
 
     def _populate_saved_certs(self, csha1_vhlist):
         # pylint: disable=no-self-use
@@ -177,7 +134,7 @@ class Revoker(object):
             csvreader = csv.reader(csvfile)
             # idx, orig_cert, orig_key
             for row in csvreader:
-                cert = Cert.fromrow(row)
+                cert = Cert.fromrow(row, self.config.cert_key_backup)
 
                 # If we were able to find the cert installed... update status
                 cert.installed = csha1_vhlist.get(cert.get_fingerprint(), [])
@@ -189,8 +146,8 @@ class Revoker(object):
     def _get_installed_locations(self):
         """Get installed locations of certificates
 
-        :returns: cert sha1 fingerprint -> :class:`list` of vhosts where
-            the certificate is installed.
+        :returns: map from cert sha1 fingerprint to :class:`list` of vhosts
+            where the certificate is installed.
 
         """
         csha1_vhlist = {}
@@ -211,10 +168,58 @@ class Revoker(object):
 
         return csha1_vhlist
 
+    def _safe_revoke(self, certs):
+        """Confirm and revoke certificates.
+
+        :param certs: certs intended to be revoked
+        :type certs: :class:`list` of :class:`letsencrypt.client.revoker.Cert`
+
+        """
+        success_list = []
+        try:
+            for cert in certs:
+                if self.no_confirm or revocation.confirm_revocation(cert):
+                    try:
+                        self._acme_revoke(cert)
+
+                        success_list.append(cert)
+                        revocation.success_revocation(cert)
+                    except errors.LetsEncryptClientError:
+                        # TODO: Improve error handling when networking is set...
+                        logging.error(
+                            "Unable to revoke cert:%s%s", os.linesep, str(cert))
+        finally:
+            if success_list:
+                self._remove_certs_keys(success_list)
+
+    def _acme_revoke(self, cert):
+        """Revoke the certificate with the ACME server.
+
+        :param cert: certificate to revoke
+        :type cert: :class:`letsencrypt.client.revoker.Cert`
+
+        :returns: TODO
+
+        """
+        try:
+            certificate = acme_util.ComparableX509(cert.cert)
+            with open(cert.backup_key_path, "rU") as backup_key_file:
+                key = Crypto.PublicKey.RSA.importKey(backup_key_file.read())
+
+        # If the key file doesn't exist... or is corrupted
+        except (OSError, IOError):
+            raise errors.LetsEncryptRevokerError("Unable to read key file")
+
+        # TODO: Catch error associated with already revoked and proceed.
+        return self.network.send_and_receive_expected(
+            messages.RevocationRequest.create(
+                certificate=certificate, key=key),
+            messages.Revocation)
+
     def _remove_certs_keys(self, cert_list):  # pylint: disable=no-self-use
         """Remove certificate and key.
 
-        :param list cert_list: each is of type
+        :param list cert_list: Must contain certs, each is of type
             :class:`letsencrypt.client.revoker.Cert`
 
         """
@@ -229,26 +234,29 @@ class Revoker(object):
     def _remove_certs_from_list(self, cert_list):  # pylint: disable=no-self-use
         """Remove a certificate from the LIST file.
 
-        :param list cert_list: each is of type
+        :param list cert_list: Must contain valid certs, each is of type
             :class:`letsencrypt.client.revoker.Cert`
 
         """
         list_path2 = os.path.join(self.config.cert_key_backup, "LIST.tmp")
 
         idx = 0
+
         with open(self.list_path, "rb") as orgfile:
             csvreader = csv.reader(orgfile)
             with open(list_path2, "wb") as newfile:
                 csvwriter = csv.writer(newfile)
 
                 for row in csvreader:
-                    if row != cert_list[idx].get_row():
+                    if idx >= len(cert_list) or row != cert_list[idx].get_row():
                         csvwriter.writerow(row)
                     else:
                         idx += 1
 
+        # This should never happen...
         if idx != len(cert_list):
-            errors.LetsEncryptRevokerError("Did not find all cert_list items")
+            raise errors.LetsEncryptRevokerError(
+                "Did not find all cert_list items to remove from LIST")
 
         shutil.copy2(list_path2, self.list_path)
         os.remove(list_path2)
@@ -266,35 +274,22 @@ class Revoker(object):
                 self._get_backup(self.config.cert_key_backup, row[0], row[2]))
 
     @classmethod
-    def store_cert_key(cls, cert_path, key_path, config, encrypt=False):
+    def store_cert_key(cls, cert_path, key_path, config):
         """Store certificate key. (Used to allow quick revocation)
 
         :param str cert_path: Path to a certificate file.
-        :param key_path: Authorized key for certificate
-        :type key_path: :class:`letsencrypt.client.le_util.Key`
+        :param str key_path: Path to authorized key for certificate
+
         :ivar config: Configuration.
         :type config: :class:`~letsencrypt.client.interfaces.IConfig`
 
-        :param bool encrypt: Should the certificate key be encrypted?
-
-        :returns: True if key file was stored successfully, False otherwise.
-        :rtype: bool
-
         """
-        list_path = (config.cert_key_backup, "LIST")
-        le_util.make_or_verify_dir(config.cert_key_backup, 0o700)
-
-        if encrypt:
-            logging.error(
-                "Unfortunately securely storing the certificates/"
-                "keys is not yet available. Stay tuned for the "
-                "next update!")
-            return False
+        list_path = os.path.join(config.cert_key_backup, "LIST")
+        le_util.make_or_verify_dir(config.cert_key_backup, 0o700, os.geteuid())
 
         cls._catalog_files(
             config.cert_key_backup, cert_path, key_path, list_path)
 
-        return True
 
     @classmethod
     def _catalog_files(cls, backup_dir, cert_path, key_path, list_path):
@@ -319,11 +314,13 @@ class Revoker(object):
 
     @classmethod
     def _copy_files(cls, backup_dir, idx, cert_path, key_path):
+        """Copies the files into the backup dir appropriately."""
         shutil.copy2(cert_path, cls._get_backup(backup_dir, idx, cert_path))
         shutil.copy2(key_path, cls._get_backup(backup_dir, idx, key_path))
 
     @classmethod
     def _get_backup(cls, backup_dir, idx, orig_path):
+        """Returns the path to the backup."""
         return os.path.join(
             backup_dir, "{name}_{idx}".format(
                 name=os.path.basename(orig_path), idx=str(idx)))
@@ -336,9 +333,9 @@ class Cert(object):
     :type cert: :class:`M2Crypto.X509`
 
     :ivar int idx: convenience index used for listing
-    :ivar orig: (`str` original certificate filepath, `str` status)
-    :type orig: PathStatus
-    :ivar orig_key: named tuple with(`str` original auth key path, `str` status)
+    :ivar orig: (`str` path - original certificate, `str` status)
+    :type orig: :class:`PathStatus`
+    :ivar orig_key: (`str` path - original auth key, `str` status)
     :type orig_key: :class:`PathStatus`
     :ivar str backup_path: backup filepath of the certificate
     :ivar str backup_key_path: backup filepath of the authorized key
@@ -349,6 +346,9 @@ class Cert(object):
     """
     PathStatus = collections.namedtuple("PathStatus", "path status")
     """Convenience container to hold path and status info"""
+
+    DELETED_MSG = "This file has been moved or deleted"
+    CHANGED_MSG = "This file has changed"
 
     def __init__(self, cert_path):
         """Cert initialization
@@ -373,7 +373,7 @@ class Cert(object):
         self.installed = ["Unknown"]
 
     @classmethod
-    def fromrow(cls, row, backup_dir):
+    def fromrow(cls, row, backup_dir):  # pylint: disable=protected-access
         """Initialize Cert from a csv row."""
         idx = int(row[0])
         backup = Revoker._get_backup(backup_dir, idx, row[1])
@@ -381,10 +381,13 @@ class Cert(object):
 
         obj = cls(backup)
         obj.add_meta(idx, row[1], row[2], backup, backup_key)
+        return obj
 
     def get_row(self):
-        """Returns a list in CSV format."""
-        return [str(self.idx), self.orig, self.orig_key]
+        """Returns a list in CSV format. If meta data is available."""
+        if self.orig is not None and self.orig_key is not None:
+            return [str(self.idx), self.orig.path, self.orig_key.path]
+        return None
 
     def add_meta(self, idx, orig, orig_key, backup, backup_key):
         """Add meta data to cert
@@ -396,29 +399,27 @@ class Cert(object):
         :param str backup_key: backup key filepath
 
         """
-        deleted_msg = "This file has been moved or deleted"
-        changed_msg = "This file has changed"
         status = ""
         key_status = ""
 
         # Verify original cert path
         if not os.path.isfile(orig):
-            status = deleted_msg
+            status = Cert.DELETED_MSG
         else:
             o_cert = M2Crypto.X509.load_cert(orig)
             if self.get_fingerprint() != o_cert.get_fingerprint(md="sha1"):
-                status = changed_msg
+                status = Cert.CHANGED_MSG
 
         # Verify original key path
         if not os.path.isfile(orig_key):
-            key_status = deleted_msg
+            key_status = Cert.DELETED_MSG
         else:
             with open(orig_key, "r") as fd:
                 key_pem = fd.read()
             with open(backup_key, "r") as fd:
                 backup_key_pem = fd.read()
             if key_pem != backup_key_pem:
-                key_status = changed_msg
+                key_status = Cert.CHANGED_MSG
 
         self.idx = idx
         self.orig = Cert.PathStatus(orig, status)
@@ -488,4 +489,5 @@ class Cert(object):
         frame = "-" * (display_util.WIDTH - 4) + os.linesep
         return "{frame}{cert}{frame}".format(frame=frame, cert=str(self))
 
-
+    def __eq__(self, other):
+        return self.cert.as_der() == other.cert.as_der()

@@ -4,37 +4,33 @@ import os
 import zope.component
 
 from letsencrypt.client import interfaces
-from letsencrypt.client.display import display_util
+from letsencrypt.client.display import util as display_util
 
 util = zope.component.getUtility  # pylint: disable=invalid-name
 
 
 def choose_certs(certs):
-    """Display choose certificates menu.
+    """Choose a certificate from a menu.
 
     :param list certs: List of cert dicts.
 
-    :returns: cert to revoke
-    :rtype: :class:`letsencrypt.client.revoker.Cert`
+    :returns: selection (zero-based index)
+    :rtype: int
 
     """
-    code, tag = display_certs(certs)
+    while True:
+        code, selection = _display_certs(certs)
 
-    if code == display_util.OK:
-        cert = certs[tag]
-        if confirm_revocation(cert):
-            return cert
+        if code == display_util.OK:
+            if confirm_revocation(certs[selection]):
+                return selection
+        elif code == display_util.HELP:
+            more_info_cert(certs[selection])
         else:
-            choose_certs(certs)
-    elif code == display_util.HELP:
-        cert = certs[tag]
-        more_info_cert(cert)
-        choose_certs(certs)
-    else:
-        exit(0)
+            exit(0)
 
 
-def display_certs(certs):
+def _display_certs(certs):
     """Display the certificates in a menu for revocation.
 
     :param list certs: each is a :class:`letsencrypt.client.revoker.Cert`
@@ -53,15 +49,12 @@ def display_certs(certs):
             else "") for cert in certs
     ]
 
-    print list_choices
     code, tag = util(interfaces.IDisplay).menu(
         "Which certificates would you like to revoke?",
         list_choices, help_label="More Info", ok_label="Revoke",
         cancel_label="Exit")
-    if not tag:
-        tag = -1
 
-    return code, (int(tag) - 1)
+    return code, tag
 
 
 def confirm_revocation(cert):
@@ -78,7 +71,7 @@ def confirm_revocation(cert):
             "certificate:{0}".format(os.linesep))
     text += cert.pretty_print()
     text += "This action cannot be reversed!"
-    return display_util.OK == util(interfaces.IDisplay).yesno(text)
+    return util(interfaces.IDisplay).yesno(text)
 
 
 def more_info_cert(cert):

@@ -93,7 +93,10 @@ class NcursesDisplay(object):
                 help_button=help_button, help_label=help_label,
                 width=self.width, height=self.height)
 
-            return code, int(tag) - 1
+            if code == OK:
+                return code, int(tag) - 1
+
+            return code, -1
 
     def input(self, message):
         """Display an input box to the user.

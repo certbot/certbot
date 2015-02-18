@@ -5,7 +5,7 @@ import unittest
 import mock
 import zope.component
 
-from letsencrypt.client.display import display_util
+from letsencrypt.client.display import util as display_util
 
 
 class ChooseAuthenticatorTest(unittest.TestCase):

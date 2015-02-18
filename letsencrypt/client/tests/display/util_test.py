@@ -4,7 +4,7 @@ import unittest
 
 import mock
 
-from letsencrypt.client.display import display_util
+from letsencrypt.client.display import util as display_util
 
 
 class DisplayT(unittest.TestCase):
@@ -42,13 +42,13 @@ class NcursesDisplayTest(DisplayT):
         super(NcursesDisplayTest, self).setUp()
         self.displayer = display_util.NcursesDisplay()
 
-    @mock.patch("letsencrypt.client.display.display_util.dialog.Dialog.msgbox")
+    @mock.patch("letsencrypt.client.display.util.dialog.Dialog.msgbox")
     def test_notification(self, mock_msgbox):
         """Kind of worthless... one liner."""
         self.displayer.notification("message")
         self.assertEqual(mock_msgbox.call_count, 1)
 
-    @mock.patch("letsencrypt.client.display.display_util.dialog.Dialog.menu")
+    @mock.patch("letsencrypt.client.display.util.dialog.Dialog.menu")
     def test_menu_tag_and_desc(self, mock_menu):
         mock_menu.return_value = (display_util.OK, "First")
 
@@ -61,7 +61,7 @@ class NcursesDisplayTest(DisplayT):
 
         self.assertEqual(ret, (display_util.OK, 0))
 
-    @mock.patch("letsencrypt.client.display.display_util.dialog.Dialog.menu")
+    @mock.patch("letsencrypt.client.display.util.dialog.Dialog.menu")
     def test_menu_tag_and_desc_cancel(self, mock_menu):
         mock_menu.return_value = (display_util.CANCEL, "")
 
@@ -76,7 +76,7 @@ class NcursesDisplayTest(DisplayT):
 
         self.assertEqual(ret, (display_util.CANCEL, -1))
 
-    @mock.patch("letsencrypt.client.display.display_util.dialog.Dialog.menu")
+    @mock.patch("letsencrypt.client.display.util.dialog.Dialog.menu")
     def test_menu_desc_only(self, mock_menu):
         mock_menu.return_value = (display_util.OK, "1")
 
@@ -91,13 +91,21 @@ class NcursesDisplayTest(DisplayT):
 
         self.assertEqual(ret, (display_util.OK, 0))
 
-    @mock.patch("letsencrypt.client.display.display_util."
+    @mock.patch("letsencrypt.client.display.util.dialog.Dialog.menu")
+    def test_menu_desc_only_cancel(self, mock_menu):
+        mock_menu.return_value = (display_util.CANCEL, "")
+
+        ret = self.displayer.menu("Message", self.tags, help_label="More Info")
+
+        self.assertEqual(ret, (display_util.CANCEL, -1))
+
+    @mock.patch("letsencrypt.client.display.util."
                 "dialog.Dialog.inputbox")
     def test_input(self, mock_input):
         self.displayer.input("message")
         mock_input.assert_called_with("message")
 
-    @mock.patch("letsencrypt.client.display.display_util.dialog.Dialog.yesno")
+    @mock.patch("letsencrypt.client.display.util.dialog.Dialog.yesno")
     def test_yesno(self, mock_yesno):
         mock_yesno.return_value = display_util.OK
 
@@ -107,7 +115,7 @@ class NcursesDisplayTest(DisplayT):
             "message", display_util.HEIGHT, display_util.WIDTH,
             yes_label="Yes", no_label="No")
 
-    @mock.patch("letsencrypt.client.display.display_util."
+    @mock.patch("letsencrypt.client.display.util."
                 "dialog.Dialog.checklist")
     def test_checklist(self, mock_checklist):
         self.displayer.checklist("message", self.tags)
@@ -149,7 +157,7 @@ class FileOutputDisplayTest(DisplayT):
 
         self.assertTrue("message" in self.mock_stdout.write.call_args[0][0])
 
-    @mock.patch("letsencrypt.client.display.display_util."
+    @mock.patch("letsencrypt.client.display.util."
                 "FileDisplay._get_valid_int_ans")
     def test_menu(self, mock_ans):
         mock_ans.return_value = (display_util.OK, 1)
@@ -179,14 +187,14 @@ class FileOutputDisplayTest(DisplayT):
         with mock.patch("__builtin__.raw_input", return_value="a"):
             self.assertTrue(self.displayer.yesno("msg", yes_label="Agree"))
 
-    @mock.patch("letsencrypt.client.display.display_util.FileDisplay.input")
+    @mock.patch("letsencrypt.client.display.util.FileDisplay.input")
     def test_checklist_valid(self, mock_input):
         mock_input.return_value = (display_util.OK, "2 1")
         code, tag_list = self.displayer.checklist("msg", self.tags)
         self.assertEqual(
             (code, set(tag_list)), (display_util.OK, set(["tag1", "tag2"])))
 
-    @mock.patch("letsencrypt.client.display.display_util.FileDisplay.input")
+    @mock.patch("letsencrypt.client.display.util.FileDisplay.input")
     def test_checklist_miss_valid(self, mock_input):
         mock_input.side_effect = [
             (display_util.OK, "10"),
@@ -197,7 +205,7 @@ class FileOutputDisplayTest(DisplayT):
         ret = self.displayer.checklist("msg", self.tags)
         self.assertEqual(ret, (display_util.OK, ["tag1"]))
 
-    @mock.patch("letsencrypt.client.display.display_util.FileDisplay.input")
+    @mock.patch("letsencrypt.client.display.util.FileDisplay.input")
     def test_checklist_miss_quit(self, mock_input):
         mock_input.side_effect = [
             (display_util.OK, "10"),
@@ -288,7 +296,7 @@ class SeparateListInputTest(unittest.TestCase):
 
     @classmethod
     def _call(cls, input_):
-        from letsencrypt.client.display.display_util import separate_list_input
+        from letsencrypt.client.display.util import separate_list_input
         return separate_list_input(input_)
 
     def test_commas(self):
@@ -314,7 +322,7 @@ class SeparateListInputTest(unittest.TestCase):
 class PlaceParensTest(unittest.TestCase):
     @classmethod
     def _call(cls, label):  # pylint: disable=protected-access
-        from letsencrypt.client.display.display_util import _parens_around_char
+        from letsencrypt.client.display.util import _parens_around_char
         return _parens_around_char(label)
 
     def test_single_letter(self):

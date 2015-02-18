@@ -9,7 +9,7 @@ import zope.component
 from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
-from letsencrypt.client.display import display_util
+from letsencrypt.client.display import util as display_util
 
 
 class Reverter(object):
