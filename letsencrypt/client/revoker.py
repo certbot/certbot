@@ -373,7 +373,8 @@ class Cert(object):
         self.installed = ["Unknown"]
 
     @classmethod
-    def fromrow(cls, row, backup_dir):  # pylint: disable=protected-access
+    def fromrow(cls, row, backup_dir):
+        # pylint: disable=protected-access
         """Initialize Cert from a csv row."""
         idx = int(row[0])
         backup = Revoker._get_backup(backup_dir, idx, row[1])

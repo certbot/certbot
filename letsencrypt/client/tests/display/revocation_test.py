@@ -1,3 +1,4 @@
+"""Test :mod:`letsencrypt.client.display.revocation`."""
 import os
 import pkg_resources
 import sys

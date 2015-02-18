@@ -162,8 +162,3 @@ def make_ss_cert(key_str, domains, not_before=None,
     # print check_purpose(,0
     return m2_cert.as_pem()
 
-
-def b64_cert_to_pem(b64_der_cert):
-    """Convert JOSE Base-64 encoded DER cert to PEM."""
-    return M2Crypto.X509.load_cert_der_string(
-        le_util.jose_b64decode(b64_der_cert)).as_pem()

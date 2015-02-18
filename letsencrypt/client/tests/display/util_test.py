@@ -1,4 +1,4 @@
-"""Test the display utility."""
+"""Test :mod:`letsencrypt.client.display.util`."""
 import os
 import unittest
 

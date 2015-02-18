@@ -1,3 +1,4 @@
+"""Test :mod:`letsencrypt.client.revoker`."""
 import csv
 import os
 import pkg_resources
@@ -11,7 +12,8 @@ from letsencrypt.client import errors
 from letsencrypt.client import le_util
 
 
-class RevokerBase(unittest.TestCase):
+class RevokerBase(unittest.TestCase):  # pylint: disable=too-few-public-methods
+    """Base Class for Revoker Tests."""
     def setUp(self):
         self.paths, self.certs, self.key_path = create_revoker_certs()
 
@@ -21,6 +23,7 @@ class RevokerBase(unittest.TestCase):
         self.list_path = os.path.join(self.backup_dir, "LIST")
 
     def _store_certs(self):
+        # pylint: disable=protected-access
         from letsencrypt.client.revoker import Revoker
         Revoker.store_cert_key(self.paths[0], self.key_path, self.mock_config)
         Revoker.store_cert_key(self.paths[1], self.key_path, self.mock_config)
@@ -135,6 +138,7 @@ class RevokerTest(RevokerBase):
     @mock.patch("letsencrypt.client.revoker.Revoker._acme_revoke")
     @mock.patch("letsencrypt.client.revoker.logging")
     def test_safe_revoke_acme_fail(self, mock_log, mock_revoke, mock_display):
+        # pylint: disable=protected-access
         mock_revoke.side_effect = errors.LetsEncryptClientError
         mock_display().confirm_revocation.return_value = True
 
@@ -143,12 +147,14 @@ class RevokerTest(RevokerBase):
 
     @mock.patch("letsencrypt.client.revoker.Crypto.PublicKey.RSA.importKey")
     def test_acme_revoke_failure(self, mock_crypto):
+        # pylint: disable=protected-access
         mock_crypto.side_effect = IOError
         self.assertRaises(errors.LetsEncryptClientError,
                           self.revoker._acme_revoke,
                           self.certs[0])
 
     def test_remove_certs_from_list_bad_certs(self):
+        # pylint: disable=protected-access
         from letsencrypt.client.revoker import Cert
 
         new_cert = Cert(self.paths[0])
@@ -165,6 +171,7 @@ class RevokerTest(RevokerBase):
                           [new_cert])
 
     def _backups_exist(self, row):
+        # pylint: disable=protected-access
         cert_path, key_path = self.revoker._row_to_backup(row)
         return os.path.isfile(cert_path) and os.path.isfile(key_path)
 
@@ -191,10 +198,12 @@ class RevokerInstallerTest(RevokerBase):
         return Revoker(installer, self.mock_config)
 
     def test_no_installer_get_installed_locations(self):
+        # pylint: disable=protected-access
         revoker = self._get_revoker(None)
         self.assertEqual(revoker._get_installed_locations(), {})
 
     def test_get_installed_locations(self):
+        # pylint: disable=protected-access
         mock_installer = mock.MagicMock()
         mock_installer.get_all_certs_keys.return_value = self.certs_keys
 
@@ -216,6 +225,7 @@ class RevokerInstallerTest(RevokerBase):
 
         revoker = self._get_revoker(mock_installer)
 
+        # pylint: disable=protected-access
         self.assertEqual(revoker._get_installed_locations(), {})
 
 class RevokerClassMethodsTest(RevokerBase):
@@ -239,6 +249,7 @@ class RevokerClassMethodsTest(RevokerBase):
         rows = self._get_rows()
         i = 0
         for i, row in enumerate(rows):
+            # pylint: disable=protected-access
             self.assertTrue(os.path.isfile(
                 Revoker._get_backup(self.backup_dir, i, self.paths[i])))
             self.assertTrue(os.path.isfile(
@@ -256,10 +267,11 @@ class RevokerClassMethodsTest(RevokerBase):
         self.assertEqual(
             self._get_rows()[3], ["22", self.paths[0], self.key_path])
 
+        # pylint: disable=protected-access
         self.assertTrue(os.path.isfile(
-                Revoker._get_backup(self.backup_dir, 22, self.paths[0])))
+            Revoker._get_backup(self.backup_dir, 22, self.paths[0])))
         self.assertTrue(os.path.isfile(
-                Revoker._get_backup(self.backup_dir, 22, self.key_path)))
+            Revoker._get_backup(self.backup_dir, 22, self.key_path)))
 
 
 class CertTest(unittest.TestCase):
@@ -303,6 +315,7 @@ class CertTest(unittest.TestCase):
         self.assertTrue(self.certs[1].pretty_print())
 
 def create_revoker_certs():
+    """Create a few revoker.Cert objects."""
     from letsencrypt.client.revoker import Cert
 
     base_package = "letsencrypt.client.tests"

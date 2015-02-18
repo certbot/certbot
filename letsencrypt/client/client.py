@@ -473,7 +473,7 @@ def revoke(config, no_confirm, cert, authkey):
     elif authkey is not None:
         revoc.revoke_from_key(le_util.Key(authkey[0], authkey[1]))
     else:
-        revoc.display_menu()
+        revoc.revoke_from_menu()
 
 
 def view_config_changes(config):
