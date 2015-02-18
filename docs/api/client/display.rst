@@ -4,10 +4,10 @@
 .. automodule:: letsencrypt.client.display
    :members:
 
-:mod:`letsencrypt.client.display.display_util`
-==============================================
+:mod:`letsencrypt.client.display.util`
+======================================
 
-.. automodule:: letsencrypt.client.display.display_util
+.. automodule:: letsencrypt.client.display.util
    :members:
 
 :mod:`letsencrypt.client.display.ops`
