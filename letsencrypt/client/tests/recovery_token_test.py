@@ -42,6 +42,11 @@ class RecoveryTokenTest(unittest.TestCase):
         # Shouldn't throw an error
         self.rec_token.cleanup(challenge_util.RecTokenChall("example4.com"))
 
+        # SHOULD throw an error (OSError other than nonexistent file)
+        self.assertRaises(
+            OSError, self.rec_token.cleanup,
+            challenge_util.RecTokenChall("a"+"r"*10000+".com"))
+
     def test_perform_stored(self):
         self.rec_token.store_token("example4.com", 444)
         response = self.rec_token.perform(
