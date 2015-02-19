@@ -11,24 +11,38 @@ from letsencrypt.client.display import util as display_util
 util = zope.component.getUtility  # pylint: disable=invalid-name
 
 
-def choose_authenticator(auths):
+def choose_authenticator(auths, errs):
     """Allow the user to choose their authenticator.
 
-    :param list auths: Where each is a
-        :class:`letsencrypt.client.interfaces.IAuthenticator` object
+    :param list auths: Where each is a tuple of the form
+        ('description', 'IAuthenticator') where IAuthenticator is a
+        :class:`letsencrypt.client.interfaces.IAuthenticator` object or class
+    :param dict errs: Mapping IAuthenticator objects to error messages
 
     :returns: Authenticator selected
     :rtype: :class:`letsencrypt.client.interfaces.IAuthenticator`
 
     """
-    code, index = util(interfaces.IDisplay).menu(
-        "How would you like to authenticate with the Let's Encrypt CA?",
-        [str(auth) for auth in auths])
+    descs = [auth[0] for auth in auths]
+    iauths = [auth[1] for auth in auths]
 
-    if code == display_util.OK:
-        return auths[index]
-    else:
-        sys.exit(0)
+    while True:
+        code, index = util(interfaces.IDisplay).menu(
+            "How would you like to authenticate with the Let's Encrypt CA?",
+            descs, help_label="More Info")
+
+        if code == display_util.OK:
+            return iauths[index]
+        elif code == display_util.HELP:
+            if iauths[index] in errs:
+                msg = "Reported Error: %s" % errs[iauths[index]]
+            else:
+                msg = iauths[index].more_info()
+            util(interfaces.IDisplay).notification(
+                msg, height=display_util.HEIGHT)
+        else:
+            sys.exit(0)
+
 
 def choose_names(installer):
     """Display screen to select domains to validate.
@@ -116,7 +130,7 @@ def _gen_https_names(domains):
         return "https://{dom[0]} and https://{dom[1]}".format(dom=domains)
     elif len(domains) > 2:
         return "{0}{1}{2}".format(
-            ", ".join("https://" + dom for dom in domains[:-1]),
+            ", ".join("https://%s" % dom for dom in domains[:-1]),
             ", and https://",
             domains[-1])
 

@@ -19,6 +19,7 @@ from letsencrypt.client import le_util
 from letsencrypt.client import network
 from letsencrypt.client import reverter
 from letsencrypt.client import revoker
+from letsencrypt.client import standalone_authenticator
 
 from letsencrypt.client.apache import configurator
 from letsencrypt.client.display import ops
@@ -102,7 +103,8 @@ class Client(object):
         cert_file, chain_file = self.save_certificate(
             certificate_msg, self.config.cert_path, self.config.chain_path)
 
-        revoker.Revoker.store_cert_key(cert_file, self.authkey.file, False)
+        revoker.Revoker.store_cert_key(
+            cert_file, self.authkey.file, self.config)
 
         return cert_file, chain_file
 
@@ -350,16 +352,53 @@ def determine_authenticator(config):
     :param config: Configuration.
     :type config: :class:`letsencrypt.client.interfaces.IConfig`
 
+    :returns: Valid Authenticator object or None
+
     """
-    auths = []
-    try:
-        auths.append(configurator.ApacheConfigurator(config))
-    except errors.LetsEncryptNoInstallationError:
-        logging.info("Unable to determine a way to authenticate the server")
-    if len(auths) > 1:
-        return ops.choose_authenticator(auths)
-    elif len(auths) == 1:
-        return auths[0]
+    # list of (Description, Known Authenticator classes, init arguments)
+    all_auths = [
+        ("Apache Web Server", configurator.ApacheConfigurator, config),
+        ("Standalone Authenticator",
+         standalone_authenticator.StandaloneAuthenticator),
+    ]
+
+    # Available Authenticator objects
+    avail_auths = []
+    # Error messages for misconfigured authenticators
+    errs = {}
+
+    for pot_auth in all_auths:
+        try:
+            # I do not think this a great solution but haven't come up with
+            # anything better yet...
+            if len(pot_auth) == 2:
+                # pylint: disable=no-value-for-parameter
+                avail_auths.append((pot_auth[0], pot_auth[1]()))
+            elif len(pot_auth) == 3:
+                avail_auths.append((pot_auth[0], pot_auth[1](pot_auth[2])))
+            else:
+                errors.LetsEncryptClientError(
+                    "IAuthenticator: Number of parameters not supported")
+        except errors.LetsEncryptMisconfigurationError as err:
+            errs[pot_auth[1]] = err
+            avail_auths.append((pot_auth[0], pot_auth[1]))
+        except errors.LetsEncryptNoInstallationError:
+            pass
+
+    if len(avail_auths) > 1:
+        auth = ops.choose_authenticator(avail_auths, errs)
+    elif len(avail_auths) == 1:
+        auth = avail_auths[0]
+    else:
+        auth = None
+
+    if auth in errs:
+        logging.error("Please fix the configuration for the Authenticator. "
+                      "The following error message was received: "
+                      "%s", errs[auth])
+        sys.exit(1)
+
+    return auth
 
 
 def determine_installer(config):

@@ -542,5 +542,17 @@ class CleanupTest(unittest.TestCase):
         self.assertRaises(ValueError, self.authenticator.cleanup, [chall])
 
 
+class MoreInfoTest(unittest.TestCase):
+    """Tests for more_info() method. (trivially)"""
+    def setUp(self):
+        from letsencrypt.client.standalone_authenticator import \
+            StandaloneAuthenticator
+        self.authenticator = StandaloneAuthenticator()
+
+    def test_chall_pref(self):
+        """Make sure exceptions aren't raised."""
+        self.authenticator.more_info()
+
+
 if __name__ == "__main__":
     unittest.main()

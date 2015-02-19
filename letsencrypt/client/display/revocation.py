@@ -20,10 +20,8 @@ def choose_certs(certs):
     """
     while True:
         code, selection = _display_certs(certs)
-
         if code == display_util.OK:
-            if confirm_revocation(certs[selection]):
-                return selection
+            return selection
         elif code == display_util.HELP:
             more_info_cert(certs[selection])
         else:

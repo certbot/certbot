@@ -149,14 +149,14 @@ class StandaloneAuthenticator(object):
             if self.subproc_state == "ready":
                 return True
             elif self.subproc_state == "inuse":
-                display.generic_notification(
+                display.notification(
                     "Could not bind TCP port {0} because it is already in "
                     "use by another process on this system (such as a web "
                     "server). Please stop the program in question and then "
                     "try again.".format(port))
                 return False
             elif self.subproc_state == "cantbind":
-                display.generic_notification(
+                display.notification(
                     "Could not bind TCP port {0} because you don't have "
                     "the appropriate permissions (for example, you "
                     "aren't running this program as "
@@ -164,7 +164,7 @@ class StandaloneAuthenticator(object):
                 return False
             time.sleep(0.1)
 
-        display.generic_notification(
+        display.notification(
             "Subprocess unexpectedly timed out while trying to bind TCP "
             "port {0}.".format(port))
 
@@ -291,7 +291,7 @@ class StandaloneAuthenticator(object):
             if listeners:
                 pid, name = listeners[0].split("/")
                 display = zope.component.getUtility(interfaces.IDisplay)
-                display.generic_notification(
+                display.notification(
                     "The program {0} (process ID {1}) is already listening "
                     "on TCP port {2}. This will prevent us from binding to "
                     "that port. Please stop the {0} program temporarily "
@@ -406,3 +406,12 @@ class StandaloneAuthenticator(object):
             # TODO: restore original signal handlers in parent process
             #       by resetting their actions to SIG_DFL
             # print "TCP listener subprocess has been told to shut down"
+
+    def more_info(self):  # pylint: disable=no-self-use
+        """Human-readable string that describes the Authenticator."""
+        return ("The Standalone Authenticator uses PyOpenSSL to listen "
+                "on port 443 and perform DVSNI challenges. Once a certificate"
+                "is attained, it will be saved in the "
+                "(TODO) current working directory.{0}{0}"
+                "Port 443 must be open in order to use the "
+                "Standalone Authenticator.")

@@ -93,10 +93,10 @@ class NcursesDisplay(object):
                 help_button=help_button, help_label=help_label,
                 width=self.width, height=self.height)
 
-            if code == OK:
-                return code, int(tag) - 1
+            if code == CANCEL:
+                return code, -1
 
-            return code, -1
+            return code, int(tag) - 1
 
     def input(self, message):
         """Display an input box to the user.
@@ -108,7 +108,7 @@ class NcursesDisplay(object):
             `string` - input entered by the user
 
         """
-        return self.dialog.inputbox(message)
+        return self.dialog.inputbox(message, width=self.width)
 
     def yesno(self, message, yes_label="Yes", no_label="No"):
         """Display a Yes/No dialog box
@@ -232,12 +232,19 @@ class FileDisplay(object):
         self.outfile.write("{0}{frame}{msg}{0}{frame}".format(
             os.linesep, frame=side_frame, msg=message))
 
-        ans = raw_input("{yes}/{no}: ".format(
-            yes=_parens_around_char(yes_label),
-            no=_parens_around_char(no_label)))
+        while True:
+            ans = raw_input("{yes}/{no}: ".format(
+                yes=_parens_around_char(yes_label),
+                no=_parens_around_char(no_label)))
 
-        return (ans.startswith(yes_label[0].lower()) or
-                ans.startswith(yes_label[0].upper()))
+            # Couldn't get pylint indentation right with elif
+            # elif doesn't matter in this situation
+            if (ans.startswith(yes_label[0].lower()) or
+                    ans.startswith(yes_label[0].upper())):
+                return True
+            if (ans.startswith(no_label[0].lower()) or
+                    ans.startswith(no_label[0].upper())):
+                return False
 
     def checklist(self, message, tags):
         """Display a checklist.
@@ -275,7 +282,7 @@ class FileDisplay(object):
         :param list indices: input
         :param list tags: Original tags of the checklist
 
-        :returns: tags the user selected
+        :returns: valid tags the user selected
         :rtype: :class:`list` of :class:`str`
 
         """
@@ -387,7 +394,8 @@ def separate_list_input(input_):
 
     """
     no_commas = input_.replace(",", " ")
-    return [string for string in no_commas.split()]
+    # Each string is naturally unicode, this causes problems with M2Crypto SANs
+    return [str(string) for string in no_commas.split()]
 
 def _parens_around_char(label):
     """Place parens around first character of label.

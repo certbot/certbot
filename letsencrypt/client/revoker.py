@@ -105,18 +105,18 @@ class Revoker(object):
             if certs:
                 selection = revocation.choose_certs(certs)
 
-                self._safe_revoke([certs[selection]])
-                # This is safer than using remove as Revoker.Certs only check
-                # the DER value of the cert. There could potentially be multiple
-                # backup certs with the same value.
-                del certs[selection]
+                revoked_certs = self._safe_revoke([certs[selection]])
+                # Since we are currently only revoking one cert at a time...
+                if revoked_certs:
+                    # This is safer than using remove as Revoker.Certs only
+                    # check the DER value of the cert. There could potentially
+                    # be multiple backup certs with the same value.
+                    del certs[selection]
             else:
                 logging.info(
                     "There are not any trusted Let's Encrypt "
                     "certificates for this server.")
                 return
-
-
 
     def _populate_saved_certs(self, csha1_vhlist):
         # pylint: disable=no-self-use
@@ -174,6 +174,9 @@ class Revoker(object):
         :param certs: certs intended to be revoked
         :type certs: :class:`list` of :class:`letsencrypt.client.revoker.Cert`
 
+        :returns: certs successfully revoked
+        :rtype: :class:`list` of :class:`letsencrypt.client.revoker.Cert`
+
         """
         success_list = []
         try:
@@ -191,6 +194,8 @@ class Revoker(object):
         finally:
             if success_list:
                 self._remove_certs_keys(success_list)
+
+        return success_list
 
     def _acme_revoke(self, cert):
         """Revoke the certificate with the ACME server.
@@ -290,9 +295,9 @@ class Revoker(object):
         cls._catalog_files(
             config.cert_key_backup, cert_path, key_path, list_path)
 
-
     @classmethod
     def _catalog_files(cls, backup_dir, cert_path, key_path, list_path):
+        idx = 0
         if os.path.isfile(list_path):
             with open(list_path, "r+b") as csvfile:
                 csvreader = csv.reader(csvfile)
@@ -309,8 +314,8 @@ class Revoker(object):
             with open(list_path, "wb") as csvfile:
                 csvwriter = csv.writer(csvfile)
                 # You must move the files before appending the row
-                cls._copy_files(backup_dir, "0", cert_path, key_path)
-                csvwriter.writerow(["0", cert_path, key_path])
+                cls._copy_files(backup_dir, idx, cert_path, key_path)
+                csvwriter.writerow([str(idx), cert_path, key_path])
 
     @classmethod
     def _copy_files(cls, backup_dir, idx, cert_path, key_path):
@@ -481,8 +486,21 @@ class Cert(object):
         text.append("Not Before: %s" % str(self.get_not_before()))
         text.append("Not After: %s" % str(self.get_not_after()))
         text.append("Serial Number: %s" % self.get_serial())
-        text.append("SHA1: %s" % self.get_fingerprint())
+        text.append("SHA1: %s%s" % (self.get_fingerprint(), os.linesep))
         text.append("Installed: %s" % self.get_installed_msg())
+
+        if self.orig is not None:
+            if self.orig.status == "":
+                text.append("Path: %s" % self.orig.path)
+            else:
+                text.append("Orig Path: %s (%s)" % self.orig)
+        if self.orig_key is not None:
+            if self.orig_key.status == "":
+                text.append("Auth Key Path: %s" % self.orig_key.path)
+            else:
+                text.append("Orig Auth Key Path: %s (%s)" % self.orig_key)
+
+        text.append("")
         return os.linesep.join(text)
 
     def pretty_print(self):

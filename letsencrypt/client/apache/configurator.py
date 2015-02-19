@@ -942,9 +942,15 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         return tuple([int(i) for i in matches[0].split('.')])
 
-    def __str__(self):
-        return "Apache version %s" % ".".join(self.get_version())
-
+    def more_info(self):
+        """Human-readable string to help understand the module"""
+        return (
+            "Configures Apache to authenticate and install HTTPS.{0}"
+            "Server root: {root}{0}"
+            "Version: {version}".format(
+                os.linesep, root=self.parser.loc["root"],
+                version=".".join(str(i) for i in self.version))
+        )
 
     ###########################################################################
     # Challenges Section

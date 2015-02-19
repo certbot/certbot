@@ -16,7 +16,6 @@ import letsencrypt
 
 from letsencrypt.client import configuration
 from letsencrypt.client import client
-from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
 from letsencrypt.client import log
@@ -116,12 +115,14 @@ def main():  # pylint: disable=too-many-branches
         displayer = display_util.NcursesDisplay()
     else:
         displayer = display_util.FileDisplay(sys.stdout)
+
     zope.component.provideUtility(displayer)
 
     if args.view_config_changes:
         client.view_config_changes(config)
         sys.exit()
 
+    # TODO: if revoke, rev_cert...
     if args.revoke:
         client.revoke(config, args.no_confirm, args.rev_cert, args.rev_key)
         sys.exit()
@@ -135,32 +136,30 @@ def main():  # pylint: disable=too-many-branches
 
     # Make sure we actually get an installer that is functioning properly
     # before we begin to try to use it.
-    try:
-        auth = client.determine_authenticator(config)
-    except errors.LetsEncryptMisconfigurationError as err:
-        logging.fatal("Please fix your configuration before proceeding.%s"
-                      "The Authenticator exited with the following message: "
-                      "%s", os.linesep, err)
-        sys.exit(1)
+    auth = client.determine_authenticator(config)
+    if auth is None:
+        logging.critical("Unable to find a way to authenticate the server.")
+        sys.exit(4)
 
     # Use the same object if possible
     if interfaces.IInstaller.providedBy(auth):  # pylint: disable=no-member
         installer = auth
     else:
-        installer = client.determine_installer(config)
+        # This is simple and avoids confusion right now.
+        installer = None
 
     doms = ops.choose_names(installer) if args.domains is None else args.domains
 
     # Prepare for init of Client
-    if args.privkey is None:
-        privkey = client.init_key(args.rsa_key_size, config.key_dir)
+    if args.authkey is None:
+        authkey = client.init_key(args.rsa_key_size, config.key_dir)
     else:
-        privkey = le_util.Key(args.authkey[0], args.authkey[1])
+        authkey = le_util.Key(args.authkey[0], args.authkey[1])
 
-    acme = client.Client(config, privkey, auth, installer)
+    acme = client.Client(config, authkey, auth, installer)
 
     # Validate the key and csr
-    client.validate_key_csr(privkey)
+    client.validate_key_csr(authkey)
 
     # This more closely mimics the capabilities of the CLI
     # It should be possible for reconfig only, install-only, no-install
@@ -170,7 +169,7 @@ def main():  # pylint: disable=too-many-branches
     if auth is not None:
         cert_file, chain_file = acme.obtain_certificate(doms)
     if installer is not None and cert_file is not None:
-        acme.deploy_certificate(doms, privkey, cert_file, chain_file)
+        acme.deploy_certificate(doms, authkey, cert_file, chain_file)
     if installer is not None:
         acme.enhance_config(doms, args.redirect)
 

@@ -29,8 +29,7 @@ class ChooseCertsTest(unittest.TestCase):
         return choose_certs(certs)
 
     @mock.patch("letsencrypt.client.display.revocation.util")
-    def test_confirm_revocation(self, mock_util):
-        mock_util().yesno.return_value = True
+    def test_revocation(self, mock_util):
         mock_util().menu.return_value = (display_util.OK, 0)
 
         choice = self._call(self.certs)
@@ -38,12 +37,8 @@ class ChooseCertsTest(unittest.TestCase):
         self.assertTrue(self.certs[choice] == self.cert0)
 
     @mock.patch("letsencrypt.client.display.revocation.util")
-    def test_confirm_cancel(self, mock_util):
-        mock_util().yesno.return_value = False
-        mock_util().menu.side_effect = [
-            (display_util.OK, 0),
-            (display_util.CANCEL, -1)
-        ]
+    def test_cancel(self, mock_util):
+        mock_util().menu.return_value = (display_util.CANCEL, -1)
 
         self.assertRaises(SystemExit, self._call, self.certs)
 
@@ -53,7 +48,6 @@ class ChooseCertsTest(unittest.TestCase):
             (display_util.HELP, 1),
             (display_util.OK, 1),
         ]
-        mock_util().yesno.return_value = True
 
         choice = self._call(self.certs)
 
@@ -78,6 +72,26 @@ class SuccessRevocationTest(unittest.TestCase):
         self._call(self.cert)
 
         self.assertEqual(mock_util().notification.call_count, 1)
+
+
+class ConfirmRevocationTest(unittest.TestCase):
+    def setUp(self):
+        from letsencrypt.client.revoker import Cert
+        self.cert = Cert(pkg_resources.resource_filename(
+            "letsencrypt.client.tests", os.path.join("testdata", "cert.pem")))
+
+    @classmethod
+    def _call(cls, cert):
+        from letsencrypt.client.display.revocation import confirm_revocation
+        return confirm_revocation(cert)
+
+    @mock.patch("letsencrypt.client.display.revocation.util")
+    def test_confirm_revocation(self, mock_util):
+        mock_util().yesno.return_value = True
+        self.assertTrue(self._call(self.cert))
+
+        mock_util().yesno.return_value = False
+        self.assertFalse(self._call(self.cert))
 
 if __name__ == "__main__":
     unittest.main()

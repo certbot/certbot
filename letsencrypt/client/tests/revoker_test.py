@@ -309,10 +309,20 @@ class CertTest(unittest.TestCase):
         self.assertEqual(self.certs[0].orig.status, "")
         self.assertEqual(self.certs[0].orig_key.status, "")
 
-    def test_print(self):
-        """Just make sure there aren't any errors."""
+    def test_print_meta(self):
+        """Just make sure there aren't any major errors."""
+        self.certs[0].add_meta(
+            0, self.paths[0], self.key_path, self.paths[0], self.key_path)
+        # Changed path and deleted file
+        self.certs[1].add_meta(
+            1, self.paths[0], "/not/a/path", self.paths[1], self.key_path)
         self.assertTrue(self.certs[0].pretty_print())
         self.assertTrue(self.certs[1].pretty_print())
+
+    def test_print_no_meta(self):
+        self.assertTrue(self.certs[0].pretty_print())
+        self.assertTrue(self.certs[1].pretty_print())
+
 
 def create_revoker_certs():
     """Create a few revoker.Cert objects."""

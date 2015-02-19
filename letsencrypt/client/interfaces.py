@@ -57,6 +57,13 @@ class IAuthenticator(zope.interface.Interface):
 
         """
 
+    def more_info(self):
+        """Human-readable string to help the user.
+
+        Should describe the steps taken and any relevant info to help the user
+        decide which Authenticator to use.
+
+        """
 
 class IConfig(zope.interface.Interface):
     """Let's Encrypt user-supplied configuration.

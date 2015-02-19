@@ -92,6 +92,14 @@ class NcursesDisplayTest(DisplayT):
         self.assertEqual(ret, (display_util.OK, 0))
 
     @mock.patch("letsencrypt.client.display.util.dialog.Dialog.menu")
+    def test_menu_desc_only_help(self, mock_menu):
+        mock_menu.return_value = (display_util.HELP, "2")
+
+        ret = self.displayer.menu("Message", self.tags, help_label="More Info")
+
+        self.assertEqual(ret, (display_util.HELP, 1))
+
+    @mock.patch("letsencrypt.client.display.util.dialog.Dialog.menu")
     def test_menu_desc_only_cancel(self, mock_menu):
         mock_menu.return_value = (display_util.CANCEL, "")
 
@@ -103,7 +111,7 @@ class NcursesDisplayTest(DisplayT):
                 "dialog.Dialog.inputbox")
     def test_input(self, mock_input):
         self.displayer.input("message")
-        mock_input.assert_called_with("message")
+        self.assertEqual(mock_input.call_count, 1)
 
     @mock.patch("letsencrypt.client.display.util.dialog.Dialog.yesno")
     def test_yesno(self, mock_yesno):
@@ -182,8 +190,13 @@ class FileOutputDisplayTest(DisplayT):
             self.assertTrue(self.displayer.yesno("message"))
         with mock.patch("__builtin__.raw_input", return_value="y"):
             self.assertTrue(self.displayer.yesno("message"))
-        with mock.patch("__builtin__.raw_input", return_value="cancel"):
+        with mock.patch("__builtin__.raw_input", side_effect=["maybe", "y"]):
+            self.assertTrue(self.displayer.yesno("message"))
+        with mock.patch("__builtin__.raw_input", return_value="No"):
             self.assertFalse(self.displayer.yesno("message"))
+        with mock.patch("__builtin__.raw_input", side_effect=["cancel", "n"]):
+            self.assertFalse(self.displayer.yesno("message"))
+
         with mock.patch("__builtin__.raw_input", return_value="a"):
             self.assertTrue(self.displayer.yesno("msg", yes_label="Agree"))
 
