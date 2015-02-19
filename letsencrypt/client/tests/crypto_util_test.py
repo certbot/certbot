@@ -1,5 +1,6 @@
 """Tests for letsencrypt.client.crypto_util."""
 import datetime
+import mock
 import os
 import pkg_resources
 import unittest
@@ -131,6 +132,72 @@ class GetCertInfoTest(unittest.TestCase):
             'fingerprint': '62F7110431B8E8F55905DBE5592518F9634AC50A',
         })
         self._call('cert-san.pem')
+
+
+class GetSansFromCsrTest(unittest.TestCase):
+    """Tests for letsencrypt.client.crypto_util.get_sans_from_csr."""
+    def test_extract_one_san(self):
+        from letsencrypt.client.crypto_util import get_sans_from_csr
+        csr = pkg_resources.resource_string(
+            __name__, os.path.join('testdata', 'csr.pem'))
+        result = get_sans_from_csr(csr)
+        self.assertEqual(result, ['example.com'])
+
+    def test_extract_two_sans(self):
+        from letsencrypt.client.crypto_util import get_sans_from_csr
+        csr = pkg_resources.resource_string(
+            __name__, os.path.join('testdata', 'csr-san.pem'))
+        result = get_sans_from_csr(csr)
+        self.assertEqual(result, ['example.com', 'www.example.com'])
+
+    def test_extract_six_sans(self):
+        from letsencrypt.client.crypto_util import get_sans_from_csr
+        csr = pkg_resources.resource_string(
+            __name__, os.path.join('testdata', 'csr-6sans.pem'))
+        result = get_sans_from_csr(csr)
+        self.assertEqual(
+            result, ["example.com", "example.org", "example.net",
+                     "example.info", "subdomain.example.com",
+                     "other.subdomain.example.com"])
+
+    def test_parse_non_csr(self):
+        from M2Crypto.X509 import X509Error
+        from letsencrypt.client.crypto_util import get_sans_from_csr
+        self.assertRaises(X509Error, get_sans_from_csr, "hello there")
+
+    def test_parse_no_sans(self):
+        from letsencrypt.client.crypto_util import get_sans_from_csr
+        csr = pkg_resources.resource_string(
+            __name__, os.path.join('testdata', 'csr-nosans.pem'))
+        self.assertRaises(ValueError, get_sans_from_csr, csr)
+
+    @mock.patch("M2Crypto.X509.load_request_string")
+    def test_parse_weird_m2crypto_output(self, mock_lrs):
+        # It's not clear how to reach this exception with invalid input,
+        # because M2Crypto is likely to raise X509Error rather than
+        # returning invalid output, but we can test the possibility with
+        # mock.
+        mock_lrs.as_text.return_value = "Something other than OpenSSL output"
+        from letsencrypt.client.crypto_util import get_sans_from_csr
+        self.assertRaises(ValueError, get_sans_from_csr, "input")
+
+class MakeCSRTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
+    """Tests for letsencrypt.client.crypto_util.make_csr."""
+    def test_make_csr(self):
+        from letsencrypt.client.crypto_util import make_csr, get_sans_from_csr
+        result = make_csr(RSA512_KEY, ["example.com", "foo.example.com"])[0]
+        self.assertEqual(
+            get_sans_from_csr(result), ["example.com", "foo.example.com"])
+        req = M2Crypto.X509.load_request_string(result)
+        subject = req.get_subject().as_text()
+        modulus = req.get_pubkey().get_modulus()
+        self.assertEqual(
+            subject, "C=US, ST=Michigan, L=Ann Arbor, O=EFF, OU=University"
+                     " of Michigan, CN=example.com")
+        self.assertEqual(
+            modulus, "F4B61171513736BFAA95E79C11C5FC2705439E3786D57EEE72C0"
+                     "9AB2EB993347B4F5C998B94CF12243233BFF71E0055CBD75D15CF"
+                     "115F8BCD65A47E44E5CD133")
 
 
 if __name__ == '__main__':

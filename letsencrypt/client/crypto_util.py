@@ -1,4 +1,5 @@
 """Let's Encrypt client crypto utility functions"""
+import re
 import time
 
 import Crypto.Hash.SHA256
@@ -189,3 +190,43 @@ def get_cert_info(filename):
         "serial": cert.get_serial_number(),
         "pub_key": "RSA " + str(cert.get_pubkey().size() * 8),
     }
+
+
+def get_sans_from_csr(csr):
+    """Get list of Subject Alternative Names from signing request.
+
+    :param str csr: Certificate Signing Request in PEM format
+
+    :returns: List of referenced subject alternative names
+    :rtype: list
+    """
+    # TODO: This is a temporary solution involving parsing the .as_text()
+    #       output because there doesn't seem to be a built-in feature in
+    #       any Python cryptography module that performs this function.
+    #       In the future we should try to replace this with a more direct
+    #       use of relevant OpenSSL or other X509-parsing APIs.
+    req = M2Crypto.X509.load_request_string(csr)
+    text = req.as_text().split("\n")
+    if len(text) < 2 or text[0] != "Certificate Request:" or \
+                        text[1] != "    Data:":
+        raise ValueError("Unable to parse CSR")
+    text = text[2:]
+    while text and text[0] != "        Attributes:":
+        text = text[1:]
+    while text and text[0] != "        Requested Extensions:":
+        text = text[1:]
+    while text and text[0] != "            X509v3 Subject Alternative Name: ":
+        text = text[1:]
+    text = text[1:]
+    if not text:
+        raise ValueError("Unable to parse CSR")
+    # XXX: This might break for non-ASCII hostnames and for non-DNS
+    #      names in SANs.  There is also a parser safety concern about
+    #      whether the CSR's contents are interpreted in the same way
+    #      by this code and by any other code that might interpret the
+    #      CSR for a difference purpose.
+    # All DNS names other than the last one
+    matches = re.findall(r"(?:DNS:([\w.]+), )", text[0])
+    # The last DNS name
+    matches.append(re.search(r"(?:DNS:([\w.]+))$", text[0]).groups()[0])
+    return matches
