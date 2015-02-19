@@ -4,8 +4,13 @@ before_install: >
   travis_retry sudo apt-get install python python-setuptools
   python-virtualenv python-dev gcc swig dialog libaugeas0 libssl-dev
 
-install: travis_retry python setup.py dev  # installs tox
+install:
+  - travis_retry python setup.py dev  # installs tox
+  - travis_retry pip install coveralls
+
 script: travis_retry tox
+
+after_success: coveralls
 
 env:
   - TOXENV=py26
