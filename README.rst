@@ -25,11 +25,9 @@ All you need to do is:
 **Encrypt ALL the things!**
 
 
-.. image:: https://travis-ci.org/letsencrypt/lets-encrypt-preview.svg?branch=master
-    :target: https://travis-ci.org/letsencrypt/lets-encrypt-preview
+[![Build Status](https://travis-ci.org/letsencrypt/lets-encrypt-preview.svg)](https://travis-ci.org/letsencrypt/lets-encrypt-preview)
 
-.. image:: https://coveralls.io/repos/letsencrypt/lets-encrypt-preview/badge.png?branch=master
-    :target: https://coveralls.io/r/letsencrypt/lets-encrypt-preview
+[![Coverage Status](https://coveralls.io/repos/letsencrypt/lets-encrypt-preview/badge.svg)](https://coveralls.io/r/letsencrypt/lets-encrypt-preview)
 
 .. _watch demo video: https://www.youtube.com/watch?v=Gas_sSB-5SU
 
