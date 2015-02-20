@@ -275,7 +275,7 @@ class StandaloneAuthenticator(object):
         listeners = [conn.pid for conn in psutil.net_connections()
                      if conn.status == 'LISTEN' and
                      conn.type == socket.SOCK_STREAM and
-                     (conn.laddr[1] == port)]
+                     conn.laddr[1] == port]
         try:
             if listeners and listeners[0] is not None:
                 # conn.pid may be None if the current process doesn't have
