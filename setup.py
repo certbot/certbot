@@ -26,7 +26,7 @@ install_requires = [
     'ConfArgParse',
     'jsonschema',
     'mock',
-    'psutil',
+    'psutil>2.1.0',  # net_connections introduced in 2.1.0
     'pycrypto',
     'PyOpenSSL',
     'python-augeas',

@@ -1,6 +1,7 @@
 """Tests for letsencrypt.client.standalone_authenticator."""
 import os
 import pkg_resources
+import psutil
 import signal
 import socket
 import unittest
@@ -197,7 +198,6 @@ class AlreadyListeningTest(unittest.TestCase):
         # incompatibility in which, for some reason, no process name can be
         # found to match the identified listening PID.
         from psutil._common import sconn
-        from psutil import NoSuchProcess
         conns = [
             sconn(fd=-1, family=2, type=1, laddr=('0.0.0.0', 30),
                   raddr=(), status='LISTEN', pid=None),
@@ -208,7 +208,7 @@ class AlreadyListeningTest(unittest.TestCase):
             sconn(fd=3, family=2, type=1, laddr=('0.0.0.0', 17),
                   raddr=(), status='LISTEN', pid=4416)]
         mock_net.return_value = conns
-        mock_process.side_effect = NoSuchProcess("No such PID")
+        mock_process.side_effect = psutil.NoSuchProcess("No such PID")
         # We simulate being unable to find the process name of PID 4416,
         # which results in returning False.
         self.assertFalse(self.authenticator.already_listening(17))
