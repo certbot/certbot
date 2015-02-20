@@ -140,30 +140,28 @@ class GetSansFromCsrTest(unittest.TestCase):
         from letsencrypt.client.crypto_util import get_sans_from_csr
         csr = pkg_resources.resource_string(
             __name__, os.path.join('testdata', 'csr.pem'))
-        result = get_sans_from_csr(csr)
-        self.assertEqual(result, ['example.com'])
+        self.assertEqual(get_sans_from_csr(csr), ['example.com'])
 
     def test_extract_two_sans(self):
         from letsencrypt.client.crypto_util import get_sans_from_csr
         csr = pkg_resources.resource_string(
             __name__, os.path.join('testdata', 'csr-san.pem'))
-        result = get_sans_from_csr(csr)
-        self.assertEqual(result, ['example.com', 'www.example.com'])
+        self.assertEqual(get_sans_from_csr(csr), ['example.com',
+                                                  'www.example.com'])
 
     def test_extract_six_sans(self):
         from letsencrypt.client.crypto_util import get_sans_from_csr
         csr = pkg_resources.resource_string(
             __name__, os.path.join('testdata', 'csr-6sans.pem'))
-        result = get_sans_from_csr(csr)
-        self.assertEqual(
-            result, ["example.com", "example.org", "example.net",
-                     "example.info", "subdomain.example.com",
-                     "other.subdomain.example.com"])
+        self.assertEqual(get_sans_from_csr(csr),
+                         ["example.com", "example.org", "example.net",
+                          "example.info", "subdomain.example.com",
+                          "other.subdomain.example.com"])
 
     def test_parse_non_csr(self):
-        from M2Crypto.X509 import X509Error
         from letsencrypt.client.crypto_util import get_sans_from_csr
-        self.assertRaises(X509Error, get_sans_from_csr, "hello there")
+        self.assertRaises(M2Crypto.X509.X509Error, get_sans_from_csr,
+                          "hello there")
 
     def test_parse_no_sans(self):
         from letsencrypt.client.crypto_util import get_sans_from_csr
@@ -184,20 +182,21 @@ class GetSansFromCsrTest(unittest.TestCase):
 class MakeCSRTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
     """Tests for letsencrypt.client.crypto_util.make_csr."""
     def test_make_csr(self):
-        from letsencrypt.client.crypto_util import make_csr, get_sans_from_csr
+        from letsencrypt.client.crypto_util import get_sans_from_csr
+        from letsencrypt.client.crypto_util import make_csr
         result = make_csr(RSA512_KEY, ["example.com", "foo.example.com"])[0]
         self.assertEqual(
             get_sans_from_csr(result), ["example.com", "foo.example.com"])
         req = M2Crypto.X509.load_request_string(result)
-        subject = req.get_subject().as_text()
-        modulus = req.get_pubkey().get_modulus()
         self.assertEqual(
-            subject, "C=US, ST=Michigan, L=Ann Arbor, O=EFF, OU=University"
-                     " of Michigan, CN=example.com")
+            req.get_subject().as_text(),
+            "C=US, ST=Michigan, L=Ann Arbor, O=EFF, OU=University"
+            " of Michigan, CN=example.com")
         self.assertEqual(
-            modulus, "F4B61171513736BFAA95E79C11C5FC2705439E3786D57EEE72C0"
-                     "9AB2EB993347B4F5C998B94CF12243233BFF71E0055CBD75D15CF"
-                     "115F8BCD65A47E44E5CD133")
+            req.get_pubkey().get_modulus(),
+            "F4B61171513736BFAA95E79C11C5FC2705439E3786D57EEE72C0"
+            "9AB2EB993347B4F5C998B94CF12243233BFF71E0055CBD75D15CF"
+            "115F8BCD65A47E44E5CD133")
 
 
 if __name__ == '__main__':

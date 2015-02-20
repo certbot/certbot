@@ -195,7 +195,9 @@ def get_cert_info(filename):
 def get_sans_from_csr(csr):
     """Get list of Subject Alternative Names from signing request.
 
-    :param str csr: Certificate Signing Request in PEM format
+    :param str csr: Certificate Signing Request in PEM format (must contain
+        one or more subjectAlternativeNames, or the function will fail,
+        raising ValueError)
 
     :returns: List of referenced subject alternative names
     :rtype: list
@@ -207,8 +209,8 @@ def get_sans_from_csr(csr):
     #       use of relevant OpenSSL or other X509-parsing APIs.
     req = M2Crypto.X509.load_request_string(csr)
     text = req.as_text().split("\n")
-    if len(text) < 2 or text[0] != "Certificate Request:" or \
-                        text[1] != "    Data:":
+    if (len(text) < 2 or text[0] != "Certificate Request:" or
+            text[1] != "    Data:"):
         raise ValueError("Unable to parse CSR")
     text = text[2:]
     while text and text[0] != "        Attributes:":
