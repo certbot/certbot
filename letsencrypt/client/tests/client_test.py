@@ -6,10 +6,66 @@ import mock
 from letsencrypt.client import errors
 
 
+class DetermineAuthenticatorTest(unittest.TestCase):
+    def setUp(self):
+        from letsencrypt.client.apache.configurator import ApacheConfigurator
+        from letsencrypt.client.standalone_authenticator \
+            import StandaloneAuthenticator
+
+        self.mock_stand = mock.MagicMock(spec=StandaloneAuthenticator)
+        self.mock_apache = mock.MagicMock(spec=ApacheConfigurator)
+
+        self.mock_config = mock.Mock()
+
+        self.all_auths = [
+            ("Apache Web Server", self.mock_apache, self.mock_config),
+            ("Standalone", self.mock_stand),
+        ]
+
+    @classmethod
+    def _call(cls, all_auths):
+        from letsencrypt.client.client import determine_authenticator
+        return determine_authenticator(all_auths)
+
+    @mock.patch("letsencrypt.client.client.ops.choose_authenticator")
+    def test_accept_two(self, mock_choose):
+        mock_choose.return_value = self.mock_stand()
+        self.assertEqual(self._call(self.all_auths), self.mock_stand())
+
+    def test_accept_one(self):
+        self.assertEqual(
+            self._call(self.all_auths[:1]), self.mock_apache(self.mock_config))
+
+    def test_no_installation_one(self):
+        self.mock_apache.side_effect = errors.LetsEncryptNoInstallationError
+
+        self.assertEqual(self._call(self.all_auths), self.mock_stand())
+
+    def test_no_installations(self):
+        self.mock_apache.side_effect = errors.LetsEncryptNoInstallationError
+        self.mock_stand.side_effect = errors.LetsEncryptNoInstallationError
+
+        self.assertTrue(self._call(self.all_auths) is None)
+
+    @mock.patch("letsencrypt.client.client.logging")
+    @mock.patch("letsencrypt.client.client.ops.choose_authenticator")
+    def test_misconfigured(self, mock_choose, mock_log):
+        self.mock_apache.side_effect = errors.LetsEncryptMisconfigurationError
+        mock_choose.return_value = self.mock_apache
+
+        self.assertRaises(SystemExit, self._call, self.all_auths)
+
+    def test_too_many_params(self):
+        self.assertRaises(
+            errors.LetsEncryptClientError,
+            self._call,
+            [("desc", self.mock_apache, "1", "2", "3", "4", "5")])
+
 class RollbackTest(unittest.TestCase):
     """Test the rollback function."""
     def setUp(self):
-        self.m_install = mock.MagicMock()
+        from letsencrypt.client.apache.configurator import ApacheConfigurator
+        self.m_install = mock.MagicMock(spec=ApacheConfigurator)
 
     @classmethod
     def _call(cls, checkpoints):

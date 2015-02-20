@@ -23,7 +23,8 @@ def choose_authenticator(auths, errs):
     :rtype: :class:`letsencrypt.client.interfaces.IAuthenticator`
 
     """
-    descs = [auth[0] for auth in auths]
+    descs = [auth[0] if auth[1] not in errs else "%s (Misconfigured)" % auth[0]
+             for auth in auths]
     iauths = [auth[1] for auth in auths]
 
     while True:

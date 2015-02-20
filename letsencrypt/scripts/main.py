@@ -19,6 +19,8 @@ from letsencrypt.client import client
 from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
 from letsencrypt.client import log
+from letsencrypt.client import standalone_authenticator
+from letsencrypt.client.apache import configurator
 from letsencrypt.client.display import util as display_util
 from letsencrypt.client.display import ops
 
@@ -134,9 +136,13 @@ def main():  # pylint: disable=too-many-branches
     if not args.eula:
         display_eula()
 
-    # Make sure we actually get an installer that is functioning properly
-    # before we begin to try to use it.
-    auth = client.determine_authenticator(config)
+    # list of (Description, Known Authenticator classes, init arguments)
+    all_auths = [
+        ("Apache Web Server", configurator.ApacheConfigurator, config),
+        ("Standalone Authenticator",
+        standalone_authenticator.StandaloneAuthenticator),
+    ]
+    auth = client.determine_authenticator(all_auths)
     if auth is None:
         logging.critical("Unable to find a way to authenticate the server.")
         sys.exit(4)

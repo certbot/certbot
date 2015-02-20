@@ -414,4 +414,4 @@ class StandaloneAuthenticator(object):
                 "is attained, it will be saved in the "
                 "(TODO) current working directory.{0}{0}"
                 "Port 443 must be open in order to use the "
-                "Standalone Authenticator.")
+                "Standalone Authenticator.".format(os.linesep))

@@ -57,7 +57,7 @@ class IAuthenticator(zope.interface.Interface):
 
         """
 
-    def more_info(self):
+    def more_info():
         """Human-readable string to help the user.
 
         Should describe the steps taken and any relevant info to help the user

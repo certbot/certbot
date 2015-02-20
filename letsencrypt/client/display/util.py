@@ -175,6 +175,9 @@ class FileDisplay(object):
         # pylint: disable=unused-argument
         """Display a menu.
 
+        .. todo:: This doesn't enable the help label/button (I wasn't sold on
+           any interface I came up with for this). It would be a nice feature
+
         :param str message: title of menu
         :param choices: Menu lines, len must be > 0
         :type choices: list of tuples (tag, item) or
