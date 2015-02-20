@@ -109,12 +109,14 @@ def _choose_names_manually():
 def success_installation(domains):
     """Display a box confirming the installation of HTTPS.
 
+    .. todo:: This should be centered on the screen
+
     :param list domains: domain names which were enabled
 
     """
     util(interfaces.IDisplay).notification(
         "Congratulations! You have successfully enabled "
-        "%s!" % _gen_https_names(domains), pause=True)
+        "%s!" % _gen_https_names(domains), pause=False)
 
 
 def _gen_https_names(domains):

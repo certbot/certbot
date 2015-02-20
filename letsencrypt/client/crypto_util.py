@@ -161,4 +161,3 @@ def make_ss_cert(key_str, domains, not_before=None,
     assert m2_cert.verify()
     # print check_purpose(,0
     return m2_cert.as_pem()
-

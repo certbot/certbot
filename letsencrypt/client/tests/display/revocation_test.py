@@ -54,6 +54,7 @@ class ChooseCertsTest(unittest.TestCase):
         self.assertTrue(self.certs[choice] == self.cert1)
         self.assertEqual(mock_util().notification.call_count, 1)
 
+
 class SuccessRevocationTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.client.revoker import Cert

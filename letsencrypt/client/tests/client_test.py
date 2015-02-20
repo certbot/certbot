@@ -49,7 +49,7 @@ class DetermineAuthenticatorTest(unittest.TestCase):
 
     @mock.patch("letsencrypt.client.client.logging")
     @mock.patch("letsencrypt.client.client.ops.choose_authenticator")
-    def test_misconfigured(self, mock_choose, mock_log):
+    def test_misconfigured(self, mock_choose, mock_log):  # pylint: disable=unused-argument
         self.mock_apache.side_effect = errors.LetsEncryptMisconfigurationError
         mock_choose.return_value = self.mock_apache
 
@@ -60,6 +60,7 @@ class DetermineAuthenticatorTest(unittest.TestCase):
             errors.LetsEncryptClientError,
             self._call,
             [("desc", self.mock_apache, "1", "2", "3", "4", "5")])
+
 
 class RollbackTest(unittest.TestCase):
     """Test the rollback function."""

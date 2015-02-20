@@ -19,7 +19,7 @@ from letsencrypt.client import client
 from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
 from letsencrypt.client import log
-from letsencrypt.client import standalone_authenticator
+from letsencrypt.client import standalone_authenticator as standalone
 from letsencrypt.client.apache import configurator
 from letsencrypt.client.display import util as display_util
 from letsencrypt.client.display import ops
@@ -124,8 +124,7 @@ def main():  # pylint: disable=too-many-branches
         client.view_config_changes(config)
         sys.exit()
 
-    # TODO: if revoke, rev_cert...
-    if args.revoke:
+    if args.revoke or args.rev_cert or args.rev_key:
         client.revoke(config, args.no_confirm, args.rev_cert, args.rev_key)
         sys.exit()
 
@@ -139,8 +138,7 @@ def main():  # pylint: disable=too-many-branches
     # list of (Description, Known Authenticator classes, init arguments)
     all_auths = [
         ("Apache Web Server", configurator.ApacheConfigurator, config),
-        ("Standalone Authenticator",
-        standalone_authenticator.StandaloneAuthenticator),
+        ("Standalone Authenticator", standalone.StandaloneAuthenticator),
     ]
     auth = client.determine_authenticator(all_auths)
     if auth is None:

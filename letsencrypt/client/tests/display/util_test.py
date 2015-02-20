@@ -67,7 +67,6 @@ class NcursesDisplayTest(DisplayT):
 
         ret = self.displayer.menu("Message", self.choices)
 
-
         mock_menu.assert_called_with(
             "Message", choices=self.choices, ok_label="OK",
             cancel_label="Cancel",
@@ -81,7 +80,6 @@ class NcursesDisplayTest(DisplayT):
         mock_menu.return_value = (display_util.OK, "1")
 
         ret = self.displayer.menu("Message", self.tags, help_label="More Info")
-
 
         mock_menu.assert_called_with(
             "Message", choices=self.tags_choices, ok_label="OK",

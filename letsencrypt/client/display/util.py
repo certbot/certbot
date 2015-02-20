@@ -143,6 +143,7 @@ class NcursesDisplay(object):
         return self.dialog.checklist(
             message, width=self.width, height=self.height, choices=choices)
 
+
 class FileDisplay(object):
     """File-based display."""
 
@@ -305,7 +306,6 @@ class FileDisplay(object):
         # Transform indices to appropriate tags
         return [tags[index-1] for index in indices]
 
-
     def _print_menu(self, message, choices):
         """Print a menu on the screen.
 
@@ -399,6 +399,7 @@ def separate_list_input(input_):
     no_commas = input_.replace(",", " ")
     # Each string is naturally unicode, this causes problems with M2Crypto SANs
     return [str(string) for string in no_commas.split()]
+
 
 def _parens_around_char(label):
     """Place parens around first character of label.

@@ -320,6 +320,7 @@ def init_key(key_size, key_dir):
 
     return le_util.Key(key_filename, key_pem)
 
+
 def init_csr(privkey, names, cert_dir):
     """Initialize a CSR with the given private key.
 
@@ -343,6 +344,7 @@ def init_csr(privkey, names, cert_dir):
     logging.info("Creating CSR: %s", csr_filename)
 
     return le_util.CSR(csr_filename, csr_der, "der")
+
 
 # This should be controlled by commandline parameters
 def determine_authenticator(all_auths):

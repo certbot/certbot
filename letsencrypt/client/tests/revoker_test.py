@@ -80,6 +80,26 @@ class RevokerTest(RevokerBase):
     @mock.patch("letsencrypt.client.revoker.network."
                 "Network.send_and_receive_expected")
     @mock.patch("letsencrypt.client.revoker.revocation")
+    def test_revoke_by_wrong_key(self, mock_display, mock_net):
+        mock_display().confirm_revocation.return_value = True
+
+        key_path = pkg_resources.resource_filename(
+            "letsencrypt.client.tests", os.path.join(
+                "testdata", "rsa256_key.pem"))
+
+        wrong_key = le_util.Key(key_path, open(key_path).read())
+        self.revoker.revoke_from_key(wrong_key)
+
+        # Nothing was removed
+        self.assertEqual(len(self._get_rows()), 2)
+        # No revocation went through
+        self.assertEqual(mock_net.call_count, 0)
+
+
+
+    @mock.patch("letsencrypt.client.revoker.network."
+                "Network.send_and_receive_expected")
+    @mock.patch("letsencrypt.client.revoker.revocation")
     def test_revoke_by_cert(self, mock_display, mock_net):
         mock_display().confirm_revocation.return_value = True
 
@@ -92,6 +112,26 @@ class RevokerTest(RevokerBase):
 
         self.assertTrue(self._backups_exist(row0))
         self.assertFalse(self._backups_exist(row1))
+
+        self.assertEqual(mock_net.call_count, 1)
+
+    @mock.patch("letsencrypt.client.revoker.network."
+                "Network.send_and_receive_expected")
+    @mock.patch("letsencrypt.client.revoker.revocation")
+    def test_revoke_by_cert_not_found(self, mock_display, mock_net):
+        mock_display().confirm_revocation.return_value = True
+
+        self.revoker.revoke_from_cert(self.paths[0])
+        self.revoker.revoke_from_cert(self.paths[0])
+
+        row0 = self.certs[0].get_row()
+        row1 = self.certs[1].get_row()
+
+        # Same check as last time... just reversed.
+        self.assertEqual(self._get_rows(), [row1])
+
+        self.assertTrue(self._backups_exist(row1))
+        self.assertFalse(self._backups_exist(row0))
 
         self.assertEqual(mock_net.call_count, 1)
 
@@ -227,6 +267,7 @@ class RevokerInstallerTest(RevokerBase):
 
         # pylint: disable=protected-access
         self.assertEqual(revoker._get_installed_locations(), {})
+
 
 class RevokerClassMethodsTest(RevokerBase):
     def setUp(self):

@@ -65,6 +65,7 @@ class IAuthenticator(zope.interface.Interface):
 
         """
 
+
 class IConfig(zope.interface.Interface):
     """Let's Encrypt user-supplied configuration.
 

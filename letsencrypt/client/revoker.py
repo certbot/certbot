@@ -40,6 +40,8 @@ class Revoker(object):
     :ivar config: Configuration.
     :type config: :class:`~letsencrypt.client.interfaces.IConfig`
 
+    :ivar bool no_confirm: Whether or not to ask for confirmation for revocation
+
     """
     def __init__(self, installer, config, no_confirm=False):
         self.network = network.Network(config.server)
@@ -62,24 +64,30 @@ class Revoker(object):
 
         """
         certs = []
+        clean_pem = Crypto.PublicKey.RSA.importKey(authkey.pem).exportKey("PEM")
         with open(self.list_path, "rb") as csvfile:
             csvreader = csv.reader(csvfile)
             for row in csvreader:
                 # idx, cert, key
                 # Add all keys that match to marked list
-                # TODO: This doesn't account for padding in the file that might
-                #   differ. This should only consider the key material.
                 # Note: The key can be different than the pub key found in the
                 #    certificate.
                 _, b_k = self._row_to_backup(row)
-                if authkey.pem == open(b_k).read():
+                if clean_pem == Crypto.PublicKey.RSA.importKey(
+                        open(b_k).read()).exportKey("PEM"):
                     certs.append(Cert.fromrow(row, self.config.cert_key_backup))
 
         if certs:
             self._safe_revoke(certs)
+        else:
+            logging.info("No certificates using the authorized key were found.")
 
     def revoke_from_cert(self, cert_path):
         """Revoke a certificate by specifying a file path.
+
+        .. todo:: Add the ability to revoke the certificate even if the cert
+            is not stored locally. A path to the auth key will need to be
+            attained from the user.
 
         :param str cert_path: path to ACME certificate in pem form
 
@@ -94,6 +102,9 @@ class Revoker(object):
 
                 if cert == cert_to_revoke:
                     self._safe_revoke([cert])
+                    return
+
+        logging.info("Associated ACME certificate was not found.")
 
     def revoke_from_menu(self):
         """List trusted Let's Encrypt certificates."""
@@ -127,6 +138,9 @@ class Revoker(object):
         program crashes, this may differ from what is actually in the directory.
         Namely, additional certs/keys may exist.  There should never be any
         certs/keys in the LIST that don't exist in the directory however.
+
+        :param dict csha1_vhlist: map from cert sha1 fingerprints to a list
+           of it's installed location paths.
 
         """
         certs = []
