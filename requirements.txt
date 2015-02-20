@@ -6,3 +6,5 @@ requests==2.4.3
 argparse==1.2.2
 mock==1.0.1
 PyOpenSSL==0.13
+ConfArgParse==1.0.15
+zope.component==4.2.1
