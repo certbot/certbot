@@ -26,6 +26,7 @@ install_requires = [
     'ConfArgParse',
     'jsonschema',
     'mock',
+    'psutil',
     'pycrypto',
     'PyOpenSSL',
     'python-augeas',
