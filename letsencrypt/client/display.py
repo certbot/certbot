@@ -245,7 +245,7 @@ class FileDisplay(CommonDisplayMixin):
         self.outfile.write("%s\n" % side_frame)
 
         code, selection = self._get_valid_int_ans(
-            "%s (c to cancel): " % input_text)
+            "%s (c to cancel): " % input_text, len(choices))
 
         return code, (selection - 1)
 
@@ -297,7 +297,11 @@ class FileDisplay(CommonDisplayMixin):
             names, "Select the number of the name: ")
 
         # Make sure to return a list...
-        return code, [names[tag]]
+        if tag < 0:
+            names = []
+        else:
+            names = [names[tag]]
+        return code, names
 
     def success_installation(self, domains):
         """Display a box confirming the installation of HTTPS.
@@ -321,49 +325,51 @@ class FileDisplay(CommonDisplayMixin):
         :rtype: tuple
 
         """
-        menu_choices = [(str(i+1), str(c["cn"]) + " - " + c["pub_key"] +
+        menu_choices = [(str(i), str(c["cn"]) + " - " + c["pub_key"] +
                          " - " + str(c["not_before"])[:-6])
-                        for i, c in enumerate(certs)]
+                        for i, c in enumerate(certs, 1)]
 
         self.outfile.write("Which certificate would you like to revoke?\n")
         for choice in menu_choices:
             self.outfile.write(textwrap.fill(
                 "%s: %s - %s Signed (UTC): %s\n" % choice[:4]))
 
-        return self._get_valid_int_ans("Revoke Number (c to cancel): ") - 1
+        return self._get_valid_int_ans("Revoke Number (c to cancel): ",
+                                       len(menu_choices)) - 1
 
-    def _get_valid_int_ans(self, input_string):
+    def _get_valid_int_ans(self, input_string, count, first=1):
         """Get a numerical selection.
 
         :param str input_string: Instructions for the user to make a selection.
+        :param int count: amount of choices
+        :param int first: the number identifying the first choice [1]
 
         :returns: tuple of the form (code, selection) where
-            code is a display exit code
-            selection is the user's int selection
+            code is a display exit code (OK, or CANCEL)
+            selection is the user's int selection (first..count-1, or -1)
         :rtype: tuple
 
         """
-        valid_ans = False
-        e_msg = "Please input a number or the letter c to cancel\n"
-        while not valid_ans:
-
-            ans = raw_input(input_string)
-            if ans.startswith('c') or ans.startswith('C'):
+        valid = False
+        while not valid:
+            answer = raw_input(input_string)
+            if answer.startswith('c') or answer.startswith('C'):
                 code = CANCEL
                 selection = -1
-                valid_ans = True
+                valid = True
             else:
                 try:
-                    selection = int(ans)
-                    # TODO add check to make sure it is less than max
-                    if selection < 0:
-                        self.outfile.write(e_msg)
-                        continue
-                    code = OK
-                    valid_ans = True
+                    selection = int(answer)
                 except ValueError:
-                    self.outfile.write(e_msg)
-
+                    valid = False
+                else:
+                    valid = first <= selection < first + count
+                if valid:
+                    code = OK
+                else:
+                    self.outfile.write((
+                        "Please input a number [%d-%d] or the letter c to"
+                        "cancel\n") % (first, first + count - 1))
         return code, selection
 
     def confirm_revocation(self, cert):
