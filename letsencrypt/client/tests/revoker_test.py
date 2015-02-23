@@ -1,4 +1,4 @@
-"""Test :mod:`letsencrypt.client.revoker`."""
+"""Test letsencrypt.client.revoker."""
 import csv
 import os
 import pkg_resources
@@ -10,6 +10,8 @@ import mock
 
 from letsencrypt.client import errors
 from letsencrypt.client import le_util
+from letsencrypt.client.apache import configurator
+from letsencrypt.client.display import util as display_util
 
 
 class RevokerBase(unittest.TestCase):  # pylint: disable=too-few-public-methods
@@ -56,8 +58,9 @@ class RevokerTest(RevokerBase):
 
         self._store_certs()
 
-        self.mock_installer = mock.MagicMock()
-        self.revoker = Revoker(self.mock_installer, self.mock_config)
+        self.revoker = Revoker(
+            mock.MagicMock(spec=configurator.ApacheConfigurator),
+            self.mock_config)
 
     def tearDown(self):
         shutil.rmtree(self.backup_dir)
@@ -77,6 +80,18 @@ class RevokerTest(RevokerBase):
 
         self.assertEqual(mock_net.call_count, 2)
 
+    @mock.patch("letsencrypt.client.revoker.Crypto.PublicKey.RSA.importKey")
+    def test_revoke_by_invalid_keys(self, mock_import):
+        mock_import.side_effect = ValueError
+        self.assertRaises(errors.LetsEncryptRevokerError,
+                          self.revoker.revoke_from_key,
+                          self.key)
+
+        mock_import.side_effect = [mock.Mock(), IndexError]
+        self.assertRaises(errors.LetsEncryptRevokerError,
+                          self.revoker.revoke_from_key,
+                          self.key)
+
     @mock.patch("letsencrypt.client.revoker.network."
                 "Network.send_and_receive_expected")
     @mock.patch("letsencrypt.client.revoker.revocation")
@@ -94,8 +109,6 @@ class RevokerTest(RevokerBase):
         self.assertEqual(len(self._get_rows()), 2)
         # No revocation went through
         self.assertEqual(mock_net.call_count, 0)
-
-
 
     @mock.patch("letsencrypt.client.revoker.network."
                 "Network.send_and_receive_expected")
@@ -140,9 +153,13 @@ class RevokerTest(RevokerBase):
     @mock.patch("letsencrypt.client.revoker.revocation")
     def test_revoke_by_menu(self, mock_display, mock_net):
         mock_display().confirm_revocation.return_value = True
-        mock_display.choose_certs.side_effect = [0, SystemExit]
+        mock_display.display_certs.side_effect = [
+            (display_util.HELP, 0),
+            (display_util.OK, 0),
+            (display_util.CANCEL, -1),
+        ]
 
-        self.assertRaises(SystemExit, self.revoker.revoke_from_menu)
+        self.revoker.revoke_from_menu()
 
         row0 = self.certs[0].get_row()
         row1 = self.certs[1].get_row()
@@ -153,6 +170,7 @@ class RevokerTest(RevokerBase):
         self.assertTrue(self._backups_exist(row1))
 
         self.assertEqual(mock_net.call_count, 1)
+        self.assertEqual(mock_display.more_info_cert.call_count, 1)
 
     @mock.patch("letsencrypt.client.revoker.logging")
     @mock.patch("letsencrypt.client.revoker.network."
@@ -160,7 +178,7 @@ class RevokerTest(RevokerBase):
     @mock.patch("letsencrypt.client.revoker.revocation")
     def test_revoke_by_menu_delete_all(self, mock_display, mock_net, mock_log):
         mock_display().confirm_revocation.return_value = True
-        mock_display.choose_certs.return_value = 0
+        mock_display.display_certs.return_value = (display_util.OK, 0)
 
         self.revoker.revoke_from_menu()
 
@@ -288,7 +306,7 @@ class RevokerClassMethodsTest(RevokerBase):
 
         self.assertTrue(os.path.isfile(self.list_path))
         rows = self._get_rows()
-        i = 0
+
         for i, row in enumerate(rows):
             # pylint: disable=protected-access
             self.assertTrue(os.path.isfile(
@@ -297,7 +315,7 @@ class RevokerClassMethodsTest(RevokerBase):
                 Revoker._get_backup(self.backup_dir, i, self.key_path)))
             self.assertEqual([str(i), self.paths[i], self.key_path], row)
 
-        self.assertEqual(i, 1)
+        self.assertEqual(len(rows), 2)
 
     def test_store_one_mixed(self):
         from letsencrypt.client.revoker import Revoker

@@ -129,35 +129,35 @@ def make_ss_cert(key_str, domains, not_before=None,
     pubkey = M2Crypto.EVP.PKey()
     pubkey.assign_rsa(rsa_key)
 
-    m2_cert = M2Crypto.X509.X509()
-    m2_cert.set_pubkey(pubkey)
-    m2_cert.set_serial_number(1337)
-    m2_cert.set_version(2)
+    cert = M2Crypto.X509.X509()
+    cert.set_pubkey(pubkey)
+    cert.set_serial_number(1337)
+    cert.set_version(2)
 
     current_ts = long(time.time() if not_before is None else not_before)
     current = M2Crypto.ASN1.ASN1_UTCTIME()
     current.set_time(current_ts)
     expire = M2Crypto.ASN1.ASN1_UTCTIME()
     expire.set_time(current_ts + validity)
-    m2_cert.set_not_before(current)
-    m2_cert.set_not_after(expire)
+    cert.set_not_before(current)
+    cert.set_not_after(expire)
 
-    subject = m2_cert.get_subject()
+    subject = cert.get_subject()
     subject.C = "US"
     subject.ST = "Michigan"
     subject.L = "Ann Arbor"
     subject.O = "University of Michigan and the EFF"
     subject.CN = domains[0]
-    m2_cert.set_issuer(m2_cert.get_subject())
+    cert.set_issuer(cert.get_subject())
 
     if len(domains) > 1:
-        m2_cert.add_ext(M2Crypto.X509.new_extension(
+        cert.add_ext(M2Crypto.X509.new_extension(
             "basicConstraints", "CA:FALSE"))
-        m2_cert.add_ext(M2Crypto.X509.new_extension(
+        cert.add_ext(M2Crypto.X509.new_extension(
             "subjectAltName", ", ".join(["DNS:%s" % d for d in domains])))
 
-    m2_cert.sign(pubkey, "sha256")
-    assert m2_cert.verify(pubkey)
-    assert m2_cert.verify()
+    cert.sign(pubkey, "sha256")
+    assert cert.verify(pubkey)
+    assert cert.verify()
     # print check_purpose(,0
-    return m2_cert.as_pem()
+    return cert.as_pem()

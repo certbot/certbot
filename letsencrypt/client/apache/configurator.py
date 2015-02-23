@@ -74,6 +74,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     """
     zope.interface.implements(interfaces.IAuthenticator, interfaces.IInstaller)
 
+    description = "Apache Web Server"
+
     def __init__(self, config, version=None):
         """Initialize an Apache Configurator.
 
@@ -87,6 +89,19 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if os.geteuid() == 0:
             self.verify_setup()
 
+        # Add name_server association dict
+        self.assoc = dict()
+        # Add number of outstanding challenges
+        self.chall_out = 0
+
+        # These will be set in the prepare function
+        self.parser = None
+        self.version = version
+        self.vhosts = None
+        self.enhance_func = {"redirect": self._enable_redirect}
+
+    def prepare(self):
+        """Prepare the authenticator/installer."""
         self.parser = parser.ApacheParser(
             self.aug, self.config.apache_server_root,
             self.config.apache_mod_ssl_conf)
@@ -94,14 +109,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.check_parsing_errors("httpd.aug")
 
         # Set Version
-        self.version = self.get_version() if version is None else version
+        if self.version is None:
+            self.version = self.get_version()
 
         # Get all of the available vhosts
         self.vhosts = self.get_virtual_hosts()
-        # Add name_server association dict
-        self.assoc = dict()
-        # Add number of outstanding challenges
-        self.chall_out = 0
 
         # Enable mod_ssl if it isn't already enabled
         # This is Let's Encrypt... we enable mod_ssl on initialization :)
@@ -110,8 +122,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         #     on initialization
         self._prepare_server_https()
 
-        self.enhance_func = {"redirect": self._enable_redirect}
         temp_install(self.config.apache_mod_ssl_conf)
+
 
     def deploy_cert(self, domain, cert, key, cert_chain=None):
         """Deploys certificate to specified virtual host.

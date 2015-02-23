@@ -13,6 +13,16 @@ class IAuthenticator(zope.interface.Interface):
 
     """
 
+    def prepare():
+        """Prepare the authenticator.
+
+         Finish up any additional initialization.
+
+         :raises
+             :class:`letsencrypt.client.errors.LetsEncryptMisconfigurationError`
+             when full initialization cannot be completed.
+        """
+
     def get_chall_pref(domain):
         """Return list of challenge preferences.
 
@@ -117,6 +127,16 @@ class IInstaller(zope.interface.Interface):
     Represents any server that an X509 certificate can be placed.
 
     """
+
+    def prepare():
+        """Prepare the installer.
+
+         Finish up any additional initialization.
+
+         :raises
+             :class:`letsencrypt.client.errors.LetsEncryptMisconfigurationError`
+             when full initialization cannot be completed.
+        """
 
     def get_all_names():
         """Returns all names that may be authenticated."""

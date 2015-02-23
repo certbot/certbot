@@ -11,6 +11,7 @@ import csv
 import logging
 import os
 import shutil
+import tempfile
 
 import Crypto.PublicKey.RSA
 import M2Crypto
@@ -64,7 +65,14 @@ class Revoker(object):
 
         """
         certs = []
-        clean_pem = Crypto.PublicKey.RSA.importKey(authkey.pem).exportKey("PEM")
+        try:
+            clean_pem = Crypto.PublicKey.RSA.importKey(
+                authkey.pem).exportKey("PEM")
+        # https://www.dlitz.net/software/pycrypto/api/current/Crypto.PublicKey.RSA-module.html
+        except (IndexError, ValueError, TypeError):
+            raise errors.LetsEncryptRevokerError(
+                "Invalid key file specified to revoke_from_key")
+
         with open(self.list_path, "rb") as csvfile:
             csvreader = csv.reader(csvfile)
             for row in csvreader:
@@ -73,9 +81,17 @@ class Revoker(object):
                 # Note: The key can be different than the pub key found in the
                 #    certificate.
                 _, b_k = self._row_to_backup(row)
-                if clean_pem == Crypto.PublicKey.RSA.importKey(
-                        open(b_k).read()).exportKey("PEM"):
-                    certs.append(Cert.fromrow(row, self.config.cert_key_backup))
+                try:
+                    if clean_pem == Crypto.PublicKey.RSA.importKey(
+                            open(b_k).read()).exportKey("PEM"):
+                        certs.append(
+                            Cert.fromrow(row, self.config.cert_key_backup))
+                except (IndexError, ValueError, TypeError):
+                    # This should never happen given the assumptions of the
+                    # module. If it does, it is probably best to delete the
+                    # the offending key/cert. For now... just raise an exception
+                    raise errors.LetsEncryptRevokerError(
+                        "%s - backup file is corrupted.")
 
         if certs:
             self._safe_revoke(certs)
@@ -100,7 +116,7 @@ class Revoker(object):
             for row in csvreader:
                 cert = Cert.fromrow(row, self.config.cert_key_backup)
 
-                if cert == cert_to_revoke:
+                if cert.get_der() == cert_to_revoke.get_der():
                     self._safe_revoke([cert])
                     return
 
@@ -114,15 +130,17 @@ class Revoker(object):
 
         while True:
             if certs:
-                selection = revocation.choose_certs(certs)
+                code, selection = revocation.display_certs(certs)
 
-                revoked_certs = self._safe_revoke([certs[selection]])
-                # Since we are currently only revoking one cert at a time...
-                if revoked_certs:
-                    # This is safer than using remove as Revoker.Certs only
-                    # check the DER value of the cert. There could potentially
-                    # be multiple backup certs with the same value.
-                    del certs[selection]
+                if code == display_util.OK:
+                    revoked_certs = self._safe_revoke([certs[selection]])
+                    # Since we are currently only revoking one cert at a time...
+                    if revoked_certs:
+                        del certs[selection]
+                elif code == display_util.HELP:
+                    revocation.more_info_cert(certs[selection])
+                else:
+                    return
             else:
                 logging.info(
                     "There are not any trusted Let's Encrypt "
@@ -158,7 +176,7 @@ class Revoker(object):
         return certs
 
     def _get_installed_locations(self):
-        """Get installed locations of certificates
+        """Get installed locations of certificates.
 
         :returns: map from cert sha1 fingerprint to :class:`list` of vhosts
             where the certificate is installed.
@@ -257,8 +275,7 @@ class Revoker(object):
             :class:`letsencrypt.client.revoker.Cert`
 
         """
-        list_path2 = os.path.join(self.config.cert_key_backup, "LIST.tmp")
-
+        list_path2 = tempfile.mktemp(".tmp", "LIST")
         idx = 0
 
         with open(self.list_path, "rb") as orgfile:
@@ -447,24 +464,14 @@ class Cert(object):
         self.backup_path = backup
         self.backup_key_path = backup_key
 
-    def get_installed_msg(self):
-        """Access installed message."""
-        return ", ".join(self.installed)
-
-    def get_subject(self):
-        """Get subject."""
-        return self.cert.get_subject().as_text()
-
+    # I would rather not have outside classes messing with Cert directly.
+    # (I would like to change M2Crypto -> something else without issues)
     def get_cn(self):
         """Get common name."""
         return self.cert.get_subject().CN
 
-    def get_issuer(self):
-        """Get issuer."""
-        return self.cert.get_issuer().as_text()
-
     def get_fingerprint(self):
-        """Get sha1 fingerprint."""
+        """Get SHA1"""
         return self.cert.get_fingerprint(md="sha1")
 
     def get_not_before(self):
@@ -475,13 +482,16 @@ class Cert(object):
         """Get not_valid_after field."""
         return self.cert.get_not_after().get_datetime()
 
-    def get_serial(self):
-        """Get serial number."""
-        self.cert.get_serial_number()
+    def get_der(self):
+        """Get certificate in der format."""
+        return self.cert.as_der()
 
     def get_pub_key(self):
-        """Get public key size."""
-        # .. todo:: M2Crypto doesn't support ECC, this will have to be updated
+        """Get public key size.
+
+        .. todo:: M2Crypto doesn't support ECC, this will have to be updated
+
+        """
         return "RSA " + str(self.cert.get_pubkey().size() * 8)
 
     def get_san(self):
@@ -492,16 +502,17 @@ class Cert(object):
             return ""
 
     def __str__(self):
-        text = []
-        text.append("Subject: %s" % self.get_subject())
-        text.append("SAN: %s" % self.get_san())
-        text.append("Issuer: %s" % self.get_issuer())
-        text.append("Public Key: %s" % self.get_pub_key())
-        text.append("Not Before: %s" % str(self.get_not_before()))
-        text.append("Not After: %s" % str(self.get_not_after()))
-        text.append("Serial Number: %s" % self.get_serial())
-        text.append("SHA1: %s%s" % (self.get_fingerprint(), os.linesep))
-        text.append("Installed: %s" % self.get_installed_msg())
+        text = [
+            "Subject: %s" % self.cert.get_subject().as_text(),
+            "SAN: %s" % self.get_san(),
+            "Issuer: %s" % self.cert.get_issuer().as_text(),
+            "Public Key: %s" % self.get_pub_key(),
+            "Not Before: %s" % str(self.get_not_before()),
+            "Not After: %s" % str(self.get_not_after()),
+            "Serial Number: %s" % self.cert.get_serial_number(),
+            "SHA1: %s%s" % (self.get_fingerprint(), os.linesep),
+            "Installed: %s" % ", ".join(self.installed),
+        ]
 
         if self.orig is not None:
             if self.orig.status == "":
@@ -521,6 +532,3 @@ class Cert(object):
         """Nicely frames a cert str"""
         frame = "-" * (display_util.WIDTH - 4) + os.linesep
         return "{frame}{cert}{frame}".format(frame=frame, cert=str(self))
-
-    def __eq__(self, other):
-        return self.cert.as_der() == other.cert.as_der()

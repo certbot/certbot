@@ -22,7 +22,7 @@ from letsencrypt.client import log
 from letsencrypt.client import standalone_authenticator as standalone
 from letsencrypt.client.apache import configurator
 from letsencrypt.client.display import util as display_util
-from letsencrypt.client.display import ops
+from letsencrypt.client.display import ops as display_ops
 
 
 def create_parser():
@@ -124,7 +124,7 @@ def main():  # pylint: disable=too-many-branches
         client.view_config_changes(config)
         sys.exit()
 
-    if args.revoke or args.rev_cert or args.rev_key:
+    if args.revoke or args.rev_cert is not None or args.rev_key is not None:
         client.revoke(config, args.no_confirm, args.rev_cert, args.rev_key)
         sys.exit()
 
@@ -135,10 +135,9 @@ def main():  # pylint: disable=too-many-branches
     if not args.eula:
         display_eula()
 
-    # list of (Description, Known Authenticator classes, init arguments)
     all_auths = [
-        ("Apache Web Server", configurator.ApacheConfigurator, config),
-        ("Standalone Authenticator", standalone.StandaloneAuthenticator),
+        configurator.ApacheConfigurator(config),
+        standalone.StandaloneAuthenticator(),
     ]
     auth = client.determine_authenticator(all_auths)
     if auth is None:
@@ -152,7 +151,10 @@ def main():  # pylint: disable=too-many-branches
         # This is simple and avoids confusion right now.
         installer = None
 
-    doms = ops.choose_names(installer) if args.domains is None else args.domains
+    if args.domains is None:
+        doms = display_ops.choose_names(installer)
+    else:
+        doms = args.domains
 
     # Prepare for init of Client
     if args.authkey is None:

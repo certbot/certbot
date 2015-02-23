@@ -330,7 +330,7 @@ class TestFullCheckpointsReverter(unittest.TestCase):
         self.assertEqual(read_in(self.config2), "directive-dir2")
         self.assertFalse(os.path.isfile(config3))
 
-    @mock.patch("letsencrypt.client.client.zope.component.getUtility")
+    @mock.patch("letsencrypt.client.reverter.zope.component.getUtility")
     def test_view_config_changes(self, mock_output):
         """This is not strict as this is subject to change."""
         self._setup_three_checkpoints()

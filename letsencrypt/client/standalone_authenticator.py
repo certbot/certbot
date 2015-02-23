@@ -29,6 +29,8 @@ class StandaloneAuthenticator(object):
     """
     zope.interface.implements(interfaces.IAuthenticator)
 
+    description = "Standalone Authenticator"
+
     def __init__(self):
         self.child_pid = None
         self.parent_pid = os.getpid()
@@ -38,6 +40,14 @@ class StandaloneAuthenticator(object):
         self.connection = None
         self.private_key = None
         self.ssl_conn = None
+
+    def prepare(self):
+        """There is nothing left to setup.
+
+        .. todo:: This should probably do the port check
+
+        """
+        pass
 
     def client_signal_handler(self, sig, unused_frame):
         """Signal handler for the parent process.

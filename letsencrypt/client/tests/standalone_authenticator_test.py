@@ -549,9 +549,25 @@ class MoreInfoTest(unittest.TestCase):
             StandaloneAuthenticator
         self.authenticator = StandaloneAuthenticator()
 
-    def test_chall_pref(self):
+    def test_more_info(self):
         """Make sure exceptions aren't raised."""
         self.authenticator.more_info()
+
+
+class InitTest(unittest.TestCase):
+    """Tests for more_info() method. (trivially)"""
+    def setUp(self):
+        from letsencrypt.client.standalone_authenticator import \
+            StandaloneAuthenticator
+        self.authenticator = StandaloneAuthenticator()
+
+    def test_prepare(self):
+        """Make sure exceptions aren't raised.
+
+        .. todo:: Add on more once things are setup appropriately.
+
+        """
+        self.authenticator.prepare()
 
 
 if __name__ == "__main__":

@@ -8,6 +8,10 @@ from letsencrypt.client import interfaces
 from letsencrypt.client.display import util as display_util
 
 
+# Used to make easier to read code.
+util = zope.component.getUtility  # pylint: disable=invalid-name
+
+
 def ask(enhancement):
     """Display the enhancement to the user.
 
@@ -22,9 +26,10 @@ def ask(enhancement):
 
     """
     try:
-        return dispatch[enhancement]()
+        # Call the appropriate function based on the enhancement
+        return DISPATCH[enhancement]()
     except KeyError:
-        logging.error("Unsupported enhancement given to ask()")
+        logging.error("Unsupported enhancement given to ask(): %s", enhancement)
         raise errors.LetsEncryptClientError("Unsupported Enhancement")
 
 
@@ -50,9 +55,6 @@ def redirect_by_default():
     return selection == 1
 
 
-util = zope.component.getUtility  # pylint: disable=invalid-name
-
-
-dispatch = {  # pylint: disable=invalid-name
+DISPATCH = {
     "redirect": redirect_by_default
 }

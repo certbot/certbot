@@ -10,7 +10,7 @@ import zope.component
 from letsencrypt.client.display import util as display_util
 
 
-class ChooseCertsTest(unittest.TestCase):
+class DisplayCertsTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.client.revoker import Cert
         base_package = "letsencrypt.client.tests"
@@ -25,33 +25,37 @@ class ChooseCertsTest(unittest.TestCase):
 
     @classmethod
     def _call(cls, certs):
-        from letsencrypt.client.display.revocation import choose_certs
-        return choose_certs(certs)
+        from letsencrypt.client.display.revocation import display_certs
+        return display_certs(certs)
 
     @mock.patch("letsencrypt.client.display.revocation.util")
     def test_revocation(self, mock_util):
         mock_util().menu.return_value = (display_util.OK, 0)
 
-        choice = self._call(self.certs)
+        code, choice = self._call(self.certs)
 
+        self.assertEqual(display_util.OK, code)
         self.assertTrue(self.certs[choice] == self.cert0)
 
     @mock.patch("letsencrypt.client.display.revocation.util")
     def test_cancel(self, mock_util):
         mock_util().menu.return_value = (display_util.CANCEL, -1)
 
-        self.assertRaises(SystemExit, self._call, self.certs)
+        code, _ = self._call(self.certs)
+        self.assertEqual(display_util.CANCEL, code)
+
+
+class MoreInfoCertTest(unittest.TestCase):
+    # pylint: disable=too-few-public-methods
+    @classmethod
+    def _call(cls, cert):
+        from letsencrypt.client.display.revocation import more_info_cert
+        more_info_cert(cert)
 
     @mock.patch("letsencrypt.client.display.revocation.util")
     def test_more_info(self, mock_util):
-        mock_util().menu.side_effect = [
-            (display_util.HELP, 1),
-            (display_util.OK, 1),
-        ]
+        self._call(mock.MagicMock())
 
-        choice = self._call(self.certs)
-
-        self.assertTrue(self.certs[choice] == self.cert1)
         self.assertEqual(mock_util().notification.call_count, 1)
 
 

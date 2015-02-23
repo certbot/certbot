@@ -1,4 +1,4 @@
-"""Lets Encrypt display."""
+"""Let's Encrypt display."""
 import os
 import textwrap
 
@@ -13,10 +13,10 @@ HEIGHT = 20
 
 # Display exit codes
 OK = "ok"
-"""Display exit code indicating user acceptance"""
+"""Display exit code indicating user acceptance."""
 
 CANCEL = "cancel"
-"""Display exit code for a user canceling the display"""
+"""Display exit code for a user canceling the display."""
 
 HELP = "help"
 """Display exit code when for when the user requests more help."""
@@ -63,10 +63,7 @@ class NcursesDisplay(object):
         :rtype: tuple
 
         """
-        if help_label:
-            help_button = True
-        else:
-            help_button = False
+        help_button = bool(help_label)
 
         # Can accept either tuples or just the actual choices
         if choices and isinstance(choices[0], tuple):
@@ -111,7 +108,7 @@ class NcursesDisplay(object):
         return self.dialog.inputbox(message, width=self.width)
 
     def yesno(self, message, yes_label="Yes", no_label="No"):
-        """Display a Yes/No dialog box
+        """Display a Yes/No dialog box.
 
         Yes and No label must begin with different letters.
 
@@ -198,7 +195,7 @@ class FileDisplay(object):
 
     def input(self, message):
         # pylint: disable=no-self-use
-        """Accept input from the user
+        """Accept input from the user.
 
         :param str message: message to display to the user
 
@@ -219,7 +216,8 @@ class FileDisplay(object):
     def yesno(self, message, yes_label="Yes", no_label="No"):
         """Query the user with a yes/no question.
 
-        Yes and No label must begin with different letters
+        Yes and No label must begin with different letters, and must contain at
+        least one letter each.
 
         :param str message: question for the user
         :param str yes_label: Label of the "Yes" parameter
@@ -336,7 +334,7 @@ class FileDisplay(object):
         self.outfile.write(side_frame)
 
     def _wrap_lines(self, msg):  # pylint: disable=no-self-use
-        """Format lines nicely to 80 chars
+        """Format lines nicely to 80 chars.
 
         :param str msg: Original message
 

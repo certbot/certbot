@@ -1,4 +1,4 @@
-"""Test display.ops."""
+"""Test letsencrypt.client.display.ops."""
 import sys
 import unittest
 
@@ -17,10 +17,7 @@ class ChooseAuthenticatorTest(unittest.TestCase):
         self.mock_apache().more_info.return_value = "Apache Info"
         self.mock_stand().more_info.return_value = "Standalone Info"
 
-        self.auths = [
-            ("Apache Tag", self.mock_apache),
-            ("Standalone Tag", self.mock_stand)
-        ]
+        self.auths = [self.mock_apache, self.mock_stand]
 
         self.errs = {self.mock_apache: "This is an error message."}
 
@@ -58,7 +55,7 @@ class ChooseAuthenticatorTest(unittest.TestCase):
 
 
 class GenHttpsNamesTest(unittest.TestCase):
-    """Test _gen_https_names"""
+    """Test _gen_https_names."""
     def setUp(self):
         zope.component.provideUtility(display_util.FileDisplay(sys.stdout))
 

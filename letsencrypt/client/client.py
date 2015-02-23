@@ -5,7 +5,6 @@ import sys
 
 import Crypto.PublicKey.RSA
 import M2Crypto
-import zope.component
 
 from letsencrypt.acme import messages
 from letsencrypt.acme import util as acme_util
@@ -14,14 +13,13 @@ from letsencrypt.client import auth_handler
 from letsencrypt.client import client_authenticator
 from letsencrypt.client import crypto_util
 from letsencrypt.client import errors
-from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
 from letsencrypt.client import network
 from letsencrypt.client import reverter
 from letsencrypt.client import revoker
 
 from letsencrypt.client.apache import configurator
-from letsencrypt.client.display import ops
+from letsencrypt.client.display import ops as display_ops
 from letsencrypt.client.display import enhancements
 
 
@@ -50,7 +48,8 @@ class Client(object):
         """Initialize a client.
 
         :param dv_auth: IAuthenticator that can solve the
-            :const:`letsencrypt.client.constants.DV_CHALLENGES`
+            :const:`letsencrypt.client.constants.DV_CHALLENGES`.
+            :func:`letsencrypt.client.interfaces.IAuthenticator.prepare`
         :type dv_auth: :class:`letsencrypt.client.interfaces.IAuthenticator`
 
         """
@@ -200,7 +199,7 @@ class Client(object):
         # sites may have been enabled / final cleanup
         self.installer.restart()
 
-        ops.success_installation(domains)
+        display_ops.success_installation(domains)
 
     def enhance_config(self, domains, redirect=None):
         """Enhance the configuration.
@@ -357,6 +356,8 @@ def determine_authenticator(all_auths):
 
     :returns: Valid Authenticator object or None
 
+    :raises :class:`letsencrypt.client.errors.LetsEncryptClientError`
+
     """
     # Available Authenticator objects
     avail_auths = []
@@ -365,29 +366,20 @@ def determine_authenticator(all_auths):
 
     for pot_auth in all_auths:
         try:
-            # I do not think this a great solution but haven't come up with
-            # anything better yet... other than constricting init functions for
-            # authenticators
-            if len(pot_auth) == 2:
-                # pylint: disable=no-value-for-parameter
-                avail_auths.append((pot_auth[0], pot_auth[1]()))
-            elif len(pot_auth) == 3:
-                avail_auths.append((pot_auth[0], pot_auth[1](pot_auth[2])))
-            else:
-                raise errors.LetsEncryptClientError(
-                    "IAuthenticator: Number of parameters not supported")
+            pot_auth.prepare()
+            avail_auths.append(pot_auth)
         except errors.LetsEncryptMisconfigurationError as err:
-            errs[pot_auth[1]] = err
-            avail_auths.append((pot_auth[0], pot_auth[1]))
+            errs[pot_auth] = err
+            avail_auths.append(pot_auth)
         except errors.LetsEncryptNoInstallationError:
-            pass
+            continue
 
     if len(avail_auths) > 1:
-        auth = ops.choose_authenticator(avail_auths, errs)
+        auth = display_ops.choose_authenticator(avail_auths, errs)
     elif len(avail_auths) == 1:
-        auth = avail_auths[0][1]
+        auth = avail_auths[0]
     else:
-        auth = None
+        raise errors.LetsEncryptClientError("No Authenticators available.")
 
     if auth in errs:
         logging.error("Please fix the configuration for the Authenticator. "
@@ -406,25 +398,19 @@ def determine_installer(config):
 
     """
     try:
-        return configurator.ApacheConfigurator(config)
+        installer = configurator.ApacheConfigurator(config)
+        installer.prepare()
+        return installer
     except errors.LetsEncryptNoInstallationError:
         logging.info("Unable to find a way to install the certificate.")
+        return None
+    except errors.LetsEncryptMisconfigurationError:
+        # This will have to be changed in the future...
+        return installer
 
 
 def rollback(checkpoints, config):
     """Revert configuration the specified number of checkpoints.
-
-    .. note:: If another installer uses something other than the reverter class
-        to do their configuration changes, the correct reverter will have to be
-        determined.
-
-    .. note:: This function restarts the server even if there weren't any
-        rollbacks.  The user may be confused or made an error and simply needs
-        to restart the server.
-
-    .. todo:: This function will have to change depending on the functionality
-        of future installers.  Perhaps the interface should define errors that
-        are thrown for the various functions.
 
     :param int checkpoints: Number of checkpoints to revert.
 
@@ -433,11 +419,7 @@ def rollback(checkpoints, config):
 
     """
     # Misconfigurations are only a slight problems... allow the user to rollback
-    try:
-        installer = determine_installer(config)
-    except errors.LetsEncryptMisconfigurationError:
-        _misconfigured_rollback(checkpoints, config)
-        return
+    installer = determine_installer(config)
 
     # No Errors occurred during init... proceed normally
     # If installer is None... couldn't find an installer... there shouldn't be
@@ -445,43 +427,6 @@ def rollback(checkpoints, config):
     if installer is not None:
         installer.rollback_checkpoints(checkpoints)
         installer.restart()
-
-
-def _misconfigured_rollback(checkpoints, config):
-    """Handles the case where the Installer is misconfigured.
-
-    :param int checkpoints: Number of checkpoints to revert.
-
-    :param config: Configuration.
-    :type config: :class:`letsencrypt.client.interfaces.IConfig`
-
-    """
-    yes = zope.component.getUtility(interfaces.IDisplay).yesno(
-        "Oh, no! The web server is currently misconfigured.{0}{0}"
-        "Would you still like to rollback the "
-        "configuration?".format(os.linesep))
-    if not yes:
-        logging.info("The error message is above.")
-        logging.info("Configuration was not rolled back.")
-        return
-
-    logging.info("Rolling back using the Reverter module")
-    # recovery routine has probably already been run by installer
-    # in the__init__ attempt, run it again for safety... it shouldn't hurt
-    # Also... not sure how future installers will handle recovery.
-    rev = reverter.Reverter(config)
-    rev.recovery_routine()
-    rev.rollback_checkpoints(checkpoints)
-
-    # We should try to restart the server
-    try:
-        installer = determine_installer(config)
-        installer.restart()
-        logging.info("Hooray!  Rollback solved the misconfiguration!")
-        logging.info("Your web server is back up and running.")
-    except errors.LetsEncryptMisconfigurationError:
-        logging.warning(
-            "Rollback was unable to solve the misconfiguration issues")
 
 
 def revoke(config, no_confirm, cert, authkey):
@@ -493,14 +438,9 @@ def revoke(config, no_confirm, cert, authkey):
     """
     # Misconfigurations don't really matter. Determine installer better choose
     # correctly though.
-    try:
-        installer = determine_installer(config)
-    except errors.LetsEncryptMisconfigurationError:
-        zope.component.getUtility(interfaces.IDisplay).notification(
-            "The web server is currently misconfigured. Some "
-            "abilities like seeing which certificates are currently "
-            "installed may not be available.")
-        installer = None
+    # This will need some better prepared or properly configured parameter...
+    # I will figure it out later...
+    installer = determine_installer(config)
 
     revoc = revoker.Revoker(installer, config, no_confirm)
     # Cert is most selective, so it is chosen first.

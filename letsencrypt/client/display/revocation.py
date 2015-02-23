@@ -6,29 +6,11 @@ import zope.component
 from letsencrypt.client import interfaces
 from letsencrypt.client.display import util as display_util
 
+# Convenience call to make for easier to read lines.
 util = zope.component.getUtility  # pylint: disable=invalid-name
 
 
-def choose_certs(certs):
-    """Choose a certificate from a menu.
-
-    :param list certs: List of cert dicts.
-
-    :returns: selection (zero-based index)
-    :rtype: int
-
-    """
-    while True:
-        code, selection = _display_certs(certs)
-        if code == display_util.OK:
-            return selection
-        elif code == display_util.HELP:
-            more_info_cert(certs[selection])
-        else:
-            exit(0)
-
-
-def _display_certs(certs):
+def display_certs(certs):
     """Display the certificates in a menu for revocation.
 
     :param list certs: each is a :class:`letsencrypt.client.revoker.Cert`
@@ -65,10 +47,9 @@ def confirm_revocation(cert):
     :rtype: bool
 
     """
-    text = ("{0}Are you sure you would like to revoke the following "
-            "certificate:{0}".format(os.linesep))
-    text += cert.pretty_print()
-    text += "This action cannot be reversed!"
+    text = ("Are you sure you would like to revoke the following "
+            "certificate:{0}{cert}This action cannot be "
+            "reversed!".format(os.linesep, cert=cert.pretty_print()))
     return util(interfaces.IDisplay).yesno(text)
 
 
@@ -78,8 +59,8 @@ def more_info_cert(cert):
     :param dict cert: cert dict used throughout revoker.py
 
     """
-    text = "{0}Certificate Information:{0}".format(os.linesep)
-    text += cert.pretty_print()
+    text = "Certificate Information:{0}{1}".format(
+        os.linesep, cert.pretty_print())
     util(interfaces.IDisplay).notification(text, height=display_util.HEIGHT)
 
 

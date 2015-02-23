@@ -14,18 +14,17 @@ util = zope.component.getUtility  # pylint: disable=invalid-name
 def choose_authenticator(auths, errs):
     """Allow the user to choose their authenticator.
 
-    :param list auths: Where each is a tuple of the form
-        ('description', 'IAuthenticator') where IAuthenticator is a
-        :class:`letsencrypt.client.interfaces.IAuthenticator` object or class
+    :param list auths: Where each of type
+        :class:`letsencrypt.client.interfaces.IAuthenticator` object
     :param dict errs: Mapping IAuthenticator objects to error messages
 
     :returns: Authenticator selected
     :rtype: :class:`letsencrypt.client.interfaces.IAuthenticator`
 
     """
-    descs = [auth[0] if auth[1] not in errs else "%s (Misconfigured)" % auth[0]
+    descs = [auth.description if auth not in errs
+             else "%s (Misconfigured)" % auth.description
              for auth in auths]
-    iauths = [auth[1] for auth in auths]
 
     while True:
         code, index = util(interfaces.IDisplay).menu(
@@ -33,12 +32,12 @@ def choose_authenticator(auths, errs):
             descs, help_label="More Info")
 
         if code == display_util.OK:
-            return iauths[index]
+            return auths[index]
         elif code == display_util.HELP:
-            if iauths[index] in errs:
-                msg = "Reported Error: %s" % errs[iauths[index]]
+            if auths[index] in errs:
+                msg = "Reported Error: %s" % errs[auths[index]]
             else:
-                msg = iauths[index].more_info()
+                msg = auths[index].more_info()
             util(interfaces.IDisplay).notification(
                 msg, height=display_util.HEIGHT)
         else:
@@ -95,7 +94,7 @@ def _filter_names(names):
 
 
 def _choose_names_manually():
-    """Manualy input names for those without an installer."""
+    """Manually input names for those without an installer."""
 
     code, input_ = util(interfaces.IDisplay).input(
         "Please enter in your domain name(s) (comma and/or space separated) ")
