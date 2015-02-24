@@ -127,7 +127,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         temp_install(self.config.apache_mod_ssl_conf)
 
-
     def deploy_cert(self, domain, cert, key, cert_chain=None):
         """Deploys certificate to specified virtual host.
 
