@@ -102,7 +102,6 @@ def _choose_names_manually():
 
     if code == display_util.OK:
         return display_util.separate_list_input(input_)
-    # Else just return None
     return []
 
 
