@@ -21,6 +21,7 @@ import mock
 
 
 # http://docs.readthedocs.org/en/latest/faq.html#i-get-import-errors-on-libraries-that-depend-on-c-modules
+# c.f. #262
 sys.modules.update(
     (mod_name, mock.MagicMock()) for mod_name in ['augeas', 'M2Crypto'])
 
