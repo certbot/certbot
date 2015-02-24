@@ -45,6 +45,7 @@ dev_extras = [
 docs_extras = [
     'repoze.sphinx.autointerface',
     'Sphinx',
+    'sphinx_rtd_theme',
 ]
 
 testing_extras = [
