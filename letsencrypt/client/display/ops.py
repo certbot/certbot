@@ -42,6 +42,7 @@ def choose_authenticator(auths, errs):
         else:
             return
 
+
 def choose_names(installer):
     """Display screen to select domains to validate.
 

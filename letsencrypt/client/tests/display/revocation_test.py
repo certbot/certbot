@@ -98,5 +98,6 @@ class ConfirmRevocationTest(unittest.TestCase):
         mock_util().yesno.return_value = False
         self.assertFalse(self._call(self.cert))
 
+
 if __name__ == "__main__":
     unittest.main()

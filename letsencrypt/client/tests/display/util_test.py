@@ -53,7 +53,6 @@ class NcursesDisplayTest(DisplayT):
             "menu_height": display_util.HEIGHT-6,
         }
 
-
     @mock.patch("letsencrypt.client.display.util.dialog.Dialog.msgbox")
     def test_notification(self, mock_msgbox):
         """Kind of worthless... one liner."""
