@@ -53,7 +53,7 @@ The letsencrypt commandline tool has a builtin help:
 
 ::
 
-   letsencrypt --help
+   ./venv/bin/letsencrypt --help
 
 
 .. _augeas: http://augeas.net/
