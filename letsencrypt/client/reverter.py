@@ -28,8 +28,8 @@ class Reverter(object):
         This function should reinstall the users original configuration files
         for all saves with temporary=True
 
-        :raises :class:`errors.LetsEncryptReverterError`:
-            Unable to revert config
+        :raises letsencrypt.client.errors.LetsEncryptReverterError: when
+            unable to revert config
 
         """
         if os.path.isdir(self.config.temp_checkpoint_dir):
@@ -48,7 +48,7 @@ class Reverter(object):
         :param int rollback: Number of checkpoints to reverse. A str num will be
            cast to an integer. So "2" is also acceptable.
 
-        :raises :class:`letsencrypt.client.errors.LetsEncryptReverterError`: If
+        :raises letsencrypt.client.errors.LetsEncryptReverterError: If
             there is a problem with the input or if the function is unable to
             correctly revert the configuration checkpoints.
 
@@ -159,7 +159,7 @@ class Reverter(object):
         :param str save_notes: notes about changes made during the save
 
         :raises IOError: If unable to open cp_dir + FILEPATHS file
-        :raises :class:`letsencrypt.client.errors.LetsEncryptReverterError: If
+        :raises letsencrypt.client.errors.LetsEncryptReverterError: If
             unable to add checkpoint
 
         """
@@ -252,7 +252,7 @@ class Reverter(object):
 
         :param set save_files: Set of files about to be saved.
 
-        :raises :class:`letsencrypt.client.errors.LetsEncryptReverterError`:
+        :raises letsencrypt.client.errors.LetsEncryptReverterError:
             when save is attempting to overwrite a temporary file.
 
         """
@@ -288,7 +288,7 @@ class Reverter(object):
             a temp or permanent save.
         :param \*files: file paths (str) to be registered
 
-        :raises :class:`letsencrypt.client.errors.LetsEncryptReverterError`: If
+        :raises letsencrypt.client.errors.LetsEncryptReverterError: If
             call does not contain necessary parameters or if the file creation
             is unable to be registered.
 
@@ -354,7 +354,7 @@ class Reverter(object):
         :returns: Success
         :rtype: bool
 
-        :raises :class:`letsencrypt.client.errors.LetsEncryptReverterError`: If
+        :raises letsencrypt.client.errors.LetsEncryptReverterError: If
             all files within file_list cannot be removed
 
         """
@@ -393,7 +393,8 @@ class Reverter(object):
 
         :param str title: Title describing checkpoint
 
-        :raises :class:`letsencrypt.client.errors.LetsEncryptReverterError`
+        :raises letsencrypt.client.errors.LetsEncryptReverterError: when the
+            checkpoint is not able to be finalized.
 
         """
         # Check to make sure an "in progress" directory exists

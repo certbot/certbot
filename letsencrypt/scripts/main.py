@@ -16,6 +16,7 @@ import letsencrypt
 
 from letsencrypt.client import configuration
 from letsencrypt.client import client
+from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
 from letsencrypt.client import log
@@ -97,7 +98,7 @@ def create_parser():
     return parser
 
 
-def main():  # pylint: disable=too-many-branches
+def main():  # pylint: disable=too-many-branches, too-many-statements
     """Command line argument parsing and main script execution."""
     # note: arg parser internally handles --help (and exits afterwards)
     args = create_parser().parse_args()
@@ -139,10 +140,16 @@ def main():  # pylint: disable=too-many-branches
         configurator.ApacheConfigurator(config),
         standalone.StandaloneAuthenticator(),
     ]
-    auth = client.determine_authenticator(all_auths)
+    try:
+        auth = client.determine_authenticator(all_auths)
+    except errors.LetsEncryptClientError:
+        logging.critical("No authentication mechanisms were found on your "
+                         "system.")
+        sys.exit(1)
+
     if auth is None:
-        logging.critical("Unable to find a way to authenticate the server.")
-        sys.exit(4)
+        logging.info("Cannot authenticate to the ACME server.")
+        sys.exit(0)
 
     # Use the same object if possible
     if interfaces.IInstaller.providedBy(auth):  # pylint: disable=no-member
@@ -155,6 +162,9 @@ def main():  # pylint: disable=too-many-branches
         doms = display_ops.choose_names(installer)
     else:
         doms = args.domains
+
+    if not doms:
+        sys.exit(0)
 
     # Prepare for init of Client
     if args.authkey is None:

@@ -1,6 +1,5 @@
 """Contains UI methods for LE user operations."""
 import os
-import sys
 
 import zope.component
 
@@ -19,7 +18,7 @@ def choose_authenticator(auths, errs):
     :param dict errs: Mapping IAuthenticator objects to error messages
 
     :returns: Authenticator selected
-    :rtype: :class:`letsencrypt.client.interfaces.IAuthenticator`
+    :rtype: :class:`letsencrypt.client.interfaces.IAuthenticator` or `None`
 
     """
     descs = [auth.description if auth not in errs
@@ -41,14 +40,16 @@ def choose_authenticator(auths, errs):
             util(interfaces.IDisplay).notification(
                 msg, height=display_util.HEIGHT)
         else:
-            sys.exit(0)
-
+            return
 
 def choose_names(installer):
     """Display screen to select domains to validate.
 
     :param installer: An installer object
     :type installer: :class:`letsencrypt.client.interfaces.IInstaller`
+
+    :returns: List of selected names
+    :rtype: `list` of `str`
 
     """
     if installer is None:
@@ -67,13 +68,13 @@ def choose_names(installer):
         if manual:
             return _choose_names_manually()
         else:
-            sys.exit(0)
+            return []
 
     code, names = _filter_names(names)
     if code == display_util.OK and names:
         return names
     else:
-        sys.exit(0)
+        return []
 
 
 def _filter_names(names):
@@ -101,8 +102,8 @@ def _choose_names_manually():
 
     if code == display_util.OK:
         return display_util.separate_list_input(input_)
-
-    sys.exit(0)
+    # Else just return None
+    return []
 
 
 def success_installation(domains):

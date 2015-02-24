@@ -21,7 +21,7 @@ def ask(enhancement):
     :returns: True if feature is desired, False otherwise
     :rtype: bool
 
-    :raises :class:`letsencrypt.client.errors.LetsEncryptClientError`: If
+    :raises letsencrypt.client.errors.LetsEncryptClientError: If
         the enhancement provided is not supported.
 
     """

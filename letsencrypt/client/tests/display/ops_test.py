@@ -51,7 +51,7 @@ class ChooseAuthenticatorTest(unittest.TestCase):
     def test_no_choice(self, mock_util):
         mock_util().menu.return_value = (display_util.CANCEL, 0)
 
-        self.assertRaises(SystemExit, self._call, self.auths, {})
+        self.assertEqual(self._call(self.auths, {}), None)
 
 
 class GenHttpsNamesTest(unittest.TestCase):
@@ -68,14 +68,22 @@ class GenHttpsNamesTest(unittest.TestCase):
         self.assertEqual(self._call([]), "")
 
     def test_one(self):
-        dom = "example.com"
-        self.assertEqual(self._call([dom]), "https://%s" % dom)
+        doms = [
+            "example.com",
+            "asllkjsadfljasdf.c",
+        ]
+        for dom in doms:
+            self.assertEqual(self._call([dom]), "https://%s" % dom)
 
     def test_two(self):
-        doms = ["foo.bar.org", "bar.org"]
-        self.assertEqual(
-            self._call(doms),
-            "https://{dom[0]} and https://{dom[1]}".format(dom=doms))
+        domains_list = [
+            ["foo.bar.org", "bar.org"],
+            ["paypal.google.facebook.live.com", "*.zombo.example.com"],
+        ]
+        for doms in domains_list:
+            self.assertEqual(
+                self._call(doms),
+                "https://{dom[0]} and https://{dom[1]}".format(dom=doms))
 
     def test_three(self):
         doms = ["a.org", "b.org", "c.org"]
@@ -112,7 +120,7 @@ class ChooseNamesTest(unittest.TestCase):
     @mock.patch("letsencrypt.client.display.ops.util")
     def test_no_installer_cancel(self, mock_util):
         mock_util().input.return_value = (display_util.CANCEL, [])
-        self.assertRaises(SystemExit, self._call, None)
+        self.assertEqual(self._call(None), [])
 
     @mock.patch("letsencrypt.client.display.ops.util")
     def test_no_names_choose(self, mock_util):
@@ -130,7 +138,7 @@ class ChooseNamesTest(unittest.TestCase):
         self.mock_install().get_all_names.return_value = set()
         mock_util().yesno.return_value = False
 
-        self.assertRaises(SystemExit, self._call, self.mock_install)
+        self.assertEqual(self._call(self.mock_install), [])
 
     @mock.patch("letsencrypt.client.display.ops.util")
     def test_filter_names_valid_return(self, mock_util):
@@ -146,7 +154,7 @@ class ChooseNamesTest(unittest.TestCase):
         self.mock_install.get_all_names.return_value = set(["example.com"])
         mock_util().checklist.return_value = (display_util.OK, [])
 
-        self.assertRaises(SystemExit, self._call, self.mock_install)
+        self.assertEqual(self._call(self.mock_install), [])
 
     @mock.patch("letsencrypt.client.display.ops.util")
     def test_filter_names_cancel(self, mock_util):
@@ -154,7 +162,7 @@ class ChooseNamesTest(unittest.TestCase):
         mock_util().checklist.return_value = (
             display_util.CANCEL, ["example.com"])
 
-        self.assertRaises(SystemExit, self._call, self.mock_install)
+        self.assertEqual(self._call(self.mock_install), [])
 
 
 class SuccessInstallationTest(unittest.TestCase):

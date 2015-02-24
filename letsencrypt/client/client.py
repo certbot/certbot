@@ -214,7 +214,7 @@ class Client(object):
         :param redirect: If traffic should be forwarded from HTTP to HTTPS.
         :type redirect: bool or None
 
-        :raises :class:`letsencrypt.client.errors.LetsEncryptClientError`: if
+        :raises letsencrypt.client.errors.LetsEncryptClientError: if
             no installer is specified in the client.
 
         """
@@ -261,7 +261,8 @@ def validate_key_csr(privkey, csr=None):
     :param csr: CSR
     :type csr: :class:`letsencrypt.client.le_util.CSR`
 
-    :raises LetsEncryptClientError: if validation fails
+    :raises letsencrypt.client.errors.LetsEncryptClientError: when
+        validation fails
 
     """
     # TODO: Handle all of these problems appropriately
@@ -355,7 +356,7 @@ def determine_authenticator(all_auths):
 
     :returns: Valid Authenticator object or None
 
-    :raises :class:`letsencrypt.client.errors.LetsEncryptClientError`: If no
+    :raises letsencrypt.client.errors.LetsEncryptClientError: If no
         authenticator is available.
 
     """
@@ -380,11 +381,11 @@ def determine_authenticator(all_auths):
     else:
         raise errors.LetsEncryptClientError("No Authenticators available.")
 
-    if auth in errs:
+    if auth and auth in errs:
         logging.error("Please fix the configuration for the Authenticator. "
                       "The following error message was received: "
                       "%s", errs[auth])
-        sys.exit(1)
+        return
 
     return auth
 

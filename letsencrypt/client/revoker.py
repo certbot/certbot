@@ -82,10 +82,8 @@ class Revoker(object):
                 #    certificate.
                 _, b_k = self._row_to_backup(row)
                 try:
-                    if clean_pem == Crypto.PublicKey.RSA.importKey(
-                            open(b_k).read()).exportKey("PEM"):
-                        certs.append(
-                            Cert.fromrow(row, self.config.cert_key_backup))
+                    test_pem = Crypto.PublicKey.RSA.importKey(
+                        open(b_k).read()).exportKey("PEM")
                 except (IndexError, ValueError, TypeError):
                     # This should never happen given the assumptions of the
                     # module. If it does, it is probably best to delete the
@@ -93,6 +91,9 @@ class Revoker(object):
                     raise errors.LetsEncryptRevokerError(
                         "%s - backup file is corrupted.")
 
+                if clean_pem == test_pem:
+                    certs.append(
+                        Cert.fromrow(row, self.config.cert_key_backup))
         if certs:
             self._safe_revoke(certs)
         else:
@@ -216,13 +217,12 @@ class Revoker(object):
                 if self.no_confirm or revocation.confirm_revocation(cert):
                     try:
                         self._acme_revoke(cert)
-                        success_list.append(cert)
-                        revocation.success_revocation(cert)
-
                     except errors.LetsEncryptClientError:
                         # TODO: Improve error handling when networking is set...
                         logging.error(
                             "Unable to revoke cert:%s%s", os.linesep, str(cert))
+                    success_list.append(cert)
+                    revocation.success_revocation(cert)
         finally:
             if success_list:
                 self._remove_certs_keys(success_list)

@@ -265,10 +265,10 @@ class FileOutputDisplayTest(DisplayT):
 
     def test_wrap_lines(self):
         # pylint: disable=protected-access
-        msg = ("This is just a weak test\n"
-               "This function is only meant to be for easy viewing\n"
+        msg = ("This is just a weak test{0}"
+               "This function is only meant to be for easy viewing{0}"
                "Test a really really really really really really really really "
-               "really really really really really long line...")
+               "really really really really long line...".format(os.linesep))
         text = self.displayer._wrap_lines(msg)
 
         self.assertEqual(text.count(os.linesep), 3)
@@ -313,20 +313,20 @@ class SeparateListInputTest(unittest.TestCase):
         return separate_list_input(input_)
 
     def test_commas(self):
-        actual = self._call("a,b,c,test")
-        self.assertEqual(actual, self.exp)
+        self.assertEqual(self._call("a,b,c,test"), self.exp)
 
     def test_spaces(self):
-        actual = self._call("a b c test")
-        self.assertEqual(actual, self.exp)
+        self.assertEqual(self._call("a b c test"), self.exp)
 
     def test_both(self):
-        actual = self._call("a, b, c, test")
-        self.assertEqual(actual, self.exp)
+        self.assertEqual(self._call("a, b, c, test"), self.exp)
 
     def test_mess(self):
-        actual = [self._call(" a , b    c \t test")]
-        actual.append(self._call(",a, ,, , b c  test "))
+        actual = [
+            self._call("  a , b    c \t test"),
+            self._call(",a, ,, , b c  test  "),
+            self._call(",,,,, , a b,,, , c,test"),
+        ]
 
         for act in actual:
             self.assertEqual(act, self.exp)
@@ -339,12 +339,11 @@ class PlaceParensTest(unittest.TestCase):
         return _parens_around_char(label)
 
     def test_single_letter(self):
-        ret = self._call("a")
-        self.assertEqual("(a)", ret)
+        self.assertEqual("(a)", self._call("a"))
 
     def test_multiple(self):
-        ret = self._call("Label")
-        self.assertEqual("(L)abel", ret)
+        self.assertEqual("(L)abel", self._call("Label"))
+        self.assertEqual("(y)es please", self._call("yes please"))
 
 
 if __name__ == "__main__":
