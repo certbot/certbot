@@ -18,7 +18,6 @@ class IJSONSerializable(zope.interface.Interface):
             objects, that haven't been serialized yet, which is fine as
             long as :func:`letsencrypt.acme.util.dump_ijsonserializable`
             is used.
-        :rtype: dict
 
         """
 

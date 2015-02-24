@@ -82,7 +82,13 @@ class Message(util.TypedACMEObject):
 
 @Message.register  # pylint: disable=too-few-public-methods
 class Challenge(Message):
-    """ACME "challenge" message."""
+    """ACME "challenge" message.
+
+    :ivar str nonce: Random data, **not** base64-encoded.
+    :ivar list challenges: List of
+        :class:`~letsencrypt.acme.challenges.Challenge` objects.
+
+    """
     acme_type = "challenge"
     schema = util.load_schema(acme_type)
     __slots__ = ("session_id", "nonce", "challenges", "combinations")
@@ -119,11 +125,7 @@ class Challenge(Message):
 
 @Message.register  # pylint: disable=too-few-public-methods
 class ChallengeRequest(Message):
-    """ACME "challengeRequest" message.
-
-    :ivar str identifier: Domain name.
-
-    """
+    """ACME "challengeRequest" message."""
     acme_type = "challengeRequest"
     schema = util.load_schema(acme_type)
     __slots__ = ("identifier",)
@@ -140,7 +142,11 @@ class ChallengeRequest(Message):
 
 @Message.register  # pylint: disable=too-few-public-methods
 class Authorization(Message):
-    """ACME "authorization" message."""
+    """ACME "authorization" message.
+
+    :ivar jwk: :class:`letsencrypt.acme.other.JWK`
+
+    """
     acme_type = "authorization"
     schema = util.load_schema(acme_type)
     __slots__ = ("recovery_token", "identifier", "jwk")
@@ -168,11 +174,11 @@ class Authorization(Message):
 class AuthorizationRequest(Message):
     """ACME "authorizationRequest" message.
 
-    :ivar str session_id: "sessionID" from the server challenge
-    :ivar str nonce: Nonce from the server challenge
-    :ivar list responses: List of completed challenges
+    :ivar str nonce: Random data from the corresponding
+        :attr:`Challenge.nonce`, **not** base64-encoded.
+    :ivar list responses: List of completed challenges (
+        :class:`letsencrypt.acme.challenges.ChallengeResponse`).
     :ivar signature: Signature (:class:`letsencrypt.acme.other.Signature`).
-    :ivar contact: TODO
 
     """
     acme_type = "authorizationRequest"
