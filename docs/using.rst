@@ -27,6 +27,7 @@ Ubuntu
                  gcc swig dialog libaugeas0 libssl-dev libffi-dev \
                  ca-certificates
 
+.. Please keep the above command in sync with .travis.yml (before_install)
 
 Mac OSX
 -------

@@ -1,8 +1,10 @@
 language: python
 
+# please keep this in sync with docs/using.rst (Ubuntu section, apt-get)
 before_install: >
   travis_retry sudo apt-get install python python-setuptools
   python-virtualenv python-dev gcc swig dialog libaugeas0 libssl-dev
+  libffi-dev ca-certificates
 
 install: "travis_retry pip install tox coveralls"
 script: "travis_retry tox"
