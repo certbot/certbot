@@ -40,6 +40,9 @@ install_requires = [
 
 dev_extras = [
     'pylint>=1.4.0',  # upstream #248
+]
+
+docs_extras = [
     'repoze.sphinx.autointerface',
     'Sphinx',
 ]
@@ -73,6 +76,7 @@ setup(
     test_suite='letsencrypt',
     extras_require={
         'dev': dev_extras,
+        'docs': docs_extras,
         'testing': testing_extras,
     },
     entry_points={
