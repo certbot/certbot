@@ -17,6 +17,13 @@ import os
 import re
 import sys
 
+import mock
+
+
+# http://docs.readthedocs.org/en/latest/faq.html#i-get-import-errors-on-libraries-that-depend-on-c-modules
+sys.modules.update(
+    (mod_name, mock.MagicMock()) for mod_name in ['augeas', 'M2Crypto'])
+
 here = os.path.abspath(os.path.dirname(__file__))
 
 # read version number (and other metadata) from package init
