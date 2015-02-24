@@ -35,7 +35,7 @@ class DisplayCertsTest(unittest.TestCase):
         code, choice = self._call(self.certs)
 
         self.assertEqual(display_util.OK, code)
-        self.assertTrue(self.certs[choice] == self.cert0)
+        self.assertEqual(self.certs[choice], self.cert0)
 
     @mock.patch("letsencrypt.client.display.revocation.util")
     def test_cancel(self, mock_util):

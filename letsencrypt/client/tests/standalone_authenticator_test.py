@@ -545,8 +545,8 @@ class CleanupTest(unittest.TestCase):
 class MoreInfoTest(unittest.TestCase):
     """Tests for more_info() method. (trivially)"""
     def setUp(self):
-        from letsencrypt.client.standalone_authenticator import \
-            StandaloneAuthenticator
+        from letsencrypt.client.standalone_authenticator import (
+            StandaloneAuthenticator)
         self.authenticator = StandaloneAuthenticator()
 
     def test_more_info(self):
@@ -557,8 +557,8 @@ class MoreInfoTest(unittest.TestCase):
 class InitTest(unittest.TestCase):
     """Tests for more_info() method. (trivially)"""
     def setUp(self):
-        from letsencrypt.client.standalone_authenticator import \
-            StandaloneAuthenticator
+        from letsencrypt.client.standalone_authenticator import (
+            StandaloneAuthenticator)
         self.authenticator = StandaloneAuthenticator()
 
     def test_prepare(self):

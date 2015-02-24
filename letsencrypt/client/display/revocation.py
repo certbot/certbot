@@ -6,7 +6,7 @@ import zope.component
 from letsencrypt.client import interfaces
 from letsencrypt.client.display import util as display_util
 
-# Convenience call to make for easier to read lines.
+# Define a helper function to avoid verbose code
 util = zope.component.getUtility  # pylint: disable=invalid-name
 
 
@@ -47,10 +47,10 @@ def confirm_revocation(cert):
     :rtype: bool
 
     """
-    text = ("Are you sure you would like to revoke the following "
-            "certificate:{0}{cert}This action cannot be "
-            "reversed!".format(os.linesep, cert=cert.pretty_print()))
-    return util(interfaces.IDisplay).yesno(text)
+    return util(interfaces.IDisplay).yesno(
+        "Are you sure you would like to revoke the following "
+        "certificate:{0}{cert}This action cannot be reversed!".format(
+            os.linesep, cert=cert.pretty_print()))
 
 
 def more_info_cert(cert):
@@ -59,9 +59,10 @@ def more_info_cert(cert):
     :param dict cert: cert dict used throughout revoker.py
 
     """
-    text = "Certificate Information:{0}{1}".format(
-        os.linesep, cert.pretty_print())
-    util(interfaces.IDisplay).notification(text, height=display_util.HEIGHT)
+    util(interfaces.IDisplay).notification(
+        "Certificate Information:{0}{1}".format(
+            os.linesep, cert.pretty_print()),
+        height=display_util.HEIGHT)
 
 
 def success_revocation(cert):

@@ -65,6 +65,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     :ivar config: Configuration.
     :type config: :class:`~letsencrypt.client.interfaces.IConfig`
 
+    :ivar parser: Handles low level parsing
+    :type parser: :class:`letsencrypt.client.apache.parser`
+
     :ivar tup version: version of Apache
     :ivar list vhosts: All vhosts found in the configuration
         (:class:`list` of :class:`letsencrypt.client.apache.obj.VirtualHost`)
@@ -92,13 +95,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Add name_server association dict
         self.assoc = dict()
         # Add number of outstanding challenges
-        self.chall_out = 0
+        self._chall_out = 0
 
         # These will be set in the prepare function
         self.parser = None
         self.version = version
         self.vhosts = None
-        self.enhance_func = {"redirect": self._enable_redirect}
+        self._enhance_func = {"redirect": self._enable_redirect}
 
     def prepare(self):
         """Prepare the authenticator/installer."""
@@ -533,7 +536,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         try:
-            return self.enhance_func[enhancement](
+            return self._enhance_func[enhancement](
                 self.choose_vhost(domain), options)
         except ValueError:
             raise errors.LetsEncryptConfiguratorError(
@@ -987,7 +990,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: list
 
         """
-        self.chall_out += len(chall_list)
+        self._chall_out += len(chall_list)
         responses = [None] * len(chall_list)
         apache_dvsni = dvsni.ApacheDvsni(self)
 
@@ -1013,10 +1016,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     def cleanup(self, chall_list):
         """Revert all challenges."""
-        self.chall_out -= len(chall_list)
+        self._chall_out -= len(chall_list)
 
         # If all of the challenges have been finished, clean up everything
-        if self.chall_out <= 0:
+        if self._chall_out <= 0:
             self.revert_challenge_config()
             self.restart()
 

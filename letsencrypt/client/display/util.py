@@ -37,6 +37,11 @@ class NcursesDisplay(object):
         # pylint: disable=unused-argument
         """Display a notification to the user and wait for user acceptance.
 
+        .. todo:: It probably makes sense to use one of the transient message
+            types for pause. It isn't straightforward how best to approach
+            the matter though given the context of our messages.
+            http://pythondialog.sourceforge.net/doc/widgets.html#displaying-transient-messages
+
         :param str message: Message to display
         :param int height: Height of the dialog box
         :param bool pause: Not applicable to NcursesDisplay
@@ -63,15 +68,21 @@ class NcursesDisplay(object):
         :rtype: tuple
 
         """
-        help_button = bool(help_label)
+        menu_options = {
+            "choices": choices,
+            "ok_label": ok_label,
+            "cancel_label": cancel_label,
+            "help_button": bool(help_label),
+            "help_label": help_label,
+            "width": self.width,
+            "height": self.height,
+            "menu_height": self.height-6,
+        }
 
         # Can accept either tuples or just the actual choices
         if choices and isinstance(choices[0], tuple):
-            code, selection = self.dialog.menu(
-                message, choices=choices, ok_label=ok_label,
-                cancel_label=cancel_label,
-                help_button=help_button, help_label=help_label,
-                width=self.width, height=self.height)
+            # pylint: disable=star-args
+            code, selection = self.dialog.menu(message, **menu_options)
 
             # Return the selection index
             for i, choice in enumerate(choices):
@@ -81,14 +92,12 @@ class NcursesDisplay(object):
             return code, -1
 
         else:
-            choices = [
+            # "choices" is not formatted the way the dialog.menu expects...
+            menu_options["choices"] = [
                 (str(i), choice) for i, choice in enumerate(choices, 1)
             ]
-            code, tag = self.dialog.menu(
-                message, choices=choices, ok_label=ok_label,
-                cancel_label=cancel_label,
-                help_button=help_button, help_label=help_label,
-                width=self.width, height=self.height)
+            # pylint: disable=star-args
+            code, tag = self.dialog.menu(message, **menu_options)
 
             if code == CANCEL:
                 return code, -1
@@ -263,8 +272,8 @@ class FileDisplay(object):
         while True:
             self._print_menu(message, tags)
 
-            code, ans = self.input("Select the appropriate numbers "
-                                   "separated by commas and/or spaces ")
+            code, ans = self.input("Select the appropriate numbers separated "
+                                   "by commas and/or spaces")
 
             if code == OK:
                 indices = separate_list_input(ans)

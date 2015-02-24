@@ -191,12 +191,12 @@ class Revoker(object):
             try:
                 cert_sha1 = M2Crypto.X509.load_cert(
                     cert_path).get_fingerprint(md="sha1")
-                if cert_sha1 in csha1_vhlist:
-                    csha1_vhlist[cert_sha1].append(path)
-                else:
-                    csha1_vhlist[cert_sha1] = [path]
             except (IOError, M2Crypto.X509.X509Error):
                 continue
+            if cert_sha1 in csha1_vhlist:
+                csha1_vhlist[cert_sha1].append(path)
+            else:
+                csha1_vhlist[cert_sha1] = [path]
 
         return csha1_vhlist
 
@@ -216,9 +216,9 @@ class Revoker(object):
                 if self.no_confirm or revocation.confirm_revocation(cert):
                     try:
                         self._acme_revoke(cert)
-
                         success_list.append(cert)
                         revocation.success_revocation(cert)
+
                     except errors.LetsEncryptClientError:
                         # TODO: Improve error handling when networking is set...
                         logging.error(
@@ -238,19 +238,21 @@ class Revoker(object):
         :returns: TODO
 
         """
+        # These will both have to change in the future away from M2Crypto
+        # pylint: disable=protected-access
+        certificate = acme_util.ComparableX509(cert._cert)
         try:
-            certificate = acme_util.ComparableX509(cert.cert)
             with open(cert.backup_key_path, "rU") as backup_key_file:
                 key = Crypto.PublicKey.RSA.importKey(backup_key_file.read())
 
         # If the key file doesn't exist... or is corrupted
-        except (OSError, IOError):
-            raise errors.LetsEncryptRevokerError("Unable to read key file")
+        except (IndexError, ValueError, TypeError):
+            raise errors.LetsEncryptRevokerError(
+                "Corrupted backup key file: %s" % cert.backup_key_path)
 
         # TODO: Catch error associated with already revoked and proceed.
         return self.network.send_and_receive_expected(
-            messages.RevocationRequest.create(
-                certificate=certificate, key=key),
+            messages.RevocationRequest.create(certificate=certificate, key=key),
             messages.Revocation)
 
     def _remove_certs_keys(self, cert_list):  # pylint: disable=no-self-use
@@ -365,8 +367,8 @@ class Revoker(object):
 class Cert(object):
     """Cert object used for Revocation convenience.
 
-    :ivar cert: M2Crypto X509 cert
-    :type cert: :class:`M2Crypto.X509`
+    :ivar _cert: M2Crypto X509 cert
+    :type _cert: :class:`M2Crypto.X509`
 
     :ivar int idx: convenience index used for listing
     :ivar orig: (`str` path - original certificate, `str` status)
@@ -394,7 +396,7 @@ class Cert(object):
 
         """
         try:
-            self.cert = M2Crypto.X509.load_cert(cert_path)
+            self._cert = M2Crypto.X509.load_cert(cert_path)
         except (IOError, M2Crypto.X509.X509Error):
             raise errors.LetsEncryptRevokerError(
                 "Error loading certificate: %s" % cert_path)
@@ -464,27 +466,26 @@ class Cert(object):
         self.backup_path = backup
         self.backup_key_path = backup_key
 
-    # I would rather not have outside classes messing with Cert directly.
-    # (I would like to change M2Crypto -> something else without issues)
+    # M2Crypto is eventually going to be replaced, hence the reason for _cert
     def get_cn(self):
         """Get common name."""
-        return self.cert.get_subject().CN
+        return self._cert.get_subject().CN
 
     def get_fingerprint(self):
-        """Get SHA1"""
-        return self.cert.get_fingerprint(md="sha1")
+        """Get SHA1 fingerprint."""
+        return self._cert.get_fingerprint(md="sha1")
 
     def get_not_before(self):
         """Get not_valid_before field."""
-        return self.cert.get_not_before().get_datetime()
+        return self._cert.get_not_before().get_datetime()
 
     def get_not_after(self):
         """Get not_valid_after field."""
-        return self.cert.get_not_after().get_datetime()
+        return self._cert.get_not_after().get_datetime()
 
     def get_der(self):
         """Get certificate in der format."""
-        return self.cert.as_der()
+        return self._cert.as_der()
 
     def get_pub_key(self):
         """Get public key size.
@@ -492,24 +493,24 @@ class Cert(object):
         .. todo:: M2Crypto doesn't support ECC, this will have to be updated
 
         """
-        return "RSA " + str(self.cert.get_pubkey().size() * 8)
+        return "RSA " + str(self._cert.get_pubkey().size() * 8)
 
     def get_san(self):
         """Get subject alternative name if available."""
         try:
-            return self.cert.get_ext("subjectAltName").get_value()
+            return self._cert.get_ext("subjectAltName").get_value()
         except LookupError:
             return ""
 
     def __str__(self):
         text = [
-            "Subject: %s" % self.cert.get_subject().as_text(),
+            "Subject: %s" % self._cert.get_subject().as_text(),
             "SAN: %s" % self.get_san(),
-            "Issuer: %s" % self.cert.get_issuer().as_text(),
+            "Issuer: %s" % self._cert.get_issuer().as_text(),
             "Public Key: %s" % self.get_pub_key(),
             "Not Before: %s" % str(self.get_not_before()),
             "Not After: %s" % str(self.get_not_after()),
-            "Serial Number: %s" % self.cert.get_serial_number(),
+            "Serial Number: %s" % self._cert.get_serial_number(),
             "SHA1: %s%s" % (self.get_fingerprint(), os.linesep),
             "Installed: %s" % ", ".join(self.installed),
         ]

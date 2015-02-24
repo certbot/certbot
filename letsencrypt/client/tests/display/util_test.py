@@ -42,6 +42,18 @@ class NcursesDisplayTest(DisplayT):
         super(NcursesDisplayTest, self).setUp()
         self.displayer = display_util.NcursesDisplay()
 
+        self.default_menu_options = {
+            "choices": self.choices,
+            "ok_label": "OK",
+            "cancel_label": "Cancel",
+            "help_button": False,
+            "help_label": "",
+            "width": display_util.WIDTH,
+            "height": display_util.HEIGHT,
+            "menu_height": display_util.HEIGHT-6,
+        }
+
+
     @mock.patch("letsencrypt.client.display.util.dialog.Dialog.msgbox")
     def test_notification(self, mock_msgbox):
         """Kind of worthless... one liner."""
@@ -53,11 +65,7 @@ class NcursesDisplayTest(DisplayT):
         mock_menu.return_value = (display_util.OK, "First")
 
         ret = self.displayer.menu("Message", self.choices)
-        mock_menu.assert_called_with(
-            "Message", choices=self.choices, ok_label="OK",
-            cancel_label="Cancel",
-            help_button=False, help_label="",
-            width=display_util.WIDTH, height=display_util.HEIGHT)
+        mock_menu.assert_called_with("Message", **self.default_menu_options)
 
         self.assertEqual(ret, (display_util.OK, 0))
 
@@ -67,11 +75,7 @@ class NcursesDisplayTest(DisplayT):
 
         ret = self.displayer.menu("Message", self.choices)
 
-        mock_menu.assert_called_with(
-            "Message", choices=self.choices, ok_label="OK",
-            cancel_label="Cancel",
-            help_button=False, help_label="",
-            width=display_util.WIDTH, height=display_util.HEIGHT)
+        mock_menu.assert_called_with("Message", **self.default_menu_options)
 
         self.assertEqual(ret, (display_util.CANCEL, -1))
 
@@ -81,11 +85,9 @@ class NcursesDisplayTest(DisplayT):
 
         ret = self.displayer.menu("Message", self.tags, help_label="More Info")
 
-        mock_menu.assert_called_with(
-            "Message", choices=self.tags_choices, ok_label="OK",
-            cancel_label="Cancel",
-            help_button=True, help_label="More Info",
-            width=display_util.WIDTH, height=display_util.HEIGHT)
+        self.default_menu_options.update(
+            choices=self.tags_choices, help_button=True, help_label="More Info")
+        mock_menu.assert_called_with("Message", **self.default_menu_options)
 
         self.assertEqual(ret, (display_util.OK, 0))
 

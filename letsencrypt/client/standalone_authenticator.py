@@ -47,7 +47,6 @@ class StandaloneAuthenticator(object):
         .. todo:: This should probably do the port check
 
         """
-        pass
 
     def client_signal_handler(self, sig, unused_frame):
         """Signal handler for the parent process.

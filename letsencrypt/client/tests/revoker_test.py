@@ -206,7 +206,7 @@ class RevokerTest(RevokerBase):
     @mock.patch("letsencrypt.client.revoker.Crypto.PublicKey.RSA.importKey")
     def test_acme_revoke_failure(self, mock_crypto):
         # pylint: disable=protected-access
-        mock_crypto.side_effect = IOError
+        mock_crypto.side_effect = ValueError
         self.assertRaises(errors.LetsEncryptClientError,
                           self.revoker._acme_revoke,
                           self.certs[0])

@@ -49,7 +49,8 @@ class Client(object):
 
         :param dv_auth: IAuthenticator that can solve the
             :const:`letsencrypt.client.constants.DV_CHALLENGES`.
-            :func:`letsencrypt.client.interfaces.IAuthenticator.prepare`
+            The :meth:`~letsencrypt.client.interfaces.IAuthenticator.prepare`
+            must have already been run.
         :type dv_auth: :class:`letsencrypt.client.interfaces.IAuthenticator`
 
         """
@@ -349,14 +350,13 @@ def init_csr(privkey, names, cert_dir):
 def determine_authenticator(all_auths):
     """Returns a valid IAuthenticator.
 
-    :param list all_auths: Where each is a tuple of the form
-        ('description', 'IAuthenticator', *options..) where IAuthenticator is a
-        :class:`letsencrypt.client.interfaces.IAuthenticator` object or class
-        and options are the parameters used to initialize the authenticator.
+    :param list all_auths: Where each is a
+        :class:`letsencrypt.client.interfaces.IAuthenticator` object
 
     :returns: Valid Authenticator object or None
 
-    :raises :class:`letsencrypt.client.errors.LetsEncryptClientError`
+    :raises :class:`letsencrypt.client.errors.LetsEncryptClientError`: If no
+        authenticator is available.
 
     """
     # Available Authenticator objects
@@ -367,12 +367,11 @@ def determine_authenticator(all_auths):
     for pot_auth in all_auths:
         try:
             pot_auth.prepare()
-            avail_auths.append(pot_auth)
         except errors.LetsEncryptMisconfigurationError as err:
             errs[pot_auth] = err
-            avail_auths.append(pot_auth)
         except errors.LetsEncryptNoInstallationError:
             continue
+        avail_auths.append(pot_auth)
 
     if len(avail_auths) > 1:
         auth = display_ops.choose_authenticator(avail_auths, errs)
@@ -396,14 +395,17 @@ def determine_installer(config):
     :param config: Configuration.
     :type config: :class:`letsencrypt.client.interfaces.IConfig`
 
+    :returns: IInstaller or `None`
+    :rtype: :class:`~letsencrypt.client.interfaces.IInstaller` or `None`
+
     """
+    installer = configurator.ApacheConfigurator(config)
     try:
-        installer = configurator.ApacheConfigurator(config)
         installer.prepare()
         return installer
     except errors.LetsEncryptNoInstallationError:
         logging.info("Unable to find a way to install the certificate.")
-        return None
+        return
     except errors.LetsEncryptMisconfigurationError:
         # This will have to be changed in the future...
         return installer

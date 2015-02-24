@@ -18,9 +18,11 @@ class IAuthenticator(zope.interface.Interface):
 
          Finish up any additional initialization.
 
-         :raises
-             :class:`letsencrypt.client.errors.LetsEncryptMisconfigurationError`
-             when full initialization cannot be completed.
+         :raises :class:`~.errors.LetsEncryptMisconfigurationError`: when
+             full initialization cannot be completed.
+         :raises :class:`~.errors.LetsEncryptNoInstallationError`: when the
+             necessary programs/files cannot be located.
+
         """
 
     def get_chall_pref(domain):
@@ -133,9 +135,11 @@ class IInstaller(zope.interface.Interface):
 
          Finish up any additional initialization.
 
-         :raises
-             :class:`letsencrypt.client.errors.LetsEncryptMisconfigurationError`
-             when full initialization cannot be completed.
+         :raises :class:`~.errors.LetsEncryptMisconfigurationError`: when
+             full initialization cannot be completed.
+         :raises :class:`~.errors.LetsEncryptNoInstallationError`: when the
+             necessary programs/files cannot be located.
+
         """
 
     def get_all_names():
@@ -247,7 +251,7 @@ class IDisplay(zope.interface.Interface):
         """
 
     def input(message):
-        """Accept input from the user
+        """Accept input from the user.
 
         :param str message: message to display to the user
 
