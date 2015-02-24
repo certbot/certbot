@@ -59,7 +59,7 @@ class DetermineAuthenticatorTest(unittest.TestCase):
             errors.LetsEncryptMisconfigurationError)
         mock_choose.return_value = self.mock_apache
 
-        self.assertRaises(self._call(self.all_auths), None)
+        self.assertEqual(self._call(self.all_auths), None)
 
 
 class RollbackTest(unittest.TestCase):
