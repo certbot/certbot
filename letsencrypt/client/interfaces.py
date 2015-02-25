@@ -30,9 +30,10 @@ class IAuthenticator(zope.interface.Interface):
 
         :param list chall_list: List of namedtuple types defined in
             :mod:`letsencrypt.client.challenge_util` (``DvsniChall``, etc.).
+
             - chall_list will never be empty
             - chall_list will only contain types found within
-                :func:`get_chall_pref`
+              :func:`get_chall_pref`
 
         :returns: ACME Challenge responses or if it cannot be completed then:
 
@@ -52,7 +53,7 @@ class IAuthenticator(zope.interface.Interface):
             :mod:`letsencrypt.client.challenge_util` (``DvsniChall``, etc.)
 
             - Only challenges given previously in the perform function will be
-            found in chall_list.
+              found in chall_list.
             - chall_list will never be empty
 
         """
