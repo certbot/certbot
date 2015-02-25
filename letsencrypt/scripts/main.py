@@ -148,7 +148,6 @@ def main():  # pylint: disable=too-many-branches, too-many-statements
         sys.exit(1)
 
     if auth is None:
-        logging.info("Cannot authenticate to the ACME server.")
         sys.exit(0)
 
     # Use the same object if possible
