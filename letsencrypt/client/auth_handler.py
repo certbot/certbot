@@ -233,7 +233,6 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         if client_list:
             self.client_auth.cleanup(client_list)
 
-
     def _cleanup_state(self, delete_list):
         """Cleanup state after an authorization is received.
 

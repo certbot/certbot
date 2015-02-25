@@ -11,6 +11,7 @@ Key = collections.namedtuple("Key", "file pem")
 # Note: form is the type of data, "pem" or "der"
 CSR = collections.namedtuple("CSR", "file data form")
 
+
 def make_or_verify_dir(directory, mode=0o755, uid=0):
     """Make sure directory exists with proper permissions.
 
@@ -72,3 +73,12 @@ def unique_file(path, mode=0o777):
         except OSError:
             pass
         count += 1
+
+
+def safely_remove(path):
+    """Remove a file that may not exist."""
+    try:
+        os.remove(path)
+    except OSError as err:
+        if err.errno != errno.ENOENT:
+            raise
