@@ -10,7 +10,7 @@ install:
 
 script: travis_retry tox
 
-after_success: coveralls
+after_success: '[ "$TOXENV" == "cover" ] && coveralls'
 
 env:
   - TOXENV=py26
