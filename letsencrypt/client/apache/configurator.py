@@ -1023,13 +1023,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.restart()
 
 
-def enable_mod(mod_name, apache_init, apache_enmod):
+def enable_mod(mod_name, apache_init_script, apache_enmod):
     """Enables module in Apache.
 
     Both enables and restarts Apache so module is active.
 
     :param str mod_name: Name of the module to enable.
-    :param str apache_init: Path to the Apache init script.
+    :param str apache_init_script: Path to the Apache init script.
     :param str apache_enmod: Path to the Apache a2enmod script.
 
     """
@@ -1039,7 +1039,7 @@ def enable_mod(mod_name, apache_init, apache_enmod):
         subprocess.check_call(["sudo", apache_enmod, mod_name],  # TODO: sudo?
                               stdout=open("/dev/null", 'w'),
                               stderr=open("/dev/null", 'w'))
-        apache_restart(apache_init)
+        apache_restart(apache_init_script)
     except (OSError, subprocess.CalledProcessError) as err:
         logging.error("Error enabling mod_%s", mod_name)
         logging.error("Exception: %s", err)
