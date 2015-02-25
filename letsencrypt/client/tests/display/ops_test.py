@@ -51,7 +51,7 @@ class ChooseAuthenticatorTest(unittest.TestCase):
     def test_no_choice(self, mock_util):
         mock_util().menu.return_value = (display_util.CANCEL, 0)
 
-        self.assertEqual(self._call(self.auths, {}), None)
+        self.assertTrue(self._call(self.auths, {}) is None)
 
 
 class GenHttpsNamesTest(unittest.TestCase):

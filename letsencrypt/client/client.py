@@ -381,7 +381,7 @@ def determine_authenticator(all_auths):
     else:
         raise errors.LetsEncryptClientError("No Authenticators available.")
 
-    if auth and auth in errs:
+    if auth is not None and auth in errs:
         logging.error("Please fix the configuration for the Authenticator. "
                       "The following error message was received: "
                       "%s", errs[auth])
