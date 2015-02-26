@@ -1,8 +1,8 @@
 """Standalone authenticator."""
 import os
+import psutil
 import signal
 import socket
-import subprocess
 import sys
 import time
 
@@ -275,30 +275,26 @@ class StandaloneAuthenticator(object):
         If so, also tell the user via a display notification.
 
         .. warning::
-            The current implementation is Linux-specific.  (On other
-            operating systems, it will simply not detect bound ports.)
-            This function can only usefully be run as root.
+            On some operating systems, this function can only usefully be
+            run as root.
 
         :param int port: The TCP port in question.
         :returns: True or False."""
 
+        listeners = [conn.pid for conn in psutil.net_connections()
+                     if conn.status == 'LISTEN' and
+                     conn.type == socket.SOCK_STREAM and
+                     conn.laddr[1] == port]
         try:
-            proc = subprocess.Popen(
-                [constants.NETSTAT, "-nta", "--program"],
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            stdout, _ = proc.communicate()
-            if proc.wait() != 0:
-                raise OSError("netstat subprocess failed")
-            lines = [x.split() for x in stdout.split("\n")[2:] if x]
-            listeners = [L[6] for L in lines if
-                         # IPv4 socket case
-                         (L[0] == 'tcp' and L[5] == 'LISTEN' \
-                         and L[3] == '0.0.0.0:{0}'.format(port)) or \
-                         # IPv6 socket case
-                         (L[0] == 'tcp6' and L[5] == 'LISTEN' \
-                         and L[3] == ':::{0}'.format(port))]
-            if listeners:
-                pid, name = listeners[0].split("/")
+            if listeners and listeners[0] is not None:
+                # conn.pid may be None if the current process doesn't have
+                # permission to identify the listening process!  Additionally,
+                # listeners may have more than one element if separate
+                # sockets have bound the same port on separate interfaces.
+                # We currently only have UI to notify the user about one
+                # of them at a time.
+                pid = listeners[0]
+                name = psutil.Process(pid).name()
                 display = zope.component.getUtility(interfaces.IDisplay)
                 display.notification(
                     "The program {0} (process ID {1}) is already listening "
@@ -306,11 +302,11 @@ class StandaloneAuthenticator(object):
                     "that port. Please stop the {0} program temporarily "
                     "and then try again.".format(name, pid, port))
                 return True
-        except (OSError, ValueError, IndexError):
-            # A sign that this command isn't available or usable this
-            # way on this operating system, or there was something
-            # unexpected about the format of the netstat output; we will
-            # not be able to recover from this condition.
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            # Perhaps the result of a race where the process could have
+            # exited or relinquished the port (NoSuchProcess), or the result
+            # of an OS policy where we're not allowed to look up the process
+            # name (AccessDenied).
             pass
         return False
 
