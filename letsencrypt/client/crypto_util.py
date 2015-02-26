@@ -4,7 +4,6 @@
     is capable of handling the signatures.
 
 """
-import re
 import time
 
 import Crypto.Hash.SHA256
@@ -194,13 +193,18 @@ def get_sans_from_csr(csr):
     text = text[1:]
     if not text:
         raise ValueError("Unable to parse CSR")
+
     # XXX: This might break for non-ASCII hostnames and for non-DNS
     #      names in SANs.  There is also a parser safety concern about
     #      whether the CSR's contents are interpreted in the same way
     #      by this code and by any other code that might interpret the
-    #      CSR for a difference purpose.
-    # All DNS names other than the last one
-    matches = re.findall(r"(?:DNS:([\w.]+), )", text[0])
-    # The last DNS name
-    matches.append(re.search(r"(?:DNS:([\w.]+))$", text[0]).groups()[0])
-    return matches
+    #      CSR for a different purpose.  Also, if there is a non-DNS
+    #      name in a SAN that contains ", DNS:example.com, " as part
+    #      of the name (for example, in the comment field of an e-mail
+    #      SAN), this code will be fooled into returning that name as
+    #      if it were an additional DNS SAN.  The severity of this is
+    #      unclear, because the client currently presents the results of
+    #      this list to the user for confirmation before requesting the
+    #      cert from the server.
+    return [san.split(":")[1] for san in text[0].strip().split(", ")
+            if san.startswith("DNS:")]
