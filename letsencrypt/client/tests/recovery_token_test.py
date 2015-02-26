@@ -56,9 +56,10 @@ class RecoveryTokenTest(unittest.TestCase):
 
     @mock.patch("letsencrypt.client.recovery_token.zope.component.getUtility")
     def test_perform_not_stored(self, mock_input):
-        mock_input().generic_input.side_effect = [(0, "555"), (1, "000")]
+        mock_input().input.side_effect = [(0, "555"), (1, "000")]
         response = self.rec_token.perform(
             challenge_util.RecTokenChall("example5.com"))
+
         self.assertEqual(response, {"type": "recoveryToken", "token": "555"})
 
         response = self.rec_token.perform(
@@ -66,5 +67,5 @@ class RecoveryTokenTest(unittest.TestCase):
         self.assertTrue(response is None)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

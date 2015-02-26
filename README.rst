@@ -1,6 +1,8 @@
 About the Let's Encrypt Client
 ==============================
 
+|build-status| |coverage| |docs|
+
 In short: getting and installing SSL/TLS certificates made easy (`watch demo video`_).
 
 The Let's Encrypt Client is a tool to automatically receive and install
@@ -25,8 +27,17 @@ All you need to do is:
 **Encrypt ALL the things!**
 
 
-.. image:: https://travis-ci.org/letsencrypt/lets-encrypt-preview.svg?branch=master
-    :target: https://travis-ci.org/letsencrypt/lets-encrypt-preview
+.. |build-status| image:: https://travis-ci.org/letsencrypt/lets-encrypt-preview.svg?branch=master
+   :target: https://travis-ci.org/letsencrypt/lets-encrypt-preview
+   :alt: Travis CI status
+
+.. |coverage| image:: https://coveralls.io/repos/letsencrypt/lets-encrypt-preview/badge.svg?branch=master
+   :target: https://coveralls.io/r/letsencrypt/lets-encrypt-preview
+   :alt: Coverage status
+
+.. |docs| image:: https://readthedocs.org/projects/letsencrypt/badge/
+   :target: https://readthedocs.org/projects/letsencrypt/
+   :alt: Documentation status
 
 .. _watch demo video: https://www.youtube.com/watch?v=Gas_sSB-5SU
 

@@ -1,8 +1,8 @@
 """Standalone authenticator."""
 import os
+import psutil
 import signal
 import socket
-import subprocess
 import sys
 import time
 
@@ -29,6 +29,8 @@ class StandaloneAuthenticator(object):
     """
     zope.interface.implements(interfaces.IAuthenticator)
 
+    description = "Standalone Authenticator"
+
     def __init__(self):
         self.child_pid = None
         self.parent_pid = os.getpid()
@@ -38,6 +40,13 @@ class StandaloneAuthenticator(object):
         self.connection = None
         self.private_key = None
         self.ssl_conn = None
+
+    def prepare(self):
+        """There is nothing left to setup.
+
+        .. todo:: This should probably do the port check
+
+        """
 
     def client_signal_handler(self, sig, unused_frame):
         """Signal handler for the parent process.
@@ -149,14 +158,14 @@ class StandaloneAuthenticator(object):
             if self.subproc_state == "ready":
                 return True
             elif self.subproc_state == "inuse":
-                display.generic_notification(
+                display.notification(
                     "Could not bind TCP port {0} because it is already in "
                     "use by another process on this system (such as a web "
                     "server). Please stop the program in question and then "
                     "try again.".format(port))
                 return False
             elif self.subproc_state == "cantbind":
-                display.generic_notification(
+                display.notification(
                     "Could not bind TCP port {0} because you don't have "
                     "the appropriate permissions (for example, you "
                     "aren't running this program as "
@@ -164,7 +173,7 @@ class StandaloneAuthenticator(object):
                 return False
             time.sleep(0.1)
 
-        display.generic_notification(
+        display.notification(
             "Subprocess unexpectedly timed out while trying to bind TCP "
             "port {0}.".format(port))
 
@@ -266,42 +275,38 @@ class StandaloneAuthenticator(object):
         If so, also tell the user via a display notification.
 
         .. warning::
-            The current implementation is Linux-specific.  (On other
-            operating systems, it will simply not detect bound ports.)
-            This function can only usefully be run as root.
+            On some operating systems, this function can only usefully be
+            run as root.
 
         :param int port: The TCP port in question.
         :returns: True or False."""
 
+        listeners = [conn.pid for conn in psutil.net_connections()
+                     if conn.status == 'LISTEN' and
+                     conn.type == socket.SOCK_STREAM and
+                     conn.laddr[1] == port]
         try:
-            proc = subprocess.Popen(
-                [constants.NETSTAT, "-nta", "--program"],
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            stdout, _ = proc.communicate()
-            if proc.wait() != 0:
-                raise OSError("netstat subprocess failed")
-            lines = [x.split() for x in stdout.split("\n")[2:] if x]
-            listeners = [L[6] for L in lines if
-                         # IPv4 socket case
-                         (L[0] == 'tcp' and L[5] == 'LISTEN' \
-                         and L[3] == '0.0.0.0:{0}'.format(port)) or \
-                         # IPv6 socket case
-                         (L[0] == 'tcp6' and L[5] == 'LISTEN' \
-                         and L[3] == ':::{0}'.format(port))]
-            if listeners:
-                pid, name = listeners[0].split("/")
+            if listeners and listeners[0] is not None:
+                # conn.pid may be None if the current process doesn't have
+                # permission to identify the listening process!  Additionally,
+                # listeners may have more than one element if separate
+                # sockets have bound the same port on separate interfaces.
+                # We currently only have UI to notify the user about one
+                # of them at a time.
+                pid = listeners[0]
+                name = psutil.Process(pid).name()
                 display = zope.component.getUtility(interfaces.IDisplay)
-                display.generic_notification(
+                display.notification(
                     "The program {0} (process ID {1}) is already listening "
                     "on TCP port {2}. This will prevent us from binding to "
                     "that port. Please stop the {0} program temporarily "
                     "and then try again.".format(name, pid, port))
                 return True
-        except (OSError, ValueError, IndexError):
-            # A sign that this command isn't available or usable this
-            # way on this operating system, or there was something
-            # unexpected about the format of the netstat output; we will
-            # not be able to recover from this condition.
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            # Perhaps the result of a race where the process could have
+            # exited or relinquished the port (NoSuchProcess), or the result
+            # of an OS policy where we're not allowed to look up the process
+            # name (AccessDenied).
             pass
         return False
 
@@ -406,3 +411,12 @@ class StandaloneAuthenticator(object):
             # TODO: restore original signal handlers in parent process
             #       by resetting their actions to SIG_DFL
             # print "TCP listener subprocess has been told to shut down"
+
+    def more_info(self):  # pylint: disable=no-self-use
+        """Human-readable string that describes the Authenticator."""
+        return ("The Standalone Authenticator uses PyOpenSSL to listen "
+                "on port 443 and perform DVSNI challenges. Once a certificate"
+                "is attained, it will be saved in the "
+                "(TODO) current working directory.{0}{0}"
+                "Port 443 must be open in order to use the "
+                "Standalone Authenticator.".format(os.linesep))

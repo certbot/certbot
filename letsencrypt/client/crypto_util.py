@@ -1,4 +1,9 @@
-"""Let's Encrypt client crypto utility functions"""
+"""Let's Encrypt client crypto utility functions.
+
+.. todo:: Make the transition to use PSS rather than PKCS1_v1_5 when the server
+    is capable of handling the signatures.
+
+"""
 import re
 import time
 
@@ -40,7 +45,7 @@ def make_csr(key_str, domains):
 
     extstack.push(ext)
     csr.add_extensions(extstack)
-    csr.sign(pubkey, 'sha256')
+    csr.sign(pubkey, "sha256")
     assert csr.verify(pubkey)
     pubkey2 = csr.get_pubkey()
     assert csr.verify(pubkey2)
@@ -94,7 +99,7 @@ def make_key(bits):
     :rtype: str
 
     """
-    return Crypto.PublicKey.RSA.generate(bits).exportKey(format='PEM')
+    return Crypto.PublicKey.RSA.generate(bits).exportKey(format="PEM")
 
 
 def valid_privkey(privkey):
@@ -148,48 +153,15 @@ def make_ss_cert(key_str, domains, not_before=None,
 
     if len(domains) > 1:
         cert.add_ext(M2Crypto.X509.new_extension(
-            'basicConstraints', 'CA:FALSE'))
-        # cert.add_ext(M2Crypto.X509.new_extension(
-        #    'extendedKeyUsage', 'TLS Web Server Authentication'))
+            "basicConstraints", "CA:FALSE"))
         cert.add_ext(M2Crypto.X509.new_extension(
-            'subjectAltName', ", ".join(["DNS:%s" % d for d in domains])))
+            "subjectAltName", ", ".join(["DNS:%s" % d for d in domains])))
 
-    cert.sign(pubkey, 'sha256')
+    cert.sign(pubkey, "sha256")
     assert cert.verify(pubkey)
     assert cert.verify()
     # print check_purpose(,0
     return cert.as_pem()
-
-
-def get_cert_info(filename):
-    """Get certificate info.
-
-    .. todo:: Pub key is assumed to be RSA... find a good solution to allow EC.
-
-    :param str filename: Name of file containing certificate in PEM format.
-
-    :rtype: dict
-
-    """
-    # M2Crypto Library only supports RSA right now
-    cert = M2Crypto.X509.load_cert(filename)
-
-    try:
-        san = cert.get_ext("subjectAltName").get_value()
-    except LookupError:
-        san = ""
-
-    return {
-        "not_before": cert.get_not_before().get_datetime(),
-        "not_after": cert.get_not_after().get_datetime(),
-        "subject": cert.get_subject().as_text(),
-        "cn": cert.get_subject().CN,
-        "issuer": cert.get_issuer().as_text(),
-        "fingerprint": cert.get_fingerprint(md='sha1'),
-        "san": san,
-        "serial": cert.get_serial_number(),
-        "pub_key": "RSA " + str(cert.get_pubkey().size() * 8),
-    }
 
 
 def get_sans_from_csr(csr):

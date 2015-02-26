@@ -26,6 +26,7 @@ install_requires = [
     'ConfArgParse',
     'jsonschema',
     'mock',
+    'psutil>=2.1.0',  # net_connections introduced in 2.1.0
     'pycrypto',
     'PyOpenSSL',
     'python-augeas',
@@ -40,8 +41,12 @@ install_requires = [
 
 dev_extras = [
     'pylint>=1.4.0',  # upstream #248
+]
+
+docs_extras = [
     'repoze.sphinx.autointerface',
     'Sphinx',
+    'sphinx_rtd_theme',
 ]
 
 testing_extras = [
@@ -64,8 +69,10 @@ setup(
         'letsencrypt.acme',
         'letsencrypt.client',
         'letsencrypt.client.apache',
+        'letsencrypt.client.display',
         'letsencrypt.client.tests',
         'letsencrypt.client.tests.apache',
+        'letsencrypt.client.tests.display',
         'letsencrypt.scripts',
     ],
     install_requires=install_requires,
@@ -73,6 +80,7 @@ setup(
     test_suite='letsencrypt',
     extras_require={
         'dev': dev_extras,
+        'docs': docs_extras,
         'testing': testing_extras,
     },
     entry_points={

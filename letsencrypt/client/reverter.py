@@ -6,10 +6,10 @@ import time
 
 import zope.component
 
-from letsencrypt.client import display
 from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
+from letsencrypt.client.display import util as display_util
 
 
 class Reverter(object):
@@ -28,8 +28,8 @@ class Reverter(object):
         This function should reinstall the users original configuration files
         for all saves with temporary=True
 
-        :raises :class:`errors.LetsEncryptReverterError`:
-            Unable to revert config
+        :raises letsencrypt.client.errors.LetsEncryptReverterError: when
+            unable to revert config
 
         """
         if os.path.isdir(self.config.temp_checkpoint_dir):
@@ -46,9 +46,9 @@ class Reverter(object):
         """Revert 'rollback' number of configuration checkpoints.
 
         :param int rollback: Number of checkpoints to reverse. A str num will be
-           cast to an integer. So '2' is also acceptable.
+           cast to an integer. So "2" is also acceptable.
 
-        :raises :class:`letsencrypt.client.errors.LetsEncryptReverterError`: If
+        :raises letsencrypt.client.errors.LetsEncryptReverterError: If
             there is a problem with the input or if the function is unable to
             correctly revert the configuration checkpoints.
 
@@ -126,8 +126,8 @@ class Reverter(object):
 
             output.append(os.linesep)
 
-        zope.component.getUtility(interfaces.IDisplay).generic_notification(
-            os.linesep.join(output), display.HEIGHT)
+        zope.component.getUtility(interfaces.IDisplay).notification(
+            os.linesep.join(output), display_util.HEIGHT)
 
     def add_to_temp_checkpoint(self, save_files, save_notes):
         """Add files to temporary checkpoint
@@ -159,7 +159,7 @@ class Reverter(object):
         :param str save_notes: notes about changes made during the save
 
         :raises IOError: If unable to open cp_dir + FILEPATHS file
-        :raises :class:`letsencrypt.client.errors.LetsEncryptReverterError: If
+        :raises letsencrypt.client.errors.LetsEncryptReverterError: If
             unable to add checkpoint
 
         """
@@ -180,7 +180,7 @@ class Reverter(object):
                 try:
                     shutil.copy2(filename, os.path.join(
                         cp_dir, os.path.basename(filename) + "_" + str(idx)))
-                    op_fd.write(filename + '\n')
+                    op_fd.write(filename + os.linesep)
                 # http://stackoverflow.com/questions/4726260/effective-use-of-python-shutil-copy2
                 except IOError:
                     op_fd.close()
@@ -193,7 +193,7 @@ class Reverter(object):
                 idx += 1
         op_fd.close()
 
-        with open(os.path.join(cp_dir, "CHANGES_SINCE"), 'a') as notes_fd:
+        with open(os.path.join(cp_dir, "CHANGES_SINCE"), "a") as notes_fd:
             notes_fd.write(save_notes)
 
     def _read_and_append(self, filepath):  # pylint: disable=no-self-use
@@ -204,11 +204,11 @@ class Reverter(object):
         """
         # Open up filepath differently depending on if it already exists
         if os.path.isfile(filepath):
-            op_fd = open(filepath, 'r+')
+            op_fd = open(filepath, "r+")
             lines = op_fd.read().splitlines()
         else:
             lines = []
-            op_fd = open(filepath, 'w')
+            op_fd = open(filepath, "w")
 
         return op_fd, lines
 
@@ -230,7 +230,7 @@ class Reverter(object):
                     for idx, path in enumerate(filepaths):
                         shutil.copy2(os.path.join(
                             cp_dir,
-                            os.path.basename(path) + '_' + str(idx)), path)
+                            os.path.basename(path) + "_" + str(idx)), path)
             except (IOError, OSError):
                 # This file is required in all checkpoints.
                 logging.error("Unable to recover files from %s", cp_dir)
@@ -252,7 +252,7 @@ class Reverter(object):
 
         :param set save_files: Set of files about to be saved.
 
-        :raises :class:`letsencrypt.client.errors.LetsEncryptReverterError`:
+        :raises letsencrypt.client.errors.LetsEncryptReverterError:
             when save is attempting to overwrite a temporary file.
 
         """
@@ -261,13 +261,13 @@ class Reverter(object):
         # Get temp modified files
         temp_path = os.path.join(self.config.temp_checkpoint_dir, "FILEPATHS")
         if os.path.isfile(temp_path):
-            with open(temp_path, 'r') as protected_fd:
+            with open(temp_path, "r") as protected_fd:
                 protected_files.extend(protected_fd.read().splitlines())
 
         # Get temp new files
         new_path = os.path.join(self.config.temp_checkpoint_dir, "NEW_FILES")
         if os.path.isfile(new_path):
-            with open(new_path, 'r') as protected_fd:
+            with open(new_path, "r") as protected_fd:
                 protected_files.extend(protected_fd.read().splitlines())
 
         # Verify no save_file is in protected_files
@@ -288,7 +288,7 @@ class Reverter(object):
             a temp or permanent save.
         :param \*files: file paths (str) to be registered
 
-        :raises :class:`letsencrypt.client.errors.LetsEncryptReverterError`: If
+        :raises letsencrypt.client.errors.LetsEncryptReverterError: If
             call does not contain necessary parameters or if the file creation
             is unable to be registered.
 
@@ -354,7 +354,7 @@ class Reverter(object):
         :returns: Success
         :rtype: bool
 
-        :raises :class:`letsencrypt.client.errors.LetsEncryptReverterError`: If
+        :raises letsencrypt.client.errors.LetsEncryptReverterError: If
             all files within file_list cannot be removed
 
         """
@@ -363,7 +363,7 @@ class Reverter(object):
         if not os.path.isfile(file_list):
             return False
         try:
-            with open(file_list, 'r') as list_fd:
+            with open(file_list, "r") as list_fd:
                 filepaths = list_fd.read().splitlines()
                 for path in filepaths:
                     # Files are registered before they are added... so
@@ -393,23 +393,24 @@ class Reverter(object):
 
         :param str title: Title describing checkpoint
 
-        :raises :class:`letsencrypt.client.errors.LetsEncryptReverterError`
+        :raises letsencrypt.client.errors.LetsEncryptReverterError: when the
+            checkpoint is not able to be finalized.
 
         """
         # Check to make sure an "in progress" directory exists
         if not os.path.isdir(self.config.in_progress_dir):
-            logging.warning("No IN_PROGRESS checkpoint to finalize")
             return
 
         changes_since_path = os.path.join(
-            self.config.in_progress_dir, 'CHANGES_SINCE')
+            self.config.in_progress_dir, "CHANGES_SINCE")
+
         changes_since_tmp_path = os.path.join(
-            self.config.in_progress_dir, 'CHANGES_SINCE.tmp')
+            self.config.in_progress_dir, "CHANGES_SINCE.tmp")
 
         try:
-            with open(changes_since_tmp_path, 'w') as changes_tmp:
+            with open(changes_since_tmp_path, "w") as changes_tmp:
                 changes_tmp.write("-- %s --\n" % title)
-                with open(changes_since_path, 'r') as changes_orig:
+                with open(changes_since_path, "r") as changes_orig:
                     changes_tmp.write(changes_orig.read())
 
             shutil.move(changes_since_tmp_path, changes_since_path)
