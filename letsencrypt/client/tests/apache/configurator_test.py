@@ -133,31 +133,6 @@ class TwoVhost80Test(util.ApacheTest):
         self.assertEqual(len(self.config.vhosts), 5)
 
     @mock.patch("letsencrypt.client.apache.configurator."
-                "subprocess.Popen")
-    def test_get_version(self, mock_popen):
-        mock_popen().communicate.return_value = (
-            "Server Version: Apache/2.4.2 (Debian)", "")
-        self.assertEqual(self.config.get_version(), (2, 4, 2))
-
-        mock_popen().communicate.return_value = (
-            "Server Version: Apache/2 (Linux)", "")
-        self.assertEqual(self.config.get_version(), (2,))
-
-        mock_popen().communicate.return_value = (
-            "Server Version: Apache (Debian)", "")
-        self.assertRaises(
-            errors.LetsEncryptConfiguratorError, self.config.get_version)
-
-        mock_popen().communicate.return_value = (
-            "Server Version: Apache/2.3\n Apache/2.4.7", "")
-        self.assertRaises(
-            errors.LetsEncryptConfiguratorError, self.config.get_version)
-
-        mock_popen.side_effect = OSError("Can't find program")
-        self.assertRaises(
-            errors.LetsEncryptConfiguratorError, self.config.get_version)
-
-    @mock.patch("letsencrypt.client.apache.configurator."
                 "dvsni.ApacheDvsni.perform")
     @mock.patch("letsencrypt.client.apache.configurator."
                 "ApacheConfigurator.restart")
@@ -188,6 +163,32 @@ class TwoVhost80Test(util.ApacheTest):
         self.assertEqual(responses, dvsni_ret_val)
 
         self.assertEqual(mock_restart.call_count, 1)
+
+    @mock.patch("letsencrypt.client.apache.configurator."
+                "subprocess.Popen")
+    def test_get_version(self, mock_popen):
+        mock_popen().communicate.return_value = (
+            "Server Version: Apache/2.4.2 (Debian)", "")
+        self.assertEqual(self.config.get_version(), (2, 4, 2))
+
+        mock_popen().communicate.return_value = (
+            "Server Version: Apache/2 (Linux)", "")
+        self.assertEqual(self.config.get_version(), (2,))
+
+        mock_popen().communicate.return_value = (
+            "Server Version: Apache (Debian)", "")
+        self.assertRaises(
+            errors.LetsEncryptConfiguratorError, self.config.get_version)
+
+        mock_popen().communicate.return_value = (
+            "Server Version: Apache/2.3\n Apache/2.4.7", "")
+        self.assertRaises(
+            errors.LetsEncryptConfiguratorError, self.config.get_version)
+
+        mock_popen.side_effect = OSError("Can't find program")
+        self.assertRaises(
+            errors.LetsEncryptConfiguratorError, self.config.get_version)
+
 
 if __name__ == '__main__':
     unittest.main()

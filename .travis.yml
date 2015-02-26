@@ -1,17 +1,19 @@
 language: python
 
+# please keep this in sync with docs/using.rst (Ubuntu section, apt-get)
 before_install: >
   travis_retry sudo apt-get install python python-setuptools
   python-virtualenv python-dev gcc swig dialog libaugeas0 libssl-dev
+  libffi-dev ca-certificates
 
-install:
-  - travis_retry python setup.py dev  # installs tox
-  - travis_retry pip install coveralls
+install: "travis_retry pip install tox coveralls"
+script: "travis_retry tox"
 
-script: travis_retry tox
+after_success: '[ "$TOXENV" == "cover" ] && coveralls'
 
-after_success: coveralls
-
+# using separate envs with different TOXENVs creates 4x1 Travis build
+# matrix, which allows us to clearly distinguish which component under
+# test has failed
 env:
   - TOXENV=py26
   - TOXENV=py27

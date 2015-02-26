@@ -13,6 +13,18 @@ class IAuthenticator(zope.interface.Interface):
 
     """
 
+    def prepare():
+        """Prepare the authenticator.
+
+         Finish up any additional initialization.
+
+         :raises letsencrypt.client.errors.LetsEncryptMisconfigurationError:
+             when full initialization cannot be completed.
+         :raises letsencrypt.client.errors.LetsEncryptNoInstallationError:
+             when the necessary programs/files cannot be located.
+
+        """
+
     def get_chall_pref(domain):
         """Return list of challenge preferences.
 
@@ -30,9 +42,10 @@ class IAuthenticator(zope.interface.Interface):
 
         :param list chall_list: List of namedtuple types defined in
             :mod:`letsencrypt.client.challenge_util` (``DvsniChall``, etc.).
+
             - chall_list will never be empty
             - chall_list will only contain types found within
-                :func:`get_chall_pref`
+              :func:`get_chall_pref`
 
         :returns: ACME Challenge responses or if it cannot be completed then:
 
@@ -52,8 +65,16 @@ class IAuthenticator(zope.interface.Interface):
             :mod:`letsencrypt.client.challenge_util` (``DvsniChall``, etc.)
 
             - Only challenges given previously in the perform function will be
-            found in chall_list.
+              found in chall_list.
             - chall_list will never be empty
+
+        """
+
+    def more_info():
+        """Human-readable string to help the user.
+
+        Should describe the steps taken and any relevant info to help the user
+        decide which Authenticator to use.
 
         """
 
@@ -62,10 +83,9 @@ class IConfig(zope.interface.Interface):
     """Let's Encrypt user-supplied configuration.
 
     .. warning:: The values stored in the configuration have not been
-        filtered, stripped or sanitized in any way!
+        filtered, stripped or sanitized.
 
     """
-
     server = zope.interface.Attribute(
         "CA hostname (and optionally :port). The server certificate must "
         "be trusted in order to avoid further modifications to the client.")
@@ -110,6 +130,18 @@ class IInstaller(zope.interface.Interface):
     Represents any server that an X509 certificate can be placed.
 
     """
+
+    def prepare():
+        """Prepare the installer.
+
+         Finish up any additional initialization.
+
+         :raises letsencrypt.client.errors.LetsEncryptMisconfigurationError`:
+             when full initialization cannot be completed.
+         :raises letsencrypt.errors.LetsEncryptNoInstallationError`:
+             when the necessary programs/files cannot be located.
+
+        """
 
     def get_all_names():
         """Returns all names that may be authenticated."""
@@ -190,48 +222,68 @@ class IInstaller(zope.interface.Interface):
 class IDisplay(zope.interface.Interface):
     """Generic display."""
 
-    def generic_notification(message):
+    def notification(message, height, pause):
         """Displays a string message
 
         :param str message: Message to display
+        :param int height: Height of dialog box if applicable
+        :param bool pause: Whether or not the application should pause for
+            confirmation (if available)
 
         """
 
-    def generic_menu(message, choices, input_text=""):
+    def menu(message, choices,
+             ok_label="OK", cancel_label="Cancel", help_label=""):
         """Displays a generic menu.
 
         :param str message: message to display
 
         :param choices: choices
-        :type choices: :class:`list` of :func:`tuple`
+        :type choices: :class:`list` of :func:`tuple` or :class:`str`
 
-        :param str input_text: instructions on how to make a selection
+        :param str ok_label: label for OK button
+        :param str cancel_label: label for Cancel button
+        :param str help_label: label for Help button
+
+        :returns: tuple of (`code`, `index`) where
+            `code` - str display exit code
+            `index` - int index of the user's selection
 
         """
 
-    def generic_input(message):
-        """Accept input from the user."""
+    def input(message):
+        """Accept input from the user.
 
-    def generic_yesno(message, yes_label="Yes", no_label="No"):
-        """A yes/no dialog."""
+        :param str message: message to display to the user
 
-    def filter_names(names):
-        """Allow the user to select which names they would like to activate."""
+        :returns: tuple of (`code`, `input`) where
+            `code` - str display exit code
+            `input` - str of the user's input
+        :rtype: tuple
 
-    def success_installation(domains):
-        """Display a congratulations message for new https domains."""
+        """
 
-    def display_certs(certs):
-        """Display a list of certificates."""
+    def yesno(message, yes_label="Yes", no_label="No"):
+        """Query the user with a yes/no question.
 
-    def confirm_revocation(cert):
-        """Confirmation of revocation screen."""
+        Yes and No label must begin with different letters.
 
-    def more_info_cert(cert):
-        """Print out all information for a given certificate dict."""
+        :param str message: question for the user
 
-    def redirect_by_default():
-        """Ask the user whether they would like to redirect to HTTPS."""
+        :returns: True for "Yes", False for "No"
+        :rtype: bool
+
+        """
+
+    def checklist(message, choices):
+        """Allow for multiple selections from a menu.
+
+        :param str message: message to display to the user
+
+        :param tags: tags
+        :type tags: :class:`list` of :class:`str`
+
+        """
 
 
 class IValidator(zope.interface.Interface):

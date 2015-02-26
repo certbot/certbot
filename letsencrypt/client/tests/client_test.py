@@ -6,10 +6,67 @@ import mock
 from letsencrypt.client import errors
 
 
+class DetermineAuthenticatorTest(unittest.TestCase):
+    def setUp(self):
+        from letsencrypt.client.apache.configurator import ApacheConfigurator
+        from letsencrypt.client.standalone_authenticator import (
+            StandaloneAuthenticator)
+
+        self.mock_stand = mock.MagicMock(
+            spec=StandaloneAuthenticator, description="Apache Web Server")
+        self.mock_apache = mock.MagicMock(
+            spec=ApacheConfigurator, description="Standalone Authenticator")
+
+        self.mock_config = mock.Mock()
+
+        self.all_auths = [self.mock_apache, self.mock_stand]
+
+    @classmethod
+    def _call(cls, all_auths):
+        from letsencrypt.client.client import determine_authenticator
+        return determine_authenticator(all_auths)
+
+    @mock.patch("letsencrypt.client.client.display_ops.choose_authenticator")
+    def test_accept_two(self, mock_choose):
+        mock_choose.return_value = self.mock_stand()
+        self.assertEqual(self._call(self.all_auths), self.mock_stand())
+
+    def test_accept_one(self):
+        self.mock_apache.prepare.return_value = self.mock_apache
+        self.assertEqual(
+            self._call(self.all_auths[:1]), self.mock_apache)
+
+    def test_no_installation_one(self):
+        self.mock_apache.prepare.side_effect = (
+            errors.LetsEncryptNoInstallationError)
+
+        self.assertEqual(self._call(self.all_auths), self.mock_stand)
+
+    def test_no_installations(self):
+        self.mock_apache.prepare.side_effect = (
+            errors.LetsEncryptNoInstallationError)
+        self.mock_stand.prepare.side_effect = (
+            errors.LetsEncryptNoInstallationError)
+
+        self.assertRaises(errors.LetsEncryptClientError,
+                          self._call,
+                          self.all_auths)
+
+    @mock.patch("letsencrypt.client.client.logging")
+    @mock.patch("letsencrypt.client.client.display_ops.choose_authenticator")
+    def test_misconfigured(self, mock_choose, unused_log):
+        self.mock_apache.prepare.side_effect = (
+            errors.LetsEncryptMisconfigurationError)
+        mock_choose.return_value = self.mock_apache
+
+        self.assertTrue(self._call(self.all_auths) is None)
+
+
 class RollbackTest(unittest.TestCase):
     """Test the rollback function."""
     def setUp(self):
-        self.m_install = mock.MagicMock()
+        from letsencrypt.client.apache.configurator import ApacheConfigurator
+        self.m_install = mock.MagicMock(spec=ApacheConfigurator)
 
     @classmethod
     def _call(cls, checkpoints):
@@ -25,59 +82,6 @@ class RollbackTest(unittest.TestCase):
         self.assertEqual(self.m_install().rollback_checkpoints.call_count, 1)
         self.assertEqual(self.m_install().restart.call_count, 1)
 
-    @mock.patch("letsencrypt.client.client.zope.component.getUtility")
-    @mock.patch("letsencrypt.client.reverter.Reverter")
-    @mock.patch("letsencrypt.client.client.determine_installer")
-    def test_misconfiguration_fixed(self, mock_det, mock_rev, mock_input):
-        mock_det.side_effect = [errors.LetsEncryptMisconfigurationError,
-                                self.m_install]
-        mock_input().generic_yesno.return_value = True
-
-        self._call(1)
-
-        # Don't rollback twice... (only on one object)
-        self.assertEqual(self.m_install().rollback_checkpoints.call_count, 0)
-        self.assertEqual(mock_rev().rollback_checkpoints.call_count, 1)
-
-        # Only restart once
-        self.assertEqual(self.m_install.restart.call_count, 1)
-
-    @mock.patch("letsencrypt.client.client.zope.component.getUtility")
-    @mock.patch("letsencrypt.client.client.logging.warning")
-    @mock.patch("letsencrypt.client.reverter.Reverter")
-    @mock.patch("letsencrypt.client.client.determine_installer")
-    def test_misconfiguration_remains(
-            self, mock_det, mock_rev, mock_warn, mock_input):
-        mock_det.side_effect = errors.LetsEncryptMisconfigurationError
-
-        mock_input().generic_yesno.return_value = True
-
-        self._call(1)
-
-        # Don't rollback twice... (only on one object)
-        self.assertEqual(self.m_install().rollback_checkpoints.call_count, 0)
-        self.assertEqual(mock_rev().rollback_checkpoints.call_count, 1)
-
-        # Never call restart because init never succeeds
-        self.assertEqual(self.m_install().restart.call_count, 0)
-        # There should be a warning about the remaining problem
-        self.assertEqual(mock_warn.call_count, 1)
-
-    @mock.patch("letsencrypt.client.client.zope.component.getUtility")
-    @mock.patch("letsencrypt.client.reverter.Reverter")
-    @mock.patch("letsencrypt.client.client.determine_installer")
-    def test_user_decides_to_manually_investigate(
-            self, mock_det, mock_rev, mock_input):
-        mock_det.side_effect = errors.LetsEncryptMisconfigurationError
-
-        mock_input().generic_yesno.return_value = False
-
-        self._call(1)
-
-        # Neither is ever called
-        self.assertEqual(self.m_install().rollback_checkpoints.call_count, 0)
-        self.assertEqual(mock_rev().rollback_checkpoints.call_count, 0)
-
     @mock.patch("letsencrypt.client.client.determine_installer")
     def test_no_installer(self, mock_det):
         mock_det.return_value = None
@@ -86,5 +90,5 @@ class RollbackTest(unittest.TestCase):
         self._call(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

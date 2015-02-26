@@ -65,6 +65,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     :ivar config: Configuration.
     :type config: :class:`~letsencrypt.client.interfaces.IConfig`
 
+    :ivar parser: Handles low level parsing
+    :type parser: :class:`letsencrypt.client.apache.parser`
+
     :ivar tup version: version of Apache
     :ivar list vhosts: All vhosts found in the configuration
         (:class:`list` of :class:`letsencrypt.client.apache.obj.VirtualHost`)
@@ -73,6 +76,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     """
     zope.interface.implements(interfaces.IAuthenticator, interfaces.IInstaller)
+
+    description = "Apache Web Server"
 
     def __init__(self, config, version=None):
         """Initialize an Apache Configurator.
@@ -87,6 +92,19 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if os.geteuid() == 0:
             self.verify_setup()
 
+        # Add name_server association dict
+        self.assoc = dict()
+        # Add number of outstanding challenges
+        self._chall_out = 0
+
+        # These will be set in the prepare function
+        self.parser = None
+        self.version = version
+        self.vhosts = None
+        self._enhance_func = {"redirect": self._enable_redirect}
+
+    def prepare(self):
+        """Prepare the authenticator/installer."""
         self.parser = parser.ApacheParser(
             self.aug, self.config.apache_server_root,
             self.config.apache_mod_ssl_conf)
@@ -94,14 +112,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.check_parsing_errors("httpd.aug")
 
         # Set Version
-        self.version = self.get_version() if version is None else version
+        if self.version is None:
+            self.version = self.get_version()
 
         # Get all of the available vhosts
         self.vhosts = self.get_virtual_hosts()
-        # Add name_server association dict
-        self.assoc = dict()
-        # Add number of outstanding challenges
-        self.chall_out = 0
 
         # Enable mod_ssl if it isn't already enabled
         # This is Let's Encrypt... we enable mod_ssl on initialization :)
@@ -110,7 +125,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         #     on initialization
         self._prepare_server_https()
 
-        self.enhance_func = {"redirect": self._enable_redirect}
         temp_install(self.config.apache_mod_ssl_conf)
 
     def deploy_cert(self, domain, cert, key, cert_chain=None):
@@ -521,7 +535,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         try:
-            return self.enhance_func[enhancement](
+            return self._enhance_func[enhancement](
                 self.choose_vhost(domain), options)
         except ValueError:
             raise errors.LetsEncryptConfiguratorError(
@@ -898,7 +912,20 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         return True
 
-    def get_version(self):  # pylint: disable=no-self-use
+    def verify_setup(self):
+        """Verify the setup to ensure safe operating environment.
+
+        Make sure that files/directories are setup with appropriate permissions
+        Aim for defensive coding... make sure all input files
+        have permissions of root
+
+        """
+        uid = os.geteuid()
+        le_util.make_or_verify_dir(self.config.config_dir, 0o755, uid)
+        le_util.make_or_verify_dir(self.config.work_dir, 0o755, uid)
+        le_util.make_or_verify_dir(self.config.backup_dir, 0o755, uid)
+
+    def get_version(self):
         """Return version of Apache Server.
 
         Version is returned as tuple. (ie. 2.4.7 = (2, 4, 7))
@@ -929,18 +956,15 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         return tuple([int(i) for i in matches[0].split('.')])
 
-    def verify_setup(self):
-        """Verify the setup to ensure safe operating environment.
-
-        Make sure that files/directories are setup with appropriate permissions
-        Aim for defensive coding... make sure all input files
-        have permissions of root
-
-        """
-        uid = os.geteuid()
-        le_util.make_or_verify_dir(self.config.config_dir, 0o755, uid)
-        le_util.make_or_verify_dir(self.config.work_dir, 0o755, uid)
-        le_util.make_or_verify_dir(self.config.backup_dir, 0o755, uid)
+    def more_info(self):
+        """Human-readable string to help understand the module"""
+        return (
+            "Configures Apache to authenticate and install HTTPS.{0}"
+            "Server root: {root}{0}"
+            "Version: {version}".format(
+                os.linesep, root=self.parser.loc["root"],
+                version=".".join(str(i) for i in self.version))
+        )
 
     ###########################################################################
     # Challenges Section
@@ -965,7 +989,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: list
 
         """
-        self.chall_out += len(chall_list)
+        self._chall_out += len(chall_list)
         responses = [None] * len(chall_list)
         apache_dvsni = dvsni.ApacheDvsni(self)
 
@@ -991,10 +1015,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     def cleanup(self, chall_list):
         """Revert all challenges."""
-        self.chall_out -= len(chall_list)
+        self._chall_out -= len(chall_list)
 
         # If all of the challenges have been finished, clean up everything
-        if self.chall_out <= 0:
+        if self._chall_out <= 0:
             self.revert_challenge_config()
             self.restart()
 

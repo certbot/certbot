@@ -1,8 +1,0 @@
-M2Crypto==0.22.3
-python2-pythondialog
-jsonschema==2.4.0
-python-augeas==0.5.0
-requests==2.4.3
-argparse==1.2.2
-mock==1.0.1
-PyOpenSSL==0.13
