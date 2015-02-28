@@ -154,8 +154,8 @@ class TwoVhost80Test(util.ApacheTest):
             domain="letsencrypt.demo", key=auth_key)
 
         dvsni_ret_val = [
-            {"type": "dvsni", "s": "randomS1"},
-            {"type": "dvsni", "s": "randomS2"}
+            challenges.DVSNIResponse(s="randomS1"),
+            challenges.DVSNIResponse(s="randomS2"),
         ]
 
         mock_dvsni_perform.return_value = dvsni_ret_val
