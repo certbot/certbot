@@ -109,8 +109,8 @@ class Signature(util.ACMEObject):
 
         """
         hashed = Crypto.Hash.SHA256.new(self.nonce + msg)
-        return bool(Crypto.Signature.PKCS1_v1_5.new(self.jwk.key).verify(
-            hashed, self.sig))
+        return Crypto.Signature.PKCS1_v1_5.new(self.jwk.key).verify(
+            hashed, self.sig)
 
     def to_json(self):
         return {
