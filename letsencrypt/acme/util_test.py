@@ -5,7 +5,7 @@ import os
 import pkg_resources
 import unittest
 
-import M2Crypto.X509
+import M2Crypto
 import zope.interface
 
 from letsencrypt.acme import errors
