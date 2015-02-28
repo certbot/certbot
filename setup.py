@@ -57,13 +57,31 @@ testing_extras = [
 ]
 
 setup(
-    name="letsencrypt",
+    name='letsencrypt',
     version=meta['version'],
     description="Let's Encrypt",
     long_description=readme,  # later: + '\n\n' + changes
     author="Let's Encrypt Project",
-    license="",
-    url="https://letsencrypt.org",
+    license='Apache License 2.0',
+    url='https://letsencrypt.org',
+    classifiers=[
+        'Environment :: Console',
+        'Environment :: Console :: Curses',
+        'Intended Audience :: System Administrators',
+        'License :: OSI Approved :: Apache Software License',
+        'Operating System :: POSIX :: Linux',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 2.6',
+        'Programming Language :: Python :: 2.7',
+        'Topic :: Internet :: WWW/HTTP',
+        'Topic :: Security',
+        'Topic :: System :: Installation/Setup',
+        'Topic :: System :: Networking',
+        'Topic :: System :: Systems Administration',
+        'Topic :: Utilities',
+    ],
+
     packages=[
         'letsencrypt',
         'letsencrypt.acme',
@@ -75,19 +93,23 @@ setup(
         'letsencrypt.client.tests.display',
         'letsencrypt.scripts',
     ],
+
     install_requires=install_requires,
-    tests_require=install_requires,
-    test_suite='letsencrypt',
     extras_require={
         'dev': dev_extras,
         'docs': docs_extras,
         'testing': testing_extras,
     },
+
+    tests_require=install_requires,
+    test_suite='letsencrypt',
+
     entry_points={
         'console_scripts': [
             'letsencrypt = letsencrypt.scripts.main:main',
         ],
     },
+
     zip_safe=False,
     include_package_data=True,
 )
