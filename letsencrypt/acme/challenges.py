@@ -1,4 +1,5 @@
 """ACME Identifier Validation Challenges."""
+import binascii
 import functools
 import hashlib
 
@@ -106,12 +107,12 @@ class DVSNI(DVChallenge):
     @property
     def nonce_domain(self):
         """Domain name used in SNI."""
-        return self._encode_hex16(self.nonce) + self.DOMAIN_SUFFIX
+        return binascii.hexlify(self.nonce) + self.DOMAIN_SUFFIX
 
     def _fields_to_json(self):
         return {
             "r": jose.b64encode(self.r),
-            "nonce": self._encode_hex16(self.nonce),
+            "nonce": binascii.hexlify(self.nonce),
         }
 
     @classmethod

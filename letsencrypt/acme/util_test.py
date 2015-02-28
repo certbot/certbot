@@ -160,10 +160,6 @@ class ACMEObjectTest(unittest.TestCase):
         self.assertRaises(errors.ValidationError, ACMEObject._decode_b64jose,
                           'Zm9v', size=4, minimum=True)
 
-    def test_encode_hex16(self):
-        from letsencrypt.acme.util import ACMEObject
-        self.assertEqual('666f6f', ACMEObject._encode_hex16('foo'))
-
     def test_decode_hex16(self):
         from letsencrypt.acme.util import ACMEObject
         self.assertEqual('foo', ACMEObject._decode_hex16('666f6f'))

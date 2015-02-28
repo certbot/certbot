@@ -42,11 +42,9 @@ class Message(util.TypedACMEObject):
             raise errors.ValidationError("missing type field")
 
         try:
-            msg_cls = cls.TYPES[msg_type]
+            return cls.TYPES[msg_type]
         except KeyError:
             raise errors.UnrecognizedTypeError(msg_type)
-
-        return msg_cls
 
     @classmethod
     def from_json(cls, jobj):

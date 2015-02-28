@@ -113,10 +113,6 @@ class ACMEObject(ImmutableMap):  # pylint: disable=too-few-public-methods
         return decoded
 
     @classmethod
-    def _encode_hex16(cls, data):
-        return binascii.hexlify(data)
-
-    @classmethod
     def _decode_hex16(cls, data, size=None, minimum=False):
         if size is not None and ((not minimum and len(data) != size * 2)
                                  or (minimum and len(data) < size * 2)):
