@@ -60,7 +60,7 @@ class JWKTest(unittest.TestCase):
                           {'kty': 'RSA', 'e': 'AQAB', 'n': '1'})
 
 
-class SigatureTest(unittest.TestCase):
+class SignatureTest(unittest.TestCase):
     # pylint: disable=too-many-instance-attributes
     """Tests for letsencrypt.acme.sig.Signature."""
 
