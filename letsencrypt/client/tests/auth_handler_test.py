@@ -584,11 +584,12 @@ def gen_auth_resp(chall_list):
 
 
 def gen_path(required, challs):
-    """Generate a path for challenge messages
+    """Generate a combination by picking ``required`` from ``challs``.
 
-    :param required:
-    :param list str_list: challenge message types (:class:`str`)
-    :param challs: ACME challenge messages
+    :param required: Required types of challenges (subclasses of
+        :class:`~letsencrypt.acme.challenges.Challenge`).
+    :param challs: Sequence of ACME challenge messages, corresponding to
+        :attr:`letsencrypt.acme.messages.Challenge.challenges`.
 
     :return: :class:`list` of :class:`int`
 

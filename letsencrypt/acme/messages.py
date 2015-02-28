@@ -16,6 +16,13 @@ class Message(util.TypedACMEObject):
     TYPES = {}
 
     schema = NotImplemented
+    """JSON schema the object is tested against in :meth:`from_json`.
+
+    Subclasses must overrride it with a value that is acceptable by
+    :func:`jsonschema.validate`, most probably using
+    :func:`letsencrypt.acme.util.load_schema`.
+
+    """
 
     @classmethod
     def get_msg_cls(cls, jobj):
@@ -49,8 +56,11 @@ class Message(util.TypedACMEObject):
 
         :param jobj: JSON object.
 
-        :raises letsencrypt.acme.errors.SchemaValidationError: if ``validate``
-            was ``True`` and object couldn't be validated.
+        :raises letsencrypt.acme.errors.SchemaValidationError: if the input
+            JSON object could not be validated against JSON schema specified
+            in :attr:`schema`.
+        :raises letsencrypt.acme.errors.ValidationError: for any other generic
+            error in decoding.
 
         :returns: instance of the class
 

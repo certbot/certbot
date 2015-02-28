@@ -191,7 +191,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
 
         :param list flat_list: flat_list of responses from an IAuthenticator
         :param dict ichall_dict: Master dict mapping all domains to a list of
-            their associated 'client' and 'dv' Indexed challengesenges, or their
+            their associated 'client' and 'dv' Indexed challenges, or their
             :class:`letsencrypt.client.achallenges.Indexed` list
 
         """

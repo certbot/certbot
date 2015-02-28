@@ -40,7 +40,10 @@ def dump_ijsonserializable(python_object):
     """Serialize IJSONSerializable to JSON.
 
     This is meant to be passed to :func:`json.dumps` as ``default``
-    argument.
+    argument in order to facilitate recursive calls to
+    :meth:`~letsencrypt.acme.interfaces.IJSONSerializable.to_json`.
+    Please see :meth:`letsencrypt.acme.interfaces.IJSONSerializable.to_json`
+    for an example.
 
     """
     # providedBy | pylint: disable=no-member
@@ -164,8 +167,6 @@ class TypedACMEObject(ACMEObject):
         """Get JSON serializable object.
 
         :returns: Serializable JSON object representing ACME typed object.
-            :meth:`validate` will almost certianly not work, due to reasons
-            explained in :class:`letsencrypt.acme.interfaces.IJSONSerializable`.
         :rtype: dict
 
         """
