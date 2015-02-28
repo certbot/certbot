@@ -125,7 +125,7 @@ class Challenge(Message):
         # TODO: turn "combinations" elements into sets?
         # TODO: turn "combinations" into set?
         return cls(session_id=jobj["sessionID"],
-                   nonce=cls._decode_b64jose(jobj["nonce"]),
+                   nonce=util.decode_b64jose(jobj["nonce"]),
                    challenges=[challenges.Challenge.from_valid_json(chall)
                                for chall in jobj["challenges"]],
                    combinations=jobj.get("combinations", []))
@@ -245,7 +245,7 @@ class AuthorizationRequest(Message):
     def from_valid_json(cls, jobj):
         return cls(
             session_id=jobj["sessionID"],
-            nonce=cls._decode_b64jose(jobj["nonce"]),
+            nonce=util.decode_b64jose(jobj["nonce"]),
             responses=[challenges.ChallengeResponse.from_valid_json(chall)
                        for chall in jobj["responses"]],
             signature=other.Signature.from_valid_json(jobj["signature"]),
@@ -268,17 +268,17 @@ class Certificate(Message):
     __slots__ = ("certificate", "chain", "refresh")
 
     def _fields_to_json(self):
-        fields = {"certificate": self._encode_cert(self.certificate)}
+        fields = {"certificate": util.encode_cert(self.certificate)}
         if self.chain:
-            fields["chain"] = [self._encode_cert(cert) for cert in self.chain]
+            fields["chain"] = [util.encode_cert(cert) for cert in self.chain]
         if self.refresh is not None:
             fields["refresh"] = self.refresh
         return fields
 
     @classmethod
     def from_valid_json(cls, jobj):
-        return cls(certificate=cls._decode_cert(jobj["certificate"]),
-                   chain=[cls._decode_cert(cert) for cert in
+        return cls(certificate=util.decode_cert(jobj["certificate"]),
+                   chain=[util.decode_cert(cert) for cert in
                           jobj.get("chain", [])],
                    refresh=jobj.get("refresh"))
 
@@ -328,13 +328,13 @@ class CertificateRequest(Message):
 
     def _fields_to_json(self):
         return {
-            "csr": self._encode_csr(self.csr),
+            "csr": util.encode_csr(self.csr),
             "signature": self.signature,
         }
 
     @classmethod
     def from_valid_json(cls, jobj):
-        return cls(csr=cls._decode_csr(jobj["csr"]),
+        return cls(csr=util.decode_csr(jobj["csr"]),
                    signature=other.Signature.from_valid_json(jobj["signature"]))
 
 
@@ -449,13 +449,13 @@ class RevocationRequest(Message):
 
     def _fields_to_json(self):
         return {
-            "certificate": self._encode_cert(self.certificate),
+            "certificate": util.encode_cert(self.certificate),
             "signature": self.signature,
         }
 
     @classmethod
     def from_valid_json(cls, jobj):
-        return cls(certificate=cls._decode_cert(jobj["certificate"]),
+        return cls(certificate=util.decode_cert(jobj["certificate"]),
                    signature=other.Signature.from_valid_json(jobj["signature"]))
 
 

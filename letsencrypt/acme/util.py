@@ -99,49 +99,99 @@ class ACMEObject(ImmutableMap):  # pylint: disable=too-few-public-methods
         """Deserialize from valid JSON object."""
         raise NotImplementedError()
 
-    @classmethod
-    def _decode_b64jose(cls, data, size=None, minimum=False):
-        try:
-            decoded = jose.b64decode(data)
-        except TypeError:
-            raise errors.ValidationError()
 
-        if size is not None and ((not minimum and len(decoded) != size)
-                                 or (minimum and len(decoded) < size)):
-            raise errors.ValidationError()
+def decode_b64jose(value, size=None, minimum=False):
+    """Decode ACME object JOSE Base64 encoded field.
 
-        return decoded
+    :param str value: Encoded field value.
+    :param int size: If specified, this function will check if data size
+        (after decoding) matches.
+    :param bool minimum: If ``True``, then ``size`` is the minimum required
+        size, otherwise ``size`` must be exact.
 
-    @classmethod
-    def _decode_hex16(cls, data, size=None, minimum=False):
-        if size is not None and ((not minimum and len(data) != size * 2)
-                                 or (minimum and len(data) < size * 2)):
-            raise errors.ValidationError()
-        return binascii.unhexlify(data)
+    :raises letsencrypt.acme.errors.ValidationError: if anything goes wrong
+    :returns: Decoded value.
 
-    @classmethod
-    def _encode_cert(cls, cert):
-        return jose.b64encode(cert.as_der())
+    """
+    try:
+        decoded = jose.b64decode(value)
+    except TypeError:
+        raise errors.ValidationError()
 
-    @classmethod
-    def _decode_cert(cls, b64der):
-        try:
-            return ComparableX509(M2Crypto.X509.load_cert_der_string(
-                cls._decode_b64jose(b64der)))
-        except M2Crypto.X509.X509Error:
-            raise errors.ValidationError()
+    if size is not None and ((not minimum and len(decoded) != size)
+                             or (minimum and len(decoded) < size)):
+        raise errors.ValidationError()
 
-    @classmethod
-    def _encode_csr(cls, csr):
-        return cls._encode_cert(csr)
+    return decoded
 
-    @classmethod
-    def _decode_csr(cls, b64der):
-        try:
-            return ComparableX509(M2Crypto.X509.load_request_der_string(
-                cls._decode_b64jose(b64der)))
-        except M2Crypto.X509.X509Error:
-            raise errors.ValidationError()
+
+def decode_hex16(value, size=None, minimum=False):
+    """Decode ACME object hex16-encoded field.
+
+    :param str value: Encoded field value.
+    :param int size: If specified, this function will check if data size
+        (after decoding) matches.
+    :param bool minimum: If ``True``, then ``size`` is the minimum required
+        size, otherwise ``size`` must be exact.
+
+    """
+    # binascii.hexlify.__doc__: "The resulting string is therefore twice
+    # as long as the length of data."
+    if size is not None and ((not minimum and len(value) != size * 2)
+                             or (minimum and len(value) < size * 2)):
+        raise errors.ValidationError()
+    try:
+        return binascii.unhexlify(value)
+    except TypeError as error:  # odd-length string (binascci.unhexlify.__doc__)
+        raise errors.ValidationError(error)
+
+
+def encode_cert(cert):
+    """Encode ACME object X509 certificate field."""
+    return jose.b64encode(cert.as_der())
+
+
+def decode_cert(b64der):
+    """Decode ACME object X509 certificate field.
+
+    :param str b64der: Input data that's meant to be valid base64
+        DER-encoded certificate.
+
+    :raises letsencrypt.acme.errors.ValidationError: if anything goes wrong
+
+    :returns: Decoded certificate.
+    :rtype: :class:`M2Crypto.X509.X509` wrapped in :class:`ComparableX509`.
+
+    """
+    try:
+        return ComparableX509(M2Crypto.X509.load_cert_der_string(
+            decode_b64jose(b64der)))
+    except M2Crypto.X509.X509Error:
+        raise errors.ValidationError()
+
+
+def encode_csr(csr):
+    """Encode ACME object CSR field."""
+    return encode_cert(csr)
+
+
+def decode_csr(b64der):
+    """Decode ACME object CSR field.
+
+    :param str b64der: Input data that's meant to be valid base64
+        DER-encoded CSR.
+
+    :raises letsencrypt.acme.errors.ValidationError: if anything goes wrong
+
+    :returns: Decoded certificate.
+    :rtype: :class:`M2Crypto.X509.X509` wrapped in :class:`ComparableX509`.
+
+    """
+    try:
+        return ComparableX509(M2Crypto.X509.load_request_der_string(
+            decode_b64jose(b64der)))
+    except M2Crypto.X509.X509Error:
+        raise errors.ValidationError()
 
 
 class TypedACMEObject(ACMEObject):

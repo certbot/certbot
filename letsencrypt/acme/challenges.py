@@ -117,8 +117,8 @@ class DVSNI(DVChallenge):
 
     @classmethod
     def from_valid_json(cls, jobj):
-        return cls(r=cls._decode_b64jose(jobj["r"], cls.R_SIZE),
-                   nonce=cls._decode_hex16(jobj["nonce"], cls.NONCE_SIZE))
+        return cls(r=util.decode_b64jose(jobj["r"], cls.R_SIZE),
+                   nonce=util.decode_hex16(jobj["nonce"], cls.NONCE_SIZE))
 
 
 @ChallengeResponse.register
@@ -162,7 +162,7 @@ class DVSNIResponse(ChallengeResponse):
 
     @classmethod
     def from_valid_json(cls, jobj):
-        return cls(s=cls._decode_b64jose(jobj["s"], cls.S_SIZE))
+        return cls(s=util.decode_b64jose(jobj["s"], cls.S_SIZE))
 
 
 @Challenge.register
@@ -271,7 +271,7 @@ class ProofOfPossession(ClientChallenge):
             fields = {"jwk": self.jwk}
             add = functools.partial(_extend_if_not_empty, fields)
             add(self.cert_fingerprints, "certFingerprints")
-            add([self._encode_cert(cert) for cert in self.certs], "certs")
+            add([util.encode_cert(cert) for cert in self.certs], "certs")
             add(self.subject_key_identifiers, "subjectKeyIdentifiers")
             add(self.serial_numbers, "serialNumbers")
             add(self.issuers, "issuers")
@@ -283,7 +283,7 @@ class ProofOfPossession(ClientChallenge):
             return cls(
                 jwk=other.JWK.from_valid_json(jobj["jwk"]),
                 cert_fingerprints=jobj.get("certFingerprints", []),
-                certs=[cls._decode_cert(cert)
+                certs=[util.decode_cert(cert)
                        for cert in jobj.get("certs", [])],
                 subject_key_identifiers=jobj.get("subjectKeyIdentifiers", []),
                 serial_numbers=jobj.get("serialNumbers", []),
@@ -300,7 +300,7 @@ class ProofOfPossession(ClientChallenge):
     @classmethod
     def from_valid_json(cls, jobj):
         return cls(alg=jobj["alg"],
-                   nonce=cls._decode_b64jose(jobj["nonce"], cls.NONCE_SIZE),
+                   nonce=util.decode_b64jose(jobj["nonce"], cls.NONCE_SIZE),
                    hints=cls.Hints.from_valid_json(jobj["hints"]))
 
 
@@ -329,7 +329,7 @@ class ProofOfPossessionResponse(ChallengeResponse):
 
     @classmethod
     def from_valid_json(cls, jobj):
-        return cls(nonce=cls._decode_b64jose(jobj["nonce"], cls.NONCE_SIZE),
+        return cls(nonce=util.decode_b64jose(jobj["nonce"], cls.NONCE_SIZE),
                    signature=other.Signature.from_valid_json(jobj["signature"]))
 
 

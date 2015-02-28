@@ -109,8 +109,8 @@ class ImmutableMapTest(unittest.TestCase):
         self.assertEqual("B(x='foo', y='bar')", repr(self.B(x='foo', y='bar')))
 
 
-class ACMEObjectTest(unittest.TestCase):
-    """Tests for letsencrypt.acme.util.ACMEObject."""
+class EncodersAndDecodersTest(unittest.TestCase):
+    """Tests for encoders and decoders from letsencrypt.acme.util"""
     # pylint: disable=protected-access
 
     def setUp(self):
@@ -139,57 +139,62 @@ class ACMEObjectTest(unittest.TestCase):
         )
 
     def test_decode_b64_jose_padding_error(self):
-        from letsencrypt.acme.util import ACMEObject
-        self.assertRaises(
-            errors.ValidationError, ACMEObject._decode_b64jose, 'x')
+        from letsencrypt.acme.util import decode_b64jose
+        self.assertRaises(errors.ValidationError, decode_b64jose, 'x')
 
     def test_decode_b64_jose_size(self):
-        from letsencrypt.acme.util import ACMEObject
-        self.assertEqual('foo', ACMEObject._decode_b64jose('Zm9v', size=3))
+        from letsencrypt.acme.util import decode_b64jose
+        self.assertEqual('foo', decode_b64jose('Zm9v', size=3))
         self.assertRaises(
-            errors.ValidationError, ACMEObject._decode_b64jose, 'Zm9v', size=2)
+            errors.ValidationError, decode_b64jose, 'Zm9v', size=2)
         self.assertRaises(
-            errors.ValidationError, ACMEObject._decode_b64jose, 'Zm9v', size=4)
+            errors.ValidationError, decode_b64jose, 'Zm9v', size=4)
 
     def test_decode_b64_jose_minimum_size(self):
-        from letsencrypt.acme.util import ACMEObject
-        self.assertEqual(
-            'foo', ACMEObject._decode_b64jose('Zm9v', size=3, minimum=True))
-        self.assertEqual(
-            'foo', ACMEObject._decode_b64jose('Zm9v', size=2, minimum=True))
-        self.assertRaises(errors.ValidationError, ACMEObject._decode_b64jose,
+        from letsencrypt.acme.util import decode_b64jose
+        self.assertEqual('foo', decode_b64jose('Zm9v', size=3, minimum=True))
+        self.assertEqual('foo', decode_b64jose('Zm9v', size=2, minimum=True))
+        self.assertRaises(errors.ValidationError, decode_b64jose,
                           'Zm9v', size=4, minimum=True)
 
     def test_decode_hex16(self):
-        from letsencrypt.acme.util import ACMEObject
-        self.assertEqual('foo', ACMEObject._decode_hex16('666f6f'))
+        from letsencrypt.acme.util import decode_hex16
+        self.assertEqual('foo', decode_hex16('666f6f'))
 
     def test_decode_hex16_minimum_size(self):
-        from letsencrypt.acme.util import ACMEObject
-        self.assertEqual(
-            'foo', ACMEObject._decode_hex16('666f6f', size=3, minimum=True))
-        self.assertEqual(
-            'foo', ACMEObject._decode_hex16('666f6f', size=2, minimum=True))
-        self.assertRaises(errors.ValidationError, ACMEObject._decode_hex16,
+        from letsencrypt.acme.util import decode_hex16
+        self.assertEqual('foo', decode_hex16('666f6f', size=3, minimum=True))
+        self.assertEqual('foo', decode_hex16('666f6f', size=2, minimum=True))
+        self.assertRaises(errors.ValidationError, decode_hex16,
                           '666f6f', size=4, minimum=True)
 
+    def test_decode_hex16_odd_length(self):
+        from letsencrypt.acme.util import decode_hex16
+        self.assertRaises(errors.ValidationError, decode_hex16, 'x')
+
     def test_encode_cert(self):
-        from letsencrypt.acme.util import ACMEObject
-        self.assertEqual(self.b64_cert, ACMEObject._encode_cert(CERT))
+        from letsencrypt.acme.util import encode_cert
+        self.assertEqual(self.b64_cert, encode_cert(CERT))
 
     def test_decode_cert(self):
-        from letsencrypt.acme.util import ACMEObject
-        self.assertEqual(CERT, ACMEObject._decode_cert(self.b64_cert))
-        self.assertRaises(errors.ValidationError, ACMEObject._decode_cert, '')
+        from letsencrypt.acme.util import ComparableX509
+        from letsencrypt.acme.util import decode_cert
+        cert = decode_cert(self.b64_cert)
+        self.assertTrue(isinstance(cert, ComparableX509))
+        self.assertEqual(cert, CERT)
+        self.assertRaises(errors.ValidationError, decode_cert, '')
 
     def test_encode_csr(self):
-        from letsencrypt.acme.util import ACMEObject
-        self.assertEqual(self.b64_csr, ACMEObject._encode_csr(CSR))
+        from letsencrypt.acme.util import encode_csr
+        self.assertEqual(self.b64_csr, encode_csr(CSR))
 
     def test_decode_csr(self):
-        from letsencrypt.acme.util import ACMEObject
-        self.assertEqual(CSR, ACMEObject._decode_csr(self.b64_csr))
-        self.assertRaises(errors.ValidationError, ACMEObject._decode_csr, '')
+        from letsencrypt.acme.util import ComparableX509
+        from letsencrypt.acme.util import decode_csr
+        csr = decode_csr(self.b64_csr)
+        self.assertTrue(isinstance(csr, ComparableX509))
+        self.assertEqual(csr, CSR)
+        self.assertRaises(errors.ValidationError, decode_csr, '')
 
 
 class TypedACMEObjectTest(unittest.TestCase):

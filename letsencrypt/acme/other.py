@@ -34,7 +34,7 @@ class JWK(util.ACMEObject):
     @classmethod
     def _decode_param(cls, data):
         try:
-            return long(binascii.hexlify(cls._decode_b64jose(data)), 16)
+            return long(binascii.hexlify(util.decode_b64jose(data)), 16)
         except ValueError:  # invalid literal for long() with base 16
             raise errors.ValidationError(data)
 
@@ -123,7 +123,7 @@ class Signature(util.ACMEObject):
     @classmethod
     def from_valid_json(cls, jobj):
         assert jobj['alg'] == 'RS256'  # TODO: support other algorithms
-        return cls(alg=jobj['alg'], sig=cls._decode_b64jose(jobj['sig']),
-                   nonce=cls._decode_b64jose(
+        return cls(alg=jobj['alg'], sig=util.decode_b64jose(jobj['sig']),
+                   nonce=util.decode_b64jose(
                        jobj['nonce'], cls.NONCE_SIZE, minimum=True),
                    jwk=JWK.from_valid_json(jobj['jwk']))
