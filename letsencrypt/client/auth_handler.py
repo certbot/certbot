@@ -275,25 +275,25 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
             chall = self.msgs[domain].challenges[index]
 
             if isinstance(chall, challenges.DVSNI):
-                logging.info("DVSNI challenge for %s.", domain)
+                logging.info("  DVSNI challenge for %s.", domain)
                 achall = achallenges.DVSNI(
                     chall=chall, domain=domain, key=self.authkey[domain])
             elif isinstance(chall, challenges.SimpleHTTPS):
-                logging.info("SimpleHTTPS challenge for %s.", domain)
+                logging.info("  SimpleHTTPS challenge for %s.", domain)
                 achall = achallenges.SimpleHTTPS(
                     chall=chall, domain=domain, key=self.authkey[domain])
             elif isinstance(chall, challenges.DNS):
-                logging.info("DNS challenge for %s.", domain)
+                logging.info("  DNS challenge for %s.", domain)
                 achall = achallenges.DNS(chall=chall, domain=domain)
 
             elif isinstance(chall, challenges.RecoveryToken):
-                logging.info("Recovery Token Challenge for %s.", domain)
+                logging.info("  Recovery Token Challenge for %s.", domain)
                 achall = achallenges.RecoveryToken(chall=chall, domain=domain)
             elif isinstance(chall, challenges.RecoveryContact):
-                logging.info("Recovery Contact Challenge for %s.", domain)
+                logging.info("  Recovery Contact Challenge for %s.", domain)
                 achall = achallenges.RecoveryContact(chall=chall, domain=domain)
             elif isinstance(chall, challenges.ProofOfPossession):
-                logging.info("Proof-of-Possession Challenge for %s", domain)
+                logging.info("  Proof-of-Possession Challenge for %s", domain)
                 achall = achallenges.ProofOfPossession(
                     chall=chall, domain=domain)
 
