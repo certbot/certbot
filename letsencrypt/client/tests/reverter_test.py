@@ -289,10 +289,9 @@ class TestFullCheckpointsReverter(unittest.TestCase):
         self.reverter.rollback_checkpoints(1)
         self.assertEqual(read_in(self.config1), "directive-dir1")
 
-    @mock.patch("letsencrypt.client.reverter.logging.warning")
-    def test_finalize_checkpoint_no_in_progress(self, mock_warn):
-        self.reverter.finalize_checkpoint("No checkpoint... should warn")
-        self.assertEqual(mock_warn.call_count, 1)
+    def test_finalize_checkpoint_no_in_progress(self):
+        # No need to warn for this... just make sure there are no errors.
+        self.reverter.finalize_checkpoint("No checkpoint...")
 
     @mock.patch("letsencrypt.client.reverter.shutil.move")
     def test_finalize_checkpoint_cannot_title(self, mock_move):
@@ -324,7 +323,7 @@ class TestFullCheckpointsReverter(unittest.TestCase):
         self.assertEqual(read_in(self.config2), "directive-dir2")
         self.assertFalse(os.path.isfile(config3))
 
-    @mock.patch("letsencrypt.client.client.zope.component.getUtility")
+    @mock.patch("letsencrypt.client.reverter.zope.component.getUtility")
     def test_view_config_changes(self, mock_output):
         """This is not strict as this is subject to change."""
         self._setup_three_checkpoints()
@@ -333,7 +332,7 @@ class TestFullCheckpointsReverter(unittest.TestCase):
         self.reverter.view_config_changes()
 
         # Make sure notification is output
-        self.assertEqual(mock_output().generic_notification.call_count, 1)
+        self.assertEqual(mock_output().notification.call_count, 1)
 
     @mock.patch("letsencrypt.client.reverter.logging")
     def test_view_config_changes_no_backups(self, mock_logging):

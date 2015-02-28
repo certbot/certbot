@@ -4,8 +4,11 @@ import unittest
 
 import mock
 
+from letsencrypt.acme import messages
+
 from letsencrypt.client import challenge_util
 from letsencrypt.client import errors
+
 from letsencrypt.client.tests import acme_util
 
 
@@ -25,8 +28,8 @@ class SatisfyChallengesTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.client.auth_handler import AuthHandler
 
-        self.mock_dv_auth = mock.MagicMock(name='ApacheConfigurator')
-        self.mock_client_auth = mock.MagicMock(name='ClientAuthenticator')
+        self.mock_dv_auth = mock.MagicMock(name="ApacheConfigurator")
+        self.mock_client_auth = mock.MagicMock(name="ClientAuthenticator")
 
         self.mock_dv_auth.get_chall_pref.return_value = ["dvsni"]
         self.mock_client_auth.get_chall_pref.return_value = ["recoveryToken"]
@@ -45,7 +48,8 @@ class SatisfyChallengesTest(unittest.TestCase):
     def test_name1_dvsni1(self):
         dom = "0"
         challenge = [acme_util.CHALLENGES["dvsni"]]
-        msg = acme_util.get_chall_msg(dom, "nonce0", challenge)
+        msg = messages.Challenge(session_id=dom, nonce="nonce0",
+                                 challenges=challenge, combinations=[])
         self.handler.add_chall_msg(dom, msg, "dummy_key")
 
         self.handler._satisfy_challenges()  # pylint: disable=protected-access
@@ -59,12 +63,37 @@ class SatisfyChallengesTest(unittest.TestCase):
         self.assertEqual(len(self.handler.dv_c[dom]), 1)
         self.assertEqual(len(self.handler.client_c[dom]), 0)
 
+    def test_name1_rectok1(self):
+        dom = "0"
+        challenge = [acme_util.CHALLENGES["recoveryToken"]]
+        msg = messages.Challenge(session_id=dom, nonce="nonce0",
+                                 challenges=challenge, combinations=[])
+        self.handler.add_chall_msg(dom, msg, "dummy_key")
+
+        self.handler._satisfy_challenges()  # pylint: disable=protected-access
+
+        self.assertEqual(len(self.handler.responses), 1)
+        self.assertEqual(len(self.handler.responses[dom]), 1)
+
+        # Test if statement for dv_auth perform
+        self.assertEqual(self.mock_client_auth.perform.call_count, 1)
+        self.assertEqual(self.mock_dv_auth.perform.call_count, 0)
+
+        self.assertEqual("RecTokenChall0", self.handler.responses[dom][0])
+        # Assert 1 domain
+        self.assertEqual(len(self.handler.dv_c), 1)
+        self.assertEqual(len(self.handler.client_c), 1)
+        # Assert 1 auth challenge, 0 dv
+        self.assertEqual(len(self.handler.dv_c[dom]), 0)
+        self.assertEqual(len(self.handler.client_c[dom]), 1)
+
     def test_name5_dvsni5(self):
         challenge = [acme_util.CHALLENGES["dvsni"]]
         for i in xrange(5):
             self.handler.add_chall_msg(
                 str(i),
-                acme_util.get_chall_msg(str(i), "nonce%d" % i, challenge),
+                messages.Challenge(session_id=str(i), nonce="nonce%d" % i,
+                                   challenges=challenge, combinations=[]),
                 "dummy_key")
 
         self.handler._satisfy_challenges()  # pylint: disable=protected-access
@@ -73,6 +102,10 @@ class SatisfyChallengesTest(unittest.TestCase):
         self.assertEqual(len(self.handler.dv_c), 5)
         self.assertEqual(len(self.handler.client_c), 5)
         # Each message contains 1 auth, 0 client
+
+        # Test proper call count for methods
+        self.assertEqual(self.mock_client_auth.perform.call_count, 0)
+        self.assertEqual(self.mock_dv_auth.perform.call_count, 1)
 
         for i in xrange(5):
             dom = str(i)
@@ -91,7 +124,8 @@ class SatisfyChallengesTest(unittest.TestCase):
         combos = acme_util.gen_combos(challenges)
         self.handler.add_chall_msg(
             dom,
-            acme_util.get_chall_msg("0", "nonce0", challenges, combos),
+            messages.Challenge(session_id="0", nonce="nonce0",
+                               challenges=challenges, combinations=combos),
             "dummy_key")
 
         path = gen_path(["simpleHttps"], challenges)
@@ -102,6 +136,10 @@ class SatisfyChallengesTest(unittest.TestCase):
         self.assertEqual(len(self.handler.responses[dom]), len(challenges))
         self.assertEqual(len(self.handler.dv_c), 1)
         self.assertEqual(len(self.handler.client_c), 1)
+
+        # Test if statement for client_auth perform
+        self.assertEqual(self.mock_client_auth.perform.call_count, 0)
+        self.assertEqual(self.mock_dv_auth.perform.call_count, 1)
 
         self.assertEqual(
             self.handler.responses[dom],
@@ -120,7 +158,8 @@ class SatisfyChallengesTest(unittest.TestCase):
         combos = acme_util.gen_combos(challenges)
         self.handler.add_chall_msg(
             dom,
-            acme_util.get_chall_msg(dom, "nonce0", challenges, combos),
+            messages.Challenge(session_id=dom, nonce="nonce0",
+                               challenges=challenges, combinations=combos),
             "dummy_key")
 
         path = gen_path(["simpleHttps", "recoveryToken"], challenges)
@@ -150,8 +189,9 @@ class SatisfyChallengesTest(unittest.TestCase):
         for i in xrange(5):
             self.handler.add_chall_msg(
                 str(i),
-                acme_util.get_chall_msg(
-                    str(i), "nonce%d" % i, challenges, combos),
+                messages.Challenge(
+                    session_id=str(i), nonce="nonce%d" % i,
+                    challenges=challenges, combinations=combos),
                 "dummy_key")
 
         path = gen_path(["dvsni", "recoveryContact"], challenges)
@@ -166,7 +206,7 @@ class SatisfyChallengesTest(unittest.TestCase):
         self.assertEqual(len(self.handler.dv_c), 5)
         self.assertEqual(len(self.handler.client_c), 5)
 
-        for i in range(5):
+        for i in xrange(5):
             dom = str(i)
             self.assertEqual(
                 self.handler.responses[dom],
@@ -199,8 +239,9 @@ class SatisfyChallengesTest(unittest.TestCase):
             paths.append(gen_path(chosen_chall[i], challenge_list[i]))
             self.handler.add_chall_msg(
                 dom,
-                acme_util.get_chall_msg(
-                    dom, "nonce%d" % i, challenge_list[i]),
+                messages.Challenge(
+                    session_id=dom, nonce="nonce%d" % i,
+                    challenges=challenge_list[i], combinations=[]),
                 "dummy_key")
 
         mock_chall_path.side_effect = paths
@@ -247,40 +288,47 @@ class SatisfyChallengesTest(unittest.TestCase):
         for i in xrange(3):
             self.handler.add_chall_msg(
                 str(i),
-                acme_util.get_chall_msg(
-                    str(i), "nonce%d" % i, challenges, combos),
+                messages.Challenge(
+                    session_id=str(i), nonce="nonce%d" % i,
+                    challenges=challenges, combinations=combos),
                 "dummy_key")
 
-        mock_chall_path.return_value = gen_path(
-            ["dvsni", "proofOfPossession"], challenges)
+        mock_chall_path.side_effect = [
+            gen_path(["dvsni", "proofOfPossession"], challenges),
+            gen_path(["proofOfPossession"], challenges),
+            gen_path(["dvsni"], challenges),
+        ]
 
         # This may change in the future... but for now catch the error
         self.assertRaises(
             errors.AuthHandlerError, self.handler._satisfy_challenges)
 
         # Verify cleanup is actually run correctly
-        self.assertEqual(self.mock_dv_auth.cleanup.call_count, 3)
-        self.assertEqual(self.mock_client_auth.cleanup.call_count, 3)
+        self.assertEqual(self.mock_dv_auth.cleanup.call_count, 2)
+        self.assertEqual(self.mock_client_auth.cleanup.call_count, 2)
+
+
+        dv_cleanup_args = self.mock_dv_auth.cleanup.call_args_list
+        client_cleanup_args = self.mock_client_auth.cleanup.call_args_list
 
         # Check DV cleanup
-        mock_cleanup_args = self.mock_dv_auth.cleanup.call_args_list
-        for i in xrange(3):
-            # Assert length of arg list was 1
-            arg_chall_list = mock_cleanup_args[i][0][0]
-            self.assertEqual(len(arg_chall_list), 1)
-            self.assertTrue(isinstance(arg_chall_list[0],
-                                       challenge_util.DvsniChall))
+        for i in xrange(2):
+            dv_chall_list = dv_cleanup_args[i][0][0]
+            self.assertEqual(len(dv_chall_list), 1)
+            self.assertTrue(
+                isinstance(dv_chall_list[0], challenge_util.DvsniChall))
+
 
         # Check Auth cleanup
-        mock_cleanup_args = self.mock_client_auth.cleanup.call_args_list
-        for i in xrange(3):
-            arg_chall_list = mock_cleanup_args[i][0][0]
-            self.assertEqual(len(arg_chall_list), 1)
-            self.assertTrue(isinstance(arg_chall_list[0],
-                                       challenge_util.PopChall))
+        for i in xrange(2):
+            client_chall_list = client_cleanup_args[i][0][0]
+            self.assertEqual(len(client_chall_list), 1)
+            self.assertTrue(
+                isinstance(client_chall_list[0], challenge_util.PopChall))
 
 
-    def _get_exp_response(self, domain, path, challenges):  # pylint: disable=no-self-use
+    def _get_exp_response(self, domain, path, challenges):
+        # pylint: disable=no-self-use
         exp_resp = ["null"] * len(challenges)
         for i in path:
             exp_resp[i] = TRANSLATE[challenges[i]["type"]] + str(domain)
@@ -293,8 +341,8 @@ class GetAuthorizationsTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.client.auth_handler import AuthHandler
 
-        self.mock_dv_auth = mock.MagicMock(name='ApacheConfigurator')
-        self.mock_client_auth = mock.MagicMock(name='ClientAuthenticator')
+        self.mock_dv_auth = mock.MagicMock(name="ApacheConfigurator")
+        self.mock_client_auth = mock.MagicMock(name="ClientAuthenticator")
 
         self.mock_sat_chall = mock.MagicMock(name="_satisfy_challenges")
         self.mock_acme_auth = mock.MagicMock(name="acme_authorization")
@@ -313,7 +361,8 @@ class GetAuthorizationsTest(unittest.TestCase):
         for i in xrange(3):
             self.handler.add_chall_msg(
                 str(i),
-                acme_util.get_chall_msg(str(i), "nonce%d" % i, challenge),
+                messages.Challenge(session_id=str(i), nonce="nonce%d" % i,
+                                   challenges=challenge, combinations=[]),
                 "dummy_key")
 
         self.mock_sat_chall.side_effect = self._sat_solved_at_once
@@ -341,7 +390,8 @@ class GetAuthorizationsTest(unittest.TestCase):
         challenges = acme_util.get_challenges()
         self.handler.add_chall_msg(
             "0",
-            acme_util.get_chall_msg("0", "nonce0", challenges),
+            messages.Challenge(session_id="0", nonce="nonce0",
+                               challenges=challenges, combinations=[]),
             "dummy_key")
 
         # Don't do anything to satisfy challenges
@@ -356,7 +406,7 @@ class GetAuthorizationsTest(unittest.TestCase):
     def _sat_failure(self):
         dom = "0"
         self.handler.paths[dom] = gen_path(
-            ["dns", "recoveryToken"], self.handler.msgs[dom]["challenges"])
+            ["dns", "recoveryToken"], self.handler.msgs[dom].challenges)
         dv_c, c_c = self.handler._challenge_factory(
             dom, self.handler.paths[dom])
         self.handler.dv_c[dom], self.handler.client_c[dom] = dv_c, c_c
@@ -369,7 +419,8 @@ class GetAuthorizationsTest(unittest.TestCase):
             dom = str(i)
             self.handler.add_chall_msg(
                 dom,
-                acme_util.get_chall_msg(dom, "nonce%d" % i, challs[i]),
+                messages.Challenge(session_id=dom, nonce="nonce%d" % i,
+                                   challenges=challs[i], combinations=[]),
                 "dummy_key")
 
         self.mock_sat_chall.side_effect = self._sat_incremental
@@ -462,7 +513,7 @@ class PathSatisfiedTest(unittest.TestCase):
 
 def gen_auth_resp(chall_list):
     """Generate a dummy authorization response."""
-    return ["%s%s" % (type(chall).__name__, chall.domain)
+    return ["%s%s" % (chall.__class__.__name__, chall.domain)
             for chall in chall_list]
 
 
@@ -484,5 +535,5 @@ def gen_path(str_list, challenges):
     return path
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

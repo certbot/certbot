@@ -45,8 +45,10 @@ class NamespaceConfig(object):
     @property
     def cert_key_backup(self):  # pylint: disable=missing-docstring
         return os.path.join(
-            self.namespace.work_dir, constants.CERT_KEY_BACKUP_DIR)
+            self.namespace.work_dir, constants.CERT_KEY_BACKUP_DIR,
+            self.namespace.server.partition(":")[0])
 
+    # TODO: This should probably include the server name
     @property
     def rec_token_dir(self):  # pylint: disable=missing-docstring
         return os.path.join(self.namespace.work_dir, constants.REC_TOKEN_DIR)

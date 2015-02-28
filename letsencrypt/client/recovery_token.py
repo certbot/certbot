@@ -33,7 +33,7 @@ class RecoveryToken(object):
                 return self.generate_response(token_fd.read())
 
         cancel, token = zope.component.getUtility(
-            interfaces.IDisplay).generic_input(
+            interfaces.IDisplay).input(
                 "%s - Input Recovery Token: " % chall.domain)
         if cancel != 1:
             return self.generate_response(token)
@@ -48,7 +48,7 @@ class RecoveryToken(object):
 
         """
         try:
-            os.remove(os.path.join(self.token_dir, chall.domain))
+            le_util.safely_remove(os.path.join(self.token_dir, chall.domain))
         except OSError as err:
             if err.errno != errno.ENOENT:
                 raise
@@ -73,5 +73,5 @@ class RecoveryToken(object):
         """
         le_util.make_or_verify_dir(self.token_dir, 0o700, os.geteuid())
 
-        with open(os.path.join(self.token_dir, domain), 'w') as token_fd:
+        with open(os.path.join(self.token_dir, domain), "w") as token_fd:
             token_fd.write(str(token))

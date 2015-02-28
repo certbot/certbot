@@ -77,13 +77,12 @@ class ApacheParser(object):
 
         """
         self.aug.set(aug_conf_path + "/directive[last() + 1]", directive)
-        if type(arg) is not list:
-            self.aug.set(aug_conf_path + "/directive[last()]/arg", arg)
+        if isinstance(arg, list):
+            for i, value in enumerate(arg, 1):
+                self.aug.set(
+                    "%s/directive[last()]/arg[%d]" % (aug_conf_path, i), value)
         else:
-            for i in range(len(arg)):
-                self.aug.set("%s/directive[last()]/arg[%d]" %
-                             (aug_conf_path, (i+1)),
-                             arg[i])
+            self.aug.set(aug_conf_path + "/directive[last()]/arg", arg)
 
     def find_dir(self, directive, arg=None, start=None):
         """Finds directive in the configuration.
@@ -96,7 +95,7 @@ class ApacheParser(object):
 
         Note: Augeas is inherently case sensitive while Apache is case
         insensitive.  Augeas 1.0 allows case insensitive regexes like
-        regexp(/Listen/, 'i'), however the version currently supported
+        regexp(/Listen/, "i"), however the version currently supported
         by Ubuntu 0.10 does not.  Thus I have included my own case insensitive
         transformation by calling case_i() on everything to maintain
         compatibility.
@@ -119,10 +118,11 @@ class ApacheParser(object):
         # No regexp code
         # if arg is None:
         #     matches = self.aug.match(start +
-        # "//*[self::directive='"+directive+"']/arg")
+        # "//*[self::directive='" + directive + "']/arg")
         # else:
         #     matches = self.aug.match(start +
-        # "//*[self::directive='" + directive+"']/* [self::arg='" + arg + "']")
+        # "//*[self::directive='" + directive +
+        #   "']/* [self::arg='" + arg + "']")
 
         # includes = self.aug.match(start +
         # "//* [self::directive='Include']/* [label()='arg']")
@@ -313,8 +313,8 @@ class ApacheParser(object):
                 self.root + "/*/*/*.augsave",
                 self.root + "/*/*/*~"]
 
-        for i in range(len(excl)):
-            self.aug.set("/augeas/load/Httpd/excl[%d]" % (i+1), excl[i])
+        for i, excluded in enumerate(excl, 1):
+            self.aug.set("/augeas/load/Httpd/excl[%d]" % i, excluded)
 
         self.aug.load()
 

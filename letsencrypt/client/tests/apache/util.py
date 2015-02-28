@@ -75,6 +75,8 @@ def get_apache_configurator(
                 work_dir=work_dir),
             version)
 
+    config.prepare()
+
     return config
 
 

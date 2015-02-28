@@ -9,7 +9,8 @@ class NamespaceConfigTest(unittest.TestCase):
 
     def setUp(self):
         from letsencrypt.client.configuration import NamespaceConfig
-        namespace = mock.MagicMock(work_dir='/tmp/foo', foo='bar')
+        namespace = mock.MagicMock(
+            work_dir='/tmp/foo', foo='bar', server='acme-server.org:443')
         self.config = NamespaceConfig(namespace)
 
     def test_proxy_getattr(self):
@@ -24,7 +25,8 @@ class NamespaceConfigTest(unittest.TestCase):
         constants.REC_TOKEN_DIR = '/r'
         self.assertEqual(self.config.temp_checkpoint_dir, '/tmp/foo/t')
         self.assertEqual(self.config.in_progress_dir, '/tmp/foo/../p')
-        self.assertEqual(self.config.cert_key_backup, '/tmp/foo/c/')
+        self.assertEqual(
+            self.config.cert_key_backup, '/tmp/foo/c/acme-server.org')
         self.assertEqual(self.config.rec_token_dir, '/r')
 
 

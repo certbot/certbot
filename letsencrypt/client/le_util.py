@@ -1,5 +1,4 @@
 """Utilities for all Let's Encrypt."""
-import base64
 import collections
 import errno
 import os
@@ -12,6 +11,7 @@ Key = collections.namedtuple("Key", "file pem")
 # Note: form is the type of data, "pem" or "der"
 CSR = collections.namedtuple("CSR", "file data form")
 
+
 def make_or_verify_dir(directory, mode=0o755, uid=0):
     """Make sure directory exists with proper permissions.
 
@@ -19,8 +19,8 @@ def make_or_verify_dir(directory, mode=0o755, uid=0):
     :param int mode: Directory mode.
     :param int uid: Directory owner.
 
-    :raises LetsEncryptClientError: if a directory already exists,
-        but has wrong permissions or owner
+    :raises letsencrypt.client.errors.Error: if a directory already
+        exists, but has wrong permissions or owner
 
     :raises OSError: if invalid or inaccessible file names and
         paths, or other arguments that have the correct type,
@@ -32,7 +32,7 @@ def make_or_verify_dir(directory, mode=0o755, uid=0):
     except OSError as exception:
         if exception.errno == errno.EEXIST:
             if not check_permissions(directory, mode, uid):
-                raise errors.ClientError(
+                raise errors.Error(
                     "%s exists, but does not have the proper "
                     "permissions or owner" % directory)
         else:
@@ -75,52 +75,10 @@ def unique_file(path, mode=0o777):
         count += 1
 
 
-# https://tools.ietf.org/html/draft-ietf-jose-json-web-signature-37#appendix-C
-#
-# Jose Base64:
-#
-#   - URL-safe Base64
-#
-#   - padding stripped
-
-
-def jose_b64encode(data):
-    """JOSE Base64 encode.
-
-    :param data: Data to be encoded.
-    :type data: str or bytearray
-
-    :returns: JOSE Base64 string.
-    :rtype: str
-
-    :raises TypeError: if `data` is of incorrect type
-
-    """
-    if not isinstance(data, str):
-        raise TypeError("argument should be str or bytearray")
-    return base64.urlsafe_b64encode(data).rstrip("=")
-
-
-def jose_b64decode(data):
-    """JOSE Base64 decode.
-
-    :param data: Base64 string to be decoded. If it's unicode, then
-                 only ASCII characters are allowed.
-    :type data: str or unicode
-
-    :returns: Decoded data.
-
-    :raises TypeError: if input is of incorrect type
-    :raises ValueError: if input is unicode with non-ASCII characters
-
-    """
-    if isinstance(data, unicode):
-        try:
-            data = data.encode("ascii")
-        except UnicodeEncodeError:
-            raise ValueError(
-                "unicode argument should contain only ASCII characters")
-    elif not isinstance(data, str):
-        raise TypeError("argument should be a str or unicode")
-
-    return base64.urlsafe_b64decode(data + "=" * (4 - (len(data) % 4)))
+def safely_remove(path):
+    """Remove a file that may not exist."""
+    try:
+        os.remove(path)
+    except OSError as err:
+        if err.errno != errno.ENOENT:
+            raise

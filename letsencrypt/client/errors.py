@@ -1,16 +1,16 @@
 """Let's Encrypt client errors."""
 
 
-class ClientError(Exception):
+class Error(Exception):
     """Generic Let's Encrypt client error."""
 
 
-class ReverterError(ClientError):
+class ReverterError(Error):
     """Reverter error."""
 
 
 # Auth Handler Errors
-class AuthHandlerError(ClientError):
+class AuthHandlerError(Error):
     """Auth Handler error."""
 
 
@@ -28,7 +28,7 @@ class DvsniError(DvAuthError):
 
 
 # Configurator Errors
-class ConfiguratorError(ClientError):
+class ConfiguratorError(Error):
     """Configurator error."""
 
 
@@ -39,3 +39,6 @@ class NoInstallationError(ConfiguratorError):
 class MisconfigurationError(ConfiguratorError):
     """Misconfiguration error."""
 
+
+class RevokerError(Error):
+    """Let's Encrypt Revoker error."""

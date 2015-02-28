@@ -15,7 +15,7 @@
             "type": "string"
         },
         "jwk": {
-            "$ref": "file:letsencrypt/client/schemata/jwk.json"
+            "$ref": "file:letsencrypt/acme/schemata/jwk.json"
         }
     }
 }

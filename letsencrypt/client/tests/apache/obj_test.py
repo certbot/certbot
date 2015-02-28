@@ -31,9 +31,7 @@ class AddrTest(unittest.TestCase):
     def test_eq(self):
         self.assertEqual(self.addr1, self.addr2.get_addr_obj(""))
         self.assertNotEqual(self.addr1, self.addr2)
-        # This is specifically designed to hit line 28 but coverage denies me
-        # the satisfaction :(
-        self.assertNotEqual(self.addr1, 3333)
+        self.assertFalse(self.addr1 == 3333)
 
     def test_set_inclusion(self):
         from letsencrypt.client.apache.obj import Addr
@@ -63,4 +61,8 @@ class VirtualHostTest(unittest.TestCase):
 
         self.assertEqual(vhost1b, self.vhost1)
         self.assertEqual(str(vhost1b), str(self.vhost1))
-        self.assertNotEqual(vhost1b, 1234)
+        self.assertFalse(vhost1b == 1234)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,5 +1,7 @@
-include README.rst CHANGES.rst
+include README.rst
+include CHANGES.rst
+include CONTRIBUTING.rst
+include linter_plugin.py
 recursive-include letsencrypt *.json
-recursive-include letsencrypt *.sh
 recursive-include letsencrypt *.conf
 recursive-include letsencrypt/client/tests/testdata *

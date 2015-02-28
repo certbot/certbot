@@ -36,7 +36,7 @@ List of expected options parameters:
 
 
 APACHE_MOD_SSL_CONF = pkg_resources.resource_filename(
-    'letsencrypt.client.apache', 'options-ssl.conf')
+    "letsencrypt.client.apache", "options-ssl.conf")
 """Path to the Apache mod_ssl config file found in the Let's Encrypt
 distribution."""
 
@@ -66,3 +66,7 @@ IConfig.work_dir. Used for easy revocation."""
 REC_TOKEN_DIR = "recovery_tokens"
 """Directory where all recovery tokens are saved (relative to
 IConfig.work_dir)."""
+
+NETSTAT = "/bin/netstat"
+"""Location of netstat binary for checking whether a listener is already
+running on the specified port (Linux-specific)."""

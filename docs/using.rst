@@ -24,8 +24,10 @@ Ubuntu
 ::
 
     sudo apt-get install python python-setuptools python-virtualenv python-dev \
-                 gcc swig dialog libaugeas0 libssl-dev ca-certificates
+                 gcc swig dialog libaugeas0 libssl-dev libffi-dev \
+                 ca-certificates
 
+.. Please keep the above command in sync with .travis.yml (before_install)
 
 Mac OSX
 -------
@@ -52,7 +54,7 @@ The letsencrypt commandline tool has a builtin help:
 
 ::
 
-   letsencrypt --help
+   ./venv/bin/letsencrypt --help
 
 
 .. _augeas: http://augeas.net/

@@ -2,7 +2,10 @@
 import logging
 import sys
 
-from letsencrypt.client import acme
+import Crypto.PublicKey.RSA
+
+from letsencrypt.acme import messages
+
 from letsencrypt.client import challenge_util
 from letsencrypt.client import constants
 from letsencrypt.client import errors
@@ -53,7 +56,9 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         """Add a challenge message to the AuthHandler.
 
         :param str domain: domain for authorization
-        :param dict msg: ACME challenge message
+
+        :param msg: ACME "challenge" message
+        :type msg: :class:`letsencrypt.acme.message.Challenge`
 
         :param authkey: authorized key for the challenge
         :type authkey: :class:`letsencrypt.client.le_util.Key`
@@ -64,7 +69,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
                 "Multiple ACMEChallengeMessages for the same domain "
                 "is not supported.")
         self.domains.append(domain)
-        self.responses[domain] = ["null"] * len(msg["challenges"])
+        self.responses[domain] = ["null"] * len(msg.challenges)
         self.msgs[domain] = msg
         self.authkey[domain] = authkey
 
@@ -102,21 +107,22 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         :param str domain: domain that is requesting authorization
 
         :returns: ACME "authorization" message.
-        :rtype: dict
+        :rtype: :class:`letsencrypt.acme.messages.Authorization`
 
         """
         try:
             auth = self.network.send_and_receive_expected(
-                acme.authorization_request(
-                    self.msgs[domain]["sessionID"],
-                    domain,
-                    self.msgs[domain]["nonce"],
-                    self.responses[domain],
-                    self.authkey[domain].pem),
-                "authorization")
+                messages.AuthorizationRequest.create(
+                    session_id=self.msgs[domain].session_id,
+                    nonce=self.msgs[domain].nonce,
+                    responses=self.responses[domain],
+                    name=domain,
+                    key=Crypto.PublicKey.RSA.importKey(
+                        self.authkey[domain].pem)),
+                messages.Authorization)
             logging.info("Received Authorization for %s", domain)
             return auth
-        except errors.ClientError as err:
+        except errors.Error as err:
             logging.fatal(str(err))
             logging.fatal(
                 "Failed Authorization procedure - cleaning up challenges")
@@ -129,14 +135,15 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
 
         .. todo:: It might be worth it to try different challenges to
             find one that doesn't throw an exception
+        .. todo:: separate into more functions
 
         """
         logging.info("Performing the following challenges:")
         for dom in self.domains:
             self.paths[dom] = gen_challenge_path(
-                self.msgs[dom]["challenges"],
+                self.msgs[dom].challenges,
                 self._get_chall_pref(dom),
-                self.msgs[dom].get("combinations", None))
+                self.msgs[dom].combinations)
 
             self.dv_c[dom], self.client_c[dom] = self._challenge_factory(
                 dom, self.paths[dom])
@@ -145,14 +152,19 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         # Order is important here as we will not expose the outside
         # Authenticator to our own indices.
         flat_client = []
-        flat_auth = []
+        flat_dv = []
+
         for dom in self.domains:
             flat_client.extend(ichall.chall for ichall in self.client_c[dom])
-            flat_auth.extend(ichall.chall for ichall in self.dv_c[dom])
+            flat_dv.extend(ichall.chall for ichall in self.dv_c[dom])
 
+        client_resp = []
+        dv_resp = []
         try:
-            client_resp = self.client_auth.perform(flat_client)
-            dv_resp = self.dv_auth.perform(flat_auth)
+            if flat_client:
+                client_resp = self.client_auth.perform(flat_client)
+            if flat_dv:
+                dv_resp = self.dv_auth.perform(flat_dv)
         # This will catch both specific types of errors.
         except errors.AuthHandlerError as err:
             logging.critical("Failure in setting up challenges:")
@@ -166,8 +178,10 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         logging.info("Ready for verification...")
 
         # Assemble Responses
-        self._assign_responses(client_resp, self.client_c)
-        self._assign_responses(dv_resp, self.dv_c)
+        if client_resp:
+            self._assign_responses(client_resp, self.client_c)
+        if dv_resp:
+            self._assign_responses(dv_resp, self.dv_c)
 
     def _assign_responses(self, flat_list, ichall_dict):
         """Assign responses from flat_list back to the IndexedChall dicts.
@@ -211,9 +225,12 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         # These are indexed challenges... give just the challenges to the auth
         # Chose to make these lists instead of a generator to make it easier to
         # work with...
-        self.dv_auth.cleanup([ichall.chall for ichall in self.dv_c[domain]])
-        self.client_auth.cleanup(
-            [ichall.chall for ichall in self.client_c[domain]])
+        dv_list = [ichall.chall for ichall in self.dv_c[domain]]
+        client_list = [ichall.chall for ichall in self.client_c[domain]]
+        if dv_list:
+            self.dv_auth.cleanup(dv_list)
+        if client_list:
+            self.client_auth.cleanup(client_list)
 
     def _cleanup_state(self, delete_list):
         """Cleanup state after an authorization is received.
@@ -246,11 +263,10 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
             :class:`letsencrypt.client.challenge_util.IndexedChall`
         :rtype: tuple
 
-        :raises errors.ClientError: If Challenge type is not
-            recognized
+        :raises errors.Error: If Challenge type is not recognized
 
         """
-        challenges = self.msgs[domain]["challenges"]
+        challenges = self.msgs[domain].challenges
 
         dv_chall = []
         client_chall = []
@@ -269,7 +285,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
                     self._construct_client_chall(chall, domain), index))
 
             else:
-                raise errors.ClientError(
+                raise errors.Error(
                     "Received unrecognized challenge of type: "
                     "%s" % chall["type"])
 
@@ -284,7 +300,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         :returns: challenge_util named tuple Chall object
         :rtype: `collections.namedtuple`
 
-        :raises errors.ClientError: If unimplemented challenge exists
+        :raises errors.Error: If unimplemented challenge exists
 
         """
         if chall["type"] == "dvsni":
@@ -303,7 +319,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
             return challenge_util.DnsChall(domain, str(chall["token"]))
 
         else:
-            raise errors.ClientError(
+            raise errors.Error(
                 "Unimplemented Auth Challenge: %s" % chall["type"])
 
     def _construct_client_chall(self, chall, domain):  # pylint: disable=no-self-use
@@ -315,7 +331,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         :returns: challenge_util named tuple Chall object
         :rtype: `collections.namedtuple`
 
-        :raises errors.ClientError: If unimplemented challenge exists
+        :raises errors.Error: If unimplemented challenge exists
 
         """
         if chall["type"] == "recoveryToken":
@@ -337,7 +353,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
                 domain, chall["alg"], chall["nonce"], chall["hints"])
 
         else:
-            raise errors.ClientError(
+            raise errors.Error(
                 "Unimplemented Client Challenge: %s" % chall["type"])
 
 
