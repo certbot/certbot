@@ -18,9 +18,9 @@ class IAuthenticator(zope.interface.Interface):
 
          Finish up any additional initialization.
 
-         :raises letsencrypt.client.errors.LetsEncryptMisconfigurationError:
+         :raises letsencrypt.client.errors.MisconfigurationError:
              when full initialization cannot be completed.
-         :raises letsencrypt.client.errors.LetsEncryptNoInstallationError:
+         :raises letsencrypt.client.errors.NoInstallationError:
              when the necessary programs/files cannot be located.
 
         """
@@ -136,9 +136,9 @@ class IInstaller(zope.interface.Interface):
 
          Finish up any additional initialization.
 
-         :raises letsencrypt.client.errors.LetsEncryptMisconfigurationError`:
+         :raises letsencrypt.client.errors.MisconfigurationError`:
              when full initialization cannot be completed.
-         :raises letsencrypt.errors.LetsEncryptNoInstallationError`:
+         :raises letsencrypt.errors.NoInstallationError`:
              when the necessary programs/files cannot be located.
 
         """

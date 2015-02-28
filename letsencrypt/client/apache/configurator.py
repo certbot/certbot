@@ -538,9 +538,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             return self._enhance_func[enhancement](
                 self.choose_vhost(domain), options)
         except ValueError:
-            raise errors.LetsEncryptConfiguratorError(
+            raise errors.ConfiguratorError(
                 "Unsupported enhancement: {}".format(enhancement))
-        except errors.LetsEncryptConfiguratorError:
+        except errors.ConfiguratorError:
             logging.warn("Failed %s for %s", enhancement, domain)
 
     def _enable_redirect(self, ssl_vhost, unused_options):
@@ -586,9 +586,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     return
                 else:
                     logging.info("Unknown redirect exists for this vhost")
-                    raise errors.LetsEncryptConfiguratorError(
-                        "Unknown redirect already exists "
-                        "in {}".format(general_v.filep))
+                    raise errors.ConfiguratorError(
+                        "Unknown redirect already exists in {}".format(
+                            general_v.filep))
             # Add directives to server
             self.parser.add_dir(general_v.path, "RewriteEngine", "On")
             self.parser.add_dir(general_v.path, "RewriteRule",
@@ -656,9 +656,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Make sure adding the vhost will be safe
         conflict, host_or_addrs = self._conflicting_host(ssl_vhost)
         if conflict:
-            raise errors.LetsEncryptConfiguratorError(
-                "Unable to create a redirection vhost "
-                "- {}".format(host_or_addrs))
+            raise errors.ConfiguratorError(
+                "Unable to create a redirection vhost - {}".format(
+                    host_or_addrs))
 
         redirect_addrs = host_or_addrs
 
@@ -933,8 +933,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :returns: version
         :rtype: tuple
 
-        :raises errors.LetsEncryptConfiguratorError:
-            Unable to find Apache version
+        :raises errors.ConfiguratorError: Unable to find Apache version
 
         """
         try:
@@ -944,15 +943,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 stderr=subprocess.PIPE)
             text = proc.communicate()[0]
         except (OSError, ValueError):
-            raise errors.LetsEncryptConfiguratorError(
+            raise errors.ConfiguratorError(
                 "Unable to run %s -v" % self.config.apache_ctl)
 
         regex = re.compile(r"Apache/([0-9\.]*)", re.IGNORECASE)
         matches = regex.findall(text)
 
         if len(matches) != 1:
-            raise errors.LetsEncryptConfiguratorError(
-                "Unable to find Apache version")
+            raise errors.ConfiguratorError("Unable to find Apache version")
 
         return tuple([int(i) for i in matches[0].split('.')])
 
@@ -1068,12 +1066,12 @@ def mod_loaded(module, apache_ctl):
     except (OSError, ValueError):
         logging.error(
             "Error accessing %s for loaded modules!", apache_ctl)
-        raise errors.LetsEncryptConfiguratorError(
-            "Error accessing loaded modules")
+        raise errors.ConfiguratorError("Error accessing loaded modules")
+
     # Small errors that do not impede
     if proc.returncode != 0:
         logging.warn("Error in checking loaded module list: %s", stderr)
-        raise errors.LetsEncryptMisconfigurationError(
+        raise errors.MisconfigurationError(
             "Apache is unable to check whether or not the module is "
             "loaded because Apache is misconfigured.")
 

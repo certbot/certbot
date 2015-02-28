@@ -38,7 +38,7 @@ class Network(object):
 
         :raises TypeError: if `msg` is not JSON serializable
         :raises jsonschema.ValidationError: if not valid ACME message
-        :raises errors.LetsEncryptClientError: in case of connection error
+        :raises errors.Error: in case of connection error
             or if response from server is not a valid ACME message.
 
         """
@@ -50,7 +50,7 @@ class Network(object):
                 verify=True
             )
         except requests.exceptions.RequestException as error:
-            raise errors.LetsEncryptClientError(
+            raise errors.Error(
                 'Sending ACME message to server has failed: %s' % error)
 
         return messages.Message.from_json(response.json(), validate=True)
@@ -64,7 +64,7 @@ class Network(object):
         :returns: ACME response message of expected type.
         :rtype: :class:`letsencrypt.acme.messages.Message`
 
-        :raises errors.LetsEncryptClientError: An exception is thrown
+        :raises errors.Error: An exception is thrown
 
         """
         response = self.send(msg)
@@ -88,7 +88,7 @@ class Network(object):
         :returns: ACME response message from server.
         :rtype: :class:`letsencrypt.acme.messages.Message`
 
-        :raises LetsEncryptClientError: if server sent ACME "error" message
+        :raises ClientError: if server sent ACME "error" message
 
         """
         for _ in xrange(rounds):
@@ -96,7 +96,7 @@ class Network(object):
                 return response
             elif isinstance(response, messages.Error):
                 logging.error("%s", response)
-                raise errors.LetsEncryptClientError(response.error)
+                raise errors.Error(response.error)
             elif isinstance(response, messages.Defer):
                 logging.info("Waiting for %d seconds...", delay)
                 time.sleep(delay)

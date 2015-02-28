@@ -37,28 +37,19 @@ class DetermineAuthenticatorTest(unittest.TestCase):
             self._call(self.all_auths[:1]), self.mock_apache)
 
     def test_no_installation_one(self):
-        self.mock_apache.prepare.side_effect = (
-            errors.LetsEncryptNoInstallationError)
-
+        self.mock_apache.prepare.side_effect = errors.NoInstallationError
         self.assertEqual(self._call(self.all_auths), self.mock_stand)
 
     def test_no_installations(self):
-        self.mock_apache.prepare.side_effect = (
-            errors.LetsEncryptNoInstallationError)
-        self.mock_stand.prepare.side_effect = (
-            errors.LetsEncryptNoInstallationError)
-
-        self.assertRaises(errors.LetsEncryptClientError,
-                          self._call,
-                          self.all_auths)
+        self.mock_apache.prepare.side_effect = errors.NoInstallationError
+        self.mock_stand.prepare.side_effect = errors.NoInstallationError
+        self.assertRaises(errors.Error, self._call, self.all_auths)
 
     @mock.patch("letsencrypt.client.client.logging")
     @mock.patch("letsencrypt.client.client.display_ops.choose_authenticator")
     def test_misconfigured(self, mock_choose, unused_log):
-        self.mock_apache.prepare.side_effect = (
-            errors.LetsEncryptMisconfigurationError)
+        self.mock_apache.prepare.side_effect = errors.MisconfigurationError
         mock_choose.return_value = self.mock_apache
-
         self.assertTrue(self._call(self.all_auths) is None)
 
 

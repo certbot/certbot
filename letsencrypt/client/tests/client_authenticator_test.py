@@ -37,9 +37,8 @@ class PerformTest(unittest.TestCase):
     def test_unexpected(self):
         unexpected = challenge_util.DvsniChall(
             "0", "rb64", "123", "invalid_key")
-
         self.assertRaises(
-            errors.LetsEncryptClientAuthError, self.auth.perform, [unexpected])
+            errors.ClientAuthError, self.auth.perform, [unexpected])
 
     def test_chall_pref(self):
         self.assertEqual(
@@ -70,8 +69,8 @@ class CleanupTest(unittest.TestCase):
         token = challenge_util.RecTokenChall("0")
         unexpected = challenge_util.DvsniChall("0", "rb64", "123", "dummy_key")
 
-        self.assertRaises(errors.LetsEncryptClientAuthError,
-                          self.auth.cleanup, [token, unexpected])
+        self.assertRaises(
+            errors.ClientAuthError, self.auth.cleanup, [token, unexpected])
 
 
 def gen_client_resp(chall):

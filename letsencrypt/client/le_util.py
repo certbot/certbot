@@ -19,8 +19,8 @@ def make_or_verify_dir(directory, mode=0o755, uid=0):
     :param int mode: Directory mode.
     :param int uid: Directory owner.
 
-    :raises LetsEncryptClientError: if a directory already exists,
-        but has wrong permissions or owner
+    :raises letsencrypt.client.errors.Error: if a directory already
+        exists, but has wrong permissions or owner
 
     :raises OSError: if invalid or inaccessible file names and
         paths, or other arguments that have the correct type,
@@ -32,7 +32,7 @@ def make_or_verify_dir(directory, mode=0o755, uid=0):
     except OSError as exception:
         if exception.errno == errno.EEXIST:
             if not check_permissions(directory, mode, uid):
-                raise errors.LetsEncryptClientError(
+                raise errors.Error(
                     "%s exists, but does not have the proper "
                     "permissions or owner" % directory)
         else:

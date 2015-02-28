@@ -280,7 +280,7 @@ class SatisfyChallengesTest(unittest.TestCase):
     def test_perform_exception_cleanup(self, mock_chall_path):
         """3 Challenge messages... fail perform... clean up."""
         # pylint: disable=protected-access
-        self.mock_dv_auth.perform.side_effect = errors.LetsEncryptDvsniError
+        self.mock_dv_auth.perform.side_effect = errors.DvsniError
 
         challenges = acme_util.get_challenges()
         combos = acme_util.gen_combos(challenges)
@@ -300,8 +300,8 @@ class SatisfyChallengesTest(unittest.TestCase):
         ]
 
         # This may change in the future... but for now catch the error
-        self.assertRaises(errors.LetsEncryptAuthHandlerError,
-                          self.handler._satisfy_challenges)
+        self.assertRaises(
+            errors.AuthHandlerError, self.handler._satisfy_challenges)
 
         # Verify cleanup is actually run correctly
         self.assertEqual(self.mock_dv_auth.cleanup.call_count, 2)
@@ -398,7 +398,7 @@ class GetAuthorizationsTest(unittest.TestCase):
         self.mock_sat_chall.side_effect = self._sat_failure
 
         self.assertRaises(
-            errors.LetsEncryptAuthHandlerError, self.handler.get_authorizations)
+            errors.AuthHandlerError, self.handler.get_authorizations)
 
         # Check to make sure program didn't loop
         self.assertEqual(self.mock_sat_chall.call_count, 1)
@@ -456,7 +456,7 @@ class GetAuthorizationsTest(unittest.TestCase):
             self.handler.responses["0"][3] = "finally!"
 
         else:
-            raise errors.LetsEncryptAuthHandlerError(
+            raise errors.AuthHandlerError(
                 "Failed incremental test: too many invocations")
 
     def _test_finished(self):
