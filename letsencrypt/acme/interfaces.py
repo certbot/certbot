@@ -37,7 +37,7 @@ class IJSONSerializable(zope.interface.Interface):
                   return 'foo'
 
           class Bar(object):
-              zope.interface.implemeents(IJSONSerializable)
+              zope.interface.implements(IJSONSerializable)
 
               def to_json(self):
                   return [Foo(), Foo()]
