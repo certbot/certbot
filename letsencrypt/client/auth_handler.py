@@ -4,9 +4,10 @@ import sys
 
 import Crypto.PublicKey.RSA
 
+from letsencrypt.acme import challenges
 from letsencrypt.acme import messages
 
-from letsencrypt.client import challenge_util
+from letsencrypt.client import achallenges
 from letsencrypt.client import constants
 from letsencrypt.client import errors
 
@@ -29,13 +30,14 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
     :ivar list domains: list of str domains to get authorization
     :ivar dict authkey: Authorized Keys for each domain.
         values are of type :class:`letsencrypt.client.le_util.Key`
-    :ivar dict responses: keys: domain, values: list of dict responses
-    :ivar dict msgs: ACME Challenge messages with domain as a key
+    :ivar dict responses: keys: domain, values: list of responses
+        (:class:`letsencrypt.acme.challenges.ChallengeResponse`.
+    :ivar dict msgs: ACME Challenge messages with domain as a key.
     :ivar dict paths: optimal path for authorization. eg. paths[domain]
     :ivar dict dv_c: Keys - domain, Values are DV challenges in the form of
-        :class:`letsencrypt.client.challenge_util.IndexedChall`
+        :class:`letsencrypt.client.achallenges.Indexed`
     :ivar dict client_c: Keys - domain, Values are Client challenges in the form
-        of :class:`letsencrypt.client.challenge_util.IndexedChall`
+        of :class:`letsencrypt.client.achallenges.Indexed`
 
     """
     def __init__(self, dv_auth, client_auth, network):
@@ -69,7 +71,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
                 "Multiple ACMEChallengeMessages for the same domain "
                 "is not supported.")
         self.domains.append(domain)
-        self.responses[domain] = ["null"] * len(msg.challenges)
+        self.responses[domain] = [None] * len(msg.challenges)
         self.msgs[domain] = msg
         self.authkey[domain] = authkey
 
@@ -155,8 +157,8 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         flat_dv = []
 
         for dom in self.domains:
-            flat_client.extend(ichall.chall for ichall in self.client_c[dom])
-            flat_dv.extend(ichall.chall for ichall in self.dv_c[dom])
+            flat_client.extend(ichall.achall for ichall in self.client_c[dom])
+            flat_dv.extend(ichall.achall for ichall in self.dv_c[dom])
 
         client_resp = []
         dv_resp = []
@@ -185,12 +187,12 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
             self._assign_responses(dv_resp, self.dv_c)
 
     def _assign_responses(self, flat_list, ichall_dict):
-        """Assign responses from flat_list back to the IndexedChall dicts.
+        """Assign responses from flat_list back to the Indexed dicts.
 
         :param list flat_list: flat_list of responses from an IAuthenticator
         :param dict ichall_dict: Master dict mapping all domains to a list of
-            their associated 'client' and 'dv' IndexedChallenges, or their
-            :class:`letsencrypt.client.challenge_util.IndexedChall` list
+            their associated 'client' and 'dv' Indexed challenges, or their
+            :class:`letsencrypt.client.achallenges.Indexed` list
 
         """
         flat_index = 0
@@ -201,9 +203,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
 
     def _path_satisfied(self, dom):
         """Returns whether a path has been completely satisfied."""
-        return all(
-            None != self.responses[dom][i] and "null" != self.responses[dom][i]
-            for i in self.paths[dom])
+        return all(self.responses[dom][i] is not None for i in self.paths[dom])
 
     def _get_chall_pref(self, domain):
         """Return list of challenge preferences.
@@ -226,8 +226,8 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         # These are indexed challenges... give just the challenges to the auth
         # Chose to make these lists instead of a generator to make it easier to
         # work with...
-        dv_list = [ichall.chall for ichall in self.dv_c[domain]]
-        client_list = [ichall.chall for ichall in self.client_c[domain]]
+        dv_list = [ichall.achall for ichall in self.dv_c[domain]]
+        client_list = [ichall.achall for ichall in self.client_c[domain]]
         if dv_list:
             self.dv_auth.cleanup(dv_list)
         if client_list:
@@ -259,156 +259,99 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         :param list path: List of indices from `challenges`.
 
         :returns: dv_chall, list of
-            :class:`letsencrypt.client.challenge_util.IndexedChall`
+            :class:`letsencrypt.client.achallenges.Indexed`
             client_chall, list of
-            :class:`letsencrypt.client.challenge_util.IndexedChall`
+            :class:`letsencrypt.client.achallenges.Indexed`
         :rtype: tuple
 
         :raises errors.LetsEncryptClientError: If Challenge type is not
             recognized
 
         """
-        challenges = self.msgs[domain].challenges
-
         dv_chall = []
         client_chall = []
 
         for index in path:
-            chall = challenges[index]
+            chall = self.msgs[domain].challenges[index]
 
-            # Authenticator Challenges
-            if chall["type"] in constants.DV_CHALLENGES:
-                dv_chall.append(challenge_util.IndexedChall(
-                    self._construct_dv_chall(chall, domain), index))
+            if isinstance(chall, challenges.DVSNI):
+                logging.info("  DVSNI challenge for %s.", domain)
+                achall = achallenges.DVSNI(
+                    chall=chall, domain=domain, key=self.authkey[domain])
+            elif isinstance(chall, challenges.SimpleHTTPS):
+                logging.info("  SimpleHTTPS challenge for %s.", domain)
+                achall = achallenges.SimpleHTTPS(
+                    chall=chall, domain=domain, key=self.authkey[domain])
+            elif isinstance(chall, challenges.DNS):
+                logging.info("  DNS challenge for %s.", domain)
+                achall = achallenges.DNS(chall=chall, domain=domain)
 
-            # Client Challenges
-            elif chall["type"] in constants.CLIENT_CHALLENGES:
-                client_chall.append(challenge_util.IndexedChall(
-                    self._construct_client_chall(chall, domain), index))
+            elif isinstance(chall, challenges.RecoveryToken):
+                logging.info("  Recovery Token Challenge for %s.", domain)
+                achall = achallenges.RecoveryToken(chall=chall, domain=domain)
+            elif isinstance(chall, challenges.RecoveryContact):
+                logging.info("  Recovery Contact Challenge for %s.", domain)
+                achall = achallenges.RecoveryContact(chall=chall, domain=domain)
+            elif isinstance(chall, challenges.ProofOfPossession):
+                logging.info("  Proof-of-Possession Challenge for %s", domain)
+                achall = achallenges.ProofOfPossession(
+                    chall=chall, domain=domain)
 
             else:
                 raise errors.LetsEncryptClientError(
-                    "Received unrecognized challenge of type: "
-                    "%s" % chall["type"])
+                    "Received unsupported challenge of type: "
+                    "%s" % chall.acme_type)
+
+            ichall = achallenges.Indexed(achall=achall, index=index)
+
+            if isinstance(chall, challenges.ClientChallenge):
+                client_chall.append(ichall)
+            elif isinstance(chall, challenges.DVChallenge):
+                dv_chall.append(ichall)
 
         return dv_chall, client_chall
 
-    def _construct_dv_chall(self, chall, domain):
-        """Construct Auth Type Challenges.
 
-        :param dict chall: Single challenge
-        :param str domain: challenge's domain
-
-        :returns: challenge_util named tuple Chall object
-        :rtype: `collections.namedtuple`
-
-        :raises errors.LetsEncryptClientError: If unimplemented challenge exists
-
-        """
-        if chall["type"] == "dvsni":
-            logging.info("  DVSNI challenge for name %s.", domain)
-            return challenge_util.DvsniChall(
-                domain, str(chall["r"]), str(chall["nonce"]),
-                self.authkey[domain])
-
-        elif chall["type"] == "simpleHttps":
-            logging.info("  SimpleHTTPS challenge for name %s.", domain)
-            return challenge_util.SimpleHttpsChall(
-                domain, str(chall["token"]), self.authkey[domain])
-
-        elif chall["type"] == "dns":
-            logging.info("  DNS challenge for name %s.", domain)
-            return challenge_util.DnsChall(domain, str(chall["token"]))
-
-        else:
-            raise errors.LetsEncryptClientError(
-                "Unimplemented Auth Challenge: %s" % chall["type"])
-
-    def _construct_client_chall(self, chall, domain):  # pylint: disable=no-self-use
-        """Construct Client Type Challenges.
-
-        :param dict chall: Single challenge
-        :param str domain: challenge's domain
-
-        :returns: challenge_util named tuple Chall object
-        :rtype: `collections.namedtuple`
-
-        :raises errors.LetsEncryptClientError: If unimplemented challenge exists
-
-        """
-        if chall["type"] == "recoveryToken":
-            logging.info("  Recovery Token Challenge for name: %s.", domain)
-            return challenge_util.RecTokenChall(domain)
-
-        elif chall["type"] == "recoveryContact":
-            logging.info("  Recovery Contact Challenge for name: %s.", domain)
-            return challenge_util.RecContactChall(
-                domain,
-                chall.get("activationURL", None),
-                chall.get("successURL", None),
-                chall.get("contact", None))
-
-        elif chall["type"] == "proofOfPossession":
-            logging.info("  Proof-of-Possession Challenge for name: "
-                         "%s", domain)
-            return challenge_util.PopChall(
-                domain, chall["alg"], chall["nonce"], chall["hints"])
-
-        else:
-            raise errors.LetsEncryptClientError(
-                "Unimplemented Client Challenge: %s" % chall["type"])
-
-
-def gen_challenge_path(challenges, preferences, combos=None):
+def gen_challenge_path(challs, preferences, combinations):
     """Generate a plan to get authority over the identity.
 
     .. todo:: Make sure that the challenges are feasible...
         Example: Do you have the recovery key?
 
-    :param list challenges: A list of challenges from ACME "challenge"
-        server message to be fulfilled by the client in order to prove
-        possession of the identifier.
+    :param list challs: A list of challenges
+        (:class:`letsencrypt.acme.challenges.Challenge`) from
+        :class:`letsencrypt.acme.messages.Challenge` server message to
+        be fulfilled by the client in order to prove possession of the
+        identifier.
 
     :param list preferences: List of challenge preferences for domain
+        (:class:`letsencrypt.acme.challenges.Challege` subclasses)
 
-    :param combos:  A collection of sets of challenges from ACME
-        "challenge" server message ("combinations"), each of which would
+    :param list combinations: A collection of sets of challenges from
+        :class:`letsencrypt.acme.messages.Challenge`, each of which would
         be sufficient to prove possession of the identifier.
-    :type combos: list or None
 
-    :returns: List of indices from `challenges`.
+    :returns: List of indices from ``challenges``.
     :rtype: list
 
     """
-    if combos:
-        return _find_smart_path(challenges, preferences, combos)
+    if combinations:
+        return _find_smart_path(challs, preferences, combinations)
     else:
-        return _find_dumb_path(challenges, preferences)
+        return _find_dumb_path(challs, preferences)
 
 
-def _find_smart_path(challenges, preferences, combos):
+def _find_smart_path(challs, preferences, combinations):
     """Find challenge path with server hints.
 
     Can be called if combinations is included. Function uses a simple
     ranking system to choose the combo with the lowest cost.
 
-    :param list challenges: A list of challenges from ACME "challenge"
-        server message to be fulfilled by the client in order to prove
-        possession of the identifier.
-
-    :param combos:  A collection of sets of challenges from ACME
-        "challenge" server message ("combinations"), each of which would
-        be sufficient to prove possession of the identifier.
-    :type combos: list or None
-
-    :returns: List of indices from `challenges`.
-    :rtype: list
-
     """
     chall_cost = {}
     max_cost = 0
-    for i, chall in enumerate(preferences):
-        chall_cost[chall] = i
+    for i, chall_cls in enumerate(preferences):
+        chall_cost[chall_cls] = i
         max_cost += i
 
     best_combo = []
@@ -416,10 +359,10 @@ def _find_smart_path(challenges, preferences, combos):
     best_combo_cost = max_cost + 1
 
     combo_total = 0
-    for combo in combos:
+    for combo in combinations:
         for challenge_index in combo:
-            combo_total += chall_cost.get(challenges[
-                challenge_index]["type"], max_cost)
+            combo_total += chall_cost.get(challs[
+                challenge_index].__class__, max_cost)
         if combo_total < best_combo_cost:
             best_combo = combo
             best_combo_cost = combo_total
@@ -433,47 +376,48 @@ def _find_smart_path(challenges, preferences, combos):
     return best_combo
 
 
-def _find_dumb_path(challenges, preferences):
+def _find_dumb_path(challs, preferences):
     """Find challenge path without server hints.
 
     Should be called if the combinations hint is not included by the
     server. This function returns the best path that does not contain
     multiple mutually exclusive challenges.
 
-    :param list challenges: A list of challenges from ACME "challenge"
-        server message to be fulfilled by the client in order to prove
-        possession of the identifier.
-
-    :param list preferences: A list of preferences representing the
-        challenge type found within the ACME spec. Each challenge type
-        can only be listed once.
-
-    :returns: List of indices from `challenges`.
-    :rtype: list
-
     """
-    # Add logic for a crappy server
-    # Choose a DV
-    path = []
     assert len(preferences) == len(set(preferences))
+
+    path = []
+    satisfied = set()
     for pref_c in preferences:
-        for i, offered_challenge in enumerate(challenges):
-            if (pref_c == offered_challenge["type"] and
-                    is_preferred(offered_challenge["type"], path)):
-                path.append((i, offered_challenge["type"]))
+        for i, offered_chall in enumerate(challs):
+            if (isinstance(offered_chall, pref_c) and
+                    is_preferred(offered_chall, satisfied)):
+                path.append(i)
+                satisfied.add(offered_chall)
+    return path
 
-    return [i for (i, _) in path]
 
+def mutually_exclusive(obj1, obj2, groups, different=False):
+    """Are two objects mutually exclusive?"""
+    for group in groups:
+        obj1_present = False
+        obj2_present = False
 
-def is_preferred(offered_challenge_type, path):
-    """Return whether or not the challenge is preferred in path."""
-    for _, challenge_type in path:
-        for mutually_exclusive in constants.EXCLUSIVE_CHALLENGES:
-            # Second part is in case we eventually allow multiple names
-            # to be challenges at the same time
-            if (challenge_type in mutually_exclusive and
-                    offered_challenge_type in mutually_exclusive and
-                    challenge_type != offered_challenge_type):
+        for obj_cls in group:
+            obj1_present |= isinstance(obj1, obj_cls)
+            obj2_present |= isinstance(obj2, obj_cls)
+
+            if obj1_present and obj2_present and (
+                    not different or not isinstance(obj1, obj2.__class__)):
                 return False
+    return True
 
+
+def is_preferred(offered_chall, satisfied,
+                 exclusive_groups=constants.EXCLUSIVE_CHALLENGES):
+    """Return whether or not the challenge is preferred in path."""
+    for chall in satisfied:
+        if not mutually_exclusive(
+                offered_chall, chall, exclusive_groups, different=True):
+            return False
     return True

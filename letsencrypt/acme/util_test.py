@@ -1,86 +1,32 @@
 """Tests for letsencrypt.acme.util."""
 import functools
 import json
+import os
+import pkg_resources
 import unittest
 
+import M2Crypto
 import zope.interface
 
 from letsencrypt.acme import errors
 from letsencrypt.acme import interfaces
 
 
-class MockJSONSerialiazable(object):
-    # pylint: disable=missing-docstring,too-few-public-methods,no-self-use
-    zope.interface.implements(interfaces.IJSONSerializable)
-
-    def to_json(self):
-        return [3, 2, 1]
-
-
-class JSONDeSerializableTest(unittest.TestCase):
-    """Tests for letsencrypt.acme.util.JSONDeSerializable."""
-
-    def setUp(self):
-        from letsencrypt.acme.util import JSONDeSerializable
-
-        class Tester(JSONDeSerializable):
-            # pylint: disable=missing-docstring,no-self-use,
-            # pylint: disable=too-few-public-methods
-            zope.interface.implements(interfaces.IJSONSerializable)
-
-            schema = {'type': 'integer'}
-
-            def __init__(self, jobj):
-                self.jobj = jobj
-
-            @classmethod
-            def _from_valid_json(cls, jobj):
-                return cls(jobj)
-
-            def to_json(self):
-                return {'foo': MockJSONSerialiazable()}
-
-        self.tester_cls = Tester
-
-    def test_validate_invalid_json(self):
-        self.assertRaises(errors.SchemaValidationError,
-                          self.tester_cls.validate_json, 'bang!')
-
-    def test_validate_valid_json(self):
-        self.tester_cls.validate_json(5)
-
-    def test_from_json(self):
-        self.assertEqual(5, self.tester_cls.from_json(5, validate=True).jobj)
-
-    def test_from_json_no_validation(self):
-        self.assertEqual(['1', 2], self.tester_cls.from_json(
-            ['1', 2], validate=False).jobj)
-
-    def test_from_valid_json_raises_error(self):
-        from letsencrypt.acme.util import JSONDeSerializable
-        # pylint: disable=protected-access
-        self.assertRaises(
-            NotImplementedError, JSONDeSerializable._from_valid_json, 'foo')
-
-    def test_json_loads(self):
-        tester = self.tester_cls.json_loads('5', validate=True)
-        self.assertEqual(tester.jobj, 5)
-
-    def test_json_loads_no_validation(self):
-        self.assertEqual(
-            'foo', self.tester_cls.json_loads('"foo"', validate=False).jobj)
-
-    def test_to_json_raises_error(self):
-        from letsencrypt.acme.util import JSONDeSerializable
-        self.assertRaises(NotImplementedError, JSONDeSerializable().to_json)
-
-    def test_json_dumps(self):
-        self.assertEqual(
-            self.tester_cls('foo').json_dumps(), '{"foo": [3, 2, 1]}')
+CERT = M2Crypto.X509.load_cert(pkg_resources.resource_filename(
+    'letsencrypt.client.tests', os.path.join('testdata', 'cert.pem')))
+CSR = M2Crypto.X509.load_request(pkg_resources.resource_filename(
+    'letsencrypt.client.tests', os.path.join('testdata', 'csr.pem')))
 
 
 class DumpIJSONSerializableTest(unittest.TestCase):
     """Tests for letsencrypt.acme.util.dump_ijsonserializable."""
+
+    class MockJSONSerialiazable(object):
+        # pylint: disable=missing-docstring,too-few-public-methods,no-self-use
+        zope.interface.implements(interfaces.IJSONSerializable)
+
+        def to_json(self):
+            return [3, 2, 1]
 
     @classmethod
     def _call(cls, obj):
@@ -91,7 +37,7 @@ class DumpIJSONSerializableTest(unittest.TestCase):
         self.assertEqual('5', self._call(5))
 
     def test_ijsonserializable(self):
-        self.assertEqual('[3, 2, 1]', self._call(MockJSONSerialiazable()))
+        self.assertEqual('[3, 2, 1]', self._call(self.MockJSONSerialiazable()))
 
     def test_raises_type_error(self):
         self.assertRaises(TypeError, self._call, object())
@@ -161,6 +107,133 @@ class ImmutableMapTest(unittest.TestCase):
         self.assertEqual('A(x=1, y=2)', repr(self.a1_swap))
         self.assertEqual('B(x=1, y=2)', repr(self.b))
         self.assertEqual("B(x='foo', y='bar')", repr(self.B(x='foo', y='bar')))
+
+
+class EncodersAndDecodersTest(unittest.TestCase):
+    """Tests for encoders and decoders from letsencrypt.acme.util"""
+    # pylint: disable=protected-access
+
+    def setUp(self):
+        self.b64_cert = (
+            'MIIB3jCCAYigAwIBAgICBTkwDQYJKoZIhvcNAQELBQAwdzELMAkGA1UEBhM'
+            'CVVMxETAPBgNVBAgMCE1pY2hpZ2FuMRIwEAYDVQQHDAlBbm4gQXJib3IxKz'
+            'ApBgNVBAoMIlVuaXZlcnNpdHkgb2YgTWljaGlnYW4gYW5kIHRoZSBFRkYxF'
+            'DASBgNVBAMMC2V4YW1wbGUuY29tMB4XDTE0MTIxMTIyMzQ0NVoXDTE0MTIx'
+            'ODIyMzQ0NVowdzELMAkGA1UEBhMCVVMxETAPBgNVBAgMCE1pY2hpZ2FuMRI'
+            'wEAYDVQQHDAlBbm4gQXJib3IxKzApBgNVBAoMIlVuaXZlcnNpdHkgb2YgTW'
+            'ljaGlnYW4gYW5kIHRoZSBFRkYxFDASBgNVBAMMC2V4YW1wbGUuY29tMFwwD'
+            'QYJKoZIhvcNAQEBBQADSwAwSAJBAKx1c7RR7R_drnBSQ_zfx1vQLHUbFLh1'
+            'AQQQ5R8DZUXd36efNK79vukFhN9HFoHZiUvOjm0c-pVE6K-EdE_twuUCAwE'
+            'AATANBgkqhkiG9w0BAQsFAANBAC24z0IdwIVKSlntksllvr6zJepBH5fMnd'
+            'fk3XJp10jT6VE-14KNtjh02a56GoraAvJAT5_H67E8GvJ_ocNnB_o'
+        )
+        self.b64_csr = (
+            'MIIBXTCCAQcCAQAweTELMAkGA1UEBhMCVVMxETAPBgNVBAgMCE1pY2hpZ2F'
+            'uMRIwEAYDVQQHDAlBbm4gQXJib3IxDDAKBgNVBAoMA0VGRjEfMB0GA1UECw'
+            'wWVW5pdmVyc2l0eSBvZiBNaWNoaWdhbjEUMBIGA1UEAwwLZXhhbXBsZS5jb'
+            '20wXDANBgkqhkiG9w0BAQEFAANLADBIAkEArHVztFHtH92ucFJD_N_HW9As'
+            'dRsUuHUBBBDlHwNlRd3fp580rv2-6QWE30cWgdmJS86ObRz6lUTor4R0T-3'
+            'C5QIDAQABoCkwJwYJKoZIhvcNAQkOMRowGDAWBgNVHREEDzANggtleGFtcG'
+            'xlLmNvbTANBgkqhkiG9w0BAQsFAANBAHJH_O6BtC9aGzEVCMGOZ7z9iIRHW'
+            'Szr9x_bOzn7hLwsbXPAgO1QxEwL-X-4g20Gn9XBE1N9W6HCIEut2d8wACg'
+        )
+
+    def test_decode_b64_jose_padding_error(self):
+        from letsencrypt.acme.util import decode_b64jose
+        self.assertRaises(errors.ValidationError, decode_b64jose, 'x')
+
+    def test_decode_b64_jose_size(self):
+        from letsencrypt.acme.util import decode_b64jose
+        self.assertEqual('foo', decode_b64jose('Zm9v', size=3))
+        self.assertRaises(
+            errors.ValidationError, decode_b64jose, 'Zm9v', size=2)
+        self.assertRaises(
+            errors.ValidationError, decode_b64jose, 'Zm9v', size=4)
+
+    def test_decode_b64_jose_minimum_size(self):
+        from letsencrypt.acme.util import decode_b64jose
+        self.assertEqual('foo', decode_b64jose('Zm9v', size=3, minimum=True))
+        self.assertEqual('foo', decode_b64jose('Zm9v', size=2, minimum=True))
+        self.assertRaises(errors.ValidationError, decode_b64jose,
+                          'Zm9v', size=4, minimum=True)
+
+    def test_decode_hex16(self):
+        from letsencrypt.acme.util import decode_hex16
+        self.assertEqual('foo', decode_hex16('666f6f'))
+
+    def test_decode_hex16_minimum_size(self):
+        from letsencrypt.acme.util import decode_hex16
+        self.assertEqual('foo', decode_hex16('666f6f', size=3, minimum=True))
+        self.assertEqual('foo', decode_hex16('666f6f', size=2, minimum=True))
+        self.assertRaises(errors.ValidationError, decode_hex16,
+                          '666f6f', size=4, minimum=True)
+
+    def test_decode_hex16_odd_length(self):
+        from letsencrypt.acme.util import decode_hex16
+        self.assertRaises(errors.ValidationError, decode_hex16, 'x')
+
+    def test_encode_cert(self):
+        from letsencrypt.acme.util import encode_cert
+        self.assertEqual(self.b64_cert, encode_cert(CERT))
+
+    def test_decode_cert(self):
+        from letsencrypt.acme.util import ComparableX509
+        from letsencrypt.acme.util import decode_cert
+        cert = decode_cert(self.b64_cert)
+        self.assertTrue(isinstance(cert, ComparableX509))
+        self.assertEqual(cert, CERT)
+        self.assertRaises(errors.ValidationError, decode_cert, '')
+
+    def test_encode_csr(self):
+        from letsencrypt.acme.util import encode_csr
+        self.assertEqual(self.b64_csr, encode_csr(CSR))
+
+    def test_decode_csr(self):
+        from letsencrypt.acme.util import ComparableX509
+        from letsencrypt.acme.util import decode_csr
+        csr = decode_csr(self.b64_csr)
+        self.assertTrue(isinstance(csr, ComparableX509))
+        self.assertEqual(csr, CSR)
+        self.assertRaises(errors.ValidationError, decode_csr, '')
+
+
+class TypedACMEObjectTest(unittest.TestCase):
+
+    def setUp(self):
+        from letsencrypt.acme.util import TypedACMEObject
+
+        # pylint: disable=missing-docstring,abstract-method
+        # pylint: disable=too-few-public-methods
+
+        class MockParentTypedACMEObject(TypedACMEObject):
+            TYPES = {}
+
+        @MockParentTypedACMEObject.register
+        class MockTypedACMEObject(MockParentTypedACMEObject):
+            acme_type = 'test'
+
+            @classmethod
+            def from_valid_json(cls, unused_obj):
+                return '!'
+
+            def _fields_to_json(self):
+                return {'foo': 'bar'}
+
+        self.parent_cls = MockParentTypedACMEObject
+        self.msg = MockTypedACMEObject()
+
+    def test_to_json(self):
+        self.assertEqual(self.msg.to_json(), {
+            'type': 'test',
+            'foo': 'bar',
+        })
+
+    def test_from_json_unknown_type_fails(self):
+        self.assertRaises(errors.UnrecognizedTypeError,
+                          self.parent_cls.from_valid_json, {'type': 'bar'})
+
+    def test_from_json_returns_obj(self):
+        self.assertEqual(self.parent_cls.from_valid_json({'type': 'test'}), '!')
 
 
 if __name__ == '__main__':

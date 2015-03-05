@@ -30,43 +30,43 @@ class IAuthenticator(zope.interface.Interface):
 
         :param str domain: Domain for which challenge preferences are sought.
 
-        :returns: list of strings with the most preferred challenges first.
-            If a type is not specified, it means the Authenticator cannot
-            perform the challenge.
+        :returns: List of challege types (subclasses of
+            :class:`letsencrypt.acme.challenges.Challenge`) with the most
+            preferred challenges first. If a type is not specified, it means the
+            Authenticator cannot perform the challenge.
         :rtype: list
 
         """
 
-    def perform(chall_list):
+    def perform(achalls):
         """Perform the given challenge.
 
-        :param list chall_list: List of namedtuple types defined in
-            :mod:`letsencrypt.client.challenge_util` (``DvsniChall``, etc.).
+        :param list achalls: Non-empty (guaranteed) list of
+            :class:`~letsencrypt.client.achallenges.AnnotatedChallenge`
+            instances, such that it contains types found within
+            :func:`get_chall_pref` only.
 
-            - chall_list will never be empty
-            - chall_list will only contain types found within
-              :func:`get_chall_pref`
-
-        :returns: ACME Challenge responses or if it cannot be completed then:
+        :returns: List of ACME
+            :class:`~letsencrypt.acme.challenges.ChallengeResponse` instances
+            or if the :class:`~letsencrypt.acme.challenges.Challenge` cannot
+            be fulfilled then:
 
             ``None``
-              Authenticator can perform challenge, but can't at this time
+              Authenticator can perform challenge, but not at this time.
             ``False``
-              Authenticator will never be able to perform (error)
+              Authenticator will never be able to perform (error).
 
-        :rtype: :class:`list` of :class:`dict`
+        :rtype: :class:`list` of
+            :class:`letsencrypt.acme.challenges.ChallengeResponse`
 
         """
 
-    def cleanup(chall_list):
+    def cleanup(achalls):
         """Revert changes and shutdown after challenges complete.
 
-        :param list chall_list: List of namedtuple types defined in
-            :mod:`letsencrypt.client.challenge_util` (``DvsniChall``, etc.)
-
-            - Only challenges given previously in the perform function will be
-              found in chall_list.
-            - chall_list will never be empty
+        :param list achalls: Non-empty (guaranteed) list of
+            :class:`~letsencrypt.client.achallenges.AnnotatedChallenge`
+            instances, a subset of those previously passed to :func:`perform`.
 
         """
 

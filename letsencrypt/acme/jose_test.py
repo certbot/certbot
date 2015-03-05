@@ -1,53 +1,5 @@
 """Tests for letsencrypt.acme.jose."""
-import pkg_resources
 import unittest
-
-import Crypto.PublicKey.RSA
-
-
-RSA256_KEY = Crypto.PublicKey.RSA.importKey(pkg_resources.resource_string(
-    'letsencrypt.client.tests', 'testdata/rsa256_key.pem'))
-RSA512_KEY = Crypto.PublicKey.RSA.importKey(pkg_resources.resource_string(
-    'letsencrypt.client.tests', 'testdata/rsa512_key.pem'))
-
-
-class JWKTest(unittest.TestCase):
-    """Tests fro letsencrypt.acme.jose.JWK."""
-
-    def setUp(self):
-        from letsencrypt.acme.jose import JWK
-        self.jwk256 = JWK(key=RSA256_KEY.publickey())
-        self.jwk256json = {
-            'kty': 'RSA',
-            'e': 'AQAB',
-            'n': 'rHVztFHtH92ucFJD_N_HW9AsdRsUuHUBBBDlHwNlRd3fp5'
-                 '80rv2-6QWE30cWgdmJS86ObRz6lUTor4R0T-3C5Q',
-        }
-        self.jwk512 = JWK(key=RSA512_KEY.publickey())
-        self.jwk512json = {
-            'kty': 'RSA',
-            'e': 'AQAB',
-            'n': '9LYRcVE3Nr-qleecEcX8JwVDnjeG1X7ucsCasuuZM0e09c'
-                 'mYuUzxIkMjO_9x4AVcvXXRXPEV-LzWWkfkTlzRMw',
-        }
-
-    def test_equals(self):
-        self.assertEqual(self.jwk256, self.jwk256)
-        self.assertEqual(self.jwk512, self.jwk512)
-
-    def test_not_equals(self):
-        self.assertNotEqual(self.jwk256, self.jwk512)
-        self.assertNotEqual(self.jwk512, self.jwk256)
-
-    def test_to_json(self):
-        self.assertEqual(self.jwk256.to_json(), self.jwk256json)
-        self.assertEqual(self.jwk512.to_json(), self.jwk512json)
-
-    def test_from_json(self):
-        from letsencrypt.acme.jose import JWK
-        self.assertEqual(self.jwk256, JWK.from_json(self.jwk256json))
-        # TODO: fix schemata to allow RSA512
-        #self.assertEqual(self.jwk512, JWK.from_json(self.jwk512json))
 
 
 # https://en.wikipedia.org/wiki/Base64#Examples
