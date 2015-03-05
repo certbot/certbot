@@ -6,7 +6,9 @@ import unittest
 
 import mock
 
-from letsencrypt.client import challenge_util
+from letsencrypt.acme import challenges
+
+from letsencrypt.client import achallenges
 from letsencrypt.client import errors
 from letsencrypt.client import le_util
 
@@ -140,24 +142,24 @@ class TwoVhost80Test(util.ApacheTest):
         # Only tests functionality specific to configurator.perform
         # Note: As more challenges are offered this will have to be expanded
         auth_key = le_util.Key(self.rsa256_file, self.rsa256_pem)
-        chall1 = challenge_util.DvsniChall(
-            "encryption-example.demo",
-            "jIq_Xy1mXGN37tb4L6Xj_es58fW571ZNyXekdZzhh7Q",
-            "37bc5eb75d3e00a19b4f6355845e5a18",
-            auth_key)
-        chall2 = challenge_util.DvsniChall(
-            "letsencrypt.demo",
-            "uqnaPzxtrndteOqtrXb0Asl5gOJfWAnnx6QJyvcmlDU",
-            "59ed014cac95f77057b1d7a1b2c596ba",
-            auth_key)
+        achall1 = achallenges.DVSNI(
+            chall=challenges.DVSNI(
+                r="jIq_Xy1mXGN37tb4L6Xj_es58fW571ZNyXekdZzhh7Q",
+                nonce="37bc5eb75d3e00a19b4f6355845e5a18"),
+            domain="encryption-example.demo", key=auth_key)
+        achall2 = achallenges.DVSNI(
+            chall=challenges.DVSNI(
+                r="uqnaPzxtrndteOqtrXb0Asl5gOJfWAnnx6QJyvcmlDU",
+                nonce="59ed014cac95f77057b1d7a1b2c596ba"),
+            domain="letsencrypt.demo", key=auth_key)
 
         dvsni_ret_val = [
-            {"type": "dvsni", "s": "randomS1"},
-            {"type": "dvsni", "s": "randomS2"}
+            challenges.DVSNIResponse(s="randomS1"),
+            challenges.DVSNIResponse(s="randomS2"),
         ]
 
         mock_dvsni_perform.return_value = dvsni_ret_val
-        responses = self.config.perform([chall1, chall2])
+        responses = self.config.perform([achall1, achall2])
 
         self.assertEqual(mock_dvsni_perform.call_count, 1)
         self.assertEqual(responses, dvsni_ret_val)

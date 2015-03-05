@@ -10,9 +10,9 @@ import mock
 import OpenSSL.crypto
 import OpenSSL.SSL
 
-from letsencrypt.acme import jose
+from letsencrypt.acme import challenges
 
-from letsencrypt.client import challenge_util
+from letsencrypt.client import achallenges
 from letsencrypt.client import le_util
 
 
@@ -54,8 +54,8 @@ class ChallPrefTest(unittest.TestCase):
         self.authenticator = StandaloneAuthenticator()
 
     def test_chall_pref(self):
-        self.assertEqual(
-            self.authenticator.get_chall_pref("example.com"), ["dvsni"])
+        self.assertEqual(self.authenticator.get_chall_pref("example.com"),
+                         [challenges.DVSNI])
 
 
 class SNICallbackTest(unittest.TestCase):
@@ -64,11 +64,12 @@ class SNICallbackTest(unittest.TestCase):
         from letsencrypt.client.standalone_authenticator import \
             StandaloneAuthenticator
         self.authenticator = StandaloneAuthenticator()
-        name, r_b64 = "example.com", jose.b64encode("x" * 32)
         test_key = pkg_resources.resource_string(
             __name__, "testdata/rsa256_key.pem")
-        nonce, key = "abcdef", le_util.Key("foo", test_key)
-        self.cert = challenge_util.dvsni_gen_cert(name, r_b64, nonce, key)[0]
+        key = le_util.Key("foo", test_key)
+        self.cert = achallenges.DVSNI(
+            chall=challenges.DVSNI(r="x"*32, nonce="abcdef"),
+            domain="example.com", key=key).gen_cert_and_response()[0]
         private_key = OpenSSL.crypto.load_privatekey(
             OpenSSL.crypto.FILETYPE_PEM, key.pem)
         self.authenticator.private_key = private_key
@@ -291,80 +292,71 @@ class PerformTest(unittest.TestCase):
             StandaloneAuthenticator
         self.authenticator = StandaloneAuthenticator()
 
-    def test_perform_when_already_listening(self):
         test_key = pkg_resources.resource_string(
             __name__, "testdata/rsa256_key.pem")
-        key = le_util.Key("something", test_key)
-        chall1 = challenge_util.DvsniChall(
-            "foo.example.com", "whee", "foononce", key)
+        self.key = le_util.Key("something", test_key)
+
+        self.achall1 = achallenges.DVSNI(
+            chall=challenges.DVSNI(r="whee", nonce="foo"),
+            domain="foo.example.com", key=self.key)
+        self.achall2 = achallenges.DVSNI(
+            chall=challenges.DVSNI(r="whee", nonce="bar"),
+            domain="bar.example.com", key=self.key)
+        bad_achall = ("This", "Represents", "A Non-DVSNI", "Challenge")
+        self.achalls = [self.achall1, self.achall2, bad_achall]
+
+    def test_perform_when_already_listening(self):
         self.authenticator.already_listening = mock.Mock()
         self.authenticator.already_listening.return_value = True
-        result = self.authenticator.perform([chall1])
+        result = self.authenticator.perform([self.achall1])
         self.assertEqual(result, [None])
 
     def test_can_perform(self):
         """What happens if start_listener() returns True."""
-        test_key = pkg_resources.resource_string(
-            __name__, "testdata/rsa256_key.pem")
-        key = le_util.Key("something", test_key)
-        chall1 = challenge_util.DvsniChall(
-            "foo.example.com", "whee", "foononce", key)
-        chall2 = challenge_util.DvsniChall(
-            "bar.example.com", "whee", "barnonce", key)
-        bad_chall = ("This", "Represents", "A Non-DVSNI", "Challenge")
         self.authenticator.start_listener = mock.Mock()
         self.authenticator.start_listener.return_value = True
-        result = self.authenticator.perform([chall1, chall2, bad_chall])
+        result = self.authenticator.perform(self.achalls)
         self.assertEqual(len(self.authenticator.tasks), 2)
         self.assertTrue(
-            self.authenticator.tasks.has_key("foononce.acme.invalid"))
+            self.authenticator.tasks.has_key(self.achall1.nonce_domain))
         self.assertTrue(
-            self.authenticator.tasks.has_key("barnonce.acme.invalid"))
+            self.authenticator.tasks.has_key(self.achall2.nonce_domain))
         self.assertTrue(isinstance(result, list))
         self.assertEqual(len(result), 3)
-        self.assertTrue(isinstance(result[0], dict))
-        self.assertTrue(isinstance(result[1], dict))
+        self.assertTrue(isinstance(result[0], challenges.ChallengeResponse))
+        self.assertTrue(isinstance(result[1], challenges.ChallengeResponse))
         self.assertFalse(result[2])
-        self.assertTrue(result[0].has_key("s"))
-        self.assertTrue(result[1].has_key("s"))
-        self.authenticator.start_listener.assert_called_once_with(443, key)
+        self.authenticator.start_listener.assert_called_once_with(443, self.key)
 
     def test_cannot_perform(self):
         """What happens if start_listener() returns False."""
-        test_key = pkg_resources.resource_string(
-            __name__, "testdata/rsa256_key.pem")
-        key = le_util.Key("something", test_key)
-        chall1 = challenge_util.DvsniChall(
-            "foo.example.com", "whee", "foononce", key)
-        chall2 = challenge_util.DvsniChall(
-            "bar.example.com", "whee", "barnonce", key)
-        bad_chall = ("This", "Represents", "A Non-DVSNI", "Challenge")
         self.authenticator.start_listener = mock.Mock()
         self.authenticator.start_listener.return_value = False
-        result = self.authenticator.perform([chall1, chall2, bad_chall])
+        result = self.authenticator.perform(self.achalls)
         self.assertEqual(len(self.authenticator.tasks), 2)
         self.assertTrue(
-            self.authenticator.tasks.has_key("foononce.acme.invalid"))
+            self.authenticator.tasks.has_key(self.achall1.nonce_domain))
         self.assertTrue(
-            self.authenticator.tasks.has_key("barnonce.acme.invalid"))
+            self.authenticator.tasks.has_key(self.achall2.nonce_domain))
         self.assertTrue(isinstance(result, list))
         self.assertEqual(len(result), 3)
         self.assertEqual(result, [None, None, False])
-        self.authenticator.start_listener.assert_called_once_with(443, key)
+        self.authenticator.start_listener.assert_called_once_with(
+            443, self. key)
 
     def test_perform_with_pending_tasks(self):
         self.authenticator.tasks = {"foononce.acme.invalid": "cert_data"}
-        extra_challenge = challenge_util.DvsniChall("a", "b", "c", "d")
+        extra_achall = achallenges.DVSNI(chall="a", domain="b", key="c")
         self.assertRaises(
-            ValueError, self.authenticator.perform, [extra_challenge])
+            ValueError, self.authenticator.perform, [extra_achall])
 
     def test_perform_without_challenge_list(self):
-        extra_challenge = challenge_util.DvsniChall("a", "b", "c", "d")
+        extra_achall = achallenges.DVSNI(chall="a", domain="b", key="c")
         # This is wrong because a challenge must be specified.
         self.assertRaises(ValueError, self.authenticator.perform, [])
         # This is wrong because it must be a list, not a bare challenge.
         self.assertRaises(
-            ValueError, self.authenticator.perform, extra_challenge)
+            ValueError, self.authenticator.perform, extra_achall)
         # This is wrong because the list must contain at least one challenge.
         self.assertRaises(
             ValueError, self.authenticator.perform, range(20))
@@ -461,12 +453,13 @@ class DoChildProcessTest(unittest.TestCase):
         from letsencrypt.client.standalone_authenticator import \
             StandaloneAuthenticator
         self.authenticator = StandaloneAuthenticator()
-        name, r_b64 = "example.com", jose.b64encode("x" * 32)
         test_key = pkg_resources.resource_string(
             __name__, "testdata/rsa256_key.pem")
-        nonce, key = "abcdef", le_util.Key("foo", test_key)
+        key = le_util.Key("foo", test_key)
         self.key = key
-        self.cert = challenge_util.dvsni_gen_cert(name, r_b64, nonce, key)[0]
+        self.cert = achallenges.DVSNI(
+            chall=challenges.DVSNI(r="x"*32, nonce="abcdef"),
+            domain="example.com", key=key).gen_cert_and_response()[0]
         private_key = OpenSSL.crypto.load_privatekey(
             OpenSSL.crypto.FILETYPE_PEM, key.pem)
         self.authenticator.private_key = private_key
@@ -553,7 +546,10 @@ class CleanupTest(unittest.TestCase):
         from letsencrypt.client.standalone_authenticator import \
             StandaloneAuthenticator
         self.authenticator = StandaloneAuthenticator()
-        self.authenticator.tasks = {"foononce.acme.invalid": "stuff"}
+        self.achall = achallenges.DVSNI(
+            chall=challenges.DVSNI(r="whee", nonce="foononce"),
+            domain="foo.example.com", key="key")
+        self.authenticator.tasks = {self.achall.nonce_domain: "stuff"}
         self.authenticator.child_pid = 12345
 
     @mock.patch("letsencrypt.client.standalone_authenticator.os.kill")
@@ -561,16 +557,17 @@ class CleanupTest(unittest.TestCase):
     def test_cleanup(self, mock_sleep, mock_kill):
         mock_sleep.return_value = None
         mock_kill.return_value = None
-        chall = challenge_util.DvsniChall(
-            "foo.example.com", "whee", "foononce", "key")
-        self.authenticator.cleanup([chall])
+
+        self.authenticator.cleanup([self.achall])
+
         mock_kill.assert_called_once_with(12345, signal.SIGINT)
         mock_sleep.assert_called_once_with(1)
 
     def test_bad_cleanup(self):
-        chall = challenge_util.DvsniChall(
-            "bad.example.com", "whee", "badnonce", "key")
-        self.assertRaises(ValueError, self.authenticator.cleanup, [chall])
+        self.assertRaises(
+            ValueError, self.authenticator.cleanup, [achallenges.DVSNI(
+                chall=challenges.DVSNI(r="whee", nonce="badnonce"),
+                domain="bad.example.com", key="key")])
 
 
 class MoreInfoTest(unittest.TestCase):

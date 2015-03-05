@@ -1,25 +1,20 @@
 """Let's Encrypt constants."""
 import pkg_resources
 
+from letsencrypt.acme import challenges
+
 
 S_SIZE = 32
 """Size (in bytes) of secret base64-encoded octet string "s" used in
-challanges."""
+challenges."""
 
 NONCE_SIZE = 16
 """Size of nonce used in JWS objects (in bytes)."""
 
 
-EXCLUSIVE_CHALLENGES = [frozenset(["dvsni", "simpleHttps"])]
+EXCLUSIVE_CHALLENGES = frozenset([frozenset([
+    challenges.DVSNI, challenges.SimpleHTTPS])])
 """Mutually exclusive challenges."""
-
-DV_CHALLENGES = frozenset(["dvsni", "simpleHttps", "dns"])
-"""Challenges that must be solved by a
-:class:`letsencrypt.client.interfaces.IAuthenticator` object."""
-
-CLIENT_CHALLENGES = frozenset(
-    ["recoveryToken", "recoveryContact", "proofOfPossession"])
-"""Challenges that are handled by the Let's Encrypt client."""
 
 
 ENHANCEMENTS = ["redirect", "http-header", "ocsp-stapling", "spdy"]
@@ -47,9 +42,6 @@ APACHE_REWRITE_HTTPS_ARGS = [
 
 DVSNI_CHALLENGE_PORT = 443
 """Port to perform DVSNI challenge."""
-
-DVSNI_DOMAIN_SUFFIX = ".acme.invalid"
-"""Suffix appended to domains in DVSNI validation."""
 
 
 TEMP_CHECKPOINT_DIR = "temp_checkpoint"

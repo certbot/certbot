@@ -1,15 +1,59 @@
-"""JSON objects in ACME protocol other than messages."""
+"""Other ACME objects."""
+import binascii
 import logging
 
-from Crypto import Random
+import Crypto.Random
 import Crypto.Hash.SHA256
+import Crypto.PublicKey.RSA
 import Crypto.Signature.PKCS1_v1_5
 
+from letsencrypt.acme import errors
 from letsencrypt.acme import jose
 from letsencrypt.acme import util
 
 
-class Signature(util.JSONDeSerializable, util.ImmutableMap):
+class JWK(util.ACMEObject):
+    # pylint: disable=too-few-public-methods
+    """JSON Web Key.
+
+    .. todo:: Currently works for RSA public keys only.
+
+    """
+    __slots__ = ('key',)
+
+    @classmethod
+    def _encode_param(cls, data):
+        def _leading_zeros(arg):
+            if len(arg) % 2:
+                return '0' + arg
+            return arg
+
+        return jose.b64encode(binascii.unhexlify(
+            _leading_zeros(hex(data)[2:].rstrip('L'))))
+
+    @classmethod
+    def _decode_param(cls, data):
+        try:
+            return long(binascii.hexlify(util.decode_b64jose(data)), 16)
+        except ValueError:  # invalid literal for long() with base 16
+            raise errors.ValidationError(data)
+
+    def to_json(self):
+        return {
+            'kty': 'RSA',  # TODO
+            'n': self._encode_param(self.key.n),
+            'e': self._encode_param(self.key.e),
+        }
+
+    @classmethod
+    def from_valid_json(cls, jobj):
+        assert 'RSA' == jobj['kty']  # TODO
+        return cls(key=Crypto.PublicKey.RSA.construct(
+            (cls._decode_param(jobj['n']),
+             cls._decode_param(jobj['e']))))
+
+
+class Signature(util.ACMEObject):
     """ACME signature.
 
     :ivar str alg: Signature algorithm.
@@ -17,19 +61,18 @@ class Signature(util.JSONDeSerializable, util.ImmutableMap):
     :ivar str nonce: Nonce.
 
     :ivar jwk: JWK.
-    :type jwk: :class:`letsencrypt.acme.jose.JWK`
+    :type jwk: :class:`JWK`
 
     .. todo:: Currently works for RSA keys only.
 
     """
     __slots__ = ('alg', 'sig', 'nonce', 'jwk')
-    schema = util.load_schema('signature')
 
-    NONCE_LEN = 16
-    """Size of nonce in bytes, as specified in the ACME protocol."""
+    NONCE_SIZE = 16
+    """Minimum size of nonce in bytes."""
 
     @classmethod
-    def from_msg(cls, msg, key, nonce=None):
+    def from_msg(cls, msg, key, nonce=None, nonce_size=None):
         """Create signature with nonce prepended to the message.
 
         .. todo:: Protect against crypto unicode errors... is this sufficient?
@@ -40,13 +83,15 @@ class Signature(util.JSONDeSerializable, util.ImmutableMap):
         :param key: Key used for signing.
         :type key: :class:`Crypto.PublicKey.RSA`
 
-        :param nonce: Nonce to be used. If None, nonce of
-            :const:`NONCE_LEN` size will be randomly generated.
-        :type nonce: str or None
+        :param str nonce: Nonce to be used. If None, nonce of
+            ``nonce_size`` will be randomly generated.
+        :param int nonce_size: Size of the automatically generated nonce.
+            Defaults to :const:`NONCE_SIZE`.
 
         """
+        nonce_size = cls.NONCE_SIZE if nonce_size is None else nonce_size
         if nonce is None:
-            nonce = Random.get_random_bytes(cls.NONCE_LEN)
+            nonce = Crypto.Random.get_random_bytes(nonce_size)
 
         msg_with_nonce = nonce + msg
         hashed = Crypto.Hash.SHA256.new(msg_with_nonce)
@@ -55,7 +100,7 @@ class Signature(util.JSONDeSerializable, util.ImmutableMap):
         logging.debug('%s signed as %s', msg_with_nonce, sig)
 
         return cls(alg='RS256', sig=sig, nonce=nonce,
-                   jwk=jose.JWK(key=key.publickey()))
+                   jwk=JWK(key=key.publickey()))
 
     def verify(self, msg):
         """Verify the signature.
@@ -68,7 +113,6 @@ class Signature(util.JSONDeSerializable, util.ImmutableMap):
             hashed, self.sig)
 
     def to_json(self):
-        """Prepare JSON serializable object."""
         return {
             'alg': self.alg,
             'sig': jose.b64encode(self.sig),
@@ -77,7 +121,9 @@ class Signature(util.JSONDeSerializable, util.ImmutableMap):
         }
 
     @classmethod
-    def _from_valid_json(cls, jobj):
-        return cls(alg=jobj['alg'], sig=jose.b64decode(jobj['sig']),
-                   nonce=jose.b64decode(jobj['nonce']),
-                   jwk=jose.JWK.from_json(jobj['jwk'], validate=False))
+    def from_valid_json(cls, jobj):
+        assert jobj['alg'] == 'RS256'  # TODO: support other algorithms
+        return cls(alg=jobj['alg'], sig=util.decode_b64jose(jobj['sig']),
+                   nonce=util.decode_b64jose(
+                       jobj['nonce'], cls.NONCE_SIZE, minimum=True),
+                   jwk=JWK.from_valid_json(jobj['jwk']))
