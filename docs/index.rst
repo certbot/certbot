@@ -7,6 +7,7 @@ Welcome to the Let's Encrypt client documentation!
    intro
    using
    project
+   legalese
 
 .. toctree::
    :maxdepth: 1
