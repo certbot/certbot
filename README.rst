@@ -21,7 +21,7 @@ All you need to do is:
 
 ::
 
-   user@www:~$ sudo letsencrypt www.example.org
+   user@www:~$ sudo letsencrypt -d www.example.org
 
 
 **Encrypt ALL the things!**
