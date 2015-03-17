@@ -506,8 +506,8 @@ class PathSatisfiedTest(unittest.TestCase):
         self.handler.paths[dom[2]] = [0]
         self.handler.responses[dom[2]] = [None]
 
-        self.handler.paths[dom[2]] = [0]
-        self.handler.responses[dom[2]] = [False]
+        self.handler.paths[dom[3]] = [0]
+        self.handler.responses[dom[3]] = [False]
 
         for i in xrange(3):
             self.assertFalse(self.handler._path_satisfied(dom[i]))
