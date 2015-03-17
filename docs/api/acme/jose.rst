@@ -21,6 +21,13 @@ JSON Web Key
    :members:
 
 
+JSON Web Signature
+------------------
+
+.. automodule:: letsencrypt.acme.jose.jws
+   :members:
+
+
 Implementation details
 ----------------------
 

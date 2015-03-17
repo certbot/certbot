@@ -107,6 +107,7 @@ setup(
     entry_points={
         'console_scripts': [
             'letsencrypt = letsencrypt.scripts.main:main',
+            'jws = letsencrypt.acme.jose.jws:CLI.run',
         ],
     },
 
