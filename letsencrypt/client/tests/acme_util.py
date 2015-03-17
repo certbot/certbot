@@ -5,7 +5,7 @@ import pkg_resources
 import Crypto.PublicKey.RSA
 
 from letsencrypt.acme import challenges
-from letsencrypt.acme import other
+from letsencrypt.acme import jose
 
 
 KEY = Crypto.PublicKey.RSA.importKey(pkg_resources.resource_string(
@@ -26,7 +26,7 @@ RECOVERY_TOKEN = challenges.RecoveryToken()
 POP = challenges.ProofOfPossession(
     alg="RS256", nonce="xD\xf9\xb9\xdbU\xed\xaa\x17\xf1y|\x81\x88\x99 ",
     hints=challenges.ProofOfPossession.Hints(
-        jwk=other.JWK(key=KEY.publickey()),
+        jwk=jose.JWKRSA(key=KEY.publickey()),
         cert_fingerprints=[
             "93416768eb85e33adc4277f4c9acd63e7418fcfe",
             "16d95b7b63f1972b980b14c20291f3c0d1855d95",

@@ -1,4 +1,4 @@
-"""Tests for letsencrypt.acme.jose."""
+"""Tests for letsencrypt.acme.jose.b64."""
 import unittest
 
 
@@ -19,11 +19,11 @@ B64_URL_UNSAFE_EXAMPLES = {
 
 
 class B64EncodeTest(unittest.TestCase):
-    """Tests for letsencrypt.acme.jose.b64encode."""
+    """Tests for letsencrypt.acme.jose.b64.b64encode."""
 
     @classmethod
     def _call(cls, data):
-        from letsencrypt.acme.jose import b64encode
+        from letsencrypt.acme.jose.b64 import b64encode
         return b64encode(data)
 
     def test_unsafe_url(self):
@@ -39,11 +39,11 @@ class B64EncodeTest(unittest.TestCase):
 
 
 class B64DecodeTest(unittest.TestCase):
-    """Tests for letsencrypt.acme.jose.b64decode."""
+    """Tests for letsencrypt.acme.jose.b64.b64decode."""
 
     @classmethod
     def _call(cls, data):
-        from letsencrypt.acme.jose import b64decode
+        from letsencrypt.acme.jose.b64 import b64decode
         return b64decode(data)
 
     def test_unsafe_url(self):

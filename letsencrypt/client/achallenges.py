@@ -17,7 +17,7 @@ Note, that all annotated challenges act as a proxy objects::
 
 """
 from letsencrypt.acme import challenges
-from letsencrypt.acme import util as acme_util
+from letsencrypt.acme.jose import util as jose_util
 
 from letsencrypt.client import crypto_util
 
@@ -25,7 +25,7 @@ from letsencrypt.client import crypto_util
 # pylint: disable=too-few-public-methods
 
 
-class AnnotatedChallenge(acme_util.ImmutableMap):
+class AnnotatedChallenge(jose_util.ImmutableMap):
     """Client annotated challenge.
 
     Wraps around :class:`~letsencrypt.acme.challenges.Challenge` and
@@ -88,7 +88,7 @@ class ProofOfPossession(AnnotatedChallenge):
     acme_type = challenges.ProofOfPossession
 
 
-class Indexed(acme_util.ImmutableMap):
+class Indexed(jose_util.ImmutableMap):
     """Indexed and annotated ACME challenge.
 
     Wraps around :class:`AnnotatedChallenge` and annotates with an
