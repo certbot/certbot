@@ -18,7 +18,7 @@ def add_record(zone, token, keyring):
 	challenge_subdomain = "_acme-challenge.%s" % (zone)
 
 	challenge_record = dns.update.Update(zone, keyring=keyring)
-	# check absent challenge_subdomain
+	# check challenge_subdomain is absent
 	challenge_request.absent(challenge_subdomain)
 	# add challenge_subdomain TXT with token
 	challenge_request.add(challenge_subdomain, DEFAULT_TTL, "TXT", token)
@@ -26,13 +26,13 @@ def add_record(zone, token, keyring):
 	# return req
 	return challenge_request
 
-def del_record(zone, token, keyring): # token needed?
+def del_record(zone, token, keyring):
 	challenge_subdomain = "_acme-challenge.%s" % (zone)
 
 	challenge_request = dns.update(zone, keyring=keyring)
-	# check present challenge_subdomain
+	# check challenge_subdomain is present
 	challenge_request.present(challenge_subdomain)
-	# delete challegen_subdomain TXT (with token?)
+	# delete challegen_subdomain TXT
 	challenge_request.delete(challenge_subdomain)
 
 	# return req
@@ -64,23 +64,23 @@ def send_request(gen_record, zone, token, keyring, server, port, source_port, ti
 		response = dns.query.tcp(dns_request, server, port=port, source_port=source_port, timeout=timeout)
 
 		if response.rcode() == 0:
-			return True # ???
+			return True # ??? this is definitely wrong...
 		else:
-			raise errors.LetsEncryptDNSAuthError(rcode_errors.get(response.rcode()))
+			raise errors.LetsEncryptDNSAuthError(rcode_errors.get("DNS Error: %s" % (response.rcode())))
 
 	except (NoAnswer, UnexpectedSource, BadResponse,
                 TimeoutError, OSError) as err:
-		# FIXME: should use better error than ValueError...
 		if isinstance(err, NoAnswer):
-			raise ValueError("DNS Error: Did not recieve a response to DNS request!")
+			dns_error = "DNS Error: Did not recieve a response to DNS request!"
 		elif isinstance(err, UnexpectedSource):
-			raise ValueError("DNS Error: Recieved response to DNS request from unexpected source!")
+			dns_error = "DNS Error: Recieved response to DNS request from unexpected source!"
 		elif isinstance(err, BadResponse):
-			raise ValueError("DNS Error: Recieved malformed response to DNS request!")
+			dns_error = "DNS Error: Recieved malformed response to DNS request!"
 		elif isinstance(err, TimeoutError):
-			raise ValueError("DNS Error: DNS request timed out!")
+			dns_error = "DNS Error: DNS request timed out!"
 		elif isinstance(err, OSError):
-			raise ValueError("DNS Error: I forgot what an OSError means in this context...")
+			dns_error = "DNS Error: I forgot what an OSError means in this context..."
+		raise errors.LetsEncryptDNSAuthError(dns_error)
 
 class DNSAuthenticator(object):
 	zope.interface.implements(interfaces.IAuthenticator)
@@ -103,8 +103,7 @@ class DNSAuthenticator(object):
 
 				# send request
 				resp = send_request(add_record, zone, token, tsig_keyring, DNS_SERVER, DNS_PORT, DNS_SOURCE_PORT, DNS_TIMEOUT)
-				# do something
-				responses.append() # ???
+				responses.append(resp)
 			else:
 				# uh, nothing?
 				raise errors.LetsEncryptDNSAuthError("Unexpected Challenge")
@@ -117,7 +116,7 @@ class DNSAuthenticator(object):
                         if isinstance(achall, achallenges.DNS):
                                 zone = achall.domain
                                 tsig_keyring = dns.tsigkeyring.from_text({achall.tsig_key_name: achall.tsig_key})
-                                token = achall.token
+				token = achall.token
 
 				# send it
 				send_request(del_record, zone, token, tsig_keyring, DNS_SERVER, DNS_PORT, DNS_SOURCE_PORT, DNS_TIMEOUT)

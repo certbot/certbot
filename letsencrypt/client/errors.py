@@ -26,6 +26,9 @@ class LetsEncryptDvAuthError(LetsEncryptAuthHandlerError):
 class LetsEncryptDvsniError(LetsEncryptDvAuthError):
     """Let's Encrypt DVSNI error."""
 
+class LetsEncryptDNSError(LetsEncryptDvAuthError):
+    """Let's Encrypt DNS error."""
+
 
 # Configurator Errors
 class LetsEncryptConfiguratorError(LetsEncryptClientError):
