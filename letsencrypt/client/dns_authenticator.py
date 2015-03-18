@@ -1,6 +1,10 @@
 """DNS Authenticator"""
 import zope.interface
-import dnspython
+import dns.query
+import dns.tsigkeyring
+import dns.update
+from dns.query import UnexpectedSource, BadResponse
+from dns.resolver import NoAnswer
 
 from letsencrypt.client import CONFIG
 from letsencrypt.acme import challenges
@@ -64,20 +68,20 @@ def send_request(gen_record, zone, token, keyring, server, port, source_port, ti
 		response = dns.query.tcp(dns_request, server, port=port, source_port=source_port, timeout=timeout)
 
 		if response.rcode() == 0:
-			return True # ??? this is definitely wrong...
+			return True
 		else:
 			raise errors.LetsEncryptDNSAuthError(rcode_errors.get("DNS Error: %s" % (response.rcode())))
 
 	except (NoAnswer, UnexpectedSource, BadResponse,
-                TimeoutError, OSError) as err:
+                OSError) as err: # TimeoutError doesn't exist in 2.7 I dont think...
 		if isinstance(err, NoAnswer):
 			dns_error = "DNS Error: Did not recieve a response to DNS request!"
 		elif isinstance(err, UnexpectedSource):
 			dns_error = "DNS Error: Recieved response to DNS request from unexpected source!"
 		elif isinstance(err, BadResponse):
 			dns_error = "DNS Error: Recieved malformed response to DNS request!"
-		elif isinstance(err, TimeoutError):
-			dns_error = "DNS Error: DNS request timed out!"
+		# elif isinstance(err, TimeoutError):
+		# 	dns_error = "DNS Error: DNS request timed out!"
 		elif isinstance(err, OSError):
 			dns_error = "DNS Error: I forgot what an OSError means in this context..."
 		raise errors.LetsEncryptDNSAuthError(dns_error)
@@ -102,10 +106,9 @@ class DNSAuthenticator(object):
 				token = achall.token
 
 				# send request
-				resp = send_request(add_record, zone, token, tsig_keyring, DNS_SERVER, DNS_PORT, DNS_SOURCE_PORT, DNS_TIMEOUT)
-				responses.append(resp)
+				if send_request(add_record, zone, token, tsig_keyring, DNS_SERVER, DNS_PORT, DNS_SOURCE_PORT, DNS_TIMEOUT):
+					responses.append(challenges.DNSResponse())
 			else:
-				# uh, nothing?
 				raise errors.LetsEncryptDNSAuthError("Unexpected Challenge")
 		return responses
 
@@ -118,7 +121,7 @@ class DNSAuthenticator(object):
                                 tsig_keyring = dns.tsigkeyring.from_text({achall.tsig_key_name: achall.tsig_key})
 				token = achall.token
 
-				# send it
+				# send it, raises error on absent records etc...
 				send_request(del_record, zone, token, tsig_keyring, DNS_SERVER, DNS_PORT, DNS_SOURCE_PORT, DNS_TIMEOUT)
 			else:
-				raise errors.LetsEncryptDNSAuthError("Unexpected Challenge") 
+				raise errors.LetsEncryptDNSAuthError("Unexpected Challenge")
