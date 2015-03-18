@@ -221,21 +221,7 @@ class CertificateRequest(Message):
 
     csr = jose.Field("csr", encoder=jose.encode_csr,
                      decoder=jose.decode_csr)
-    signature = jose.Field("signature")
-
-    @classmethod
-    def fields_from_json(cls, jobj):
-        cls._check_required(jobj)
-
-        sig = other.Signature.from_json(
-            jobj[cls._fields['signature'].json_name])
-        if not sig.verify(json_util.decode_b64jose(jobj["csr"])):
-            raise jose_errors.DeserializationError(
-                'Signature could not be verified')
-        # verify signature before decoding principle!
-        csr = jose.decode_csr(jobj[cls._fields['csr'].json_name])
-
-        return {'signature': sig, 'csr': csr}
+    signature = jose.Field("signature", decoder=other.Signature.from_json)
 
     @classmethod
     def create(cls, key, sig_nonce=None, **kwargs):

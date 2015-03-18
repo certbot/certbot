@@ -343,13 +343,6 @@ class CertificateRequestTest(unittest.TestCase):
         from letsencrypt.acme.messages import CertificateRequest
         self.assertEqual(self.msg, CertificateRequest.from_json(self.jmsg_from))
 
-    def test_from_json_wrong_signature_raises_error(self):
-        from letsencrypt.acme.messages import CertificateRequest
-        self.jmsg_from['csr'] = jose.b64encode(CSR2.as_der())
-        self.assertRaises(
-            jose_errors.DeserializationError, CertificateRequest.from_json,
-            self.jmsg_from)
-
 
 class DeferTest(unittest.TestCase):
 
