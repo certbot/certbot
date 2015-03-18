@@ -24,6 +24,7 @@ changes = read_file(os.path.join(here, 'CHANGES.rst'))
 install_requires = [
     'argparse',
     'ConfArgParse',
+    'dnspython',
     'jsonschema',
     'mock',
     'psutil>=2.1.0',  # net_connections introduced in 2.1.0
