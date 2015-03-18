@@ -61,11 +61,12 @@ def send_request(gen_record, zone, token, keyring, server, port, source_port, ti
         }
 
 	try:
-		response = dns.query.tcp()
-		if rcode_errors.get(response.rcode()):
-			raise ValueError("DNS Error: %s", rcode_errors.get(response.rcode()))			
+		response = dns.query.tcp(dns_request, server, port=port, source_port=source_port, timeout=timeout)
+
+		if response.rcode() == 0:
+			return True # ???
 		else:
-			# its good!
+			raise errors.LetsEncryptDNSAuthError(rcode_errors.get(response.rcode()))
 
 	except (NoAnswer, UnexpectedSource, BadResponse,
                 TimeoutError, OSError) as err:
@@ -88,13 +89,14 @@ class DNSAuthenticator(object):
 		pass
 
 	def get_chall_pref(self, unused_domain):
-		return [challenges.dns]
+		return [challenges.DNS]
 
 	def preform(self, achalls):
 		if not achalls or not isinstance(achalls, list):
 			raise ValueError(".perform() was called without challenge list")
+		responses = []
 		for achall in achalls:
-			if isinstance(achall, achallenges.dns):
+			if isinstance(achall, achallenges.DNS):
 				zone = achall.domain
 				tsig_keyring = dns.tsigkeyring.from_text({achall.tsig_key_name: achall.tsig_key})
 				token = achall.token
@@ -102,22 +104,22 @@ class DNSAuthenticator(object):
 				# send request
 				resp = send_request(add_record, zone, token, tsig_keyring, DNS_SERVER, DNS_PORT, DNS_SOURCE_PORT, DNS_TIMEOUT)
 				# do something
+				responses.append() # ???
 			else:
 				# uh, nothing?
-				return False
+				raise errors.LetsEncryptDNSAuthError("Unexpected Challenge")
+		return responses
 
 	def cleanup(self, achalls):
 		if not achalls or not isinstance(achalls, list):
                         raise ValueError(".cleanup() was called without challenge list")
                 for achall in achalls:
-                        if isinstance(achall, achallenges.dns):
+                        if isinstance(achall, achallenges.DNS):
                                 zone = achall.domain
                                 tsig_keyring = dns.tsigkeyring.from_text({achall.tsig_key_name: achall.tsig_key})
                                 token = achall.token
 
 				# send it
-				resp = send_request(del_record, zone, token, tsig_keyring, DNS_SERVER, DNS_PORT, DNS_SOURCE_PORT, DNS_TIMEOUT)
-				# do something
+				send_request(del_record, zone, token, tsig_keyring, DNS_SERVER, DNS_PORT, DNS_SOURCE_PORT, DNS_TIMEOUT)
 			else:
-				# ummm
-				raise ValueError("could not find the challenge to remove")
+				raise errors.LetsEncryptDNSAuthError("Unexpected Challenge") 
