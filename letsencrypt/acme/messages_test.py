@@ -45,15 +45,8 @@ class MessageTest(unittest.TestCase):
                     'name': {'type': 'string'},
                 },
             }
-            __slots__ = ('price', 'name')
-
-            @classmethod
-            def from_valid_json(cls, jobj):
-                return cls(price=jobj.get('price'), name=jobj.get('name'))
-
-            def _fields_to_json(self):
-                # pylint: disable=no-member
-                return {'price': self.price, 'name': self.name}
+            price = jose.Field('price')
+            name = jose.Field('name')
 
         self.parent_cls = MockParentMessage
         self.msg = MockMessage(price=123, name='foo')
