@@ -102,7 +102,7 @@ class DNSAuthenticator(object):
 		for achall in achalls:
 			if isinstance(achall, achallenges.DNS):
 				zone = achall.domain
-				tsig_keyring = dns.tsigkeyring.from_text({achall.tsig_key_name: achall.tsig_key})
+				tsig_keyring = dns.tsigkeyring.from_text({achall.tsig_key_name: achall.tsig_key}) # this probably isn't actually where this will come from...
 				token = achall.token
 
 				# send request
