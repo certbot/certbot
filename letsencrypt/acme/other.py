@@ -6,7 +6,6 @@ import Crypto.Random
 import Crypto.PublicKey.RSA
 
 from letsencrypt.acme import jose
-from letsencrypt.acme.jose import json_util
 
 
 class Signature(jose.JSONObjectWithFields):
@@ -23,13 +22,13 @@ class Signature(jose.JSONObjectWithFields):
     NONCE_SIZE = 16
     """Minimum size of nonce in bytes."""
 
-    alg = json_util.Field('alg', decoder=jose.JWASignature.from_json)
-    sig = json_util.Field('sig', encoder=jose.b64encode,
-                          decoder=json_util.decode_b64jose)
-    nonce = json_util.Field(
+    alg = jose.Field('alg', decoder=jose.JWASignature.from_json)
+    sig = jose.Field('sig', encoder=jose.b64encode,
+                     decoder=jose.decode_b64jose)
+    nonce = jose.Field(
         'nonce', encoder=jose.b64encode, decoder=functools.partial(
-            json_util.decode_b64jose, size=NONCE_SIZE, minimum=True))
-    jwk = json_util.Field('jwk', decoder=jose.JWK.from_json)
+            jose.decode_b64jose, size=NONCE_SIZE, minimum=True))
+    jwk = jose.Field('jwk', decoder=jose.JWK.from_json)
 
     @classmethod
     def from_msg(cls, msg, key, nonce=None, nonce_size=None, alg=jose.RS256):

@@ -10,8 +10,6 @@ from letsencrypt.acme import errors
 from letsencrypt.acme import jose
 from letsencrypt.acme import other
 
-from letsencrypt.acme.jose import errors as jose_errors
-
 
 KEY = Crypto.PublicKey.RSA.importKey(pkg_resources.resource_string(
     'letsencrypt.client.tests', 'testdata/rsa256_key.pem'))

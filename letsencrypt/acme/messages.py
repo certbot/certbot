@@ -7,9 +7,6 @@ from letsencrypt.acme import jose
 from letsencrypt.acme import other
 from letsencrypt.acme import util
 
-from letsencrypt.acme.jose import errors as jose_errors
-from letsencrypt.acme.jose import json_util
-
 
 class Message(jose.TypedJSONObjectWithFields):
     # _fields_to_json | pylint: disable=abstract-method
