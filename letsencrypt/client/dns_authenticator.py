@@ -1,22 +1,22 @@
 """DNS Authenticator"""
-import zope.interface
 import dns.query
 import dns.tsigkeyring
 import dns.update
 from dns.query import UnexpectedSource, BadResponse
 from dns.resolver import NoAnswer
 
-from letsencrypt.client import CONFIG
+import zope.interface
+
 from letsencrypt.acme import challenges
+
+from letsencrypt.client import achallenges
+from letsencrypt.client import constants
 from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 
-# these should be constants prob? (dns server/port should be settable obv tho)
-DNS_DEFAULT_TTL = 60
+# this should be provided by the user!
 DNS_SERVER = "localhost"
 DNS_PORT = 53
-DNS_SOURCE_PORT = 0
-DNS_TIMEOUT = 30
 
 def add_record(zone, token, keyring):
 	challenge_subdomain = "_acme-challenge.%s" % (zone)
@@ -25,7 +25,7 @@ def add_record(zone, token, keyring):
 	# check challenge_subdomain is absent
 	challenge_request.absent(challenge_subdomain)
 	# add challenge_subdomain TXT with token
-	challenge_request.add(challenge_subdomain, DEFAULT_TTL, "TXT", token)
+	challenge_request.add(challenge_subdomain, constants.DNS_CHALLENGE_TTL, "TXT", token)
 
 	# return req
 	return challenge_request
@@ -106,7 +106,7 @@ class DNSAuthenticator(object):
 				token = achall.token
 
 				# send request
-				if send_request(add_record, zone, token, tsig_keyring, DNS_SERVER, DNS_PORT, DNS_SOURCE_PORT, DNS_TIMEOUT):
+				if send_request(add_record, zone, token, tsig_keyring, DNS_SERVER, DNS_PORT, constants.DNS_CHALLENGE_SOURCE_PORT, constants.DNS_CHALLENGE_TIMEOUT):
 					responses.append(challenges.DNSResponse())
 			else:
 				raise errors.LetsEncryptDNSAuthError("Unexpected Challenge")
@@ -122,6 +122,6 @@ class DNSAuthenticator(object):
 				token = achall.token
 
 				# send it, raises error on absent records etc...
-				send_request(del_record, zone, token, tsig_keyring, DNS_SERVER, DNS_PORT, DNS_SOURCE_PORT, DNS_TIMEOUT)
+				send_request(del_record, zone, token, tsig_keyring, DNS_SERVER, DNS_PORT, constants.DNS_CHALLENGE_SOURCE_PORT, constants.DNS_CHALLENGE_TIMEOUT)
 			else:
 				raise errors.LetsEncryptDNSAuthError("Unexpected Challenge")
