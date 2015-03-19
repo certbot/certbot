@@ -15,8 +15,6 @@ from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 
 # this should be provided by the user!
-DNS_SERVER = "localhost"
-DNS_PORT = 53
 
 def add_record(zone, token, keyring):
 	challenge_subdomain = "_acme-challenge.%s" % (zone)
@@ -45,6 +43,7 @@ def del_record(zone, token, keyring):
 def send_request(gen_record, zone, token, keyring, server, port, source_port, timeout):
 	dns_request = gen_record(zone, token, keyring)
 
+	# FIXME: better keyring errors (that include that key that was used)
 	rcode_errors = {
 		1: 'Malformed DNS message',
 		2: 'Server failed',
@@ -102,11 +101,14 @@ class DNSAuthenticator(object):
 		for achall in achalls:
 			if isinstance(achall, achallenges.DNS):
 				zone = achall.domain
-				tsig_keyring = dns.tsigkeyring.from_text({achall.tsig_key_name: achall.tsig_key}) # this probably isn't actually where this will come from...
+				tsig = [t[0], t[1] for t in self.config.dns_tsig_keys if zone in [t3]]
+				if not tsig:
+					raise errors.LetsEncryptDNSAuthError("No TSIG key provided for domain '%s'" % (zone))
+				tsig_keyring = dns.tsigkeyring.from_text({tsig[0]: tsig[1]})
 				token = achall.token
 
 				# send request
-				if send_request(add_record, zone, token, tsig_keyring, DNS_SERVER, DNS_PORT, constants.DNS_CHALLENGE_SOURCE_PORT, constants.DNS_CHALLENGE_TIMEOUT):
+				if send_request(add_record, zone, token, tsig_keyring, self.config.dns_server, self.config.dns_server_port, constants.DNS_CHALLENGE_SOURCE_PORT, constants.DNS_CHALLENGE_TIMEOUT):
 					responses.append(challenges.DNSResponse())
 			else:
 				raise errors.LetsEncryptDNSAuthError("Unexpected Challenge")
