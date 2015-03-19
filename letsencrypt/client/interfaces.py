@@ -127,7 +127,7 @@ class IConfig(zope.interface.Interface):
         "DNS server hostname used to create challenge subdomains.")
     dns_server_port = zope.interface.Attribute(
         "DNS server port to use.")
-    dns_tsig_key = zope.interface.Attribute(
+    dns_tsig_keys = zope.interface.Attribute(
         "DNS TSIG keys for updates in the format: keyname,keysecret,domains+")
 
 
