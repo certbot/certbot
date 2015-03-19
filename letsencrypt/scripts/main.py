@@ -98,7 +98,7 @@ def create_parser():
 
     add("--dns-server", default="localhost", help=config_help("dns_server"))
     add("--dns-server-port", default=53, help=config_help("dns_server_port"))
-    add("--dns-tsig-keys", default=[], type=split_tsig_keys, help=config_help("dns_key_file")) # json may not be the best format...?
+    add("--dns-tsig-keys", default=[], type=split_tsig_keys, help=config_help("dns_key_file"))
 
     return parser
 
