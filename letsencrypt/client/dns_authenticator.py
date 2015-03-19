@@ -101,7 +101,7 @@ class DNSAuthenticator(object):
 		for achall in achalls:
 			if isinstance(achall, achallenges.DNS):
 				zone = achall.domain
-				tsig = [t[0], t[1] for t in self.config.dns_tsig_keys if zone in [t3]]
+				tsig = [[t[0], t[1]] for t in self.config.dns_tsig_keys if zone in t[3]]
 				if not tsig:
 					raise errors.LetsEncryptDNSAuthError("No TSIG key provided for domain '%s'" % (zone))
 				tsig_keyring = dns.tsigkeyring.from_text({tsig[0]: tsig[1]})
