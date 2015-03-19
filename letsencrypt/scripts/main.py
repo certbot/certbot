@@ -96,6 +96,10 @@ def create_parser():
     add("--apache-init-script", default="/etc/init.d/apache2",
         help=config_help("apache_init_script"))
 
+    add("--dns-server", default="localhost", help=config_help("dns_server"))
+    add("--dns-server-port", default=53, help=config_help("dns_server_port"))
+    add("--dns-tsig-keys", default=[], type=split_tsig_keys, help=config_help("dns_key_file")) # json may not be the best format...?
+
     return parser
 
 
@@ -213,6 +217,23 @@ def read_file(filename):
         return filename, open(filename, "rU").read()
     except IOError as exc:
         raise argparse.ArgumentTypeError(exc.strerror)
+
+
+def split_tsig_keys(packed):
+    """Returns the unpacked TSIG key name, secret, and a list of domains from
+    the argument format.
+
+    :param str packed: Packed
+
+    :returns: A tuple of key name, secret, and a list of domains
+    :rtype: tuple
+
+    :raises argparse.ArgumentTypeError: Packed TSIG key is in incorrect format."""
+    packed = packed.split(",")
+    if len(packed) < 3:
+        raise argparse.ArgumentTypeError("Provided TSIG key is in incorrect format."""
+    key_name, secret, domains = packed[0], packed[1], packed[2:]
+    return key_name, secret, domains
 
 
 if __name__ == "__main__":
