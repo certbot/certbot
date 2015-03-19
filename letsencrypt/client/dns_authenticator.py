@@ -89,7 +89,7 @@ class DNSAuthenticator(object):
 	zope.interface.implements(interfaces.IAuthenticator)
 	
 	def __init__(self, config):
-		pass
+		 super(DNSAuthenticator, self).__init__(config)
 
 	def get_chall_pref(self, unused_domain):
 		return [challenges.DNS]
