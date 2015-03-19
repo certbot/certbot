@@ -123,6 +123,13 @@ class IConfig(zope.interface.Interface):
     apache_mod_ssl_conf = zope.interface.Attribute(
         "Contains standard Apache SSL directives.")
 
+    dns_server = zope.interface.Attribute(
+        "DNS server hostname used to create challenge subdomains.")
+    dns_server_port = zope.interface.Attribute(
+        "DNS server port to use.")
+    dns_tsig_key = zope.interface.Attribute(
+        "DNS TSIG keys for updates in the format: keyname,keysecret,domains+")
+
 
 class IInstaller(zope.interface.Interface):
     """Generic Let's Encrypt Installer Interface.
