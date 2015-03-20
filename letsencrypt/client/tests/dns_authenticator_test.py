@@ -122,10 +122,10 @@ class PerformCleanupTest(unittest.TestCase): # pylint: disable=too-many-public-m
 
         # query exceptions
         for excep in [NoAnswer, UnexpectedSource, BadResponse, OSError]:
-        	with mock.patch("dns.query.tcp") as query:
-        		query.side_effect = excep
+            with mock.patch("dns.query.tcp") as query:
+                query.side_effect = excep
 
-        		self.assertRaises(
+                self.assertRaises(
                     errors.LetsEncryptDNSAuthError,
                     self.authenticator.perform,
                     [self.achalls[0]]
@@ -168,12 +168,12 @@ class PerformCleanupTest(unittest.TestCase): # pylint: disable=too-many-public-m
 
         # query exceptions
         for excep in [NoAnswer, UnexpectedSource, BadResponse, OSError]:
-        	with mock.patch("dns.query.tcp") as query:
-        		query.side_effect = excep
+            with mock.patch("dns.query.tcp") as query:
+                query.side_effect = excep
 
-        		self.assertRaises(
+                self.assertRaises(
                     errors.LetsEncryptDNSAuthError,
-                    self.authenticator.cleanup,
+                    self.authenticator.perform,
                     [self.achalls[0]]
                 )
 

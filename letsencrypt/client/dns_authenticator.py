@@ -14,7 +14,24 @@ from letsencrypt.client import constants
 from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 
-# this should be provided by the user!
+def find_valid_key(tsig_keys, domain):
+    """Search provided TSIG key pairs.
+
+    Search the keypairs in `config.dns_tsig_keys` for one valid for the
+    provided `domain`.
+
+    :param list tsig_keys: List of tuples containing key name, key secret,
+        and domains key is valid for.
+    :param str domain: Domain name to look for a key pair for.
+
+    :returns: Keyring valid for `domain` or `None`.
+    :rtype: dns.tsigkeyring
+
+    """
+    for keypair in tsig_keys:
+        if domain in keypair[2]:
+            return dns.tsigkeyring.from_text(
+                {keypair[0]: keypair[1]})
 
 def add_record(zone, token, keyring):
     """Add record DNS request generator.
@@ -28,7 +45,7 @@ def add_record(zone, token, keyring):
         be provisioned.
     :param str token: Token provided by ACME server.
     :param dns.tsigkeyring keyring: TSIG keyring object containg TSIG
-        keypair valid for the provided zone.
+        key pair valid for the provided zone.
 
     :returns: Add record DNS message.
     :rtype: dns.message.Message
@@ -189,17 +206,11 @@ class DNSAuthenticator(object):
         for achall in achalls:
             if isinstance(achall, achallenges.DNS):
                 zone = achall.domain
-                # this could be cleaned up, esp since we use it here and in
-                # cleanup, could prob just be a function...
-                tsig = [
-                    [t[0], t[1]] for t in self.dns_tsig_keys if zone in t[2]
-                ]
-                if not tsig:
-                    raise ValueError(
-                        "No TSIG key provided for domain '%s'" % (zone))
-                tsig_keyring = dns.tsigkeyring.from_text(
-                    {tsig[0][0]: tsig[0][1]})
                 token = achall.token
+                tsig_keyring = find_valid_key(self.dns_tsig_keys, zone)
+                if not tsig_keyring:
+                    raise ValueError(
+                        "No TSIG keypair provided for %s" % (zone))
 
                 # send request
                 if send_request(
@@ -224,15 +235,11 @@ class DNSAuthenticator(object):
         for achall in achalls:
             if isinstance(achall, achallenges.DNS):
                 zone = achall.domain
-                tsig = [
-                    [t[0], t[1]] for t in self.dns_tsig_keys if zone in t[2]
-                ]
-                if not tsig:
-                    raise ValueError(
-                        "No TSIG key provided for domain '%s'" % (zone))
-                tsig_keyring = dns.tsigkeyring.from_text(
-                    {tsig[0][0]: tsig[0][1]})
                 token = achall.token
+                tsig_keyring = find_valid_key(self.dns_tsig_keys, zone)
+                if not tsig_keyring:
+                    raise ValueError(
+                        "No TSIG keypair provided for %s" % (zone))
 
                 # send it, raises error on absent records etc...
                 send_request(
