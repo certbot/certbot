@@ -6,3 +6,4 @@ venv/
 .tox/
 .coverage
 m3
+*.swp
