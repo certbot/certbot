@@ -19,7 +19,7 @@ from letsencrypt.client import interfaces
 def add_record(zone, token, keyring):
 	challenge_subdomain = "_acme-challenge.%s" % (zone)
 
-	challenge_record = dns.update.Update(zone, keyring=keyring)
+	challenge_request = dns.update.Update(zone, keyring=keyring)
 	# check challenge_subdomain is absent
 	challenge_request.absent(challenge_subdomain)
 	# add challenge_subdomain TXT with token
@@ -89,26 +89,29 @@ class DNSAuthenticator(object):
 	zope.interface.implements(interfaces.IAuthenticator)
 	
 	def __init__(self, config):
-		 super(DNSAuthenticator, self).__init__(config)
+		# super(DNSAuthenticator, self).__init__(config)
+		self.dns_server = config.dns_server
+		self.dns_server_port = config.dns_server_port
+		self.dns_tsig_keys = config.dns_tsig_keys
 
 	def get_chall_pref(self, unused_domain):
 		return [challenges.DNS]
 
-	def preform(self, achalls):
+	def perform(self, achalls):
 		if not achalls or not isinstance(achalls, list):
 			raise ValueError(".perform() was called without challenge list")
 		responses = []
 		for achall in achalls:
 			if isinstance(achall, achallenges.DNS):
 				zone = achall.domain
-				tsig = [[t[0], t[1]] for t in self.config.dns_tsig_keys if zone in t[3]]
+				tsig = [[t[0], t[1]] for t in self.dns_tsig_keys if zone in t[2]]
 				if not tsig:
 					raise errors.LetsEncryptDNSAuthError("No TSIG key provided for domain '%s'" % (zone))
-				tsig_keyring = dns.tsigkeyring.from_text({tsig[0]: tsig[1]})
+				tsig_keyring = dns.tsigkeyring.from_text({tsig[0][0]: tsig[0][1]})
 				token = achall.token
 
 				# send request
-				if send_request(add_record, zone, token, tsig_keyring, self.config.dns_server, self.config.dns_server_port, constants.DNS_CHALLENGE_SOURCE_PORT, constants.DNS_CHALLENGE_TIMEOUT):
+				if send_request(add_record, zone, token, tsig_keyring, self.dns_server, self.dns_server_port, constants.DNS_CHALLENGE_SOURCE_PORT, constants.DNS_CHALLENGE_TIMEOUT):
 					responses.append(challenges.DNSResponse())
 			else:
 				raise errors.LetsEncryptDNSAuthError("Unexpected Challenge")
