@@ -5,7 +5,7 @@ The demo code is supported and known to work on **Ubuntu only** (even
 closely related `Debian is known to fail`_).
 
 Therefore, prerequisites for other platforms listed below are provided
-mainly for the :ref:`developers <hacking>` reference.
+mainly for the `hacking`_ reference.
 
 In general:
 
@@ -66,10 +66,11 @@ In order to start hacking, you will first have to create a development
 environment. Start by installing the development packages:
 
 ::
+
     ./venv/bin/python setup.py dev
 
 The code base, including your pull requests, **must** have 100% test statement
-coverage **and** be compliant with the :ref:`coding-style`.
+coverage **and** be compliant with the coding-style_.
 
 The following tools are there to help you:
 
@@ -83,8 +84,6 @@ The following tools are there to help you:
 
 
 .. _coding-style:
-.. _setup instructions: https://letsencrypt.readthedocs.org/en/latest/using.html
-
 Coding style
 ============
 
