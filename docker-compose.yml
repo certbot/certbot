@@ -1,0 +1,4 @@
+letsencrypt:
+  build: .
+  ports:
+    - "443:443"
