@@ -20,18 +20,18 @@ def add_record(zone, token, keyring):
     """Add record DNS request generator.
 
     Create a `dns.message.Message` object asking the server to
-   create a TXT record for the challenge subdomain
-   (`_acme-challenge.example.com`) signed by the provided
-   TSIG keyring.
+    create a TXT record for the challenge subdomain
+    (`_acme-challenge.example.com`) signed by the provided
+    TSIG keyring.
 
-   :param str zone: Zone (domain) in which the record should
+    :param str zone: Zone (domain) in which the record should
         be provisioned.
-   :param str token: Token provided by ACME server.
-   :param dns.tsigkeyring keyring: TSIG keyring object containg TSIG
+    :param str token: Token provided by ACME server.
+    :param dns.tsigkeyring keyring: TSIG keyring object containg TSIG
         keypair valid for the provided zone.
 
-   :returns: Add record DNS message.
-   :rtype: dns.message.Message
+    :returns: Add record DNS message.
+    :rtype: dns.message.Message
 
     """
     challenge_subdomain = "_acme-challenge.%s" % (zone)
@@ -50,17 +50,17 @@ def del_record(zone, token, keyring): # pylint: disable=unused-argument
     """Delete record DNS request generator.
 
     Create a `dns.message.Message` object asking the server to
-   delete a TXT record for the challenge subdomain
-   (`_acme-challenge.example.com`) signed by the provided
-   TSIG keyring.
+    delete a TXT record for the challenge subdomain
+    (`_acme-challenge.example.com`) signed by the provided
+    TSIG keyring.
 
-   :param str zone: Zone (domain) in which the record should exists.
-   :param str token: Not needed
-   :param dns.tsigkeyring keyring: TSIG keyring object containg TSIG
+    :param str zone: Zone (domain) in which the record should exists.
+    :param str token: Not needed
+    :param dns.tsigkeyring keyring: TSIG keyring object containg TSIG
         keypair valid for the provided zone.
 
-   :returns: Delete record DNS message.
-   :rtype: dns.message.Message
+    :returns: Delete record DNS message.
+    :rtype: dns.message.Message
 
     """
     challenge_subdomain = "_acme-challenge.%s" % (zone)
@@ -79,24 +79,24 @@ def send_request(
     """Generate and send request to DNS server.
 
     Generates a DNS message based on function passed as `gen_request`
-   (either `add_record` or `del_record`) and then sends it to the DNS
-   server specified by `server` at `port`. If the DNS request fails for
-   any reason `LetsEncryptDNSAuthError` willbe raised, otherwise `True`
-   will be returned.
+    (either :meth:`add_record` or :meth:`del_record`) and then sends it to
+    the DNS server specified by `server` at `port`. If the DNS request fails
+    for any reason `LetsEncryptDNSAuthError` willbe raised, otherwise `True`
+    will be returned.
 
-   :param function gen_request: Function (either `add_record` or `del_record`)
-        to use to generate the relevant DNS message.
-   :param str zone: Zone (domain) in which things will happen.
-   :param str token: Token provided by ACME server.
-   :param dns.tsigkeyring keyring: TSIG keyring object containg TSIG
+    :param function gen_request: Function (either :meth:`add_record` or
+        :meth:`del_record`) used to generate the relevant DNS message.
+    :param str zone: Zone (domain) in which things will happen.
+    :param str token: Token provided by ACME server.
+    :param dns.tsigkeyring keyring: TSIG keyring object containg TSIG
         keypair valid for the provided zone.
-   :param str server: Hostname or IP address of DNS server to make
+    :param str server: Hostname or IP address of DNS server to make
         requests to.
-   :param int port: Port the DNS server listens on.
+    :param int port: Port the DNS server listens on.
 
-   :returns: `True` if challenge subdomain is successfully
+    :returns: `True` if challenge subdomain is successfully
         provisioned.
-   :rtype: bool
+    :rtype: bool
 
     """
     dns_request = gen_request(zone, token, keyring)
