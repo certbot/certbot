@@ -3,7 +3,7 @@ Section: web
 Priority: optional
 Maintainer: Debian letsencrypt <letsencrypt-devel@lists.alioth.debian.org>
 Uploaders: Francois Marier <francois@debian.org>
-Build-Depends: debhelper (>= 9), python-all, dh-python
+Build-Depends: debhelper (>= 9), python-all, dh-python, python-m2crypto, python-zope.component, python-augeas, python-psutil, python-jsonschema, python-requests, python-nose, python-openssl, python-crypto, python-nosexcover, python-tox, python-mock
 Standards-Version: 3.9.6
 Homepage: https://www.letsencrypt.org/
 
