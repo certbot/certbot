@@ -73,6 +73,8 @@ class PerformCleanupTest(unittest.TestCase): # pylint: disable=too-many-public-m
             bad_dns_msg.set_rcode(rcode)
             self.bad_dns_msgs.append(bad_dns_msg)
 
+        self.dns_exceptions = [NoAnswer, UnexpectedSource, BadResponse, OSError]
+
     def test_chall_pref(self):
         self.assertEqual(
             self.authenticator.get_chall_pref("example.com"), [challenges.DNS])
@@ -121,7 +123,7 @@ class PerformCleanupTest(unittest.TestCase): # pylint: disable=too-many-public-m
                 )
 
         # query exceptions
-        for excep in [NoAnswer, UnexpectedSource, BadResponse, OSError]:
+        for excep in self.dns_exceptions:
             with mock.patch("dns.query.tcp") as query:
                 query.side_effect = excep
 
@@ -167,7 +169,7 @@ class PerformCleanupTest(unittest.TestCase): # pylint: disable=too-many-public-m
                 )
 
         # query exceptions
-        for excep in [NoAnswer, UnexpectedSource, BadResponse, OSError]:
+        for excep in self.dns_exceptions:
             with mock.patch("dns.query.tcp") as query:
                 query.side_effect = excep
 
