@@ -2,8 +2,7 @@
 import dns.query
 import dns.tsigkeyring
 import dns.update
-from dns.query import UnexpectedSource, BadResponse
-from dns.resolver import NoAnswer
+import dns.resolver
 
 import zope.interface
 
@@ -154,16 +153,20 @@ def send_request(
             raise errors.LetsEncryptDNSAuthError(
                 rcode_errors.get("DNS Error: %s" % (response.rcode())))
 
-    except (NoAnswer, UnexpectedSource, BadResponse,
-                OSError) as err: # TimeoutError doesn't exist in 2.7 afaik
+    except (
+        dns.resolver.NoAnswer,
+        dns.query.UnexpectedSource,
+        dns.query.BadResponse,
+        OSError
+    ) as err: # TimeoutError doesn't exist in 2.7 afaik
         # elif isinstance(err, TimeoutError):
         #     dns_error = "DNS Error: DNS request timed out!"
-        if isinstance(err, NoAnswer):
+        if isinstance(err, dns.resolver.NoAnswer):
             dns_error = "DNS Error: Did not recieve a response to DNS request!"
-        elif isinstance(err, UnexpectedSource):
+        elif isinstance(err, dns.query.UnexpectedSource):
             dns_error = ("DNS Error: Recieved response to DNS request from "
                          "unexpected source!")
-        elif isinstance(err, BadResponse):
+        elif isinstance(err, dns.query.BadResponse):
             dns_error = ("DNS Error: Recieved malformed response to DNS "
                          "request!")
         elif isinstance(err, OSError):
@@ -202,6 +205,8 @@ class DNSAuthenticator(object):
         """
         if not achalls or not isinstance(achalls, list):
             raise ValueError(".perform() was called without challenge list")
+        if not self.dns_tsig_keys:
+            raise errors.LetsEncryptDNSAuthError("No TSIG keys provided.")
         responses = []
         for achall in achalls:
             if isinstance(achall, achallenges.DNS):
@@ -232,6 +237,8 @@ class DNSAuthenticator(object):
         """
         if not achalls or not isinstance(achalls, list):
             raise ValueError(".cleanup() was called without challenge list")
+        if not self.dns_tsig_keys:
+            raise errors.LetsEncryptDNSAuthError("No TSIG keys provided.")
         for achall in achalls:
             if isinstance(achall, achallenges.DNS):
                 zone = achall.domain

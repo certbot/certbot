@@ -98,7 +98,7 @@ def create_parser():
 
     add("--dns-server", default="localhost", help=config_help("dns_server"))
     add("--dns-server-port", default=53, help=config_help("dns_server_port"))
-    add("--dns-tsig-keys", default=[], type=split_tsig_keys, help=config_help("dns_tsig_keys"))
+    add("--dns-tsig-keys", nargs="+", type=split_tsig_keys, help=config_help("dns_tsig_keys"))
 
     return parser
 
@@ -230,11 +230,12 @@ def split_tsig_keys(packed):
     :rtype: tuple
 
     :raises argparse.ArgumentTypeError: Packed TSIG key is in incorrect format."""
+    if not packed:
+        raise argparse.ArgumentTypeError("No TSIG keys provided.")
     packed = packed.split(",")
     if len(packed) < 3:
         raise argparse.ArgumentTypeError("Provided TSIG key is in incorrect format.")
-    (key_name, secret, domains) = packed[0], packed[1], packed[2:]
-    return key_name, secret, domains
+    return packed[0], packed[1], packed[2:]
 
 
 if __name__ == "__main__":

@@ -4,8 +4,8 @@ import unittest
 import mock
 
 import dns.message
-from dns.query import UnexpectedSource, BadResponse
-from dns.resolver import NoAnswer
+import dns.query
+import dns.resolver
 
 from letsencrypt.acme import challenges
 
@@ -73,7 +73,12 @@ class PerformCleanupTest(unittest.TestCase): # pylint: disable=too-many-public-m
             bad_dns_msg.set_rcode(rcode)
             self.bad_dns_msgs.append(bad_dns_msg)
 
-        self.dns_exceptions = [NoAnswer, UnexpectedSource, BadResponse, OSError]
+        self.dns_exceptions = [
+            dns.resolver.NoAnswer,
+            dns.query.UnexpectedSource,
+            dns.query.BadResponse,
+            OSError
+        ]
 
     def test_chall_pref(self):
         self.assertEqual(
@@ -115,6 +120,17 @@ class PerformCleanupTest(unittest.TestCase): # pylint: disable=too-many-public-m
                     [self.achalls[0]]
                 )
 
+        # query exceptions
+        for excep in self.dns_exceptions:
+            with mock.patch("dns.query.tcp") as query:
+                query.side_effect = excep
+
+                self.assertRaises(
+                    errors.LetsEncryptDNSAuthError,
+                    self.authenticator.perform,
+                    [self.achalls[0]]
+                )
+
         # no TSIG key
         self.assertRaises(
                     ValueError,
@@ -122,12 +138,14 @@ class PerformCleanupTest(unittest.TestCase): # pylint: disable=too-many-public-m
                     [self.achalls[4]]
                 )
 
-        # query exceptions
-        for excep in self.dns_exceptions:
-            with mock.patch("dns.query.tcp") as query:
-                query.side_effect = excep
-
-                self.assertRaises(
+        # no TSIG keys at all
+        from letsencrypt.client.dns_authenticator import DNSAuthenticator
+        self.authenticator = DNSAuthenticator(mock.MagicMock(
+            dns_server="localhost",
+            dns_server_port=53,
+            dns_tsig_keys=None
+        ))
+        self.assertRaises(
                     errors.LetsEncryptDNSAuthError,
                     self.authenticator.perform,
                     [self.achalls[0]]
@@ -161,13 +179,6 @@ class PerformCleanupTest(unittest.TestCase): # pylint: disable=too-many-public-m
                     [self.achalls[0]]
                 )
 
-        # no TSIG key
-        self.assertRaises(
-                    ValueError,
-                    self.authenticator.cleanup,
-                    [self.achalls[4]]
-                )
-
         # query exceptions
         for excep in self.dns_exceptions:
             with mock.patch("dns.query.tcp") as query:
@@ -176,6 +187,26 @@ class PerformCleanupTest(unittest.TestCase): # pylint: disable=too-many-public-m
                 self.assertRaises(
                     errors.LetsEncryptDNSAuthError,
                     self.authenticator.perform,
+                    [self.achalls[0]]
+                )
+
+        # no TSIG key
+        self.assertRaises(
+                    ValueError,
+                    self.authenticator.cleanup,
+                    [self.achalls[4]]
+                )
+
+        # no TSIG keys at all
+        from letsencrypt.client.dns_authenticator import DNSAuthenticator
+        self.authenticator = DNSAuthenticator(mock.MagicMock(
+            dns_server="localhost",
+            dns_server_port=53,
+            dns_tsig_keys=None
+        ))
+        self.assertRaises(
+                    errors.LetsEncryptDNSAuthError,
+                    self.authenticator.cleanup,
                     [self.achalls[0]]
                 )
 
