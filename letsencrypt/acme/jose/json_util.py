@@ -30,13 +30,7 @@ class Field(object):
     :class:`~letsencrypt.acme.jose.errors.SerializationError`
     (:class:`~letsencrypt.acme.jose.errors.DeserializationError`).
 
-    For greater flexibility, ``encoder2`` and ``decoder2`` accept two
-    parameters: the whole object ("``self``" in case of encoding, and
-    JSON serialized object ``jobj`` in case of decoding) and the value
-    to be encoded/decoded.
-
-    Note, that ``decoder`` and ``decoder2`` should perform partial
-    serialization only.
+    Note, that ``decoder`` should perform partial serialization only.
 
     :ivar str json_name: Name of the field when encoded to JSON.
     :ivar default: Default value (used when not present in JSON object).
@@ -52,14 +46,12 @@ class Field(object):
                  'fdec', 'fenc', 'fdec2', 'fenc2')
 
     def __init__(self, json_name, default=None, omitempty=False,
-                 decoder=None, encoder=None, decoder2=None, encoder2=None):
+                 decoder=None, encoder=None):
         # pylint: disable=too-many-arguments
         self.json_name = json_name
         self.default = default
         self.omitempty = omitempty
 
-        self.fdec2 = decoder2
-        self.fenc2 = encoder2
         self.fdec = self.default_decoder if decoder is None else decoder
         self.fenc = self.default_encoder if encoder is None else encoder
 
@@ -80,37 +72,24 @@ class Field(object):
     def _update_params(self, **kwargs):
         current = dict(json_name=self.json_name, default=self.default,
                        omitempty=self.omitempty,
-                       decoder=self.fdec, encoder=self.fenc,
-                       decoder2=self.fdec2, encoder2=self.fenc2)
+                       decoder=self.fdec, encoder=self.fenc)
         current.update(kwargs)
         return type(self)(**current)  # pylint: disable=star-args
 
     def decoder(self, fdec):
         """Descriptor to change the decoder on JSON object field."""
-        return self._update_params(decoder=fdec, decoder2=None)
+        return self._update_params(decoder=fdec)
 
     def encoder(self, fenc):
         """Descriptor to change the encoder on JSON object field."""
-        return self._update_params(encoder=fenc, encoder2=None)
+        return self._update_params(encoder=fenc)
 
-    def decoder2(self, fdec2):
-        """Descriptor to change the decoder2 on JSON object field."""
-        return self._update_params(decoder2=fdec2, decoder=None)
-
-    def encoder2(self, fenc2):
-        """Descriptor to change the encoder2 on JSON object field."""
-        return self._update_params(encoder2=fenc2, encoder=None)
-
-    def decode(self, value, jobj=None):
+    def decode(self, value):
         """Decode a value, optionally with context JSON object."""
-        if self.fdec2 is not None:
-            return self.fdec2(jobj, value)
         return self.fdec(value)
 
-    def encode(self, value, obj=None):
+    def encode(self, value):
         """Encode a value, optionally with context JSON object."""
-        if self.fenc2 is not None:
-            return self.fenc2(obj, value)
         return self.fenc(value)
 
     @classmethod
@@ -241,7 +220,7 @@ class JSONObjectWithFields(util.ImmutableMap, interfaces.JSONDeSerializable):
                 logging.debug('Ommiting empty field "%s" (%s)', slot, value)
             else:
                 try:
-                    jobj[field.json_name] = field.encode(value, self)
+                    jobj[field.json_name] = field.encode(value)
                 except errors.SerializationError as error:
                     raise errors.SerializationError(
                         'Could not encode {0} ({1}): {2}'.format(
@@ -274,7 +253,7 @@ class JSONObjectWithFields(util.ImmutableMap, interfaces.JSONDeSerializable):
             else:
                 value = jobj[field.json_name]
                 try:
-                    fields[slot] = field.decode(value, jobj)
+                    fields[slot] = field.decode(value)
                 except errors.DeserializationError as error:
                     raise errors.DeserializationError(
                         'Could not decode {0!r} ({1!r}): {2}'.format(
