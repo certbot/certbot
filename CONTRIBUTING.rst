@@ -4,10 +4,14 @@ Hacking
 =======
 
 In order to start hacking, you will first have to create a development
-environment:
+environment. Start by installing the required system packages:
 
 ::
+    sudo apt-get install python-2.7 python-pip swig  
 
+Now you can install the development packages in your virtualenv:
+
+::
     ./venv/bin/python setup.py dev
 
 The code base, including your pull requests, **must** have 100% test statement
