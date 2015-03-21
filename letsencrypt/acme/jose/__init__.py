@@ -6,6 +6,7 @@ particular the following RFCs:
 
   - `JSON Web Algorithms (JWA)`_
   - `JSON Web Key (JWK)`_
+  - `JSON Web Signature (JWS)`_
 
 
 .. _`Javascript Object Signing and Encryption (Active WG)`:
@@ -16,6 +17,9 @@ particular the following RFCs:
 
 .. _`JSON Web Key (JWK)`:
   https://datatracker.ietf.org/doc/draft-ietf-jose-json-web-key/
+
+.. _`JSON Web Signature (JWS)`:
+  https://datatracker.ietf.org/doc/draft-ietf-jose-json-web-signature/
 
 """
 from letsencrypt.acme.jose.b64 import (
@@ -61,6 +65,8 @@ from letsencrypt.acme.jose.jwk import (
     JWK,
     JWKRSA,
 )
+
+from letsencrypt.acme.jose.jws import JWS
 
 from letsencrypt.acme.jose.util import (
     ComparableX509,

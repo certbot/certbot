@@ -29,6 +29,13 @@ class JWKOctTest(unittest.TestCase):
         from letsencrypt.acme.jose.jwk import JWKOct
         self.assertEqual(self.jwk, JWKOct.from_json(self.jobj))
 
+    def test_load(self):
+        from letsencrypt.acme.jose.jwk import JWKOct
+        self.assertEqual(self.jwk, JWKOct.load('foo'))
+
+    def test_public(self):
+        self.assertTrue(self.jwk.public() is self.jwk)
+
 
 class JWKRSATest(unittest.TestCase):
     """Tests for letsencrypt.acme.jose.jwk.JWKRSA."""
@@ -36,6 +43,7 @@ class JWKRSATest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.acme.jose.jwk import JWKRSA
         self.jwk256 = JWKRSA(key=RSA256_KEY.publickey())
+        self.jwk256_private = JWKRSA(key=RSA256_KEY)
         self.jwk256json = {
             'kty': 'RSA',
             'e': 'AQAB',
@@ -64,6 +72,9 @@ class JWKRSATest(unittest.TestCase):
             pkg_resources.resource_string(
                 'letsencrypt.client.tests',
                 os.path.join('testdata', 'rsa256_key.pem'))))
+
+    def test_public(self):
+        self.assertEqual(self.jwk256, self.jwk256_private.public())
 
     def test_to_json(self):
         self.assertEqual(self.jwk256.to_json(), self.jwk256json)

@@ -1,4 +1,5 @@
 """JSON Web Key."""
+import abc
 import binascii
 
 import Crypto.PublicKey.RSA
@@ -6,6 +7,7 @@ import Crypto.PublicKey.RSA
 from letsencrypt.acme.jose import b64
 from letsencrypt.acme.jose import errors
 from letsencrypt.acme.jose import json_util
+from letsencrypt.acme.jose import util
 
 
 class JWK(json_util.TypedJSONObjectWithFields):
@@ -13,6 +15,20 @@ class JWK(json_util.TypedJSONObjectWithFields):
     """JSON Web Key."""
     type_field_name = 'kty'
     TYPES = {}
+
+    @util.abstractclassmethod
+    def load(cls, string):  # pragma: no cover
+        """Load key from normalized string form."""
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def public(self):  # pragma: no cover
+        """Generate JWK with public key.
+
+        For symmetric cryptosystems, this would return ``self``.
+
+        """
+        raise NotImplementedError()
 
 
 @JWK.register
@@ -32,6 +48,13 @@ class JWKES(JWK):  # pragma: no cover
     def fields_from_json(cls, jobj):
         raise NotImplementedError()
 
+    @classmethod
+    def load(cls, string):
+        raise NotImplementedError()
+
+    def public(self):
+        raise NotImplementedError()
+
 
 @JWK.register
 class JWKOct(JWK):
@@ -49,6 +72,13 @@ class JWKOct(JWK):
     @classmethod
     def fields_from_json(cls, jobj):
         return cls(key=jobj['k'])
+
+    @classmethod
+    def load(cls, string):
+        return cls(key=string)
+
+    def public(self):
+        return self
 
 
 @JWK.register
@@ -75,16 +105,19 @@ class JWKRSA(JWK):
             raise errors.DeserializationError()
 
     @classmethod
-    def load(cls, key):
+    def load(cls, string):
         """Load RSA key from string.
 
-        :param str key: RSA key in string form.
+        :param str string: RSA key in string form.
 
         :returns:
         :rtype: :class:`JWKRSA`
 
         """
-        return cls(key=Crypto.PublicKey.RSA.importKey(key))
+        return cls(key=Crypto.PublicKey.RSA.importKey(string))
+
+    def public(self):
+        return type(self)(key=self.key.publickey())
 
     @classmethod
     def fields_from_json(cls, jobj):
@@ -97,4 +130,3 @@ class JWKRSA(JWK):
             'n': self._encode_param(self.key.n),
             'e': self._encode_param(self.key.e),
         }
-
