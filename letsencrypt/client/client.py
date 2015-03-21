@@ -10,7 +10,7 @@ from letsencrypt.acme import messages
 from letsencrypt.acme import util as acme_util
 
 from letsencrypt.client import auth_handler
-from letsencrypt.client import client_authenticator
+from letsencrypt.client import continuity_authenticator
 from letsencrypt.client import crypto_util
 from letsencrypt.client import errors
 from letsencrypt.client import le_util
@@ -33,7 +33,7 @@ class Client(object):
     :type authkey: :class:`letsencrypt.client.le_util.Key`
 
     :ivar auth_handler: Object that supports the IAuthenticator interface.
-        auth_handler contains both a dv_authenticator and a client_authenticator
+        auth_handler contains both a dv_authenticator and a continuity_authenticator
     :type auth_handler: :class:`letsencrypt.client.auth_handler.AuthHandler`
 
     :ivar installer: Object supporting the IInstaller interface.
@@ -60,7 +60,7 @@ class Client(object):
         self.config = config
 
         if dv_auth is not None:
-            client_auth = client_authenticator.ClientAuthenticator(config)
+            client_auth = continuity_authenticator.ContinuityAuthenticator(config)
             self.auth_handler = auth_handler.AuthHandler(
                 dv_auth, client_auth, self.network)
         else:

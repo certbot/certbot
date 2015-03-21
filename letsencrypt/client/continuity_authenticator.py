@@ -9,7 +9,7 @@ from letsencrypt.client import interfaces
 from letsencrypt.client import recovery_token
 
 
-class ClientAuthenticator(object):
+class ContinuityAuthenticator(object):
     """IAuthenticator for
     :const:`~letsencrypt.client.constants.CLIENT_CHALLENGES`.
 
