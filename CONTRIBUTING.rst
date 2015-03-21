@@ -4,14 +4,16 @@ Hacking
 =======
 
 In order to start hacking, you will first have to create a development
-environment:
+environment. Start by `installing dependencies and setting up Let's Encrypt`_.
+
+Now you can install the development packages:
 
 ::
 
     ./venv/bin/python setup.py dev
 
 The code base, including your pull requests, **must** have 100% test statement
-coverage **and** be compliant with the :ref:`coding-style`.
+coverage **and** be compliant with the coding-style_.
 
 The following tools are there to help you:
 
@@ -23,9 +25,9 @@ The following tools are there to help you:
 - ``./venv/bin/tox -e lint`` checks the style of the whole project,
   while ``./venv/bin/pylint --rcfile=.pylintrc file`` will check a single `file` only.
 
+.. _installing dependencies and setting up Let's Encrypt: https://letsencrypt.readthedocs.org/en/latest/using.html
 
 .. _coding-style:
-
 Coding style
 ============
 
