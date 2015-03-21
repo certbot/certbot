@@ -21,8 +21,6 @@ class FieldTest(unittest.TestCase):
     """Tests for letsencrypt.acme.jose.json_util.Field."""
 
     def test_descriptors(self):
-        mock_jobj = mock.MagicMock()
-        mock_obj = mock.MagicMock()
         mock_value = mock.MagicMock()
 
         # pylint: disable=missing-docstring
@@ -33,36 +31,15 @@ class FieldTest(unittest.TestCase):
         def encoder(unused_value):
             return 'e'
 
-        def decoder2(jobj, unused_value):
-            self.assertTrue(jobj is mock_jobj)
-            return 'd2'
-
-        def encoder2(obj, unused_value):
-            self.assertTrue(obj is mock_obj)
-            return 'e2'
-
         from letsencrypt.acme.jose.json_util import Field
-        field = Field('foo', decoder=decoder, encoder=encoder,
-                      decoder2=decoder2, encoder2=encoder2)
-
-        self.assertEqual('e2', field.encode(mock_value, mock_obj))
-        self.assertEqual('d2', field.decode(mock_value, mock_jobj))
+        field = Field('foo')
 
         field = field.encoder(encoder)
-        self.assertEqual('e', field.encode(mock_value, mock_obj))
-        self.assertEqual('d2', field.decode(mock_value, mock_jobj))
+        self.assertEqual('e', field.encode(mock_value))
 
         field = field.decoder(decoder)
-        self.assertEqual('e', field.encode(mock_value, mock_obj))
-        self.assertEqual('d', field.decode(mock_value, mock_jobj))
-
-        field = field.encoder2(encoder2)
-        self.assertEqual('e2', field.encode(mock_value, mock_obj))
-        self.assertEqual('d', field.decode(mock_value, mock_jobj))
-
-        field = field.decoder2(decoder2)
-        self.assertEqual('e2', field.encode(mock_value, mock_obj))
-        self.assertEqual('d2', field.decode(mock_value, mock_jobj))
+        self.assertEqual('e', field.encode(mock_value))
+        self.assertEqual('d', field.decode(mock_value))
 
     def test_default_encoder_is_partial(self):
         class MockField(interfaces.JSONDeSerializable):

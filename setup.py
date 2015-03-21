@@ -40,7 +40,9 @@ install_requires = [
 ]
 
 dev_extras = [
-    'pylint>=1.4.0',  # upstream #248
+    # Pin astroid==1.3.5, pylint==1.4.2 as a workaround for #289
+    'astroid==1.3.5',
+    'pylint==1.4.2',  # upstream #248
 ]
 
 docs_extras = [
