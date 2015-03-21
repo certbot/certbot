@@ -8,3 +8,4 @@ venv/
 m3
 *~
 .vagrant
+*.swp

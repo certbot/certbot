@@ -57,6 +57,7 @@ Current Features
 * web servers supported:
 
   - apache2.x (tested and working on Ubuntu Linux)
+  - standalone (runs its own webserver to prove you control the domain)
 
 * the private key is generated locally on your system
 * can talk to the Let's Encrypt (demo) CA or optionally to other ACME
@@ -78,6 +79,8 @@ Links
 Documentation: https://letsencrypt.readthedocs.org/
 
 Software project: https://github.com/letsencrypt/lets-encrypt-preview
+
+Notes for developers: [CONTRIBUTING.rst](/CONTRIBUTING.rst)
 
 Main Website: https://letsencrypt.org/
 
