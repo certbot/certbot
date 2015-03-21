@@ -12,4 +12,5 @@ RUN \
   virtualenv --no-site-packages -p python2 venv && \
   ./venv/bin/python setup.py install
 
+ENV DOCKER_RUN True
 ENTRYPOINT [ "./venv/bin/letsencrypt", "--text" ]

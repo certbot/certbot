@@ -336,7 +336,8 @@ def init_csr(privkey, names, cert_dir):
     csr_pem, csr_der = crypto_util.make_csr(privkey.pem, names)
 
     # Save CSR
-    le_util.make_or_verify_dir(cert_dir, 0o755)
+    if not os.environ.get('DOCKER_RUN'):
+	le_util.make_or_verify_dir(cert_dir, 0o755)
     csr_f, csr_filename = le_util.unique_file(
         os.path.join(cert_dir, "csr-letsencrypt.pem"), 0o644)
     csr_f.write(csr_pem)
