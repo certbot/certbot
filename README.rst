@@ -80,6 +80,8 @@ Documentation: https://letsencrypt.readthedocs.org/
 
 Software project: https://github.com/letsencrypt/lets-encrypt-preview
 
+Notes for developers: [CONTRIBUTING.rst](/CONTRIBUTING.rst)
+
 Main Website: https://letsencrypt.org/
 
 IRC Channel: #letsencrypt on `Freenode`_
