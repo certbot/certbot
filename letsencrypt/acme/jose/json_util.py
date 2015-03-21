@@ -42,8 +42,7 @@ class Field(object):
         deserializing.
 
     """
-    __slots__ = ('json_name', 'default', 'omitempty',
-                 'fdec', 'fenc', 'fdec2', 'fenc2')
+    __slots__ = ('json_name', 'default', 'omitempty', 'fdec', 'fenc')
 
     def __init__(self, json_name, default=None, omitempty=False,
                  decoder=None, encoder=None):
