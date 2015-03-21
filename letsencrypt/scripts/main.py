@@ -108,7 +108,6 @@ def main():  # pylint: disable=too-many-branches, too-many-statements
     # note: arg parser internally handles --help (and exits afterwards)
     args = create_parser().parse_args()
     config = configuration.NamespaceConfig(args)
-
     # note: check is done after arg parsing as --help should work w/o root also.
     if not os.geteuid() == 0:
         sys.exit(
@@ -144,7 +143,7 @@ def main():  # pylint: disable=too-many-branches, too-many-statements
     all_auths = [
         configurator.ApacheConfigurator(config),
         standalone.StandaloneAuthenticator(),
-        dns.DNSAuthenticator(config)
+        dns.DNSAuthenticator(config),
     ]
     try:
         auth = client.determine_authenticator(all_auths)
@@ -224,18 +223,23 @@ def split_tsig_keys(packed):
     """Returns the unpacked TSIG key name, secret, and a list of domains from
     the argument format.
 
-    :param str packed: Packed
+    :param str packed: TSIG key in the format "key-name,key-secret,domains+"
 
     :returns: A tuple of key name, secret, and a list of domains
     :rtype: tuple
 
-    :raises argparse.ArgumentTypeError: Packed TSIG key is in incorrect format."""
-    if not packed:
+    :raises argparse.ArgumentTypeError: Packed TSIG key is in incorrect format.
+
+    """
+    print(packed)
+    # if --dns-tsig-keys "" called... you never know
+    if packed is "":
         raise argparse.ArgumentTypeError("No TSIG keys provided.")
-    packed = packed.split(",")
-    if len(packed) < 3:
-        raise argparse.ArgumentTypeError("Provided TSIG key is in incorrect format.")
-    return packed[0], packed[1], packed[2:]
+    unpacked = packed.split(",")
+    if len(unpacked) < 3:
+        raise argparse.ArgumentTypeError(
+            "Provided TSIG key is in incorrect format.")
+    return unpacked[0], unpacked[1], unpacked[2:]
 
 
 if __name__ == "__main__":

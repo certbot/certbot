@@ -6,6 +6,7 @@ import mock
 import dns.message
 import dns.query
 import dns.resolver
+import dns.rcode
 
 from letsencrypt.acme import challenges
 
@@ -23,17 +24,16 @@ class PerformCleanupTest(unittest.TestCase): # pylint: disable=too-many-public-m
             dns_server="localhost",
             dns_server_port=53,
             dns_tsig_keys=[
-                ["example.key",
-                "+Cdjlkef9ZTSeixERZ433Q==",
                 [
-                    "example.com",
-                    "final-example.com"
-                ]],
-                ["other-example.key",
-                "+Lkalkef7EdSeixZXC433Q==",
+                    "example.key",
+                    "+Cdjlkef9ZTSeixERZ433Q==",
+                    ["example.com", "final-example.com"]
+                ],
                 [
-                    "other-example.com"
-                ]]
+                    "other-example.key",
+                    "+Lkalkef7EdSeixZXC433Q==",
+                    ["other-example.com"]
+                ]
             ]
         ))
 
@@ -50,7 +50,6 @@ class PerformCleanupTest(unittest.TestCase): # pylint: disable=too-many-public-m
             domain="final-example.com"
         )
 
-        bad_chall = ("this", "isnt", "a", "dns", "challenge")
         no_key_chall = achallenges.DNS(
             chall=challenges.DNS(token="17817c66b60ce2e4012dfad92657527"),
             domain="no-key-example.com"
@@ -60,15 +59,27 @@ class PerformCleanupTest(unittest.TestCase): # pylint: disable=too-many-public-m
             good_chall,
             second_good_chall,
             third_good_chall,
-            bad_chall,
-            no_key_chall
+            no_key_chall,
         ]
 
         self.good_dns_msg = dns.message.Message()
-        self.good_dns_msg.set_rcode(0)
+        self.good_dns_msg.set_rcode(dns.rcode.NOERROR)
 
         self.bad_dns_msgs = []
-        for rcode in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 16, 17]:
+        bad_rcodes = [
+            dns.rcode.FORMERR,
+            dns.rcode.SERVFAIL,
+            dns.rcode.NXDOMAIN,
+            dns.rcode.NOTIMP,
+            dns.rcode.REFUSED,
+            dns.rcode.YXDOMAIN,
+            dns.rcode.YXRRSET,
+            dns.rcode.NXRRSET,
+            dns.rcode.NOTAUTH,
+            dns.rcode.NOTZONE,
+            dns.rcode.BADVERS,
+        ]
+        for rcode in bad_rcodes:
             bad_dns_msg = dns.message.Message()
             bad_dns_msg.set_rcode(rcode)
             self.bad_dns_msgs.append(bad_dns_msg)
@@ -77,7 +88,7 @@ class PerformCleanupTest(unittest.TestCase): # pylint: disable=too-many-public-m
             dns.resolver.NoAnswer,
             dns.query.UnexpectedSource,
             dns.query.BadResponse,
-            OSError
+            OSError,
         ]
 
     def test_chall_pref(self):
@@ -100,15 +111,6 @@ class PerformCleanupTest(unittest.TestCase): # pylint: disable=too-many-public-m
                 isinstance(results[2], challenges.ChallengeResponse))
 
     def test_bad_challs_perform(self):
-        # no challenges
-        self.assertRaises(ValueError, self.authenticator.perform, [])
-        # invalid challenge
-        self.assertRaises(
-            errors.LetsEncryptDNSAuthError,
-            self.authenticator.perform,
-            [self.achalls[3]]
-        )
-
         # bad DNS message responses
         for bad_dns_msg in self.bad_dns_msgs:
             with mock.patch("dns.query.tcp") as query:
@@ -133,22 +135,9 @@ class PerformCleanupTest(unittest.TestCase): # pylint: disable=too-many-public-m
 
         # no TSIG key
         self.assertRaises(
-                    ValueError,
-                    self.authenticator.perform,
-                    [self.achalls[4]]
-                )
-
-        # no TSIG keys at all
-        from letsencrypt.client.dns_authenticator import DNSAuthenticator
-        self.authenticator = DNSAuthenticator(mock.MagicMock(
-            dns_server="localhost",
-            dns_server_port=53,
-            dns_tsig_keys=None
-        ))
-        self.assertRaises(
                     errors.LetsEncryptDNSAuthError,
                     self.authenticator.perform,
-                    [self.achalls[0]]
+                    [self.achalls[3]]
                 )
 
     def test_good_cleanup(self):
@@ -158,16 +147,6 @@ class PerformCleanupTest(unittest.TestCase): # pylint: disable=too-many-public-m
             self.authenticator.cleanup(self.achalls[:3])
 
     def test_bad_challs_cleanup(self):
-        # no challenges
-        self.assertRaises(ValueError, self.authenticator.cleanup, [])
-
-        # invalid challenge
-        self.assertRaises(
-            errors.LetsEncryptDNSAuthError,
-            self.authenticator.cleanup,
-            [self.achalls[3]]
-        )
-
         # bad DNS message responses
         for bad_dns_msg in self.bad_dns_msgs:
             with mock.patch("dns.query.tcp") as query:
@@ -192,23 +171,24 @@ class PerformCleanupTest(unittest.TestCase): # pylint: disable=too-many-public-m
 
         # no TSIG key
         self.assertRaises(
-                    ValueError,
+                    errors.LetsEncryptDNSAuthError,
                     self.authenticator.cleanup,
-                    [self.achalls[4]]
+                    [self.achalls[3]]
                 )
 
+    def test_no_tsig_keys(self):
         # no TSIG keys at all
         from letsencrypt.client.dns_authenticator import DNSAuthenticator
-        self.authenticator = DNSAuthenticator(mock.MagicMock(
+        magic = mock.MagicMock(
             dns_server="localhost",
             dns_server_port=53,
             dns_tsig_keys=None
-        ))
+        )
         self.assertRaises(
-                    errors.LetsEncryptDNSAuthError,
-                    self.authenticator.cleanup,
-                    [self.achalls[0]]
-                )
+            errors.LetsEncryptDNSAuthError,
+            DNSAuthenticator,
+            magic
+        )
 
 
 if __name__ == '__main__':

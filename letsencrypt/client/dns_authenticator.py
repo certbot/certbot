@@ -1,8 +1,8 @@
 """DNS Authenticator"""
 import dns.query
+import dns.resolver
 import dns.tsigkeyring
 import dns.update
-import dns.resolver
 
 import zope.interface
 
@@ -13,10 +13,11 @@ from letsencrypt.client import constants
 from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 
+
 def find_valid_key(tsig_keys, domain):
     """Search provided TSIG key pairs.
 
-    Search the keypairs in `config.dns_tsig_keys` for one valid for the
+    Search the keypairs provided on the CLI for one valid for the
     provided `domain`.
 
     :param list tsig_keys: List of tuples containing key name, key secret,
@@ -50,7 +51,7 @@ def add_record(zone, token, keyring):
     :rtype: dns.message.Message
 
     """
-    challenge_subdomain = "_acme-challenge.%s" % (zone)
+    challenge_subdomain = challenges.DNS.txt_subdomain(zone)
 
     challenge_request = dns.update.Update(zone, keyring=keyring)
     # check challenge_subdomain is absent
@@ -79,8 +80,7 @@ def del_record(zone, token, keyring): # pylint: disable=unused-argument
     :rtype: dns.message.Message
 
     """
-    challenge_subdomain = "_acme-challenge.%s" % (zone)
-
+    challenge_subdomain = challenges.DNS.txt_subdomain(zone)
     challenge_request = dns.update.Update(zone, keyring=keyring)
     # check challenge_subdomain is present
     challenge_request.present(challenge_subdomain)
@@ -125,11 +125,11 @@ def send_request(
         4: 'DNS server does not support that opcode',
         5: ('DNS server refuses to perform the specified '
             'operation for policy or security reasons'),
-        6: 'Name exists when it should not (_acme-challenge.%s)' % (zone),
-        7: ('Records that should not exist do exist (_acme-challenge.%s)'
-            % (zone)),
-        8: ('Records that should exist do not exist (_acme-challenge.%s)'
-            % (zone)),
+        6: 'Name exists when it should not (%s)' % challenges.DNS.txt_subdomain(zone),
+        7: ('Records that should not exist do exist (%s)'
+            % challenges.DNS.txt_subdomain(zone)),
+        8: ('Records that should exist do not exist (%s)'
+            % challenges.DNS.txt_subdomain(zone)),
         9: ('Server is not authorized or is using bad TSIG key to '
             'make updates to zone "%s"' % (zone)),
         10: ('Zone "%s" does not exist' % (zone)),
@@ -190,6 +190,9 @@ class DNSAuthenticator(object):
         self.dns_server_port = config.dns_server_port
         self.dns_tsig_keys = config.dns_tsig_keys
 
+        if self.dns_tsig_keys is None:
+            raise errors.LetsEncryptDNSAuthError("No TSIG keys provided.")
+
     @staticmethod
     def get_chall_pref(unused_domain):
         """Get challenge preferences.
@@ -200,62 +203,44 @@ class DNSAuthenticator(object):
         return [challenges.DNS]
 
     def perform(self, achalls):
-        """Perform the challenges.
-
-        """
-        if not achalls or not isinstance(achalls, list):
-            raise ValueError(".perform() was called without challenge list")
-        if not self.dns_tsig_keys:
-            raise errors.LetsEncryptDNSAuthError("No TSIG keys provided.")
+        """Perform the challenges."""
         responses = []
         for achall in achalls:
-            if isinstance(achall, achallenges.DNS):
-                zone = achall.domain
-                token = achall.token
-                tsig_keyring = find_valid_key(self.dns_tsig_keys, zone)
-                if not tsig_keyring:
-                    raise ValueError(
-                        "No TSIG keypair provided for %s" % (zone))
+            zone = achall.domain
+            token = achall.token
+            tsig_keyring = find_valid_key(self.dns_tsig_keys, zone)
+            if not tsig_keyring:
+                raise errors.LetsEncryptDNSAuthError(
+                    "No TSIG keypair provided for %s" % (zone))
 
-                # send request
-                if send_request(
-                    add_record,
-                    zone,
-                    token,
-                    tsig_keyring,
-                    self.dns_server,
-                    self.dns_server_port
-                ):
-                    responses.append(challenges.DNSResponse())
-            else:
-                raise errors.LetsEncryptDNSAuthError("Unexpected Challenge")
+            # send request
+            if send_request(
+                add_record,
+                zone,
+                token,
+                tsig_keyring,
+                self.dns_server,
+                self.dns_server_port
+            ):
+                responses.append(challenges.DNSResponse())
         return responses
 
     def cleanup(self, achalls):
-        """Clean up, remove all challenge subdomains that were provisioned.
-
-        """
-        if not achalls or not isinstance(achalls, list):
-            raise ValueError(".cleanup() was called without challenge list")
-        if not self.dns_tsig_keys:
-            raise errors.LetsEncryptDNSAuthError("No TSIG keys provided.")
+        """Clean up, remove all challenge subdomains that were provisioned."""
         for achall in achalls:
-            if isinstance(achall, achallenges.DNS):
-                zone = achall.domain
-                token = achall.token
-                tsig_keyring = find_valid_key(self.dns_tsig_keys, zone)
-                if not tsig_keyring:
-                    raise ValueError(
-                        "No TSIG keypair provided for %s" % (zone))
+            zone = achall.domain
+            token = achall.token
+            tsig_keyring = find_valid_key(self.dns_tsig_keys, zone)
+            if not tsig_keyring:
+                raise errors.LetsEncryptDNSAuthError(
+                    "No TSIG keypair provided for %s" % (zone))
 
-                # send it, raises error on absent records etc...
-                send_request(
-                    del_record,
-                    zone,
-                    token,
-                    tsig_keyring,
-                    self.dns_server,
-                    self.dns_server_port
-                )
-            else:
-                raise errors.LetsEncryptDNSAuthError("Unexpected Challenge")
+            # send it, raises error on absent records etc...
+            send_request(
+                del_record,
+                zone,
+                token,
+                tsig_keyring,
+                self.dns_server,
+                self.dns_server_port
+            )
