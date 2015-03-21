@@ -5,6 +5,12 @@ import re
 
 from setuptools import setup
 
+# Workaround for http://bugs.python.org/issue8876, see
+# http://bugs.python.org/issue8876#msg208792
+# This can be removed when using Python 2.7.9 or later:
+# https://hg.python.org/cpython/raw-file/v2.7.9/Misc/NEWS
+if os.path.abspath(__file__).split(os.path.sep)[1] == 'vagrant':
+    del os.link
 
 def read_file(filename, encoding='utf8'):
     """Read unicode from given file."""
@@ -41,7 +47,9 @@ install_requires = [
 ]
 
 dev_extras = [
-    'pylint>=1.4.0',  # upstream #248
+    # Pin astroid==1.3.5, pylint==1.4.2 as a workaround for #289
+    'astroid==1.3.5',
+    'pylint==1.4.2',  # upstream #248
 ]
 
 docs_extras = [

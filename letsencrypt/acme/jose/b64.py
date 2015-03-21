@@ -1,13 +1,19 @@
-"""JOSE."""
-import base64
+"""JOSE Base64.
 
-# https://tools.ietf.org/html/draft-ietf-jose-json-web-signature-37#appendix-C
-#
-# Jose Base64:
-#
-#   - URL-safe Base64
-#
-#   - padding stripped
+`JOSE Base64`_ is defined as:
+
+  - URL-safe Base64
+  - padding stripped
+
+
+.. _`JOSE Base64`:
+    https://tools.ietf.org/html/draft-ietf-jose-json-web-signature-37#appendix-C
+
+.. warning:: Do NOT try to call this module "base64",
+    as it will "shadow" the standard library.
+
+"""
+import base64
 
 
 def b64encode(data):
