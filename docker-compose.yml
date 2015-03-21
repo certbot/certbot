@@ -1,0 +1,6 @@
+letsencrypt:
+  build: .
+  ports:
+    - "443:443"
+  volumes:
+    - ./certs/:/etc/letsencrypt/certs/

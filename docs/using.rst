@@ -37,6 +37,16 @@ Mac OSX
     sudo brew install augeas swig
 
 
+Quick Usage
+===========
+Using docker you can quickly get yourself a testing cert.  From the server that the domain your requesting a cert for resolves to, download docker 1.5, and issue the following command:
+
+::
+
+    docker run -it --rm -p 443:443 -v $PWD/certs/:/etc/letsencrypt/certs/ letsencrypt/lets-encrypt-preview
+
+And follow the instructions.  Your new cert will be available in `certs/`
+
 Installation
 ============
 
