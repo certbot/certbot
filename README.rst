@@ -80,7 +80,7 @@ Documentation: https://letsencrypt.readthedocs.org/
 
 Software project: https://github.com/letsencrypt/lets-encrypt-preview
 
-Notes for developers: [CONTRIBUTING.rst](/CONTRIBUTING.rst)
+Notes for developers: CONTRIBUTING.rst_
 
 Main Website: https://letsencrypt.org/
 
@@ -91,3 +91,4 @@ email to client-dev+subscribe@letsencrypt.org)
 
 .. _Freenode: https://freenode.net
 .. _client-dev: https://groups.google.com/a/letsencrypt.org/forum/#!forum/client-dev
+.. _CONTRIBUTING.rst: https://github.com/letsencrypt/lets-encrypt-preview/blob/master/CONTRIBUTING.rst
