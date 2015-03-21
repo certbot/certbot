@@ -30,7 +30,7 @@ class SatisfyChallengesTest(unittest.TestCase):
         from letsencrypt.client.auth_handler import AuthHandler
 
         self.mock_dv_auth = mock.MagicMock(name="ApacheConfigurator")
-        self.mock_client_auth = mock.MagicMock(name="ClientAuthenticator")
+        self.mock_client_auth = mock.MagicMock(name="ContinuityAuthenticator")
 
         self.mock_dv_auth.get_chall_pref.return_value = [challenges.DVSNI]
         self.mock_client_auth.get_chall_pref.return_value = [
@@ -346,7 +346,7 @@ class GetAuthorizationsTest(unittest.TestCase):
         from letsencrypt.client.auth_handler import AuthHandler
 
         self.mock_dv_auth = mock.MagicMock(name="ApacheConfigurator")
-        self.mock_client_auth = mock.MagicMock(name="ClientAuthenticator")
+        self.mock_client_auth = mock.MagicMock(name="ContinuityAuthenticator")
 
         self.mock_sat_chall = mock.MagicMock(name="_satisfy_challenges")
         self.mock_acme_auth = mock.MagicMock(name="acme_authorization")
