@@ -162,7 +162,7 @@ class PerformCleanupTest(unittest.TestCase): # pylint: disable=too-many-public-m
         # no TSIG keys at all
         from letsencrypt.client.dns_authenticator import DNSAuthenticator
         magic = mock.MagicMock(dns_server="localhost", dns_server_port=53,
-            dns_tsig_keys=None)
+                               dns_tsig_keys=None)
         self.assertRaises(errors.LetsEncryptDNSAuthError, DNSAuthenticator,
                           magic)
 

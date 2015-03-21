@@ -29,9 +29,7 @@ def find_valid_key(tsig_keys, domain):
     """
     for keypair in tsig_keys:
         if domain in keypair[2]:
-            return dns.tsigkeyring.from_text({
-            	keypair[0]: keypair[1]
-            })
+            return dns.tsigkeyring.from_text({keypair[0]: keypair[1]})
 
 def add_record(zone, token, keyring):
     """Add record DNS request generator.
@@ -125,7 +123,7 @@ def send_request(gen_request, zone, token, keyring, server, port):
         5: ('DNS server refuses to perform the specified '
             'operation for policy or security reasons'),
         6: ('Name exists when it should not (%s)'
-        	% challenges.DNS.txt_subdomain(zone)),
+            % challenges.DNS.txt_subdomain(zone)),
         7: ('Records that should not exist do exist (%s)'
             % challenges.DNS.txt_subdomain(zone)),
         8: ('Records that should exist do not exist (%s)'
@@ -134,28 +132,24 @@ def send_request(gen_request, zone, token, keyring, server, port):
             'make updates to zone "%s"' % (zone)),
         10: ('Zone "%s" does not exist' % (zone)),
         16: ('Server is using bad TSIG key to '
-                    'make updates to zone "%s"' % (zone)),
+             'make updates to zone "%s"' % (zone)),
         17: ('Server is using bad TSIG key to '
-                    'make updates to zone "%s"' % (zone))
+             'make updates to zone "%s"' % (zone))
         }
 
     try:
-        response = dns.query.tcp(dns_request, server, port=port,
-            source_port=constants.DNS_CHALLENGE_SOURCE_PORT,
-            timeout=constants.DNS_CHALLENGE_TIMEOUT)
+        resp = dns.query.tcp(dns_request, server, port=port,
+                             source_port=constants.DNS_CHALLENGE_SOURCE_PORT,
+                             timeout=constants.DNS_CHALLENGE_TIMEOUT)
 
-        if response.rcode() == 0:
+        if resp.rcode() == 0:
             return True
         else:
             raise errors.LetsEncryptDNSAuthError(
-                rcode_errors.get("DNS Error: %s" % (response.rcode())))
+                rcode_errors.get("DNS Error: %s" % (resp.rcode())))
 
-    except (
-        dns.resolver.NoAnswer,
-        dns.query.UnexpectedSource,
-        dns.query.BadResponse,
-        OSError
-    ) as err: # TimeoutError doesn't exist in 2.7 afaik
+    except (dns.resolver.NoAnswer, dns.query.UnexpectedSource,
+            dns.query.BadResponse, OSError) as err:
         # elif isinstance(err, TimeoutError):
         #     dns_error = "DNS Error: DNS request timed out!"
         if isinstance(err, dns.resolver.NoAnswer):
@@ -207,8 +201,8 @@ class DNSAuthenticator(object):
             token = achall.token
             tsig_keyring = find_valid_key(self.dns_tsig_keys, zone)
             if not tsig_keyring:
-                raise errors.LetsEncryptDNSAuthError(
-                	"No TSIG keypair provided for %s" % (zone))
+                raise errors.LetsEncryptDNSAuthError("No TSIG keypair provided"
+                                                     " for %s" % (zone))
 
             # send request
             if send_request(add_record, zone, token, tsig_keyring,
@@ -223,9 +217,9 @@ class DNSAuthenticator(object):
             token = achall.token
             tsig_keyring = find_valid_key(self.dns_tsig_keys, zone)
             if not tsig_keyring:
-                raise errors.LetsEncryptDNSAuthError(
-                	"No TSIG keypair provided for %s" % (zone))
+                raise errors.LetsEncryptDNSAuthError("No TSIG keypair provided"
+                                                     " for %s" % (zone))
 
             # send it, raises error on absent records etc...
-            send_request(add_record, zone, token, tsig_keyring,
-                            self.dns_server, self.dns_server_port)
+            send_request(del_record, zone, token, tsig_keyring,
+                         self.dns_server, self.dns_server_port)

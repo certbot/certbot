@@ -17,6 +17,7 @@ import letsencrypt
 
 from letsencrypt.client import configuration
 from letsencrypt.client import client
+from letsencrypt.client import dns_authenticator as dns
 from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
@@ -98,7 +99,8 @@ def create_parser():
 
     add("--dns-server", default="localhost", help=config_help("dns_server"))
     add("--dns-server-port", default=53, help=config_help("dns_server_port"))
-    add("--dns-tsig-keys", nargs="+", type=split_tsig_keys, help=config_help("dns_tsig_keys"))
+    add("--dns-tsig-keys", nargs="+", type=split_tsig_keys,
+        help=config_help("dns_tsig_keys"))
 
     return parser
 
