@@ -231,7 +231,6 @@ def split_tsig_keys(packed):
     :raises argparse.ArgumentTypeError: Packed TSIG key is in incorrect format.
 
     """
-    print(packed)
     # if --dns-tsig-keys "" called... you never know
     if packed is "":
         raise argparse.ArgumentTypeError("No TSIG keys provided.")

@@ -8,7 +8,6 @@ import zope.interface
 
 from letsencrypt.acme import challenges
 
-from letsencrypt.client import achallenges
 from letsencrypt.client import constants
 from letsencrypt.client import errors
 from letsencrypt.client import interfaces
@@ -30,8 +29,9 @@ def find_valid_key(tsig_keys, domain):
     """
     for keypair in tsig_keys:
         if domain in keypair[2]:
-            return dns.tsigkeyring.from_text(
-                {keypair[0]: keypair[1]})
+            return dns.tsigkeyring.from_text({
+            	keypair[0]: keypair[1]
+            })
 
 def add_record(zone, token, keyring):
     """Add record DNS request generator.
@@ -57,8 +57,8 @@ def add_record(zone, token, keyring):
     # check challenge_subdomain is absent
     challenge_request.absent(challenge_subdomain)
     # add challenge_subdomain TXT with token
-    challenge_request.add(
-        challenge_subdomain, constants.DNS_CHALLENGE_TTL, "TXT", token)
+    challenge_request.add(challenge_subdomain, constants.DNS_CHALLENGE_TTL,
+                          "TXT", token)
 
     # return req
     return challenge_request
@@ -90,8 +90,7 @@ def del_record(zone, token, keyring): # pylint: disable=unused-argument
     # return req
     return challenge_request
 
-def send_request(
-        gen_request, zone, token, keyring, server, port):
+def send_request(gen_request, zone, token, keyring, server, port):
     """Generate and send request to DNS server.
 
     Generates a DNS message based on function passed as `gen_request`
@@ -125,7 +124,8 @@ def send_request(
         4: 'DNS server does not support that opcode',
         5: ('DNS server refuses to perform the specified '
             'operation for policy or security reasons'),
-        6: 'Name exists when it should not (%s)' % challenges.DNS.txt_subdomain(zone),
+        6: ('Name exists when it should not (%s)'
+        	% challenges.DNS.txt_subdomain(zone)),
         7: ('Records that should not exist do exist (%s)'
             % challenges.DNS.txt_subdomain(zone)),
         8: ('Records that should exist do not exist (%s)'
@@ -140,12 +140,9 @@ def send_request(
         }
 
     try:
-        response = dns.query.tcp(
-            dns_request,
-            server, port=port,
+        response = dns.query.tcp(dns_request, server, port=port,
             source_port=constants.DNS_CHALLENGE_SOURCE_PORT,
-            timeout=constants.DNS_CHALLENGE_TIMEOUT
-        )
+            timeout=constants.DNS_CHALLENGE_TIMEOUT)
 
         if response.rcode() == 0:
             return True
@@ -211,17 +208,11 @@ class DNSAuthenticator(object):
             tsig_keyring = find_valid_key(self.dns_tsig_keys, zone)
             if not tsig_keyring:
                 raise errors.LetsEncryptDNSAuthError(
-                    "No TSIG keypair provided for %s" % (zone))
+                	"No TSIG keypair provided for %s" % (zone))
 
             # send request
-            if send_request(
-                add_record,
-                zone,
-                token,
-                tsig_keyring,
-                self.dns_server,
-                self.dns_server_port
-            ):
+            if send_request(add_record, zone, token, tsig_keyring,
+                            self.dns_server, self.dns_server_port):
                 responses.append(challenges.DNSResponse())
         return responses
 
@@ -233,14 +224,8 @@ class DNSAuthenticator(object):
             tsig_keyring = find_valid_key(self.dns_tsig_keys, zone)
             if not tsig_keyring:
                 raise errors.LetsEncryptDNSAuthError(
-                    "No TSIG keypair provided for %s" % (zone))
+                	"No TSIG keypair provided for %s" % (zone))
 
             # send it, raises error on absent records etc...
-            send_request(
-                del_record,
-                zone,
-                token,
-                tsig_keyring,
-                self.dns_server,
-                self.dns_server_port
-            )
+            send_request(add_record, zone, token, tsig_keyring,
+                            self.dns_server, self.dns_server_port)
