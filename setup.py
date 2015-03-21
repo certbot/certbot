@@ -94,7 +94,6 @@ setup(
         'letsencrypt',
         'letsencrypt.acme',
         'letsencrypt.acme.jose',
-        'letsencrypt.acme.schemata',
         'letsencrypt.client',
         'letsencrypt.client.apache',
         'letsencrypt.client.display',
