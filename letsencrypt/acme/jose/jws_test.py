@@ -205,29 +205,33 @@ class CLITest(unittest.TestCase):
 
     def test_unverified(self):
         from letsencrypt.acme.jose.jws import CLI
-        with mock.patch('sys.stdin') as sin, mock.patch('sys.stdout'):
+        with mock.patch('sys.stdin') as sin:
             sin.read.return_value = '{"payload": "foo", "signature": "xxx"}'
-            self.assertEqual(-1, CLI.run(['verify']))
+            with mock.patch('sys.stdout'):
+                self.assertEqual(-1, CLI.run(['verify']))
 
     def test_json(self):
         from letsencrypt.acme.jose.jws import CLI
 
-        with mock.patch('sys.stdin') as sin, mock.patch('sys.stdout') as sout:
+        with mock.patch('sys.stdin') as sin:
             sin.read.return_value = 'foo'
-            CLI.run(['sign', '-k', self.key_path, '-a', 'RS256',
-                     '-p', 'jwk'])
-            sin.read.return_value = sout.write.mock_calls[0][1][0]
-            self.assertEqual(0, CLI.run(['verify']))
+            with mock.patch('sys.stdout') as sout:
+                CLI.run(['sign', '-k', self.key_path, '-a', 'RS256',
+                         '-p', 'jwk'])
+                sin.read.return_value = sout.write.mock_calls[0][1][0]
+                self.assertEqual(0, CLI.run(['verify']))
 
     def test_compact(self):
         from letsencrypt.acme.jose.jws import CLI
 
-        with mock.patch('sys.stdin') as sin, mock.patch('sys.stdout') as sout:
+        with mock.patch('sys.stdin') as sin:
             sin.read.return_value = 'foo'
-            CLI.run(['--compact', 'sign', '-k', self.key_path])
-            sin.read.return_value = sout.write.mock_calls[0][1][0]
-            self.assertEqual(0, CLI.run([
-                '--compact', 'verify', '--kty', 'RSA', '-k', self.key_path]))
+            with mock.patch('sys.stdout') as sout:
+                CLI.run(['--compact', 'sign', '-k', self.key_path])
+                sin.read.return_value = sout.write.mock_calls[0][1][0]
+                self.assertEqual(0, CLI.run([
+                    '--compact', 'verify', '--kty', 'RSA',
+                    '-k', self.key_path]))
 
 
 if __name__ == '__main__':
