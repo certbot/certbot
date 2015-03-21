@@ -5,7 +5,7 @@ import time
 
 import requests
 
-from letsencrypt.acme import errors as acme_errors
+from letsencrypt.acme import jose
 from letsencrypt.acme import messages
 
 from letsencrypt.client import errors
@@ -57,7 +57,7 @@ class Network(object):
         json_string = response.json()
         try:
             return messages.Message.from_json(json_string)
-        except acme_errors.ValidationError as error:
+        except jose.DeserializationError as error:
             logging.error(json_string)
             raise  # TODO
 

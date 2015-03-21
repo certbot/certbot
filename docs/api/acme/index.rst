@@ -5,12 +5,6 @@
    :members:
 
 
-Interfaces
-----------
-
-.. automodule:: letsencrypt.acme.interfaces
-   :members:
-
 Messages
 --------
 
@@ -45,7 +39,4 @@ Utilities
 ---------
 
 .. automodule:: letsencrypt.acme.util
-   :members:
-
-.. automodule:: letsencrypt.acme.jose
    :members:

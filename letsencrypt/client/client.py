@@ -7,7 +7,7 @@ import Crypto.PublicKey.RSA
 import M2Crypto
 
 from letsencrypt.acme import messages
-from letsencrypt.acme import util as acme_util
+from letsencrypt.acme.jose import util as jose_util
 
 from letsencrypt.client import auth_handler
 from letsencrypt.client import client_authenticator
@@ -130,7 +130,7 @@ class Client(object):
         logging.info("Preparing and sending CSR...")
         return self.network.send_and_receive_expected(
             messages.CertificateRequest.create(
-                csr=acme_util.ComparableX509(
+                csr=jose_util.ComparableX509(
                     M2Crypto.X509.load_request_der_string(csr_der)),
                 key=Crypto.PublicKey.RSA.importKey(self.authkey.pem)),
             messages.Certificate)
