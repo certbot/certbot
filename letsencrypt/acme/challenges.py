@@ -241,6 +241,13 @@ class DNS(DVChallenge):
     typ = "dns"
     token = jose.Field("token")
 
+    TXT_RECORD_TEMPLATE = "_acme-challenge.{0}"
+
+    @classmethod
+    def txt_subdomain(cls, zone):
+        """Subdomain for the TXT record used for validation."""
+        return cls.TXT_RECORD_TEMPLATE.format(zone)
+
 
 @ChallengeResponse.register
 class DNSResponse(ChallengeResponse):
