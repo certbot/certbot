@@ -71,7 +71,12 @@ class _JWAHS(JWASignature):
         return HMAC.new(key, msg, self.digestmod).digest()
 
     def verify(self, key, msg, sig):
-        # TODO: use constant compare to mitigate timing attack?
+        """Verify the signature.
+
+        .. warning::
+            Does not protect against timing attack (no constant compare).
+
+        """
         return self.sign(key, msg) == sig
 
 
