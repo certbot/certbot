@@ -1,4 +1,5 @@
 """DNS Authenticator"""
+import dns.exception
 import dns.query
 import dns.rcode
 import dns.resolver
@@ -152,9 +153,7 @@ def send_request(gen_request, zone, token, keyring, server, port):
                 "DNS Error: %s" % (rcode_errors.get(resp.rcode())))
 
     except (dns.resolver.NoAnswer, dns.query.UnexpectedSource,
-            dns.query.BadResponse, OSError) as err:
-        # elif isinstance(err, TimeoutError):
-        #     dns_error = "DNS Error: DNS request timed out!"
+            dns.query.BadResponse, OSError, dns.exception.Timeout) as err:
         if isinstance(err, dns.resolver.NoAnswer):
             dns_error = "DNS Error: Did not recieve a response to DNS request!"
         elif isinstance(err, dns.query.UnexpectedSource):
@@ -166,6 +165,8 @@ def send_request(gen_request, zone, token, keyring, server, port):
         elif isinstance(err, OSError):
             dns_error = ("DNS Error: I forgot what an OSError means in this"
                          " context...")
+        elif isinstance(err, dns.exception.Timeout):
+            dns_error = "DNS Error: DNS request timed out!"
         raise errors.LetsEncryptDNSAuthError(dns_error)
 
 class DNSAuthenticator(object):

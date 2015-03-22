@@ -3,6 +3,7 @@ import unittest
 
 import mock
 
+import dns.exception
 import dns.message
 import dns.query
 import dns.resolver
@@ -85,6 +86,7 @@ class PerformCleanupTest(unittest.TestCase): # pylint: disable=too-many-public-m
             dns.query.UnexpectedSource,
             dns.query.BadResponse,
             OSError,
+            dns.exception.Timeout,
         ]
 
     def test_chall_pref(self):
