@@ -17,7 +17,7 @@ import letsencrypt
 
 from letsencrypt.client import configuration
 from letsencrypt.client import client
-from letsencrypt.client import dns_authenticator as dns
+from letsencrypt.client import dns_authenticator
 from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
@@ -145,7 +145,7 @@ def main():  # pylint: disable=too-many-branches, too-many-statements
     all_auths = [
         configurator.ApacheConfigurator(config),
         standalone.StandaloneAuthenticator(),
-        dns.DNSAuthenticator(config),
+        dns_authenticator.DNSAuthenticator(config),
     ]
     try:
         auth = client.determine_authenticator(all_auths)
@@ -234,7 +234,7 @@ def split_tsig_keys(packed):
 
     """
     # if --dns-tsig-keys "" called... you never know
-    if packed is "":
+    if not packed:
         raise argparse.ArgumentTypeError("No TSIG keys provided.")
     unpacked = packed.split(",")
     if len(unpacked) < 3:

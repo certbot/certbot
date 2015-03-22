@@ -1,5 +1,6 @@
 """DNS Authenticator"""
 import dns.query
+import dns.rcode
 import dns.resolver
 import dns.tsigkeyring
 import dns.update
@@ -113,25 +114,30 @@ def send_request(gen_request, zone, token, keyring, server, port):
 
     # FIXME: better keyring errors (that include that key that was used)
     rcode_errors = {
-        1: 'Malformed DNS message',
-        2: 'Server failed',
-        3: 'Domain does not exist on DNS server (%s)' % (zone),
-        4: 'DNS server does not support that opcode',
-        5: ('DNS server refuses to perform the specified '
-            'operation for policy or security reasons'),
-        6: ('Name exists when it should not (%s.%s)'
-            % (constants.DNS_CHALLENGE_SUBDOMAIN, zone)),
-        7: ('Records that should not exist do exist (%s.%s)'
-            % (constants.DNS_CHALLENGE_SUBDOMAIN, zone)),
-        8: ('Records that should exist do not exist (%s.%s)'
-            % (constants.DNS_CHALLENGE_SUBDOMAIN, zone)),
-        9: ('Server is not authorized or is using bad TSIG key to '
-            'make updates to zone "%s"' % (zone)),
-        10: ('Zone "%s" does not exist' % (zone)),
-        16: ('Server is using bad TSIG key to '
-             'make updates to zone "%s"' % (zone)),
-        17: ('Server is using bad TSIG key to '
-             'make updates to zone "%s"' % (zone))
+        dns.rcode.FORMERR: 'Malformed DNS message',
+        dns.rcode.SERVFAIL: 'Server failed',
+        dns.rcode.NXDOMAIN: 'Domain does not exist on DNS server'
+                            ' (%s)' % (zone),
+        dns.rcode.NOTIMP: 'DNS server does not support that opcode',
+        dns.rcode.REFUSED: ('DNS server refuses to perform the specified '
+                            'operation for policy or security reasons'),
+        dns.rcode.YXDOMAIN: ('Name exists when it should not (%s.%s)'
+                             % (constants.DNS_CHALLENGE_SUBDOMAIN, zone)),
+        dns.rcode.YXRRSET: ('Records that should not exist do exist (%s.%s)'
+                            % (constants.DNS_CHALLENGE_SUBDOMAIN, zone)),
+        dns.rcode.NXRRSET: ('Records that should exist do not exist (%s.%s)'
+                            % (constants.DNS_CHALLENGE_SUBDOMAIN, zone)),
+        dns.rcode.NOTAUTH: ('Server is not authorized or was supplied bad TSIG'
+                            ' key to make updates to zone "%s" [key: %s]'
+                            % (zone, dns.tsigkeyring.to_text(keyring))),
+        dns.rcode.NOTZONE: ('Zone "%s" does not exist' % (zone)),
+        # this rcode can also mean BADOPT (Bad OPT version)
+        dns.rcode.BADVERS: ('Server was supplied bad TSIG key to '
+                            'make updates to zone "%s" [key: %s]'
+                            % (zone, dns.tsigkeyring.to_text(keyring))),
+        # this rcode isn't specified in dnspython but means BADKEY
+        17: ('Server was supplied bad TSIG key to make updates to zone'
+             ' "%s"  [key: %s]' % (zone, dns.tsigkeyring.to_text(keyring))),
         }
 
     try:
