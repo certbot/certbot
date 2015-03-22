@@ -6,7 +6,22 @@
 export PYBUILD_NAME=letsencrypt
 
 %:
-	dh $@ --with python2 --buildsystem=pybuild
+	dh $@ --with python2,sphinxdoc --buildsystem=pybuild
+
+override_dh_clean:
+	dh_clean
+	rm -rf $(CURDIR)/debian/doc-build
+
+override_dh_auto_build:
+	dh_auto_build
+
+	# Build the Sphinx docs
+	sphinx-build -N -b html docs $(CURDIR)/debian/doc-build/html
+	find $(CURDIR)/debian/doc-build/html/ -type f -name '*.html' \
+	  -exec sed -i -e 's|https://cdnjs.cloudflare.com/ajax/libs/modernizr/.*/modernizr.min.js|../../../javascript/modernizr/modernizr.min.js|' '{}' +
+	sed -i -e 's|<img alt="Travis CI status" src="https://travis-ci.org/letsencrypt/lets-encrypt-preview.svg?branch=master" />|Travis CI status|' $(CURDIR)/debian/doc-build/html/intro.html
+	sed -i -e 's|<img alt="Coverage status" src="https://coveralls.io/repos/letsencrypt/lets-encrypt-preview/badge.svg?branch=master" />|Coverage status|' $(CURDIR)/debian/doc-build/html/intro.html
+	sed -i -e 's|<img alt="Documentation status" src="https://readthedocs.org/projects/letsencrypt/badge/" />|Documentation status|' $(CURDIR)/debian/doc-build/html/intro.html
 
 override_dh_auto_install:
 	dh_auto_install
