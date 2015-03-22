@@ -8,16 +8,18 @@ Hacking
 =======
 
 In order to start hacking, you will first have to create a development
-environment. Start by `installing dependencies and setting up Let's Encrypt`_.
+environment. Start by :doc:`installing dependencies and setting up
+Let's Encrypt <using>`.
 
 Now you can install the development packages:
 
-::
+.. code-block:: shell
 
-    ./venv/bin/python setup.py dev
+   ./venv/bin/python setup.py dev
 
-The code base, including your pull requests, **must** have 100% test statement
-coverage **and** be compliant with the coding-style_.
+The code base, including your pull requests, **must** have 100% test
+statement coverage **and** be compliant with the :ref:`coding style
+<coding-style>`.
 
 The following tools are there to help you:
 
@@ -27,116 +29,127 @@ The following tools are there to help you:
 - ``./venv/bin/tox -e cover`` checks the test coverage only.
 
 - ``./venv/bin/tox -e lint`` checks the style of the whole project,
-  while ``./venv/bin/pylint --rcfile=.pylintrc file`` will check a single `file` only.
+  while ``./venv/bin/pylint --rcfile=.pylintrc file`` will check a
+  single ``file`` only.
 
-.. _installing dependencies and setting up Let's Encrypt: https://letsencrypt.readthedocs.org/en/latest/using.html
+.. _installing dependencies and setting up Let's Encrypt:
+  https://letsencrypt.readthedocs.org/en/latest/using.html
 
-	
+
 Vagrant
-=======
+-------
 
-If you are a Vagrant user, Let's Encrypt comes with a Vagrantfile that automates
-setting up a development environment in an Ubuntu 14.04 LTS VM. To set it up,
-simply run ``vagrant up``. The repository is synced to ``/vagrant``, so you can
-get started with:
+If you are a Vagrant user, Let's Encrypt comes with a Vagrantfile that
+automates setting up a development environment in an Ubuntu 14.04
+LTS VM. To set it up, simply run ``vagrant up``. The repository is
+synced to ``/vagrant``, so you can get started with:
 
-::
+.. code-block:: shell
 
-	 vagrant ssh
-	 cd /vagrant
-	 ./venv/bin/python setup.py install
-	 sudo ./venv/bin/letsencrypt
+  vagrant ssh
+  cd /vagrant
+  ./venv/bin/python setup.py install
+  sudo ./venv/bin/letsencrypt
 
 Support for other Linux distributions coming soon.
 
-**Note:** Unfortunately, Python distutils and, by extension, setup.py and tox,
-use hard linking quite extensively. Hard linking is not supported by the
-default sync filesystem in Vagrant. As a result, all actions with these
-commands are *significantly slower* in Vagrant. One potential fix is to `use
-NFS`_ (`related issue`_).
+.. note::
+   Unfortunately, Python distutils and, by extension, setup.py and
+   tox, use hard linking quite extensively. Hard linking is not
+   supported by the default sync filesystem in Vagrant. As a result,
+   all actions with these commands are *significantly slower* in
+   Vagrant. One potential fix is to `use NFS`_ (`related issue`_).
 
 .. _use NFS: http://docs.vagrantup.com/v2/synced-folders/nfs.html
 .. _related issue: https://github.com/ClusterHQ/flocker/issues/516
 
 
-CODE COMPONENTS AND LAYOUT
+Code components and layout
 ==========================
 
-letsencrypt/acme - contains all protocol specific code
-letsencrypt/client - all client code
-letsencrypt/scripts - just the starting point of the code, main.py
+letsencrypt/acme
+  contains all protocol specific code
+letsencrypt/client
+  all client code
+letsencrypt/scripts
+  just the starting point of the code, main.py
+
 
 Plugin-architecture
 -------------------
 
-Let's Encrypt has a plugin architecture to facilitate support for different
-webservers, other TLS servers, and operating systems.
+Let's Encrypt has a plugin architecture to facilitate support for
+different webservers, other TLS servers, and operating systems.
 
 The most common kind of plugin is a "Configurator", which is likely to
-implement the "Authenticator" and "Installer" interfaces (though some
+implement the `~letsencrypt.client.interfaces.IAuthenticator` and
+`~letsencrypt.client.interfaces.IInstaller` interfaces (though some
 Configurators may implement just one of those).
 
-Defined here:
-https://github.com/letsencrypt/lets-encrypt-preview/blob/master/letsencrypt/client/interfaces.py
+There are also `~letsencrypt.client.interfaces.IDisplay` plugins,
+which implement bindings to alternative UI libraries.
 
-There are also "Display" plugins, which implement bindings to alternative UI
-libraries.
 
 Authenticators
 --------------
 
-Authenticators are plugins designed to solve challenges received from the
-ACME server. From the protocol, there are essentially two different types
-of challenges. Challenges that must be solved by individual plugins in
-order to satisfy domain validation (dvsni, simpleHttps, dns) and client
-specific challenges (recoveryToken, recoveryContact, pop). Client specific
-challenges are always handled by the "Authenticator"
-client_authenticator.py. Right now we have two DV Authenticators,
-apache/configurator.py and the standalone_authenticator.py. The Standalone
-and Apache authenticators only solve the DVSNI challenge currently. (You
-can set which challenges your authenticator can handle through the
-get_chall_pref(domain) function)
+Authenticators are plugins designed to solve challenges received from
+the ACME server. From the protocol, there are essentially two
+different types of challenges. Challenges that must be solved by
+individual plugins in order to satisfy domain validation (subclasses
+of `~.DVChallenge`, i.e. `~.challenges.DVSNI`,
+`~.challenges.SimpleHTTPS`, `~.challenges.DNS`) and client specific
+challenges (subclasses of `~.ClientChallenge`,
+i.e. `~.challenges.RecoveryToken`, `~.challenges.RecoveryContact`,
+`~.challenges.ProofOfPossession`). Client specific challenges are
+always handled by the `~.ClientAuthenticator`. Right now we have two
+DV Authenticators, `~.ApacheConfigurator` and the
+`~.StandaloneAuthenticator`. The Standalone and Apache authenticators
+only solve the `~.challenges.DVSNI` challenge currently. (You can set
+which challenges your authenticator can handle through the
+:meth:`~.IAuthenticator.get_chall_pref`.
 
-(FYI: We also have a partial implementation for a dns_authenticator in a
-separate branch).
+(FYI: We also have a partial implementation for a `~.DNSAuthenticator`
+in a separate branch).
 
-Challenge types are defined here...
-(
-https://github.com/letsencrypt/lets-encrypt-preview/blob/master/letsencrypt/client/constants.py#L16
-)
 
 Installer
 ---------
 
 Installers classes exist to actually setup the certificate and be able
-to enhance the configuration. (Turn on HSTS, redirect to HTTPS, etc). You
-can indicate your abilities through the supported_enhancements call. We
-currently only have one Installer written (still developing),
-apache/configurator.py
+to enhance the configuration. (Turn on HSTS, redirect to HTTPS,
+etc). You can indicate your abilities through the
+:meth:`~.IInstaller.supported_enhancements` call. We currently only
+have one Installer written (still developing), `~.ApacheConfigurator`.
 
-Installers and Authenticators will oftentimes be the same class/object.
-Installers and Authenticators are kept separate because it should be
-possible to use the standalone_authenticator (it sets up its own Python
-server to perform challenges) with a program that cannot solve challenges
-itself. (I am imagining MTA installers).
+Installers and Authenticators will oftentimes be the same
+class/object. Installers and Authenticators are kept separate because
+it should be possible to use the `~.StandaloneAuthenticator` (it sets
+up its own Python server to perform challenges) with a program that
+cannot solve challenges itself. (I am imagining MTA installers).
 
-*Display* - we currently offer a pythondialog and "text" mode for
-displays. I have rewritten the interface which should be merged within the
-next day (the rewrite is in the revoker branch of the repo and should be
-merged within the next day)
 
-Here is what the display interface will look like
-https://github.com/letsencrypt/lets-encrypt-preview/blob/revoker/letsencrypt/client/interfaces.py#L217
+Display
+~~~~~~~
 
-Augeus
+We currently offer a pythondialog and "text" mode for displays. I have
+rewritten the interface which should be merged within the next day
+(the rewrite is in the revoker branch of the repo and should be merged
+within the next day). Display plugins implement
+`~letsencrypt.client.interfaces.IDisplay` interface.
+
+
+Augeas
 ------
 
-Some plugins, especially those designed to reconfigure UNIX servers, can take
-inherit from the augeus_configurator.py class in order to more efficiently
-handle common operations on UNIX server configuration files.
+Some plugins, especially those designed to reconfigure UNIX servers,
+can take inherit from `~.AugeasConfigurator` class in order to more
+efficiently handle common operations on UNIX server configuration
+files.
 
 
 .. _coding-style:
+
 Coding style
 ============
 
@@ -147,9 +160,7 @@ Please:
 2. Read `PEP 8 - Style Guide for Python Code`_.
 
 3. Follow the `Google Python Style Guide`_, with the exception that we
-   use `Sphinx-style`_ documentation:
-
-    ::
+   use `Sphinx-style`_ documentation::
 
         def foo(arg):
             """Short description.
@@ -164,20 +175,23 @@ Please:
 
 4. Remember to use ``./venv/bin/pylint``.
 
-.. _Google Python Style Guide: https://google-styleguide.googlecode.com/svn/trunk/pyguide.html
+.. _Google Python Style Guide:
+  https://google-styleguide.googlecode.com/svn/trunk/pyguide.html
 .. _Sphinx-style: http://sphinx-doc.org/
-.. _PEP 8 - Style Guide for Python Code: https://www.python.org/dev/peps/pep-0008
+.. _PEP 8 - Style Guide for Python Code:
+  https://www.python.org/dev/peps/pep-0008
 
 
-Updating the Documentation
+Updating the documentation
 ==========================
 
-In order to generate the Sphinx documentation, run the following commands.
+In order to generate the Sphinx documentation, run the following
+commands:
 
-::
+.. code-block:: shell
 
-    cd docs
-    make clean html SPHINXBUILD=../venv/bin/sphinx-build
+   cd docs
+   make clean html SPHINXBUILD=../venv/bin/sphinx-build
 
-
-This should generate documentation in the ``docs/_build/html`` directory.
+This should generate documentation in the ``docs/_build/html``
+directory.

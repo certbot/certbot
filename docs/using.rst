@@ -21,30 +21,30 @@ In general:
 Ubuntu
 ------
 
-::
+.. code-block:: shell
 
-    sudo apt-get install python python-setuptools python-virtualenv python-dev \
-                 gcc swig dialog libaugeas0 libssl-dev libffi-dev \
-                 ca-certificates
+   sudo apt-get install python python-setuptools python-virtualenv python-dev \
+                        gcc swig dialog libaugeas0 libssl-dev libffi-dev \
+                        ca-certificates
 
 .. Please keep the above command in sync with .travis.yml (before_install)
 
 Mac OSX
 -------
 
-::
+.. code-block:: shell
 
-    sudo brew install augeas swig
+   sudo brew install augeas swig
 
 
 Installation
 ============
 
-::
+.. code-block:: shell
 
-    virtualenv --no-site-packages -p python2 venv
-    ./venv/bin/python setup.py install
-    sudo ./venv/bin/letsencrypt
+   virtualenv --no-site-packages -p python2 venv
+   ./venv/bin/python setup.py install
+   sudo ./venv/bin/letsencrypt
 
 
 Usage
@@ -52,7 +52,7 @@ Usage
 
 The letsencrypt commandline tool has a builtin help:
 
-::
+.. code-block:: shell
 
    ./venv/bin/letsencrypt --help
 
