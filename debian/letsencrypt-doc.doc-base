@@ -7,9 +7,6 @@ Abstract: This manual documents the letsencrypt client, a tool that can update
  intervention.
 Section: System/Security
 
-Format: Text
-Files: /usr/share/doc/letsencrypt/README.rst
-
 Format: HTML
-Index: /usr/share/doc/letsencrypt/html/index.html
-Files: /usr/share/doc/letsencrypt/html/*
+Index: /usr/share/doc/letsencrypt-doc/html/index.html
+Files: /usr/share/doc/letsencrypt-doc/html/*
