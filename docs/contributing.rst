@@ -1,3 +1,7 @@
+============
+Contributing
+============
+
 .. _hacking:
 
 Hacking
