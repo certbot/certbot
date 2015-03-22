@@ -3,11 +3,11 @@ Upstream-Name: letsencrypt
 Source: https://github.com/letsencrypt/lets-encrypt-preview
 
 Files: *
-Copyright: 2014 Let's Encrypt (https://letsencrypt.org/)
+Copyright: 2014-2015 Let's Encrypt (https://letsencrypt.org/)
 License: Apache-2
 
 Files: debian/*
-Copyright: 2014 Francois Marier <francois@debian.org>
+Copyright: 2014-2015 Francois Marier <francois@debian.org>
 License: Apache-2
 
 License: Apache-2
