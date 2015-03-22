@@ -49,14 +49,12 @@ def add_record(zone, token, keyring):
     :rtype: dns.message.Message
 
     """
-    challenge_subdomain = challenges.DNS.txt_subdomain(zone)
-
     challenge_request = dns.update.Update(zone, keyring=keyring)
     # check challenge_subdomain is absent
-    challenge_request.absent(challenge_subdomain)
+    challenge_request.absent(constants.DNS_CHALLENGE_SUBDOMAIN)
     # add challenge_subdomain TXT with token
-    challenge_request.add(challenge_subdomain, constants.DNS_CHALLENGE_TTL,
-                          "TXT", token)
+    challenge_request.add(constants.DNS_CHALLENGE_SUBDOMAIN,
+                          constants.DNS_CHALLENGE_TTL, "TXT", token)
 
     # return req
     return challenge_request
@@ -78,12 +76,11 @@ def del_record(zone, token, keyring): # pylint: disable=unused-argument
     :rtype: dns.message.Message
 
     """
-    challenge_subdomain = challenges.DNS.txt_subdomain(zone)
     challenge_request = dns.update.Update(zone, keyring=keyring)
     # check challenge_subdomain is present
-    challenge_request.present(challenge_subdomain)
+    challenge_request.present(constants.DNS_CHALLENGE_SUBDOMAIN)
     # delete challegen_subdomain TXT
-    challenge_request.delete(challenge_subdomain)
+    challenge_request.delete(constants.DNS_CHALLENGE_SUBDOMAIN)
 
     # return req
     return challenge_request
@@ -122,12 +119,12 @@ def send_request(gen_request, zone, token, keyring, server, port):
         4: 'DNS server does not support that opcode',
         5: ('DNS server refuses to perform the specified '
             'operation for policy or security reasons'),
-        6: ('Name exists when it should not (%s)'
-            % challenges.DNS.txt_subdomain(zone)),
-        7: ('Records that should not exist do exist (%s)'
-            % challenges.DNS.txt_subdomain(zone)),
-        8: ('Records that should exist do not exist (%s)'
-            % challenges.DNS.txt_subdomain(zone)),
+        6: ('Name exists when it should not (%s.%s)'
+            % (constants.DNS_CHALLENGE_SUBDOMAIN, zone)),
+        7: ('Records that should not exist do exist (%s.%s)'
+            % (constants.DNS_CHALLENGE_SUBDOMAIN, zone)),
+        8: ('Records that should exist do not exist (%s.%s)'
+            % (constants.DNS_CHALLENGE_SUBDOMAIN, zone)),
         9: ('Server is not authorized or is using bad TSIG key to '
             'make updates to zone "%s"' % (zone)),
         10: ('Zone "%s" does not exist' % (zone)),
@@ -146,7 +143,7 @@ def send_request(gen_request, zone, token, keyring, server, port):
             return True
         else:
             raise errors.LetsEncryptDNSAuthError(
-                rcode_errors.get("DNS Error: %s" % (resp.rcode())))
+                "DNS Error: %s" % (rcode_errors.get(resp.rcode())))
 
     except (dns.resolver.NoAnswer, dns.query.UnexpectedSource,
             dns.query.BadResponse, OSError) as err:

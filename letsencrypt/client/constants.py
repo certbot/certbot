@@ -44,6 +44,9 @@ DVSNI_CHALLENGE_PORT = 443
 """Port to perform DVSNI challenge."""
 
 
+DNS_CHALLENGE_SUBDOMAIN = "_acme-challenge"
+"""Challenge subdomain."""
+
 DNS_CHALLENGE_TTL = 60
 """TTL, in seconds, for the _acme-challenge.domain TXT record."""
 
