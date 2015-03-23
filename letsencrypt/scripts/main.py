@@ -17,6 +17,7 @@ import letsencrypt
 
 from letsencrypt.client import configuration
 from letsencrypt.client import client
+from letsencrypt.client import dns_authenticator
 from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
@@ -96,6 +97,11 @@ def create_parser():
     add("--apache-init-script", default="/etc/init.d/apache2",
         help=config_help("apache_init_script"))
 
+    add("--dns-server", default="localhost", help=config_help("dns_server"))
+    add("--dns-server-port", default=53, help=config_help("dns_server_port"))
+    add("--dns-tsig-keys", nargs="+", type=split_tsig_keys,
+        help=config_help("dns_tsig_keys"))
+
     return parser
 
 
@@ -104,7 +110,6 @@ def main():  # pylint: disable=too-many-branches, too-many-statements
     # note: arg parser internally handles --help (and exits afterwards)
     args = create_parser().parse_args()
     config = configuration.NamespaceConfig(args)
-
     # note: check is done after arg parsing as --help should work w/o root also.
     if not os.geteuid() == 0:
         sys.exit(
@@ -140,6 +145,7 @@ def main():  # pylint: disable=too-many-branches, too-many-statements
     all_auths = [
         configurator.ApacheConfigurator(config),
         standalone.StandaloneAuthenticator(),
+        dns_authenticator.DNSAuthenticator(config),
     ]
     try:
         auth = client.determine_authenticator(all_auths)
@@ -213,6 +219,28 @@ def read_file(filename):
         return filename, open(filename, "rU").read()
     except IOError as exc:
         raise argparse.ArgumentTypeError(exc.strerror)
+
+
+def split_tsig_keys(packed):
+    """Returns the unpacked TSIG key name, secret, and a list of domains from
+    the argument format.
+
+    :param str packed: TSIG key in the format "key-name,key-secret,domains+"
+
+    :returns: A tuple of key name, secret, and a list of domains
+    :rtype: tuple
+
+    :raises argparse.ArgumentTypeError: Packed TSIG key is in incorrect format.
+
+    """
+    # if --dns-tsig-keys "" called... you never know
+    if not packed:
+        raise argparse.ArgumentTypeError("No TSIG keys provided.")
+    unpacked = packed.split(",")
+    if len(unpacked) < 3:
+        raise argparse.ArgumentTypeError(
+            "Provided TSIG key is in incorrect format.")
+    return unpacked[0], unpacked[1], unpacked[2:]
 
 
 if __name__ == "__main__":

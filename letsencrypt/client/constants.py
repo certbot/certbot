@@ -44,6 +44,19 @@ DVSNI_CHALLENGE_PORT = 443
 """Port to perform DVSNI challenge."""
 
 
+DNS_CHALLENGE_SUBDOMAIN = "_acme-challenge"
+"""Challenge subdomain."""
+
+DNS_CHALLENGE_TTL = 60
+"""TTL, in seconds, for the _acme-challenge.domain TXT record."""
+
+DNS_CHALLENGE_SOURCE_PORT = 0
+"""Port to issue DNS queries from."""
+
+DNS_CHALLENGE_TIMEOUT = 30
+"""Timeout, in seconds, for DNS requests."""
+
+
 TEMP_CHECKPOINT_DIR = "temp_checkpoint"
 """Temporary checkpoint directory (relative to IConfig.work_dir)."""
 
