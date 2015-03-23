@@ -23,18 +23,15 @@ Ubuntu
 
 .. code-block:: shell
 
-   sudo apt-get install python python-setuptools python-virtualenv python-dev \
-                        gcc swig dialog libaugeas0 libssl-dev libffi-dev \
-                        ca-certificates
+   ./bootstrap/ubuntu.sh
 
-.. Please keep the above command in sync with .travis.yml (before_install)
 
 Mac OSX
 -------
 
 .. code-block:: shell
 
-   sudo brew install augeas swig
+   ./bootstrap/mac.sh
 
 
 Installation
