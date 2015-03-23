@@ -4,6 +4,12 @@ import re
 
 from setuptools import setup
 
+# Workaround for http://bugs.python.org/issue8876, see
+# http://bugs.python.org/issue8876#msg208792
+# This can be removed when using Python 2.7.9 or later:
+# https://hg.python.org/cpython/raw-file/v2.7.9/Misc/NEWS
+if os.path.abspath(__file__).split(os.path.sep)[1] == 'vagrant':
+    del os.link
 
 def read_file(filename, encoding='utf8'):
     """Read unicode from given file."""
@@ -39,12 +45,14 @@ install_requires = [
 ]
 
 dev_extras = [
-    'pylint>=1.4.0',  # upstream #248
+    # Pin astroid==1.3.5, pylint==1.4.2 as a workaround for #289
+    'astroid==1.3.5',
+    'pylint==1.4.2',  # upstream #248
 ]
 
 docs_extras = [
     'repoze.sphinx.autointerface',
-    'Sphinx',
+    'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
     'sphinx_rtd_theme',
 ]
 
@@ -56,16 +64,35 @@ testing_extras = [
 ]
 
 setup(
-    name="letsencrypt",
+    name='letsencrypt',
     version=meta['version'],
     description="Let's Encrypt",
     long_description=readme,  # later: + '\n\n' + changes
     author="Let's Encrypt Project",
-    license="",
-    url="https://letsencrypt.org",
+    license='Apache License 2.0',
+    url='https://letsencrypt.org',
+    classifiers=[
+        'Environment :: Console',
+        'Environment :: Console :: Curses',
+        'Intended Audience :: System Administrators',
+        'License :: OSI Approved :: Apache Software License',
+        'Operating System :: POSIX :: Linux',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 2.6',
+        'Programming Language :: Python :: 2.7',
+        'Topic :: Internet :: WWW/HTTP',
+        'Topic :: Security',
+        'Topic :: System :: Installation/Setup',
+        'Topic :: System :: Networking',
+        'Topic :: System :: Systems Administration',
+        'Topic :: Utilities',
+    ],
+
     packages=[
         'letsencrypt',
         'letsencrypt.acme',
+        'letsencrypt.acme.jose',
         'letsencrypt.client',
         'letsencrypt.client.apache',
         'letsencrypt.client.display',
@@ -74,19 +101,24 @@ setup(
         'letsencrypt.client.tests.display',
         'letsencrypt.scripts',
     ],
+
     install_requires=install_requires,
-    tests_require=install_requires,
-    test_suite='letsencrypt',
     extras_require={
         'dev': dev_extras,
         'docs': docs_extras,
         'testing': testing_extras,
     },
+
+    tests_require=install_requires,
+    test_suite='letsencrypt',
+
     entry_points={
         'console_scripts': [
             'letsencrypt = letsencrypt.scripts.main:main',
+            'jws = letsencrypt.acme.jose.jws:CLI.run',
         ],
     },
+
     zip_safe=False,
     include_package_data=True,
 )

@@ -1,15 +1,14 @@
-"""JSON objects in ACME protocol other than messages."""
+"""Other ACME objects."""
+import functools
 import logging
 
-from Crypto import Random
-import Crypto.Hash.SHA256
-import Crypto.Signature.PKCS1_v1_5
+import Crypto.Random
+import Crypto.PublicKey.RSA
 
 from letsencrypt.acme import jose
-from letsencrypt.acme import util
 
 
-class Signature(util.JSONDeSerializable, util.ImmutableMap):
+class Signature(jose.JSONObjectWithFields):
     """ACME signature.
 
     :ivar str alg: Signature algorithm.
@@ -17,19 +16,22 @@ class Signature(util.JSONDeSerializable, util.ImmutableMap):
     :ivar str nonce: Nonce.
 
     :ivar jwk: JWK.
-    :type jwk: :class:`letsencrypt.acme.jose.JWK`
-
-    .. todo:: Currently works for RSA keys only.
+    :type jwk: :class:`JWK`
 
     """
-    __slots__ = ('alg', 'sig', 'nonce', 'jwk')
-    schema = util.load_schema('signature')
+    NONCE_SIZE = 16
+    """Minimum size of nonce in bytes."""
 
-    NONCE_LEN = 16
-    """Size of nonce in bytes, as specified in the ACME protocol."""
+    alg = jose.Field('alg', decoder=jose.JWASignature.from_json)
+    sig = jose.Field('sig', encoder=jose.b64encode,
+                     decoder=jose.decode_b64jose)
+    nonce = jose.Field(
+        'nonce', encoder=jose.b64encode, decoder=functools.partial(
+            jose.decode_b64jose, size=NONCE_SIZE, minimum=True))
+    jwk = jose.Field('jwk', decoder=jose.JWK.from_json)
 
     @classmethod
-    def from_msg(cls, msg, key, nonce=None):
+    def from_msg(cls, msg, key, nonce=None, nonce_size=None, alg=jose.RS256):
         """Create signature with nonce prepended to the message.
 
         .. todo:: Protect against crypto unicode errors... is this sufficient?
@@ -40,22 +42,22 @@ class Signature(util.JSONDeSerializable, util.ImmutableMap):
         :param key: Key used for signing.
         :type key: :class:`Crypto.PublicKey.RSA`
 
-        :param nonce: Nonce to be used. If None, nonce of
-            :const:`NONCE_LEN` size will be randomly generated.
-        :type nonce: str or None
+        :param str nonce: Nonce to be used. If None, nonce of
+            ``nonce_size`` will be randomly generated.
+        :param int nonce_size: Size of the automatically generated nonce.
+            Defaults to :const:`NONCE_SIZE`.
 
         """
+        nonce_size = cls.NONCE_SIZE if nonce_size is None else nonce_size
         if nonce is None:
-            nonce = Random.get_random_bytes(cls.NONCE_LEN)
+            nonce = Crypto.Random.get_random_bytes(nonce_size)
 
         msg_with_nonce = nonce + msg
-        hashed = Crypto.Hash.SHA256.new(msg_with_nonce)
-        sig = Crypto.Signature.PKCS1_v1_5.new(key).sign(hashed)
-
+        sig = alg.sign(key, nonce + msg)
         logging.debug('%s signed as %s', msg_with_nonce, sig)
 
-        return cls(alg='RS256', sig=sig, nonce=nonce,
-                   jwk=jose.JWK(key=key.publickey()))
+        return cls(alg=alg, sig=sig, nonce=nonce,
+                   jwk=alg.kty(key=key.publickey()))
 
     def verify(self, msg):
         """Verify the signature.
@@ -63,21 +65,5 @@ class Signature(util.JSONDeSerializable, util.ImmutableMap):
         :param str msg: Message that was used in signing.
 
         """
-        hashed = Crypto.Hash.SHA256.new(self.nonce + msg)
-        return Crypto.Signature.PKCS1_v1_5.new(self.jwk.key).verify(
-            hashed, self.sig)
-
-    def to_json(self):
-        """Prepare JSON serializable object."""
-        return {
-            'alg': self.alg,
-            'sig': jose.b64encode(self.sig),
-            'nonce': jose.b64encode(self.nonce),
-            'jwk': self.jwk,
-        }
-
-    @classmethod
-    def _from_valid_json(cls, jobj):
-        return cls(alg=jobj['alg'], sig=jose.b64decode(jobj['sig']),
-                   nonce=jose.b64decode(jobj['nonce']),
-                   jwk=jose.JWK.from_json(jobj['jwk'], validate=False))
+        # self.alg is not Field, but JWA | pylint: disable=no-member
+        return self.alg.verify(self.jwk.key, self.nonce + msg, self.sig)

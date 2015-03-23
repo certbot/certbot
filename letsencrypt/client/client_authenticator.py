@@ -1,7 +1,9 @@
 """Client Authenticator"""
 import zope.interface
 
-from letsencrypt.client import challenge_util
+from letsencrypt.acme import challenges
+
+from letsencrypt.client import achallenges
 from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 from letsencrypt.client import recovery_token
@@ -30,22 +32,22 @@ class ClientAuthenticator(object):
 
     def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use
         """Return list of challenge preferences."""
-        return ["recoveryToken"]
+        return [challenges.RecoveryToken]
 
-    def perform(self, chall_list):
+    def perform(self, achalls):
         """Perform client specific challenges for IAuthenticator"""
         responses = []
-        for chall in chall_list:
-            if isinstance(chall, challenge_util.RecTokenChall):
-                responses.append(self.rec_token.perform(chall))
+        for achall in achalls:
+            if isinstance(achall, achallenges.RecoveryToken):
+                responses.append(self.rec_token.perform(achall))
             else:
                 raise errors.LetsEncryptClientAuthError("Unexpected Challenge")
         return responses
 
-    def cleanup(self, chall_list):
+    def cleanup(self, achalls):
         """Cleanup call for IAuthenticator."""
-        for chall in chall_list:
-            if isinstance(chall, challenge_util.RecTokenChall):
-                self.rec_token.cleanup(chall)
+        for achall in achalls:
+            if isinstance(achall, achallenges.RecoveryToken):
+                self.rec_token.cleanup(achall)
             else:
                 raise errors.LetsEncryptClientAuthError("Unexpected Challenge")

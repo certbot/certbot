@@ -6,6 +6,7 @@
 import argparse
 import logging
 import os
+import pkg_resources
 import sys
 
 import confargparse
@@ -190,10 +191,10 @@ def main():  # pylint: disable=too-many-branches, too-many-statements
 
 def display_eula():
     """Displays the end user agreement."""
-    with open("EULA") as eula_file:
-        if not zope.component.getUtility(interfaces.IDisplay).yesno(
-                eula_file.read(), "Agree", "Cancel"):
-            sys.exit(0)
+    eula = pkg_resources.resource_string("letsencrypt", "EULA")
+    if not zope.component.getUtility(interfaces.IDisplay).yesno(
+            eula, "Agree", "Cancel"):
+        sys.exit(0)
 
 
 def read_file(filename):
