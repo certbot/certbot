@@ -32,7 +32,9 @@ install_requires = [
     'ConfArgParse',
     'jsonschema',
     'mock',
+    'ndg-httpsclient',  # urllib3 InsecurePlatformWarning (#304)
     'psutil>=2.1.0',  # net_connections introduced in 2.1.0
+    'pyasn1',  # urllib3 InsecurePlatformWarning (#304)
     'pycrypto',
     'PyOpenSSL',
     'python-augeas',
