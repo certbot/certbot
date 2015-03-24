@@ -36,14 +36,19 @@ class Network(object):
 
     def register(self, contact=messages2.Registration._fields['contact'].default):
         new_reg = messages2.Registration(contact=contact)
+
         response = self._post(self.new_reg_uri, self._wrap_in_jws(new_reg))
         assert response.status_code == httplib.CREATED  # TODO: handle errors
+
+        terms_of_service = (response.links['next']['url']
+               if 'terms-of-service' in response.links else None)
         regr = messages2.RegistrationResource(
             body=messages2.Registration.from_json(response.json()),
             uri=response.headers['location'],
             new_authz_uri=response.links['next']['url'],
-        )
+            terms_of_service=terms_of_service)
         assert regr.body.key == self.key.public()
+
         return regr
 
     def update_registration(self, regr):

@@ -117,7 +117,7 @@ class RegistrationResource(Resource):
     :ivar new_authz_uri: URI found in the 'next' Link header
 
     """
-    __slots__ = ('body', 'uri', 'new_authz_uri')
+    __slots__ = ('body', 'uri', 'new_authz_uri', 'terms_of_service')
 
 
 class Registration(ResourceBody):
@@ -128,6 +128,7 @@ class Registration(ResourceBody):
     key = jose.Field('key', omitempty=True, decoder=jose.JWK.from_json)
     contact = jose.Field('contact', omitempty=True, default=())
     recovery_token = jose.Field('recoveryToken', omitempty=True)
+    agreement = jose.Field('agreement', omitempty=True)
 
 
 class ChallengeResource(Resource, jose.JSONObjectWithFields):
