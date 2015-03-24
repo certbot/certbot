@@ -189,10 +189,13 @@ class Network(object):
 
         """
         response = requests.get(authzr.uri)
+        retry_after = 0  # TODO, get it from response.headers.get('Retry-After')
+
         updated_authzr = self._authzr_from_response(
             response, authzr.body.identifier, authzr.uri, authzr.new_cert_uri)
         # TODO check UnexpectedUpdate
-        return updated_authzr
+
+        return updated_authzr, retry_after
 
     def request_issuance(self, csr, authzrs):
         """Request issuance.
