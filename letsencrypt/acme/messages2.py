@@ -214,16 +214,16 @@ class CertificateResource(Resource):
 
     :ivar body: `M2Crypto.X509.X509`
     :ivar cert_chain_uri: URI found in the 'up' Link header
-    :ivar authzs: List of `Authorization`.
+    :ivar authzrs: `list` of `AuthorizationResource`.
 
     """
-    __slots__ = ('body', 'uri', 'cert_chain_uri', 'authz')
+    __slots__ = ('body', 'uri', 'cert_chain_uri', 'authzrs')
 
 
 class Revocation(jose.JSONObjectWithFields):
     """Revocation message."""
 
-    class When(object):  # TODO
+    class When(object):  # TODO: 'now' or datetime
         pass
 
     revoke = jose.Field('revoke')   # TODO: use When

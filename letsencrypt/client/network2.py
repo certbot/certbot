@@ -46,6 +46,18 @@ class Network(object):
         assert regr.body.key == self.key.public()
         return regr
 
+    def update_registration(self, regr):
+        """Update registration.
+
+        :pram regr: Registration resource.
+        :type regr: `.RegistrationResource`
+
+        :returns: Updated registration resource.
+        :rtype: `.RegistrationResource`
+
+        """
+        response = self._post(regr.uri, self._wrap_in_jws(regr.body))
+
     def request_challenges(self, identifier, regr):
         """Request challenges.
 
@@ -65,3 +77,117 @@ class Network(object):
             new_cert_uri=response.links['next']['url'])
         assert authzr.body.key == self.key.public()
         return authzr
+
+    # TODO: anything below is also stub, bot not working, not tested at all
+
+    def answer_challenge(self, challr, response):
+        """Answer challenge.
+
+        :param challr: Corresponding challenge resource.
+        :type challr: `.ChallengeResource`
+
+        :param response: Challenge response
+        :type response: `.challenges.ChallengeResponse`
+
+        :returns: Updated challenge resource.
+        :rtype: `.ChallengeResource`
+
+        """
+        response = self._post(challr.uri, self._wrap_in_jws(response))
+        assert response.headers['location'] == challr.uri
+        updated_challr = messages2.ChallengeResource(
+            body=challenges.Challenge.from_json(response.json()),
+            uri=challr.uri)
+        return updated_challr
+
+    def answer_challenges(self, challrs, responses):
+        """Answer multiple challenges.
+
+        .. note:: This is a convenience function to make integration
+           with old proto code easier and shall probably be removed
+           once restification is over.
+
+        """
+        return [self.answer_challenge(challr, response)
+                for challr, response in itertools.izip(challrs, responses)]
+
+    def poll(self, authzr):
+        """Poll Authorization Resource for status.
+
+        :param authzr: Authorization Resource
+        :type authzr: `.AuthorizationResource`
+
+        :returns: Updated Authorization Resource and 'Retry-After'
+            value (0, if such header not provided).
+
+        :rtype: (`.AuthorizationResource`, `int`)
+
+        """
+
+    def request_issuance(self, csr, authzrs):
+        """Request issuance.
+
+        :param csr: CSR
+        :type csr: `M2Crypto.X509.Request`
+
+        :param authzrs: `list` of `.AuthorizationResource`
+
+        """
+        req = CertificateRequest(
+            csr=csr, authorizations=tuple(authzr.uri for authzr in authzrs))
+        response = self._post(
+            authzrs[0].new_cert_uri,  # TODO: acme-spec #90
+            self._wrap_in_jws(req))
+        # assert content-type: application/pkix-cert
+        return messages2.CertificateResource(
+            authzrs=authzrs,
+            body=M2Crypto.X509.load_der_string(response.text),
+            cert_chain_uri=response.links['up']['url'])
+
+    def poll_and_request_issuance(self, csr, authzrs, mintime=5):
+        """Poll and request issuance.
+
+        :param int mintime: Minimum time before next attempt
+
+        """
+        waiting = set()
+        finished = set()
+
+        while waiting:
+            authzr = waiting.pop()
+            updated_authzr, retry_after = self.poll(authzr)
+            if updated_authzr.body.status == messages2.StatusValidated:
+                finished.add(updated_authzr)
+            else:
+                waiting.add(updated_authzr)
+            # TODO: implement reasonable sleeping!
+
+        return request_issuance(csr, authzrs)
+
+    def check_cert(self, certr):
+        """Check for new cert.
+
+        :param certr: CertificateResource
+        :type certr: `.CertificateResource`
+
+        """
+        # TODO: acme-spec 5.1 table action should be renamed to
+        # "refresh cert", and this method integrated with self.refresh
+        return requests.get(certr.uri)
+
+    def refresh(self, certr):
+        """Refresh certificate."""
+        return self.check_cert(certr)
+
+    def fetch_chain(self, certr):
+        """Fetch chain for certificate."""
+
+    def revoke(self, certr, when='now'):
+        """Revoke certificate.
+
+        :param when: When should the revocation take place.
+        :type when: `.Revocation.When`
+
+        """
+        rev = messages2.Revocation(revoke=when, authorizations=tuple(
+            authzr.uri for authzr in certr.authzrs))
