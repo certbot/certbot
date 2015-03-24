@@ -108,6 +108,23 @@ class Network(object):
             #raise errors.UnexpectedUpdate(regr)
         return updated_regr
 
+    def _authzr_from_response(self, response, identifier,
+                              uri=None, new_cert_uri=None):
+        if new_cert_uri is None:
+            try:
+                new_cert_uri = response.links['next']['url']
+            except KeyError:
+                raise errors.NetworkError('"next" link missing')
+
+        authzr = messages2.AuthorizationResource(
+            body=messages2.Authorization.from_json(response.json()),
+            uri=response.headers.get('location', uri),
+            new_cert_uri=new_cert_uri)
+        if (authzr.body.key != self.key.public()
+                or authzr.body.identifier != identifier):
+            raise errors.UnexpectedUpdate(authzr)
+        return authzr
+
     def request_challenges(self, identifier, regr):
         """Request challenges.
 
@@ -121,14 +138,7 @@ class Network(object):
         new_authz = messages2.Authorization(identifier=identifier)
         response = self._post(regr.new_authz_uri, self._wrap_in_jws(new_authz))
         assert response.status_code == httplib.CREATED  # TODO: handle errors
-        authzr = messages2.AuthorizationResource(
-            body=messages2.Authorization.from_json(response.json()),
-            uri=response.headers['location'],
-            new_cert_uri=response.links['next']['url'])
-        if (authzr.body.key != self.key.public()
-                or authzr.body.identifier != identifier):
-            raise errors.UnexpectedUpdate(authzr)
-        return authzr
+        return self._authzr_from_response(response, identifier)
 
     # TODO: anything below is also stub, bot not working, not tested at all
 
@@ -178,6 +188,11 @@ class Network(object):
         :rtype: (`.AuthorizationResource`, `int`)
 
         """
+        response = requests.get(authzr.uri)
+        updated_authzr = self._authzr_from_response(
+            response, authzr.body.identifier, authzr.uri, authzr.new_cert_uri)
+        # TODO check UnexpectedUpdate
+        return updated_authzr
 
     def request_issuance(self, csr, authzrs):
         """Request issuance.
