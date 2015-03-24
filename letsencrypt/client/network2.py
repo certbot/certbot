@@ -133,9 +133,12 @@ class Network(object):
         :returns: Updated challenge resource.
         :rtype: `.ChallengeResource`
 
+        :raises errors.UnexpectedUpdate:
+
         """
         response = self._post(challr.uri, self._wrap_in_jws(response))
-        assert response.headers['location'] == challr.uri
+        if response.headers['location'] != challr.uri:
+            raise UnexpectedUpdate(response.headers['location'])
         updated_challr = messages2.ChallengeResource(
             body=challenges.Challenge.from_json(response.json()),
             uri=challr.uri)
