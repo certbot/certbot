@@ -11,11 +11,7 @@ from letsencrypt.client import network2
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
-URL_ROOT = 'https://www.letsencrypt-demo.org'
-NEW_REG_URL = URL_ROOT + '/acme/new-reg'
-NEW_AUTHZ_URL = URL_ROOT + '/acme/new-authz'
-#NEW_CERT_URL = URL_ROOT + '/acme/new-certz'
-
+NEW_REG_URL = 'https://www.letsencrypt-demo.org/acme/new-reg'
 
 key = jose.JWKRSA.load(pkg_resources.resource_string(
     'letsencrypt.acme.jose', os.path.join('testdata', 'rsa512_key.pem')))
