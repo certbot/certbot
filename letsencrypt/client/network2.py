@@ -4,6 +4,8 @@ import logging
 
 import requests
 
+import M2Crypto
+
 from letsencrypt.acme import jose
 from letsencrypt.acme import messages2
 
@@ -179,7 +181,8 @@ class Network(object):
         :param authzrs: `list` of `.AuthorizationResource`
 
         """
-        req = CertificateRequest(
+        # TODO: assert len(authzrs) == number of SANs
+        req = messages2.CertificateRequest(
             csr=csr, authorizations=tuple(authzr.uri for authzr in authzrs))
         response = self._post(
             authzrs[0].new_cert_uri,  # TODO: acme-spec #90
@@ -187,7 +190,7 @@ class Network(object):
         # assert content-type: application/pkix-cert
         return messages2.CertificateResource(
             authzrs=authzrs,
-            body=M2Crypto.X509.load_der_string(response.text),
+            body=M2Crypto.X509.load_cert_der_string(response.text),
             cert_chain_uri=response.links['up']['url'])
 
     def poll_and_request_issuance(self, csr, authzrs, mintime=5):
