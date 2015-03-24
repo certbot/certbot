@@ -37,6 +37,14 @@ class Network(object):
         return response
 
     def register(self, contact=messages2.Registration._fields['contact'].default):
+        """Register.
+
+        :returns: Registration Resource.
+        :rtype: `.RegistrationResource`
+
+        :raises letsencrypt.client.errors.UnexpectedUpdate:
+
+        """
         new_reg = messages2.Registration(contact=contact)
 
         response = self._post(self.new_reg_uri, self._wrap_in_jws(new_reg))
@@ -58,10 +66,10 @@ class Network(object):
     def update_registration(self, regr):
         """Update registration.
 
-        :pram regr: Registration resource.
+        :pram regr: Registration Resource.
         :type regr: `.RegistrationResource`
 
-        :returns: Updated registration resource.
+        :returns: Updated Registration Resource.
         :rtype: `.RegistrationResource`
 
         """
@@ -176,7 +184,7 @@ class Network(object):
     def check_cert(self, certr):
         """Check for new cert.
 
-        :param certr: CertificateResource
+        :param certr: Certificate Resource
         :type certr: `.CertificateResource`
 
         """
