@@ -548,8 +548,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     def _enable_redirect(self, ssl_vhost, unused_options):
         """Redirect all equivalent HTTP traffic to ssl_vhost.
 
-        .. todo:: This enhancement should be rewritten and will unfortunately
-            require lots of debugging by hand.
+        .. todo:: This enhancement should be rewritten and will
+           unfortunately require lots of debugging by hand.
+
         Adds Redirect directive to the port 80 equivalent of ssl_vhost
         First the function attempts to find the vhost with equivalent
         ip addresses that serves on non-ssl ports

@@ -301,8 +301,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
 
             else:
                 raise errors.LetsEncryptClientError(
-                    "Received unsupported challenge of type: "
-                    "%s" % chall.acme_type)
+                    "Received unsupported challenge of type: %s", chall.typ)
 
             ichall = achallenges.Indexed(achall=achall, index=index)
 

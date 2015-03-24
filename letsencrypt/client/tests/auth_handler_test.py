@@ -335,7 +335,7 @@ class SatisfyChallengesTest(unittest.TestCase):
         # pylint: disable=no-self-use
         exp_resp = [None] * len(challs)
         for i in path:
-            exp_resp[i] = TRANSLATE[challs[i].acme_type] + str(domain)
+            exp_resp[i] = TRANSLATE[challs[i].typ] + str(domain)
 
         return exp_resp
 
