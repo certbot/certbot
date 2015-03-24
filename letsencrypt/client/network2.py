@@ -7,6 +7,8 @@ import requests
 from letsencrypt.acme import jose
 from letsencrypt.acme import messages2
 
+from letsencrypt.client import errors
+
 
 class Network(object):
     """ACME networking.
@@ -47,7 +49,9 @@ class Network(object):
             uri=response.headers['location'],
             new_authz_uri=response.links['next']['url'],
             terms_of_service=terms_of_service)
-        assert regr.body.key == self.key.public()
+
+        if regr.body.key != self.key.public() or regr.body.contact != contact:
+            raise errors.UnexpectedUpdate(regr)
 
         return regr
 

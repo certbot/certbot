@@ -5,6 +5,14 @@ class LetsEncryptClientError(Exception):
     """Generic Let's Encrypt client error."""
 
 
+class NetworkError(LetsEncryptClientError):
+    """Network error."""
+
+
+class UnexpectedUpdate(NetworkError):
+    """Unexpected update."""
+
+
 class LetsEncryptReverterError(LetsEncryptClientError):
     """Let's Encrypt Reverter error."""
 
