@@ -36,6 +36,23 @@ class Network(object):
         logging.debug('Received response %s: %s', response, response.text)
         return response
 
+    def _regr_from_response(self, response, uri=None, new_authz_uri=None):
+        terms_of_service = (
+            response.links['next']['url']
+            if 'terms-of-service' in response.links else None)
+
+        if new_authz_uri is None:
+            try:
+                new_authz_uri = response.links['next']['url']
+            except KeyError:
+                raise errors.NetworkError('"next" link missing')
+
+        return messages2.RegistrationResource(
+            body=messages2.Registration.from_json(response.json()),
+            uri=response.headers.get('location', uri),
+            new_authz_uri=new_authz_uri,
+            terms_of_service=terms_of_service)
+
     def register(self, contact=messages2.Registration._fields['contact'].default):
         """Register.
 
@@ -50,14 +67,7 @@ class Network(object):
         response = self._post(self.new_reg_uri, self._wrap_in_jws(new_reg))
         assert response.status_code == httplib.CREATED  # TODO: handle errors
 
-        terms_of_service = (response.links['next']['url']
-               if 'terms-of-service' in response.links else None)
-        regr = messages2.RegistrationResource(
-            body=messages2.Registration.from_json(response.json()),
-            uri=response.headers['location'],
-            new_authz_uri=response.links['next']['url'],
-            terms_of_service=terms_of_service)
-
+        regr = self._regr_from_response(response)
         if regr.body.key != self.key.public() or regr.body.contact != contact:
             raise errors.UnexpectedUpdate(regr)
 
@@ -74,6 +84,20 @@ class Network(object):
 
         """
         response = self._post(regr.uri, self._wrap_in_jws(regr.body))
+
+        # TODO: Boulder returns httplib.ACCEPTED
+        #assert response.status_code == httplib.OK
+
+        # TODO: Boulder does not set Location or Link on update
+        # (c.f. acme-spec #94)
+
+        updated_regr = self._regr_from_response(
+            response, uri=regr.uri, new_authz_uri=regr.new_authz_uri)
+        if updated_regr != regr:
+            pass
+            # TODO: Boulder reregisters with new recoveryToken and new URI
+            #raise errors.UnexpectedUpdate(regr)
+        return updated_regr
 
     def request_challenges(self, identifier, regr):
         """Request challenges.
