@@ -8,7 +8,7 @@ from letsencrypt.acme import other
 from letsencrypt.acme import util
 
 
-class Error(jose.JSONObjectWithFields):
+class Error(jose.JSONObjectWithFields, Exception):
     """ACME error.
 
     https://tools.ietf.org/html/draft-ietf-appsawg-http-problem-00
@@ -23,10 +23,11 @@ class Error(jose.JSONObjectWithFields):
         "badCSR": "The CSR is unacceptable (e.g., due to a short key)",
     }
 
-    typ = jose.Field('type')
+    typ = jose.Field('type', omitempty=True)  # Boulder omits, spec requires
     title = jose.Field('title', omitempty=True)
     detail = jose.Field('detail')
-    instance = jose.Field('instance')
+    # Boulder omits, spec requires
+    instance = jose.Field('instance', omitempty=True)
 
     @typ.encoder
     def typ(value):

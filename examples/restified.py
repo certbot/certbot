@@ -34,4 +34,7 @@ logging.debug(authzr)
 
 csr = M2Crypto.X509.load_request_string(pkg_resources.resource_string(
     'letsencrypt.client.tests', os.path.join('testdata', 'csr.pem')))
-net.request_issuance(csr, (authzr,))
+try:
+    net.request_issuance(csr, (authzr,))
+except messages2.Error as error:
+    print error.detail

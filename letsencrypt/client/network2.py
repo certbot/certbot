@@ -33,9 +33,16 @@ class Network(object):
             payload=dumps, key=self.key, alg=self.alg).json_dumps()
 
     def _post(self, uri, data):
+        """Send POST data.
+
+        :raises letsencrypt.acme.messages2.Error:
+
+        """
         logging.debug('Sending data: %s', data)
         response = requests.post(uri, data)
         logging.debug('Received response %s: %s', response, response.text)
+        if not response.ok:
+            raise messages2.Error.from_json(response.json())
         return response
 
     def _regr_from_response(self, response, uri=None, new_authz_uri=None):
