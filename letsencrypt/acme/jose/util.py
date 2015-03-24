@@ -57,6 +57,12 @@ class ImmutableMap(collections.Mapping, collections.Hashable):
         for slot in self.__slots__:
             object.__setattr__(self, slot, kwargs.pop(slot))
 
+    def update(self, **kwargs):
+        """Return updated map."""
+        items = dict(self)
+        items.update(kwargs)
+        return type(self)(**items)
+
     def __getitem__(self, key):
         try:
             return getattr(self, key)
