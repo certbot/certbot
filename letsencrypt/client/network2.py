@@ -116,7 +116,9 @@ class Network(object):
             body=messages2.Authorization.from_json(response.json()),
             uri=response.headers['location'],
             new_cert_uri=response.links['next']['url'])
-        assert authzr.body.key == self.key.public()
+        if (authzr.body.key != self.key.public()
+                or authzr.body.identifier != identifier):
+            raise errors.UnexpectedUpdate(authzr)
         return authzr
 
     # TODO: anything below is also stub, bot not working, not tested at all
