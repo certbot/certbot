@@ -19,6 +19,9 @@ net = network2.Network(NEW_REG_URL, key)
 
 regr = net.register(contact=(
     'mailto:cert-admin@example.com', 'tel:+12025551212'))
+logging.info('Auto-accepting TOS: %s', regr.terms_of_service)
+net.update_registration(regr.update(
+    body=regr.body.update(agreement=regr.terms_of_service)))
 logging.debug(regr)
 
 authzr = net.request_challenges(
