@@ -142,6 +142,10 @@ class ChallengeResource(Resource, jose.JSONObjectWithFields):
     """
     __slots__ = ('body', 'authz_uri')
 
+    @property
+    def uri(self):
+        return body.uri
+
 
 class Challenge(ResourceBody):
     """Challenge resource body.
