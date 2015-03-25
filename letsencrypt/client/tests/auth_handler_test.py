@@ -481,7 +481,7 @@ class PathSatisfiedTest(unittest.TestCase):
         self.handler.responses[dom[0]] = [None, "sat", "sat2", None]
 
         self.handler.paths[dom[1]] = [0]
-        self.handler.responses[dom[1]] = ["sat", None, None, None]
+        self.handler.responses[dom[1]] = ["sat", None, None, False]
 
         self.handler.paths[dom[2]] = [0]
         self.handler.responses[dom[2]] = ["sat"]
@@ -496,7 +496,7 @@ class PathSatisfiedTest(unittest.TestCase):
             self.assertTrue(self.handler._path_satisfied(dom[i]))
 
     def test_not_satisfied(self):
-        dom = ["0", "1", "2"]
+        dom = ["0", "1", "2", "3"]
         self.handler.paths[dom[0]] = [1, 2]
         self.handler.responses[dom[0]] = ["sat1", None, "sat2", None]
 
@@ -505,6 +505,9 @@ class PathSatisfiedTest(unittest.TestCase):
 
         self.handler.paths[dom[2]] = [0]
         self.handler.responses[dom[2]] = [None]
+
+        self.handler.paths[dom[3]] = [0]
+        self.handler.responses[dom[3]] = [False]
 
         for i in xrange(3):
             self.assertFalse(self.handler._path_satisfied(dom[i]))

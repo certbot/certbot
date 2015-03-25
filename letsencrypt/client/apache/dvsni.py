@@ -50,7 +50,7 @@ class ApacheDvsni(object):
     def perform(self):
         """Peform a DVSNI challenge."""
         if not self.achalls:
-            return None
+            return []
         # Save any changes to the configuration as a precaution
         # About to make temporary changes to the config
         self.configurator.save()
@@ -160,19 +160,19 @@ class ApacheDvsni(object):
         ips = " ".join(str(i) for i in ip_addrs)
         document_root = os.path.join(
             self.configurator.config.config_dir, "dvsni_page/")
-        return ("<VirtualHost " + ips + ">\n"
-                "ServerName " + achall.nonce_domain + "\n"
-                "UseCanonicalName on\n"
-                "SSLStrictSNIVHostCheck on\n"
-                "\n"
-                "LimitRequestBody 1048576\n"
-                "\n"
-                "Include " + self.configurator.parser.loc["ssl_options"] + "\n"
-                "SSLCertificateFile " + self.get_cert_file(achall) + "\n"
-                "SSLCertificateKeyFile " + achall.key.file + "\n"
-                "\n"
-                "DocumentRoot " + document_root + "\n"
-                "</VirtualHost>\n\n")
+        return ("<VirtualHost " + ips + ">{0}"
+                "ServerName " + achall.nonce_domain + "{0}"
+                "UseCanonicalName on{0}"
+                "SSLStrictSNIVHostCheck on{0}"
+                "{0}"
+                "LimitRequestBody 1048576{0}"
+                "{0}"
+                "Include " + self.configurator.parser.loc["ssl_options"] + "{0}"
+                "SSLCertificateFile " + self.get_cert_file(achall) + "{0}"
+                "SSLCertificateKeyFile " + achall.key.file + "{0}"
+                "{0}"
+                "DocumentRoot " + document_root + "{0}"
+                "</VirtualHost>{0}{0}".format(os.linesep))
 
     def get_cert_file(self, achall):
         """Returns standardized name for challenge certificate.

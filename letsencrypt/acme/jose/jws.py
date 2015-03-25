@@ -3,7 +3,7 @@ import argparse
 import base64
 import sys
 
-import M2Crypto.X509
+import M2Crypto
 
 from letsencrypt.acme.jose import b64
 from letsencrypt.acme.jose import errors

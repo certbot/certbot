@@ -6,3 +6,6 @@ venv/
 .tox/
 .coverage
 m3
+*~
+.vagrant
+*.swp

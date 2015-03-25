@@ -203,7 +203,8 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
 
     def _path_satisfied(self, dom):
         """Returns whether a path has been completely satisfied."""
-        return all(self.responses[dom][i] is not None for i in self.paths[dom])
+        # Make sure that there are no 'None' or 'False' entries along path.
+        return all(self.responses[dom][i] for i in self.paths[dom])
 
     def _get_chall_pref(self, domain):
         """Return list of challenge preferences.
