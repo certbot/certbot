@@ -27,6 +27,7 @@ class Network(object):
         self.alg = alg
 
     def _wrap_in_jws(self, data):
+        """Wrap `JSONDeSerializable` object in JWS."""
         dumps = data.json_dumps()
         logging.debug('Serialized JSON: %s', dumps)
         return jose.JWS.sign(
