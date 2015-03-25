@@ -39,6 +39,7 @@ install_requires = [
     'python-augeas',
     'python2-pythondialog',
     'requests',
+    'werkzeug',
     'zope.component',
     'zope.interface',
     # order of items in install_requires DOES matter and M2Crypto has
