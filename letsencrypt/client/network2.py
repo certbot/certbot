@@ -1,8 +1,12 @@
 """Networking for ACME protocol v02."""
+import datetime
+import heapq
 import httplib
 import logging
+import time
 
 import requests
+import werkzeug
 
 import M2Crypto
 
@@ -216,26 +220,32 @@ class Network(object):
         return [self.answer_challenge(challr, response)
                 for challr, response in itertools.izip(challrs, responses)]
 
+    def _retry_after(self, response, mintime):
+        ra = response.headers.get('Retry-After', str(mintime))
+        try:
+            seconds = int(ra)
+        except ValueError:
+            return werkzeug.parse_date(ra)
+        else:
+            return datetime.datetime.now() + datetime.timedelta(seconds=seconds)
+
     def poll(self, authzr):
         """Poll Authorization Resource for status.
 
         :param authzr: Authorization Resource
         :type authzr: `.AuthorizationResource`
 
-        :returns: Updated Authorization Resource and 'Retry-After'
-            value (0, if such header not provided).
+        :returns: Updated Authorization Resource and HTTP response.
 
-        :rtype: (`.AuthorizationResource`, `int`)
+        :rtype: (`.AuthorizationResource`, `requests.Response`)
 
         """
         response = self._get(authzr.uri)
-        retry_after = 0  # TODO, get it from response.headers.get('Retry-After')
-
         updated_authzr = self._authzr_from_response(
             response, authzr.body.identifier, authzr.uri, authzr.new_cert_uri)
         # TODO check UnexpectedUpdate
 
-        return updated_authzr, retry_after
+        return updated_authzr, response
 
     def request_issuance(self, csr, authzrs):
         """Request issuance.
@@ -265,22 +275,40 @@ class Network(object):
     def poll_and_request_issuance(self, csr, authzrs, mintime=5):
         """Poll and request issuance.
 
-        :param int mintime: Minimum time before next attempt
+        :param int mintime: Minimum time before next attempt.
+
+        .. todo:: add `max_attempts` or `timeout`
 
         """
-        waiting = set()
-        finished = set()
+        # priority queue with datetime (based od Retry-After) as key,
+        # and original Authorization Resource as value
+        waiting = [(datetime.datetime.now(), authzr) for authzr in authzrs]
+        # mapping between original Authorization Resource and the most
+        # recently updated one
+        updated = dict((authzr, authzr) for authzr in authzrs)
 
         while waiting:
-            authzr = waiting.pop()
-            updated_authzr, retry_after = self.poll(authzr)
-            if updated_authzr.body.status == messages2.StatusValidated:
-                finished.add(updated_authzr)
-            else:
-                waiting.add(updated_authzr)
-            # TODO: implement reasonable sleeping!
+            # find the smallest Retry-After, and sleep if necessary
+            when, authzr = heapq.heappop(waiting)
+            now = datetime.datetime.now()
+            if when > now:
+                seconds = (when - now).seconds
+                logging.debug('Sleeping for %d seconds', seconds)
+                time.sleep(seconds)
 
-        return request_issuance(csr, authzrs)
+            updated_authzr, response = self.poll(authzr)
+            updated[authzr] = updated_authzr
+            # URI must not change throughout, as we are polling
+            # original Authorization Resource URI only
+            assert updated_authzr.uri == authzr
+
+            if updated_authzr.body.status != messages2.StatusValidated:
+                # push back to the priority queue, with updated retry_after
+                heapq.heappush(waiting, (self._retry_after(
+                    response, mintime=mintime), authzr))
+
+        return request_issuance(csr, authzrs), tuple(
+            updated[authzr] for authzr in authzrs)
 
     def _get_cert(self, uri):
         content_type = self.DER_CONTENT_TYPE  # TODO: make it a param

@@ -32,7 +32,7 @@ authzr = net.request_challenges(
     regr=regr)
 logging.debug(authzr)
 
-authzr, retry_after = net.poll(authzr)
+authzr, authzr_response = net.poll(authzr)
 
 csr = M2Crypto.X509.load_request_string(pkg_resources.resource_string(
     'letsencrypt.client.tests', os.path.join('testdata', 'csr.pem')))
