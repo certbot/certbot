@@ -21,6 +21,8 @@ class Network(object):
 
     """
 
+    DER_CONTENT_TYPE = 'application/plix-cert'
+
     def __init__(self, new_reg_uri, key, alg=jose.RS256):
         self.new_reg_uri = new_reg_uri
         self.key = key
@@ -248,7 +250,7 @@ class Network(object):
         req = messages2.CertificateRequest(
             csr=csr, authorizations=tuple(authzr.uri for authzr in authzrs))
 
-        content_type = 'application/plix-cert'  # TODO: add 'cert_type 'argument
+        content_type = self.DER_CONTENT_TYPE  # TODO: add 'cert_type 'argument
         response = self._post(
             authzrs[0].new_cert_uri,  # TODO: acme-spec #90
             self._wrap_in_jws(req),
@@ -280,23 +282,52 @@ class Network(object):
 
         return request_issuance(csr, authzrs)
 
+    def _get_cert(self, uri):
+        content_type = self.DER_CONTENT_TYPE  # TODO: make it a param
+        response = self._get(uri, headers={'Accept': content_type},
+                             content_type=content_type)
+        return response, M2Crypto.X509.load_cert_der_string(response.text)
+
     def check_cert(self, certr):
         """Check for new cert.
 
         :param certr: Certificate Resource
         :type certr: `.CertificateResource`
 
+        :returns: Updated Certificate Resource.
+        :rtype: `.CertificateResource`
+
         """
         # TODO: acme-spec 5.1 table action should be renamed to
         # "refresh cert", and this method integrated with self.refresh
-        return self._get(certr.uri)
+        response, cert = self._get_cert(certr.uri)
+        if not response.headers['location'] != certr.uri:
+            raise UnexpectedUpdate(response.text)
+        return certr.update(body=cert)
 
     def refresh(self, certr):
-        """Refresh certificate."""
+        """Refresh certificate.
+
+        :param certr: Certificate Resource
+        :type certr: `.CertificateResource`
+
+        :returns: Updated Certificate Resource.
+        :rtype: `.CertificateResource`
+
+        """
         return self.check_cert(certr)
 
     def fetch_chain(self, certr):
-        """Fetch chain for certificate."""
+        """Fetch chain for certificate.
+
+        :param certr: Certificate Resource
+        :type certr: `.CertificateResource`
+
+        :returns: Certificate chain
+        :rtype: `M2Crypto.X509.X509`
+
+        """
+        return self._get_cert(certr.cert_chain_uri)
 
     def revoke(self, certr, when='now'):
         """Revoke certificate.
