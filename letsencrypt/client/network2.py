@@ -185,8 +185,6 @@ class Network(object):
         assert response.status_code == httplib.CREATED  # TODO: handle errors
         return self._authzr_from_response(response, identifier)
 
-    # TODO: anything below is also stub, bot not working, not tested at all
-
     def answer_challenge(self, challr, response):
         """Answer challenge.
 
