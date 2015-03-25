@@ -66,10 +66,11 @@ class Network(object):
         logging.debug('Received response %s: %s', response, response.text)
 
         if not response.ok:
-            if response.content_type == 'application/json':
-                raise messages2.Error.from_json(response.json())
-            else:
-                raise errors.NetworkError(response)
+            # Boulder messes up Content-Type #56
+            #if response.headers['content-type'] == 'application/json':
+            raise messages2.Error.from_json(response.json())
+            #else:
+            #    raise errors.NetworkError(response)
 
         # TODO: Boulder messes up Content-Type #56
         #if response.headers['content-type'] != content_type:
