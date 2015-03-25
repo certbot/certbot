@@ -74,7 +74,6 @@ class _Constant(jose.JSONDeSerializable):
 class Status(_Constant):
     """ACME "status" field."""
     POSSIBLE_NAMES = {}
-# TODO: acme-spec #88
 StatusUnknown = Status('unknown')
 StatusPending = Status('pending')
 StatusProcessing = Status('processing')
