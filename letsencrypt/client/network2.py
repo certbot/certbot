@@ -243,10 +243,14 @@ class Network(object):
         # TODO: assert len(authzrs) == number of SANs
         req = messages2.CertificateRequest(
             csr=csr, authorizations=tuple(authzr.uri for authzr in authzrs))
+
+        content_type = 'application/plix-cert'  # TODO: add 'cert_type 'argument
         response = self._post(
             authzrs[0].new_cert_uri,  # TODO: acme-spec #90
-            self._wrap_in_jws(req))
-        # assert content-type: application/pkix-cert
+            self._wrap_in_jws(req),
+            content_type=content_type,
+            headers={'Accept': content_type})
+
         return messages2.CertificateResource(
             authzrs=authzrs,
             body=M2Crypto.X509.load_cert_der_string(response.text),
