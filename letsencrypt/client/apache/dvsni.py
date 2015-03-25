@@ -26,6 +26,23 @@ class ApacheDvsni(object):
     :param str challenge_conf: location of the challenge config file
 
     """
+
+    VHOST_TEMPLATE = """\
+<VirtualHost {vhost}>
+    ServerName {server_name}
+    UseCanonicalName on
+    SSLStrictSNIVHostCheck on
+
+    LimitRequestBody 1048576
+
+    Include {ssl_options_conf_path}
+    SSLCertificateFile {cert_path}
+    SSLCertificateKeyFile {key_path}
+
+    DocumentRoot {document_root}
+</VirtualHost>
+
+"""
     def __init__(self, configurator):
         self.configurator = configurator
         self.achalls = []
@@ -160,19 +177,16 @@ class ApacheDvsni(object):
         ips = " ".join(str(i) for i in ip_addrs)
         document_root = os.path.join(
             self.configurator.config.config_dir, "dvsni_page/")
-        return ("<VirtualHost " + ips + ">{0}"
-                "ServerName " + achall.nonce_domain + "{0}"
-                "UseCanonicalName on{0}"
-                "SSLStrictSNIVHostCheck on{0}"
-                "{0}"
-                "LimitRequestBody 1048576{0}"
-                "{0}"
-                "Include " + self.configurator.parser.loc["ssl_options"] + "{0}"
-                "SSLCertificateFile " + self.get_cert_file(achall) + "{0}"
-                "SSLCertificateKeyFile " + achall.key.file + "{0}"
-                "{0}"
-                "DocumentRoot " + document_root + "{0}"
-                "</VirtualHost>{0}{0}".format(os.linesep))
+        # TODO: Python docs is not clear how mutliline string literal
+        # newlines are parsed on different platforms. At least on
+        # Linux (Debian sid), when source file uses CRLF, Python still
+        # parses it as '\n'... c.f.:
+        # https://docs.python.org/2.7/reference/lexical_analysis.html
+        return self.VHOST_TEMPLATE.format(
+            vhost=ips, server_name=achall.nonce_domain,
+            ssl_options_conf_path=self.configurator.parser.loc["ssl_options"],
+            cert_path=self.get_cert_file(achall), key_path=achall.key.file,
+            document_root=document_root).replace('\n', os.linesep)
 
     def get_cert_file(self, achall):
         """Returns standardized name for challenge certificate.
