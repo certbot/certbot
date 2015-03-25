@@ -32,17 +32,49 @@ class Network(object):
         return jose.JWS.sign(
             payload=dumps, key=self.key, alg=self.alg).json_dumps()
 
-    def _post(self, uri, data):
-        """Send POST data.
+    def _get(self, uri, **kwargs):
+        """Send GET request.
 
-        :raises letsencrypt.acme.messages2.Error:
+        :raises letsencrypt.client.errors.NetworkError:
+
+        :returns: HTTP Response
+        :rtype: `requests.Response`
 
         """
-        logging.debug('Sending data: %s', data)
-        response = requests.post(uri, data)
+        try:
+            return requests.get(uri, **kwargs)
+        except requests.exception.RequestException as error:
+            raise errors.NetworkError(error)
+
+    def _post(self, uri, data, content_type='application/json', **kwargs):
+        """Send POST data.
+
+        :param str content_type: Expected Content-Type, fails if not set.
+
+        :raises letsencrypt.acme.messages2.NetworkError:
+
+        :returns: HTTP Response
+        :rtype: `requests.Response`
+
+        """
+        logging.debug('Sending POST data: %s', data)
+        try:
+            response = requests.post(uri, data=data, **kwargs)
+        except requests.exception.RequestException as error:
+            raise errors.NetworkError(error)
         logging.debug('Received response %s: %s', response, response.text)
+
         if not response.ok:
-            raise messages2.Error.from_json(response.json())
+            if response.content_type == 'application/json':
+                raise messages2.Error.from_json(response.json())
+            else:
+                raise errors.NetworkError(response)
+
+        # TODO: Boulder messes up Content-Type #56
+        #if response.headers['content-type'] != content_type:
+        #    raise errors.NetworkError(
+        #        'Server returned unexpected content-type header')
+
         return response
 
     def _regr_from_response(self, response, uri=None, new_authz_uri=None):
@@ -188,7 +220,7 @@ class Network(object):
         :rtype: (`.AuthorizationResource`, `int`)
 
         """
-        response = requests.get(authzr.uri)
+        response = self._get(authzr.uri)
         retry_after = 0  # TODO, get it from response.headers.get('Retry-After')
 
         updated_authzr = self._authzr_from_response(
@@ -247,7 +279,7 @@ class Network(object):
         """
         # TODO: acme-spec 5.1 table action should be renamed to
         # "refresh cert", and this method integrated with self.refresh
-        return requests.get(certr.uri)
+        return self._get(certr.uri)
 
     def refresh(self, certr):
         """Refresh certificate."""
