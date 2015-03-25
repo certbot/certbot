@@ -179,7 +179,7 @@ class ApacheDvsni(object):
             self.configurator.config.config_dir, "dvsni_page/")
         # TODO: Python docs is not clear how mutliline string literal
         # newlines are parsed on different platforms. At least on
-        # Linux (Debian sid), when source file uses CLRF, Python still
+        # Linux (Debian sid), when source file uses CRLF, Python still
         # parses it as '\n'... c.f.:
         # https://docs.python.org/2.7/reference/lexical_analysis.html
         return self.VHOST_TEMPLATE.format(
