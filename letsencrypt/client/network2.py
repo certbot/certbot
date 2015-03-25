@@ -338,3 +338,7 @@ class Network(object):
         """
         rev = messages2.Revocation(revoke=when, authorizations=tuple(
             authzr.uri for authzr in certr.authzrs))
+        response = self._post(certr.uri, self._wrap_in_jws(rev))
+        if response.status_code != httplib.OK:
+            raise errors.NetworkError(
+                'Successful revocation must return HTTP OK status')
