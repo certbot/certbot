@@ -33,7 +33,14 @@ class Network(object):
         return jose.JWS.sign(
             payload=dumps, key=self.key, alg=self.alg).json_dumps()
 
-    def _get(self, uri, **kwargs):
+    def _check_content_type(self, response, content_type):
+        # TODO: Boulder messes up Content-Type #56
+        #if response.headers['content-type'] != content_type:
+        #    raise errors.NetworkError(
+        #        'Server returned unexpected content-type header')
+        pass
+
+    def _get(self, uri, content_type='application/json', **kwargs):
         """Send GET request.
 
         :raises letsencrypt.client.errors.NetworkError:
@@ -43,9 +50,11 @@ class Network(object):
 
         """
         try:
-            return requests.get(uri, **kwargs)
+            response = requests.get(uri, **kwargs)
         except requests.exception.RequestException as error:
             raise errors.NetworkError(error)
+        self._check_content_type(response, content_type)
+        return response
 
     def _post(self, uri, data, content_type='application/json', **kwargs):
         """Send POST data.
@@ -72,11 +81,7 @@ class Network(object):
             #else:
             #    raise errors.NetworkError(response)
 
-        # TODO: Boulder messes up Content-Type #56
-        #if response.headers['content-type'] != content_type:
-        #    raise errors.NetworkError(
-        #        'Server returned unexpected content-type header')
-
+        self._check_content_type(response, content_type)
         return response
 
     def _regr_from_response(self, response, uri=None, new_authz_uri=None):
