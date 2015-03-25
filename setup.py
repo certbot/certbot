@@ -36,6 +36,7 @@ install_requires = [
     'pyasn1',  # urllib3 InsecurePlatformWarning (#304)
     'pycrypto',
     'PyOpenSSL',
+    'pyrfc3339',
     'python-augeas',
     'python2-pythondialog',
     'requests',

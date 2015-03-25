@@ -355,7 +355,7 @@ class Network(object):
         """
         return self._get_cert(certr.cert_chain_uri)
 
-    def revoke(self, certr, when='now'):
+    def revoke(self, certr, when=messages2.Revocation.NOW):
         """Revoke certificate.
 
         :param when: When should the revocation take place.

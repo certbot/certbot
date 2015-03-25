@@ -3,6 +3,7 @@ import jsonschema
 
 from letsencrypt.acme import challenges
 from letsencrypt.acme import errors
+from letsencrypt.acme import fields
 from letsencrypt.acme import jose
 from letsencrypt.acme import other
 from letsencrypt.acme import util
@@ -157,8 +158,7 @@ class Challenge(ResourceBody):
     __slots__ = ('chall',)
     uri = jose.Field('uri')
     status = jose.Field('status', decoder=Status.from_json)
-    # TODO: de/encode datetime
-    validated = jose.Field('validated', omitempty=True)
+    validated = fields.RFC3339Field('validated', omitempty=True)
 
     def to_json(self):
         jobj = super(Challenge, self).to_json()
@@ -202,7 +202,7 @@ class Authorization(ResourceBody):
     # general, but for Key Authorization '[t]he "expires" field MUST
     # be absent'... then acme-spec gives example with 'expires'
     # present... That's confusing!
-    expires = jose.Field('expires', omitempty=True)  # TODO: this is date
+    expires = fields.RFC3339Field('expires', omitempty=True)
 
     @challenges.decoder
     def challenges(value):  # pylint: disable=missing-docstring,no-self-argument
@@ -241,8 +241,21 @@ class CertificateResource(Resource):
 class Revocation(jose.JSONObjectWithFields):
     """Revocation message."""
 
-    class When(object):  # TODO: 'now' or datetime
-        pass
+    NOW = 'now'
 
-    revoke = jose.Field('revoke')   # TODO: use When
+    revoke = jose.Field('revoke')
     authorizations = CertificateRequest._fields['authorizations']
+
+    @revoke.decoder
+    def revoke(value):
+        if jobj == NOW:
+            return jobj
+        else:
+            return RFC3339Field.default_decoder(value)
+
+    @revoke.encoder
+    def revoke(value):
+        if jobj == NOW:
+            return value
+        else:
+            return RFC3339Field.default_encoder(value)
