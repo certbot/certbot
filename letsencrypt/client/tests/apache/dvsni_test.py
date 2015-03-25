@@ -60,7 +60,7 @@ class DvsniPerformTest(util.ApacheTest):
 
     def test_perform0(self):
         resp = self.sni.perform()
-        self.assertTrue(resp is None)
+        self.assertEqual(len(resp), 0)
 
     def test_setup_challenge_cert(self):
         # This is a helper function that can be used for handling
