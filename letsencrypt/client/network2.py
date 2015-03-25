@@ -199,9 +199,8 @@ class Network(object):
         response = self._post(challr.uri, self._wrap_in_jws(response))
         if response.headers['location'] != challr.uri:
             raise UnexpectedUpdate(response.headers['location'])
-        updated_challr = messages2.ChallengeResource(
-            body=challenges.Challenge.from_json(response.json()),
-            uri=challr.uri)
+        updated_challr = challr.update(
+            body=challenges.Challenge.from_json(response.json()))
         return updated_challr
 
     def answer_challenges(self, challrs, responses):
