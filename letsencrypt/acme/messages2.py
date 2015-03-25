@@ -88,6 +88,7 @@ class IdentifierType(_Constant):
     POSSIBLE_NAMES = {}
 IdentifierFQDN = IdentifierType('dns')  # IdentifierDNS in Boulder
 
+
 class Identifier(jose.JSONObjectWithFields):
     """ACME identifier."""
     typ = jose.Field('type', decoder=IdentifierType.from_json)
@@ -139,22 +140,36 @@ class ChallengeResource(Resource, jose.JSONObjectWithFields):
     :ivar authz_uri: URI found in the 'up' Link header.
 
     """
-    __slots__ = ('body',)# 'authz_uri')
+    __slots__ = ('body', 'authz_uri')
 
+
+class Challenge(ResourceBody):
+    """Challenge resource body.
+
+    .. todo::
+       Confusingly, this has the same name as
+       `challenges.Challenge`. Indeed, this class could be integrated
+       with challenges.Challenge, but this way it would be confusing
+       when compared to acme-spec, where all challenges are presented
+       without 'uri', 'status', or 'validated' fields.
+
+    """
+
+    __slots__ = ('chall',)
     uri = jose.Field('uri')
     status = jose.Field('status', decoder=Status.from_json)
     # TODO: de/encode datetime
     validated = jose.Field('validated', omitempty=True)
 
     def to_json(self):
-        jobj = super(ChallengeResource, self).to_json()
-        jobj.update(self.body.to_json())
+        jobj = super(Challenge, self).to_json()
+        jobj.update(self.chall.to_json())
         return jobj
 
     @classmethod
     def fields_from_json(cls, jobj):
-        fields = super(ChallengeResource, cls).fields_from_json(jobj)
-        fields['body'] = challenges.Challenge.from_json(jobj)
+        fields = super(Challenge, cls).fields_from_json(jobj)
+        fields['chall'] = challenges.Challenge.from_json(jobj)
         return fields
 
 
@@ -169,7 +184,11 @@ class AuthorizationResource(Resource):
 
 
 class Authorization(ResourceBody):
-    """Authorization resource body."""
+    """Authorization resource body.
+
+    :ivar challenges: `list` of `Challenge`
+
+    """
 
     identifier = jose.Field('identifier', decoder=Identifier.from_json)
     challenges = jose.Field('challenges', omitempty=True)
@@ -179,8 +198,6 @@ class Authorization(ResourceBody):
     key = Registration._fields['key']
     contact = Registration._fields['contact']
 
-    # TODO: move status/expires to AuthorizationResource for symmetry
-    # with ChallengeResource.status/validated?
     status = jose.Field('status', omitempty=True, decoder=Status.from_json)
     # TODO: 'expires' is allowed for Authorization Resources in
     # general, but for Key Authorization '[t]he "expires" field MUST
@@ -190,7 +207,9 @@ class Authorization(ResourceBody):
 
     @challenges.decoder
     def challenges(value):  # pylint: disable=missing-docstring,no-self-argument
-        return tuple(ChallengeResource.from_json(chall) for chall in value)
+        return tuple(
+            ChallengeResource(body=Challenge.from_json(chall), authz_uri=None)
+            for chall in value)
 
     @property
     def resolved_combinations(self):
