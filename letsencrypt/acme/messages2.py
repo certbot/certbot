@@ -122,7 +122,7 @@ class RegistrationResource(Resource):
 
 
 class Registration(ResourceBody):
-    """Registration resource."""
+    """Registration resource body."""
 
     # on new-reg key server ignores 'key' and populates it based on
     # JWS.signature.combined.jwk
@@ -169,26 +169,24 @@ class AuthorizationResource(Resource):
 
 
 class Authorization(ResourceBody):
+    """Authorization resource body."""
 
     identifier = jose.Field('identifier', decoder=Identifier.from_json)
-
-    # acme-spec marks 'key' as 'required', but new-authz does not need
-    # to carry it, server will take 'key' from the 'jwk' found in the
-    # JWS
-    key = jose.Field('key', omitempty=True, decoder=jose.JWK.from_json)
-    status = jose.Field('status', omitempty=True, decoder=Status.from_json)
     challenges = jose.Field('challenges', omitempty=True)
-
-    # TODO: 'expires' is allowed for Authorization Resources in
-    # general, but for Authorization '[t]he "expires" field MUST be
-    # absent'... then acme-spec gives example with 'expires'
-    # present... That's confusing!
-    expires = jose.Field('expires', omitempty=True)  # TODO: this is date
-
     combinations = jose.Field('combinations', omitempty=True)
 
-    # TODO: 'The client MAY provide contact information in the
-    # "contact" field in this or any subsequent request.' ???
+    # TODO: acme-spec #92, #98
+    key = Registration._fields['key']
+    contact = Registration._fields['contact']
+
+    # TODO: move status/expires to AuthorizationResource for symmetry
+    # with ChallengeResource.status/validated?
+    status = jose.Field('status', omitempty=True, decoder=Status.from_json)
+    # TODO: 'expires' is allowed for Authorization Resources in
+    # general, but for Key Authorization '[t]he "expires" field MUST
+    # be absent'... then acme-spec gives example with 'expires'
+    # present... That's confusing!
+    expires = jose.Field('expires', omitempty=True)  # TODO: this is date
 
     @challenges.decoder
     def challenges(value):  # pylint: disable=missing-docstring,no-self-argument
