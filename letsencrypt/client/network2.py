@@ -30,6 +30,7 @@ class Network(object):
     """
 
     DER_CONTENT_TYPE = 'application/plix-cert'
+    JSON_CONTENT_TYPE = 'application/json'
 
     def __init__(self, new_reg_uri, key, alg=jose.RS256):
         self.new_reg_uri = new_reg_uri
@@ -43,14 +44,45 @@ class Network(object):
         return jose.JWS.sign(
             payload=dumps, key=self.key, alg=self.alg).json_dumps()
 
-    def _check_content_type(self, response, content_type):
-        # TODO: Boulder messes up Content-Type #56
-        #if response.headers['content-type'] != content_type:
-        #    raise errors.NetworkError(
-        #        'Server returned unexpected content-type header')
-        pass
+    @classmethod
+    def _check_response(cls, response, content_type=None):
+        """Check response content and its type.
 
-    def _get(self, uri, content_type='application/json', **kwargs):
+        .. note::
+           Checking is not strict: skips wrong server response Content-Type
+           if response is an expected JSON object (c.f. Boulder #56).
+
+        """
+        response_ct = response.headers['content-type']
+
+        try:
+            # TODO: response.json() is called twice, once here, and
+            # once in _get and _post clients
+            jobj = response.json()
+        except ValueError as error:
+            jobj = None
+
+        if jobj is not None and response_ct != cls.JSON_CONTENT_TYPE:
+            logging.debug(
+                'Decoded JSON response, but wrong Content-Type (%s).',
+                response_ct)
+
+        if not response.ok:
+            if jobj is not None:
+                try:
+                    raise messages2.Error.from_json(jobj)
+                except jose.DeserializationError as error:
+                    # Couldn't deserialize JSON object
+                    raise errors.NetworkError((response, error))
+            else:
+                # response is not JSON object
+                raise errors.NetworkError(response)
+        elif (content_type is not None and response_ct != content_type
+              and content_type != cls.JSON_CONTENT_TYPE):
+            raise errors.NetworkError(
+                'Unexpected response Content-Type: {0}'.format(response_ct))
+
+    def _get(self, uri, content_type=JSON_CONTENT_TYPE, **kwargs):
         """Send GET request.
 
         :raises letsencrypt.client.errors.NetworkError:
@@ -61,12 +93,12 @@ class Network(object):
         """
         try:
             response = requests.get(uri, **kwargs)
-        except requests.exception.RequestException as error:
+        except requests.exceptions.RequestException as error:
             raise errors.NetworkError(error)
-        self._check_content_type(response, content_type)
+        self._check_response(response, content_type)
         return response
 
-    def _post(self, uri, data, content_type='application/json', **kwargs):
+    def _post(self, uri, data, content_type=JSON_CONTENT_TYPE, **kwargs):
         """Send POST data.
 
         :param str content_type: Expected Content-Type, fails if not set.
@@ -80,18 +112,11 @@ class Network(object):
         logging.debug('Sending POST data: %s', data)
         try:
             response = requests.post(uri, data=data, **kwargs)
-        except requests.exception.RequestException as error:
+        except requests.exceptions.RequestException as error:
             raise errors.NetworkError(error)
         logging.debug('Received response %s: %s', response, response.text)
 
-        if not response.ok:
-            # Boulder messes up Content-Type #56
-            #if response.headers['content-type'] == 'application/json':
-            raise messages2.Error.from_json(response.json())
-            #else:
-            #    raise errors.NetworkError(response)
-
-        self._check_content_type(response, content_type)
+        self._check_response(response, content_type)
         return response
 
     def _regr_from_response(self, response, uri=None, new_authz_uri=None):
