@@ -1,12 +1,7 @@
 """ACME protocol v02 messages."""
-import jsonschema
-
 from letsencrypt.acme import challenges
-from letsencrypt.acme import errors
 from letsencrypt.acme import fields
 from letsencrypt.acme import jose
-from letsencrypt.acme import other
-from letsencrypt.acme import util
 
 
 class Error(jose.JSONObjectWithFields, Exception):
@@ -37,7 +32,7 @@ class Error(jose.JSONObjectWithFields, Exception):
     @typ.decoder
     def typ(value):
         if not value.startswith(ERROR_TYPE_NAMESPACE):
-            raise errors.DeserializationError('Unrecognized error type')
+            raise jose.DeserializationError('Unrecognized error type')
 
         return value[len(ERROR_TYPE_NAMESPACE):]
 
@@ -75,18 +70,18 @@ class _Constant(jose.JSONDeSerializable):
 class Status(_Constant):
     """ACME "status" field."""
     POSSIBLE_NAMES = {}
-StatusUnknown = Status('unknown')
-StatusPending = Status('pending')
-StatusProcessing = Status('processing')
-StatusValid = Status('valid')
-StatusInvalid = Status('invalid')
-StatusRevoked = Status('revoked')
+STATUS_UNKNOWN = Status('unknown')
+STATUS_PENDING = Status('pending')
+STATUS_PROCESSING = Status('processing')
+STATUS_VALID = Status('valid')
+STATUS_INVALID = Status('invalid')
+STATUS_REVOKED = Status('revoked')
 
 
 class IdentifierType(_Constant):
     """ACME identifier type."""
     POSSIBLE_NAMES = {}
-IdentifierFQDN = IdentifierType('dns')  # IdentifierDNS in Boulder
+IDENTIFIER_FQDN = IdentifierType('dns')  # IdentifierDNS in Boulder
 
 
 class Identifier(jose.JSONObjectWithFields):
@@ -255,11 +250,11 @@ class Revocation(jose.JSONObjectWithFields):
         if jobj == NOW:
             return jobj
         else:
-            return RFC3339Field.default_decoder(value)
+            return fields.RFC3339Field.default_decoder(value)
 
     @revoke.encoder
     def revoke(value):
         if jobj == NOW:
             return value
         else:
-            return RFC3339Field.default_encoder(value)
+            return fields.RFC3339Field.default_encoder(value)

@@ -8,7 +8,7 @@ class RFC3339Field(jose.Field):
     """RFC3339 field encoder/decoder"""
 
     @classmethod
-    def default_encoder(self, value):
+    def default_encoder(cls, value):
         return pyrfc3339.generate(value)
 
     @classmethod

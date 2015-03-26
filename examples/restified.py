@@ -28,7 +28,7 @@ logging.debug(regr)
 
 authzr = net.request_challenges(
     identifier=messages2.Identifier(
-        typ=messages2.IdentifierFQDN, value='example1.com'),
+        typ=messages2.IDENTIFIER_FQDN, value='example1.com'),
     regr=regr)
 logging.debug(authzr)
 
