@@ -33,6 +33,7 @@ class Network(object):
 
     DER_CONTENT_TYPE = 'application/plix-cert'
     JSON_CONTENT_TYPE = 'application/json'
+    JSON_ERROR_CONTENT_TYPE = 'application/problem+json'
 
     def __init__(self, new_reg_uri, key, alg=jose.RS256):
         self.new_reg_uri = new_reg_uri
@@ -64,13 +65,13 @@ class Network(object):
         except ValueError as error:
             jobj = None
 
-        if jobj is not None and response_ct != cls.JSON_CONTENT_TYPE:
-            logging.debug(
-                'Decoded JSON response, but wrong Content-Type (%s).',
-                response_ct)
-
         if not response.ok:
             if jobj is not None:
+                if response_ct != cls.JSON_ERROR_CONTENT_TYPE:
+                    logging.debug(
+                        'Ignoring wrong Content-Type (%r) for JSON Error',
+                        response_ct)
+
                 try:
                     raise messages2.Error.from_json(jobj)
                 except jose.DeserializationError as error:
@@ -79,10 +80,18 @@ class Network(object):
             else:
                 # response is not JSON object
                 raise errors.NetworkError(response)
-        elif (content_type is not None and response_ct != content_type
-              and content_type != cls.JSON_CONTENT_TYPE):
-            raise errors.NetworkError(
-                'Unexpected response Content-Type: {0}'.format(response_ct))
+        else:
+            if jobj is not None and (
+                    response_ct != cls.JSON_CONTENT_TYPE or
+                    response_ct != cls.JSON_ERROR_CONTENT_TYPE):
+                logging.debug(
+                    'Ignoring wrong Content-Type (%r) for JSON decodable '
+                    'response', response_ct)
+
+            if (content_type is not None and response_ct != content_type
+                    and content_type != cls.JSON_CONTENT_TYPE):
+                raise errors.NetworkError(
+                    'Unexpected response Content-Type: {0}'.format(response_ct))
 
     def _get(self, uri, content_type=JSON_CONTENT_TYPE, **kwargs):
         """Send GET request.
