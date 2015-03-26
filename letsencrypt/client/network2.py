@@ -343,7 +343,7 @@ class Network(object):
             # original Authorization Resource URI only
             assert updated_authzr.uri == authzr
 
-            if updated_authzr.body.status != messages2.StatusValid:
+            if updated_authzr.body.status != messages2.STATUS_VALID:
                 # push back to the priority queue, with updated retry_after
                 heapq.heappush(waiting, (self._retry_after(
                     response, mintime=mintime), authzr))
