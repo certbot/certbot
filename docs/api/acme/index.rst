@@ -8,7 +8,16 @@
 Messages
 --------
 
+v00
+~~~
+
 .. automodule:: letsencrypt.acme.messages
+   :members:
+
+v02
+~~~
+
+.. automodule:: letsencrypt.acme.messages2
    :members:
 
 
