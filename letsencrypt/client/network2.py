@@ -16,6 +16,10 @@ from letsencrypt.acme import messages2
 from letsencrypt.client import errors
 
 
+# https://urllib3.readthedocs.org/en/latest/security.html#insecureplatformwarning
+requests.packages.urllib3.contrib.pyopenssl.inject_into_urllib3()
+
+
 class Network(object):
     """ACME networking.
 
