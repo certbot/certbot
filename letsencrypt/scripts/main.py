@@ -20,8 +20,6 @@ from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
 from letsencrypt.client import log
-from letsencrypt.client import standalone_authenticator as standalone
-from letsencrypt.client.apache import configurator
 from letsencrypt.client.display import util as display_util
 from letsencrypt.client.display import ops as display_ops
 
