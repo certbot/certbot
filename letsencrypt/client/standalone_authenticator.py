@@ -33,7 +33,7 @@ class StandaloneAuthenticator(object):
 
     description = "Standalone Authenticator"
 
-    def __init__(self):
+    def __init__(self, unused_config):
         self.child_pid = None
         self.parent_pid = os.getpid()
         self.subproc_state = None
