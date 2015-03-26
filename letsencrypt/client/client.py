@@ -28,7 +28,7 @@ from letsencrypt.client.display import ops as display_ops
 from letsencrypt.client.display import enhancements
 
 
-SETUPTOOLS_AUTHENTICATORS_ENTRY_POINT = 'letsencrypt.authenticators'
+SETUPTOOLS_AUTHENTICATORS_ENTRY_POINT = "letsencrypt.authenticators"
 """Setuptools entry point group name for Authenticator plugins."""
 
 
@@ -43,7 +43,7 @@ def init_auths(config):
             zope.interface.verify.verifyObject(interfaces.IAuthenticator, auth)
         except zope.interface.exceptions.BrokenImplementation:
             logging.debug(
-                '"%s" object does not provide IAuthenticator, skipping',
+                "%r object does not provide IAuthenticator, skipping",
                 entrypoint.name)
         else:
             auths[auth] = entrypoint.name

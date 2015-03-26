@@ -137,7 +137,7 @@ def main():  # pylint: disable=too-many-branches, too-many-statements
         display_eula()
 
     all_auths = client.init_auths(config)
-    logging.debug('Initialized authenticators: %s', all_auths)
+    logging.debug('Initialized authenticators: %s', all_auths.values())
     try:
         auth = client.determine_authenticator(all_auths.keys())
     except errors.LetsEncryptClientError:
