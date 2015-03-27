@@ -72,7 +72,7 @@ class ChallengeResourceTest(unittest.TestCase):
     def test_uri(self):
         from letsencrypt.acme.messages2 import ChallengeResource
         self.assertEqual('http://challb', ChallengeResource(body=mock.MagicMock(
-            uri='http://challb'), authz_uri='http://authz').uri)
+            uri='http://challb'), authzr_uri='http://authz').uri)
 
 
 class ChallengeBodyTest(unittest.TestCase):

@@ -6,12 +6,10 @@ import itertools
 import logging
 import time
 
+import M2Crypto
 import requests
 import werkzeug
 
-import M2Crypto
-
-from letsencrypt.acme import challenges
 from letsencrypt.acme import jose
 from letsencrypt.acme import messages2
 
@@ -40,9 +38,13 @@ class Network(object):
         self.key = key
         self.alg = alg
 
-    def _wrap_in_jws(self, data):
-        """Wrap `JSONDeSerializable` object in JWS."""
-        dumps = data.json_dumps()
+    def _wrap_in_jws(self, obj):
+        """Wrap `JSONDeSerializable` object in JWS.
+
+        :rtype: `.JWS`
+
+        """
+        dumps = obj.json_dumps()
         logging.debug('Serialized JSON: %s', dumps)
         return jose.JWS.sign(
             payload=dumps, key=self.key, alg=self.alg).json_dumps()
@@ -52,11 +54,12 @@ class Network(object):
         """Check response content and its type.
 
         .. note::
-           Checking is not strict: skips wrong server response Content-Type
-           if response is an expected JSON object (c.f. Boulder #56).
+           Checking is not strict: wrong server response ``Content-Type``
+           HTTP header is ignored if response is an expected JSON object
+           (c.f. Boulder #56).
 
         """
-        response_ct = response.headers['content-type']
+        response_ct = response.headers.get('Content-Type')
 
         try:
             # TODO: response.json() is called twice, once here, and
@@ -81,15 +84,12 @@ class Network(object):
                 # response is not JSON object
                 raise errors.NetworkError(response)
         else:
-            if jobj is not None and (
-                    response_ct != cls.JSON_CONTENT_TYPE or
-                    response_ct != cls.JSON_ERROR_CONTENT_TYPE):
+            if jobj is not None and response_ct != cls.JSON_CONTENT_TYPE:
                 logging.debug(
                     'Ignoring wrong Content-Type (%r) for JSON decodable '
                     'response', response_ct)
 
-            if (content_type is not None and response_ct != content_type
-                    and content_type != cls.JSON_CONTENT_TYPE):
+            if content_type == cls.JSON_CONTENT_TYPE and jobj is None:
                 raise errors.NetworkError(
                     'Unexpected response Content-Type: {0}'.format(response_ct))
 
@@ -106,13 +106,13 @@ class Network(object):
             response = requests.get(uri, **kwargs)
         except requests.exceptions.RequestException as error:
             raise errors.NetworkError(error)
-        self._check_response(response, content_type)
+        self._check_response(response, content_type=content_type)
         return response
 
     def _post(self, uri, data, content_type=JSON_CONTENT_TYPE, **kwargs):
         """Send POST data.
 
-        :param str content_type: Expected Content-Type, fails if not set.
+        :param str content_type: Expected ``Content-Type``, fails if not set.
 
         :raises letsencrypt.acme.messages2.NetworkError:
 
@@ -127,30 +127,34 @@ class Network(object):
             raise errors.NetworkError(error)
         logging.debug('Received response %s: %s', response, response.text)
 
-        self._check_response(response, content_type)
+        self._check_response(response, content_type=content_type)
         return response
 
     @classmethod
-    def _regr_from_response(cls, response, uri=None, new_authz_uri=None):
+    def _regr_from_response(cls, response, uri=None, new_authzr_uri=None,
+                            terms_of_service=None):
         terms_of_service = (
-            response.links['next']['url']
-            if 'terms-of-service' in response.links else None)
+            response.links['terms-of-service']['url']
+            if 'terms-of-service' in response.links else terms_of_service)
 
-        if new_authz_uri is None:
+        if new_authzr_uri is None:
             try:
-                new_authz_uri = response.links['next']['url']
+                new_authzr_uri = response.links['next']['url']
             except KeyError:
                 raise errors.NetworkError('"next" link missing')
 
         return messages2.RegistrationResource(
             body=messages2.Registration.from_json(response.json()),
-            uri=response.headers.get('location', uri),
-            new_authz_uri=new_authz_uri,
+            uri=response.headers.get('Location', uri),
+            new_authzr_uri=new_authzr_uri,
             terms_of_service=terms_of_service)
 
     def register(self, contact=messages2.Registration._fields[
             'contact'].default):
         """Register.
+
+        :param contact: Contact list, as accpeted by `.RegistrationResource`
+        :type contact: `tuple`
 
         :returns: Registration Resource.
         :rtype: `.RegistrationResource`
@@ -188,11 +192,11 @@ class Network(object):
         # (c.f. acme-spec #94)
 
         updated_regr = self._regr_from_response(
-            response, uri=regr.uri, new_authz_uri=regr.new_authz_uri)
+            response, uri=regr.uri, new_authzr_uri=regr.new_authzr_uri,
+            terms_of_service=regr.terms_of_service)
         if updated_regr != regr:
-            pass
             # TODO: Boulder reregisters with new recoveryToken and new URI
-            #raise errors.UnexpectedUpdate(regr)
+            raise errors.UnexpectedUpdate(regr)
         return updated_regr
 
     def _authzr_from_response(self, response, identifier,
@@ -205,7 +209,7 @@ class Network(object):
 
         authzr = messages2.AuthorizationResource(
             body=messages2.Authorization.from_json(response.json()),
-            uri=response.headers.get('location', uri),
+            uri=response.headers.get('Location', uri),
             new_cert_uri=new_cert_uri)
         if (authzr.body.key != self.key.public()
                 or authzr.body.identifier != identifier):
@@ -223,33 +227,44 @@ class Network(object):
 
         """
         new_authz = messages2.Authorization(identifier=identifier)
-        response = self._post(regr.new_authz_uri, self._wrap_in_jws(new_authz))
+        response = self._post(regr.new_authzr_uri, self._wrap_in_jws(new_authz))
         assert response.status_code == httplib.CREATED  # TODO: handle errors
         return self._authzr_from_response(response, identifier)
 
-    def answer_challenge(self, challr, response):
+    def request_domain_challenges(self, domain, regr):
+        """Request challenges for domain names."""
+        return self.request_challenges(messages2.Identifier(
+            typ=messages2.IDENTIFIER_FQDN, value=domain), regr)
+
+    def answer_challenge(self, challb, response):
         """Answer challenge.
 
-        :param challr: Corresponding challenge resource.
-        :type challr: `.ChallengeResource`
+        :param challb: Challenge Resource body.
+        :type challb: `.ChallengeBody`
 
-        :param response: Challenge response
+        :param response: Corresponding Challenge response
         :type response: `.challenges.ChallengeResponse`
 
-        :returns: Updated challenge resource.
+        :returns: Challenge resource with updated body.
         :rtype: `.ChallengeResource`
 
         :raises errors.UnexpectedUpdate:
 
         """
-        response = self._post(challr.uri, self._wrap_in_jws(response))
-        if response.headers['location'] != challr.uri:
-            raise errors.UnexpectedUpdate(response.headers['location'])
-        updated_challr = challr.update(
-            body=challenges.Challenge.from_json(response.json()))
-        return updated_challr
+        response = self._post(challb.uri, self._wrap_in_jws(response))
+        try:
+            authzr_uri = response.links['up']['url']
+        except KeyError:
+            raise errors.NetworkError('"up" Link header missing')
+        challr = messages2.ChallengeResource(
+            authzr_uri=authzr_uri,
+            body=messages2.ChallengeBody.from_json(response.json()))
+        # TODO: check that challr.uri == response.headers['Location']?
+        if challr.uri != challb.uri:
+            raise errors.UnexpectedUpdate(challr.uri)
+        return challr
 
-    def answer_challenges(self, challrs, responses):
+    def answer_challenges(self, challbs, responses):
         """Answer multiple challenges.
 
         .. note:: This is a convenience function to make integration
@@ -257,18 +272,35 @@ class Network(object):
            once restification is over.
 
         """
-        return [self.answer_challenge(challr, response)
-                for challr, response in itertools.izip(challrs, responses)]
+        return [self.answer_challenge(challb, response)
+                for challb, response in itertools.izip(challbs, responses)]
 
     @classmethod
-    def _retry_after(cls, response, mintime):
-        retry_after = response.headers.get('Retry-After', str(mintime))
+    def retry_after(cls, response, default):
+        """Compute next `poll` time based on response ``Retry-After`` header.
+
+        :param response: Response from `poll`.
+        :type response: `requests.Response`
+
+        :param int default: Default value (in seconds), used when
+            ``Retry-After`` header is not present or invalid.
+
+        :returns: Time point when next `poll` should be performed.
+        :rtype: `datetime.datetime`
+
+        """
+        retry_after = response.headers.get('Retry-After', str(default))
         try:
             seconds = int(retry_after)
         except ValueError:
-            return werkzeug.parse_date(retry_after)  # pylint: disable=no-member
-        else:
-            return datetime.datetime.now() + datetime.timedelta(seconds=seconds)
+            # pylint: disable=no-member
+            decoded = werkzeug.parse_date(retry_after)  # RFC1123
+            if decoded is None:
+                seconds = default
+            else:
+                return decoded
+
+        return datetime.datetime.now() + datetime.timedelta(seconds=seconds)
 
     def poll(self, authzr):
         """Poll Authorization Resource for status.
@@ -284,7 +316,7 @@ class Network(object):
         response = self._get(authzr.uri)
         updated_authzr = self._authzr_from_response(
             response, authzr.body.identifier, authzr.uri, authzr.new_cert_uri)
-        # TODO check UnexpectedUpdate
+        # TODO: check and raise UnexpectedUpdate
 
         return updated_authzr, response
 
@@ -292,11 +324,16 @@ class Network(object):
         """Request issuance.
 
         :param csr: CSR
-        :type csr: `M2Crypto.X509.Request`
+        :type csr: `M2Crypto.X509.Request` wrapped in `.ComparableX509`
 
         :param authzrs: `list` of `.AuthorizationResource`
 
+        :returns: Issued certificate
+        :rtype: `.messages2.CertificateResource`
+
         """
+        assert authzrs, "Authorizations list is empty"
+
         # TODO: assert len(authzrs) == number of SANs
         req = messages2.CertificateRequest(
             csr=csr, authorizations=tuple(authzr.uri for authzr in authzrs))
@@ -308,17 +345,45 @@ class Network(object):
             content_type=content_type,
             headers={'Accept': content_type})
 
+        try:
+            cert_chain_uri = response.links['up']['url']
+        except KeyError:
+            raise errors.NetworkError('"up" Link missing')
+
+        try:
+            uri = response.headers['Location']
+        except KeyError:
+            raise errors.NetworkError('"Location" Header missing')
+
         return messages2.CertificateResource(
-            authzrs=authzrs,
-            body=M2Crypto.X509.load_cert_der_string(response.text),
-            cert_chain_uri=response.links['up']['url'])
+            uri=uri, authzrs=authzrs, cert_chain_uri=cert_chain_uri,
+            body=jose.ComparableX509(
+                M2Crypto.X509.load_cert_der_string(response.content)))
 
     def poll_and_request_issuance(self, csr, authzrs, mintime=5):
         """Poll and request issuance.
 
-        :param int mintime: Minimum time before next attempt.
+        This function polls all provided Authorization Resource URIs
+        until all challenges are valid, respecting ``Retry-After`` HTTP
+        headers, and then calls `request_issuance`.
 
         .. todo:: add `max_attempts` or `timeout`
+
+        :param csr: CSR.
+        :type csr: `M2Crypto.X509.Request` wrapped in `.ComparableX509`
+
+        :param authzrs: `list` of `.AuthorizationResource`
+
+        :param int mintime: Minimum time before next attempt, used if
+            ``Retry-After`` is not present in the response.
+
+        :returns: ``(cert, updated_authzrs)`` `tuple` where ``cert`` is
+            the issued certificate (`.messages2.CertificateResource.),
+            and ``updated_authzrs`` is a `tuple` consisting of updated
+            Authorization Resources (`.AuthorizationResource`) as
+            present in the responses from server, and in the same order
+            as the input ``authzrs``.
+        :rtype: `tuple`
 
         """
         # priority queue with datetime (based od Retry-After) as key,
@@ -337,25 +402,25 @@ class Network(object):
                 logging.debug('Sleeping for %d seconds', seconds)
                 time.sleep(seconds)
 
-            updated_authzr, response = self.poll(authzr)
+            # Note that we poll with the latest updated Authorization
+            # URI, which might have a different URI than initial one
+            updated_authzr, response = self.poll(updated[authzr])
             updated[authzr] = updated_authzr
-            # URI must not change throughout, as we are polling
-            # original Authorization Resource URI only
-            assert updated_authzr.uri == authzr
 
             if updated_authzr.body.status != messages2.STATUS_VALID:
                 # push back to the priority queue, with updated retry_after
-                heapq.heappush(waiting, (self._retry_after(
-                    response, mintime=mintime), authzr))
+                heapq.heappush(waiting, (self.retry_after(
+                    response, default=mintime), authzr))
 
-        return self.request_issuance(csr, authzrs), tuple(
-            updated[authzr] for authzr in authzrs)
+        updated_authzrs = tuple(updated[authzr] for authzr in authzrs)
+        return self.request_issuance(csr, updated_authzrs), updated_authzrs
 
     def _get_cert(self, uri):
         content_type = self.DER_CONTENT_TYPE  # TODO: make it a param
         response = self._get(uri, headers={'Accept': content_type},
                              content_type=content_type)
-        return response, M2Crypto.X509.load_cert_der_string(response.text)
+        return response, jose.ComparableX509(
+            M2Crypto.X509.load_cert_der_string(response.content))
 
     def check_cert(self, certr):
         """Check for new cert.
@@ -370,7 +435,9 @@ class Network(object):
         # TODO: acme-spec 5.1 table action should be renamed to
         # "refresh cert", and this method integrated with self.refresh
         response, cert = self._get_cert(certr.uri)
-        if not response.headers['location'] != certr.uri:
+        if 'Location' not in response.headers:
+            raise errors.NetworkError('Location header missing')
+        if response.headers['Location'] != certr.uri:
             raise errors.UnexpectedUpdate(response.text)
         return certr.update(body=cert)
 
@@ -393,7 +460,7 @@ class Network(object):
         :type certr: `.CertificateResource`
 
         :returns: Certificate chain
-        :rtype: `M2Crypto.X509.X509`
+        :rtype: `M2Crypto.X509.X509` wrapped in `.ComparableX509`
 
         """
         return self._get_cert(certr.cert_chain_uri)
@@ -401,8 +468,8 @@ class Network(object):
     def revoke(self, certr, when=messages2.Revocation.NOW):
         """Revoke certificate.
 
-        :param when: When should the revocation take place.
-        :type when: `.Revocation.When`
+        :param when: When should the revocation take place? Takes
+           the same values as `.messages2.Revocation.revoke`.
 
         """
         rev = messages2.Revocation(revoke=when, authorizations=tuple(

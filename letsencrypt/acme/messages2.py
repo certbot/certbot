@@ -117,10 +117,10 @@ class RegistrationResource(Resource):
 
     :ivar body: `Registration`
     :ivar str uri: URI of the resource.
-    :ivar new_authz_uri: URI found in the 'next' Link header
+    :ivar new_authzr_uri: URI found in the 'next' Link header
 
     """
-    __slots__ = ('body', 'uri', 'new_authz_uri', 'terms_of_service')
+    __slots__ = ('body', 'uri', 'new_authzr_uri', 'terms_of_service')
 
 
 class Registration(ResourceBody):
@@ -138,10 +138,10 @@ class ChallengeResource(Resource, jose.JSONObjectWithFields):
     """Challenge resource.
 
     :ivar body: `.challenges.ChallengeBody`
-    :ivar authz_uri: URI found in the 'up' Link header.
+    :ivar authzr_uri: URI found in the 'up' Link header.
 
     """
-    __slots__ = ('body', 'authz_uri')
+    __slots__ = ('body', 'authzr_uri')
 
     @property
     def uri(self):  # pylint: disable=missing-docstring,no-self-argument
@@ -217,10 +217,7 @@ class Authorization(ResourceBody):
 
     @challenges.decoder
     def challenges(value):  # pylint: disable=missing-docstring,no-self-argument
-        return tuple(
-            ChallengeResource(
-                body=ChallengeBody.from_json(chall), authz_uri=None)
-            for chall in value)
+        return tuple(ChallengeBody.from_json(chall) for chall in value)
 
     @property
     def resolved_combinations(self):
@@ -232,7 +229,7 @@ class Authorization(ResourceBody):
 class CertificateRequest(jose.JSONObjectWithFields):
     """ACME new-cert request.
 
-    :ivar csr: `M2Crypto.X509.Request`
+    :ivar csr: `M2Crypto.X509.Request` wrapped in `.ComparableX509`
 
     """
     csr = jose.Field('csr', decoder=jose.decode_csr, encoder=jose.encode_csr)
@@ -242,7 +239,7 @@ class CertificateRequest(jose.JSONObjectWithFields):
 class CertificateResource(Resource):
     """Authorization resource.
 
-    :ivar body: `M2Crypto.X509.X509`
+    :ivar body: `M2Crypto.X509.X509` wrapped in `.ComparableX509`
     :ivar cert_chain_uri: URI found in the 'up' Link header
     :ivar authzrs: `list` of `AuthorizationResource`.
 
