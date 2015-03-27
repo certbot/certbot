@@ -92,7 +92,7 @@ def create_parser():
         help=config_help("le_vhost_ext"))
     apply_on_all(CONFIGURATION_PARSERS, "add_argument", "-b", "--rollback", type=int, default=0, metavar="N",
         help="Revert configuration N number of checkpoints.")
-    apply_on_all(CONFIGURATION_PARSERS, "add_argument", "-c", "--view-config-changes", action="store_true",
+    apply_on_all(CONFIGURATION_PARSERS, "add_argument", "--view-config-changes", action="store_true",
         help="View checkpoints and associated configuration changes.")
     # TODO: resolve - assumes binary logic while client.py assumes ternary.
     apply_on_all(CONFIGURATION_PARSERS, "add_argument", "-r", "--redirect", action="store_true",
