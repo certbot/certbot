@@ -80,7 +80,7 @@ Documentation: https://letsencrypt.readthedocs.org/
 
 Software project: https://github.com/letsencrypt/lets-encrypt-preview
 
-Notes for developers: CONTRIBUTING.rst_
+Notes for developers: CONTRIBUTING.md_
 
 Main Website: https://letsencrypt.org/
 
