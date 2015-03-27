@@ -43,6 +43,26 @@ APACHE_REWRITE_HTTPS_ARGS = [
 DVSNI_CHALLENGE_PORT = 443
 """Port to perform DVSNI challenge."""
 
+CONFIG_DIR = "/etc/letsencrypt"
+"""Location of the lets enecrypt config dir"""
+
+WORK_DIR = "/var/lib/letsencrypt"
+"""location of the data directory for lets encrypt"""
+
+BACKUP_DIR = "backups"
+"""Backups of config files"""
+
+KEY_DIR = "keys"
+"""Private key storage"""
+
+CERT_DIR = "certs"
+"""Certificate Storage"""
+
+CERT_NAME = "cert-letsencrypt.pem"
+"""Default name for certificate pemfile"""
+
+CHAIN_NAME = "chain-letsencrypt.pem"
+"""Default name for cert chain pemfile"""
 
 TEMP_CHECKPOINT_DIR = "temp_checkpoint"
 """Temporary checkpoint directory (relative to IConfig.work_dir)."""
@@ -62,3 +82,12 @@ IConfig.work_dir)."""
 NETSTAT = "/bin/netstat"
 """Location of netstat binary for checking whether a listener is already
 running on the specified port (Linux-specific)."""
+
+
+APACHE_SERVER_ROOT = "/etc/apache2"
+APACHE_MOD_SSL_CONF = "/etc/letsencrypt/options-ssl.conf"
+APACHE_CTL = "apache2ctl"
+APACHE_ENMOD = "a2enmod"
+APACHE_INIT_SCRIPT = "/etc/init.d/apache2"
+LE_VHOST_EXT = "-le-ssl.conf"
+ROLLBACK = 0
