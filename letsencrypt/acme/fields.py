@@ -5,7 +5,13 @@ from letsencrypt.acme import jose
 
 
 class RFC3339Field(jose.Field):
-    """RFC3339 field encoder/decoder"""
+    """RFC3339 field encoder/decoder.
+
+    Handles decoding/encoding between RFC3339 strings and aware (not
+    naive) `datetime.datetime` objects
+    (e.g. ``datetime.datetime.now(pytz.utc)``).
+
+    """
 
     @classmethod
     def default_encoder(cls, value):

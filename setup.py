@@ -39,6 +39,7 @@ install_requires = [
     'pyrfc3339',
     'python-augeas',
     'python2-pythondialog',
+    'pytz',
     'requests',
     'werkzeug',
     'zope.component',
