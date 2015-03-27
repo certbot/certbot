@@ -63,7 +63,7 @@ class _Constant(jose.JSONDeSerializable):
     def from_json(cls, value):
         if value not in cls.POSSIBLE_NAMES:
             raise jose.DeserializationError(
-                '{} not recognized'.format(cls.__name__))
+                '{0} not recognized'.format(cls.__name__))
         return cls.POSSIBLE_NAMES[value]
 
     def __repr__(self):
