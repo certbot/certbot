@@ -1,4 +1,4 @@
-"""Tests for letsencrypt.client.standalone_authenticator."""
+"""Tests for letsencrypt.client.plugins.standalone.authenticator."""
 import os
 import pkg_resources
 import psutil
@@ -49,7 +49,7 @@ class CallableExhausted(Exception):
 class ChallPrefTest(unittest.TestCase):
     """Tests for chall_pref() method."""
     def setUp(self):
-        from letsencrypt.client.standalone_authenticator import \
+        from letsencrypt.client.plugins.standalone.authenticator import \
             StandaloneAuthenticator
         self.authenticator = StandaloneAuthenticator(None)
 
@@ -61,11 +61,11 @@ class ChallPrefTest(unittest.TestCase):
 class SNICallbackTest(unittest.TestCase):
     """Tests for sni_callback() method."""
     def setUp(self):
-        from letsencrypt.client.standalone_authenticator import \
+        from letsencrypt.client.plugins.standalone.authenticator import \
             StandaloneAuthenticator
         self.authenticator = StandaloneAuthenticator(None)
         test_key = pkg_resources.resource_string(
-            __name__, "testdata/rsa256_key.pem")
+            "letsencrypt.client.tests", "testdata/rsa256_key.pem")
         key = le_util.Key("foo", test_key)
         self.cert = achallenges.DVSNI(
             chall=challenges.DVSNI(r="x"*32, nonce="abcdef"),
@@ -104,7 +104,7 @@ class SNICallbackTest(unittest.TestCase):
 class ClientSignalHandlerTest(unittest.TestCase):
     """Tests for client_signal_handler() method."""
     def setUp(self):
-        from letsencrypt.client.standalone_authenticator import \
+        from letsencrypt.client.plugins.standalone.authenticator import \
             StandaloneAuthenticator
         self.authenticator = StandaloneAuthenticator(None)
         self.authenticator.tasks = {"foononce.acme.invalid": "stuff"}
@@ -133,15 +133,15 @@ class ClientSignalHandlerTest(unittest.TestCase):
 class SubprocSignalHandlerTest(unittest.TestCase):
     """Tests for subproc_signal_handler() method."""
     def setUp(self):
-        from letsencrypt.client.standalone_authenticator import \
+        from letsencrypt.client.plugins.standalone.authenticator import \
             StandaloneAuthenticator
         self.authenticator = StandaloneAuthenticator(None)
         self.authenticator.tasks = {"foononce.acme.invalid": "stuff"}
         self.authenticator.child_pid = 12345
         self.authenticator.parent_pid = 23456
 
-    @mock.patch("letsencrypt.client.standalone_authenticator.os.kill")
-    @mock.patch("letsencrypt.client.standalone_authenticator.sys.exit")
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator.os.kill")
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator.sys.exit")
     def test_subproc_signal_handler(self, mock_exit, mock_kill):
         self.authenticator.ssl_conn = mock.MagicMock()
         self.authenticator.connection = mock.MagicMock()
@@ -155,8 +155,8 @@ class SubprocSignalHandlerTest(unittest.TestCase):
             self.authenticator.parent_pid, signal.SIGUSR1)
         mock_exit.assert_called_once_with(0)
 
-    @mock.patch("letsencrypt.client.standalone_authenticator.os.kill")
-    @mock.patch("letsencrypt.client.standalone_authenticator.sys.exit")
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator.os.kill")
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator.sys.exit")
     def test_subproc_signal_handler_trouble(self, mock_exit, mock_kill):
         """Test attempting to shut down a non-existent connection.
 
@@ -185,14 +185,15 @@ class SubprocSignalHandlerTest(unittest.TestCase):
 class AlreadyListeningTest(unittest.TestCase):
     """Tests for already_listening() method."""
     def setUp(self):
-        from letsencrypt.client.standalone_authenticator import \
+        from letsencrypt.client.plugins.standalone.authenticator import \
             StandaloneAuthenticator
         self.authenticator = StandaloneAuthenticator(None)
 
-    @mock.patch("letsencrypt.client.standalone_authenticator.psutil."
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator.psutil."
                 "net_connections")
-    @mock.patch("letsencrypt.client.standalone_authenticator.psutil.Process")
-    @mock.patch("letsencrypt.client.standalone_authenticator."
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator."
+                "psutil.Process")
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator."
                 "zope.component.getUtility")
     def test_race_condition(self, mock_get_utility, mock_process, mock_net):
         # This tests a race condition, or permission problem, or OS
@@ -200,14 +201,14 @@ class AlreadyListeningTest(unittest.TestCase):
         # found to match the identified listening PID.
         from psutil._common import sconn
         conns = [
-            sconn(fd=-1, family=2, type=1, laddr=('0.0.0.0', 30),
-                  raddr=(), status='LISTEN', pid=None),
-            sconn(fd=3, family=2, type=1, laddr=('192.168.5.10', 32783),
-                  raddr=('20.40.60.80', 22), status='ESTABLISHED', pid=1234),
-            sconn(fd=-1, family=10, type=1, laddr=('::1', 54321),
-                  raddr=('::1', 111), status='CLOSE_WAIT', pid=None),
-            sconn(fd=3, family=2, type=1, laddr=('0.0.0.0', 17),
-                  raddr=(), status='LISTEN', pid=4416)]
+            sconn(fd=-1, family=2, type=1, laddr=("0.0.0.0", 30),
+                  raddr=(), status="LISTEN", pid=None),
+            sconn(fd=3, family=2, type=1, laddr=("192.168.5.10", 32783),
+                  raddr=("20.40.60.80", 22), status="ESTABLISHED", pid=1234),
+            sconn(fd=-1, family=10, type=1, laddr=("::1", 54321),
+                  raddr=("::1", 111), status="CLOSE_WAIT", pid=None),
+            sconn(fd=3, family=2, type=1, laddr=("0.0.0.0", 17),
+                  raddr=(), status="LISTEN", pid=4416)]
         mock_net.return_value = conns
         mock_process.side_effect = psutil.NoSuchProcess("No such PID")
         # We simulate being unable to find the process name of PID 4416,
@@ -216,42 +217,44 @@ class AlreadyListeningTest(unittest.TestCase):
         self.assertEqual(mock_get_utility.generic_notification.call_count, 0)
         mock_process.assert_called_once_with(4416)
 
-    @mock.patch("letsencrypt.client.standalone_authenticator.psutil."
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator.psutil."
                 "net_connections")
-    @mock.patch("letsencrypt.client.standalone_authenticator.psutil.Process")
-    @mock.patch("letsencrypt.client.standalone_authenticator."
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator."
+                "psutil.Process")
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator."
                 "zope.component.getUtility")
     def test_not_listening(self, mock_get_utility, mock_process, mock_net):
         from psutil._common import sconn
         conns = [
-            sconn(fd=-1, family=2, type=1, laddr=('0.0.0.0', 30),
-                  raddr=(), status='LISTEN', pid=None),
-            sconn(fd=3, family=2, type=1, laddr=('192.168.5.10', 32783),
-                  raddr=('20.40.60.80', 22), status='ESTABLISHED', pid=1234),
-            sconn(fd=-1, family=10, type=1, laddr=('::1', 54321),
-                  raddr=('::1', 111), status='CLOSE_WAIT', pid=None)]
+            sconn(fd=-1, family=2, type=1, laddr=("0.0.0.0", 30),
+                  raddr=(), status="LISTEN", pid=None),
+            sconn(fd=3, family=2, type=1, laddr=("192.168.5.10", 32783),
+                  raddr=("20.40.60.80", 22), status="ESTABLISHED", pid=1234),
+            sconn(fd=-1, family=10, type=1, laddr=("::1", 54321),
+                  raddr=("::1", 111), status="CLOSE_WAIT", pid=None)]
         mock_net.return_value = conns
         mock_process.name.return_value = "inetd"
         self.assertFalse(self.authenticator.already_listening(17))
         self.assertEqual(mock_get_utility.generic_notification.call_count, 0)
         self.assertEqual(mock_process.call_count, 0)
 
-    @mock.patch("letsencrypt.client.standalone_authenticator.psutil."
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator.psutil."
                 "net_connections")
-    @mock.patch("letsencrypt.client.standalone_authenticator.psutil.Process")
-    @mock.patch("letsencrypt.client.standalone_authenticator."
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator."
+                "psutil.Process")
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator."
                 "zope.component.getUtility")
     def test_listening_ipv4(self, mock_get_utility, mock_process, mock_net):
         from psutil._common import sconn
         conns = [
-            sconn(fd=-1, family=2, type=1, laddr=('0.0.0.0', 30),
-                  raddr=(), status='LISTEN', pid=None),
-            sconn(fd=3, family=2, type=1, laddr=('192.168.5.10', 32783),
-                  raddr=('20.40.60.80', 22), status='ESTABLISHED', pid=1234),
-            sconn(fd=-1, family=10, type=1, laddr=('::1', 54321),
-                  raddr=('::1', 111), status='CLOSE_WAIT', pid=None),
-            sconn(fd=3, family=2, type=1, laddr=('0.0.0.0', 17),
-                  raddr=(), status='LISTEN', pid=4416)]
+            sconn(fd=-1, family=2, type=1, laddr=("0.0.0.0", 30),
+                  raddr=(), status="LISTEN", pid=None),
+            sconn(fd=3, family=2, type=1, laddr=("192.168.5.10", 32783),
+                  raddr=("20.40.60.80", 22), status="ESTABLISHED", pid=1234),
+            sconn(fd=-1, family=10, type=1, laddr=("::1", 54321),
+                  raddr=("::1", 111), status="CLOSE_WAIT", pid=None),
+            sconn(fd=3, family=2, type=1, laddr=("0.0.0.0", 17),
+                  raddr=(), status="LISTEN", pid=4416)]
         mock_net.return_value = conns
         mock_process.name.return_value = "inetd"
         result = self.authenticator.already_listening(17)
@@ -259,24 +262,25 @@ class AlreadyListeningTest(unittest.TestCase):
         self.assertEqual(mock_get_utility.call_count, 1)
         mock_process.assert_called_once_with(4416)
 
-    @mock.patch("letsencrypt.client.standalone_authenticator.psutil."
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator.psutil."
                 "net_connections")
-    @mock.patch("letsencrypt.client.standalone_authenticator.psutil.Process")
-    @mock.patch("letsencrypt.client.standalone_authenticator."
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator."
+                "psutil.Process")
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator."
                 "zope.component.getUtility")
     def test_listening_ipv6(self, mock_get_utility, mock_process, mock_net):
         from psutil._common import sconn
         conns = [
-            sconn(fd=-1, family=2, type=1, laddr=('0.0.0.0', 30),
-                  raddr=(), status='LISTEN', pid=None),
-            sconn(fd=3, family=2, type=1, laddr=('192.168.5.10', 32783),
-                  raddr=('20.40.60.80', 22), status='ESTABLISHED', pid=1234),
-            sconn(fd=-1, family=10, type=1, laddr=('::1', 54321),
-                  raddr=('::1', 111), status='CLOSE_WAIT', pid=None),
-            sconn(fd=3, family=10, type=1, laddr=('::', 12345), raddr=(),
-                  status='LISTEN', pid=4420),
-            sconn(fd=3, family=2, type=1, laddr=('0.0.0.0', 17),
-                  raddr=(), status='LISTEN', pid=4416)]
+            sconn(fd=-1, family=2, type=1, laddr=("0.0.0.0", 30),
+                  raddr=(), status="LISTEN", pid=None),
+            sconn(fd=3, family=2, type=1, laddr=("192.168.5.10", 32783),
+                  raddr=("20.40.60.80", 22), status="ESTABLISHED", pid=1234),
+            sconn(fd=-1, family=10, type=1, laddr=("::1", 54321),
+                  raddr=("::1", 111), status="CLOSE_WAIT", pid=None),
+            sconn(fd=3, family=10, type=1, laddr=("::", 12345), raddr=(),
+                  status="LISTEN", pid=4420),
+            sconn(fd=3, family=2, type=1, laddr=("0.0.0.0", 17),
+                  raddr=(), status="LISTEN", pid=4416)]
         mock_net.return_value = conns
         mock_process.name.return_value = "inetd"
         result = self.authenticator.already_listening(12345)
@@ -288,12 +292,12 @@ class AlreadyListeningTest(unittest.TestCase):
 class PerformTest(unittest.TestCase):
     """Tests for perform() method."""
     def setUp(self):
-        from letsencrypt.client.standalone_authenticator import \
+        from letsencrypt.client.plugins.standalone.authenticator import \
             StandaloneAuthenticator
         self.authenticator = StandaloneAuthenticator(None)
 
         test_key = pkg_resources.resource_string(
-            __name__, "testdata/rsa256_key.pem")
+            "letsencrypt.client.tests", "testdata/rsa256_key.pem")
         self.key = le_util.Key("something", test_key)
 
         self.achall1 = achallenges.DVSNI(
@@ -365,13 +369,13 @@ class PerformTest(unittest.TestCase):
 class StartListenerTest(unittest.TestCase):
     """Tests for start_listener() method."""
     def setUp(self):
-        from letsencrypt.client.standalone_authenticator import \
+        from letsencrypt.client.plugins.standalone.authenticator import \
             StandaloneAuthenticator
         self.authenticator = StandaloneAuthenticator(None)
 
-    @mock.patch("letsencrypt.client.standalone_authenticator."
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator."
                 "Crypto.Random.atfork")
-    @mock.patch("letsencrypt.client.standalone_authenticator.os.fork")
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator.os.fork")
     def test_start_listener_fork_parent(self, mock_fork, mock_atfork):
         self.authenticator.do_parent_process = mock.Mock()
         self.authenticator.do_parent_process.return_value = True
@@ -384,9 +388,9 @@ class StartListenerTest(unittest.TestCase):
         self.authenticator.do_parent_process.assert_called_once_with(1717)
         mock_atfork.assert_called_once_with()
 
-    @mock.patch("letsencrypt.client.standalone_authenticator."
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator."
                 "Crypto.Random.atfork")
-    @mock.patch("letsencrypt.client.standalone_authenticator.os.fork")
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator.os.fork")
     def test_start_listener_fork_child(self, mock_fork, mock_atfork):
         self.authenticator.do_parent_process = mock.Mock()
         self.authenticator.do_child_process = mock.Mock()
@@ -400,12 +404,13 @@ class StartListenerTest(unittest.TestCase):
 class DoParentProcessTest(unittest.TestCase):
     """Tests for do_parent_process() method."""
     def setUp(self):
-        from letsencrypt.client.standalone_authenticator import \
+        from letsencrypt.client.plugins.standalone.authenticator import \
             StandaloneAuthenticator
         self.authenticator = StandaloneAuthenticator(None)
 
-    @mock.patch("letsencrypt.client.standalone_authenticator.signal.signal")
-    @mock.patch("letsencrypt.client.standalone_authenticator."
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator."
+                "signal.signal")
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator."
                 "zope.component.getUtility")
     def test_do_parent_process_ok(self, mock_get_utility, mock_signal):
         self.authenticator.subproc_state = "ready"
@@ -414,8 +419,9 @@ class DoParentProcessTest(unittest.TestCase):
         self.assertEqual(mock_get_utility.call_count, 1)
         self.assertEqual(mock_signal.call_count, 3)
 
-    @mock.patch("letsencrypt.client.standalone_authenticator.signal.signal")
-    @mock.patch("letsencrypt.client.standalone_authenticator."
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator."
+                "signal.signal")
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator."
                 "zope.component.getUtility")
     def test_do_parent_process_inuse(self, mock_get_utility, mock_signal):
         self.authenticator.subproc_state = "inuse"
@@ -424,8 +430,9 @@ class DoParentProcessTest(unittest.TestCase):
         self.assertEqual(mock_get_utility.call_count, 1)
         self.assertEqual(mock_signal.call_count, 3)
 
-    @mock.patch("letsencrypt.client.standalone_authenticator.signal.signal")
-    @mock.patch("letsencrypt.client.standalone_authenticator."
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator."
+                "signal.signal")
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator."
                 "zope.component.getUtility")
     def test_do_parent_process_cantbind(self, mock_get_utility, mock_signal):
         self.authenticator.subproc_state = "cantbind"
@@ -434,8 +441,9 @@ class DoParentProcessTest(unittest.TestCase):
         self.assertEqual(mock_get_utility.call_count, 1)
         self.assertEqual(mock_signal.call_count, 3)
 
-    @mock.patch("letsencrypt.client.standalone_authenticator.signal.signal")
-    @mock.patch("letsencrypt.client.standalone_authenticator."
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator."
+                "signal.signal")
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator."
                 "zope.component.getUtility")
     def test_do_parent_process_timeout(self, mock_get_utility, mock_signal):
         # Normally times out in 5 seconds and returns False.  We can
@@ -450,11 +458,11 @@ class DoParentProcessTest(unittest.TestCase):
 class DoChildProcessTest(unittest.TestCase):
     """Tests for do_child_process() method."""
     def setUp(self):
-        from letsencrypt.client.standalone_authenticator import \
+        from letsencrypt.client.plugins.standalone.authenticator import \
             StandaloneAuthenticator
         self.authenticator = StandaloneAuthenticator(None)
         test_key = pkg_resources.resource_string(
-            __name__, "testdata/rsa256_key.pem")
+            "letsencrypt.client.tests", "testdata/rsa256_key.pem")
         key = le_util.Key("foo", test_key)
         self.key = key
         self.cert = achallenges.DVSNI(
@@ -466,9 +474,10 @@ class DoChildProcessTest(unittest.TestCase):
         self.authenticator.tasks = {"abcdef.acme.invalid": self.cert}
         self.authenticator.parent_pid = 12345
 
-    @mock.patch("letsencrypt.client.standalone_authenticator.socket.socket")
-    @mock.patch("letsencrypt.client.standalone_authenticator.os.kill")
-    @mock.patch("letsencrypt.client.standalone_authenticator.sys.exit")
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator."
+                "socket.socket")
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator.os.kill")
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator.sys.exit")
     def test_do_child_process_cantbind1(
             self, mock_exit, mock_kill, mock_socket):
         mock_exit.side_effect = IndentationError("subprocess would exit here")
@@ -488,9 +497,10 @@ class DoChildProcessTest(unittest.TestCase):
         mock_exit.assert_called_once_with(1)
         mock_kill.assert_called_once_with(12345, signal.SIGUSR2)
 
-    @mock.patch("letsencrypt.client.standalone_authenticator.socket.socket")
-    @mock.patch("letsencrypt.client.standalone_authenticator.os.kill")
-    @mock.patch("letsencrypt.client.standalone_authenticator.sys.exit")
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator."
+                "socket.socket")
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator.os.kill")
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator.sys.exit")
     def test_do_child_process_cantbind2(self, mock_exit, mock_kill,
                                         mock_socket):
         mock_exit.side_effect = IndentationError("subprocess would exit here")
@@ -504,7 +514,8 @@ class DoChildProcessTest(unittest.TestCase):
         mock_exit.assert_called_once_with(1)
         mock_kill.assert_called_once_with(12345, signal.SIGUSR1)
 
-    @mock.patch("letsencrypt.client.standalone_authenticator.socket.socket")
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator."
+                "socket.socket")
     def test_do_child_process_cantbind3(self, mock_socket):
         """Test case where attempt to bind socket results in an unhandled
         socket error.  (The expected behavior is arguably wrong because it
@@ -517,10 +528,11 @@ class DoChildProcessTest(unittest.TestCase):
         self.assertRaises(
             socket.error, self.authenticator.do_child_process, 1717, self.key)
 
-    @mock.patch("letsencrypt.client.standalone_authenticator."
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator."
                 "OpenSSL.SSL.Connection")
-    @mock.patch("letsencrypt.client.standalone_authenticator.socket.socket")
-    @mock.patch("letsencrypt.client.standalone_authenticator.os.kill")
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator."
+                "socket.socket")
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator.os.kill")
     def test_do_child_process_success(
             self, mock_kill, mock_socket, mock_connection):
         sample_socket = mock.MagicMock()
@@ -543,7 +555,7 @@ class DoChildProcessTest(unittest.TestCase):
 class CleanupTest(unittest.TestCase):
     """Tests for cleanup() method."""
     def setUp(self):
-        from letsencrypt.client.standalone_authenticator import \
+        from letsencrypt.client.plugins.standalone.authenticator import \
             StandaloneAuthenticator
         self.authenticator = StandaloneAuthenticator(None)
         self.achall = achallenges.DVSNI(
@@ -552,8 +564,9 @@ class CleanupTest(unittest.TestCase):
         self.authenticator.tasks = {self.achall.nonce_domain: "stuff"}
         self.authenticator.child_pid = 12345
 
-    @mock.patch("letsencrypt.client.standalone_authenticator.os.kill")
-    @mock.patch("letsencrypt.client.standalone_authenticator.time.sleep")
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator.os.kill")
+    @mock.patch("letsencrypt.client.plugins.standalone.authenticator."
+                "time.sleep")
     def test_cleanup(self, mock_sleep, mock_kill):
         mock_sleep.return_value = None
         mock_kill.return_value = None
@@ -573,7 +586,7 @@ class CleanupTest(unittest.TestCase):
 class MoreInfoTest(unittest.TestCase):
     """Tests for more_info() method. (trivially)"""
     def setUp(self):
-        from letsencrypt.client.standalone_authenticator import (
+        from letsencrypt.client.plugins.standalone.authenticator import (
             StandaloneAuthenticator)
         self.authenticator = StandaloneAuthenticator(None)
 
@@ -585,7 +598,7 @@ class MoreInfoTest(unittest.TestCase):
 class InitTest(unittest.TestCase):
     """Tests for more_info() method. (trivially)"""
     def setUp(self):
-        from letsencrypt.client.standalone_authenticator import (
+        from letsencrypt.client.plugins.standalone.authenticator import (
             StandaloneAuthenticator)
         self.authenticator = StandaloneAuthenticator(None)
 

@@ -1,4 +1,4 @@
-"""Common utilities for letsencrypt.client.apache."""
+"""Common utilities for letsencrypt.client.plugins.apache."""
 import os
 import pkg_resources
 import shutil
@@ -8,8 +8,8 @@ import unittest
 import mock
 
 from letsencrypt.client import constants
-from letsencrypt.client.apache import configurator
-from letsencrypt.client.apache import obj
+from letsencrypt.client.plugins.apache import configurator
+from letsencrypt.client.plugins.apache import obj
 
 
 class ApacheTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
@@ -26,9 +26,9 @@ class ApacheTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
             self.temp_dir, "debian_apache_2_4/two_vhost_80/apache2")
 
         self.rsa256_file = pkg_resources.resource_filename(
-            "letsencrypt.client.tests", 'testdata/rsa256_key.pem')
+            "letsencrypt.client.tests", "testdata/rsa256_key.pem")
         self.rsa256_pem = pkg_resources.resource_string(
-            "letsencrypt.client.tests", 'testdata/rsa256_key.pem')
+            "letsencrypt.client.tests", "testdata/rsa256_key.pem")
 
 
 def dir_setup(test_dir="debian_apache_2_4/two_vhost_80"):
@@ -38,7 +38,7 @@ def dir_setup(test_dir="debian_apache_2_4/two_vhost_80"):
     work_dir = tempfile.mkdtemp("work")
 
     test_configs = pkg_resources.resource_filename(
-        "letsencrypt.client.tests", "testdata/%s" % test_dir)
+        "letsencrypt.client.plugins.apache.tests", "testdata/%s" % test_dir)
 
     shutil.copytree(
         test_configs, os.path.join(temp_dir, test_dir), symlinks=True)
@@ -59,7 +59,7 @@ def get_apache_configurator(
 
     backups = os.path.join(work_dir, "backups")
 
-    with mock.patch("letsencrypt.client.apache.configurator."
+    with mock.patch("letsencrypt.client.plugins.apache.configurator."
                     "subprocess.Popen") as mock_popen:
         # This just states that the ssl module is already loaded
         mock_popen().communicate.return_value = ("ssl_module", "")

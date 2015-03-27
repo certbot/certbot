@@ -2,20 +2,19 @@
 import logging
 import os
 
-from letsencrypt.client.apache import parser
+from letsencrypt.client.plugins.apache import parser
 
 
 class ApacheDvsni(object):
     """Class performs DVSNI challenges within the Apache configurator.
 
     :ivar configurator: ApacheConfigurator object
-    :type configurator:
-        :class:`letsencrypt.client.apache.configurator.ApacheConfigurator`
+    :type configurator: :class:`~apache.configurator.ApacheConfigurator`
 
     :ivar list achalls: Annotated :class:`~letsencrypt.client.achallenges.DVSNI`
         challenges.
 
-    :param list indicies: Meant to hold indices of challenges in a
+    :param list indices: Meant to hold indices of challenges in a
         larger array. ApacheDvsni is capable of solving many challenges
         at once which causes an indexing issue within ApacheConfigurator
         who must return all responses in order.  Imagine ApacheConfigurator
@@ -118,7 +117,7 @@ class ApacheDvsni(object):
         cert_pem, response = achall.gen_cert_and_response(s)
 
         # Write out challenge cert
-        with open(cert_path, 'w') as cert_chall_fd:
+        with open(cert_path, "w") as cert_chall_fd:
             cert_chall_fd.write(cert_pem)
 
         return response
@@ -129,7 +128,7 @@ class ApacheDvsni(object):
         Result: Apache config includes virtual servers for issued challs
 
         :param list ll_addrs: list of list of
-            :class:`letsencrypt.client.apache.obj.Addr` to apply
+            :class:`letsencrypt.client.plugins.apache.obj.Addr` to apply
 
         """
         # TODO: Use ip address of existing vhost instead of relying on FQDN
@@ -142,7 +141,7 @@ class ApacheDvsni(object):
         self.configurator.reverter.register_file_creation(
             True, self.challenge_conf)
 
-        with open(self.challenge_conf, 'w') as new_conf:
+        with open(self.challenge_conf, "w") as new_conf:
             new_conf.write(config_text)
 
     def _conf_include_check(self, main_config):
@@ -168,7 +167,7 @@ class ApacheDvsni(object):
         :type achall: :class:`letsencrypt.client.achallenges.DVSNI`
 
         :param list ip_addrs: addresses of challenged domain
-            :class:`list` of type :class:`letsencrypt.client.apache.obj.Addr`
+            :class:`list` of type :class:`~apache.obj.Addr`
 
         :returns: virtual host configuration text
         :rtype: str
@@ -180,13 +179,13 @@ class ApacheDvsni(object):
         # TODO: Python docs is not clear how mutliline string literal
         # newlines are parsed on different platforms. At least on
         # Linux (Debian sid), when source file uses CRLF, Python still
-        # parses it as '\n'... c.f.:
+        # parses it as "\n"... c.f.:
         # https://docs.python.org/2.7/reference/lexical_analysis.html
         return self.VHOST_TEMPLATE.format(
             vhost=ips, server_name=achall.nonce_domain,
             ssl_options_conf_path=self.configurator.parser.loc["ssl_options"],
             cert_path=self.get_cert_file(achall), key_path=achall.key.file,
-            document_root=document_root).replace('\n', os.linesep)
+            document_root=document_root).replace("\n", os.linesep)
 
     def get_cert_file(self, achall):
         """Returns standardized name for challenge certificate.

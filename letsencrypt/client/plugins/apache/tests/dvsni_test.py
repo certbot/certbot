@@ -1,4 +1,4 @@
-"""Test for letsencrypt.client.apache.dvsni."""
+"""Test for letsencrypt.client.plugins.apache.dvsni."""
 import pkg_resources
 import unittest
 import shutil
@@ -10,9 +10,9 @@ from letsencrypt.acme import challenges
 from letsencrypt.client import achallenges
 from letsencrypt.client import le_util
 
-from letsencrypt.client.apache.obj import Addr
+from letsencrypt.client.plugins.apache.obj import Addr
 
-from letsencrypt.client.tests.apache import util
+from letsencrypt.client.plugins.apache.tests import util
 
 
 class DvsniPerformTest(util.ApacheTest):
@@ -21,20 +21,20 @@ class DvsniPerformTest(util.ApacheTest):
     def setUp(self):
         super(DvsniPerformTest, self).setUp()
 
-        with mock.patch("letsencrypt.client.apache.configurator."
+        with mock.patch("letsencrypt.client.plugins.apache.configurator."
                         "mod_loaded") as mock_load:
             mock_load.return_value = True
             config = util.get_apache_configurator(
                 self.config_path, self.config_dir, self.work_dir,
                 self.ssl_options)
 
-        from letsencrypt.client.apache import dvsni
+        from letsencrypt.client.plugins.apache import dvsni
         self.sni = dvsni.ApacheDvsni(config)
 
         rsa256_file = pkg_resources.resource_filename(
-            "letsencrypt.client.tests", 'testdata/rsa256_key.pem')
+            "letsencrypt.client.tests", "testdata/rsa256_key.pem")
         rsa256_pem = pkg_resources.resource_string(
-            "letsencrypt.client.tests", 'testdata/rsa256_key.pem')
+            "letsencrypt.client.tests", "testdata/rsa256_key.pem")
 
         auth_key = le_util.Key(rsa256_file, rsa256_pem)
         self.achalls = [
@@ -74,7 +74,7 @@ class DvsniPerformTest(util.ApacheTest):
                                 nonce_domain=self.achalls[0].nonce_domain)
         achall.gen_cert_and_response.return_value = ("pem", response)
 
-        with mock.patch("letsencrypt.client.apache.dvsni.open",
+        with mock.patch("letsencrypt.client.plugins.apache.dvsni.open",
                         m_open, create=True):
             # pylint: disable=protected-access
             self.assertEqual(response, self.sni._setup_challenge_cert(
@@ -82,7 +82,7 @@ class DvsniPerformTest(util.ApacheTest):
 
             self.assertTrue(m_open.called)
             self.assertEqual(
-                m_open.call_args[0], (self.sni.get_cert_file(achall), 'w'))
+                m_open.call_args[0], (self.sni.get_cert_file(achall), "w"))
             self.assertEqual(m_open().write.call_args[0][0], "pem")
 
     def test_perform1(self):
@@ -166,5 +166,5 @@ class DvsniPerformTest(util.ApacheTest):
                     set([self.achalls[1].nonce_domain]))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

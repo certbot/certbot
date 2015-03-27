@@ -14,3 +14,5 @@ class Authenticator(object):
 
     # Implement all methods from IAuthenticator, remembering to add
     # "self" as first argument, e.g. def prepare(self)...
+
+    # For full examples, see letsencrypt.client.plugins

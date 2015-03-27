@@ -1,11 +1,11 @@
-"""Test the helper objects in apache.obj.py."""
+"""Test the helper objects in letsencrypt.client.plugins.apache.obj."""
 import unittest
 
 
 class AddrTest(unittest.TestCase):
     """Test the Addr class."""
     def setUp(self):
-        from letsencrypt.client.apache.obj import Addr
+        from letsencrypt.client.plugins.apache.obj import Addr
         self.addr1 = Addr.fromstring("192.168.1.1")
         self.addr2 = Addr.fromstring("192.168.1.1:*")
         self.addr3 = Addr.fromstring("192.168.1.1:80")
@@ -34,7 +34,7 @@ class AddrTest(unittest.TestCase):
         self.assertFalse(self.addr1 == 3333)
 
     def test_set_inclusion(self):
-        from letsencrypt.client.apache.obj import Addr
+        from letsencrypt.client.plugins.apache.obj import Addr
         set_a = set([self.addr1, self.addr2])
         addr1b = Addr.fromstring("192.168.1.1")
         addr2b = Addr.fromstring("192.168.1.1:*")
@@ -46,15 +46,15 @@ class AddrTest(unittest.TestCase):
 class VirtualHostTest(unittest.TestCase):
     """Test the VirtualHost class."""
     def setUp(self):
-        from letsencrypt.client.apache.obj import VirtualHost
-        from letsencrypt.client.apache.obj import Addr
+        from letsencrypt.client.plugins.apache.obj import VirtualHost
+        from letsencrypt.client.plugins.apache.obj import Addr
         self.vhost1 = VirtualHost(
             "filep", "vh_path",
             set([Addr.fromstring("localhost")]), False, False)
 
     def test_eq(self):
-        from letsencrypt.client.apache.obj import Addr
-        from letsencrypt.client.apache.obj import VirtualHost
+        from letsencrypt.client.plugins.apache.obj import Addr
+        from letsencrypt.client.plugins.apache.obj import VirtualHost
         vhost1b = VirtualHost(
             "filep", "vh_path",
             set([Addr.fromstring("localhost")]), False, False)
