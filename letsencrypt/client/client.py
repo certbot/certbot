@@ -1,14 +1,10 @@
 """ACME protocol client class and helper functions."""
 import logging
 import os
-import pkg_resources
 import sys
 
 import Crypto.PublicKey.RSA
 import M2Crypto
-
-import zope.interface.exceptions
-import zope.interface.verify
 
 from letsencrypt.acme import messages
 from letsencrypt.acme.jose import util as jose_util
@@ -17,7 +13,6 @@ from letsencrypt.client import auth_handler
 from letsencrypt.client import client_authenticator
 from letsencrypt.client import crypto_util
 from letsencrypt.client import errors
-from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
 from letsencrypt.client import network
 from letsencrypt.client import reverter
@@ -26,28 +21,6 @@ from letsencrypt.client import revoker
 from letsencrypt.client.plugins.apache import configurator
 from letsencrypt.client.display import ops as display_ops
 from letsencrypt.client.display import enhancements
-
-
-SETUPTOOLS_AUTHENTICATORS_ENTRY_POINT = "letsencrypt.authenticators"
-"""Setuptools entry point group name for Authenticator plugins."""
-
-
-def init_auths(config):
-    """Find (setuptools entry points) and initialize Authenticators."""
-    auths = {}
-    for entrypoint in pkg_resources.iter_entry_points(
-            SETUPTOOLS_AUTHENTICATORS_ENTRY_POINT):
-        auth_cls = entrypoint.load()
-        auth = auth_cls(config)
-        try:
-            zope.interface.verify.verifyObject(interfaces.IAuthenticator, auth)
-        except zope.interface.exceptions.BrokenImplementation:
-            logging.debug(
-                "%r object does not provide IAuthenticator, skipping",
-                entrypoint.name)
-        else:
-            auths[auth] = entrypoint.name
-    return auths
 
 
 class Client(object):
