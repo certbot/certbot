@@ -30,7 +30,15 @@ Challenges
 
 Other ACME objects
 ------------------
+
 .. automodule:: letsencrypt.acme.other
+   :members:
+
+
+Fields
+------
+
+.. automodule:: letsencrypt.acme.fields
    :members:
 
 
