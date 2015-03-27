@@ -96,10 +96,13 @@ setup(
         'letsencrypt.acme',
         'letsencrypt.acme.jose',
         'letsencrypt.client',
-        'letsencrypt.client.apache',
         'letsencrypt.client.display',
+        'letsencrypt.client.plugins',
+        'letsencrypt.client.plugins.apache',
+        'letsencrypt.client.plugins.apache.tests',
+        'letsencrypt.client.plugins.standalone',
+        'letsencrypt.client.plugins.standalone.tests',
         'letsencrypt.client.tests',
-        'letsencrypt.client.tests.apache',
         'letsencrypt.client.tests.display',
         'letsencrypt.scripts',
     ],
@@ -120,9 +123,9 @@ setup(
             'jws = letsencrypt.acme.jose.jws:CLI.run',
         ],
         'letsencrypt.authenticators': [
-            'apache = letsencrypt.client.apache.configurator'
+            'apache = letsencrypt.client.plugins.apache.configurator'
             ':ApacheConfigurator',
-            'standalone = letsencrypt.client.standalone_authenticator'
+            'standalone = letsencrypt.client.plugins.standalone.authenticator'
             ':StandaloneAuthenticator',
         ],
     },

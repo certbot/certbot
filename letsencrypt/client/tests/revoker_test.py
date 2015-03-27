@@ -10,7 +10,7 @@ import mock
 
 from letsencrypt.client import errors
 from letsencrypt.client import le_util
-from letsencrypt.client.apache import configurator
+from letsencrypt.client.plugins.apache import configurator
 from letsencrypt.client.display import util as display_util
 
 

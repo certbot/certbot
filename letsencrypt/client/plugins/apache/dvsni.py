@@ -2,20 +2,19 @@
 import logging
 import os
 
-from letsencrypt.client.apache import parser
+from letsencrypt.client.plugins.apache import parser
 
 
 class ApacheDvsni(object):
     """Class performs DVSNI challenges within the Apache configurator.
 
     :ivar configurator: ApacheConfigurator object
-    :type configurator:
-        :class:`letsencrypt.client.apache.configurator.ApacheConfigurator`
+    :type configurator: :class:`~apache.configurator.ApacheConfigurator`
 
     :ivar list achalls: Annotated :class:`~letsencrypt.client.achallenges.DVSNI`
         challenges.
 
-    :param list indicies: Meant to hold indices of challenges in a
+    :param list indices: Meant to hold indices of challenges in a
         larger array. ApacheDvsni is capable of solving many challenges
         at once which causes an indexing issue within ApacheConfigurator
         who must return all responses in order.  Imagine ApacheConfigurator
@@ -129,7 +128,7 @@ class ApacheDvsni(object):
         Result: Apache config includes virtual servers for issued challs
 
         :param list ll_addrs: list of list of
-            :class:`letsencrypt.client.apache.obj.Addr` to apply
+            :class:`letsencrypt.client.plugins.apache.obj.Addr` to apply
 
         """
         # TODO: Use ip address of existing vhost instead of relying on FQDN
@@ -168,7 +167,7 @@ class ApacheDvsni(object):
         :type achall: :class:`letsencrypt.client.achallenges.DVSNI`
 
         :param list ip_addrs: addresses of challenged domain
-            :class:`list` of type :class:`letsencrypt.client.apache.obj.Addr`
+            :class:`list` of type :class:`~apache.obj.Addr`
 
         :returns: virtual host configuration text
         :rtype: str

@@ -1,4 +1,4 @@
-"""Test for letsencrypt.client.apache.configurator."""
+"""Test for letsencrypt.client.plugins.apache.configurator."""
 import os
 import re
 import shutil
@@ -12,11 +12,11 @@ from letsencrypt.client import achallenges
 from letsencrypt.client import errors
 from letsencrypt.client import le_util
 
-from letsencrypt.client.apache import configurator
-from letsencrypt.client.apache import obj
-from letsencrypt.client.apache import parser
+from letsencrypt.client.plugins.apache import configurator
+from letsencrypt.client.plugins.apache import obj
+from letsencrypt.client.plugins.apache import parser
 
-from letsencrypt.client.tests.apache import util
+from letsencrypt.client.plugins.apache.tests import util
 
 
 class TwoVhost80Test(util.ApacheTest):
@@ -25,7 +25,7 @@ class TwoVhost80Test(util.ApacheTest):
     def setUp(self):
         super(TwoVhost80Test, self).setUp()
 
-        with mock.patch("letsencrypt.client.apache.configurator."
+        with mock.patch("letsencrypt.client.plugins.apache.configurator."
                         "mod_loaded") as mock_load:
             mock_load.return_value = True
             self.config = util.get_apache_configurator(
@@ -46,6 +46,12 @@ class TwoVhost80Test(util.ApacheTest):
             ['letsencrypt.demo', 'encryption-example.demo', 'ip-172-30-0-17']))
 
     def test_get_virtual_hosts(self):
+        """Make sure all vhosts are being properly found.
+
+        .. note:: If test fails, only finding 1 Vhost... it is likely that
+            it is a problem with is_enabled.
+
+        """
         vhs = self.config.get_virtual_hosts()
         self.assertEqual(len(vhs), 4)
         found = 0
@@ -59,6 +65,14 @@ class TwoVhost80Test(util.ApacheTest):
         self.assertEqual(found, 4)
 
     def test_is_site_enabled(self):
+        """Test if site is enabled.
+
+        .. note:: This test currently fails for hard links
+            (which may happen if you move dirs incorrectly)
+        .. warning:: This test does not work when running using the
+            unittest.main() function. It incorrectly copies symlinks.
+
+        """
         self.assertTrue(self.config.is_site_enabled(self.vh_truth[0].filep))
         self.assertFalse(self.config.is_site_enabled(self.vh_truth[1].filep))
         self.assertTrue(self.config.is_site_enabled(self.vh_truth[2].filep))
@@ -134,9 +148,9 @@ class TwoVhost80Test(util.ApacheTest):
 
         self.assertEqual(len(self.config.vhosts), 5)
 
-    @mock.patch("letsencrypt.client.apache.configurator."
+    @mock.patch("letsencrypt.client.plugins.apache.configurator."
                 "dvsni.ApacheDvsni.perform")
-    @mock.patch("letsencrypt.client.apache.configurator."
+    @mock.patch("letsencrypt.client.plugins.apache.configurator."
                 "ApacheConfigurator.restart")
     def test_perform(self, mock_restart, mock_dvsni_perform):
         # Only tests functionality specific to configurator.perform
@@ -166,7 +180,7 @@ class TwoVhost80Test(util.ApacheTest):
 
         self.assertEqual(mock_restart.call_count, 1)
 
-    @mock.patch("letsencrypt.client.apache.configurator."
+    @mock.patch("letsencrypt.client.plugins.apache.configurator."
                 "subprocess.Popen")
     def test_get_version(self, mock_popen):
         mock_popen().communicate.return_value = (
