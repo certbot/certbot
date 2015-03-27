@@ -129,18 +129,24 @@ class JSONDeSerializable(object):
         :returns: Fully serialized object.
 
         """
-        partial = self.to_json()
-        try_serialize = (lambda x: x.fully_serialize()
-                         if isinstance(x, JSONDeSerializable) else x)
-        if isinstance(partial, basestring):  # strings are sequences
-            return partial
-        if isinstance(partial, collections.Sequence):
-            return [try_serialize(elem) for elem in partial]
-        elif isinstance(partial, collections.Mapping):
-            return dict([(try_serialize(key), try_serialize(value))
-                         for key, value in partial.iteritems()])
-        else:
-            return partial
+        def _serialize(obj):
+            if isinstance(obj, JSONDeSerializable):
+                return _serialize(obj.to_json())
+            if isinstance(obj, basestring):  # strings are sequence
+                return obj
+            elif isinstance(obj, list):
+                return [_serialize(subobj) for subobj in obj]
+            elif isinstance(obj, collections.Sequence):
+                # default to tuple, otherwise Mapping could get
+                # unhashable list
+                return tuple(_serialize(subobj) for subobj in obj)
+            elif isinstance(obj, collections.Mapping):
+                return dict((_serialize(key), _serialize(value))
+                            for key, value in obj.iteritems())
+            else:
+                return obj
+
+        return _serialize(self)
 
     @util.abstractclassmethod
     def from_json(cls, unused_jobj):
