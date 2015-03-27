@@ -61,7 +61,7 @@ class ImmutableMap(collections.Mapping, collections.Hashable):
         """Return updated map."""
         items = dict(self)
         items.update(kwargs)
-        return type(self)(**items)
+        return type(self)(**items)  # pylint: disable=star-args
 
     def __getitem__(self, key):
         try:

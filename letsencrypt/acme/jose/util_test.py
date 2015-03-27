@@ -25,6 +25,10 @@ class ImmutableMapTest(unittest.TestCase):
         self.a2 = self.A(x=3, y=4)
         self.b = self.B(x=1, y=2)
 
+    def test_update(self):
+        self.assertEqual(self.A(x=2, y=2), self.a1.update(x=2))
+        self.assertEqual(self.a2, self.a1.update(x=3, y=4))
+
     def test_get_missing_item_raises_key_error(self):
         self.assertRaises(KeyError, self.a1.__getitem__, 'z')
 
