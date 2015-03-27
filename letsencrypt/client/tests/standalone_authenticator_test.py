@@ -51,7 +51,7 @@ class ChallPrefTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.client.standalone_authenticator import \
             StandaloneAuthenticator
-        self.authenticator = StandaloneAuthenticator()
+        self.authenticator = StandaloneAuthenticator(None)
 
     def test_chall_pref(self):
         self.assertEqual(self.authenticator.get_chall_pref("example.com"),
@@ -63,7 +63,7 @@ class SNICallbackTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.client.standalone_authenticator import \
             StandaloneAuthenticator
-        self.authenticator = StandaloneAuthenticator()
+        self.authenticator = StandaloneAuthenticator(None)
         test_key = pkg_resources.resource_string(
             __name__, "testdata/rsa256_key.pem")
         key = le_util.Key("foo", test_key)
@@ -106,7 +106,7 @@ class ClientSignalHandlerTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.client.standalone_authenticator import \
             StandaloneAuthenticator
-        self.authenticator = StandaloneAuthenticator()
+        self.authenticator = StandaloneAuthenticator(None)
         self.authenticator.tasks = {"foononce.acme.invalid": "stuff"}
         self.authenticator.child_pid = 12345
 
@@ -135,7 +135,7 @@ class SubprocSignalHandlerTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.client.standalone_authenticator import \
             StandaloneAuthenticator
-        self.authenticator = StandaloneAuthenticator()
+        self.authenticator = StandaloneAuthenticator(None)
         self.authenticator.tasks = {"foononce.acme.invalid": "stuff"}
         self.authenticator.child_pid = 12345
         self.authenticator.parent_pid = 23456
@@ -187,7 +187,7 @@ class AlreadyListeningTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.client.standalone_authenticator import \
             StandaloneAuthenticator
-        self.authenticator = StandaloneAuthenticator()
+        self.authenticator = StandaloneAuthenticator(None)
 
     @mock.patch("letsencrypt.client.standalone_authenticator.psutil."
                 "net_connections")
@@ -290,7 +290,7 @@ class PerformTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.client.standalone_authenticator import \
             StandaloneAuthenticator
-        self.authenticator = StandaloneAuthenticator()
+        self.authenticator = StandaloneAuthenticator(None)
 
         test_key = pkg_resources.resource_string(
             __name__, "testdata/rsa256_key.pem")
@@ -367,7 +367,7 @@ class StartListenerTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.client.standalone_authenticator import \
             StandaloneAuthenticator
-        self.authenticator = StandaloneAuthenticator()
+        self.authenticator = StandaloneAuthenticator(None)
 
     @mock.patch("letsencrypt.client.standalone_authenticator."
                 "Crypto.Random.atfork")
@@ -402,7 +402,7 @@ class DoParentProcessTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.client.standalone_authenticator import \
             StandaloneAuthenticator
-        self.authenticator = StandaloneAuthenticator()
+        self.authenticator = StandaloneAuthenticator(None)
 
     @mock.patch("letsencrypt.client.standalone_authenticator.signal.signal")
     @mock.patch("letsencrypt.client.standalone_authenticator."
@@ -452,7 +452,7 @@ class DoChildProcessTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.client.standalone_authenticator import \
             StandaloneAuthenticator
-        self.authenticator = StandaloneAuthenticator()
+        self.authenticator = StandaloneAuthenticator(None)
         test_key = pkg_resources.resource_string(
             __name__, "testdata/rsa256_key.pem")
         key = le_util.Key("foo", test_key)
@@ -545,7 +545,7 @@ class CleanupTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.client.standalone_authenticator import \
             StandaloneAuthenticator
-        self.authenticator = StandaloneAuthenticator()
+        self.authenticator = StandaloneAuthenticator(None)
         self.achall = achallenges.DVSNI(
             chall=challenges.DVSNI(r="whee", nonce="foononce"),
             domain="foo.example.com", key="key")
@@ -575,7 +575,7 @@ class MoreInfoTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.client.standalone_authenticator import (
             StandaloneAuthenticator)
-        self.authenticator = StandaloneAuthenticator()
+        self.authenticator = StandaloneAuthenticator(None)
 
     def test_more_info(self):
         """Make sure exceptions aren't raised."""
@@ -587,7 +587,7 @@ class InitTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.client.standalone_authenticator import (
             StandaloneAuthenticator)
-        self.authenticator = StandaloneAuthenticator()
+        self.authenticator = StandaloneAuthenticator(None)
 
     def test_prepare(self):
         """Make sure exceptions aren't raised.
