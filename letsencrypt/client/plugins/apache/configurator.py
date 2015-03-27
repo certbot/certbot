@@ -561,13 +561,15 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         .. note:: This function saves the configuration
 
         :param ssl_vhost: Destination of traffic, an ssl enabled vhost
-        :type ssl_vhost: :class:`~letsencrypt.client.plugins.apache.obj.VirtualHost`
+        :type ssl_vhost:
+            :class:`~letsencrypt.client.plugins.apache.obj.VirtualHost`
 
         :param unused_options: Not currently used
         :type unused_options: Not Available
 
         :returns: Success, general_vhost (HTTP vhost)
-        :rtype: (bool, :class:`~letsencrypt.client.plugins.apache.obj.VirtualHost`)
+        :rtype: (bool,
+            :class:`~letsencrypt.client.plugins.apache.obj.VirtualHost`)
 
         """
         if not mod_loaded("rewrite_module", self.config.apache_ctl):
