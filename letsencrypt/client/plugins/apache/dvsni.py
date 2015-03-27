@@ -117,7 +117,7 @@ class ApacheDvsni(object):
         cert_pem, response = achall.gen_cert_and_response(s)
 
         # Write out challenge cert
-        with open(cert_path, 'w') as cert_chall_fd:
+        with open(cert_path, "w") as cert_chall_fd:
             cert_chall_fd.write(cert_pem)
 
         return response
@@ -141,7 +141,7 @@ class ApacheDvsni(object):
         self.configurator.reverter.register_file_creation(
             True, self.challenge_conf)
 
-        with open(self.challenge_conf, 'w') as new_conf:
+        with open(self.challenge_conf, "w") as new_conf:
             new_conf.write(config_text)
 
     def _conf_include_check(self, main_config):
@@ -179,13 +179,13 @@ class ApacheDvsni(object):
         # TODO: Python docs is not clear how mutliline string literal
         # newlines are parsed on different platforms. At least on
         # Linux (Debian sid), when source file uses CRLF, Python still
-        # parses it as '\n'... c.f.:
+        # parses it as "\n"... c.f.:
         # https://docs.python.org/2.7/reference/lexical_analysis.html
         return self.VHOST_TEMPLATE.format(
             vhost=ips, server_name=achall.nonce_domain,
             ssl_options_conf_path=self.configurator.parser.loc["ssl_options"],
             cert_path=self.get_cert_file(achall), key_path=achall.key.file,
-            document_root=document_root).replace('\n', os.linesep)
+            document_root=document_root).replace("\n", os.linesep)
 
     def get_cert_file(self, achall):
         """Returns standardized name for challenge certificate.

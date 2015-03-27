@@ -43,7 +43,7 @@ class TwoVhost80Test(util.ApacheTest):
     def test_get_all_names(self):
         names = self.config.get_all_names()
         self.assertEqual(names, set(
-            ['letsencrypt.demo', 'encryption-example.demo', 'ip-172-30-0-17']))
+            ["letsencrypt.demo", "encryption-example.demo", "ip-172-30-0-17"]))
 
     def test_get_virtual_hosts(self):
         """Make sure all vhosts are being properly found.
@@ -197,7 +197,7 @@ class TwoVhost80Test(util.ApacheTest):
             errors.LetsEncryptConfiguratorError, self.config.get_version)
 
         mock_popen().communicate.return_value = (
-            "Server Version: Apache/2.3\n Apache/2.4.7", "")
+            "Server Version: Apache/2.3{0} Apache/2.4.7".format(os.linesep), "")
         self.assertRaises(
             errors.LetsEncryptConfiguratorError, self.config.get_version)
 
@@ -206,5 +206,5 @@ class TwoVhost80Test(util.ApacheTest):
             errors.LetsEncryptConfiguratorError, self.config.get_version)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
