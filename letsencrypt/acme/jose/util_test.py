@@ -1,6 +1,35 @@
 """Tests for letsencrypt.acme.jose.util."""
 import functools
+import os
+import pkg_resources
 import unittest
+
+import Crypto.PublicKey.RSA
+
+
+class HashableRSAKeyTest(unittest.TestCase):
+    """Tests for letsencrypt.acme.jose.util.HashableRSAKey."""
+
+    def setUp(self):
+        from letsencrypt.acme.jose.util import HashableRSAKey
+        self.key = HashableRSAKey(Crypto.PublicKey.RSA.importKey(
+            pkg_resources.resource_string(
+                __name__, os.path.join('testdata', 'rsa256_key.pem'))))
+        self.key_same = HashableRSAKey(Crypto.PublicKey.RSA.importKey(
+            pkg_resources.resource_string(
+                __name__, os.path.join('testdata', 'rsa256_key.pem'))))
+
+    def test_eq(self):
+        # if __eq__ is not defined, then two HashableRSAKeys with same
+        # _wrapped do not equate
+        self.assertEqual(self.key, self.key_same)
+
+    def test_hash(self):
+        self.assertTrue(isinstance(hash(self.key), int))
+
+    def test_publickey(self):
+        from letsencrypt.acme.jose.util import HashableRSAKey
+        self.assertTrue(isinstance(self.key.publickey(), HashableRSAKey))
 
 
 class ImmutableMapTest(unittest.TestCase):

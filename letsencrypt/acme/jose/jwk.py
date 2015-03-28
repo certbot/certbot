@@ -83,7 +83,11 @@ class JWKOct(JWK):
 
 @JWK.register
 class JWKRSA(JWK):
-    """RSA JWK."""
+    """RSA JWK.
+
+    :ivar key: `Crypto.PublicKey.RSA` wrapped in `.HashableRSAKey`
+
+    """
     typ = 'RSA'
     __slots__ = ('key',)
 
@@ -114,7 +118,8 @@ class JWKRSA(JWK):
         :rtype: :class:`JWKRSA`
 
         """
-        return cls(key=Crypto.PublicKey.RSA.importKey(string))
+        return cls(key=util.HashableRSAKey(
+            Crypto.PublicKey.RSA.importKey(string)))
 
     def public(self):
         return type(self)(key=self.key.publickey())
