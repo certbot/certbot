@@ -513,6 +513,78 @@ class PathSatisfiedTest(unittest.TestCase):
             self.assertFalse(self.handler._path_satisfied(dom[i]))
 
 
+class GenChallengePathTest(unittest.TestCase):
+    """Tests for letsencrypt.client.auth_handler.gen_challenge_path.
+
+    .. todo:: Add more tests for dumb_path... depending on what we want to do.
+
+    """
+    def setUp(self):
+        logging.disable(logging.fatal)
+
+    def tearDown(self):
+        logging.disable(logging.NOTSET)
+
+    @classmethod
+    def _call(cls, challs, preferences, combinations):
+        from letsencrypt.client.auth_handler import gen_challenge_path
+        return gen_challenge_path(challs, preferences, combinations)
+
+    def test_common_case(self):
+        """Given DVSNI and SimpleHTTPS with appropriate combos."""
+        challs = (acme_util.DVSNI, acme_util.SIMPLE_HTTPS)
+        prefs = [challenges.DVSNI]
+        combos = ((0,), (1,))
+
+        # Smart then trivial dumb path test
+        self.assertEqual(self._call(challs, prefs, combos), (0,))
+        self.assertTrue(self._call(challs, prefs, None))
+        # Rearrange order...
+        self.assertEqual(self._call(challs[::-1], prefs, combos), (1,))
+        self.assertTrue(self._call(challs[::-1], prefs, None))
+
+    def test_common_case_with_continuity(self):
+        challs = (acme_util.RECOVERY_TOKEN,
+                  acme_util.RECOVERY_CONTACT,
+                  acme_util.DVSNI,
+                  acme_util.SIMPLE_HTTPS)
+        prefs = [challenges.RecoveryToken, challenges.DVSNI]
+        combos = acme_util.gen_combos(challs)
+        self.assertEqual(self._call(challs, prefs, combos), (0, 2))
+
+         # dumb_path() trivial test
+        self.assertTrue(self._call(challs, prefs, None))
+
+    def test_full_client_server(self):
+        challs = (acme_util.RECOVERY_TOKEN,
+                  acme_util.RECOVERY_CONTACT,
+                  acme_util.POP,
+                  acme_util.DVSNI,
+                  acme_util.SIMPLE_HTTPS,
+                  acme_util.DNS)
+        # Typical webserver client that can do everything except DNS
+        # Attempted to make the order realistic
+        prefs = [challenges.RecoveryToken,
+                 challenges.ProofOfPossession,
+                 challenges.SimpleHTTPS,
+                 challenges.DVSNI,
+                 challenges.RecoveryContact]
+        combos = acme_util.gen_combos(challs)
+        self.assertEqual(self._call(challs, prefs, combos), (0, 4))
+
+        # Dumb path trivial test
+        self.assertTrue(self._call(challs, prefs, None))
+
+    def test_not_supported(self):
+        challs = (acme_util.POP, acme_util.DVSNI)
+        prefs = [challenges.DVSNI]
+        combos = ((0, 1),)
+
+        self.assertRaises(errors.LetsEncryptAuthHandlerError,
+                          self._call,
+                          challs, prefs, combos)
+
+
 class MutuallyExclusiveTest(unittest.TestCase):
     """Tests for letsencrypt.client.auth_handler.mutually_exclusive."""
 
