@@ -184,7 +184,7 @@ class ProofOfPossession(ClientChallenge):
         """Hints for "proofOfPossession" challenge.
 
         :ivar jwk: JSON Web Key (:class:`letsencrypt.acme.jose.JWK`)
-        :ivar list certs: List of :class:`M2Crypto.X509.X509` cetificates.
+        :ivar list certs: List of :class:`M2Crypto.X509.X509` certificates.
 
         """
         jwk = jose.Field("jwk", decoder=jose.JWK.from_json)
