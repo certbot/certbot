@@ -333,6 +333,10 @@ def gen_challenge_path(challs, preferences, combinations):
     :returns: tuple of indices from ``challenges``.
     :rtype: tuple
 
+    :raises letsencrypt.client.errors.LetsEncryptAuthHandlerError: If a
+        path cannot be created that satisfies the CA given the preferences and
+        combinations.
+
     """
     if combinations:
         return _find_smart_path(challs, preferences, combinations)
