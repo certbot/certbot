@@ -14,7 +14,7 @@ class LetsEncryptAuthHandlerError(LetsEncryptClientError):
     """Let's Encrypt Auth Handler error."""
 
 
-class LetsEncryptClientAuthError(LetsEncryptAuthHandlerError):
+class LetsEncryptContAuthError(LetsEncryptAuthHandlerError):
     """Let's Encrypt Client Authenticator error."""
 
 

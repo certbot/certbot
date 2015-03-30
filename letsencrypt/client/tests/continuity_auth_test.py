@@ -13,7 +13,7 @@ class PerformTest(unittest.TestCase):
     """Test client perform function."""
 
     def setUp(self):
-        from letsencrypt.client.continuity_authenticator import ContinuityAuthenticator
+        from letsencrypt.client.continuity_auth import ContinuityAuthenticator
 
         self.auth = ContinuityAuthenticator(
             mock.MagicMock(server="demo_server.org"))
@@ -38,7 +38,7 @@ class PerformTest(unittest.TestCase):
 
     def test_unexpected(self):
         self.assertRaises(
-            errors.LetsEncryptClientAuthError, self.auth.perform, [
+            errors.LetsEncryptContAuthError, self.auth.perform, [
                 achallenges.DVSNI(chall=None, domain="0", key="invalid_key")])
 
     def test_chall_pref(self):
@@ -50,7 +50,7 @@ class CleanupTest(unittest.TestCase):
     """Test the Authenticator cleanup function."""
 
     def setUp(self):
-        from letsencrypt.client.continuity_authenticator import ContinuityAuthenticator
+        from letsencrypt.client.continuity_auth import ContinuityAuthenticator
 
         self.auth = ContinuityAuthenticator(
             mock.MagicMock(server="demo_server.org"))
@@ -70,7 +70,7 @@ class CleanupTest(unittest.TestCase):
         token = achallenges.RecoveryToken(chall=None, domain="0")
         unexpected = achallenges.DVSNI(chall=None, domain="0", key="dummy_key")
 
-        self.assertRaises(errors.LetsEncryptClientAuthError,
+        self.assertRaises(errors.LetsEncryptContAuthError,
                           self.auth.cleanup, [token, unexpected])
 
 

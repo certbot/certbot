@@ -30,17 +30,17 @@ class SatisfyChallengesTest(unittest.TestCase):
         from letsencrypt.client.auth_handler import AuthHandler
 
         self.mock_dv_auth = mock.MagicMock(name="ApacheConfigurator")
-        self.mock_client_auth = mock.MagicMock(name="ContinuityAuthenticator")
+        self.mock_cont_auth = mock.MagicMock(name="ContinuityAuthenticator")
 
         self.mock_dv_auth.get_chall_pref.return_value = [challenges.DVSNI]
-        self.mock_client_auth.get_chall_pref.return_value = [
+        self.mock_cont_auth.get_chall_pref.return_value = [
             challenges.RecoveryToken]
 
-        self.mock_client_auth.perform.side_effect = gen_auth_resp
+        self.mock_cont_auth.perform.side_effect = gen_auth_resp
         self.mock_dv_auth.perform.side_effect = gen_auth_resp
 
         self.handler = AuthHandler(
-            self.mock_dv_auth, self.mock_client_auth, None)
+            self.mock_dv_auth, self.mock_cont_auth, None)
 
         logging.disable(logging.CRITICAL)
 
@@ -78,7 +78,7 @@ class SatisfyChallengesTest(unittest.TestCase):
         self.assertEqual(len(self.handler.responses[dom]), 1)
 
         # Test if statement for dv_auth perform
-        self.assertEqual(self.mock_client_auth.perform.call_count, 1)
+        self.assertEqual(self.mock_cont_auth.perform.call_count, 1)
         self.assertEqual(self.mock_dv_auth.perform.call_count, 0)
 
         self.assertEqual("RecoveryToken0", self.handler.responses[dom][0])
@@ -106,7 +106,7 @@ class SatisfyChallengesTest(unittest.TestCase):
         # Each message contains 1 auth, 0 client
 
         # Test proper call count for methods
-        self.assertEqual(self.mock_client_auth.perform.call_count, 0)
+        self.assertEqual(self.mock_cont_auth.perform.call_count, 0)
         self.assertEqual(self.mock_dv_auth.perform.call_count, 1)
 
         for i in xrange(5):
@@ -141,7 +141,7 @@ class SatisfyChallengesTest(unittest.TestCase):
         self.assertEqual(len(self.handler.client_c), 1)
 
         # Test if statement for client_auth perform
-        self.assertEqual(self.mock_client_auth.perform.call_count, 0)
+        self.assertEqual(self.mock_cont_auth.perform.call_count, 0)
         self.assertEqual(self.mock_dv_auth.perform.call_count, 1)
 
         self.assertEqual(
@@ -309,11 +309,11 @@ class SatisfyChallengesTest(unittest.TestCase):
 
         # Verify cleanup is actually run correctly
         self.assertEqual(self.mock_dv_auth.cleanup.call_count, 2)
-        self.assertEqual(self.mock_client_auth.cleanup.call_count, 2)
+        self.assertEqual(self.mock_cont_auth.cleanup.call_count, 2)
 
 
         dv_cleanup_args = self.mock_dv_auth.cleanup.call_args_list
-        client_cleanup_args = self.mock_client_auth.cleanup.call_args_list
+        client_cleanup_args = self.mock_cont_auth.cleanup.call_args_list
 
         # Check DV cleanup
         for i in xrange(2):
@@ -346,7 +346,7 @@ class GetAuthorizationsTest(unittest.TestCase):
         from letsencrypt.client.auth_handler import AuthHandler
 
         self.mock_dv_auth = mock.MagicMock(name="ApacheConfigurator")
-        self.mock_client_auth = mock.MagicMock(name="ContinuityAuthenticator")
+        self.mock_cont_auth = mock.MagicMock(name="ContinuityAuthenticator")
 
         self.mock_sat_chall = mock.MagicMock(name="_satisfy_challenges")
         self.mock_acme_auth = mock.MagicMock(name="acme_authorization")
@@ -354,7 +354,7 @@ class GetAuthorizationsTest(unittest.TestCase):
         self.iteration = 0
 
         self.handler = AuthHandler(
-            self.mock_dv_auth, self.mock_client_auth, None)
+            self.mock_dv_auth, self.mock_cont_auth, None)
 
         self.handler._satisfy_challenges = self.mock_sat_chall
         self.handler.acme_authorization = self.mock_acme_auth
