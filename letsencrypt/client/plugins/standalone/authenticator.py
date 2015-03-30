@@ -410,5 +410,5 @@ class StandaloneAuthenticator(object):
                 "on port 443 and perform DVSNI challenges. Once a certificate"
                 "is attained, it will be saved in the "
                 "(TODO) current working directory.{0}{0}"
-                "Port 443 must be open in order to use the "
+                "TCP port 443 must be available in order to use the "
                 "Standalone Authenticator.".format(os.linesep))
