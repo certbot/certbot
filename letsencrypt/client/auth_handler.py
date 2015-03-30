@@ -5,6 +5,7 @@ import sys
 import Crypto.PublicKey.RSA
 
 from letsencrypt.acme import challenges
+from letsencrypt.acme import jose
 from letsencrypt.acme import messages
 
 from letsencrypt.client import achallenges
@@ -119,8 +120,8 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
                     nonce=self.msgs[domain].nonce,
                     responses=self.responses[domain],
                     name=domain,
-                    key=Crypto.PublicKey.RSA.importKey(
-                        self.authkey[domain].pem)),
+                    key=jose.HashableRSAKey(Crypto.PublicKey.RSA.importKey(
+                        self.authkey[domain].pem))),
                 messages.Authorization)
             logging.info("Received Authorization for %s", domain)
             return auth

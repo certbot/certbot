@@ -8,8 +8,10 @@ from letsencrypt.acme import challenges
 from letsencrypt.acme import jose
 
 
-KEY = Crypto.PublicKey.RSA.importKey(pkg_resources.resource_string(
-    "letsencrypt.client.tests", os.path.join("testdata", "rsa256_key.pem")))
+KEY = jose.HashableRSAKey(Crypto.PublicKey.RSA.importKey(
+    pkg_resources.resource_string(
+        "letsencrypt.client.tests",
+        os.path.join("testdata", "rsa256_key.pem"))))
 
 # Challenges
 SIMPLE_HTTPS = challenges.SimpleHTTPS(

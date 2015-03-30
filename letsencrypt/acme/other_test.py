@@ -7,10 +7,12 @@ import Crypto.PublicKey.RSA
 from letsencrypt.acme import jose
 
 
-RSA256_KEY = Crypto.PublicKey.RSA.importKey(pkg_resources.resource_string(
-    'letsencrypt.client.tests', 'testdata/rsa256_key.pem'))
-RSA512_KEY = Crypto.PublicKey.RSA.importKey(pkg_resources.resource_string(
-    'letsencrypt.client.tests', 'testdata/rsa512_key.pem'))
+RSA256_KEY = jose.HashableRSAKey(Crypto.PublicKey.RSA.importKey(
+    pkg_resources.resource_string(
+        'letsencrypt.client.tests', 'testdata/rsa256_key.pem')))
+RSA512_KEY = jose.HashableRSAKey(
+    Crypto.PublicKey.RSA.importKey(pkg_resources.resource_string(
+        'letsencrypt.client.tests', 'testdata/rsa512_key.pem')))
 
 
 class SignatureTest(unittest.TestCase):
