@@ -9,7 +9,7 @@ setup(
         'zope.interface',
     ],
     entry_points={
-        'letsencrypt.authenticators': [
+        'letsencrypt.plugins': [
             'example = letsencrypt_example_plugins:Authenticator',
         ],
     },

@@ -122,7 +122,7 @@ setup(
             'letsencrypt = letsencrypt.scripts.main:main',
             'jws = letsencrypt.acme.jose.jws:CLI.run',
         ],
-        'letsencrypt.authenticators': [
+        'letsencrypt.plugins': [
             'apache = letsencrypt.client.plugins.apache.configurator'
             ':ApacheConfigurator',
             'standalone = letsencrypt.client.plugins.standalone.authenticator'
