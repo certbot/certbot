@@ -396,14 +396,13 @@ def _find_dumb_path(challs, preferences):
     assert len(preferences) == len(set(preferences))
 
     path = []
-    # This cannot be a set() because POP challenge is not currently hashable
-    satisfied = []
+    satisfied = set()
     for pref_c in preferences:
         for i, offered_chall in enumerate(challs):
             if (isinstance(offered_chall, pref_c) and
                     is_preferred(offered_chall, satisfied)):
                 path.append(i)
-                satisfied.append(offered_chall)
+                satisfied.add(offered_chall)
     return path
 
 
