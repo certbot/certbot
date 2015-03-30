@@ -4,60 +4,15 @@ import unittest
 
 import Crypto.PublicKey.RSA
 
-from letsencrypt.acme import errors
+from letsencrypt.acme import jose
 
 
-RSA256_KEY = Crypto.PublicKey.RSA.importKey(pkg_resources.resource_string(
-    'letsencrypt.client.tests', 'testdata/rsa256_key.pem'))
-RSA512_KEY = Crypto.PublicKey.RSA.importKey(pkg_resources.resource_string(
-    'letsencrypt.client.tests', 'testdata/rsa512_key.pem'))
-
-
-class JWKTest(unittest.TestCase):
-    """Tests fro letsencrypt.acme.other.JWK."""
-
-    def setUp(self):
-        from letsencrypt.acme.other import JWK
-        self.jwk256 = JWK(key=RSA256_KEY.publickey())
-        self.jwk256json = {
-            'kty': 'RSA',
-            'e': 'AQAB',
-            'n': 'rHVztFHtH92ucFJD_N_HW9AsdRsUuHUBBBDlHwNlRd3fp5'
-                 '80rv2-6QWE30cWgdmJS86ObRz6lUTor4R0T-3C5Q',
-        }
-        self.jwk512 = JWK(key=RSA512_KEY.publickey())
-        self.jwk512json = {
-            'kty': 'RSA',
-            'e': 'AQAB',
-            'n': '9LYRcVE3Nr-qleecEcX8JwVDnjeG1X7ucsCasuuZM0e09c'
-                 'mYuUzxIkMjO_9x4AVcvXXRXPEV-LzWWkfkTlzRMw',
-        }
-
-    def test_equals(self):
-        self.assertEqual(self.jwk256, self.jwk256)
-        self.assertEqual(self.jwk512, self.jwk512)
-
-    def test_not_equals(self):
-        self.assertNotEqual(self.jwk256, self.jwk512)
-        self.assertNotEqual(self.jwk512, self.jwk256)
-
-    def test_to_json(self):
-        self.assertEqual(self.jwk256.to_json(), self.jwk256json)
-        self.assertEqual(self.jwk512.to_json(), self.jwk512json)
-
-    def test_from_json(self):
-        from letsencrypt.acme.other import JWK
-        self.assertEqual(self.jwk256, JWK.from_valid_json(self.jwk256json))
-        # TODO: fix schemata to allow RSA512
-        #self.assertEqual(self.jwk512, JWK.from_json(self.jwk512json))
-
-    def test_from_json_non_schema_errors(self):
-        # valid against schema, but still failing
-        from letsencrypt.acme.other import JWK
-        self.assertRaises(errors.ValidationError, JWK.from_valid_json,
-                          {'kty': 'RSA', 'e': 'AQAB', 'n': ''})
-        self.assertRaises(errors.ValidationError, JWK.from_valid_json,
-                          {'kty': 'RSA', 'e': 'AQAB', 'n': '1'})
+RSA256_KEY = jose.HashableRSAKey(Crypto.PublicKey.RSA.importKey(
+    pkg_resources.resource_string(
+        'letsencrypt.client.tests', 'testdata/rsa256_key.pem')))
+RSA512_KEY = jose.HashableRSAKey(
+    Crypto.PublicKey.RSA.importKey(pkg_resources.resource_string(
+        'letsencrypt.client.tests', 'testdata/rsa512_key.pem')))
 
 
 class SignatureTest(unittest.TestCase):
@@ -66,15 +21,14 @@ class SignatureTest(unittest.TestCase):
 
     def setUp(self):
         self.msg = 'message'
-        self.alg = 'RS256'
         self.sig = ('IC\xd8*\xe7\x14\x9e\x19S\xb7\xcf\xec3\x12\xe2\x8a\x03'
                     '\x98u\xff\xf0\x94\xe2\xd7<\x8f\xa8\xed\xa4KN\xc3\xaa'
                     '\xb9X\xc3w\xaa\xc0_\xd0\x05$y>l#\x10<\x96\xd2\xcdr\xa3'
                     '\x1b\xa1\xf5!f\xef\xc64\xb6\x13')
         self.nonce = '\xec\xd6\xf2oYH\xeb\x13\xd5#q\xe0\xdd\xa2\x92\xa9'
 
-        from letsencrypt.acme.other import JWK
-        self.jwk = JWK(key=RSA256_KEY.publickey())
+        self.alg = jose.RS256
+        self.jwk = jose.JWKRSA(key=RSA256_KEY.publickey())
 
         b64sig = ('SUPYKucUnhlTt8_sMxLiigOYdf_wlOLXPI-o7aRLTsOquVjDd6r'
                   'AX9AFJHk-bCMQPJbSzXKjG6H1IWbvxjS2Ew')
@@ -88,7 +42,7 @@ class SignatureTest(unittest.TestCase):
 
         self.jsig_from = {
             'nonce': b64nonce,
-            'alg': self.alg,
+            'alg': self.alg.to_json(),
             'jwk': self.jwk.to_json(),
             'sig': b64sig,
         }
@@ -130,15 +84,17 @@ class SignatureTest(unittest.TestCase):
     def test_from_json(self):
         from letsencrypt.acme.other import Signature
         self.assertEqual(
-            self.signature, Signature.from_valid_json(self.jsig_from))
+            self.signature, Signature.from_json(self.jsig_from))
 
     def test_from_json_non_schema_errors(self):
         from letsencrypt.acme.other import Signature
         jwk = self.jwk.to_json()
-        self.assertRaises(errors.ValidationError, Signature.from_valid_json, {
-            'alg': 'RS256', 'sig': 'x', 'nonce': '', 'jwk': jwk})
-        self.assertRaises(errors.ValidationError, Signature.from_valid_json, {
-            'alg': 'RS256', 'sig': '', 'nonce': 'x', 'jwk': jwk})
+        self.assertRaises(
+            jose.DeserializationError, Signature.from_json, {
+                'alg': 'RS256', 'sig': 'x', 'nonce': '', 'jwk': jwk})
+        self.assertRaises(
+            jose.DeserializationError, Signature.from_json, {
+                'alg': 'RS256', 'sig': '', 'nonce': 'x', 'jwk': jwk})
 
 
 if __name__ == '__main__':

@@ -7,13 +7,12 @@ import Crypto.Random
 
 from letsencrypt.acme import jose
 from letsencrypt.acme import other
-from letsencrypt.acme import util
 
 
 # pylint: disable=too-few-public-methods
 
 
-class Challenge(util.TypedACMEObject):
+class Challenge(jose.TypedJSONObjectWithFields):
     # _fields_to_json | pylint: disable=abstract-method
     """ACME challenge."""
     TYPES = {}
@@ -27,40 +26,33 @@ class DVChallenge(Challenge):  # pylint: disable=abstract-method
     """Domain validation challenges."""
 
 
-class ChallengeResponse(util.TypedACMEObject):
+class ChallengeResponse(jose.TypedJSONObjectWithFields):
     # _fields_to_json | pylint: disable=abstract-method
     """ACME challenge response."""
     TYPES = {}
 
     @classmethod
-    def from_valid_json(cls, jobj):
+    def from_json(cls, jobj):
         if jobj is None:
             # if the client chooses not to respond to a given
             # challenge, then the corresponding entry in the response
             # array is set to None (null)
             return None
-        return super(ChallengeResponse, cls).from_valid_json(jobj)
+        return super(ChallengeResponse, cls).from_json(jobj)
 
 
 @Challenge.register
 class SimpleHTTPS(DVChallenge):
     """ACME "simpleHttps" challenge."""
-    acme_type = "simpleHttps"
-    __slots__ = ("token",)
-
-    def _fields_to_json(self):
-        return {"token": self.token}
-
-    @classmethod
-    def from_valid_json(cls, jobj):
-        return cls(token=jobj["token"])
+    typ = "simpleHttps"
+    token = jose.Field("token")
 
 
 @ChallengeResponse.register
 class SimpleHTTPSResponse(ChallengeResponse):
     """ACME "simpleHttps" challenge response."""
-    acme_type = "simpleHttps"
-    __slots__ = ("path",)
+    typ = "simpleHttps"
+    path = jose.Field("path")
 
     URI_TEMPLATE = "https://{domain}/.well-known/acme-challenge/{path}"
     """URI template for HTTPS server provisioned resource."""
@@ -76,13 +68,6 @@ class SimpleHTTPSResponse(ChallengeResponse):
         """
         return self.URI_TEMPLATE.format(domain=domain, path=self.path)
 
-    def _fields_to_json(self):
-        return {"path": self.path}
-
-    @classmethod
-    def from_valid_json(cls, jobj):
-        return cls(path=jobj["path"])
-
 
 @Challenge.register
 class DVSNI(DVChallenge):
@@ -92,8 +77,7 @@ class DVSNI(DVChallenge):
     :ivar str nonce: Random data, **not** hex-encoded.
 
     """
-    acme_type = "dvsni"
-    __slots__ = ("r", "nonce")
+    typ = "dvsni"
 
     DOMAIN_SUFFIX = ".acme.invalid"
     """Domain name suffix."""
@@ -104,21 +88,16 @@ class DVSNI(DVChallenge):
     NONCE_SIZE = 16
     """Required size of the :attr:`nonce` in bytes."""
 
+    r = jose.Field("r", encoder=jose.b64encode,  # pylint: disable=invalid-name
+                   decoder=functools.partial(jose.decode_b64jose, size=R_SIZE))
+    nonce = jose.Field("nonce", encoder=binascii.hexlify,
+                       decoder=functools.partial(functools.partial(
+                           jose.decode_hex16, size=NONCE_SIZE)))
+
     @property
     def nonce_domain(self):
         """Domain name used in SNI."""
         return binascii.hexlify(self.nonce) + self.DOMAIN_SUFFIX
-
-    def _fields_to_json(self):
-        return {
-            "r": jose.b64encode(self.r),
-            "nonce": binascii.hexlify(self.nonce),
-        }
-
-    @classmethod
-    def from_valid_json(cls, jobj):
-        return cls(r=util.decode_b64jose(jobj["r"], cls.R_SIZE),
-                   nonce=util.decode_hex16(jobj["nonce"], cls.NONCE_SIZE))
 
 
 @ChallengeResponse.register
@@ -128,14 +107,16 @@ class DVSNIResponse(ChallengeResponse):
     :param str s: Random data, **not** base64-encoded.
 
     """
-    acme_type = "dvsni"
-    __slots__ = ("s",)
+    typ = "dvsni"
 
     DOMAIN_SUFFIX = DVSNI.DOMAIN_SUFFIX
     """Domain name suffix."""
 
     S_SIZE = 32
     """Required size of the :attr:`s` in bytes."""
+
+    s = jose.Field("s", encoder=jose.b64encode,  # pylint: disable=invalid-name
+                   decoder=functools.partial(jose.decode_b64jose, size=S_SIZE))
 
     def __init__(self, s=None, *args, **kwargs):
         s = Crypto.Random.get_random_bytes(self.S_SIZE) if s is None else s
@@ -157,90 +138,34 @@ class DVSNIResponse(ChallengeResponse):
         """Domain name for certificate subjectAltName."""
         return self.z(chall) + self.DOMAIN_SUFFIX
 
-    def _fields_to_json(self):
-        return {"s": jose.b64encode(self.s)}
-
-    @classmethod
-    def from_valid_json(cls, jobj):
-        return cls(s=util.decode_b64jose(jobj["s"], cls.S_SIZE))
-
-
 @Challenge.register
 class RecoveryContact(ClientChallenge):
     """ACME "recoveryContact" challenge."""
-    acme_type = "recoveryContact"
-    __slots__ = ("activation_url", "success_url", "contact")
+    typ = "recoveryContact"
 
-    def _fields_to_json(self):
-        fields = {}
-        add = functools.partial(_extend_if_not_none, fields)
-        add(self.activation_url, "activationURL")
-        add(self.success_url, "successURL")
-        add(self.contact, "contact")
-        return fields
-
-    @classmethod
-    def from_valid_json(cls, jobj):
-        return cls(activation_url=jobj.get("activationURL"),
-                   success_url=jobj.get("successURL"),
-                   contact=jobj.get("contact"))
+    activation_url = jose.Field("activationURL", omitempty=True)
+    success_url = jose.Field("successURL", omitempty=True)
+    contact = jose.Field("contact", omitempty=True)
 
 
 @ChallengeResponse.register
 class RecoveryContactResponse(ChallengeResponse):
     """ACME "recoveryContact" challenge response."""
-    acme_type = "recoveryContact"
-    __slots__ = ("token",)
-
-    def _fields_to_json(self):
-        fields = {}
-        if self.token is not None:
-            fields["token"] = self.token
-        return fields
-
-    @classmethod
-    def from_valid_json(cls, jobj):
-        return cls(token=jobj.get("token"))
+    typ = "recoveryContact"
+    token = jose.Field("token", omitempty=True)
 
 
 @Challenge.register
 class RecoveryToken(ClientChallenge):
     """ACME "recoveryToken" challenge."""
-    acme_type = "recoveryToken"
-    __slots__ = ()
-
-    def _fields_to_json(self):
-        return {}
-
-    @classmethod
-    def from_valid_json(cls, jobj):
-        return cls()
+    typ = "recoveryToken"
 
 
 @ChallengeResponse.register
 class RecoveryTokenResponse(ChallengeResponse):
     """ACME "recoveryToken" challenge response."""
-    acme_type = "recoveryToken"
-    __slots__ = ("token",)
-
-    def _fields_to_json(self):
-        fields = {}
-        if self.token is not None:
-            fields["token"] = self.token
-        return fields
-
-    @classmethod
-    def from_valid_json(cls, jobj):
-        return cls(token=jobj.get("token"))
-
-
-def _extend_if_not_empty(dikt, param, name):
-    if param:
-        dikt[name] = param
-
-def _extend_if_not_none(dikt, param, name):
-    if param is not None:
-        dikt[name] = param
+    typ = "recoveryToken"
+    token = jose.Field("token", omitempty=True)
 
 
 @Challenge.register
@@ -251,57 +176,41 @@ class ProofOfPossession(ClientChallenge):
     :ivar hints: Various clues for the client (:class:`Hints`).
 
     """
-    acme_type = "proofOfPossession"
-    __slots__ = ("alg", "nonce", "hints")
+    typ = "proofOfPossession"
 
     NONCE_SIZE = 16
 
-    class Hints(util.ACMEObject):
+    class Hints(jose.JSONObjectWithFields):
         """Hints for "proofOfPossession" challenge.
 
-        :ivar jwk: JSON Web Key (:class:`letsencrypt.acme.other.JWK`)
-        :ivar list certs: List of :class:`M2Crypto.X509.X509` cetificates.
+        :ivar jwk: JSON Web Key (:class:`letsencrypt.acme.jose.JWK`)
+        :ivar list certs: List of :class:`letsencrypt.acme.jose.ComparableX509`
+            certificates.
 
         """
-        __slots__ = (
-            "jwk", "cert_fingerprints", "certs", "subject_key_identifiers",
-            "serial_numbers", "issuers", "authorized_for")
+        jwk = jose.Field("jwk", decoder=jose.JWK.from_json)
+        cert_fingerprints = jose.Field(
+            "certFingerprints", omitempty=True, default=())
+        certs = jose.Field("certs", omitempty=True, default=())
+        subject_key_identifiers = jose.Field(
+            "subjectKeyIdentifiers", omitempty=True, default=())
+        serial_numbers = jose.Field("serialNumbers", omitempty=True, default=())
+        issuers = jose.Field("issuers", omitempty=True, default=())
+        authorized_for = jose.Field("authorizedFor", omitempty=True, default=())
 
-        def to_json(self):
-            fields = {"jwk": self.jwk}
-            add = functools.partial(_extend_if_not_empty, fields)
-            add(self.cert_fingerprints, "certFingerprints")
-            add([util.encode_cert(cert) for cert in self.certs], "certs")
-            add(self.subject_key_identifiers, "subjectKeyIdentifiers")
-            add(self.serial_numbers, "serialNumbers")
-            add(self.issuers, "issuers")
-            add(self.authorized_for, "authorizedFor")
-            return fields
+        @certs.encoder
+        def certs(value):  # pylint: disable=missing-docstring,no-self-argument
+            return tuple(jose.encode_cert(cert) for cert in value)
 
-        @classmethod
-        def from_valid_json(cls, jobj):
-            return cls(
-                jwk=other.JWK.from_valid_json(jobj["jwk"]),
-                cert_fingerprints=jobj.get("certFingerprints", []),
-                certs=[util.decode_cert(cert)
-                       for cert in jobj.get("certs", [])],
-                subject_key_identifiers=jobj.get("subjectKeyIdentifiers", []),
-                serial_numbers=jobj.get("serialNumbers", []),
-                issuers=jobj.get("issuers", []),
-                authorized_for=jobj.get("authorizedFor", []))
+        @certs.decoder
+        def certs(value):  # pylint: disable=missing-docstring,no-self-argument
+            return tuple(jose.decode_cert(cert) for cert in value)
 
-    def _fields_to_json(self):
-        return {
-            "alg": self.alg,
-            "nonce": jose.b64encode(self.nonce),
-            "hints": self.hints,
-        }
-
-    @classmethod
-    def from_valid_json(cls, jobj):
-        return cls(alg=jobj["alg"],
-                   nonce=util.decode_b64jose(jobj["nonce"], cls.NONCE_SIZE),
-                   hints=cls.Hints.from_valid_json(jobj["hints"]))
+    alg = jose.Field("alg", decoder=jose.JWASignature.from_json)
+    nonce = jose.Field(
+        "nonce", encoder=jose.b64encode, decoder=functools.partial(
+            jose.decode_b64jose, size=NONCE_SIZE))
+    hints = jose.Field("hints", decoder=Hints.from_json)
 
 
 @ChallengeResponse.register
@@ -312,50 +221,29 @@ class ProofOfPossessionResponse(ChallengeResponse):
     :ivar signature: :class:`~letsencrypt.acme.other.Signature` of this message.
 
     """
-    acme_type = "proofOfPossession"
-    __slots__ = ("nonce", "signature")
+    typ = "proofOfPossession"
 
     NONCE_SIZE = ProofOfPossession.NONCE_SIZE
 
+    nonce = jose.Field(
+        "nonce", encoder=jose.b64encode, decoder=functools.partial(
+            jose.decode_b64jose, size=NONCE_SIZE))
+    signature = jose.Field("signature", decoder=other.Signature.from_json)
+
     def verify(self):
         """Verify the challenge."""
+        # self.signature is not Field | pylint: disable=no-member
         return self.signature.verify(self.nonce)
-
-    def _fields_to_json(self):
-        return {
-            "nonce": jose.b64encode(self.nonce),
-            "signature": self.signature,
-        }
-
-    @classmethod
-    def from_valid_json(cls, jobj):
-        return cls(nonce=util.decode_b64jose(jobj["nonce"], cls.NONCE_SIZE),
-                   signature=other.Signature.from_valid_json(jobj["signature"]))
 
 
 @Challenge.register
 class DNS(DVChallenge):
     """ACME "dns" challenge."""
-    acme_type = "dns"
-    __slots__ = ("token",)
-
-    def _fields_to_json(self):
-        return {"token": self.token}
-
-    @classmethod
-    def from_valid_json(cls, jobj):
-        return cls(token=jobj["token"])
+    typ = "dns"
+    token = jose.Field("token")
 
 
 @ChallengeResponse.register
 class DNSResponse(ChallengeResponse):
     """ACME "dns" challenge response."""
-    acme_type = "dns"
-    __slots__ = ()
-
-    def _fields_to_json(self):
-        return {}
-
-    @classmethod
-    def from_valid_json(cls, jobj):
-        return cls()
+    typ = "dns"

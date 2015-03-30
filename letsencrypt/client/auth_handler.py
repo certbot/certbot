@@ -5,6 +5,7 @@ import sys
 import Crypto.PublicKey.RSA
 
 from letsencrypt.acme import challenges
+from letsencrypt.acme import jose
 from letsencrypt.acme import messages
 
 from letsencrypt.client import achallenges
@@ -119,8 +120,8 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
                     nonce=self.msgs[domain].nonce,
                     responses=self.responses[domain],
                     name=domain,
-                    key=Crypto.PublicKey.RSA.importKey(
-                        self.authkey[domain].pem)),
+                    key=jose.HashableRSAKey(Crypto.PublicKey.RSA.importKey(
+                        self.authkey[domain].pem))),
                 messages.Authorization)
             logging.info("Received Authorization for %s", domain)
             return auth
@@ -203,7 +204,8 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
 
     def _path_satisfied(self, dom):
         """Returns whether a path has been completely satisfied."""
-        return all(self.responses[dom][i] is not None for i in self.paths[dom])
+        # Make sure that there are no 'None' or 'False' entries along path.
+        return all(self.responses[dom][i] for i in self.paths[dom])
 
     def _get_chall_pref(self, domain):
         """Return list of challenge preferences.
@@ -299,8 +301,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
 
             else:
                 raise errors.LetsEncryptClientError(
-                    "Received unsupported challenge of type: "
-                    "%s" % chall.acme_type)
+                    "Received unsupported challenge of type: %s", chall.typ)
 
             ichall = achallenges.Indexed(achall=achall, index=index)
 
@@ -315,24 +316,27 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
 def gen_challenge_path(challs, preferences, combinations):
     """Generate a plan to get authority over the identity.
 
-    .. todo:: Make sure that the challenges are feasible...
-        Example: Do you have the recovery key?
+    .. todo:: This can be possibly be rewritten to use resolved_combinations.
 
-    :param list challs: A list of challenges
+    :param tuple challs: A tuple of challenges
         (:class:`letsencrypt.acme.challenges.Challenge`) from
         :class:`letsencrypt.acme.messages.Challenge` server message to
         be fulfilled by the client in order to prove possession of the
         identifier.
 
     :param list preferences: List of challenge preferences for domain
-        (:class:`letsencrypt.acme.challenges.Challege` subclasses)
+        (:class:`letsencrypt.acme.challenges.Challenge` subclasses)
 
-    :param list combinations: A collection of sets of challenges from
+    :param tuple combinations: A collection of sets of challenges from
         :class:`letsencrypt.acme.messages.Challenge`, each of which would
         be sufficient to prove possession of the identifier.
 
-    :returns: List of indices from ``challenges``.
-    :rtype: list
+    :returns: tuple of indices from ``challenges``.
+    :rtype: tuple
+
+    :raises letsencrypt.client.errors.LetsEncryptAuthHandlerError: If a
+        path cannot be created that satisfies the CA given the preferences and
+        combinations.
 
     """
     if combinations:
@@ -349,29 +353,34 @@ def _find_smart_path(challs, preferences, combinations):
 
     """
     chall_cost = {}
-    max_cost = 0
+    max_cost = 1
     for i, chall_cls in enumerate(preferences):
         chall_cost[chall_cls] = i
         max_cost += i
 
+    # max_cost is now equal to sum(indices) + 1
+
     best_combo = []
     # Set above completing all of the available challenges
-    best_combo_cost = max_cost + 1
+    best_combo_cost = max_cost
 
     combo_total = 0
     for combo in combinations:
         for challenge_index in combo:
             combo_total += chall_cost.get(challs[
                 challenge_index].__class__, max_cost)
+
         if combo_total < best_combo_cost:
             best_combo = combo
             best_combo_cost = combo_total
-            combo_total = 0
+
+        combo_total = 0
 
     if not best_combo:
-        logging.fatal("Client does not support any combination of "
-                      "challenges to satisfy ACME server")
-        sys.exit(22)
+        msg = ("Client does not support any combination of challenges that "
+               "will satisfy the CA.")
+        logging.fatal(msg)
+        raise errors.LetsEncryptAuthHandlerError(msg)
 
     return best_combo
 

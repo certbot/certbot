@@ -1,10 +1,15 @@
-#!/usr/bin/env python
 import codecs
 import os
 import re
 
 from setuptools import setup
 
+# Workaround for http://bugs.python.org/issue8876, see
+# http://bugs.python.org/issue8876#msg208792
+# This can be removed when using Python 2.7.9 or later:
+# https://hg.python.org/cpython/raw-file/v2.7.9/Misc/NEWS
+if os.path.abspath(__file__).split(os.path.sep)[1] == 'vagrant':
+    del os.link
 
 def read_file(filename, encoding='utf8'):
     """Read unicode from given file."""
@@ -26,7 +31,9 @@ install_requires = [
     'ConfArgParse',
     'jsonschema',
     'mock',
+    'ndg-httpsclient',  # urllib3 InsecurePlatformWarning (#304)
     'psutil>=2.1.0',  # net_connections introduced in 2.1.0
+    'pyasn1',  # urllib3 InsecurePlatformWarning (#304)
     'pycrypto',
     'PyOpenSSL',
     'python-augeas',
@@ -87,11 +94,15 @@ setup(
     packages=[
         'letsencrypt',
         'letsencrypt.acme',
+        'letsencrypt.acme.jose',
         'letsencrypt.client',
-        'letsencrypt.client.apache',
         'letsencrypt.client.display',
+        'letsencrypt.client.plugins',
+        'letsencrypt.client.plugins.apache',
+        'letsencrypt.client.plugins.apache.tests',
+        'letsencrypt.client.plugins.standalone',
+        'letsencrypt.client.plugins.standalone.tests',
         'letsencrypt.client.tests',
-        'letsencrypt.client.tests.apache',
         'letsencrypt.client.tests.display',
         'letsencrypt.scripts',
     ],
@@ -109,6 +120,13 @@ setup(
     entry_points={
         'console_scripts': [
             'letsencrypt = letsencrypt.scripts.main:main',
+            'jws = letsencrypt.acme.jose.jws:CLI.run',
+        ],
+        'letsencrypt.authenticators': [
+            'apache = letsencrypt.client.plugins.apache.configurator'
+            ':ApacheConfigurator',
+            'standalone = letsencrypt.client.plugins.standalone.authenticator'
+            ':StandaloneAuthenticator',
         ],
     },
 
