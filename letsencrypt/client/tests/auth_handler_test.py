@@ -581,8 +581,7 @@ class GenChallengePathTest(unittest.TestCase):
         combos = ((0, 1),)
 
         self.assertRaises(errors.LetsEncryptAuthHandlerError,
-                          self._call,
-                          challs, prefs, combos)
+                          self._call, challs, prefs, combos)
 
 
 class MutuallyExclusiveTest(unittest.TestCase):
