@@ -10,6 +10,28 @@ from letsencrypt.client.display import util as display_util
 util = zope.component.getUtility  # pylint: disable=invalid-name
 
 
+def choose_plugin(prepared, question):
+    descs = [plugin.description if error is None
+             else "%s (Misconfigured)" % plugin.description
+             for (plugin, error) in prepared]
+
+    while True:
+        code, index = util(interfaces.IDisplay).menu(
+            question, descs, help_label="More Info")
+
+        if code == display_util.OK:
+            return prepared[index][0]
+        elif code == display_util.HELP:
+            if prepared[index][1] is not None:
+                msg = "Reported Error: %s" % prepared[index][1]
+            else:
+                msg = prepared[index][0].more_info()
+            util(interfaces.IDisplay).notification(
+                msg, height=display_util.HEIGHT)
+        else:
+            return
+
+
 def choose_authenticator(auths, errs):
     """Allow the user to choose their authenticator.
 

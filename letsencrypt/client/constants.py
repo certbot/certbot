@@ -4,6 +4,9 @@ import pkg_resources
 from letsencrypt.acme import challenges
 
 
+SETUPTOOLS_PLUGINS_ENTRY_POINT = "letsencrypt.plugins"
+"""Setuptools entry point group name for plugins."""
+
 S_SIZE = 32
 """Size (in bytes) of secret base64-encoded octet string "s" used in
 challenges."""

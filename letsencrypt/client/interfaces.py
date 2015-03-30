@@ -5,16 +5,13 @@ import zope.interface
 # pylint: disable=too-few-public-methods
 
 
-class IAuthenticator(zope.interface.Interface):
-    """Generic Let's Encrypt Authenticator.
+class IPlugin(zope.interface.Interface):
+    """Let's Encrypt plugin."""
 
-    Class represents all possible tools processes that have the
-    ability to perform challenges and attain a certificate.
-
-    """
+    description = zope.interface.Attribute("Short plugin description")
 
     def prepare():
-        """Prepare the authenticator.
+        """Prepare the plugin.
 
          Finish up any additional initialization.
 
@@ -24,6 +21,23 @@ class IAuthenticator(zope.interface.Interface):
              when the necessary programs/files cannot be located.
 
         """
+
+    def more_info():
+        """Human-readable string to help the user.
+
+        Should describe the steps taken and any relevant info to help the user
+        decide which plugin to use.
+
+        """
+
+
+class IAuthenticator(IPlugin):
+    """Generic Let's Encrypt Authenticator.
+
+    Class represents all possible tools processes that have the
+    ability to perform challenges and attain a certificate.
+
+    """
 
     def get_chall_pref(domain):
         """Return list of challenge preferences.
@@ -67,14 +81,6 @@ class IAuthenticator(zope.interface.Interface):
         :param list achalls: Non-empty (guaranteed) list of
             :class:`~letsencrypt.client.achallenges.AnnotatedChallenge`
             instances, a subset of those previously passed to :func:`perform`.
-
-        """
-
-    def more_info():
-        """Human-readable string to help the user.
-
-        Should describe the steps taken and any relevant info to help the user
-        decide which Authenticator to use.
 
         """
 
@@ -124,24 +130,12 @@ class IConfig(zope.interface.Interface):
         "Contains standard Apache SSL directives.")
 
 
-class IInstaller(zope.interface.Interface):
+class IInstaller(IPlugin):
     """Generic Let's Encrypt Installer Interface.
 
     Represents any server that an X509 certificate can be placed.
 
     """
-
-    def prepare():
-        """Prepare the installer.
-
-         Finish up any additional initialization.
-
-         :raises letsencrypt.client.errors.LetsEncryptMisconfigurationError`:
-             when full initialization cannot be completed.
-         :raises letsencrypt.errors.LetsEncryptNoInstallationError`:
-             when the necessary programs/files cannot be located.
-
-        """
 
     def get_all_names():
         """Returns all names that may be authenticated."""
