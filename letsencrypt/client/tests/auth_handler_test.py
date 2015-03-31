@@ -61,9 +61,9 @@ class SatisfyChallengesTest(unittest.TestCase):
 
         self.assertEqual("DVSNI0", self.handler.responses[dom][0])
         self.assertEqual(len(self.handler.dv_c), 1)
-        self.assertEqual(len(self.handler.client_c), 1)
+        self.assertEqual(len(self.handler.cont_c), 1)
         self.assertEqual(len(self.handler.dv_c[dom]), 1)
-        self.assertEqual(len(self.handler.client_c[dom]), 0)
+        self.assertEqual(len(self.handler.cont_c[dom]), 0)
 
     def test_name1_rectok1(self):
         dom = "0"
@@ -84,10 +84,10 @@ class SatisfyChallengesTest(unittest.TestCase):
         self.assertEqual("RecoveryToken0", self.handler.responses[dom][0])
         # Assert 1 domain
         self.assertEqual(len(self.handler.dv_c), 1)
-        self.assertEqual(len(self.handler.client_c), 1)
+        self.assertEqual(len(self.handler.cont_c), 1)
         # Assert 1 auth challenge, 0 dv
         self.assertEqual(len(self.handler.dv_c[dom]), 0)
-        self.assertEqual(len(self.handler.client_c[dom]), 1)
+        self.assertEqual(len(self.handler.cont_c[dom]), 1)
 
     def test_name5_dvsni5(self):
         for i in xrange(5):
@@ -102,7 +102,7 @@ class SatisfyChallengesTest(unittest.TestCase):
 
         self.assertEqual(len(self.handler.responses), 5)
         self.assertEqual(len(self.handler.dv_c), 5)
-        self.assertEqual(len(self.handler.client_c), 5)
+        self.assertEqual(len(self.handler.cont_c), 5)
         # Each message contains 1 auth, 0 client
 
         # Test proper call count for methods
@@ -114,7 +114,7 @@ class SatisfyChallengesTest(unittest.TestCase):
             self.assertEqual(len(self.handler.responses[dom]), 1)
             self.assertEqual(self.handler.responses[dom][0], "DVSNI%d" % i)
             self.assertEqual(len(self.handler.dv_c[dom]), 1)
-            self.assertEqual(len(self.handler.client_c[dom]), 0)
+            self.assertEqual(len(self.handler.cont_c[dom]), 0)
             self.assertTrue(isinstance(self.handler.dv_c[dom][0].achall,
                                        achallenges.DVSNI))
 
@@ -138,9 +138,9 @@ class SatisfyChallengesTest(unittest.TestCase):
         self.assertEqual(len(self.handler.responses[dom]),
                          len(acme_util.DV_CHALLENGES))
         self.assertEqual(len(self.handler.dv_c), 1)
-        self.assertEqual(len(self.handler.client_c), 1)
+        self.assertEqual(len(self.handler.cont_c), 1)
 
-        # Test if statement for client_auth perform
+        # Test if statement for cont_auth perform
         self.assertEqual(self.mock_cont_auth.perform.call_count, 0)
         self.assertEqual(self.mock_dv_auth.perform.call_count, 1)
 
@@ -149,7 +149,7 @@ class SatisfyChallengesTest(unittest.TestCase):
             self._get_exp_response(dom, path, acme_util.DV_CHALLENGES))
 
         self.assertEqual(len(self.handler.dv_c[dom]), 1)
-        self.assertEqual(len(self.handler.client_c[dom]), 0)
+        self.assertEqual(len(self.handler.cont_c[dom]), 0)
         self.assertTrue(isinstance(self.handler.dv_c[dom][0].achall,
                                    achallenges.SimpleHTTPS))
 
@@ -175,16 +175,16 @@ class SatisfyChallengesTest(unittest.TestCase):
         self.assertEqual(
             len(self.handler.responses[dom]), len(acme_util.CHALLENGES))
         self.assertEqual(len(self.handler.dv_c), 1)
-        self.assertEqual(len(self.handler.client_c), 1)
+        self.assertEqual(len(self.handler.cont_c), 1)
         self.assertEqual(len(self.handler.dv_c[dom]), 1)
-        self.assertEqual(len(self.handler.client_c[dom]), 1)
+        self.assertEqual(len(self.handler.cont_c[dom]), 1)
 
         self.assertEqual(
             self.handler.responses[dom],
             self._get_exp_response(dom, path, acme_util.CHALLENGES))
         self.assertTrue(isinstance(self.handler.dv_c[dom][0].achall,
                                    achallenges.SimpleHTTPS))
-        self.assertTrue(isinstance(self.handler.client_c[dom][0].achall,
+        self.assertTrue(isinstance(self.handler.cont_c[dom][0].achall,
                                    achallenges.RecoveryToken))
 
     @mock.patch("letsencrypt.client.auth_handler.gen_challenge_path")
@@ -209,7 +209,7 @@ class SatisfyChallengesTest(unittest.TestCase):
             self.assertEqual(
                 len(self.handler.responses[str(i)]), len(acme_util.CHALLENGES))
         self.assertEqual(len(self.handler.dv_c), 5)
-        self.assertEqual(len(self.handler.client_c), 5)
+        self.assertEqual(len(self.handler.cont_c), 5)
 
         for i in xrange(5):
             dom = str(i)
@@ -217,11 +217,11 @@ class SatisfyChallengesTest(unittest.TestCase):
                 self.handler.responses[dom],
                 self._get_exp_response(dom, path, acme_util.CHALLENGES))
             self.assertEqual(len(self.handler.dv_c[dom]), 1)
-            self.assertEqual(len(self.handler.client_c[dom]), 1)
+            self.assertEqual(len(self.handler.cont_c[dom]), 1)
 
             self.assertTrue(isinstance(self.handler.dv_c[dom][0].achall,
                                        achallenges.DVSNI))
-            self.assertTrue(isinstance(self.handler.client_c[dom][0].achall,
+            self.assertTrue(isinstance(self.handler.cont_c[dom][0].achall,
                                        achallenges.RecoveryContact))
 
     @mock.patch("letsencrypt.client.auth_handler.gen_challenge_path")
@@ -255,7 +255,7 @@ class SatisfyChallengesTest(unittest.TestCase):
 
         self.assertEqual(len(self.handler.responses), 5)
         self.assertEqual(len(self.handler.dv_c), 5)
-        self.assertEqual(len(self.handler.client_c), 5)
+        self.assertEqual(len(self.handler.cont_c), 5)
 
         for i in xrange(5):
             dom = str(i)
@@ -263,7 +263,7 @@ class SatisfyChallengesTest(unittest.TestCase):
             self.assertEqual(self.handler.responses[dom], resp)
             self.assertEqual(len(self.handler.dv_c[dom]), 1)
             self.assertEqual(
-                len(self.handler.client_c[dom]), len(chosen_chall[i]) - 1)
+                len(self.handler.cont_c[dom]), len(chosen_chall[i]) - 1)
 
         self.assertTrue(isinstance(
             self.handler.dv_c["0"][0].achall, achallenges.DNS))
@@ -276,10 +276,10 @@ class SatisfyChallengesTest(unittest.TestCase):
         self.assertTrue(isinstance(
             self.handler.dv_c["4"][0].achall, achallenges.DNS))
 
-        self.assertTrue(isinstance(self.handler.client_c["2"][0].achall,
+        self.assertTrue(isinstance(self.handler.cont_c["2"][0].achall,
                                    achallenges.ProofOfPossession))
         self.assertTrue(isinstance(
-            self.handler.client_c["4"][0].achall, achallenges.RecoveryToken))
+            self.handler.cont_c["4"][0].achall, achallenges.RecoveryToken))
 
     @mock.patch("letsencrypt.client.auth_handler.gen_challenge_path")
     def test_perform_exception_cleanup(self, mock_chall_path):
@@ -313,7 +313,7 @@ class SatisfyChallengesTest(unittest.TestCase):
 
 
         dv_cleanup_args = self.mock_dv_auth.cleanup.call_args_list
-        client_cleanup_args = self.mock_cont_auth.cleanup.call_args_list
+        cont_cleanup_args = self.mock_cont_auth.cleanup.call_args_list
 
         # Check DV cleanup
         for i in xrange(2):
@@ -325,10 +325,10 @@ class SatisfyChallengesTest(unittest.TestCase):
 
         # Check Auth cleanup
         for i in xrange(2):
-            client_chall_list = client_cleanup_args[i][0][0]
-            self.assertEqual(len(client_chall_list), 1)
+            cont_chall_list = cont_cleanup_args[i][0][0]
+            self.assertEqual(len(cont_chall_list), 1)
             self.assertTrue(
-                isinstance(client_chall_list[0], achallenges.ProofOfPossession))
+                isinstance(cont_chall_list[0], achallenges.ProofOfPossession))
 
 
     def _get_exp_response(self, domain, path, challs):
@@ -388,7 +388,7 @@ class GetAuthorizationsTest(unittest.TestCase):
             # Assignment was > 80 char...
             dv_c, c_c = self.handler._challenge_factory(dom, [0])
 
-            self.handler.dv_c[dom], self.handler.client_c[dom] = dv_c, c_c
+            self.handler.dv_c[dom], self.handler.cont_c[dom] = dv_c, c_c
 
     def test_progress_failure(self):
         self.handler.add_chall_msg(
@@ -414,7 +414,7 @@ class GetAuthorizationsTest(unittest.TestCase):
             self.handler.msgs[dom].challenges)
         dv_c, c_c = self.handler._challenge_factory(
             dom, self.handler.paths[dom])
-        self.handler.dv_c[dom], self.handler.client_c[dom] = dv_c, c_c
+        self.handler.dv_c[dom], self.handler.cont_c[dom] = dv_c, c_c
 
     def test_incremental_progress(self):
         for dom, challs in [("0", acme_util.CHALLENGES),
@@ -444,9 +444,9 @@ class GetAuthorizationsTest(unittest.TestCase):
             self.handler.paths["1"] = [2]
             # This is probably overkill... but set it anyway
             dv_c, c_c = self.handler._challenge_factory("0", [1, 3])
-            self.handler.dv_c["0"], self.handler.client_c["0"] = dv_c, c_c
+            self.handler.dv_c["0"], self.handler.cont_c["0"] = dv_c, c_c
             dv_c, c_c = self.handler._challenge_factory("1", [2])
-            self.handler.dv_c["1"], self.handler.client_c["1"] = dv_c, c_c
+            self.handler.dv_c["1"], self.handler.cont_c["1"] = dv_c, c_c
 
             self.iteration += 1
 
@@ -555,7 +555,7 @@ class GenChallengePathTest(unittest.TestCase):
          # dumb_path() trivial test
         self.assertTrue(self._call(challs, prefs, None))
 
-    def test_full_client_server(self):
+    def test_full_cont_server(self):
         challs = (acme_util.RECOVERY_TOKEN,
                   acme_util.RECOVERY_CONTACT,
                   acme_util.POP,

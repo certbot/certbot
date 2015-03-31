@@ -49,7 +49,7 @@ CHALLENGES = [SIMPLE_HTTPS, DVSNI, DNS, RECOVERY_CONTACT, RECOVERY_TOKEN, POP]
 DV_CHALLENGES = [chall for chall in CHALLENGES
                  if isinstance(chall, challenges.DVChallenge)]
 CONT_CHALLENGES = [chall for chall in CHALLENGES
-                     if isinstance(chall, challenges.ContinuityChallenge)]
+                   if isinstance(chall, challenges.ContinuityChallenge)]
 
 
 def gen_combos(challs):
