@@ -55,14 +55,14 @@ CONT_CHALLENGES = [chall for chall in CHALLENGES
 def gen_combos(challs):
     """Generate natural combinations for challs."""
     dv_chall = []
-    renewal_chall = []
+    cont_chall = []
 
     for i, chall in enumerate(challs):  # pylint: disable=redefined-outer-name
         if isinstance(chall, challenges.DVChallenge):
             dv_chall.append(i)
         else:
-            renewal_chall.append(i)
+            cont_chall.append(i)
 
     # Gen combos for 1 of each type, lowest index first (makes testing easier)
     return tuple((i, j) if i < j else (j, i)
-                 for i in dv_chall for j in renewal_chall)
+                 for i in dv_chall for j in cont_chall)
