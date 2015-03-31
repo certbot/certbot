@@ -134,11 +134,11 @@ Installer Development
 
 There are a few existing classes that may be beneficial while
 developing a new `~letsencrypt.client.interfaces.IInstaller`.
-Installer's aimed to reconfigure UNIX servers may use Augeas for
+Installers aimed to reconfigure UNIX servers may use Augeas for
 configuration parsing and can inherit from `~.AugeasConfigurator` class
 to handle much of the interface. Installers that are unable to use
-Augeas may still use the `~.Reverter` class to handle configuration
-checkpoints and rollback.
+Augeas may still find the `~.Reverter` class helpful in handling
+configuration checkpoints and rollback.
 
 
 Display
