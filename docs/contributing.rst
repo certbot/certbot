@@ -126,26 +126,27 @@ Installers and Authenticators will oftentimes be the same
 class/object. Installers and Authenticators are kept separate because
 it should be possible to use the `~.StandaloneAuthenticator` (it sets
 up its own Python server to perform challenges) with a program that
-cannot solve challenges itself. (I am imagining MTA installers).
+cannot solve challenges itself. (Imagine MTA installers).
+
+
+Installer Development
+---------------------
+
+There are a few existing classes that may be beneficial while
+developing a new `~letsencrypt.client.interfaces.IInstaller`.
+Installer's aimed to reconfigure UNIX servers may use Augeas for
+configuration parsing and can inherit from `~.AugeasConfigurator` class
+to handle much of the interface. Installers that are unable to use
+Augeas may still use the `~.Reverter` class to handle configuration
+checkpoints and rollback.
 
 
 Display
 ~~~~~~~
 
-We currently offer a pythondialog and "text" mode for displays. I have
-rewritten the interface which should be merged within the next day
-(the rewrite is in the revoker branch of the repo and should be merged
-within the next day). Display plugins implement
-`~letsencrypt.client.interfaces.IDisplay` interface.
-
-
-Augeas
-------
-
-Some plugins, especially those designed to reconfigure UNIX servers,
-can take inherit from `~.AugeasConfigurator` class in order to more
-efficiently handle common operations on UNIX server configuration
-files.
+We currently offer a pythondialog and "text" mode for displays. Display
+plugins implement the `~letsencrypt.client.interfaces.IDisplay`
+interface.
 
 
 .. _coding-style:
