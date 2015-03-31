@@ -48,8 +48,8 @@ POP = challenges.ProofOfPossession(
 CHALLENGES = [SIMPLE_HTTPS, DVSNI, DNS, RECOVERY_CONTACT, RECOVERY_TOKEN, POP]
 DV_CHALLENGES = [chall for chall in CHALLENGES
                  if isinstance(chall, challenges.DVChallenge)]
-CLIENT_CHALLENGES = [chall for chall in CHALLENGES
-                     if isinstance(chall, challenges.ClientChallenge)]
+CONT_CHALLENGES = [chall for chall in CHALLENGES
+                     if isinstance(chall, challenges.ContinuityChallenge)]
 
 
 def gen_combos(challs):
