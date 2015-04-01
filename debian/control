@@ -12,7 +12,7 @@ Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}, apache2, openssl, python-m2crypto, python-zope.component, python-augeas, python-psutil, python-jsonschema, python-requests, python-openssl, python-crypto, python-mock, python-confargparse, python-dialog
 Suggests: letsencrypt-doc
 Description: Let's Encrypt client that can update Apache configurations (client)
- The objective of Let’s Encrypt and the ACME (Automated Certificate Management
+ The objective of Let's Encrypt and the ACME (Automated Certificate Management
  Environment) protocol is to make it possible to set up an HTTPS server and have
  it automatically obtain a browser-trusted certificate, without any human
  intervention. This is accomplished by running a certificate management agent on
@@ -20,7 +20,7 @@ Description: Let's Encrypt client that can update Apache configurations (client)
  .
  This agent is used to:
  .
-  - Automatically prove to the Let’s Encrypt CA that you control the website
+  - Automatically prove to the Let's Encrypt CA that you control the website
   - Obtain a browser-trusted certificate and set it up on your web server
   - Keep track of when your certificate is going to expire, and renew it
   - Help you revoke the certificate if that ever becomes necessary.
@@ -32,7 +32,7 @@ Section: doc
 Architecture: all
 Depends: ${misc:Depends}, libjs-modernizr
 Description: Let's Encrypt client that can update Apache configurations (docs)
- The objective of Let’s Encrypt and the ACME (Automated Certificate Management
+ The objective of Let's Encrypt and the ACME (Automated Certificate Management
  Environment) protocol is to make it possible to set up an HTTPS server and have
  it automatically obtain a browser-trusted certificate, without any human
  intervention. This is accomplished by running a certificate management agent on
@@ -40,7 +40,7 @@ Description: Let's Encrypt client that can update Apache configurations (docs)
  .
  This agent is used to:
  .
-  - Automatically prove to the Let’s Encrypt CA that you control the website
+  - Automatically prove to the Let's Encrypt CA that you control the website
   - Obtain a browser-trusted certificate and set it up on your web server
   - Keep track of when your certificate is going to expire, and renew it
   - Help you revoke the certificate if that ever becomes necessary.
