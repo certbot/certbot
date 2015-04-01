@@ -36,9 +36,12 @@ install_requires = [
     'pyasn1',  # urllib3 InsecurePlatformWarning (#304)
     'pycrypto',
     'PyOpenSSL',
+    'pyrfc3339',
     'python-augeas',
     'python2-pythondialog',
+    'pytz',
     'requests',
+    'werkzeug',
     'zope.component',
     'zope.interface',
     # order of items in install_requires DOES matter and M2Crypto has
