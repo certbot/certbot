@@ -317,13 +317,14 @@ class NetworkTest(unittest.TestCase):
         # TODO: check POST args
 
     def test_request_issuance_missing_up(self):
+        self.response.content = CERT.as_der()
+        self.response.headers['Location'] = self.certr.uri
         self._mock_post_get()
-        self.assertRaises(
-            errors.NetworkError, self.net.request_issuance,
-            CSR, (self.authzr,))
+        self.assertEqual(
+            self.certr.update(cert_chain_uri=None),
+            self.net.request_issuance(CSR, (self.authzr,)))
 
     def test_request_issuance_missing_location(self):
-        self.response.links['up'] = {'url': self.certr.cert_chain_uri}
         self._mock_post_get()
         self.assertRaises(
             errors.NetworkError, self.net.request_issuance,
@@ -436,6 +437,10 @@ class NetworkTest(unittest.TestCase):
         self.net._get_cert = mock.MagicMock()
         self.assertEqual(self.net._get_cert(self.certr.cert_chain_uri),
                          self.net.fetch_chain(self.certr))
+
+    def test_fetch_chain_no_up_link(self):
+        self.assertTrue(self.net.fetch_chain(self.certr.update(
+            cert_chain_uri=None)) is None)
 
     def test_revoke(self):
         self._mock_post_get()

@@ -43,7 +43,8 @@ class Error(jose.JSONObjectWithFields, Exception):
         return without_prefix
 
     @property
-    def description(self):  # pylint: disable=missing-docstring,no-self-argument
+    def description(self):
+        """Hardcoded error description based on its type."""
         return self.ERROR_TYPE_DESCRIPTIONS[self.typ]
 
 
@@ -91,7 +92,11 @@ IDENTIFIER_FQDN = IdentifierType('dns')  # IdentifierDNS in Boulder
 
 
 class Identifier(jose.JSONObjectWithFields):
-    """ACME identifier."""
+    """ACME identifier.
+
+    :ivar letsencrypt.acme.messages2.IdentifierType typ:
+
+    """
     typ = jose.Field('type', decoder=IdentifierType.from_json)
     value = jose.Field('value')
 
@@ -99,32 +104,35 @@ class Identifier(jose.JSONObjectWithFields):
 class Resource(jose.ImmutableMap):
     """ACME Resource.
 
-    :param body: Resource body.
-    :type body: Instance of `ResourceBody` (subclass).
-
-    :param str uri: Location of the resource.
+    :ivar letsencrypt.acme.messages2.ResourceBody body: Resource body.
+    :ivar str uri: Location of the resource.
 
     """
     __slots__ = ('body', 'uri')
 
 
 class ResourceBody(jose.JSONObjectWithFields):
-    """ACME Resource body."""
+    """ACME Resource Body."""
 
 
 class RegistrationResource(Resource):
-    """Registration resource.
+    """Registration Resource.
 
-    :ivar body: `Registration`
-    :ivar str uri: URI of the resource.
-    :ivar new_authzr_uri: URI found in the 'next' Link header
+    :ivar letsencrypt.acme.messages2.Registration body:
+    :ivar str new_authzr_uri: URI found in the 'next' ``Link`` header
+    :ivar str terms_of_service: URL for the CA TOS.
 
     """
     __slots__ = ('body', 'uri', 'new_authzr_uri', 'terms_of_service')
 
 
 class Registration(ResourceBody):
-    """Registration resource body."""
+    """Registration Resource Body.
+
+    :ivar letsencrypt.acme.jose.jwk.JWK key: Public key.
+    :ivar tuple contact:
+
+    """
 
     # on new-reg key server ignores 'key' and populates it based on
     # JWS.signature.combined.jwk
@@ -135,10 +143,10 @@ class Registration(ResourceBody):
 
 
 class ChallengeResource(Resource, jose.JSONObjectWithFields):
-    """Challenge resource.
+    """Challenge Resource.
 
-    :ivar body: `.challenges.ChallengeBody`
-    :ivar authzr_uri: URI found in the 'up' Link header.
+    :ivar letsencrypt.acme.messages2.ChallengeBody body:
+    :ivar str authzr_uri: URI found in the 'up' ``Link`` header.
 
     """
     __slots__ = ('body', 'authzr_uri')
@@ -151,18 +159,21 @@ class ChallengeResource(Resource, jose.JSONObjectWithFields):
 
 
 class ChallengeBody(ResourceBody):
-    """Challenge resource body.
-
-    Confusingly, this has a similar name to `.challenges.Challenge`, as
-    well as `.achallanges.AnnotatedChallenge` or
-    `.achallanges.IndexedChallenge`. Use names such as ``challb`` to
-    distinguish instances of this class from ``achall`` or ``ichall``.
+    """Challenge Resource Body.
 
     .. todo::
-       This class could be integrated with challenges.Challenge, but
-       this way it would be confusing when compared to acme-spec, where
-       all challenges are presented without 'uri', 'status', or
-       'validated' fields.
+       Confusingly, this has a similar name to `.challenges.Challenge`,
+       as well as `.achallenges.AnnotatedChallenge` or
+       `.achallenges.Indexed`... Once `messages2` and `network2` is
+       integrated with the rest of the client, this class functionality
+       will be merged with `.challenges.Challenge`. Meanwhile,
+       separation allows the ``master`` to be still interoperable with
+       Node.js server (protocol v00). For the time being use names such
+       as ``challb`` to distinguish instances of this class from
+       ``achall`` or ``ichall``.
+
+    :ivar letsencrypt.acme.messages2.Status status:
+    :ivar datetime.datetime validated:
 
     """
 
@@ -184,19 +195,26 @@ class ChallengeBody(ResourceBody):
 
 
 class AuthorizationResource(Resource):
-    """Authorization resource.
+    """Authorization Resource.
 
-    :ivar body: `Authorization`
-    :ivar new_cert_uri: URI found in the 'next' Link header
+    :ivar letsencrypt.acme.messages2.Authorization body:
+    :ivar str new_cert_uri: URI found in the 'next' ``Link`` header
 
     """
     __slots__ = ('body', 'uri', 'new_cert_uri')
 
 
 class Authorization(ResourceBody):
-    """Authorization resource body.
+    """Authorization Resource Body.
 
-    :ivar challenges: `list` of `Challenge`
+    :ivar letsencrypt.acme.messages2.Identifier identifier:
+    :ivar list challenges: `list` of `Challenge`
+    :ivar tuple combinations: Challenge combinations (`tuple` of `tuple`
+        of `int`, as opposed to `list` of `list` from the spec).
+    :ivar letsencrypt.acme.jose.jwk.JWK key: Public key.
+    :ivar tuple contact:
+    :ivar letsencrypt.acme.messages2.Status status:
+    :ivar datetime.datetime expires:
 
     """
 
@@ -229,7 +247,9 @@ class Authorization(ResourceBody):
 class CertificateRequest(jose.JSONObjectWithFields):
     """ACME new-cert request.
 
-    :ivar csr: `M2Crypto.X509.Request` wrapped in `.ComparableX509`
+    :ivar letsencrypt.acme.jose.util.ComparableX509 csr:
+        `M2Crypto.X509.Request` wrapped in `.ComparableX509`
+    :ivar tuple authorizations: `tuple` of URIs (`str`)
 
     """
     csr = jose.Field('csr', decoder=jose.decode_csr, encoder=jose.encode_csr)
@@ -237,11 +257,12 @@ class CertificateRequest(jose.JSONObjectWithFields):
 
 
 class CertificateResource(Resource):
-    """Authorization resource.
+    """Certificate Resource.
 
-    :ivar body: `M2Crypto.X509.X509` wrapped in `.ComparableX509`
-    :ivar cert_chain_uri: URI found in the 'up' Link header
-    :ivar authzrs: `list` of `AuthorizationResource`.
+    :ivar letsencrypt.acme.jose.util.ComparableX509 body:
+        `M2Crypto.X509.X509` wrapped in `.ComparableX509`
+    :ivar str cert_chain_uri: URI found in the 'up' ``Link`` header
+    :ivar tuple authzrs: `tuple` of `AuthorizationResource`.
 
     """
     __slots__ = ('body', 'uri', 'cert_chain_uri', 'authzrs')
@@ -250,7 +271,8 @@ class CertificateResource(Resource):
 class Revocation(jose.JSONObjectWithFields):
     """Revocation message.
 
-    :ivar revoke: Either a `datetime.datetime` or `NOW`.
+    :ivar revoke: Either a `datetime.datetime` or `Revocation.NOW`.
+    :ivar tuple authorizations: Same as `CertificateRequest.authorizations`
 
     """
 

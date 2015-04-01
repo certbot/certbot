@@ -23,13 +23,17 @@ requests.packages.urllib3.contrib.pyopenssl.inject_into_urllib3()
 class Network(object):
     """ACME networking.
 
+    .. todo::
+       Clean up raised error types hierarchy, document, and handle (wrap)
+       instances of `.DeserializationError` raised in `from_json()``.
+
     :ivar str new_reg_uri: Location of new-reg
     :ivar key: `.JWK` (private)
     :ivar alg: `.JWASignature`
 
     """
 
-    DER_CONTENT_TYPE = 'application/plix-cert'
+    DER_CONTENT_TYPE = 'application/pkix-cert'
     JSON_CONTENT_TYPE = 'application/json'
     JSON_ERROR_CONTENT_TYPE = 'application/problem+json'
 
@@ -57,6 +61,16 @@ class Network(object):
            Checking is not strict: wrong server response ``Content-Type``
            HTTP header is ignored if response is an expected JSON object
            (c.f. Boulder #56).
+
+        :param str content_type: Expected Content-Type response header.
+            If JSON is expected and not present in server response, this
+            function will raise an error. Otherwise, wrong Content-Type
+            is ignored, but logged.
+
+        :raises letsencrypt.messages2.Error: If server response body
+            carries HTTP Problem (draft-ietf-appsawg-http-problem-00).
+        :raises letsencrypt.errors.NetworkError: In case of other
+            networking errors.
 
         """
         response_ct = response.headers.get('Content-Type')
@@ -222,8 +236,11 @@ class Network(object):
         :param identifier: Identifier to be challenged.
         :type identifier: `.messages2.Identifier`
 
-        :pram regr: Registration resource.
+        :param regr: Registration Resource.
         :type regr: `.RegistrationResource`
+
+        :returns: Authorization Resource.
+        :rtype: `.AuthorizationResource`
 
         """
         new_authz = messages2.Authorization(identifier=identifier)
@@ -232,7 +249,15 @@ class Network(object):
         return self._authzr_from_response(response, identifier)
 
     def request_domain_challenges(self, domain, regr):
-        """Request challenges for domain names."""
+        """Request challenges for domain names.
+
+        This is simply a convenience function that wraps around
+        `request_challenges`, but works with domain names instead of
+        generic identifiers.
+
+        :param str domain: Domain name to be challenged.
+
+        """
         return self.request_challenges(messages2.Identifier(
             typ=messages2.IDENTIFIER_FQDN, value=domain), regr)
 
@@ -245,7 +270,7 @@ class Network(object):
         :param response: Corresponding Challenge response
         :type response: `.challenges.ChallengeResponse`
 
-        :returns: Challenge resource with updated body.
+        :returns: Challenge Resource with updated body.
         :rtype: `.ChallengeResource`
 
         :raises errors.UnexpectedUpdate:
@@ -345,10 +370,7 @@ class Network(object):
             content_type=content_type,
             headers={'Accept': content_type})
 
-        try:
-            cert_chain_uri = response.links['up']['url']
-        except KeyError:
-            raise errors.NetworkError('"up" Link missing')
+        cert_chain_uri = response.links.get('up', {}).get('url')
 
         try:
             uri = response.headers['Location']
@@ -451,6 +473,9 @@ class Network(object):
         :rtype: `.CertificateResource`
 
         """
+        # TODO: If a client sends a refresh request and the server is
+        # not willing to refresh the certificate, the server MUST
+        # respond with status code 403 (Forbidden)
         return self.check_cert(certr)
 
     def fetch_chain(self, certr):
@@ -459,11 +484,12 @@ class Network(object):
         :param certr: Certificate Resource
         :type certr: `.CertificateResource`
 
-        :returns: Certificate chain
+        :returns: Certificate chain, or `None` if no "up" Link was provided.
         :rtype: `M2Crypto.X509.X509` wrapped in `.ComparableX509`
 
         """
-        return self._get_cert(certr.cert_chain_uri)
+        if certr.cert_chain_uri is not None:
+            return self._get_cert(certr.cert_chain_uri)
 
     def revoke(self, certr, when=messages2.Revocation.NOW):
         """Revoke certificate.
