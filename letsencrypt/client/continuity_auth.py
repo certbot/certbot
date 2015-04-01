@@ -11,7 +11,7 @@ from letsencrypt.client import recovery_token
 
 class ContinuityAuthenticator(object):
     """IAuthenticator for
-    :const:`~letsencrypt.acme.challenges.ContinuityChallenge`s.
+    :const:`~letsencrypt.acme.challenges.ContinuityChallenge` class challenges.
 
     :ivar rec_token: Performs "recoveryToken" challenges
     :type rec_token: :class:`letsencrypt.client.recovery_token.RecoveryToken`

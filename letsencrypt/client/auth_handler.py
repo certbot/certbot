@@ -17,11 +17,11 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
     """ACME Authorization Handler for a client.
 
     :ivar dv_auth: Authenticator capable of solving
-        :const:`~letsencrypt.acme.challenges.DVChallenge`(s)
+        :class:`~letsencrypt.acme.challenges.DVChallenge` types
     :type dv_auth: :class:`letsencrypt.client.interfaces.IAuthenticator`
 
     :ivar cont_auth: Authenticator capable of solving
-        :const:`~letsencrypt.acme.challenges.ContinuityChallenge`(s)
+        :class:`~letsencrypt.acme.challenges.ContinuityChallenge` types
     :type cont_auth: :class:`letsencrypt.client.interfaces.IAuthenticator`
 
     :ivar network: Network object for sending and receiving authorization
