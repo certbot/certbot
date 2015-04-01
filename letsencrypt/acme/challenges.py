@@ -18,7 +18,7 @@ class Challenge(jose.TypedJSONObjectWithFields):
     TYPES = {}
 
 
-class ClientChallenge(Challenge):  # pylint: disable=abstract-method
+class ContinuityChallenge(Challenge):  # pylint: disable=abstract-method
     """Client validation challenges."""
 
 
@@ -139,7 +139,7 @@ class DVSNIResponse(ChallengeResponse):
         return self.z(chall) + self.DOMAIN_SUFFIX
 
 @Challenge.register
-class RecoveryContact(ClientChallenge):
+class RecoveryContact(ContinuityChallenge):
     """ACME "recoveryContact" challenge."""
     typ = "recoveryContact"
 
@@ -156,7 +156,7 @@ class RecoveryContactResponse(ChallengeResponse):
 
 
 @Challenge.register
-class RecoveryToken(ClientChallenge):
+class RecoveryToken(ContinuityChallenge):
     """ACME "recoveryToken" challenge."""
     typ = "recoveryToken"
 
@@ -169,7 +169,7 @@ class RecoveryTokenResponse(ChallengeResponse):
 
 
 @Challenge.register
-class ProofOfPossession(ClientChallenge):
+class ProofOfPossession(ContinuityChallenge):
     """ACME "proofOfPossession" challenge.
 
     :ivar str nonce: Random data, **not** base64-encoded.

@@ -98,15 +98,16 @@ the ACME server. From the protocol, there are essentially two
 different types of challenges. Challenges that must be solved by
 individual plugins in order to satisfy domain validation (subclasses
 of `~.DVChallenge`, i.e. `~.challenges.DVSNI`,
-`~.challenges.SimpleHTTPS`, `~.challenges.DNS`) and client specific
-challenges (subclasses of `~.ClientChallenge`,
+`~.challenges.SimpleHTTPS`, `~.challenges.DNS`) and continuity specific
+challenges (subclasses of `~.ContinuityChallenge`,
 i.e. `~.challenges.RecoveryToken`, `~.challenges.RecoveryContact`,
-`~.challenges.ProofOfPossession`). Client specific challenges are
-always handled by the `~.ClientAuthenticator`. Right now we have two
-DV Authenticators, `~.ApacheConfigurator` and the
-`~.StandaloneAuthenticator`. The Standalone and Apache authenticators
-only solve the `~.challenges.DVSNI` challenge currently. (You can set
-which challenges your authenticator can handle through the
+`~.challenges.ProofOfPossession`). Continuity challenges are
+always handled by the `~.ContinuityAuthenticator`, while plugins are
+expected to handle `~.DVChallenge` types.
+Right now, we have two authenticator plugins, the `~.ApacheConfigurator`
+and the `~.StandaloneAuthenticator`. The Standalone and Apache
+authenticators only solve the `~.challenges.DVSNI` challenge currently.
+(You can set which challenges your authenticator can handle through the
 :meth:`~.IAuthenticator.get_chall_pref`.
 
 (FYI: We also have a partial implementation for a `~.DNSAuthenticator`
