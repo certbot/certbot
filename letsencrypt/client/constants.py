@@ -8,7 +8,24 @@ from letsencrypt.acme import challenges
 SETUPTOOLS_PLUGINS_ENTRY_POINT = "letsencrypt.plugins"
 """Setuptools entry point group name for plugins."""
 
+
+# CLI/IConfig defaults
 DEFAULT_VERBOSE_COUNT = -(logging.WARNING / 10)
+DEFAULT_SERVER = "letsencrypt-demo.org:443"
+DEFAULT_RSA_KEY_SIZE = 2048
+DEFAULT_ROLLBACK_CHECKPOINTS = 0
+DEFAULT_CONFIG_DIR = "/etc/letsencrypt"
+DEFAULT_WORK_DIR = "/var/lib/letsencrypt"
+DEFAULT_BACKUP_DIR = "/var/lib/letsencrypt/backups"
+DEFAULT_KEY_DIR = "/etc/letsencrypt/keys"
+DEFAULT_CERTS_DIR = "/etc/letsencrypt/certs"
+DEFAULT_CERT_PATH = "/etc/letsencrypt/certs/cert-letsencrypt.pem"
+DEFAULT_CHAIN_PATH = "/etc/letsencrypt/certs/chain-letsencrypt.pem"
+DEFAULT_APACHE_SERVER_ROOT = "/etc/apache2"
+DEFAULT_APACHE_MOD_SSL_CONF = "/etc/letsencrypt/options-ssl.conf"
+DEFAULT_APACHE_CTL = "apache2ctl"
+DEFAULT_APACHE_ENMOD = "a2enmod"
+DEFAULT_APACHE_INIT_SCRIPT = "/etc/init.d/apache2"
 
 
 S_SIZE = 32
