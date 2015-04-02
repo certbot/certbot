@@ -1,9 +1,9 @@
 #!/bin/sh
 
 # Tested with:
-#   - 12.04 (Travis)
-#   - 14.04 (digitalocean x64, Vagrant)
-#   - 14.10 (digitalocean x64)
+#   - 12.04 (x64, Travis)
+#   - 14.04 (x64, Vagrant)
+#   - 14.10 (x64)
 
 # dpkg-dev: dpkg-architecture binary necessary to compile M2Crypto, c.f.
 #           #276, https://github.com/martinpaljak/M2Crypto/issues/62,
