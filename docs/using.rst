@@ -5,18 +5,15 @@ Using the Let's Encrypt client
 Prerequisites
 =============
 
-The demo code is supported and known to work on **Ubuntu only** (even
-closely related `Debian is known to fail`_).
-
-Therefore, prerequisites for other platforms listed below are provided
-mainly for the :ref:`developers <hacking>` reference.
+The demo code is supported and known to work on **Ubuntu and
+Debian**. Therefore, prerequisites for other platforms listed below
+are provided mainly for the :ref:`developers <hacking>` reference.
 
 In general:
 
 * `swig`_ is required for compiling `m2crypto`_
 * `augeas`_ is required for the ``python-augeas`` bindings
 
-.. _Debian is known to fail: https://github.com/letsencrypt/lets-encrypt-preview/issues/68
 
 Ubuntu
 ------
@@ -24,6 +21,25 @@ Ubuntu
 .. code-block:: shell
 
    ./bootstrap/ubuntu.sh
+
+
+Debian
+------
+
+.. code-block:: shell
+
+   ./bootstrap/debian.sh
+
+For squezze you will need to:
+
+- Run ``apt-get install -y --no-install-recommends sudo`` as root
+  (``sudo`` is not installed by default) before running the bootstrap
+  script.
+- Use ``virtualenv --no-site-packages -p python`` instead of ``-p python2``.
+- Use text mode ``sudo ./venv/bin/letsencrypt --text`` (`#280`_)
+
+
+.. _`#280`: https://github.com/letsencrypt/lets-encrypt-preview/issues/280
 
 
 Mac OSX
