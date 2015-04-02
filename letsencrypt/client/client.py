@@ -6,11 +6,11 @@ import sys
 import Crypto.PublicKey.RSA
 import M2Crypto
 
+from letsencrypt.acme import jose
 from letsencrypt.acme import messages
-from letsencrypt.acme.jose import util as jose_util
 
 from letsencrypt.client import auth_handler
-from letsencrypt.client import client_authenticator
+from letsencrypt.client import continuity_auth
 from letsencrypt.client import crypto_util
 from letsencrypt.client import errors
 from letsencrypt.client import le_util
@@ -18,7 +18,7 @@ from letsencrypt.client import network
 from letsencrypt.client import reverter
 from letsencrypt.client import revoker
 
-from letsencrypt.client.apache import configurator
+from letsencrypt.client.plugins.apache import configurator
 from letsencrypt.client.display import ops as display_ops
 from letsencrypt.client.display import enhancements
 
@@ -33,7 +33,8 @@ class Client(object):
     :type authkey: :class:`letsencrypt.client.le_util.Key`
 
     :ivar auth_handler: Object that supports the IAuthenticator interface.
-        auth_handler contains both a dv_authenticator and a client_authenticator
+        auth_handler contains both a dv_authenticator and a
+        continuity_authenticator
     :type auth_handler: :class:`letsencrypt.client.auth_handler.AuthHandler`
 
     :ivar installer: Object supporting the IInstaller interface.
@@ -60,9 +61,9 @@ class Client(object):
         self.config = config
 
         if dv_auth is not None:
-            client_auth = client_authenticator.ClientAuthenticator(config)
+            cont_auth = continuity_auth.ContinuityAuthenticator(config)
             self.auth_handler = auth_handler.AuthHandler(
-                dv_auth, client_auth, self.network)
+                dv_auth, cont_auth, self.network)
         else:
             self.auth_handler = None
 
@@ -130,9 +131,10 @@ class Client(object):
         logging.info("Preparing and sending CSR...")
         return self.network.send_and_receive_expected(
             messages.CertificateRequest.create(
-                csr=jose_util.ComparableX509(
+                csr=jose.ComparableX509(
                     M2Crypto.X509.load_request_der_string(csr_der)),
-                key=Crypto.PublicKey.RSA.importKey(self.authkey.pem)),
+                key=jose.HashableRSAKey(Crypto.PublicKey.RSA.importKey(
+                    self.authkey.pem))),
             messages.Certificate)
 
     def save_certificate(self, certificate_msg, cert_path, chain_path):

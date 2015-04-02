@@ -1,6 +1,35 @@
 """Tests for letsencrypt.acme.jose.util."""
 import functools
+import os
+import pkg_resources
 import unittest
+
+import Crypto.PublicKey.RSA
+
+
+class HashableRSAKeyTest(unittest.TestCase):
+    """Tests for letsencrypt.acme.jose.util.HashableRSAKey."""
+
+    def setUp(self):
+        from letsencrypt.acme.jose.util import HashableRSAKey
+        self.key = HashableRSAKey(Crypto.PublicKey.RSA.importKey(
+            pkg_resources.resource_string(
+                __name__, os.path.join('testdata', 'rsa256_key.pem'))))
+        self.key_same = HashableRSAKey(Crypto.PublicKey.RSA.importKey(
+            pkg_resources.resource_string(
+                __name__, os.path.join('testdata', 'rsa256_key.pem'))))
+
+    def test_eq(self):
+        # if __eq__ is not defined, then two HashableRSAKeys with same
+        # _wrapped do not equate
+        self.assertEqual(self.key, self.key_same)
+
+    def test_hash(self):
+        self.assertTrue(isinstance(hash(self.key), int))
+
+    def test_publickey(self):
+        from letsencrypt.acme.jose.util import HashableRSAKey
+        self.assertTrue(isinstance(self.key.publickey(), HashableRSAKey))
 
 
 class ImmutableMapTest(unittest.TestCase):
@@ -24,6 +53,10 @@ class ImmutableMapTest(unittest.TestCase):
         self.a1_swap = self.A(y=2, x=1)
         self.a2 = self.A(x=3, y=4)
         self.b = self.B(x=1, y=2)
+
+    def test_update(self):
+        self.assertEqual(self.A(x=2, y=2), self.a1.update(x=2))
+        self.assertEqual(self.a2, self.a1.update(x=3, y=4))
 
     def test_get_missing_item_raises_key_error(self):
         self.assertRaises(KeyError, self.a1.__getitem__, 'z')

@@ -8,8 +8,9 @@ from letsencrypt.client import errors
 
 class DetermineAuthenticatorTest(unittest.TestCase):
     def setUp(self):
-        from letsencrypt.client.apache.configurator import ApacheConfigurator
-        from letsencrypt.client.standalone_authenticator import (
+        from letsencrypt.client.plugins.apache.configurator import (
+            ApacheConfigurator)
+        from letsencrypt.client.plugins.standalone.authenticator import (
             StandaloneAuthenticator)
 
         self.mock_stand = mock.MagicMock(
@@ -65,7 +66,8 @@ class DetermineAuthenticatorTest(unittest.TestCase):
 class RollbackTest(unittest.TestCase):
     """Test the rollback function."""
     def setUp(self):
-        from letsencrypt.client.apache.configurator import ApacheConfigurator
+        from letsencrypt.client.plugins.apache.configurator import (
+            ApacheConfigurator)
         self.m_install = mock.MagicMock(spec=ApacheConfigurator)
 
     @classmethod

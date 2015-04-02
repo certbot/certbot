@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """Parse command line and call the appropriate functions.
 
 .. todo:: Sanity check all input.  Be sure to avoid shell code etc...
@@ -12,6 +11,8 @@ import sys
 
 import confargparse
 import zope.component
+import zope.interface.exceptions
+import zope.interface.verify
 
 import letsencrypt
 
@@ -21,10 +22,30 @@ from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
 from letsencrypt.client import log
-from letsencrypt.client import standalone_authenticator as standalone
-from letsencrypt.client.apache import configurator
 from letsencrypt.client.display import util as display_util
 from letsencrypt.client.display import ops as display_ops
+
+
+SETUPTOOLS_AUTHENTICATORS_ENTRY_POINT = "letsencrypt.authenticators"
+"""Setuptools entry point group name for Authenticator plugins."""
+
+
+def init_auths(config):
+    """Find (setuptools entry points) and initialize Authenticators."""
+    auths = {}
+    for entrypoint in pkg_resources.iter_entry_points(
+            SETUPTOOLS_AUTHENTICATORS_ENTRY_POINT):
+        auth_cls = entrypoint.load()
+        auth = auth_cls(config)
+        try:
+            zope.interface.verify.verifyObject(interfaces.IAuthenticator, auth)
+        except zope.interface.exceptions.BrokenImplementation:
+            logging.debug(
+                "%r object does not provide IAuthenticator, skipping",
+                entrypoint.name)
+        else:
+            auths[auth] = entrypoint.name
+    return auths
 
 
 def create_parser():
@@ -137,12 +158,10 @@ def main():  # pylint: disable=too-many-branches, too-many-statements
     if not args.eula:
         display_eula()
 
-    all_auths = [
-        configurator.ApacheConfigurator(config),
-        standalone.StandaloneAuthenticator(),
-    ]
+    all_auths = init_auths(config)
+    logging.debug('Initialized authenticators: %s', all_auths.values())
     try:
-        auth = client.determine_authenticator(all_auths)
+        auth = client.determine_authenticator(all_auths.keys())
     except errors.LetsEncryptClientError:
         logging.critical("No authentication mechanisms were found on your "
                          "system.")

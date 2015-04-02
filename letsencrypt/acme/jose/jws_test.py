@@ -5,7 +5,7 @@ import pkg_resources
 import unittest
 
 import Crypto.PublicKey.RSA
-import M2Crypto.X509
+import M2Crypto
 import mock
 
 from letsencrypt.acme.jose import b64

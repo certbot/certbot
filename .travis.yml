@@ -19,4 +19,10 @@ env:
 
 notifications:
   email: false
-  irc: "chat.freenode.net#letsencrypt"
+  irc:
+    channels:
+      - "chat.freenode.net#letsencrypt"
+    on_success: never
+    on_failure: always
+    use_notice: true
+    skip_join: true

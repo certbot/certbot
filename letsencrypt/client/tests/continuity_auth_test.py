@@ -1,4 +1,4 @@
-"""Test the ClientAuthenticator dispatcher."""
+"""Test the ContinuityAuthenticator dispatcher."""
 import unittest
 
 import mock
@@ -13,9 +13,9 @@ class PerformTest(unittest.TestCase):
     """Test client perform function."""
 
     def setUp(self):
-        from letsencrypt.client.client_authenticator import ClientAuthenticator
+        from letsencrypt.client.continuity_auth import ContinuityAuthenticator
 
-        self.auth = ClientAuthenticator(
+        self.auth = ContinuityAuthenticator(
             mock.MagicMock(server="demo_server.org"))
         self.auth.rec_token.perform = mock.MagicMock(
             name="rec_token_perform", side_effect=gen_client_resp)
@@ -38,7 +38,7 @@ class PerformTest(unittest.TestCase):
 
     def test_unexpected(self):
         self.assertRaises(
-            errors.LetsEncryptClientAuthError, self.auth.perform, [
+            errors.LetsEncryptContAuthError, self.auth.perform, [
                 achallenges.DVSNI(chall=None, domain="0", key="invalid_key")])
 
     def test_chall_pref(self):
@@ -50,9 +50,9 @@ class CleanupTest(unittest.TestCase):
     """Test the Authenticator cleanup function."""
 
     def setUp(self):
-        from letsencrypt.client.client_authenticator import ClientAuthenticator
+        from letsencrypt.client.continuity_auth import ContinuityAuthenticator
 
-        self.auth = ClientAuthenticator(
+        self.auth = ContinuityAuthenticator(
             mock.MagicMock(server="demo_server.org"))
         self.mock_cleanup = mock.MagicMock(name="rec_token_cleanup")
         self.auth.rec_token.cleanup = self.mock_cleanup
@@ -70,7 +70,7 @@ class CleanupTest(unittest.TestCase):
         token = achallenges.RecoveryToken(chall=None, domain="0")
         unexpected = achallenges.DVSNI(chall=None, domain="0", key="dummy_key")
 
-        self.assertRaises(errors.LetsEncryptClientAuthError,
+        self.assertRaises(errors.LetsEncryptContAuthError,
                           self.auth.cleanup, [token, unexpected])
 
 

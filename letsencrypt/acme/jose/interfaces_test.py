@@ -3,6 +3,7 @@ import unittest
 
 
 class JSONDeSerializableTest(unittest.TestCase):
+    # pylint: disable=too-many-instance-attributes
 
     def setUp(self):
         from letsencrypt.acme.jose.interfaces import JSONDeSerializable
@@ -50,6 +51,8 @@ class JSONDeSerializableTest(unittest.TestCase):
         self.basic2 = Basic('foo2')
         self.seq = Sequence(self.basic1, self.basic2)
         self.mapping = Mapping(self.basic1, self.basic2)
+        self.nested = Basic([[self.basic1]])
+        self.tuple = Basic(('foo',))
 
         # pylint: disable=invalid-name
         self.Basic = Basic
@@ -65,6 +68,12 @@ class JSONDeSerializableTest(unittest.TestCase):
     def test_fully_serialize_other(self):
         mock_value = object()
         self.assertTrue(self.Basic(mock_value).fully_serialize() is mock_value)
+
+    def test_fully_serialize_nested(self):
+        self.assertEqual(self.nested.fully_serialize(), [['foo1']])
+
+    def test_fully_serialize(self):
+        self.assertEqual(self.tuple.fully_serialize(), (('foo', )))
 
     def test_from_json_not_implemented(self):
         from letsencrypt.acme.jose.interfaces import JSONDeSerializable

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 import codecs
 import os
 import re
@@ -32,12 +31,17 @@ install_requires = [
     'ConfArgParse',
     'jsonschema',
     'mock',
+    'ndg-httpsclient',  # urllib3 InsecurePlatformWarning (#304)
     'psutil>=2.1.0',  # net_connections introduced in 2.1.0
+    'pyasn1',  # urllib3 InsecurePlatformWarning (#304)
     'pycrypto',
     'PyOpenSSL',
+    'pyrfc3339',
     'python-augeas',
     'python2-pythondialog',
+    'pytz',
     'requests',
+    'werkzeug',
     'zope.component',
     'zope.interface',
     # order of items in install_requires DOES matter and M2Crypto has
@@ -95,10 +99,13 @@ setup(
         'letsencrypt.acme',
         'letsencrypt.acme.jose',
         'letsencrypt.client',
-        'letsencrypt.client.apache',
         'letsencrypt.client.display',
+        'letsencrypt.client.plugins',
+        'letsencrypt.client.plugins.apache',
+        'letsencrypt.client.plugins.apache.tests',
+        'letsencrypt.client.plugins.standalone',
+        'letsencrypt.client.plugins.standalone.tests',
         'letsencrypt.client.tests',
-        'letsencrypt.client.tests.apache',
         'letsencrypt.client.tests.display',
         'letsencrypt.scripts',
     ],
@@ -117,6 +124,12 @@ setup(
         'console_scripts': [
             'letsencrypt = letsencrypt.scripts.main:main',
             'jws = letsencrypt.acme.jose.jws:CLI.run',
+        ],
+        'letsencrypt.authenticators': [
+            'apache = letsencrypt.client.plugins.apache.configurator'
+            ':ApacheConfigurator',
+            'standalone = letsencrypt.client.plugins.standalone.authenticator'
+            ':StandaloneAuthenticator',
         ],
     },
 
