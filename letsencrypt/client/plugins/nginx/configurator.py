@@ -156,6 +156,9 @@ class NginxConfigurator(object):
         if not vhost.enabled:
             self.enable_site(vhost)
 
+    #######################
+    # Vhost parsing methods
+    #######################
     def choose_vhost(self, target_name):
         """Chooses a virtual host based on the given domain name.
 
@@ -258,19 +261,6 @@ class NginxConfigurator(object):
 
         return vhs
 
-    def add_name_vhost(self, addr):
-        """Adds NameVirtualHost directive for given address.
-
-        :param str addr: Address that will be added as NameVirtualHost directive
-
-        """
-        path = self.parser.add_dir_to_ifmodssl(
-            parser.get_aug_path(
-                self.parser.loc["name"]), "NameVirtualHost", str(addr))
-
-        self.save_notes += "Setting %s to be NameBasedVirtualHost\n" % addr
-        self.save_notes += "\tDirective added to %s\n" % path
-
     def make_vhost_ssl(self, nonssl_vhost):  # pylint: disable=too-many-locals
         """Makes an ssl_vhost version of a nonssl_vhost.
 
@@ -349,6 +339,29 @@ class NginxConfigurator(object):
 
         return ssl_vhost
 
+    def get_all_certs_keys(self):
+        """Find all existing keys, certs from configuration.
+
+        Retrieve all certs and keys set in VirtualHosts on the Nginx server
+
+        :returns: list of tuples with form [(cert, key, path)]
+            cert - str path to certificate file
+            key - str path to associated key file
+            path - File path to configuration file.
+        :rtype: list
+
+        """
+        c_k = set()
+
+        for vhost in self.vhosts:
+            if vhost.ssl:
+                # TODO: get the cert, key, and conf file paths
+
+        return c_k
+
+    #####################
+    # enhancement methods
+    #####################
     def supported_enhancements(self):  # pylint: disable=no-self-use
         """Returns currently supported enhancements."""
         return []
@@ -373,39 +386,9 @@ class NginxConfigurator(object):
         except errors.LetsEncryptConfiguratorError:
             logging.warn("Failed %s for %s", enhancement, domain)
 
-    def get_all_certs_keys(self):
-        """Find all existing keys, certs from configuration.
-
-        Retrieve all certs and keys set in VirtualHosts on the Nginx server
-
-        :returns: list of tuples with form [(cert, key, path)]
-            cert - str path to certificate file
-            key - str path to associated key file
-            path - File path to configuration file.
-        :rtype: list
-
-        """
-        c_k = set()
-
-        for vhost in self.vhosts:
-            if vhost.ssl:
-                cert_path = self.parser.find_dir(
-                    parser.case_i("SSLCertificateFile"), None, vhost.path)
-                key_path = self.parser.find_dir(
-                    parser.case_i("SSLCertificateKeyFile"), None, vhost.path)
-
-                # Can be removed once find directive can return ordered results
-                if len(cert_path) != 1 or len(key_path) != 1:
-                    logging.error("Too many cert or key directives in vhost %s",
-                                  vhost.filep)
-                    sys.exit(40)
-
-                cert = os.path.abspath(self.aug.get(cert_path[0]))
-                key = os.path.abspath(self.aug.get(key_path[0]))
-                c_k.add((cert, key, get_file_path(cert_path[0])))
-
-        return c_k
-
+    #########################
+    # Nginx server management
+    #########################
     def is_site_enabled(self, avail_fp):
         """Checks to see if the given site is enabled.
 
@@ -556,7 +539,9 @@ class NginxConfigurator(object):
                 version=".".join(str(i) for i in self.version))
         )
 
+    ######################################
     # Wrapper functions for Reverter class
+    ######################################
     def save(self, title=None, temporary=False):
         """Saves all changes to the configuration files.
 
@@ -690,34 +675,6 @@ def nginx_restart(nginx_ctl):
         sys.exit(1)
 
     return True
-
-
-def get_file_path(vhost_path):
-    """Get file path from augeas_vhost_path.
-
-    Takes in Augeas path and returns the file name
-
-    :param str vhost_path: Augeas virtual host path
-
-    :returns: filename of vhost
-    :rtype: str
-
-    """
-    # Strip off /files
-    avail_fp = vhost_path[6:]
-    # This can be optimized...
-    while True:
-        # Cast both to lowercase to be case insensitive
-        find_if = avail_fp.lower().find("/ifmodule")
-        if find_if != -1:
-            avail_fp = avail_fp[:find_if]
-            continue
-        find_vh = avail_fp.lower().find("/virtualhost")
-        if find_vh != -1:
-            avail_fp = avail_fp[:find_vh]
-            continue
-        break
-    return avail_fp
 
 
 def temp_install(options_ssl):
