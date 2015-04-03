@@ -16,6 +16,7 @@ from letsencrypt.client import constants
 from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
+from letsencrypt.client import reverter
 
 from letsencrypt.client.plugins.nginx import dvsni
 from letsencrypt.client.plugins.nginx import obj
@@ -54,6 +55,7 @@ class NginxConfigurator(object):
 
         """
         self.config = config
+        self.save_notes = ""
 
         # Verify that all directories and files exist with proper permissions
         if os.geteuid() == 0:
@@ -69,6 +71,10 @@ class NginxConfigurator(object):
         self.version = version
         self.vhosts = None
         self._enhance_func = {}  # TODO: Support at least redirects
+
+        # Set up reverter
+        self.reverter = reverter.Reverter(config)
+        self.reverter.recovery_routine()
 
     def prepare(self):
         """Prepare the authenticator/installer."""
@@ -549,6 +555,66 @@ class NginxConfigurator(object):
                 os.linesep, root=self.parser.loc["root"],
                 version=".".join(str(i) for i in self.version))
         )
+
+    # Wrapper functions for Reverter class
+    def save(self, title=None, temporary=False):
+        """Saves all changes to the configuration files.
+
+        Working changes are saved in *.conf.le files. This overrides the .conf
+        file with the .conf.le file contents.
+
+        :param str title: The title of the save. If a title is given, the
+            configuration will be saved as a new checkpoint and put in a
+            timestamped directory.
+
+        :param bool temporary: Indicates whether the changes made will
+            be quickly reversed in the future (ie. challenges)
+
+        """
+        if len(self.save_files) > 0:
+            # Create Checkpoint
+            if temporary:
+                self.reverter.add_to_temp_checkpoint(
+                    self.save_files, self.save_notes)
+            else:
+                self.reverter.add_to_checkpoint(self.save_files,
+                                                self.save_notes)
+            # Override the original files with their working copies
+            for f in self.save_files:
+                tmpfile = f + '.le'
+                if (os.path.isfile(tmpfile)):
+                    os.rename(f + '.le', f)
+                else:
+                    logging.warn("Expected file %s to exist", tmpfile)
+
+        if title and not temporary:
+            self.reverter.finalize_checkpoint(title)
+
+        return True
+
+    def recovery_routine(self):
+        """Revert all previously modified files.
+
+        Reverts all modified files that have not been saved as a checkpoint
+
+        """
+        self.reverter.recovery_routine()
+
+    def revert_challenge_config(self):
+        """Used to cleanup challenge configurations."""
+        self.reverter.revert_temporary_config()
+
+    def rollback_checkpoints(self, rollback=1):
+        """Rollback saved checkpoints.
+
+        :param int rollback: Number of checkpoints to revert
+
+        """
+        self.reverter.rollback_checkpoints(rollback)
+
+    def view_config_changes(self):
+        """Show all of the configuration changes that have taken place."""
+        self.reverter.view_config_changes()
 
     ###########################################################################
     # Challenges Section
