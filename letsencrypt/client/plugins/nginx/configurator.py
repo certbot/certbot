@@ -1,4 +1,4 @@
-"""Nginx Configuration based off of Augeas Configurator."""
+"""Nginx Configuration"""
 import logging
 import os
 import re
@@ -12,7 +12,6 @@ import zope.interface
 from letsencrypt.acme import challenges
 
 from letsencrypt.client import achallenges
-from letsencrypt.client import augeas_configurator
 from letsencrypt.client import constants
 from letsencrypt.client import errors
 from letsencrypt.client import interfaces
@@ -23,46 +22,11 @@ from letsencrypt.client.plugins.nginx import obj
 from letsencrypt.client.plugins.nginx import parser
 
 
-# TODO: Augeas sections ie. <VirtualHost>, <IfModule> beginning and closing
-# tags need to be the same case, otherwise Augeas doesn't recognize them.
-# This is not able to be completely remedied by regular expressions because
-# Augeas views <VirtualHost> </Virtualhost> as an error. This will just
-# require another check_parsing_errors() after all files are included...
-# (after a find_directive search is executed currently). It can be a one
-# time check however because all of LE's transactions will ensure
-# only properly formed sections are added.
-
-# Note: This protocol works for filenames with spaces in it, the sites are
-# properly set up and directives are changed appropriately, but Nginx won't
-# recognize names in sites-enabled that have spaces. These are not added to the
-# Nginx configuration. It may be wise to warn the user if they are trying
-# to use vhost filenames that contain spaces and offer to change ' ' to '_'
-
-# Note: FILEPATHS and changes to files are transactional.  They are copied
-# over before the updates are made to the existing files. NEW_FILES is
-# transactional due to the use of register_file_creation()
-
-
-class NginxConfigurator(augeas_configurator.AugeasConfigurator):
+class NginxConfigurator(object):
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
     """Nginx configurator.
 
-    State of Configurator: This code has been tested under Ubuntu 12.04
-    Nginx 2.2 and this code works for Ubuntu 14.04 Nginx 2.4. Further
-    notes below.
-
-    This class was originally developed for Nginx 2.2 and I have been slowly
-    transitioning the codebase to work with all of the 2.4 features.
-    I have implemented most of the changes... the missing ones are
-    mod_ssl.c vs ssl_mod, and I need to account for configuration variables.
-    This class can adequately configure most typical configurations but
-    is not ready to handle very complex configurations.
-
-    .. todo:: Add support for config file variables Define rootDir /var/www/
-    .. todo:: Add proper support for module configuration
-
-    The API of this class will change in the coming weeks as the exact
-    needs of clients are clarified with the new and developing protocol.
+    .. todo:: Add proper support for comments in the config
 
     :ivar config: Configuration.
     :type config: :class:`~letsencrypt.client.interfaces.IConfig`
@@ -89,7 +53,7 @@ class NginxConfigurator(augeas_configurator.AugeasConfigurator):
             (used mostly for unittesting)
 
         """
-        super(NginxConfigurator, self).__init__(config)
+        self.config = config
 
         # Verify that all directories and files exist with proper permissions
         if os.geteuid() == 0:
@@ -109,10 +73,8 @@ class NginxConfigurator(augeas_configurator.AugeasConfigurator):
     def prepare(self):
         """Prepare the authenticator/installer."""
         self.parser = parser.NginxParser(
-            self.aug, self.config.nginx_server_root,
+            self.config.nginx_server_root,
             self.config.nginx_mod_ssl_conf)
-        # Check for errors in parsing files with Augeas
-        self.check_parsing_errors("httpd.aug")
 
         # Set Version
         if self.version is None:
@@ -120,13 +82,6 @@ class NginxConfigurator(augeas_configurator.AugeasConfigurator):
 
         # Get all of the available vhosts
         self.vhosts = self.get_virtual_hosts()
-
-        # Enable mod_ssl if it isn't already enabled
-        # This is Let's Encrypt... we enable mod_ssl on initialization :)
-        # TODO: attempt to make the check faster... this enable should
-        #     be asynchronous as it shouldn't be that time sensitive
-        #     on initialization
-        self._prepare_server_https()
 
         temp_install(self.config.nginx_mod_ssl_conf)
 
@@ -278,50 +233,6 @@ class NginxConfigurator(augeas_configurator.AugeasConfigurator):
 
         return all_names
 
-    def _add_servernames(self, host):
-        """Helper function for get_virtual_hosts().
-
-        :param host: In progress vhost whose names will be added
-        :type host: :class:`~letsencrypt.client.plugins.nginx.obj.VirtualHost`
-
-        """
-        name_match = self.aug.match(("%s//*[self::directive=~regexp('%s')] | "
-                                     "%s//*[self::directive=~regexp('%s')]" %
-                                     (host.path,
-                                      parser.case_i("ServerName"),
-                                      host.path,
-                                      parser.case_i("ServerAlias"))))
-
-        for name in name_match:
-            args = self.aug.match(name + "/*")
-            for arg in args:
-                host.add_name(self.aug.get(arg))
-
-    def _create_vhost(self, path):
-        """Used by get_virtual_hosts to create vhost objects
-
-        :param str path: Augeas path to virtual host
-
-        :returns: newly created vhost
-        :rtype: :class:`~letsencrypt.client.plugins.nginx.obj.VirtualHost`
-
-        """
-        addrs = set()
-        args = self.aug.match(path + "/arg")
-        for arg in args:
-            addrs.add(obj.Addr.fromstring(self.aug.get(arg)))
-        is_ssl = False
-
-        if self.parser.find_dir(
-                parser.case_i("SSLEngine"), parser.case_i("on"), path):
-            is_ssl = True
-
-        filename = get_file_path(path)
-        is_enabled = self.is_site_enabled(filename)
-        vhost = obj.VirtualHost(filename, path, addrs, is_ssl, is_enabled)
-        self._add_servernames(vhost)
-        return vhost
-
     # TODO: make "sites-available" a configurable directory
     def get_virtual_hosts(self):
         """Returns list of virtual hosts found in the Nginx configuration.
@@ -332,39 +243,14 @@ class NginxConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: list
 
         """
-        # Search sites-available, httpd.conf for possible virtual hosts
-        paths = self.aug.match(
-            ("/files%s/sites-available//*[label()=~regexp('%s')]" %
-             (self.parser.root, parser.case_i("VirtualHost"))))
+        # Search sites-available/, conf.d/, nginx.conf for possible vhosts
+        paths = self.parser.get_conf_files()
         vhs = []
 
         for path in paths:
-            vhs.append(self._create_vhost(path))
+            vhs.append(self.parser.get_vhosts(path))
 
         return vhs
-
-    def is_name_vhost(self, target_addr):
-        r"""Returns if vhost is a name based vhost
-
-        NameVirtualHost was deprecated in Nginx 2.4 as all VirtualHosts are
-        now NameVirtualHosts. If version is earlier than 2.4, check if addr
-        has a NameVirtualHost directive in the Nginx config
-
-        :param str target_addr: vhost address ie. \*:443
-
-        :returns: Success
-        :rtype: bool
-
-        """
-        # Mixed and matched wildcard NameVirtualHost with VirtualHost
-        # behavior is undefined. Make sure that an exact match exists
-
-        # search for NameVirtualHost directive for ip_addr
-        # note ip_addr can be FQDN although Nginx does not recommend it
-        return (self.version >= (2, 4) or
-                self.parser.find_dir(
-                    parser.case_i("NameVirtualHost"),
-                    parser.case_i(str(target_addr))))
 
     def add_name_vhost(self, addr):
         """Adds NameVirtualHost directive for given address.
@@ -378,55 +264,6 @@ class NginxConfigurator(augeas_configurator.AugeasConfigurator):
 
         self.save_notes += "Setting %s to be NameBasedVirtualHost\n" % addr
         self.save_notes += "\tDirective added to %s\n" % path
-
-    def _prepare_server_https(self):
-        """Prepare the server for HTTPS.
-
-        Make sure that the ssl_module is loaded and that the server
-        is appropriately listening on port 443.
-
-        """
-        if not mod_loaded("ssl_module", self.config.nginx_ctl):
-            logging.info("Loading mod_ssl into Nginx Server")
-            enable_mod("ssl", self.config.nginx_init_script,
-                       self.config.nginx_enmod)
-
-        # Check for Listen 443
-        # Note: This could be made to also look for ip:443 combo
-        # TODO: Need to search only open directives and IfMod mod_ssl.c
-        if len(self.parser.find_dir(parser.case_i("Listen"), "443")) == 0:
-            logging.debug("No Listen 443 directive found")
-            logging.debug("Setting the Nginx Server to Listen on port 443")
-            path = self.parser.add_dir_to_ifmodssl(
-                parser.get_aug_path(self.parser.loc["listen"]), "Listen", "443")
-            self.save_notes += "Added Listen 443 directive to %s\n" % path
-
-    def make_server_sni_ready(self, vhost, default_addr="*:443"):
-        """Checks to see if the server is ready for SNI challenges.
-
-        :param vhost: VirtualHost to check SNI compatibility
-        :type vhost: :class:`~letsencrypt.client.plugins.nginx.obj.VirtualHost`
-
-        :param str default_addr: TODO - investigate function further
-
-        """
-        if self.version >= (2, 4):
-            return
-        # Check for NameVirtualHost
-        # First see if any of the vhost addresses is a _default_ addr
-        for addr in vhost.addrs:
-            if addr.get_addr() == "_default_":
-                if not self.is_name_vhost(default_addr):
-                    logging.debug("Setting all VirtualHosts on %s to be "
-                                  "name based vhosts", default_addr)
-                    self.add_name_vhost(default_addr)
-
-        # No default addresses... so set each one individually
-        for addr in vhost.addrs:
-            if not self.is_name_vhost(addr):
-                logging.debug("Setting VirtualHost at %s to be a name "
-                              "based virtual host", addr)
-                self.add_name_vhost(addr)
 
     def make_vhost_ssl(self, nonssl_vhost):  # pylint: disable=too-many-locals
         """Makes an ssl_vhost version of a nonssl_vhost.
@@ -503,23 +340,6 @@ class NginxConfigurator(augeas_configurator.AugeasConfigurator):
         # We know the length is one because of the assertion above
         ssl_vhost = self._create_vhost(vh_p[0])
         self.vhosts.append(ssl_vhost)
-
-        # NOTE: Searches through Augeas seem to ruin changes to directives
-        #       The configuration must also be saved before being searched
-        #       for the new directives; For these reasons... this is tacked
-        #       on after fully creating the new vhost
-        need_to_save = False
-        # See if the exact address appears in any other vhost
-        for addr in ssl_addrs:
-            for vhost in self.vhosts:
-                if (ssl_vhost.filep != vhost.filep and addr in vhost.addrs and
-                        not self.is_name_vhost(addr)):
-                    self.add_name_vhost(addr)
-                    logging.info("Enabling NameVirtualHosts on %s", addr)
-                    need_to_save = True
-
-        if need_to_save:
-            self.save()
 
         return ssl_vhost
 
@@ -908,17 +728,17 @@ class NginxConfigurator(augeas_configurator.AugeasConfigurator):
         """
         try:
             proc = subprocess.Popen(
-                ["sudo", self.config.nginx_ctl, "configtest"], # TODO: sudo?
+                [self.config.nginx_ctl, "-t"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
             stdout, stderr = proc.communicate()
         except (OSError, ValueError):
-            logging.fatal("Unable to run /usr/sbin/nginx2ctl configtest")
+            logging.fatal("Unable to run nginx config test")
             sys.exit(1)
 
         if proc.returncode != 0:
             # Enter recovery routine...
-            logging.error("Configtest failed")
+            logging.error("Config test failed")
             logging.error(stdout)
             logging.error(stderr)
             return False
@@ -947,27 +767,42 @@ class NginxConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: tuple
 
         :raises errors.LetsEncryptConfiguratorError:
-            Unable to find Nginx version
+            Unable to find Nginx version or version is unsupported
 
         """
         try:
             proc = subprocess.Popen(
-                [self.config.nginx_ctl, "-v"],
+                [self.config.nginx_ctl, "-V"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
-            text = proc.communicate()[0]
+            text = proc.communicate()[1]  # nginx prints output to stderr
         except (OSError, ValueError):
             raise errors.LetsEncryptConfiguratorError(
-                "Unable to run %s -v" % self.config.nginx_ctl)
+                "Unable to run %s -V" % self.config.nginx_ctl)
 
-        regex = re.compile(r"Nginx/([0-9\.]*)", re.IGNORECASE)
-        matches = regex.findall(text)
+        version_regex = re.compile(r"nginx/([0-9\.]*)", re.IGNORECASE)
+        version_matches = version_regex.findall(text)
 
-        if len(matches) != 1:
+        sni_regex = re.compile(r"TLS SNI support enabled", re.IGNORECASE)
+        sni_matches = sni_regex.findall(text)
+
+        if len(version_matches) == 0:
             raise errors.LetsEncryptConfiguratorError(
                 "Unable to find Nginx version")
+        if len(sni_matches) == 0:
+            raise errors.LetsEncryptConfiguratorError(
+                "Nginx build doesn't support SNI")
 
-        return tuple([int(i) for i in matches[0].split(".")])
+        nginx_version = tuple([int(i) for i in version_matches[0].split(".")])
+
+        # nginx <= 0.7.14 has an incompatible SSL configuration format
+        if (nginx_version[0] == 0 and
+            (nginx_version[1] < 7 or
+             (nginx_version[1] == 7 and nginx_version[2] < 15))):
+            raise errors.LetsEncryptConfiguratorError(
+                "Nginx version not supported")
+
+        return nginx_version
 
     def more_info(self):
         """Human-readable string to help understand the module"""
@@ -1160,4 +995,4 @@ def temp_install(options_ssl):
 
     # Check to make sure options-ssl.conf is installed
     if not os.path.isfile(options_ssl):
-        shutil.copyfile(constants.APACHE_MOD_SSL_CONF, options_ssl)
+        shutil.copyfile(constants.NGINX_MOD_SSL_CONF, options_ssl)

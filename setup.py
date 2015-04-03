@@ -132,6 +132,8 @@ setup(
         'letsencrypt.authenticators': [
             'apache = letsencrypt.client.plugins.apache.configurator'
             ':ApacheConfigurator',
+            'nginx = letsencrypt.client.plugins.nginx.configurator'
+            ':NginxConfigurator',
             'standalone = letsencrypt.client.plugins.standalone.authenticator'
             ':StandaloneAuthenticator',
         ],
