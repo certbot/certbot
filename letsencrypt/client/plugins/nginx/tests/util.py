@@ -8,8 +8,8 @@ import unittest
 import mock
 
 from letsencrypt.client import constants
-from letsencrypt.client.nginx import configurator
-from letsencrypt.client.nginx import obj
+from letsencrypt.client.plugins.nginx import configurator
+from letsencrypt.client.plugins.nginx import obj
 
 
 class NginxTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
@@ -26,9 +26,14 @@ class NginxTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
             self.temp_dir, "debian_nginx_2_4/two_vhost_80/nginx2")
 
         self.rsa256_file = pkg_resources.resource_filename(
-            "letsencrypt.client.tests", 'testdata/rsa256_key.pem')
+            "letsencrypt.client.tests", "testdata/rsa256_key.pem")
         self.rsa256_pem = pkg_resources.resource_string(
-            "letsencrypt.client.tests", 'testdata/rsa256_key.pem')
+            "letsencrypt.client.tests", "testdata/rsa256_key.pem")
+
+
+def get_data_filename(filename):
+    return pkg_resources.resource_filename(
+        "letsencrypt.client.plugins.nginx.tests", "testdata/%s" % filename)
 
 
 def dir_setup(test_dir="debian_nginx_2_4/two_vhost_80"):
@@ -38,7 +43,7 @@ def dir_setup(test_dir="debian_nginx_2_4/two_vhost_80"):
     work_dir = tempfile.mkdtemp("work")
 
     test_configs = pkg_resources.resource_filename(
-        "letsencrypt.client.tests", "testdata/%s" % test_dir)
+        "letsencrypt.client.plugins.nginx.tests", "testdata/%s" % test_dir)
 
     shutil.copytree(
         test_configs, os.path.join(temp_dir, test_dir), symlinks=True)
@@ -59,7 +64,7 @@ def get_nginx_configurator(
 
     backups = os.path.join(work_dir, "backups")
 
-    with mock.patch("letsencrypt.client.nginx.configurator."
+    with mock.patch("letsencrypt.client.plugins.nginx.configurator."
                     "subprocess.Popen") as mock_popen:
         # This just states that the ssl module is already loaded
         mock_popen().communicate.return_value = ("ssl_module", "")

@@ -1,7 +1,9 @@
 import operator
 import unittest
 
-from nginxparser import NginxParser, load, dumps, dump
+from letsencrypt.client.plugins.nginx.nginxparser import (NginxParser,
+                                                          load, dumps, dump)
+from letsencrypt.client.plugins.nginx.tests import util
 
 
 first = operator.itemgetter(0)
@@ -57,7 +59,7 @@ class TestNginxParser(unittest.TestCase):
                          '}')
 
     def test_parse_from_file(self):
-        parsed = load(open('data/foo.conf'))
+        parsed = load(open(util.get_data_filename('foo.conf')))
         self.assertEqual(
             parsed,
             [['user', 'www-data'],
@@ -79,7 +81,7 @@ class TestNginxParser(unittest.TestCase):
         )
 
     def test_dump_as_file(self):
-        parsed = load(open('data/nginx.conf'))
+        parsed = load(open(util.get_data_filename('nginx.conf')))
         parsed[-1][-1].append([['server'],
                                [['listen', '443 ssl'],
                                 ['server_name', 'localhost'],
@@ -91,9 +93,9 @@ class TestNginxParser(unittest.TestCase):
                                 [['location', '/'],
                                  [['root', 'html'],
                                   ['index', 'index.html index.htm']]]]])
-        f = open('data/nginx.new.conf', 'w')
+        f = open(util.get_data_filename('nginx.new.conf'), 'w')
         dump(parsed, f)
-        parsed_new = load(open('data/nginx.new.conf'))
+        parsed_new = load(open(util.get_data_filename('nginx.new.conf')))
         self.assertEquals(parsed, parsed_new)
 
 

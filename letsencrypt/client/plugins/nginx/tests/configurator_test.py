@@ -1,4 +1,4 @@
-"""Test for letsencrypt.client.nginx.configurator."""
+"""Test for letsencrypt.client.plugins.nginx.configurator."""
 import os
 import re
 import shutil
@@ -12,11 +12,11 @@ from letsencrypt.client import achallenges
 from letsencrypt.client import errors
 from letsencrypt.client import le_util
 
-from letsencrypt.client.nginx import configurator
-from letsencrypt.client.nginx import obj
-from letsencrypt.client.nginx import parser
+from letsencrypt.client.plugins.nginx import configurator
+from letsencrypt.client.plugins.nginx import obj
+from letsencrypt.client.plugins.nginx import parser
 
-from letsencrypt.client.tests.nginx import util
+from letsencrypt.client.plugins.nginx.tests import util
 
 
 class TwoVhost80Test(util.NginxTest):
@@ -25,7 +25,7 @@ class TwoVhost80Test(util.NginxTest):
     def setUp(self):
         super(TwoVhost80Test, self).setUp()
 
-        with mock.patch("letsencrypt.client.nginx.configurator."
+        with mock.patch("letsencrypt.client.plugins.nginx.configurator."
                         "mod_loaded") as mock_load:
             mock_load.return_value = True
             self.config = util.get_nginx_configurator(
@@ -43,9 +43,15 @@ class TwoVhost80Test(util.NginxTest):
     def test_get_all_names(self):
         names = self.config.get_all_names()
         self.assertEqual(names, set(
-            ['letsencrypt.demo', 'encryption-example.demo', 'ip-172-30-0-17']))
+            ["letsencrypt.demo", "encryption-example.demo", "ip-172-30-0-17"]))
 
     def test_get_virtual_hosts(self):
+        """Make sure all vhosts are being properly found.
+
+        .. note:: If test fails, only finding 1 Vhost... it is likely that
+            it is a problem with is_enabled.
+
+        """
         vhs = self.config.get_virtual_hosts()
         self.assertEqual(len(vhs), 4)
         found = 0
@@ -59,6 +65,14 @@ class TwoVhost80Test(util.NginxTest):
         self.assertEqual(found, 4)
 
     def test_is_site_enabled(self):
+        """Test if site is enabled.
+
+        .. note:: This test currently fails for hard links
+            (which may happen if you move dirs incorrectly)
+        .. warning:: This test does not work when running using the
+            unittest.main() function. It incorrectly copies symlinks.
+
+        """
         self.assertTrue(self.config.is_site_enabled(self.vh_truth[0].filep))
         self.assertFalse(self.config.is_site_enabled(self.vh_truth[1].filep))
         self.assertTrue(self.config.is_site_enabled(self.vh_truth[2].filep))
@@ -134,9 +148,9 @@ class TwoVhost80Test(util.NginxTest):
 
         self.assertEqual(len(self.config.vhosts), 5)
 
-    @mock.patch("letsencrypt.client.nginx.configurator."
+    @mock.patch("letsencrypt.client.plugins.nginx.configurator."
                 "dvsni.NginxDvsni.perform")
-    @mock.patch("letsencrypt.client.nginx.configurator."
+    @mock.patch("letsencrypt.client.plugins.nginx.configurator."
                 "NginxConfigurator.restart")
     def test_perform(self, mock_restart, mock_dvsni_perform):
         # Only tests functionality specific to configurator.perform
@@ -166,7 +180,7 @@ class TwoVhost80Test(util.NginxTest):
 
         self.assertEqual(mock_restart.call_count, 1)
 
-    @mock.patch("letsencrypt.client.nginx.configurator."
+    @mock.patch("letsencrypt.client.plugins.nginx.configurator."
                 "subprocess.Popen")
     def test_get_version(self, mock_popen):
         mock_popen().communicate.return_value = (
@@ -183,7 +197,7 @@ class TwoVhost80Test(util.NginxTest):
             errors.LetsEncryptConfiguratorError, self.config.get_version)
 
         mock_popen().communicate.return_value = (
-            "Server Version: Nginx/2.3\n Nginx/2.4.7", "")
+            "Server Version: Nginx/2.3{0} Nginx/2.4.7".format(os.linesep), "")
         self.assertRaises(
             errors.LetsEncryptConfiguratorError, self.config.get_version)
 
@@ -192,5 +206,5 @@ class TwoVhost80Test(util.NginxTest):
             errors.LetsEncryptConfiguratorError, self.config.get_version)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
