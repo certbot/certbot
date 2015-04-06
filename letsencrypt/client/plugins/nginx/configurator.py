@@ -35,6 +35,12 @@ class NginxConfigurator(object):
     :ivar parser: Handles low level parsing
     :type parser: :class:`~letsencrypt.client.plugins.nginx.parser`
 
+    :ivar set save_files: Files that need to be saved
+    :ivar str save_notes: Human-readable config change notes
+
+    :ivar reverter: saves and reverts checkpoints
+    :type reverter: :class:`letsencrypt.client.reverter.Reverter`
+
     :ivar tup version: version of Nginx
     :ivar list vhosts: All vhosts found in the configuration
         (:class:`list` of
@@ -55,11 +61,14 @@ class NginxConfigurator(object):
 
         """
         self.config = config
-        self.save_notes = ""
 
         # Verify that all directories and files exist with proper permissions
         if os.geteuid() == 0:
-            self.verify_setup()
+            self._verify_setup()
+
+        # Files to save
+        self.save_files = set()
+        self.save_notes = ""
 
         # Add name_server association dict
         self.assoc = dict()
@@ -76,6 +85,7 @@ class NginxConfigurator(object):
         self.reverter = reverter.Reverter(config)
         self.reverter.recovery_routine()
 
+    # This is called in determine_authenticator and determine_installer
     def prepare(self):
         """Prepare the authenticator/installer."""
         self.parser = parser.NginxParser(
@@ -84,13 +94,14 @@ class NginxConfigurator(object):
 
         # Set Version
         if self.version is None:
-            self.version = self.get_version()
+            self.version = self._get_version()
 
         # Get all of the available vhosts
-        self.vhosts = self.get_virtual_hosts()
+        self.vhosts = self._get_vhosts()
 
         temp_install(self.config.nginx_mod_ssl_conf)
 
+    # Entry point in main.py for installing cert
     def deploy_cert(self, domain, cert, key, cert_chain=None):
         """Deploys certificate to specified virtual host.
 
@@ -154,7 +165,7 @@ class NginxConfigurator(object):
 
         # Make sure vhost is enabled
         if not vhost.enabled:
-            self.enable_site(vhost)
+            self._enable_site(vhost)
 
     #######################
     # Vhost parsing methods
@@ -172,7 +183,6 @@ class NginxConfigurator(object):
 
         """
         # Allows for domain names to be associated with a virtual host
-        # Client isn't using create_dn_server_assoc(self, dn, vh) yet
         if target_name in self.assoc:
             return self.assoc[target_name]
         # Check for servernames/aliases for ssl hosts
@@ -191,7 +201,7 @@ class NginxConfigurator(object):
         # Check for non ssl vhosts with servernames/aliases == "name"
         for vhost in self.vhosts:
             if not vhost.ssl and target_name in vhost.names:
-                vhost = self.make_vhost_ssl(vhost)
+                vhost = self._make_vhost_ssl(vhost)
                 self.assoc[target_name] = vhost
                 return vhost
 
@@ -200,19 +210,6 @@ class NginxConfigurator(object):
             if "_default_:443" in vhost.addrs:
                 return vhost
         return None
-
-    def create_dn_server_assoc(self, domain, vhost):
-        """Create an association between a domain name and virtual host.
-
-        Helps to choose an appropriate vhost
-
-        :param str domain: domain name to associate
-
-        :param vhost: virtual host to associate with domain
-        :type vhost: :class:`~letsencrypt.client.plugins.nginx.obj.VirtualHost`
-
-        """
-        self.assoc[domain] = vhost
 
     def get_all_names(self):
         """Returns all names found in the Nginx Configuration.
@@ -243,7 +240,7 @@ class NginxConfigurator(object):
         return all_names
 
     # TODO: make "sites-available" a configurable directory
-    def get_virtual_hosts(self):
+    def _get_vhosts(self):
         """Returns list of virtual hosts found in the Nginx configuration.
 
         :returns: List of
@@ -261,7 +258,7 @@ class NginxConfigurator(object):
 
         return vhs
 
-    def make_vhost_ssl(self, nonssl_vhost):  # pylint: disable=too-many-locals
+    def _make_vhost_ssl(self, nonssl_vhost):  # pylint: disable=too-many-locals
         """Makes an ssl_vhost version of a nonssl_vhost.
 
         Duplicates vhost and adds default ssl options
@@ -296,7 +293,7 @@ class NginxConfigurator(object):
                         new_file.write(line)
                     new_file.write("</IfModule>\n")
         except IOError:
-            logging.fatal("Error writing/reading to file in make_vhost_ssl")
+            logging.fatal("Error writing/reading to file in _make_vhost_ssl")
             sys.exit(49)
 
         self.aug.load()
@@ -356,12 +353,13 @@ class NginxConfigurator(object):
         for vhost in self.vhosts:
             if vhost.ssl:
                 # TODO: get the cert, key, and conf file paths
+                pass
 
         return c_k
 
-    #####################
-    # enhancement methods
-    #####################
+    ##################################
+    # enhancement methods (IInstaller)
+    ##################################
     def supported_enhancements(self):  # pylint: disable=no-self-use
         """Returns currently supported enhancements."""
         return []
@@ -386,10 +384,10 @@ class NginxConfigurator(object):
         except errors.LetsEncryptConfiguratorError:
             logging.warn("Failed %s for %s", enhancement, domain)
 
-    #########################
-    # Nginx server management
-    #########################
-    def is_site_enabled(self, avail_fp):
+    ######################################
+    # Nginx server management (IInstaller)
+    ######################################
+    def _is_site_enabled(self, avail_fp):
         """Checks to see if the given site is enabled.
 
         .. todo:: fix hardcoded sites-enabled, check os.path.samefile
@@ -407,7 +405,7 @@ class NginxConfigurator(object):
 
         return False
 
-    def enable_site(self, vhost):
+    def _enable_site(self, vhost):
         """Enables an available site, Nginx restart required.
 
         .. todo:: This function should number subdomains before the domain vhost
@@ -421,7 +419,7 @@ class NginxConfigurator(object):
         :rtype: bool
 
         """
-        if self.is_site_enabled(vhost.filep):
+        if self._is_site_enabled(vhost.filep):
             return True
 
         if "/sites-available/" in vhost.filep:
@@ -470,7 +468,7 @@ class NginxConfigurator(object):
 
         return True
 
-    def verify_setup(self):
+    def _verify_setup(self):
         """Verify the setup to ensure safe operating environment.
 
         Make sure that files/directories are setup with appropriate permissions
@@ -483,7 +481,7 @@ class NginxConfigurator(object):
         le_util.make_or_verify_dir(self.config.work_dir, 0o755, uid)
         le_util.make_or_verify_dir(self.config.backup_dir, 0o755, uid)
 
-    def get_version(self):
+    def _get_version(self):
         """Return version of Nginx Server.
 
         Version is returned as tuple. (ie. 2.4.7 = (2, 4, 7))
@@ -539,9 +537,9 @@ class NginxConfigurator(object):
                 version=".".join(str(i) for i in self.version))
         )
 
-    ######################################
-    # Wrapper functions for Reverter class
-    ######################################
+    ###################################################
+    # Wrapper functions for Reverter class (IInstaller)
+    ###################################################
     def save(self, title=None, temporary=False):
         """Saves all changes to the configuration files.
 
@@ -571,6 +569,7 @@ class NginxConfigurator(object):
                     os.rename(f + '.le', f)
                 else:
                     logging.warn("Expected file %s to exist", tmpfile)
+                self.save_files.remove(f)
 
         if title and not temporary:
             self.reverter.finalize_checkpoint(title)
@@ -602,12 +601,13 @@ class NginxConfigurator(object):
         self.reverter.view_config_changes()
 
     ###########################################################################
-    # Challenges Section
+    # Challenges Section for IAuthenticator
     ###########################################################################
     def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use
         """Return list of challenge preferences."""
         return [challenges.DVSNI]
 
+    # Entry point in main.py for performing challenges
     def perform(self, achalls):
         """Perform the configuration related challenge.
 
@@ -640,6 +640,7 @@ class NginxConfigurator(object):
 
         return responses
 
+    # called after challenges are performed
     def cleanup(self, achalls):
         """Revert all challenges."""
         self._chall_out -= len(achalls)

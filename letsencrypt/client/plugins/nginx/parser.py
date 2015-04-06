@@ -1,8 +1,12 @@
 """NginxParser is a member object of the NginxConfigurator class."""
+import glob
+import logging
 import os
 import re
+import pyparsing
 
 from letsencrypt.client import errors
+from letsencrypt.client.plugins.nginx.nginxparser import dump, load
 
 
 class NginxParser(object):
@@ -10,22 +14,19 @@ class NginxParser(object):
 
     :ivar str root: Normalized abosulte path to the server root
         directory. Without trailing slash.
+    :ivar dict parsed: Mapping of file paths to parsed trees
 
     """
 
-    def __init__(self, aug, root, ssl_options):
-        # Find configuration root and make sure augeas can parse it.
-        self.aug = aug
+    def __init__(self, root, ssl_options):
+        self.parsed = {}
         self.root = os.path.abspath(root)
         self.loc = self._set_locations(ssl_options)
         self._parse_file(self.loc["root"])
 
         # Must also attempt to parse sites-available or equivalent
         # Sites-available is not included naturally in configuration
-        self._parse_file(os.path.join(self.root, "sites-available") + "/*")
-
-        # This problem has been fixed in Augeas 1.0
-        self.standardize_excl()
+        self._parse_file(os.path.join(self.root, "sites-available") + "/*.conf")
 
     def add_dir_to_ifmodssl(self, aug_conf_path, directive, val):
         """Adds directive and value to IfMod ssl block.
@@ -246,24 +247,19 @@ class NginxParser(object):
         return regex
 
     def _parse_file(self, filepath):
-        """Parse file with Augeas
-
-        Checks to see if file_path is parsed by Augeas
-        If filepath isn't parsed, the file is added and Augeas is reloaded
+        """Parse file
 
         :param str filepath: Nginx config file path
 
         """
-        # Test if augeas included file for Httpd.lens
-        # Note: This works for augeas globs, ie. *.conf
-        inc_test = self.aug.match(
-            "/augeas/load/Httpd/incl [. ='%s']" % filepath)
-        if not inc_test:
-            # Load up files
-            # This doesn't seem to work on TravisCI
-            # self.aug.add_transform("Httpd.lns", [filepath])
-            self._add_httpd_transform(filepath)
-            self.aug.load()
+        files = glob.glob(filepath)
+        for f in files:
+            try:
+                self.parsed[f] = load(open(f))
+            except IOError:
+                logging.warn("Could not parse file: %s" % f)
+            except pyparsing.ParseException:
+                logging.warn("Could not parse file: %s" % f)
 
     def _add_httpd_transform(self, incl):
         """Add a transform to Augeas.
@@ -286,38 +282,6 @@ class NginxParser(object):
             self.aug.set("/augeas/load/Httpd/lens", "Httpd.lns")
             self.aug.set("/augeas/load/Httpd/incl", incl)
 
-    def standardize_excl(self):
-        """Standardize the excl arguments for the Httpd lens in Augeas.
-
-        Note: Hack!
-        Standardize the excl arguments for the Httpd lens in Augeas
-        Servers sometimes give incorrect defaults
-        Note: This problem should be fixed in Augeas 1.0.  Unfortunately,
-        Augeas 0.10 appears to be the most popular version currently.
-
-        """
-        # attempt to protect against augeas error in 0.10.0 - ubuntu
-        # *.augsave -> /*.augsave upon augeas.load()
-        # Try to avoid bad httpd files
-        # There has to be a better way... but after a day and a half of testing
-        # I had no luck
-        # This is a hack... work around... submit to augeas if still not fixed
-
-        excl = ["*.augnew", "*.augsave", "*.dpkg-dist", "*.dpkg-bak",
-                "*.dpkg-new", "*.dpkg-old", "*.rpmsave", "*.rpmnew",
-                "*~",
-                self.root + "/*.augsave",
-                self.root + "/*~",
-                self.root + "/*/*augsave",
-                self.root + "/*/*~",
-                self.root + "/*/*/*.augsave",
-                self.root + "/*/*/*~"]
-
-        for i, excluded in enumerate(excl, 1):
-            self.aug.set("/augeas/load/Httpd/excl[%d]" % i, excluded)
-
-        self.aug.load()
-
     def _set_locations(self, ssl_options):
         """Set default location for directives.
 
@@ -326,7 +290,7 @@ class NginxParser(object):
 
         """
         root = self._find_config_root()
-        default = self._set_user_config_file(root)
+        default = os.path.join(self.root, 'nginx.conf')
 
         temp = os.path.join(self.root, "ports.conf")
         if os.path.isfile(temp):
@@ -341,7 +305,7 @@ class NginxParser(object):
 
     def _find_config_root(self):
         """Find the Nginx Configuration Root file."""
-        location = ["nginx2.conf", "httpd.conf"]
+        location = ['nginx.conf']
 
         for name in location:
             if os.path.isfile(os.path.join(self.root, name)):
@@ -349,24 +313,6 @@ class NginxParser(object):
 
         raise errors.LetsEncryptNoInstallationError(
             "Could not find configuration root")
-
-    def _set_user_config_file(self, root):
-        """Set the appropriate user configuration file
-
-        .. todo:: This will have to be updated for other distros versions
-
-        :param str root: pathname which contains the user config
-
-        """
-        # Basic check to see if httpd.conf exists and
-        # in hierarchy via direct include
-        # httpd.conf was very common as a user file in Nginx 2.2
-        if (os.path.isfile(os.path.join(self.root, 'httpd.conf')) and
-                self.find_dir(
-                    case_i("Include"), case_i("httpd.conf"), root)):
-            return os.path.join(self.root, 'httpd.conf')
-        else:
-            return os.path.join(self.root, 'nginx2.conf')
 
 
 def case_i(string):
