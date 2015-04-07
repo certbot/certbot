@@ -18,12 +18,12 @@ class NginxTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
         super(NginxTest, self).setUp()
 
         self.temp_dir, self.config_dir, self.work_dir = dir_setup(
-            "debian_nginx_2_4/two_vhost_80")
+            "testdata")
 
         self.ssl_options = setup_nginx_ssl_options(self.config_dir)
 
         self.config_path = os.path.join(
-            self.temp_dir, "debian_nginx_2_4/two_vhost_80/nginx2")
+            self.temp_dir, "testdata")
 
         self.rsa256_file = pkg_resources.resource_filename(
             "letsencrypt.client.tests", "testdata/rsa256_key.pem")
@@ -36,14 +36,14 @@ def get_data_filename(filename):
         "letsencrypt.client.plugins.nginx.tests", "testdata/%s" % filename)
 
 
-def dir_setup(test_dir="debian_nginx_2_4/two_vhost_80"):
+def dir_setup(test_dir="debian_nginx/two_vhost_80"):
     """Setup the directories necessary for the configurator."""
     temp_dir = tempfile.mkdtemp("temp")
     config_dir = tempfile.mkdtemp("config")
     work_dir = tempfile.mkdtemp("work")
 
     test_configs = pkg_resources.resource_filename(
-        "letsencrypt.client.plugins.nginx.tests", "testdata/%s" % test_dir)
+        "letsencrypt.client.plugins.nginx.tests", test_dir)
 
     shutil.copytree(
         test_configs, os.path.join(temp_dir, test_dir), symlinks=True)
@@ -54,7 +54,7 @@ def dir_setup(test_dir="debian_nginx_2_4/two_vhost_80"):
 def setup_nginx_ssl_options(config_dir):
     """Move the ssl_options into position and return the path."""
     option_path = os.path.join(config_dir, "options-ssl.conf")
-    shutil.copyfile(constants.APACHE_MOD_SSL_CONF, option_path)
+    shutil.copyfile(constants.NGINX_MOD_SSL_CONF, option_path)
     return option_path
 
 

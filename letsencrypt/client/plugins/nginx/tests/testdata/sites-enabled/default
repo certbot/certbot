@@ -1,0 +1,9 @@
+server {
+    listen       1234;
+    server_name example.org;
+
+    location / {
+        root   html;
+        index  index.html index.htm;
+    }
+}

@@ -37,7 +37,10 @@ class NginxParser(object):
         .. todo:: Can Nginx 'virtual hosts' be defined somewhere other than in
         the server context?
 
+        :param str filepath: The path to the files to parse, as a glob
+
         """
+        filepath = self.abs_path(filepath)
         trees = self._parse_files(filepath)
         for tree in trees:
             for entry in tree:
@@ -55,6 +58,20 @@ class NginxParser(object):
                             for server_entry in subentry[1]:
                                 if self._is_include_directive(server_entry):
                                     self._parse_recursively(server_entry[1])
+
+    def abs_path(self, path):
+        """Converts a relative path to an absolute path relative to the root.
+        Does nothing for paths that are already absolute.
+
+        :param str path: The path
+        :returns: The absolute path
+        :rtype str
+
+        """
+        if not os.path.isabs(path):
+            return os.path.join(self.root, path)
+        else:
+            return path
 
     def _is_include_directive(self, entry):
         """Checks if an nginx parsed entry is an 'include' directive.
@@ -339,7 +356,7 @@ class NginxParser(object):
         return regex
 
     def _parse_files(self, filepath):
-        """Parse file
+        """Parse files from a glob
 
         :param str filepath: Nginx config file path
         :returns: list of parsed tree structures
@@ -356,7 +373,7 @@ class NginxParser(object):
                 self.parsed[f] = parsed
                 trees.append(parsed)
             except IOError:
-                logging.warn("Could not parse file: %s" % f)
+                logging.warn("Could not open file: %s" % f)
             except pyparsing.ParseException:
                 logging.warn("Could not parse file: %s" % f)
         return trees
@@ -390,7 +407,7 @@ class NginxParser(object):
 
         """
         root = self._find_config_root()
-        default = os.path.join(self.root, 'nginx.conf')
+        default = root
 
         temp = os.path.join(self.root, "ports.conf")
         if os.path.isfile(temp):
