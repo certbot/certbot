@@ -6,7 +6,7 @@ import Crypto.PublicKey.RSA
 
 from letsencrypt.acme import challenges
 from letsencrypt.acme import jose
-from letsencrypt.acme import messages
+from letsencrypt.acme import messages2
 
 from letsencrypt.client import achallenges
 from letsencrypt.client import constants
@@ -26,58 +26,38 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
 
     :ivar network: Network object for sending and receiving authorization
         messages
-    :type network: :class:`letsencrypt.client.network.Network`
+    :type network: :class:`letsencrypt.client.network2.Network`
 
     :ivar list domains: list of str domains to get authorization
     :ivar dict authkey: Authorized Keys for each domain.
         values are of type :class:`letsencrypt.client.le_util.Key`
-    :ivar dict responses: keys: domain, values: list of responses
-        (:class:`letsencrypt.acme.challenges.ChallengeResponse`.
-    :ivar dict msgs: ACME Challenge messages with domain as a key.
-    :ivar dict paths: optimal path for authorization. eg. paths[domain]
-    :ivar dict dv_c: Keys - domain, Values are DV challenges in the form of
+    :ivar dict authzr: ACME Challenge messages with domain as a key.
+    :ivar list dv_c: Keys - DV challenges in the form of
         :class:`letsencrypt.client.achallenges.Indexed`
-    :ivar dict cont_c: Keys - domain, Values are Continuity challenges in the
+    :ivar list cont_c: Keys - Continuity challenges in the
         form of :class:`letsencrypt.client.achallenges.Indexed`
 
     """
-    def __init__(self, dv_auth, cont_auth, network):
+    def __init__(self, dv_auth, cont_auth, network, authkey):
         self.dv_auth = dv_auth
         self.cont_auth = cont_auth
         self.network = network
 
         self.domains = []
-        self.authkey = dict()
-        self.responses = dict()
-        self.msgs = dict()
-        self.paths = dict()
+        self.authkey = authkey
+        self.authzr = dict()
 
-        self.dv_c = dict()
-        self.cont_c = dict()
+        self.dv_c = []
+        self.cont_c = []
 
-    def add_chall_msg(self, domain, msg, authkey):
-        """Add a challenge message to the AuthHandler.
-
-        :param str domain: domain for authorization
-
-        :param msg: ACME "challenge" message
-        :type msg: :class:`letsencrypt.acme.message.Challenge`
-
-        :param authkey: authorized key for the challenge
-        :type authkey: :class:`letsencrypt.client.le_util.Key`
-
-        """
-        if domain in self.domains:
-            raise errors.LetsEncryptAuthHandlerError(
-                "Multiple ACMEChallengeMessages for the same domain "
-                "is not supported.")
-        self.domains.append(domain)
-        self.responses[domain] = [None] * len(msg.challenges)
-        self.msgs[domain] = msg
-        self.authkey[domain] = authkey
-
-    def get_authorizations(self):
+    def get_authorizations(self, domains):
         """Retrieve all authorizations for challenges.
+
+        :param set domains: Domains for authorization
+
+        :returns: tuple of lists of authorization resources. Takes the form of
+            (`completed`, `failed`)
+        rtype: tuple
 
         :raises LetsEncryptAuthHandlerError: If unable to retrieve all
             authorizations
@@ -143,31 +123,23 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         """
         logging.info("Performing the following challenges:")
         for dom in self.domains:
-            self.paths[dom] = gen_challenge_path(
-                self.msgs[dom].challenges,
+            path = gen_challenge_path(
+                self.authzr[dom].challenges,
                 self._get_chall_pref(dom),
-                self.msgs[dom].combinations)
+                self.authzr[dom].combinations)
 
-            self.dv_c[dom], self.cont_c[dom] = self._challenge_factory(
-                dom, self.paths[dom])
-
-        # Flatten challs for authenticator functions and remove index
-        # Order is important here as we will not expose the outside
-        # Authenticator to our own indices.
-        flat_cont = []
-        flat_dv = []
-
-        for dom in self.domains:
-            flat_cont.extend(ichall.achall for ichall in self.cont_c[dom])
-            flat_dv.extend(ichall.achall for ichall in self.dv_c[dom])
+            dom_dv_c, dom_cont_c = self._challenge_factory(
+                dom, path)
+            self.dv_c.extend(dom_dv_c)
+            self.cont_c.extend(dom_cont_c)
 
         cont_resp = []
         dv_resp = []
         try:
-            if flat_cont:
-                cont_resp = self.cont_auth.perform(flat_cont)
-            if flat_dv:
-                dv_resp = self.dv_auth.perform(flat_dv)
+            if self.cont_c:
+                cont_resp = self.cont_auth.perform(self.cont_c)
+            if self.dv_c:
+                dv_resp = self.dv_auth.perform(self.dv_c)
         # This will catch both specific types of errors.
         except errors.LetsEncryptAuthHandlerError as err:
             logging.critical("Failure in setting up challenges:")
@@ -179,33 +151,29 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
             raise errors.LetsEncryptAuthHandlerError(
                 "Unable to perform challenges")
 
+        assert len(cont_resp) == len(self.cont_c)
+        assert len(dv_resp) == len(self.dv_c)
+
         logging.info("Ready for verification...")
 
-        # Assemble Responses
-        if cont_resp:
-            self._assign_responses(cont_resp, self.cont_c)
-        if dv_resp:
-            self._assign_responses(dv_resp, self.dv_c)
+        # Send all Responses
+        self._respond(cont_resp, dv_resp)
 
-    def _assign_responses(self, flat_list, ichall_dict):
-        """Assign responses from flat_list back to the Indexed dicts.
+    def _respond(self, cont_resp, dv_resp):
+        """Send/Recieve confirmation of all challenges.
 
-        :param list flat_list: flat_list of responses from an IAuthenticator
-        :param dict ichall_dict: Master dict mapping all domains to a list of
-            their associated 'continuity' and 'dv' Indexed challenges, or their
-            :class:`letsencrypt.client.achallenges.Indexed` list
+        .. note:: This method also cleans up the auth_handler state.
 
         """
-        flat_index = 0
-        for dom in self.domains:
-            for ichall in ichall_dict[dom]:
-                self.responses[dom][ichall.index] = flat_list[flat_index]
-                flat_index += 1
+        completed = []
+        for chall, resp in itertools.izip(self.cont_c, cont_resp):
+            if cont_resp[i]:
+                self.network.answer_challenge(self.cont_c[i], cont_resp[i])
+        for i in range(len(dv_resp)):
+            if dv_resp[i]:
+                self.network.answer_challenge(self.dv_c[i], cont_resp[i])
 
-    def _path_satisfied(self, dom):
-        """Returns whether a path has been completely satisfied."""
-        # Make sure that there are no 'None' or 'False' entries along path.
-        return all(self.responses[dom][i] for i in self.paths[dom])
+
 
     def _get_chall_pref(self, domain):
         """Return list of challenge preferences.
@@ -218,40 +186,14 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         chall_prefs.extend(self.dv_auth.get_chall_pref(domain))
         return chall_prefs
 
-    def _cleanup_challenges(self, domain):
-        """Cleanup configuration challenges
+    def _cleanup_challenges(self):
+        """Cleanup all configuration challenges."""
+        logging.info("Cleaning up all challenges")
 
-        :param str domain: domain for which to clean up challenges
-
-        """
-        logging.info("Cleaning up challenges for %s", domain)
-        # These are indexed challenges... give just the challenges to the auth
-        # Chose to make these lists instead of a generator to make it easier to
-        # work with...
-        dv_list = [ichall.achall for ichall in self.dv_c[domain]]
-        cont_list = [ichall.achall for ichall in self.cont_c[domain]]
-        if dv_list:
-            self.dv_auth.cleanup(dv_list)
-        if cont_list:
-            self.cont_auth.cleanup(cont_list)
-
-    def _cleanup_state(self, delete_list):
-        """Cleanup state after an authorization is received.
-
-        :param list delete_list: list of domains in str form
-
-        """
-        for domain in delete_list:
-            del self.msgs[domain]
-            del self.responses[domain]
-            del self.paths[domain]
-
-            del self.authkey[domain]
-
-            del self.cont_c[domain]
-            del self.dv_c[domain]
-
-            self.domains.remove(domain)
+        if self.dv_c:
+            self.dv_auth.cleanup(self.dv_c)
+        if self.cont_c:
+            self.cont_auth.cleanup(self.cont_c)
 
     def _challenge_factory(self, domain, path):
         """Construct Namedtuple Challenges

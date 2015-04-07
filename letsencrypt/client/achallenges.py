@@ -29,7 +29,7 @@ class AnnotatedChallenge(jose_util.ImmutableMap):
     """Client annotated challenge.
 
     Wraps around :class:`~letsencrypt.acme.challenges.Challenge` and
-    annotates with data usfeul for the client.
+    annotates with data useful for the client.
 
     """
     acme_type = NotImplemented

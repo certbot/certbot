@@ -217,7 +217,7 @@ class NetworkTest(unittest.TestCase):
         }
 
         self._mock_post_get()
-        self.net.request_challenges(self.identifier, self.regr)
+        self.net.request_challenges(self.identifier, self.authzr.uri)
         # TODO: test POST call arguments
 
         # TODO: split here and separate test

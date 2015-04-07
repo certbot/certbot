@@ -7,6 +7,7 @@ import Crypto.PublicKey.RSA
 import M2Crypto
 
 from letsencrypt.acme import jose
+from letsencrypt.acme.jose import jwk
 from letsencrypt.acme import messages
 
 from letsencrypt.client import auth_handler
@@ -14,7 +15,7 @@ from letsencrypt.client import continuity_auth
 from letsencrypt.client import crypto_util
 from letsencrypt.client import errors
 from letsencrypt.client import le_util
-from letsencrypt.client import network
+from letsencrypt.client import network2
 from letsencrypt.client import reverter
 from letsencrypt.client import revoker
 
@@ -27,10 +28,13 @@ class Client(object):
     """ACME protocol client.
 
     :ivar network: Network object for sending and receiving messages
-    :type network: :class:`letsencrypt.client.network.Network`
+    :type network: :class:`letsencrypt.client.network2.Network`
 
     :ivar authkey: Authorization Key
     :type authkey: :class:`letsencrypt.client.le_util.Key`
+
+    :ivar reg: Registration Resource
+    :type reg: :class:`letsencrypt.acme.messages2.RegistrationResource`
 
     :ivar auth_handler: Object that supports the IAuthenticator interface.
         auth_handler contains both a dv_authenticator and a
@@ -55,22 +59,49 @@ class Client(object):
         :type dv_auth: :class:`letsencrypt.client.interfaces.IAuthenticator`
 
         """
-        self.network = network.Network(config.server)
         self.authkey = authkey
+        self.regr = None
         self.installer = installer
+
+        # TODO: Allow for other alg types besides RS256
+        self.network = network2.Network(
+            config.server+"/acme/new-registration",
+            jwk.JWKRSA.load(authkey.pem))
         self.config = config
 
         if dv_auth is not None:
             cont_auth = continuity_auth.ContinuityAuthenticator(config)
             self.auth_handler = auth_handler.AuthHandler(
-                dv_auth, cont_auth, self.network)
+                dv_auth, cont_auth, self.network, self.authkey)
         else:
             self.auth_handler = None
+
+    def register(self, email=None, phone=None):
+        """New Registration with the ACME server.
+
+        :param str email: User's email address
+        :param str phone: User's phone number
+
+        """
+        # TODO: properly format/scrub phone number
+        details = (
+            "mailto:" + email if email is not None else None,
+            "tel:" + phone if phone is not None else None
+        )
+
+        self.regr = self.network.register(
+            tuple(detail for detail in details if detail is not None))
+
+    def set_regr(self, regr):
+        """Set a preexisting registration resource."""
+        self.regr = regr
 
     def obtain_certificate(self, domains, csr=None):
         """Obtains a certificate from the ACME server.
 
-        :param str domains: list of domains to get a certificate
+        :meth:`.register` must be called before :meth:`.obtain_certificate`
+
+        :param set domains: domains to get a certificate
 
         :param csr: CSR must contain requested domains, the key used to generate
             this CSR can be different than self.authkey
@@ -81,16 +112,20 @@ class Client(object):
 
         """
         if self.auth_handler is None:
-            logging.warning("Unable to obtain a certificate, because client "
-                            "does not have a valid auth handler.")
-
-        # Request Challenges
-        for name in domains:
-            self.auth_handler.add_chall_msg(
-                name, self.acme_challenge(name), self.authkey)
+            msg = ("Unable to obtain certificate because authenticator is "
+                   "not set.")
+            logging.warning(msg)
+            raise errors.LetsEncryptClientError(msg)
+        if self.regr is None:
+            raise errors.LetsEncryptClientError(
+                "Please register with the ACME server first.")
 
         # Perform Challenges/Get Authorizations
-        self.auth_handler.get_authorizations()
+        if self.regr.new_authzr_uri:
+            self.auth_handler.get_authorizations(domains, self.regr)
+        else:
+            self.auth_handler.get_authorizations(
+                domains, self.config.server + "/acme/new-authorization")
 
         # Create CSR from names
         if csr is None:
@@ -330,7 +365,7 @@ def init_csr(privkey, names, cert_dir):
     :param privkey: Key to include in the CSR
     :type privkey: :class:`letsencrypt.client.le_util.Key`
 
-    :param list names: `str` names to include in the CSR
+    :param set names: `str` names to include in the CSR
 
     :param str cert_dir: Certificate save directory.
 

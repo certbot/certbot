@@ -167,7 +167,7 @@ class Network(object):
             'contact'].default):
         """Register.
 
-        :param contact: Contact list, as accpeted by `.RegistrationResource`
+        :param contact: Contact list, as accepted by `.RegistrationResource`
         :type contact: `tuple`
 
         :returns: Registration Resource.
@@ -230,25 +230,24 @@ class Network(object):
             raise errors.UnexpectedUpdate(authzr)
         return authzr
 
-    def request_challenges(self, identifier, regr):
+    def request_challenges(self, identifier, new_authzr_uri):
         """Request challenges.
 
         :param identifier: Identifier to be challenged.
         :type identifier: `.messages2.Identifier`
 
-        :param regr: Registration Resource.
-        :type regr: `.RegistrationResource`
+        :param str new_authzr_uri: new-authorization URI
 
         :returns: Authorization Resource.
         :rtype: `.AuthorizationResource`
 
         """
         new_authz = messages2.Authorization(identifier=identifier)
-        response = self._post(regr.new_authzr_uri, self._wrap_in_jws(new_authz))
+        response = self._post(new_authzr_uri, self._wrap_in_jws(new_authz))
         assert response.status_code == httplib.CREATED  # TODO: handle errors
         return self._authzr_from_response(response, identifier)
 
-    def request_domain_challenges(self, domain, regr):
+    def request_domain_challenges(self, domain, new_authz_uri):
         """Request challenges for domain names.
 
         This is simply a convenience function that wraps around
@@ -256,10 +255,14 @@ class Network(object):
         generic identifiers.
 
         :param str domain: Domain name to be challenged.
+        :param str new_authzr_uri: new-authorization URI
+
+        :returns: Authorization Resource.
+        :rtype: `.AuthorizationResource`
 
         """
         return self.request_challenges(messages2.Identifier(
-            typ=messages2.IDENTIFIER_FQDN, value=domain), regr)
+            typ=messages2.IDENTIFIER_FQDN, value=domain), new_authz_uri)
 
     def answer_challenge(self, challb, response):
         """Answer challenge.
@@ -288,17 +291,6 @@ class Network(object):
         if challr.uri != challb.uri:
             raise errors.UnexpectedUpdate(challr.uri)
         return challr
-
-    def answer_challenges(self, challbs, responses):
-        """Answer multiple challenges.
-
-        .. note:: This is a convenience function to make integration
-           with old proto code easier and shall probably be removed
-           once restification is over.
-
-        """
-        return [self.answer_challenge(challb, response)
-                for challb, response in itertools.izip(challbs, responses)]
 
     @classmethod
     def retry_after(cls, response, default):
