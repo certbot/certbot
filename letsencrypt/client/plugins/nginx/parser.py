@@ -129,13 +129,15 @@ class NginxParser(object):
         """
         enabled = True  # We only look at enabled vhosts for now
         vhosts = []
-        for filename, tree in self.parsed:
+        for filename in self.parsed:
+            tree = self.parsed[filename]
             vhost = obj.VirtulHost(filename,
                                    self._get_addrs(tree),
                                    self._get_ssl(tree),
                                    enabled,
                                    self._get_names(tree))
             vhosts.append(vhost)
+        return vhosts
 
     def add_dir_to_ifmodssl(self, aug_conf_path, directive, val):
         """Adds directive and value to IfMod ssl block.
@@ -369,9 +371,10 @@ class NginxParser(object):
             if f in self.parsed:
                 continue
             try:
-                parsed = load(open(f))
-                self.parsed[f] = parsed
-                trees.append(parsed)
+                with open(f) as fo:
+                    parsed = load(fo)
+                    self.parsed[f] = parsed
+                    trees.append(parsed)
             except IOError:
                 logging.warn("Could not open file: %s" % f)
             except pyparsing.ParseException:
@@ -430,6 +433,23 @@ class NginxParser(object):
 
         raise errors.LetsEncryptNoInstallationError(
             "Could not find configuration root")
+
+    def filedump(self, ext='tmp'):
+        """Dumps parsed configurations into files.
+
+        :param str ext: The file extension to use for the dumped files. If
+            empty, this overrides the existing conf files.
+
+        """
+        for filename in self.parsed:
+            tree = self.parsed[filename]
+            if ext:
+                filename = filename + os.path.extsep + ext
+            try:
+                with open(filename, 'w') as f:
+                    dump(tree, f)
+            except IOError:
+                logging.error("Could not open file for writing: %s" % filename)
 
 
 def case_i(string):

@@ -105,6 +105,4 @@ def dumps(blocks, indentation=4):
 
 
 def dump(blocks, _file, indentation=4):
-    _file.write(dumps(blocks, indentation))
-    _file.close()
-    return _file
+    return _file.write(dumps(blocks, indentation))

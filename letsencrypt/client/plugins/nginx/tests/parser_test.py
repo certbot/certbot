@@ -1,4 +1,5 @@
 """Tests for letsencrypt.client.plugins.nginx.parser."""
+import glob
 import os
 import shutil
 import sys
@@ -29,8 +30,8 @@ class NginxParserTest(util.NginxTest):
         shutil.rmtree(self.work_dir)
 
     def test_root_normalized(self):
-        path = os.path.join(self.temp_dir, "debian_nginx_2_4/////"
-                            "two_vhost_80/../../testdata")
+        path = os.path.join(self.temp_dir, "foo/////"
+                            "bar/../../testdata")
         parser = NginxParser(path, None)
         self.assertEqual(parser.root, self.config_path)
 
@@ -46,19 +47,37 @@ class NginxParserTest(util.NginxTest):
         """Test recursive conf file parsing.
 
         """
-        self.parser = NginxParser(self.config_path, self.ssl_options)
-        self.assertEqual(set(map(self.parser.abs_path,
+        parser = NginxParser(self.config_path, self.ssl_options)
+        self.assertEqual(set(map(parser.abs_path,
                              ['foo.conf', 'nginx.conf', 'server.conf',
                               'sites-enabled/default',
                               'sites-enabled/example.com'])),
-                         set(self.parser.parsed.keys()))
+                         set(parser.parsed.keys()))
         self.assertEqual([['server_name', 'somename  alias  another.alias']],
-                         self.parser.parsed[self.parser.abs_path(
-                             'server.conf')])
+                         parser.parsed[parser.abs_path('server.conf')])
         self.assertEqual([[['server'], [['listen', '9000'],
                                         ['server_name', 'example.com']]]],
-                         self.parser.parsed[self.parser.abs_path(
+                         parser.parsed[parser.abs_path(
                              'sites-enabled/example.com')])
+
+    def test_abs_path(self):
+        parser = NginxParser(self.config_path, self.ssl_options)
+        self.assertEqual('/etc/nginx/*', parser.abs_path('/etc/nginx/*'))
+        self.assertEqual(os.path.join(self.config_path, 'foo/bar/'),
+                         parser.abs_path('foo/bar/'))
+
+    def test_filedump(self):
+        parser = NginxParser(self.config_path, self.ssl_options)
+        parser.filedump('test')
+        # pylint: disable=protected-access
+        parsed = parser._parse_files(parser.abs_path(
+            'sites-enabled/example.com.test'))
+        self.assertEqual(3, len(glob.glob(parser.abs_path('*.test'))))
+        self.assertEqual(2, len(
+            glob.glob(parser.abs_path('sites-enabled/*.test'))))
+        self.assertEqual([[['server'], [['listen', '9000'],
+                                        ['server_name', 'example.com']]]],
+                         parsed[0])
 
 #    def test_find_dir(self):
 #        from letsencrypt.client.plugins.nginx.parser import case_i

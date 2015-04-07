@@ -95,6 +95,7 @@ class TestRawNginxParser(unittest.TestCase):
                                   ['index', 'index.html index.htm']]]]])
         f = open(util.get_data_filename('nginx.new.conf'), 'w')
         dump(parsed, f)
+        f.close()
         parsed_new = load(open(util.get_data_filename('nginx.new.conf')))
         self.assertEquals(parsed, parsed_new)
 
