@@ -6,6 +6,7 @@ import re
 import pyparsing
 
 from letsencrypt.client import errors
+from letsencrypt.client.plugins.nginx import obj
 from letsencrypt.client.plugins.nginx.nginxparser import dump, load
 
 
@@ -22,11 +23,101 @@ class NginxParser(object):
         self.parsed = {}
         self.root = os.path.abspath(root)
         self.loc = self._set_locations(ssl_options)
-        self._parse_file(self.loc["root"])
 
-        # Must also attempt to parse sites-available or equivalent
-        # Sites-available is not included naturally in configuration
-        self._parse_file(os.path.join(self.root, "sites-available") + "/*.conf")
+        # Parse nginx.conf and included files.
+        # TODO: Check sites-available/ as well. For now, the configurator does
+        # not enable sites from there.
+        self._parse_recursively(self.loc["root"])
+
+    def _parse_recursively(self, filepath):
+        """Parses nginx config files recursively by looking at 'include'
+        directives inside 'http' and 'server' blocks. Note that this only
+        reads Nginx files that potentially declare a virtual host.
+
+        .. todo:: Can Nginx 'virtual hosts' be defined somewhere other than in
+        the server context?
+
+        """
+        trees = self._parse_files(filepath)
+        for tree in trees:
+            for entry in tree:
+                if self._is_include_directive(entry):
+                    # Parse the top-level included file
+                    self._parse_recursively(entry[1])
+                elif entry[0] == ['http'] or entry[0] == ['server']:
+                    # Look for includes in the top-level 'http'/'server' context
+                    for subentry in entry[1]:
+                        if self._is_include_directive(subentry):
+                            self._parse_recursively(subentry[1])
+                        elif entry[0] == ['http'] and subentry[0] == ['server']:
+                            # Look for includes in a 'server' context within
+                            # an 'http' context
+                            for server_entry in subentry[1]:
+                                if self._is_include_directive(server_entry):
+                                    self._parse_recursively(server_entry[1])
+
+    def _is_include_directive(self, entry):
+        """Checks if an nginx parsed entry is an 'include' directive.
+
+        :param list entry: the parsed entry
+        :returns: Whether it's an 'include' directive
+        :rtype: bool
+
+        """
+        return (entry[0] == 'include' and len(entry) == 2 and
+                type(entry[1]) == str)
+
+    def _get_names(self, entry):
+        """Gets server names from nginx parsed entry.
+
+        :param list entry: the parsed entry
+        :returns: Set of server names
+        :rtype: set
+
+        """
+        return set()
+
+    def _get_addrs(self, entry):
+        """Gets addresses from nginx parsed entry.
+
+        :param list entry: the parsed entry
+        :returns: Set of
+            :class:`~letsencrypt.client.plugins.nginx.obj.Addr` objects
+        :rtype: set
+
+        """
+        return set()
+
+    def _get_ssl(self, entry):
+        """Gets whether the nginx parsed entry is SSL-enabled.
+
+        :param list entry: the parsed entry
+        :returns: Whether it's SSL-enabled
+        :rtype: bool
+
+        """
+        return False
+
+    def get_vhosts(self):
+        """Gets list of all 'virtual hosts' found in Nginx configuration.
+        Technically this is a misnomer because Nginx does not have virtual
+        hosts, it has 'server blocks'.
+
+        :returns: List of
+            :class:`~letsencrypt.client.plugins.nginx.obj.VirtualHost` objects
+            found in configuration
+        :rtype: list
+
+        """
+        enabled = True  # We only look at enabled vhosts for now
+        vhosts = []
+        for filename, tree in self.parsed:
+            vhost = obj.VirtulHost(filename,
+                                   self._get_addrs(tree),
+                                   self._get_ssl(tree),
+                                   enabled,
+                                   self._get_names(tree))
+            vhosts.append(vhost)
 
     def add_dir_to_ifmodssl(self, aug_conf_path, directive, val):
         """Adds directive and value to IfMod ssl block.
@@ -200,7 +291,7 @@ class NginxParser(object):
         # TODO: Test if Nginx allows ../ or ~/ for Includes
 
         # Attempts to add a transform to the file if one does not already exist
-        self._parse_file(arg)
+        self._parse_files(arg)
 
         # Argument represents an fnmatch regular expression, convert it
         # Split up the path and convert each into an Augeas accepted regex
@@ -246,20 +337,28 @@ class NginxParser(object):
                 regex = regex + letter
         return regex
 
-    def _parse_file(self, filepath):
+    def _parse_files(self, filepath):
         """Parse file
 
         :param str filepath: Nginx config file path
+        :returns: list of parsed tree structures
+        :rtype: list
 
         """
         files = glob.glob(filepath)
+        trees = []
         for f in files:
+            if f in self.parsed:
+                continue
             try:
-                self.parsed[f] = load(open(f))
+                parsed = load(open(f))
+                self.parsed[f] = parsed
+                trees.append(parsed)
             except IOError:
                 logging.warn("Could not parse file: %s" % f)
             except pyparsing.ParseException:
                 logging.warn("Could not parse file: %s" % f)
+        return trees
 
     def _add_httpd_transform(self, incl):
         """Add a transform to Augeas.

@@ -97,7 +97,7 @@ class NginxConfigurator(object):
             self.version = self._get_version()
 
         # Get all of the available vhosts
-        self.vhosts = self._get_vhosts()
+        self.vhosts = self.parser._get_vhosts()
 
         temp_install(self.config.nginx_mod_ssl_conf)
 
@@ -238,25 +238,6 @@ class NginxConfigurator(object):
                         continue
 
         return all_names
-
-    # TODO: make "sites-available" a configurable directory
-    def _get_vhosts(self):
-        """Returns list of virtual hosts found in the Nginx configuration.
-
-        :returns: List of
-            :class:`~letsencrypt.client.plugins.nginx.obj.VirtualHost` objects
-            found in configuration
-        :rtype: list
-
-        """
-        # Search sites-available/, conf.d/, nginx.conf for possible vhosts
-        paths = self.parser.get_conf_files()
-        vhs = []
-
-        for path in paths:
-            vhs.append(self.parser.get_vhosts(path))
-
-        return vhs
 
     def _make_vhost_ssl(self, nonssl_vhost):  # pylint: disable=too-many-locals
         """Makes an ssl_vhost version of a nonssl_vhost.

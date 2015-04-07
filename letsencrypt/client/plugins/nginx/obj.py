@@ -47,7 +47,6 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
     """Represents an Nginx Virtualhost.
 
     :ivar str filep: file path of VH
-    :ivar str path: Augeas path to virtual host
     :ivar set addrs: Virtual Host addresses (:class:`set` of :class:`Addr`)
     :ivar set names: Server names/aliases of vhost
         (:class:`list` of :class:`str`)
@@ -57,11 +56,10 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
 
     """
 
-    def __init__(self, filep, path, addrs, ssl, enabled, names=None):
+    def __init__(self, filep, addrs, ssl, enabled, names=None):
         # pylint: disable=too-many-arguments
         """Initialize a VH."""
         self.filep = filep
-        self.path = path
         self.addrs = addrs
         self.names = set() if names is None else set(names)
         self.ssl = ssl
@@ -74,16 +72,15 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
     def __str__(self):
         addr_str = ", ".join(str(addr) for addr in self.addrs)
         return ("file: %s\n"
-                "vh_path: %s\n"
                 "addrs: %s\n"
                 "names: %s\n"
                 "ssl: %s\n"
-                "enabled: %s" % (self.filep, self.path, addr_str,
+                "enabled: %s" % (self.filep, addr_str,
                                  self.names, self.ssl, self.enabled))
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
-            return (self.filep == other.filep and self.path == other.path and
+            return (self.filep == other.filep and
                     self.addrs == other.addrs and
                     self.names == other.names and
                     self.ssl == other.ssl and self.enabled == other.enabled)

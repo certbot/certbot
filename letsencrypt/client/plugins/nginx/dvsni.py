@@ -42,6 +42,7 @@ class NginxDvsni(object):
 </VirtualHost>
 
 """
+
     def __init__(self, configurator):
         self.configurator = configurator
         self.achalls = []
@@ -82,9 +83,6 @@ class NginxDvsni(object):
                 logging.error("No _default_:443 vhost exists")
                 logging.error("Please specify servernames in the Nginx config")
                 return None
-
-            # TODO - @jdkasten review this code to make sure it makes sense
-            self.configurator.make_server_sni_ready(vhost, default_addr)
 
             for addr in vhost.addrs:
                 if "_default_" == addr.get_addr():

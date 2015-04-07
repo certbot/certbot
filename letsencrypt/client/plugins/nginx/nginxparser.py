@@ -1,4 +1,4 @@
-"""An nginx config parser based on pyparsing."""
+"""Very low-level nginx config parser based on pyparsing."""
 import string
 
 from pyparsing import (
