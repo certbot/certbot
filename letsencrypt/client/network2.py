@@ -292,6 +292,8 @@ class Network(object):
             raise errors.UnexpectedUpdate(challr.uri)
         return challr
 
+    def poll_challenge(self, chall):
+
     @classmethod
     def retry_after(cls, response, default):
         """Compute next `poll` time based on response ``Retry-After`` header.

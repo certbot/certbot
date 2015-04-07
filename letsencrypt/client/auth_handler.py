@@ -1,4 +1,5 @@
 """ACME AuthHandler."""
+import itertools
 import logging
 import sys
 
@@ -31,7 +32,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
     :ivar list domains: list of str domains to get authorization
     :ivar dict authkey: Authorized Keys for each domain.
         values are of type :class:`letsencrypt.client.le_util.Key`
-    :ivar dict authzr: ACME Challenge messages with domain as a key.
+    :ivar dict authzr: ACME Authorization Resource dict where keys are domains.
     :ivar list dv_c: Keys - DV challenges in the form of
         :class:`letsencrypt.client.achallenges.Indexed`
     :ivar list cont_c: Keys - Continuity challenges in the
@@ -59,30 +60,51 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
             (`completed`, `failed`)
         rtype: tuple
 
-        :raises LetsEncryptAuthHandlerError: If unable to retrieve all
+        :raises AuthHandlerError: If unable to retrieve all
             authorizations
 
         """
-        progress = True
-        while self.msgs and progress:
-            progress = False
-            self._satisfy_challenges()
+        self._choose_challenges(domains)
+        cont_resp, dv_resp = self._get_responses()
+        logging.info("Ready for verification...")
 
-            delete_list = []
+        # Send all Responses
+        self._respond(cont_resp, dv_resp)
 
-            for dom in self.domains:
-                if self._path_satisfied(dom):
-                    self.acme_authorization(dom)
-                    delete_list.append(dom)
+    def _choose_challenges(self, domains):
+        logging.info("Performing the following challenges:")
+        for dom in domains:
+            path = gen_challenge_path(
+                self.authzr[dom].challenges,
+                self._get_chall_pref(dom),
+                self.authzr[dom].combinations)
 
-            # This avoids modifying while iterating over the list
-            if delete_list:
-                self._cleanup_state(delete_list)
-                progress = True
+            dom_dv_c, dom_cont_c = self._challenge_factory(
+                dom, path)
+            self.dv_c.extend(dom_dv_c)
+            self.cont_c.extend(dom_cont_c)
 
-        if not progress:
-            raise errors.LetsEncryptAuthHandlerError(
-                "Unable to solve challenges for requested names.")
+    def _get_responses(self):
+        """Get Responses for challenges from authenticators."""
+        cont_resp = []
+        dv_resp = []
+        try:
+            if self.cont_c:
+                cont_resp = self.cont_auth.perform(self.cont_c)
+            if self.dv_c:
+                dv_resp = self.dv_auth.perform(self.dv_c)
+        # This will catch both specific types of errors.
+        except errors.AuthHandlerError as err:
+            logging.critical("Failure in setting up challenges.")
+            logging.info("Attempting to clean up outstanding challenges...")
+            self._cleanup_challenges()
+            raise errors.AuthHandlerError(
+                "Unable to perform challenges")
+
+        assert len(cont_resp) == len(self.cont_c)
+        assert len(dv_resp) == len(self.dv_c)
+
+        return cont_resp, dv_resp
 
     def acme_authorization(self, domain):
         """Handle ACME "authorization" phase.
@@ -113,67 +135,22 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         finally:
             self._cleanup_challenges(domain)
 
-    def _satisfy_challenges(self):
-        """Attempt to satisfy all saved challenge messages.
-
-        .. todo:: It might be worth it to try different challenges to
-            find one that doesn't throw an exception
-        .. todo:: separate into more functions
-
-        """
-        logging.info("Performing the following challenges:")
-        for dom in self.domains:
-            path = gen_challenge_path(
-                self.authzr[dom].challenges,
-                self._get_chall_pref(dom),
-                self.authzr[dom].combinations)
-
-            dom_dv_c, dom_cont_c = self._challenge_factory(
-                dom, path)
-            self.dv_c.extend(dom_dv_c)
-            self.cont_c.extend(dom_cont_c)
-
-        cont_resp = []
-        dv_resp = []
-        try:
-            if self.cont_c:
-                cont_resp = self.cont_auth.perform(self.cont_c)
-            if self.dv_c:
-                dv_resp = self.dv_auth.perform(self.dv_c)
-        # This will catch both specific types of errors.
-        except errors.LetsEncryptAuthHandlerError as err:
-            logging.critical("Failure in setting up challenges:")
-            logging.critical(str(err))
-            logging.info("Attempting to clean up outstanding challenges...")
-            for dom in self.domains:
-                self._cleanup_challenges(dom)
-
-            raise errors.LetsEncryptAuthHandlerError(
-                "Unable to perform challenges")
-
-        assert len(cont_resp) == len(self.cont_c)
-        assert len(dv_resp) == len(self.dv_c)
-
-        logging.info("Ready for verification...")
-
-        # Send all Responses
-        self._respond(cont_resp, dv_resp)
-
     def _respond(self, cont_resp, dv_resp):
         """Send/Recieve confirmation of all challenges.
 
         .. note:: This method also cleans up the auth_handler state.
 
         """
-        completed = []
-        for chall, resp in itertools.izip(self.cont_c, cont_resp):
-            if cont_resp[i]:
-                self.network.answer_challenge(self.cont_c[i], cont_resp[i])
-        for i in range(len(dv_resp)):
-            if dv_resp[i]:
-                self.network.answer_challenge(self.dv_c[i], cont_resp[i])
+        to_check = self._send_responses(self.dv_c, dv_resp)
+        to_check.update(self._send_responses(self.cont_c, cont_resp))
 
-
+    def _send_responses(self, achalls, resps):
+        """Send responses and make sure errors are handled."""
+        to_check = dict()
+        for achall, resp in itertools.izip(achalls, resps):
+            if resp:
+                to_check[achall.domain] = self.network.answer_challenge(
+                    achall.chall, resp)
 
     def _get_chall_pref(self, domain):
         """Return list of challenge preferences.
@@ -181,8 +158,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         :param str domain: domain for which you are requesting preferences
 
         """
-        chall_prefs = []
-        chall_prefs.extend(self.cont_auth.get_chall_pref(domain))
+        chall_prefs = self.cont_auth.get_chall_pref(domain)
         chall_prefs.extend(self.dv_auth.get_chall_pref(domain))
         return chall_prefs
 
@@ -216,7 +192,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         cont_chall = []
 
         for index in path:
-            chall = self.msgs[domain].challenges[index]
+            chall = self.authzr[domain].challenges[index]
 
             if isinstance(chall, challenges.DVSNI):
                 logging.info("  DVSNI challenge for %s.", domain)
@@ -276,7 +252,7 @@ def gen_challenge_path(challs, preferences, combinations):
     :returns: tuple of indices from ``challenges``.
     :rtype: tuple
 
-    :raises letsencrypt.client.errors.LetsEncryptAuthHandlerError: If a
+    :raises letsencrypt.client.errors.AuthHandlerError: If a
         path cannot be created that satisfies the CA given the preferences and
         combinations.
 
@@ -322,7 +298,7 @@ def _find_smart_path(challs, preferences, combinations):
         msg = ("Client does not support any combination of challenges that "
                "will satisfy the CA.")
         logging.fatal(msg)
-        raise errors.LetsEncryptAuthHandlerError(msg)
+        raise errors.AuthHandlerError(msg)
 
     return best_combo
 
