@@ -6,7 +6,7 @@ from pyparsing import (
     Optional, OneOrMore, ZeroOrMore, pythonStyleComment)
 
 
-class NginxParser(object):
+class RawNginxParser(object):
     """
     A class that parses nginx configuration with pyparsing
     """
@@ -50,7 +50,7 @@ class NginxParser(object):
         return self.parse().asList()
 
 
-class NginxDumper(object):
+class RawNginxDumper(object):
     """
     A class that dumps nginx configuration from the provided tree.
     """
@@ -93,7 +93,7 @@ class NginxDumper(object):
 # (like pyyaml, picker or json)
 
 def loads(source):
-    return NginxParser(source).as_list()
+    return RawNginxParser(source).as_list()
 
 
 def load(_file):
@@ -101,7 +101,7 @@ def load(_file):
 
 
 def dumps(blocks, indentation=4):
-    return NginxDumper(blocks, indentation).as_string()
+    return RawNginxDumper(blocks, indentation).as_string()
 
 
 def dump(blocks, _file, indentation=4):

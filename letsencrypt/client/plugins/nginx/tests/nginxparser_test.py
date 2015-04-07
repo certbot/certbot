@@ -1,7 +1,7 @@
 import operator
 import unittest
 
-from letsencrypt.client.plugins.nginx.nginxparser import (NginxParser,
+from letsencrypt.client.plugins.nginx.nginxparser import (RawNginxParser,
                                                           load, dumps, dump)
 from letsencrypt.client.plugins.nginx.tests import util
 
@@ -9,25 +9,25 @@ from letsencrypt.client.plugins.nginx.tests import util
 first = operator.itemgetter(0)
 
 
-class TestNginxParser(unittest.TestCase):
+class TestRawNginxParser(unittest.TestCase):
 
     def test_assignments(self):
-        parsed = NginxParser.assignment.parseString('root /test;').asList()
+        parsed = RawNginxParser.assignment.parseString('root /test;').asList()
         self.assertEqual(parsed, ['root', '/test'])
-        parsed = NginxParser.assignment.parseString('root /test;'
-                                                    'foo bar;').asList()
+        parsed = RawNginxParser.assignment.parseString('root /test;'
+                                                       'foo bar;').asList()
         self.assertEqual(parsed, ['root', '/test'], ['foo', 'bar'])
 
     def test_blocks(self):
-        parsed = NginxParser.block.parseString('foo {}').asList()
+        parsed = RawNginxParser.block.parseString('foo {}').asList()
         self.assertEqual(parsed, [[['foo'], []]])
-        parsed = NginxParser.block.parseString('location /foo{}').asList()
+        parsed = RawNginxParser.block.parseString('location /foo{}').asList()
         self.assertEqual(parsed, [[['location', '/foo'], []]])
-        parsed = NginxParser.block.parseString('foo { bar foo; }').asList()
+        parsed = RawNginxParser.block.parseString('foo { bar foo; }').asList()
         self.assertEqual(parsed, [[['foo'], [['bar', 'foo']]]])
 
     def test_nested_blocks(self):
-        parsed = NginxParser.block.parseString('foo { bar {} }').asList()
+        parsed = RawNginxParser.block.parseString('foo { bar {} }').asList()
         block, content = first(parsed)
         self.assertEqual(first(content), [['bar'], []])
 
