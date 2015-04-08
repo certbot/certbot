@@ -32,6 +32,8 @@ SETUPTOOLS_AUTHENTICATORS_ENTRY_POINT = "letsencrypt.authenticators"
 
 def init_auths(config):
     """Find (setuptools entry points) and initialize Authenticators."""
+    # TODO: handle collisions in authenticator names. Or is this
+    # already handled for us by pkg_resources?
     auths = {}
     for entrypoint in pkg_resources.iter_entry_points(
             SETUPTOOLS_AUTHENTICATORS_ENTRY_POINT):
@@ -44,7 +46,7 @@ def init_auths(config):
                 "%r object does not provide IAuthenticator, skipping",
                 entrypoint.name)
         else:
-            auths[auth] = entrypoint.name
+            auths[entrypoint.name] = auth
     return auths
 
 
@@ -59,6 +61,12 @@ def create_parser():
     add("-d", "--domains", metavar="DOMAIN", nargs="+")
     add("-s", "--server", default="letsencrypt-demo.org:443",
         help=config_help("server"))
+
+    # TODO: we should generate the list of choices from the set of
+    # available authenticators, but that is tricky due to the
+    # dependency between init_auths and config. Hardcoding it for now.
+    add("-a", "--authenticator", dest="authenticator",
+        help=config_help("authenticator"))
 
     add("-k", "--authkey", type=read_file,
         help="Path to the authorized key file")
@@ -159,9 +167,10 @@ def main():  # pylint: disable=too-many-branches, too-many-statements
         display_eula()
 
     all_auths = init_auths(config)
-    logging.debug('Initialized authenticators: %s', all_auths.values())
+    logging.debug('Initialized authenticators: %s', all_auths.keys())
     try:
-        auth = client.determine_authenticator(all_auths.keys())
+        auth = client.determine_authenticator(all_auths, config)
+        logging.debug("Selected authenticator: %s", auth)
     except errors.LetsEncryptClientError:
         logging.critical("No authentication mechanisms were found on your "
                          "system.")
