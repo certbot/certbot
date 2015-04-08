@@ -35,7 +35,6 @@ class NginxConfigurator(object):
     :ivar parser: Handles low level parsing
     :type parser: :class:`~letsencrypt.client.plugins.nginx.parser`
 
-    :ivar set save_files: Files that need to be saved
     :ivar str save_notes: Human-readable config change notes
 
     :ivar reverter: saves and reverts checkpoints
@@ -67,7 +66,6 @@ class NginxConfigurator(object):
             self._verify_setup()
 
         # Files to save
-        self.save_files = set()
         self.save_notes = ""
 
         # Add name_server association dict
@@ -223,15 +221,23 @@ class NginxConfigurator(object):
         priv_ip_regex = (r"(^127\.0\.0\.1)|(^10\.)|(^172\.1[6-9]\.)|"
                          r"(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)")
         private_ips = re.compile(priv_ip_regex)
+        hostname_regex = r"^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*[a-z]+$"
+        hostnames = re.compile(hostname_regex, re.IGNORECASE)
 
         for vhost in self.vhosts:
             all_names.update(vhost.names)
+
             for addr in vhost.addrs:
-                # If it isn't a private IP, do a reverse DNS lookup
-                if not private_ips.match(addr.get_addr()):
+                host = addr.get_addr()
+                if hostnames.match(host):
+                    # If it's a hostname, add it to the names.
+                    all_names.add(host)
+                elif not private_ips.match(host):
+                    # If it isn't a private IP, do a reverse DNS lookup
+                    # TODO: IPv6 support
                     try:
-                        socket.inet_aton(addr.get_addr())
-                        all_names.add(socket.gethostbyaddr(addr.get_addr())[0])
+                        socket.inet_aton(host)
+                        all_names.add(socket.gethostbyaddr(host)[0])
                     except (socket.error, socket.herror, socket.timeout):
                         continue
 
@@ -476,9 +482,6 @@ class NginxConfigurator(object):
     def save(self, title=None, temporary=False):
         """Saves all changes to the configuration files.
 
-        Working changes are saved in *.conf.le files. This overrides the .conf
-        file with the .conf.le file contents.
-
         :param str title: The title of the save. If a title is given, the
             configuration will be saved as a new checkpoint and put in a
             timestamped directory.
@@ -487,23 +490,18 @@ class NginxConfigurator(object):
             be quickly reversed in the future (ie. challenges)
 
         """
-        if len(self.save_files) > 0:
-            # Create Checkpoint
-            if temporary:
-                self.reverter.add_to_temp_checkpoint(
-                    self.save_files, self.save_notes)
-            else:
-                self.reverter.add_to_checkpoint(self.save_files,
-                                                self.save_notes)
-            # Override the original files with their working copies
-            for f in self.save_files:
-                tmpfile = f + '.le'
-                if (os.path.isfile(tmpfile)):
-                    os.rename(f + '.le', f)
-                else:
-                    logging.warn("Expected file %s to exist", tmpfile)
-                self.save_files.remove(f)
+        save_files = set(self.parser.parsed.keys())
 
+        # Create Checkpoint
+        if temporary:
+            self.reverter.add_to_temp_checkpoint(
+                save_files, self.save_notes)
+        else:
+            self.reverter.add_to_checkpoint(save_files,
+                                            self.save_notes)
+
+        # Don't override original files for now.
+        self.parser.filedump('le')
         if title and not temporary:
             self.reverter.finalize_checkpoint(title)
 
