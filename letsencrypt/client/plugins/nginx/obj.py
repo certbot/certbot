@@ -13,6 +13,9 @@ class Addr(object):
     *:8000 (otherwise). If no port is specified, the default is 80. If no
     address is specified, listen on all addresses.
 
+    .. todo:: Old-style nginx configs define SSL vhosts in a separate block
+    instead of using 'ssl' in the listen directive
+
     :param str addr: addr part of vhost address, may be hostname, IPv4, IPv6,
         "", or "*"
     :param str port: port number or "*" or ""

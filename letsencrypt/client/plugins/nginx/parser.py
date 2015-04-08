@@ -84,38 +84,6 @@ class NginxParser(object):
         return (entry[0] == 'include' and len(entry) == 2 and
                 type(entry[1]) == str)
 
-    def _get_names(self, entry):
-        """Gets server names from nginx parsed entry.
-
-        :param list entry: the parsed entry
-        :returns: Set of server names
-        :rtype: set
-
-        """
-        return set()
-
-    def _get_addrs(self, entry):
-        """Gets addresses from nginx parsed entry.
-
-        :param list entry: the parsed entry
-        :returns: Set of
-            :class:`~letsencrypt.client.plugins.nginx.obj.Addr` objects
-        :rtype: set
-
-        """
-        return set()
-
-    def _get_ssl(self, entry):
-        """Gets whether the nginx parsed entry is SSL-enabled.
-
-        :param list entry: the parsed entry
-        :returns: Whether it's SSL-enabled
-        :rtype: bool
-
-        """
-        # Look for a server block that contains 'listen [...] ssl'
-        return False
-
     def get_vhosts(self):
         """Gets list of all 'virtual hosts' found in Nginx configuration.
         Technically this is a misnomer because Nginx does not have virtual
@@ -129,15 +97,63 @@ class NginxParser(object):
         """
         enabled = True  # We only look at enabled vhosts for now
         vhosts = []
+        servers = {}  # Map of filename to list of parsed server blocks
+
         for filename in self.parsed:
             tree = self.parsed[filename]
-            vhost = obj.VirtulHost(filename,
-                                   self._get_addrs(tree),
-                                   self._get_ssl(tree),
-                                   enabled,
-                                   self._get_names(tree))
-            vhosts.append(vhost)
+            servers[filename] = []
+
+            # Find all the server blocks
+            do_for_subarray(tree, lambda x: x[0] == ['server'],
+                            lambda x: servers[filename].append(x[1]))
+
+            # Find 'include' statements in server blocks and append their trees
+            for server in servers[filename]:
+                for directive in server:
+                    if (self._is_include_directive(directive)):
+                        included_files = glob.glob(
+                            self.abs_path(directive[1]))
+                        for f in included_files:
+                            try:
+                                servers[f] = self.parsed[f]
+                            except:
+                                pass
+
+        for filename in servers:
+            for server in servers[filename]:
+                # Parse the server block into a VirtualHost object
+                parsed_server = self._parse_server(server)
+                vhost = obj.VirtualHost(filename,
+                                        parsed_server.addrs,
+                                        parsed_server.ssl,
+                                        enabled,
+                                        parsed_server.names)
+                vhosts.append(vhost)
+
         return vhosts
+
+    def _parse_server(self, server):
+        """Parses a list of server directives.
+
+        :param list server: list of directives in a server block
+        :rtype: dict
+
+        """
+        parsed_server = {}
+        parsed_server.addrs = set()
+        parsed_server.ssl = False
+        parsed_server.names = set()
+
+        for directive in server:
+            if directive[0] == 'listen':
+                addr = obj.Addr.fromstring(directive[1])
+                parsed_server.addrs.add(addr)
+                if not parsed_server.ssl and addr.ssl:
+                    parsed_server.ssl = True
+            elif directive[0] == 'server_name':
+                parsed_server.names.update(' '.split(directive[1]))
+
+        return parsed_server
 
     def add_dir_to_ifmodssl(self, aug_conf_path, directive, val):
         """Adds directive and value to IfMod ssl block.
@@ -494,3 +510,23 @@ def strip_dir(path):
         return path[:index+1]
     # No directory
     return ""
+
+
+def do_for_subarray(entry, condition, func):
+    """Executes a function for a subarray of a nested array if it matches
+    the given condition.
+
+    :param list entry: The list to iterate over
+    :param function condition: Returns true iff func should be executed on item
+    :param function func: The function to call for each matching item
+
+    """
+    for item in entry:
+        if type(item) == list:
+            if condition(item):
+                try:
+                    func(item)
+                except:
+                    logging.warn("Error in do_for_subarray for %s" % item)
+            else:
+                do_for_subarray(item, condition, func)
