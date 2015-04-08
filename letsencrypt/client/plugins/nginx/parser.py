@@ -113,7 +113,7 @@ class NginxParser(object):
         :rtype: bool
 
         """
-        # Look for a server block that contains 'listen [port] ssl'
+        # Look for a server block that contains 'listen [...] ssl'
         return False
 
     def get_vhosts(self):

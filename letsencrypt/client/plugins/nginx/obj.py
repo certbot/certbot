@@ -1,21 +1,65 @@
 """Module contains classes used by the Nginx Configurator."""
+import re
 
 
 class Addr(object):
-    r"""Represents an Nginx VirtualHost address.
+    """Represents an Nginx address, i.e. what comes after the 'listen'
+    directive.
 
-    :param str addr: addr part of vhost address
-    :param str port: port number or \*, or ""
+    According to http://nginx.org/en/docs/http/ngx_http_core_module.html#listen,
+    this may be address[:port], port, or unix:path. The latter is ignored here.
+
+    The default value if no directive is specified is *:80 (superuser) or
+    *:8000 (otherwise). If no port is specified, the default is 80. If no
+    address is specified, listen on all addresses.
+
+    :param str addr: addr part of vhost address, may be hostname, IPv4, IPv6,
+        "", or "*"
+    :param str port: port number or "*" or ""
+    :param bool ssl: Whether the directive includes 'ssl'
+    :param bool default: Whether the directive includes 'default_server'
 
     """
-    def __init__(self, tup):
-        self.tup = tup
+    def __init__(self, host, port, ssl, default):
+        self.tup = (host, port)
+        self.ssl = ssl
+        self.default = default
 
     @classmethod
     def fromstring(cls, str_addr):
         """Initialize Addr from string."""
-        tup = str_addr.partition(':')
-        return cls((tup[0], tup[2]))
+        parts = str_addr.split(' ')
+        ssl = False
+        default = False
+        host = ''
+        port = ''
+
+        # The first part must be the address
+        addr = parts.pop(0)
+
+        # Ignore UNIX-domain sockets
+        if addr.startswith('unix:'):
+            return None
+
+        tup = addr.partition(':')
+        if re.match('^\d+$', tup[0]):
+            # This is a bare port, not a hostname. E.g. listen 80
+            host = ''
+            port = tup[0]
+        else:
+            # This is a host-port tuple. E.g. listen 127.0.0.1:*
+            host = tup[0]
+            port = tup[2]
+
+        # The rest of the parts are options; we only care about ssl and default
+        while len(parts) > 0:
+            nextpart = parts.pop()
+            if nextpart == 'ssl':
+                ssl = True
+            elif nextpart == 'default_server':
+                default = True
+
+        return cls(host, port, ssl, default)
 
     def __str__(self):
         if self.tup[1]:

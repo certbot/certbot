@@ -109,8 +109,7 @@ class NginxConfigurator(object):
         the VHost associated with the given domain. If it can't find the
         directives, it searches the "included" confs. The function verifies that
         it has located the three directives and finally modifies them to point
-        to the correct destination. After the certificate is installed, the
-        VirtualHost is enabled if it isn't already.
+        to the correct destination.
 
         .. todo:: Make sure last directive is changed
 
