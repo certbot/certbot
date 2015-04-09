@@ -164,7 +164,8 @@ class NginxConfigurator(object):
     # Vhost parsing methods
     #######################
     def choose_vhost(self, target_name):
-        """Chooses a virtual host based on the given domain name.
+        """Chooses a virtual host based on the given domain name. NOTE: This
+        makes the vhost SSL-enabled if it isn't already.
 
         .. todo:: This should maybe return list if no obvious answer
             is presented.
@@ -178,34 +179,66 @@ class NginxConfigurator(object):
         :rtype: :class:`~letsencrypt.client.plugins.nginx.obj.VirtualHost`
 
         """
-        # Allows for domain names to be associated with a virtual host
+        vhost = None
+
+        # If we already found the vhost for the target, use it
         if target_name in self.assoc:
-            return self.assoc[target_name]
-        # Check for servernames/aliases for ssl hosts
-        for vhost in self.vhosts:
-            if vhost.ssl and target_name in vhost.names:
-                self.assoc[target_name] = vhost
-                return vhost
-        # Checking for domain name in vhost address
-        # This technique is not recommended by Nginx but is technically valid
-        target_addr = obj.Addr((target_name, "443"))
-        for vhost in self.vhosts:
-            if target_addr in vhost.addrs:
-                self.assoc[target_name] = vhost
-                return vhost
+            vhost = self.assoc[target_name]
+        else:
+            matches = self._get_ranked_matches(target_name)
+            if len(matches) == 0:
+                # No matches at all :'(
+                break
+            elif matches[0]['rank'] in range(2, 6):
+                # Wildcard match - need to find the longest one
+                rank = matches[0]['rank']
+                wildcards = [x for x in matches if x['rank'] == rank]
+                vhost = max(wildcards, key=lambda x: len(x['name']))['vhost']
+            else:
+                vhost = matches[0]['vhost']
 
-        # Check for non ssl vhosts with servernames/aliases == "name"
-        for vhost in self.vhosts:
-            if not vhost.ssl and target_name in vhost.names:
+        if vhost is not None:
+            self.assoc[target_name] = vhost
+            if not vhost.ssl:
                 vhost = self._make_vhost_ssl(vhost)
-                self.assoc[target_name] = vhost
-                return vhost
 
-        # No matches, search for the default
+        return vhost
+
+    def _get_ranked_matches(self, target_name):
+        """
+        Returns a ranked list of vhosts that match target_name.
+
+        :param str target_name: The name to match
+        :returns: list of dicts containing the vhost, the matching name, and
+            the numerical rank
+        :rtype: list
+
+        """
+        # Nginx chooses a matching server name for a request with precedence:
+        # 1. exact name match
+        # 2. longest wildcard name starting with *
+        # 3. longest wildcard name ending with *
+        # 4. first matching regex in order of appearance in the file
+        matches = []
         for vhost in self.vhosts:
-            if "_default_:443" in vhost.addrs:
-                return vhost
-        return None
+            name_type, name = parser.get_best_match(target_name, vhost.names)
+            if name_type == 'exact':
+                matches.append({'vhost': vhost,
+                                'name': name,
+                                'rank': 0 if vhost.ssl else 1})
+            elif name_type == 'wildcard_start':
+                matches.append({'vhost': vhost,
+                                'name': name,
+                                'rank': 2 if vhost.ssl else 3})
+            elif name_type == 'wildcard_end':
+                matches.append({'vhost': vhost,
+                                'name': name,
+                                'rank': 4 if vhost.ssl else 5})
+            elif name_type == 'regex':
+                matches.append({'vhost': vhost,
+                                'name': name,
+                                'rank': 6 if vhost.ssl else 7})
+        return sorted(matches, key=lambda x: x['rank'], reverse=True)
 
     def get_all_names(self):
         """Returns all names found in the Nginx Configuration.

@@ -3,6 +3,7 @@ import glob
 import logging
 import os
 import pyparsing
+import re
 
 from letsencrypt.client import errors
 from letsencrypt.client.plugins.nginx import obj
@@ -64,7 +65,7 @@ class NginxParser(object):
 
         :param str path: The path
         :returns: The absolute path
-        :rtype str
+        :rtype: str
 
         """
         if not os.path.isabs(path):
@@ -114,6 +115,9 @@ class NginxParser(object):
                             self.abs_path(directive[1]))
                         for f in included_files:
                             try:
+                                # Assign instead of append because servers[f]
+                                # should be empty since server blocks cannot
+                                # contain other server blocks.
                                 servers[f] = self.parsed[f]
                             except:
                                 pass
@@ -279,3 +283,90 @@ def do_for_subarray(entry, condition, func):
                     logging.warn("Error in do_for_subarray for %s" % item)
             else:
                 do_for_subarray(item, condition, func)
+
+
+def get_best_match(target_name, names):
+    """Finds the best match for target_name out of names using the Nginx
+    name-matching rules (exact > longest wildcard starting with * >
+    longest wildcard ending with * > regex).
+
+    :param str target_name: The name to match
+    :param list names: The candidate server names
+    :returns: Tuple of (type of match, the name that matched)
+    :rtype: tuple
+
+    """
+    exact = []
+    wildcard_start = []
+    wildcard_end = []
+    regex = []
+
+    for name in names:
+        if _exact_match(target_name, name):
+            exact.append(name)
+        elif _wildcard_match(target_name, name, True):
+            wildcard_start.append(name)
+        elif _wildcard_match(target_name, name, False):
+            wildcard_end.append(name)
+        elif _regex_match(target_name, name):
+            regex.append(name)
+
+    if len(exact) > 0:
+        # There can be more than one exact match; e.g. eff.org, .eff.org
+        match = min(exact, key=lambda x: len(x))
+        return ('exact', match)
+    if len(wildcard_start) > 0:
+        # Return the longest wildcard
+        match = max(wildcard_start, key=lambda x: len(x))
+        return ('wildcard_start', match)
+    if len(wildcard_end) > 0:
+        # Return the longest wildcard
+        match = max(wildcard_end, key=lambda x: len(x))
+        return ('wildcard_end', match)
+    if len(regex) > 0:
+        # Just return the first one for now
+        match = regex[0]
+        return ('regex', match)
+
+    return (None, None)
+
+
+def _exact_match(target_name, name):
+    return (target_name == name or target_name == '.' + name)
+
+
+def _wildcard_match(target_name, name, start):
+    parts = target_name.split('.')
+    match_parts = name.split('.')
+
+    # If the domain ends in a wildcard, do the match procedure in reverse
+    if not start:
+        parts.reverse()
+        match_parts.reverse()
+
+    # The first part must be a wildcard
+    if match_parts.pop(0) != '*':
+        return False
+
+    target_name = '.'.join(parts)
+    name = '.'.join(match_parts)
+
+    # Ex: www.eff.org matches *.eff.org, eff.org does not match *.eff.org
+    return target_name.endswith('.' + name)
+
+
+def _regex_match(target_name, name):
+    # Must start with a tilde
+    if name[0] != '~':
+        return False
+
+    # After tilde is a perl-compatible regex
+    try:
+        regex = re.compile(name[1:])
+        if regex.match(target_name):
+            return True
+        else:
+            return False
+    except:
+        # perl-compatible regexes are sometimes not recognized by python
+        return False
