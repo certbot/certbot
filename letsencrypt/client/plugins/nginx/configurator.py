@@ -19,7 +19,6 @@ from letsencrypt.client import le_util
 from letsencrypt.client import reverter
 
 from letsencrypt.client.plugins.nginx import dvsni
-from letsencrypt.client.plugins.nginx import obj
 from letsencrypt.client.plugins.nginx import parser
 
 
@@ -165,7 +164,8 @@ class NginxConfigurator(object):
     #######################
     def choose_vhost(self, target_name):
         """Chooses a virtual host based on the given domain name. NOTE: This
-        makes the vhost SSL-enabled if it isn't already.
+        makes the vhost SSL-enabled if it isn't already. Follows Nginx's server
+        block selection rules but prefers blocks that are already SSL.
 
         .. todo:: This should maybe return list if no obvious answer
             is presented.
@@ -200,7 +200,7 @@ class NginxConfigurator(object):
         if vhost is not None:
             self.assoc[target_name] = vhost
             if not vhost.ssl:
-                vhost = self._make_vhost_ssl(vhost)
+                self._make_server_ssl(vhost.filep, vhost.names)
 
         return vhost
 
@@ -276,83 +276,23 @@ class NginxConfigurator(object):
 
         return all_names
 
-    def _make_vhost_ssl(self, nonssl_vhost):  # pylint: disable=too-many-locals
-        """Makes an ssl_vhost version of a nonssl_vhost.
+    def _make_server_ssl(self, filename, names):
+        """Makes a server SSL based on server_name and filename by adding
+        a 'listen 443 ssl' directive to the server block.
 
-        Duplicates vhost and adds default ssl options
-        New vhost will reside as (nonssl_vhost.path) + ``IConfig.le_vhost_ext``
+        .. todo:: Maybe this should create a new block instead of modifying
+        the existing one?
 
-        .. note:: This function saves the configuration
-
-        :param nonssl_vhost: Valid VH that doesn't have SSLEngine on
-        :type nonssl_vhost:
-            :class:`~letsencrypt.client.plugins.nginx.obj.VirtualHost`
-
-        :returns: SSL vhost
-        :rtype: :class:`~letsencrypt.client.plugins.nginx.obj.VirtualHost`
+        :param str filename: The absolute filename of the config file.
+        :param set names: The server names of the block to add SSL in
 
         """
-        avail_fp = nonssl_vhost.filep
-        # Get filepath of new ssl_vhost
-        if avail_fp.endswith(".conf"):
-            ssl_fp = avail_fp[:-(len(".conf"))] + self.config.le_vhost_ext
-        else:
-            ssl_fp = avail_fp + self.config.le_vhost_ext
-
-        # First register the creation so that it is properly removed if
-        # configuration is rolled back
-        self.reverter.register_file_creation(False, ssl_fp)
-
-        try:
-            with open(avail_fp, "r") as orig_file:
-                with open(ssl_fp, "w") as new_file:
-                    new_file.write("<IfModule mod_ssl.c>\n")
-                    for line in orig_file:
-                        new_file.write(line)
-                    new_file.write("</IfModule>\n")
-        except IOError:
-            logging.fatal("Error writing/reading to file in _make_vhost_ssl")
-            sys.exit(49)
-
-        self.aug.load()
-
-        ssl_addrs = set()
-
-        # change address to address:443
-        addr_match = "/files%s//* [label()=~regexp('%s')]/arg"
-        ssl_addr_p = self.aug.match(
-            addr_match % (ssl_fp, parser.case_i("VirtualHost")))
-
-        for addr in ssl_addr_p:
-            old_addr = obj.Addr.fromstring(
-                str(self.aug.get(addr)))
-            ssl_addr = old_addr.get_addr_obj("443")
-            self.aug.set(addr, str(ssl_addr))
-            ssl_addrs.add(ssl_addr)
-
-        # Add directives
-        vh_p = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
-                              (ssl_fp, parser.case_i("VirtualHost")))
-        if len(vh_p) != 1:
-            logging.error("Error: should only be one vhost in %s", avail_fp)
-            sys.exit(1)
-
-        self.parser.add_dir(vh_p[0], "SSLCertificateFile",
-                            "/etc/ssl/certs/ssl-cert-snakeoil.pem")
-        self.parser.add_dir(vh_p[0], "SSLCertificateKeyFile",
-                            "/etc/ssl/private/ssl-cert-snakeoil.key")
-        self.parser.add_dir(vh_p[0], "Include", self.parser.loc["ssl_options"])
-
-        # Log actions and create save notes
-        logging.info("Created an SSL vhost at %s", ssl_fp)
-        self.save_notes += "Created ssl vhost at %s\n" % ssl_fp
-        self.save()
-
-        # We know the length is one because of the assertion above
-        ssl_vhost = self._create_vhost(vh_p[0])
-        self.vhosts.append(ssl_vhost)
-
-        return ssl_vhost
+        self.parser.add_server_directives(
+            filename, names,
+            [['listen', '443 ssl'],
+             ['ssl_certificate', '/etc/ssl/certs/ssl-cert-snakeoil.pem'],
+             ['ssl_key', '/etc/ssl/private/ssl-cert-snakeoil.key'],
+             ['include', self.parser.loc["ssl_options"]]])
 
     def get_all_certs_keys(self):
         """Find all existing keys, certs from configuration.
@@ -490,12 +430,12 @@ class NginxConfigurator(object):
 
         nginx_version = tuple([int(i) for i in version_matches[0].split(".")])
 
-        # nginx <= 0.7.14 has an incompatible SSL configuration format
+        # nginx < 0.8.21 doesn't use default_server
         if (nginx_version[0] == 0 and
-            (nginx_version[1] < 7 or
-             (nginx_version[1] == 7 and nginx_version[2] < 15))):
+            (nginx_version[1] < 8 or
+             (nginx_version[1] == 8 and nginx_version[2] < 21))):
             raise errors.LetsEncryptConfiguratorError(
-                "Nginx version not supported")
+                "Nginx version must be 0.8.21+")
 
         return nginx_version
 

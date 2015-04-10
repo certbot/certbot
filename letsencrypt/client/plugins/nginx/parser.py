@@ -264,6 +264,30 @@ class NginxParser(object):
             except IOError:
                 logging.error("Could not open file for writing: %s" % filename)
 
+    def add_server_directives(self, filename, names, directives):
+        """Adds directives to a server block whose server_name set is 'names'.
+
+        :param str filename: The absolute filename of the config file
+        :param str names: The server_name to match
+        :param list directives: The directives to add
+
+        """
+        if len(names) == 0:
+            # Nothing to identify blocks with
+            return False
+
+        def has_server_names(entry):
+            # Checks if a server block has the given names
+            # TODO: Make this work if some of the names are in included files
+            server_names = set()
+            for item in entry:
+                if item[0] == 'server_name':
+                    server_names.update((' ').split(item[1]))
+            return server_names == names
+
+        do_for_subarray(self.parsed[filename], lambda x: has_server_names(x),
+                        lambda x: x.extend(directives))
+
 
 def do_for_subarray(entry, condition, func):
     """Executes a function for a subarray of a nested array if it matches
@@ -291,7 +315,7 @@ def get_best_match(target_name, names):
     longest wildcard ending with * > regex).
 
     :param str target_name: The name to match
-    :param list names: The candidate server names
+    :param set names: The candidate server names
     :returns: Tuple of (type of match, the name that matched)
     :rtype: tuple
 

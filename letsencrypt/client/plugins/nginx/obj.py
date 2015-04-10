@@ -103,18 +103,14 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
 
     """
 
-    def __init__(self, filep, addrs, ssl, enabled, names=None):
+    def __init__(self, filep, addrs, ssl, enabled, names):
         # pylint: disable=too-many-arguments
         """Initialize a VH."""
         self.filep = filep
         self.addrs = addrs
-        self.names = set() if names is None else set(names)
+        self.names = names
         self.ssl = ssl
         self.enabled = enabled
-
-    def add_name(self, name):
-        """Add name to vhost."""
-        self.names.add(name)
 
     def __str__(self):
         addr_str = ", ".join(str(addr) for addr in self.addrs)
