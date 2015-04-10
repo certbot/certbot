@@ -100,18 +100,11 @@ class NginxConfigurator(object):
 
     # Entry point in main.py for installing cert
     def deploy_cert(self, domain, cert, key, cert_chain=None):
-        """Deploys certificate to specified virtual host.
+        """Deploys certificate to specified virtual host. Aborts if the
+        vhost is missing ssl_certificate or ssl_certificate_key.
 
-        Currently tries to find the last directives to deploy the cert in
-        the VHost associated with the given domain. If it can't find the
-        directives, it searches the "included" confs. The function verifies that
-        it has located the three directives and finally modifies them to point
-        to the correct destination.
-
-        .. todo:: Make sure last directive is changed
-
-        .. todo:: Might be nice to remove chain directive if none exists
-                  This shouldn't happen within letsencrypt though
+        Nginx doesn't have a cert chain directive, so the last parameter is
+        always ignored. It expects the cert file to have the concatenated chain.
 
         :param str domain: domain to deploy certificate
         :param str cert: certificate filename
@@ -120,44 +113,26 @@ class NginxConfigurator(object):
 
         """
         vhost = self.choose_vhost(domain)
-        path = {}
+        directives = [['ssl_certificate', cert], ['ssl_certificate_key', key]]
 
-        path["cert_file"] = self.parser.find_dir(parser.case_i(
-            "SSLCertificateFile"), None, vhost.path)
-        path["cert_key"] = self.parser.find_dir(parser.case_i(
-            "SSLCertificateKeyFile"), None, vhost.path)
-
-        # Only include if a certificate chain is specified
-        if cert_chain is not None:
-            path["cert_chain"] = self.parser.find_dir(
-                parser.case_i("SSLCertificateChainFile"), None, vhost.path)
-
-        if len(path["cert_file"]) == 0 or len(path["cert_key"]) == 0:
-            # Throw some can't find all of the directives error"
+        try:
+            self.parser.add_server_directives(vhost.filep, vhost.names,
+                                              directives, True)
+            logging.info("Deployed Certificate to VirtualHost %s for %s",
+                         vhost.filep, vhost.names)
+        except errors.LetsEncryptMisconfigurationError:
             logging.warn(
-                "Cannot find a cert or key directive in %s", vhost.path)
+                "Cannot find a cert or key directive in %s for %s",
+                vhost.filep, vhost.names)
             logging.warn("VirtualHost was not modified")
             # Presumably break here so that the virtualhost is not modified
             return False
 
-        logging.info("Deploying Certificate to VirtualHost %s", vhost.filep)
-
-        self.aug.set(path["cert_file"][0], cert)
-        self.aug.set(path["cert_key"][0], key)
-        if cert_chain is not None:
-            if len(path["cert_chain"]) == 0:
-                self.parser.add_dir(
-                    vhost.path, "SSLCertificateChainFile", cert_chain)
-            else:
-                self.aug.set(path["cert_chain"][0], cert_chain)
-
         self.save_notes += ("Changed vhost at %s with addresses of %s\n" %
                             (vhost.filep,
                              ", ".join(str(addr) for addr in vhost.addrs)))
-        self.save_notes += "\tSSLCertificateFile %s\n" % cert
-        self.save_notes += "\tSSLCertificateKeyFile %s\n" % key
-        if cert_chain:
-            self.save_notes += "\tSSLCertificateChainFile %s\n" % cert_chain
+        self.save_notes += "\tssl_certificate %s\n" % cert
+        self.save_notes += "\tssl_certificate_key %s\n" % key
 
     #######################
     # Vhost parsing methods
@@ -291,7 +266,7 @@ class NginxConfigurator(object):
             filename, names,
             [['listen', '443 ssl'],
              ['ssl_certificate', '/etc/ssl/certs/ssl-cert-snakeoil.pem'],
-             ['ssl_key', '/etc/ssl/private/ssl-cert-snakeoil.key'],
+             ['ssl_certificate_key', '/etc/ssl/private/ssl-cert-snakeoil.key'],
              ['include', self.parser.loc["ssl_options"]]])
 
     def get_all_certs_keys(self):

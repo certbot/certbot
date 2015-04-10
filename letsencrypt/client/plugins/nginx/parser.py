@@ -81,7 +81,8 @@ class NginxParser(object):
         :rtype: bool
 
         """
-        return (entry[0] == 'include' and len(entry) == 2 and
+        return (type(entry) == list and
+                entry[0] == 'include' and len(entry) == 2 and
                 type(entry[1]) == str)
 
     def get_vhosts(self):
@@ -214,39 +215,6 @@ class NginxParser(object):
         raise errors.LetsEncryptNoInstallationError(
             "Could not find configuration root")
 
-    def add_dir(self, aug_conf_path, directive, arg):
-        """Appends directive to the end fo the file given by aug_conf_path.
-
-        .. note:: Not added to AugeasConfigurator because it may depend
-            on the lens
-
-        :param str aug_conf_path: Augeas configuration path to add directive
-        :param str directive: Directive to add
-        :param str arg: Value of the directive. ie. Listen 443, 443 is arg
-
-        """
-        pass
-
-    def find_dir(self, directive, arg=None, start=None):
-        """Finds directive in the configuration.
-
-        Recursively searches through config files to find directives
-
-        .. todo:: Add order to directives returned. Last directive comes last..
-        .. todo:: arg should probably be a list
-
-        :param str directive: Directive to look for
-
-        :param arg: Specific value directive must have, None if all should
-                    be considered
-        :type arg: str or None
-
-        :param str start: Beginning Augeas path to begin looking
-        :rtype: list
-
-        """
-        return []
-
     def filedump(self, ext='tmp'):
         """Dumps parsed configurations into files.
 
@@ -264,29 +232,83 @@ class NginxParser(object):
             except IOError:
                 logging.error("Could not open file for writing: %s" % filename)
 
-    def add_server_directives(self, filename, names, directives):
-        """Adds directives to a server block whose server_name set is 'names'.
+    def _has_server_names(self, entry, names):
+        """Checks if a server block has the given set of server_names. This
+        is the primary way of identifying server blocks in the configurator.
+        Returns false if 'entry' doesn't look like a server block at all.
 
-        :param str filename: The absolute filename of the config file
-        :param str names: The server_name to match
-        :param list directives: The directives to add
+        ..todo :: Doesn't match server blocks whose server_name directives are
+        split across multiple conf files.
+
+        :param list entry: The block to search
+        :param set names: The names to match
+        :rtype: bool
 
         """
         if len(names) == 0:
             # Nothing to identify blocks with
             return False
 
-        def has_server_names(entry):
-            # Checks if a server block has the given names
-            # TODO: Make this work if some of the names are in included files
-            server_names = set()
-            for item in entry:
-                if item[0] == 'server_name':
-                    server_names.update((' ').split(item[1]))
-            return server_names == names
+        if type(entry) != list:
+            # Can't be a server block
+            return False
 
-        do_for_subarray(self.parsed[filename], lambda x: has_server_names(x),
-                        lambda x: x.extend(directives))
+        server_names = set()
+        for item in entry:
+            if type(item) != list:
+                # Can't be a server block
+                return False
+
+            if item[0] == 'server_name':
+                server_names.update((' ').split(item[1]))
+
+        return server_names == names
+
+    def _replace_directives(self, block, directives):
+        """Replaces directives in a block. If the directive doesn't exist in
+        the entry already, raises a misconfiguration error.
+
+        ..todo :: Find directives that are in included files.
+
+        :param list block: The block to replace in
+        :param list directives: The new directives.
+        """
+        for directive in directives:
+            changed = False
+            if len(directive) == 0:
+                continue
+            for line in block:
+                if len(line) > 0 and line[0] == directive[0]:
+                    line = directive
+                    changed = True
+            if not changed:
+                raise errors.LetsEncryptMisconfigurationError(
+                    'LetsEncrypt expected directive for %s in the Nginx config '
+                    'but did not find it.' % directive[0])
+
+    def add_server_directives(self, filename, names, directives,
+                              replace=False):
+        """Add or replace directives in server blocks whose server_name set
+        is 'names'. If replace is True, this raises a misconfiguration error
+        if the directive does not already exist.
+
+        ..todo :: Doesn't match server blocks whose server_name directives are
+            split across multiple conf files.
+
+        :param str filename: The absolute filename of the config file
+        :param str names: The server_name to match
+        :param list directives: The directives to add
+        :param bool replace: Whether to only replace existing directives
+
+        """
+        if replace:
+            do_for_subarray(self.parsed[filename],
+                            lambda x: self._has_server_names(x, names),
+                            lambda x: self._replace_directives(x, directives))
+        else:
+            do_for_subarray(self.parsed[filename],
+                            lambda x: self._has_server_names(x, names),
+                            lambda x: x.extend(directives))
 
 
 def do_for_subarray(entry, condition, func):
