@@ -171,9 +171,8 @@ def main():  # pylint: disable=too-many-branches, too-many-statements
     try:
         auth = client.determine_authenticator(all_auths, config)
         logging.debug("Selected authenticator: %s", auth)
-    except errors.LetsEncryptClientError:
-        logging.critical("No authentication mechanisms were found on your "
-                         "system.")
+    except errors.LetsEncryptClientError as err:
+        logging.critical(str(err))
         sys.exit(1)
 
     if auth is None:
