@@ -1,7 +1,6 @@
 """Client annotated ACME challenges.
 
-Please use names such as ``achall`` and ``ichall`` (respectively ``achalls``
-and ``ichalls`` for collections) to distiguish from variables "of type"
+Please use names such as ``achall`` to distiguish from variables "of type"
 :class:`letsencrypt.acme.challenges.Challenge` (denoted by ``chall``)::
 
   from letsencrypt.acme import challenges
@@ -9,11 +8,10 @@ and ``ichalls`` for collections) to distiguish from variables "of type"
 
   chall = challenges.DNS(token='foo')
   achall = achallenges.DNS(chall=chall, domain='example.com')
-  ichall = achallenges.Indexed(achall=achall, index=0)
 
 Note, that all annotated challenges act as a proxy objects::
 
-  ichall.token == achall.token == chall.token
+  achall.token == chall.token
 
 """
 from letsencrypt.acme import challenges
@@ -86,17 +84,3 @@ class ProofOfPossession(AnnotatedChallenge):
     """Client annotated "proofOfPossession" ACME challenge."""
     __slots__ = ('chall', 'domain')
     acme_type = challenges.ProofOfPossession
-
-
-class Indexed(jose_util.ImmutableMap):
-    """Indexed and annotated ACME challenge.
-
-    Wraps around :class:`AnnotatedChallenge` and annotates with an
-    ``index`` in order to maintain  the proper position of the response
-    within a larger challenge list.
-
-    """
-    __slots__ = ('achall', 'index')
-
-    def __getattr__(self, name):
-        return getattr(self.achall, name)

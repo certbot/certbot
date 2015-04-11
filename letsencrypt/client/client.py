@@ -65,8 +65,9 @@ class Client(object):
 
         # TODO: Allow for other alg types besides RS256
         self.network = network2.Network(
-            config.server+"/acme/new-registration",
+            "https://%s/acme/new-reg" % config.server,
             jwk.JWKRSA.load(authkey.pem))
+
         self.config = config
 
         if dv_auth is not None:
@@ -88,9 +89,18 @@ class Client(object):
             "mailto:" + email if email is not None else None,
             "tel:" + phone if phone is not None else None
         )
+        contact_tuple = tuple(detail for detail in details if detail is not None)
 
-        self.regr = self.network.register(
-            tuple(detail for detail in details if detail is not None))
+        # TODO: Replace with real info once through testing.
+        if not contact_tuple:
+            contact_tuple = ("mailto:letsencrypt-client@letsencrypt.org",
+                             "tel:+12025551212")
+        self.regr = self.network.register(contact=contact_tuple)
+
+        # If terms of service exist... we need to sign it.
+        # TODO: Replace the `preview EULA` with this...
+        if self.regr.terms_of_service:
+            self.network.agree_to_tos(self.regr)
 
     def set_regr(self, regr):
         """Set a preexisting registration resource."""
@@ -122,21 +132,26 @@ class Client(object):
 
         # Perform Challenges/Get Authorizations
         if self.regr.new_authzr_uri:
-            self.auth_handler.get_authorizations(domains, self.regr)
+            authzr = self.auth_handler.get_authorizations(
+                domains, self.regr.new_authzr_uri)
         else:
-            self.auth_handler.get_authorizations(
-                domains, self.config.server + "/acme/new-authorization")
+            authzr = self.auth_handler.get_authorizations(
+                domains,
+                "https://%s/acme/new-authz" % self.config.server)
 
         # Create CSR from names
         if csr is None:
             csr = init_csr(self.authkey, domains, self.config.cert_dir)
 
         # Retrieve certificate
-        certificate_msg = self.acme_certificate(csr.data)
+        certr = self.network.request_issuance(
+            jose.ComparableX509(
+                M2Crypto.X509.load_request_der_string(csr.data)),
+            authzr)
 
         # Save Certificate
         cert_file, chain_file = self.save_certificate(
-            certificate_msg, self.config.cert_path, self.config.chain_path)
+            certr, self.config.cert_path, self.config.chain_path)
 
         revoker.Revoker.store_cert_key(
             cert_file, self.authkey.file, self.config)
@@ -172,12 +187,12 @@ class Client(object):
                     self.authkey.pem))),
             messages.Certificate)
 
-    def save_certificate(self, certificate_msg, cert_path, chain_path):
+    def save_certificate(self, certr, cert_path, chain_path):
         # pylint: disable=no-self-use
         """Saves the certificate received from the ACME server.
 
-        :param certificate_msg: ACME "certificate" message from server.
-        :type certificate_msg: :class:`letsencrypt.acme.messages.Certificate`
+        :param certr: ACME "certificate" resource.
+        :type certr: :class:`letsencrypt.acme.messages.Certificate`
 
         :param str cert_path: Path to attempt to save the cert file
         :param str chain_path: Path to attempt to save the chain file
@@ -188,17 +203,19 @@ class Client(object):
         :raises IOError: If unable to find room to write the cert files
 
         """
+        # try finally close
         cert_chain_abspath = None
         cert_fd, cert_file = le_util.unique_file(cert_path, 0o644)
-        cert_fd.write(certificate_msg.certificate.as_pem())
+        cert_fd.write(certr.body.as_pem())
         cert_fd.close()
         logging.info(
             "Server issued certificate; certificate written to %s", cert_file)
 
-        if certificate_msg.chain:
+        if certr.cert_chain_uri:
+            # try finally close
+            chain_cert = self.network.fetch_chain(certr.cert_chain_uri)
             chain_fd, chain_fn = le_util.unique_file(chain_path, 0o644)
-            for cert in certificate_msg.chain:
-                chain_fd.write(cert.to_pem())
+            chain_fd.write(chain_cert.to_pem())
             chain_fd.close()
 
             logging.info("Cert chain written to %s", chain_fn)

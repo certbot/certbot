@@ -57,7 +57,7 @@ def create_parser():
     config_help = lambda name: interfaces.IConfig[name].__doc__
 
     add("-d", "--domains", metavar="DOMAIN", nargs="+")
-    add("-s", "--server", default="letsencrypt-demo.org:443",
+    add("-s", "--server", default="www.letsencrypt-demo.org",
         help=config_help("server"))
 
     add("-k", "--authkey", type=read_file,
@@ -202,6 +202,7 @@ def main():  # pylint: disable=too-many-branches, too-many-statements
     # but this code should be safe on all environments.
     cert_file = None
     if auth is not None:
+        acme.register()
         cert_file, chain_file = acme.obtain_certificate(doms)
     if installer is not None and cert_file is not None:
         acme.deploy_certificate(doms, authkey, cert_file, chain_file)

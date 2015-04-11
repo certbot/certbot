@@ -50,6 +50,7 @@ class Network(object):
         """
         dumps = obj.json_dumps()
         logging.debug('Serialized JSON: %s', dumps)
+        print "json_dumps:", dumps
         return jose.JWS.sign(
             payload=dumps, key=self.key, alg=self.alg).json_dumps()
 
@@ -74,7 +75,6 @@ class Network(object):
 
         """
         response_ct = response.headers.get('Content-Type')
-
         try:
             # TODO: response.json() is called twice, once here, and
             # once in _get and _post clients
@@ -83,6 +83,9 @@ class Network(object):
             jobj = None
 
         if not response.ok:
+            print response
+            print response.headers
+            print response.content
             if jobj is not None:
                 if response_ct != cls.JSON_ERROR_CONTENT_TYPE:
                     logging.debug(
@@ -167,7 +170,7 @@ class Network(object):
             'contact'].default):
         """Register.
 
-        :param contact: Contact list, as accepted by `.RegistrationResource`
+        :param contact: Contact list, as accepted by `.Registration`
         :type contact: `tuple`
 
         :returns: Registration Resource.
@@ -212,6 +215,21 @@ class Network(object):
             # TODO: Boulder reregisters with new recoveryToken and new URI
             raise errors.UnexpectedUpdate(regr)
         return updated_regr
+
+    def agree_to_tos(self, regr):
+        """Agree to the terms-of-service.
+
+        Agree to the terms-of-service in a Registration Resource.
+
+        :param regr: Registration Resource.
+        :type regr: `.RegistrationResource`
+
+        :returns: Updated Registration Resource.
+        :rtype: `.RegistrationResource`
+
+        """
+        self.update_registration(
+            regr.update(body=regr.body.update(agreement=regr.terms_of_service)))
 
     def _authzr_from_response(self, response, identifier,
                               uri=None, new_cert_uri=None):
@@ -279,20 +297,23 @@ class Network(object):
         :raises errors.UnexpectedUpdate:
 
         """
+        print "sendinging challenge to:", challb.uri
         response = self._post(challb.uri, self._wrap_in_jws(response))
         try:
             authzr_uri = response.links['up']['url']
         except KeyError:
-            raise errors.NetworkError('"up" Link header missing')
-        challr = messages2.ChallengeResource(
+            # TODO: Right now Boulder responds with the authorization resource
+            # instead of a challenge resource... this can be uncommented
+            # once the error is fixed.
+            return challb
+            # raise errors.NetworkError('"up" Link header missing')
+        challr2 = messages2.ChallengeResource(
             authzr_uri=authzr_uri,
             body=messages2.ChallengeBody.from_json(response.json()))
         # TODO: check that challr.uri == response.headers['Location']?
-        if challr.uri != challb.uri:
-            raise errors.UnexpectedUpdate(challr.uri)
-        return challr
-
-    def poll_challenge(self, chall):
+        if challr2.uri != challb.uri:
+            raise errors.UnexpectedUpdate(challb.uri)
+        return challr2
 
     @classmethod
     def retry_after(cls, response, default):
@@ -352,6 +373,8 @@ class Network(object):
 
         """
         assert authzrs, "Authorizations list is empty"
+        logging.debug("Requesting issuance...")
+        print "Requesting issuance: ", authzrs[0]
 
         # TODO: assert len(authzrs) == number of SANs
         req = messages2.CertificateRequest(
@@ -402,7 +425,7 @@ class Network(object):
         :rtype: `tuple`
 
         """
-        # priority queue with datetime (based od Retry-After) as key,
+        # priority queue with datetime (based on Retry-After) as key,
         # and original Authorization Resource as value
         waiting = [(datetime.datetime.now(), authzr) for authzr in authzrs]
         # mapping between original Authorization Resource and the most

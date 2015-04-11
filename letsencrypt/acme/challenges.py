@@ -5,24 +5,20 @@ import hashlib
 
 import Crypto.Random
 
+from letsencrypt.acme import fields
 from letsencrypt.acme import jose
+from letsencrypt.acme import messages2
 from letsencrypt.acme import other
 
 
 # pylint: disable=too-few-public-methods
 
 
-class Challenge(jose.TypedJSONObjectWithFields):
-    # _fields_to_json | pylint: disable=abstract-method
-    """ACME challenge."""
-    TYPES = {}
-
-
-class ContinuityChallenge(Challenge):  # pylint: disable=abstract-method
+class ContinuityChallenge(messages2.Challenge):  # pylint: disable=abstract-method
     """Client validation challenges."""
 
 
-class DVChallenge(Challenge):  # pylint: disable=abstract-method
+class DVChallenge(messages2.Challenge):  # pylint: disable=abstract-method
     """Domain validation challenges."""
 
 
@@ -41,7 +37,7 @@ class ChallengeResponse(jose.TypedJSONObjectWithFields):
         return super(ChallengeResponse, cls).from_json(jobj)
 
 
-@Challenge.register
+@messages2.Challenge.register
 class SimpleHTTPS(DVChallenge):
     """ACME "simpleHttps" challenge."""
     typ = "simpleHttps"
@@ -69,7 +65,7 @@ class SimpleHTTPSResponse(ChallengeResponse):
         return self.URI_TEMPLATE.format(domain=domain, path=self.path)
 
 
-@Challenge.register
+@messages2.Challenge.register
 class DVSNI(DVChallenge):
     """ACME "dvsni" challenge.
 
@@ -93,6 +89,9 @@ class DVSNI(DVChallenge):
     nonce = jose.Field("nonce", encoder=binascii.hexlify,
                        decoder=functools.partial(functools.partial(
                            jose.decode_hex16, size=NONCE_SIZE)))
+    uri = jose.Field('uri')
+    status = jose.Field('status', decoder=messages2.Status.from_json)
+    validated = fields.RFC3339Field('validated', omitempty=True)
 
     @property
     def nonce_domain(self):
@@ -138,7 +137,7 @@ class DVSNIResponse(ChallengeResponse):
         """Domain name for certificate subjectAltName."""
         return self.z(chall) + self.DOMAIN_SUFFIX
 
-@Challenge.register
+@messages2.Challenge.register
 class RecoveryContact(ContinuityChallenge):
     """ACME "recoveryContact" challenge."""
     typ = "recoveryContact"
@@ -146,6 +145,10 @@ class RecoveryContact(ContinuityChallenge):
     activation_url = jose.Field("activationURL", omitempty=True)
     success_url = jose.Field("successURL", omitempty=True)
     contact = jose.Field("contact", omitempty=True)
+
+    uri = jose.Field('uri')
+    status = jose.Field('status', decoder=messages2.Status.from_json)
+    validated = fields.RFC3339Field('validated', omitempty=True)
 
 
 @ChallengeResponse.register
@@ -155,10 +158,14 @@ class RecoveryContactResponse(ChallengeResponse):
     token = jose.Field("token", omitempty=True)
 
 
-@Challenge.register
+@messages2.Challenge.register
 class RecoveryToken(ContinuityChallenge):
     """ACME "recoveryToken" challenge."""
     typ = "recoveryToken"
+
+    uri = jose.Field('uri')
+    status = jose.Field('status', decoder=messages2.Status.from_json)
+    validated = fields.RFC3339Field('validated', omitempty=True)
 
 
 @ChallengeResponse.register
@@ -168,7 +175,7 @@ class RecoveryTokenResponse(ChallengeResponse):
     token = jose.Field("token", omitempty=True)
 
 
-@Challenge.register
+@messages2.Challenge.register
 class ProofOfPossession(ContinuityChallenge):
     """ACME "proofOfPossession" challenge.
 
@@ -179,6 +186,10 @@ class ProofOfPossession(ContinuityChallenge):
     typ = "proofOfPossession"
 
     NONCE_SIZE = 16
+
+    uri = jose.Field('uri')
+    status = jose.Field('status', decoder=messages2.Status.from_json)
+    validated = fields.RFC3339Field('validated', omitempty=True)
 
     class Hints(jose.JSONObjectWithFields):
         """Hints for "proofOfPossession" challenge.
@@ -236,12 +247,15 @@ class ProofOfPossessionResponse(ChallengeResponse):
         return self.signature.verify(self.nonce)
 
 
-@Challenge.register
+@messages2.Challenge.register
 class DNS(DVChallenge):
     """ACME "dns" challenge."""
     typ = "dns"
     token = jose.Field("token")
 
+    uri = jose.Field('uri')
+    status = jose.Field('status', decoder=messages2.Status.from_json)
+    validated = fields.RFC3339Field('validated', omitempty=True)
 
 @ChallengeResponse.register
 class DNSResponse(ChallengeResponse):

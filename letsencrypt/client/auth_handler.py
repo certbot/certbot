@@ -2,6 +2,7 @@
 import itertools
 import logging
 import sys
+import time
 
 import Crypto.PublicKey.RSA
 
@@ -51,7 +52,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         self.dv_c = []
         self.cont_c = []
 
-    def get_authorizations(self, domains):
+    def get_authorizations(self, domains, new_authz_uri):
         """Retrieve all authorizations for challenges.
 
         :param set domains: Domains for authorization
@@ -64,6 +65,9 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
             authorizations
 
         """
+        for domain in domains:
+            self.authzr[domain] = self.network.request_domain_challenges(
+                domain, new_authz_uri)
         self._choose_challenges(domains)
         cont_resp, dv_resp = self._get_responses()
         logging.info("Ready for verification...")
@@ -71,13 +75,15 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         # Send all Responses
         self._respond(cont_resp, dv_resp)
 
+        return self._verify_auths()
+
     def _choose_challenges(self, domains):
         logging.info("Performing the following challenges:")
         for dom in domains:
             path = gen_challenge_path(
-                self.authzr[dom].challenges,
+                self.authzr[dom].body.challenges,
                 self._get_chall_pref(dom),
-                self.authzr[dom].combinations)
+                self.authzr[dom].body.combinations)
 
             dom_dv_c, dom_cont_c = self._challenge_factory(
                 dom, path)
@@ -106,51 +112,65 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
 
         return cont_resp, dv_resp
 
-    def acme_authorization(self, domain):
-        """Handle ACME "authorization" phase.
+    def _verify_auths(self):
+        time.sleep(6)
+        for domain in self.authzr:
+            self.authzr[domain], resp = self.network.poll(self.authzr[domain])
+            if self.authzr[domain].body.status == messages2.STATUS_INVALID:
+                raise errors.AuthHandlerError(
+                    "Unable to retrieve authorization for %s" % domain)
 
-        :param str domain: domain that is requesting authorization
-
-        :returns: ACME "authorization" message.
-        :rtype: :class:`letsencrypt.acme.messages.Authorization`
-
-        """
-        try:
-            auth = self.network.send_and_receive_expected(
-                messages.AuthorizationRequest.create(
-                    session_id=self.msgs[domain].session_id,
-                    nonce=self.msgs[domain].nonce,
-                    responses=self.responses[domain],
-                    name=domain,
-                    key=jose.HashableRSAKey(Crypto.PublicKey.RSA.importKey(
-                        self.authkey[domain].pem))),
-                messages.Authorization)
-            logging.info("Received Authorization for %s", domain)
-            return auth
-        except errors.LetsEncryptClientError as err:
-            logging.fatal(str(err))
-            logging.fatal(
-                "Failed Authorization procedure - cleaning up challenges")
-            sys.exit(1)
-        finally:
-            self._cleanup_challenges(domain)
+        self._cleanup_challenges()
+        return [self.authzr[domain] for domain in self.authzr]
 
     def _respond(self, cont_resp, dv_resp):
-        """Send/Recieve confirmation of all challenges.
+        """Send/Receive confirmation of all challenges.
 
         .. note:: This method also cleans up the auth_handler state.
 
         """
-        to_check = self._send_responses(self.dv_c, dv_resp)
-        to_check.update(self._send_responses(self.cont_c, cont_resp))
+        chall_update = dict()
+        self._send_responses(self.dv_c, dv_resp, chall_update)
+        self._send_responses(self.cont_c, cont_resp, chall_update)
 
-    def _send_responses(self, achalls, resps):
+        # self._poll_challenges(chall_update)
+
+    def _send_responses(self, achalls, resps, chall_update):
         """Send responses and make sure errors are handled."""
-        to_check = dict()
         for achall, resp in itertools.izip(achalls, resps):
             if resp:
-                to_check[achall.domain] = self.network.answer_challenge(
-                    achall.chall, resp)
+                challr = self.network.answer_challenge(achall.chall, resp)
+                chall_update[achall.domain] = chall_update.get(
+                    achall.domain, []).append(challr)
+
+    # def _poll_challenges(self, chall_update):
+    #     to_check = chall_update.keys()
+    #     completed = []
+    #     while to_check:
+    #
+    # def _handle_to_check(self):
+    #     for domain in to_check:
+    #         self.authzr[domain] = self.network.poll(self.authzr[domain])
+    #         if self.authzr[domain].status == messages2.STATUS_VALID:
+    #             completed.append(domain)
+    #         if self.authzr[domain].status == messages2.STATUS_INVALID:
+    #             logging.error("Failed authorization for %s", domain)
+    #             raise errors.AuthHandlerError(
+    #                 "Failed Authorization for %s" % domain)
+    #         for challr in chall_update[domain]:
+    #             status = self._get_status_of_chall(self.authzr[domain], challr)
+    #             if status == messages2.STATUS_VALID:
+    #                 chall_update[domain].remove(challr)
+    #             elif status == messages2.STATUS_INVALID:
+    #                 raise errors.AuthHandlerError(
+    #                     "Failed %s challenge for domain %s" % (
+    #                         challr.body.chall.typ, domain))
+    #
+    # def _get_status_of_chall(self, authzr, challr):
+    #     for challb in authzr.challenges:
+    #         # TODO: Use better identifiers... instead of type
+    #         if isinstance(challb.chall, challr.body.chall):
+    #             return challb.status
 
     def _get_chall_pref(self, domain):
         """Return list of challenge preferences.
@@ -192,16 +212,16 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         cont_chall = []
 
         for index in path:
-            chall = self.authzr[domain].challenges[index]
+            chall = self.authzr[domain].body.challenges[index]
 
             if isinstance(chall, challenges.DVSNI):
                 logging.info("  DVSNI challenge for %s.", domain)
                 achall = achallenges.DVSNI(
-                    chall=chall, domain=domain, key=self.authkey[domain])
+                    chall=chall, domain=domain, key=self.authkey)
             elif isinstance(chall, challenges.SimpleHTTPS):
                 logging.info("  SimpleHTTPS challenge for %s.", domain)
                 achall = achallenges.SimpleHTTPS(
-                    chall=chall, domain=domain, key=self.authkey[domain])
+                    chall=chall, domain=domain, key=self.authkey)
             elif isinstance(chall, challenges.DNS):
                 logging.info("  DNS challenge for %s.", domain)
                 achall = achallenges.DNS(chall=chall, domain=domain)
@@ -211,7 +231,8 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
                 achall = achallenges.RecoveryToken(chall=chall, domain=domain)
             elif isinstance(chall, challenges.RecoveryContact):
                 logging.info("  Recovery Contact Challenge for %s.", domain)
-                achall = achallenges.RecoveryContact(chall=chall, domain=domain)
+                achall = achallenges.RecoveryContact(
+                    chall=chall, domain=domain)
             elif isinstance(chall, challenges.ProofOfPossession):
                 logging.info("  Proof-of-Possession Challenge for %s", domain)
                 achall = achallenges.ProofOfPossession(
@@ -219,14 +240,13 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
 
             else:
                 raise errors.LetsEncryptClientError(
-                    "Received unsupported challenge of type: %s", chall.typ)
-
-            ichall = achallenges.Indexed(achall=achall, index=index)
+                    "Received unsupported challenge of type: %s",
+                    chall.typ)
 
             if isinstance(chall, challenges.ContinuityChallenge):
-                cont_chall.append(ichall)
+                cont_chall.append(achall)
             elif isinstance(chall, challenges.DVChallenge):
-                dv_chall.append(ichall)
+                dv_chall.append(achall)
 
         return dv_chall, cont_chall
 
