@@ -1,6 +1,6 @@
 server {
-    listen       1234;
-    server_name example.org;
+    listen       myhost default_server;
+    server_name www.example.org;
 
     location / {
         root   html;

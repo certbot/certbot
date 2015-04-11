@@ -5,12 +5,11 @@ import shutil
 import sys
 import unittest
 
-import mock
 import zope.component
 
-from letsencrypt.client import errors
 from letsencrypt.client.display import util as display_util
 
+from letsencrypt.client.plugins.nginx.obj import Addr, VirtualHost
 from letsencrypt.client.plugins.nginx.parser import NginxParser
 from letsencrypt.client.plugins.nginx.tests import util
 
@@ -56,7 +55,8 @@ class NginxParserTest(util.NginxTest):
         self.assertEqual([['server_name', 'somename  alias  another.alias']],
                          parser.parsed[parser.abs_path('server.conf')])
         self.assertEqual([[['server'], [['listen', '9000'],
-                                        ['server_name', 'example.com']]]],
+                                        ['server_name', '.example.com'],
+                                        ['server_name', 'example.*']]]],
                          parser.parsed[parser.abs_path(
                              'sites-enabled/example.com')])
 
@@ -76,8 +76,49 @@ class NginxParserTest(util.NginxTest):
         self.assertEqual(2, len(
             glob.glob(parser.abs_path('sites-enabled/*.test'))))
         self.assertEqual([[['server'], [['listen', '9000'],
-                                        ['server_name', 'example.com']]]],
+                                        ['server_name', '.example.com'],
+                                        ['server_name', 'example.*']]]],
                          parsed[0])
+
+    def test_get_vhosts(self):
+        parser = NginxParser(self.config_path, self.ssl_options)
+        vhosts = parser.get_vhosts()
+
+        vhost1 = VirtualHost(parser.abs_path('nginx.conf'),
+                             [Addr('', '8080', False, False)],
+                             False, True, set(['localhost']))
+        vhost2 = VirtualHost(parser.abs_path('nginx.conf'),
+                             [Addr('somename', '8080', False, False),
+                              Addr('', '8000', False, False)],
+                             False, True, set(['somename',
+                                               'another.alias', 'alias']))
+        vhost3 = VirtualHost(parser.abs_path('sites-enabled/example.com'),
+                             [Addr('', '9000', False, False)],
+                             False, True, set(['.example.com', 'example.*']))
+        vhost4 = VirtualHost(parser.abs_path('sites-enabled/default'),
+                             [Addr('myhost', '', False, True)],
+                             False, True, set(['www.example.org']))
+        vhost5 = VirtualHost(parser.abs_path('foo.conf'),
+                             [Addr('*', '80', True, True)],
+                             True, True, set(['*.www.foo.com']))
+
+        self.assertEqual(5, len(vhosts))
+        example_com = filter(lambda x: 'example.com' in x.filep, vhosts)[0]
+        self.assertEqual(vhost3, example_com)
+        default = filter(lambda x: 'default' in x.filep, vhosts)[0]
+        self.assertEqual(vhost4, default)
+        foo = filter(lambda x: 'foo.conf' in x.filep, vhosts)[0]
+        self.assertEqual(vhost5, foo)
+        localhost = filter(lambda x: 'localhost' in x.names, vhosts)[0]
+        self.assertEquals(vhost1, localhost)
+        somename = filter(lambda x: 'somename' in x.names, vhosts)[0]
+        self.assertEquals(vhost2, somename)
+
+    def test_add_server_directives(self):
+        pass
+
+    def test_get_best_match(self):
+        pass
 
 #    def test_find_dir(self):
 #        from letsencrypt.client.plugins.nginx.parser import case_i

@@ -71,7 +71,9 @@ class Addr(object):
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
-            return self.tup == other.tup
+            return (self.tup == other.tup and
+                    self.ssl == other.ssl and
+                    self.default == other.default)
         return False
 
     def __hash__(self):
@@ -124,7 +126,7 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
     def __eq__(self, other):
         if isinstance(other, self.__class__):
             return (self.filep == other.filep and
-                    self.addrs == other.addrs and
+                    list(self.addrs) == list(other.addrs) and
                     self.names == other.names and
                     self.ssl == other.ssl and self.enabled == other.enabled)
 

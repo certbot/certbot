@@ -163,7 +163,7 @@ class NginxConfigurator(object):
             matches = self._get_ranked_matches(target_name)
             if len(matches) == 0:
                 # No matches at all :'(
-                break
+                pass
             elif matches[0]['rank'] in range(2, 6):
                 # Wildcard match - need to find the longest one
                 rank = matches[0]['rank']

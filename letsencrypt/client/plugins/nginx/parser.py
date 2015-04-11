@@ -105,8 +105,8 @@ class NginxParser(object):
             servers[filename] = []
 
             # Find all the server blocks
-            do_for_subarray(tree, lambda x: x[0] == ['server'],
-                            lambda x: servers[filename].append(x[1]))
+            _do_for_subarray(tree, lambda x: x[0] == ['server'],
+                             lambda x: servers[filename].append(x[1]))
 
             # Find 'include' statements in server blocks and append their trees
             for server in servers[filename]:
@@ -116,10 +116,7 @@ class NginxParser(object):
                             self.abs_path(directive[1]))
                         for f in included_files:
                             try:
-                                # Assign instead of append because servers[f]
-                                # should be empty since server blocks cannot
-                                # contain other server blocks.
-                                servers[f] = self.parsed[f]
+                                server.extend(self.parsed[f])
                             except:
                                 pass
 
@@ -128,10 +125,10 @@ class NginxParser(object):
                 # Parse the server block into a VirtualHost object
                 parsed_server = self._parse_server(server)
                 vhost = obj.VirtualHost(filename,
-                                        parsed_server.addrs,
-                                        parsed_server.ssl,
+                                        parsed_server['addrs'],
+                                        parsed_server['ssl'],
                                         enabled,
-                                        parsed_server.names)
+                                        parsed_server['names'])
                 vhosts.append(vhost)
 
         return vhosts
@@ -144,20 +141,32 @@ class NginxParser(object):
 
         """
         parsed_server = {}
-        parsed_server.addrs = set()
-        parsed_server.ssl = False
-        parsed_server.names = set()
+        parsed_server['addrs'] = set()
+        parsed_server['ssl'] = False
+        parsed_server['names'] = set()
 
         for directive in server:
             if directive[0] == 'listen':
                 addr = obj.Addr.fromstring(directive[1])
-                parsed_server.addrs.add(addr)
-                if not parsed_server.ssl and addr.ssl:
-                    parsed_server.ssl = True
+                parsed_server['addrs'].add(addr)
+                if not parsed_server['ssl'] and addr.ssl:
+                    parsed_server['ssl'] = True
             elif directive[0] == 'server_name':
-                parsed_server.names.update(' '.split(directive[1]))
+                parsed_server['names'].update(
+                    self._get_servernames(directive[1]))
 
         return parsed_server
+
+    def _get_servernames(self, names):
+        """Turns a server_name string into a list of server names
+
+        :param str names: server names
+        :rtype: list
+
+        """
+        whitespace_re = re.compile(r'\s+')
+        names = re.sub(whitespace_re, ' ', names)
+        return names.split(' ')
 
     def _parse_files(self, filepath):
         """Parse files from a glob
@@ -260,7 +269,7 @@ class NginxParser(object):
                 return False
 
             if item[0] == 'server_name':
-                server_names.update((' ').split(item[1]))
+                server_names.update(self._get_servernames(item[1]))
 
         return server_names == names
 
@@ -302,16 +311,16 @@ class NginxParser(object):
 
         """
         if replace:
-            do_for_subarray(self.parsed[filename],
-                            lambda x: self._has_server_names(x, names),
-                            lambda x: self._replace_directives(x, directives))
+            _do_for_subarray(self.parsed[filename],
+                             lambda x: self._has_server_names(x, names),
+                             lambda x: self._replace_directives(x, directives))
         else:
-            do_for_subarray(self.parsed[filename],
-                            lambda x: self._has_server_names(x, names),
-                            lambda x: x.extend(directives))
+            _do_for_subarray(self.parsed[filename],
+                             lambda x: self._has_server_names(x, names),
+                             lambda x: x.extend(directives))
 
 
-def do_for_subarray(entry, condition, func):
+def _do_for_subarray(entry, condition, func):
     """Executes a function for a subarray of a nested array if it matches
     the given condition.
 
@@ -326,9 +335,9 @@ def do_for_subarray(entry, condition, func):
                 try:
                     func(item)
                 except:
-                    logging.warn("Error in do_for_subarray for %s" % item)
+                    logging.warn("Error in _do_for_subarray for %s" % item)
             else:
-                do_for_subarray(item, condition, func)
+                _do_for_subarray(item, condition, func)
 
 
 def get_best_match(target_name, names):
