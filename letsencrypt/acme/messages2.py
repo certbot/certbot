@@ -1,4 +1,5 @@
 """ACME protocol v02 messages."""
+from letsencrypt.acme import challenges
 from letsencrypt.acme import fields
 from letsencrypt.acme import jose
 
@@ -110,12 +111,8 @@ class Resource(jose.ImmutableMap):
     __slots__ = ('body', 'uri')
 
 
-class TypedResourceBody(jose.TypedJSONObjectWithFields):
-    """ACME Resource Body with type."""
-
-
 class ResourceBody(jose.JSONObjectWithFields):
-    """ACME Resource Body"""
+    """ACME Resource Body."""
 
 
 class RegistrationResource(Resource):
@@ -148,7 +145,7 @@ class Registration(ResourceBody):
 class ChallengeResource(Resource, jose.JSONObjectWithFields):
     """Challenge Resource.
 
-    :ivar letsencrypt.acme.messages2.Challenge body:
+    :ivar letsencrypt.acme.messages2.ChallengeBody body:
     :ivar str authzr_uri: URI found in the 'up' ``Link`` header.
 
     """
@@ -161,22 +158,34 @@ class ChallengeResource(Resource, jose.JSONObjectWithFields):
         return self.body.uri
 
 
-class Challenge(TypedResourceBody):
+class ChallengeBody(ResourceBody):
     """Challenge Resource Body.
+
+    .. todo::
+       Confusingly, this has a similar name to `.challenges.Challenge`,
+       as well as `.achallenges.AnnotateChallenge`. Please use names
+       such as ``challb`` to distinguish instanced of this class from
+       ``achall``.
 
     :ivar letsencrypt.acme.messages2.Status status:
     :ivar datetime.datetime validated:
 
     """
-    TYPES = {}
+    __slots__ = ('chall',)
     uri = jose.Field('uri')
     status = jose.Field('status', decoder=Status.from_json)
     validated = fields.RFC3339Field('validated', omitempty=True)
 
     def to_json(self):
-        jobj = super(Challenge, self).to_json()
+        jobj = super(ChallengeBody, self).to_json()
+        jobj.update(self.chall.to_json())
         return jobj
 
+    @classmethod
+    def fields_from_json(cls, jobj):
+        jobj_fields = super(ChallengeBody, cls).fields_from_json(jobj)
+        jobj_fields['chall'] = challenges.Challenge.from_json(jobj)
+        return jobj_fields
 
 
 class AuthorizationResource(Resource):
@@ -193,7 +202,7 @@ class Authorization(ResourceBody):
     """Authorization Resource Body.
 
     :ivar letsencrypt.acme.messages2.Identifier identifier:
-    :ivar list challenges: `list` of `.Challenge`
+    :ivar list challenges: `list` of `.ChallengeBody`
     :ivar tuple combinations: Challenge combinations (`tuple` of `tuple`
         of `int`, as opposed to `list` of `list` from the spec).
     :ivar letsencrypt.acme.jose.jwk.JWK key: Public key.
@@ -220,7 +229,7 @@ class Authorization(ResourceBody):
 
     @challenges.decoder
     def challenges(value):  # pylint: disable=missing-docstring,no-self-argument
-        return tuple(Challenge.from_json(chall) for chall in value)
+        return tuple(ChallengeBody.from_json(chall) for chall in value)
 
     @property
     def resolved_combinations(self):
