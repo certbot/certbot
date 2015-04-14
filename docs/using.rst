@@ -36,7 +36,6 @@ For squezze you will need to:
   (``sudo`` is not installed by default) before running the bootstrap
   script.
 - Use ``virtualenv --no-site-packages -p python`` instead of ``-p python2``.
-- Use text mode ``sudo ./venv/bin/letsencrypt --text`` (`#280`_)
 
 
 .. _`#280`: https://github.com/letsencrypt/lets-encrypt-preview/issues/280
