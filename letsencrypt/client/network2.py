@@ -224,7 +224,7 @@ class Network(object):
         :rtype: `.RegistrationResource`
 
         """
-        self.update_registration(
+        return self.update_registration(
             regr.update(body=regr.body.update(agreement=regr.terms_of_service)))
 
     def _authzr_from_response(self, response, identifier,

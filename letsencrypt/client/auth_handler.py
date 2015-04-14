@@ -138,7 +138,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         for achall, resp in itertools.izip(achalls, resps):
             # Don't send challenges for None and False authenticator responses
             if resp:
-                challr = self.network.answer_challenge(achall.chall, resp)
+                challr = self.network.answer_challenge(achall.challb, resp)
                 if achall.domain in chall_update:
                     chall_update[achall.domain].append(achall)
                 else:
@@ -267,31 +267,32 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         cont_chall = set()
 
         for index in path:
-            chall = self.authzr[domain].body.challenges[index]
+            challb = self.authzr[domain].body.challenges[index]
+            chall = challb.chall
 
             if isinstance(chall, challenges.DVSNI):
                 logging.info("  DVSNI challenge for %s.", domain)
                 achall = achallenges.DVSNI(
-                    chall=chall, domain=domain, key=self.authkey)
+                    challb=challb, domain=domain, key=self.authkey)
             elif isinstance(chall, challenges.SimpleHTTPS):
                 logging.info("  SimpleHTTPS challenge for %s.", domain)
                 achall = achallenges.SimpleHTTPS(
-                    chall=chall, domain=domain, key=self.authkey)
+                    challb=challb, domain=domain, key=self.authkey)
             elif isinstance(chall, challenges.DNS):
                 logging.info("  DNS challenge for %s.", domain)
-                achall = achallenges.DNS(chall=chall, domain=domain)
+                achall = achallenges.DNS(challb=challb, domain=domain)
 
             elif isinstance(chall, challenges.RecoveryToken):
                 logging.info("  Recovery Token Challenge for %s.", domain)
-                achall = achallenges.RecoveryToken(chall=chall, domain=domain)
+                achall = achallenges.RecoveryToken(challb=challb, domain=domain)
             elif isinstance(chall, challenges.RecoveryContact):
                 logging.info("  Recovery Contact Challenge for %s.", domain)
                 achall = achallenges.RecoveryContact(
-                    chall=chall, domain=domain)
+                    challb=challb, domain=domain)
             elif isinstance(chall, challenges.ProofOfPossession):
                 logging.info("  Proof-of-Possession Challenge for %s", domain)
                 achall = achallenges.ProofOfPossession(
-                    chall=chall, domain=domain)
+                    challb=challb, domain=domain)
 
             else:
                 raise errors.LetsEncryptClientError(
@@ -306,15 +307,15 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         return dv_chall, cont_chall
 
 
-def gen_challenge_path(challs, preferences, combinations):
+def gen_challenge_path(challbs, preferences, combinations):
     """Generate a plan to get authority over the identity.
 
     .. todo:: This can be possibly be rewritten to use resolved_combinations.
 
-    :param tuple challs: A tuple of challenges
-        (:class:`letsencrypt.acme.challenges.Challenge`) from
-        :class:`letsencrypt.acme.messages.Challenge` server message to
-        be fulfilled by the client in order to prove possession of the
+    :param tuple challbs: A tuple of challenges
+        (:class:`letsencrypt.acme.messages2.Challenge`) from
+        :class:`letsencrypt.acme.messages2.AuthorizationResource` to be
+        fulfilled by the client in order to prove possession of the
         identifier.
 
     :param list preferences: List of challenge preferences for domain
@@ -333,12 +334,12 @@ def gen_challenge_path(challs, preferences, combinations):
 
     """
     if combinations:
-        return _find_smart_path(challs, preferences, combinations)
+        return _find_smart_path(challbs, preferences, combinations)
     else:
-        return _find_dumb_path(challs, preferences)
+        return _find_dumb_path(challbs, preferences)
 
 
-def _find_smart_path(challs, preferences, combinations):
+def _find_smart_path(challbs, preferences, combinations):
     """Find challenge path with server hints.
 
     Can be called if combinations is included. Function uses a simple
@@ -360,8 +361,8 @@ def _find_smart_path(challs, preferences, combinations):
     combo_total = 0
     for combo in combinations:
         for challenge_index in combo:
-            combo_total += chall_cost.get(challs[
-                challenge_index].__class__, max_cost)
+            combo_total += chall_cost.get(challbs[
+                challenge_index].chall.__class__, max_cost)
 
         if combo_total < best_combo_cost:
             best_combo = combo
@@ -378,7 +379,7 @@ def _find_smart_path(challs, preferences, combinations):
     return best_combo
 
 
-def _find_dumb_path(challs, preferences):
+def _find_dumb_path(challbs, preferences):
     """Find challenge path without server hints.
 
     Should be called if the combinations hint is not included by the
@@ -391,11 +392,11 @@ def _find_dumb_path(challs, preferences):
     path = []
     satisfied = set()
     for pref_c in preferences:
-        for i, offered_chall in enumerate(challs):
-            if (isinstance(offered_chall, pref_c) and
-                    is_preferred(offered_chall, satisfied)):
+        for i, offered_challb in enumerate(challbs):
+            if (isinstance(offered_challb.chall, pref_c) and
+                    is_preferred(offered_challb, satisfied)):
                 path.append(i)
-                satisfied.add(offered_chall)
+                satisfied.add(offered_challb)
     return path
 
 
@@ -415,11 +416,12 @@ def mutually_exclusive(obj1, obj2, groups, different=False):
     return True
 
 
-def is_preferred(offered_chall, satisfied,
+def is_preferred(offered_challb, satisfied,
                  exclusive_groups=constants.EXCLUSIVE_CHALLENGES):
     """Return whether or not the challenge is preferred in path."""
-    for chall in satisfied:
+    for challb in satisfied:
         if not mutually_exclusive(
-                offered_chall, chall, exclusive_groups, different=True):
+                offered_challb.chall, challb.chall, exclusive_groups,
+                different=True):
             return False
     return True
