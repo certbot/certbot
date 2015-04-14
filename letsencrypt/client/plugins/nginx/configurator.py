@@ -54,7 +54,7 @@ class NginxConfigurator(object):
     def __init__(self, config, version=None):
         """Initialize an Nginx Configurator.
 
-        :param tup version: version of Nginx as a tuple (2, 4, 7)
+        :param tup version: version of Nginx as a tuple (1, 4, 7)
             (used mostly for unittesting)
 
         """
@@ -133,6 +133,7 @@ class NginxConfigurator(object):
                              ", ".join(str(addr) for addr in vhost.addrs)))
         self.save_notes += "\tssl_certificate %s\n" % cert
         self.save_notes += "\tssl_certificate_key %s\n" % key
+        self.save()
 
     #######################
     # Vhost parsing methods
@@ -272,23 +273,14 @@ class NginxConfigurator(object):
     def get_all_certs_keys(self):
         """Find all existing keys, certs from configuration.
 
-        Retrieve all certs and keys set in VirtualHosts on the Nginx server
-
         :returns: list of tuples with form [(cert, key, path)]
             cert - str path to certificate file
             key - str path to associated key file
             path - File path to configuration file.
-        :rtype: list
+        :rtype: set
 
         """
-        c_k = set()
-
-        for vhost in self.vhosts:
-            if vhost.ssl:
-                # TODO: get the cert, key, and conf file paths
-                pass
-
-        return c_k
+        return self.parser.get_all_certs_keys()
 
     ##################################
     # enhancement methods (IInstaller)
@@ -452,6 +444,8 @@ class NginxConfigurator(object):
         self.parser.filedump('le')
         if title and not temporary:
             self.reverter.finalize_checkpoint(title)
+
+        self.vhosts = self.parser.get_vhosts()
 
         return True
 

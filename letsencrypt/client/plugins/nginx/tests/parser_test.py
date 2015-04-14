@@ -3,14 +3,9 @@ import glob
 import os
 import re
 import shutil
-import sys
 import unittest
 
-import zope.component
-
-from letsencrypt.client.display import util as display_util
 from letsencrypt.client.errors import LetsEncryptMisconfigurationError
-
 from letsencrypt.client.plugins.nginx.nginxparser import dumps
 from letsencrypt.client.plugins.nginx.obj import Addr, VirtualHost
 from letsencrypt.client.plugins.nginx.parser import NginxParser, get_best_match
@@ -22,9 +17,6 @@ class NginxParserTest(util.NginxTest):
 
     def setUp(self):
         super(NginxParserTest, self).setUp()
-
-        self.maxDiff = None
-        zope.component.provideUtility(display_util.FileDisplay(sys.stdout))
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
@@ -57,7 +49,8 @@ class NginxParserTest(util.NginxTest):
                          set(parser.parsed.keys()))
         self.assertEqual([['server_name', 'somename  alias  another.alias']],
                          parser.parsed[parser.abs_path('server.conf')])
-        self.assertEqual([[['server'], [['listen', '9000'],
+        self.assertEqual([[['server'], [['listen', '69.50.225.155:9000'],
+                                        ['listen', '127.0.0.1'],
                                         ['server_name', '.example.com'],
                                         ['server_name', 'example.*']]]],
                          parser.parsed[parser.abs_path(
@@ -78,7 +71,8 @@ class NginxParserTest(util.NginxTest):
         self.assertEqual(3, len(glob.glob(parser.abs_path('*.test'))))
         self.assertEqual(2, len(
             glob.glob(parser.abs_path('sites-enabled/*.test'))))
-        self.assertEqual([[['server'], [['listen', '9000'],
+        self.assertEqual([[['server'], [['listen', '69.50.225.155:9000'],
+                                        ['listen', '127.0.0.1'],
                                         ['server_name', '.example.com'],
                                         ['server_name', 'example.*']]]],
                          parsed[0])
@@ -89,21 +83,23 @@ class NginxParserTest(util.NginxTest):
 
         vhost1 = VirtualHost(parser.abs_path('nginx.conf'),
                              [Addr('', '8080', False, False)],
-                             False, True, set(['localhost']))
+                             False, True, set(['localhost']), [])
         vhost2 = VirtualHost(parser.abs_path('nginx.conf'),
                              [Addr('somename', '8080', False, False),
                               Addr('', '8000', False, False)],
                              False, True, set(['somename',
-                                               'another.alias', 'alias']))
+                                               'another.alias', 'alias']), [])
         vhost3 = VirtualHost(parser.abs_path('sites-enabled/example.com'),
-                             [Addr('', '9000', False, False)],
-                             False, True, set(['.example.com', 'example.*']))
+                             [Addr('69.50.225.155', '9000', False, False),
+                              Addr('127.0.0.1', '', False, False)],
+                             False, True, set(['.example.com', 'example.*']),
+                             [])
         vhost4 = VirtualHost(parser.abs_path('sites-enabled/default'),
                              [Addr('myhost', '', False, True)],
-                             False, True, set(['www.example.org']))
+                             False, True, set(['www.example.org']), [])
         vhost5 = VirtualHost(parser.abs_path('foo.conf'),
                              [Addr('*', '80', True, True)],
-                             True, True, set(['*.www.foo.com']))
+                             True, True, set(['*.www.foo.com']), [])
 
         self.assertEqual(5, len(vhosts))
         example_com = filter(lambda x: 'example.com' in x.filep, vhosts)[0]
@@ -144,7 +140,9 @@ class NginxParserTest(util.NginxTest):
             filep, target, [['server_name', 'foo bar']], True)
         self.assertEqual(
             parser.parsed[filep],
-            [[['server'], [['listen', '9000'], ['server_name', 'foo bar'],
+            [[['server'], [['listen', '69.50.225.155:9000'],
+                           ['listen', '127.0.0.1'],
+                           ['server_name', 'foo bar'],
                            ['server_name', 'foo bar']]]])
         self.assertRaises(LetsEncryptMisconfigurationError,
                           parser.add_server_directives,
@@ -182,6 +180,17 @@ class NginxParserTest(util.NginxTest):
 
         for i, winner in enumerate(winners):
             self.assertEqual(winner, get_best_match(target_name, names[i]))
+
+    def test_get_all_certs_keys(self):
+        parser = NginxParser(self.config_path, self.ssl_options)
+        filep = parser.abs_path('sites-enabled/example.com')
+        parser.add_server_directives(filep,
+                                     set(['.example.com', 'example.*']),
+                                     [['ssl_certificate', 'foo.pem'],
+                                      ['ssl_certificate_key', 'bar.key'],
+                                      ['listen', '443 ssl']])
+        ck = parser.get_all_certs_keys()
+        self.assertEqual(set([('foo.pem', 'bar.key', filep)]), ck)
 
 
 if __name__ == "__main__":

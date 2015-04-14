@@ -99,13 +99,14 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
     :ivar set addrs: Virtual Host addresses (:class:`set` of :class:`Addr`)
     :ivar set names: Server names/aliases of vhost
         (:class:`list` of :class:`str`)
+    :ivar array raw: The raw form of the parsed server block
 
     :ivar bool ssl: SSLEngine on in vhost
     :ivar bool enabled: Virtual host is enabled
 
     """
 
-    def __init__(self, filep, addrs, ssl, enabled, names):
+    def __init__(self, filep, addrs, ssl, enabled, names, raw):
         # pylint: disable=too-many-arguments
         """Initialize a VH."""
         self.filep = filep
@@ -113,6 +114,7 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
         self.names = names
         self.ssl = ssl
         self.enabled = enabled
+        self.raw = raw
 
     def __str__(self):
         addr_str = ", ".join(str(addr) for addr in self.addrs)

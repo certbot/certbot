@@ -98,7 +98,7 @@ class NginxParser(object):
         """
         enabled = True  # We only look at enabled vhosts for now
         vhosts = []
-        servers = {}  # Map of filename to list of parsed server blocks
+        servers = {}
 
         for filename in self.parsed:
             tree = self.parsed[filename]
@@ -128,7 +128,8 @@ class NginxParser(object):
                                         parsed_server['addrs'],
                                         parsed_server['ssl'],
                                         enabled,
-                                        parsed_server['names'])
+                                        parsed_server['names'],
+                                        server)
                 vhosts.append(vhost)
 
         return vhosts
@@ -318,6 +319,30 @@ class NginxParser(object):
             _do_for_subarray(self.parsed[filename],
                              lambda x: self._has_server_names(x, names),
                              lambda x: x.extend(directives))
+
+    def get_all_certs_keys(self):
+        """Gets all certs and keys in the nginx config.
+
+        :returns: list of tuples with form [(cert, key, path)]
+            cert - str path to certificate file
+            key - str path to associated key file
+            path - File path to configuration file.
+        :rtype: set
+
+        """
+        c_k = set()
+        vhosts = self.get_vhosts()
+        for vhost in vhosts:
+            tup = [None, None, vhost.filep]
+            if vhost.ssl:
+                for directive in vhost.raw:
+                    if directive[0] == 'ssl_certificate':
+                        tup[0] = directive[1]
+                    elif directive[0] == 'ssl_certificate_key':
+                        tup[1] = directive[1]
+            if tup[0] is not None and tup[1] is not None:
+                c_k.add(tuple(tup))
+        return c_k
 
 
 def _do_for_subarray(entry, condition, func):
