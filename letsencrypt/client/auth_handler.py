@@ -1,13 +1,9 @@
 """ACME AuthHandler."""
 import itertools
 import logging
-import sys
 import time
 
-import Crypto.PublicKey.RSA
-
 from letsencrypt.acme import challenges
-from letsencrypt.acme import jose
 from letsencrypt.acme import messages2
 
 from letsencrypt.client import achallenges
@@ -30,14 +26,14 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         messages
     :type network: :class:`letsencrypt.client.network2.Network`
 
-    :ivar list domains: list of str domains to get authorization
-    :ivar dict authkey: Authorized Keys for each domain.
-        values are of type :class:`letsencrypt.client.le_util.Key`
+    :ivar authkey: Authorized Keys for domains.
+    :type authkey: :class:`letsencrypt.client.le_util.Key`
+
     :ivar dict authzr: ACME Authorization Resource dict where keys are domains.
-    :ivar list dv_c: Keys - DV challenges in the form of
-        :class:`letsencrypt.client.achallenges.Indexed`
-    :ivar list cont_c: Keys - Continuity challenges in the
-        form of :class:`letsencrypt.client.achallenges.Indexed`
+    :ivar list dv_c: DV challenges in the form of
+        :class:`letsencrypt.client.achallenges.AnnotatedChallenge`
+    :ivar list cont_c: Continuity challenges in the
+        form of :class:`letsencrypt.client.achallenges.AnnotatedChallenge`
 
     """
     def __init__(self, dv_auth, cont_auth, network, authkey):
@@ -45,23 +41,26 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         self.cont_auth = cont_auth
         self.network = network
 
-        self.domains = []
         self.authkey = authkey
         self.authzr = dict()
 
+        # List must be used to keep responses straight.
         self.dv_c = []
         self.cont_c = []
 
-    def get_authorizations(self, domains, new_authz_uri):
+    def get_authorizations(self, domains, new_authz_uri, best_effort=False):
         """Retrieve all authorizations for challenges.
 
         :param set domains: Domains for authorization
+        :param str new_authz_uri: Location to get new authorization resources
+        :param bool best_effort: Whether or not all authorizations are required
+            (this is useful in renewal)
 
         :returns: tuple of lists of authorization resources. Takes the form of
             (`completed`, `failed`)
         rtype: tuple
 
-        :raises AuthHandlerError: If unable to retrieve all
+        :raises AuthorizationError: If unable to retrieve all
             authorizations
 
         """
@@ -69,13 +68,16 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
             self.authzr[domain] = self.network.request_domain_challenges(
                 domain, new_authz_uri)
         self._choose_challenges(domains)
-        cont_resp, dv_resp = self._get_responses()
-        logging.info("Ready for verification...")
 
-        # Send all Responses
-        self._respond(cont_resp, dv_resp)
+        # While there are still challenges remaining...
+        while self.dv_c or self.cont_c:
+            cont_resp, dv_resp = self._solve_challenges()
+            logging.info("Waiting for verification...")
 
-        return self._verify_auths()
+            # Send all Responses - this modifies dv_c and cont_c
+            self._respond(cont_resp, dv_resp, best_effort)
+
+        return self.authzr.values()
 
     def _choose_challenges(self, domains):
         logging.info("Performing the following challenges:")
@@ -90,7 +92,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
             self.dv_c.extend(dom_dv_c)
             self.cont_c.extend(dom_cont_c)
 
-    def _get_responses(self):
+    def _solve_challenges(self):
         """Get Responses for challenges from authenticators."""
         cont_resp = []
         dv_resp = []
@@ -100,11 +102,11 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
             if self.dv_c:
                 dv_resp = self.dv_auth.perform(self.dv_c)
         # This will catch both specific types of errors.
-        except errors.AuthHandlerError as err:
+        except errors.AuthorizationError as err:
             logging.critical("Failure in setting up challenges.")
             logging.info("Attempting to clean up outstanding challenges...")
             self._cleanup_challenges()
-            raise errors.AuthHandlerError(
+            raise errors.AuthorizationError(
                 "Unable to perform challenges")
 
         assert len(cont_resp) == len(self.cont_c)
@@ -112,65 +114,101 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
 
         return cont_resp, dv_resp
 
-    def _verify_auths(self):
-        time.sleep(6)
-        for domain in self.authzr:
-            self.authzr[domain], resp = self.network.poll(self.authzr[domain])
-            if self.authzr[domain].body.status == messages2.STATUS_INVALID:
-                raise errors.AuthHandlerError(
-                    "Unable to retrieve authorization for %s" % domain)
-
-        self._cleanup_challenges()
-        return [self.authzr[domain] for domain in self.authzr]
-
-    def _respond(self, cont_resp, dv_resp):
+    def _respond(self, cont_resp, dv_resp, best_effort):
         """Send/Receive confirmation of all challenges.
 
         .. note:: This method also cleans up the auth_handler state.
 
         """
+        # TODO: chall_update is a dirty hack to get around acme-spec #105
         chall_update = dict()
         self._send_responses(self.dv_c, dv_resp, chall_update)
         self._send_responses(self.cont_c, cont_resp, chall_update)
 
-        # self._poll_challenges(chall_update)
+        # Check for updated status...
+        self._poll_challenges(chall_update, best_effort)
 
     def _send_responses(self, achalls, resps, chall_update):
-        """Send responses and make sure errors are handled."""
+        """Send responses and make sure errors are handled.
+
+        :param dict chall_update: parameter that is updated to hold
+            authzr -> list of outstanding solved annotated challenges
+
+        """
         for achall, resp in itertools.izip(achalls, resps):
+            # Don't send challenges for None and False authenticator responses
             if resp:
                 challr = self.network.answer_challenge(achall.chall, resp)
-                chall_update[achall.domain] = chall_update.get(
-                    achall.domain, []).append(challr)
+                if achall.domain in chall_update:
+                    chall_update[achall.domain].append(achall)
+                else:
+                    chall_update[achall.domain] = [achall]
 
-    # def _poll_challenges(self, chall_update):
-    #     to_check = chall_update.keys()
-    #     completed = []
-    #     while to_check:
-    #
-    # def _handle_to_check(self):
-    #     for domain in to_check:
-    #         self.authzr[domain] = self.network.poll(self.authzr[domain])
-    #         if self.authzr[domain].status == messages2.STATUS_VALID:
-    #             completed.append(domain)
-    #         if self.authzr[domain].status == messages2.STATUS_INVALID:
-    #             logging.error("Failed authorization for %s", domain)
-    #             raise errors.AuthHandlerError(
-    #                 "Failed Authorization for %s" % domain)
-    #         for challr in chall_update[domain]:
-    #             status = self._get_status_of_chall(self.authzr[domain], challr)
-    #             if status == messages2.STATUS_VALID:
-    #                 chall_update[domain].remove(challr)
-    #             elif status == messages2.STATUS_INVALID:
-    #                 raise errors.AuthHandlerError(
-    #                     "Failed %s challenge for domain %s" % (
-    #                         challr.body.chall.typ, domain))
-    #
-    # def _get_status_of_chall(self, authzr, challr):
-    #     for challb in authzr.challenges:
-    #         # TODO: Use better identifiers... instead of type
-    #         if isinstance(challb.chall, challr.body.chall):
-    #             return challb.status
+    def _poll_challenges(self, chall_update, best_effort, min_sleep=3):
+        """Wait for all challenge results to be determined."""
+        dom_to_check = set(chall_update.keys())
+        comp_domains = set()
+
+        while dom_to_check:
+            # TODO: Use retry-after...
+            time.sleep(min_sleep)
+            for domain in dom_to_check:
+                comp_challs, failed_challs = self._handle_check(
+                    domain, chall_update[domain])
+
+                if len(comp_challs) == len(chall_update[domain]):
+                    comp_domains.add(domain)
+                elif not failed_challs:
+                    for chall in comp_challs:
+                        chall_update[domain].remove(chall)
+                # We failed some challenges... damage control
+                else:
+                    # Right now... just assume a loss and carry on...
+                    if best_effort:
+                        # Add to completed list... but remove authzr
+                        del self.authzr[domain]
+                        comp_domains.add(domain)
+                    else:
+                        raise errors.AuthorizationError(
+                            "Failed Authorization procedure for %s" % domain)
+
+                self._cleanup_challenges(comp_challs)
+                self._cleanup_challenges(failed_challs)
+
+            dom_to_check -= comp_domains
+            comp_domains.clear()
+
+    def _handle_check(self, domain, achalls):
+        """Returns tuple of ('completed', 'failed')."""
+        completed = []
+        failed = []
+
+        self.authzr[domain], _ = self.network.poll(self.authzr[domain])
+        if self.authzr[domain].body.status == messages2.STATUS_VALID:
+            return achalls, []
+
+        # Note: if the whole authorization is invalid, the individual failed
+        #     challenges will be determined here...
+        for achall in achalls:
+            status = self._get_chall_status(self.authzr[domain])
+            # This does nothing for challenges that have yet to be decided yet.
+            if status == messages2.STATUS_VALID:
+                completed.append(achall)
+            elif status == messages2.STATUS_INVALID:
+                failed.append(achall)
+
+        return completed, failed
+
+    def _get_chall_status(self, authzr, chall):
+        """Get the status of the challenge.
+
+        .. warning:: This assumes only one instance of type of challenge in
+            each challenge resource.
+
+        """
+        for authzr_chall in authzr:
+            if type(authzr_chall) is type(chall):
+                return chall.status
 
     def _get_chall_pref(self, domain):
         """Return list of challenge preferences.
@@ -182,14 +220,31 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         chall_prefs.extend(self.dv_auth.get_chall_pref(domain))
         return chall_prefs
 
-    def _cleanup_challenges(self):
-        """Cleanup all configuration challenges."""
-        logging.info("Cleaning up all challenges")
+    def _cleanup_challenges(self, achall_list=None):
+        """Cleanup challenges.
 
-        if self.dv_c:
-            self.dv_auth.cleanup(self.dv_c)
-        if self.cont_c:
-            self.cont_auth.cleanup(self.cont_c)
+        If achall_list is not provided, cleanup all achallenges.
+
+        """
+        logging.info("Cleaning up challenges")
+
+        if achall_list is None:
+            dv_c = self.dv_c
+            cont_c = self.cont_c
+        else:
+            dv_c = [achall for achall in achall_list
+                    if isinstance(achall.chall, challenges.DVChallenge)]
+            cont_c = [achall for achall in achall_list if isinstance(
+                achall.chall, challenges.ContinuityChallenge)]
+
+        if dv_c:
+            self.dv_auth.cleanup(dv_c)
+            for achall in dv_c:
+                self.dv_c.remove(achall)
+        if cont_c:
+            self.cont_auth.cleanup(cont_c)
+            for achall in cont_c:
+                self.cont_c.remove(achall)
 
     def _challenge_factory(self, domain, path):
         """Construct Namedtuple Challenges
@@ -208,8 +263,8 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
             recognized
 
         """
-        dv_chall = []
-        cont_chall = []
+        dv_chall = set()
+        cont_chall = set()
 
         for index in path:
             chall = self.authzr[domain].body.challenges[index]
@@ -244,9 +299,9 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
                     chall.typ)
 
             if isinstance(chall, challenges.ContinuityChallenge):
-                cont_chall.append(achall)
+                cont_chall.add(achall)
             elif isinstance(chall, challenges.DVChallenge):
-                dv_chall.append(achall)
+                dv_chall.add(achall)
 
         return dv_chall, cont_chall
 
@@ -272,7 +327,7 @@ def gen_challenge_path(challs, preferences, combinations):
     :returns: tuple of indices from ``challenges``.
     :rtype: tuple
 
-    :raises letsencrypt.client.errors.AuthHandlerError: If a
+    :raises letsencrypt.client.errors.AuthorizationError: If a
         path cannot be created that satisfies the CA given the preferences and
         combinations.
 
@@ -318,7 +373,7 @@ def _find_smart_path(challs, preferences, combinations):
         msg = ("Client does not support any combination of challenges that "
                "will satisfy the CA.")
         logging.fatal(msg)
-        raise errors.AuthHandlerError(msg)
+        raise errors.AuthorizationError(msg)
 
     return best_combo
 

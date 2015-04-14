@@ -18,15 +18,15 @@ class LetsEncryptReverterError(LetsEncryptClientError):
 
 
 # Auth Handler Errors
-class AuthHandlerError(LetsEncryptClientError):
-    """Auth Handler error."""
+class AuthorizationError(LetsEncryptClientError):
+    """Authorization error."""
 
 
-class LetsEncryptContAuthError(AuthHandlerError):
-    """Let's Encrypt Client Authenticator error."""
+class LetsEncryptContAuthError(AuthorizationError):
+    """Let's Encrypt Continuity Authenticator error."""
 
 
-class LetsEncryptDvAuthError(AuthHandlerError):
+class LetsEncryptDvAuthError(AuthorizationError):
     """Let's Encrypt DV Authenticator error."""
 
 

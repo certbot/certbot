@@ -3,12 +3,10 @@ import logging
 import os
 import sys
 
-import Crypto.PublicKey.RSA
 import M2Crypto
 
 from letsencrypt.acme import jose
 from letsencrypt.acme.jose import jwk
-from letsencrypt.acme import messages
 
 from letsencrypt.client import auth_handler
 from letsencrypt.client import continuity_auth
@@ -134,6 +132,8 @@ class Client(object):
         if self.regr.new_authzr_uri:
             authzr = self.auth_handler.get_authorizations(
                 domains, self.regr.new_authzr_uri)
+        # This isn't required to be in the registration resource...
+        # and it isn't standardized... ugh - acme-spec #93
         else:
             authzr = self.auth_handler.get_authorizations(
                 domains,
@@ -158,35 +158,6 @@ class Client(object):
 
         return cert_file, chain_file
 
-    def acme_challenge(self, domain):
-        """Handle ACME "challenge" phase.
-
-        :returns: ACME "challenge" message.
-        :rtype: :class:`letsencrypt.acme.messages.Challenge`
-
-        """
-        return self.network.send_and_receive_expected(
-            messages.ChallengeRequest(identifier=domain),
-            messages.Challenge)
-
-    def acme_certificate(self, csr_der):
-        """Handle ACME "certificate" phase.
-
-        :param str csr_der: CSR in DER format.
-
-        :returns: ACME "certificate" message.
-        :rtype: :class:`letsencrypt.acme.message.Certificate`
-
-        """
-        logging.info("Preparing and sending CSR...")
-        return self.network.send_and_receive_expected(
-            messages.CertificateRequest.create(
-                csr=jose.ComparableX509(
-                    M2Crypto.X509.load_request_der_string(csr_der)),
-                key=jose.HashableRSAKey(Crypto.PublicKey.RSA.importKey(
-                    self.authkey.pem))),
-            messages.Certificate)
-
     def save_certificate(self, certr, cert_path, chain_path):
         # pylint: disable=no-self-use
         """Saves the certificate received from the ACME server.
@@ -205,25 +176,30 @@ class Client(object):
         """
         # try finally close
         cert_chain_abspath = None
-        cert_fd, cert_file = le_util.unique_file(cert_path, 0o644)
-        cert_fd.write(certr.body.as_pem())
-        cert_fd.close()
+        cert_file, act_cert_path = le_util.unique_file(cert_path, 0o644)
+        # TODO: Except
+        try:
+            cert_file.write(certr.body.as_pem())
+        finally:
+            cert_file.close()
         logging.info(
-            "Server issued certificate; certificate written to %s", cert_file)
+            "Server issued certificate; certificate written to %s", cert_path)
 
         if certr.cert_chain_uri:
-            # try finally close
+            # TODO: Except
             chain_cert = self.network.fetch_chain(certr.cert_chain_uri)
-            chain_fd, chain_fn = le_util.unique_file(chain_path, 0o644)
-            chain_fd.write(chain_cert.to_pem())
-            chain_fd.close()
+            chain_file, act_chain_path = le_util.unique_file(chain_path, 0o644)
+            try:
+                chain_file.write(chain_cert.to_pem())
+            finally:
+                chain_file.close()
 
-            logging.info("Cert chain written to %s", chain_fn)
+            logging.info("Cert chain written to %s", act_chain_path)
 
             # This expects a valid chain file
-            cert_chain_abspath = os.path.abspath(chain_fn)
+            cert_chain_abspath = os.path.abspath(act_chain_path)
 
-        return os.path.abspath(cert_file), cert_chain_abspath
+        return os.path.abspath(act_cert_path), cert_chain_abspath
 
     def deploy_certificate(self, domains, privkey, cert_file, chain_file=None):
         """Install certificate

@@ -2,7 +2,6 @@
 import datetime
 import heapq
 import httplib
-import itertools
 import logging
 import time
 
@@ -50,7 +49,6 @@ class Network(object):
         """
         dumps = obj.json_dumps()
         logging.debug('Serialized JSON: %s', dumps)
-        print "json_dumps:", dumps
         return jose.JWS.sign(
             payload=dumps, key=self.key, alg=self.alg).json_dumps()
 
@@ -83,9 +81,6 @@ class Network(object):
             jobj = None
 
         if not response.ok:
-            print response
-            print response.headers
-            print response.content
             if jobj is not None:
                 if response_ct != cls.JSON_ERROR_CONTENT_TYPE:
                     logging.debug(
@@ -93,6 +88,7 @@ class Network(object):
                         response_ct)
 
                 try:
+                    # TODO: This is insufficient or doesn't work as intended.
                     raise messages2.Error.from_json(jobj)
                 except jose.DeserializationError as error:
                     # Couldn't deserialize JSON object
@@ -297,7 +293,6 @@ class Network(object):
         :raises errors.UnexpectedUpdate:
 
         """
-        print "sendinging challenge to:", challb.uri
         response = self._post(challb.uri, self._wrap_in_jws(response))
         try:
             authzr_uri = response.links['up']['url']
@@ -307,13 +302,13 @@ class Network(object):
             # once the error is fixed.
             return challb
             # raise errors.NetworkError('"up" Link header missing')
-        challr2 = messages2.ChallengeResource(
+        challr = messages2.ChallengeResource(
             authzr_uri=authzr_uri,
             body=messages2.ChallengeBody.from_json(response.json()))
         # TODO: check that challr.uri == response.headers['Location']?
-        if challr2.uri != challb.uri:
+        if challr.uri != challb.uri:
             raise errors.UnexpectedUpdate(challb.uri)
-        return challr2
+        return challr
 
     @classmethod
     def retry_after(cls, response, default):
@@ -374,7 +369,6 @@ class Network(object):
         """
         assert authzrs, "Authorizations list is empty"
         logging.debug("Requesting issuance...")
-        print "Requesting issuance: ", authzrs[0]
 
         # TODO: assert len(authzrs) == number of SANs
         req = messages2.CertificateRequest(

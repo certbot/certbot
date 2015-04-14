@@ -1,5 +1,4 @@
 """ACME protocol v02 messages."""
-from letsencrypt.acme import challenges
 from letsencrypt.acme import fields
 from letsencrypt.acme import jose
 
@@ -111,10 +110,6 @@ class Resource(jose.ImmutableMap):
     __slots__ = ('body', 'uri')
 
 
-class ResourceBody(jose.JSONObjectWithFields):
-    """ACME Resource Body."""
-
-
 class TypedResourceBody(jose.TypedJSONObjectWithFields):
     """ACME Resource Body with type."""
 
@@ -153,7 +148,7 @@ class Registration(ResourceBody):
 class ChallengeResource(Resource, jose.JSONObjectWithFields):
     """Challenge Resource.
 
-    :ivar letsencrypt.acme.messages2.ChallengeBody body:
+    :ivar letsencrypt.acme.messages2.Challenge body:
     :ivar str authzr_uri: URI found in the 'up' ``Link`` header.
 
     """
@@ -174,7 +169,6 @@ class Challenge(TypedResourceBody):
 
     """
     TYPES = {}
-    # __slots__ = ('chall',)
     uri = jose.Field('uri')
     status = jose.Field('status', decoder=Status.from_json)
     validated = fields.RFC3339Field('validated', omitempty=True)
@@ -182,6 +176,7 @@ class Challenge(TypedResourceBody):
     def to_json(self):
         jobj = super(Challenge, self).to_json()
         return jobj
+
 
 
 class AuthorizationResource(Resource):
@@ -198,7 +193,7 @@ class Authorization(ResourceBody):
     """Authorization Resource Body.
 
     :ivar letsencrypt.acme.messages2.Identifier identifier:
-    :ivar list challenges: `list` of `ChallengeBody`
+    :ivar list challenges: `list` of `.Challenge`
     :ivar tuple combinations: Challenge combinations (`tuple` of `tuple`
         of `int`, as opposed to `list` of `list` from the spec).
     :ivar letsencrypt.acme.jose.jwk.JWK key: Public key.
@@ -225,7 +220,7 @@ class Authorization(ResourceBody):
 
     @challenges.decoder
     def challenges(value):  # pylint: disable=missing-docstring,no-self-argument
-        return tuple(challenges.Challenge.from_json(chall) for chall in value)
+        return tuple(Challenge.from_json(chall) for chall in value)
 
     @property
     def resolved_combinations(self):
