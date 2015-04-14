@@ -286,9 +286,9 @@ class NginxParser(object):
             changed = False
             if len(directive) == 0:
                 continue
-            for line in block:
+            for index, line in enumerate(block):
                 if len(line) > 0 and line[0] == directive[0]:
-                    line = directive
+                    block[index] = directive
                     changed = True
             if not changed:
                 raise errors.LetsEncryptMisconfigurationError(
@@ -305,7 +305,7 @@ class NginxParser(object):
             split across multiple conf files.
 
         :param str filename: The absolute filename of the config file
-        :param str names: The server_name to match
+        :param set names: The server_name to match
         :param list directives: The directives to add
         :param bool replace: Whether to only replace existing directives
 
@@ -329,14 +329,11 @@ def _do_for_subarray(entry, condition, func):
     :param function func: The function to call for each matching item
 
     """
-    for item in entry:
-        if type(item) == list:
-            if condition(item):
-                try:
-                    func(item)
-                except:
-                    logging.warn("Error in _do_for_subarray for %s" % item)
-            else:
+    if type(entry) == list:
+        if condition(entry):
+            func(entry)
+        else:
+            for item in entry:
                 _do_for_subarray(item, condition, func)
 
 
@@ -387,10 +384,14 @@ def get_best_match(target_name, names):
 
 
 def _exact_match(target_name, name):
-    return (target_name == name or target_name == '.' + name)
+    return (target_name == name or '.' + target_name == name)
 
 
 def _wildcard_match(target_name, name, start):
+    # Degenerate case
+    if name == '*':
+        return True
+
     parts = target_name.split('.')
     match_parts = name.split('.')
 
@@ -399,8 +400,12 @@ def _wildcard_match(target_name, name, start):
         parts.reverse()
         match_parts.reverse()
 
-    # The first part must be a wildcard
-    if match_parts.pop(0) != '*':
+    if len(match_parts) == 0:
+        return False
+
+    # The first part must be a wildcard or blank, e.g. '.eff.org'
+    first = match_parts.pop(0)
+    if first != '*' and first != '':
         return False
 
     target_name = '.'.join(parts)
@@ -412,13 +417,13 @@ def _wildcard_match(target_name, name, start):
 
 def _regex_match(target_name, name):
     # Must start with a tilde
-    if name[0] != '~':
+    if len(name) < 2 or name[0] != '~':
         return False
 
     # After tilde is a perl-compatible regex
     try:
         regex = re.compile(name[1:])
-        if regex.match(target_name):
+        if re.match(regex, target_name):
             return True
         else:
             return False
