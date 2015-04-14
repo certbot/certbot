@@ -169,10 +169,11 @@ class NginxParser(object):
         names = re.sub(whitespace_re, ' ', names)
         return names.split(' ')
 
-    def _parse_files(self, filepath):
+    def _parse_files(self, filepath, override=False):
         """Parse files from a glob
 
         :param str filepath: Nginx config file path
+        :param bool override: Whether to parse a file that has been parsed
         :returns: list of parsed tree structures
         :rtype: list
 
@@ -180,7 +181,7 @@ class NginxParser(object):
         files = glob.glob(filepath)
         trees = []
         for f in files:
-            if f in self.parsed:
+            if f in self.parsed and not override:
                 continue
             try:
                 with open(f) as fo:

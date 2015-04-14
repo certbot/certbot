@@ -99,7 +99,8 @@ class NginxParserTest(util.NginxTest):
                              False, True, set(['www.example.org']), [])
         vhost5 = VirtualHost(parser.abs_path('foo.conf'),
                              [Addr('*', '80', True, True)],
-                             True, True, set(['*.www.foo.com']), [])
+                             True, True, set(['*.www.foo.com',
+                                              '*.www.example.com']), [])
 
         self.assertEqual(5, len(vhosts))
         example_com = filter(lambda x: 'example.com' in x.filep, vhosts)[0]

@@ -91,7 +91,7 @@ class NginxConfigurator(object):
 
         # Set Version
         if self.version is None:
-            self.version = self._get_version()
+            self.version = self.get_version()
 
         # Get all of the available vhosts
         self.vhosts = self.parser.get_vhosts()
@@ -214,7 +214,7 @@ class NginxConfigurator(object):
                 matches.append({'vhost': vhost,
                                 'name': name,
                                 'rank': 6 if vhost.ssl else 7})
-        return sorted(matches, key=lambda x: x['rank'], reverse=True)
+        return sorted(matches, key=lambda x: x['rank'])
 
     def get_all_names(self):
         """Returns all names found in the Nginx Configuration.
@@ -303,7 +303,7 @@ class NginxConfigurator(object):
         try:
             return self._enhance_func[enhancement](
                 self.choose_vhost(domain), options)
-        except ValueError:
+        except (KeyError, ValueError):
             raise errors.LetsEncryptConfiguratorError(
                 "Unsupported enhancement: {}".format(enhancement))
         except errors.LetsEncryptConfiguratorError:
@@ -360,7 +360,7 @@ class NginxConfigurator(object):
         le_util.make_or_verify_dir(self.config.work_dir, 0o755, uid)
         le_util.make_or_verify_dir(self.config.backup_dir, 0o755, uid)
 
-    def _get_version(self):
+    def get_version(self):
         """Return version of Nginx Server.
 
         Version is returned as tuple. (ie. 2.4.7 = (2, 4, 7))
@@ -440,11 +440,11 @@ class NginxConfigurator(object):
             self.reverter.add_to_checkpoint(save_files,
                                             self.save_notes)
 
-        # Don't override original files for now.
-        self.parser.filedump('le')
+        self.parser.filedump(ext='')
         if title and not temporary:
             self.reverter.finalize_checkpoint(title)
 
+        # Refresh the vhosts
         self.vhosts = self.parser.get_vhosts()
 
         return True

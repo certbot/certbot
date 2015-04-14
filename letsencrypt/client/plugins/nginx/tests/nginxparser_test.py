@@ -64,8 +64,8 @@ class TestRawNginxParser(unittest.TestCase):
             parsed,
             [['user', 'www-data'],
              [['server'], [
-                 ['listen', '80'],
-                 ['server_name', 'foo.com'],
+                 ['listen', '*:80 default_server ssl'],
+                 ['server_name', '*.www.foo.com *.www.example.com'],
                  ['root', '/home/ubuntu/sites/foo/'],
                  [['location', '/status'], [
                      ['check_status'],
