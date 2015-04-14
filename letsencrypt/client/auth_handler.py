@@ -190,7 +190,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         # Note: if the whole authorization is invalid, the individual failed
         #     challenges will be determined here...
         for achall in achalls:
-            status = self._get_chall_status(self.authzr[domain])
+            status = self._get_chall_status(self.authzr[domain], achall)
             # This does nothing for challenges that have yet to be decided yet.
             if status == messages2.STATUS_VALID:
                 completed.append(achall)
