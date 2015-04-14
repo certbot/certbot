@@ -80,6 +80,8 @@ Plugin-architecture
 
 Let's Encrypt has a plugin architecture to facilitate support for
 different webservers, other TLS servers, and operating systems.
+The interfaces available for plugins to implement are defined in
+`interfaces.py`_.
 
 The most common kind of plugin is a "Configurator", which is likely to
 implement the `~letsencrypt.client.interfaces.IAuthenticator` and
@@ -88,6 +90,8 @@ Configurators may implement just one of those).
 
 There are also `~letsencrypt.client.interfaces.IDisplay` plugins,
 which implement bindings to alternative UI libraries.
+
+.. _interfaces.py: https://github.com/letsencrypt/lets-encrypt-preview/blob/master/letsencrypt/client/interfaces.py
 
 
 Authenticators

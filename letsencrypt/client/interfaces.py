@@ -13,6 +13,10 @@ class IAuthenticator(zope.interface.Interface):
 
     """
 
+    description = zope.interface.Attribute(
+        "Short description of this authenticator. "
+        "Used in interactive configuration.")
+
     def prepare():
         """Prepare the authenticator.
 
@@ -89,6 +93,8 @@ class IConfig(zope.interface.Interface):
     server = zope.interface.Attribute(
         "CA hostname (and optionally :port). The server certificate must "
         "be trusted in order to avoid further modifications to the client.")
+    authenticator = zope.interface.Attribute(
+        "Authenticator to use for responding to challenges.")
     rsa_key_size = zope.interface.Attribute("Size of the RSA key.")
 
     config_dir = zope.interface.Attribute("Configuration directory.")
