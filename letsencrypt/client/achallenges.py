@@ -1,17 +1,20 @@
 """Client annotated ACME challenges.
 
 Please use names such as ``achall`` to distiguish from variables "of type"
-:class:`letsencrypt.acme.challenges.Challenge` (denoted by ``chall``)::
+:class:`letsencrypt.acme.challenges.Challenge` (denoted by ``chall``)
+and :class:`.ChallengeBody` (denoted by ``challb``)::
 
   from letsencrypt.acme import challenges
+  from letsencrypt.acme import messages2
   from letsencrypt.client import achallenges
 
   chall = challenges.DNS(token='foo')
-  achall = achallenges.DNS(chall=chall, domain='example.com')
+  challb = messages2.ChallengeBody(chall=chall)
+  achall = achallenges.DNS(chall=challb, domain='example.com')
 
 Note, that all annotated challenges act as a proxy objects::
 
-  achall.token == chall.token
+  achall.token == challb.token
 
 """
 from letsencrypt.acme import challenges
@@ -29,19 +32,19 @@ class AnnotatedChallenge(jose_util.ImmutableMap):
     Wraps around server provided challenge and annotates with data
     useful for the client.
 
-    :ivar chall: Wrapped `~.ChallengeBody` (or just `~.challenges.Challenge`).
+    :ivar challb: Wrapped `~.ChallengeBody`.
 
     """
-    __slots__ = ('chall',)
+    __slots__ = ('challb',)
     acme_type = NotImplemented
 
     def __getattr__(self, name):
-        return getattr(self.chall, name)
+        return getattr(self.challb, name)
 
 
 class DVSNI(AnnotatedChallenge):
     """Client annotated "dvsni" ACME challenge."""
-    __slots__ = ('chall', 'domain', 'key')
+    __slots__ = ('challb', 'domain', 'key')
     acme_type = challenges.DVSNI
 
     def gen_cert_and_response(self, s=None):  # pylint: disable=invalid-name
@@ -55,35 +58,35 @@ class DVSNI(AnnotatedChallenge):
         """
         response = challenges.DVSNIResponse(s=s)
         cert_pem = crypto_util.make_ss_cert(self.key.pem, [
-            self.nonce_domain, self.domain, response.z_domain(self.chall)])
+            self.nonce_domain, self.domain, response.z_domain(self.challb)])
         return cert_pem, response
 
 
 class SimpleHTTPS(AnnotatedChallenge):
     """Client annotated "simpleHttps" ACME challenge."""
-    __slots__ = ('chall', 'domain', 'key')
+    __slots__ = ('challb', 'domain', 'key')
     acme_type = challenges.SimpleHTTPS
 
 
 class DNS(AnnotatedChallenge):
     """Client annotated "dns" ACME challenge."""
-    __slots__ = ('chall', 'domain')
+    __slots__ = ('challb', 'domain')
     acme_type = challenges.DNS
 
 
 class RecoveryContact(AnnotatedChallenge):
     """Client annotated "recoveryContact" ACME challenge."""
-    __slots__ = ('chall', 'domain')
+    __slots__ = ('challb', 'domain')
     acme_type = challenges.RecoveryContact
 
 
 class RecoveryToken(AnnotatedChallenge):
     """Client annotated "recoveryToken" ACME challenge."""
-    __slots__ = ('chall', 'domain')
+    __slots__ = ('challb', 'domain')
     acme_type = challenges.RecoveryToken
 
 
 class ProofOfPossession(AnnotatedChallenge):
     """Client annotated "proofOfPossession" ACME challenge."""
-    __slots__ = ('chall', 'domain')
+    __slots__ = ('challb', 'domain')
     acme_type = challenges.ProofOfPossession
