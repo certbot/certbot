@@ -167,6 +167,9 @@ class ChallengeBody(ResourceBody):
        such as ``challb`` to distinguish instanced of this class from
        ``achall``.
 
+    :ivar letsencrypt.acme.challenges.Challenge: Wrapped challenge.
+        Conveniently, all challenge fields are proxied, i.e. you can
+        call ``challb.x`` to get ``challb.chall.x`` contents.
     :ivar letsencrypt.acme.messages2.Status status:
     :ivar datetime.datetime validated:
 
@@ -186,6 +189,9 @@ class ChallengeBody(ResourceBody):
         jobj_fields = super(ChallengeBody, cls).fields_from_json(jobj)
         jobj_fields['chall'] = challenges.Challenge.from_json(jobj)
         return jobj_fields
+
+    def __getattr__(self, name):
+        return getattr(self.chall, name)
 
 
 class AuthorizationResource(Resource):

@@ -103,6 +103,9 @@ class ChallengeBodyTest(unittest.TestCase):
         from letsencrypt.acme.messages2 import ChallengeBody
         self.assertEqual(self.challb, ChallengeBody.from_json(self.jobj_from))
 
+    def test_getattr_proxy(self):
+        self.assertEqual('foo', self.challb.token)
+
 
 class AuthorizationTest(unittest.TestCase):
     """Tests for letsencrypt.acme.messages2.Authorization."""
