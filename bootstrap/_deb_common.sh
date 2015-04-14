@@ -29,7 +29,7 @@ fi
 #           #276, https://github.com/martinpaljak/M2Crypto/issues/62,
 #           M2Crypto setup.py:add_multiarch_paths
 
-sudo apt-get update
-sudo apt-get install -y --no-install-recommends \
-     python python-setuptools "$virtualenv" python-dev gcc swig \
-     dialog libaugeas0 libssl-dev libffi-dev ca-certificates dpkg-dev
+apt-get update
+apt-get install -y --no-install-recommends \
+  python python-setuptools "$virtualenv" python-dev gcc swig \
+  dialog libaugeas0 libssl-dev libffi-dev ca-certificates dpkg-dev

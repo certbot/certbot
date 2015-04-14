@@ -11,6 +11,7 @@ are provided mainly for the :ref:`developers <hacking>` reference.
 
 In general:
 
+* ``sudo`` is required as a suggested way of running privileged process
 * `swig`_ is required for compiling `m2crypto`_
 * `augeas`_ is required for the ``python-augeas`` bindings
 
@@ -20,7 +21,7 @@ Ubuntu
 
 .. code-block:: shell
 
-   ./bootstrap/ubuntu.sh
+   sudo ./bootstrap/ubuntu.sh
 
 
 Debian
@@ -28,13 +29,10 @@ Debian
 
 .. code-block:: shell
 
-   ./bootstrap/debian.sh
+   sudo ./bootstrap/debian.sh
 
 For squezze you will need to:
 
-- Run ``apt-get install -y --no-install-recommends sudo`` as root
-  (``sudo`` is not installed by default) before running the bootstrap
-  script.
 - Use ``virtualenv --no-site-packages -p python`` instead of ``-p python2``.
 - Use text mode ``sudo ./venv/bin/letsencrypt --text`` (`#280`_)
 
@@ -47,7 +45,7 @@ Mac OSX
 
 .. code-block:: shell
 
-   ./bootstrap/mac.sh
+   sudo ./bootstrap/mac.sh
 
 
 Installation
