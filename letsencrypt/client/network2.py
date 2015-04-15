@@ -186,6 +186,19 @@ class Network(object):
 
         return regr
 
+    def register_from_account(self, account):
+         # TODO: properly format/scrub phone number and email
+        details = (
+            "mailto:" + self.email if self.email is not None else None,
+            "tel:" + self.phone if self.phone is not None else None
+        )
+
+        contact_tuple = tuple(det for det in details if det is not None)
+
+        account.regr = self.register(contact=contact_tuple)
+
+        return account
+
     def update_registration(self, regr):
         """Update registration.
 

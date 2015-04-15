@@ -4,6 +4,7 @@ import os
 import sys
 
 import M2Crypto
+import zope.component
 
 from letsencrypt.acme import jose
 from letsencrypt.acme.jose import jwk
@@ -12,6 +13,7 @@ from letsencrypt.client import auth_handler
 from letsencrypt.client import continuity_auth
 from letsencrypt.client import crypto_util
 from letsencrypt.client import errors
+from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
 from letsencrypt.client import network2
 from letsencrypt.client import reverter
@@ -31,8 +33,8 @@ class Client(object):
     :ivar authkey: Authorization Key
     :type authkey: :class:`letsencrypt.client.le_util.Key`
 
-    :ivar reg: Registration Resource
-    :type reg: :class:`letsencrypt.acme.messages2.RegistrationResource`
+    :ivar account: Account object used for registration
+    :type account: :class:`letsencrypt.client.registration.Registration`
 
     :ivar auth_handler: Object that supports the IAuthenticator interface.
         auth_handler contains both a dv_authenticator and a
@@ -58,7 +60,7 @@ class Client(object):
 
         """
         self.authkey = authkey
-        self.regr = None
+        self.account = None
         self.installer = installer
 
         # TODO: Allow for other alg types besides RS256
@@ -75,34 +77,19 @@ class Client(object):
         else:
             self.auth_handler = None
 
-    def register(self, email=None, phone=None):
+    def register(self, network, store=True):
         """New Registration with the ACME server.
 
-        :param str email: User's email address
-        :param str phone: User's phone number
+        :param bool store: Whether to store the registration information
 
         """
-        # TODO: properly format/scrub phone number
-        details = (
-            "mailto:" + email if email is not None else None,
-            "tel:" + phone if phone is not None else None
-        )
-        contact_tuple = tuple(detail for detail in details if detail is not None)
-
-        # TODO: Replace with real info once through testing.
-        if not contact_tuple:
-            contact_tuple = ("mailto:letsencrypt-client@letsencrypt.org",
-                             "tel:+12025551212")
-        self.regr = self.network.register(contact=contact_tuple)
-
-        # If terms of service exist... we need to sign it.
-        # TODO: Replace the `preview EULA` with this...
-        if self.regr.terms_of_service:
-            self.network.agree_to_tos(self.regr)
-
-    def set_regr(self, regr):
-        """Set a preexisting registration resource."""
-        self.regr = regr
+        self.account = self.network.register_from_account(self.account)
+        if self.account.regr.terms_of_service or self.config.tos:
+            agree = zope.component.getUtility(interfaces.IDisplay).yesno(
+                self.account.regr.terms_of_service, "Agree", "Cancel")
+            if agree:
+                self.account.regr = self.network.agree_to_tos(self.account.regr)
+            # TODO: Handle case where user doesn't agree
 
     def obtain_certificate(self, domains, csr=None):
         """Obtains a certificate from the ACME server.
@@ -141,7 +128,8 @@ class Client(object):
 
         # Create CSR from names
         if csr is None:
-            csr = init_csr(self.authkey, domains, self.config.cert_dir)
+            csr = crypto_util.init_save_csr(
+                self.authkey, domains, self.config.cert_dir)
 
         # Retrieve certificate
         certr = self.network.request_issuance(
@@ -321,60 +309,6 @@ def validate_key_csr(privkey, csr=None):
                     csr.data, privkey.pem):
                 raise errors.LetsEncryptClientError(
                     "The key and CSR do not match")
-
-
-def init_key(key_size, key_dir):
-    """Initializes privkey.
-
-    Inits key and CSR using provided files or generating new files
-    if necessary. Both will be saved in PEM format on the
-    filesystem. The CSR is placed into DER format to allow
-    the namedtuple to easily work with the protocol.
-
-    :param str key_dir: Key save directory.
-
-    """
-    try:
-        key_pem = crypto_util.make_key(key_size)
-    except ValueError as err:
-        logging.fatal(str(err))
-        sys.exit(1)
-
-    # Save file
-    le_util.make_or_verify_dir(key_dir, 0o700)
-    key_f, key_filename = le_util.unique_file(
-        os.path.join(key_dir, "key-letsencrypt.pem"), 0o600)
-    key_f.write(key_pem)
-    key_f.close()
-
-    logging.info("Generating key (%d bits): %s", key_size, key_filename)
-
-    return le_util.Key(key_filename, key_pem)
-
-
-def init_csr(privkey, names, cert_dir):
-    """Initialize a CSR with the given private key.
-
-    :param privkey: Key to include in the CSR
-    :type privkey: :class:`letsencrypt.client.le_util.Key`
-
-    :param set names: `str` names to include in the CSR
-
-    :param str cert_dir: Certificate save directory.
-
-    """
-    csr_pem, csr_der = crypto_util.make_csr(privkey.pem, names)
-
-    # Save CSR
-    le_util.make_or_verify_dir(cert_dir, 0o755)
-    csr_f, csr_filename = le_util.unique_file(
-        os.path.join(cert_dir, "csr-letsencrypt.pem"), 0o644)
-    csr_f.write(csr_pem)
-    csr_f.close()
-
-    logging.info("Creating CSR: %s", csr_filename)
-
-    return le_util.CSR(csr_filename, csr_der, "der")
 
 
 def list_available_authenticators(avail_auths):

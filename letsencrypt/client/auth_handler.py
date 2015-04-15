@@ -172,8 +172,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
                         raise errors.AuthorizationError(
                             "Failed Authorization procedure for %s" % domain)
 
-                self._cleanup_challenges(comp_challs)
-                self._cleanup_challenges(failed_challs)
+                self._cleanup_challenges(comp_challs+failed_challs)
 
             dom_to_check -= comp_domains
             comp_domains.clear()
@@ -191,6 +190,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         #     challenges will be determined here...
         for achall in achalls:
             status = self._get_chall_status(self.authzr[domain], achall)
+            print "Status:", status
             # This does nothing for challenges that have yet to be decided yet.
             if status == messages2.STATUS_VALID:
                 completed.append(achall)
@@ -209,6 +209,8 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         for authzr_chall in authzr:
             if type(authzr_chall) is type(chall):
                 return chall.status
+        raise errors.AuthorizationError(
+            "Target challenge not found in authorization resource")
 
     def _get_chall_pref(self, domain):
         """Return list of challenge preferences.

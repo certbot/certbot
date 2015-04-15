@@ -4,6 +4,8 @@
     is capable of handling the signatures.
 
 """
+import logging
+import os
 import time
 
 import Crypto.Hash.SHA256
@@ -12,7 +14,69 @@ import Crypto.Signature.PKCS1_v1_5
 
 import M2Crypto
 
+from letsencrypt.client import le_util
 
+
+# High level functions
+def init_save_key(key_size, key_dir, keyname="key-letsencrypt.pem"):
+    """Initializes and saves a privkey.
+
+    Inits key and saves it in PEM format on the filesystem.
+
+    .. note:: keyname is the attempted filename, it may be different if a file
+        already exists at the path.
+
+    :param int key_size: RSA key size in bits
+    :param str key_dir: Key save directory.
+    :param str keyname: Filename of key
+
+    :raises ValueError: If unable to generate the key given key_size.
+
+    """
+    try:
+        key_pem = make_key(key_size)
+    except ValueError as err:
+        logging.fatal(str(err))
+        raise err
+
+    # Save file
+    le_util.make_or_verify_dir(key_dir, 0o700)
+    key_f, key_path = le_util.unique_file(
+        os.path.join(key_dir, keyname), 0o600)
+    key_f.write(key_pem)
+    key_f.close()
+
+    logging.info("Generating key (%d bits): %s", key_size, key_path)
+
+    return le_util.Key(key_path, key_pem)
+
+
+def init_save_csr(privkey, names, cert_dir):
+    """Initialize a CSR with the given private key.
+
+    :param privkey: Key to include in the CSR
+    :type privkey: :class:`letsencrypt.client.le_util.Key`
+
+    :param set names: `str` names to include in the CSR
+
+    :param str cert_dir: Certificate save directory.
+
+    """
+    csr_pem, csr_der = make_csr(privkey.pem, names)
+
+    # Save CSR
+    le_util.make_or_verify_dir(cert_dir, 0o755)
+    csr_f, csr_filename = le_util.unique_file(
+        os.path.join(cert_dir, "csr-letsencrypt.pem"), 0o644)
+    csr_f.write(csr_pem)
+    csr_f.close()
+
+    logging.info("Creating CSR: %s", csr_filename)
+
+    return le_util.CSR(csr_filename, csr_der, "der")
+
+
+# Lower level functions
 def make_csr(key_str, domains):
     """Generate a CSR.
 

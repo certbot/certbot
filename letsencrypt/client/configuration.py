@@ -48,6 +48,16 @@ class NamespaceConfig(object):
             self.namespace.work_dir, constants.CERT_KEY_BACKUP_DIR,
             self.namespace.server.partition(":")[0])
 
+    @property
+    def accounts_dir(self):  #pylint: disable=missing-docstring
+        return os.path.join(
+            self.namespace.config_dir, "accounts", self.namespace.server)
+
+    @property
+    def account_keys_dir(self):  #pylint: disable=missing-docstring
+        return os.path.join(self.namespace.config_dir, "accounts",
+                            self.namespace.server, "keys")
+
     # TODO: This should probably include the server name
     @property
     def rec_token_dir(self):  # pylint: disable=missing-docstring

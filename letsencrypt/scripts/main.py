@@ -18,6 +18,7 @@ import letsencrypt
 
 from letsencrypt.client import configuration
 from letsencrypt.client import client
+from letsencrypt.client import crypto_util
 from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
@@ -93,7 +94,7 @@ def create_parser():
     add("--no-confirm", dest="no_confirm", action="store_true",
         help="Turn off confirmation screens, currently used for --revoke")
 
-    add("-e", "--agree-tos", dest="eula", action="store_true",
+    add("-e", "--agree-tos", dest="tos", action="store_true",
         help="Skip the end user license agreement screen.")
     add("-t", "--text", dest="use_curses", action="store_false",
         help="Use the text output instead of the curses UI.")
@@ -163,7 +164,7 @@ def main():  # pylint: disable=too-many-branches, too-many-statements
         client.rollback(args.rollback, config)
         sys.exit()
 
-    if not args.eula:
+    if not args.tos:
         display_eula()
 
     all_auths = init_auths(config)
@@ -195,7 +196,7 @@ def main():  # pylint: disable=too-many-branches, too-many-statements
 
     # Prepare for init of Client
     if args.authkey is None:
-        authkey = client.init_key(args.rsa_key_size, config.key_dir)
+        authkey = crypto_util.init_save_key(args.rsa_key_size, config.key_dir)
     else:
         authkey = le_util.Key(args.authkey[0], args.authkey[1])
 

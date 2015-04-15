@@ -1006,15 +1006,16 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 apache_dvsni.add_chall(achall, i)
 
         sni_response = apache_dvsni.perform()
-        # Must restart in order to activate the challenges.
-        # Handled here because we may be able to load up other challenge types
-        self.restart()
+        if sni_response:
+            # Must restart in order to activate the challenges.
+            # Handled here because we may be able to load up other challenge types
+            self.restart()
 
-        # Go through all of the challenges and assign them to the proper place
-        # in the responses return value. All responses must be in the same order
-        # as the original challenges.
-        for i, resp in enumerate(sni_response):
-            responses[apache_dvsni.indices[i]] = resp
+            # Go through all of the challenges and assign them to the proper
+            # place in the responses return value. All responses must be in the
+            # same order as the original challenges.
+            for i, resp in enumerate(sni_response):
+                responses[apache_dvsni.indices[i]] = resp
 
         return responses
 
