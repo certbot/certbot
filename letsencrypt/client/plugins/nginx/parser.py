@@ -27,6 +27,12 @@ class NginxParser(object):
         # Parse nginx.conf and included files.
         # TODO: Check sites-available/ as well. For now, the configurator does
         # not enable sites from there.
+        self.load()
+
+    def load(self):
+        """Loads Nginx files into a parsed tree.
+
+        """
         self._parse_recursively(self.loc["root"])
 
     def _parse_recursively(self, filepath):

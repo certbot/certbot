@@ -37,11 +37,12 @@ class NginxParserTest(util.NginxTest):
         parser = NginxParser(self.config_path + os.path.sep, None)
         self.assertEqual(parser.root, self.config_path)
 
-    def test_parse(self):
+    def test_load(self):
         """Test recursive conf file parsing.
 
         """
         parser = NginxParser(self.config_path, self.ssl_options)
+        parser.load()
         self.assertEqual(set(map(parser.abs_path,
                              ['foo.conf', 'nginx.conf', 'server.conf',
                               'sites-enabled/default',

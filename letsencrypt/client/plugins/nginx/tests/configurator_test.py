@@ -28,7 +28,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
     def test_prepare(self):
         self.assertEquals((1, 6, 2), self.config.version)
-        self.assertEquals(5, len(self.config.vhosts))
+        self.assertEquals(5, len(self.config.parser.parsed))
 
     def test_get_all_names(self):
         names = self.config.get_all_names()

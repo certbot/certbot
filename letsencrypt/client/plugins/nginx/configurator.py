@@ -40,11 +40,6 @@ class NginxConfigurator(object):
     :type reverter: :class:`letsencrypt.client.reverter.Reverter`
 
     :ivar tup version: version of Nginx
-    :ivar list vhosts: All vhosts found in the configuration
-        (:class:`list` of
-        :class:`~letsencrypt.client.plugins.nginx.obj.VirtualHost`)
-
-    :ivar dict assoc: Mapping between domains and vhosts
 
     """
     zope.interface.implements(interfaces.IAuthenticator, interfaces.IInstaller)
@@ -67,15 +62,12 @@ class NginxConfigurator(object):
         # Files to save
         self.save_notes = ""
 
-        # Add name_server association dict
-        self.assoc = dict()
         # Add number of outstanding challenges
         self._chall_out = 0
 
         # These will be set in the prepare function
         self.parser = None
         self.version = version
-        self.vhosts = None
         self._enhance_func = {}  # TODO: Support at least redirects
 
         # Set up reverter
@@ -92,9 +84,6 @@ class NginxConfigurator(object):
         # Set Version
         if self.version is None:
             self.version = self.get_version()
-
-        # Get all of the available vhosts
-        self.vhosts = self.parser.get_vhosts()
 
         temp_install(self.config.nginx_mod_ssl_conf)
 
@@ -157,24 +146,19 @@ class NginxConfigurator(object):
         """
         vhost = None
 
-        # If we already found the vhost for the target, use it
-        if target_name in self.assoc:
-            vhost = self.assoc[target_name]
+        matches = self._get_ranked_matches(target_name)
+        if len(matches) == 0:
+            # No matches at all :'(
+            pass
+        elif matches[0]['rank'] in range(2, 6):
+            # Wildcard match - need to find the longest one
+            rank = matches[0]['rank']
+            wildcards = [x for x in matches if x['rank'] == rank]
+            vhost = max(wildcards, key=lambda x: len(x['name']))['vhost']
         else:
-            matches = self._get_ranked_matches(target_name)
-            if len(matches) == 0:
-                # No matches at all :'(
-                pass
-            elif matches[0]['rank'] in range(2, 6):
-                # Wildcard match - need to find the longest one
-                rank = matches[0]['rank']
-                wildcards = [x for x in matches if x['rank'] == rank]
-                vhost = max(wildcards, key=lambda x: len(x['name']))['vhost']
-            else:
-                vhost = matches[0]['vhost']
+            vhost = matches[0]['vhost']
 
         if vhost is not None:
-            self.assoc[target_name] = vhost
             if not vhost.ssl:
                 self._make_server_ssl(vhost.filep, vhost.names)
 
@@ -196,7 +180,7 @@ class NginxConfigurator(object):
         # 3. longest wildcard name ending with *
         # 4. first matching regex in order of appearance in the file
         matches = []
-        for vhost in self.vhosts:
+        for vhost in self.parser.get_vhosts():
             name_type, name = parser.get_best_match(target_name, vhost.names)
             if name_type == 'exact':
                 matches.append({'vhost': vhost,
@@ -233,7 +217,7 @@ class NginxConfigurator(object):
         hostname_regex = r"^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*[a-z]+$"
         hostnames = re.compile(hostname_regex, re.IGNORECASE)
 
-        for vhost in self.vhosts:
+        for vhost in self.parser.get_vhosts():
             all_names.update(vhost.names)
 
             for addr in vhost.addrs:
@@ -444,9 +428,6 @@ class NginxConfigurator(object):
         if title and not temporary:
             self.reverter.finalize_checkpoint(title)
 
-        # Refresh the vhosts
-        self.vhosts = self.parser.get_vhosts()
-
         return True
 
     def recovery_routine(self):
@@ -456,10 +437,12 @@ class NginxConfigurator(object):
 
         """
         self.reverter.recovery_routine()
+        self.parser.load()
 
     def revert_challenge_config(self):
         """Used to cleanup challenge configurations."""
         self.reverter.revert_temporary_config()
+        self.parser.load()
 
     def rollback_checkpoints(self, rollback=1):
         """Rollback saved checkpoints.
@@ -468,6 +451,7 @@ class NginxConfigurator(object):
 
         """
         self.reverter.rollback_checkpoints(rollback)
+        self.parser.load()
 
     def view_config_changes(self):
         """Show all of the configuration changes that have taken place."""
