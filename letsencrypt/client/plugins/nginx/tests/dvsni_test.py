@@ -1,0 +1,85 @@
+"""Test for letsencrypt.client.plugins.nginx.dvsni."""
+import pkg_resources
+import unittest
+import shutil
+
+import mock
+
+from letsencrypt.acme import challenges
+
+from letsencrypt.client import achallenges
+from letsencrypt.client import le_util
+
+from letsencrypt.client.plugins.nginx.tests import util
+
+
+class DvsniPerformTest(util.NginxTest):
+    """Test the NginxDVSNI challenge."""
+
+    def setUp(self):
+        super(DvsniPerformTest, self).setUp()
+
+        config = util.get_nginx_configurator(
+            self.config_path, self.config_dir, self.work_dir,
+            self.ssl_options)
+
+        from letsencrypt.client.plugins.nginx import dvsni
+        self.sni = dvsni.NginxDvsni(config)
+
+        rsa256_file = pkg_resources.resource_filename(
+            "letsencrypt.client.tests", "testdata/rsa256_key.pem")
+        rsa256_pem = pkg_resources.resource_string(
+            "letsencrypt.client.tests", "testdata/rsa256_key.pem")
+
+        auth_key = le_util.Key(rsa256_file, rsa256_pem)
+        self.achalls = [
+            achallenges.DVSNI(
+                chall=challenges.DVSNI(
+                    r="\x8c\x8a\xbf_-f\\cw\xee\xd6\xf8/\xa5\xe3\xfd\xeb9\xf1"
+                      "\xf5\xb9\xefVM\xc9w\xa4u\x9c\xe1\x87\xb4",
+                    nonce="7\xbc^\xb7]>\x00\xa1\x9bOcU\x84^Z\x18",
+                ), domain="www.example.com", key=auth_key),
+            achallenges.DVSNI(
+                chall=challenges.DVSNI(
+                    r="\xba\xa9\xda?<m\xaewmx\xea\xad\xadv\xf4\x02\xc9y\x80"
+                      "\xe2_X\t\xe7\xc7\xa4\t\xca\xf7&\x945",
+                    nonce="Y\xed\x01L\xac\x95\xf7pW\xb1\xd7"
+                          "\xa1\xb2\xc5\x96\xba",
+                ), domain="blah", key=auth_key),
+        ]
+
+    def tearDown(self):
+        shutil.rmtree(self.temp_dir)
+        shutil.rmtree(self.config_dir)
+        shutil.rmtree(self.work_dir)
+
+    def test_add_chall(self):
+        self.sni.add_chall(self.achalls[0], 0)
+        self.assertEqual(1, len(self.sni.achalls))
+        self.assertEqual([0], self.sni.indices)
+
+    @mock.patch("letsencrypt.client.plugins.nginx.configurator."
+                "NginxConfigurator.save")
+    def test_perform0(self, mock_save):
+        self.sni.add_chall(self.achalls[0])
+        responses = self.sni.perform()
+        self.assertEqual([], responses)
+        self.assertEqual(mock_save.call_count, 2)
+
+    def test_setup_challenge_cert(self):
+        # This is a helper function that can be used for handling
+        # open context managers more elegantly. It avoids dealing with
+        # __enter__ and __exit__ calls.
+        # http://www.voidspace.org.uk/python/mock/helpers.html#mock.mock_open
+        pass
+
+    @mock.patch("letsencrypt.client.plugins.nginx.configurator."
+                "NginxConfigurator.save")
+    def test_perform1(self, mock_save):
+        self.sni.add_chall(self.achalls[1])
+        responses = self.sni.perform()
+        self.assertEqual(None, responses)
+        self.assertEqual(mock_save.call_count, 1)
+
+if __name__ == "__main__":
+    unittest.main()

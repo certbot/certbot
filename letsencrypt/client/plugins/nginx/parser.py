@@ -337,7 +337,6 @@ class NginxParser(object):
                              lambda x: self._has_server_names(x, names),
                              lambda x: self._replace_directives(x, directives))
         else:
-            print('adding server directives for %s' % filename)
             _do_for_subarray(self.parsed[filename],
                              lambda x: self._has_server_names(x, names),
                              lambda x: x.extend(directives))
