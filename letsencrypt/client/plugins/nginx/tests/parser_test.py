@@ -84,7 +84,9 @@ class NginxParserTest(util.NginxTest):
 
         vhost1 = VirtualHost(parser.abs_path('nginx.conf'),
                              [Addr('', '8080', False, False)],
-                             False, True, set(['localhost']), [])
+                             False, True, set(['localhost',
+                                               '~^(www\.)?(example|bar)\.']),
+                             [])
         vhost2 = VirtualHost(parser.abs_path('nginx.conf'),
                              [Addr('somename', '8080', False, False),
                               Addr('', '8000', False, False)],
@@ -118,7 +120,8 @@ class NginxParserTest(util.NginxTest):
     def test_add_server_directives(self):
         parser = NginxParser(self.config_path, self.ssl_options)
         parser.add_server_directives(parser.abs_path('nginx.conf'),
-                                     set(['localhost']),
+                                     set(['localhost',
+                                          '~^(www\.)?(example|bar)\.']),
                                      [['foo', 'bar'], ['ssl_certificate',
                                                        '/etc/ssl/cert.pem']])
         r = re.compile('foo bar;\n\s+ssl_certificate /etc/ssl/cert.pem')

@@ -63,21 +63,22 @@ class TestRawNginxParser(unittest.TestCase):
         self.assertEqual(
             parsed,
             [['user', 'www-data'],
-             [['server'], [
-                 ['listen', '*:80 default_server ssl'],
-                 ['server_name', '*.www.foo.com *.www.example.com'],
-                 ['root', '/home/ubuntu/sites/foo/'],
-                 [['location', '/status'], [
-                     ['check_status'],
-                     [['types'], [['image/jpeg', 'jpg']]],
-                 ]],
-                 [['location', '~', 'case_sensitive\.php$'], [
-                     ['hoge', 'hoge']
-                 ]],
-                 [['location', '~*', 'case_insensitive\.php$'], []],
-                 [['location', '=', 'exact_match\.php$'], []],
-                 [['location', '^~', 'ignore_regex\.php$'], []],
-             ]]]
+             [['http'],
+              [[['server'], [
+                  ['listen', '*:80 default_server ssl'],
+                  ['server_name', '*.www.foo.com *.www.example.com'],
+                  ['root', '/home/ubuntu/sites/foo/'],
+                  [['location', '/status'], [
+                      [['types'], [['image/jpeg', 'jpg']]],
+                  ]],
+                  [['location', '~', 'case_sensitive\.php$'], [
+                      ['index', 'index.php'],
+                      ['root', '/var/root'],
+                  ]],
+                  [['location', '~*', 'case_insensitive\.php$'], []],
+                  [['location', '=', 'exact_match\.php$'], []],
+                  [['location', '^~', 'ignore_regex\.php$'], []]
+              ]]]]]
         )
 
     def test_dump_as_file(self):

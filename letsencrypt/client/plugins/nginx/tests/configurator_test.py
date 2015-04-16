@@ -36,7 +36,7 @@ class NginxConfiguratorTest(util.NginxTest):
         names = self.config.get_all_names()
         self.assertEqual(names, set(
             ["*.www.foo.com", "somename", "another.alias",
-             "alias", "localhost", ".example.com",
+             "alias", "localhost", ".example.com", "~^(www\.)?(example|bar)\.",
              "155.225.50.69.nephoscale.net", "*.www.example.com",
              "example.*", "www.example.org", "myhost"]))
 
@@ -70,7 +70,7 @@ class NginxConfiguratorTest(util.NginxTest):
                          parsed[0])
 
     def test_choose_vhost(self):
-        localhost_conf = set(['localhost'])
+        localhost_conf = set(['localhost', '~^(www\.)?(example|bar)\.'])
         server_conf = set(['somename', 'another.alias', 'alias'])
         example_conf = set(['.example.com', 'example.*'])
         foo_conf = set(['*.www.foo.com', '*.www.example.com'])
@@ -81,8 +81,10 @@ class NginxConfiguratorTest(util.NginxTest):
                    'example.com.uk.test': example_conf,
                    'www.example.com': example_conf,
                    'test.www.example.com': foo_conf,
-                   'abc.www.foo.com': foo_conf}
-        bad_results = ['www.foo.com', 'example', '69.255.225.155']
+                   'abc.www.foo.com': foo_conf,
+                   'www.bar.co.uk': localhost_conf}
+        bad_results = ['www.foo.com', 'example', 't.www.bar.co',
+                       '69.255.225.155']
 
         for name in results:
             self.assertEqual(results[name],
@@ -134,7 +136,7 @@ class NginxConfiguratorTest(util.NginxTest):
                            ['ssl_certificate_key', '/etc/nginx/key.pem'],
                            ['include',
                             self.config.parser.loc["ssl_options"]]]],
-                         self.config.parser.parsed[nginx_conf][-1][-1][-3])
+                         self.config.parser.parsed[nginx_conf][-1][-1][-1])
 
     def test_get_all_certs_keys(self):
         nginx_conf = self.config.parser.abs_path('nginx.conf')
