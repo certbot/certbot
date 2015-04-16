@@ -8,6 +8,9 @@ from letsencrypt.client.plugins.nginx import parser
 class NginxDvsni(object):
     """Class performs DVSNI challenges within the Nginx configurator.
 
+    .. todo:: This is basically copied-and-pasted from the Apache equivalent.
+        It doesn't actually work yet.
+
     :ivar configurator: NginxConfigurator object
     :type configurator: :class:`~nginx.configurator.NginxConfigurator`
 

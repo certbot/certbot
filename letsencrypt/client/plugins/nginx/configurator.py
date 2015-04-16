@@ -95,6 +95,8 @@ class NginxConfigurator(object):
         Nginx doesn't have a cert chain directive, so the last parameter is
         always ignored. It expects the cert file to have the concatenated chain.
 
+        .. note:: This doesn't save the config files!
+
         :param str domain: domain to deploy certificate
         :param str cert: certificate filename
         :param str key: private key filename
@@ -122,7 +124,6 @@ class NginxConfigurator(object):
                              ", ".join(str(addr) for addr in vhost.addrs)))
         self.save_notes += "\tssl_certificate %s\n" % cert
         self.save_notes += "\tssl_certificate_key %s\n" % key
-        self.save()
 
     #######################
     # Vhost parsing methods
@@ -424,6 +425,7 @@ class NginxConfigurator(object):
             self.reverter.add_to_checkpoint(save_files,
                                             self.save_notes)
 
+        # Change 'ext' to something else to not override existing conf files
         self.parser.filedump(ext='')
         if title and not temporary:
             self.reverter.finalize_checkpoint(title)

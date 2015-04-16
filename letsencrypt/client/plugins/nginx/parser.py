@@ -115,16 +115,9 @@ class NginxParser(object):
                              lambda x: servers[filename].append(x[1]))
 
             # Find 'include' statements in server blocks and append their trees
-            for server in servers[filename]:
-                for directive in server:
-                    if (self._is_include_directive(directive)):
-                        included_files = glob.glob(
-                            self.abs_path(directive[1]))
-                        for f in included_files:
-                            try:
-                                server.extend(self.parsed[f])
-                            except:
-                                pass
+            for i, server in enumerate(servers[filename]):
+                new_server = self._get_included_directives(server)
+                servers[filename][i] = new_server
 
         for filename in servers:
             for server in servers[filename]:
@@ -139,6 +132,26 @@ class NginxParser(object):
                 vhosts.append(vhost)
 
         return vhosts
+
+    def _get_included_directives(self, block):
+        """Returns array with the "include" directives expanded out by
+        concatenating the contents of the included file to the block.
+
+        :param list block:
+        :rtype: list
+
+        """
+        result = list(block)  # Copy the list to keep self.parsed idempotent
+        for directive in block:
+            if (self._is_include_directive(directive)):
+                included_files = glob.glob(
+                    self.abs_path(directive[1]))
+                for f in included_files:
+                    try:
+                        result.extend(self.parsed[f])
+                    except:
+                        pass
+        return result
 
     def _parse_server(self, server):
         """Parses a list of server directives.
@@ -270,8 +283,9 @@ class NginxParser(object):
             # Can't be a server block
             return False
 
+        new_entry = self._get_included_directives(entry)
         server_names = set()
-        for item in entry:
+        for item in new_entry:
             if type(item) != list:
                 # Can't be a server block
                 return False
@@ -323,6 +337,7 @@ class NginxParser(object):
                              lambda x: self._has_server_names(x, names),
                              lambda x: self._replace_directives(x, directives))
         else:
+            print('adding server directives for %s' % filename)
             _do_for_subarray(self.parsed[filename],
                              lambda x: self._has_server_names(x, names),
                              lambda x: x.extend(directives))
