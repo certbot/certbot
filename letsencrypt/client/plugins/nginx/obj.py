@@ -65,9 +65,12 @@ class Addr(object):
         return cls(host, port, ssl, default)
 
     def __str__(self):
-        if self.tup[1]:
+        if self.tup[0] and self.tup[1]:
             return "%s:%s" % self.tup
-        return self.tup[0]
+        elif self.tup[0]:
+            return self.tup[0]
+        else:
+            return self.tup[1]
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
@@ -86,10 +89,6 @@ class Addr(object):
     def get_port(self):
         """Return port."""
         return self.tup[1]
-
-    def get_addr_obj(self, port):
-        """Return new address object with same addr and new port."""
-        return self.__class__((self.tup[0], port))
 
 
 class VirtualHost(object):  # pylint: disable=too-few-public-methods
