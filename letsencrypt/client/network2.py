@@ -187,10 +187,18 @@ class Network(object):
         return regr
 
     def register_from_account(self, account):
-         # TODO: properly format/scrub phone number and email
+        """Register with server.
+
+        :param account: Account
+        :type account: :class:`letsencrypt.client.account.Account`
+
+        :returns: Updated account
+        :rtype: :class:`letsencrypt.client.account.Account`
+
+        """
         details = (
-            "mailto:" + self.email if self.email is not None else None,
-            "tel:" + self.phone if self.phone is not None else None
+            "mailto:" + account.email if account.email is not None else None,
+            "tel:" + account.phone if account.phone is not None else None
         )
 
         contact_tuple = tuple(det for det in details if det is not None)

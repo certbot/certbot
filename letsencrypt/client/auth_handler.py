@@ -26,8 +26,8 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         messages
     :type network: :class:`letsencrypt.client.network2.Network`
 
-    :ivar authkey: Authorized Keys for domains.
-    :type authkey: :class:`letsencrypt.client.le_util.Key`
+    :ivar account: Client's Account
+    :type account: :class:`letsencrypt.client.account.Account`
 
     :ivar dict authzr: ACME Authorization Resource dict where keys are domains.
     :ivar list dv_c: DV challenges in the form of
@@ -36,12 +36,12 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         form of :class:`letsencrypt.client.achallenges.AnnotatedChallenge`
 
     """
-    def __init__(self, dv_auth, cont_auth, network, authkey):
+    def __init__(self, dv_auth, cont_auth, network, account):
         self.dv_auth = dv_auth
         self.cont_auth = cont_auth
         self.network = network
 
-        self.authkey = authkey
+        self.account = account
         self.authzr = dict()
 
         # List must be used to keep responses straight.
@@ -275,11 +275,11 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
             if isinstance(chall, challenges.DVSNI):
                 logging.info("  DVSNI challenge for %s.", domain)
                 achall = achallenges.DVSNI(
-                    challb=challb, domain=domain, key=self.authkey)
+                    challb=challb, domain=domain, key=self.account.key)
             elif isinstance(chall, challenges.SimpleHTTPS):
                 logging.info("  SimpleHTTPS challenge for %s.", domain)
                 achall = achallenges.SimpleHTTPS(
-                    challb=challb, domain=domain, key=self.authkey)
+                    challb=challb, domain=domain, key=self.account.key)
             elif isinstance(chall, challenges.DNS):
                 logging.info("  DNS challenge for %s.", domain)
                 achall = achallenges.DNS(challb=challb, domain=domain)

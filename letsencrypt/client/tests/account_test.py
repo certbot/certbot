@@ -93,7 +93,6 @@ class AccountTest(unittest.TestCase):
         self.assertTrue(partial.terms_of_service is None)
         self.assertTrue(partial.recovery_token is None)
 
-
     def test_partial_account_default(self):
         partial = account.Account(self.config, self.key)
         partial.save()
@@ -105,25 +104,19 @@ class AccountTest(unittest.TestCase):
         self.assertEqual(partial.phone, acc.phone)
         self.assertEqual(partial.regr, acc.regr)
 
-    @mock.patch("letsencrypt.client.account.display_ops.choose_account")
-    def test_choose_account(self, mock_op):
-        mock_op.return_value = self.test_account
+    def test_get_accounts(self):
+        accs = account.Account.get_accounts(self.config)
+        self.assertFalse(accs)
 
-        # Test 0
-        self.assertTrue(account.Account.choose_account(self.config) is None)
-
-        # Test 1
         self.test_account.save()
-        acc = account.Account.choose_account(self.config)
-        self.assertEqual(acc.email, self.test_account.email)
+        accs = account.Account.get_accounts(self.config)
+        self.assertEqual(len(accs), 1)
+        self.assertEqual(accs[0].email, self.test_account.email)
 
-        # Test multiple
-        self.assertFalse(mock_op.called)
-        acc2 = account.Account(self.config, self.key)
+        acc2 = account.Account(self.config, self.key, "testing_email@gmail.com")
         acc2.save()
-        test_acc = account.Account.choose_account(self.config)
-        self.assertTrue(mock_op.called)
-        self.assertTrue(test_acc.email, self.test_account.email)
+        accs = account.Account.get_accounts(self.config)
+        self.assertEqual(len(accs), 2)
 
     def _read_out_config(self, filep):
         print open(os.path.join(self.accounts_dir, filep)).read()

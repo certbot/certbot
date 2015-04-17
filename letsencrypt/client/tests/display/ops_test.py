@@ -72,8 +72,9 @@ class ChooseAccountTest(unittest.TestCase):
             server="letsencrypt-demo.org")
         self.key = le_util.Key("keypath", "pem")
 
-        self.acc1 = account.Account(self.config, self.key, "email1")
-        self.acc2 = account.Account(self.config, self.key, "email2", "phone")
+        self.acc1 = account.Account(self.config, self.key, "email1@g.com")
+        self.acc2 = account.Account(
+            self.config, self.key, "email2@g.com", "phone")
         self.acc1.save()
         self.acc2.save()
 
@@ -84,6 +85,7 @@ class ChooseAccountTest(unittest.TestCase):
 
     @mock.patch("letsencrypt.client.display.ops.util")
     def test_one(self, mock_util):
+        print self.acc1
         mock_util().menu.return_value = (display_util.OK, 0)
         self.assertEqual(self._call([self.acc1]), self.acc1)
 

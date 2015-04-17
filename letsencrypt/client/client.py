@@ -1,7 +1,6 @@
 """ACME protocol client class and helper functions."""
 import logging
 import os
-import sys
 
 import M2Crypto
 import zope.component
@@ -9,6 +8,7 @@ import zope.component
 from letsencrypt.acme import jose
 from letsencrypt.acme.jose import jwk
 
+from letsencrypt.client import account
 from letsencrypt.client import auth_handler
 from letsencrypt.client import continuity_auth
 from letsencrypt.client import crypto_util
@@ -30,11 +30,8 @@ class Client(object):
     :ivar network: Network object for sending and receiving messages
     :type network: :class:`letsencrypt.client.network2.Network`
 
-    :ivar authkey: Authorization Key
-    :type authkey: :class:`letsencrypt.client.le_util.Key`
-
     :ivar account: Account object used for registration
-    :type account: :class:`letsencrypt.client.registration.Registration`
+    :type account: :class:`letsencrypt.client.account.Account`
 
     :ivar auth_handler: Object that supports the IAuthenticator interface.
         auth_handler contains both a dv_authenticator and a
@@ -49,7 +46,7 @@ class Client(object):
 
     """
 
-    def __init__(self, config, authkey, dv_auth, installer):
+    def __init__(self, config, account, dv_auth, installer):
         """Initialize a client.
 
         :param dv_auth: IAuthenticator that can solve the
@@ -59,37 +56,39 @@ class Client(object):
         :type dv_auth: :class:`letsencrypt.client.interfaces.IAuthenticator`
 
         """
-        self.authkey = authkey
-        self.account = None
+        self.account = account
+
         self.installer = installer
 
         # TODO: Allow for other alg types besides RS256
         self.network = network2.Network(
             "https://%s/acme/new-reg" % config.server,
-            jwk.JWKRSA.load(authkey.pem))
+            jwk.JWKRSA.load(account.key.pem))
 
         self.config = config
 
         if dv_auth is not None:
             cont_auth = continuity_auth.ContinuityAuthenticator(config)
             self.auth_handler = auth_handler.AuthHandler(
-                dv_auth, cont_auth, self.network, self.authkey)
+                dv_auth, cont_auth, self.network, self.account)
         else:
             self.auth_handler = None
 
-    def register(self, network, store=True):
-        """New Registration with the ACME server.
-
-        :param bool store: Whether to store the registration information
-
-        """
+    def register(self, save=True):
+        """New Registration with the ACME server."""
         self.account = self.network.register_from_account(self.account)
-        if self.account.regr.terms_of_service or self.config.tos:
-            agree = zope.component.getUtility(interfaces.IDisplay).yesno(
-                self.account.regr.terms_of_service, "Agree", "Cancel")
+        if self.account.terms_of_service:
+            if not self.config.tos:
+                agree = zope.component.getUtility(interfaces.IDisplay).yesno(
+                    self.account.terms_of_service, "Agree", "Cancel")
+            else:
+                agree = True
+
             if agree:
                 self.account.regr = self.network.agree_to_tos(self.account.regr)
-            # TODO: Handle case where user doesn't agree
+                # TODO: Handle case where user doesn't agree
+
+        self.account.save()
 
     def obtain_certificate(self, domains, csr=None):
         """Obtains a certificate from the ACME server.
@@ -111,14 +110,14 @@ class Client(object):
                    "not set.")
             logging.warning(msg)
             raise errors.LetsEncryptClientError(msg)
-        if self.regr is None:
+        if self.account.regr is None:
             raise errors.LetsEncryptClientError(
                 "Please register with the ACME server first.")
 
         # Perform Challenges/Get Authorizations
-        if self.regr.new_authzr_uri:
+        if self.account.new_authzr_uri:
             authzr = self.auth_handler.get_authorizations(
-                domains, self.regr.new_authzr_uri)
+                domains, self.account.new_authzr_uri)
         # This isn't required to be in the registration resource...
         # and it isn't standardized... ugh - acme-spec #93
         else:
@@ -129,7 +128,7 @@ class Client(object):
         # Create CSR from names
         if csr is None:
             csr = crypto_util.init_save_csr(
-                self.authkey, domains, self.config.cert_dir)
+                self.account.key, domains, self.config.cert_dir)
 
         # Retrieve certificate
         certr = self.network.request_issuance(
@@ -142,7 +141,7 @@ class Client(object):
             certr, self.config.cert_path, self.config.chain_path)
 
         revoker.Revoker.store_cert_key(
-            cert_file, self.authkey.file, self.config)
+            cert_file, self.account.key.file, self.config)
 
         return cert_file, chain_file
 
@@ -377,6 +376,28 @@ def determine_authenticator(all_auths, config):
         return
 
     return auth
+
+
+def determine_account(config):
+    """Determine which account to use.
+
+    Will create an account if necessary.
+
+    :param config: Configuration object
+    :type config: :class:`letsencrypt.client.interfaces.IConfig`
+
+    :returns: Account
+    :rtype: :class:`letsencrypt.client.account.Account`
+
+    """
+    accounts = account.Account.get_accounts(config)
+
+    if len(accounts) == 1:
+        return accounts[0]
+    elif len(accounts) > 1:
+        return display_ops.choose_account(accounts)
+
+    return account.Account.from_prompts(config)
 
 
 def determine_installer(config):

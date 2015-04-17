@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 
@@ -11,7 +12,6 @@ from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
 
-from letsencrypt.client.display import ops as display_ops
 from letsencrypt.client.display import util as display_util
 
 
@@ -142,32 +142,43 @@ class Account(object):
         return cls(config, key, email, phone, regr)
 
     @classmethod
-    def choose_account(cls, config):
-        """Choose one of the available accounts."""
+    def get_accounts(cls, config):
+        """Return all current accounts.
+
+        :param config: Configuration
+        :type config: :class:`letsencrypt.client.interfaces.IConfig`
+
+        """
+        try:
+            filenames = os.listdir(config.accounts_dir)
+        except OSError:
+            return []
+
         accounts = []
-        filenames = os.listdir(config.accounts_dir)
         for name in filenames:
             # Not some directory ie. keys
             config_fp = os.path.join(config.accounts_dir, name)
             if os.path.isfile(config_fp):
                 accounts.append(cls._from_config_fp(config, config_fp))
 
-        if len(accounts) == 1:
-            return accounts[0]
-        elif len(accounts) > 1:
-            return display_ops.choose_account(accounts)
-        else:
-            return None
+        return accounts
 
     @classmethod
     def from_prompts(cls, config):
-        """Generate an account from prompted user input."""
+        """Generate an account from prompted user input.
+
+        :param config: Configuration
+        :type config: :class:`letsencrypt.client.interfaces.IConfig`
+
+        :returns: Account or None
+        :rtype: :class:`letsencrypt.client.account.Account`
+
+        """
         code, email = zope.component.getUtility(interfaces.IDisplay).input(
-            "Enter email address")
+            "Enter email address (optional)")
         if code == display_util.OK:
             email = email if email != "" else None
 
-            print config.account_keys_dir
             le_util.make_or_verify_dir(
                 config.account_keys_dir, 0o700, os.geteuid())
             key = crypto_util.init_save_key(
@@ -181,4 +192,5 @@ class Account(object):
         """Scrub email address before using it."""
         if re.match(cls.EMAIL_REGEX, email):
             return bool(not email.startswith(".") and ".." not in email)
+        logging.warn("Invalid email address: using default address.")
         return False

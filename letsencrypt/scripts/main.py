@@ -196,14 +196,16 @@ def main():  # pylint: disable=too-many-branches, too-many-statements
 
     # Prepare for init of Client
     if args.authkey is None:
-        authkey = crypto_util.init_save_key(args.rsa_key_size, config.key_dir)
+        account = client.determine_account(config)
     else:
-        authkey = le_util.Key(args.authkey[0], args.authkey[1])
+        # TODO: Figure out what to do with this
+        # le_util.Key(args.authkey[0], args.authkey[1])
+        account = client.determine_account(config)
 
-    acme = client.Client(config, authkey, auth, installer)
+    acme = client.Client(config, account, auth, installer)
 
     # Validate the key and csr
-    client.validate_key_csr(authkey)
+    client.validate_key_csr(account.key)
 
     # This more closely mimics the capabilities of the CLI
     # It should be possible for reconfig only, install-only, no-install
@@ -214,7 +216,7 @@ def main():  # pylint: disable=too-many-branches, too-many-statements
         acme.register()
         cert_file, chain_file = acme.obtain_certificate(doms)
     if installer is not None and cert_file is not None:
-        acme.deploy_certificate(doms, authkey, cert_file, chain_file)
+        acme.deploy_certificate(doms, account.key, cert_file, chain_file)
     if installer is not None:
         acme.enhance_config(doms, args.redirect)
 
