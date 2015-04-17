@@ -79,17 +79,18 @@ class RegistrationTest(unittest.TestCase):
             'letsencrypt.client.tests', os.path.join(
                 'testdata', 'rsa256_key.pem')))
 
-        self.key = jose.jwk.JWKRSA(key=jose.util.HashableRSAKey(
+        jwk_key = jose.jwk.JWKRSA(key=jose.util.HashableRSAKey(
             rsa_key.publickey()))
 
-        self.contact = ("mailto:letsencrypt-client@letsencrypt.org",)
-        self.recovery_token = "XYZ"
-        self.agreement = "https://letsencrypt.org/terms"
-        self.reg = Registration(
-            key=self.key, contact=self.contact,
-            recovery_token=self.recovery_token, agreement=self.agreement)
+        contact = ('mailto:letsencrypt-client@letsencrypt.org',)
+        recovery_token = 'XYZ'
+        agreement = 'https://letsencrypt.org/terms'
 
-        self.json_key = {
+        self.reg = Registration(
+            key=jwk_key, contact=contact,
+            recovery_token=recovery_token, agreement=agreement)
+
+        self.json_jwk_key = {
             'kty': 'RSA',
             'e': 'AQAB',
             'n': 'rHVztFHtH92ucFJD_N_HW9AsdRsUuHUBBBDlHwNlRd3fp5'
@@ -97,10 +98,10 @@ class RegistrationTest(unittest.TestCase):
         }
 
         self.json_reg = {
-            "contact": self.contact,
-            "recoveryToken": self.recovery_token,
-            "agreement": self.agreement,
-            "key": self.json_key,
+            'contact': contact,
+            'recoveryToken': recovery_token,
+            'agreement': agreement,
+            'key': self.json_jwk_key,
         }
 
     def test_to_json(self):
