@@ -42,17 +42,18 @@ def choose_authenticator(auths, errs):
         else:
             return
 
+
 def choose_account(accounts):
     """Choose an account.
 
-    :param list accounts: where each is of type
+    :param list accounts: Containing at least one
         :class:`~letsencrypt.client.account.Account`
 
     """
     # Note this will get more complicated once we start recording authorizations
-
     labels = [
-        "%s | %s" % (acc.email.ljust(display_util.WIDTH - 39), acc.phone)
+        "%s | %s" % (acc.email.ljust(display_util.WIDTH - 39),
+                     acc.phone if acc.phone is not None else "")
         for acc in accounts
     ]
 
@@ -62,6 +63,7 @@ def choose_account(accounts):
         return accounts[index]
     else:
         return None
+
 
 def choose_names(installer):
     """Display screen to select domains to validate.

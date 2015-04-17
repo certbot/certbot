@@ -1,10 +1,13 @@
 """Test letsencrypt.client.display.ops."""
+import os
 import sys
+import tempfile
 import unittest
 
 import mock
 import zope.component
 
+from letsencrypt.client import le_util
 from letsencrypt.client.display import util as display_util
 
 
@@ -50,8 +53,49 @@ class ChooseAuthenticatorTest(unittest.TestCase):
     @mock.patch("letsencrypt.client.display.ops.util")
     def test_no_choice(self, mock_util):
         mock_util().menu.return_value = (display_util.CANCEL, 0)
-
         self.assertTrue(self._call(self.auths, {}) is None)
+
+
+class ChooseAccountTest(unittest.TestCase):
+    """Test choose_account."""
+    def setUp(self):
+        from letsencrypt.client import account
+        zope.component.provideUtility(display_util.FileDisplay(sys.stdout))
+
+        self.accounts_dir = tempfile.mkdtemp("accounts")
+        self.account_keys_dir = os.path.join(self.accounts_dir, "keys")
+        os.makedirs(self.account_keys_dir, 0o700)
+
+        self.config = mock.MagicMock(
+            accounts_dir=self.accounts_dir,
+            account_keys_dir=self.account_keys_dir,
+            server="letsencrypt-demo.org")
+        self.key = le_util.Key("keypath", "pem")
+
+        self.acc1 = account.Account(self.config, self.key, "email1")
+        self.acc2 = account.Account(self.config, self.key, "email2", "phone")
+        self.acc1.save()
+        self.acc2.save()
+
+    @classmethod
+    def _call(cls, accounts):
+        from letsencrypt.client.display import ops
+        return ops.choose_account(accounts)
+
+    @mock.patch("letsencrypt.client.display.ops.util")
+    def test_one(self, mock_util):
+        mock_util().menu.return_value = (display_util.OK, 0)
+        self.assertEqual(self._call([self.acc1]), self.acc1)
+
+    @mock.patch("letsencrypt.client.display.ops.util")
+    def test_two(self, mock_util):
+        mock_util().menu.return_value = (display_util.OK, 1)
+        self.assertEqual(self._call([self.acc1, self.acc2]), self.acc2)
+
+    @mock.patch("letsencrypt.client.display.ops.util")
+    def test_cancel(self, mock_util):
+        mock_util().menu.return_value = (display_util.CANCEL, 1)
+        self.assertTrue(self._call([self.acc1, self.acc2]) is None)
 
 
 class GenHttpsNamesTest(unittest.TestCase):
