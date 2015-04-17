@@ -1,4 +1,5 @@
 import os
+import re
 
 import configobj
 import zope.component
@@ -33,13 +34,15 @@ class Account(object):
     # Just make sure we don't get pwned
     # Make sure that it also doesn't start with a period or have two consecutive
     # periods <- this needs to be done in addition to the regex
-    EMAIL_REGEX = "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+"
+    EMAIL_REGEX = "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+$"
 
     def __init__(self, config, key, email=None, phone=None, regr=None):
+        le_util.make_or_verify_dir(
+            config.accounts_dir, 0o700, os.geteuid())
         self.key = key
         self.config = config
-        if email is not None:
-            self.email = self.scrub_email(email)
+        if email is not None and self.safe_email(email):
+            self.email = email
         else:
             self.email = None
         self.phone = phone
@@ -69,7 +72,8 @@ class Account(object):
 
     def save(self):
         """Save account to disk."""
-        le_util.make_or_verify_dir(self.accounts_dir)
+        le_util.make_or_verify_dir(
+            self.config.accounts_dir, 0o700, os.geteuid())
 
         acc_config = configobj.ConfigObj()
         acc_config.filename = os.path.join(
@@ -102,9 +106,9 @@ class Account(object):
     @classmethod
     def from_existing_account(cls, config, email=None):
         """Populate an account from an existing email."""
-        accounts_dir = os.path.join(
-            config.accounts_dir)
-        config_fp = os.path.join(accounts_dir, cls._get_config_filename(email))
+
+        config_fp = os.path.join(
+            config.accounts_dir, cls._get_config_filename(email))
         return cls._from_config_fp(config, config_fp)
 
     @classmethod
@@ -167,13 +171,14 @@ class Account(object):
             le_util.make_or_verify_dir(
                 config.account_keys_dir, 0o700, os.geteuid())
             key = crypto_util.init_save_key(
-                2048, config.account_keys_dir, email)
+                config.rsa_key_size, config.account_keys_dir, email)
             return cls(config, key, email)
 
         return None
 
     @classmethod
-    def scrub_email(cls, email):
+    def safe_email(cls, email):
         """Scrub email address before using it."""
-        # TODO: Fill in
-        return email
+        if re.match(cls.EMAIL_REGEX, email):
+            return bool(not email.startswith(".") and ".." not in email)
+        return False

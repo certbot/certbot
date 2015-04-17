@@ -27,7 +27,7 @@ class AccountTest(unittest.TestCase):
 
         self.config = mock.MagicMock(
             spec=configuration.NamespaceConfig, accounts_dir=self.accounts_dir,
-            account_keys_dir=self.account_keys_dir,
+            account_keys_dir=self.account_keys_dir, rsa_key_size=2048,
             server="letsencrypt-demo.org")
 
         rsa256_file = pkg_resources.resource_filename(
@@ -127,6 +127,34 @@ class AccountTest(unittest.TestCase):
 
     def _read_out_config(self, filep):
         print open(os.path.join(self.accounts_dir, filep)).read()
+
+
+class SafeEmailTest(unittest.TestCase):
+    """Test safe_email."""
+
+    @classmethod
+    def _call(cls, addr):
+        from letsencrypt.client.account import Account
+        return Account.safe_email(addr)
+
+    def test_valid_emails(self):
+        addrs = [
+            "letsencrypt@letsencrypt.org",
+            "tbd.ade@gmail.com",
+            "abc_def.jdk@hotmail.museum"
+        ]
+        for addr in addrs:
+            self.assertTrue(addr, "%s failed." % addr)
+
+    def test_invalid_emails(self):
+        addrs = [
+            "letsencrypt@letsencrypt..org",
+            ".tbd.ade@gmail.com",
+            "~/abc_def.jdk@hotmail.museum"
+        ]
+        for addr in addrs:
+            self.assertTrue(addr, "%s failed." % addr)
+
 
 if __name__ == "__main__":
     unittest.main()
