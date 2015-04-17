@@ -281,13 +281,13 @@ class IDisplay(zope.interface.Interface):
 
         """
 
-    def checklist(message, choices):
+    def checklist(message, tags, default_state):
         """Allow for multiple selections from a menu.
 
         :param str message: message to display to the user
-
-        :param tags: tags
-        :type tags: :class:`list` of :class:`str`
+        :param list tags: where each is of type :class:`str` len(tags) > 0
+        :param bool default_status: If True, items are in a selected state by
+            default.
 
         """
 
