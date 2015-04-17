@@ -136,7 +136,8 @@ class Registration(ResourceBody):
 
     # on new-reg key server ignores 'key' and populates it based on
     # JWS.signature.combined.jwk
-    key = jose.Field('key', omitempty=True, decoder=jose.JWK.from_json)
+    key = jose.Field('key', omitempty=True,
+                     decoder=jose.JWK.from_json, encoder=jose.JWK.to_json)
     contact = jose.Field('contact', omitempty=True, default=())
     recovery_token = jose.Field('recoveryToken', omitempty=True)
     agreement = jose.Field('agreement', omitempty=True)

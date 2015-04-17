@@ -1,9 +1,12 @@
 """Tests for letsencrypt.acme.messages2."""
 import datetime
+import os
+import pkg_resources
 import unittest
 
 import mock
 import pytz
+from Crypto.PublicKey import RSA
 
 from letsencrypt.acme import challenges
 from letsencrypt.acme import jose
@@ -72,6 +75,48 @@ class ConstantTest(unittest.TestCase):
         self.assertEqual('MockConstant(a)', repr(self.const_a))
         self.assertEqual('MockConstant(b)', repr(self.const_b))
 
+
+class RegistrationTest(unittest.TestCase):
+    """Tests for letsencrypt.acme.messages2.Registration."""
+
+    def setUp(self):
+        from letsencrypt.acme.messages2 import Registration
+
+        rsa_key = RSA.importKey(pkg_resources.resource_string(
+            'letsencrypt.client.tests', os.path.join(
+                'testdata', 'rsa256_key.pem')))
+
+        self.key = jose.jwk.JWKRSA(key=jose.util.HashableRSAKey(
+            rsa_key.publickey()))
+
+        self.contact = ("mailto:letsencrypt-client@letsencrypt.org",)
+        self.recovery_token = "XYZ"
+        self.agreement = "https://letsencrypt.org/terms"
+        self.reg = Registration(
+            key=self.key, contact=self.contact,
+            recovery_token=self.recovery_token, agreement=self.agreement)
+
+        self.json_key = {
+            'kty': 'RSA',
+            'e': 'AQAB',
+            'n': 'rHVztFHtH92ucFJD_N_HW9AsdRsUuHUBBBDlHwNlRd3fp5'
+                 '80rv2-6QWE30cWgdmJS86ObRz6lUTor4R0T-3C5Q',
+        }
+
+        self.json_reg = {
+            "contact": self.contact,
+            "recoveryToken": self.recovery_token,
+            "agreement": self.agreement,
+            "key": self.json_key,
+        }
+
+    def test_to_json(self):
+        self.assertEqual(self.reg.to_json(), self.json_reg)
+
+    def test_from_json(self):
+        from letsencrypt.acme.messages2 import Registration
+
+        self.assertEqual(Registration.from_json(self.json_reg), self.reg)
 
 class ChallengeResourceTest(unittest.TestCase):
     """Tests for letsencrypt.acme.messages2.ChallengeResource."""

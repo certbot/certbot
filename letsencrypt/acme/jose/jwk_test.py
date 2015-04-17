@@ -6,6 +6,7 @@ import unittest
 from Crypto.PublicKey import RSA
 
 from letsencrypt.acme.jose import errors
+from letsencrypt.acme.jose import util
 
 
 RSA256_KEY = RSA.importKey(pkg_resources.resource_string(
@@ -46,15 +47,15 @@ class JWKRSATest(unittest.TestCase):
 
     def setUp(self):
         from letsencrypt.acme.jose.jwk import JWKRSA
-        self.jwk256 = JWKRSA(key=RSA256_KEY.publickey())
-        self.jwk256_private = JWKRSA(key=RSA256_KEY)
+        self.jwk256 = JWKRSA(key=util.HashableRSAKey(RSA256_KEY.publickey()))
+        self.jwk256_private = JWKRSA(key=util.HashableRSAKey(RSA256_KEY))
         self.jwk256json = {
             'kty': 'RSA',
             'e': 'AQAB',
             'n': 'rHVztFHtH92ucFJD_N_HW9AsdRsUuHUBBBDlHwNlRd3fp5'
                  '80rv2-6QWE30cWgdmJS86ObRz6lUTor4R0T-3C5Q',
         }
-        self.jwk512 = JWKRSA(key=RSA512_KEY.publickey())
+        self.jwk512 = JWKRSA(key=util.HashableRSAKey(RSA512_KEY.publickey()))
         self.jwk512json = {
             'kty': 'RSA',
             'e': 'AQAB',
@@ -72,10 +73,11 @@ class JWKRSATest(unittest.TestCase):
 
     def test_load(self):
         from letsencrypt.acme.jose.jwk import JWKRSA
-        self.assertEqual(JWKRSA(key=RSA256_KEY), JWKRSA.load(
-            pkg_resources.resource_string(
-                'letsencrypt.client.tests',
-                os.path.join('testdata', 'rsa256_key.pem'))))
+        self.assertEqual(
+            JWKRSA(key=util.HashableRSAKey(RSA256_KEY)), JWKRSA.load(
+                pkg_resources.resource_string(
+                    'letsencrypt.client.tests',
+                    os.path.join('testdata', 'rsa256_key.pem'))))
 
     def test_public(self):
         self.assertEqual(self.jwk256, self.jwk256_private.public())
