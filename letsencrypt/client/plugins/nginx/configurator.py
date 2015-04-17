@@ -290,7 +290,7 @@ class NginxConfigurator(object):
                 self.choose_vhost(domain), options)
         except (KeyError, ValueError):
             raise errors.LetsEncryptConfiguratorError(
-                "Unsupported enhancement: {}".format(enhancement))
+                "Unsupported enhancement: {0}".format(enhancement))
         except errors.LetsEncryptConfiguratorError:
             logging.warn("Failed %s for %s", enhancement, domain)
 
