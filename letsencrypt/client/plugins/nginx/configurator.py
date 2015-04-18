@@ -97,7 +97,7 @@ class NginxConfigurator(object):
             self.version = self._get_version()
 
         # Get all of the available vhosts
-        self.vhosts = self.parser._get_vhosts()
+        self.vhosts = self.parser.get_vhosts()
 
         temp_install(self.config.nginx_mod_ssl_conf)
 
