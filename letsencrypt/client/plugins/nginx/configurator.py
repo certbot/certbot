@@ -162,10 +162,6 @@ class NginxConfigurator(object):
         if cert_chain:
             self.save_notes += "\tSSLCertificateChainFile %s\n" % cert_chain
 
-        # Make sure vhost is enabled
-        if not vhost.enabled:
-            self._enable_site(vhost)
-
     #######################
     # Vhost parsing methods
     #######################
@@ -174,6 +170,9 @@ class NginxConfigurator(object):
 
         .. todo:: This should maybe return list if no obvious answer
             is presented.
+
+        .. todo:: The special name "$hostname" corresponds to the machine's
+            hostname. Currently we just ignore this.
 
         :param str target_name: domain name
 
@@ -367,52 +366,6 @@ class NginxConfigurator(object):
     ######################################
     # Nginx server management (IInstaller)
     ######################################
-    def _is_site_enabled(self, avail_fp):
-        """Checks to see if the given site is enabled.
-
-        .. todo:: fix hardcoded sites-enabled, check os.path.samefile
-
-        :param str avail_fp: Complete file path of available site
-
-        :returns: Success
-        :rtype: bool
-
-        """
-        enabled_dir = os.path.join(self.parser.root, "sites-enabled")
-        for entry in os.listdir(enabled_dir):
-            if os.path.realpath(os.path.join(enabled_dir, entry)) == avail_fp:
-                return True
-
-        return False
-
-    def _enable_site(self, vhost):
-        """Enables an available site, Nginx restart required.
-
-        .. todo:: This function should number subdomains before the domain vhost
-
-        .. todo:: Make sure link is not broken...
-
-        :param vhost: vhost to enable
-        :type vhost: :class:`~letsencrypt.client.plugins.nginx.obj.VirtualHost`
-
-        :returns: Success
-        :rtype: bool
-
-        """
-        if self._is_site_enabled(vhost.filep):
-            return True
-
-        if "/sites-available/" in vhost.filep:
-            enabled_path = ("%s/sites-enabled/%s" %
-                            (self.parser.root, os.path.basename(vhost.filep)))
-            self.reverter.register_file_creation(False, enabled_path)
-            os.symlink(vhost.filep, enabled_path)
-            vhost.enabled = True
-            logging.info("Enabling available site: %s", vhost.filep)
-            self.save_notes += "Enabled site %s\n" % vhost.filep
-            return True
-        return False
-
     def restart(self):
         """Restarts nginx server.
 
