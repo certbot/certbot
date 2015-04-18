@@ -43,10 +43,10 @@ class NginxParserTest(util.NginxTest):
         """
         parser = NginxParser(self.config_path, self.ssl_options)
         parser.load()
-        self.assertEqual(set(map(parser.abs_path,
-                             ['foo.conf', 'nginx.conf', 'server.conf',
-                              'sites-enabled/default',
-                              'sites-enabled/example.com'])),
+        self.assertEqual(set([parser.abs_path(x) for x in
+                              ['foo.conf', 'nginx.conf', 'server.conf',
+                               'sites-enabled/default',
+                               'sites-enabled/example.com']]),
                          set(parser.parsed.keys()))
         self.assertEqual([['server_name', 'somename  alias  another.alias']],
                          parser.parsed[parser.abs_path('server.conf')])
@@ -85,7 +85,7 @@ class NginxParserTest(util.NginxTest):
         vhost1 = VirtualHost(parser.abs_path('nginx.conf'),
                              [Addr('', '8080', False, False)],
                              False, True, set(['localhost',
-                                               '~^(www\.)?(example|bar)\.']),
+                                               r'~^(www\.)?(example|bar)\.']),
                              [])
         vhost2 = VirtualHost(parser.abs_path('nginx.conf'),
                              [Addr('somename', '8080', False, False),
@@ -106,26 +106,26 @@ class NginxParserTest(util.NginxTest):
                                               '*.www.example.com']), [])
 
         self.assertEqual(5, len(vhosts))
-        example_com = filter(lambda x: 'example.com' in x.filep, vhosts)[0]
+        example_com = [x for x in vhosts if 'example.com' in x.filep][0]
         self.assertEqual(vhost3, example_com)
-        default = filter(lambda x: 'default' in x.filep, vhosts)[0]
+        default = [x for x in vhosts if 'default' in x.filep][0]
         self.assertEqual(vhost4, default)
-        foo = filter(lambda x: 'foo.conf' in x.filep, vhosts)[0]
-        self.assertEqual(vhost5, foo)
-        localhost = filter(lambda x: 'localhost' in x.names, vhosts)[0]
+        fooconf = [x for x in vhosts if 'foo.conf' in x.filep][0]
+        self.assertEqual(vhost5, fooconf)
+        localhost = [x for x in vhosts if 'localhost' in x.names][0]
         self.assertEquals(vhost1, localhost)
-        somename = filter(lambda x: 'somename' in x.names, vhosts)[0]
+        somename = [x for x in vhosts if 'somename' in x.names][0]
         self.assertEquals(vhost2, somename)
 
     def test_add_server_directives(self):
         parser = NginxParser(self.config_path, self.ssl_options)
         parser.add_server_directives(parser.abs_path('nginx.conf'),
                                      set(['localhost',
-                                          '~^(www\.)?(example|bar)\.']),
+                                          r'~^(www\.)?(example|bar)\.']),
                                      [['foo', 'bar'], ['ssl_certificate',
                                                        '/etc/ssl/cert.pem']])
-        r = re.compile('foo bar;\n\s+ssl_certificate /etc/ssl/cert.pem')
-        self.assertEqual(1, len(re.findall(r, dumps(parser.parsed[
+        ssl_re = re.compile(r'foo bar;\n\s+ssl_certificate /etc/ssl/cert.pem')
+        self.assertEqual(1, len(re.findall(ssl_re, dumps(parser.parsed[
             parser.abs_path('nginx.conf')]))))
         parser.add_server_directives(parser.abs_path('server.conf'),
                                      set(['alias', 'another.alias',
@@ -161,10 +161,10 @@ class NginxParserTest(util.NginxTest):
                  set(['*.eff.org', '.www.eff.org']),
                  set(['.eff.org', '*.org']),
                  set(['www.eff.', 'www.eff.*', '*.www.eff.org']),
-                 set(['example.com', '~^(www\.)?(eff.+)', '*.eff.*']),
-                 set(['*', '~^(www\.)?(eff.+)']),
-                 set(['www.*', '~^(www\.)?(eff.+)', '.test.eff.org']),
-                 set(['*.org', '*.eff.org', 'www.eff.*']),
+                 set(['example.com', r'~^(www\.)?(eff.+)', '*.eff.*']),
+                 set(['*', r'~^(www\.)?(eff.+)']),
+                 set(['www.*', r'~^(www\.)?(eff.+)', '.test.eff.org']),
+                 set(['*.org', r'*.eff.org', 'www.eff.*']),
                  set(['*.www.eff.org', 'www.*']),
                  set(['*.org']),
                  set([]),
@@ -174,7 +174,7 @@ class NginxParserTest(util.NginxTest):
                    ('exact', '.www.eff.org'),
                    ('wildcard_start', '.eff.org'),
                    ('wildcard_end', 'www.eff.*'),
-                   ('regex', '~^(www\.)?(eff.+)'),
+                   ('regex', r'~^(www\.)?(eff.+)'),
                    ('wildcard_start', '*'),
                    ('wildcard_end', 'www.*'),
                    ('wildcard_start', '*.eff.org'),
@@ -194,8 +194,8 @@ class NginxParserTest(util.NginxTest):
                                      [['ssl_certificate', 'foo.pem'],
                                       ['ssl_certificate_key', 'bar.key'],
                                       ['listen', '443 ssl']])
-        ck = parser.get_all_certs_keys()
-        self.assertEqual(set([('foo.pem', 'bar.key', filep)]), ck)
+        c_k = parser.get_all_certs_keys()
+        self.assertEqual(set([('foo.pem', 'bar.key', filep)]), c_k)
 
 
 if __name__ == "__main__":

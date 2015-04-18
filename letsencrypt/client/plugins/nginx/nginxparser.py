@@ -7,6 +7,7 @@ from pyparsing import (
 
 
 class RawNginxParser(object):
+    # pylint: disable=expression-not-assigned
     """
     A class that parses nginx configuration with pyparsing
     """
@@ -51,6 +52,7 @@ class RawNginxParser(object):
 
 
 class RawNginxDumper(object):
+    # pylint: disable=too-few-public-methods
     """
     A class that dumps nginx configuration from the provided tree.
     """
@@ -86,6 +88,9 @@ class RawNginxDumper(object):
                 yield spacer * current_indent + key + spacer + values + ';'
 
     def as_string(self):
+        """
+        Return the parsed block as a string.
+        """
         return '\n'.join(self)
 
 
@@ -93,16 +98,45 @@ class RawNginxDumper(object):
 # (like pyyaml, picker or json)
 
 def loads(source):
+    """Parses from a string.
+
+    :param str souce: The string to parse
+    :returns: The parsed tree
+    :rtype: list
+
+    """
     return RawNginxParser(source).as_list()
 
 
 def load(_file):
+    """Parses from a file.
+
+    :param file _file: The file to parse
+    :returns: The parsed tree
+    :rtype: list
+
+    """
     return loads(_file.read())
 
 
 def dumps(blocks, indentation=4):
+    """Dump to a string.
+
+    :param list block: The parsed tree
+    :param int indentation: The number of spaces to indent
+    :rtype: str
+
+    """
     return RawNginxDumper(blocks, indentation).as_string()
 
 
 def dump(blocks, _file, indentation=4):
+    """Dump to a file.
+
+    :param list block: The parsed tree
+    :param file _file: The file to dump to
+    :param int indentation: The number of spaces to indent
+    :rtype: NoneType
+
+    """
     return _file.write(dumps(blocks, indentation))

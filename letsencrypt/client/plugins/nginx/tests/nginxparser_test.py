@@ -1,3 +1,4 @@
+"""Test for letsencrypt.client.plugins.nginx.nginxparser."""
 import operator
 import unittest
 
@@ -6,10 +7,11 @@ from letsencrypt.client.plugins.nginx.nginxparser import (RawNginxParser,
 from letsencrypt.client.plugins.nginx.tests import util
 
 
-first = operator.itemgetter(0)
+FIRST = operator.itemgetter(0)
 
 
 class TestRawNginxParser(unittest.TestCase):
+    """Test the raw low-level Nginx config parser."""
 
     def test_assignments(self):
         parsed = RawNginxParser.assignment.parseString('root /test;').asList()
@@ -28,8 +30,9 @@ class TestRawNginxParser(unittest.TestCase):
 
     def test_nested_blocks(self):
         parsed = RawNginxParser.block.parseString('foo { bar {} }').asList()
-        block, content = first(parsed)
-        self.assertEqual(first(content), [['bar'], []])
+        block, content = FIRST(parsed)
+        self.assertEqual(FIRST(content), [['bar'], []])
+        self.assertEqual(FIRST(block), 'foo')
 
     def test_dump_as_string(self):
         dumped = dumps([
@@ -71,13 +74,13 @@ class TestRawNginxParser(unittest.TestCase):
                   [['location', '/status'], [
                       [['types'], [['image/jpeg', 'jpg']]],
                   ]],
-                  [['location', '~', 'case_sensitive\.php$'], [
+                  [['location', '~', r'case_sensitive\.php$'], [
                       ['index', 'index.php'],
                       ['root', '/var/root'],
                   ]],
-                  [['location', '~*', 'case_insensitive\.php$'], []],
-                  [['location', '=', 'exact_match\.php$'], []],
-                  [['location', '^~', 'ignore_regex\.php$'], []]
+                  [['location', '~*', r'case_insensitive\.php$'], []],
+                  [['location', '=', r'exact_match\.php$'], []],
+                  [['location', '^~', r'ignore_regex\.php$'], []]
               ]]]]]
         )
 
@@ -94,9 +97,9 @@ class TestRawNginxParser(unittest.TestCase):
                                 [['location', '/'],
                                  [['root', 'html'],
                                   ['index', 'index.html index.htm']]]]])
-        f = open(util.get_data_filename('nginx.new.conf'), 'w')
-        dump(parsed, f)
-        f.close()
+        _file = open(util.get_data_filename('nginx.new.conf'), 'w')
+        dump(parsed, _file)
+        _file.close()
         parsed_new = load(open(util.get_data_filename('nginx.new.conf')))
         self.assertEquals(parsed, parsed_new)
 

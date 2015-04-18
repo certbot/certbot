@@ -30,15 +30,9 @@ class NginxDvsni(object):
     VHOST_TEMPLATE = """\
 <VirtualHost {vhost}>
     ServerName {server_name}
-    UseCanonicalName on
-    SSLStrictSNIVHostCheck on
-
-    LimitRequestBody 1048576
-
     Include {ssl_options_conf_path}
     SSLCertificateFile {cert_path}
     SSLCertificateKeyFile {key_path}
-
     DocumentRoot {document_root}
 </VirtualHost>
 

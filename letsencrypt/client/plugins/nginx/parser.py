@@ -50,19 +50,19 @@ class NginxParser(object):
         trees = self._parse_files(filepath)
         for tree in trees:
             for entry in tree:
-                if self._is_include_directive(entry):
+                if _is_include_directive(entry):
                     # Parse the top-level included file
                     self._parse_recursively(entry[1])
                 elif entry[0] == ['http'] or entry[0] == ['server']:
                     # Look for includes in the top-level 'http'/'server' context
                     for subentry in entry[1]:
-                        if self._is_include_directive(subentry):
+                        if _is_include_directive(subentry):
                             self._parse_recursively(subentry[1])
                         elif entry[0] == ['http'] and subentry[0] == ['server']:
                             # Look for includes in a 'server' context within
                             # an 'http' context
                             for server_entry in subentry[1]:
-                                if self._is_include_directive(server_entry):
+                                if _is_include_directive(server_entry):
                                     self._parse_recursively(server_entry[1])
 
     def abs_path(self, path):
@@ -79,19 +79,8 @@ class NginxParser(object):
         else:
             return path
 
-    def _is_include_directive(self, entry):
-        """Checks if an nginx parsed entry is an 'include' directive.
-
-        :param list entry: the parsed entry
-        :returns: Whether it's an 'include' directive
-        :rtype: bool
-
-        """
-        return (type(entry) == list and
-                entry[0] == 'include' and len(entry) == 2 and
-                type(entry[1]) == str)
-
     def get_vhosts(self):
+        # pylint: disable=cell-var-from-loop
         """Gets list of all 'virtual hosts' found in Nginx configuration.
         Technically this is a misnomer because Nginx does not have virtual
         hosts, it has 'server blocks'.
@@ -109,10 +98,11 @@ class NginxParser(object):
         for filename in self.parsed:
             tree = self.parsed[filename]
             servers[filename] = []
+            srv = servers[filename]  # workaround undefined loop var in lambdas
 
             # Find all the server blocks
             _do_for_subarray(tree, lambda x: x[0] == ['server'],
-                             lambda x: servers[filename].append(x[1]))
+                             lambda x: srv.append(x[1]))
 
             # Find 'include' statements in server blocks and append their trees
             for i, server in enumerate(servers[filename]):
@@ -122,7 +112,7 @@ class NginxParser(object):
         for filename in servers:
             for server in servers[filename]:
                 # Parse the server block into a VirtualHost object
-                parsed_server = self._parse_server(server)
+                parsed_server = _parse_server(server)
                 vhost = obj.VirtualHost(filename,
                                         parsed_server['addrs'],
                                         parsed_server['ssl'],
@@ -143,50 +133,15 @@ class NginxParser(object):
         """
         result = list(block)  # Copy the list to keep self.parsed idempotent
         for directive in block:
-            if (self._is_include_directive(directive)):
+            if _is_include_directive(directive):
                 included_files = glob.glob(
                     self.abs_path(directive[1]))
-                for f in included_files:
+                for incl in included_files:
                     try:
-                        result.extend(self.parsed[f])
-                    except:
+                        result.extend(self.parsed[incl])
+                    except KeyError:
                         pass
         return result
-
-    def _parse_server(self, server):
-        """Parses a list of server directives.
-
-        :param list server: list of directives in a server block
-        :rtype: dict
-
-        """
-        parsed_server = {}
-        parsed_server['addrs'] = set()
-        parsed_server['ssl'] = False
-        parsed_server['names'] = set()
-
-        for directive in server:
-            if directive[0] == 'listen':
-                addr = obj.Addr.fromstring(directive[1])
-                parsed_server['addrs'].add(addr)
-                if not parsed_server['ssl'] and addr.ssl:
-                    parsed_server['ssl'] = True
-            elif directive[0] == 'server_name':
-                parsed_server['names'].update(
-                    self._get_servernames(directive[1]))
-
-        return parsed_server
-
-    def _get_servernames(self, names):
-        """Turns a server_name string into a list of server names
-
-        :param str names: server names
-        :rtype: list
-
-        """
-        whitespace_re = re.compile(r'\s+')
-        names = re.sub(whitespace_re, ' ', names)
-        return names.split(' ')
 
     def _parse_files(self, filepath, override=False):
         """Parse files from a glob
@@ -199,18 +154,18 @@ class NginxParser(object):
         """
         files = glob.glob(filepath)
         trees = []
-        for f in files:
-            if f in self.parsed and not override:
+        for item in files:
+            if item in self.parsed and not override:
                 continue
             try:
-                with open(f) as fo:
-                    parsed = load(fo)
-                    self.parsed[f] = parsed
+                with open(item) as _file:
+                    parsed = load(_file)
+                    self.parsed[item] = parsed
                     trees.append(parsed)
             except IOError:
-                logging.warn("Could not open file: %s" % f)
+                logging.warn("Could not open file: %s", item)
             except pyparsing.ParseException:
-                logging.warn("Could not parse file: %s" % f)
+                logging.warn("Could not parse file: %s", item)
         return trees
 
     def _set_locations(self, ssl_options):
@@ -257,10 +212,10 @@ class NginxParser(object):
             if ext:
                 filename = filename + os.path.extsep + ext
             try:
-                with open(filename, 'w') as f:
-                    dump(tree, f)
+                with open(filename, 'w') as _file:
+                    dump(tree, _file)
             except IOError:
-                logging.error("Could not open file for writing: %s" % filename)
+                logging.error("Could not open file for writing: %s", filename)
 
     def _has_server_names(self, entry, names):
         """Checks if a server block has the given set of server_names. This
@@ -279,43 +234,21 @@ class NginxParser(object):
             # Nothing to identify blocks with
             return False
 
-        if type(entry) != list:
+        if not isinstance(entry, list):
             # Can't be a server block
             return False
 
         new_entry = self._get_included_directives(entry)
         server_names = set()
         for item in new_entry:
-            if type(item) != list:
+            if not isinstance(item, list):
                 # Can't be a server block
                 return False
 
             if item[0] == 'server_name':
-                server_names.update(self._get_servernames(item[1]))
+                server_names.update(_get_servernames(item[1]))
 
         return server_names == names
-
-    def _replace_directives(self, block, directives):
-        """Replaces directives in a block. If the directive doesn't exist in
-        the entry already, raises a misconfiguration error.
-
-        ..todo :: Find directives that are in included files.
-
-        :param list block: The block to replace in
-        :param list directives: The new directives.
-        """
-        for directive in directives:
-            changed = False
-            if len(directive) == 0:
-                continue
-            for index, line in enumerate(block):
-                if len(line) > 0 and line[0] == directive[0]:
-                    block[index] = directive
-                    changed = True
-            if not changed:
-                raise errors.LetsEncryptMisconfigurationError(
-                    'LetsEncrypt expected directive for %s in the Nginx config '
-                    'but did not find it.' % directive[0])
 
     def add_server_directives(self, filename, names, directives,
                               replace=False):
@@ -335,7 +268,7 @@ class NginxParser(object):
         if replace:
             _do_for_subarray(self.parsed[filename],
                              lambda x: self._has_server_names(x, names),
-                             lambda x: self._replace_directives(x, directives))
+                             lambda x: _replace_directives(x, directives))
         else:
             _do_for_subarray(self.parsed[filename],
                              lambda x: self._has_server_names(x, names),
@@ -375,7 +308,7 @@ def _do_for_subarray(entry, condition, func):
     :param function func: The function to call for each matching item
 
     """
-    if type(entry) == list:
+    if isinstance(entry, list):
         if condition(entry):
             func(entry)
         else:
@@ -411,15 +344,15 @@ def get_best_match(target_name, names):
 
     if len(exact) > 0:
         # There can be more than one exact match; e.g. eff.org, .eff.org
-        match = min(exact, key=lambda x: len(x))
+        match = min(exact, key=len)
         return ('exact', match)
     if len(wildcard_start) > 0:
         # Return the longest wildcard
-        match = max(wildcard_start, key=lambda x: len(x))
+        match = max(wildcard_start, key=len)
         return ('wildcard_start', match)
     if len(wildcard_end) > 0:
         # Return the longest wildcard
-        match = max(wildcard_end, key=lambda x: len(x))
+        match = max(wildcard_end, key=len)
         return ('wildcard_end', match)
     if len(regex) > 0:
         # Just return the first one for now
@@ -430,7 +363,7 @@ def get_best_match(target_name, names):
 
 
 def _exact_match(target_name, name):
-    return (target_name == name or '.' + target_name == name)
+    return target_name == name or '.' + target_name == name
 
 
 def _wildcard_match(target_name, name, start):
@@ -473,6 +406,79 @@ def _regex_match(target_name, name):
             return True
         else:
             return False
-    except:
+    except re.error:
         # perl-compatible regexes are sometimes not recognized by python
         return False
+
+
+def _is_include_directive(entry):
+    """Checks if an nginx parsed entry is an 'include' directive.
+
+    :param list entry: the parsed entry
+    :returns: Whether it's an 'include' directive
+    :rtype: bool
+
+    """
+    return (isinstance(entry, list) and
+            entry[0] == 'include' and len(entry) == 2 and
+            isinstance(entry[1], str))
+
+
+def _get_servernames(names):
+    """Turns a server_name string into a list of server names
+
+    :param str names: server names
+    :rtype: list
+
+    """
+    whitespace_re = re.compile(r'\s+')
+    names = re.sub(whitespace_re, ' ', names)
+    return names.split(' ')
+
+
+def _parse_server(server):
+    """Parses a list of server directives.
+
+    :param list server: list of directives in a server block
+    :rtype: dict
+
+    """
+    parsed_server = {}
+    parsed_server['addrs'] = set()
+    parsed_server['ssl'] = False
+    parsed_server['names'] = set()
+
+    for directive in server:
+        if directive[0] == 'listen':
+            addr = obj.Addr.fromstring(directive[1])
+            parsed_server['addrs'].add(addr)
+            if not parsed_server['ssl'] and addr.ssl:
+                parsed_server['ssl'] = True
+        elif directive[0] == 'server_name':
+            parsed_server['names'].update(
+                _get_servernames(directive[1]))
+
+    return parsed_server
+
+
+def _replace_directives(block, directives):
+    """Replaces directives in a block. If the directive doesn't exist in
+    the entry already, raises a misconfiguration error.
+
+    ..todo :: Find directives that are in included files.
+
+    :param list block: The block to replace in
+    :param list directives: The new directives.
+    """
+    for directive in directives:
+        changed = False
+        if len(directive) == 0:
+            continue
+        for index, line in enumerate(block):
+            if len(line) > 0 and line[0] == directive[0]:
+                block[index] = directive
+                changed = True
+        if not changed:
+            raise errors.LetsEncryptMisconfigurationError(
+                'LetsEncrypt expected directive for %s in the Nginx config '
+                'but did not find it.' % directive[0])

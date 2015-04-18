@@ -15,7 +15,6 @@ class NginxTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
 
     def setUp(self):
         super(NginxTest, self).setUp()
-        self.maxDiff = None
 
         self.temp_dir, self.config_dir, self.work_dir = dir_setup(
             "testdata")
@@ -32,6 +31,7 @@ class NginxTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
 
 
 def get_data_filename(filename):
+    """Gets the filename of a test data file."""
     return pkg_resources.resource_filename(
         "letsencrypt.client.plugins.nginx.tests", "testdata/%s" % filename)
 

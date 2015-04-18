@@ -36,7 +36,7 @@ class NginxConfiguratorTest(util.NginxTest):
         names = self.config.get_all_names()
         self.assertEqual(names, set(
             ["*.www.foo.com", "somename", "another.alias",
-             "alias", "localhost", ".example.com", "~^(www\.)?(example|bar)\.",
+             "alias", "localhost", ".example.com", r"~^(www\.)?(example|bar)\.",
              "155.225.50.69.nephoscale.net", "*.www.example.com",
              "example.*", "www.example.org", "myhost"]))
 
@@ -70,7 +70,7 @@ class NginxConfiguratorTest(util.NginxTest):
                          parsed[0])
 
     def test_choose_vhost(self):
-        localhost_conf = set(['localhost', '~^(www\.)?(example|bar)\.'])
+        localhost_conf = set(['localhost', r'~^(www\.)?(example|bar)\.'])
         server_conf = set(['somename', 'another.alias', 'alias'])
         example_conf = set(['.example.com', 'example.*'])
         foo_conf = set(['*.www.foo.com', '*.www.example.com'])
@@ -225,17 +225,17 @@ class NginxConfiguratorTest(util.NginxTest):
     @mock.patch("letsencrypt.client.plugins.nginx.configurator."
                 "subprocess.Popen")
     def test_nginx_restart(self, mock_popen):
-        m = mock_popen()
-        m.communicate.return_value = ('', '')
-        m.returncode = 0
+        mocked = mock_popen()
+        mocked.communicate.return_value = ('', '')
+        mocked.returncode = 0
         self.assertTrue(self.config.restart())
 
     @mock.patch("letsencrypt.client.plugins.nginx.configurator."
                 "subprocess.Popen")
     def test_config_test(self, mock_popen):
-        m = mock_popen()
-        m.communicate.return_value = ('', '')
-        m.returncode = 0
+        mocked = mock_popen()
+        mocked.communicate.return_value = ('', '')
+        mocked.returncode = 0
         self.assertTrue(self.config.config_test())
 
 if __name__ == "__main__":

@@ -95,10 +95,10 @@ class VirtualHostTest(unittest.TestCase):
         self.assertFalse(vhost1b == 1234)
 
     def test_str(self):
-        s = '\n'.join(['file: filep', 'addrs: localhost',
-                       "names: set(['localhost'])", 'ssl: False',
-                       'enabled: False'])
-        self.assertEqual(s, str(self.vhost1))
+        stringified = '\n'.join(['file: filep', 'addrs: localhost',
+                                 "names: set(['localhost'])", 'ssl: False',
+                                 'enabled: False'])
+        self.assertEqual(stringified, str(self.vhost1))
 
 
 if __name__ == "__main__":

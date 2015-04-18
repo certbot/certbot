@@ -89,6 +89,7 @@ class NginxConfigurator(object):
 
     # Entry point in main.py for installing cert
     def deploy_cert(self, domain, cert, key, cert_chain=None):
+        # pylint: disable=unused-argument
         """Deploys certificate to specified virtual host. Aborts if the
         vhost is missing ssl_certificate or ssl_certificate_key.
 
@@ -383,9 +384,9 @@ class NginxConfigurator(object):
         nginx_version = tuple([int(i) for i in version_matches[0].split(".")])
 
         # nginx < 0.8.21 doesn't use default_server
-        if (nginx_version[0] == 0 and
-            (nginx_version[1] < 8 or
-             (nginx_version[1] == 8 and nginx_version[2] < 21))):
+        if (nginx_version[0] == 0 and (nginx_version[1] < 8 or
+                                       (nginx_version[1] == 8 and
+                                        nginx_version[2] < 21))):
             raise errors.LetsEncryptConfiguratorError(
                 "Nginx version must be 0.8.21+")
 

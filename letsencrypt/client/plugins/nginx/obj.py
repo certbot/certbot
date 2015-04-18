@@ -45,7 +45,7 @@ class Addr(object):
             return None
 
         tup = addr.partition(':')
-        if re.match('^\d+$', tup[0]):
+        if re.match(r'^\d+$', tup[0]):
             # This is a bare port, not a hostname. E.g. listen 80
             host = ''
             port = tup[0]
