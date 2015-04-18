@@ -338,13 +338,13 @@ class NginxConfigurator(object):
 
         Make sure that files/directories are setup with appropriate permissions
         Aim for defensive coding... make sure all input files
-        have permissions of root
+        have permissions of root.
 
         """
         uid = os.geteuid()
-        le_util.make_or_verify_dir(self.config.config_dir, 0o755, uid)
         le_util.make_or_verify_dir(self.config.work_dir, 0o755, uid)
         le_util.make_or_verify_dir(self.config.backup_dir, 0o755, uid)
+        le_util.make_or_verify_dir(self.config.config_dir, 0o755, uid)
 
     def get_version(self):
         """Return version of Nginx Server.

@@ -178,10 +178,10 @@ class NginxParser(object):
         root = self._find_config_root()
         default = root
 
-        temp = os.path.join(self.root, "ports.conf")
-        if os.path.isfile(temp):
-            listen = temp
-            name = temp
+        nginx_temp = os.path.join(self.root, "nginx_ports.conf")
+        if os.path.isfile(nginx_temp):
+            listen = nginx_temp
+            name = nginx_temp
         else:
             listen = default
             name = default

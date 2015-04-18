@@ -1,8 +1,10 @@
 """Module contains classes used by the Nginx Configurator."""
 import re
 
+from letsencrypt.client.plugins.apache.obj import Addr as ApacheAddr
 
-class Addr(object):
+
+class Addr(ApacheAddr):
     """Represents an Nginx address, i.e. what comes after the 'listen'
     directive.
 
@@ -24,7 +26,7 @@ class Addr(object):
 
     """
     def __init__(self, host, port, ssl, default):
-        self.tup = (host, port)
+        super(Addr, self).__init__((host, port))
         self.ssl = ssl
         self.default = default
 
@@ -78,17 +80,6 @@ class Addr(object):
                     self.ssl == other.ssl and
                     self.default == other.default)
         return False
-
-    def __hash__(self):
-        return hash(self.tup)
-
-    def get_addr(self):
-        """Return addr part of Addr object."""
-        return self.tup[0]
-
-    def get_port(self):
-        """Return port."""
-        return self.tup[1]
 
 
 class VirtualHost(object):  # pylint: disable=too-few-public-methods

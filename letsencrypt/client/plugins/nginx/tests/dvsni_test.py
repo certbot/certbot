@@ -23,21 +23,21 @@ class DvsniPerformTest(util.NginxTest):
             self.config_path, self.config_dir, self.work_dir,
             self.ssl_options)
 
-        from letsencrypt.client.plugins.nginx import dvsni
-        self.sni = dvsni.NginxDvsni(config)
-
         rsa256_file = pkg_resources.resource_filename(
             "letsencrypt.client.tests", "testdata/rsa256_key.pem")
         rsa256_pem = pkg_resources.resource_string(
             "letsencrypt.client.tests", "testdata/rsa256_key.pem")
 
         auth_key = le_util.Key(rsa256_file, rsa256_pem)
+
+        from letsencrypt.client.plugins.nginx import dvsni
+        self.sni = dvsni.NginxDvsni(config)
+
         self.achalls = [
             achallenges.DVSNI(
                 chall=challenges.DVSNI(
-                    r="\x8c\x8a\xbf_-f\\cw\xee\xd6\xf8/\xa5\xe3\xfd\xeb9\xf1"
-                      "\xf5\xb9\xefVM\xc9w\xa4u\x9c\xe1\x87\xb4",
-                    nonce="7\xbc^\xb7]>\x00\xa1\x9bOcU\x84^Z\x18",
+                    r="foo",
+                    nonce="bar",
                 ), domain="www.example.com", key=auth_key),
             achallenges.DVSNI(
                 chall=challenges.DVSNI(

@@ -1,9 +1,10 @@
 """NginxDVSNI"""
 import logging
-import os
+
+from letsencrypt.client.plugins.apache.dvsni import ApacheDvsni
 
 
-class NginxDvsni(object):
+class NginxDvsni(ApacheDvsni):
     """Class performs DVSNI challenges within the Nginx configurator.
 
     .. todo:: This is basically copied-and-pasted from the Apache equivalent.
@@ -38,51 +39,29 @@ class NginxDvsni(object):
 
 """
 
-    def __init__(self, configurator):
-        self.configurator = configurator
-        self.achalls = []
-        self.indices = []
-        self.challenge_conf = os.path.join(
-            configurator.config.config_dir, "le_dvsni_cert_challenge.conf")
-        # self.completed = 0
-
-    def add_chall(self, achall, idx=None):
-        """Add challenge to DVSNI object to perform at once.
-
-        :param achall: Annotated DVSNI challenge.
-        :type achall: :class:`letsencrypt.client.achallenges.DVSNI`
-
-        :param int idx: index to challenge in a larger array
-
-        """
-        self.achalls.append(achall)
-        if idx is not None:
-            self.indices.append(idx)
-
     def perform(self):
-        """Peform a DVSNI challenge."""
+        """Perform a DVSNI challenge on Nginx."""
         if not self.achalls:
             return []
-        # Save any changes to the configuration as a precaution
-        # About to make temporary changes to the config
+
         self.configurator.save()
 
         addresses = []
-        default_addr = "*:443"
+        # default_addr = "*:443"
         for achall in self.achalls:
             vhost = self.configurator.choose_vhost(achall.domain)
             if vhost is None:
                 logging.error(
-                    "No vhost exists with servername or alias of: %s",
+                    "No nginx vhost exists with servername or alias of: %s",
                     achall.domain)
-                logging.error("No _default_:443 vhost exists")
+                logging.error("No default 443 nginx vhost exists")
                 logging.error("Please specify servernames in the Nginx config")
                 return None
 
-            for addr in vhost.addrs:
-                if "_default_" == addr.get_addr():
-                    addresses.append([default_addr])
-                    break
+            # for addr in vhost.addrs:
+            #     if "_default_" == addr.get_addr():
+            #         addresses.append([default_addr])
+            #         break
             else:
                 addresses.append(list(vhost.addrs))
 

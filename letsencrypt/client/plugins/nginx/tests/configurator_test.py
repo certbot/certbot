@@ -167,18 +167,18 @@ class NginxConfiguratorTest(util.NginxTest):
         auth_key = le_util.Key(self.rsa256_file, self.rsa256_pem)
         achall1 = achallenges.DVSNI(
             chall=challenges.DVSNI(
-                r="jIq_Xy1mXGN37tb4L6Xj_es58fW571ZNyXekdZzhh7Q",
-                nonce="37bc5eb75d3e00a19b4f6355845e5a18"),
-            domain="encryption-example.demo", key=auth_key)
+                r="foo",
+                nonce="bar"),
+            domain="localhost", key=auth_key)
         achall2 = achallenges.DVSNI(
             chall=challenges.DVSNI(
-                r="uqnaPzxtrndteOqtrXb0Asl5gOJfWAnnx6QJyvcmlDU",
-                nonce="59ed014cac95f77057b1d7a1b2c596ba"),
-            domain="letsencrypt.demo", key=auth_key)
+                r="abc",
+                nonce="def"),
+            domain="example.com", key=auth_key)
 
         dvsni_ret_val = [
-            challenges.DVSNIResponse(s="randomS1"),
-            challenges.DVSNIResponse(s="randomS2"),
+            challenges.DVSNIResponse(s="irrelevant"),
+            challenges.DVSNIResponse(s="arbitrary"),
         ]
 
         mock_dvsni_perform.return_value = dvsni_ret_val
