@@ -93,23 +93,25 @@ class RegistrationTest(unittest.TestCase):
             key=key, contact=contact, recovery_token=recovery_token,
             agreement=agreement)
 
-        self.jobj = {
+        self.jobj_to = {
             'contact': contact,
             'recoveryToken': recovery_token,
             'agreement': agreement,
-            'key': key.fully_serialize(),
+            'key': key,
         }
+        self.jobj_from = self.jobj_to.copy()
+        self.jobj_from['key'] = key.fully_serialize()
 
     def test_to_json(self):
-        self.assertEqual(self.jobj, self.reg.to_json())
+        self.assertEqual(self.jobj_to, self.reg.to_json())
 
     def test_from_json(self):
         from letsencrypt.acme.messages2 import Registration
-        self.assertEqual(self.reg, Registration.from_json(self.jobj))
+        self.assertEqual(self.reg, Registration.from_json(self.jobj_from))
 
     def test_from_json_hashable(self):
         from letsencrypt.acme.messages2 import Registration
-        hash(Registration.from_json(self.jobj))
+        hash(Registration.from_json(self.jobj_from))
 
 
 class ChallengeResourceTest(unittest.TestCase):
