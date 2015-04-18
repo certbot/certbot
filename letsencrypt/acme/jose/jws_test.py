@@ -196,6 +196,10 @@ class JWSTest(unittest.TestCase):
         self.assertRaises(errors.DeserializationError, JWS.from_json,
                           {'signatures': (), 'signature': 'foo'})
 
+    def test_from_json_hashable(self):
+        from letsencrypt.acme.jose.jws import JWS
+        hash(JWS.from_json(self.mixed.fully_serialize()))
+
 
 class CLITest(unittest.TestCase):
 

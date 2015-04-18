@@ -29,6 +29,10 @@ class JWKOctTest(unittest.TestCase):
         from letsencrypt.acme.jose.jwk import JWKOct
         self.assertEqual(self.jwk, JWKOct.from_json(self.jobj))
 
+    def test_from_json_hashable(self):
+        from letsencrypt.acme.jose.jwk import JWKOct
+        hash(JWKOct.from_json(self.jobj))
+
     def test_load(self):
         from letsencrypt.acme.jose.jwk import JWKOct
         self.assertEqual(self.jwk, JWKOct.load('foo'))
@@ -85,6 +89,10 @@ class JWKRSATest(unittest.TestCase):
         self.assertEqual(self.jwk256, JWK.from_json(self.jwk256json))
         # TODO: fix schemata to allow RSA512
         #self.assertEqual(self.jwk512, JWK.from_json(self.jwk512json))
+
+    def test_from_json_hashable(self):
+        from letsencrypt.acme.jose.jwk import JWK
+        hash(JWK.from_json(self.jwk256json))
 
     def test_from_json_non_schema_errors(self):
         # valid against schema, but still failing
