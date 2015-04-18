@@ -43,9 +43,9 @@ class JWASignatureTest(unittest.TestCase):
         self.assertEqual('Sig1', repr(self.Sig1))
         self.assertEqual('Sig2', repr(self.Sig2))
 
-    def test_to_json(self):
-        self.assertEqual(self.Sig1.to_json(), 'Sig1')
-        self.assertEqual(self.Sig2.to_json(), 'Sig2')
+    def test_to_partial_json(self):
+        self.assertEqual(self.Sig1.to_partial_json(), 'Sig1')
+        self.assertEqual(self.Sig2.to_partial_json(), 'Sig2')
 
     def test_from_json(self):
         from letsencrypt.acme.jose.jwa import JWASignature

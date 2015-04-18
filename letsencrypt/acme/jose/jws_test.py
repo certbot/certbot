@@ -72,7 +72,7 @@ class HeaderTest(unittest.TestCase):
     def test_x5c_decoding(self):
         from letsencrypt.acme.jose.jws import Header
         header = Header(x5c=(CERT, CERT))
-        jobj = header.to_json()
+        jobj = header.to_partial_json()
         cert_b64 = base64.b64encode(CERT.as_der())
         self.assertEqual(jobj, {'x5c': [cert_b64, cert_b64]})
         self.assertEqual(header, Header.from_json(jobj))
@@ -152,14 +152,13 @@ class JWSTest(unittest.TestCase):
         self.assertRaises(errors.DeserializationError, JWS.from_compact, '.')
 
     def test_json_omitempty(self):
-        protected_jobj = self.protected.to_json(flat=True)
-        unprotected_jobj = self.unprotected.to_json(flat=True)
+        protected_jobj = self.protected.to_partial_json(flat=True)
+        unprotected_jobj = self.unprotected.to_partial_json(flat=True)
 
         self.assertTrue('protected' not in unprotected_jobj)
         self.assertTrue('header' not in protected_jobj)
 
-        unprotected_jobj['header'] = unprotected_jobj[
-            'header'].fully_serialize()
+        unprotected_jobj['header'] = unprotected_jobj['header'].to_json()
 
         from letsencrypt.acme.jose.jws import JWS
         self.assertEqual(JWS.from_json(protected_jobj), self.protected)
@@ -173,9 +172,9 @@ class JWSTest(unittest.TestCase):
             'protected': b64.b64encode(self.mixed.signature.protected),
         }
         jobj_from = jobj_to.copy()
-        jobj_from['header'] = jobj_from['header'].fully_serialize()
+        jobj_from['header'] = jobj_from['header'].to_json()
 
-        self.assertEqual(self.mixed.to_json(flat=True), jobj_to)
+        self.assertEqual(self.mixed.to_partial_json(flat=True), jobj_to)
         from letsencrypt.acme.jose.jws import JWS
         self.assertEqual(self.mixed, JWS.from_json(jobj_from))
 
@@ -185,9 +184,9 @@ class JWSTest(unittest.TestCase):
             'payload': b64.b64encode('foo'),
         }
         jobj_from = jobj_to.copy()
-        jobj_from['signatures'] = [jobj_to['signatures'][0].fully_serialize()]
+        jobj_from['signatures'] = [jobj_to['signatures'][0].to_json()]
 
-        self.assertEqual(self.mixed.to_json(flat=False), jobj_to)
+        self.assertEqual(self.mixed.to_partial_json(flat=False), jobj_to)
         from letsencrypt.acme.jose.jws import JWS
         self.assertEqual(self.mixed, JWS.from_json(jobj_from))
 
@@ -198,7 +197,7 @@ class JWSTest(unittest.TestCase):
 
     def test_from_json_hashable(self):
         from letsencrypt.acme.jose.jws import JWS
-        hash(JWS.from_json(self.mixed.fully_serialize()))
+        hash(JWS.from_json(self.mixed.to_json()))
 
 
 class CLITest(unittest.TestCase):

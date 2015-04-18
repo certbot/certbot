@@ -88,7 +88,7 @@ class NetworkTest(unittest.TestCase):
             # pylint: disable=missing-docstring
             def __init__(self, value):
                 self.value = value
-            def to_json(self):
+            def to_partial_json(self):
                 return self.value
             @classmethod
             def from_json(cls, value):
@@ -173,7 +173,7 @@ class NetworkTest(unittest.TestCase):
 
     def test_register(self):
         self.response.status_code = httplib.CREATED
-        self.response.json.return_value = self.regr.body.fully_serialize()
+        self.response.json.return_value = self.regr.body.to_json()
         self.response.headers['Location'] = self.regr.uri
         self.response.links.update({
             'next': {'url': self.regr.new_authzr_uri},
@@ -186,7 +186,7 @@ class NetworkTest(unittest.TestCase):
 
         # TODO: split here and separate test
         reg_wrong_key = self.regr.body.update(key=KEY2.public())
-        self.response.json.return_value = reg_wrong_key.fully_serialize()
+        self.response.json.return_value = reg_wrong_key.to_json()
         self.assertRaises(
             errors.UnexpectedUpdate, self.net.register, self.contact)
 
@@ -198,20 +198,20 @@ class NetworkTest(unittest.TestCase):
 
     def test_update_registration(self):
         self.response.headers['Location'] = self.regr.uri
-        self.response.json.return_value = self.regr.body.fully_serialize()
+        self.response.json.return_value = self.regr.body.to_json()
         self._mock_post_get()
         self.assertEqual(self.regr, self.net.update_registration(self.regr))
 
         # TODO: split here and separate test
         self.response.json.return_value = self.regr.body.update(
-            contact=()).fully_serialize()
+            contact=()).to_json()
         self.assertRaises(
             errors.UnexpectedUpdate, self.net.update_registration, self.regr)
 
     def test_request_challenges(self):
         self.response.status_code = httplib.CREATED
         self.response.headers['Location'] = self.authzr.uri
-        self.response.json.return_value = self.authz.fully_serialize()
+        self.response.json.return_value = self.authz.to_json()
         self.response.links = {
             'next': {'url': self.authzr.new_cert_uri},
         }
@@ -222,7 +222,7 @@ class NetworkTest(unittest.TestCase):
 
         # TODO: split here and separate test
         authz_wrong_key = self.authz.update(key=KEY2.public())
-        self.response.json.return_value = authz_wrong_key.fully_serialize()
+        self.response.json.return_value = authz_wrong_key.to_json()
         self.assertRaises(
             errors.UnexpectedUpdate, self.net.request_challenges,
             self.identifier, self.regr)
@@ -242,7 +242,7 @@ class NetworkTest(unittest.TestCase):
 
     def test_answer_challenge(self):
         self.response.links['up'] = {'url': self.challr.authzr_uri}
-        self.response.json.return_value = self.challr.body.fully_serialize()
+        self.response.json.return_value = self.challr.body.to_json()
 
         chall_response = challenges.DNSResponse()
 
@@ -302,7 +302,7 @@ class NetworkTest(unittest.TestCase):
             self.net.retry_after(response=self.response, default=10))
 
     def test_poll(self):
-        self.response.json.return_value = self.authzr.body.fully_serialize()
+        self.response.json.return_value = self.authzr.body.to_json()
         self._mock_post_get()
         self.assertEqual((self.authzr, self.response),
                          self.net.poll(self.authzr))

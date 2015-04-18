@@ -57,7 +57,7 @@ class _Constant(jose.JSONDeSerializable):
         self.POSSIBLE_NAMES[name] = self
         self.name = name
 
-    def to_json(self):
+    def to_partial_json(self):
         return self.name
 
     @classmethod
@@ -182,9 +182,9 @@ class ChallengeBody(ResourceBody):
     status = jose.Field('status', decoder=Status.from_json)
     validated = fields.RFC3339Field('validated', omitempty=True)
 
-    def to_json(self):
-        jobj = super(ChallengeBody, self).to_json()
-        jobj.update(self.chall.to_json())
+    def to_partial_json(self):
+        jobj = super(ChallengeBody, self).to_partial_json()
+        jobj.update(self.chall.to_partial_json())
         return jobj
 
     @classmethod

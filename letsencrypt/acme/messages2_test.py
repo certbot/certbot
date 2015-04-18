@@ -22,9 +22,9 @@ class ErrorTest(unittest.TestCase):
     def test_typ_prefix(self):
         self.assertEqual('malformed', self.error.typ)
         self.assertEqual(
-            'urn:acme:error:malformed', self.error.to_json()['type'])
+            'urn:acme:error:malformed', self.error.to_partial_json()['type'])
         self.assertEqual(
-            'malformed', self.error.from_json(self.error.to_json()).typ)
+            'malformed', self.error.from_json(self.error.to_partial_json()).typ)
 
     def test_typ_decoder_missing_prefix(self):
         from letsencrypt.acme.messages2 import Error
@@ -44,7 +44,7 @@ class ErrorTest(unittest.TestCase):
 
     def test_from_json_hashable(self):
         from letsencrypt.acme.messages2 import Error
-        hash(Error.from_json(self.error.fully_serialize()))
+        hash(Error.from_json(self.error.to_json()))
 
 
 class ConstantTest(unittest.TestCase):
@@ -59,9 +59,9 @@ class ConstantTest(unittest.TestCase):
         self.const_a = MockConstant('a')
         self.const_b = MockConstant('b')
 
-    def test_to_json(self):
-        self.assertEqual('a', self.const_a.to_json())
-        self.assertEqual('b', self.const_b.to_json())
+    def test_to_partial_json(self):
+        self.assertEqual('a', self.const_a.to_partial_json())
+        self.assertEqual('b', self.const_b.to_partial_json())
 
     def test_from_json(self):
         self.assertEqual(self.const_a, self.MockConstant.from_json('a'))
@@ -100,10 +100,10 @@ class RegistrationTest(unittest.TestCase):
             'key': key,
         }
         self.jobj_from = self.jobj_to.copy()
-        self.jobj_from['key'] = key.fully_serialize()
+        self.jobj_from['key'] = key.to_json()
 
-    def test_to_json(self):
-        self.assertEqual(self.jobj_to, self.reg.to_json())
+    def test_to_partial_json(self):
+        self.assertEqual(self.jobj_to, self.reg.to_partial_json())
 
     def test_from_json(self):
         from letsencrypt.acme.messages2 import Registration
@@ -144,8 +144,8 @@ class ChallengeBodyTest(unittest.TestCase):
         self.jobj_from = self.jobj_to.copy()
         self.jobj_from['status'] = 'valid'
 
-    def test_to_json(self):
-        self.assertEqual(self.jobj_to, self.challb.to_json())
+    def test_to_partial_json(self):
+        self.assertEqual(self.jobj_to, self.challb.to_partial_json())
 
     def test_from_json(self):
         from letsencrypt.acme.messages2 import ChallengeBody
@@ -182,8 +182,8 @@ class AuthorizationTest(unittest.TestCase):
             challenges=self.challbs)
 
         self.jobj_from = {
-            'identifier': identifier.fully_serialize(),
-            'challenges': [challb.fully_serialize() for challb in self.challbs],
+            'identifier': identifier.to_json(),
+            'challenges': [challb.to_json() for challb in self.challbs],
             'combinations': combinations,
         }
 
@@ -220,12 +220,12 @@ class RevocationTest(unittest.TestCase):
         self.assertEqual(self.rev_date, Revocation.from_json(self.jobj_date))
 
     def test_revoke_encoder(self):
-        self.assertEqual(self.jobj_now, self.rev_now.to_json())
-        self.assertEqual(self.jobj_date, self.rev_date.to_json())
+        self.assertEqual(self.jobj_now, self.rev_now.to_partial_json())
+        self.assertEqual(self.jobj_date, self.rev_date.to_partial_json())
 
     def test_from_json_hashable(self):
         from letsencrypt.acme.messages2 import Revocation
-        hash(Revocation.from_json(self.rev_now.fully_serialize()))
+        hash(Revocation.from_json(self.rev_now.to_json()))
 
 
 if __name__ == '__main__':

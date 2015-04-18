@@ -30,8 +30,8 @@ class SimpleHTTPSTest(unittest.TestCase):
             'token': 'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ+PCt92wr+oA',
         }
 
-    def test_to_json(self):
-        self.assertEqual(self.jmsg, self.msg.to_json())
+    def test_to_partial_json(self):
+        self.assertEqual(self.jmsg, self.msg.to_partial_json())
 
     def test_from_json(self):
         from letsencrypt.acme.challenges import SimpleHTTPS
@@ -56,8 +56,8 @@ class SimpleHTTPSResponseTest(unittest.TestCase):
         self.assertEqual('https://example.com/.well-known/acme-challenge/'
                          '6tbIMBC5Anhl5bOlWT5ZFA', self.msg.uri('example.com'))
 
-    def test_to_json(self):
-        self.assertEqual(self.jmsg, self.msg.to_json())
+    def test_to_partial_json(self):
+        self.assertEqual(self.jmsg, self.msg.to_partial_json())
 
     def test_from_json(self):
         from letsencrypt.acme.challenges import SimpleHTTPSResponse
@@ -87,8 +87,8 @@ class DVSNITest(unittest.TestCase):
         self.assertEqual('a82d5ff8ef740d12881f6d3c2277ab2e.acme.invalid',
                          self.msg.nonce_domain)
 
-    def test_to_json(self):
-        self.assertEqual(self.jmsg, self.msg.to_json())
+    def test_to_partial_json(self):
+        self.assertEqual(self.jmsg, self.msg.to_partial_json())
 
     def test_from_json(self):
         from letsencrypt.acme.challenges import DVSNI
@@ -136,8 +136,8 @@ class DVSNIResponseTest(unittest.TestCase):
         self.assertEqual(
             '{0}.acme.invalid'.format(z), self.msg.z_domain(challenge))
 
-    def test_to_json(self):
-        self.assertEqual(self.jmsg, self.msg.to_json())
+    def test_to_partial_json(self):
+        self.assertEqual(self.jmsg, self.msg.to_partial_json())
 
     def test_from_json(self):
         from letsencrypt.acme.challenges import DVSNIResponse
@@ -163,8 +163,8 @@ class RecoveryContactTest(unittest.TestCase):
             'contact' : 'c********n@example.com',
         }
 
-    def test_to_json(self):
-        self.assertEqual(self.jmsg, self.msg.to_json())
+    def test_to_partial_json(self):
+        self.assertEqual(self.jmsg, self.msg.to_partial_json())
 
     def test_from_json(self):
         from letsencrypt.acme.challenges import RecoveryContact
@@ -185,7 +185,7 @@ class RecoveryContactTest(unittest.TestCase):
         self.assertTrue(msg.activation_url is None)
         self.assertTrue(msg.success_url is None)
         self.assertTrue(msg.contact is None)
-        self.assertEqual(self.jmsg, msg.to_json())
+        self.assertEqual(self.jmsg, msg.to_partial_json())
 
 
 class RecoveryContactResponseTest(unittest.TestCase):
@@ -195,8 +195,8 @@ class RecoveryContactResponseTest(unittest.TestCase):
         self.msg = RecoveryContactResponse(token='23029d88d9e123e')
         self.jmsg = {'type': 'recoveryContact', 'token': '23029d88d9e123e'}
 
-    def test_to_json(self):
-        self.assertEqual(self.jmsg, self.msg.to_json())
+    def test_to_partial_json(self):
+        self.assertEqual(self.jmsg, self.msg.to_partial_json())
 
     def test_from_json(self):
         from letsencrypt.acme.challenges import RecoveryContactResponse
@@ -214,7 +214,7 @@ class RecoveryContactResponseTest(unittest.TestCase):
         msg = RecoveryContactResponse.from_json(self.jmsg)
 
         self.assertTrue(msg.token is None)
-        self.assertEqual(self.jmsg, msg.to_json())
+        self.assertEqual(self.jmsg, msg.to_partial_json())
 
 
 class RecoveryTokenTest(unittest.TestCase):
@@ -224,8 +224,8 @@ class RecoveryTokenTest(unittest.TestCase):
         self.msg = RecoveryToken()
         self.jmsg = {'type': 'recoveryToken'}
 
-    def test_to_json(self):
-        self.assertEqual(self.jmsg, self.msg.to_json())
+    def test_to_partial_json(self):
+        self.assertEqual(self.jmsg, self.msg.to_partial_json())
 
     def test_from_json(self):
         from letsencrypt.acme.challenges import RecoveryToken
@@ -243,8 +243,8 @@ class RecoveryTokenResponseTest(unittest.TestCase):
         self.msg = RecoveryTokenResponse(token='23029d88d9e123e')
         self.jmsg = {'type': 'recoveryToken', 'token': '23029d88d9e123e'}
 
-    def test_to_json(self):
-        self.assertEqual(self.jmsg, self.msg.to_json())
+    def test_to_partial_json(self):
+        self.assertEqual(self.jmsg, self.msg.to_partial_json())
 
     def test_from_json(self):
         from letsencrypt.acme.challenges import RecoveryTokenResponse
@@ -262,7 +262,7 @@ class RecoveryTokenResponseTest(unittest.TestCase):
         msg = RecoveryTokenResponse.from_json(self.jmsg)
 
         self.assertTrue(msg.token is None)
-        self.assertEqual(self.jmsg, msg.to_json())
+        self.assertEqual(self.jmsg, msg.to_partial_json())
 
 
 class ProofOfPossessionHintsTest(unittest.TestCase):
@@ -298,10 +298,10 @@ class ProofOfPossessionHintsTest(unittest.TestCase):
             'authorizedFor': authorized_for,
         }
         self.jmsg_from = self.jmsg_to.copy()
-        self.jmsg_from.update({'jwk': jwk.fully_serialize()})
+        self.jmsg_from.update({'jwk': jwk.to_json()})
 
-    def test_to_json(self):
-        self.assertEqual(self.jmsg_to, self.msg.to_json())
+    def test_to_partial_json(self):
+        self.assertEqual(self.jmsg_to, self.msg.to_partial_json())
 
     def test_from_json(self):
         from letsencrypt.acme.challenges import ProofOfPossession
@@ -328,7 +328,7 @@ class ProofOfPossessionHintsTest(unittest.TestCase):
         self.assertEqual(msg.issuers, ())
         self.assertEqual(msg.authorized_for, ())
 
-        self.assertEqual(self.jmsg_to, msg.to_json())
+        self.assertEqual(self.jmsg_to, msg.to_partial_json())
 
 
 class ProofOfPossessionTest(unittest.TestCase):
@@ -351,13 +351,13 @@ class ProofOfPossessionTest(unittest.TestCase):
         }
         self.jmsg_from = {
             'type': 'proofOfPossession',
-            'alg': jose.RS256.fully_serialize(),
+            'alg': jose.RS256.to_json(),
             'nonce': 'eET5udtV7aoX8Xl8gYiZIA',
-            'hints': hints.fully_serialize(),
+            'hints': hints.to_json(),
         }
 
-    def test_to_json(self):
-        self.assertEqual(self.jmsg_to, self.msg.to_json())
+    def test_to_partial_json(self):
+        self.assertEqual(self.jmsg_to, self.msg.to_partial_json())
 
     def test_from_json(self):
         from letsencrypt.acme.challenges import ProofOfPossession
@@ -397,14 +397,14 @@ class ProofOfPossessionResponseTest(unittest.TestCase):
         self.jmsg_from = {
             'type': 'proofOfPossession',
             'nonce': 'eET5udtV7aoX8Xl8gYiZIA',
-            'signature': signature.fully_serialize(),
+            'signature': signature.to_json(),
         }
 
     def test_verify(self):
         self.assertTrue(self.msg.verify())
 
-    def test_to_json(self):
-        self.assertEqual(self.jmsg_to, self.msg.to_json())
+    def test_to_partial_json(self):
+        self.assertEqual(self.jmsg_to, self.msg.to_partial_json())
 
     def test_from_json(self):
         from letsencrypt.acme.challenges import ProofOfPossessionResponse
@@ -423,8 +423,8 @@ class DNSTest(unittest.TestCase):
         self.msg = DNS(token='17817c66b60ce2e4012dfad92657527a')
         self.jmsg = {'type': 'dns', 'token': '17817c66b60ce2e4012dfad92657527a'}
 
-    def test_to_json(self):
-        self.assertEqual(self.jmsg, self.msg.to_json())
+    def test_to_partial_json(self):
+        self.assertEqual(self.jmsg, self.msg.to_partial_json())
 
     def test_from_json(self):
         from letsencrypt.acme.challenges import DNS
@@ -442,8 +442,8 @@ class DNSResponseTest(unittest.TestCase):
         self.msg = DNSResponse()
         self.jmsg = {'type': 'dns'}
 
-    def test_to_json(self):
-        self.assertEqual(self.jmsg, self.msg.to_json())
+    def test_to_partial_json(self):
+        self.assertEqual(self.jmsg, self.msg.to_partial_json())
 
     def test_from_json(self):
         from letsencrypt.acme.challenges import DNSResponse
