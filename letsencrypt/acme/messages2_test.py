@@ -80,43 +80,37 @@ class RegistrationTest(unittest.TestCase):
     """Tests for letsencrypt.acme.messages2.Registration."""
 
     def setUp(self):
+        key = jose.jwk.JWKRSA(key=jose.util.HashableRSAKey(
+            RSA.importKey(pkg_resources.resource_string(
+                'letsencrypt.client.tests', os.path.join(
+                    'testdata', 'rsa256_key.pem'))).publickey()))
+        contact = ('mailto:letsencrypt-client@letsencrypt.org',)
+        recovery_token = 'XYZ'
+        agreement = 'https://letsencrypt.org/terms'
+
         from letsencrypt.acme.messages2 import Registration
-
-        rsa_key = RSA.importKey(pkg_resources.resource_string(
-            'letsencrypt.client.tests', os.path.join(
-                'testdata', 'rsa256_key.pem')))
-
-        self.key = jose.jwk.JWKRSA(key=jose.util.HashableRSAKey(
-            rsa_key.publickey()))
-
-        self.contact = ("mailto:letsencrypt-client@letsencrypt.org",)
-        self.recovery_token = "XYZ"
-        self.agreement = "https://letsencrypt.org/terms"
         self.reg = Registration(
-            key=self.key, contact=self.contact,
-            recovery_token=self.recovery_token, agreement=self.agreement)
+            key=key, contact=contact, recovery_token=recovery_token,
+            agreement=agreement)
 
-        self.json_key = {
-            'kty': 'RSA',
-            'e': 'AQAB',
-            'n': 'rHVztFHtH92ucFJD_N_HW9AsdRsUuHUBBBDlHwNlRd3fp5'
-                 '80rv2-6QWE30cWgdmJS86ObRz6lUTor4R0T-3C5Q',
-        }
-
-        self.json_reg = {
-            "contact": self.contact,
-            "recoveryToken": self.recovery_token,
-            "agreement": self.agreement,
-            "key": self.json_key,
+        self.jobj = {
+            'contact': contact,
+            'recoveryToken': recovery_token,
+            'agreement': agreement,
+            'key': key.fully_serialize(),
         }
 
     def test_to_json(self):
-        self.assertEqual(self.reg.to_json(), self.json_reg)
+        self.assertEqual(self.jobj, self.reg.to_json())
 
     def test_from_json(self):
         from letsencrypt.acme.messages2 import Registration
+        self.assertEqual(self.reg, Registration.from_json(self.jobj))
 
-        self.assertEqual(Registration.from_json(self.json_reg), self.reg)
+    def test_from_json_hashable(self):
+        from letsencrypt.acme.messages2 import Registration
+        hash(Registration.from_json(self.jobj))
+
 
 class ChallengeResourceTest(unittest.TestCase):
     """Tests for letsencrypt.acme.messages2.ChallengeResource."""

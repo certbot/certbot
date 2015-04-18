@@ -129,7 +129,7 @@ class JWKRSA(JWK):
         return cls(key=util.HashableRSAKey(
             Crypto.PublicKey.RSA.construct(
                 (cls._decode_param(jobj['n']),
-                cls._decode_param(jobj['e'])))))
+                 cls._decode_param(jobj['e'])))))
 
     def fields_to_json(self):
         return {
