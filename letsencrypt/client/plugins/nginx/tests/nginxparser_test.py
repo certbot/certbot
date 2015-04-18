@@ -48,17 +48,17 @@ class TestRawNginxParser(unittest.TestCase):
             ]]])
 
         self.assertEqual(dumped,
-                         'user www-data;\n' +
-                         'server {\n' +
-                         '    listen 80;\n' +
-                         '    server_name foo.com;\n' +
-                         '    root /home/ubuntu/sites/foo/;\n \n' +
-                         '    location /status {\n' +
-                         '        check_status;\n \n' +
-                         '        types {\n' +
-                         '            image/jpeg jpg;\n' +
-                         '        }\n' +
-                         '    }\n' +
+                         'user www-data;\n'
+                         'server {\n'
+                         '    listen 80;\n'
+                         '    server_name foo.com;\n'
+                         '    root /home/ubuntu/sites/foo/;\n \n'
+                         '    location /status {\n'
+                         '        check_status;\n \n'
+                         '        types {\n'
+                         '            image/jpeg jpg;\n'
+                         '        }\n'
+                         '    }\n'
                          '}')
 
     def test_parse_from_file(self):

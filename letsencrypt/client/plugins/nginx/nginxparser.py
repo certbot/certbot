@@ -8,9 +8,7 @@ from pyparsing import (
 
 class RawNginxParser(object):
     # pylint: disable=expression-not-assigned
-    """
-    A class that parses nginx configuration with pyparsing
-    """
+    """A class that parses nginx configuration with pyparsing."""
 
     # constants
     left_bracket = Literal("{").suppress()
@@ -39,31 +37,23 @@ class RawNginxParser(object):
         self.source = source
 
     def parse(self):
-        """
-        Returns the parsed tree.
-        """
+        """Returns the parsed tree."""
         return self.script.parseString(self.source)
 
     def as_list(self):
-        """
-        Returns the list of tree.
-        """
+        """Returns the parsed tree as a list."""
         return self.parse().asList()
 
 
 class RawNginxDumper(object):
     # pylint: disable=too-few-public-methods
-    """
-    A class that dumps nginx configuration from the provided tree.
-    """
+    """A class that dumps nginx configuration from the provided tree."""
     def __init__(self, blocks, indentation=4):
         self.blocks = blocks
         self.indentation = indentation
 
     def __iter__(self, blocks=None, current_indent=0, spacer=' '):
-        """
-        Iterates the dumped nginx content.
-        """
+        """Iterates the dumped nginx content."""
         blocks = blocks or self.blocks
         for key, values in blocks:
             if current_indent:
@@ -88,9 +78,7 @@ class RawNginxDumper(object):
                 yield spacer * current_indent + key + spacer + values + ';'
 
     def as_string(self):
-        """
-        Return the parsed block as a string.
-        """
+        """Return the parsed block as a string."""
         return '\n'.join(self)
 
 

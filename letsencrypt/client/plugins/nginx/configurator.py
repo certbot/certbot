@@ -90,11 +90,14 @@ class NginxConfigurator(object):
     # Entry point in main.py for installing cert
     def deploy_cert(self, domain, cert, key, cert_chain=None):
         # pylint: disable=unused-argument
-        """Deploys certificate to specified virtual host. Aborts if the
-        vhost is missing ssl_certificate or ssl_certificate_key.
+        """Deploys certificate to specified virtual host.
 
-        Nginx doesn't have a cert chain directive, so the last parameter is
-        always ignored. It expects the cert file to have the concatenated chain.
+        .. note:: Aborts if the vhost is missing ssl_certificate or
+            ssl_certificate_key.
+
+        .. note:: Nginx doesn't have a cert chain directive, so the last
+            parameter is always ignored. It expects the cert file to have
+            the concatenated chain.
 
         .. note:: This doesn't save the config files!
 
@@ -130,9 +133,11 @@ class NginxConfigurator(object):
     # Vhost parsing methods
     #######################
     def choose_vhost(self, target_name):
-        """Chooses a virtual host based on the given domain name. NOTE: This
-        makes the vhost SSL-enabled if it isn't already. Follows Nginx's server
-        block selection rules but prefers blocks that are already SSL.
+        """Chooses a virtual host based on the given domain name.
+
+        .. note:: This makes the vhost SSL-enabled if it isn't already. Follows
+            Nginx's server block selection rules preferring blocks that are
+            already SSL.
 
         .. todo:: This should maybe return list if no obvious answer
             is presented.
@@ -149,10 +154,10 @@ class NginxConfigurator(object):
         vhost = None
 
         matches = self._get_ranked_matches(target_name)
-        if len(matches) == 0:
+        if not matches:
             # No matches at all :'(
             pass
-        elif matches[0]['rank'] in range(2, 6):
+        elif matches[0]['rank'] in xrange(2, 6):
             # Wildcard match - need to find the longest one
             rank = matches[0]['rank']
             wildcards = [x for x in matches if x['rank'] == rank]
@@ -167,8 +172,7 @@ class NginxConfigurator(object):
         return vhost
 
     def _get_ranked_matches(self, target_name):
-        """
-        Returns a ranked list of vhosts that match target_name.
+        """Returns a ranked list of vhosts that match target_name.
 
         :param str target_name: The name to match
         :returns: list of dicts containing the vhost, the matching name, and
@@ -374,10 +378,10 @@ class NginxConfigurator(object):
         sni_regex = re.compile(r"TLS SNI support enabled", re.IGNORECASE)
         sni_matches = sni_regex.findall(text)
 
-        if len(version_matches) == 0:
+        if not version_matches:
             raise errors.LetsEncryptConfiguratorError(
                 "Unable to find Nginx version")
-        if len(sni_matches) == 0:
+        if not sni_matches:
             raise errors.LetsEncryptConfiguratorError(
                 "Nginx build doesn't support SNI")
 
