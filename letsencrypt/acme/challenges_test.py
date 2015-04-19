@@ -37,6 +37,10 @@ class SimpleHTTPSTest(unittest.TestCase):
         from letsencrypt.acme.challenges import SimpleHTTPS
         self.assertEqual(self.msg, SimpleHTTPS.from_json(self.jmsg))
 
+    def test_from_json_hashable(self):
+        from letsencrypt.acme.challenges import SimpleHTTPS
+        hash(SimpleHTTPS.from_json(self.jmsg))
+
 
 class SimpleHTTPSResponseTest(unittest.TestCase):
 
@@ -59,6 +63,10 @@ class SimpleHTTPSResponseTest(unittest.TestCase):
         from letsencrypt.acme.challenges import SimpleHTTPSResponse
         self.assertEqual(
             self.msg, SimpleHTTPSResponse.from_json(self.jmsg))
+
+    def test_from_json_hashable(self):
+        from letsencrypt.acme.challenges import SimpleHTTPSResponse
+        hash(SimpleHTTPSResponse.from_json(self.jmsg))
 
 
 class DVSNITest(unittest.TestCase):
@@ -85,6 +93,10 @@ class DVSNITest(unittest.TestCase):
     def test_from_json(self):
         from letsencrypt.acme.challenges import DVSNI
         self.assertEqual(self.msg, DVSNI.from_json(self.jmsg))
+
+    def test_from_json_hashable(self):
+        from letsencrypt.acme.challenges import DVSNI
+        hash(DVSNI.from_json(self.jmsg))
 
     def test_from_json_invalid_r_length(self):
         from letsencrypt.acme.challenges import DVSNI
@@ -131,6 +143,10 @@ class DVSNIResponseTest(unittest.TestCase):
         from letsencrypt.acme.challenges import DVSNIResponse
         self.assertEqual(self.msg, DVSNIResponse.from_json(self.jmsg))
 
+    def test_from_json_hashable(self):
+        from letsencrypt.acme.challenges import DVSNIResponse
+        hash(DVSNIResponse.from_json(self.jmsg))
+
 
 class RecoveryContactTest(unittest.TestCase):
 
@@ -153,6 +169,10 @@ class RecoveryContactTest(unittest.TestCase):
     def test_from_json(self):
         from letsencrypt.acme.challenges import RecoveryContact
         self.assertEqual(self.msg, RecoveryContact.from_json(self.jmsg))
+
+    def test_from_json_hashable(self):
+        from letsencrypt.acme.challenges import RecoveryContact
+        hash(RecoveryContact.from_json(self.jmsg))
 
     def test_json_without_optionals(self):
         del self.jmsg['activationURL']
@@ -183,6 +203,10 @@ class RecoveryContactResponseTest(unittest.TestCase):
         self.assertEqual(
             self.msg, RecoveryContactResponse.from_json(self.jmsg))
 
+    def test_from_json_hashable(self):
+        from letsencrypt.acme.challenges import RecoveryContactResponse
+        hash(RecoveryContactResponse.from_json(self.jmsg))
+
     def test_json_without_optionals(self):
         del self.jmsg['token']
 
@@ -207,6 +231,10 @@ class RecoveryTokenTest(unittest.TestCase):
         from letsencrypt.acme.challenges import RecoveryToken
         self.assertEqual(self.msg, RecoveryToken.from_json(self.jmsg))
 
+    def test_from_json_hashable(self):
+        from letsencrypt.acme.challenges import RecoveryToken
+        hash(RecoveryToken.from_json(self.jmsg))
+
 
 class RecoveryTokenResponseTest(unittest.TestCase):
 
@@ -222,6 +250,10 @@ class RecoveryTokenResponseTest(unittest.TestCase):
         from letsencrypt.acme.challenges import RecoveryTokenResponse
         self.assertEqual(
             self.msg, RecoveryTokenResponse.from_json(self.jmsg))
+
+    def test_from_json_hashable(self):
+        from letsencrypt.acme.challenges import RecoveryTokenResponse
+        hash(RecoveryTokenResponse.from_json(self.jmsg))
 
     def test_json_without_optionals(self):
         del self.jmsg['token']
@@ -276,6 +308,10 @@ class ProofOfPossessionHintsTest(unittest.TestCase):
         self.assertEqual(
             self.msg, ProofOfPossession.Hints.from_json(self.jmsg_from))
 
+    def test_from_json_hashable(self):
+        from letsencrypt.acme.challenges import ProofOfPossession
+        hash(ProofOfPossession.Hints.from_json(self.jmsg_from))
+
     def test_json_without_optionals(self):
         for optional in ['certFingerprints', 'certs', 'subjectKeyIdentifiers',
                          'serialNumbers', 'issuers', 'authorizedFor']:
@@ -328,6 +364,10 @@ class ProofOfPossessionTest(unittest.TestCase):
         self.assertEqual(
             self.msg, ProofOfPossession.from_json(self.jmsg_from))
 
+    def test_from_json_hashable(self):
+        from letsencrypt.acme.challenges import ProofOfPossession
+        hash(ProofOfPossession.from_json(self.jmsg_from))
+
 
 class ProofOfPossessionResponseTest(unittest.TestCase):
 
@@ -371,6 +411,10 @@ class ProofOfPossessionResponseTest(unittest.TestCase):
         self.assertEqual(
             self.msg, ProofOfPossessionResponse.from_json(self.jmsg_from))
 
+    def test_from_json_hashable(self):
+        from letsencrypt.acme.challenges import ProofOfPossessionResponse
+        hash(ProofOfPossessionResponse.from_json(self.jmsg_from))
+
 
 class DNSTest(unittest.TestCase):
 
@@ -386,6 +430,10 @@ class DNSTest(unittest.TestCase):
         from letsencrypt.acme.challenges import DNS
         self.assertEqual(self.msg, DNS.from_json(self.jmsg))
 
+    def test_from_json_hashable(self):
+        from letsencrypt.acme.challenges import DNS
+        hash(DNS.from_json(self.jmsg))
+
 
 class DNSResponseTest(unittest.TestCase):
 
@@ -400,6 +448,10 @@ class DNSResponseTest(unittest.TestCase):
     def test_from_json(self):
         from letsencrypt.acme.challenges import DNSResponse
         self.assertEqual(self.msg, DNSResponse.from_json(self.jmsg))
+
+    def test_from_json_hashable(self):
+        from letsencrypt.acme.challenges import DNSResponse
+        hash(DNSResponse.from_json(self.jmsg))
 
 
 if __name__ == '__main__':
