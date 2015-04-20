@@ -37,7 +37,7 @@ install_requires = [
     'pyasn1',  # urllib3 InsecurePlatformWarning (#304)
     'pycrypto',
     'PyOpenSSL',
-    'pyparsing>=1.5.5',
+    'pyparsing>=1.5.5',  # Python3 support; perhaps unnecessary?
     'pyrfc3339',
     'python-augeas',
     'python2-pythondialog>=3.2.2rc1',  # Debian squeeze support, cf. #280

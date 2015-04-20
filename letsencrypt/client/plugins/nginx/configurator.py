@@ -26,7 +26,8 @@ class NginxConfigurator(object):
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
     """Nginx configurator.
 
-    .. todo:: Add proper support for comments in the config
+    .. todo:: Add proper support for comments in the config. Currently,
+        config files modified by the configurator will lose all their comments.
 
     :ivar config: Configuration.
     :type config: :class:`~letsencrypt.client.interfaces.IConfig`
