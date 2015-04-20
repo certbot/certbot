@@ -7,7 +7,7 @@ VAGRANTFILE_API_VERSION = "2"
 # Setup instructions from docs/using.rst
 $ubuntu_setup_script = <<SETUP_SCRIPT
 cd /vagrant
-./bootstrap/ubuntu.sh
+sudo ./bootstrap/ubuntu.sh
 if [ ! -d "venv" ]; then
   virtualenv --no-site-packages -p python2 venv
   ./venv/bin/python setup.py dev
