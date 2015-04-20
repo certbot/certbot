@@ -38,7 +38,7 @@ class JWASignature(JWA):
         cls.SIGNATURES[signature_cls.name] = signature_cls
         return signature_cls
 
-    def to_json(self):
+    def to_partial_json(self):
         return self.name
 
     @classmethod

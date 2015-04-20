@@ -44,7 +44,7 @@ class FieldTest(unittest.TestCase):
     def test_default_encoder_is_partial(self):
         class MockField(interfaces.JSONDeSerializable):
             # pylint: disable=missing-docstring
-            def to_json(self):
+            def to_partial_json(self):
                 return 'foo'
             @classmethod
             def from_json(cls, jobj):
@@ -113,8 +113,8 @@ class JSONObjectWithFieldsTest(unittest.TestCase):
     def test_init_defaults(self):
         self.assertEqual(self.mock, self.MockJSONObjectWithFields(y=2, z=3))
 
-    def test_fields_to_json_omits_empty(self):
-        self.assertEqual(self.mock.fields_to_json(), {'y': 2, 'Z': 3})
+    def test_fields_to_partial_json_omits_empty(self):
+        self.assertEqual(self.mock.fields_to_partial_json(), {'y': 2, 'Z': 3})
 
     def test_fields_from_json_fills_default_for_empty(self):
         self.assertEqual(
@@ -135,9 +135,10 @@ class JSONObjectWithFieldsTest(unittest.TestCase):
             errors.DeserializationError,
             self.MockJSONObjectWithFields.fields_from_json, {'x': 0, 'Z': 0})
 
-    def test_fields_to_json_encoder(self):
-        self.assertEqual(self.MockJSONObjectWithFields(x=1, y=2, z=3).to_json(),
-                         {'x': 2, 'y': 2, 'Z': 3})
+    def test_fields_to_partial_json_encoder(self):
+        self.assertEqual(
+            self.MockJSONObjectWithFields(x=1, y=2, z=3).to_partial_json(),
+            {'x': 2, 'y': 2, 'Z': 3})
 
     def test_fields_from_json_decoder(self):
         self.assertEqual(
@@ -145,10 +146,10 @@ class JSONObjectWithFieldsTest(unittest.TestCase):
             self.MockJSONObjectWithFields.fields_from_json(
                 {'x': 4, 'y': 2, 'Z': 3}))
 
-    def test_fields_to_json_error_passthrough(self):
+    def test_fields_to_partial_json_error_passthrough(self):
         self.assertRaises(
             errors.SerializationError, self.MockJSONObjectWithFields(
-                x=1, y=500, z=3).to_json)
+                x=1, y=500, z=3).to_partial_json)
 
     def test_fields_from_json_error_passthrough(self):
         self.assertRaises(
@@ -262,14 +263,14 @@ class TypedJSONObjectWithFieldsTest(unittest.TestCase):
             def fields_from_json(cls, jobj):
                 return {'foo': jobj['foo']}
 
-            def fields_to_json(self):
+            def fields_to_partial_json(self):
                 return {'foo': self.foo}
 
         self.parent_cls = MockParentTypedJSONObjectWithFields
         self.msg = MockTypedJSONObjectWithFields(foo='bar')
 
-    def test_to_json(self):
-        self.assertEqual(self.msg.to_json(), {
+    def test_to_partial_json(self):
+        self.assertEqual(self.msg.to_partial_json(), {
             'type': 'test',
             'foo': 'bar',
         })
