@@ -13,7 +13,7 @@ from letsencrypt.acme import other
 
 
 class Challenge(jose.TypedJSONObjectWithFields):
-    # _fields_to_json | pylint: disable=abstract-method
+    # _fields_to_partial_json | pylint: disable=abstract-method
     """ACME challenge."""
     TYPES = {}
 
@@ -27,7 +27,7 @@ class DVChallenge(Challenge):  # pylint: disable=abstract-method
 
 
 class ChallengeResponse(jose.TypedJSONObjectWithFields):
-    # _fields_to_json | pylint: disable=abstract-method
+    # _fields_to_partial_json | pylint: disable=abstract-method
     """ACME challenge response."""
     TYPES = {}
 

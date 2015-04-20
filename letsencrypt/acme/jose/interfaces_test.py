@@ -14,7 +14,7 @@ class JSONDeSerializableTest(unittest.TestCase):
             def __init__(self, v):
                 self.v = v
 
-            def to_json(self):
+            def to_partial_json(self):
                 return self.v
 
             @classmethod
@@ -26,7 +26,7 @@ class JSONDeSerializableTest(unittest.TestCase):
                 self.x = x
                 self.y = y
 
-            def to_json(self):
+            def to_partial_json(self):
                 return [self.x, self.y]
 
             @classmethod
@@ -39,7 +39,7 @@ class JSONDeSerializableTest(unittest.TestCase):
                 self.x = x
                 self.y = y
 
-            def to_json(self):
+            def to_partial_json(self):
                 return {self.x: self.y}
 
             @classmethod
@@ -59,21 +59,21 @@ class JSONDeSerializableTest(unittest.TestCase):
         self.Sequence = Sequence
         self.Mapping = Mapping
 
-    def test_fully_serialize_sequence(self):
-        self.assertEqual(self.seq.fully_serialize(), ['foo1', 'foo2'])
+    def test_to_json_sequence(self):
+        self.assertEqual(self.seq.to_json(), ['foo1', 'foo2'])
 
-    def test_fully_serialize_mapping(self):
-        self.assertEqual(self.mapping.fully_serialize(), {'foo1': 'foo2'})
+    def test_to_json_mapping(self):
+        self.assertEqual(self.mapping.to_json(), {'foo1': 'foo2'})
 
-    def test_fully_serialize_other(self):
+    def test_to_json_other(self):
         mock_value = object()
-        self.assertTrue(self.Basic(mock_value).fully_serialize() is mock_value)
+        self.assertTrue(self.Basic(mock_value).to_json() is mock_value)
 
-    def test_fully_serialize_nested(self):
-        self.assertEqual(self.nested.fully_serialize(), [['foo1']])
+    def test_to_json_nested(self):
+        self.assertEqual(self.nested.to_json(), [['foo1']])
 
-    def test_fully_serialize(self):
-        self.assertEqual(self.tuple.fully_serialize(), (('foo', )))
+    def test_to_json(self):
+        self.assertEqual(self.tuple.to_json(), (('foo', )))
 
     def test_from_json_not_implemented(self):
         from letsencrypt.acme.jose.interfaces import JSONDeSerializable

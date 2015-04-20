@@ -39,7 +39,7 @@ install_requires = [
     'PyOpenSSL',
     'pyrfc3339',
     'python-augeas',
-    'python2-pythondialog',
+    'python2-pythondialog>=3.2.2rc1',  # Debian squeeze support, cf. #280
     'pytz',
     'requests',
     'werkzeug',

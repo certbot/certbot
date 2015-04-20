@@ -41,7 +41,7 @@ class JWKES(JWK):  # pragma: no cover
     """
     typ = 'ES'
 
-    def fields_to_json(self):
+    def fields_to_partial_json(self):
         raise NotImplementedError()
 
     @classmethod
@@ -62,7 +62,7 @@ class JWKOct(JWK):
     typ = 'oct'
     __slots__ = ('key',)
 
-    def fields_to_json(self):
+    def fields_to_partial_json(self):
         # TODO: An "alg" member SHOULD also be present to identify the
         # algorithm intended to be used with the key, unless the
         # application uses another means or convention to determine
@@ -129,9 +129,9 @@ class JWKRSA(JWK):
         return cls(key=util.HashableRSAKey(
             Crypto.PublicKey.RSA.construct(
                 (cls._decode_param(jobj['n']),
-                cls._decode_param(jobj['e'])))))
+                 cls._decode_param(jobj['e'])))))
 
-    def fields_to_json(self):
+    def fields_to_partial_json(self):
         return {
             'n': self._encode_param(self.key.n),
             'e': self._encode_param(self.key.e),

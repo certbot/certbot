@@ -46,7 +46,7 @@ class Header(json_util.JSONObjectWithFields):
         Parameter Names (as defined in section 4.1 of the
         protocol). If you need Public Header Parameter Names (4.2)
         or Private Header Parameter Names (4.3), you must subclass
-        and override :meth:`from_json` and :meth:`to_json`
+        and override :meth:`from_json` and :meth:`to_partial_json`
         appropriately.
 
     .. warning:: This class does not support any extensions through
@@ -223,8 +223,8 @@ class Signature(json_util.JSONObjectWithFields):
 
         return cls(protected=protected, header=header, signature=signature)
 
-    def fields_to_json(self):
-        fields = super(Signature, self).fields_to_json()
+    def fields_to_partial_json(self):
+        fields = super(Signature, self).fields_to_partial_json()
         if not fields['header'].not_omitted():
             del fields['header']
         return fields
@@ -294,12 +294,12 @@ class JWS(json_util.JSONObjectWithFields):
                         signature=json_util.decode_b64jose(signature))
         return cls(payload=json_util.decode_b64jose(payload), signatures=(sig,))
 
-    def to_json(self, flat=True):  # pylint: disable=arguments-differ
+    def to_partial_json(self, flat=True):  # pylint: disable=arguments-differ
         assert self.signatures
         payload = b64.b64encode(self.payload)
 
         if flat and len(self.signatures) == 1:
-            ret = self.signatures[0].to_json()
+            ret = self.signatures[0].to_partial_json()
             ret['payload'] = payload
             return ret
         else:
