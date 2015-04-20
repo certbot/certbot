@@ -129,6 +129,14 @@ class IConfig(zope.interface.Interface):
     apache_mod_ssl_conf = zope.interface.Attribute(
         "Contains standard Apache SSL directives.")
 
+    nginx_server_root = zope.interface.Attribute(
+        "Nginx server root directory.")
+    nginx_ctl = zope.interface.Attribute(
+        "Path to the 'nginx' binary, used for 'configtest' and "
+        "retrieving nginx version number.")
+    nginx_mod_ssl_conf = zope.interface.Attribute(
+        "Contains standard nginx SSL directives.")
+
 
 class IInstaller(zope.interface.Interface):
     """Generic Let's Encrypt Installer Interface.

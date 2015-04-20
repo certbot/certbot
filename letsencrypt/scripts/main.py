@@ -125,6 +125,13 @@ def create_parser():
     add("--apache-init-script", default="/etc/init.d/apache2",
         help=config_help("apache_init_script"))
 
+    add("--nginx-server-root", default="/etc/nginx",
+        help=config_help("nginx_server_root"))
+    add("--nginx-mod-ssl-conf",
+        default="/etc/letsencrypt/options-ssl-nginx.conf",
+        help=config_help("nginx_mod_ssl_conf"))
+    add("--nginx-ctl", default="nginx", help=config_help("nginx_ctl"))
+
     return parser
 
 

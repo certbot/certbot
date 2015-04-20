@@ -40,6 +40,12 @@ APACHE_REWRITE_HTTPS_ARGS = [
 """Apache rewrite rule arguments used for redirections to https vhost"""
 
 
+NGINX_MOD_SSL_CONF = pkg_resources.resource_filename(
+    "letsencrypt.client.plugins.nginx", "options-ssl.conf")
+"""Path to the Nginx mod_ssl config file found in the Let's Encrypt
+distribution."""
+
+
 DVSNI_CHALLENGE_PORT = 443
 """Port to perform DVSNI challenge."""
 
