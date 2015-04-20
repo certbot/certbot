@@ -378,9 +378,15 @@ class NginxConfigurator(object):
         sni_regex = re.compile(r"TLS SNI support enabled", re.IGNORECASE)
         sni_matches = sni_regex.findall(text)
 
+        ssl_regex = re.compile(r" --with-http_ssl_module")
+        ssl_matches = ssl_regex.findall(text)
+
         if not version_matches:
             raise errors.LetsEncryptConfiguratorError(
                 "Unable to find Nginx version")
+        if not ssl_matches:
+            raise errors.LetsEncryptConfiguratorError(
+                "Nginx build is missing SSL module (--with-http_ssl_module).")
         if not sni_matches:
             raise errors.LetsEncryptConfiguratorError(
                 "Nginx build doesn't support SNI")
@@ -388,9 +394,7 @@ class NginxConfigurator(object):
         nginx_version = tuple([int(i) for i in version_matches[0].split(".")])
 
         # nginx < 0.8.21 doesn't use default_server
-        if (nginx_version[0] == 0 and (nginx_version[1] < 8 or
-                                       (nginx_version[1] == 8 and
-                                        nginx_version[2] < 21))):
+        if nginx_version < (0, 8, 21):
             raise errors.LetsEncryptConfiguratorError(
                 "Nginx version must be 0.8.21+")
 

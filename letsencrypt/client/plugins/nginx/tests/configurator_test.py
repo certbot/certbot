@@ -201,20 +201,42 @@ class NginxConfiguratorTest(util.NginxTest):
         self.assertEqual(self.config.get_version(), (1, 4, 2))
 
         mock_popen().communicate.return_value = (
+            "", "\n".join(["nginx version: nginx/0.9",
+                           "built by clang 6.0 (clang-600.0.56)"
+                           " (based on LLVM 3.5svn)",
+                           "TLS SNI support enabled",
+                           "configure arguments: --with-http_ssl_module"]))
+        self.assertEqual(self.config.get_version(), (0, 9))
+
+        mock_popen().communicate.return_value = (
             "", "\n".join(["blah 0.0.1",
+                           "built by clang 6.0 (clang-600.0.56)"
+                           " (based on LLVM 3.5svn)",
+                           "TLS SNI support enabled",
+                           "configure arguments: --with-http_ssl_module"]))
+        self.assertRaises(errors.LetsEncryptConfiguratorError,
+                          self.config.get_version)
+
+        mock_popen().communicate.return_value = (
+            "", "\n".join(["nginx version: nginx/1.4.2",
                            "TLS SNI support enabled"]))
         self.assertRaises(errors.LetsEncryptConfiguratorError,
                           self.config.get_version)
 
         mock_popen().communicate.return_value = (
             "", "\n".join(["nginx version: nginx/1.4.2",
-                           ""]))
+                           "built by clang 6.0 (clang-600.0.56)"
+                           " (based on LLVM 3.5svn)",
+                           "configure arguments: --with-http_ssl_module"]))
         self.assertRaises(errors.LetsEncryptConfiguratorError,
                           self.config.get_version)
 
         mock_popen().communicate.return_value = (
             "", "\n".join(["nginx version: nginx/0.8.1",
-                           ""]))
+                           "built by clang 6.0 (clang-600.0.56)"
+                           " (based on LLVM 3.5svn)",
+                           "TLS SNI support enabled",
+                           "configure arguments: --with-http_ssl_module"]))
         self.assertRaises(errors.LetsEncryptConfiguratorError,
                           self.config.get_version)
 
