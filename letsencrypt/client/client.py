@@ -115,15 +115,7 @@ class Client(object):
                 "Please register with the ACME server first.")
 
         # Perform Challenges/Get Authorizations
-        if self.account.new_authzr_uri:
-            authzr = self.auth_handler.get_authorizations(
-                domains, self.account.new_authzr_uri)
-        # This isn't required to be in the registration resource...
-        # and it isn't standardized... ugh - acme-spec #93
-        else:
-            authzr = self.auth_handler.get_authorizations(
-                domains,
-                "https://%s/acme/new-authz" % self.config.server)
+        authzr = self.auth_handler.get_authorizations(domains)
 
         # Create CSR from names
         if csr is None:

@@ -5,10 +5,12 @@ import unittest
 import mock
 
 from letsencrypt.acme import challenges
-from letsencrypt.acme import messages
+from letsencrypt.acme import messages2
 
+from letsencrypt.client import account
 from letsencrypt.client import achallenges
 from letsencrypt.client import errors
+from letsencrypt.client import le_util
 
 from letsencrypt.client.tests import acme_util
 
@@ -23,7 +25,7 @@ TRANSLATE = {
 }
 
 
-class SatisfyChallengesTest(unittest.TestCase):
+class SolveChallengesTest(unittest.TestCase):
     """verify_identities test."""
 
     def setUp(self):
@@ -39,8 +41,10 @@ class SatisfyChallengesTest(unittest.TestCase):
         self.mock_cont_auth.perform.side_effect = gen_auth_resp
         self.mock_dv_auth.perform.side_effect = gen_auth_resp
 
+        self.account = account.Account(None, le_util.Key("filepath", "pem"))
+
         self.handler = AuthHandler(
-            self.mock_dv_auth, self.mock_cont_auth, None)
+            self.mock_dv_auth, self.mock_cont_auth, None, account)
 
         logging.disable(logging.CRITICAL)
 
@@ -48,22 +52,17 @@ class SatisfyChallengesTest(unittest.TestCase):
         logging.disable(logging.NOTSET)
 
     def test_name1_dvsni1(self):
+        # pylint: disable=protected-access
         dom = "0"
-        msg = messages.Challenge(
-            session_id=dom, nonce="nonce0", combinations=[],
-            challenges=[acme_util.DVSNI])
-        self.handler.add_chall_msg(dom, msg, "dummy_key")
+        # Note:
+        self.handler.dv_c = []
+        cont_resp, dv_resp = self.handler._solve_challenges()
 
-        self.handler._satisfy_challenges()  # pylint: disable=protected-access
-
-        self.assertEqual(len(self.handler.responses), 1)
         self.assertEqual(len(self.handler.responses[dom]), 1)
 
         self.assertEqual("DVSNI0", self.handler.responses[dom][0])
         self.assertEqual(len(self.handler.dv_c), 1)
-        self.assertEqual(len(self.handler.cont_c), 1)
-        self.assertEqual(len(self.handler.dv_c[dom]), 1)
-        self.assertEqual(len(self.handler.cont_c[dom]), 0)
+        self.assertEqual(len(self.handler.cont_c), 0)
 
     def test_name1_rectok1(self):
         dom = "0"
@@ -292,7 +291,7 @@ class SatisfyChallengesTest(unittest.TestCase):
         for i in xrange(3):
             self.handler.add_chall_msg(
                 str(i),
-                messages.Challenge(
+                messages2.Challenge(
                     session_id=str(i), nonce="nonce%d" % i,
                     challenges=acme_util.CHALLENGES, combinations=combos),
                 "dummy_key")
@@ -467,50 +466,6 @@ class GetAuthorizationsTest(unittest.TestCase):
         self.assertFalse(self.handler.responses)
         self.assertFalse(self.handler.paths)
         self.assertFalse(self.handler.domains)
-
-
-# pylint: disable=protected-access
-class PathSatisfiedTest(unittest.TestCase):
-    def setUp(self):
-        from letsencrypt.client.auth_handler import AuthHandler
-        self.handler = AuthHandler(None, None, None)
-
-    def test_satisfied_true(self):
-        dom = ["0", "1", "2", "3", "4"]
-        self.handler.paths[dom[0]] = [1, 2]
-        self.handler.responses[dom[0]] = [None, "sat", "sat2", None]
-
-        self.handler.paths[dom[1]] = [0]
-        self.handler.responses[dom[1]] = ["sat", None, None, False]
-
-        self.handler.paths[dom[2]] = [0]
-        self.handler.responses[dom[2]] = ["sat"]
-
-        self.handler.paths[dom[3]] = []
-        self.handler.responses[dom[3]] = []
-
-        self.handler.paths[dom[4]] = []
-        self.handler.responses[dom[4]] = ["respond... sure"]
-
-        for i in xrange(5):
-            self.assertTrue(self.handler._path_satisfied(dom[i]))
-
-    def test_not_satisfied(self):
-        dom = ["0", "1", "2", "3"]
-        self.handler.paths[dom[0]] = [1, 2]
-        self.handler.responses[dom[0]] = ["sat1", None, "sat2", None]
-
-        self.handler.paths[dom[1]] = [0]
-        self.handler.responses[dom[1]] = [None, None, None, None]
-
-        self.handler.paths[dom[2]] = [0]
-        self.handler.responses[dom[2]] = [None]
-
-        self.handler.paths[dom[3]] = [0]
-        self.handler.responses[dom[3]] = [False]
-
-        for i in xrange(3):
-            self.assertFalse(self.handler._path_satisfied(dom[i]))
 
 
 class GenChallengePathTest(unittest.TestCase):

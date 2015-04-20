@@ -29,7 +29,8 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
     :ivar account: Client's Account
     :type account: :class:`letsencrypt.client.account.Account`
 
-    :ivar dict authzr: ACME Authorization Resource dict where keys are domains.
+    :ivar dict authzr: ACME Authorization Resource dict where keys are domains
+        and values are :class:`letsencrypt.acme.messages2.AuthorizationResource`
     :ivar list dv_c: DV challenges in the form of
         :class:`letsencrypt.client.achallenges.AnnotatedChallenge`
     :ivar list cont_c: Continuity challenges in the
@@ -48,11 +49,10 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         self.dv_c = []
         self.cont_c = []
 
-    def get_authorizations(self, domains, new_authz_uri, best_effort=False):
+    def get_authorizations(self, domains, best_effort=False):
         """Retrieve all authorizations for challenges.
 
         :param set domains: Domains for authorization
-        :param str new_authz_uri: Location to get new authorization resources
         :param bool best_effort: Whether or not all authorizations are required
             (this is useful in renewal)
 
@@ -66,7 +66,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         """
         for domain in domains:
             self.authzr[domain] = self.network.request_domain_challenges(
-                domain, new_authz_uri)
+                domain, self.account.new_authzr_uri)
         self._choose_challenges(domains)
 
         # While there are still challenges remaining...
@@ -80,6 +80,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         return self.authzr.values()
 
     def _choose_challenges(self, domains):
+        """Retrieve necessary challenges to satisfy server."""
         logging.info("Performing the following challenges:")
         for dom in domains:
             path = gen_challenge_path(

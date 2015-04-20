@@ -58,7 +58,12 @@ class Account(object):
     @property
     def new_authzr_uri(self):  # pylint: disable=missing-docstring
         if self.regr is not None:
-            return self.regr.new_authzr_uri
+            if self.regr.new_authzr_uri:
+                return self.regr.new_authzr_uri
+            else:
+                # Default: spec says they "may" provide the header
+                # ugh.. acme-spec #93
+                return "https://%s/acme/new-authz" % self.config.server
 
     @property
     def terms_of_service(self):  # pylint: disable=missing-docstring

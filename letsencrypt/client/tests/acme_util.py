@@ -1,4 +1,6 @@
 """Class helps construct valid ACME messages for testing."""
+import datetime
+import itertools
 import os
 import pkg_resources
 
@@ -6,6 +8,7 @@ import Crypto.PublicKey.RSA
 
 from letsencrypt.acme import challenges
 from letsencrypt.acme import jose
+from letsencrypt.acme import messages2
 
 
 KEY = jose.HashableRSAKey(Crypto.PublicKey.RSA.importKey(
@@ -52,13 +55,13 @@ CONT_CHALLENGES = [chall for chall in CHALLENGES
                    if isinstance(chall, challenges.ContinuityChallenge)]
 
 
-def gen_combos(challs):
-    """Generate natural combinations for challs."""
+def gen_combos(challbs):
+    """Generate natural combinations for challbs."""
     dv_chall = []
     cont_chall = []
 
-    for i, chall in enumerate(challs):  # pylint: disable=redefined-outer-name
-        if isinstance(chall, challenges.DVChallenge):
+    for i, challb in enumerate(challbs):  # pylint: disable=redefined-outer-name
+        if isinstance(challb.chall, challenges.DVChallenge):
             dv_chall.append(i)
         else:
             cont_chall.append(i)
@@ -66,3 +69,54 @@ def gen_combos(challs):
     # Gen combos for 1 of each type, lowest index first (makes testing easier)
     return tuple((i, j) if i < j else (j, i)
                  for i in dv_chall for j in cont_chall)
+
+
+def chall_to_challb(chall, status):
+    """Return ChallengeBody from Challenge.
+
+    :param str status: "valid", "invalid", "pending"...
+
+    """
+    kwargs = {
+        "uri": chall.typ+"_uri",
+        "status": messages2.Status(status),
+    }
+
+    if status == "valid":
+        kwargs.update({"validated": datetime.datetime.now()})
+
+    return messages2.ChallengeBody(**kwargs)
+
+
+def gen_authzr(authz_status, domain, challs, statuses, combos=True):
+    """Generate an authorization resource.
+
+    :param str authz_status: "valid", "invalid", "pending"...
+    :param list challs: Challenge objects
+    :param list statuses: status of each challenge object e.g. "valid"...
+    :param bool combos: Whether or not to add combinations
+
+    """
+    challbs = [
+        chall_to_challb(chall, status)
+        for chall, status in itertools.izip(challs, statuses)
+    ]
+    authz_kwargs = {
+        "identifier": messages2.Identifier(
+            type=messages2.IDENTIFIER_FQDN, value=domain),
+         "challenges": challbs,
+    }
+    if combos:
+        authz_kwargs.update({"combinations": gen_combos(challbs)})
+    if authz_status == "valid":
+        now = datetime.datetime.now()
+        authz_kwargs.update({
+            "status": messages2.Status(authz_status),
+            "expires": datetime.datetime(now.year, now.month+1, now.day),
+        })
+
+    return messages2.AuthorizationResource(
+        uri="https://trusted.ca/new-authz-resource",
+        new_cert_uri="https://trusted.ca/new-cert",
+        body=messages2.Authorization(**authz_kwargs)
+    )
