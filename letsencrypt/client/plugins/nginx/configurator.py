@@ -26,6 +26,8 @@ class NginxConfigurator(object):
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
     """Nginx configurator.
 
+    .. warning:: This plugin is a stub, does not support DVSNI yet!
+
     .. todo:: Add proper support for comments in the config. Currently,
         config files modified by the configurator will lose all their comments.
 
