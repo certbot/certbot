@@ -1,4 +1,4 @@
-"""Let's Encrypt Client."""
+"""Let's Encrypt CLI."""
 # TODO: Sanity check all input.  Be sure to avoid shell code etc...
 import argparse
 import collections

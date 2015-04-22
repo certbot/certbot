@@ -104,7 +104,6 @@ setup(
         'letsencrypt.client.plugins.standalone.tests',
         'letsencrypt.client.tests',
         'letsencrypt.client.tests.display',
-        'letsencrypt.scripts',
     ],
 
     install_requires=install_requires,
@@ -119,7 +118,7 @@ setup(
 
     entry_points={
         'console_scripts': [
-            'letsencrypt = letsencrypt.scripts.main:main',
+            'letsencrypt = letsencrypt.client.cli:main',
             'jws = letsencrypt.acme.jose.jws:CLI.run',
         ],
         'letsencrypt.plugins': [
