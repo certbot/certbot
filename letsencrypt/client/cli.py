@@ -216,7 +216,8 @@ def create_parser():
     parser = configargparse.ArgParser(
         description=__doc__,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        args_for_setting_config_path=["-c", "--config"])
+        args_for_setting_config_path=["-c", "--config"],
+        default_config_files=constants.DEFAULT_CONFIG_FILES)
 
     # --help is automatically provided by argparse
     parser.add_argument(

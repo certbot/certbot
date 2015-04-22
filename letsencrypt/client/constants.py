@@ -10,6 +10,7 @@ SETUPTOOLS_PLUGINS_ENTRY_POINT = "letsencrypt.plugins"
 
 
 # CLI/IConfig defaults
+DEFAULT_CONFIG_FILES = ["/etc/letsencrypt/cli.ini"]
 DEFAULT_VERBOSE_COUNT = -(logging.WARNING / 10)
 DEFAULT_SERVER = "letsencrypt-demo.org:443"
 DEFAULT_RSA_KEY_SIZE = 2048
