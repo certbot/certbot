@@ -138,7 +138,7 @@ class RenewableCertTests(unittest.TestCase):
 
     def test_current_version(self):
         for ver in (1, 5, 10, 20):
-            os.symlink(os.path.join("..", "..", "archive", "example.org", "cert{}.pem".format(ver)), self.test_rc.cert)
+            os.symlink(os.path.join("..", "..", "archive", "example.org", "cert{0}.pem".format(ver)), self.test_rc.cert)
             with open(self.test_rc.cert, "w") as f:
                 f.write("cert")
             os.unlink(self.test_rc.cert)
@@ -154,7 +154,7 @@ class RenewableCertTests(unittest.TestCase):
                 where = self.test_rc.__getattribute__(kind)
                 if os.path.islink(where):
                     os.unlink(where)
-                os.symlink(os.path.join("..", "..", "archive", "example.org", "{}{}.pem".format(kind, ver)), where)
+                os.symlink(os.path.join("..", "..", "archive", "example.org", "{0}{1}.pem".format(kind, ver)), where)
                 with open(where, "w") as f:
                     f.write(kind)
         self.assertEqual(self.test_rc.latest_common_version(), 5)
@@ -185,7 +185,7 @@ class RenewableCertTests(unittest.TestCase):
             where = self.test_rc.__getattribute__(kind)
             if os.path.islink(where):
                 os.unlink(where)
-            os.symlink(os.path.join("..", "..", "archive", "example.org", "{}{}.pem".format(kind, ver)), where)
+            os.symlink(os.path.join("..", "..", "archive", "example.org", "{0}{1}.pem".format(kind, ver)), where)
             with open(where, "w") as f:
                 f.write(kind)
         self.assertEqual(self.test_rc.latest_common_version(), 17)
@@ -197,7 +197,7 @@ class RenewableCertTests(unittest.TestCase):
                 where = self.test_rc.__getattribute__(kind)
                 if os.path.islink(where):
                     os.unlink(where)
-                os.symlink(os.path.join("..", "..", "archive", "example.org", "{}{}.pem".format(kind, ver)), where)
+                os.symlink(os.path.join("..", "..", "archive", "example.org", "{0}{1}.pem".format(kind, ver)), where)
                 with open(where, "w") as f:
                     f.write(kind)
                 self.assertEqual(ver, self.test_rc.current_version(kind))
@@ -231,7 +231,7 @@ class RenewableCertTests(unittest.TestCase):
                 where = self.test_rc.__getattribute__(kind)
                 if os.path.islink(where):
                     os.unlink(where)
-                os.symlink(os.path.join("..", "..", "archive", "example.org", "{}{}.pem".format(kind, ver)), where)
+                os.symlink(os.path.join("..", "..", "archive", "example.org", "{0}{1}.pem".format(kind, ver)), where)
                 with open(where, "w") as f:
                     f.write(kind)
                 self.assertEqual(ver, self.test_rc.current_version(kind))
@@ -248,7 +248,7 @@ class RenewableCertTests(unittest.TestCase):
                 where = self.test_rc.__getattribute__(kind)
                 if os.path.islink(where):
                     os.unlink(where)
-                os.symlink(os.path.join("..", "..", "archive", "example.org", "{}{}.pem".format(kind, ver)), where)
+                os.symlink(os.path.join("..", "..", "archive", "example.org", "{0}{1}.pem".format(kind, ver)), where)
                 with open(where, "w") as f:
                     f.write(kind)
                 self.assertEqual(ver, self.test_rc.current_version(kind))
@@ -295,7 +295,7 @@ class RenewableCertTests(unittest.TestCase):
                 where = self.test_rc.__getattribute__(kind)
                 if os.path.islink(where):
                     os.unlink(where)
-                os.symlink(os.path.join("..", "..", "archive", "example.org", "{}{}.pem".format(kind, ver)), where)
+                os.symlink(os.path.join("..", "..", "archive", "example.org", "{0}{1}.pem".format(kind, ver)), where)
                 with open(where, "w") as f:
                     f.write(kind)
         self.assertFalse(self.test_rc.should_autodeploy())
@@ -355,7 +355,7 @@ class RenewableCertTests(unittest.TestCase):
         self.test_rc.configuration["autorenew"] = "1"
         for kind in ALL_FOUR:
             where = self.test_rc.__getattribute__(kind)
-            os.symlink(os.path.join("..", "..", "archive", "example.org", "{}12.pem".format(kind)), where)
+            os.symlink(os.path.join("..", "..", "archive", "example.org", "{0}12.pem".format(kind)), where)
             with open(where, "w") as f:
                 f.write(kind)
         test_cert = pkg_resources.resource_string(
@@ -416,7 +416,7 @@ class RenewableCertTests(unittest.TestCase):
                 where = self.test_rc.__getattribute__(kind)
                 if os.path.islink(where):
                     os.unlink(where)
-                os.symlink(os.path.join("..", "..", "archive", "example.org", "{}{}.pem".format(kind, ver)), where)
+                os.symlink(os.path.join("..", "..", "archive", "example.org", "{0}{1}.pem".format(kind, ver)), where)
                 with open(where, "w") as f:
                     f.write(kind)
         self.test_rc.update_all_links_to(3)
