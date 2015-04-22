@@ -343,7 +343,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         if os.path.exists(our_archive):
             raise ValueError("archive directory exists for " + lineagename)
         if os.path.exists(our_live_dir):
-            raise ValueError("archive directory exists for " + lineagename)
+            raise ValueError("live directory exists for " + lineagename)
         os.mkdir(our_archive)
         os.mkdir(our_live_dir)
         relative_archive = os.path.join("..", "..", "archive", lineagename)
@@ -363,6 +363,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             f.write(cert)
         with open(privkey_target, "w") as f:
             f.write(privkey)
+            # XXX: Let's make sure to get the file permissions right here
         with open(chain_target, "w") as f:
             f.write(chain)
         with open(fullchain_target, "w") as f:
@@ -376,7 +377,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         # TODO: add human-readable comments explaining other available
         #       parameters
         new_config.write()
-        return cls(config_filename, config)
+        return cls(new_config, config)
 
     def save_successor(self, prior_version, new_cert, new_chain):
         """Save a new cert and chain as a successor of a specific prior
@@ -435,6 +436,8 @@ def main(config=DEFAULTS):
     """main function for autorenewer script."""
     for i in os.listdir(config["renewal_configs_dir"]):
         print "Processing", i
+        if not i.endswith(".conf"):
+            continue
         cert = RenewableCert(i)
         if cert.should_autodeploy():
             cert.update_all_links_to(cert.latest_common_version())

@@ -453,6 +453,47 @@ class RenewableCertTests(unittest.TestCase):
         with open(self.test_rc.version("fullchain", 9)) as f:
             self.assertEqual(f.read(), "last" + "attempt")
 
+    def test_new_lineage(self):
+        """Test for new_lineage() class method."""
+        from letsencrypt.client import renewer
+        config_dir = self.defaults["renewal_configs_dir"]
+        archive_dir = self.defaults["official_archive_dir"]
+        live_dir = self.defaults["live_dir"]
+        result = renewer.RenewableCert.new_lineage("the-lineage.com", "cert",
+                                                   "privkey", "chain",
+                                                   self.defaults)
+        # This consistency check tests most relevant properties about the
+        # newly created cert lineage.
+        self.assertTrue(result.consistent())
+        self.assertTrue(os.path.exists(os.path.join(config_dir,
+                                                    "the-lineage.com.conf")))
+        with open(result.fullchain) as f:
+            self.assertEqual(f.read(), "cert" + "chain")
+        # Let's do it again and make sure it makes a different lineage
+        result = renewer.RenewableCert.new_lineage("the-lineage.com", "cert2",
+                                                   "privkey2", "chain2",
+                                                   self.defaults)
+        print os.listdir(config_dir)
+        self.assertTrue(os.path.exists(
+            os.path.join(config_dir, "the-lineage.com-0001.conf")))
+        # Now trigger the detection of already existing files
+        os.mkdir(os.path.join(live_dir, "the-lineage.com-0002"))
+        self.assertRaises(ValueError, renewer.RenewableCert.new_lineage,
+                          "the-lineage.com", "cert3", "privkey3", "chain3",
+                          self.defaults)
+        os.mkdir(os.path.join(archive_dir, "other-example.com"))
+        self.assertRaises(ValueError, renewer.RenewableCert.new_lineage,
+                          "other-example.com", "cert4", "privkey4", "chain4",
+                          self.defaults)
+
+    @mock.patch("letsencrypt.client.renewer.le_util.unique_lineage_name")
+    def test_invalid_config_filename(self, mock_uln):
+        from letsencrypt.client import renewer
+        mock_uln.return_value = "this_does_not_end_with_dot_conf", "yikes"
+        self.assertRaises(ValueError, renewer.RenewableCert.new_lineage,
+                          "example.com", "cert", "privkey", "chain",
+                          self.defaults)
+
     def test_bad_kind(self):
         self.assertRaises(ValueError, self.test_rc.current_target, "elephant")
         self.assertRaises(ValueError, self.test_rc.current_version, "elephant")
@@ -503,6 +544,9 @@ class RenewableCertTests(unittest.TestCase):
         mock_rc_instance.should_autorenew.return_value = True
         mock_rc_instance.latest_common_version.return_value = 10
         mock_rc.return_value = mock_rc_instance
+        with open(os.path.join(self.defaults["renewal_configs_dir"], "README"), "w") as f:
+            f.write("This is a README file to make sure that the renewer is")
+            f.write("able to correctly ignore files that don't end in .conf.")
         with open(os.path.join(self.defaults["renewal_configs_dir"], "example.org.conf"), "w") as f:
             # This isn't actually parsed in this test; we have a separate
             # test_initialization that tests the initialization, assuming
