@@ -3,6 +3,7 @@
 import argparse
 import collections
 import logging
+import os
 import pkg_resources
 import sys
 
@@ -210,6 +211,8 @@ def read_file(filename):
     except IOError as exc:
         raise argparse.ArgumentTypeError(exc.strerror)
 
+def config_help(name):
+    return interfaces.IConfig[name].__doc__
 
 def create_parser():
     """Create parser."""
@@ -218,14 +221,19 @@ def create_parser():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         args_for_setting_config_path=["-c", "--config"],
         default_config_files=constants.DEFAULT_CONFIG_FILES)
+    add = parser.add_argument
 
     # --help is automatically provided by argparse
-    parser.add_argument(
-        "--version", action="version", version="%(prog)s {0}".format(
+    add("--version", action="version", version="%(prog)s {0}".format(
             letsencrypt.__version__))
-    parser.add_argument(
-        "-v", "--verbose", dest="verbose_count", action="count",
+    add("-v", "--verbose", dest="verbose_count", action="count",
         default=constants.DEFAULT_VERBOSE_COUNT)
+    add("--no-confirm", dest="no_confirm", action="store_true",
+        help="Turn off confirmation screens, currently used for --revoke")
+    add("-e", "--agree-tos", dest="eula", action="store_true",
+        help="Skip the end user license agreement screen.")
+    add("-t", "--text", dest="use_curses", action="store_false",
+        help="Use the text output instead of the curses UI.")
 
     subparsers = parser.add_subparsers(metavar="SUBCOMMAND")
     def add_subparser(name, func):
@@ -251,9 +259,6 @@ def create_parser():
         "--installers", action="append_const", dest="ifaces",
         const=interfaces.IInstaller)
 
-    add = parser.add_argument
-    config_help = lambda name: interfaces.IConfig[name].__doc__
-
     parser_run.add_argument("--configurator")
     for subparser in parser_run, parser_auth:
         subparser.add_argument("-a", "--authenticator")
@@ -268,12 +273,15 @@ def create_parser():
     add("-d", "--domains", metavar="DOMAIN", action="append")
     add("-s", "--server", default=constants.DEFAULT_SERVER,
         help=config_help("server"))
-
     add("-k", "--authkey", type=read_file,
         help="Path to the authorized key file")
     add("-B", "--rsa-key-size", type=int, metavar="N",
         default=constants.DEFAULT_RSA_KEY_SIZE,
         help=config_help("rsa_key_size"))
+    # TODO: resolve - assumes binary logic while client.py assumes ternary.
+    add("-r", "--redirect", action="store_true",
+        help="Automatically redirect all HTTP traffic to HTTPS for the newly "
+             "authenticated vhost.")
 
     parser_revoke.add_argument(
         "--certificate", dest="rev_cert", type=read_file, metavar="CERT_PATH",
@@ -287,19 +295,13 @@ def create_parser():
         default=constants.DEFAULT_ROLLBACK_CHECKPOINTS,
         help="Revert configuration N number of checkpoints.")
 
-    # TODO: resolve - assumes binary logic while client.py assumes ternary.
-    add("-r", "--redirect", action="store_true",
-        help="Automatically redirect all HTTP traffic to HTTPS for the newly "
-             "authenticated vhost.")
+    paths_parser(parser.add_argument_group("paths"))
+    apache_parser(parser.add_argument_group("apache"))
+    return parser
 
-    add("--no-confirm", dest="no_confirm", action="store_true",
-        help="Turn off confirmation screens, currently used for --revoke")
 
-    add("-e", "--agree-tos", dest="eula", action="store_true",
-        help="Skip the end user license agreement screen.")
-    add("-t", "--text", dest="use_curses", action="store_false",
-        help="Use the text output instead of the curses UI.")
-
+def paths_parser(parser):
+    add = parser.add_argument
     add("--config-dir", default=constants.DEFAULT_CONFIG_DIR,
         help=config_help("config_dir"))
     add("--work-dir", default=constants.DEFAULT_WORK_DIR,
@@ -318,6 +320,13 @@ def create_parser():
     add("--chain-path", default=constants.DEFAULT_CHAIN_PATH,
         help=config_help("chain_path"))
 
+    return parser
+
+
+def apache_parser(parser):
+    # TODO: this should probably be moved to plugins/apache, in
+    # general all plugins should be able to inject config options
+    add = parser.add_argument
     add("--apache-server-root", default=constants.DEFAULT_APACHE_SERVER_ROOT,
         help=config_help("apache_server_root"))
     add("--apache-mod-ssl-conf", default=constants.DEFAULT_APACHE_MOD_SSL_CONF,
@@ -328,34 +337,40 @@ def create_parser():
         help=config_help("apache_enmod"))
     add("--apache-init-script", default=constants.DEFAULT_APACHE_INIT_SCRIPT,
         help=config_help("apache_init_script"))
-
     return parser
 
 
-def main():  # pylint: disable=too-many-branches, too-many-statements
+def main(args=sys.argv[1:]):
     """Command line argument parsing and main script execution."""
     # note: arg parser internally handles --help (and exits afterwards)
-    args = create_parser().parse_args()
+    args = create_parser().parse_args(args)
     config = configuration.NamespaceConfig(args)
 
-    # note: check is done after arg parsing as --help should work w/o root also.
-    #if not os.geteuid() == 0:
-    #    return (
-    #        "{0}Root is required to run letsencrypt.  Please use sudo.{0}"
-    #        .format(os.linesep))
-
-    # Set up logging
-    level = -args.verbose_count * 10
-    logger = logging.getLogger()
-    logger.setLevel(level)
-    logging.debug("Logging level set at %d", level)
-    # displayer
+    # Displayer
     if args.use_curses:
-        logger.addHandler(log.DialogHandler())
         displayer = display_util.NcursesDisplay()
     else:
         displayer = display_util.FileDisplay(sys.stdout)
     zope.component.provideUtility(displayer)
+
+    # Logging
+    level = -args.verbose_count * 10
+    logger = logging.getLogger()
+    logger.setLevel(level)
+    logging.debug("Logging level set at %d", level)
+    if args.use_curses:
+        logger.addHandler(log.DialogHandler())
+
+    if not os.geteuid() == 0:
+        logging.warning(
+            "Root (sudo) is required to run most of letsencrypt functionality.")
+        # check must be done after arg parsing as --help should work
+        # w/o root; on the other hand, e.g. "letsencrypt run
+        # --authenticator dns" or "letsencrypt plugins" does not
+        # require root as well
+        #return (
+        #    "{0}Root is required to run letsencrypt.  Please use sudo.{0}"
+        #    .format(os.linesep))
 
     return args.func(args, config)
 
