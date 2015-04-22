@@ -13,11 +13,11 @@ from letsencrypt.acme import challenges
 
 from letsencrypt.client import achallenges
 from letsencrypt.client import augeas_configurator
-from letsencrypt.client import constants
 from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
 
+from letsencrypt.client.plugins.apache import constants
 from letsencrypt.client.plugins.apache import dvsni
 from letsencrypt.client.plugins.apache import obj
 from letsencrypt.client.plugins.apache import parser
@@ -81,6 +81,20 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     zope.interface.implements(interfaces.IAuthenticator, interfaces.IInstaller)
 
     description = "Apache Web Server"
+
+    @classmethod
+    def add_parser_arguments(cls, add):
+        add("server-root", default=constants.DEFAULT_SERVER_ROOT,
+            help="Apache server root directory.")
+        add("mod-ssl-conf", default=constants.DEFAULT_MOD_SSL_CONF,
+            help="Contains standard Apache SSL directives.")
+        add("ctl", default=constants.DEFAULT_CTL,
+            help="Path to the 'apache2ctl' binary, used for 'configtest' and "
+                 "retrieving Apache2 version number.")
+        add("enmod", default=constants.DEFAULT_ENMOD,
+            help="Path to the Apache 'a2enmod' binary.")
+        add("init-script", default=constants.DEFAULT_INIT_SCRIPT,
+            help="Path to the Apache init script (used for server reload/restart).")
 
     def __init__(self, config, version=None):
         """Initialize an Apache Configurator.
@@ -599,7 +613,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # Add directives to server
             self.parser.add_dir(general_v.path, "RewriteEngine", "On")
             self.parser.add_dir(general_v.path, "RewriteRule",
-                                constants.APACHE_REWRITE_HTTPS_ARGS)
+                                constants.REWRITE_HTTPS_ARGS)
             self.save_notes += ("Redirecting host in %s to ssl vhost in %s\n" %
                                 (general_v.filep, ssl_vhost.filep))
             self.save()
@@ -638,10 +652,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if not rewrite_path:
             # "No existing redirection for virtualhost"
             return False, -1
-        if len(rewrite_path) == len(constants.APACHE_REWRITE_HTTPS_ARGS):
+        if len(rewrite_path) == len(constants.REWRITE_HTTPS_ARGS):
             for idx, match in enumerate(rewrite_path):
                 if (self.aug.get(match) !=
-                        constants.APACHE_REWRITE_HTTPS_ARGS[idx]):
+                        constants.REWRITE_HTTPS_ARGS[idx]):
                     # Not a letsencrypt https rewrite
                     return True, 2
             # Existing letsencrypt https rewrite rule is in place
@@ -693,7 +707,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                          "LogLevel warn\n"
                          "</VirtualHost>\n"
                          % (servername, serveralias,
-                            " ".join(constants.APACHE_REWRITE_HTTPS_ARGS)))
+                            " ".join(constants.REWRITE_HTTPS_ARGS)))
 
         # Write out the file
         # This is the default name
@@ -1160,4 +1174,4 @@ def temp_install(options_ssl):
 
     # Check to make sure options-ssl.conf is installed
     if not os.path.isfile(options_ssl):
-        shutil.copyfile(constants.APACHE_MOD_SSL_CONF, options_ssl)
+        shutil.copyfile(constants.MOD_SSL_CONF, options_ssl)

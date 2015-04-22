@@ -22,11 +22,6 @@ DEFAULT_KEY_DIR = "/etc/letsencrypt/keys"
 DEFAULT_CERTS_DIR = "/etc/letsencrypt/certs"
 DEFAULT_CERT_PATH = "/etc/letsencrypt/certs/cert-letsencrypt.pem"
 DEFAULT_CHAIN_PATH = "/etc/letsencrypt/certs/chain-letsencrypt.pem"
-DEFAULT_APACHE_SERVER_ROOT = "/etc/apache2"
-DEFAULT_APACHE_MOD_SSL_CONF = "/etc/letsencrypt/options-ssl.conf"
-DEFAULT_APACHE_CTL = "apache2ctl"
-DEFAULT_APACHE_ENMOD = "a2enmod"
-DEFAULT_APACHE_INIT_SCRIPT = "/etc/init.d/apache2"
 
 
 S_SIZE = 32
@@ -53,16 +48,6 @@ List of expected options parameters:
 - spdy: TODO
 
 """
-
-
-APACHE_MOD_SSL_CONF = pkg_resources.resource_filename(
-    "letsencrypt.client.plugins.apache", "options-ssl.conf")
-"""Path to the Apache mod_ssl config file found in the Let's Encrypt
-distribution."""
-
-APACHE_REWRITE_HTTPS_ARGS = [
-    "^.*$", "https://%{SERVER_NAME}%{REQUEST_URI}", "[L,R=permanent]"]
-"""Apache rewrite rule arguments used for redirections to https vhost"""
 
 
 DVSNI_CHALLENGE_PORT = 443

@@ -7,8 +7,8 @@ import unittest
 
 import mock
 
-from letsencrypt.client import constants
 from letsencrypt.client.plugins.apache import configurator
+from letsencrypt.client.plugins.apache import constants
 from letsencrypt.client.plugins.apache import obj
 
 
@@ -49,7 +49,7 @@ def dir_setup(test_dir="debian_apache_2_4/two_vhost_80"):
 def setup_apache_ssl_options(config_dir):
     """Move the ssl_options into position and return the path."""
     option_path = os.path.join(config_dir, "options-ssl.conf")
-    shutil.copyfile(constants.APACHE_MOD_SSL_CONF, option_path)
+    shutil.copyfile(constants.MOD_SSL_CONF, option_path)
     return option_path
 
 

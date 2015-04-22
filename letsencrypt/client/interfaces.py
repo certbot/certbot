@@ -117,18 +117,6 @@ class IConfig(zope.interface.Interface):
     cert_path = zope.interface.Attribute("Let's Encrypt certificate file.")
     chain_path = zope.interface.Attribute("Let's Encrypt chain file.")
 
-    apache_server_root = zope.interface.Attribute(
-        "Apache server root directory.")
-    apache_ctl = zope.interface.Attribute(
-        "Path to the 'apache2ctl' binary, used for 'configtest' and "
-        "retrieving Apache2 version number.")
-    apache_enmod = zope.interface.Attribute(
-        "Path to the Apache 'a2enmod' binary.")
-    apache_init_script = zope.interface.Attribute(
-        "Path to the Apache init script (used for server reload/restart).")
-    apache_mod_ssl_conf = zope.interface.Attribute(
-        "Contains standard Apache SSL directives.")
-
 
 class IInstaller(IPlugin):
     """Generic Let's Encrypt Installer Interface.

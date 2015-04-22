@@ -27,6 +27,8 @@ from letsencrypt.client.display import ops as display_ops
 
 from letsencrypt.client.plugins import disco as plugins_disco
 
+from letsencrypt.client.plugins.apache import configurator as apache_configurator
+
 
 def _common_run(args, config, authenticator, installer):
     if args.domains is None:
@@ -296,7 +298,11 @@ def create_parser():
         help="Revert configuration N number of checkpoints.")
 
     paths_parser(parser.add_argument_group("paths"))
-    apache_parser(parser.add_argument_group("apache"))
+
+    # TODO: plugin_parser should be called for every detected plugin
+    plugin_parser(
+        parser.add_argument_group("apache"), prefix="apache",
+        plugin_cls=apache_configurator.ApacheConfigurator)
     return parser
 
 
@@ -323,20 +329,11 @@ def paths_parser(parser):
     return parser
 
 
-def apache_parser(parser):
-    # TODO: this should probably be moved to plugins/apache, in
-    # general all plugins should be able to inject config options
-    add = parser.add_argument
-    add("--apache-server-root", default=constants.DEFAULT_APACHE_SERVER_ROOT,
-        help=config_help("apache_server_root"))
-    add("--apache-mod-ssl-conf", default=constants.DEFAULT_APACHE_MOD_SSL_CONF,
-        help=config_help("apache_mod_ssl_conf"))
-    add("--apache-ctl", default=constants.DEFAULT_APACHE_CTL,
-        help=config_help("apache_ctl"))
-    add("--apache-enmod", default=constants.DEFAULT_APACHE_ENMOD,
-        help=config_help("apache_enmod"))
-    add("--apache-init-script", default=constants.DEFAULT_APACHE_INIT_SCRIPT,
-        help=config_help("apache_init_script"))
+def plugin_parser(parser, prefix, plugin_cls):
+    def add(arg_name_no_prefix, *args, **kwargs):
+        parser.add_argument(
+            "--{0}-{1}".format(prefix, arg_name_no_prefix), *args, **kwargs)
+    plugin_cls.add_parser_arguments(add)
     return parser
 
 
