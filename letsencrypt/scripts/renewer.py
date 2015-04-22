@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import configobj
+
 from letsencrypt.client import renewer
 
 DEFAULTS = configobj.ConfigObj("renewal.conf")
