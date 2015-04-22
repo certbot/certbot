@@ -28,7 +28,7 @@ changes = read_file(os.path.join(here, 'CHANGES.rst'))
 
 install_requires = [
     'argparse',
-    'ConfArgParse',
+    'ConfigArgParse',
     'jsonschema',
     'mock',
     'ndg-httpsclient',  # urllib3 InsecurePlatformWarning (#304)

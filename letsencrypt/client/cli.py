@@ -6,7 +6,7 @@ import logging
 import pkg_resources
 import sys
 
-import confargparse
+import configargparse
 import zope.component
 import zope.interface.exceptions
 import zope.interface.verify
@@ -213,7 +213,10 @@ def read_file(filename):
 
 def create_parser():
     """Create parser."""
-    parser = confargparse.ConfArgParser(description=__doc__)
+    parser = configargparse.ArgParser(
+        description=__doc__,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        args_for_setting_config_path=["-c", "--config"])
 
     # --help is automatically provided by argparse
     parser.add_argument(
