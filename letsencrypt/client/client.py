@@ -397,10 +397,11 @@ def determine_authenticator(all_auths, config):
         try:
             auth = avail_auths[config.authenticator]
         except KeyError:
-            logging.info(list_available_authenticators(avail_auths))
-            raise errors.LetsEncryptClientError(
-                "The specified authenticator '%s' could not be found" %
+            logging.error(
+                "The specified authenticator '%s' could not be found",
                 config.authenticator)
+            logging.info(list_available_authenticators(avail_auths))
+            return
     elif len(avail_auths) > 1:
         auth = display_ops.choose_authenticator(avail_auths.values(), errs)
     elif len(avail_auths.keys()) == 1:

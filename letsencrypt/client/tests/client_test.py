@@ -1,9 +1,9 @@
 """letsencrypt.client.client.py tests."""
+from collections import namedtuple
 import unittest
 
 import mock
 
-from letsencrypt.client import configuration
 from letsencrypt.client import errors
 
 
@@ -19,8 +19,7 @@ class DetermineAuthenticatorTest(unittest.TestCase):
         self.mock_apache = mock.MagicMock(
             spec=ApacheConfigurator, description="Standalone Authenticator")
 
-        self.mock_config = mock.MagicMock(
-            spec=configuration.NamespaceConfig, authenticator=None)
+        self.mock_config = mock.Mock()
 
         self.all_auths = {
             'apache': self.mock_apache,
@@ -28,30 +27,29 @@ class DetermineAuthenticatorTest(unittest.TestCase):
         }
 
     @classmethod
-    def _call(cls, all_auths, config):
+    def _call(cls, all_auths):
         from letsencrypt.client.client import determine_authenticator
-        return determine_authenticator(all_auths, config)
+        # TODO: add tests for setting the authenticator via the command line
+        mock_config = namedtuple("Config", ['authenticator'])
+        return determine_authenticator(all_auths,
+                                       mock_config(authenticator=None))
 
     @mock.patch("letsencrypt.client.client.display_ops.choose_authenticator")
     def test_accept_two(self, mock_choose):
         mock_choose.return_value = self.mock_stand()
-        self.assertEqual(self._call(self.all_auths, self.mock_config),
-                         self.mock_stand())
+        self.assertEqual(self._call(self.all_auths), self.mock_stand())
 
     def test_accept_one(self):
         self.mock_apache.prepare.return_value = self.mock_apache
-        one_avail_auth = {
-            'apache': self.mock_apache
-        }
-        self.assertEqual(self._call(one_avail_auth, self.mock_config),
-                         self.mock_apache)
+        self.assertEqual(
+            self._call(dict(apache=self.all_auths['apache'])),
+            self.mock_apache)
 
     def test_no_installation_one(self):
         self.mock_apache.prepare.side_effect = (
             errors.LetsEncryptNoInstallationError)
 
-        self.assertEqual(self._call(self.all_auths, self.mock_config),
-                         self.mock_stand)
+        self.assertEqual(self._call(self.all_auths), self.mock_stand)
 
     def test_no_installations(self):
         self.mock_apache.prepare.side_effect = (
@@ -61,8 +59,7 @@ class DetermineAuthenticatorTest(unittest.TestCase):
 
         self.assertRaises(errors.LetsEncryptClientError,
                           self._call,
-                          self.all_auths,
-                          self.mock_config)
+                          self.all_auths)
 
     @mock.patch("letsencrypt.client.client.logging")
     @mock.patch("letsencrypt.client.client.display_ops.choose_authenticator")
@@ -71,26 +68,7 @@ class DetermineAuthenticatorTest(unittest.TestCase):
             errors.LetsEncryptMisconfigurationError)
         mock_choose.return_value = self.mock_apache
 
-        self.assertTrue(self._call(self.all_auths, self.mock_config) is None)
-
-    def test_choose_valid_auth_from_cmd_line(self):
-        standalone_config = mock.MagicMock(spec=configuration.NamespaceConfig,
-                                           authenticator='standalone')
-        self.assertEqual(self._call(self.all_auths, standalone_config),
-                         self.mock_stand)
-
-        apache_config = mock.MagicMock(spec=configuration.NamespaceConfig,
-                                       authenticator='apache')
-        self.assertEqual(self._call(self.all_auths, apache_config),
-                         self.mock_apache)
-
-    def test_choose_invalid_auth_from_cmd_line(self):
-        invalid_config = mock.MagicMock(spec=configuration.NamespaceConfig,
-                                        authenticator='foobar')
-        self.assertRaises(errors.LetsEncryptClientError,
-                          self._call,
-                          self.all_auths,
-                          invalid_config)
+        self.assertTrue(self._call(self.all_auths) is None)
 
 
 class RollbackTest(unittest.TestCase):
