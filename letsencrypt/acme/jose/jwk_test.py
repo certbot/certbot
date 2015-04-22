@@ -6,6 +6,7 @@ import unittest
 from Crypto.PublicKey import RSA
 
 from letsencrypt.acme.jose import errors
+from letsencrypt.acme.jose import util
 
 
 RSA256_KEY = RSA.importKey(pkg_resources.resource_string(
@@ -22,12 +23,16 @@ class JWKOctTest(unittest.TestCase):
         self.jwk = JWKOct(key='foo')
         self.jobj = {'kty': 'oct', 'k': 'foo'}
 
-    def test_to_json(self):
-        self.assertEqual(self.jwk.to_json(), self.jobj)
+    def test_to_partial_json(self):
+        self.assertEqual(self.jwk.to_partial_json(), self.jobj)
 
     def test_from_json(self):
         from letsencrypt.acme.jose.jwk import JWKOct
         self.assertEqual(self.jwk, JWKOct.from_json(self.jobj))
+
+    def test_from_json_hashable(self):
+        from letsencrypt.acme.jose.jwk import JWKOct
+        hash(JWKOct.from_json(self.jobj))
 
     def test_load(self):
         from letsencrypt.acme.jose.jwk import JWKOct
@@ -42,15 +47,15 @@ class JWKRSATest(unittest.TestCase):
 
     def setUp(self):
         from letsencrypt.acme.jose.jwk import JWKRSA
-        self.jwk256 = JWKRSA(key=RSA256_KEY.publickey())
-        self.jwk256_private = JWKRSA(key=RSA256_KEY)
+        self.jwk256 = JWKRSA(key=util.HashableRSAKey(RSA256_KEY.publickey()))
+        self.jwk256_private = JWKRSA(key=util.HashableRSAKey(RSA256_KEY))
         self.jwk256json = {
             'kty': 'RSA',
             'e': 'AQAB',
             'n': 'rHVztFHtH92ucFJD_N_HW9AsdRsUuHUBBBDlHwNlRd3fp5'
                  '80rv2-6QWE30cWgdmJS86ObRz6lUTor4R0T-3C5Q',
         }
-        self.jwk512 = JWKRSA(key=RSA512_KEY.publickey())
+        self.jwk512 = JWKRSA(key=util.HashableRSAKey(RSA512_KEY.publickey()))
         self.jwk512json = {
             'kty': 'RSA',
             'e': 'AQAB',
@@ -68,23 +73,28 @@ class JWKRSATest(unittest.TestCase):
 
     def test_load(self):
         from letsencrypt.acme.jose.jwk import JWKRSA
-        self.assertEqual(JWKRSA(key=RSA256_KEY), JWKRSA.load(
-            pkg_resources.resource_string(
-                'letsencrypt.client.tests',
-                os.path.join('testdata', 'rsa256_key.pem'))))
+        self.assertEqual(
+            JWKRSA(key=util.HashableRSAKey(RSA256_KEY)), JWKRSA.load(
+                pkg_resources.resource_string(
+                    'letsencrypt.client.tests',
+                    os.path.join('testdata', 'rsa256_key.pem'))))
 
     def test_public(self):
         self.assertEqual(self.jwk256, self.jwk256_private.public())
 
-    def test_to_json(self):
-        self.assertEqual(self.jwk256.to_json(), self.jwk256json)
-        self.assertEqual(self.jwk512.to_json(), self.jwk512json)
+    def test_to_partial_json(self):
+        self.assertEqual(self.jwk256.to_partial_json(), self.jwk256json)
+        self.assertEqual(self.jwk512.to_partial_json(), self.jwk512json)
 
     def test_from_json(self):
         from letsencrypt.acme.jose.jwk import JWK
         self.assertEqual(self.jwk256, JWK.from_json(self.jwk256json))
         # TODO: fix schemata to allow RSA512
         #self.assertEqual(self.jwk512, JWK.from_json(self.jwk512json))
+
+    def test_from_json_hashable(self):
+        from letsencrypt.acme.jose.jwk import JWK
+        hash(JWK.from_json(self.jwk256json))
 
     def test_from_json_non_schema_errors(self):
         # valid against schema, but still failing

@@ -80,6 +80,8 @@ Plugin-architecture
 
 Let's Encrypt has a plugin architecture to facilitate support for
 different webservers, other TLS servers, and operating systems.
+The interfaces available for plugins to implement are defined in
+`interfaces.py`_.
 
 The most common kind of plugin is a "Configurator", which is likely to
 implement the `~letsencrypt.client.interfaces.IAuthenticator` and
@@ -88,6 +90,8 @@ Configurators may implement just one of those).
 
 There are also `~letsencrypt.client.interfaces.IDisplay` plugins,
 which implement bindings to alternative UI libraries.
+
+.. _interfaces.py: https://github.com/letsencrypt/lets-encrypt-preview/blob/master/letsencrypt/client/interfaces.py
 
 
 Authenticators
@@ -98,15 +102,16 @@ the ACME server. From the protocol, there are essentially two
 different types of challenges. Challenges that must be solved by
 individual plugins in order to satisfy domain validation (subclasses
 of `~.DVChallenge`, i.e. `~.challenges.DVSNI`,
-`~.challenges.SimpleHTTPS`, `~.challenges.DNS`) and client specific
-challenges (subclasses of `~.ClientChallenge`,
+`~.challenges.SimpleHTTPS`, `~.challenges.DNS`) and continuity specific
+challenges (subclasses of `~.ContinuityChallenge`,
 i.e. `~.challenges.RecoveryToken`, `~.challenges.RecoveryContact`,
-`~.challenges.ProofOfPossession`). Client specific challenges are
-always handled by the `~.ClientAuthenticator`. Right now we have two
-DV Authenticators, `~.ApacheConfigurator` and the
-`~.StandaloneAuthenticator`. The Standalone and Apache authenticators
-only solve the `~.challenges.DVSNI` challenge currently. (You can set
-which challenges your authenticator can handle through the
+`~.challenges.ProofOfPossession`). Continuity challenges are
+always handled by the `~.ContinuityAuthenticator`, while plugins are
+expected to handle `~.DVChallenge` types.
+Right now, we have two authenticator plugins, the `~.ApacheConfigurator`
+and the `~.StandaloneAuthenticator`. The Standalone and Apache
+authenticators only solve the `~.challenges.DVSNI` challenge currently.
+(You can set which challenges your authenticator can handle through the
 :meth:`~.IAuthenticator.get_chall_pref`.
 
 (FYI: We also have a partial implementation for a `~.DNSAuthenticator`
@@ -126,26 +131,27 @@ Installers and Authenticators will oftentimes be the same
 class/object. Installers and Authenticators are kept separate because
 it should be possible to use the `~.StandaloneAuthenticator` (it sets
 up its own Python server to perform challenges) with a program that
-cannot solve challenges itself. (I am imagining MTA installers).
+cannot solve challenges itself. (Imagine MTA installers).
+
+
+Installer Development
+---------------------
+
+There are a few existing classes that may be beneficial while
+developing a new `~letsencrypt.client.interfaces.IInstaller`.
+Installers aimed to reconfigure UNIX servers may use Augeas for
+configuration parsing and can inherit from `~.AugeasConfigurator` class
+to handle much of the interface. Installers that are unable to use
+Augeas may still find the `~.Reverter` class helpful in handling
+configuration checkpoints and rollback.
 
 
 Display
 ~~~~~~~
 
-We currently offer a pythondialog and "text" mode for displays. I have
-rewritten the interface which should be merged within the next day
-(the rewrite is in the revoker branch of the repo and should be merged
-within the next day). Display plugins implement
-`~letsencrypt.client.interfaces.IDisplay` interface.
-
-
-Augeas
-------
-
-Some plugins, especially those designed to reconfigure UNIX servers,
-can take inherit from `~.AugeasConfigurator` class in order to more
-efficiently handle common operations on UNIX server configuration
-files.
+We currently offer a pythondialog and "text" mode for displays. Display
+plugins implement the `~letsencrypt.client.interfaces.IDisplay`
+interface.
 
 
 .. _coding-style:

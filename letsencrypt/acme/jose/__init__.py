@@ -70,5 +70,6 @@ from letsencrypt.acme.jose.jws import JWS
 
 from letsencrypt.acme.jose.util import (
     ComparableX509,
+    HashableRSAKey,
     ImmutableMap,
 )

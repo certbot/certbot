@@ -8,8 +8,10 @@ from letsencrypt.acme import challenges
 from letsencrypt.acme import jose
 
 
-KEY = Crypto.PublicKey.RSA.importKey(pkg_resources.resource_string(
-    "letsencrypt.client.tests", os.path.join("testdata", "rsa256_key.pem")))
+KEY = jose.HashableRSAKey(Crypto.PublicKey.RSA.importKey(
+    pkg_resources.resource_string(
+        "letsencrypt.client.tests",
+        os.path.join("testdata", "rsa256_key.pem"))))
 
 # Challenges
 SIMPLE_HTTPS = challenges.SimpleHTTPS(
@@ -27,40 +29,40 @@ POP = challenges.ProofOfPossession(
     alg="RS256", nonce="xD\xf9\xb9\xdbU\xed\xaa\x17\xf1y|\x81\x88\x99 ",
     hints=challenges.ProofOfPossession.Hints(
         jwk=jose.JWKRSA(key=KEY.publickey()),
-        cert_fingerprints=[
+        cert_fingerprints=(
             "93416768eb85e33adc4277f4c9acd63e7418fcfe",
             "16d95b7b63f1972b980b14c20291f3c0d1855d95",
             "48b46570d9fc6358108af43ad1649484def0debf"
-        ],
-        certs=[], # TODO
-        subject_key_identifiers=["d0083162dcc4c8a23ecb8aecbd86120e56fd24e5"],
-        serial_numbers=[34234239832, 23993939911, 17],
-        issuers=[
+        ),
+        certs=(), # TODO
+        subject_key_identifiers=("d0083162dcc4c8a23ecb8aecbd86120e56fd24e5"),
+        serial_numbers=(34234239832, 23993939911, 17),
+        issuers=(
             "C=US, O=SuperT LLC, CN=SuperTrustworthy Public CA",
             "O=LessTrustworthy CA Inc, CN=LessTrustworthy But StillSecure",
-        ],
-        authorized_for=["www.example.com", "example.net"],
+        ),
+        authorized_for=("www.example.com", "example.net"),
     )
 )
 
 CHALLENGES = [SIMPLE_HTTPS, DVSNI, DNS, RECOVERY_CONTACT, RECOVERY_TOKEN, POP]
 DV_CHALLENGES = [chall for chall in CHALLENGES
                  if isinstance(chall, challenges.DVChallenge)]
-CLIENT_CHALLENGES = [chall for chall in CHALLENGES
-                     if isinstance(chall, challenges.ClientChallenge)]
+CONT_CHALLENGES = [chall for chall in CHALLENGES
+                   if isinstance(chall, challenges.ContinuityChallenge)]
 
 
 def gen_combos(challs):
     """Generate natural combinations for challs."""
     dv_chall = []
-    renewal_chall = []
+    cont_chall = []
 
     for i, chall in enumerate(challs):  # pylint: disable=redefined-outer-name
         if isinstance(chall, challenges.DVChallenge):
             dv_chall.append(i)
         else:
-            renewal_chall.append(i)
+            cont_chall.append(i)
 
-    # Gen combos for 1 of each type
-    return [[i, j] for i in xrange(len(dv_chall))
-            for j in xrange(len(renewal_chall))]
+    # Gen combos for 1 of each type, lowest index first (makes testing easier)
+    return tuple((i, j) if i < j else (j, i)
+                 for i in dv_chall for j in cont_chall)

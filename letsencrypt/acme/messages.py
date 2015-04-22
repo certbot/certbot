@@ -9,7 +9,7 @@ from letsencrypt.acme import util
 
 
 class Message(jose.TypedJSONObjectWithFields):
-    # _fields_to_json | pylint: disable=abstract-method
+    # _fields_to_partial_json | pylint: disable=abstract-method
     # pylint: disable=too-few-public-methods
     """ACME message."""
     TYPES = {}

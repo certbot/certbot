@@ -41,7 +41,7 @@ class JWKES(JWK):  # pragma: no cover
     """
     typ = 'ES'
 
-    def fields_to_json(self):
+    def fields_to_partial_json(self):
         raise NotImplementedError()
 
     @classmethod
@@ -62,7 +62,7 @@ class JWKOct(JWK):
     typ = 'oct'
     __slots__ = ('key',)
 
-    def fields_to_json(self):
+    def fields_to_partial_json(self):
         # TODO: An "alg" member SHOULD also be present to identify the
         # algorithm intended to be used with the key, unless the
         # application uses another means or convention to determine
@@ -83,7 +83,11 @@ class JWKOct(JWK):
 
 @JWK.register
 class JWKRSA(JWK):
-    """RSA JWK."""
+    """RSA JWK.
+
+    :ivar key: `Crypto.PublicKey.RSA` wrapped in `.HashableRSAKey`
+
+    """
     typ = 'RSA'
     __slots__ = ('key',)
 
@@ -114,18 +118,20 @@ class JWKRSA(JWK):
         :rtype: :class:`JWKRSA`
 
         """
-        return cls(key=Crypto.PublicKey.RSA.importKey(string))
+        return cls(key=util.HashableRSAKey(
+            Crypto.PublicKey.RSA.importKey(string)))
 
     def public(self):
         return type(self)(key=self.key.publickey())
 
     @classmethod
     def fields_from_json(cls, jobj):
-        return cls(key=Crypto.PublicKey.RSA.construct(
-            (cls._decode_param(jobj['n']),
-             cls._decode_param(jobj['e']))))
+        return cls(key=util.HashableRSAKey(
+            Crypto.PublicKey.RSA.construct(
+                (cls._decode_param(jobj['n']),
+                 cls._decode_param(jobj['e'])))))
 
-    def fields_to_json(self):
+    def fields_to_partial_json(self):
         return {
             'n': self._encode_param(self.key.n),
             'e': self._encode_param(self.key.e),

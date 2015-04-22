@@ -7,10 +7,12 @@ import Crypto.PublicKey.RSA
 from letsencrypt.acme import jose
 
 
-RSA256_KEY = Crypto.PublicKey.RSA.importKey(pkg_resources.resource_string(
-    'letsencrypt.client.tests', 'testdata/rsa256_key.pem'))
-RSA512_KEY = Crypto.PublicKey.RSA.importKey(pkg_resources.resource_string(
-    'letsencrypt.client.tests', 'testdata/rsa512_key.pem'))
+RSA256_KEY = jose.HashableRSAKey(Crypto.PublicKey.RSA.importKey(
+    pkg_resources.resource_string(
+        'letsencrypt.client.tests', 'testdata/rsa256_key.pem')))
+RSA512_KEY = jose.HashableRSAKey(
+    Crypto.PublicKey.RSA.importKey(pkg_resources.resource_string(
+        'letsencrypt.client.tests', 'testdata/rsa512_key.pem')))
 
 
 class SignatureTest(unittest.TestCase):
@@ -40,8 +42,8 @@ class SignatureTest(unittest.TestCase):
 
         self.jsig_from = {
             'nonce': b64nonce,
-            'alg': self.alg.to_json(),
-            'jwk': self.jwk.to_json(),
+            'alg': self.alg.to_partial_json(),
+            'jwk': self.jwk.to_partial_json(),
             'sig': b64sig,
         }
 
@@ -76,8 +78,8 @@ class SignatureTest(unittest.TestCase):
         self.assertEqual(signature.jwk, self.jwk)
         self.assertTrue(signature.verify(self.msg))
 
-    def test_to_json(self):
-        self.assertEqual(self.signature.to_json(), self.jsig_to)
+    def test_to_partial_json(self):
+        self.assertEqual(self.signature.to_partial_json(), self.jsig_to)
 
     def test_from_json(self):
         from letsencrypt.acme.other import Signature
@@ -86,7 +88,7 @@ class SignatureTest(unittest.TestCase):
 
     def test_from_json_non_schema_errors(self):
         from letsencrypt.acme.other import Signature
-        jwk = self.jwk.to_json()
+        jwk = self.jwk.to_partial_json()
         self.assertRaises(
             jose.DeserializationError, Signature.from_json, {
                 'alg': 'RS256', 'sig': 'x', 'nonce': '', 'jwk': jwk})

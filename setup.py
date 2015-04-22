@@ -11,6 +11,7 @@ from setuptools import setup
 if os.path.abspath(__file__).split(os.path.sep)[1] == 'vagrant':
     del os.link
 
+
 def read_file(filename, encoding='utf8'):
     """Read unicode from given file."""
     with codecs.open(filename, encoding=encoding) as fd:
@@ -36,9 +37,13 @@ install_requires = [
     'pyasn1',  # urllib3 InsecurePlatformWarning (#304)
     'pycrypto',
     'PyOpenSSL',
+    'pyparsing>=1.5.5',  # Python3 support; perhaps unnecessary?
+    'pyrfc3339',
     'python-augeas',
-    'python2-pythondialog',
+    'python2-pythondialog>=3.2.2rc1',  # Debian squeeze support, cf. #280
+    'pytz',
     'requests',
+    'werkzeug',
     'zope.component',
     'zope.interface',
     # order of items in install_requires DOES matter and M2Crypto has
@@ -100,6 +105,8 @@ setup(
         'letsencrypt.client.plugins',
         'letsencrypt.client.plugins.apache',
         'letsencrypt.client.plugins.apache.tests',
+        'letsencrypt.client.plugins.nginx',
+        'letsencrypt.client.plugins.nginx.tests',
         'letsencrypt.client.plugins.standalone',
         'letsencrypt.client.plugins.standalone.tests',
         'letsencrypt.client.tests',
@@ -124,6 +131,8 @@ setup(
         'letsencrypt.plugins': [
             'apache = letsencrypt.client.plugins.apache.configurator'
             ':ApacheConfigurator',
+            'nginx = letsencrypt.client.plugins.nginx.configurator'
+            ':NginxConfigurator',
             'standalone = letsencrypt.client.plugins.standalone.authenticator'
             ':StandaloneAuthenticator',
         ],

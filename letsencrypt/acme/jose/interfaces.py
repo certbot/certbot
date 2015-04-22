@@ -36,8 +36,8 @@ class JSONDeSerializable(object):
         Turning an arbitrary Python object into Python object that can
         be encoded into a JSON document. **Full serialization** produces
         a Python object composed of only basic types as required by the
-        :ref:`conversion table <conversion-table>`.
-        **Partial serialization** (acomplished by :meth:`to_json`)
+        :ref:`conversion table <conversion-table>`. **Partial
+        serialization** (acomplished by :meth:`to_partial_json`)
         produces a Python object that might also be built from other
         :class:`JSONDeSerializable` objects.
 
@@ -71,15 +71,16 @@ class JSONDeSerializable(object):
 
     Interestingly, ``default`` is required to perform only partial
     serialization, as :func:`json.dumps` applies ``default``
-    recursively. This is the idea behind making :meth:`to_json` produce
-    only partial serialization, while providing custom :meth:`json_dumps`
-    that dumps with ``default`` set to :meth:`json_dump_default`.
+    recursively. This is the idea behind making :meth:`to_partial_json`
+    produce only partial serialization, while providing custom
+    :meth:`json_dumps` that dumps with ``default`` set to
+    :meth:`json_dump_default`.
 
     To make further documentation a bit more concrete, please, consider
     the following imaginatory implementation example::
 
       class Foo(JSONDeSerializable):
-          def to_json(self):
+          def to_partial_json(self):
               return 'foo'
 
           @classmethod
@@ -87,7 +88,7 @@ class JSONDeSerializable(object):
               return Foo()
 
       class Bar(JSONDeSerializable):
-          def to_json(self):
+          def to_partial_json(self):
               return [Foo(), Foo()]
 
           @classmethod
@@ -98,16 +99,16 @@ class JSONDeSerializable(object):
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
-    def to_json(self):  # pragma: no cover
+    def to_partial_json(self):  # pragma: no cover
         """Partially serialize.
 
         Following the example, **partial serialization** means the following::
 
-          assert isinstance(Bar().to_json()[0], Foo)
-          assert isinstance(Bar().to_json()[1], Foo)
+          assert isinstance(Bar().to_partial_json()[0], Foo)
+          assert isinstance(Bar().to_partial_json()[1], Foo)
 
           # in particular...
-          assert Bar().to_json() != ['foo', 'foo']
+          assert Bar().to_partial_json() != ['foo', 'foo']
 
         :raises letsencrypt.acme.jose.errors.SerializationError:
             in case of any serialization error.
@@ -116,31 +117,37 @@ class JSONDeSerializable(object):
         """
         raise NotImplementedError()
 
-    def fully_serialize(self):
+    def to_json(self):
         """Fully serialize.
 
         Again, following the example from before, **full serialization**
         means the following::
 
-          assert Bar().fully_serialize() == ['foo', 'foo']
+          assert Bar().to_json() == ['foo', 'foo']
 
         :raises letsencrypt.acme.jose.errors.SerializationError:
             in case of any serialization error.
         :returns: Fully serialized object.
 
         """
-        partial = self.to_json()
-        try_serialize = (lambda x: x.fully_serialize()
-                         if isinstance(x, JSONDeSerializable) else x)
-        if isinstance(partial, basestring):  # strings are sequences
-            return partial
-        if isinstance(partial, collections.Sequence):
-            return [try_serialize(elem) for elem in partial]
-        elif isinstance(partial, collections.Mapping):
-            return dict([(try_serialize(key), try_serialize(value))
-                         for key, value in partial.iteritems()])
-        else:
-            return partial
+        def _serialize(obj):
+            if isinstance(obj, JSONDeSerializable):
+                return _serialize(obj.to_partial_json())
+            if isinstance(obj, basestring):  # strings are sequence
+                return obj
+            elif isinstance(obj, list):
+                return [_serialize(subobj) for subobj in obj]
+            elif isinstance(obj, collections.Sequence):
+                # default to tuple, otherwise Mapping could get
+                # unhashable list
+                return tuple(_serialize(subobj) for subobj in obj)
+            elif isinstance(obj, collections.Mapping):
+                return dict((_serialize(key), _serialize(value))
+                            for key, value in obj.iteritems())
+            else:
+                return obj
+
+        return _serialize(self)
 
     @util.abstractclassmethod
     def from_json(cls, unused_jobj):
@@ -157,7 +164,7 @@ class JSONDeSerializable(object):
 
         """
         # TypeError: Can't instantiate abstract class <cls> with
-        # abstract methods from_json, to_json
+        # abstract methods from_json, to_partial_json
         return cls()  # pylint: disable=abstract-class-instantiated
 
     @classmethod
@@ -193,6 +200,6 @@ class JSONDeSerializable(object):
 
         """
         if isinstance(python_object, JSONDeSerializable):
-            return python_object.to_json()
+            return python_object.to_partial_json()
         else:  # this branch is necessary, cannot just "return"
             raise TypeError(repr(python_object) + ' is not JSON serializable')

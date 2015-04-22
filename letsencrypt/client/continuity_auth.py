@@ -1,4 +1,4 @@
-"""Client Authenticator"""
+"""Continuity Authenticator"""
 import zope.interface
 
 from letsencrypt.acme import challenges
@@ -9,9 +9,9 @@ from letsencrypt.client import interfaces
 from letsencrypt.client import recovery_token
 
 
-class ClientAuthenticator(object):
+class ContinuityAuthenticator(object):
     """IAuthenticator for
-    :const:`~letsencrypt.client.constants.CLIENT_CHALLENGES`.
+    :const:`~letsencrypt.acme.challenges.ContinuityChallenge` class challenges.
 
     :ivar rec_token: Performs "recoveryToken" challenges
     :type rec_token: :class:`letsencrypt.client.recovery_token.RecoveryToken`
@@ -41,7 +41,7 @@ class ClientAuthenticator(object):
             if isinstance(achall, achallenges.RecoveryToken):
                 responses.append(self.rec_token.perform(achall))
             else:
-                raise errors.LetsEncryptClientAuthError("Unexpected Challenge")
+                raise errors.LetsEncryptContAuthError("Unexpected Challenge")
         return responses
 
     def cleanup(self, achalls):
@@ -50,4 +50,4 @@ class ClientAuthenticator(object):
             if isinstance(achall, achallenges.RecoveryToken):
                 self.rec_token.cleanup(achall)
             else:
-                raise errors.LetsEncryptClientAuthError("Unexpected Challenge")
+                raise errors.LetsEncryptContAuthError("Unexpected Challenge")

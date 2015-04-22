@@ -41,6 +41,26 @@ class ComparableX509(object):  # pylint: disable=too-few-public-methods
         return self.as_der() == other.as_der()
 
 
+class HashableRSAKey(object):  # pylint: disable=too-few-public-methods
+    """Wrapper for `Crypto.PublicKey.RSA` objects that supports hashing."""
+
+    def __init__(self, wrapped):
+        self._wrapped = wrapped
+
+    def __getattr__(self, name):
+        return getattr(self._wrapped, name)
+
+    def __eq__(self, other):
+        return self._wrapped == other
+
+    def __hash__(self):
+        return hash((type(self), self.exportKey(format='DER')))
+
+    def publickey(self):
+        """Get wrapped public key."""
+        return type(self)(self._wrapped.publickey())
+
+
 class ImmutableMap(collections.Mapping, collections.Hashable):
     # pylint: disable=too-few-public-methods
     """Immutable key to value mapping with attribute access."""
@@ -56,6 +76,12 @@ class ImmutableMap(collections.Mapping, collections.Hashable):
                                      ', '.join(kwargs) if kwargs else 'none'))
         for slot in self.__slots__:
             object.__setattr__(self, slot, kwargs.pop(slot))
+
+    def update(self, **kwargs):
+        """Return updated map."""
+        items = dict(self)
+        items.update(kwargs)
+        return type(self)(**items)  # pylint: disable=star-args
 
     def __getitem__(self, key):
         try:

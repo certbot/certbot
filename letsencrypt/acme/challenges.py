@@ -13,12 +13,12 @@ from letsencrypt.acme import other
 
 
 class Challenge(jose.TypedJSONObjectWithFields):
-    # _fields_to_json | pylint: disable=abstract-method
+    # _fields_to_partial_json | pylint: disable=abstract-method
     """ACME challenge."""
     TYPES = {}
 
 
-class ClientChallenge(Challenge):  # pylint: disable=abstract-method
+class ContinuityChallenge(Challenge):  # pylint: disable=abstract-method
     """Client validation challenges."""
 
 
@@ -27,7 +27,7 @@ class DVChallenge(Challenge):  # pylint: disable=abstract-method
 
 
 class ChallengeResponse(jose.TypedJSONObjectWithFields):
-    # _fields_to_json | pylint: disable=abstract-method
+    # _fields_to_partial_json | pylint: disable=abstract-method
     """ACME challenge response."""
     TYPES = {}
 
@@ -139,7 +139,7 @@ class DVSNIResponse(ChallengeResponse):
         return self.z(chall) + self.DOMAIN_SUFFIX
 
 @Challenge.register
-class RecoveryContact(ClientChallenge):
+class RecoveryContact(ContinuityChallenge):
     """ACME "recoveryContact" challenge."""
     typ = "recoveryContact"
 
@@ -156,7 +156,7 @@ class RecoveryContactResponse(ChallengeResponse):
 
 
 @Challenge.register
-class RecoveryToken(ClientChallenge):
+class RecoveryToken(ContinuityChallenge):
     """ACME "recoveryToken" challenge."""
     typ = "recoveryToken"
 
@@ -169,7 +169,7 @@ class RecoveryTokenResponse(ChallengeResponse):
 
 
 @Challenge.register
-class ProofOfPossession(ClientChallenge):
+class ProofOfPossession(ContinuityChallenge):
     """ACME "proofOfPossession" challenge.
 
     :ivar str nonce: Random data, **not** base64-encoded.
@@ -184,7 +184,8 @@ class ProofOfPossession(ClientChallenge):
         """Hints for "proofOfPossession" challenge.
 
         :ivar jwk: JSON Web Key (:class:`letsencrypt.acme.jose.JWK`)
-        :ivar list certs: List of :class:`M2Crypto.X509.X509` cetificates.
+        :ivar list certs: List of :class:`letsencrypt.acme.jose.ComparableX509`
+            certificates.
 
         """
         jwk = jose.Field("jwk", decoder=jose.JWK.from_json)

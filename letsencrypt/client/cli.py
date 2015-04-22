@@ -28,6 +28,7 @@ from letsencrypt.client.display import ops as display_ops
 from letsencrypt.client.plugins import disco as plugins_disco
 
 from letsencrypt.client.plugins.apache import configurator as apache_configurator
+from letsencrypt.client.plugins.nginx import configurator as nginx_configurator
 
 
 def _common_run(args, config, authenticator, installer):
@@ -303,6 +304,10 @@ def create_parser():
     plugin_parser(
         parser.add_argument_group("apache"), prefix="apache",
         plugin_cls=apache_configurator.ApacheConfigurator)
+    plugin_parser(
+        parser.add_argument_group("nginx"), prefix="nginx",
+        plugin_cls=nginx_configurator.NginxConfigurator)
+
     return parser
 
 

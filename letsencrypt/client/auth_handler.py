@@ -5,6 +5,7 @@ import sys
 import Crypto.PublicKey.RSA
 
 from letsencrypt.acme import challenges
+from letsencrypt.acme import jose
 from letsencrypt.acme import messages
 
 from letsencrypt.client import achallenges
@@ -16,12 +17,12 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
     """ACME Authorization Handler for a client.
 
     :ivar dv_auth: Authenticator capable of solving
-        :const:`~letsencrypt.client.constants.DV_CHALLENGES`
+        :class:`~letsencrypt.acme.challenges.DVChallenge` types
     :type dv_auth: :class:`letsencrypt.client.interfaces.IAuthenticator`
 
-    :ivar client_auth: Authenticator capable of solving
-        :const:`~letsencrypt.client_auth.constants.CLIENT_CHALLENGES`
-    :type client_auth: :class:`letsencrypt.client.interfaces.IAuthenticator`
+    :ivar cont_auth: Authenticator capable of solving
+        :class:`~letsencrypt.acme.challenges.ContinuityChallenge` types
+    :type cont_auth: :class:`letsencrypt.client.interfaces.IAuthenticator`
 
     :ivar network: Network object for sending and receiving authorization
         messages
@@ -36,13 +37,13 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
     :ivar dict paths: optimal path for authorization. eg. paths[domain]
     :ivar dict dv_c: Keys - domain, Values are DV challenges in the form of
         :class:`letsencrypt.client.achallenges.Indexed`
-    :ivar dict client_c: Keys - domain, Values are Client challenges in the form
-        of :class:`letsencrypt.client.achallenges.Indexed`
+    :ivar dict cont_c: Keys - domain, Values are Continuity challenges in the
+        form of :class:`letsencrypt.client.achallenges.Indexed`
 
     """
-    def __init__(self, dv_auth, client_auth, network):
+    def __init__(self, dv_auth, cont_auth, network):
         self.dv_auth = dv_auth
-        self.client_auth = client_auth
+        self.cont_auth = cont_auth
         self.network = network
 
         self.domains = []
@@ -52,7 +53,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         self.paths = dict()
 
         self.dv_c = dict()
-        self.client_c = dict()
+        self.cont_c = dict()
 
     def add_chall_msg(self, domain, msg, authkey):
         """Add a challenge message to the AuthHandler.
@@ -76,7 +77,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         self.authkey[domain] = authkey
 
     def get_authorizations(self):
-        """Retreive all authorizations for challenges.
+        """Retrieve all authorizations for challenges.
 
         :raises LetsEncryptAuthHandlerError: If unable to retrieve all
             authorizations
@@ -119,8 +120,8 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
                     nonce=self.msgs[domain].nonce,
                     responses=self.responses[domain],
                     name=domain,
-                    key=Crypto.PublicKey.RSA.importKey(
-                        self.authkey[domain].pem)),
+                    key=jose.HashableRSAKey(Crypto.PublicKey.RSA.importKey(
+                        self.authkey[domain].pem))),
                 messages.Authorization)
             logging.info("Received Authorization for %s", domain)
             return auth
@@ -147,24 +148,24 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
                 self._get_chall_pref(dom),
                 self.msgs[dom].combinations)
 
-            self.dv_c[dom], self.client_c[dom] = self._challenge_factory(
+            self.dv_c[dom], self.cont_c[dom] = self._challenge_factory(
                 dom, self.paths[dom])
 
         # Flatten challs for authenticator functions and remove index
         # Order is important here as we will not expose the outside
         # Authenticator to our own indices.
-        flat_client = []
+        flat_cont = []
         flat_dv = []
 
         for dom in self.domains:
-            flat_client.extend(ichall.achall for ichall in self.client_c[dom])
+            flat_cont.extend(ichall.achall for ichall in self.cont_c[dom])
             flat_dv.extend(ichall.achall for ichall in self.dv_c[dom])
 
-        client_resp = []
+        cont_resp = []
         dv_resp = []
         try:
-            if flat_client:
-                client_resp = self.client_auth.perform(flat_client)
+            if flat_cont:
+                cont_resp = self.cont_auth.perform(flat_cont)
             if flat_dv:
                 dv_resp = self.dv_auth.perform(flat_dv)
         # This will catch both specific types of errors.
@@ -181,8 +182,8 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         logging.info("Ready for verification...")
 
         # Assemble Responses
-        if client_resp:
-            self._assign_responses(client_resp, self.client_c)
+        if cont_resp:
+            self._assign_responses(cont_resp, self.cont_c)
         if dv_resp:
             self._assign_responses(dv_resp, self.dv_c)
 
@@ -191,7 +192,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
 
         :param list flat_list: flat_list of responses from an IAuthenticator
         :param dict ichall_dict: Master dict mapping all domains to a list of
-            their associated 'client' and 'dv' Indexed challenges, or their
+            their associated 'continuity' and 'dv' Indexed challenges, or their
             :class:`letsencrypt.client.achallenges.Indexed` list
 
         """
@@ -213,7 +214,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
 
         """
         chall_prefs = []
-        chall_prefs.extend(self.client_auth.get_chall_pref(domain))
+        chall_prefs.extend(self.cont_auth.get_chall_pref(domain))
         chall_prefs.extend(self.dv_auth.get_chall_pref(domain))
         return chall_prefs
 
@@ -228,11 +229,11 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         # Chose to make these lists instead of a generator to make it easier to
         # work with...
         dv_list = [ichall.achall for ichall in self.dv_c[domain]]
-        client_list = [ichall.achall for ichall in self.client_c[domain]]
+        cont_list = [ichall.achall for ichall in self.cont_c[domain]]
         if dv_list:
             self.dv_auth.cleanup(dv_list)
-        if client_list:
-            self.client_auth.cleanup(client_list)
+        if cont_list:
+            self.cont_auth.cleanup(cont_list)
 
     def _cleanup_state(self, delete_list):
         """Cleanup state after an authorization is received.
@@ -247,7 +248,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
 
             del self.authkey[domain]
 
-            del self.client_c[domain]
+            del self.cont_c[domain]
             del self.dv_c[domain]
 
             self.domains.remove(domain)
@@ -259,9 +260,9 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
 
         :param list path: List of indices from `challenges`.
 
-        :returns: dv_chall, list of
+        :returns: dv_chall, list of DVChallenge type
             :class:`letsencrypt.client.achallenges.Indexed`
-            client_chall, list of
+            cont_chall, list of ContinuityChallenge type
             :class:`letsencrypt.client.achallenges.Indexed`
         :rtype: tuple
 
@@ -270,7 +271,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
 
         """
         dv_chall = []
-        client_chall = []
+        cont_chall = []
 
         for index in path:
             chall = self.msgs[domain].challenges[index]
@@ -304,35 +305,38 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
 
             ichall = achallenges.Indexed(achall=achall, index=index)
 
-            if isinstance(chall, challenges.ClientChallenge):
-                client_chall.append(ichall)
+            if isinstance(chall, challenges.ContinuityChallenge):
+                cont_chall.append(ichall)
             elif isinstance(chall, challenges.DVChallenge):
                 dv_chall.append(ichall)
 
-        return dv_chall, client_chall
+        return dv_chall, cont_chall
 
 
 def gen_challenge_path(challs, preferences, combinations):
     """Generate a plan to get authority over the identity.
 
-    .. todo:: Make sure that the challenges are feasible...
-        Example: Do you have the recovery key?
+    .. todo:: This can be possibly be rewritten to use resolved_combinations.
 
-    :param list challs: A list of challenges
+    :param tuple challs: A tuple of challenges
         (:class:`letsencrypt.acme.challenges.Challenge`) from
         :class:`letsencrypt.acme.messages.Challenge` server message to
         be fulfilled by the client in order to prove possession of the
         identifier.
 
     :param list preferences: List of challenge preferences for domain
-        (:class:`letsencrypt.acme.challenges.Challege` subclasses)
+        (:class:`letsencrypt.acme.challenges.Challenge` subclasses)
 
-    :param list combinations: A collection of sets of challenges from
+    :param tuple combinations: A collection of sets of challenges from
         :class:`letsencrypt.acme.messages.Challenge`, each of which would
         be sufficient to prove possession of the identifier.
 
-    :returns: List of indices from ``challenges``.
-    :rtype: list
+    :returns: tuple of indices from ``challenges``.
+    :rtype: tuple
+
+    :raises letsencrypt.client.errors.LetsEncryptAuthHandlerError: If a
+        path cannot be created that satisfies the CA given the preferences and
+        combinations.
 
     """
     if combinations:
@@ -349,29 +353,34 @@ def _find_smart_path(challs, preferences, combinations):
 
     """
     chall_cost = {}
-    max_cost = 0
+    max_cost = 1
     for i, chall_cls in enumerate(preferences):
         chall_cost[chall_cls] = i
         max_cost += i
 
+    # max_cost is now equal to sum(indices) + 1
+
     best_combo = []
     # Set above completing all of the available challenges
-    best_combo_cost = max_cost + 1
+    best_combo_cost = max_cost
 
     combo_total = 0
     for combo in combinations:
         for challenge_index in combo:
             combo_total += chall_cost.get(challs[
                 challenge_index].__class__, max_cost)
+
         if combo_total < best_combo_cost:
             best_combo = combo
             best_combo_cost = combo_total
-            combo_total = 0
+
+        combo_total = 0
 
     if not best_combo:
-        logging.fatal("Client does not support any combination of "
-                      "challenges to satisfy ACME server")
-        sys.exit(22)
+        msg = ("Client does not support any combination of challenges that "
+               "will satisfy the CA.")
+        logging.fatal(msg)
+        raise errors.LetsEncryptAuthHandlerError(msg)
 
     return best_combo
 
