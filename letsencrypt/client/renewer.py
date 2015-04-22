@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """Renewer tool to handle autorenewal and autodeployment of renewed
 certs within lineages of successor certificates, according to
 configuration."""
@@ -452,12 +450,3 @@ def main(config=DEFAULTS):
             renew(cert, old_version)
             notify.notify("Autorenewed a cert!!!", "root", "It worked!")
             # TODO: explain what happened
-
-
-if __name__ == "__main__":
-    if ("renewer_enabled" in DEFAULTS
-            and not DEFAULTS.as_bool("renewer_enabled")):
-        print "Renewer is disabled by configuration!  Exiting."
-        raise SystemExit
-    else:
-        main()
