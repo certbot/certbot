@@ -349,28 +349,12 @@ def init_csr(privkey, names, cert_dir):
     return le_util.CSR(csr_filename, csr_der, "der")
 
 
-def list_available_authenticators(avail_auths):
-    """Return a pretty-printed list of authenticators.
-
-    This is used to provide helpful feedback in the case where a user
-    specifies an invalid authenticator on the command line.
-
-    """
-    output_lines = ["Available authenticators:"]
-    for auth_name, auth in avail_auths.iteritems():
-        output_lines.append(" - %s : %s" % (auth_name, auth.description))
-    return '\n'.join(output_lines)
-
-
 # This should be controlled by commandline parameters
-def determine_authenticator(all_auths, config):
+def determine_authenticator(all_auths):
     """Returns a valid IAuthenticator.
 
     :param list all_auths: Where each is a
         :class:`letsencrypt.client.interfaces.IAuthenticator` object
-
-    :param config: Used if an authenticator was specified on the command line.
-    :type config: :class:`letsencrypt.client.interfaces.IConfig`
 
     :returns: Valid Authenticator object or None
 
@@ -379,33 +363,23 @@ def determine_authenticator(all_auths, config):
 
     """
     # Available Authenticator objects
-    avail_auths = {}
+    avail_auths = []
     # Error messages for misconfigured authenticators
     errs = {}
 
-    for auth_name, auth in all_auths.iteritems():
+    for pot_auth in all_auths:
         try:
-            auth.prepare()
+            pot_auth.prepare()
         except errors.LetsEncryptMisconfigurationError as err:
-            errs[auth] = err
+            errs[pot_auth] = err
         except errors.LetsEncryptNoInstallationError:
             continue
-        avail_auths[auth_name] = auth
+        avail_auths.append(pot_auth)
 
-    # If an authenticator was specified on the command line, try to use it
-    if config.authenticator:
-        try:
-            auth = avail_auths[config.authenticator]
-        except KeyError:
-            logging.error(
-                "The specified authenticator '%s' could not be found",
-                config.authenticator)
-            logging.info(list_available_authenticators(avail_auths))
-            return
-    elif len(avail_auths) > 1:
-        auth = display_ops.choose_authenticator(avail_auths.values(), errs)
-    elif len(avail_auths.keys()) == 1:
-        auth = avail_auths[avail_auths.keys()[0]]
+    if len(avail_auths) > 1:
+        auth = display_ops.choose_authenticator(avail_auths, errs)
+    elif len(avail_auths) == 1:
+        auth = avail_auths[0]
     else:
         raise errors.LetsEncryptClientError("No Authenticators available.")
 
