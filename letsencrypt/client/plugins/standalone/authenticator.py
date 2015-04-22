@@ -30,8 +30,13 @@ class StandaloneAuthenticator(object):
 
     """
     zope.interface.implements(interfaces.IAuthenticator)
+    zope.interface.classProvides(interfaces.IPluginFactory)
 
     description = "Standalone Authenticator"
+
+    @classmethod
+    def add_parser_arguments(cls, add):
+        pass
 
     def __init__(self, unused_config):
         self.child_pid = None

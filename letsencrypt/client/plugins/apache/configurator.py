@@ -79,6 +79,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     """
     zope.interface.implements(interfaces.IAuthenticator, interfaces.IInstaller)
+    zope.interface.classProvides(interfaces.IPluginFactory)
 
     description = "Apache Web Server"
 

@@ -5,6 +5,26 @@ import zope.interface
 # pylint: disable=too-few-public-methods
 
 
+class IPluginFactory(zope.interface.Interface):
+
+    def __call__(config):
+        """Create new `IPlugin`.
+
+        :param IConfig config: Configuration.
+
+        """
+
+    def add_parser_arguments(add):
+        """Add plugin arguments to the CLI argument parser.
+
+        :param callable add: Function that proxies calls to
+            `argparse.ArgumentParser.add_argument` prepending options
+            with unique plugin name prefix.
+
+        """
+        # TODO: move to IPlugin?
+
+
 class IPlugin(zope.interface.Interface):
     """Let's Encrypt plugin."""
 
