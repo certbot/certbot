@@ -78,6 +78,7 @@ def chall_to_challb(chall, status):
 
     """
     kwargs = {
+        "chall": chall,
         "uri": chall.typ+"_uri",
         "status": messages2.Status(status),
     }
@@ -86,6 +87,24 @@ def chall_to_challb(chall, status):
         kwargs.update({"validated": datetime.datetime.now()})
 
     return messages2.ChallengeBody(**kwargs)
+
+
+# Pending ChallengeBody objects
+DVSNI_P = chall_to_challb(DVSNI, "pending")
+SIMPLE_HTTPS_P = chall_to_challb(SIMPLE_HTTPS, "pending")
+DNS_P = chall_to_challb(DNS, "pending")
+RECOVERY_CONTACT_P = chall_to_challb(RECOVERY_CONTACT, "pending")
+RECOVERY_TOKEN_P = chall_to_challb(RECOVERY_TOKEN, "pending")
+POP_P = chall_to_challb(POP, "pending")
+
+CHALLENGES_P = [SIMPLE_HTTPS_P, DVSNI_P, DNS_P,
+                RECOVERY_CONTACT_P, RECOVERY_TOKEN_P, POP_P]
+DV_CHALLENGES_P = [challb for challb in CHALLENGES_P
+                   if isinstance(challb.chall, challenges.DVChallenge)]
+CONT_CHALLENGES_P = [
+    challb for challb in CHALLENGES_P
+    if isinstance(challb.chall, challenges.ContinuityChallenge)
+]
 
 
 def gen_authzr(authz_status, domain, challs, statuses, combos=True):
@@ -103,7 +122,7 @@ def gen_authzr(authz_status, domain, challs, statuses, combos=True):
     ]
     authz_kwargs = {
         "identifier": messages2.Identifier(
-            type=messages2.IDENTIFIER_FQDN, value=domain),
+            typ=messages2.IDENTIFIER_FQDN, value=domain),
          "challenges": challbs,
     }
     if combos:

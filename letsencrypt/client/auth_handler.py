@@ -67,6 +67,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         for domain in domains:
             self.authzr[domain] = self.network.request_domain_challenges(
                 domain, self.account.new_authzr_uri)
+
         self._choose_challenges(domains)
 
         # While there are still challenges remaining...
@@ -77,7 +78,11 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
             # Send all Responses - this modifies dv_c and cont_c
             self._respond(cont_resp, dv_resp, best_effort)
 
-        return self.authzr.values()
+        # Just make sure all decisions are complete.
+        self._verify_authzr_complete()
+        # Only return valid authorizations
+        return [authzr for authzr in self.authzr.values()
+                if authzr.body.status == messages2.STATUS_VALID]
 
     def _choose_challenges(self, domains):
         """Retrieve necessary challenges to satisfy server."""
@@ -88,7 +93,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
                 self._get_chall_pref(dom),
                 self.authzr[dom].body.combinations)
 
-            dom_dv_c, dom_cont_c = self._challenge_factory(
+            dom_cont_c, dom_dv_c = self._challenge_factory(
                 dom, path)
             self.dv_c.extend(dom_dv_c)
             self.cont_c.extend(dom_cont_c)
@@ -123,11 +128,16 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         """
         # TODO: chall_update is a dirty hack to get around acme-spec #105
         chall_update = dict()
-        self._send_responses(self.dv_c, dv_resp, chall_update)
-        self._send_responses(self.cont_c, cont_resp, chall_update)
+        active_achalls = []
+        active_achalls.extend(
+            self._send_responses(self.dv_c, dv_resp, chall_update))
+        active_achalls.extend(
+            self._send_responses(self.cont_c, cont_resp, chall_update))
 
         # Check for updated status...
         self._poll_challenges(chall_update, best_effort)
+        # This removes challenges from self.dv_c and self.cont_c
+        self._cleanup_challenges(active_achalls)
 
     def _send_responses(self, achalls, resps, chall_update):
         """Send responses and make sure errors are handled.
@@ -136,14 +146,18 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
             authzr -> list of outstanding solved annotated challenges
 
         """
+        active_achalls = []
         for achall, resp in itertools.izip(achalls, resps):
             # Don't send challenges for None and False authenticator responses
             if resp:
-                challr = self.network.answer_challenge(achall.challb, resp)
+                self.network.answer_challenge(achall.challb, resp)
+                active_achalls.append(achall)
                 if achall.domain in chall_update:
                     chall_update[achall.domain].append(achall)
                 else:
                     chall_update[achall.domain] = [achall]
+
+        return active_achalls
 
     def _poll_challenges(self, chall_update, best_effort, min_sleep=3):
         """Wait for all challenge results to be determined."""
@@ -166,14 +180,11 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
                 else:
                     # Right now... just assume a loss and carry on...
                     if best_effort:
-                        # Add to completed list... but remove authzr
-                        del self.authzr[domain]
                         comp_domains.add(domain)
+
                     else:
                         raise errors.AuthorizationError(
                             "Failed Authorization procedure for %s" % domain)
-
-                self._cleanup_challenges(comp_challs+failed_challs)
 
             dom_to_check -= comp_domains
             comp_domains.clear()
@@ -191,7 +202,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         #     challenges will be determined here...
         for achall in achalls:
             status = self._get_chall_status(self.authzr[domain], achall)
-            print "Status:", status
+
             # This does nothing for challenges that have yet to be decided yet.
             if status == messages2.STATUS_VALID:
                 completed.append(achall)
@@ -200,16 +211,16 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
 
         return completed, failed
 
-    def _get_chall_status(self, authzr, chall):
+    def _get_chall_status(self, authzr, achall):
         """Get the status of the challenge.
 
         .. warning:: This assumes only one instance of type of challenge in
             each challenge resource.
 
         """
-        for authzr_chall in authzr:
-            if type(authzr_chall) is type(chall):
-                return chall.status
+        for authzr_challb in authzr.body.challenges:
+            if type(authzr_challb.chall) is type(achall.challb.chall):
+                return achall.challb.status
         raise errors.AuthorizationError(
             "Target challenge not found in authorization resource")
 
@@ -219,7 +230,9 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
         :param str domain: domain for which you are requesting preferences
 
         """
-        chall_prefs = self.cont_auth.get_chall_pref(domain)
+        # Make sure to make a copy...
+        chall_prefs = []
+        chall_prefs.extend(self.cont_auth.get_chall_pref(domain))
         chall_prefs.extend(self.dv_auth.get_chall_pref(domain))
         return chall_prefs
 
@@ -249,6 +262,12 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
             for achall in cont_c:
                 self.cont_c.remove(achall)
 
+    def _verify_authzr_complete(self):
+        for authzr in self.authzr.values():
+            if (authzr.body.status != messages2.STATUS_VALID and
+                    authzr.body.status != messages2.STATUS_INVALID):
+                raise errors.AuthorizationError("Incomplete authorizations")
+
     def _challenge_factory(self, domain, path):
         """Construct Namedtuple Challenges
 
@@ -266,8 +285,8 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
             recognized
 
         """
-        dv_chall = set()
-        cont_chall = set()
+        dv_chall = []
+        cont_chall = []
 
         for index in path:
             challb = self.authzr[domain].body.challenges[index]
@@ -303,11 +322,11 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
                     chall.typ)
 
             if isinstance(chall, challenges.ContinuityChallenge):
-                cont_chall.add(achall)
+                cont_chall.append(achall)
             elif isinstance(chall, challenges.DVChallenge):
-                dv_chall.add(achall)
+                dv_chall.append(achall)
 
-        return dv_chall, cont_chall
+        return cont_chall, dv_chall
 
 
 def gen_challenge_path(challbs, preferences, combinations):

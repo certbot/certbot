@@ -10,7 +10,6 @@ class Error(jose.JSONObjectWithFields, Exception):
     https://tools.ietf.org/html/draft-ietf-appsawg-http-problem-00
 
     """
-
     ERROR_TYPE_NAMESPACE = 'urn:acme:error:'
     ERROR_TYPE_DESCRIPTIONS = {
         'malformed': 'The request message was malformed',
@@ -73,6 +72,9 @@ class _Constant(jose.JSONDeSerializable):
     def __eq__(self, other):
         return isinstance(other, type(self)) and other.name == self.name
 
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
 
 class Status(_Constant):
     """ACME "status" field."""
@@ -133,7 +135,6 @@ class Registration(ResourceBody):
     :ivar tuple contact: Contact information following ACME spec
 
     """
-
     # on new-reg key server ignores 'key' and populates it based on
     # JWS.signature.combined.jwk
     key = jose.Field('key', omitempty=True, decoder=jose.JWK.from_json)
@@ -217,7 +218,6 @@ class Authorization(ResourceBody):
     :ivar datetime.datetime expires:
 
     """
-
     identifier = jose.Field('identifier', decoder=Identifier.from_json)
     challenges = jose.Field('challenges', omitempty=True)
     combinations = jose.Field('combinations', omitempty=True)
