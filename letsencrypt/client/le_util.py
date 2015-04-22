@@ -75,6 +75,34 @@ def unique_file(path, mode=0o777):
         count += 1
 
 
+def unique_lineage_name(path, filename, mode=0o777):
+    """Safely finds a unique file for writing only (by default).  Uses a
+    file lineage convention.
+
+    :param str path: path
+    :param str filename: filename
+    :param int mode: File mode
+
+    :return: tuple of file object and file name
+
+    """
+    fname = os.path.join(path, "%s.conf" % (filename))
+    try:
+        file_d = os.open(fname, os.O_CREAT | os.O_EXCL | os.O_RDWR, mode)
+        return os.fdopen(file_d, "w"), fname
+    except OSError:
+        pass
+    count = 1
+    while True:
+        fname = os.path.join(path, "%s-%04d.conf" % (filename, count))
+        try:
+            file_d = os.open(fname, os.O_CREAT | os.O_EXCL | os.O_RDWR, mode)
+            return os.fdopen(file_d, "w"), fname
+        except OSError:
+            pass
+        count += 1
+
+
 def safely_remove(path):
     """Remove a file that may not exist."""
     try:

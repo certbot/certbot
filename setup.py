@@ -30,9 +30,11 @@ changes = read_file(os.path.join(here, 'CHANGES.rst'))
 install_requires = [
     'argparse',
     'ConfArgParse',
+    'configobj',
     'jsonschema',
     'mock',
     'ndg-httpsclient',  # urllib3 InsecurePlatformWarning (#304)
+    'parsedatetime',
     'psutil>=2.1.0',  # net_connections introduced in 2.1.0
     'pyasn1',  # urllib3 InsecurePlatformWarning (#304)
     'pycrypto',
