@@ -101,7 +101,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
                 return False
             # The link must point to a file that follows the archive
             # naming convention
-            pattern = re.compile(r"^{}([0-9]+)\.pem$".format(kind))
+            pattern = re.compile(r"^{0}([0-9]+)\.pem$".format(kind))
             if not pattern.match(os.path.basename(target)):
                 return False
             # It is NOT required that the link's target be a regular
@@ -151,7 +151,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         "chain7.pem", returns the integer 7."""
         if kind not in ALL_FOUR:
             raise ValueError("unknown kind of item")
-        pattern = re.compile(r"^{}([0-9]+)\.pem$".format(kind))
+        pattern = re.compile(r"^{0}([0-9]+)\.pem$".format(kind))
         target = self.current_target(kind)
         if not target or not os.path.exists(target):
             target = ""
@@ -168,7 +168,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         if kind not in ALL_FOUR:
             raise ValueError("unknown kind of item")
         where = os.path.dirname(self.current_target(kind))
-        return os.path.join(where, "{}{}.pem".format(kind, version))
+        return os.path.join(where, "{0}{1}.pem".format(kind, version))
 
     def available_versions(self, kind):
         """Which alternative versions of the specified kind of item
@@ -178,7 +178,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             raise ValueError("unknown kind of item")
         where = os.path.dirname(self.current_target(kind))
         files = os.listdir(where)
-        pattern = re.compile(r"^{}([0-9]+)\.pem$".format(kind))
+        pattern = re.compile(r"^{0}([0-9]+)\.pem$".format(kind))
         matches = [pattern.match(f) for f in files]
         return sorted([int(m.groups()[0]) for m in matches if m])
 
@@ -220,7 +220,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         if kind not in ALL_FOUR:
             raise ValueError("unknown kind of item")
         link = self.__getattribute__(kind)
-        filename = "{}{}.pem".format(kind, version)
+        filename = "{0}{1}.pem".format(kind, version)
         # Relative rather than absolute target directory
         target_directory = os.path.dirname(os.readlink(link))
         # TODO: it could be safer to make the link first under a temporary
@@ -392,23 +392,23 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         archive = self.configuration["official_archive_dir"]
         prefix = os.path.join(archive, self.lineagename)
         cert_target = os.path.join(
-            prefix, "cert{}.pem".format(target_version))
+            prefix, "cert{0}.pem".format(target_version))
         privkey_target = os.path.join(
-            prefix, "privkey{}.pem".format(target_version))
+            prefix, "privkey{0}.pem".format(target_version))
         chain_target = os.path.join(
-            prefix, "chain{}.pem".format(target_version))
+            prefix, "chain{0}.pem".format(target_version))
         fullchain_target = os.path.join(
-            prefix, "fullchain{}.pem".format(target_version))
+            prefix, "fullchain{0}.pem".format(target_version))
         with open(cert_target, "w") as f:
             f.write(new_cert)
         # The behavior below always keeps the prior key by creating a new
         # symlink to the old key or the target of the old key symlink.
         old_privkey = os.path.join(
-            prefix, "privkey{}.pem".format(prior_version))
+            prefix, "privkey{0}.pem".format(prior_version))
         if os.path.islink(old_privkey):
             old_privkey = os.readlink(old_privkey)
         else:
-            old_privkey = "privkey{}.pem".format(prior_version)
+            old_privkey = "privkey{0}.pem".format(prior_version)
         os.symlink(old_privkey, privkey_target)
         with open(chain_target, "w") as f:
             f.write(new_chain)
