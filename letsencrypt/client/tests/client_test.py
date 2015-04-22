@@ -1,5 +1,4 @@
 """letsencrypt.client.client.py tests."""
-from collections import namedtuple
 import unittest
 
 import mock
@@ -21,18 +20,12 @@ class DetermineAuthenticatorTest(unittest.TestCase):
 
         self.mock_config = mock.Mock()
 
-        self.all_auths = {
-            'apache': self.mock_apache,
-            'standalone': self.mock_stand
-        }
+        self.all_auths = [self.mock_apache, self.mock_stand]
 
     @classmethod
     def _call(cls, all_auths):
         from letsencrypt.client.client import determine_authenticator
-        # TODO: add tests for setting the authenticator via the command line
-        mock_config = namedtuple("Config", ['authenticator'])
-        return determine_authenticator(all_auths,
-                                       mock_config(authenticator=None))
+        return determine_authenticator(all_auths)
 
     @mock.patch("letsencrypt.client.client.display_ops.choose_authenticator")
     def test_accept_two(self, mock_choose):
@@ -42,8 +35,7 @@ class DetermineAuthenticatorTest(unittest.TestCase):
     def test_accept_one(self):
         self.mock_apache.prepare.return_value = self.mock_apache
         self.assertEqual(
-            self._call(dict(apache=self.all_auths['apache'])),
-            self.mock_apache)
+            self._call(self.all_auths[:1]), self.mock_apache)
 
     def test_no_installation_one(self):
         self.mock_apache.prepare.side_effect = (
