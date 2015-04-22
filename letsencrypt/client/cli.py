@@ -361,4 +361,4 @@ def main():  # pylint: disable=too-many-branches, too-many-statements
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main())  # pragma: no cover
