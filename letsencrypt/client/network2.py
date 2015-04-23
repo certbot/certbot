@@ -470,6 +470,15 @@ class Network(object):
         return self.request_issuance(csr, updated_authzrs), updated_authzrs
 
     def _get_cert(self, uri):
+        """Returns certificate from URI.
+
+        :param str uri: URI of certificate
+
+        :returns: tuple of the form
+            (response, :class:`letsencrypt.acme.jose.ComparableX509`)
+        :rtype: tuple
+
+        """
         content_type = self.DER_CONTENT_TYPE  # TODO: make it a param
         response = self._get(uri, headers={'Accept': content_type},
                              content_type=content_type)
@@ -521,7 +530,8 @@ class Network(object):
 
         """
         if certr.cert_chain_uri is not None:
-            return self._get_cert(certr.cert_chain_uri)
+            _, cert = self._get_cert(certr.cert_chain_uri)
+            return cert
 
     def revoke(self, certr, when=messages2.Revocation.NOW):
         """Revoke certificate.

@@ -1,3 +1,4 @@
+"""Tests for letsencrypt.client.account."""
 import mock
 import os
 import pkg_resources
@@ -66,10 +67,6 @@ class AccountTest(unittest.TestCase):
         self.assertEqual(acc.key, self.key)
         self.assertEqual(acc.config, self.config)
 
-    def test_save(self):
-        self.test_account.save()
-        self._read_out_config(self.email)
-
     def test_save_from_existing_account(self):
         self.test_account.save()
         acc = account.Account.from_existing_account(self.config, self.email)
@@ -117,9 +114,6 @@ class AccountTest(unittest.TestCase):
         acc2.save()
         accs = account.Account.get_accounts(self.config)
         self.assertEqual(len(accs), 2)
-
-    def _read_out_config(self, filep):
-        print open(os.path.join(self.accounts_dir, filep)).read()
 
 
 class SafeEmailTest(unittest.TestCase):

@@ -46,7 +46,7 @@ class Client(object):
 
     """
 
-    def __init__(self, config, account, dv_auth, installer):
+    def __init__(self, config, account_, dv_auth, installer):
         """Initialize a client.
 
         :param dv_auth: IAuthenticator that can solve the
@@ -56,14 +56,14 @@ class Client(object):
         :type dv_auth: :class:`letsencrypt.client.interfaces.IAuthenticator`
 
         """
-        self.account = account
+        self.account = account_
 
         self.installer = installer
 
         # TODO: Allow for other alg types besides RS256
         self.network = network2.Network(
             "https://%s/acme/new-reg" % config.server,
-            jwk.JWKRSA.load(account.key.pem))
+            jwk.JWKRSA.load(self.account.key.pem))
 
         self.config = config
 
@@ -74,7 +74,7 @@ class Client(object):
         else:
             self.auth_handler = None
 
-    def register(self, save=True):
+    def register(self):
         """New Registration with the ACME server."""
         self.account = self.network.register_from_account(self.account)
         if self.account.terms_of_service:
@@ -167,16 +167,18 @@ class Client(object):
         if certr.cert_chain_uri:
             # TODO: Except
             chain_cert = self.network.fetch_chain(certr.cert_chain_uri)
-            chain_file, act_chain_path = le_util.unique_file(chain_path, 0o644)
-            try:
-                chain_file.write(chain_cert.to_pem())
-            finally:
-                chain_file.close()
+            if chain_cert:
+                chain_file, act_chain_path = le_util.unique_file(
+                    chain_path, 0o644)
+                try:
+                    chain_file.write(chain_cert.to_pem())
+                finally:
+                    chain_file.close()
 
-            logging.info("Cert chain written to %s", act_chain_path)
+                logging.info("Cert chain written to %s", act_chain_path)
 
-            # This expects a valid chain file
-            cert_chain_abspath = os.path.abspath(act_chain_path)
+                # This expects a valid chain file
+                cert_chain_abspath = os.path.abspath(act_chain_path)
 
         return os.path.abspath(act_cert_path), cert_chain_abspath
 

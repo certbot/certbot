@@ -1,3 +1,4 @@
+"""Creates ACME accounts for server."""
 import logging
 import os
 import re
@@ -197,5 +198,5 @@ class Account(object):
         """Scrub email address before using it."""
         if re.match(cls.EMAIL_REGEX, email):
             return bool(not email.startswith(".") and ".." not in email)
-        logging.warn("Invalid email address: using default address.")
+        logging.warn("Invalid email address.")
         return False

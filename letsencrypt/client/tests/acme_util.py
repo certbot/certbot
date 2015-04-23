@@ -71,7 +71,7 @@ def gen_combos(challbs):
                  for i in dv_chall for j in cont_chall)
 
 
-def chall_to_challb(chall, status):
+def chall_to_challb(chall, status):  # pylint: disable=redefined-outer-name
     """Return ChallengeBody from Challenge.
 
     :param str status: "valid", "invalid", "pending"...
@@ -86,7 +86,7 @@ def chall_to_challb(chall, status):
     if status == "valid":
         kwargs.update({"validated": datetime.datetime.now()})
 
-    return messages2.ChallengeBody(**kwargs)
+    return messages2.ChallengeBody(**kwargs)  # pylint: disable=star-args
 
 
 # Pending ChallengeBody objects
@@ -116,6 +116,7 @@ def gen_authzr(authz_status, domain, challs, statuses, combos=True):
     :param bool combos: Whether or not to add combinations
 
     """
+    # pylint: disable=redefined-outer-name
     challbs = [
         chall_to_challb(chall, status)
         for chall, status in itertools.izip(challs, statuses)
@@ -123,7 +124,7 @@ def gen_authzr(authz_status, domain, challs, statuses, combos=True):
     authz_kwargs = {
         "identifier": messages2.Identifier(
             typ=messages2.IDENTIFIER_FQDN, value=domain),
-         "challenges": challbs,
+        "challenges": challbs,
     }
     if combos:
         authz_kwargs.update({"combinations": gen_combos(challbs)})
@@ -134,6 +135,7 @@ def gen_authzr(authz_status, domain, challs, statuses, combos=True):
             "expires": datetime.datetime(now.year, now.month+1, now.day),
         })
 
+    # pylint: disable=star-args
     return messages2.AuthorizationResource(
         uri="https://trusted.ca/new-authz-resource",
         new_cert_uri="https://trusted.ca/new-cert",

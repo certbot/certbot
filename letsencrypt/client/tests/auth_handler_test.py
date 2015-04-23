@@ -6,10 +6,7 @@ import unittest
 import mock
 
 from letsencrypt.acme import challenges
-from letsencrypt.acme import messages2
 
-from letsencrypt.client import account
-from letsencrypt.client import achallenges
 from letsencrypt.client import errors
 from letsencrypt.client import le_util
 from letsencrypt.client import network2
@@ -156,13 +153,32 @@ class GetAuthorizationsTest(unittest.TestCase):
 
         return exp_resp
 
-    def _validate_all(self, unused1, unused2):
+    def _validate_all(self, unused_1, unused_2):
         for dom in self.handler.authzr.keys():
             azr = self.handler.authzr[dom]
             self.handler.authzr[dom] = acme_util.gen_authzr(
                 "valid", dom, [challb.chall for challb in azr.body.challenges],
                 ["valid"]*len(azr.body.challenges), azr.body.combinations)
 
+
+class PollChallengesTest(unittest.TestCase):
+    """Test poll challenges."""
+
+    def setUp(self):
+        from letsencrypt.client.auth_handler import AuthHandler
+        # Account is mocked...
+        self.handler = AuthHandler(
+            None, None, None, mock.Mock(key="mock_key"))
+
+        self.doms = ["0", "1", "2"]
+        self.handler.authzr[self.doms[0]] = acme_util.gen_authzr(
+            "pending", self.doms[0], acme_util.CHALLENGES, ["pending"]*6, False)
+
+        self.handler.authzr[self.doms[1]] = acme_util.gen_authzr(
+            "pending", self.doms[1], acme_util.CHALLENGES, ["pending"]*6, False)
+
+        self.handler.authzr[self.doms[2]] = acme_util.gen_authzr(
+            "pending", self.doms[2], acme_util.CHALLENGES, ["pending"]*6, False)
 
 class GenChallengePathTest(unittest.TestCase):
     """Tests for letsencrypt.client.auth_handler.gen_challenge_path.
@@ -208,11 +224,11 @@ class GenChallengePathTest(unittest.TestCase):
 
     def test_full_cont_server(self):
         challbs = (acme_util.RECOVERY_TOKEN_P,
-                  acme_util.RECOVERY_CONTACT_P,
-                  acme_util.POP_P,
-                  acme_util.DVSNI_P,
-                  acme_util.SIMPLE_HTTPS_P,
-                  acme_util.DNS_P)
+                   acme_util.RECOVERY_CONTACT_P,
+                   acme_util.POP_P,
+                   acme_util.DVSNI_P,
+                   acme_util.SIMPLE_HTTPS_P,
+                   acme_util.DNS_P)
         # Typical webserver client that can do everything except DNS
         # Attempted to make the order realistic
         prefs = [challenges.RecoveryToken,
@@ -295,7 +311,8 @@ class IsPreferredTest(unittest.TestCase):
 
     def test_mutually_exclusvie(self):
         self.assertFalse(
-            self._call(acme_util.DVSNI_P, frozenset([acme_util.SIMPLE_HTTPS_P])))
+            self._call(
+                acme_util.DVSNI_P, frozenset([acme_util.SIMPLE_HTTPS_P])))
 
     def test_mutually_exclusive_same_type(self):
         self.assertTrue(

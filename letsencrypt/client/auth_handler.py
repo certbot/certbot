@@ -10,8 +10,8 @@ from letsencrypt.client import achallenges
 from letsencrypt.client import constants
 from letsencrypt.client import errors
 
-
-class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
+# pylint: disable=too-many-instance-attributes, too-few-public-methods
+class AuthHandler(object):
     """ACME Authorization Handler for a client.
 
     :ivar dv_auth: Authenticator capable of solving
@@ -108,7 +108,7 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
             if self.dv_c:
                 dv_resp = self.dv_auth.perform(self.dv_c)
         # This will catch both specific types of errors.
-        except errors.AuthorizationError as err:
+        except errors.AuthorizationError:
             logging.critical("Failure in setting up challenges.")
             logging.info("Attempting to clean up outstanding challenges...")
             self._cleanup_challenges()
@@ -211,11 +211,17 @@ class AuthHandler(object):  # pylint: disable=too-many-instance-attributes
 
         return completed, failed
 
-    def _get_chall_status(self, authzr, achall):
+    def _get_chall_status(self, authzr, achall):  # pylint: disable=no-self-use
         """Get the status of the challenge.
 
         .. warning:: This assumes only one instance of type of challenge in
             each challenge resource.
+
+        :param authzr: Authorization Resource
+        :type authzr: :class:`letsencrypt.acme.messages2.AuthorizationResource`
+
+        :param achall: Annotated challenge for which to get status
+        :type achall: :class:`letsencrypt.client.achallenges.AnnotatedChallenge`
 
         """
         for authzr_challb in authzr.body.challenges:

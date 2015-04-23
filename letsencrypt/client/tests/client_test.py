@@ -15,12 +15,12 @@ from letsencrypt.client import le_util
 class DetermineAccountTest(unittest.TestCase):
     def setUp(self):
         self.accounts_dir = tempfile.mkdtemp("accounts")
-        self.account_keys_dir = os.path.join(self.accounts_dir, "keys")
-        os.makedirs(self.account_keys_dir, 0o700)
+        account_keys_dir = os.path.join(self.accounts_dir, "keys")
+        os.makedirs(account_keys_dir, 0o700)
 
         self.config = mock.MagicMock(
             spec=configuration.NamespaceConfig, accounts_dir=self.accounts_dir,
-            account_keys_dir=self.account_keys_dir, rsa_key_size=2048,
+            account_keys_dir=account_keys_dir, rsa_key_size=2048,
             server="letsencrypt-demo.org")
 
     def tearDown(self):
@@ -29,6 +29,7 @@ class DetermineAccountTest(unittest.TestCase):
     @mock.patch("letsencrypt.client.client.account.Account.from_prompts")
     @mock.patch("letsencrypt.client.client.display_ops.choose_account")
     def determine_account(self, mock_op, mock_prompt):
+        """Test determine account"""
         from letsencrypt.client import client
 
         key = le_util.Key("file", "pem")
@@ -46,7 +47,7 @@ class DetermineAccountTest(unittest.TestCase):
 
         # Test multiple
         self.assertFalse(mock_op.called)
-        acc2 = account.Account(self.config, self.key)
+        acc2 = account.Account(self.config, key)
         acc2.save()
         chosen_acc = client.determine_account(self.config)
         self.assertTrue(mock_op.called)
