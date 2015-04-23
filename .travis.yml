@@ -1,7 +1,7 @@
 language: python
 
 # http://docs.travis-ci.com/user/ci-environment/#CI-environment-OS
-before_install: travis_retry ./bootstrap/ubuntu.sh
+before_install: travis_retry sudo ./bootstrap/ubuntu.sh
 
 install: "travis_retry pip install tox coveralls"
 script: "travis_retry tox"
