@@ -9,11 +9,12 @@ import M2Crypto
 import mock
 import requests
 
-from letsencrypt.client import errors
-
 from letsencrypt.acme import challenges
 from letsencrypt.acme import jose
 from letsencrypt.acme import messages2
+
+from letsencrypt.client import account
+from letsencrypt.client import errors
 
 
 CERT = jose.ComparableX509(M2Crypto.X509.load_cert_string(
@@ -195,6 +196,30 @@ class NetworkTest(unittest.TestCase):
         self._mock_post_get()
         self.assertRaises(
             errors.NetworkError, self.net.register, self.regr.body)
+
+    def test_register_from_account(self):
+        self.net.register = mock.Mock()
+        acc = account.Account(
+            mock.Mock(accounts_dir='mock_dir'), 'key',
+            email='cert-admin@example.com', phone='+12025551212')
+
+        self.net.register_from_account(acc)
+
+        self.net.register.assert_called_with(contact=self.contact)
+
+    def test_register_from_account_partial_info(self):
+        self.net.register = mock.Mock()
+        acc = account.Account(
+            mock.Mock(accounts_dir='mock_dir'), 'key',
+            email='cert-admin@example.com')
+        acc2 = account.Account(mock.Mock(accounts_dir='mock_dir'), 'key')
+
+        self.net.register_from_account(acc)
+        self.net.register.assert_called_with(
+            contact=('mailto:cert-admin@example.com',))
+
+        self.net.register_from_account(acc2)
+        self.net.register.assert_called_with(contact=())
 
     def test_update_registration(self):
         self.response.headers['Location'] = self.regr.uri
@@ -428,7 +453,8 @@ class NetworkTest(unittest.TestCase):
     def test_fetch_chain(self):
         # pylint: disable=protected-access
         self.net._get_cert = mock.MagicMock()
-        self.assertEqual(self.net._get_cert(self.certr.cert_chain_uri),
+        self.net._get_cert.return_value = ("response", "certificate")
+        self.assertEqual(self.net._get_cert(self.certr.cert_chain_uri)[1],
                          self.net.fetch_chain(self.certr))
 
     def test_fetch_chain_no_up_link(self):

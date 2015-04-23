@@ -530,8 +530,7 @@ class Network(object):
 
         """
         if certr.cert_chain_uri is not None:
-            _, cert = self._get_cert(certr.cert_chain_uri)
-            return cert
+            return self._get_cert(certr.cert_chain_uri)[1]
 
     def revoke(self, certr, when=messages2.Revocation.NOW):
         """Revoke certificate.
