@@ -233,6 +233,12 @@ class NetworkTest(unittest.TestCase):
         self.assertRaises(
             errors.UnexpectedUpdate, self.net.update_registration, self.regr)
 
+    def test_agree_to_tos(self):
+        self.net.update_registration = mock.Mock()
+        self.net.agree_to_tos(self.regr)
+        regr = self.net.update_registration.call_args[0][0]
+        self.assertEqual(self.regr.terms_of_service, regr.body.agreement)
+
     def test_request_challenges(self):
         self.response.status_code = httplib.CREATED
         self.response.headers['Location'] = self.authzr.uri
@@ -280,6 +286,7 @@ class NetworkTest(unittest.TestCase):
 
     @unittest.skip("Skip til challenge_resource boulder issue is resolved")
     def test_answer_challenge_missing_next(self):
+        # TODO: Change once acme-spec #93 is resolved/boulder issue
         self._mock_post_get()
         self.assertRaises(errors.NetworkError, self.net.answer_challenge,
                           self.challr.body, challenges.DNSResponse())

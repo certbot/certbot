@@ -79,7 +79,7 @@ class AuthHandler(object):
             self._respond(cont_resp, dv_resp, best_effort)
 
         # Just make sure all decisions are complete.
-        self._verify_authzr_complete()
+        self.verify_authzr_complete()
         # Only return valid authorizations
         return [authzr for authzr in self.authzr.values()
                 if authzr.body.status == messages2.STATUS_VALID]
@@ -112,8 +112,7 @@ class AuthHandler(object):
             logging.critical("Failure in setting up challenges.")
             logging.info("Attempting to clean up outstanding challenges...")
             self._cleanup_challenges()
-            raise errors.AuthorizationError(
-                "Unable to perform challenges")
+            raise
 
         assert len(cont_resp) == len(self.cont_c)
         assert len(dv_resp) == len(self.dv_c)
@@ -159,12 +158,14 @@ class AuthHandler(object):
 
         return active_achalls
 
-    def _poll_challenges(self, chall_update, best_effort, min_sleep=3):
+    def _poll_challenges(
+            self, chall_update, best_effort, min_sleep=3, max_rounds=15):
         """Wait for all challenge results to be determined."""
         dom_to_check = set(chall_update.keys())
         comp_domains = set()
+        rounds = 0
 
-        while dom_to_check:
+        while dom_to_check and rounds < max_rounds:
             # TODO: Use retry-after...
             time.sleep(min_sleep)
             for domain in dom_to_check:
@@ -181,13 +182,13 @@ class AuthHandler(object):
                     # Right now... just assume a loss and carry on...
                     if best_effort:
                         comp_domains.add(domain)
-
                     else:
                         raise errors.AuthorizationError(
                             "Failed Authorization procedure for %s" % domain)
 
             dom_to_check -= comp_domains
             comp_domains.clear()
+            rounds += 1
 
     def _handle_check(self, domain, achalls):
         """Returns tuple of ('completed', 'failed')."""
@@ -226,7 +227,7 @@ class AuthHandler(object):
         """
         for authzr_challb in authzr.body.challenges:
             if type(authzr_challb.chall) is type(achall.challb.chall):
-                return achall.challb.status
+                return authzr_challb.status
         raise errors.AuthorizationError(
             "Target challenge not found in authorization resource")
 
@@ -268,7 +269,13 @@ class AuthHandler(object):
             for achall in cont_c:
                 self.cont_c.remove(achall)
 
-    def _verify_authzr_complete(self):
+    def verify_authzr_complete(self):
+        """Verifies that all authorizations have been decided.
+
+        :returns: Whether all authzr are complete
+        :rtype: bool
+
+        """
         for authzr in self.authzr.values():
             if (authzr.body.status != messages2.STATUS_VALID and
                     authzr.body.status != messages2.STATUS_INVALID):
@@ -298,34 +305,7 @@ class AuthHandler(object):
             challb = self.authzr[domain].body.challenges[index]
             chall = challb.chall
 
-            if isinstance(chall, challenges.DVSNI):
-                logging.info("  DVSNI challenge for %s.", domain)
-                achall = achallenges.DVSNI(
-                    challb=challb, domain=domain, key=self.account.key)
-            elif isinstance(chall, challenges.SimpleHTTPS):
-                logging.info("  SimpleHTTPS challenge for %s.", domain)
-                achall = achallenges.SimpleHTTPS(
-                    challb=challb, domain=domain, key=self.account.key)
-            elif isinstance(chall, challenges.DNS):
-                logging.info("  DNS challenge for %s.", domain)
-                achall = achallenges.DNS(challb=challb, domain=domain)
-
-            elif isinstance(chall, challenges.RecoveryToken):
-                logging.info("  Recovery Token Challenge for %s.", domain)
-                achall = achallenges.RecoveryToken(challb=challb, domain=domain)
-            elif isinstance(chall, challenges.RecoveryContact):
-                logging.info("  Recovery Contact Challenge for %s.", domain)
-                achall = achallenges.RecoveryContact(
-                    challb=challb, domain=domain)
-            elif isinstance(chall, challenges.ProofOfPossession):
-                logging.info("  Proof-of-Possession Challenge for %s", domain)
-                achall = achallenges.ProofOfPossession(
-                    challb=challb, domain=domain)
-
-            else:
-                raise errors.LetsEncryptClientError(
-                    "Received unsupported challenge of type: %s",
-                    chall.typ)
+            achall = challb_to_achall(challb, self.account.key, domain)
 
             if isinstance(chall, challenges.ContinuityChallenge):
                 cont_chall.append(achall)
@@ -333,6 +313,53 @@ class AuthHandler(object):
                 dv_chall.append(achall)
 
         return cont_chall, dv_chall
+
+
+def challb_to_achall(challb, key, domain):
+    """Converts a ChallengeBody object to an AnnotatedChallenge.
+
+    :param challb: ChallengeBody
+    :type challb: :class:`letsencrypt.acme.messages2.ChallengeBody`
+
+    :param key: Key
+    :type key: :class:`letsencrypt.client.le_util.Key`
+
+    :param str domain: Domain of the challb
+
+    :returns: Appropriate AnnotatedChallenge
+    :rtype: :class:`letsencrypt.client.achallenges.AnnotatedChallenge`
+
+    """
+    chall = challb.chall
+
+    if isinstance(chall, challenges.DVSNI):
+        logging.info("  DVSNI challenge for %s.", domain)
+        return achallenges.DVSNI(
+            challb=challb, domain=domain, key=key)
+    elif isinstance(chall, challenges.SimpleHTTPS):
+        logging.info("  SimpleHTTPS challenge for %s.", domain)
+        return achallenges.SimpleHTTPS(
+            challb=challb, domain=domain, key=key)
+    elif isinstance(chall, challenges.DNS):
+        logging.info("  DNS challenge for %s.", domain)
+        return achallenges.DNS(challb=challb, domain=domain)
+
+    elif isinstance(chall, challenges.RecoveryToken):
+        logging.info("  Recovery Token Challenge for %s.", domain)
+        return achallenges.RecoveryToken(challb=challb, domain=domain)
+    elif isinstance(chall, challenges.RecoveryContact):
+        logging.info("  Recovery Contact Challenge for %s.", domain)
+        return achallenges.RecoveryContact(
+            challb=challb, domain=domain)
+    elif isinstance(chall, challenges.ProofOfPossession):
+        logging.info("  Proof-of-Possession Challenge for %s", domain)
+        return achallenges.ProofOfPossession(
+            challb=challb, domain=domain)
+
+    else:
+        raise errors.LetsEncryptClientError(
+            "Received unsupported challenge of type: %s",
+            chall.typ)
 
 
 def gen_challenge_path(challbs, preferences, combinations):

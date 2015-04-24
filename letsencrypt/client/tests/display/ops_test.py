@@ -85,7 +85,6 @@ class ChooseAccountTest(unittest.TestCase):
 
     @mock.patch("letsencrypt.client.display.ops.util")
     def test_one(self, mock_util):
-        print self.acc1
         mock_util().menu.return_value = (display_util.OK, 0)
         self.assertEqual(self._call([self.acc1]), self.acc1)
 

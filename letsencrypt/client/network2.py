@@ -150,6 +150,7 @@ class Network(object):
             response.links['terms-of-service']['url']
             if 'terms-of-service' in response.links else terms_of_service)
 
+        # TODO: Consider removing this check based on spec clarifications #93
         if new_authzr_uri is None:
             try:
                 new_authzr_uri = response.links['next']['url']
@@ -321,7 +322,7 @@ class Network(object):
             # TODO: Right now Boulder responds with the authorization resource
             # instead of a challenge resource... this can be uncommented
             # once the error is fixed.
-            return challb
+            return None
             # raise errors.NetworkError('"up" Link header missing')
         challr = messages2.ChallengeResource(
             authzr_uri=authzr_uri,

@@ -72,15 +72,11 @@ def gen_combos(challbs):
 
 
 def chall_to_challb(chall, status):  # pylint: disable=redefined-outer-name
-    """Return ChallengeBody from Challenge.
-
-    :param str status: "valid", "invalid", "pending"...
-
-    """
+    """Return ChallengeBody from Challenge."""
     kwargs = {
         "chall": chall,
         "uri": chall.typ+"_uri",
-        "status": messages2.Status(status),
+        "status": status,
     }
 
     if status == "valid":
@@ -90,12 +86,12 @@ def chall_to_challb(chall, status):  # pylint: disable=redefined-outer-name
 
 
 # Pending ChallengeBody objects
-DVSNI_P = chall_to_challb(DVSNI, "pending")
-SIMPLE_HTTPS_P = chall_to_challb(SIMPLE_HTTPS, "pending")
-DNS_P = chall_to_challb(DNS, "pending")
-RECOVERY_CONTACT_P = chall_to_challb(RECOVERY_CONTACT, "pending")
-RECOVERY_TOKEN_P = chall_to_challb(RECOVERY_TOKEN, "pending")
-POP_P = chall_to_challb(POP, "pending")
+DVSNI_P = chall_to_challb(DVSNI, messages2.STATUS_PENDING)
+SIMPLE_HTTPS_P = chall_to_challb(SIMPLE_HTTPS, messages2.STATUS_PENDING)
+DNS_P = chall_to_challb(DNS, messages2.STATUS_PENDING)
+RECOVERY_CONTACT_P = chall_to_challb(RECOVERY_CONTACT, messages2.STATUS_PENDING)
+RECOVERY_TOKEN_P = chall_to_challb(RECOVERY_TOKEN, messages2.STATUS_PENDING)
+POP_P = chall_to_challb(POP, messages2.STATUS_PENDING)
 
 CHALLENGES_P = [SIMPLE_HTTPS_P, DVSNI_P, DNS_P,
                 RECOVERY_CONTACT_P, RECOVERY_TOKEN_P, POP_P]
@@ -110,17 +106,18 @@ CONT_CHALLENGES_P = [
 def gen_authzr(authz_status, domain, challs, statuses, combos=True):
     """Generate an authorization resource.
 
-    :param str authz_status: "valid", "invalid", "pending"...
+    :param authz_status: Status object
+    :type authz_status: :class:`letsencrypt.acme.messages2.Status`
     :param list challs: Challenge objects
-    :param list statuses: status of each challenge object e.g. "valid"...
+    :param list statuses: status of each challenge object
     :param bool combos: Whether or not to add combinations
 
     """
     # pylint: disable=redefined-outer-name
-    challbs = [
+    challbs = tuple(
         chall_to_challb(chall, status)
         for chall, status in itertools.izip(challs, statuses)
-    ]
+    )
     authz_kwargs = {
         "identifier": messages2.Identifier(
             typ=messages2.IDENTIFIER_FQDN, value=domain),
@@ -128,11 +125,15 @@ def gen_authzr(authz_status, domain, challs, statuses, combos=True):
     }
     if combos:
         authz_kwargs.update({"combinations": gen_combos(challbs)})
-    if authz_status == "valid":
+    if authz_status == messages2.STATUS_VALID:
         now = datetime.datetime.now()
         authz_kwargs.update({
-            "status": messages2.Status(authz_status),
+            "status": authz_status,
             "expires": datetime.datetime(now.year, now.month+1, now.day),
+        })
+    else:
+        authz_kwargs.update({
+            "status": authz_status,
         })
 
     # pylint: disable=star-args

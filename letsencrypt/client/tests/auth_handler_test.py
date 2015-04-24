@@ -6,6 +6,7 @@ import unittest
 import mock
 
 from letsencrypt.acme import challenges
+from letsencrypt.acme import messages2
 
 from letsencrypt.client import errors
 from letsencrypt.client import le_util
@@ -36,7 +37,8 @@ class ChallengeFactoryTest(unittest.TestCase):
 
         self.dom = "test"
         self.handler.authzr[self.dom] = acme_util.gen_authzr(
-            "pending", self.dom, acme_util.CHALLENGES, ["pending"]*6, False)
+            messages2.STATUS_PENDING, self.dom, acme_util.CHALLENGES,
+            [messages2.STATUS_PENDING]*6, False)
 
     def test_all(self):
         cont_c, dv_c = self.handler._challenge_factory(self.dom, range(0, 6))
@@ -55,8 +57,9 @@ class ChallengeFactoryTest(unittest.TestCase):
 
     def test_unrecognized(self):
         self.handler.authzr["failure.com"] = acme_util.gen_authzr(
-            "pending", "failure.com",
-            [mock.Mock(chall="chall", typ="unrecognized")], ["pending"])
+            messages2.STATUS_PENDING, "failure.com",
+            [mock.Mock(chall="chall", typ="unrecognized")],
+            [messages2.STATUS_PENDING])
 
         self.assertRaises(errors.LetsEncryptClientError,
                           self.handler._challenge_factory, "failure.com", [0])
@@ -145,6 +148,14 @@ class GetAuthorizationsTest(unittest.TestCase):
 
         self.assertEqual(len(authzr), 3)
 
+    def test_perform_failure(self):
+        self.mock_net.request_domain_challenges.side_effect = functools.partial(
+            gen_dom_authzr, challs=acme_util.CHALLENGES)
+        self.mock_dv_auth.perform.side_effect = errors.AuthorizationError
+
+        self.assertRaises(errors.AuthorizationError,
+                          self.handler.get_authorizations, ["0"])
+
     def _get_exp_response(self, domain, path, challs):
         # pylint: disable=no-self-use
         exp_resp = [None] * len(challs)
@@ -157,28 +168,129 @@ class GetAuthorizationsTest(unittest.TestCase):
         for dom in self.handler.authzr.keys():
             azr = self.handler.authzr[dom]
             self.handler.authzr[dom] = acme_util.gen_authzr(
-                "valid", dom, [challb.chall for challb in azr.body.challenges],
-                ["valid"]*len(azr.body.challenges), azr.body.combinations)
+                messages2.STATUS_VALID,
+                dom,
+                [challb.chall for challb in azr.body.challenges],
+                [messages2.STATUS_VALID]*len(azr.body.challenges),
+                azr.body.combinations)
 
 
 class PollChallengesTest(unittest.TestCase):
+    # pylint: disable=protected-access
     """Test poll challenges."""
 
     def setUp(self):
+        from letsencrypt.client.auth_handler import challb_to_achall
         from letsencrypt.client.auth_handler import AuthHandler
-        # Account is mocked...
+
+        # Account and network are mocked...
+        self.mock_net = mock.MagicMock()
         self.handler = AuthHandler(
-            None, None, None, mock.Mock(key="mock_key"))
+            None, None, self.mock_net, mock.Mock(key="mock_key"))
 
         self.doms = ["0", "1", "2"]
         self.handler.authzr[self.doms[0]] = acme_util.gen_authzr(
-            "pending", self.doms[0], acme_util.CHALLENGES, ["pending"]*6, False)
+            messages2.STATUS_PENDING, self.doms[0],
+            acme_util.DV_CHALLENGES, [messages2.STATUS_PENDING]*3, False)
 
         self.handler.authzr[self.doms[1]] = acme_util.gen_authzr(
-            "pending", self.doms[1], acme_util.CHALLENGES, ["pending"]*6, False)
+            messages2.STATUS_PENDING, self.doms[1],
+            acme_util.DV_CHALLENGES, [messages2.STATUS_PENDING]*3, False)
 
         self.handler.authzr[self.doms[2]] = acme_util.gen_authzr(
-            "pending", self.doms[2], acme_util.CHALLENGES, ["pending"]*6, False)
+            messages2.STATUS_PENDING, self.doms[2],
+            acme_util.DV_CHALLENGES, [messages2.STATUS_PENDING]*3, False)
+
+        self.chall_update = {}
+        for dom in self.doms:
+            self.chall_update[dom] = [
+                challb_to_achall(challb, "dummy_key", dom)
+                for challb in self.handler.authzr[dom].body.challenges]
+
+    @mock.patch("letsencrypt.client.auth_handler.time")
+    def test_poll_challenges(self, unused_mock_time):
+        self.mock_net.poll.side_effect = self._mock_poll_solve_one_valid
+        self.handler._poll_challenges(self.chall_update, False)
+
+        for authzr in self.handler.authzr.values():
+            self.assertEqual(authzr.body.status, messages2.STATUS_VALID)
+
+    @mock.patch("letsencrypt.client.auth_handler.time")
+    def test_poll_challenges_failure_best_effort(self, unused_mock_time):
+        self.mock_net.poll.side_effect = self._mock_poll_solve_one_invalid
+        self.handler._poll_challenges(self.chall_update, True)
+
+        for authzr in self.handler.authzr.values():
+            self.assertEqual(authzr.body.status, messages2.STATUS_PENDING)
+
+    @mock.patch("letsencrypt.client.auth_handler.time")
+    def test_poll_challenges_failure(self, unused_mock_time):
+        self.mock_net.poll.side_effect = self._mock_poll_solve_one_invalid
+        self.assertRaises(errors.AuthorizationError,
+                          self.handler._poll_challenges,
+                          self.chall_update, False)
+
+    @mock.patch("letsencrypt.client.auth_handler.time")
+    def test_unable_to_find_challenge_status(self, unused_mock_time):
+        from letsencrypt.client.auth_handler import challb_to_achall
+        self.mock_net.poll.side_effect = self._mock_poll_solve_one_valid
+        self.chall_update[self.doms[0]].append(
+            challb_to_achall(acme_util.RECOVERY_CONTACT_P, "key", self.doms[0]))
+        self.assertRaises(
+            errors.AuthorizationError,
+            self.handler._poll_challenges, self.chall_update, False)
+
+    def test_verify_authzr_failure(self):
+        self.assertRaises(
+            errors.AuthorizationError, self.handler.verify_authzr_complete)
+
+
+    def _mock_poll_solve_one_valid(self, authzr):
+        # Pending here because my dummy script won't change the full status.
+        # Basically it didn't raise an error and it stopped earlier than
+        # Making all challenges invalid which would make mock_poll_solve_one
+        # change authzr to invalid
+        return self._mock_poll_solve_one_chall(authzr, messages2.STATUS_VALID)
+
+    def _mock_poll_solve_one_invalid(self, authzr):
+        return self._mock_poll_solve_one_chall(authzr, messages2.STATUS_INVALID)
+
+    def _mock_poll_solve_one_chall(self, authzr, desired_status):
+        # pylint: disable=no-self-use
+        """Dummy method that solves one chall at a time to desired_status.
+
+        When all are solved.. it changes authzr.status to desired_status
+
+        """
+        new_challbs = authzr.body.challenges
+        for challb in authzr.body.challenges:
+            if challb.status != desired_status:
+                new_challbs = tuple(
+                    challb_temp if challb_temp != challb
+                    else acme_util.chall_to_challb(challb.chall, desired_status)
+                    for challb_temp in authzr.body.challenges
+                )
+                break
+
+        if all(test_challb.status == desired_status
+               for test_challb in new_challbs):
+            status_ = desired_status
+        else:
+            status_ = authzr.body.status
+
+        new_authzr = messages2.AuthorizationResource(
+            uri=authzr.uri,
+            new_cert_uri=authzr.new_cert_uri,
+            body=messages2.Authorization(
+                identifier=authzr.body.identifier,
+                challenges=new_challbs,
+                combinations=authzr.body.combinations,
+                key=authzr.body.key,
+                contact=authzr.body.contact,
+                status=status_,
+            ),
+        )
+        return (new_authzr, "response")
 
 class GenChallengePathTest(unittest.TestCase):
     """Tests for letsencrypt.client.auth_handler.gen_challenge_path.
@@ -328,7 +440,8 @@ def gen_auth_resp(chall_list):
 def gen_dom_authzr(domain, unused_new_authzr_uri, challs):
     """Generates new authzr for domains."""
     return acme_util.gen_authzr(
-        "pending", domain, challs, ["pending"]*len(challs))
+        messages2.STATUS_PENDING, domain, challs,
+        [messages2.STATUS_PENDING]*len(challs))
 
 
 def gen_path(required, challs):

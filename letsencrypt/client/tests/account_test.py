@@ -1,4 +1,5 @@
 """Tests for letsencrypt.client.account."""
+import logging
 import mock
 import os
 import pkg_resources
@@ -13,6 +14,7 @@ from letsencrypt.acme import messages2
 
 from letsencrypt.client import account
 from letsencrypt.client import configuration
+from letsencrypt.client import errors
 from letsencrypt.client import le_util
 
 from letsencrypt.client.display import util as display_util
@@ -22,6 +24,8 @@ class AccountTest(unittest.TestCase):
     """Tests letsencrypt.client.account.Account."""
 
     def setUp(self):
+        logging.disable(logging.CRITICAL)
+
         self.accounts_dir = tempfile.mkdtemp("accounts")
         self.account_keys_dir = os.path.join(self.accounts_dir, "keys")
         os.makedirs(self.account_keys_dir, 0o700)
@@ -51,6 +55,7 @@ class AccountTest(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.accounts_dir)
+        logging.disable(logging.NOTSET)
 
     @mock.patch("letsencrypt.client.account.zope.component.getUtility")
     @mock.patch("letsencrypt.client.account.crypto_util.init_save_key")
@@ -66,6 +71,15 @@ class AccountTest(unittest.TestCase):
         self.assertEqual(acc.email, self.email)
         self.assertEqual(acc.key, self.key)
         self.assertEqual(acc.config, self.config)
+
+    @mock.patch("letsencrypt.client.account.zope.component.getUtility")
+    def test_prompts_cancel(self, mock_util):
+        # displayer = display_util.FileDisplay(sys.stdout)
+        # zope.component.provideUtility(displayer)
+
+        mock_util().input.return_value = (display_util.CANCEL, "")
+
+        self.assertTrue(account.Account.from_prompts(self.config) is None)
 
     def test_save_from_existing_account(self):
         self.test_account.save()
@@ -84,11 +98,24 @@ class AccountTest(unittest.TestCase):
 
     def test_partial_properties(self):
         partial = account.Account(self.config, self.key)
+        regr_no_authzr_uri = messages2.RegistrationResource(
+            uri="uri",
+            new_authzr_uri=None,
+            terms_of_service="terms_of_service",
+            body=messages2.Registration(
+                recovery_token="recovery_token", agreement="agreement")
+        )
+        partial2 = account.Account(
+            self.config, self.key, regr=regr_no_authzr_uri)
 
         self.assertTrue(partial.uri is None)
         self.assertTrue(partial.new_authzr_uri is None)
         self.assertTrue(partial.terms_of_service is None)
         self.assertTrue(partial.recovery_token is None)
+
+        self.assertEqual(
+            partial2.new_authzr_uri,
+            "https://letsencrypt-demo.org/acme/new-authz")
 
     def test_partial_account_default(self):
         partial = account.Account(self.config, self.key)
@@ -115,9 +142,23 @@ class AccountTest(unittest.TestCase):
         accs = account.Account.get_accounts(self.config)
         self.assertEqual(len(accs), 2)
 
+    def test_get_accounts_no_accounts(self):
+        self.assertEqual(account.Account.get_accounts(
+            mock.Mock(accounts_dir="non-existant")), [])
+
+    def test_failed_existing_account(self):
+        self.assertRaises(
+            errors.LetsEncryptClientError,
+            account.Account.from_existing_account,
+            self.config, "non-existant@email.org")
 
 class SafeEmailTest(unittest.TestCase):
     """Test safe_email."""
+    def setUp(self):
+        logging.disable(logging.CRITICAL)
+
+    def tearDown(self):
+        logging.disable(logging.NOTSET)
 
     @classmethod
     def _call(cls, addr):
@@ -131,16 +172,16 @@ class SafeEmailTest(unittest.TestCase):
             "abc_def.jdk@hotmail.museum"
         ]
         for addr in addrs:
-            self.assertTrue(addr, "%s failed." % addr)
+            self.assertTrue(self._call(addr), "%s failed." % addr)
 
     def test_invalid_emails(self):
         addrs = [
             "letsencrypt@letsencrypt..org",
             ".tbd.ade@gmail.com",
-            "~/abc_def.jdk@hotmail.museum"
+            "~/abc_def.jdk@hotmail.museum",
         ]
         for addr in addrs:
-            self.assertTrue(addr, "%s failed." % addr)
+            self.assertFalse(self._call(addr), "%s failed." % addr)
 
 
 if __name__ == "__main__":
