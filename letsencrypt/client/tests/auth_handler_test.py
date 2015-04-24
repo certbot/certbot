@@ -244,7 +244,6 @@ class PollChallengesTest(unittest.TestCase):
         self.assertRaises(
             errors.AuthorizationError, self.handler.verify_authzr_complete)
 
-
     def _mock_poll_solve_one_valid(self, authzr):
         # Pending here because my dummy script won't change the full status.
         # Basically it didn't raise an error and it stopped earlier than
