@@ -180,18 +180,21 @@ class Account(object):
         :rtype: :class:`letsencrypt.client.account.Account`
 
         """
-        code, email = zope.component.getUtility(interfaces.IDisplay).input(
-            "Enter email address (optional)")
-        if code == display_util.OK:
-            email = email if email != "" else None
+        while True:
+            code, email = zope.component.getUtility(interfaces.IDisplay).input(
+                "Enter email address (optional, press Enter to skip)")
 
-            le_util.make_or_verify_dir(
-                config.account_keys_dir, 0o700, os.geteuid())
-            key = crypto_util.init_save_key(
-                config.rsa_key_size, config.account_keys_dir, email)
-            return cls(config, key, email)
+            if code == display_util.OK:
+                if email == "" or cls.safe_email(email):
+                    email = email if email != "" else None
 
-        return None
+                    le_util.make_or_verify_dir(
+                        config.account_keys_dir, 0o700, os.geteuid())
+                    key = crypto_util.init_save_key(
+                        config.rsa_key_size, config.account_keys_dir, email)
+                    return cls(config, key, email)
+            else:
+                return None
 
     @classmethod
     def safe_email(cls, email):

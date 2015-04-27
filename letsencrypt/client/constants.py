@@ -61,6 +61,12 @@ CERT_KEY_BACKUP_DIR = "keys-certs"
 """Directory where all certificates and keys are stored (relative to
 IConfig.work_dir. Used for easy revocation."""
 
+ACCOUNTS_DIR = "accounts"
+"""Directory where all accounts are saved."""
+
+ACCOUNT_KEYS_DIR = "keys"
+"""Directory where account keys are saved. Relative to ACCOUNTS_DIR."""
+
 REC_TOKEN_DIR = "recovery_tokens"
 """Directory where all recovery tokens are saved (relative to
 IConfig.work_dir)."""

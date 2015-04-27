@@ -89,6 +89,8 @@ class Network(object):
 
                 try:
                     # TODO: This is insufficient or doesn't work as intended.
+                    logging.error("Error: %s", jobj)
+                    logging.error("Response from server: %s", response.content)
                     raise messages2.Error.from_json(jobj)
                 except jose.DeserializationError as error:
                     # Couldn't deserialize JSON object
@@ -536,8 +538,14 @@ class Network(object):
     def revoke(self, certr, when=messages2.Revocation.NOW):
         """Revoke certificate.
 
+        :param certr: Certificate Resource
+        :type certr: `.CertificateResource`
+
         :param when: When should the revocation take place? Takes
            the same values as `.messages2.Revocation.revoke`.
+
+        :raises letsencrypt.client.errors.NetworkError: If revocation is
+            unsuccessful.
 
         """
         rev = messages2.Revocation(revoke=when, authorizations=tuple(

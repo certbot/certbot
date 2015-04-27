@@ -162,7 +162,11 @@ def main():  # pylint: disable=too-many-branches, too-many-statements
         sys.exit()
 
     if args.revoke or args.rev_cert is not None or args.rev_key is not None:
-        client.revoke(config, args.no_confirm, args.rev_cert, args.rev_key)
+        # This depends on the renewal config and cannot be completed yet.
+        zope.component.getUtility(interfaces.IDisplay).notification(
+            "Revocation is not available with the new Boulder server yet.")
+
+        # client.revoke(config, args.no_confirm, args.rev_cert, args.rev_key)
         sys.exit()
 
     if args.rollback > 0:
@@ -206,6 +210,9 @@ def main():  # pylint: disable=too-many-branches, too-many-statements
         # TODO: Figure out what to do with this
         # le_util.Key(args.authkey[0], args.authkey[1])
         account = client.determine_account(config)
+
+    if account is None:
+        sys.exit(0)
 
     acme = client.Client(config, account, auth, installer)
 
