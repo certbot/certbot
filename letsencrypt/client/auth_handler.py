@@ -10,7 +10,7 @@ from letsencrypt.client import achallenges
 from letsencrypt.client import constants
 from letsencrypt.client import errors
 
-# pylint: disable=too-many-instance-attributes, too-few-public-methods
+
 class AuthHandler(object):
     """ACME Authorization Handler for a client.
 
