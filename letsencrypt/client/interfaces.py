@@ -107,6 +107,10 @@ class IConfig(zope.interface.Interface):
     cert_key_backup = zope.interface.Attribute(
         "Directory where all certificates and keys are stored. "
         "Used for easy revocation.")
+    accounts_dir = zope.interface.Attribute(
+        "Directory where all account information is stored.")
+    account_keys_dir = zope.interface.Attribute(
+        "Directory where all account keys are stored".)
     rec_token_dir = zope.interface.Attribute(
         "Directory where all recovery tokens are saved.")
     key_dir = zope.interface.Attribute("Keys storage.")
