@@ -95,6 +95,10 @@ class Client(object):
 
         :meth:`.register` must be called before :meth:`.obtain_certificate`
 
+        .. todo:: This function currently uses the account key for the cert.
+            This should be changed to an independent key once renewal is sorted
+            out.
+
         :param set domains: domains to get a certificate
 
         :param csr: CSR must contain requested domains, the key used to generate
