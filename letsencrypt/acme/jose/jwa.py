@@ -18,7 +18,10 @@ from letsencrypt.acme.jose import interfaces
 from letsencrypt.acme.jose import jwk
 
 
-class JWA(interfaces.JSONDeSerializable):  # pylint: disable=abstract-method,too-few-public-methods
+class JWA(interfaces.JSONDeSerializable): # pylint: disable=abstract-method
+    # pylint: disable=too-few-public-methods
+    # for some reason disable=abstract-method has to be on the line
+    # above...
     """JSON Web Algorithm."""
 
 
