@@ -9,10 +9,10 @@ from letsencrypt.acme.jose import errors
 from letsencrypt.acme.jose import util
 
 
-RSA256_KEY = RSA.importKey(pkg_resources.resource_string(
-    'letsencrypt.client.tests', os.path.join('testdata', 'rsa256_key.pem')))
-RSA512_KEY = RSA.importKey(pkg_resources.resource_string(
-    'letsencrypt.client.tests', os.path.join('testdata', 'rsa512_key.pem')))
+RSA256_KEY = util.HashableRSAKey(RSA.importKey(pkg_resources.resource_string(
+    __name__, os.path.join('testdata', 'rsa256_key.pem'))))
+RSA512_KEY = util.HashableRSAKey(RSA.importKey(pkg_resources.resource_string(
+    __name__, os.path.join('testdata', 'rsa512_key.pem'))))
 
 
 class JWKOctTest(unittest.TestCase):
@@ -47,20 +47,19 @@ class JWKRSATest(unittest.TestCase):
 
     def setUp(self):
         from letsencrypt.acme.jose.jwk import JWKRSA
-        self.jwk256 = JWKRSA(key=util.HashableRSAKey(RSA256_KEY.publickey()))
-        self.jwk256_private = JWKRSA(key=util.HashableRSAKey(RSA256_KEY))
+        self.jwk256 = JWKRSA(key=RSA256_KEY.publickey())
+        self.jwk256_private = JWKRSA(key=RSA256_KEY)
         self.jwk256json = {
+            'kty': 'RSA',
+            'e': 'AQAB',
+            'n': 'm2Fylv-Uz7trgTW8EBHP3FQSMeZs2GNQ6VRo1sIVJEk',
+        }
+        self.jwk512 = JWKRSA(key=RSA512_KEY.publickey())
+        self.jwk512json = {
             'kty': 'RSA',
             'e': 'AQAB',
             'n': 'rHVztFHtH92ucFJD_N_HW9AsdRsUuHUBBBDlHwNlRd3fp5'
                  '80rv2-6QWE30cWgdmJS86ObRz6lUTor4R0T-3C5Q',
-        }
-        self.jwk512 = JWKRSA(key=util.HashableRSAKey(RSA512_KEY.publickey()))
-        self.jwk512json = {
-            'kty': 'RSA',
-            'e': 'AQAB',
-            'n': '9LYRcVE3Nr-qleecEcX8JwVDnjeG1X7ucsCasuuZM0e09c'
-                 'mYuUzxIkMjO_9x4AVcvXXRXPEV-LzWWkfkTlzRMw',
         }
 
     def test_equals(self):
@@ -76,8 +75,7 @@ class JWKRSATest(unittest.TestCase):
         self.assertEqual(
             JWKRSA(key=util.HashableRSAKey(RSA256_KEY)), JWKRSA.load(
                 pkg_resources.resource_string(
-                    'letsencrypt.client.tests',
-                    os.path.join('testdata', 'rsa256_key.pem'))))
+                    __name__, os.path.join('testdata', 'rsa256_key.pem'))))
 
     def test_public(self):
         self.assertEqual(self.jwk256, self.jwk256_private.public())

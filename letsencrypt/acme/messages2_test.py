@@ -12,6 +12,10 @@ from letsencrypt.acme import challenges
 from letsencrypt.acme import jose
 
 
+KEY = jose.util.HashableRSAKey(RSA.importKey(pkg_resources.resource_string(
+    'letsencrypt.acme.jose', os.path.join('testdata', 'rsa512_key.pem'))))
+
+
 class ErrorTest(unittest.TestCase):
     """Tests for letsencrypt.acme.messages2.Error."""
 
@@ -80,10 +84,7 @@ class RegistrationTest(unittest.TestCase):
     """Tests for letsencrypt.acme.messages2.Registration."""
 
     def setUp(self):
-        key = jose.jwk.JWKRSA(key=jose.util.HashableRSAKey(
-            RSA.importKey(pkg_resources.resource_string(
-                'letsencrypt.client.tests', os.path.join(
-                    'testdata', 'rsa256_key.pem'))).publickey()))
+        key = jose.jwk.JWKRSA(key=KEY.publickey())
         contact = ('mailto:letsencrypt-client@letsencrypt.org',)
         recovery_token = 'XYZ'
         agreement = 'https://letsencrypt.org/terms'

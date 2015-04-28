@@ -6,8 +6,10 @@ import unittest
 import M2Crypto
 
 
-RSA256_KEY = pkg_resources.resource_string(__name__, 'testdata/rsa256_key.pem')
-RSA512_KEY = pkg_resources.resource_string(__name__, 'testdata/rsa512_key.pem')
+RSA256_KEY = pkg_resources.resource_string(
+    'letsencrypt.acme.jose', os.path.join('testdata', 'rsa256_key.pem'))
+RSA512_KEY = pkg_resources.resource_string(
+    'letsencrypt.acme.jose', os.path.join('testdata', 'rsa512_key.pem'))
 
 
 class ValidCSRTest(unittest.TestCase):
@@ -51,10 +53,10 @@ class CSRMatchesPubkeyTest(unittest.TestCase):
             __name__, os.path.join('testdata', name)), privkey)
 
     def test_valid_true(self):
-        self.assertTrue(self._call_testdata('csr.pem', RSA256_KEY))
+        self.assertTrue(self._call_testdata('csr.pem', RSA512_KEY))
 
     def test_invalid_false(self):
-        self.assertFalse(self._call_testdata('csr.pem', RSA512_KEY))
+        self.assertFalse(self._call_testdata('csr.pem', RSA256_KEY))
 
 
 class MakeKeyTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
@@ -90,7 +92,7 @@ class MakeSSCertTest(unittest.TestCase):
 
     def test_it(self):  # pylint: disable=no-self-use
         from letsencrypt.client.crypto_util import make_ss_cert
-        make_ss_cert(RSA256_KEY, ['example.com', 'www.example.com'])
+        make_ss_cert(RSA512_KEY, ['example.com', 'www.example.com'])
 
 
 if __name__ == '__main__':
