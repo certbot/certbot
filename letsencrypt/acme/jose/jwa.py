@@ -92,11 +92,11 @@ class _JWARS(JWASignature):
     def sign(self, key, msg):
         try:
             return self.padding.new(key).sign(self.digestmod.new(msg))
-        except TypeError as error:  # key has no private part
-            raise errors.Error(error)
-        except (AttributeError, ValueError) as error:
-            # key is too small: ValueError for PS, AttributeError for RS
-            raise errors.Error(error)
+        except TypeError:
+            raise errors.Error('Key has no private part necessary for signing')
+        except (AttributeError, ValueError):
+            # ValueError for PS, AttributeError for RS
+            raise errors.Error('Key too small ({0})'.format(key.size()))
 
     def verify(self, key, msg, sig):
         return self.padding.new(key).verify(self.digestmod.new(msg), sig)
