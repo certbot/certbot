@@ -4,14 +4,6 @@ import pkg_resources
 from letsencrypt.acme import challenges
 
 
-S_SIZE = 32
-"""Size (in bytes) of secret base64-encoded octet string "s" used in
-challenges."""
-
-NONCE_SIZE = 16
-"""Size of nonce used in JWS objects (in bytes)."""
-
-
 EXCLUSIVE_CHALLENGES = frozenset([frozenset([
     challenges.DVSNI, challenges.SimpleHTTPS])])
 """Mutually exclusive challenges."""
@@ -44,10 +36,6 @@ NGINX_MOD_SSL_CONF = pkg_resources.resource_filename(
     "letsencrypt.client.plugins.nginx", "options-ssl.conf")
 """Path to the Nginx mod_ssl config file found in the Let's Encrypt
 distribution."""
-
-
-DVSNI_CHALLENGE_PORT = 443
-"""Port to perform DVSNI challenge."""
 
 
 TEMP_CHECKPOINT_DIR = "temp_checkpoint"
