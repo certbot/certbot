@@ -399,10 +399,11 @@ class NginxConfigurator(object):
 
         nginx_version = tuple([int(i) for i in version_matches[0].split(".")])
 
-        # nginx < 0.8.21 doesn't use default_server
-        if nginx_version < (0, 8, 21):
+        # nginx < 0.8.48 uses machine hostname as default server_name instead of
+        # the empty string
+        if nginx_version < (0, 8, 48):
             raise errors.LetsEncryptConfiguratorError(
-                "Nginx version must be 0.8.21+")
+                "Nginx version must be 0.8.48+")
 
         return nginx_version
 
