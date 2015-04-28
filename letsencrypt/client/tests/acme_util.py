@@ -75,7 +75,7 @@ def chall_to_challb(chall, status):  # pylint: disable=redefined-outer-name
     """Return ChallengeBody from Challenge."""
     kwargs = {
         "chall": chall,
-        "uri": chall.typ+"_uri",
+        "uri": chall.typ + "_uri",
         "status": status,
     }
 
@@ -129,7 +129,7 @@ def gen_authzr(authz_status, domain, challs, statuses, combos=True):
         now = datetime.datetime.now()
         authz_kwargs.update({
             "status": authz_status,
-            "expires": datetime.datetime(now.year, now.month+1, now.day),
+            "expires": datetime.datetime(now.year, now.month + 1, now.day),
         })
     else:
         authz_kwargs.update({

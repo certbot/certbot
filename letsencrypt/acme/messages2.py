@@ -164,8 +164,8 @@ class ChallengeBody(ResourceBody):
 
     .. todo::
        Confusingly, this has a similar name to `.challenges.Challenge`,
-       as well as `.achallenges.AnnotateChallenge`. Please use names
-       such as ``challb`` to distinguish instanced of this class from
+       as well as `.achallenges.AnnotatedChallenge`. Please use names
+       such as ``challb`` to distinguish instances of this class from
        ``achall``.
 
     :ivar letsencrypt.acme.challenges.Challenge: Wrapped challenge.

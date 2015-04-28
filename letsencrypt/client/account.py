@@ -55,6 +55,8 @@ class Account(object):
         """URI link for new registrations."""
         if self.regr is not None:
             return self.regr.uri
+        else:
+            return None
 
     @property
     def new_authzr_uri(self):  # pylint: disable=missing-docstring
@@ -65,16 +67,22 @@ class Account(object):
                 # Default: spec says they "may" provide the header
                 # ugh.. acme-spec #93
                 return "https://%s/acme/new-authz" % self.config.server
+        else:
+            return None
 
     @property
     def terms_of_service(self):  # pylint: disable=missing-docstring
         if self.regr is not None:
             return self.regr.terms_of_service
+        else:
+            return None
 
     @property
     def recovery_token(self):  # pylint: disable=missing-docstring
         if self.regr is not None and self.regr.body is not None:
             return self.regr.body.recovery_token
+        else:
+            return None
 
     def save(self):
         """Save account to disk."""
@@ -112,7 +120,6 @@ class Account(object):
     @classmethod
     def from_existing_account(cls, config, email=None):
         """Populate an account from an existing email."""
-
         config_fp = os.path.join(
             config.accounts_dir, cls._get_config_filename(email))
         return cls._from_config_fp(config, config_fp)

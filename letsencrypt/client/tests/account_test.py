@@ -169,7 +169,7 @@ class SafeEmailTest(unittest.TestCase):
         addrs = [
             "letsencrypt@letsencrypt.org",
             "tbd.ade@gmail.com",
-            "abc_def.jdk@hotmail.museum"
+            "abc_def.jdk@hotmail.museum",
         ]
         for addr in addrs:
             self.assertTrue(self._call(addr), "%s failed." % addr)

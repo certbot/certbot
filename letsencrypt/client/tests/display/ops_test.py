@@ -7,9 +7,9 @@ import unittest
 import mock
 import zope.component
 
+from letsencrypt.client import account
 from letsencrypt.client import le_util
 from letsencrypt.client.display import util as display_util
-
 
 class ChooseAuthenticatorTest(unittest.TestCase):
     """Test choose_authenticator function."""
@@ -59,7 +59,6 @@ class ChooseAuthenticatorTest(unittest.TestCase):
 class ChooseAccountTest(unittest.TestCase):
     """Test choose_account."""
     def setUp(self):
-        from letsencrypt.client import account
         zope.component.provideUtility(display_util.FileDisplay(sys.stdout))
 
         self.accounts_dir = tempfile.mkdtemp("accounts")
