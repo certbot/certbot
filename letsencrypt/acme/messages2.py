@@ -18,7 +18,7 @@ class Error(jose.JSONObjectWithFields, Exception):
         'badCSR': 'The CSR is unacceptable (e.g., due to a short key)',
     }
 
-    # TODO: Boulder omits 'type' and 'instance', spec requires
+    # TODO: Boulder omits 'type' and 'instance', spec requires, boulder#128
     typ = jose.Field('type', omitempty=True)
     title = jose.Field('title', omitempty=True)
     detail = jose.Field('detail')
