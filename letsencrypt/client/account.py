@@ -35,7 +35,7 @@ class Account(object):
     # Just make sure we don't get pwned
     # Make sure that it also doesn't start with a period or have two consecutive
     # periods <- this needs to be done in addition to the regex
-    EMAIL_REGEX = "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+$"
+    EMAIL_REGEX = re.compile("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+$")
 
     def __init__(self, config, key, email=None, phone=None, regr=None):
         le_util.make_or_verify_dir(
@@ -192,13 +192,14 @@ class Account(object):
                 "Enter email address (optional, press Enter to skip)")
 
             if code == display_util.OK:
-                if email == "" or cls.safe_email(email):
-                    email = email if email != "" else None
+                if not email or cls.safe_email(email):
+                    email = email if email else None
 
                     le_util.make_or_verify_dir(
                         config.account_keys_dir, 0o700, os.geteuid())
                     key = crypto_util.init_save_key(
-                        config.rsa_key_size, config.account_keys_dir, email)
+                        config.rsa_key_size, config.account_keys_dir,
+                        cls._get_config_filename(email))
                     return cls(config, key, email)
             else:
                 return None
@@ -206,7 +207,8 @@ class Account(object):
     @classmethod
     def safe_email(cls, email):
         """Scrub email address before using it."""
-        if re.match(cls.EMAIL_REGEX, email):
-            return bool(not email.startswith(".") and ".." not in email)
-        logging.warn("Invalid email address.")
-        return False
+        if cls.EMAIL_REGEX.match(email):
+            return not email.startswith(".") and ".." not in email
+        else:
+            logging.warn("Invalid email address.")
+            return False

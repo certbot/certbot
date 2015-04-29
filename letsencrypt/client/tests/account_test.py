@@ -64,13 +64,25 @@ class AccountTest(unittest.TestCase):
         zope.component.provideUtility(displayer)
 
         mock_util().input.return_value = (display_util.OK, self.email)
-
         mock_key.return_value = self.key
-        acc = account.Account.from_prompts(self.config)
 
+        acc = account.Account.from_prompts(self.config)
         self.assertEqual(acc.email, self.email)
         self.assertEqual(acc.key, self.key)
         self.assertEqual(acc.config, self.config)
+
+    @mock.patch("letsencrypt.client.account.zope.component.getUtility")
+    @mock.patch("letsencrypt.client.account.crypto_util.init_save_key")
+    def test_prompts_empty_email(self, mock_key, mock_util):
+        displayer = display_util.FileDisplay(sys.stdout)
+        zope.component.provideUtility(displayer)
+
+        mock_util().input.return_value = (display_util.OK, "")
+        acc = account.Account.from_prompts(self.config)
+        self.assertTrue(acc.email is None)
+        # _get_config_filename | pylint: disable=protected-access
+        mock_key.assert_called_once_with(
+            mock.ANY, mock.ANY, acc._get_config_filename(None))
 
     @mock.patch("letsencrypt.client.account.zope.component.getUtility")
     def test_prompts_cancel(self, mock_util):
