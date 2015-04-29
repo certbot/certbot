@@ -320,7 +320,7 @@ class Network(object):
         except KeyError:
             # TODO: Right now Boulder responds with the authorization resource
             # instead of a challenge resource... this can be uncommented
-            # once the error is fixed.
+            # once the error is fixed (boulder#130).
             return None
             # raise errors.NetworkError('"up" Link header missing')
         challr = messages2.ChallengeResource(
