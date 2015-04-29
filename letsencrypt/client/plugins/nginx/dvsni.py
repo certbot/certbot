@@ -1,7 +1,11 @@
 """NginxDVSNI"""
 import logging
+import os
 
+from letsencrypt.client import errors
 from letsencrypt.client.plugins.apache.dvsni import ApacheDvsni
+from letsencrypt.client.plugins.nginx import obj
+from letsencrypt.client.plugins.nginx.nginxparser import dump
 
 
 class NginxDvsni(ApacheDvsni):
@@ -29,35 +33,110 @@ class NginxDvsni(ApacheDvsni):
     """
 
     def perform(self):
-        """Perform a DVSNI challenge on Nginx."""
+        """Perform a DVSNI challenge on Nginx.
+
+        :returns: list of :class:`letsencrypt.acme.challenges.DVSNIResponse`
+        :rtype: list
+
+        """
         if not self.achalls:
             return []
 
         self.configurator.save()
 
         addresses = []
+        default_addr = "443 default_server ssl"
+
         for achall in self.achalls:
             vhost = self.configurator.choose_vhost(achall.domain)
             if vhost is None:
                 logging.error(
-                    "No nginx vhost exists with servername or alias of: %s",
+                    "No nginx vhost exists with server_name or alias of: %s",
                     achall.domain)
                 logging.error("No default 443 nginx vhost exists")
-                logging.error("Please specify servernames in the Nginx config")
+                logging.error("Please specify server_names in the Nginx config")
                 return None
+
+            for addr in vhost.addrs:
+                if addr.default:
+                    addresses.append([obj.Addr.fromstring(default_addr)])
+                    break
             else:
                 addresses.append(list(vhost.addrs))
 
-        responses = []
+        # Create challenge certs
+        responses = [self._setup_challenge_cert(x) for x in self.achalls]
 
-        # Create all of the challenge certs
-        # for achall in self.achalls:
-        #     responses.append(self._setup_challenge_cert(achall))
-
-        # Setup the configuration
-        # self._mod_config(addresses)
+        # Set up the configuration
+        self._mod_config(addresses)
 
         # Save reversible changes
         self.configurator.save("SNI Challenge", True)
 
         return responses
+
+    def _mod_config(self, ll_addrs):
+        """Modifies Nginx config to include challenge server blocks.
+
+        :param list ll_addrs: list of lists of
+            :class:`letsencrypt.client.plugins.apache.obj.Addr` to apply
+
+        :raises errors.LetsEncryptMisconfigurationError:
+            Unable to find a suitable HTTP block to include DVSNI hosts.
+
+        """
+        # Add the 'include' statement for the challenges if it doesn't exist
+        # already in the main config
+        included = False
+        directive = ['include', self.challenge_conf]
+        root = self.configurator.parser.loc["root"]
+        main = self.configurator.parser.parsed[root]
+        for entry in main:
+            if entry[0] == ['http']:
+                body = entry[1]
+                if directive not in body:
+                    body.append(directive)
+                included = True
+                break
+        if not included:
+            raise errors.LetsEncryptMisconfigurationError(
+                'LetsEncrypt could not find an HTTP block to include DVSNI '
+                'challenges in %s.' % root)
+
+        config = []
+        for idx, addrs in enumerate(ll_addrs):
+            config.append(self._make_server_block(self.achalls[idx], addrs))
+
+        self.configurator.reverter.register_file_creation(
+            True, self.challenge_conf)
+
+        with open(self.challenge_conf, "w") as new_conf:
+            dump(config, new_conf)
+
+    def _make_server_block(self, achall, addrs):
+        """Creates a server block for a DVSNI challenge.
+
+        :param achall: Annotated DVSNI challenge.
+        :type achall: :class:`letsencrypt.client.achallenges.DVSNI`
+
+        :param list addrs: addresses of challenged domain
+            :class:`list` of type :class:`~nginx.obj.Addr`
+
+        :returns: server block for the challenge host
+        :rtype: list
+
+        """
+        block = []
+        for addr in addrs:
+            block.append(['listen', str(addr)])
+
+        block.append(['server_name', achall.nonce_domain])
+        block.append(['include', self.configurator.parser.loc["ssl_options"]])
+        block.append(['ssl_certificate', self.get_cert_file(achall)])
+        block.append(['ssl_certificate_key', achall.key.file])
+
+        document_root = os.path.join(
+            self.configurator.config.config_dir, "dvsni_page")
+        block.append([['location', '/'], [['root', document_root]]])
+
+        return [['server'], block]

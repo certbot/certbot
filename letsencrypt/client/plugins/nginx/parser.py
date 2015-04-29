@@ -33,6 +33,7 @@ class NginxParser(object):
         """Loads Nginx files into a parsed tree.
 
         """
+        self.parsed = {}
         self._parse_recursively(self.loc["root"])
 
     def _parse_recursively(self, filepath):
@@ -252,8 +253,9 @@ class NginxParser(object):
 
     def add_server_directives(self, filename, names, directives,
                               replace=False):
-        """Add or replace directives in server blocks whose server_name set
-        is 'names'. If replace is True, this raises a misconfiguration error
+        """Add or replace directives in server blocks identified by server_name.
+
+        ..note :: If replace is True, this raises a misconfiguration error
         if the directive does not already exist.
 
         ..todo :: Doesn't match server blocks whose server_name directives are

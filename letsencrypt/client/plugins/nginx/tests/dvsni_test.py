@@ -6,12 +6,15 @@ import shutil
 import mock
 
 from letsencrypt.acme import challenges
-from letsencrypt.acme import messages2
 
 from letsencrypt.client import achallenges
+from letsencrypt.client import errors
 from letsencrypt.client import le_util
 
+from letsencrypt.client.plugins.nginx.obj import Addr
 from letsencrypt.client.plugins.nginx.tests import util
+
+from letsencrypt.client.tests import acme_util
 
 
 class DvsniPerformTest(util.NginxTest):
@@ -36,25 +39,29 @@ class DvsniPerformTest(util.NginxTest):
 
         self.achalls = [
             achallenges.DVSNI(
-                challb=messages2.ChallengeBody(
-                    chall=challenges.DVSNI(
+                challb=acme_util.chall_to_challb(
+                    challenges.DVSNI(
                         r="foo",
-                        nonce="bar",
-                    ),
-                    uri="https://letsencrypt-ca.org/chall0_uri",
-                    status=messages2.Status("pending"),
-                ), domain="www.example.com", key=auth_key),
+                        nonce="bar"
+                    ), "pending"),
+                domain="www.example.com", key=auth_key),
             achallenges.DVSNI(
-                challb=messages2.ChallengeBody(
-                    chall=challenges.DVSNI(
+                challb=acme_util.chall_to_challb(
+                    challenges.DVSNI(
                         r="\xba\xa9\xda?<m\xaewmx\xea\xad\xadv\xf4\x02\xc9y\x80"
                           "\xe2_X\t\xe7\xc7\xa4\t\xca\xf7&\x945",
                         nonce="Y\xed\x01L\xac\x95\xf7pW\xb1\xd7"
-                              "\xa1\xb2\xc5\x96\xba",
-                    ),
-                    uri="https://letsencrypt-ca.org/chall1_uri",
-                    status=messages2.Status("pending"),
-                ), domain="blah", key=auth_key),
+                              "\xa1\xb2\xc5\x96\xba"
+                    ), "pending"),
+                domain="blah", key=auth_key),
+            achallenges.DVSNI(
+                challb=acme_util.chall_to_challb(
+                    challenges.DVSNI(
+                        r="\x8c\x8a\xbf_-f\\cw\xee\xd6\xf8/\xa5\xe3\xfd\xeb9"
+                          "\xf1\xf5\xb9\xefVM\xc9w\xa4u\x9c\xe1\x87\xb4",
+                        nonce="7\xbc^\xb7]>\x00\xa1\x9bOcU\x84^Z\x18"
+                    ), "pending"),
+                domain="www.example.org", key=auth_key)
         ]
 
     def tearDown(self):
@@ -69,26 +76,105 @@ class DvsniPerformTest(util.NginxTest):
 
     @mock.patch("letsencrypt.client.plugins.nginx.configurator."
                 "NginxConfigurator.save")
-    def test_perform0(self, mock_save):
-        self.sni.add_chall(self.achalls[0])
-        responses = self.sni.perform()
-        self.assertEqual([], responses)
-        self.assertEqual(mock_save.call_count, 2)
-
-    def test_setup_challenge_cert(self):
-        # This is a helper function that can be used for handling
-        # open context managers more elegantly. It avoids dealing with
-        # __enter__ and __exit__ calls.
-        # http://www.voidspace.org.uk/python/mock/helpers.html#mock.mock_open
-        pass
-
-    @mock.patch("letsencrypt.client.plugins.nginx.configurator."
-                "NginxConfigurator.save")
-    def test_perform1(self, mock_save):
+    def test_perform(self, mock_save):
         self.sni.add_chall(self.achalls[1])
         responses = self.sni.perform()
         self.assertEqual(None, responses)
         self.assertEqual(mock_save.call_count, 1)
+
+    def test_perform0(self):
+        responses = self.sni.perform()
+        self.assertEqual([], responses)
+
+    @mock.patch("letsencrypt.client.plugins.nginx.configurator."
+                "NginxConfigurator.save")
+    def test_perform1(self, mock_save):
+        self.sni.add_chall(self.achalls[0])
+        mock_setup_cert = mock.MagicMock(
+            return_value=challenges.DVSNIResponse(s="nginxS1"))
+
+        # pylint: disable=protected-access
+        self.sni._setup_challenge_cert = mock_setup_cert
+
+        responses = self.sni.perform()
+
+        mock_setup_cert.assert_called_once_with(self.achalls[0])
+        self.assertEqual([challenges.DVSNIResponse(s="nginxS1")], responses)
+        self.assertEqual(mock_save.call_count, 2)
+
+        # Make sure challenge config is included in main config
+        http = self.sni.configurator.parser.parsed[
+            self.sni.configurator.parser.loc["root"]][-1]
+        self.assertTrue(['include', self.sni.challenge_conf] in http[1])
+
+    def test_perform2(self):
+        self.sni.add_chall(self.achalls[0])
+        self.sni.add_chall(self.achalls[2])
+
+        mock_setup_cert = mock.MagicMock(side_effect=[
+            challenges.DVSNIResponse(s="nginxS0"),
+            challenges.DVSNIResponse(s="nginxS1")])
+        # pylint: disable=protected-access
+        self.sni._setup_challenge_cert = mock_setup_cert
+
+        responses = self.sni.perform()
+
+        self.assertEqual(mock_setup_cert.call_count, 2)
+
+        self.assertEqual(
+            mock_setup_cert.call_args_list[0], mock.call(self.achalls[0]))
+        self.assertEqual(
+            mock_setup_cert.call_args_list[1], mock.call(self.achalls[2]))
+
+        http = self.sni.configurator.parser.parsed[
+            self.sni.configurator.parser.loc["root"]][-1]
+        self.assertTrue(['include', self.sni.challenge_conf] in http[1])
+
+        self.assertEqual(len(responses), 2)
+        for i in xrange(2):
+            self.assertEqual(responses[i].s, "nginxS%d" % i)
+
+    def test_mod_config(self):
+        self.sni.add_chall(self.achalls[0])
+        self.sni.add_chall(self.achalls[2])
+
+        v_addr1 = [Addr("69.50.225.155", "9000", True, False),
+                   Addr("127.0.0.1", "", False, False)]
+        v_addr2 = [Addr("myhost", "", False, True)]
+        ll_addr = [v_addr1, v_addr2]
+        self.sni._mod_config(ll_addr)  # pylint: disable=protected-access
+
+        self.sni.configurator.save()
+
+        self.sni.configurator.parser.load()
+
+        http = self.sni.configurator.parser.parsed[
+            self.sni.configurator.parser.loc["root"]][-1]
+        self.assertTrue(['include', self.sni.challenge_conf] in http[1])
+
+        vhosts = self.sni.configurator.parser.get_vhosts()
+        vhs = []
+        for vhost in vhosts:
+            if vhost.filep == self.sni.challenge_conf:
+                vhs.append(vhost)
+
+        for vhost in vhs:
+            if vhost.addrs == set(v_addr1):
+                self.assertEqual(
+                    vhost.names, set([self.achalls[0].nonce_domain]))
+            else:
+                self.assertEqual(vhost.addrs, set(v_addr2))
+                self.assertEqual(
+                    vhost.names, set([self.achalls[2].nonce_domain]))
+
+        self.assertEqual(len(vhs), 2)
+
+    def test_mod_config_fail(self):
+        root = self.sni.configurator.parser.loc["root"]
+        self.sni.configurator.parser.parsed[root] = [['include', 'foo.conf']]
+        # pylint: disable=protected-access
+        self.assertRaises(errors.LetsEncryptMisconfigurationError,
+                          self.sni._mod_config, [])
 
 if __name__ == "__main__":
     unittest.main()
