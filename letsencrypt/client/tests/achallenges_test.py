@@ -19,7 +19,8 @@ class DVSNITest(unittest.TestCase):
             challenges.DVSNI(r="r_value", nonce="12345ABCDE"), "pending")
         self.response = challenges.DVSNIResponse()
         key = le_util.Key("path", pkg_resources.resource_string(
-            __name__, os.path.join("testdata", "rsa256_key.pem")))
+            "letsencrypt.acme.jose",
+            os.path.join("testdata", "rsa512_key.pem")))
 
         from letsencrypt.client.achallenges import DVSNI
         self.achall = DVSNI(challb=self.chall, domain="example.com", key=key)

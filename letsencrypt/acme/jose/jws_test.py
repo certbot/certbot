@@ -136,8 +136,8 @@ class JWSTest(unittest.TestCase):
     def test_compact_lost_unprotected(self):
         compact = self.mixed.to_compact()
         self.assertEqual(
-            'eyJhbGciOiAiUlMyNTYifQ.Zm9v.KBvYScRMEqJlp2xsReoY3CNDpVCWEU'
-            '1PyRrf44nPBsmyQz__iuNR56pPNcACeHzJQnXhTVTxqFgjge2i_vw9NA',
+            'eyJhbGciOiAiUlMyNTYifQ.Zm9v.OHdxFVj73l5LpxbFp1AmYX4yJM0Pyb'
+            '_893n1zQjpim_eLS5J1F61lkvrCrCDErTEJnBGOGesJ72M7b6Ve1cAJA',
             compact)
 
         from letsencrypt.acme.jose.jws import JWS

@@ -19,17 +19,17 @@ from letsencrypt.client import errors
 
 CERT = jose.ComparableX509(M2Crypto.X509.load_cert_string(
     pkg_resources.resource_string(
-        __name__, os.path.join('testdata/cert.pem'))))
+        __name__, os.path.join('testdata', 'cert.pem'))))
 CERT2 = jose.ComparableX509(M2Crypto.X509.load_cert_string(
     pkg_resources.resource_string(
-        __name__, os.path.join('testdata/cert-san.pem'))))
+        __name__, os.path.join('testdata', 'cert-san.pem'))))
 CSR = jose.ComparableX509(M2Crypto.X509.load_request_string(
     pkg_resources.resource_string(
-        __name__, os.path.join('testdata/csr.pem'))))
+        __name__, os.path.join('testdata', 'csr.pem'))))
 KEY = jose.JWKRSA.load(pkg_resources.resource_string(
-    __name__, os.path.join('testdata/rsa512_key.pem')))
+    'letsencrypt.acme.jose', os.path.join('testdata', 'rsa512_key.pem')))
 KEY2 = jose.JWKRSA.load(pkg_resources.resource_string(
-    __name__, os.path.join('testdata/rsa256_key.pem')))
+    'letsencrypt.acme.jose', os.path.join('testdata', 'rsa256_key.pem')))
 
 
 class NetworkTest(unittest.TestCase):

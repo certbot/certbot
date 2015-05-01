@@ -18,6 +18,12 @@ from letsencrypt.client import le_util
 from letsencrypt.client.tests import acme_util
 
 
+KEY = le_util.Key("foo", pkg_resources.resource_string(
+    "letsencrypt.acme.jose", os.path.join("testdata", "rsa512_key.pem")))
+PRIVATE_KEY = OpenSSL.crypto.load_privatekey(
+    OpenSSL.crypto.FILETYPE_PEM, KEY.pem)
+
+
 # Classes based on to allow interrupting infinite loop under test
 # after one iteration, based on.
 # http://igorsobreira.com/2013/03/17/testing-infinite-loops.html
@@ -66,15 +72,10 @@ class SNICallbackTest(unittest.TestCase):
         from letsencrypt.client.plugins.standalone.authenticator import \
             StandaloneAuthenticator
         self.authenticator = StandaloneAuthenticator(None)
-        test_key = pkg_resources.resource_string(
-            "letsencrypt.client.tests", "testdata/rsa256_key.pem")
-        key = le_util.Key("foo", test_key)
         self.cert = achallenges.DVSNI(
             challb=acme_util.DVSNI_P,
-            domain="example.com", key=key).gen_cert_and_response()[0]
-        private_key = OpenSSL.crypto.load_privatekey(
-            OpenSSL.crypto.FILETYPE_PEM, key.pem)
-        self.authenticator.private_key = private_key
+            domain="example.com", key=KEY).gen_cert_and_response()[0]
+        self.authenticator.private_key = PRIVATE_KEY
         self.authenticator.tasks = {"abcdef.acme.invalid": self.cert}
         self.authenticator.child_pid = 12345
 
@@ -298,18 +299,14 @@ class PerformTest(unittest.TestCase):
             StandaloneAuthenticator
         self.authenticator = StandaloneAuthenticator(None)
 
-        test_key = pkg_resources.resource_string(
-            "letsencrypt.client.tests", "testdata/rsa256_key.pem")
-        self.key = le_util.Key("something", test_key)
-
         self.achall1 = achallenges.DVSNI(
             challb=acme_util.chall_to_challb(
                 challenges.DVSNI(r="whee", nonce="foo"), "pending"),
-            domain="foo.example.com", key=self.key)
+            domain="foo.example.com", key=KEY)
         self.achall2 = achallenges.DVSNI(
             challb=acme_util.chall_to_challb(
                 challenges.DVSNI(r="whee", nonce="bar"), "pending"),
-            domain="bar.example.com", key=self.key)
+            domain="bar.example.com", key=KEY)
         bad_achall = ("This", "Represents", "A Non-DVSNI", "Challenge")
         self.achalls = [self.achall1, self.achall2, bad_achall]
 
@@ -334,7 +331,7 @@ class PerformTest(unittest.TestCase):
         self.assertTrue(isinstance(result[0], challenges.ChallengeResponse))
         self.assertTrue(isinstance(result[1], challenges.ChallengeResponse))
         self.assertFalse(result[2])
-        self.authenticator.start_listener.assert_called_once_with(443, self.key)
+        self.authenticator.start_listener.assert_called_once_with(443, KEY)
 
     def test_cannot_perform(self):
         """What happens if start_listener() returns False."""
@@ -349,8 +346,7 @@ class PerformTest(unittest.TestCase):
         self.assertTrue(isinstance(result, list))
         self.assertEqual(len(result), 3)
         self.assertEqual(result, [None, None, False])
-        self.authenticator.start_listener.assert_called_once_with(
-            443, self. key)
+        self.authenticator.start_listener.assert_called_once_with(443, KEY)
 
     def test_perform_with_pending_tasks(self):
         self.authenticator.tasks = {"foononce.acme.invalid": "cert_data"}
@@ -465,17 +461,11 @@ class DoChildProcessTest(unittest.TestCase):
         from letsencrypt.client.plugins.standalone.authenticator import \
             StandaloneAuthenticator
         self.authenticator = StandaloneAuthenticator(None)
-        test_key = pkg_resources.resource_string(
-            "letsencrypt.client.tests", "testdata/rsa256_key.pem")
-        key = le_util.Key("foo", test_key)
-        self.key = key
         self.cert = achallenges.DVSNI(
             challb=acme_util.chall_to_challb(
-                challenges.DVSNI(r="x"*32, nonce="abcdef"), "pending"),
-            domain="example.com", key=key).gen_cert_and_response()[0]
-        private_key = OpenSSL.crypto.load_privatekey(
-            OpenSSL.crypto.FILETYPE_PEM, key.pem)
-        self.authenticator.private_key = private_key
+                challenges.DVSNI(r=("x" * 32), nonce="abcdef"), "pending"),
+            domain="example.com", key=KEY).gen_cert_and_response()[0]
+        self.authenticator.private_key = PRIVATE_KEY
         self.authenticator.tasks = {"abcdef.acme.invalid": self.cert}
         self.authenticator.parent_pid = 12345
 
@@ -497,8 +487,7 @@ class DoChildProcessTest(unittest.TestCase):
         # do_child_process code assumes that calling sys.exit() will
         # cause subsequent code not to be executed.)
         self.assertRaises(
-            IndentationError, self.authenticator.do_child_process, 1717,
-            self.key)
+            IndentationError, self.authenticator.do_child_process, 1717, KEY)
         mock_exit.assert_called_once_with(1)
         mock_kill.assert_called_once_with(12345, signal.SIGUSR2)
 
@@ -514,8 +503,7 @@ class DoChildProcessTest(unittest.TestCase):
         sample_socket.bind.side_effect = eaccess
         mock_socket.return_value = sample_socket
         self.assertRaises(
-            IndentationError, self.authenticator.do_child_process, 1717,
-            self.key)
+            IndentationError, self.authenticator.do_child_process, 1717, KEY)
         mock_exit.assert_called_once_with(1)
         mock_kill.assert_called_once_with(12345, signal.SIGUSR1)
 
@@ -531,7 +519,7 @@ class DoChildProcessTest(unittest.TestCase):
         sample_socket.bind.side_effect = eio
         mock_socket.return_value = sample_socket
         self.assertRaises(
-            socket.error, self.authenticator.do_child_process, 1717, self.key)
+            socket.error, self.authenticator.do_child_process, 1717, KEY)
 
     @mock.patch("letsencrypt.client.plugins.standalone.authenticator."
                 "OpenSSL.SSL.Connection")
@@ -545,8 +533,7 @@ class DoChildProcessTest(unittest.TestCase):
         mock_socket.return_value = sample_socket
         mock_connection.return_value = mock.MagicMock()
         self.assertRaises(
-            CallableExhausted, self.authenticator.do_child_process, 1717,
-            self.key)
+            CallableExhausted, self.authenticator.do_child_process, 1717, KEY)
         mock_socket.assert_called_once_with()
         sample_socket.bind.assert_called_once_with(("0.0.0.0", 1717))
         sample_socket.listen.assert_called_once_with(1)

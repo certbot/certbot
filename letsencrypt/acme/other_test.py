@@ -1,4 +1,5 @@
 """Tests for letsencrypt.acme.sig."""
+import os
 import pkg_resources
 import unittest
 
@@ -7,12 +8,9 @@ import Crypto.PublicKey.RSA
 from letsencrypt.acme import jose
 
 
-RSA256_KEY = jose.HashableRSAKey(Crypto.PublicKey.RSA.importKey(
+KEY = jose.HashableRSAKey(Crypto.PublicKey.RSA.importKey(
     pkg_resources.resource_string(
-        'letsencrypt.client.tests', 'testdata/rsa256_key.pem')))
-RSA512_KEY = jose.HashableRSAKey(
-    Crypto.PublicKey.RSA.importKey(pkg_resources.resource_string(
-        'letsencrypt.client.tests', 'testdata/rsa512_key.pem')))
+        'letsencrypt.acme.jose', os.path.join('testdata', 'rsa512_key.pem'))))
 
 
 class SignatureTest(unittest.TestCase):
@@ -28,7 +26,7 @@ class SignatureTest(unittest.TestCase):
         self.nonce = '\xec\xd6\xf2oYH\xeb\x13\xd5#q\xe0\xdd\xa2\x92\xa9'
 
         self.alg = jose.RS256
-        self.jwk = jose.JWKRSA(key=RSA256_KEY.publickey())
+        self.jwk = jose.JWKRSA(key=KEY.publickey())
 
         b64sig = ('SUPYKucUnhlTt8_sMxLiigOYdf_wlOLXPI-o7aRLTsOquVjDd6r'
                   'AX9AFJHk-bCMQPJbSzXKjG6H1IWbvxjS2Ew')
@@ -69,11 +67,11 @@ class SignatureTest(unittest.TestCase):
         return Signature.from_msg(*args, **kwargs)
 
     def test_create_from_msg(self):
-        signature = self._from_msg(self.msg, RSA256_KEY, self.nonce)
+        signature = self._from_msg(self.msg, KEY, self.nonce)
         self.assertEqual(self.signature, signature)
 
     def test_create_from_msg_random_nonce(self):
-        signature = self._from_msg(self.msg, RSA256_KEY)
+        signature = self._from_msg(self.msg, KEY)
         self.assertEqual(signature.alg, self.alg)
         self.assertEqual(signature.jwk, self.jwk)
         self.assertTrue(signature.verify(self.msg))
