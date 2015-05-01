@@ -59,7 +59,8 @@ def create_parser():
     config_help = lambda name: interfaces.IConfig[name].__doc__
 
     add("-d", "--domains", metavar="DOMAIN", nargs="+")
-    add("-s", "--server", default="www.letsencrypt-demo.org/acme/new-reg",
+    add("-s", "--server",
+        default="www.letsencrypt-demo.org/acme/new-reg",
         help=config_help("server"))
 
     # TODO: we should generate the list of choices from the set of
@@ -194,9 +195,6 @@ def main():  # pylint: disable=too-many-branches, too-many-statements
     if acc is None:
         sys.exit(0)
 
-    if not args.tos:
-        display_eula()
-
     all_auths = init_auths(config)
     logging.debug('Initialized authenticators: %s', all_auths.keys())
     try:
@@ -235,20 +233,16 @@ def main():  # pylint: disable=too-many-branches, too-many-statements
     # but this code should be safe on all environments.
     cert_file = None
     if auth is not None:
-        acme.register()
+        if acc.regr is None:
+            try:
+                acme.register()
+            except errors.LetsEncryptClientError:
+                sys.exit(0)
         cert_file, chain_file = acme.obtain_certificate(doms)
     if installer is not None and cert_file is not None:
         acme.deploy_certificate(doms, acc.key, cert_file, chain_file)
     if installer is not None:
         acme.enhance_config(doms, args.redirect)
-
-
-def display_eula():
-    """Displays the end user agreement."""
-    eula = pkg_resources.resource_string("letsencrypt", "EULA")
-    if not zope.component.getUtility(interfaces.IDisplay).yesno(
-            eula, "Agree", "Cancel"):
-        sys.exit(0)
 
 
 def read_file(filename):

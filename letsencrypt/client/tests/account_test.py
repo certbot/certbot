@@ -4,11 +4,8 @@ import mock
 import os
 import pkg_resources
 import shutil
-import sys
 import tempfile
 import unittest
-
-import zope.component
 
 from letsencrypt.acme import messages2
 

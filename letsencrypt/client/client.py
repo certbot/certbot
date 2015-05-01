@@ -1,6 +1,7 @@
 """ACME protocol client class and helper functions."""
 import logging
 import os
+import pkg_resources
 
 import M2Crypto
 import zope.component
@@ -62,8 +63,7 @@ class Client(object):
 
         # TODO: Allow for other alg types besides RS256
         self.network = network2.Network(
-            "https://%s/acme/new-reg" % config.server,
-            jwk.JWKRSA.load(self.account.key.pem))
+            "https://" + config.server, jwk.JWKRSA.load(self.account.key.pem))
 
         self.config = config
 
@@ -79,14 +79,18 @@ class Client(object):
         self.account = self.network.register_from_account(self.account)
         if self.account.terms_of_service:
             if not self.config.tos:
+                # TODO: Replace with self.account.terms_of_service
+                eula = pkg_resources.resource_string("letsencrypt", "EULA")
                 agree = zope.component.getUtility(interfaces.IDisplay).yesno(
-                    self.account.terms_of_service, "Agree", "Cancel")
+                    eula, "Agree", "Cancel")
             else:
                 agree = True
 
             if agree:
                 self.account.regr = self.network.agree_to_tos(self.account.regr)
-                # TODO: Handle case where user doesn't agree
+            else:
+                # What is the proper response here...
+                raise errors.LetsEncryptClientError("Must agree to TOS")
 
         self.account.save()
 
