@@ -6,9 +6,11 @@ import time
 
 import zope.component
 
+from letsencrypt.client import constants
 from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
+
 from letsencrypt.client.display import util as display_util
 
 
@@ -164,7 +166,8 @@ class Reverter(object):
             unable to add checkpoint
 
         """
-        le_util.make_or_verify_dir(cp_dir, 0o755, os.geteuid())
+        le_util.make_or_verify_dir(
+            cp_dir, constants.CONFIG_DIRS_MODE, os.geteuid())
 
         op_fd, existing_filepaths = self._read_and_append(
             os.path.join(cp_dir, "FILEPATHS"))
@@ -305,7 +308,8 @@ class Reverter(object):
         else:
             cp_dir = self.config.in_progress_dir
 
-        le_util.make_or_verify_dir(cp_dir, 0o755, os.geteuid())
+        le_util.make_or_verify_dir(
+            cp_dir, constants.CONFIG_DIRS_MODE, os.geteuid())
 
         # Append all new files (that aren't already registered)
         new_fd = None

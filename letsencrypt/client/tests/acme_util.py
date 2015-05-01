@@ -1,4 +1,6 @@
 """Class helps construct valid ACME messages for testing."""
+import datetime
+import itertools
 import os
 import pkg_resources
 
@@ -6,6 +8,7 @@ import Crypto.PublicKey.RSA
 
 from letsencrypt.acme import challenges
 from letsencrypt.acme import jose
+from letsencrypt.acme import messages2
 
 
 KEY = jose.HashableRSAKey(Crypto.PublicKey.RSA.importKey(
@@ -52,13 +55,13 @@ CONT_CHALLENGES = [chall for chall in CHALLENGES
                    if isinstance(chall, challenges.ContinuityChallenge)]
 
 
-def gen_combos(challs):
-    """Generate natural combinations for challs."""
+def gen_combos(challbs):
+    """Generate natural combinations for challbs."""
     dv_chall = []
     cont_chall = []
 
-    for i, chall in enumerate(challs):  # pylint: disable=redefined-outer-name
-        if isinstance(chall, challenges.DVChallenge):
+    for i, challb in enumerate(challbs):  # pylint: disable=redefined-outer-name
+        if isinstance(challb.chall, challenges.DVChallenge):
             dv_chall.append(i)
         else:
             cont_chall.append(i)
@@ -66,3 +69,76 @@ def gen_combos(challs):
     # Gen combos for 1 of each type, lowest index first (makes testing easier)
     return tuple((i, j) if i < j else (j, i)
                  for i in dv_chall for j in cont_chall)
+
+
+def chall_to_challb(chall, status):  # pylint: disable=redefined-outer-name
+    """Return ChallengeBody from Challenge."""
+    kwargs = {
+        "chall": chall,
+        "uri": chall.typ + "_uri",
+        "status": status,
+    }
+
+    if status == messages2.STATUS_VALID:
+        kwargs.update({"validated": datetime.datetime.now()})
+
+    return messages2.ChallengeBody(**kwargs)  # pylint: disable=star-args
+
+
+# Pending ChallengeBody objects
+DVSNI_P = chall_to_challb(DVSNI, messages2.STATUS_PENDING)
+SIMPLE_HTTPS_P = chall_to_challb(SIMPLE_HTTPS, messages2.STATUS_PENDING)
+DNS_P = chall_to_challb(DNS, messages2.STATUS_PENDING)
+RECOVERY_CONTACT_P = chall_to_challb(RECOVERY_CONTACT, messages2.STATUS_PENDING)
+RECOVERY_TOKEN_P = chall_to_challb(RECOVERY_TOKEN, messages2.STATUS_PENDING)
+POP_P = chall_to_challb(POP, messages2.STATUS_PENDING)
+
+CHALLENGES_P = [SIMPLE_HTTPS_P, DVSNI_P, DNS_P,
+                RECOVERY_CONTACT_P, RECOVERY_TOKEN_P, POP_P]
+DV_CHALLENGES_P = [challb for challb in CHALLENGES_P
+                   if isinstance(challb.chall, challenges.DVChallenge)]
+CONT_CHALLENGES_P = [
+    challb for challb in CHALLENGES_P
+    if isinstance(challb.chall, challenges.ContinuityChallenge)
+]
+
+
+def gen_authzr(authz_status, domain, challs, statuses, combos=True):
+    """Generate an authorization resource.
+
+    :param authz_status: Status object
+    :type authz_status: :class:`letsencrypt.acme.messages2.Status`
+    :param list challs: Challenge objects
+    :param list statuses: status of each challenge object
+    :param bool combos: Whether or not to add combinations
+
+    """
+    # pylint: disable=redefined-outer-name
+    challbs = tuple(
+        chall_to_challb(chall, status)
+        for chall, status in itertools.izip(challs, statuses)
+    )
+    authz_kwargs = {
+        "identifier": messages2.Identifier(
+            typ=messages2.IDENTIFIER_FQDN, value=domain),
+        "challenges": challbs,
+    }
+    if combos:
+        authz_kwargs.update({"combinations": gen_combos(challbs)})
+    if authz_status == messages2.STATUS_VALID:
+        now = datetime.datetime.now()
+        authz_kwargs.update({
+            "status": authz_status,
+            "expires": datetime.datetime(now.year, now.month + 1, now.day),
+        })
+    else:
+        authz_kwargs.update({
+            "status": authz_status,
+        })
+
+    # pylint: disable=star-args
+    return messages2.AuthorizationResource(
+        uri="https://trusted.ca/new-authz-resource",
+        new_cert_uri="https://trusted.ca/new-cert",
+        body=messages2.Authorization(**authz_kwargs)
+    )

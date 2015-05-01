@@ -1,4 +1,4 @@
-"""ACME protocol v02 messages."""
+"""ACME protocol messages."""
 from letsencrypt.acme import challenges
 from letsencrypt.acme import fields
 from letsencrypt.acme import jose
@@ -10,7 +10,6 @@ class Error(jose.JSONObjectWithFields, Exception):
     https://tools.ietf.org/html/draft-ietf-appsawg-http-problem-00
 
     """
-
     ERROR_TYPE_NAMESPACE = 'urn:acme:error:'
     ERROR_TYPE_DESCRIPTIONS = {
         'malformed': 'The request message was malformed',
@@ -19,7 +18,7 @@ class Error(jose.JSONObjectWithFields, Exception):
         'badCSR': 'The CSR is unacceptable (e.g., due to a short key)',
     }
 
-    # TODO: Boulder omits 'type' and 'instance', spec requires
+    # TODO: Boulder omits 'type' and 'instance', spec requires, boulder#128
     typ = jose.Field('type', omitempty=True)
     title = jose.Field('title', omitempty=True)
     detail = jose.Field('detail')
@@ -72,6 +71,9 @@ class _Constant(jose.JSONDeSerializable):
 
     def __eq__(self, other):
         return isinstance(other, type(self)) and other.name == self.name
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 
 class Status(_Constant):
@@ -130,10 +132,9 @@ class Registration(ResourceBody):
     """Registration Resource Body.
 
     :ivar letsencrypt.acme.jose.jwk.JWK key: Public key.
-    :ivar tuple contact:
+    :ivar tuple contact: Contact information following ACME spec
 
     """
-
     # on new-reg key server ignores 'key' and populates it based on
     # JWS.signature.combined.jwk
     key = jose.Field('key', omitempty=True, decoder=jose.JWK.from_json)
@@ -163,20 +164,17 @@ class ChallengeBody(ResourceBody):
 
     .. todo::
        Confusingly, this has a similar name to `.challenges.Challenge`,
-       as well as `.achallenges.AnnotatedChallenge` or
-       `.achallenges.Indexed`... Once `messages2` and `network2` is
-       integrated with the rest of the client, this class functionality
-       will be merged with `.challenges.Challenge`. Meanwhile,
-       separation allows the ``master`` to be still interoperable with
-       Node.js server (protocol v00). For the time being use names such
-       as ``challb`` to distinguish instances of this class from
-       ``achall`` or ``ichall``.
+       as well as `.achallenges.AnnotatedChallenge`. Please use names
+       such as ``challb`` to distinguish instances of this class from
+       ``achall``.
 
+    :ivar letsencrypt.acme.challenges.Challenge: Wrapped challenge.
+        Conveniently, all challenge fields are proxied, i.e. you can
+        call ``challb.x`` to get ``challb.chall.x`` contents.
     :ivar letsencrypt.acme.messages2.Status status:
     :ivar datetime.datetime validated:
 
     """
-
     __slots__ = ('chall',)
     uri = jose.Field('uri')
     status = jose.Field('status', decoder=Status.from_json)
@@ -193,6 +191,9 @@ class ChallengeBody(ResourceBody):
         jobj_fields['chall'] = challenges.Challenge.from_json(jobj)
         return jobj_fields
 
+    def __getattr__(self, name):
+        return getattr(self.chall, name)
+
 
 class AuthorizationResource(Resource):
     """Authorization Resource.
@@ -208,7 +209,7 @@ class Authorization(ResourceBody):
     """Authorization Resource Body.
 
     :ivar letsencrypt.acme.messages2.Identifier identifier:
-    :ivar list challenges: `list` of `Challenge`
+    :ivar list challenges: `list` of `.ChallengeBody`
     :ivar tuple combinations: Challenge combinations (`tuple` of `tuple`
         of `int`, as opposed to `list` of `list` from the spec).
     :ivar letsencrypt.acme.jose.jwk.JWK key: Public key.
@@ -217,7 +218,6 @@ class Authorization(ResourceBody):
     :ivar datetime.datetime expires:
 
     """
-
     identifier = jose.Field('identifier', decoder=Identifier.from_json)
     challenges = jose.Field('challenges', omitempty=True)
     combinations = jose.Field('combinations', omitempty=True)
