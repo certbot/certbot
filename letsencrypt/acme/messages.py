@@ -1,4 +1,25 @@
-"""ACME protocol messages."""
+"""ACME protocol v00 messages.
+
+.. warning:: This module is an implementation of the draft `ACME
+  protocol version 00`_, and not the "RESTified" `ACME protocol version
+  01`_ or later. It should work with `older Node.js implementation`_,
+  but will definitely not work with Boulder_. It is kept for reference
+  purposes only.
+
+
+.. _`ACME protocol version 00`:
+  https://github.com/letsencrypt/acme-spec/blob/v00/draft-barnes-acme.md
+
+.. _`ACME protocol version 01`:
+  https://github.com/letsencrypt/acme-spec/blob/v01/draft-barnes-acme.md
+
+.. _Boulder: https://github.com/letsencrypt/boulder
+
+.. _`older Node.js implementation`:
+  https://github.com/letsencrypt/node-acme/commit/f42aa5b7fad4cd2fc289653c4ab14f18052367b3
+
+
+"""
 import jsonschema
 
 from letsencrypt.acme import challenges

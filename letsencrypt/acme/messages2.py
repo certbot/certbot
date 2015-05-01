@@ -1,4 +1,4 @@
-"""ACME protocol v02 messages."""
+"""ACME protocol messages."""
 from letsencrypt.acme import challenges
 from letsencrypt.acme import fields
 from letsencrypt.acme import jose
