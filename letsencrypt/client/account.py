@@ -55,15 +55,15 @@ class Account(object):
         """URI link for new registrations."""
         if self.regr is not None:
             return self.regr.uri
-
-        return None
+        else:
+            return None
 
     @property
     def new_authzr_uri(self):  # pylint: disable=missing-docstring
         if self.regr is not None:
             return self.regr.new_authzr_uri
-
-        return None
+        else:
+            return None
 
     @property
     def terms_of_service(self):  # pylint: disable=missing-docstring
@@ -112,7 +112,7 @@ class Account(object):
 
     @classmethod
     def _get_config_filename(cls, email):
-        return email if email is not None and email is not "" else "default"
+        return email if email is not None and email else "default"
 
     @classmethod
     def from_existing_account(cls, config, email=None):
@@ -209,8 +209,8 @@ class Account(object):
             email address is given.
 
         """
-        if email == "" or cls.safe_email(email):
-            email = email if email != "" else None
+        if not email or cls.safe_email(email):
+            email = email if email else None
 
             le_util.make_or_verify_dir(
                 config.account_keys_dir, 0o700, os.geteuid())
