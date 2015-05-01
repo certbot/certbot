@@ -150,7 +150,6 @@ class Network(object):
             response.links['terms-of-service']['url']
             if 'terms-of-service' in response.links else terms_of_service)
 
-        # TODO: Consider removing this check based on spec clarifications #93
         if new_authzr_uri is None:
             try:
                 new_authzr_uri = response.links['next']['url']

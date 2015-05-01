@@ -285,10 +285,10 @@ class NetworkTest(unittest.TestCase):
                           self.challr.body.update(uri='foo'), chall_response)
 
     def test_answer_challenge_missing_next(self):
-        # TODO: Change once acme-spec #93 is resolved/boulder issue
         self._mock_post_get()
         self.assertTrue(self.net.answer_challenge(
             self.challr.body, challenges.DNSResponse()) is None)
+        # TODO: boulder#130, acme-spec#110
         # self.assertRaises(errors.NetworkError, self.net.answer_challenge,
         #                  self.challr.body, challenges.DNSResponse())
 
