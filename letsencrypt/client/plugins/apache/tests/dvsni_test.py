@@ -14,6 +14,8 @@ from letsencrypt.client.plugins.apache.obj import Addr
 
 from letsencrypt.client.plugins.apache.tests import util
 
+from letsencrypt.client.tests import acme_util
+
 
 class DvsniPerformTest(util.ApacheTest):
     """Test the ApacheDVSNI challenge."""
@@ -39,18 +41,22 @@ class DvsniPerformTest(util.ApacheTest):
         auth_key = le_util.Key(rsa256_file, rsa256_pem)
         self.achalls = [
             achallenges.DVSNI(
-                chall=challenges.DVSNI(
-                    r="\x8c\x8a\xbf_-f\\cw\xee\xd6\xf8/\xa5\xe3\xfd\xeb9\xf1"
-                      "\xf5\xb9\xefVM\xc9w\xa4u\x9c\xe1\x87\xb4",
-                    nonce="7\xbc^\xb7]>\x00\xa1\x9bOcU\x84^Z\x18",
-                ), domain="encryption-example.demo", key=auth_key),
+                challb=acme_util.chall_to_challb(
+                    challenges.DVSNI(
+                        r="\x8c\x8a\xbf_-f\\cw\xee\xd6\xf8/\xa5\xe3\xfd\xeb9"
+                          "\xf1\xf5\xb9\xefVM\xc9w\xa4u\x9c\xe1\x87\xb4",
+                        nonce="7\xbc^\xb7]>\x00\xa1\x9bOcU\x84^Z\x18",
+                    ), "pending"),
+                domain="encryption-example.demo", key=auth_key),
             achallenges.DVSNI(
-                chall=challenges.DVSNI(
-                    r="\xba\xa9\xda?<m\xaewmx\xea\xad\xadv\xf4\x02\xc9y\x80"
-                      "\xe2_X\t\xe7\xc7\xa4\t\xca\xf7&\x945",
-                    nonce="Y\xed\x01L\xac\x95\xf7pW\xb1\xd7"
-                          "\xa1\xb2\xc5\x96\xba",
-                ), domain="letsencrypt.demo", key=auth_key),
+                challb=acme_util.chall_to_challb(
+                    challenges.DVSNI(
+                        r="\xba\xa9\xda?<m\xaewmx\xea\xad\xadv\xf4\x02\xc9y\x80"
+                        "\xe2_X\t\xe7\xc7\xa4\t\xca\xf7&\x945",
+                        nonce="Y\xed\x01L\xac\x95\xf7pW\xb1\xd7\xa1\xb2\xc5"
+                              "\x96\xba",
+                    ), "pending"),
+                domain="letsencrypt.demo", key=auth_key),
         ]
 
     def tearDown(self):

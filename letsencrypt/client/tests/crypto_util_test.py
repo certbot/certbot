@@ -1,14 +1,69 @@
 """Tests for letsencrypt.client.crypto_util."""
+import logging
 import os
 import pkg_resources
+import shutil
+import tempfile
 import unittest
 
 import M2Crypto
+import mock
 
 
 RSA256_KEY = pkg_resources.resource_string(__name__, 'testdata/rsa256_key.pem')
 RSA512_KEY = pkg_resources.resource_string(__name__, 'testdata/rsa512_key.pem')
 
+
+class InitSaveKeyTest(unittest.TestCase):
+    """Tests for letsencrypt.client.crypto_util.init_save_key."""
+    def setUp(self):
+        logging.disable(logging.CRITICAL)
+        self.key_dir = tempfile.mkdtemp('key_dir')
+
+    def tearDown(self):
+        logging.disable(logging.NOTSET)
+        shutil.rmtree(self.key_dir)
+
+    @classmethod
+    def _call(cls, key_size, key_dir):
+        from letsencrypt.client.crypto_util import init_save_key
+        return init_save_key(key_size, key_dir, 'key-letsencrypt.pem')
+
+    @mock.patch('letsencrypt.client.crypto_util.make_key')
+    def test_success(self, mock_make):
+        mock_make.return_value = 'key_pem'
+        key = self._call(1024, self.key_dir)
+        self.assertEqual(key.pem, 'key_pem')
+        self.assertTrue('key-letsencrypt.pem' in key.file)
+
+    @mock.patch('letsencrypt.client.crypto_util.make_key')
+    def test_key_failure(self, mock_make):
+        mock_make.side_effect = ValueError
+        self.assertRaises(ValueError, self._call, 431, self.key_dir)
+
+
+class InitSaveCSRTest(unittest.TestCase):
+    """Tests for letsencrypt.client.crypto_util.init_save_csr."""
+
+    def setUp(self):
+        self.csr_dir = tempfile.mkdtemp('csr_dir')
+
+    def tearDown(self):
+        shutil.rmtree(self.csr_dir)
+
+    @mock.patch('letsencrypt.client.crypto_util.make_csr')
+    @mock.patch('letsencrypt.client.crypto_util.le_util.make_or_verify_dir')
+    def test_it(self, unused_mock_verify, mock_csr):
+        from letsencrypt.client.crypto_util import init_save_csr
+
+        mock_csr.return_value = ('csr_pem', 'csr_der')
+
+        csr = init_save_csr(
+            mock.Mock(pem='dummy_key'), 'example.com', self.csr_dir,
+            'csr-letsencrypt.pem')
+
+        self.assertEqual(csr.data, 'csr_der')
+        self.assertTrue('csr-letsencrypt.pem' in csr.file)
 
 class ValidCSRTest(unittest.TestCase):
     """Tests for letsencrypt.client.crypto_util.valid_csr."""

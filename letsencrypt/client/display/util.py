@@ -133,19 +133,21 @@ class NcursesDisplay(object):
             message, self.height, self.width,
             yes_label=yes_label, no_label=no_label)
 
-    def checklist(self, message, tags):
+    def checklist(self, message, tags, default_status=True):
         """Displays a checklist.
 
         :param message: Message to display before choices
-        :param list tags: where each is of type :class:`str`
-            len(tags) > 0
+        :param list tags: where each is of type :class:`str` len(tags) > 0
+        :param bool default_status: If True, items are in a selected state by
+            default.
+
 
         :returns: tuple of the form (code, list_tags) where
             `code` - int display exit code
             `list_tags` - list of str tags selected by the user
 
         """
-        choices = [(tag, "", False) for tag in tags]
+        choices = [(tag, "", default_status) for tag in tags]
         return self.dialog.checklist(
             message, width=self.width, height=self.height, choices=choices)
 
@@ -257,11 +259,13 @@ class FileDisplay(object):
                     ans.startswith(no_label[0].upper())):
                 return False
 
-    def checklist(self, message, tags):
+    def checklist(self, message, tags, default_status=True):
+        # pylint: disable=unused-argument
         """Display a checklist.
 
         :param str message: Message to display to user
         :param list tags: `str` tags to select, len(tags) > 0
+        :param bool default_status: Not used for FileDisplay
 
         :returns: tuple of (`code`, `tags`) where
             `code` - str display exit code

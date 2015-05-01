@@ -26,6 +26,8 @@ class NginxConfigurator(object):
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
     """Nginx configurator.
 
+    .. warning:: This plugin is a stub, does not support DVSNI yet!
+
     .. todo:: Add proper support for comments in the config. Currently,
         config files modified by the configurator will lose all their comments.
 
@@ -347,9 +349,12 @@ class NginxConfigurator(object):
 
         """
         uid = os.geteuid()
-        le_util.make_or_verify_dir(self.config.work_dir, 0o755, uid)
-        le_util.make_or_verify_dir(self.config.backup_dir, 0o755, uid)
-        le_util.make_or_verify_dir(self.config.config_dir, 0o755, uid)
+        le_util.make_or_verify_dir(
+            self.config.work_dir, constants.CONFIG_DIRS_MODE, uid)
+        le_util.make_or_verify_dir(
+            self.config.backup_dir, constants.CONFIG_DIRS_MODE, uid)
+        le_util.make_or_verify_dir(
+            self.config.config_dir, constants.CONFIG_DIRS_MODE, uid)
 
     def get_version(self):
         """Return version of Nginx Server.

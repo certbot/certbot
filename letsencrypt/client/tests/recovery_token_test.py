@@ -39,22 +39,24 @@ class RecoveryTokenTest(unittest.TestCase):
         self.assertFalse(self.rec_token.requires_human("example3.com"))
 
         self.rec_token.cleanup(achallenges.RecoveryToken(
-            chall=None, domain="example3.com"))
+            challb=challenges.RecoveryToken(), domain="example3.com"))
         self.assertTrue(self.rec_token.requires_human("example3.com"))
 
         # Shouldn't throw an error
         self.rec_token.cleanup(achallenges.RecoveryToken(
-            chall=None, domain="example4.com"))
+            challb=None, domain="example4.com"))
 
         # SHOULD throw an error (OSError other than nonexistent file)
         self.assertRaises(
             OSError, self.rec_token.cleanup,
-            achallenges.RecoveryToken(chall=None, domain="a"+"r"*10000+".com"))
+            achallenges.RecoveryToken(
+                challb=None, domain=("a" + "r" * 10000 + ".com")))
 
     def test_perform_stored(self):
         self.rec_token.store_token("example4.com", 444)
         response = self.rec_token.perform(
-            achallenges.RecoveryToken(chall=None, domain="example4.com"))
+            achallenges.RecoveryToken(
+                challb=challenges.RecoveryToken(), domain="example4.com"))
 
         self.assertEqual(
             response, challenges.RecoveryTokenResponse(token="444"))
@@ -63,12 +65,14 @@ class RecoveryTokenTest(unittest.TestCase):
     def test_perform_not_stored(self, mock_input):
         mock_input().input.side_effect = [(0, "555"), (1, "000")]
         response = self.rec_token.perform(
-            achallenges.RecoveryToken(chall=None, domain="example5.com"))
+            achallenges.RecoveryToken(
+                challb=challenges.RecoveryToken(), domain="example5.com"))
         self.assertEqual(
             response, challenges.RecoveryTokenResponse(token="555"))
 
         response = self.rec_token.perform(
-            achallenges.RecoveryToken(chall=None, domain="example6.com"))
+            achallenges.RecoveryToken(
+                challb=challenges.RecoveryToken(), domain="example6.com"))
         self.assertTrue(response is None)
 
 

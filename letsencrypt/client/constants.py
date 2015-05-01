@@ -50,6 +50,9 @@ DVSNI_CHALLENGE_PORT = 443
 """Port to perform DVSNI challenge."""
 
 
+CONFIG_DIRS_MODE = 0o755
+"""Directory mode for ``.IConfig.config_dir`` et al."""
+
 TEMP_CHECKPOINT_DIR = "temp_checkpoint"
 """Temporary checkpoint directory (relative to IConfig.work_dir)."""
 
@@ -60,6 +63,12 @@ IConfig.work_dir)."""
 CERT_KEY_BACKUP_DIR = "keys-certs"
 """Directory where all certificates and keys are stored (relative to
 IConfig.work_dir. Used for easy revocation."""
+
+ACCOUNTS_DIR = "accounts"
+"""Directory where all accounts are saved."""
+
+ACCOUNT_KEYS_DIR = "keys"
+"""Directory where account keys are saved. Relative to ACCOUNTS_DIR."""
 
 REC_TOKEN_DIR = "recovery_tokens"
 """Directory where all recovery tokens are saved (relative to

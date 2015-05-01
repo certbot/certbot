@@ -21,14 +21,14 @@ class PerformTest(unittest.TestCase):
             name="rec_token_perform", side_effect=gen_client_resp)
 
     def test_rec_token1(self):
-        token = achallenges.RecoveryToken(chall=None, domain="0")
+        token = achallenges.RecoveryToken(challb=None, domain="0")
         responses = self.auth.perform([token])
         self.assertEqual(responses, ["RecoveryToken0"])
 
     def test_rec_token5(self):
         tokens = []
         for i in xrange(5):
-            tokens.append(achallenges.RecoveryToken(chall=None, domain=str(i)))
+            tokens.append(achallenges.RecoveryToken(challb=None, domain=str(i)))
 
         responses = self.auth.perform(tokens)
 
@@ -39,7 +39,7 @@ class PerformTest(unittest.TestCase):
     def test_unexpected(self):
         self.assertRaises(
             errors.LetsEncryptContAuthError, self.auth.perform, [
-                achallenges.DVSNI(chall=None, domain="0", key="invalid_key")])
+                achallenges.DVSNI(challb=None, domain="0", key="invalid_key")])
 
     def test_chall_pref(self):
         self.assertEqual(
@@ -58,8 +58,8 @@ class CleanupTest(unittest.TestCase):
         self.auth.rec_token.cleanup = self.mock_cleanup
 
     def test_rec_token2(self):
-        token1 = achallenges.RecoveryToken(chall=None, domain="0")
-        token2 = achallenges.RecoveryToken(chall=None, domain="1")
+        token1 = achallenges.RecoveryToken(challb=None, domain="0")
+        token2 = achallenges.RecoveryToken(challb=None, domain="1")
 
         self.auth.cleanup([token1, token2])
 
@@ -67,8 +67,8 @@ class CleanupTest(unittest.TestCase):
                          [mock.call(token1), mock.call(token2)])
 
     def test_unexpected(self):
-        token = achallenges.RecoveryToken(chall=None, domain="0")
-        unexpected = achallenges.DVSNI(chall=None, domain="0", key="dummy_key")
+        token = achallenges.RecoveryToken(challb=None, domain="0")
+        unexpected = achallenges.DVSNI(challb=None, domain="0", key="dummy_key")
 
         self.assertRaises(errors.LetsEncryptContAuthError,
                           self.auth.cleanup, [token, unexpected])
