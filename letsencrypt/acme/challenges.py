@@ -88,6 +88,9 @@ class DVSNI(DVChallenge):
     NONCE_SIZE = 16
     """Required size of the :attr:`nonce` in bytes."""
 
+    PORT = 443
+    """Port to perform DVSNI challenge."""
+
     r = jose.Field("r", encoder=jose.b64encode,  # pylint: disable=invalid-name
                    decoder=functools.partial(jose.decode_b64jose, size=R_SIZE))
     nonce = jose.Field("nonce", encoder=binascii.hexlify,
