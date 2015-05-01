@@ -11,7 +11,7 @@ class NamespaceConfigTest(unittest.TestCase):
         from letsencrypt.client.configuration import NamespaceConfig
         namespace = mock.MagicMock(
             config_dir='/tmp/config', work_dir='/tmp/foo', foo='bar',
-            server='acme-server.org:443')
+            server='acme-server.org:443/new')
         self.config = NamespaceConfig(namespace)
 
     def test_proxy_getattr(self):
@@ -33,10 +33,10 @@ class NamespaceConfigTest(unittest.TestCase):
             self.config.cert_key_backup, '/tmp/foo/c/acme-server.org')
         self.assertEqual(self.config.rec_token_dir, '/r')
         self.assertEqual(
-            self.config.accounts_dir, '/tmp/config/acc/acme-server.org')
+            self.config.accounts_dir, '/tmp/config/acc/acme-server.org-443-new')
         self.assertEqual(
             self.config.account_keys_dir,
-            '/tmp/config/acc/acme-server.org/keys')
+            '/tmp/config/acc/acme-server.org-443-new/keys')
 
 
 if __name__ == '__main__':

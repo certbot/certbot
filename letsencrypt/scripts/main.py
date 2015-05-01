@@ -70,7 +70,7 @@ def create_parser():
 
     add("-k", "--authkey", type=read_file,
         help="Path to the authorized key file")
-    add("m", "--email", type=str,
+    add("-m", "--email", type=str,
         help="Email address used for account registration.")
     add("-B", "--rsa-key-size", type=int, default=2048, metavar="N",
         help=config_help("rsa_key_size"))
@@ -176,6 +176,24 @@ def main():  # pylint: disable=too-many-branches, too-many-statements
         client.rollback(args.rollback, config)
         sys.exit()
 
+    # Prepare for init of Client
+    if args.email is None:
+        acc = client.determine_account(config)
+    else:
+        try:
+            # The way to get the default would be args.email = ""
+            # First try existing account
+            acc = account.Account.from_existing_account(config, args.email)
+        except errors.LetsEncryptClientError:
+            try:
+                # Try to make an account based on the email address
+                acc = account.Account.from_email(config, args.email)
+            except errors.LetsEncryptClientError:
+                sys.exit(1)
+
+    if acc is None:
+        sys.exit(0)
+
     if not args.tos:
         display_eula()
 
@@ -206,26 +224,10 @@ def main():  # pylint: disable=too-many-branches, too-many-statements
     if not doms:
         sys.exit(0)
 
-    # Prepare for init of Client
-    if args.email is None:
-        acc = client.determine_account(config)
-    else:
-        try:
-            # The way to get the default would be args.email = ""
-            acc = account.from_existing_account(config, args.email)
-        except errors.LetsEncryptClientError:
-            try:
-                acc = account.from_email(config, args.email)
-            except errors.LetsEncryptClientError:
-                logging.error("Invalid email address given")
-
-    if acc is None:
-        sys.exit(0)
-
     acme = client.Client(config, acc, auth, installer)
 
     # Validate the key and csr
-    client.validate_key_csr(account.key)
+    client.validate_key_csr(acc.key)
 
     # This more closely mimics the capabilities of the CLI
     # It should be possible for reconfig only, install-only, no-install
@@ -236,7 +238,7 @@ def main():  # pylint: disable=too-many-branches, too-many-statements
         acme.register()
         cert_file, chain_file = acme.obtain_certificate(doms)
     if installer is not None and cert_file is not None:
-        acme.deploy_certificate(doms, account.key, cert_file, chain_file)
+        acme.deploy_certificate(doms, acc.key, cert_file, chain_file)
     if installer is not None:
         acme.enhance_config(doms, args.redirect)
 

@@ -55,8 +55,8 @@ class Account(object):
         """URI link for new registrations."""
         if self.regr is not None:
             return self.regr.uri
-        else:
-            return None
+
+        return None
 
     @property
     def new_authzr_uri(self):  # pylint: disable=missing-docstring
@@ -198,7 +198,7 @@ class Account(object):
 
     @classmethod
     def from_email(cls, config, email):
-        """Generate an account from an email address.
+        """Generate a new account from an email address.
 
         :param config: Configuration
         :type config: :class:`letsencrypt.client.interfaces.IConfig`
@@ -215,8 +215,8 @@ class Account(object):
             le_util.make_or_verify_dir(
                 config.account_keys_dir, 0o700, os.geteuid())
             key = crypto_util.init_save_key(
-                        config.rsa_key_size, config.account_keys_dir,
-                        cls._get_config_filename(email))
+                config.rsa_key_size, config.account_keys_dir,
+                cls._get_config_filename(email))
             return cls(config, key, email)
 
         raise errors.LetsEncryptClientError("Invalid email address.")

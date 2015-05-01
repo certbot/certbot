@@ -95,6 +95,8 @@ class IConfig(zope.interface.Interface):
         "be trusted in order to avoid further modifications to the client.")
     authenticator = zope.interface.Attribute(
         "Authenticator to use for responding to challenges.")
+    email = zope.interface.Attribute(
+        "Email used for registration and recovery contact.")
     rsa_key_size = zope.interface.Attribute("Size of the RSA key.")
 
     config_dir = zope.interface.Attribute("Configuration directory.")
@@ -110,7 +112,7 @@ class IConfig(zope.interface.Interface):
     accounts_dir = zope.interface.Attribute(
         "Directory where all account information is stored.")
     account_keys_dir = zope.interface.Attribute(
-        "Directory where all account keys are stored".)
+        "Directory where all account keys are stored.")
     rec_token_dir = zope.interface.Attribute(
         "Directory where all recovery tokens are saved.")
     key_dir = zope.interface.Attribute("Keys storage.")

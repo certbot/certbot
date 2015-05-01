@@ -86,9 +86,7 @@ class Network(object):
                     logging.debug(
                         'Ignoring wrong Content-Type (%r) for JSON Error',
                         response_ct)
-
                 try:
-                    # TODO: This is insufficient or doesn't work as intended.
                     logging.error("Error: %s", jobj)
                     logging.error("Response from server: %s", response.content)
                     raise messages2.Error.from_json(jobj)
@@ -328,7 +326,7 @@ class Network(object):
             body=messages2.ChallengeBody.from_json(response.json()))
         # TODO: check that challr.uri == response.headers['Location']?
         if challr.uri != challb.uri:
-            raise errors.UnexpectedUpdate(challb.uri)
+            raise errors.UnexpectedUpdate(challr.uri)
         return challr
 
     @classmethod
