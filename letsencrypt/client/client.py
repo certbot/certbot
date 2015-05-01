@@ -165,8 +165,8 @@ class Client(object):
             cert_file.write(certr.body.as_pem())
         finally:
             cert_file.close()
-        logging.info(
-            "Server issued certificate; certificate written to %s", cert_path)
+        logging.info("Server issued certificate; certificate written to %s",
+                     act_cert_path)
 
         if certr.cert_chain_uri:
             # TODO: Except

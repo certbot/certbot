@@ -201,13 +201,10 @@ class Network(object):
         """
         details = (
             "mailto:" + account.email if account.email is not None else None,
-            "tel:" + account.phone if account.phone is not None else None
+            "tel:" + account.phone if account.phone is not None else None,
         )
-
-        contact_tuple = tuple(det for det in details if det is not None)
-
-        account.regr = self.register(contact=contact_tuple)
-
+        account.regr = self.register(contact=tuple(
+            det for det in details if det is not None))
         return account
 
     def update_registration(self, regr):
@@ -323,7 +320,7 @@ class Network(object):
         except KeyError:
             # TODO: Right now Boulder responds with the authorization resource
             # instead of a challenge resource... this can be uncommented
-            # once the error is fixed.
+            # once the error is fixed (boulder#130).
             return None
             # raise errors.NetworkError('"up" Link header missing')
         challr = messages2.ChallengeResource(
@@ -376,7 +373,6 @@ class Network(object):
         updated_authzr = self._authzr_from_response(
             response, authzr.body.identifier, authzr.uri, authzr.new_cert_uri)
         # TODO: check and raise UnexpectedUpdate
-
         return updated_authzr, response
 
     def request_issuance(self, csr, authzrs):
@@ -534,6 +530,8 @@ class Network(object):
         """
         if certr.cert_chain_uri is not None:
             return self._get_cert(certr.cert_chain_uri)[1]
+        else:
+            return None
 
     def revoke(self, certr, when=messages2.Revocation.NOW):
         """Revoke certificate.
