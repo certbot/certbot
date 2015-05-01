@@ -161,8 +161,9 @@ class Client(object):
         cert_chain_abspath = None
         cert_file, act_cert_path = le_util.unique_file(cert_path, 0o644)
         # TODO: Except
+        cert_pem = certr.body.as_pem()
         try:
-            cert_file.write(certr.body.as_pem())
+            cert_file.write(cert_pem)
         finally:
             cert_file.close()
         logging.info("Server issued certificate; certificate written to %s",
@@ -174,8 +175,9 @@ class Client(object):
             if chain_cert:
                 chain_file, act_chain_path = le_util.unique_file(
                     chain_path, 0o644)
+                chain_pem = chain_cert.to_pem()
                 try:
-                    chain_file.write(chain_cert.to_pem())
+                    chain_file.write(chain_pem)
                 finally:
                     chain_file.close()
 

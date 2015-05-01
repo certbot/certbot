@@ -12,7 +12,6 @@ import zope.component
 
 from letsencrypt.acme import messages2
 
-from letsencrypt.client import account
 from letsencrypt.client import configuration
 from letsencrypt.client import errors
 from letsencrypt.client import le_util
@@ -24,6 +23,8 @@ class AccountTest(unittest.TestCase):
     """Tests letsencrypt.client.account.Account."""
 
     def setUp(self):
+        from letsencrypt.client import account
+
         logging.disable(logging.CRITICAL)
 
         self.accounts_dir = tempfile.mkdtemp("accounts")
@@ -60,6 +61,8 @@ class AccountTest(unittest.TestCase):
     @mock.patch("letsencrypt.client.account.zope.component.getUtility")
     @mock.patch("letsencrypt.client.account.crypto_util.init_save_key")
     def test_prompts(self, mock_key, mock_util):
+        from letsencrypt.client import account
+
         displayer = display_util.FileDisplay(sys.stdout)
         zope.component.provideUtility(displayer)
 
@@ -86,14 +89,15 @@ class AccountTest(unittest.TestCase):
 
     @mock.patch("letsencrypt.client.account.zope.component.getUtility")
     def test_prompts_cancel(self, mock_util):
-        # displayer = display_util.FileDisplay(sys.stdout)
-        # zope.component.provideUtility(displayer)
+        from letsencrypt.client import account
 
         mock_util().input.return_value = (display_util.CANCEL, "")
 
         self.assertTrue(account.Account.from_prompts(self.config) is None)
 
     def test_save_from_existing_account(self):
+        from letsencrypt.client import account
+
         self.test_account.save()
         acc = account.Account.from_existing_account(self.config, self.email)
 
@@ -109,6 +113,8 @@ class AccountTest(unittest.TestCase):
         self.assertEqual(self.test_account.recovery_token, "recovery_token")
 
     def test_partial_properties(self):
+        from letsencrypt.client import account
+
         partial = account.Account(self.config, self.key)
         regr_no_authzr_uri = messages2.RegistrationResource(
             uri="uri",
@@ -130,6 +136,8 @@ class AccountTest(unittest.TestCase):
             "https://letsencrypt-demo.org/acme/new-authz")
 
     def test_partial_account_default(self):
+        from letsencrypt.client import account
+
         partial = account.Account(self.config, self.key)
         partial.save()
 
@@ -141,6 +149,8 @@ class AccountTest(unittest.TestCase):
         self.assertEqual(partial.regr, acc.regr)
 
     def test_get_accounts(self):
+        from letsencrypt.client import account
+
         accs = account.Account.get_accounts(self.config)
         self.assertFalse(accs)
 
@@ -155,10 +165,14 @@ class AccountTest(unittest.TestCase):
         self.assertEqual(len(accs), 2)
 
     def test_get_accounts_no_accounts(self):
+        from letsencrypt.client import account
+
         self.assertEqual(account.Account.get_accounts(
             mock.Mock(accounts_dir="non-existant")), [])
 
     def test_failed_existing_account(self):
+        from letsencrypt.client import account
+
         self.assertRaises(
             errors.LetsEncryptClientError,
             account.Account.from_existing_account,

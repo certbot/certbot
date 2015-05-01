@@ -79,7 +79,7 @@ def chall_to_challb(chall, status):  # pylint: disable=redefined-outer-name
         "status": status,
     }
 
-    if status == "valid":
+    if status == messages2.STATUS_VALID:
         kwargs.update({"validated": datetime.datetime.now()})
 
     return messages2.ChallengeBody(**kwargs)  # pylint: disable=star-args

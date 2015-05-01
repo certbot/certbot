@@ -58,7 +58,8 @@ class NamespaceConfig(object):
     def account_keys_dir(self):  #pylint: disable=missing-docstring
         return os.path.join(
             self.namespace.config_dir, constants.ACCOUNTS_DIR,
-            self.namespace.server.partition(":")[0], constants.ACCOUNT_KEYS_DIR)
+            self.namespace.server.replace(':', '-').replace('/', '-'),
+            constants.ACCOUNT_KEYS_DIR)
 
     # TODO: This should probably include the server name
     @property

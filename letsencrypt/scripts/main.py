@@ -16,6 +16,7 @@ import zope.interface.verify
 
 import letsencrypt
 
+from letsencrypt.client import account
 from letsencrypt.client import configuration
 from letsencrypt.client import client
 from letsencrypt.client import errors
@@ -58,7 +59,7 @@ def create_parser():
     config_help = lambda name: interfaces.IConfig[name].__doc__
 
     add("-d", "--domains", metavar="DOMAIN", nargs="+")
-    add("-s", "--server", default="www.letsencrypt-demo.org",
+    add("-s", "--server", default="www.letsencrypt-demo.org/acme/new-reg",
         help=config_help("server"))
 
     # TODO: we should generate the list of choices from the set of
@@ -69,6 +70,8 @@ def create_parser():
 
     add("-k", "--authkey", type=read_file,
         help="Path to the authorized key file")
+    add("m", "--email", type=str,
+        help="Email address used for account registration.")
     add("-B", "--rsa-key-size", type=int, default=2048, metavar="N",
         help=config_help("rsa_key_size"))
 
@@ -204,17 +207,22 @@ def main():  # pylint: disable=too-many-branches, too-many-statements
         sys.exit(0)
 
     # Prepare for init of Client
-    if args.authkey is None:
-        account = client.determine_account(config)
+    if args.email is None:
+        acc = client.determine_account(config)
     else:
-        # TODO: Figure out what to do with this
-        # le_util.Key(args.authkey[0], args.authkey[1])
-        account = client.determine_account(config)
+        try:
+            # The way to get the default would be args.email = ""
+            acc = account.from_existing_account(config, args.email)
+        except errors.LetsEncryptClientError:
+            try:
+                acc = account.from_email(config, args.email)
+            except errors.LetsEncryptClientError:
+                logging.error("Invalid email address given")
 
-    if account is None:
+    if acc is None:
         sys.exit(0)
 
-    acme = client.Client(config, account, auth, installer)
+    acme = client.Client(config, acc, auth, installer)
 
     # Validate the key and csr
     client.validate_key_csr(account.key)
