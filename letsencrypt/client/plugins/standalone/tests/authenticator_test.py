@@ -15,6 +15,8 @@ from letsencrypt.acme import challenges
 from letsencrypt.client import achallenges
 from letsencrypt.client import le_util
 
+from letsencrypt.client.tests import acme_util
+
 
 # Classes based on to allow interrupting infinite loop under test
 # after one iteration, based on.
@@ -68,7 +70,7 @@ class SNICallbackTest(unittest.TestCase):
             "letsencrypt.client.tests", "testdata/rsa256_key.pem")
         key = le_util.Key("foo", test_key)
         self.cert = achallenges.DVSNI(
-            chall=challenges.DVSNI(r="x"*32, nonce="abcdef"),
+            challb=acme_util.DVSNI_P,
             domain="example.com", key=key).gen_cert_and_response()[0]
         private_key = OpenSSL.crypto.load_privatekey(
             OpenSSL.crypto.FILETYPE_PEM, key.pem)
@@ -301,10 +303,12 @@ class PerformTest(unittest.TestCase):
         self.key = le_util.Key("something", test_key)
 
         self.achall1 = achallenges.DVSNI(
-            chall=challenges.DVSNI(r="whee", nonce="foo"),
+            challb=acme_util.chall_to_challb(
+                challenges.DVSNI(r="whee", nonce="foo"), "pending"),
             domain="foo.example.com", key=self.key)
         self.achall2 = achallenges.DVSNI(
-            chall=challenges.DVSNI(r="whee", nonce="bar"),
+            challb=acme_util.chall_to_challb(
+                challenges.DVSNI(r="whee", nonce="bar"), "pending"),
             domain="bar.example.com", key=self.key)
         bad_achall = ("This", "Represents", "A Non-DVSNI", "Challenge")
         self.achalls = [self.achall1, self.achall2, bad_achall]
@@ -350,12 +354,12 @@ class PerformTest(unittest.TestCase):
 
     def test_perform_with_pending_tasks(self):
         self.authenticator.tasks = {"foononce.acme.invalid": "cert_data"}
-        extra_achall = achallenges.DVSNI(chall="a", domain="b", key="c")
+        extra_achall = acme_util.DVSNI_P
         self.assertRaises(
             ValueError, self.authenticator.perform, [extra_achall])
 
     def test_perform_without_challenge_list(self):
-        extra_achall = achallenges.DVSNI(chall="a", domain="b", key="c")
+        extra_achall = acme_util.DVSNI_P
         # This is wrong because a challenge must be specified.
         self.assertRaises(ValueError, self.authenticator.perform, [])
         # This is wrong because it must be a list, not a bare challenge.
@@ -466,7 +470,8 @@ class DoChildProcessTest(unittest.TestCase):
         key = le_util.Key("foo", test_key)
         self.key = key
         self.cert = achallenges.DVSNI(
-            chall=challenges.DVSNI(r="x"*32, nonce="abcdef"),
+            challb=acme_util.chall_to_challb(
+                challenges.DVSNI(r="x"*32, nonce="abcdef"), "pending"),
             domain="example.com", key=key).gen_cert_and_response()[0]
         private_key = OpenSSL.crypto.load_privatekey(
             OpenSSL.crypto.FILETYPE_PEM, key.pem)
@@ -559,7 +564,8 @@ class CleanupTest(unittest.TestCase):
             StandaloneAuthenticator
         self.authenticator = StandaloneAuthenticator(None)
         self.achall = achallenges.DVSNI(
-            chall=challenges.DVSNI(r="whee", nonce="foononce"),
+            challb=acme_util.chall_to_challb(
+                challenges.DVSNI(r="whee", nonce="foononce"), "pending"),
             domain="foo.example.com", key="key")
         self.authenticator.tasks = {self.achall.nonce_domain: "stuff"}
         self.authenticator.child_pid = 12345
@@ -579,7 +585,8 @@ class CleanupTest(unittest.TestCase):
     def test_bad_cleanup(self):
         self.assertRaises(
             ValueError, self.authenticator.cleanup, [achallenges.DVSNI(
-                chall=challenges.DVSNI(r="whee", nonce="badnonce"),
+                challb=acme_util.chall_to_challb(
+                    challenges.DVSNI(r="whee", nonce="badnonce"), "pending"),
                 domain="bad.example.com", key="key")])
 
 

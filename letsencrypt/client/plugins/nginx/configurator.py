@@ -349,9 +349,12 @@ class NginxConfigurator(object):
 
         """
         uid = os.geteuid()
-        le_util.make_or_verify_dir(self.config.work_dir, 0o755, uid)
-        le_util.make_or_verify_dir(self.config.backup_dir, 0o755, uid)
-        le_util.make_or_verify_dir(self.config.config_dir, 0o755, uid)
+        le_util.make_or_verify_dir(
+            self.config.work_dir, constants.CONFIG_DIRS_MODE, uid)
+        le_util.make_or_verify_dir(
+            self.config.backup_dir, constants.CONFIG_DIRS_MODE, uid)
+        le_util.make_or_verify_dir(
+            self.config.config_dir, constants.CONFIG_DIRS_MODE, uid)
 
     def get_version(self):
         """Return version of Nginx Server.

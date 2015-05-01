@@ -16,12 +16,15 @@ import zope.interface.verify
 
 import letsencrypt
 
+from letsencrypt.client import account
 from letsencrypt.client import configuration
+from letsencrypt.client import constants
 from letsencrypt.client import client
 from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
 from letsencrypt.client import log
+
 from letsencrypt.client.display import util as display_util
 from letsencrypt.client.display import ops as display_ops
 
@@ -59,7 +62,8 @@ def create_parser():
     config_help = lambda name: interfaces.IConfig[name].__doc__
 
     add("-d", "--domains", metavar="DOMAIN", nargs="+")
-    add("-s", "--server", default="letsencrypt-demo.org:443",
+    add("-s", "--server",
+        default="www.letsencrypt-demo.org/acme/new-reg",
         help=config_help("server"))
 
     # TODO: we should generate the list of choices from the set of
@@ -70,6 +74,8 @@ def create_parser():
 
     add("-k", "--authkey", type=read_file,
         help="Path to the authorized key file")
+    add("-m", "--email", type=str,
+        help="Email address used for account registration.")
     add("-B", "--rsa-key-size", type=int, default=2048, metavar="N",
         help=config_help("rsa_key_size"))
 
@@ -93,7 +99,7 @@ def create_parser():
     add("--no-confirm", dest="no_confirm", action="store_true",
         help="Turn off confirmation screens, currently used for --revoke")
 
-    add("-e", "--agree-tos", dest="eula", action="store_true",
+    add("-e", "--agree-tos", dest="tos", action="store_true",
         help="Skip the end user license agreement screen.")
     add("-t", "--text", dest="use_curses", action="store_false",
         help="Use the text output instead of the curses UI.")
@@ -163,15 +169,37 @@ def main():  # pylint: disable=too-many-branches, too-many-statements
         sys.exit()
 
     if args.revoke or args.rev_cert is not None or args.rev_key is not None:
-        client.revoke(config, args.no_confirm, args.rev_cert, args.rev_key)
+        # This depends on the renewal config and cannot be completed yet.
+        zope.component.getUtility(interfaces.IDisplay).notification(
+            "Revocation is not available with the new Boulder server yet.")
+
+        # client.revoke(config, args.no_confirm, args.rev_cert, args.rev_key)
         sys.exit()
 
     if args.rollback > 0:
         client.rollback(args.rollback, config)
         sys.exit()
 
-    if not args.eula:
-        display_eula()
+    le_util.make_or_verify_dir(
+        config.config_dir, constants.CONFIG_DIRS_MODE, os.geteuid())
+
+    # Prepare for init of Client
+    if args.email is None:
+        acc = client.determine_account(config)
+    else:
+        try:
+            # The way to get the default would be args.email = ""
+            # First try existing account
+            acc = account.Account.from_existing_account(config, args.email)
+        except errors.LetsEncryptClientError:
+            try:
+                # Try to make an account based on the email address
+                acc = account.Account.from_email(config, args.email)
+            except errors.LetsEncryptClientError:
+                sys.exit(1)
+
+    if acc is None:
+        sys.exit(0)
 
     all_auths = init_auths(config)
     logging.debug('Initialized authenticators: %s', all_auths.keys())
@@ -200,16 +228,10 @@ def main():  # pylint: disable=too-many-branches, too-many-statements
     if not doms:
         sys.exit(0)
 
-    # Prepare for init of Client
-    if args.authkey is None:
-        authkey = client.init_key(args.rsa_key_size, config.key_dir)
-    else:
-        authkey = le_util.Key(args.authkey[0], args.authkey[1])
-
-    acme = client.Client(config, authkey, auth, installer)
+    acme = client.Client(config, acc, auth, installer)
 
     # Validate the key and csr
-    client.validate_key_csr(authkey)
+    client.validate_key_csr(acc.key)
 
     # This more closely mimics the capabilities of the CLI
     # It should be possible for reconfig only, install-only, no-install
@@ -217,19 +239,16 @@ def main():  # pylint: disable=too-many-branches, too-many-statements
     # but this code should be safe on all environments.
     cert_file = None
     if auth is not None:
+        if acc.regr is None:
+            try:
+                acme.register()
+            except errors.LetsEncryptClientError:
+                sys.exit(0)
         cert_file, chain_file = acme.obtain_certificate(doms)
     if installer is not None and cert_file is not None:
-        acme.deploy_certificate(doms, authkey, cert_file, chain_file)
+        acme.deploy_certificate(doms, acc.key, cert_file, chain_file)
     if installer is not None:
         acme.enhance_config(doms, args.redirect)
-
-
-def display_eula():
-    """Displays the end user agreement."""
-    eula = pkg_resources.resource_string("letsencrypt", "EULA")
-    if not zope.component.getUtility(interfaces.IDisplay).yesno(
-            eula, "Agree", "Cancel"):
-        sys.exit(0)
 
 
 def read_file(filename):

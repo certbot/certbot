@@ -18,6 +18,8 @@ from letsencrypt.client.plugins.apache import parser
 
 from letsencrypt.client.plugins.apache.tests import util
 
+from letsencrypt.client.tests import acme_util
+
 
 class TwoVhost80Test(util.ApacheTest):
     """Test two standard well configured HTTP vhosts."""
@@ -157,14 +159,18 @@ class TwoVhost80Test(util.ApacheTest):
         # Note: As more challenges are offered this will have to be expanded
         auth_key = le_util.Key(self.rsa256_file, self.rsa256_pem)
         achall1 = achallenges.DVSNI(
-            chall=challenges.DVSNI(
-                r="jIq_Xy1mXGN37tb4L6Xj_es58fW571ZNyXekdZzhh7Q",
-                nonce="37bc5eb75d3e00a19b4f6355845e5a18"),
+            challb=acme_util.chall_to_challb(
+                challenges.DVSNI(
+                    r="jIq_Xy1mXGN37tb4L6Xj_es58fW571ZNyXekdZzhh7Q",
+                    nonce="37bc5eb75d3e00a19b4f6355845e5a18"),
+                "pending"),
             domain="encryption-example.demo", key=auth_key)
         achall2 = achallenges.DVSNI(
-            chall=challenges.DVSNI(
-                r="uqnaPzxtrndteOqtrXb0Asl5gOJfWAnnx6QJyvcmlDU",
-                nonce="59ed014cac95f77057b1d7a1b2c596ba"),
+            challb=acme_util.chall_to_challb(
+                challenges.DVSNI(
+                    r="uqnaPzxtrndteOqtrXb0Asl5gOJfWAnnx6QJyvcmlDU",
+                    nonce="59ed014cac95f77057b1d7a1b2c596ba"),
+                "pending"),
             domain="letsencrypt.demo", key=auth_key)
 
         dvsni_ret_val = [

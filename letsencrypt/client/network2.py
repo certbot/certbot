@@ -2,7 +2,6 @@
 import datetime
 import heapq
 import httplib
-import itertools
 import logging
 import time
 
@@ -74,7 +73,6 @@ class Network(object):
 
         """
         response_ct = response.headers.get('Content-Type')
-
         try:
             # TODO: response.json() is called twice, once here, and
             # once in _get and _post clients
@@ -88,8 +86,9 @@ class Network(object):
                     logging.debug(
                         'Ignoring wrong Content-Type (%r) for JSON Error',
                         response_ct)
-
                 try:
+                    logging.error("Error: %s", jobj)
+                    logging.error("Response from server: %s", response.content)
                     raise messages2.Error.from_json(jobj)
                 except jose.DeserializationError as error:
                     # Couldn't deserialize JSON object
@@ -167,7 +166,7 @@ class Network(object):
             'contact'].default):
         """Register.
 
-        :param contact: Contact list, as accpeted by `.RegistrationResource`
+        :param contact: Contact list, as accepted by `.Registration`
         :type contact: `tuple`
 
         :returns: Registration Resource.
@@ -186,6 +185,24 @@ class Network(object):
             raise errors.UnexpectedUpdate(regr)
 
         return regr
+
+    def register_from_account(self, account):
+        """Register with server.
+
+        :param account: Account
+        :type account: :class:`letsencrypt.client.account.Account`
+
+        :returns: Updated account
+        :rtype: :class:`letsencrypt.client.account.Account`
+
+        """
+        details = (
+            "mailto:" + account.email if account.email is not None else None,
+            "tel:" + account.phone if account.phone is not None else None,
+        )
+        account.regr = self.register(contact=tuple(
+            det for det in details if det is not None))
+        return account
 
     def update_registration(self, regr):
         """Update registration.
@@ -213,6 +230,21 @@ class Network(object):
             raise errors.UnexpectedUpdate(regr)
         return updated_regr
 
+    def agree_to_tos(self, regr):
+        """Agree to the terms-of-service.
+
+        Agree to the terms-of-service in a Registration Resource.
+
+        :param regr: Registration Resource.
+        :type regr: `.RegistrationResource`
+
+        :returns: Updated Registration Resource.
+        :rtype: `.RegistrationResource`
+
+        """
+        return self.update_registration(
+            regr.update(body=regr.body.update(agreement=regr.terms_of_service)))
+
     def _authzr_from_response(self, response, identifier,
                               uri=None, new_cert_uri=None):
         if new_cert_uri is None:
@@ -230,25 +262,24 @@ class Network(object):
             raise errors.UnexpectedUpdate(authzr)
         return authzr
 
-    def request_challenges(self, identifier, regr):
+    def request_challenges(self, identifier, new_authzr_uri):
         """Request challenges.
 
         :param identifier: Identifier to be challenged.
         :type identifier: `.messages2.Identifier`
 
-        :param regr: Registration Resource.
-        :type regr: `.RegistrationResource`
+        :param str new_authzr_uri: new-authorization URI
 
         :returns: Authorization Resource.
         :rtype: `.AuthorizationResource`
 
         """
         new_authz = messages2.Authorization(identifier=identifier)
-        response = self._post(regr.new_authzr_uri, self._wrap_in_jws(new_authz))
+        response = self._post(new_authzr_uri, self._wrap_in_jws(new_authz))
         assert response.status_code == httplib.CREATED  # TODO: handle errors
         return self._authzr_from_response(response, identifier)
 
-    def request_domain_challenges(self, domain, regr):
+    def request_domain_challenges(self, domain, new_authz_uri):
         """Request challenges for domain names.
 
         This is simply a convenience function that wraps around
@@ -256,10 +287,14 @@ class Network(object):
         generic identifiers.
 
         :param str domain: Domain name to be challenged.
+        :param str new_authzr_uri: new-authorization URI
+
+        :returns: Authorization Resource.
+        :rtype: `.AuthorizationResource`
 
         """
         return self.request_challenges(messages2.Identifier(
-            typ=messages2.IDENTIFIER_FQDN, value=domain), regr)
+            typ=messages2.IDENTIFIER_FQDN, value=domain), new_authz_uri)
 
     def answer_challenge(self, challb, response):
         """Answer challenge.
@@ -280,7 +315,11 @@ class Network(object):
         try:
             authzr_uri = response.links['up']['url']
         except KeyError:
-            raise errors.NetworkError('"up" Link header missing')
+            # TODO: Right now Boulder responds with the authorization resource
+            # instead of a challenge resource... this can be uncommented
+            # once the error is fixed (boulder#130).
+            return None
+            # raise errors.NetworkError('"up" Link header missing')
         challr = messages2.ChallengeResource(
             authzr_uri=authzr_uri,
             body=messages2.ChallengeBody.from_json(response.json()))
@@ -288,17 +327,6 @@ class Network(object):
         if challr.uri != challb.uri:
             raise errors.UnexpectedUpdate(challr.uri)
         return challr
-
-    def answer_challenges(self, challbs, responses):
-        """Answer multiple challenges.
-
-        .. note:: This is a convenience function to make integration
-           with old proto code easier and shall probably be removed
-           once restification is over.
-
-        """
-        return [self.answer_challenge(challb, response)
-                for challb, response in itertools.izip(challbs, responses)]
 
     @classmethod
     def retry_after(cls, response, default):
@@ -342,7 +370,6 @@ class Network(object):
         updated_authzr = self._authzr_from_response(
             response, authzr.body.identifier, authzr.uri, authzr.new_cert_uri)
         # TODO: check and raise UnexpectedUpdate
-
         return updated_authzr, response
 
     def request_issuance(self, csr, authzrs):
@@ -358,6 +385,7 @@ class Network(object):
 
         """
         assert authzrs, "Authorizations list is empty"
+        logging.debug("Requesting issuance...")
 
         # TODO: assert len(authzrs) == number of SANs
         req = messages2.CertificateRequest(
@@ -408,7 +436,7 @@ class Network(object):
         :rtype: `tuple`
 
         """
-        # priority queue with datetime (based od Retry-After) as key,
+        # priority queue with datetime (based on Retry-After) as key,
         # and original Authorization Resource as value
         waiting = [(datetime.datetime.now(), authzr) for authzr in authzrs]
         # mapping between original Authorization Resource and the most
@@ -438,6 +466,15 @@ class Network(object):
         return self.request_issuance(csr, updated_authzrs), updated_authzrs
 
     def _get_cert(self, uri):
+        """Returns certificate from URI.
+
+        :param str uri: URI of certificate
+
+        :returns: tuple of the form
+            (response, :class:`letsencrypt.acme.jose.ComparableX509`)
+        :rtype: tuple
+
+        """
         content_type = self.DER_CONTENT_TYPE  # TODO: make it a param
         response = self._get(uri, headers={'Accept': content_type},
                              content_type=content_type)
@@ -489,13 +526,21 @@ class Network(object):
 
         """
         if certr.cert_chain_uri is not None:
-            return self._get_cert(certr.cert_chain_uri)
+            return self._get_cert(certr.cert_chain_uri)[1]
+        else:
+            return None
 
     def revoke(self, certr, when=messages2.Revocation.NOW):
         """Revoke certificate.
 
+        :param certr: Certificate Resource
+        :type certr: `.CertificateResource`
+
         :param when: When should the revocation take place? Takes
            the same values as `.messages2.Revocation.revoke`.
+
+        :raises letsencrypt.client.errors.NetworkError: If revocation is
+            unsuccessful.
 
         """
         rev = messages2.Revocation(revoke=when, authorizations=tuple(

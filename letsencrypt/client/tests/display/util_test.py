@@ -128,9 +128,9 @@ class NcursesDisplayTest(DisplayT):
         self.displayer.checklist("message", self.tags)
 
         choices = [
-            (self.tags[0], "", False),
-            (self.tags[1], "", False),
-            (self.tags[2], "", False)
+            (self.tags[0], "", True),
+            (self.tags[1], "", True),
+            (self.tags[2], "", True),
         ]
         mock_checklist.assert_called_with(
             "message", width=display_util.WIDTH, height=display_util.HEIGHT,
