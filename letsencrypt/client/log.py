@@ -37,7 +37,7 @@ class DialogHandler(logging.Handler):  # pylint: disable=too-few-public-methods
         lines.
 
         """
-        for line in (record.msg % record.args).splitlines():
+        for line in record.getMessage().splitlines():
             # check for lines that would wrap
             cur_out = line
             while len(cur_out) > self.width:
