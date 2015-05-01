@@ -50,6 +50,9 @@ DVSNI_CHALLENGE_PORT = 443
 """Port to perform DVSNI challenge."""
 
 
+CONFIG_DIRS_MODE = 0o755
+"""Directory mode for ``.IConfig.config_dir`` et al."""
+
 TEMP_CHECKPOINT_DIR = "temp_checkpoint"
 """Temporary checkpoint directory (relative to IConfig.work_dir)."""
 

@@ -18,10 +18,13 @@ import letsencrypt
 
 from letsencrypt.client import account
 from letsencrypt.client import configuration
+from letsencrypt.client import constants
 from letsencrypt.client import client
 from letsencrypt.client import errors
 from letsencrypt.client import interfaces
+from letsencrypt.client import le_util
 from letsencrypt.client import log
+
 from letsencrypt.client.display import util as display_util
 from letsencrypt.client.display import ops as display_ops
 
@@ -176,6 +179,9 @@ def main():  # pylint: disable=too-many-branches, too-many-statements
     if args.rollback > 0:
         client.rollback(args.rollback, config)
         sys.exit()
+
+    le_util.make_or_verify_dir(
+        config.config_dir, constants.CONFIG_DIRS_MODE, os.geteuid())
 
     # Prepare for init of Client
     if args.email is None:
