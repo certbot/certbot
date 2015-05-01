@@ -6,6 +6,7 @@ import shutil
 import mock
 
 from letsencrypt.acme import challenges
+from letsencrypt.acme import messages2
 
 from letsencrypt.client import achallenges
 from letsencrypt.client import le_util
@@ -35,16 +36,24 @@ class DvsniPerformTest(util.NginxTest):
 
         self.achalls = [
             achallenges.DVSNI(
-                chall=challenges.DVSNI(
-                    r="foo",
-                    nonce="bar",
+                challb=messages2.ChallengeBody(
+                    chall=challenges.DVSNI(
+                        r="foo",
+                        nonce="bar",
+                    ),
+                    uri="https://letsencrypt-ca.org/chall0_uri",
+                    status=messages2.Status("pending"),
                 ), domain="www.example.com", key=auth_key),
             achallenges.DVSNI(
-                chall=challenges.DVSNI(
-                    r="\xba\xa9\xda?<m\xaewmx\xea\xad\xadv\xf4\x02\xc9y\x80"
-                      "\xe2_X\t\xe7\xc7\xa4\t\xca\xf7&\x945",
-                    nonce="Y\xed\x01L\xac\x95\xf7pW\xb1\xd7"
-                          "\xa1\xb2\xc5\x96\xba",
+                challb=messages2.ChallengeBody(
+                    chall=challenges.DVSNI(
+                        r="\xba\xa9\xda?<m\xaewmx\xea\xad\xadv\xf4\x02\xc9y\x80"
+                          "\xe2_X\t\xe7\xc7\xa4\t\xca\xf7&\x945",
+                        nonce="Y\xed\x01L\xac\x95\xf7pW\xb1\xd7"
+                              "\xa1\xb2\xc5\x96\xba",
+                    ),
+                    uri="https://letsencrypt-ca.org/chall1_uri",
+                    status=messages2.Status("pending"),
                 ), domain="blah", key=auth_key),
         ]
 

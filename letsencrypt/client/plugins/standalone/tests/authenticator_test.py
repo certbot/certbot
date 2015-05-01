@@ -15,6 +15,8 @@ from letsencrypt.acme import challenges
 from letsencrypt.client import achallenges
 from letsencrypt.client import le_util
 
+from letsencrypt.client.tests import acme_util
+
 
 KEY = le_util.Key("foo", pkg_resources.resource_string(
     "letsencrypt.acme.jose", os.path.join("testdata", "rsa512_key.pem")))
@@ -71,7 +73,7 @@ class SNICallbackTest(unittest.TestCase):
             StandaloneAuthenticator
         self.authenticator = StandaloneAuthenticator(None)
         self.cert = achallenges.DVSNI(
-            chall=challenges.DVSNI(r="x"*32, nonce="abcdef"),
+            challb=acme_util.DVSNI_P,
             domain="example.com", key=KEY).gen_cert_and_response()[0]
         self.authenticator.private_key = PRIVATE_KEY
         self.authenticator.tasks = {"abcdef.acme.invalid": self.cert}
@@ -298,10 +300,12 @@ class PerformTest(unittest.TestCase):
         self.authenticator = StandaloneAuthenticator(None)
 
         self.achall1 = achallenges.DVSNI(
-            chall=challenges.DVSNI(r="whee", nonce="foo"),
+            challb=acme_util.chall_to_challb(
+                challenges.DVSNI(r="whee", nonce="foo"), "pending"),
             domain="foo.example.com", key=KEY)
         self.achall2 = achallenges.DVSNI(
-            chall=challenges.DVSNI(r="whee", nonce="bar"),
+            challb=acme_util.chall_to_challb(
+                challenges.DVSNI(r="whee", nonce="bar"), "pending"),
             domain="bar.example.com", key=KEY)
         bad_achall = ("This", "Represents", "A Non-DVSNI", "Challenge")
         self.achalls = [self.achall1, self.achall2, bad_achall]
@@ -346,12 +350,12 @@ class PerformTest(unittest.TestCase):
 
     def test_perform_with_pending_tasks(self):
         self.authenticator.tasks = {"foononce.acme.invalid": "cert_data"}
-        extra_achall = achallenges.DVSNI(chall="a", domain="b", key="c")
+        extra_achall = acme_util.DVSNI_P
         self.assertRaises(
             ValueError, self.authenticator.perform, [extra_achall])
 
     def test_perform_without_challenge_list(self):
-        extra_achall = achallenges.DVSNI(chall="a", domain="b", key="c")
+        extra_achall = acme_util.DVSNI_P
         # This is wrong because a challenge must be specified.
         self.assertRaises(ValueError, self.authenticator.perform, [])
         # This is wrong because it must be a list, not a bare challenge.
@@ -458,7 +462,8 @@ class DoChildProcessTest(unittest.TestCase):
             StandaloneAuthenticator
         self.authenticator = StandaloneAuthenticator(None)
         self.cert = achallenges.DVSNI(
-            chall=challenges.DVSNI(r="x"*32, nonce="abcdef"),
+            challb=acme_util.chall_to_challb(
+                challenges.DVSNI(r=("x" * 32), nonce="abcdef"), "pending"),
             domain="example.com", key=KEY).gen_cert_and_response()[0]
         self.authenticator.private_key = PRIVATE_KEY
         self.authenticator.tasks = {"abcdef.acme.invalid": self.cert}
@@ -546,7 +551,8 @@ class CleanupTest(unittest.TestCase):
             StandaloneAuthenticator
         self.authenticator = StandaloneAuthenticator(None)
         self.achall = achallenges.DVSNI(
-            chall=challenges.DVSNI(r="whee", nonce="foononce"),
+            challb=acme_util.chall_to_challb(
+                challenges.DVSNI(r="whee", nonce="foononce"), "pending"),
             domain="foo.example.com", key="key")
         self.authenticator.tasks = {self.achall.nonce_domain: "stuff"}
         self.authenticator.child_pid = 12345
@@ -566,7 +572,8 @@ class CleanupTest(unittest.TestCase):
     def test_bad_cleanup(self):
         self.assertRaises(
             ValueError, self.authenticator.cleanup, [achallenges.DVSNI(
-                chall=challenges.DVSNI(r="whee", nonce="badnonce"),
+                challb=acme_util.chall_to_challb(
+                    challenges.DVSNI(r="whee", nonce="badnonce"), "pending"),
                 domain="bad.example.com", key="key")])
 
 
