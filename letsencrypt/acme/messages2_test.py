@@ -75,6 +75,13 @@ class ConstantTest(unittest.TestCase):
         self.assertEqual('MockConstant(a)', repr(self.const_a))
         self.assertEqual('MockConstant(b)', repr(self.const_b))
 
+    def test_equality(self):
+        const_a_prime = self.MockConstant('a')
+        self.assertFalse(self.const_a == self.const_b)
+        self.assertTrue(self.const_a == const_a_prime)
+
+        self.assertTrue(self.const_a != self.const_b)
+        self.assertFalse(self.const_a != const_a_prime)
 
 class RegistrationTest(unittest.TestCase):
     """Tests for letsencrypt.acme.messages2.Registration."""

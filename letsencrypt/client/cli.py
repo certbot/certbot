@@ -14,6 +14,7 @@ import zope.interface.verify
 
 import letsencrypt
 
+from letsencrypt.client import account
 from letsencrypt.client import configuration
 from letsencrypt.client import constants
 from letsencrypt.client import client
@@ -31,34 +32,56 @@ from letsencrypt.client.plugins.apache import configurator as apache_configurato
 from letsencrypt.client.plugins.nginx import configurator as nginx_configurator
 
 
-def _common_run(args, config, authenticator, installer):
+def _account_init(args, config):
+    le_util.make_or_verify_dir(
+        config.config_dir, constants.CONFIG_DIRS_MODE, os.geteuid())
+
+    # Prepare for init of Client
+    if args.email is None:
+        return client.determine_account(config)
+    else:
+        try:
+            # The way to get the default would be args.email = ""
+            # First try existing account
+            return account.Account.from_existing_account(config, args.email)
+        except errors.LetsEncryptClientError:
+            try:
+                # Try to make an account based on the email address
+                return account.Account.from_email(config, args.email)
+            except errors.LetsEncryptClientError:
+                return None
+
+
+def _common_run(args, config, acc, authenticator, installer):
     if args.domains is None:
         doms = display_ops.choose_names(installer)
     else:
         doms = args.domains
 
     if not doms:
-        return
+        return None
 
-    # Prepare for init of Client
-    if args.authkey is None:
-        authkey = client.init_key(config.rsa_key_size, config.key_dir)
-    else:
-        authkey = le_util.Key(args.authkey[0], args.authkey[1])
-
-    acme = client.Client(config, authkey, authenticator, installer)
+    acme = client.Client(config, acc, authenticator, installer)
 
     # Validate the key and csr
-    client.validate_key_csr(authkey)
+    client.validate_key_csr(acc.key)
+
+    if authenticator is not None:
+        if acc.regr is None:
+            try:
+                acme.register()
+            except errors.LetsEncryptClientError:
+                return None
 
     return acme, doms, authkey
 
 
 def run(args, config):
     """Obtain a certificate and install."""
-    if not args.eula:
-        display_eula()
-
+    acc = _account_init(args, config)
+    if acc is None:
+        return None
+    
     if args.configurator is not None and (args.installer is not None or
                                           args.authenticator is not None):
         return ("Either --configurator or --authenticator/--installer"
@@ -76,7 +99,7 @@ def run(args, config):
     if installer is None or authenticator is None:
         return "Configurator could not be determined"
 
-    acme, auth, installer, doms, auth_key = _common_run(args, config)
+    acme, auth, installer, doms, auth_key = _common_run(args, config, acc)
     cert_file, chain_file = acme.obtain_certificate(doms)
     acme.deploy_certificate(doms, authkey, cert_file, chain_file)
     acme.enhance_config(doms, args.redirect)
@@ -84,6 +107,10 @@ def run(args, config):
 
 def auth(args, config):
     """Obtain a certificate (no install)."""
+    acc = _account_init(args, config)
+    if acc is None:
+        return None
+
     authenticator = plugins_disco.pick_authenticator(config, args.authenticator)
     if authenticator is None:
         return "Authenticator could not be determined"
@@ -122,7 +149,11 @@ def revoke(args, config):
     """Revoke."""
     if args.rev_cert is None and args.rev_key is None:
         return "At least one of --certificate or --key is required"
-    client.revoke(config, args.no_confirm, args.rev_cert, args.rev_key)
+
+    # This depends on the renewal config and cannot be completed yet.
+    zope.component.getUtility(interfaces.IDisplay).notification(
+        "Revocation is not available with the new Boulder server yet.")
+    #client.revoke(config, args.no_confirm, args.rev_cert, args.rev_key)
 
 
 def rollback(args, config):
@@ -190,14 +221,6 @@ def plugins(args, config):
     plugins_disco
 
 
-def display_eula():
-    """Displays the end user agreement."""
-    eula = pkg_resources.resource_string("letsencrypt", "EULA")
-    if not zope.component.getUtility(interfaces.IDisplay).yesno(
-            eula, "Agree", "Cancel"):
-        sys.exit(0)
-
-
 def read_file(filename):
     """Returns the given file's contents with universal new line support.
 
@@ -214,8 +237,10 @@ def read_file(filename):
     except IOError as exc:
         raise argparse.ArgumentTypeError(exc.strerror)
 
+
 def config_help(name):
     return interfaces.IConfig[name].__doc__
+
 
 def create_parser():
     """Create parser."""
@@ -233,7 +258,7 @@ def create_parser():
         default=constants.DEFAULT_VERBOSE_COUNT)
     add("--no-confirm", dest="no_confirm", action="store_true",
         help="Turn off confirmation screens, currently used for --revoke")
-    add("-e", "--agree-tos", dest="eula", action="store_true",
+    add("-e", "--agree-tos", dest="tos", action="store_true",
         help="Skip the end user license agreement screen.")
     add("-t", "--text", dest="use_curses", action="store_false",
         help="Use the text output instead of the curses UI.")
@@ -278,6 +303,7 @@ def create_parser():
         help=config_help("server"))
     add("-k", "--authkey", type=read_file,
         help="Path to the authorized key file")
+    add("-m", "--email", help=config_help("email"))
     add("-B", "--rsa-key-size", type=int, metavar="N",
         default=constants.DEFAULT_RSA_KEY_SIZE,
         help=config_help("rsa_key_size"))

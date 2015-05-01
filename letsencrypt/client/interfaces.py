@@ -115,6 +115,8 @@ class IConfig(zope.interface.Interface):
     server = zope.interface.Attribute(
         "CA hostname (and optionally :port). The server certificate must "
         "be trusted in order to avoid further modifications to the client.")
+    email = zope.interface.Attribute(
+        "Email used for registration and recovery contact.")
     rsa_key_size = zope.interface.Attribute("Size of the RSA key.")
 
     config_dir = zope.interface.Attribute("Configuration directory.")
@@ -127,6 +129,10 @@ class IConfig(zope.interface.Interface):
     cert_key_backup = zope.interface.Attribute(
         "Directory where all certificates and keys are stored. "
         "Used for easy revocation.")
+    accounts_dir = zope.interface.Attribute(
+        "Directory where all account information is stored.")
+    account_keys_dir = zope.interface.Attribute(
+        "Directory where all account keys are stored.")
     rec_token_dir = zope.interface.Attribute(
         "Directory where all recovery tokens are saved.")
     key_dir = zope.interface.Attribute("Keys storage.")
@@ -277,13 +283,13 @@ class IDisplay(zope.interface.Interface):
 
         """
 
-    def checklist(message, choices):
+    def checklist(message, tags, default_state):
         """Allow for multiple selections from a menu.
 
         :param str message: message to display to the user
-
-        :param tags: tags
-        :type tags: :class:`list` of :class:`str`
+        :param list tags: where each is of type :class:`str` len(tags) > 0
+        :param bool default_status: If True, items are in a selected state by
+            default.
 
         """
 

@@ -15,7 +15,6 @@ import zope.interface
 from letsencrypt.acme import challenges
 
 from letsencrypt.client import achallenges
-from letsencrypt.client import constants
 from letsencrypt.client import interfaces
 
 
@@ -367,7 +366,7 @@ class StandaloneAuthenticator(object):
                 results_if_failure.append(False)
         if not self.tasks:
             raise ValueError("nothing for .perform() to do")
-        if self.already_listening(constants.DVSNI_CHALLENGE_PORT):
+        if self.already_listening(challenges.DVSNI.PORT):
             # If we know a process is already listening on this port,
             # tell the user, and don't even attempt to bind it.  (This
             # test is Linux-specific and won't indicate that the port
@@ -375,7 +374,7 @@ class StandaloneAuthenticator(object):
             return results_if_failure
         # Try to do the authentication; note that this creates
         # the listener subprocess via os.fork()
-        if self.start_listener(constants.DVSNI_CHALLENGE_PORT, key):
+        if self.start_listener(challenges.DVSNI.PORT, key):
             return results_if_success
         else:
             # TODO: This should probably raise a DVAuthError exception
