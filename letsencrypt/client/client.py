@@ -63,7 +63,7 @@ class Client(object):
 
         # TODO: Allow for other alg types besides RS256
         self.network = network2.Network(
-            "https://" + config.server, jwk.JWKRSA.load(self.account.key.pem))
+            config.server_url, jwk.JWKRSA.load(self.account.key.pem))
 
         self.config = config
 
