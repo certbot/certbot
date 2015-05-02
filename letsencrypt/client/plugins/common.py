@@ -8,11 +8,11 @@ from letsencrypt.client import interfaces
 
 def option_namespace(name):
     """ArgumentParser options namespace (prefix of all options)."""
-    return name + '-'
+    return name + "-"
 
 def dest_namespace(name):
     """ArgumentParser dest namespace (prefix of all destinations)."""
-    return name + '_'
+    return name + "_"
 
 
 class Plugin(object):
@@ -26,17 +26,19 @@ class Plugin(object):
 
     @property
     def option_namespace(self):
+        """ArgumentParser options namespace (prefix of all options)."""
         return option_namespace(self.name)
 
     @property
     def dest_namespace(self):
+        """ArgumentParser dest namespace (prefix of all destinations)."""
         return dest_namespace(self.name)
 
     def dest(self, var):
         """Find a destination for given variable ``var``."""
         # this should do exactly the same what ArgumentParser(arg),
         # does to "arg" to compute "dest"
-        return self.dest_namespace + var.replace('-', '_')
+        return self.dest_namespace + var.replace("-", "_")
 
     def conf(self, var):
         """Find a configuration value for variable ``var``."""
@@ -44,12 +46,18 @@ class Plugin(object):
 
     @classmethod
     def inject_parser_options(cls, parser, name):
+        """Inject parser options.
+
+        See `~.IPlugin.inject_parser_options` for docs.
+
+        """
         # dummy function, doesn't check if dest.startswith(self.dest_namespace)
         def add(arg_name_no_prefix, *args, **kwargs):
+            # pylint: disable=missing-docstring
             return parser.add_argument(
                 "--{0}{1}".format(option_namespace(name), arg_name_no_prefix),
                 *args, **kwargs)
-        cls.add_parser_arguments(add)
+        return cls.add_parser_arguments(add)
 
     @jose_util.abstractclassmethod
     def add_parser_arguments(cls, add):
