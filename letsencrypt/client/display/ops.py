@@ -12,6 +12,11 @@ util = zope.component.getUtility  # pylint: disable=invalid-name
 
 
 def choose_plugin(prepared, question):
+    """Allow the user to choose ther plugin.
+
+    :param list prepared:
+
+    """
     opts = [plugin_ep.name_with_description if error is None
             else "%s (Misconfigured)" % plugin_ep.name_with_description
             for (plugin_ep, error) in prepared]
@@ -31,39 +36,6 @@ def choose_plugin(prepared, question):
                 msg, height=display_util.HEIGHT)
         else:
             return None
-
-
-def choose_authenticator(auths, errs):
-    """Allow the user to choose their authenticator.
-
-    :param list auths: Where each of type
-        :class:`letsencrypt.client.interfaces.IAuthenticator` object
-    :param dict errs: Mapping IAuthenticator objects to error messages
-
-    :returns: Authenticator selected
-    :rtype: :class:`letsencrypt.client.interfaces.IAuthenticator` or `None`
-
-    """
-    descs = [auth.description if auth not in errs
-             else "%s (Misconfigured)" % auth.description
-             for auth in auths]
-
-    while True:
-        code, index = util(interfaces.IDisplay).menu(
-            "How would you like to authenticate with the Let's Encrypt CA?",
-            descs, help_label="More Info")
-
-        if code == display_util.OK:
-            return auths[index]
-        elif code == display_util.HELP:
-            if auths[index] in errs:
-                msg = "Reported Error: %s" % errs[auths[index]]
-            else:
-                msg = auths[index].more_info()
-            util(interfaces.IDisplay).notification(
-                msg, height=display_util.HEIGHT)
-        else:
-            return
 
 
 def choose_account(accounts):

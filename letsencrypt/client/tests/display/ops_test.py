@@ -11,50 +11,6 @@ from letsencrypt.client import account
 from letsencrypt.client import le_util
 from letsencrypt.client.display import util as display_util
 
-class ChooseAuthenticatorTest(unittest.TestCase):
-    """Test choose_authenticator function."""
-    def setUp(self):
-        zope.component.provideUtility(display_util.FileDisplay(sys.stdout))
-        self.mock_apache = mock.Mock()
-        self.mock_stand = mock.Mock()
-        self.mock_apache().more_info.return_value = "Apache Info"
-        self.mock_stand().more_info.return_value = "Standalone Info"
-
-        self.auths = [self.mock_apache, self.mock_stand]
-
-        self.errs = {self.mock_apache: "This is an error message."}
-
-    @classmethod
-    def _call(cls, auths, errs):
-        from letsencrypt.client.display.ops import choose_authenticator
-        return choose_authenticator(auths, errs)
-
-    @mock.patch("letsencrypt.client.display.ops.util")
-    def test_successful_choice(self, mock_util):
-        mock_util().menu.return_value = (display_util.OK, 0)
-
-        ret = self._call(self.auths, {})
-
-        self.assertEqual(ret, self.mock_apache)
-
-    @mock.patch("letsencrypt.client.display.ops.util")
-    def test_more_info(self, mock_util):
-        mock_util().menu.side_effect = [
-            (display_util.HELP, 0),
-            (display_util.HELP, 1),
-            (display_util.OK, 1),
-        ]
-
-        ret = self._call(self.auths, self.errs)
-
-        self.assertEqual(mock_util().notification.call_count, 2)
-        self.assertEqual(ret, self.mock_stand)
-
-    @mock.patch("letsencrypt.client.display.ops.util")
-    def test_no_choice(self, mock_util):
-        mock_util().menu.return_value = (display_util.CANCEL, 0)
-        self.assertTrue(self._call(self.auths, {}) is None)
-
 
 class ChooseAccountTest(unittest.TestCase):
     """Test choose_account."""

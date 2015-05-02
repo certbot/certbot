@@ -153,12 +153,13 @@ def revoke(args, config, plugins):
     # This depends on the renewal config and cannot be completed yet.
     zope.component.getUtility(interfaces.IDisplay).notification(
         "Revocation is not available with the new Boulder server yet.")
-    #client.revoke(config, args.no_confirm, args.rev_cert, args.rev_key)
+    #client.revoke(args.installer, config, plugins, args.no_confirm,
+    #              args.rev_cert, args.rev_key)
 
 
 def rollback(args, config, plugins):
     """Rollback."""
-    client.rollback(args.checkpoints, config)
+    client.rollback(args.installer, args.checkpoints, config, plugins)
 
 
 def config_changes(args, config, plugins):

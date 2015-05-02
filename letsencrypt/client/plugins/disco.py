@@ -131,7 +131,7 @@ def prepare_plugins(initialized):
     return prepared  # succefully prepared + misconfigured
 
 
-def _pick_plugin(config, default, plugins, ifaces, question):
+def _pick_plugin(config, default, plugins, question, ifaces):
     if default is not None:
         filtered = {default: plugins[default]}
     else:
@@ -154,22 +154,26 @@ def _pick_plugin(config, default, plugins, ifaces, question):
         return None
 
 
-def pick_authenticator(config, default, plugins):
+def pick_authenticator(
+        config, default, plugins, question="How would you "
+        "like to authenticate with Let's Encrypt CA?"):
     """Pick authentication plugin."""
     return _pick_plugin(
-        config, default, plugins, (interfaces.IAuthenticator,),
-        "How would you like to authenticate with Let's Encrypt CA?")
+        config, default, plugins, question, (interfaces.IAuthenticator,))
 
 
-def pick_installer(config, default, plugins):
+def pick_installer(config, default, plugins,
+                   question="How would you like to install certificates?"):
     """Pick installer plugin."""
-    return _pick_plugin(config, default, plugins, (interfaces.IInstaller,),
-                        "How would you like to install certificates?")
+    return _pick_plugin(
+        config, default, plugins, question, (interfaces.IInstaller,))
 
 
-def pick_configurator(config, default, plugins):
+def pick_configurator(
+        config, default, plugins,
+        question="How would you like to authenticate and install "
+                 "certificates?"):
     """Pick configurator plugin."""
     return _pick_plugin(
-        config, default, plugins,
-        (interfaces.IAuthenticator, interfaces.IInstaller),
-        "How would you like to install certificates?")
+        config, default, plugins, question
+        (interfaces.IAuthenticator, interfaces.IInstaller))
