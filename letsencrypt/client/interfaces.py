@@ -6,29 +6,62 @@ import zope.interface
 
 
 class IPluginFactory(zope.interface.Interface):
+    """IPlugin factory.
 
-    def __call__(config):
+    Objects providing this interface will be called without satisfying
+    any entry point "extras" (extra dependencies) you might have defined
+    for your plugin, e.g (excerpt from ``setup.py`` script)::
+
+      setup(
+          ...
+          entry_points={
+              'letsencrypt.plugins': [
+                  'name=example_project.plugin[plugin_deps]',
+              ],
+          },
+          extras_require={
+              'plugin_deps': ['dep1', 'dep2'],
+          }
+      )
+
+    Therefore, make sure such objects are importable and usable without
+    extras. This is necessary, because CLI does the following operations
+    (in order):
+
+      - loads an entry point,
+      - calls `inject_parser_options`,
+      - requires an entry point,
+      - creates plugin instance (`__call__`).
+
+    """
+
+    description = zope.interface.Attribute("Short plugin description")
+
+    def __call__(config, name):
         """Create new `IPlugin`.
 
         :param IConfig config: Configuration.
+        :param str name: Unique plugin name.
 
         """
 
-    def add_parser_arguments(add):
-        """Add plugin arguments to the CLI argument parser.
+    def inject_parser_options(parser, name):
+        """Inject argument parser options (flags).
 
-        :param callable add: Function that proxies calls to
-            `argparse.ArgumentParser.add_argument` prepending options
-            with unique plugin name prefix.
+        1. Be nice and prepend all options and destinations with
+        `~.option_namespace` and `~.dest_namespace`.
+
+        2. Inject options (flags) only. Positional arguments are not
+        allowed, as this would break the CLI.
+
+        :param ArgumentParser parser: (Almost) top-level CLI parser.
+        :param str name: Unique plugin name.
 
         """
-        # TODO: move to IPlugin?
 
 
 class IPlugin(zope.interface.Interface):
     """Let's Encrypt plugin."""
-
-    description = zope.interface.Attribute("Short plugin description")
 
     def prepare():
         """Prepare the plugin.

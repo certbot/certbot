@@ -17,12 +17,14 @@ from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
 from letsencrypt.client import reverter
 
+from letsencrypt.client.plugins import common
+
 from letsencrypt.client.plugins.nginx import constants
 from letsencrypt.client.plugins.nginx import dvsni
 from letsencrypt.client.plugins.nginx import parser
 
 
-class NginxConfigurator(object):
+class NginxConfigurator(common.Plugin):
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
     """Nginx configurator.
 
@@ -60,14 +62,15 @@ class NginxConfigurator(object):
             "'nginx' binary, used for 'configtest' and retrieving nginx "
             "version number.")
 
-    def __init__(self, config, version=None):
+    def __init__(self, *args, **kwargs):
         """Initialize an Nginx Configurator.
 
         :param tup version: version of Nginx as a tuple (1, 4, 7)
             (used mostly for unittesting)
 
         """
-        self.config = config
+        version = kwargs.pop("version", None)
+        super(NginxConfigurator, self).__init__(*args, **kwargs)
 
         # Verify that all directories and files exist with proper permissions
         if os.geteuid() == 0:
@@ -85,21 +88,21 @@ class NginxConfigurator(object):
         self._enhance_func = {}  # TODO: Support at least redirects
 
         # Set up reverter
-        self.reverter = reverter.Reverter(config)
+        self.reverter = reverter.Reverter(self.config)
         self.reverter.recovery_routine()
 
     # This is called in determine_authenticator and determine_installer
     def prepare(self):
         """Prepare the authenticator/installer."""
         self.parser = parser.NginxParser(
-            self.config.nginx_server_root,
-            self.config.nginx_mod_ssl_conf)
+            self.conf('server-root'),
+            self.conf('mod-ssl-conf'))
 
         # Set Version
         if self.version is None:
             self.version = self.get_version()
 
-        temp_install(self.config.nginx_mod_ssl_conf)
+        temp_install(self.conf('mod-ssl-conf'))
 
     # Entry point in main.py for installing cert
     def deploy_cert(self, domain, cert, key, cert_chain=None):
@@ -323,7 +326,7 @@ class NginxConfigurator(object):
         :rtype: bool
 
         """
-        return nginx_restart(self.config.nginx_ctl)
+        return nginx_restart(self.conf('ctl'))
 
     def config_test(self):  # pylint: disable=no-self-use
         """Check the configuration of Nginx for errors.
@@ -334,7 +337,7 @@ class NginxConfigurator(object):
         """
         try:
             proc = subprocess.Popen(
-                [self.config.nginx_ctl, "-t"],
+                [self.conf('ctl'), "-t"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
             stdout, stderr = proc.communicate()
@@ -381,13 +384,13 @@ class NginxConfigurator(object):
         """
         try:
             proc = subprocess.Popen(
-                [self.config.nginx_ctl, "-V"],
+                [self.conf('ctl'), "-V"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
             text = proc.communicate()[1]  # nginx prints output to stderr
         except (OSError, ValueError):
             raise errors.LetsEncryptConfiguratorError(
-                "Unable to run %s -V" % self.config.nginx_ctl)
+                "Unable to run %s -V" % self.conf('ctl'))
 
         version_regex = re.compile(r"nginx/([0-9\.]*)", re.IGNORECASE)
         version_matches = version_regex.findall(text)

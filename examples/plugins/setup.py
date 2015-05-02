@@ -10,7 +10,8 @@ setup(
     ],
     entry_points={
         'letsencrypt.plugins': [
-            'example = letsencrypt_example_plugins:Authenticator',
+            'example_authenticator = letsencrypt_example_plugins:Authenticator',
+            'example_installer = letsencrypt_example_plugins:Installer',
         ],
     },
 )

@@ -97,14 +97,15 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         add("init-script", default=constants.DEFAULT_INIT_SCRIPT,
             help="Path to the Apache init script (used for server reload/restart).")
 
-    def __init__(self, config, version=None):
+    def __init__(self, *args, **kwargs):
         """Initialize an Apache Configurator.
 
         :param tup version: version of Apache as a tuple (2, 4, 7)
             (used mostly for unittesting)
 
         """
-        super(ApacheConfigurator, self).__init__(config)
+        version = kwargs.pop('version', None)
+        super(ApacheConfigurator, self).__init__(*args, **kwargs)
 
         # Verify that all directories and files exist with proper permissions
         if os.geteuid() == 0:
@@ -124,8 +125,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     def prepare(self):
         """Prepare the authenticator/installer."""
         self.parser = parser.ApacheParser(
-            self.aug, self.config.apache_server_root,
-            self.config.apache_mod_ssl_conf)
+            self.aug, self.conf('server-root'), self.conf('mod-ssl-conf'))
         # Check for errors in parsing files with Augeas
         self.check_parsing_errors("httpd.aug")
 
@@ -143,7 +143,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         #     on initialization
         self._prepare_server_https()
 
-        temp_install(self.config.apache_mod_ssl_conf)
+        temp_install(self.conf('mod-ssl-conf'))
 
     def deploy_cert(self, domain, cert, key, cert_chain=None):
         """Deploys certificate to specified virtual host.
@@ -401,10 +401,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         is appropriately listening on port 443.
 
         """
-        if not mod_loaded("ssl_module", self.config.apache_ctl):
+        if not mod_loaded("ssl_module", self.conf('ctl')):
             logging.info("Loading mod_ssl into Apache Server")
-            enable_mod("ssl", self.config.apache_init_script,
-                       self.config.apache_enmod)
+            enable_mod("ssl", self.conf('init-script'),
+                       self.conf('enmod'))
 
         # Check for Listen 443
         # Note: This could be made to also look for ip:443 combo
@@ -587,9 +587,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             :class:`~letsencrypt.client.plugins.apache.obj.VirtualHost`)
 
         """
-        if not mod_loaded("rewrite_module", self.config.apache_ctl):
-            enable_mod("rewrite", self.config.apache_init_script,
-                       self.config.apache_enmod)
+        if not mod_loaded("rewrite_module", self.conf('ctl')):
+            enable_mod("rewrite", self.conf('init-script'), self.conf('enmod'))
 
         general_v = self._general_vhost(ssl_vhost)
         if general_v is None:
@@ -912,7 +911,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: bool
 
         """
-        return apache_restart(self.config.apache_init_script)
+        return apache_restart(self.conf('init-script'))
 
     def config_test(self):  # pylint: disable=no-self-use
         """Check the configuration of Apache for errors.
@@ -923,7 +922,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         try:
             proc = subprocess.Popen(
-                ["sudo", self.config.apache_ctl, "configtest"], # TODO: sudo?
+                ["sudo", self.conf('ctl'), "configtest"], # TODO: sudo?
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
             stdout, stderr = proc.communicate()
@@ -970,13 +969,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         try:
             proc = subprocess.Popen(
-                [self.config.apache_ctl, "-v"],
+                [self.conf('ctl'), "-v"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
             text = proc.communicate()[0]
         except (OSError, ValueError):
             raise errors.LetsEncryptConfiguratorError(
-                "Unable to run %s -v" % self.config.apache_ctl)
+                "Unable to run %s -v" % self.conf('ctl'))
 
         regex = re.compile(r"Apache/([0-9\.]*)", re.IGNORECASE)
         matches = regex.findall(text)

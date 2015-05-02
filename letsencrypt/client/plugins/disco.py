@@ -12,52 +12,97 @@ from letsencrypt.client import interfaces
 from letsencrypt.client.display import ops as display_ops
 
 
-def name_plugins(plugins):
-    # TODO: actually make it unambiguous...
-    names = {}
-    for plugin_cls, entry_points in plugins.iteritems():
-        entry_point = next(iter(entry_points))  # entry_points.peek()
-        names[plugin_cls] = entry_point.name
-    return names
+class PluginEntryPoint(object):
+    """Plugin entry point."""
+
+    PREFIX_FREE_DISTRIBUTIONS = ['letsencrypt']
+    """Distributions for which prefix will be omitted."""
+
+    def __init__(self, entry_point):
+        self.name = self.entry_point_to_plugin_name(entry_point)
+        self.plugin_cls = entry_point.load()
+        self.entry_point = entry_point
+        self._initialized = None
+
+    @property
+    def initialized(self):
+        return self._initialized is not None
+
+    @classmethod
+    def entry_point_to_plugin_name(cls, entry_point):
+        if entry_point.dist.key in cls.PREFIX_FREE_DISTRIBUTIONS:
+            return entry_point.name
+        return entry_point.dist.key + ':' + entry_point.name
+
+    def init(self, config=None):
+        """Memoized plugin inititialization."""
+        if not self.initialized:
+            self.entry_point.require()  # fetch extras!
+            self._initialized = self.plugin_cls(config, self.name)
+        return self._initialized
+
+    def __repr__(self):
+        return 'PluginEntryPoint#{0}'.format(self.name)
 
 
-def find_plugins():
-    """Find plugins using setuptools entry points."""
-    plugins = collections.defaultdict(set)
-    for entry_point in pkg_resources.iter_entry_points(
-            constants.SETUPTOOLS_PLUGINS_ENTRY_POINT):
-        plugin_cls = entry_point.load()
-        plugins[plugin_cls].add(entry_point)
-    return plugins
+class PluginRegistry(collections.Mapping):
+    """Plugin registry."""
 
+    def __init__(self, plugins):
+        self.plugins = plugins
 
-def filter_plugins(plugins, *ifaces_groups):
-    """Filter plugins based on interfaces."""
-    return dict(
-        (plugin_cls, entry_points)
-        for plugin_cls, entry_points in plugins.iteritems()
-        if not ifaces_groups or any(
-            all(iface.implementedBy(plugin_cls) for iface in ifaces)
-            for ifaces in ifaces_groups))
+    @classmethod
+    def find_all(cls):
+        """Find plugins using setuptools entry points."""
+        plugins = {}
+        for entry_point in pkg_resources.iter_entry_points(
+                constants.SETUPTOOLS_PLUGINS_ENTRY_POINT):
+            plugin_ep = PluginEntryPoint(entry_point)
+            assert plugin_ep.name not in plugins, (
+                'PREFIX_FREE_DISTRIBTIONS messed up')
+            plugins[plugin_ep.name] = plugin_ep
+        return cls(plugins)
+
+    def filter(self, *ifaces_groups):
+        """Filter plugins based on interfaces."""
+        return type(self)(dict(
+            plugin_ep
+            for plugin_ep in self.plugins.iteritems()
+            if not ifaces_groups or any(
+                all(iface.implementedBy(plugin_ep.plugin_cls)
+                    for iface in ifaces)
+                for ifaces in ifaces_groups)))
+
+    def __repr__(self):
+        return '{0}({1!r})'.format(self.__class__.__name__, self.plugins)
+
+    def __getitem__(self, name):
+        return self.plugins[name]
+
+    def __iter__(self):
+        return iter(self.plugins)
+
+    def __len__(self):
+        return len(self.plugins)
 
 
 def verify_plugins(initialized, ifaces):
     """Verify plugin objects."""
     verified = {}
-    for plugin_cls, plugin in initialized.iteritems():
+    for name, plugin_ep in initialized.iteritems():
         verifies = True
         for iface in ifaces:  # zope.interface.providedBy(plugin)
             try:
-                zope.interface.verify.verifyObject(iface, plugin)
+                zope.interface.verify.verifyObject(iface, plugin_ep.init())
             except zope.interface.exceptions.BrokenImplementation:
-                if iface.implementedBy(plugin_cls):
+                if iface.implementedBy(plugin_ep.plugin_cls):
                     logging.debug(
                         "%s implements %s but object does "
-                        "not verify", plugin_cls, iface.__name__)
+                        "not verify", plugin_ep.plugin_cls, iface.__name__)
                 verifies = False
                 break
         if verifies:
-            verified[plugin_cls] = plugin
+            verified[name] = plugin_ep
     return verified
 
 

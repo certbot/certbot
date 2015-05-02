@@ -171,48 +171,49 @@ def config_changes(args, config):
     client.config_changes(config)
 
 
-def _print_plugins(filtered, plugins, names):
-    if not filtered:
+def _print_plugins(plugins):
+    # TODO: this functions should use IDisplay rather than printing
+
+    if not plugins:
         print "No plugins found"
 
-    for plugin_cls, content in filtered.iteritems():
-        print "* {0}".format(names[plugin_cls])
-        print "Description: {0}".format(plugin_cls.description)
+    for plugin_ep in plugins.itervalues():
+        print "* {0}".format(plugin_ep.name)
+        print "Description: {0}".format(plugin_ep.plugin_cls.description)
         print "Interfaces: {0}".format(", ".join(
             iface.__name__ for iface in zope.interface.implementedBy(
-                plugin_cls)))
-        print "Entry points:"
-        for entry_point in plugins[plugin_cls]:
-            print "- {0.dist}: {0}".format(entry_point)
+                plugin_ep.plugin_cls)))
+        print "Entry point: {0}".format(plugin_ep.entry_point)
+
+        if plugin_ep.initialized:
+            print "Initialized: {0}".format(plugin_ep.init())
 
         # if filtered == prepared:
-        if isinstance(content, tuple) and content[1] is not None:
-            print content[1]  # error
-        print
+        #if isinstance(content, tuple) and content[1] is not None:
+        #    print content[1]  # error
+
+        print  # whitespace between plugins
 
 
 def plugins(args, config):
     """List plugins."""
-    plugins = plugins_disco.find_plugins()
+    plugins = plugins_disco.PluginRegistry.find_all()
     logging.debug("Discovered plugins: %s", plugins)
 
-    names = plugins_disco.name_plugins(plugins)
-
     ifaces = [] if args.ifaces is None else args.ifaces
-    filtered = plugins_disco.filter_plugins(
-        plugins, *((iface,) for iface in ifaces))
+    filtered = plugins.filter(*((iface,) for iface in ifaces))
     logging.debug("Filtered plugins: %s", filtered)
 
     if not args.init and not args.prepare:
-        return _print_plugins(filtered, plugins, names)
+        return _print_plugins(filtered)
 
-    initialized = dict((plugin_cls, plugin_cls(config))
-                       for plugin_cls in filtered)
-    verified = plugins_disco.verify_plugins(initialized, ifaces)
-    logging.debug("Verified plugins: %s", initialized)
+    for plugin_ep in filtered.itervalues():
+        plugin_ep.init(config)
+    #verified = plugins_disco.verify_plugins(initialized, ifaces)
+    #logging.debug("Verified plugins: %s", initialized)
 
     if not args.prepare:
-        return _print_plugins(initialized, plugins, names)
+        return _print_plugins(filtered)
 
     prepared = plugins_disco.prepare_plugins(initialized)
     logging.debug("Prepared plugins: %s", plugins)
@@ -327,12 +328,10 @@ def create_parser():
     paths_parser(parser.add_argument_group("paths"))
 
     # TODO: plugin_parser should be called for every detected plugin
-    plugin_parser(
-        parser.add_argument_group("apache"), prefix="apache",
-        plugin_cls=apache_configurator.ApacheConfigurator)
-    plugin_parser(
-        parser.add_argument_group("nginx"), prefix="nginx",
-        plugin_cls=nginx_configurator.NginxConfigurator)
+    for name, plugin_cls in [
+            ("apache", apache_configurator.ApacheConfigurator),
+            ("nginx", nginx_configurator.NginxConfigurator)]:
+        plugin_cls.inject_parser_options(parser.add_argument_group(name), name)
 
     return parser
 
@@ -357,14 +356,6 @@ def paths_parser(parser):
     add("--chain-path", default=constants.DEFAULT_CHAIN_PATH,
         help=config_help("chain_path"))
 
-    return parser
-
-
-def plugin_parser(parser, prefix, plugin_cls):
-    def add(arg_name_no_prefix, *args, **kwargs):
-        parser.add_argument(
-            "--{0}-{1}".format(prefix, arg_name_no_prefix), *args, **kwargs)
-    plugin_cls.add_parser_arguments(add)
     return parser
 
 

@@ -17,8 +17,10 @@ from letsencrypt.acme import challenges
 from letsencrypt.client import achallenges
 from letsencrypt.client import interfaces
 
+from letsencrypt.client.plugins import common
 
-class StandaloneAuthenticator(object):
+
+class StandaloneAuthenticator(common.Plugin):
     # pylint: disable=too-many-instance-attributes
     """Standalone authenticator.
 
@@ -29,15 +31,10 @@ class StandaloneAuthenticator(object):
 
     """
     zope.interface.implements(interfaces.IAuthenticator)
-    zope.interface.classProvides(interfaces.IPluginFactory)
-
     description = "Standalone Authenticator"
 
-    @classmethod
-    def add_parser_arguments(cls, add):
-        pass
-
-    def __init__(self, unused_config):
+    def __init__(self, *args, **kwargs):
+        super(StandaloneAuthenticator, self).__init__(*args, **kwargs)
         self.child_pid = None
         self.parent_pid = os.getpid()
         self.subproc_state = None

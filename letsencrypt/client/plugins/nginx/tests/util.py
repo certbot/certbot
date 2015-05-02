@@ -65,12 +65,13 @@ def get_nginx_configurator(
     backups = os.path.join(work_dir, "backups")
 
     config = configurator.NginxConfigurator(
-        mock.MagicMock(
+        config=mock.MagicMock(
             nginx_server_root=config_path, nginx_mod_ssl_conf=ssl_options,
             le_vhost_ext="-le-ssl.conf", backup_dir=backups,
             config_dir=config_dir, work_dir=work_dir,
             temp_checkpoint_dir=os.path.join(work_dir, "temp_checkpoints"),
             in_progress_dir=os.path.join(backups, "IN_PROGRESS")),
-        version)
+        name="nginx",
+        version=version)
     config.prepare()
     return config
