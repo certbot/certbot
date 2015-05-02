@@ -336,19 +336,19 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         # lineagename will now potentially be modified based on what
         # renewal configuration file could actually be created
         lineagename = os.path.basename(config_filename)[:-5]
-        our_archive = os.path.join(archive_dir, lineagename)
-        our_live_dir = os.path.join(live_dir, lineagename)
-        if os.path.exists(our_archive):
+        archive = os.path.join(archive_dir, lineagename)
+        live_dir = os.path.join(live_dir, lineagename)
+        if os.path.exists(archive):
             raise ValueError("archive directory exists for " + lineagename)
-        if os.path.exists(our_live_dir):
+        if os.path.exists(live_dir):
             raise ValueError("live directory exists for " + lineagename)
-        os.mkdir(our_archive)
-        os.mkdir(our_live_dir)
+        os.mkdir(archive)
+        os.mkdir(live_dir)
         relative_archive = os.path.join("..", "..", "archive", lineagename)
-        cert_target = os.path.join(our_live_dir, "cert.pem")
-        privkey_target = os.path.join(our_live_dir, "privkey.pem")
-        chain_target = os.path.join(our_live_dir, "chain.pem")
-        fullchain_target = os.path.join(our_live_dir, "fullchain.pem")
+        cert_target = os.path.join(live_dir, "cert.pem")
+        privkey_target = os.path.join(live_dir, "privkey.pem")
+        chain_target = os.path.join(live_dir, "chain.pem")
+        fullchain_target = os.path.join(live_dir, "fullchain.pem")
         os.symlink(os.path.join(relative_archive, "cert1.pem"),
                    cert_target)
         os.symlink(os.path.join(relative_archive, "privkey1.pem"),

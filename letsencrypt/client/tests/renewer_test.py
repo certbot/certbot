@@ -13,6 +13,7 @@ import unittest
 ALL_FOUR = ("cert", "privkey", "chain", "fullchain")
 
 class RenewableCertTests(unittest.TestCase):
+    # pylint: disable=too-many-public-methods
     """Tests for the RenewableCert class as well as other functions
     within renewer.py."""
     def setUp(self):
@@ -26,10 +27,14 @@ class RenewableCertTests(unittest.TestCase):
         defaults["official_archive_dir"] = os.path.join(self.tempdir, "archive")
         defaults["renewal_configs_dir"] = os.path.join(self.tempdir, "configs")
         config = configobj.ConfigObj()
-        config["cert"] = os.path.join(self.tempdir, "live", "example.org", "cert.pem")
-        config["privkey"] = os.path.join(self.tempdir, "live", "example.org", "privkey.pem")
-        config["chain"] = os.path.join(self.tempdir, "live", "example.org", "chain.pem")
-        config["fullchain"] = os.path.join(self.tempdir, "live", "example.org", "fullchain.pem")
+        config["cert"] = os.path.join(self.tempdir, "live", "example.org",
+                                      "cert.pem")
+        config["privkey"] = os.path.join(self.tempdir, "live", "example.org",
+                                         "privkey.pem")
+        config["chain"] = os.path.join(self.tempdir, "live", "example.org",
+                                       "chain.pem")
+        config["fullchain"] = os.path.join(self.tempdir, "live", "example.org",
+                                           "fullchain.pem")
         config.filename = os.path.join(self.tempdir, "configs",
                                        "example.org.conf")
         self.defaults = defaults     # for main() test
@@ -40,10 +45,21 @@ class RenewableCertTests(unittest.TestCase):
 
     def test_initialization(self):
         self.assertEqual(self.test_rc.lineagename, "example.org")
-        self.assertEqual(self.test_rc.cert, os.path.join(self.tempdir, "live", "example.org", "cert.pem"))
-        self.assertEqual(self.test_rc.privkey, os.path.join(self.tempdir, "live", "example.org", "privkey.pem"))
-        self.assertEqual(self.test_rc.chain, os.path.join(self.tempdir, "live", "example.org", "chain.pem"))
-        self.assertEqual(self.test_rc.fullchain, os.path.join(self.tempdir, "live", "example.org", "fullchain.pem"))
+        self.assertEqual(self.test_rc.cert, os.path.join(self.tempdir, "live",
+                                                         "example.org",
+                                                         "cert.pem"))
+        self.assertEqual(self.test_rc.privkey, os.path.join(self.tempdir,
+                                                            "live",
+                                                            "example.org",
+                                                            "privkey.pem"))
+        self.assertEqual(self.test_rc.chain, os.path.join(self.tempdir,
+                                                          "live",
+                                                          "example.org",
+                                                          "chain.pem"))
+        self.assertEqual(self.test_rc.fullchain, os.path.join(self.tempdir,
+                                                              "live",
+                                                              "example.org",
+                                                              "fullchain.pem"))
 
     def test_renewal_config_filename_not_ending_in_conf(self):
         """Test that the RenewableCert constructor will complain if
@@ -58,7 +74,7 @@ class RenewableCertTests(unittest.TestCase):
         config.filename = "/tmp/sillyfile"
         self.assertRaises(ValueError, renewer.RenewableCert, config, defaults)
 
-    def test_consistent(self):
+    def test_consistent(self): # pylint: disable=too-many-statements
         oldcert = self.test_rc.cert
         self.test_rc.cert = "relative/path"
         # Absolute path for item requirement
@@ -84,7 +100,8 @@ class RenewableCertTests(unittest.TestCase):
         os.symlink(os.path.join("..", "cert17.pem"), self.test_rc.cert)
         os.symlink(os.path.join("..", "privkey17.pem"), self.test_rc.privkey)
         os.symlink(os.path.join("..", "chain17.pem"), self.test_rc.chain)
-        os.symlink(os.path.join("..", "fullchain17.pem"), self.test_rc.fullchain)
+        os.symlink(os.path.join("..", "fullchain17.pem"),
+                   self.test_rc.fullchain)
         self.assertEqual(self.test_rc.consistent(), False)
         os.unlink(self.test_rc.cert)
         os.unlink(self.test_rc.privkey)
@@ -92,19 +109,26 @@ class RenewableCertTests(unittest.TestCase):
         os.unlink(self.test_rc.fullchain)
         # Items must point to desired place if they are absolute
         os.symlink(os.path.join(self.tempdir, "cert17.pem"), self.test_rc.cert)
-        os.symlink(os.path.join(self.tempdir, "privkey17.pem"), self.test_rc.privkey)
-        os.symlink(os.path.join(self.tempdir, "chain17.pem"), self.test_rc.chain)
-        os.symlink(os.path.join(self.tempdir, "fullchain17.pem"), self.test_rc.fullchain)
+        os.symlink(os.path.join(self.tempdir, "privkey17.pem"),
+                   self.test_rc.privkey)
+        os.symlink(os.path.join(self.tempdir, "chain17.pem"),
+                   self.test_rc.chain)
+        os.symlink(os.path.join(self.tempdir, "fullchain17.pem"),
+                   self.test_rc.fullchain)
         self.assertEqual(self.test_rc.consistent(), False)
         os.unlink(self.test_rc.cert)
         os.unlink(self.test_rc.privkey)
         os.unlink(self.test_rc.chain)
         os.unlink(self.test_rc.fullchain)
         # Items must point to things that exist
-        os.symlink(os.path.join("..", "..", "archive", "example.org", "cert17.pem"), self.test_rc.cert)
-        os.symlink(os.path.join("..", "..", "archive", "example.org", "privkey17.pem"), self.test_rc.privkey)
-        os.symlink(os.path.join("..", "..", "archive", "example.org", "chain17.pem"), self.test_rc.chain)
-        os.symlink(os.path.join("..", "..", "archive", "example.org", "fullchain17.pem"), self.test_rc.fullchain)
+        os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                "cert17.pem"), self.test_rc.cert)
+        os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                "privkey17.pem"), self.test_rc.privkey)
+        os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                "chain17.pem"), self.test_rc.chain)
+        os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                "fullchain17.pem"), self.test_rc.fullchain)
         self.assertEqual(self.test_rc.consistent(), False)
         # This version should work
         with open(self.test_rc.cert, "w") as f:
@@ -118,31 +142,43 @@ class RenewableCertTests(unittest.TestCase):
         self.assertEqual(self.test_rc.consistent(), True)
         # Items must point to things that follow the naming convention
         os.unlink(self.test_rc.fullchain)
-        os.symlink(os.path.join("..", "..", "archive", "example.org", "fullchain_17.pem"), self.test_rc.fullchain)
+        os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                "fullchain_17.pem"), self.test_rc.fullchain)
         with open(self.test_rc.fullchain, "w") as f:
             f.write("wrongly-named fullchain")
         self.assertEqual(self.test_rc.consistent(), False)
 
     def test_current_target(self):
         # Relative path logic
-        os.symlink(os.path.join("..", "..", "archive", "example.org", "cert17.pem"), self.test_rc.cert)
+        os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                "cert17.pem"), self.test_rc.cert)
         with open(self.test_rc.cert, "w") as f:
             f.write("cert")
-        self.assertTrue(os.path.samefile(self.test_rc.current_target("cert"), os.path.join(self.tempdir, "archive", "example.org", "cert17.pem")))
+        self.assertTrue(os.path.samefile(self.test_rc.current_target("cert"),
+                                         os.path.join(self.tempdir, "archive",
+                                                      "example.org",
+                                                      "cert17.pem")))
         # Absolute path logic
         os.unlink(self.test_rc.cert)
-        os.symlink(os.path.join(self.tempdir, "archive", "example.org", "cert17.pem"), self.test_rc.cert)
+        os.symlink(os.path.join(self.tempdir, "archive", "example.org",
+                                "cert17.pem"), self.test_rc.cert)
         with open(self.test_rc.cert, "w") as f:
             f.write("cert")
-        self.assertTrue(os.path.samefile(self.test_rc.current_target("cert"), os.path.join(self.tempdir, "archive", "example.org", "cert17.pem")))
+        self.assertTrue(os.path.samefile(self.test_rc.current_target("cert"),
+                                         os.path.join(self.tempdir, "archive",
+                                                      "example.org",
+                                                      "cert17.pem")))
 
     def test_current_version(self):
         for ver in (1, 5, 10, 20):
-            os.symlink(os.path.join("..", "..", "archive", "example.org", "cert{0}.pem".format(ver)), self.test_rc.cert)
+            os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                    "cert{0}.pem".format(ver)),
+                       self.test_rc.cert)
             with open(self.test_rc.cert, "w") as f:
                 f.write("cert")
             os.unlink(self.test_rc.cert)
-        os.symlink(os.path.join("..", "..", "archive", "example.org", "cert10.pem"), self.test_rc.cert)
+        os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                "cert10.pem"), self.test_rc.cert)
         self.assertEqual(self.test_rc.current_version("cert"), 10)
 
     def test_no_current_version(self):
@@ -154,7 +190,8 @@ class RenewableCertTests(unittest.TestCase):
                 where = self.test_rc.__getattribute__(kind)
                 if os.path.islink(where):
                     os.unlink(where)
-                os.symlink(os.path.join("..", "..", "archive", "example.org", "{0}{1}.pem".format(kind, ver)), where)
+                os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                        "{0}{1}.pem".format(kind, ver)), where)
                 with open(where, "w") as f:
                     f.write(kind)
         self.assertEqual(self.test_rc.latest_common_version(), 5)
@@ -162,7 +199,8 @@ class RenewableCertTests(unittest.TestCase):
         # Having one kind of file of a later version doesn't change the
         # result
         os.unlink(self.test_rc.privkey)
-        os.symlink(os.path.join("..", "..", "archive", "example.org", "privkey7.pem"), self.test_rc.privkey)
+        os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                "privkey7.pem"), self.test_rc.privkey)
         with open(self.test_rc.privkey, "w") as f:
             f.write("privkey")
         self.assertEqual(self.test_rc.latest_common_version(), 5)
@@ -170,11 +208,13 @@ class RenewableCertTests(unittest.TestCase):
         self.assertEqual(self.test_rc.next_free_version(), 8)
         # Nor does having three out of four change the result
         os.unlink(self.test_rc.cert)
-        os.symlink(os.path.join("..", "..", "archive", "example.org", "cert7.pem"), self.test_rc.cert)
+        os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                "cert7.pem"), self.test_rc.cert)
         with open(self.test_rc.cert, "w") as f:
             f.write("cert")
         os.unlink(self.test_rc.fullchain)
-        os.symlink(os.path.join("..", "..", "archive", "example.org", "fullchain7.pem"), self.test_rc.fullchain)
+        os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                "fullchain7.pem"), self.test_rc.fullchain)
         with open(self.test_rc.fullchain, "w") as f:
             f.write("fullchain")
         self.assertEqual(self.test_rc.latest_common_version(), 5)
@@ -185,7 +225,8 @@ class RenewableCertTests(unittest.TestCase):
             where = self.test_rc.__getattribute__(kind)
             if os.path.islink(where):
                 os.unlink(where)
-            os.symlink(os.path.join("..", "..", "archive", "example.org", "{0}{1}.pem".format(kind, ver)), where)
+            os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                    "{0}{1}.pem".format(kind, ver)), where)
             with open(where, "w") as f:
                 f.write(kind)
         self.assertEqual(self.test_rc.latest_common_version(), 17)
@@ -197,7 +238,8 @@ class RenewableCertTests(unittest.TestCase):
                 where = self.test_rc.__getattribute__(kind)
                 if os.path.islink(where):
                     os.unlink(where)
-                os.symlink(os.path.join("..", "..", "archive", "example.org", "{0}{1}.pem".format(kind, ver)), where)
+                os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                        "{0}{1}.pem".format(kind, ver)), where)
                 with open(where, "w") as f:
                     f.write(kind)
                 self.assertEqual(ver, self.test_rc.current_version(kind))
@@ -216,7 +258,8 @@ class RenewableCertTests(unittest.TestCase):
                          "chain3000.pem")
 
     def test_version(self):
-        os.symlink(os.path.join("..", "..", "archive", "example.org", "cert12.pem"), self.test_rc.cert)
+        os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                "cert12.pem"), self.test_rc.cert)
         with open(self.test_rc.cert, "w") as f:
             f.write("cert")
         # TODO: We should probably test that the directory is still the
@@ -231,7 +274,8 @@ class RenewableCertTests(unittest.TestCase):
                 where = self.test_rc.__getattribute__(kind)
                 if os.path.islink(where):
                     os.unlink(where)
-                os.symlink(os.path.join("..", "..", "archive", "example.org", "{0}{1}.pem".format(kind, ver)), where)
+                os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                        "{0}{1}.pem".format(kind, ver)), where)
                 with open(where, "w") as f:
                     f.write(kind)
                 self.assertEqual(ver, self.test_rc.current_version(kind))
@@ -248,7 +292,8 @@ class RenewableCertTests(unittest.TestCase):
                 where = self.test_rc.__getattribute__(kind)
                 if os.path.islink(where):
                     os.unlink(where)
-                os.symlink(os.path.join("..", "..", "archive", "example.org", "{0}{1}.pem".format(kind, ver)), where)
+                os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                        "{0}{1}.pem".format(kind, ver)), where)
                 with open(where, "w") as f:
                     f.write(kind)
                 self.assertEqual(ver, self.test_rc.current_version(kind))
@@ -264,27 +309,34 @@ class RenewableCertTests(unittest.TestCase):
     def test_notbefore(self):
         test_cert = pkg_resources.resource_string(
             "letsencrypt.client.tests", "testdata/cert.pem")
-        os.symlink(os.path.join("..", "..", "archive", "example.org", "cert12.pem"), self.test_rc.cert)
+        os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                "cert12.pem"), self.test_rc.cert)
         with open(self.test_rc.cert, "w") as f:
             f.write(test_cert)
+        desired_time = datetime.datetime.utcfromtimestamp(1418337285)
+        desired_time = desired_time.replace(tzinfo=pytz.UTC)
         for result in (self.test_rc.notbefore(), self.test_rc.notbefore(12)):
-            self.assertEqual(result, datetime.datetime.utcfromtimestamp(1418337285).replace(tzinfo=pytz.UTC))
+            self.assertEqual(result, desired_time)
             self.assertEqual(result.utcoffset(), datetime.timedelta(0))
         # 2014-12-11 22:34:45+00:00 = Unix time 1418337285
 
     def test_notafter(self):
         test_cert = pkg_resources.resource_string(
             "letsencrypt.client.tests", "testdata/cert.pem")
-        os.symlink(os.path.join("..", "..", "archive", "example.org", "cert12.pem"), self.test_rc.cert)
+        os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                "cert12.pem"), self.test_rc.cert)
         with open(self.test_rc.cert, "w") as f:
             f.write(test_cert)
+        desired_time = datetime.datetime.utcfromtimestamp(1418942085)
+        desired_time = desired_time.replace(tzinfo=pytz.UTC)
         for result in (self.test_rc.notafter(), self.test_rc.notafter(12)):
-            self.assertEqual(result, datetime.datetime.utcfromtimestamp(1418942085).replace(tzinfo=pytz.UTC))
+            self.assertEqual(result, desired_time)
             self.assertEqual(result.utcoffset(), datetime.timedelta(0))
         # 2014-12-18 22:34:45+00:00 = Unix time 1418942085
 
     @mock.patch("letsencrypt.client.renewer.datetime")
     def test_should_autodeploy(self, mock_datetime):
+        # pylint: disable=too-many-statements
         # Autodeployment turned off
         self.test_rc.configuration["autodeploy"] = "0"
         self.assertFalse(self.test_rc.should_autodeploy())
@@ -295,7 +347,8 @@ class RenewableCertTests(unittest.TestCase):
                 where = self.test_rc.__getattribute__(kind)
                 if os.path.islink(where):
                     os.unlink(where)
-                os.symlink(os.path.join("..", "..", "archive", "example.org", "{0}{1}.pem".format(kind, ver)), where)
+                os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                        "{0}{1}.pem".format(kind, ver)), where)
                 with open(where, "w") as f:
                     f.write(kind)
         self.assertFalse(self.test_rc.should_autodeploy())
@@ -303,7 +356,8 @@ class RenewableCertTests(unittest.TestCase):
             "letsencrypt.client.tests", "testdata/cert.pem")
         mock_datetime.timedelta = datetime.timedelta
         # 2014-12-13 12:00:00+00:00 (about 5 days prior to expiry)
-        mock_datetime.datetime.utcnow.return_value = datetime.datetime.utcfromtimestamp(1418472000)
+        sometime = datetime.datetime.utcfromtimestamp(1418472000)
+        mock_datetime.datetime.utcnow.return_value = sometime
         self.test_rc.update_all_links_to(3)
         with open(self.test_rc.cert, "w") as f:
             f.write(test_cert)
@@ -316,7 +370,8 @@ class RenewableCertTests(unittest.TestCase):
         self.test_rc.configuration["deploy_before_expiry"] = "2 days"
         self.assertFalse(self.test_rc.should_autodeploy())
         # 2009-05-01 12:00:00+00:00 (about 5 years prior to expiry)
-        mock_datetime.datetime.utcnow.return_value = datetime.datetime.utcfromtimestamp(1241179200)
+        sometime = datetime.datetime.utcfromtimestamp(1241179200)
+        mock_datetime.datetime.utcnow.return_value = sometime
         self.test_rc.configuration["deploy_before_expiry"] = "8 hours"
         self.assertFalse(self.test_rc.should_autodeploy())
         self.test_rc.configuration["deploy_before_expiry"] = "2 days"
@@ -327,10 +382,12 @@ class RenewableCertTests(unittest.TestCase):
         self.assertFalse(self.test_rc.should_autodeploy())
         self.test_rc.configuration["deploy_before_expiry"] = "7 years"
         self.assertTrue(self.test_rc.should_autodeploy())
-        self.test_rc.configuration["deploy_before_expiry"] = "11 years 2 months"
+        self.test_rc.configuration["deploy_before_expiry"] = "11 years "
+        self.test_rc.configuration["deploy_before_expiry"] += "2 months"
         self.assertTrue(self.test_rc.should_autodeploy())
         # 2015-01-01 (after expiry has already happened)
-        mock_datetime.datetime.utcnow.return_value = datetime.datetime.utcfromtimestamp(1420070400)
+        sometime = datetime.datetime.utcfromtimestamp(1420070400)
+        mock_datetime.datetime.utcnow.return_value = sometime
         self.test_rc.configuration["deploy_before_expiry"] = "0 seconds"
         self.assertTrue(self.test_rc.should_autodeploy())
         self.test_rc.configuration["deploy_before_expiry"] = "10 seconds"
@@ -349,13 +406,15 @@ class RenewableCertTests(unittest.TestCase):
     @mock.patch("letsencrypt.client.renewer.datetime")
     @mock.patch("letsencrypt.client.renewer.RenewableCert.ocsp_revoked")
     def test_should_autorenew(self, mock_ocsp, mock_datetime):
+        # pylint: disable=too-many-statements
         # Autorenewal turned off
         self.test_rc.configuration["autorenew"] = "0"
         self.assertFalse(self.test_rc.should_autorenew())
         self.test_rc.configuration["autorenew"] = "1"
         for kind in ALL_FOUR:
             where = self.test_rc.__getattribute__(kind)
-            os.symlink(os.path.join("..", "..", "archive", "example.org", "{0}12.pem".format(kind)), where)
+            os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                    "{0}12.pem".format(kind)), where)
             with open(where, "w") as f:
                 f.write(kind)
         test_cert = pkg_resources.resource_string(
@@ -367,7 +426,8 @@ class RenewableCertTests(unittest.TestCase):
         # On the basis of expiry time
         mock_datetime.timedelta = datetime.timedelta
         # 2014-12-13 12:00:00+00:00 (about 5 days prior to expiry)
-        mock_datetime.datetime.utcnow.return_value = datetime.datetime.utcfromtimestamp(1418472000)
+        sometime = datetime.datetime.utcfromtimestamp(1418472000)
+        mock_datetime.datetime.utcnow.return_value = sometime
         self.test_rc.update_all_links_to(12)
         with open(self.test_rc.cert, "w") as f:
             f.write(test_cert)
@@ -380,7 +440,8 @@ class RenewableCertTests(unittest.TestCase):
         self.test_rc.configuration["renew_before_expiry"] = "2 days"
         self.assertFalse(self.test_rc.should_autorenew())
         # 2009-05-01 12:00:00+00:00 (about 5 years prior to expiry)
-        mock_datetime.datetime.utcnow.return_value = datetime.datetime.utcfromtimestamp(1241179200)
+        sometime = datetime.datetime.utcfromtimestamp(1241179200)
+        mock_datetime.datetime.utcnow.return_value = sometime
         self.test_rc.configuration["renew_before_expiry"] = "8 hours"
         self.assertFalse(self.test_rc.should_autorenew())
         self.test_rc.configuration["renew_before_expiry"] = "2 days"
@@ -394,7 +455,8 @@ class RenewableCertTests(unittest.TestCase):
         self.test_rc.configuration["renew_before_expiry"] = "11 years 2 months"
         self.assertTrue(self.test_rc.should_autorenew())
         # 2015-01-01 (after expiry has already happened)
-        mock_datetime.datetime.utcnow.return_value = datetime.datetime.utcfromtimestamp(1420070400)
+        sometime = datetime.datetime.utcfromtimestamp(1420070400)
+        mock_datetime.datetime.utcnow.return_value = sometime
         self.test_rc.configuration["renew_before_expiry"] = "0 seconds"
         self.assertTrue(self.test_rc.should_autorenew())
         self.test_rc.configuration["renew_before_expiry"] = "10 seconds"
@@ -416,11 +478,13 @@ class RenewableCertTests(unittest.TestCase):
                 where = self.test_rc.__getattribute__(kind)
                 if os.path.islink(where):
                     os.unlink(where)
-                os.symlink(os.path.join("..", "..", "archive", "example.org", "{0}{1}.pem".format(kind, ver)), where)
+                os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                        "{0}{1}.pem".format(kind, ver)), where)
                 with open(where, "w") as f:
                     f.write(kind)
         self.test_rc.update_all_links_to(3)
-        self.assertEqual(6, self.test_rc.save_successor(3, "new cert", "new chain"))
+        self.assertEqual(6, self.test_rc.save_successor(3, "new cert",
+                                                        "new chain"))
         with open(self.test_rc.version("cert", 6)) as f:
             self.assertEqual(f.read(), "new cert")
         with open(self.test_rc.version("chain", 6)) as f:
@@ -431,16 +495,24 @@ class RenewableCertTests(unittest.TestCase):
         self.assertFalse(os.path.islink(self.test_rc.version("privkey", 3)))
         self.assertTrue(os.path.islink(self.test_rc.version("privkey", 6)))
         # Let's try two more updates
-        self.assertEqual(7, self.test_rc.save_successor(6, "again", "newer chain"))
-        self.assertEqual(8, self.test_rc.save_successor(7, "hello", "other chain"))
+        self.assertEqual(7, self.test_rc.save_successor(6, "again",
+                                                        "newer chain"))
+        self.assertEqual(8, self.test_rc.save_successor(7, "hello",
+                                                        "other chain"))
         # All of the subsequent versions should link directly to the original
         # privkey.
         self.assertTrue(os.path.islink(self.test_rc.version("privkey", 6)))
         self.assertTrue(os.path.islink(self.test_rc.version("privkey", 7)))
         self.assertTrue(os.path.islink(self.test_rc.version("privkey", 8)))
-        self.assertEqual(os.path.basename(os.readlink(self.test_rc.version("privkey", 6))), "privkey3.pem")
-        self.assertEqual(os.path.basename(os.readlink(self.test_rc.version("privkey", 7))), "privkey3.pem")
-        self.assertEqual(os.path.basename(os.readlink(self.test_rc.version("privkey", 8))), "privkey3.pem")
+        self.assertEqual(
+            os.path.basename(os.readlink(self.test_rc.version("privkey", 6))),
+            "privkey3.pem")
+        self.assertEqual(
+            os.path.basename(os.readlink(self.test_rc.version("privkey", 7))),
+            "privkey3.pem")
+        self.assertEqual(
+            os.path.basename(os.readlink(self.test_rc.version("privkey", 8))),
+            "privkey3.pem")
         for kind in ALL_FOUR:
             self.assertEqual(self.test_rc.available_versions(kind), range(1, 9))
             self.assertEqual(self.test_rc.current_version(kind), 3)
@@ -448,7 +520,8 @@ class RenewableCertTests(unittest.TestCase):
         self.test_rc.update_all_links_to(8)
         self.assertEqual(9, self.test_rc.save_successor(8, "last", "attempt"))
         for kind in ALL_FOUR:
-            self.assertEqual(self.test_rc.available_versions(kind), range(1, 10))
+            self.assertEqual(self.test_rc.available_versions(kind),
+                             range(1, 10))
             self.assertEqual(self.test_rc.current_version(kind), 8)
         with open(self.test_rc.version("fullchain", 9)) as f:
             self.assertEqual(f.read(), "last" + "attempt")
@@ -498,9 +571,12 @@ class RenewableCertTests(unittest.TestCase):
         self.assertRaises(ValueError, self.test_rc.current_target, "elephant")
         self.assertRaises(ValueError, self.test_rc.current_version, "elephant")
         self.assertRaises(ValueError, self.test_rc.version, "elephant", 17)
-        self.assertRaises(ValueError, self.test_rc.available_versions, "elephant")
-        self.assertRaises(ValueError, self.test_rc.newest_available_version, "elephant")
-        self.assertRaises(ValueError, self.test_rc.update_link_to, "elephant", 17)
+        self.assertRaises(ValueError, self.test_rc.available_versions,
+                          "elephant")
+        self.assertRaises(ValueError, self.test_rc.newest_available_version,
+                          "elephant")
+        self.assertRaises(ValueError, self.test_rc.update_link_to,
+                          "elephant", 17)
 
     def test_ocsp_revoked(self):
         # XXX: This is currently hardcoded to False due to a lack of an
@@ -544,16 +620,19 @@ class RenewableCertTests(unittest.TestCase):
         mock_rc_instance.should_autorenew.return_value = True
         mock_rc_instance.latest_common_version.return_value = 10
         mock_rc.return_value = mock_rc_instance
-        with open(os.path.join(self.defaults["renewal_configs_dir"], "README"), "w") as f:
+        with open(os.path.join(self.defaults["renewal_configs_dir"],
+                               "README"), "w") as f:
             f.write("This is a README file to make sure that the renewer is")
             f.write("able to correctly ignore files that don't end in .conf.")
-        with open(os.path.join(self.defaults["renewal_configs_dir"], "example.org.conf"), "w") as f:
+        with open(os.path.join(self.defaults["renewal_configs_dir"],
+                               "example.org.conf"), "w") as f:
             # This isn't actually parsed in this test; we have a separate
             # test_initialization that tests the initialization, assuming
             # that configobj can correctly parse the config file.
             f.write("cert = cert.pem\nprivkey = privkey.pem\n")
             f.write("chain = chain.pem\nfullchain = fullchain.pem\n")
-        with open(os.path.join(self.defaults["renewal_configs_dir"], "example.com.conf"), "w") as f:
+        with open(os.path.join(self.defaults["renewal_configs_dir"],
+                               "example.com.conf"), "w") as f:
             f.write("cert = cert.pem\nprivkey = privkey.pem\n")
             f.write("chain = chain.pem\nfullchain = fullchain.pem\n")
         renewer.main(self.defaults)

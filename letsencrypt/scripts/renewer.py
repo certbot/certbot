@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+"""Let's Encrypt certificate renewer command-line / cron script."""
+
 import configobj
 
 from letsencrypt.client import renewer
