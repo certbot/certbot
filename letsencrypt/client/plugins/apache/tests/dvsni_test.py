@@ -34,9 +34,9 @@ class DvsniPerformTest(util.ApacheTest):
         self.sni = dvsni.ApacheDvsni(config)
 
         rsa256_file = pkg_resources.resource_filename(
-            "letsencrypt.client.tests", "testdata/rsa256_key.pem")
+            "letsencrypt.acme.jose", "testdata/rsa256_key.pem")
         rsa256_pem = pkg_resources.resource_string(
-            "letsencrypt.client.tests", "testdata/rsa256_key.pem")
+            "letsencrypt.acme.jose", "testdata/rsa256_key.pem")
 
         auth_key = le_util.Key(rsa256_file, rsa256_pem)
         self.achalls = [

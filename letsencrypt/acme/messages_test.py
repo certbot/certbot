@@ -1,4 +1,5 @@
 """Tests for letsencrypt.acme.messages."""
+import os
 import pkg_resources
 import unittest
 
@@ -13,16 +14,16 @@ from letsencrypt.acme import other
 
 KEY = jose.HashableRSAKey(Crypto.PublicKey.RSA.importKey(
     pkg_resources.resource_string(
-        'letsencrypt.client.tests', 'testdata/rsa256_key.pem')))
+        'letsencrypt.acme.jose', os.path.join('testdata', 'rsa512_key.pem'))))
 CERT = jose.ComparableX509(M2Crypto.X509.load_cert(
     pkg_resources.resource_filename(
-        'letsencrypt.client.tests', 'testdata/cert.pem')))
+        'letsencrypt.client.tests', os.path.join('testdata', 'cert.pem'))))
 CSR = jose.ComparableX509(M2Crypto.X509.load_request(
     pkg_resources.resource_filename(
-        'letsencrypt.client.tests', 'testdata/csr.pem')))
+        'letsencrypt.client.tests', os.path.join('testdata', 'csr.pem'))))
 CSR2 = jose.ComparableX509(M2Crypto.X509.load_request(
     pkg_resources.resource_filename(
-        'letsencrypt.acme.jose', 'testdata/csr2.pem')))
+        'letsencrypt.acme.jose', os.path.join('testdata', 'csr2.pem'))))
 
 
 class MessageTest(unittest.TestCase):

@@ -28,6 +28,8 @@ class JWK(json_util.TypedJSONObjectWithFields):
         For symmetric cryptosystems, this would return ``self``.
 
         """
+        # TODO: rename publickey to stay consistent with
+        # HashableRSAKey.publickey
         raise NotImplementedError()
 
 
