@@ -114,7 +114,8 @@ def auth(args, config, plugins):
     if acc is None:
         return None
 
-    authenticator = plugins_disco.pick_authenticator(config, args.authenticator, plugins)
+    authenticator = plugins_disco.pick_authenticator(
+        config, args.authenticator, plugins)
     if authenticator is None:
         return "Authenticator could not be determined"
 
@@ -236,7 +237,12 @@ def read_file(filename):
         raise argparse.ArgumentTypeError(exc.strerror)
 
 
+def flag_default(name):
+    """Default value for CLI flag."""
+    return constants.CLI_DEFAULTS[name]
+
 def config_help(name):
+    """Help message for `.IConfig` attribute."""
     return interfaces.IConfig[name].__doc__
 
 
@@ -246,14 +252,14 @@ def create_parser(plugins):
         description=__doc__,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         args_for_setting_config_path=["-c", "--config"],
-        default_config_files=constants.DEFAULT_CONFIG_FILES)
+        default_config_files=flag_default("config_files"))
     add = parser.add_argument
 
     # --help is automatically provided by argparse
     add("--version", action="version", version="%(prog)s {0}".format(
             letsencrypt.__version__))
     add("-v", "--verbose", dest="verbose_count", action="count",
-        default=constants.DEFAULT_VERBOSE_COUNT)
+        default=flag_default("verbose_count"))
     add("--no-confirm", dest="no_confirm", action="store_true",
         help="Turn off confirmation screens, currently used for --revoke")
     add("-e", "--agree-tos", dest="tos", action="store_true",
@@ -295,14 +301,13 @@ def create_parser(plugins):
     #    subparser.add_argument("domains", nargs="*", metavar="domain")
 
     add("-d", "--domains", metavar="DOMAIN", action="append")
-    add("-s", "--server", default=constants.DEFAULT_SERVER,
+    add("-s", "--server", default=flag_default("server"),
         help=config_help("server"))
     add("-k", "--authkey", type=read_file,
         help="Path to the authorized key file")
     add("-m", "--email", help=config_help("email"))
     add("-B", "--rsa-key-size", type=int, metavar="N",
-        default=constants.DEFAULT_RSA_KEY_SIZE,
-        help=config_help("rsa_key_size"))
+        default=flag_default("rsa_key_size"), help=config_help("rsa_key_size"))
     # TODO: resolve - assumes binary logic while client.py assumes ternary.
     add("-r", "--redirect", action="store_true",
         help="Automatically redirect all HTTP traffic to HTTPS for the newly "
@@ -317,7 +322,7 @@ def create_parser(plugins):
 
     parser_rollback.add_argument(
         "--checkpoints", type=int, metavar="N",
-        default=constants.DEFAULT_ROLLBACK_CHECKPOINTS,
+        default=flag_default("rollback_checkpoints"),
         help="Revert configuration N number of checkpoints.")
 
     paths_parser(parser.add_argument_group("paths"))
@@ -332,22 +337,22 @@ def create_parser(plugins):
 
 def paths_parser(parser):
     add = parser.add_argument
-    add("--config-dir", default=constants.DEFAULT_CONFIG_DIR,
+    add("--config-dir", default=flag_default("config_dir"),
         help=config_help("config_dir"))
-    add("--work-dir", default=constants.DEFAULT_WORK_DIR,
+    add("--work-dir", default=flag_default("work_dir"),
         help=config_help("work_dir"))
-    add("--backup-dir", default=constants.DEFAULT_BACKUP_DIR,
+    add("--backup-dir", default=flag_default("backup_dir"),
         help=config_help("backup_dir"))
-    add("--key-dir", default=constants.DEFAULT_KEY_DIR,
+    add("--key-dir", default=flag_default("key_dir"),
         help=config_help("key_dir"))
-    add("--cert-dir", default=constants.DEFAULT_CERTS_DIR,
+    add("--cert-dir", default=flag_default("certs_dir"),
         help=config_help("cert_dir"))
 
     add("--le-vhost-ext", default="-le-ssl.conf",
         help=config_help("le_vhost_ext"))
-    add("--cert-path", default=constants.DEFAULT_CERT_PATH,
+    add("--cert-path", default=flag_default("cert_path"),
         help=config_help("cert_path"))
-    add("--chain-path", default=constants.DEFAULT_CHAIN_PATH,
+    add("--chain-path", default=flag_default("chain_path"),
         help=config_help("chain_path"))
 
     return parser

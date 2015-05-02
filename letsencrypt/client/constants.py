@@ -9,19 +9,21 @@ SETUPTOOLS_PLUGINS_ENTRY_POINT = "letsencrypt.plugins"
 """Setuptools entry point group name for plugins."""
 
 
-# CLI/IConfig defaults
-DEFAULT_CONFIG_FILES = ["/etc/letsencrypt/cli.ini"]
-DEFAULT_VERBOSE_COUNT = -(logging.WARNING / 10)
-DEFAULT_SERVER = "www.letsencrypt-demo.org/acme/new-reg"
-DEFAULT_RSA_KEY_SIZE = 2048
-DEFAULT_ROLLBACK_CHECKPOINTS = 0
-DEFAULT_CONFIG_DIR = "/etc/letsencrypt"
-DEFAULT_WORK_DIR = "/var/lib/letsencrypt"
-DEFAULT_BACKUP_DIR = "/var/lib/letsencrypt/backups"
-DEFAULT_KEY_DIR = "/etc/letsencrypt/keys"
-DEFAULT_CERTS_DIR = "/etc/letsencrypt/certs"
-DEFAULT_CERT_PATH = "/etc/letsencrypt/certs/cert-letsencrypt.pem"
-DEFAULT_CHAIN_PATH = "/etc/letsencrypt/certs/chain-letsencrypt.pem"
+CLI_DEFAULTS = dict(
+    config_files=["/etc/letsencrypt/cli.ini"],
+    verbose_count=-(logging.WARNING / 10),
+    server="www.letsencrypt-demo.org/acme/new-reg",
+    rsa_key_size=2048,
+    rollback_checkpoints=0,
+    config_dir="/etc/letsencrypt",
+    work_dir="/var/lib/letsencrypt",
+    backup_dir="/var/lib/letsencrypt/backups",
+    key_dir="/etc/letsencrypt/keys",
+    certs_dir="/etc/letsencrypt/certs",
+    cert_path="/etc/letsencrypt/certs/cert-letsencrypt.pem",
+    chain_path="/etc/letsencrypt/certs/chain-letsencrypt.pem",
+)
+"""Defaults for CLI flags and `.IConfig` attributes."""
 
 
 EXCLUSIVE_CHALLENGES = frozenset([frozenset([
