@@ -44,6 +44,10 @@ class PluginEntryPoint(object):
     def __repr__(self):
         return 'PluginEntryPoint#{0}'.format(self.name)
 
+    @property
+    def name_with_description(self):
+        return "{0} ({1})".format(self.name, self.plugin_cls.description)
+
 
 class PluginRegistry(collections.Mapping):
     """Plugin registry."""
@@ -66,8 +70,8 @@ class PluginRegistry(collections.Mapping):
     def filter(self, *ifaces_groups):
         """Filter plugins based on interfaces."""
         return type(self)(dict(
-            plugin_ep
-            for plugin_ep in self.plugins.iteritems()
+            (name, plugin_ep)
+            for name, plugin_ep in self.plugins.iteritems()
             if not ifaces_groups or any(
                 all(iface.implementedBy(plugin_ep.plugin_cls)
                     for iface in ifaces)
@@ -110,59 +114,59 @@ def prepare_plugins(initialized):
     """Prepare plugins."""
     prepared = {}
 
-    for plugin_cls, plugin in initialized.iteritems():
+    for name, plugin_ep in initialized.iteritems():
         error = None
         try:
-            plugin.prepare()
+            plugin_ep.init().prepare()
         except errors.LetsEncryptMisconfigurationError as error:
-            logging.debug("Misconfigured %s: %s", plugin, error)
+            logging.debug("Misconfigured %s: %s", plugin_ep, error)
         except errors.LetsEncryptNoInstallationError as error:
-            logging.debug("No installation (%s): %s", plugin, error)
+            logging.debug("No installation (%s): %s", plugin_ep, error)
             continue
-        prepared[plugin_cls] = (plugin, error)
+        prepared[name] = (plugin_ep, error)
 
     return prepared  # succefully prepared + misconfigured
 
 
-def pick_plugin(config, default, ifaces, question):
-    plugins = find_plugins()
-    names = name_plugins(plugins)
-
+def pick_plugin(config, default, plugins, ifaces, question):
     if default is not None:
-        filtered = [names[default]]
+        filtered = {default: plugins[default]}
     else:
-        filtered = filter_plugins(plugins, ifaces)
+        filtered = plugins.filter(ifaces)
 
-    initialized = dict((plugin_cls, plugin_cls(config))
-                       for plugin_cls in filtered)
-    verified = verify_plugins(initialized, ifaces)
-    prepared = prepare_plugins(initialized)
+    for plugin_ep in plugins.itervalues():
+        plugin_ep.init(config)
+    verified = verify_plugins(filtered, ifaces)
+    prepared = prepare_plugins(filtered)
 
     if len(prepared) > 1:
         logging.debug("Multiple candidate plugins: %s", prepared)
-        return display_ops.choose_plugin(prepared.values(), question)
+        return display_ops.choose_plugin(prepared.values(), question).init()
     elif len(prepared) == 1:
-        logging.debug("Single candidate plugin: %s", prepared)
-        return prepared.values()[0]
+        plugin_ep = prepared.values()[0][0]
+        logging.debug("Single candidate plugin: %s", plugin_ep)
+        return plugin_ep.init()
     else:
         logging.debug("No candidate plugin")
         return None
 
 
-def pick_authenticator(config, default):
+def pick_authenticator(config, default, plugins):
     """Pick authentication plugin."""
     return pick_plugin(
-            config, default, (interfaces.IAuthenticator,),
+            config, default, plugins, (interfaces.IAuthenticator,),
             "How would you like to authenticate with Let's Encrypt CA?")
 
 
-def pick_installer(config, default):
+def pick_installer(config, default, plugins):
     """Pick installer plugin."""
-    return pick_plugin(config, default, (interfaces.IInstaller,),
+    return pick_plugin(config, default, plugins, (interfaces.IInstaller,),
                        "How would you like to install certificates?")
 
-def pick_configurator(config, default):
+
+def pick_configurator(config, default, plugins):
     """Pick configurator plugin."""
     return pick_plugin(
-        config, default, (interfaces.IAuthenticator, interfaces.IInstaller),
+        config, default, plugins,
+        (interfaces.IAuthenticator, interfaces.IInstaller),
         "How would you like to install certificates?")

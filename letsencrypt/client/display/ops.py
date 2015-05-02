@@ -1,4 +1,5 @@
 """Contains UI methods for LE user operations."""
+import logging
 import os
 
 import zope.component
@@ -11,13 +12,13 @@ util = zope.component.getUtility  # pylint: disable=invalid-name
 
 
 def choose_plugin(prepared, question):
-    descs = [plugin.description if error is None
-             else "%s (Misconfigured)" % plugin.description
-             for (plugin, error) in prepared]
+    opts = [plugin_ep.name_with_description if error is None
+            else "%s (Misconfigured)" % plugin_ep.name_with_description
+            for (plugin_ep, error) in prepared]
 
     while True:
         code, index = util(interfaces.IDisplay).menu(
-            question, descs, help_label="More Info")
+            question, opts, help_label="More Info")
 
         if code == display_util.OK:
             return prepared[index][0]
@@ -25,11 +26,11 @@ def choose_plugin(prepared, question):
             if prepared[index][1] is not None:
                 msg = "Reported Error: %s" % prepared[index][1]
             else:
-                msg = prepared[index][0].more_info()
+                msg = prepared[index][0].init().more_info()
             util(interfaces.IDisplay).notification(
                 msg, height=display_util.HEIGHT)
         else:
-            return
+            return None
 
 
 def choose_authenticator(auths, errs):
@@ -98,6 +99,7 @@ def choose_names(installer):
 
     """
     if installer is None:
+        logging.debug("No installer, picking names manually")
         return _choose_names_manually()
 
     names = list(installer.get_all_names())

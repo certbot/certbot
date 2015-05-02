@@ -13,6 +13,7 @@ from letsencrypt.acme import challenges
 
 from letsencrypt.client import achallenges
 from letsencrypt.client import augeas_configurator
+from letsencrypt.client import constants as core_constants
 from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
@@ -949,11 +950,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         uid = os.geteuid()
         le_util.make_or_verify_dir(
-            self.config.config_dir, constants.CONFIG_DIRS_MODE, uid)
+            self.config.config_dir, core_constants.CONFIG_DIRS_MODE, uid)
         le_util.make_or_verify_dir(
-            self.config.work_dir, constants.CONFIG_DIRS_MODE, uid)
+            self.config.work_dir, core_constants.CONFIG_DIRS_MODE, uid)
         le_util.make_or_verify_dir(
-            self.config.backup_dir, constants.CONFIG_DIRS_MODE, uid)
+            self.config.backup_dir, core_constants.CONFIG_DIRS_MODE, uid)
 
     def get_version(self):
         """Return version of Apache Server.

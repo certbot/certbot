@@ -59,7 +59,8 @@ def _common_run(args, config, acc, authenticator, installer):
         doms = args.domains
 
     if not doms:
-        return None
+        sys.exit("Please specify --domains, or --installer that will "
+                 "help in domain names autodiscovery")
 
     acme = client.Client(config, acc, authenticator, installer)
 
@@ -73,10 +74,10 @@ def _common_run(args, config, acc, authenticator, installer):
             except errors.LetsEncryptClientError:
                 return None
 
-    return acme, doms, authkey
+    return acme, doms
 
 
-def run(args, config):
+def run(args, config, plugins):
     """Obtain a certificate and install."""
     acc = _account_init(args, config)
     if acc is None:
@@ -89,63 +90,61 @@ def run(args, config):
 
     if args.authenticator is not None or args.installer is not None:
         installer = plugins_disco.pick_installer(
-            config, args.installer)
+            config, args.installer, plugins)
         authenticator = plugins_disco.pick_authenticator(
-            config, args.authenticator)
+            config, args.authenticator, plugins)
     else:
+        # TODO: this assume that user doesn't want to pick authenticator
+        #       and installer separately...
         authenticator = installer = plugins_disco.pick_configurator(
-            config, args.configurator)
+            config, args.configurator, plugins)
 
     if installer is None or authenticator is None:
         return "Configurator could not be determined"
 
-    acme, auth, installer, doms, auth_key = _common_run(args, config, acc)
-    cert_file, chain_file = acme.obtain_certificate(doms)
-    acme.deploy_certificate(doms, authkey, cert_file, chain_file)
+    acme, doms = _common_run(args, config, acc, authenticator, installer)
+    cert_path, chain_path = acme.obtain_certificate(doms)
+    acme.deploy_certificate(doms, acc.key, cert_path, chain_path)
     acme.enhance_config(doms, args.redirect)
 
 
-def auth(args, config):
+def auth(args, config, plugins):
     """Obtain a certificate (no install)."""
     acc = _account_init(args, config)
     if acc is None:
         return None
 
-    authenticator = plugins_disco.pick_authenticator(config, args.authenticator)
+    authenticator = plugins_disco.pick_authenticator(config, args.authenticator, plugins)
     if authenticator is None:
         return "Authenticator could not be determined"
 
     if args.installer is not None:
-        installer = plugins_disco.pick_installer(config, args.installer)
+        installer = plugins_disco.pick_installer(config, args.installer, plugins)
     else:
         installer = None
 
-    if args.domains is None:
-        if args.installer is not None:
-            return ("--domains not set and provided --installer does not "
-                    "help in autodiscovery")
-        else:
-           return ("Please specify --domains, or --installer that will "
-                   "help in domain names autodiscovery")
-
-    acme, doms, _ = _common_run(
-        args, config, authenticator=authenticator, installer=None)
+    acme, doms = _common_run(
+        args, config, acc, authenticator=authenticator, installer=None)
     acme.obtain_certificate(doms)
 
 
-def install(args, config):
+def install(args, config, plugins):
     """Install (no auth)."""
-    installer = plugins_disco.pick_installer(config, args.installer)
+    acc = _account_init(args, config)
+    if acc is None:
+        return None
+
+    installer = plugins_disco.pick_installer(config, args.installer, plugins)
     if installer is None:
         return "Installer could not be determined"
-    acme, doms, authkey = _common_run(
-        args, config, authenticator=None, installer=installer)
-    assert args.cert_file is not None and args.chain_file is not None
-    acme.deploy_certificate(doms, authkey, args.cert_file, args.chain_file)
+    acme, doms = _common_run(
+        args, config, acc, authenticator=None, installer=installer)
+    assert args.cert_path is not None and args.chain_path is not None
+    acme.deploy_certificate(doms, acc.key, args.cert_path, args.chain_path)
     acme.enhance_config(doms, args.redirect)
 
 
-def revoke(args, config):
+def revoke(args, config, plugins):
     """Revoke."""
     if args.rev_cert is None and args.rev_key is None:
         return "At least one of --certificate or --key is required"
@@ -156,18 +155,17 @@ def revoke(args, config):
     #client.revoke(config, args.no_confirm, args.rev_cert, args.rev_key)
 
 
-def rollback(args, config):
+def rollback(args, config, plugins):
     """Rollback."""
     client.rollback(args.checkpoints, config)
 
 
-def config_changes(args, config):
+def config_changes(args, config, plugins):
     """View config changes.
 
     View checkpoints and associated configuration changes.
 
     """
-    print args, config
     client.config_changes(config)
 
 
@@ -195,9 +193,8 @@ def _print_plugins(plugins):
         print  # whitespace between plugins
 
 
-def plugins(args, config):
+def plugins_cmd(args, config, plugins):
     """List plugins."""
-    plugins = plugins_disco.PluginRegistry.find_all()
     logging.debug("Discovered plugins: %s", plugins)
 
     ifaces = [] if args.ifaces is None else args.ifaces
@@ -243,7 +240,7 @@ def config_help(name):
     return interfaces.IConfig[name].__doc__
 
 
-def create_parser():
+def create_parser(plugins):
     """Create parser."""
     parser = configargparse.ArgParser(
         description=__doc__,
@@ -278,7 +275,7 @@ def create_parser():
     parser_rollback = add_subparser("rollback", rollback)
     parrser_config_changes = add_subparser("config_changes", config_changes)
 
-    parser_plugins = add_subparser("plugins", plugins)
+    parser_plugins = add_subparser("plugins", plugins_cmd)
     parser_plugins.add_argument("--init", action="store_true")
     parser_plugins.add_argument("--prepare", action="store_true")
     parser_plugins.add_argument(
@@ -288,12 +285,10 @@ def create_parser():
         "--installers", action="append_const", dest="ifaces",
         const=interfaces.IInstaller)
 
-    parser_run.add_argument("--configurator")
-    for subparser in parser_run, parser_auth:
-        subparser.add_argument("-a", "--authenticator")
-    for subparser in parser_run, parser_auth, parser_install:
-        # parser_auth uses --installer for domains autodiscovery
-        subparser.add_argument("-i", "--installer")
+    parser.add_argument("--configurator")
+    parser.add_argument("-a", "--authenticator")
+    parser.add_argument("-i", "--installer")
+
     # positional arg shadows --domains, instead of appending, and
     # --domains is useful, because it can be stored in config
     #for subparser in parser_run, parser_auth, parser_install:
@@ -328,10 +323,9 @@ def create_parser():
     paths_parser(parser.add_argument_group("paths"))
 
     # TODO: plugin_parser should be called for every detected plugin
-    for name, plugin_cls in [
-            ("apache", apache_configurator.ApacheConfigurator),
-            ("nginx", nginx_configurator.NginxConfigurator)]:
-        plugin_cls.inject_parser_options(parser.add_argument_group(name), name)
+    for name, plugin_ep in plugins.iteritems():
+        plugin_ep.plugin_cls.inject_parser_options(
+            parser.add_argument_group(name), name)
 
     return parser
 
@@ -362,7 +356,8 @@ def paths_parser(parser):
 def main(args=sys.argv[1:]):
     """Command line argument parsing and main script execution."""
     # note: arg parser internally handles --help (and exits afterwards)
-    args = create_parser().parse_args(args)
+    plugins = plugins_disco.PluginRegistry.find_all()
+    args = create_parser(plugins).parse_args(args)
     config = configuration.NamespaceConfig(args)
 
     # Displayer
@@ -391,7 +386,7 @@ def main(args=sys.argv[1:]):
         #    "{0}Root is required to run letsencrypt.  Please use sudo.{0}"
         #    .format(os.linesep))
 
-    return args.func(args, config)
+    return args.func(args, config, plugins)
 
 
 if __name__ == "__main__":
