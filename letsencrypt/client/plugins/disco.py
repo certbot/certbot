@@ -175,5 +175,5 @@ def pick_configurator(
                  "certificates?"):
     """Pick configurator plugin."""
     return _pick_plugin(
-        config, default, plugins, question
+        config, default, plugins, question,
         (interfaces.IAuthenticator, interfaces.IInstaller))
