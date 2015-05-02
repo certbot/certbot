@@ -33,12 +33,12 @@ class AccountTest(unittest.TestCase):
             account_keys_dir=self.account_keys_dir, rsa_key_size=2048,
             server="letsencrypt-demo.org")
 
-        rsa256_file = pkg_resources.resource_filename(
-            "letsencrypt.client.tests", "testdata/rsa256_key.pem")
-        rsa256_pem = pkg_resources.resource_string(
-            "letsencrypt.client.tests", "testdata/rsa256_key.pem")
+        key_file = pkg_resources.resource_filename(
+            "letsencrypt.acme.jose", os.path.join("testdata", "rsa512_key.pem"))
+        key_pem = pkg_resources.resource_string(
+            "letsencrypt.acme.jose", os.path.join("testdata", "rsa512_key.pem"))
 
-        self.key = le_util.Key(rsa256_file, rsa256_pem)
+        self.key = le_util.Key(key_file, key_pem)
         self.email = "client@letsencrypt.org"
         self.regr = messages2.RegistrationResource(
             uri="uri",
