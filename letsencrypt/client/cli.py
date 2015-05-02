@@ -356,7 +356,7 @@ def paths_parser(parser):
 def main(args=sys.argv[1:]):
     """Command line argument parsing and main script execution."""
     # note: arg parser internally handles --help (and exits afterwards)
-    plugins = plugins_disco.PluginRegistry.find_all()
+    plugins = plugins_disco.PluginsRegistry.find_all()
     args = create_parser(plugins).parse_args(args)
     config = configuration.NamespaceConfig(args)
 

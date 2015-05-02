@@ -15,7 +15,7 @@ from letsencrypt.client.display import ops as display_ops
 class PluginEntryPoint(object):
     """Plugin entry point."""
 
-    PREFIX_FREE_DISTRIBUTIONS = ['letsencrypt']
+    PREFIX_FREE_DISTRIBUTIONS = ["letsencrypt"]
     """Distributions for which prefix will be omitted."""
 
     def __init__(self, entry_point):
@@ -26,13 +26,15 @@ class PluginEntryPoint(object):
 
     @property
     def initialized(self):
+        """Has the plugin been initialized already?"""
         return self._initialized is not None
 
     @classmethod
     def entry_point_to_plugin_name(cls, entry_point):
+        """Unique plugin name for an ``entry_point``"""
         if entry_point.dist.key in cls.PREFIX_FREE_DISTRIBUTIONS:
             return entry_point.name
-        return entry_point.dist.key + ':' + entry_point.name
+        return entry_point.dist.key + ":" + entry_point.name
 
     def init(self, config=None):
         """Memoized plugin inititialization."""
@@ -42,15 +44,16 @@ class PluginEntryPoint(object):
         return self._initialized
 
     def __repr__(self):
-        return 'PluginEntryPoint#{0}'.format(self.name)
+        return "PluginEntryPoint#{0}".format(self.name)
 
     @property
     def name_with_description(self):
+        """Name with description. Handy for UI."""
         return "{0} ({1})".format(self.name, self.plugin_cls.description)
 
 
-class PluginRegistry(collections.Mapping):
-    """Plugin registry."""
+class PluginsRegistry(collections.Mapping):
+    """Plugins registry."""
 
     def __init__(self, plugins):
         self.plugins = plugins
@@ -63,7 +66,7 @@ class PluginRegistry(collections.Mapping):
                 constants.SETUPTOOLS_PLUGINS_ENTRY_POINT):
             plugin_ep = PluginEntryPoint(entry_point)
             assert plugin_ep.name not in plugins, (
-                'PREFIX_FREE_DISTRIBTIONS messed up')
+                "PREFIX_FREE_DISTRIBTIONS messed up")
             plugins[plugin_ep.name] = plugin_ep
         return cls(plugins)
 
@@ -78,7 +81,7 @@ class PluginRegistry(collections.Mapping):
                 for ifaces in ifaces_groups)))
 
     def __repr__(self):
-        return '{0}({1!r})'.format(self.__class__.__name__, self.plugins)
+        return "{0}({1!r})".format(self.__class__.__name__, self.plugins)
 
     def __getitem__(self, name):
         return self.plugins[name]
@@ -128,7 +131,7 @@ def prepare_plugins(initialized):
     return prepared  # succefully prepared + misconfigured
 
 
-def pick_plugin(config, default, plugins, ifaces, question):
+def _pick_plugin(config, default, plugins, ifaces, question):
     if default is not None:
         filtered = {default: plugins[default]}
     else:
@@ -137,7 +140,7 @@ def pick_plugin(config, default, plugins, ifaces, question):
     for plugin_ep in plugins.itervalues():
         plugin_ep.init(config)
     verified = verify_plugins(filtered, ifaces)
-    prepared = prepare_plugins(filtered)
+    prepared = prepare_plugins(verified)
 
     if len(prepared) > 1:
         logging.debug("Multiple candidate plugins: %s", prepared)
@@ -153,20 +156,20 @@ def pick_plugin(config, default, plugins, ifaces, question):
 
 def pick_authenticator(config, default, plugins):
     """Pick authentication plugin."""
-    return pick_plugin(
-            config, default, plugins, (interfaces.IAuthenticator,),
-            "How would you like to authenticate with Let's Encrypt CA?")
+    return _pick_plugin(
+        config, default, plugins, (interfaces.IAuthenticator,),
+        "How would you like to authenticate with Let's Encrypt CA?")
 
 
 def pick_installer(config, default, plugins):
     """Pick installer plugin."""
-    return pick_plugin(config, default, plugins, (interfaces.IInstaller,),
-                       "How would you like to install certificates?")
+    return _pick_plugin(config, default, plugins, (interfaces.IInstaller,),
+                        "How would you like to install certificates?")
 
 
 def pick_configurator(config, default, plugins):
     """Pick configurator plugin."""
-    return pick_plugin(
+    return _pick_plugin(
         config, default, plugins,
         (interfaces.IAuthenticator, interfaces.IInstaller),
         "How would you like to install certificates?")
