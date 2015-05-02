@@ -320,6 +320,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def new_lineage(cls, lineagename, cert, privkey, chain, config=DEFAULTS):
+        # pylint: disable=too-many-locals
         """Create a new certificate lineage with the (suggested) lineage name
         lineagename, and the associated cert, privkey, and chain (the
         associated fullchain will be created automatically).  Returns a new
