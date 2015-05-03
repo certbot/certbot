@@ -43,7 +43,7 @@ def _pick_plugin(config, default, plugins, question, ifaces):
         # throw more UX-friendly error if default not in plugins
         filtered = plugins.filter(lambda p_ep: p_ep.name == default)
     else:
-        filtered = plugins.filter_ifaces(ifaces)
+        filtered = plugins.ifaces(ifaces)
 
     filtered.init(config)
     verified = filtered.verify(ifaces)

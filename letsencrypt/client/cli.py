@@ -176,7 +176,7 @@ def plugins_cmd(args, config, plugins):  # TODO: Use IDiplay rathern than print
     logging.debug("Discovered plugins: %s", plugins)
 
     ifaces = [] if args.ifaces is None else args.ifaces
-    filtered = plugins.filter_ifaces(*((iface,) for iface in ifaces))
+    filtered = plugins.ifaces(*((iface,) for iface in ifaces))
     logging.debug("Filtered plugins: %r", filtered)
 
     if not args.init and not args.prepare:

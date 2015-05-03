@@ -35,6 +35,13 @@ class PluginEntryPoint(object):
         """Name with description. Handy for UI."""
         return "{0} ({1})".format(self.name, self.plugin_cls.description)
 
+    def ifaces(self, *ifaces_groups):
+        """Does plugin implements specified interface groups?"""
+        return not ifaces_groups or any(
+            all(iface.implementedBy(self.plugin_cls)
+                for iface in ifaces)
+            for ifaces in ifaces_groups)
+
     @property
     def initialized(self):
         """Has the plugin been initialized already?"""
@@ -104,7 +111,7 @@ class PluginEntryPoint(object):
             "Description: {0}".format(self.plugin_cls.description),
             "Interfaces: {0}".format(", ".join(
                 iface.__name__ for iface in zope.interface.implementedBy(
-                self.plugin_cls))),
+                    self.plugin_cls))),
             "Entry point: {0}".format(self.entry_point),
         ]
 
@@ -131,12 +138,22 @@ class PluginsRegistry(collections.Mapping):
             plugin_ep = PluginEntryPoint(entry_point)
             assert plugin_ep.name not in plugins, (
                 "PREFIX_FREE_DISTRIBUTIONS messed up")
+            # providedBy | pylint: disable=no-member
             if interfaces.IPluginFactory.providedBy(plugin_ep.plugin_cls):
                 plugins[plugin_ep.name] = plugin_ep
-            else:
+            else:  # pragma: no cover
                 logging.warning("Plugin entry point %s does not provide "
                                 "IPluginFactory, skipping", plugin_ep)
         return cls(plugins)
+
+    def __getitem__(self, name):
+        return self.plugins[name]
+
+    def __iter__(self):
+        return iter(self.plugins)
+
+    def __len__(self):
+        return len(self.plugins)
 
     def init(self, config):
         """Initialize all plugins in the registry."""
@@ -148,18 +165,17 @@ class PluginsRegistry(collections.Mapping):
         return type(self)(dict((name, plugin_ep) for name, plugin_ep
                                in self.plugins.iteritems() if pred(plugin_ep)))
 
-    def filter_ifaces(self, *ifaces_groups):
+    def ifaces(self, *ifaces_groups):
         """Filter plugins based on interfaces."""
-        return self.filter(lambda plugin_ep: not ifaces_groups or any(
-                all(iface.implementedBy(plugin_ep.plugin_cls)
-                    for iface in ifaces)
-                for ifaces in ifaces_groups))
+        # pylint: disable=star-args
+        return self.filter(lambda p_ep: p_ep.ifaces(*ifaces_groups))
 
     def verify(self, ifaces):
         """Filter plugins based on verification."""
         return self.filter(lambda p_ep: p_ep.verify(ifaces))
 
     def prepare(self):
+        """Prepare all plugins in the registry."""
         return [plugin_ep.prepare() for plugin_ep in self.plugins.itervalues()]
 
     def available(self):
@@ -171,16 +187,7 @@ class PluginsRegistry(collections.Mapping):
         return "{0}({1!r})".format(
             self.__class__.__name__, set(self.plugins.itervalues()))
 
-    def __getitem__(self, name):
-        return self.plugins[name]
-
-    def __iter__(self):
-        return iter(self.plugins)
-
-    def __len__(self):
-        return len(self.plugins)
-
     def __str__(self):
         if not self.plugins:
             return "No plugins"
-        return "\n\n".join(map(str, self.plugins.itervalues()))
+        return "\n\n".join(str(p_ep) for p_ep in self.plugins.itervalues())
