@@ -82,7 +82,7 @@ def run(args, config, plugins):
     acc = _account_init(args, config)
     if acc is None:
         return None
-    
+
     if args.configurator is not None and (args.installer is not None or
                                           args.authenticator is not None):
         return ("Either --configurator or --authenticator/--installer"
@@ -171,53 +171,30 @@ def config_changes(args, config, plugins):
     client.config_changes(config)
 
 
-def _print_plugins(plugins):
-    # TODO: this functions should use IDisplay rather than printing
-
-    if not plugins:
-        print "No plugins found"
-
-    for plugin_ep in plugins.itervalues():
-        print "* {0}".format(plugin_ep.name)
-        print "Description: {0}".format(plugin_ep.plugin_cls.description)
-        print "Interfaces: {0}".format(", ".join(
-            iface.__name__ for iface in zope.interface.implementedBy(
-                plugin_ep.plugin_cls)))
-        print "Entry point: {0}".format(plugin_ep.entry_point)
-
-        if plugin_ep.initialized:
-            print "Initialized: {0}".format(plugin_ep.init())
-
-        # if filtered == prepared:
-        #if isinstance(content, tuple) and content[1] is not None:
-        #    print content[1]  # error
-
-        print  # whitespace between plugins
-
-
-def plugins_cmd(args, config, plugins):
+def plugins_cmd(args, config, plugins):  # TODO: Use IDiplay rathern than print
     """List plugins."""
     logging.debug("Discovered plugins: %s", plugins)
 
     ifaces = [] if args.ifaces is None else args.ifaces
-    filtered = plugins.filter(*((iface,) for iface in ifaces))
-    logging.debug("Filtered plugins: %s", filtered)
+    filtered = plugins.filter_ifaces(*((iface,) for iface in ifaces))
+    logging.debug("Filtered plugins: %r", filtered)
 
     if not args.init and not args.prepare:
-        return _print_plugins(filtered)
+        print str(filtered)
+        return
 
-    for plugin_ep in filtered.itervalues():
-        plugin_ep.init(config)
-    #verified = plugins_disco.verify_plugins(initialized, ifaces)
-    #logging.debug("Verified plugins: %s", initialized)
+    filtered.init(config)
+    verified = filtered.verify(ifaces)
+    logging.debug("Verified plugins: %r", verified)
 
     if not args.prepare:
-        return _print_plugins(filtered)
+        print str(verified)
+        return
 
-    available = plugins_disco.available_plugins(filtered)
+    verified.prepare()
+    available = verified.available()
     logging.debug("Prepared plugins: %s", available)
-
-    _print_plugins(available)
+    print str(available)
 
 
 def read_file(filename):

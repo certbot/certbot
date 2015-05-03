@@ -6,7 +6,7 @@ import zope.component
 
 from letsencrypt.client import interfaces
 from letsencrypt.client.display import util as display_util
-from letsencrypt.client.plugins import disco as plugins_disco
+
 
 # Define a helper function to avoid verbose code
 util = zope.component.getUtility  # pylint: disable=invalid-name
@@ -18,8 +18,8 @@ def choose_plugin(prepared, question):
     :param list prepared:
 
     """
-    opts = [plugin_ep.name_with_description if not plugin_ep.misconfigured
-            else "%s (Misconfigured)" % plugin_ep.name_with_description
+    opts = [plugin_ep.name_with_description
+            + (" [Misconfigured]" if plugin_ep.misconfigured else "")
             for plugin_ep in prepared.itervalues()]
 
     while True:
@@ -40,14 +40,15 @@ def choose_plugin(prepared, question):
 
 def _pick_plugin(config, default, plugins, question, ifaces):
     if default is not None:
-        filtered = {default: plugins[default]}
+        # throw more UX-friendly error if default not in plugins
+        filtered = plugins.filter(lambda p_ep: p_ep.name == default)
     else:
-        filtered = plugins.filter(ifaces)
+        filtered = plugins.filter_ifaces(ifaces)
 
-    for plugin_ep in plugins.itervalues():
-        plugin_ep.init(config)
-    verified = plugins_disco.verify_plugins(filtered, ifaces)
-    prepared = plugins_disco.available_plugins(verified)
+    filtered.init(config)
+    verified = filtered.verify(ifaces)
+    filtered.prepare()
+    prepared = filtered.available()
 
     if len(prepared) > 1:
         logging.debug("Multiple candidate plugins: %s", prepared)

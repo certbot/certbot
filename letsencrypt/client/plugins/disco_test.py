@@ -85,8 +85,8 @@ class PluginsRegistryTest(unittest.TestCase):
         self.assertTrue(self.plugins["standalone"].plugin_cls
                         is authenticator.StandaloneAuthenticator)
 
-    def test_filter(self):
-        filtered = self.plugins.filter()
+    def test_id_filter(self):
+        filtered = self.plugins.filter(lambda _: True)
         self.assertEqual(len(self.plugins), len(filtered))
 
     def test_repr(self):
