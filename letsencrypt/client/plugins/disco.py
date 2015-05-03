@@ -31,6 +31,11 @@ class PluginEntryPoint(object):
         return entry_point.dist.key + ":" + entry_point.name
 
     @property
+    def name_with_description(self):
+        """Name with description. Handy for UI."""
+        return "{0} ({1})".format(self.name, self.plugin_cls.description)
+
+    @property
     def initialized(self):
         """Has the plugin been initialized already?"""
         return self._initialized is not None
@@ -41,6 +46,20 @@ class PluginEntryPoint(object):
             self.entry_point.require()  # fetch extras!
             self._initialized = self.plugin_cls(config, self.name)
         return self._initialized
+
+    def verify(self, ifaces):
+        """Verify that the plugin conforms to the specified interfaces."""
+        assert self.initialized
+        for iface in ifaces:  # zope.interface.providedBy(plugin)
+            try:
+                zope.interface.verify.verifyObject(iface, self.init())
+            except zope.interface.exceptions.BrokenImplementation:
+                if iface.implementedBy(self.plugin_cls):
+                    logging.debug(
+                        "%s implements %s but object does "
+                        "not verify", self.plugin_cls, iface.__name__)
+                return False
+        return True
 
     @property
     def prepared(self):
@@ -68,7 +87,8 @@ class PluginEntryPoint(object):
     @property
     def misconfigured(self):
         """Is plugin misconfigured?"""
-        return isinstance(self._prepared, errors.LetsEncryptMisconfigurationError)
+        return isinstance(
+            self._prepared, errors.LetsEncryptMisconfigurationError)
 
     @property
     def available(self):
@@ -77,24 +97,6 @@ class PluginEntryPoint(object):
 
     def __repr__(self):
         return "PluginEntryPoint#{0}".format(self.name)
-
-    @property
-    def name_with_description(self):
-        """Name with description. Handy for UI."""
-        return "{0} ({1})".format(self.name, self.plugin_cls.description)
-
-    def verify(self, ifaces):
-        assert self.initialized
-        for iface in ifaces:  # zope.interface.providedBy(plugin)
-            try:
-                zope.interface.verify.verifyObject(iface, self.init())
-            except zope.interface.exceptions.BrokenImplementation:
-                if iface.implementedBy(self.plugin_cls):
-                    logging.debug(
-                        "%s implements %s but object does "
-                        "not verify", self.plugin_cls, iface.__name__)
-                return False
-        return True
 
     def __str__(self):
         lines = [
