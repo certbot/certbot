@@ -9,8 +9,6 @@ from letsencrypt.client import constants
 from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 
-from letsencrypt.client.display import ops as display_ops
-
 
 class PluginEntryPoint(object):
     """Plugin entry point."""
@@ -23,11 +21,7 @@ class PluginEntryPoint(object):
         self.plugin_cls = entry_point.load()
         self.entry_point = entry_point
         self._initialized = None
-
-    @property
-    def initialized(self):
-        """Has the plugin been initialized already?"""
-        return self._initialized is not None
+        self._prepared = None
 
     @classmethod
     def entry_point_to_plugin_name(cls, entry_point):
@@ -36,12 +30,50 @@ class PluginEntryPoint(object):
             return entry_point.name
         return entry_point.dist.key + ":" + entry_point.name
 
+    @property
+    def initialized(self):
+        """Has the plugin been initialized already?"""
+        return self._initialized is not None
+
     def init(self, config=None):
         """Memoized plugin inititialization."""
         if not self.initialized:
             self.entry_point.require()  # fetch extras!
             self._initialized = self.plugin_cls(config, self.name)
         return self._initialized
+
+    @property
+    def prepared(self):
+        """Has the plugin been prepared already?"""
+        if not self.initialized:
+            logging.debug(".prepared called on uninitialized %s", self)
+        return self._prepared is not None
+
+    def prepare(self):
+        """Memoized plugin preparation."""
+        assert self.initialized
+        if self._prepared is None:
+            try:
+                self._initialized.prepare()
+            except errors.LetsEncryptMisconfigurationError as error:
+                logging.debug("Misconfigured %s: %s", self, error)
+                self._prepared = error
+            except errors.LetsEncryptNoInstallationError as error:
+                logging.debug("No installation (%s): %s", self, error)
+                self._prepared = error
+            else:
+                self._prepared = True
+        return self._prepared
+
+    @property
+    def misconfigured(self):
+        """Is plugin misconfigured?"""
+        return isinstance(self._prepared, errors.LetsEncryptMisconfigurationError)
+
+    @property
+    def available(self):
+        """Is plugin available, i.e. prepared or misconfigured?"""
+        return self._prepared is True or self.misconfigured
 
     def __repr__(self):
         return "PluginEntryPoint#{0}".format(self.name)
@@ -50,6 +82,20 @@ class PluginEntryPoint(object):
     def name_with_description(self):
         """Name with description. Handy for UI."""
         return "{0} ({1})".format(self.name, self.plugin_cls.description)
+
+    def verify(self, ifaces):
+        assert self.initialized
+        for iface in ifaces:  # zope.interface.providedBy(plugin)
+            try:
+                zope.interface.verify.verifyObject(iface, self.init())
+            except zope.interface.exceptions.BrokenImplementation:
+                if iface.implementedBy(self.plugin_cls):
+                    logging.debug(
+                        "%s implements %s but object does "
+                        "not verify", self.plugin_cls, iface.__name__)
+                return False
+        return True
+
 
 
 class PluginsRegistry(collections.Mapping):
@@ -66,8 +112,12 @@ class PluginsRegistry(collections.Mapping):
                 constants.SETUPTOOLS_PLUGINS_ENTRY_POINT):
             plugin_ep = PluginEntryPoint(entry_point)
             assert plugin_ep.name not in plugins, (
-                "PREFIX_FREE_DISTRIBTIONS messed up")
-            plugins[plugin_ep.name] = plugin_ep
+                "PREFIX_FREE_DISTRIBUTIONS messed up")
+            if interfaces.IPluginFactory.providedBy(plugin_ep.plugin_cls):
+                plugins[plugin_ep.name] = plugin_ep
+            else:
+                logging.warning("Plugin entry point %s does not provide "
+                                "IPluginFactory, skipping", plugin_ep)
         return cls(plugins)
 
     def filter(self, *ifaces_groups):
@@ -81,7 +131,8 @@ class PluginsRegistry(collections.Mapping):
                 for ifaces in ifaces_groups)))
 
     def __repr__(self):
-        return "{0}({1!r})".format(self.__class__.__name__, self.plugins)
+        return "{0}({1!r})".format(
+            self.__class__.__name__, set(self.plugins.itervalues()))
 
     def __getitem__(self, name):
         return self.plugins[name]
@@ -95,85 +146,15 @@ class PluginsRegistry(collections.Mapping):
 
 def verify_plugins(initialized, ifaces):
     """Verify plugin objects."""
-    verified = {}
-    for name, plugin_ep in initialized.iteritems():
-        verifies = True
-        for iface in ifaces:  # zope.interface.providedBy(plugin)
-            try:
-                zope.interface.verify.verifyObject(iface, plugin_ep.init())
-            except zope.interface.exceptions.BrokenImplementation:
-                if iface.implementedBy(plugin_ep.plugin_cls):
-                    logging.debug(
-                        "%s implements %s but object does "
-                        "not verify", plugin_ep.plugin_cls, iface.__name__)
-                verifies = False
-                break
-        if verifies:
-            verified[name] = plugin_ep
-    return verified
+    return dict((name, plugin_ep) for name, plugin_ep in initialized.iteritems()
+                if plugin_ep.verify(ifaces))
 
 
-def prepare_plugins(initialized):
-    """Prepare plugins."""
+def available_plugins(initialized):
+    """Prepare plugins and filter available."""
     prepared = {}
-
     for name, plugin_ep in initialized.iteritems():
-        error = None
-        try:
-            plugin_ep.init().prepare()
-        except errors.LetsEncryptMisconfigurationError as error:
-            logging.debug("Misconfigured %s: %s", plugin_ep, error)
-        except errors.LetsEncryptNoInstallationError as error:
-            logging.debug("No installation (%s): %s", plugin_ep, error)
-            continue
-        prepared[name] = (plugin_ep, error)
-
+        plugin_ep.prepare()
+        if plugin_ep.available:
+            prepared[name] = plugin_ep
     return prepared  # succefully prepared + misconfigured
-
-
-def _pick_plugin(config, default, plugins, question, ifaces):
-    if default is not None:
-        filtered = {default: plugins[default]}
-    else:
-        filtered = plugins.filter(ifaces)
-
-    for plugin_ep in plugins.itervalues():
-        plugin_ep.init(config)
-    verified = verify_plugins(filtered, ifaces)
-    prepared = prepare_plugins(verified)
-
-    if len(prepared) > 1:
-        logging.debug("Multiple candidate plugins: %s", prepared)
-        return display_ops.choose_plugin(prepared.values(), question).init()
-    elif len(prepared) == 1:
-        plugin_ep = prepared.values()[0][0]
-        logging.debug("Single candidate plugin: %s", plugin_ep)
-        return plugin_ep.init()
-    else:
-        logging.debug("No candidate plugin")
-        return None
-
-
-def pick_authenticator(
-        config, default, plugins, question="How would you "
-        "like to authenticate with Let's Encrypt CA?"):
-    """Pick authentication plugin."""
-    return _pick_plugin(
-        config, default, plugins, question, (interfaces.IAuthenticator,))
-
-
-def pick_installer(config, default, plugins,
-                   question="How would you like to install certificates?"):
-    """Pick installer plugin."""
-    return _pick_plugin(
-        config, default, plugins, question, (interfaces.IInstaller,))
-
-
-def pick_configurator(
-        config, default, plugins,
-        question="How would you like to authenticate and install "
-                 "certificates?"):
-    """Pick configurator plugin."""
-    return _pick_plugin(
-        config, default, plugins, question,
-        (interfaces.IAuthenticator, interfaces.IInstaller))

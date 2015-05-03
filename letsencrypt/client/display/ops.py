@@ -6,6 +6,7 @@ import zope.component
 
 from letsencrypt.client import interfaces
 from letsencrypt.client.display import util as display_util
+from letsencrypt.client.plugins import disco as plugins_disco
 
 # Define a helper function to avoid verbose code
 util = zope.component.getUtility  # pylint: disable=invalid-name
@@ -17,9 +18,9 @@ def choose_plugin(prepared, question):
     :param list prepared:
 
     """
-    opts = [plugin_ep.name_with_description if error is None
+    opts = [plugin_ep.name_with_description if not plugin_ep.misconfigured
             else "%s (Misconfigured)" % plugin_ep.name_with_description
-            for (plugin_ep, error) in prepared]
+            for plugin_ep in prepared.itervalues()]
 
     while True:
         code, index = util(interfaces.IDisplay).menu(
@@ -29,13 +30,60 @@ def choose_plugin(prepared, question):
             return prepared[index][0]
         elif code == display_util.HELP:
             if prepared[index][1] is not None:
-                msg = "Reported Error: %s" % prepared[index][1]
+                msg = "Reported Error: %s" % prepared[index].prepare()
             else:
                 msg = prepared[index][0].init().more_info()
             util(interfaces.IDisplay).notification(
                 msg, height=display_util.HEIGHT)
         else:
             return None
+
+def _pick_plugin(config, default, plugins, question, ifaces):
+    if default is not None:
+        filtered = {default: plugins[default]}
+    else:
+        filtered = plugins.filter(ifaces)
+
+    for plugin_ep in plugins.itervalues():
+        plugin_ep.init(config)
+    verified = plugins_disco.verify_plugins(filtered, ifaces)
+    prepared = plugins_disco.available_plugins(verified)
+
+    if len(prepared) > 1:
+        logging.debug("Multiple candidate plugins: %s", prepared)
+        return choose_plugin(prepared.values(), question).init()
+    elif len(prepared) == 1:
+        plugin_ep = prepared.values()[0]
+        logging.debug("Single candidate plugin: %s", plugin_ep)
+        return plugin_ep.init()
+    else:
+        logging.debug("No candidate plugin")
+        return None
+
+
+def pick_authenticator(
+        config, default, plugins, question="How would you "
+        "like to authenticate with Let's Encrypt CA?"):
+    """Pick authentication plugin."""
+    return _pick_plugin(
+        config, default, plugins, question, (interfaces.IAuthenticator,))
+
+
+def pick_installer(config, default, plugins,
+                   question="How would you like to install certificates?"):
+    """Pick installer plugin."""
+    return _pick_plugin(
+        config, default, plugins, question, (interfaces.IInstaller,))
+
+
+def pick_configurator(
+        config, default, plugins,
+        question="How would you like to authenticate and install "
+                 "certificates?"):
+    """Pick configurator plugin."""
+    return _pick_plugin(
+        config, default, plugins, question,
+        (interfaces.IAuthenticator, interfaces.IInstaller))
 
 
 def choose_account(accounts):

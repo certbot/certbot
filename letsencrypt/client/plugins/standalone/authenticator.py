@@ -31,6 +31,8 @@ class StandaloneAuthenticator(common.Plugin):
 
     """
     zope.interface.implements(interfaces.IAuthenticator)
+    zope.interface.classProvides(interfaces.IPluginFactory)
+
     description = "Standalone Authenticator"
 
     def __init__(self, *args, **kwargs):

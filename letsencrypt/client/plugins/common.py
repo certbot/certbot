@@ -18,7 +18,8 @@ def dest_namespace(name):
 class Plugin(object):
     """Generic plugin."""
     zope.interface.implements(interfaces.IPlugin)
-    zope.interface.classProvides(interfaces.IPluginFactory)
+    # classProvides is not inherited, subclasses must define it on their own
+    #zope.interface.classProvides(interfaces.IPluginFactory)
 
     def __init__(self, config, name):
         self.config = config

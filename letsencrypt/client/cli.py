@@ -89,14 +89,14 @@ def run(args, config, plugins):
                 "pair, but not both, is allowed")
 
     if args.authenticator is not None or args.installer is not None:
-        installer = plugins_disco.pick_installer(
+        installer = display_ops.pick_installer(
             config, args.installer, plugins)
-        authenticator = plugins_disco.pick_authenticator(
+        authenticator = display_ops.pick_authenticator(
             config, args.authenticator, plugins)
     else:
         # TODO: this assume that user doesn't want to pick authenticator
         #       and installer separately...
-        authenticator = installer = plugins_disco.pick_configurator(
+        authenticator = installer = display_ops.pick_configurator(
             config, args.configurator, plugins)
 
     if installer is None or authenticator is None:
@@ -114,13 +114,13 @@ def auth(args, config, plugins):
     if acc is None:
         return None
 
-    authenticator = plugins_disco.pick_authenticator(
+    authenticator = display_ops.pick_authenticator(
         config, args.authenticator, plugins)
     if authenticator is None:
         return "Authenticator could not be determined"
 
     if args.installer is not None:
-        installer = plugins_disco.pick_installer(config, args.installer, plugins)
+        installer = display_ops.pick_installer(config, args.installer, plugins)
     else:
         installer = None
 
@@ -135,7 +135,7 @@ def install(args, config, plugins):
     if acc is None:
         return None
 
-    installer = plugins_disco.pick_installer(config, args.installer, plugins)
+    installer = display_ops.pick_installer(config, args.installer, plugins)
     if installer is None:
         return "Installer could not be determined"
     acme, doms = _common_run(
@@ -214,11 +214,10 @@ def plugins_cmd(args, config, plugins):
     if not args.prepare:
         return _print_plugins(filtered)
 
-    prepared = plugins_disco.prepare_plugins(initialized)
-    logging.debug("Prepared plugins: %s", plugins)
+    available = plugins_disco.available_plugins(filtered)
+    logging.debug("Prepared plugins: %s", available)
 
-    _print_plugins(prepared, plugins, names)
-    plugins_disco
+    _print_plugins(available)
 
 
 def read_file(filename):

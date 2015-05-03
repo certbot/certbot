@@ -66,7 +66,7 @@ class RollbackTest(unittest.TestCase):
         from letsencrypt.client.client import rollback
         rollback(None, checkpoints, {}, mock.MagicMock())
 
-    @mock.patch("letsencrypt.client.client.plugins_disco.pick_installer")
+    @mock.patch("letsencrypt.client.client.display_ops.pick_installer")
     def test_no_problems(self, mock_pick_installer):
         mock_pick_installer.side_effect = self.m_install
 
@@ -75,7 +75,7 @@ class RollbackTest(unittest.TestCase):
         self.assertEqual(self.m_install().rollback_checkpoints.call_count, 1)
         self.assertEqual(self.m_install().restart.call_count, 1)
 
-    @mock.patch("letsencrypt.client.client.plugins_disco.pick_installer")
+    @mock.patch("letsencrypt.client.client.display_ops.pick_installer")
     def test_no_installer(self, mock_pick_installer):
         mock_pick_installer.return_value = None
         self._call(1)

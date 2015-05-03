@@ -20,8 +20,6 @@ from letsencrypt.client import network2
 from letsencrypt.client import reverter
 from letsencrypt.client import revoker
 
-from letsencrypt.client.plugins import disco as plugins_disco
-
 from letsencrypt.client.plugins.apache import configurator
 
 from letsencrypt.client.display import ops as display_ops
@@ -349,7 +347,7 @@ def rollback(default_installer, checkpoints, config, plugins):
 
     """
     # Misconfigurations are only a slight problems... allow the user to rollback
-    installer = plugins_disco.pick_installer(
+    installer = display_ops.pick_installer(
         config, default_installer, plugins, question="Which installer "
         "should be used for rollback?")
 
@@ -368,7 +366,7 @@ def revoke(default_installer, config, plugins, no_confirm, cert, authkey):
     :type config: :class:`letsencrypt.client.interfaces.IConfig`
 
     """
-    installer = plugins_disco.pick_installer(
+    installer = display_ops.pick_installer(
         config, default_installer, plugins, question="Which installer "
         "should be used for certificate revocation?")
 
