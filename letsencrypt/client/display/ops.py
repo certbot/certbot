@@ -15,30 +15,49 @@ util = zope.component.getUtility  # pylint: disable=invalid-name
 def choose_plugin(prepared, question):
     """Allow the user to choose ther plugin.
 
-    :param list prepared:
+    :param list prepared: List of `~.PluginEntryPoint`.
+    :param str question: Question to be presented to the user.
+
+    :returns: Plugin entry point chosen by the user.
+    :rtype: `~.PluginEntryPoint`
 
     """
     opts = [plugin_ep.name_with_description
             + (" [Misconfigured]" if plugin_ep.misconfigured else "")
-            for plugin_ep in prepared.itervalues()]
+            for plugin_ep in prepared]
 
     while True:
         code, index = util(interfaces.IDisplay).menu(
             question, opts, help_label="More Info")
 
         if code == display_util.OK:
-            return prepared[index][0]
+            return prepared[index]
         elif code == display_util.HELP:
-            if prepared[index][1] is not None:
+            if prepared[index].misconfigured:
                 msg = "Reported Error: %s" % prepared[index].prepare()
             else:
-                msg = prepared[index][0].init().more_info()
+                msg = prepared[index].init().more_info()
             util(interfaces.IDisplay).notification(
                 msg, height=display_util.HEIGHT)
         else:
             return None
 
-def _pick_plugin(config, default, plugins, question, ifaces):
+
+def pick_plugin(config, default, plugins, question, ifaces):
+    """Pick plugin.
+
+    :param letsencrypt.client.interfaces.IConfig: Configuration
+    :param str default: Plugin name supplied by user or ``None``.
+    :param letsencrypt.client.plugins.disco.PluginsRegistry plugins:
+        All plugins registered as entry points.
+    :param str question: Question to be presented to the user in case
+        multiple candidates are found.
+    :param list ifaces: Interfaces that plugins must provide.
+
+    :returns: Initialized plugin.
+    :rtype: IPlugin
+
+    """
     if default is not None:
         # throw more UX-friendly error if default not in plugins
         filtered = plugins.filter(lambda p_ep: p_ep.name == default)
@@ -47,8 +66,8 @@ def _pick_plugin(config, default, plugins, question, ifaces):
 
     filtered.init(config)
     verified = filtered.verify(ifaces)
-    filtered.prepare()
-    prepared = filtered.available()
+    verified.prepare()
+    prepared = verified.available()
 
     if len(prepared) > 1:
         logging.debug("Multiple candidate plugins: %s", prepared)
@@ -66,14 +85,14 @@ def pick_authenticator(
         config, default, plugins, question="How would you "
         "like to authenticate with Let's Encrypt CA?"):
     """Pick authentication plugin."""
-    return _pick_plugin(
+    return pick_plugin(
         config, default, plugins, question, (interfaces.IAuthenticator,))
 
 
 def pick_installer(config, default, plugins,
                    question="How would you like to install certificates?"):
     """Pick installer plugin."""
-    return _pick_plugin(
+    return pick_plugin(
         config, default, plugins, question, (interfaces.IInstaller,))
 
 
@@ -82,7 +101,7 @@ def pick_configurator(
         question="How would you like to authenticate and install "
                  "certificates?"):
     """Pick configurator plugin."""
-    return _pick_plugin(
+    return pick_plugin(
         config, default, plugins, question,
         (interfaces.IAuthenticator, interfaces.IInstaller))
 
