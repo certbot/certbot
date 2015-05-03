@@ -315,11 +315,7 @@ class Network(object):
         try:
             authzr_uri = response.links['up']['url']
         except KeyError:
-            # TODO: Right now Boulder responds with the authorization resource
-            # instead of a challenge resource... this can be uncommented
-            # once the error is fixed (boulder#130).
-            return None
-            # raise errors.NetworkError('"up" Link header missing')
+            raise errors.NetworkError('"up" Link header missing')
         challr = messages2.ChallengeResource(
             authzr_uri=authzr_uri,
             body=messages2.ChallengeBody.from_json(response.json()))
