@@ -1,13 +1,13 @@
 """Common utilities for letsencrypt.client.nginx."""
 import os
 import pkg_resources
-import shutil
-import tempfile
 import unittest
 
 import mock
 
 from letsencrypt.client import constants
+
+from letsencrypt.client.plugins.apache.tests import util as apache_util
 from letsencrypt.client.plugins.nginx import configurator
 
 
@@ -16,13 +16,13 @@ class NginxTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
     def setUp(self):
         super(NginxTest, self).setUp()
 
-        self.temp_dir, self.config_dir, self.work_dir = dir_setup(
-            "testdata")
+        self.temp_dir, self.config_dir, self.work_dir = apache_util.dir_setup(
+            "etc_nginx", "letsencrypt.client.plugins.nginx.tests")
 
-        self.ssl_options = setup_nginx_ssl_options(self.config_dir)
+        self.ssl_options = apache_util.setup_ssl_options(
+            self.config_dir, constants.NGINX_MOD_SSL_CONF)
 
-        self.config_path = os.path.join(
-            self.temp_dir, "testdata")
+        self.config_path = os.path.join(self.temp_dir, "etc_nginx")
 
         self.rsa256_file = pkg_resources.resource_filename(
             "letsencrypt.acme.jose", "testdata/rsa256_key.pem")
@@ -33,33 +33,8 @@ class NginxTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
 def get_data_filename(filename):
     """Gets the filename of a test data file."""
     return pkg_resources.resource_filename(
-        "letsencrypt.client.plugins.nginx.tests", "testdata/%s" % filename)
-
-
-def dir_setup(test_dir="debian_nginx/two_vhost_80"):
-    """Setup the directories necessary for the configurator."""
-    temp_dir = tempfile.mkdtemp("temp")
-    config_dir = tempfile.mkdtemp("config")
-    work_dir = tempfile.mkdtemp("work")
-
-    os.chmod(temp_dir, constants.CONFIG_DIRS_MODE)
-    os.chmod(config_dir, constants.CONFIG_DIRS_MODE)
-    os.chmod(work_dir, constants.CONFIG_DIRS_MODE)
-
-    test_configs = pkg_resources.resource_filename(
-        "letsencrypt.client.plugins.nginx.tests", test_dir)
-
-    shutil.copytree(
-        test_configs, os.path.join(temp_dir, test_dir), symlinks=True)
-
-    return temp_dir, config_dir, work_dir
-
-
-def setup_nginx_ssl_options(config_dir):
-    """Move the ssl_options into position and return the path."""
-    option_path = os.path.join(config_dir, "options-ssl.conf")
-    shutil.copyfile(constants.NGINX_MOD_SSL_CONF, option_path)
-    return option_path
+        "letsencrypt.client.plugins.nginx.tests", os.path.join(
+            "testdata", "etc_nginx", filename))
 
 
 def get_nginx_configurator(

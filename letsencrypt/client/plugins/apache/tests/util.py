@@ -20,7 +20,7 @@ class ApacheTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
         self.temp_dir, self.config_dir, self.work_dir = dir_setup(
             "debian_apache_2_4/two_vhost_80")
 
-        self.ssl_options = setup_apache_ssl_options(self.config_dir)
+        self.ssl_options = setup_ssl_options(self.config_dir)
 
         self.config_path = os.path.join(
             self.temp_dir, "debian_apache_2_4/two_vhost_80/apache2")
@@ -31,7 +31,8 @@ class ApacheTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
             "letsencrypt.acme.jose", "testdata/rsa256_key.pem")
 
 
-def dir_setup(test_dir="debian_apache_2_4/two_vhost_80"):
+def dir_setup(test_dir="debian_apache_2_4/two_vhost_80",
+              pkg="letsencrypt.client.plugins.apache.tests"):
     """Setup the directories necessary for the configurator."""
     temp_dir = tempfile.mkdtemp("temp")
     config_dir = tempfile.mkdtemp("config")
@@ -42,7 +43,7 @@ def dir_setup(test_dir="debian_apache_2_4/two_vhost_80"):
     os.chmod(work_dir, constants.CONFIG_DIRS_MODE)
 
     test_configs = pkg_resources.resource_filename(
-        "letsencrypt.client.plugins.apache.tests", "testdata/%s" % test_dir)
+        pkg, os.path.join("testdata", test_dir))
 
     shutil.copytree(
         test_configs, os.path.join(temp_dir, test_dir), symlinks=True)
@@ -50,10 +51,11 @@ def dir_setup(test_dir="debian_apache_2_4/two_vhost_80"):
     return temp_dir, config_dir, work_dir
 
 
-def setup_apache_ssl_options(config_dir):
+def setup_ssl_options(
+        config_dir, mod_ssl_conf=constants.APACHE_MOD_SSL_CONF):
     """Move the ssl_options into position and return the path."""
     option_path = os.path.join(config_dir, "options-ssl.conf")
-    shutil.copyfile(constants.APACHE_MOD_SSL_CONF, option_path)
+    shutil.copyfile(mod_ssl_conf, option_path)
     return option_path
 
 
