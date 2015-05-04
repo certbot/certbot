@@ -37,6 +37,10 @@ def dir_setup(test_dir="debian_apache_2_4/two_vhost_80"):
     config_dir = tempfile.mkdtemp("config")
     work_dir = tempfile.mkdtemp("work")
 
+    os.chmod(temp_dir, constants.CONFIG_DIRS_MODE)
+    os.chmod(config_dir, constants.CONFIG_DIRS_MODE)
+    os.chmod(work_dir, constants.CONFIG_DIRS_MODE)
+
     test_configs = pkg_resources.resource_filename(
         "letsencrypt.client.plugins.apache.tests", "testdata/%s" % test_dir)
 
