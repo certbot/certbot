@@ -108,7 +108,7 @@ class Client(object):
             this CSR can be different than self.authkey
         :type csr: :class:`CSR`
 
-        :returns: cert_file, chain_file (paths to respective files)
+        :returns: cert_path, chain_path (paths to respective files)
         :rtype: `tuple` of `str`
 
         """
@@ -136,13 +136,13 @@ class Client(object):
             authzr)
 
         # Save Certificate
-        cert_file, chain_file = self.save_certificate(
+        cert_path, chain_path = self.save_certificate(
             certr, self.config.cert_path, self.config.chain_path)
 
         revoker.Revoker.store_cert_key(
-            cert_file, self.account.key.file, self.config)
+            cert_path, self.account.key.file, self.config)
 
-        return cert_file, chain_file
+        return cert_path, chain_path
 
     def save_certificate(self, certr, cert_path, chain_path):
         # pylint: disable=no-self-use
@@ -154,7 +154,7 @@ class Client(object):
         :param str cert_path: Path to attempt to save the cert file
         :param str chain_path: Path to attempt to save the chain file
 
-        :returns: cert_file, chain_file (absolute paths to the actual files)
+        :returns: cert_path, chain_path (absolute paths to the actual files)
         :rtype: `tuple` of `str`
 
         :raises IOError: If unable to find room to write the cert files
@@ -191,7 +191,7 @@ class Client(object):
 
         return os.path.abspath(act_cert_path), cert_chain_abspath
 
-    def deploy_certificate(self, domains, privkey, cert_file, chain_file=None):
+    def deploy_certificate(self, domains, privkey, cert_path, chain_path=None):
         """Install certificate
 
         :param list domains: list of domains to install the certificate
@@ -199,8 +199,8 @@ class Client(object):
         :param privkey: private key for certificate
         :type privkey: :class:`letsencrypt.client.le_util.Key`
 
-        :param str cert_file: certificate file path
-        :param str chain_file: chain file path
+        :param str cert_path: certificate file path
+        :param str chain_path: chain file path
 
         """
         if self.installer is None:
@@ -208,13 +208,12 @@ class Client(object):
                             "the certificate")
             raise errors.LetsEncryptClientError("No installer available")
 
-        chain = None if chain_file is None else os.path.abspath(chain_file)
+        chain_path = None if chain_path is None else os.path.abspath(chain_path)
 
         for dom in domains:
-            self.installer.deploy_cert(dom,
-                                       os.path.abspath(cert_file),
-                                       os.path.abspath(privkey.file),
-                                       chain)
+            self.installer.deploy_cert(
+                dom, os.path.abspath(cert_path),
+                os.path.abspath(privkey.file), chain_path)
 
         self.installer.save("Deployed Let's Encrypt Certificate")
         # sites may have been enabled / final cleanup

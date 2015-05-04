@@ -147,7 +147,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         temp_install(self.conf('mod-ssl-conf'))
 
-    def deploy_cert(self, domain, cert, key, cert_chain=None):
+    def deploy_cert(self, domain, cert_path, key, chain_path=None):
         """Deploys certificate to specified virtual host.
 
         Currently tries to find the last directives to deploy the cert in
@@ -163,25 +163,26 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                   This shouldn't happen within letsencrypt though
 
         :param str domain: domain to deploy certificate
-        :param str cert: certificate filename
+        :param str cert_path: certificate filename
         :param str key: private key filename
-        :param str cert_chain: certificate chain filename
+        :param str chain_path: certificate chain filename
 
         """
         vhost = self.choose_vhost(domain)
+        # TODO(jdkasten): vhost might be None
         path = {}
 
-        path["cert_file"] = self.parser.find_dir(parser.case_i(
+        path["cert_path"] = self.parser.find_dir(parser.case_i(
             "SSLCertificateFile"), None, vhost.path)
         path["cert_key"] = self.parser.find_dir(parser.case_i(
             "SSLCertificateKeyFile"), None, vhost.path)
 
         # Only include if a certificate chain is specified
-        if cert_chain is not None:
-            path["cert_chain"] = self.parser.find_dir(
+        if chain_path is not None:
+            path["chain_path"] = self.parser.find_dir(
                 parser.case_i("SSLCertificateChainFile"), None, vhost.path)
 
-        if len(path["cert_file"]) == 0 or len(path["cert_key"]) == 0:
+        if not path["cert_path"] or not path["cert_key"]:
             # Throw some can't find all of the directives error"
             logging.warn(
                 "Cannot find a cert or key directive in %s", vhost.path)
@@ -191,22 +192,22 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         logging.info("Deploying Certificate to VirtualHost %s", vhost.filep)
 
-        self.aug.set(path["cert_file"][0], cert)
+        self.aug.set(path["cert_path"][0], cert_path)
         self.aug.set(path["cert_key"][0], key)
-        if cert_chain is not None:
-            if len(path["cert_chain"]) == 0:
+        if chain_path is not None:
+            if not path["chain_path"]:
                 self.parser.add_dir(
-                    vhost.path, "SSLCertificateChainFile", cert_chain)
+                    vhost.path, "SSLCertificateChainFile", chain_path)
             else:
-                self.aug.set(path["cert_chain"][0], cert_chain)
+                self.aug.set(path["chain_path"][0], chain_path)
 
         self.save_notes += ("Changed vhost at %s with addresses of %s\n" %
                             (vhost.filep,
                              ", ".join(str(addr) for addr in vhost.addrs)))
-        self.save_notes += "\tSSLCertificateFile %s\n" % cert
+        self.save_notes += "\tSSLCertificateFile %s\n" % cert_path
         self.save_notes += "\tSSLCertificateKeyFile %s\n" % key
-        if cert_chain:
-            self.save_notes += "\tSSLCertificateChainFile %s\n" % cert_chain
+        if chain_path is not None:
+            self.save_notes += "\tSSLCertificateChainFile %s\n" % chain_path
 
         # Make sure vhost is enabled
         if not vhost.enabled:

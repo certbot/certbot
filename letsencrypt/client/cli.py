@@ -135,7 +135,7 @@ def install(args, config, plugins):
         return "Installer could not be determined"
     acme, doms = _common_run(
         args, config, acc, authenticator=None, installer=installer)
-    assert args.cert_path is not None and args.chain_path is not None
+    assert args.cert_path is not None
     acme.deploy_certificate(doms, acc.key, args.cert_path, args.chain_path)
     acme.enhance_config(doms, args.redirect)
 
