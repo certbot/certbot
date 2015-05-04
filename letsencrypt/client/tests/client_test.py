@@ -8,7 +8,6 @@ import mock
 
 from letsencrypt.client import account
 from letsencrypt.client import configuration
-from letsencrypt.client import errors
 from letsencrypt.client import le_util
 
 

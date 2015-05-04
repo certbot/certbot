@@ -1,18 +1,15 @@
 """Tests for letsencrypt.client.cli."""
 import itertools
-import sys
 import unittest
 
 import mock
-import zope.component
-
-from letsencrypt.client.display import util as display_util
 
 
 class CLITest(unittest.TestCase):
     """Tests for different commands."""
 
-    def _call(self, args):
+    @classmethod
+    def _call(cls, args):
         from letsencrypt.client import cli
         args = ['--text'] + args
         with mock.patch("letsencrypt.client.cli.sys.stdout") as stdout:
@@ -28,8 +25,9 @@ class CLITest(unittest.TestCase):
 
     def test_plugins(self):
         flags = ['--init', '--prepare', '--authenticators', '--installers']
-        for args in itertools.chain(*(itertools.combinations(flags, r)
-                     for r in xrange(len(flags)))):
+        for args in itertools.chain(
+                *(itertools.combinations(flags, r)
+                  for r in xrange(len(flags)))):
             print args
             self._call(['plugins',] + list(args))
 

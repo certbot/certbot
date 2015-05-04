@@ -96,7 +96,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         add("enmod", default=constants.DEFAULT_ENMOD,
             help="Path to the Apache 'a2enmod' binary.")
         add("init-script", default=constants.DEFAULT_INIT_SCRIPT,
-            help="Path to the Apache init script (used for server reload/restart).")
+            help="Path to the Apache init script (used for server "
+            "reload/restart).")
 
     def __init__(self, *args, **kwargs):
         """Initialize an Apache Configurator.

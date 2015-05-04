@@ -1,6 +1,5 @@
 """Let's Encrypt constants."""
 import logging
-import pkg_resources
 
 from letsencrypt.acme import challenges
 

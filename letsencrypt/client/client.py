@@ -20,8 +20,6 @@ from letsencrypt.client import network2
 from letsencrypt.client import reverter
 from letsencrypt.client import revoker
 
-from letsencrypt.client.plugins.apache import configurator
-
 from letsencrypt.client.display import ops as display_ops
 from letsencrypt.client.display import enhancements
 

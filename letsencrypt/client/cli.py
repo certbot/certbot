@@ -1,10 +1,8 @@
 """Let's Encrypt CLI."""
 # TODO: Sanity check all input.  Be sure to avoid shell code etc...
 import argparse
-import collections
 import logging
 import os
-import pkg_resources
 import sys
 
 import configargparse
@@ -27,9 +25,6 @@ from letsencrypt.client.display import util as display_util
 from letsencrypt.client.display import ops as display_ops
 
 from letsencrypt.client.plugins import disco as plugins_disco
-
-from letsencrypt.client.plugins.apache import configurator as apache_configurator
-from letsencrypt.client.plugins.nginx import configurator as nginx_configurator
 
 
 def _account_init(args, config):
@@ -72,7 +67,7 @@ def _common_run(args, config, acc, authenticator, installer):
             try:
                 acme.register()
             except errors.LetsEncryptClientError:
-                return None
+                sys.exit("Unable to register an account with ACME server")
 
     return acme, doms
 
@@ -125,7 +120,7 @@ def auth(args, config, plugins):
         installer = None
 
     acme, doms = _common_run(
-        args, config, acc, authenticator=authenticator, installer=None)
+        args, config, acc, authenticator=authenticator, installer=installer)
     acme.obtain_certificate(doms)
 
 
@@ -145,7 +140,7 @@ def install(args, config, plugins):
     acme.enhance_config(doms, args.redirect)
 
 
-def revoke(args, config, plugins):
+def revoke(args, unused_config, unused_plugins):
     """Revoke."""
     if args.rev_cert is None and args.rev_key is None:
         return "At least one of --certificate or --key is required"
@@ -162,13 +157,13 @@ def rollback(args, config, plugins):
     client.rollback(args.installer, args.checkpoints, config, plugins)
 
 
-def config_changes(args, config, plugins):
+def config_changes(unused_args, config, unused_plugins):
     """View config changes.
 
     View checkpoints and associated configuration changes.
 
     """
-    client.config_changes(config)
+    client.view_config_changes(config)
 
 
 def plugins_cmd(args, config, plugins):  # TODO: Use IDiplay rathern than print
@@ -234,7 +229,7 @@ def create_parser(plugins):
 
     # --help is automatically provided by argparse
     add("--version", action="version", version="%(prog)s {0}".format(
-            letsencrypt.__version__))
+        letsencrypt.__version__))
     add("-v", "--verbose", dest="verbose_count", action="count",
         default=flag_default("verbose_count"))
     add("--no-confirm", dest="no_confirm", action="store_true",
@@ -245,18 +240,18 @@ def create_parser(plugins):
         help="Use the text output instead of the curses UI.")
 
     subparsers = parser.add_subparsers(metavar="SUBCOMMAND")
-    def add_subparser(name, func):
+    def add_subparser(name, func):  # pylint: disable=missing-docstring
         subparser = subparsers.add_parser(
             name, help=func.__doc__.splitlines()[0], description=func.__doc__)
         subparser.set_defaults(func=func)
         return subparser
 
-    parser_run = add_subparser("run", run)
-    parser_auth = add_subparser("auth", auth)
-    parser_install = add_subparser("install", install)
+    add_subparser("run", run)
+    add_subparser("auth", auth)
+    add_subparser("install", install)
     parser_revoke = add_subparser("revoke", revoke)
     parser_rollback = add_subparser("rollback", rollback)
-    parrser_config_changes = add_subparser("config_changes", config_changes)
+    add_subparser("config_changes", config_changes)
 
     parser_plugins = add_subparser("plugins", plugins_cmd)
     parser_plugins.add_argument("--init", action="store_true")
@@ -302,7 +297,7 @@ def create_parser(plugins):
         default=flag_default("rollback_checkpoints"),
         help="Revert configuration N number of checkpoints.")
 
-    paths_parser(parser.add_argument_group("paths"))
+    _paths_parser(parser.add_argument_group("paths"))
 
     # TODO: plugin_parser should be called for every detected plugin
     for name, plugin_ep in plugins.iteritems():
@@ -312,7 +307,7 @@ def create_parser(plugins):
     return parser
 
 
-def paths_parser(parser):
+def _paths_parser(parser):
     add = parser.add_argument
     add("--config-dir", default=flag_default("config_dir"),
         help=config_help("config_dir"))
