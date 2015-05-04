@@ -28,7 +28,6 @@ class CLITest(unittest.TestCase):
         for args in itertools.chain(
                 *(itertools.combinations(flags, r)
                   for r in xrange(len(flags)))):
-            print args
             self._call(['plugins',] + list(args))
 
 

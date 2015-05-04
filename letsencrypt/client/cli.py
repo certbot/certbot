@@ -168,10 +168,10 @@ def config_changes(unused_args, config, unused_plugins):
 
 def plugins_cmd(args, config, plugins):  # TODO: Use IDiplay rathern than print
     """List plugins."""
-    logging.debug("Discovered plugins: %s", plugins)
+    logging.debug("Expected interfaces: %s", args.ifaces)
 
     ifaces = [] if args.ifaces is None else args.ifaces
-    filtered = plugins.ifaces(*((iface,) for iface in ifaces))
+    filtered = plugins.ifaces(ifaces)
     logging.debug("Filtered plugins: %r", filtered)
 
     if not args.init and not args.prepare:
@@ -351,6 +351,8 @@ def main(args=sys.argv[1:]):
     logging.debug("Logging level set at %d", level)
     if args.use_curses:
         logger.addHandler(log.DialogHandler())
+
+    logging.debug("Discovered plugins: %r", plugins)
 
     if not os.geteuid() == 0:
         logging.warning(
