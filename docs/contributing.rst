@@ -15,7 +15,7 @@ Now you can install the development packages:
 
 .. code-block:: shell
 
-   ./venv/bin/pip install -r requirements.txt -e .[dev]
+   ./venv/bin/pip install -r requirements.txt -e .[dev,docs,testing]
 
 The code base, including your pull requests, **must** have 100% test
 statement coverage **and** be compliant with the :ref:`coding style
