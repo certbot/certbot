@@ -17,7 +17,7 @@ import Crypto.PublicKey.RSA
 import M2Crypto
 
 from letsencrypt.acme import messages
-from letsencrypt.acme import util as acme_util
+from letsencrypt.acme.jose import util as jose_util
 
 from letsencrypt.client import errors
 from letsencrypt.client import le_util
@@ -240,7 +240,7 @@ class Revoker(object):
         """
         # These will both have to change in the future away from M2Crypto
         # pylint: disable=protected-access
-        certificate = acme_util.ComparableX509(cert._cert)
+        certificate = jose_util.ComparableX509(cert._cert)
         try:
             with open(cert.backup_key_path, "rU") as backup_key_file:
                 key = Crypto.PublicKey.RSA.importKey(backup_key_file.read())

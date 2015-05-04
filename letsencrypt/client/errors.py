@@ -5,20 +5,28 @@ class LetsEncryptClientError(Exception):
     """Generic Let's Encrypt client error."""
 
 
+class NetworkError(LetsEncryptClientError):
+    """Network error."""
+
+
+class UnexpectedUpdate(NetworkError):
+    """Unexpected update."""
+
+
 class LetsEncryptReverterError(LetsEncryptClientError):
     """Let's Encrypt Reverter error."""
 
 
 # Auth Handler Errors
-class LetsEncryptAuthHandlerError(LetsEncryptClientError):
-    """Let's Encrypt Auth Handler error."""
+class AuthorizationError(LetsEncryptClientError):
+    """Authorization error."""
 
 
-class LetsEncryptClientAuthError(LetsEncryptAuthHandlerError):
-    """Let's Encrypt Client Authenticator error."""
+class LetsEncryptContAuthError(AuthorizationError):
+    """Let's Encrypt Continuity Authenticator error."""
 
 
-class LetsEncryptDvAuthError(LetsEncryptAuthHandlerError):
+class LetsEncryptDvAuthError(AuthorizationError):
     """Let's Encrypt DV Authenticator error."""
 
 

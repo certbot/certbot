@@ -1,14 +1,16 @@
 """Tests for letsencrypt.client.auth_handler."""
+import functools
 import logging
 import unittest
 
 import mock
 
 from letsencrypt.acme import challenges
-from letsencrypt.acme import messages
+from letsencrypt.acme import messages2
 
-from letsencrypt.client import achallenges
 from letsencrypt.client import errors
+from letsencrypt.client import le_util
+from letsencrypt.client import network2
 
 from letsencrypt.client.tests import acme_util
 
@@ -23,491 +25,341 @@ TRANSLATE = {
 }
 
 
-class SatisfyChallengesTest(unittest.TestCase):
-    """verify_identities test."""
+class ChallengeFactoryTest(unittest.TestCase):
+    # pylint: disable=protected-access
+
+    def setUp(self):
+        from letsencrypt.client.auth_handler import AuthHandler
+
+        # Account is mocked...
+        self.handler = AuthHandler(
+            None, None, None, mock.Mock(key="mock_key"))
+
+        self.dom = "test"
+        self.handler.authzr[self.dom] = acme_util.gen_authzr(
+            messages2.STATUS_PENDING, self.dom, acme_util.CHALLENGES,
+            [messages2.STATUS_PENDING]*6, False)
+
+    def test_all(self):
+        cont_c, dv_c = self.handler._challenge_factory(self.dom, range(0, 6))
+
+        self.assertEqual(
+            [achall.chall for achall in cont_c], acme_util.CONT_CHALLENGES)
+        self.assertEqual(
+            [achall.chall for achall in dv_c], acme_util.DV_CHALLENGES)
+
+    def test_one_dv_one_cont(self):
+        cont_c, dv_c = self.handler._challenge_factory(self.dom, [1, 4])
+
+        self.assertEqual(
+            [achall.chall for achall in cont_c], [acme_util.RECOVERY_TOKEN])
+        self.assertEqual([achall.chall for achall in dv_c], [acme_util.DVSNI])
+
+    def test_unrecognized(self):
+        self.handler.authzr["failure.com"] = acme_util.gen_authzr(
+            messages2.STATUS_PENDING, "failure.com",
+            [mock.Mock(chall="chall", typ="unrecognized")],
+            [messages2.STATUS_PENDING])
+
+        self.assertRaises(errors.LetsEncryptClientError,
+                          self.handler._challenge_factory, "failure.com", [0])
+
+
+class GetAuthorizationsTest(unittest.TestCase):
+    """get_authorizations test.
+
+    This tests everything except for all functions under _poll_challenges.
+
+    """
 
     def setUp(self):
         from letsencrypt.client.auth_handler import AuthHandler
 
         self.mock_dv_auth = mock.MagicMock(name="ApacheConfigurator")
-        self.mock_client_auth = mock.MagicMock(name="ClientAuthenticator")
+        self.mock_cont_auth = mock.MagicMock(name="ContinuityAuthenticator")
 
         self.mock_dv_auth.get_chall_pref.return_value = [challenges.DVSNI]
-        self.mock_client_auth.get_chall_pref.return_value = [
+        self.mock_cont_auth.get_chall_pref.return_value = [
             challenges.RecoveryToken]
 
-        self.mock_client_auth.perform.side_effect = gen_auth_resp
+        self.mock_cont_auth.perform.side_effect = gen_auth_resp
         self.mock_dv_auth.perform.side_effect = gen_auth_resp
 
+        self.mock_account = mock.Mock(key=le_util.Key("file_path", "PEM"))
+        self.mock_net = mock.MagicMock(spec=network2.Network)
+
         self.handler = AuthHandler(
-            self.mock_dv_auth, self.mock_client_auth, None)
+            self.mock_dv_auth, self.mock_cont_auth,
+            self.mock_net, self.mock_account)
 
         logging.disable(logging.CRITICAL)
 
     def tearDown(self):
         logging.disable(logging.NOTSET)
 
-    def test_name1_dvsni1(self):
-        dom = "0"
-        msg = messages.Challenge(
-            session_id=dom, nonce="nonce0", combinations=[],
-            challenges=[acme_util.DVSNI])
-        self.handler.add_chall_msg(dom, msg, "dummy_key")
+    @mock.patch("letsencrypt.client.auth_handler.AuthHandler._poll_challenges")
+    def test_name1_dvsni1(self, mock_poll):
+        self.mock_net.request_domain_challenges.side_effect = functools.partial(
+            gen_dom_authzr, challs=acme_util.DV_CHALLENGES)
 
-        self.handler._satisfy_challenges()  # pylint: disable=protected-access
+        mock_poll.side_effect = self._validate_all
 
-        self.assertEqual(len(self.handler.responses), 1)
-        self.assertEqual(len(self.handler.responses[dom]), 1)
+        authzr = self.handler.get_authorizations(["0"])
 
-        self.assertEqual("DVSNI0", self.handler.responses[dom][0])
-        self.assertEqual(len(self.handler.dv_c), 1)
-        self.assertEqual(len(self.handler.client_c), 1)
-        self.assertEqual(len(self.handler.dv_c[dom]), 1)
-        self.assertEqual(len(self.handler.client_c[dom]), 0)
+        self.assertEqual(self.mock_net.answer_challenge.call_count, 1)
 
-    def test_name1_rectok1(self):
-        dom = "0"
-        msg = messages.Challenge(
-            session_id=dom, nonce="nonce0", combinations=[],
-            challenges=[acme_util.RECOVERY_TOKEN])
-        self.handler.add_chall_msg(dom, msg, "dummy_key")
+        self.assertEqual(mock_poll.call_count, 1)
+        chall_update = mock_poll.call_args[0][0]
+        self.assertEqual(chall_update.keys(), ["0"])
+        self.assertEqual(len(chall_update.values()), 1)
 
-        self.handler._satisfy_challenges()  # pylint: disable=protected-access
-
-        self.assertEqual(len(self.handler.responses), 1)
-        self.assertEqual(len(self.handler.responses[dom]), 1)
-
-        # Test if statement for dv_auth perform
-        self.assertEqual(self.mock_client_auth.perform.call_count, 1)
-        self.assertEqual(self.mock_dv_auth.perform.call_count, 0)
-
-        self.assertEqual("RecoveryToken0", self.handler.responses[dom][0])
-        # Assert 1 domain
-        self.assertEqual(len(self.handler.dv_c), 1)
-        self.assertEqual(len(self.handler.client_c), 1)
-        # Assert 1 auth challenge, 0 dv
-        self.assertEqual(len(self.handler.dv_c[dom]), 0)
-        self.assertEqual(len(self.handler.client_c[dom]), 1)
-
-    def test_name5_dvsni5(self):
-        for i in xrange(5):
-            self.handler.add_chall_msg(
-                str(i),
-                messages.Challenge(session_id=str(i), nonce="nonce%d" % i,
-                                   challenges=[acme_util.DVSNI],
-                                   combinations=[]),
-                "dummy_key")
-
-        self.handler._satisfy_challenges()  # pylint: disable=protected-access
-
-        self.assertEqual(len(self.handler.responses), 5)
-        self.assertEqual(len(self.handler.dv_c), 5)
-        self.assertEqual(len(self.handler.client_c), 5)
-        # Each message contains 1 auth, 0 client
-
-        # Test proper call count for methods
-        self.assertEqual(self.mock_client_auth.perform.call_count, 0)
-        self.assertEqual(self.mock_dv_auth.perform.call_count, 1)
-
-        for i in xrange(5):
-            dom = str(i)
-            self.assertEqual(len(self.handler.responses[dom]), 1)
-            self.assertEqual(self.handler.responses[dom][0], "DVSNI%d" % i)
-            self.assertEqual(len(self.handler.dv_c[dom]), 1)
-            self.assertEqual(len(self.handler.client_c[dom]), 0)
-            self.assertTrue(isinstance(self.handler.dv_c[dom][0].achall,
-                                       achallenges.DVSNI))
-
-    @mock.patch("letsencrypt.client.auth_handler.gen_challenge_path")
-    def test_name1_auth(self, mock_chall_path):
-        dom = "0"
-
-        self.handler.add_chall_msg(
-            dom,
-            messages.Challenge(
-                session_id="0", nonce="nonce0",
-                challenges=acme_util.DV_CHALLENGES,
-                combinations=acme_util.gen_combos(acme_util.DV_CHALLENGES)),
-            "dummy_key")
-
-        path = gen_path([acme_util.SIMPLE_HTTPS], acme_util.DV_CHALLENGES)
-        mock_chall_path.return_value = path
-        self.handler._satisfy_challenges()  # pylint: disable=protected-access
-
-        self.assertEqual(len(self.handler.responses), 1)
-        self.assertEqual(len(self.handler.responses[dom]),
-                         len(acme_util.DV_CHALLENGES))
-        self.assertEqual(len(self.handler.dv_c), 1)
-        self.assertEqual(len(self.handler.client_c), 1)
-
-        # Test if statement for client_auth perform
-        self.assertEqual(self.mock_client_auth.perform.call_count, 0)
-        self.assertEqual(self.mock_dv_auth.perform.call_count, 1)
-
+        self.assertEqual(self.mock_dv_auth.cleanup.call_count, 1)
+        self.assertEqual(self.mock_cont_auth.cleanup.call_count, 0)
+        # Test if list first element is DVSNI, use typ because it is an achall
         self.assertEqual(
-            self.handler.responses[dom],
-            self._get_exp_response(dom, path, acme_util.DV_CHALLENGES))
+            self.mock_dv_auth.cleanup.call_args[0][0][0].typ, "dvsni")
 
-        self.assertEqual(len(self.handler.dv_c[dom]), 1)
-        self.assertEqual(len(self.handler.client_c[dom]), 0)
-        self.assertTrue(isinstance(self.handler.dv_c[dom][0].achall,
-                                   achallenges.SimpleHTTPS))
+        self.assertEqual(len(authzr), 1)
 
-    @mock.patch("letsencrypt.client.auth_handler.gen_challenge_path")
-    def test_name1_all(self, mock_chall_path):
-        dom = "0"
+    @mock.patch("letsencrypt.client.auth_handler.AuthHandler._poll_challenges")
+    def test_name3_dvsni3_rectok_3(self, mock_poll):
+        self.mock_net.request_domain_challenges.side_effect = functools.partial(
+            gen_dom_authzr, challs=acme_util.CHALLENGES)
 
-        combos = acme_util.gen_combos(acme_util.CHALLENGES)
-        self.handler.add_chall_msg(
-            dom,
-            messages.Challenge(
-                session_id=dom, nonce="nonce0", challenges=acme_util.CHALLENGES,
-                combinations=combos),
-            "dummy_key")
+        mock_poll.side_effect = self._validate_all
 
-        path = gen_path([acme_util.SIMPLE_HTTPS, acme_util.RECOVERY_TOKEN],
-                        acme_util.CHALLENGES)
-        mock_chall_path.return_value = path
+        authzr = self.handler.get_authorizations(["0", "1", "2"])
 
-        self.handler._satisfy_challenges()  # pylint: disable=protected-access
+        self.assertEqual(self.mock_net.answer_challenge.call_count, 6)
 
-        self.assertEqual(len(self.handler.responses), 1)
-        self.assertEqual(
-            len(self.handler.responses[dom]), len(acme_util.CHALLENGES))
-        self.assertEqual(len(self.handler.dv_c), 1)
-        self.assertEqual(len(self.handler.client_c), 1)
-        self.assertEqual(len(self.handler.dv_c[dom]), 1)
-        self.assertEqual(len(self.handler.client_c[dom]), 1)
+        # Check poll call
+        self.assertEqual(mock_poll.call_count, 1)
+        chall_update = mock_poll.call_args[0][0]
+        self.assertEqual(len(chall_update.keys()), 3)
+        self.assertTrue("0" in chall_update.keys())
+        self.assertEqual(len(chall_update["0"]), 2)
+        self.assertTrue("1" in chall_update.keys())
+        self.assertEqual(len(chall_update["1"]), 2)
+        self.assertTrue("2" in chall_update.keys())
+        self.assertEqual(len(chall_update["2"]), 2)
 
-        self.assertEqual(
-            self.handler.responses[dom],
-            self._get_exp_response(dom, path, acme_util.CHALLENGES))
-        self.assertTrue(isinstance(self.handler.dv_c[dom][0].achall,
-                                   achallenges.SimpleHTTPS))
-        self.assertTrue(isinstance(self.handler.client_c[dom][0].achall,
-                                   achallenges.RecoveryToken))
+        self.assertEqual(self.mock_dv_auth.cleanup.call_count, 1)
+        self.assertEqual(self.mock_cont_auth.cleanup.call_count, 1)
 
-    @mock.patch("letsencrypt.client.auth_handler.gen_challenge_path")
-    def test_name5_all(self, mock_chall_path):
-        combos = acme_util.gen_combos(acme_util.CHALLENGES)
-        for i in xrange(5):
-            self.handler.add_chall_msg(
-                str(i),
-                messages.Challenge(
-                    session_id=str(i), nonce="nonce%d" % i,
-                    challenges=acme_util.CHALLENGES, combinations=combos),
-                "dummy_key")
+        self.assertEqual(len(authzr), 3)
 
-        path = gen_path([acme_util.DVSNI, acme_util.RECOVERY_CONTACT],
-                        acme_util.CHALLENGES)
-        mock_chall_path.return_value = path
+    def test_perform_failure(self):
+        self.mock_net.request_domain_challenges.side_effect = functools.partial(
+            gen_dom_authzr, challs=acme_util.CHALLENGES)
+        self.mock_dv_auth.perform.side_effect = errors.AuthorizationError
 
-        self.handler._satisfy_challenges()  # pylint: disable=protected-access
-
-        self.assertEqual(len(self.handler.responses), 5)
-        for i in xrange(5):
-            self.assertEqual(
-                len(self.handler.responses[str(i)]), len(acme_util.CHALLENGES))
-        self.assertEqual(len(self.handler.dv_c), 5)
-        self.assertEqual(len(self.handler.client_c), 5)
-
-        for i in xrange(5):
-            dom = str(i)
-            self.assertEqual(
-                self.handler.responses[dom],
-                self._get_exp_response(dom, path, acme_util.CHALLENGES))
-            self.assertEqual(len(self.handler.dv_c[dom]), 1)
-            self.assertEqual(len(self.handler.client_c[dom]), 1)
-
-            self.assertTrue(isinstance(self.handler.dv_c[dom][0].achall,
-                                       achallenges.DVSNI))
-            self.assertTrue(isinstance(self.handler.client_c[dom][0].achall,
-                                       achallenges.RecoveryContact))
-
-    @mock.patch("letsencrypt.client.auth_handler.gen_challenge_path")
-    def test_name5_mix(self, mock_chall_path):
-        paths = []
-        chosen_chall = [[acme_util.DNS],
-                        [acme_util.DVSNI],
-                        [acme_util.SIMPLE_HTTPS, acme_util.POP],
-                        [acme_util.SIMPLE_HTTPS],
-                        [acme_util.DNS, acme_util.RECOVERY_TOKEN]]
-        challenge_list = [acme_util.DV_CHALLENGES,
-                          [acme_util.DVSNI],
-                          acme_util.CHALLENGES,
-                          acme_util.DV_CHALLENGES,
-                          acme_util.CHALLENGES]
-
-        # Combos doesn't matter since I am overriding the gen_path function
-        for i in xrange(5):
-            dom = str(i)
-            paths.append(gen_path(chosen_chall[i], challenge_list[i]))
-            self.handler.add_chall_msg(
-                dom,
-                messages.Challenge(
-                    session_id=dom, nonce="nonce%d" % i,
-                    challenges=challenge_list[i], combinations=[]),
-                "dummy_key")
-
-        mock_chall_path.side_effect = paths
-
-        self.handler._satisfy_challenges()  # pylint: disable=protected-access
-
-        self.assertEqual(len(self.handler.responses), 5)
-        self.assertEqual(len(self.handler.dv_c), 5)
-        self.assertEqual(len(self.handler.client_c), 5)
-
-        for i in xrange(5):
-            dom = str(i)
-            resp = self._get_exp_response(i, paths[i], challenge_list[i])
-            self.assertEqual(self.handler.responses[dom], resp)
-            self.assertEqual(len(self.handler.dv_c[dom]), 1)
-            self.assertEqual(
-                len(self.handler.client_c[dom]), len(chosen_chall[i]) - 1)
-
-        self.assertTrue(isinstance(
-            self.handler.dv_c["0"][0].achall, achallenges.DNS))
-        self.assertTrue(isinstance(
-            self.handler.dv_c["1"][0].achall, achallenges.DVSNI))
-        self.assertTrue(isinstance(
-            self.handler.dv_c["2"][0].achall, achallenges.SimpleHTTPS))
-        self.assertTrue(isinstance(
-            self.handler.dv_c["3"][0].achall, achallenges.SimpleHTTPS))
-        self.assertTrue(isinstance(
-            self.handler.dv_c["4"][0].achall, achallenges.DNS))
-
-        self.assertTrue(isinstance(self.handler.client_c["2"][0].achall,
-                                   achallenges.ProofOfPossession))
-        self.assertTrue(isinstance(
-            self.handler.client_c["4"][0].achall, achallenges.RecoveryToken))
-
-    @mock.patch("letsencrypt.client.auth_handler.gen_challenge_path")
-    def test_perform_exception_cleanup(self, mock_chall_path):
-        """3 Challenge messages... fail perform... clean up."""
-        # pylint: disable=protected-access
-        self.mock_dv_auth.perform.side_effect = errors.LetsEncryptDvsniError
-
-        combos = acme_util.gen_combos(acme_util.CHALLENGES)
-
-        for i in xrange(3):
-            self.handler.add_chall_msg(
-                str(i),
-                messages.Challenge(
-                    session_id=str(i), nonce="nonce%d" % i,
-                    challenges=acme_util.CHALLENGES, combinations=combos),
-                "dummy_key")
-
-        mock_chall_path.side_effect = [
-            gen_path([acme_util.DVSNI, acme_util.POP], acme_util.CHALLENGES),
-            gen_path([acme_util.POP], acme_util.CHALLENGES),
-            gen_path([acme_util.DVSNI], acme_util.CHALLENGES),
-        ]
-
-        # This may change in the future... but for now catch the error
-        self.assertRaises(errors.LetsEncryptAuthHandlerError,
-                          self.handler._satisfy_challenges)
-
-        # Verify cleanup is actually run correctly
-        self.assertEqual(self.mock_dv_auth.cleanup.call_count, 2)
-        self.assertEqual(self.mock_client_auth.cleanup.call_count, 2)
-
-
-        dv_cleanup_args = self.mock_dv_auth.cleanup.call_args_list
-        client_cleanup_args = self.mock_client_auth.cleanup.call_args_list
-
-        # Check DV cleanup
-        for i in xrange(2):
-            dv_chall_list = dv_cleanup_args[i][0][0]
-            self.assertEqual(len(dv_chall_list), 1)
-            self.assertTrue(
-                isinstance(dv_chall_list[0], achallenges.DVSNI))
-
-
-        # Check Auth cleanup
-        for i in xrange(2):
-            client_chall_list = client_cleanup_args[i][0][0]
-            self.assertEqual(len(client_chall_list), 1)
-            self.assertTrue(
-                isinstance(client_chall_list[0], achallenges.ProofOfPossession))
-
+        self.assertRaises(errors.AuthorizationError,
+                          self.handler.get_authorizations, ["0"])
 
     def _get_exp_response(self, domain, path, challs):
         # pylint: disable=no-self-use
         exp_resp = [None] * len(challs)
         for i in path:
-            exp_resp[i] = TRANSLATE[challs[i].acme_type] + str(domain)
+            exp_resp[i] = TRANSLATE[challs[i].typ] + str(domain)
 
         return exp_resp
 
-
-# pylint: disable=protected-access
-class GetAuthorizationsTest(unittest.TestCase):
-    def setUp(self):
-        from letsencrypt.client.auth_handler import AuthHandler
-
-        self.mock_dv_auth = mock.MagicMock(name="ApacheConfigurator")
-        self.mock_client_auth = mock.MagicMock(name="ClientAuthenticator")
-
-        self.mock_sat_chall = mock.MagicMock(name="_satisfy_challenges")
-        self.mock_acme_auth = mock.MagicMock(name="acme_authorization")
-
-        self.iteration = 0
-
-        self.handler = AuthHandler(
-            self.mock_dv_auth, self.mock_client_auth, None)
-
-        self.handler._satisfy_challenges = self.mock_sat_chall
-        self.handler.acme_authorization = self.mock_acme_auth
-
-    def test_solved3_at_once(self):
-        # Set 3 DVSNI challenges
-        for i in xrange(3):
-            self.handler.add_chall_msg(
-                str(i),
-                messages.Challenge(
-                    session_id=str(i), nonce="nonce%d" % i,
-                    challenges=[acme_util.DVSNI], combinations=[]),
-                "dummy_key")
-
-        self.mock_sat_chall.side_effect = self._sat_solved_at_once
-        self.handler.get_authorizations()
-
-        self.assertEqual(self.mock_sat_chall.call_count, 1)
-        self.assertEqual(self.mock_acme_auth.call_count, 3)
-
-        exp_call_list = [mock.call("0"), mock.call("1"), mock.call("2")]
-        self.assertEqual(
-            self.mock_acme_auth.call_args_list, exp_call_list)
-        self._test_finished()
-
-    def _sat_solved_at_once(self):
-        for i in xrange(3):
-            dom = str(i)
-            self.handler.responses[dom] = ["DVSNI%d" % i]
-            self.handler.paths[dom] = [0]
-            # Assignment was > 80 char...
-            dv_c, c_c = self.handler._challenge_factory(dom, [0])
-
-            self.handler.dv_c[dom], self.handler.client_c[dom] = dv_c, c_c
-
-    def test_progress_failure(self):
-        self.handler.add_chall_msg(
-            "0",
-            messages.Challenge(
-                session_id="0", nonce="nonce0", challenges=acme_util.CHALLENGES,
-                combinations=[]),
-            "dummy_key")
-
-        # Don't do anything to satisfy challenges
-        self.mock_sat_chall.side_effect = self._sat_failure
-
-        self.assertRaises(
-            errors.LetsEncryptAuthHandlerError, self.handler.get_authorizations)
-
-        # Check to make sure program didn't loop
-        self.assertEqual(self.mock_sat_chall.call_count, 1)
-
-    def _sat_failure(self):
-        dom = "0"
-        self.handler.paths[dom] = gen_path(
-            [acme_util.DNS, acme_util.RECOVERY_TOKEN],
-            self.handler.msgs[dom].challenges)
-        dv_c, c_c = self.handler._challenge_factory(
-            dom, self.handler.paths[dom])
-        self.handler.dv_c[dom], self.handler.client_c[dom] = dv_c, c_c
-
-    def test_incremental_progress(self):
-        for dom, challs in [("0", acme_util.CHALLENGES),
-                            ("1", acme_util.DV_CHALLENGES)]:
-            self.handler.add_chall_msg(
+    def _validate_all(self, unused_1, unused_2):
+        for dom in self.handler.authzr.keys():
+            azr = self.handler.authzr[dom]
+            self.handler.authzr[dom] = acme_util.gen_authzr(
+                messages2.STATUS_VALID,
                 dom,
-                messages.Challenge(session_id=dom, nonce="nonce",
-                                   combinations=[], challenges=challs),
-                "dummy_key")
-
-        self.mock_sat_chall.side_effect = self._sat_incremental
-
-        self.handler.get_authorizations()
-
-        self._test_finished()
-        self.assertEqual(self.mock_acme_auth.call_args_list,
-                         [mock.call("1"), mock.call("0")])
-
-    def _sat_incremental(self):
-        # Exact responses don't matter, just path/response match
-        if self.iteration == 0:
-            # Only solve one of "0" required challs
-            self.handler.responses["0"][1] = "onecomplete"
-            self.handler.responses["0"][3] = None
-            self.handler.responses["1"] = [None, None, "goodresp"]
-            self.handler.paths["0"] = [1, 3]
-            self.handler.paths["1"] = [2]
-            # This is probably overkill... but set it anyway
-            dv_c, c_c = self.handler._challenge_factory("0", [1, 3])
-            self.handler.dv_c["0"], self.handler.client_c["0"] = dv_c, c_c
-            dv_c, c_c = self.handler._challenge_factory("1", [2])
-            self.handler.dv_c["1"], self.handler.client_c["1"] = dv_c, c_c
-
-            self.iteration += 1
-
-        elif self.iteration == 1:
-            # Quick check to make sure it was actually completed.
-            self.assertEqual(
-                self.mock_acme_auth.call_args_list, [mock.call("1")])
-            self.handler.responses["0"][1] = "now_finish"
-            self.handler.responses["0"][3] = "finally!"
-
-        else:
-            raise errors.LetsEncryptAuthHandlerError(
-                "Failed incremental test: too many invocations")
-
-    def _test_finished(self):
-        self.assertFalse(self.handler.msgs)
-        self.assertFalse(self.handler.dv_c)
-        self.assertFalse(self.handler.responses)
-        self.assertFalse(self.handler.paths)
-        self.assertFalse(self.handler.domains)
+                [challb.chall for challb in azr.body.challenges],
+                [messages2.STATUS_VALID]*len(azr.body.challenges),
+                azr.body.combinations)
 
 
-# pylint: disable=protected-access
-class PathSatisfiedTest(unittest.TestCase):
+class PollChallengesTest(unittest.TestCase):
+    # pylint: disable=protected-access
+    """Test poll challenges."""
+
     def setUp(self):
+        from letsencrypt.client.auth_handler import challb_to_achall
         from letsencrypt.client.auth_handler import AuthHandler
-        self.handler = AuthHandler(None, None, None)
 
-    def test_satisfied_true(self):
-        dom = ["0", "1", "2", "3", "4"]
-        self.handler.paths[dom[0]] = [1, 2]
-        self.handler.responses[dom[0]] = [None, "sat", "sat2", None]
+        # Account and network are mocked...
+        self.mock_net = mock.MagicMock()
+        self.handler = AuthHandler(
+            None, None, self.mock_net, mock.Mock(key="mock_key"))
 
-        self.handler.paths[dom[1]] = [0]
-        self.handler.responses[dom[1]] = ["sat", None, None, None]
+        self.doms = ["0", "1", "2"]
+        self.handler.authzr[self.doms[0]] = acme_util.gen_authzr(
+            messages2.STATUS_PENDING, self.doms[0],
+            acme_util.DV_CHALLENGES, [messages2.STATUS_PENDING]*3, False)
 
-        self.handler.paths[dom[2]] = [0]
-        self.handler.responses[dom[2]] = ["sat"]
+        self.handler.authzr[self.doms[1]] = acme_util.gen_authzr(
+            messages2.STATUS_PENDING, self.doms[1],
+            acme_util.DV_CHALLENGES, [messages2.STATUS_PENDING]*3, False)
 
-        self.handler.paths[dom[3]] = []
-        self.handler.responses[dom[3]] = []
+        self.handler.authzr[self.doms[2]] = acme_util.gen_authzr(
+            messages2.STATUS_PENDING, self.doms[2],
+            acme_util.DV_CHALLENGES, [messages2.STATUS_PENDING]*3, False)
 
-        self.handler.paths[dom[4]] = []
-        self.handler.responses[dom[4]] = ["respond... sure"]
+        self.chall_update = {}
+        for dom in self.doms:
+            self.chall_update[dom] = [
+                challb_to_achall(challb, "dummy_key", dom)
+                for challb in self.handler.authzr[dom].body.challenges]
 
-        for i in xrange(5):
-            self.assertTrue(self.handler._path_satisfied(dom[i]))
+    @mock.patch("letsencrypt.client.auth_handler.time")
+    def test_poll_challenges(self, unused_mock_time):
+        self.mock_net.poll.side_effect = self._mock_poll_solve_one_valid
+        self.handler._poll_challenges(self.chall_update, False)
 
-    def test_not_satisfied(self):
-        dom = ["0", "1", "2"]
-        self.handler.paths[dom[0]] = [1, 2]
-        self.handler.responses[dom[0]] = ["sat1", None, "sat2", None]
+        for authzr in self.handler.authzr.values():
+            self.assertEqual(authzr.body.status, messages2.STATUS_VALID)
 
-        self.handler.paths[dom[1]] = [0]
-        self.handler.responses[dom[1]] = [None, None, None, None]
+    @mock.patch("letsencrypt.client.auth_handler.time")
+    def test_poll_challenges_failure_best_effort(self, unused_mock_time):
+        self.mock_net.poll.side_effect = self._mock_poll_solve_one_invalid
+        self.handler._poll_challenges(self.chall_update, True)
 
-        self.handler.paths[dom[2]] = [0]
-        self.handler.responses[dom[2]] = [None]
+        for authzr in self.handler.authzr.values():
+            self.assertEqual(authzr.body.status, messages2.STATUS_PENDING)
 
-        for i in xrange(3):
-            self.assertFalse(self.handler._path_satisfied(dom[i]))
+    @mock.patch("letsencrypt.client.auth_handler.time")
+    def test_poll_challenges_failure(self, unused_mock_time):
+        self.mock_net.poll.side_effect = self._mock_poll_solve_one_invalid
+        self.assertRaises(errors.AuthorizationError,
+                          self.handler._poll_challenges,
+                          self.chall_update, False)
+
+    @mock.patch("letsencrypt.client.auth_handler.time")
+    def test_unable_to_find_challenge_status(self, unused_mock_time):
+        from letsencrypt.client.auth_handler import challb_to_achall
+        self.mock_net.poll.side_effect = self._mock_poll_solve_one_valid
+        self.chall_update[self.doms[0]].append(
+            challb_to_achall(acme_util.RECOVERY_CONTACT_P, "key", self.doms[0]))
+        self.assertRaises(
+            errors.AuthorizationError,
+            self.handler._poll_challenges, self.chall_update, False)
+
+    def test_verify_authzr_failure(self):
+        self.assertRaises(
+            errors.AuthorizationError, self.handler.verify_authzr_complete)
+
+    def _mock_poll_solve_one_valid(self, authzr):
+        # Pending here because my dummy script won't change the full status.
+        # Basically it didn't raise an error and it stopped earlier than
+        # Making all challenges invalid which would make mock_poll_solve_one
+        # change authzr to invalid
+        return self._mock_poll_solve_one_chall(authzr, messages2.STATUS_VALID)
+
+    def _mock_poll_solve_one_invalid(self, authzr):
+        return self._mock_poll_solve_one_chall(authzr, messages2.STATUS_INVALID)
+
+    def _mock_poll_solve_one_chall(self, authzr, desired_status):
+        # pylint: disable=no-self-use
+        """Dummy method that solves one chall at a time to desired_status.
+
+        When all are solved.. it changes authzr.status to desired_status
+
+        """
+        new_challbs = authzr.body.challenges
+        for challb in authzr.body.challenges:
+            if challb.status != desired_status:
+                new_challbs = tuple(
+                    challb_temp if challb_temp != challb
+                    else acme_util.chall_to_challb(challb.chall, desired_status)
+                    for challb_temp in authzr.body.challenges
+                )
+                break
+
+        if all(test_challb.status == desired_status
+               for test_challb in new_challbs):
+            status_ = desired_status
+        else:
+            status_ = authzr.body.status
+
+        new_authzr = messages2.AuthorizationResource(
+            uri=authzr.uri,
+            new_cert_uri=authzr.new_cert_uri,
+            body=messages2.Authorization(
+                identifier=authzr.body.identifier,
+                challenges=new_challbs,
+                combinations=authzr.body.combinations,
+                key=authzr.body.key,
+                contact=authzr.body.contact,
+                status=status_,
+            ),
+        )
+        return (new_authzr, "response")
+
+class GenChallengePathTest(unittest.TestCase):
+    """Tests for letsencrypt.client.auth_handler.gen_challenge_path.
+
+    .. todo:: Add more tests for dumb_path... depending on what we want to do.
+
+    """
+    def setUp(self):
+        logging.disable(logging.fatal)
+
+    def tearDown(self):
+        logging.disable(logging.NOTSET)
+
+    @classmethod
+    def _call(cls, challbs, preferences, combinations):
+        from letsencrypt.client.auth_handler import gen_challenge_path
+        return gen_challenge_path(challbs, preferences, combinations)
+
+    def test_common_case(self):
+        """Given DVSNI and SimpleHTTPS with appropriate combos."""
+        challbs = (acme_util.DVSNI_P, acme_util.SIMPLE_HTTPS_P)
+        prefs = [challenges.DVSNI]
+        combos = ((0,), (1,))
+
+        # Smart then trivial dumb path test
+        self.assertEqual(self._call(challbs, prefs, combos), (0,))
+        self.assertTrue(self._call(challbs, prefs, None))
+        # Rearrange order...
+        self.assertEqual(self._call(challbs[::-1], prefs, combos), (1,))
+        self.assertTrue(self._call(challbs[::-1], prefs, None))
+
+    def test_common_case_with_continuity(self):
+        challbs = (acme_util.RECOVERY_TOKEN_P,
+                   acme_util.RECOVERY_CONTACT_P,
+                   acme_util.DVSNI_P,
+                   acme_util.SIMPLE_HTTPS_P)
+        prefs = [challenges.RecoveryToken, challenges.DVSNI]
+        combos = acme_util.gen_combos(challbs)
+        self.assertEqual(self._call(challbs, prefs, combos), (0, 2))
+
+         # dumb_path() trivial test
+        self.assertTrue(self._call(challbs, prefs, None))
+
+    def test_full_cont_server(self):
+        challbs = (acme_util.RECOVERY_TOKEN_P,
+                   acme_util.RECOVERY_CONTACT_P,
+                   acme_util.POP_P,
+                   acme_util.DVSNI_P,
+                   acme_util.SIMPLE_HTTPS_P,
+                   acme_util.DNS_P)
+        # Typical webserver client that can do everything except DNS
+        # Attempted to make the order realistic
+        prefs = [challenges.RecoveryToken,
+                 challenges.ProofOfPossession,
+                 challenges.SimpleHTTPS,
+                 challenges.DVSNI,
+                 challenges.RecoveryContact]
+        combos = acme_util.gen_combos(challbs)
+        self.assertEqual(self._call(challbs, prefs, combos), (0, 4))
+
+        # Dumb path trivial test
+        self.assertTrue(self._call(challbs, prefs, None))
+
+    def test_not_supported(self):
+        challbs = (acme_util.POP_P, acme_util.DVSNI_P)
+        prefs = [challenges.DVSNI]
+        combos = ((0, 1),)
+
+        self.assertRaises(errors.AuthorizationError,
+                          self._call, challbs, prefs, combos)
 
 
 class MutuallyExclusiveTest(unittest.TestCase):
@@ -566,21 +418,29 @@ class IsPreferredTest(unittest.TestCase):
         ]))
 
     def test_empty_satisfied(self):
-        self.assertTrue(self._call(acme_util.DNS, frozenset()))
+        self.assertTrue(self._call(acme_util.DNS_P, frozenset()))
 
     def test_mutually_exclusvie(self):
         self.assertFalse(
-            self._call(acme_util.DVSNI, frozenset([acme_util.SIMPLE_HTTPS])))
+            self._call(
+                acme_util.DVSNI_P, frozenset([acme_util.SIMPLE_HTTPS_P])))
 
     def test_mutually_exclusive_same_type(self):
         self.assertTrue(
-            self._call(acme_util.DVSNI, frozenset([acme_util.DVSNI])))
+            self._call(acme_util.DVSNI_P, frozenset([acme_util.DVSNI_P])))
 
 
 def gen_auth_resp(chall_list):
     """Generate a dummy authorization response."""
     return ["%s%s" % (chall.__class__.__name__, chall.domain)
             for chall in chall_list]
+
+
+def gen_dom_authzr(domain, unused_new_authzr_uri, challs):
+    """Generates new authzr for domains."""
+    return acme_util.gen_authzr(
+        messages2.STATUS_PENDING, domain, challs,
+        [messages2.STATUS_PENDING]*len(challs))
 
 
 def gen_path(required, challs):
@@ -595,6 +455,7 @@ def gen_path(required, challs):
 
     """
     return [challs.index(chall) for chall in required]
+
 
 if __name__ == "__main__":
     unittest.main()

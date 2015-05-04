@@ -21,5 +21,9 @@ def _transform(cls):
         for slot in cls.slots():
             cls.locals[slot.value] = [nodes.EmptyNode()]
 
+    if cls.name == 'JSONObjectWithFields':
+        # _fields is magically introduced by JSONObjectWithFieldsMeta
+        cls.locals['_fields'] = [nodes.EmptyNode()]
+
 
 MANAGER.register_transform(nodes.Class, _transform)

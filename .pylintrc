@@ -38,7 +38,8 @@ load-plugins=linter_plugin
 # --enable=similarities". If you want to run only the classes checker, but have
 # no Warning level messages displayed, use"--disable=all --enable=classes
 # --disable=W"
-disable=fixme,locally-disabled
+disable=fixme,locally-disabled,abstract-class-not-used
+# abstract-class-not-used cannot be disabled locally (at least in pylint 1.4.1)
 
 
 [REPORTS]
@@ -148,10 +149,10 @@ module-rgx=(([a-z_][a-z0-9_]*)|([A-Z][a-zA-Z0-9]+))$
 module-name-hint=(([a-z_][a-z0-9_]*)|([A-Z][a-zA-Z0-9]+))$
 
 # Regular expression matching correct method names
-method-rgx=[a-z_][a-z0-9_]{2,40}$
+method-rgx=[a-z_][a-z0-9_]{2,50}$
 
 # Naming hint for method names
-method-name-hint=[a-z_][a-z0-9_]{2,40}$
+method-name-hint=[a-z_][a-z0-9_]{2,50}$
 
 # Regular expression which should only match function or class names that do
 # not require a docstring.
@@ -311,7 +312,7 @@ max-branches=12
 max-statements=50
 
 # Maximum number of parents for a class (see R0901).
-max-parents=7
+max-parents=12
 
 # Maximum number of attributes for a class (see R0902).
 max-attributes=7
