@@ -49,6 +49,9 @@ class PluginEntryPointTest(unittest.TestCase):
             self.assertEqual(
                 name, PluginEntryPoint.entry_point_to_plugin_name(entry_point))
 
+    def test_description(self):
+        self.assertEqual("Standalone Authenticator", self.plugin_ep.description)
+
     def test_name_with_description(self):
         self.assertTrue(
             self.plugin_ep.name_with_description.startswith("sa ("))

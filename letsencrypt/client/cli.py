@@ -302,7 +302,8 @@ def create_parser(plugins):
     # TODO: plugin_parser should be called for every detected plugin
     for name, plugin_ep in plugins.iteritems():
         plugin_ep.plugin_cls.inject_parser_options(
-            parser.add_argument_group(name), name)
+            parser.add_argument_group(
+                name, description=plugin_ep.description), name)
 
     return parser
 
