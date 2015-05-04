@@ -1,0 +1,3 @@
+# https://github.com/bw2/ConfigArgParse/issues/17
+-e git+https://github.com/kuba/ConfigArgParse.git#egg=ConfigArgParse
+-e .

@@ -15,7 +15,7 @@ Now you can install the development packages:
 
 .. code-block:: shell
 
-   ./venv/bin/python setup.py dev
+   ./venv/bin/pip install -r requirements.txt -e .[dev]
 
 The code base, including your pull requests, **must** have 100% test
 statement coverage **and** be compliant with the :ref:`coding style
@@ -48,7 +48,7 @@ synced to ``/vagrant``, so you can get started with:
 
   vagrant ssh
   cd /vagrant
-  ./venv/bin/python setup.py install
+  ./venv/bin/pip install -r requirements.txt
   sudo ./venv/bin/letsencrypt
 
 Support for other Linux distributions coming soon.
