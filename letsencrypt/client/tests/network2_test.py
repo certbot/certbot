@@ -286,11 +286,8 @@ class NetworkTest(unittest.TestCase):
 
     def test_answer_challenge_missing_next(self):
         self._mock_post_get()
-        self.assertTrue(self.net.answer_challenge(
-            self.challr.body, challenges.DNSResponse()) is None)
-        # TODO: boulder#130, acme-spec#110
-        # self.assertRaises(errors.NetworkError, self.net.answer_challenge,
-        #                  self.challr.body, challenges.DNSResponse())
+        self.assertRaises(errors.NetworkError, self.net.answer_challenge,
+                          self.challr.body, challenges.DNSResponse())
 
     def test_retry_after_date(self):
         self.response.headers['Retry-After'] = 'Fri, 31 Dec 1999 23:59:59 GMT'
