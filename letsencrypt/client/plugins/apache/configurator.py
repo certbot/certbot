@@ -923,7 +923,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         try:
             proc = subprocess.Popen(
-                ["sudo", self.conf('ctl'), "configtest"], # TODO: sudo?
+                [self.conf('ctl'), "configtest"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
             stdout, stderr = proc.communicate()
@@ -1061,7 +1061,7 @@ def enable_mod(mod_name, apache_init_script, apache_enmod):
     try:
         # Use check_output so the command will finish before reloading
         # TODO: a2enmod is debian specific...
-        subprocess.check_call(["sudo", apache_enmod, mod_name],  # TODO: sudo?
+        subprocess.check_call([apache_enmod, mod_name],
                               stdout=open("/dev/null", "w"),
                               stderr=open("/dev/null", "w"))
         apache_restart(apache_init_script)
