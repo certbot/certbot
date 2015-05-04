@@ -546,7 +546,6 @@ class RenewableCertTests(unittest.TestCase):
         result = renewer.RenewableCert.new_lineage("the-lineage.com", "cert2",
                                                    "privkey2", "chain2",
                                                    self.defaults)
-        print os.listdir(config_dir)
         self.assertTrue(os.path.exists(
             os.path.join(config_dir, "the-lineage.com-0001.conf")))
         # Now trigger the detection of already existing files
