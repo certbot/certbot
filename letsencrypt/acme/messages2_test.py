@@ -50,6 +50,12 @@ class ErrorTest(unittest.TestCase):
         from letsencrypt.acme.messages2 import Error
         hash(Error.from_json(self.error.to_json()))
 
+    def test_str(self):
+        self.assertEqual(
+            'malformed :: The request message was malformed :: foo',
+            str(self.error))
+        self.assertEqual('foo', str(self.error.update(typ=None)))
+
 
 class ConstantTest(unittest.TestCase):
     """Tests for letsencrypt.acme.messages2._Constant."""
@@ -162,6 +168,9 @@ class ChallengeBodyTest(unittest.TestCase):
     def test_from_json_hashable(self):
         from letsencrypt.acme.messages2 import ChallengeBody
         hash(ChallengeBody.from_json(self.jobj_from))
+
+    def test_proxy(self):
+        self.assertEqual('foo', self.challb.token)
 
 
 class AuthorizationTest(unittest.TestCase):
