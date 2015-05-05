@@ -3,4 +3,5 @@ letsencrypt:
   ports:
     - "443:443"
   volumes:
-    - ./certs/:/etc/letsencrypt/certs/
+    - /etc/letsencrypt:/etc/letsencrypt/certs
+    - /var/lib/letsenecrypt:/var/lib/letsenecrypt

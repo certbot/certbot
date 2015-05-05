@@ -1,16 +1,55 @@
-FROM ubuntu:trusty
+FROM buildpack-deps:jessie
+MAINTAINER Jakub Warmuz <jakub@warmuz.org>
 
+# You neccesarily have to bind to 443@host as well! (ACME spec)
 EXPOSE 443
 
-RUN apt-get update && apt-get -y install python python-setuptools python-virtualenv python-dev \
-  gcc swig dialog libaugeas0 libssl-dev libffi-dev ca-certificates git && \
-  apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+# TODO: make sure --config-dir and --work-dir cannot be changed
+# through the CLI (letsencrypt-docker wrapper that uses standalone
+# authenticator and text mode only?)
+VOLUME /etc/letsencrypt /var/lib/letsencrypt
 
-RUN cd /opt && git clone https://github.com/letsencrypt/lets-encrypt-preview.git
-WORKDIR /opt/lets-encrypt-preview
-RUN \
-  virtualenv --no-site-packages -p python2 venv && \
-  ./venv/bin/python setup.py install
+WORKDIR /opt/letsencrypt
 
-ENV DOCKER_RUN True
-ENTRYPOINT [ "./venv/bin/letsencrypt", "--text" ]
+# no need to mkdir anything:
+# https://docs.docker.com/reference/builder/#copy
+# If <dest> doesn't exist, it is created along with all missing
+# directories in its path.
+
+# The following copies too much than we need...
+#COPY . /opt/letsencrypt/
+
+COPY bootstrap/debian.sh /opt/letsencrypt/src/
+RUN /opt/letsencrypt/src/debian.sh newer && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* \
+           /tmp/* \
+           /var/tmp/*
+
+# the above is not likely to change, so by putting it further up the
+# Dockerfile we make sure we cache as much as possible
+
+
+COPY setup.py README.rst CHANGES.rst MANIFEST.in /opt/letsencrypt/src/
+
+# all above files are necessary for setup.py, however, package source
+# code directory has to be copied separately to a subdirectory...
+# https://docs.docker.com/reference/builder/#copy: "If <src> is a
+# directory, the entire contents of the directory are copied,
+# including filesystem metadata. Note: The directory itself is not
+# copied, just its contents." Order again matters, three files are far
+# more likely to be cached than the whole project directory
+
+COPY letsencrypt /opt/letsencrypt/src/letsencrypt/
+
+
+RUN virtualenv --no-site-packages -p python2 /opt/letsencrypt && \
+    /opt/letsencrypt/bin/pip install -e /opt/letsencrypt/src
+
+# install in editable mode (-e) to save space: it's not possible to
+# "rm -rf /opt/letsencrypt/src" (it's stays in the underlaying image);
+# this might also help in debugging: you can "docker run --entrypoint
+# bash" and investigate, apply patches, etc.
+
+# TODO: is --text really necessary?
+ENTRYPOINT [ "/opt/letsencrypt/bin/letsencrypt", "--text" ]
