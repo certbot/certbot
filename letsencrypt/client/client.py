@@ -99,9 +99,7 @@ class Client(object):
 
         :meth:`.register` must be called before :meth:`.obtain_certificate`
 
-        .. todo:: This function currently uses the account key for the cert.
-            This should be changed to an independent key once renewal is sorted
-            out.
+        .. todo:: This function does not currently handle csr correctly...
 
         :param set domains: domains to get a certificate
 
@@ -127,8 +125,10 @@ class Client(object):
 
         # Create CSR from names
         if csr is None:
+            cert_key = crypto_util.init_save_key(
+                self.config.rsa_key_size, self.config.key_dir)
             csr = crypto_util.init_save_csr(
-                self.account.key, domains, self.config.cert_dir)
+                cert_key, domains, self.config.cert_dir)
 
         # Retrieve certificate
         certr = self.network.request_issuance(
