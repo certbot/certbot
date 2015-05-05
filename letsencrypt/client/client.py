@@ -107,8 +107,8 @@ class Client(object):
             this CSR can be different than self.authkey
         :type csr: :class:`CSR`
 
-        :returns: cert_file, chain_file (paths to respective files)
-        :rtype: `tuple` of `str`
+        :returns: cert_key, cert_path, chain_path
+        :rtype: `tuple` of (:class:`letsencrypt.client.le_util.Key`, str, str)
 
         """
         if self.auth_handler is None:
@@ -136,13 +136,13 @@ class Client(object):
             authzr)
 
         # Save Certificate
-        cert_file, chain_file = self.save_certificate(
+        cert_path, chain_path = self.save_certificate(
             certr, self.config.cert_path, self.config.chain_path)
 
         revoker.Revoker.store_cert_key(
-            cert_file, self.account.key.file, self.config)
+            cert_path, self.account.key.file, self.config)
 
-        return cert_key, cert_file, chain_file
+        return cert_key, cert_path, chain_path
 
     def save_certificate(self, certr, cert_path, chain_path):
         # pylint: disable=no-self-use
