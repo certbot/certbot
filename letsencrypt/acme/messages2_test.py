@@ -50,6 +50,12 @@ class ErrorTest(unittest.TestCase):
         from letsencrypt.acme.messages2 import Error
         hash(Error.from_json(self.error.to_json()))
 
+    def test_str(self):
+        self.assertEqual(
+            'malformed :: The request message was malformed :: foo',
+            str(self.error))
+        self.assertEqual('foo', str(self.error.update(typ=None)))
+
 
 class ConstantTest(unittest.TestCase):
     """Tests for letsencrypt.acme.messages2._Constant."""
