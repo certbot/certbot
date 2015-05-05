@@ -124,11 +124,10 @@ class Client(object):
         authzr = self.auth_handler.get_authorizations(domains)
 
         # Create CSR from names
-        if csr is None:
-            cert_key = crypto_util.init_save_key(
-                self.config.rsa_key_size, self.config.key_dir)
-            csr = crypto_util.init_save_csr(
-                cert_key, domains, self.config.cert_dir)
+        cert_key = crypto_util.init_save_key(
+            self.config.rsa_key_size, self.config.key_dir)
+        csr = crypto_util.init_save_csr(
+            cert_key, domains, self.config.cert_dir)
 
         # Retrieve certificate
         certr = self.network.request_issuance(
@@ -143,7 +142,7 @@ class Client(object):
         revoker.Revoker.store_cert_key(
             cert_file, self.account.key.file, self.config)
 
-        return cert_file, chain_file
+        return cert_key, cert_file, chain_file
 
     def save_certificate(self, certr, cert_path, chain_path):
         # pylint: disable=no-self-use
