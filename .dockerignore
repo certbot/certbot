@@ -1,4 +1,4 @@
-# this file uses slightly different syntax that .gitignore,
+# this file uses slightly different syntax than .gitignore,
 # e.g. ".tox/" will not ignore .tox directory
 
 # well, official docker build should be done on clean git checkout
