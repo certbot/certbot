@@ -2,6 +2,24 @@
 Using the Let's Encrypt client
 ==============================
 
+Quick start
+===========
+
+Using docker you can quickly get yourself a testing cert. From the
+server that the domain your requesting a cert for resolves to,
+download docker, and issue the following command
+
+.. code-block:: shell
+
+   sudo docker run -it --rm -p 443:443 --name letsencrypt \
+               -v "/etc/letsenecrypt:/etc/letsencrypt" \
+               -v "/var/lib/letsenecrypt:/var/lib/letsencrypt" \
+               quay.io/letsencrypt/lets-encrypt-preview:latest
+
+And follow the instructions. Your new cert will be available in
+``/etc/letsencrypt/certs``.
+
+
 Prerequisites
 =============
 
@@ -46,23 +64,6 @@ Mac OSX
 
    sudo ./bootstrap/mac.sh
 
-
-Quick Usage
-===========
-
-Using docker you can quickly get yourself a testing cert. From the
-server that the domain your requesting a cert for resolves to,
-download docker, and issue the following command
-
-.. code-block:: shell
-
-   sudo docker run -it --rm -p 443:443 \
-               -v "/etc/letsenecrypt:/etc/letsencrypt" \
-               -v "/var/lib/letsenecrypt:/var/lib/letsencrypt" \
-               letsencrypt/lets-encrypt-preview
-
-And follow the instructions. Your new cert will be available in
-``/etc/letsencrypt/certs``.
 
 Installation
 ============
