@@ -1,4 +1,5 @@
 """NginxDVSNI"""
+import itertools
 import logging
 import os
 
@@ -103,9 +104,8 @@ class NginxDvsni(ApacheDvsni):
                 'LetsEncrypt could not find an HTTP block to include DVSNI '
                 'challenges in %s.' % root)
 
-        config = []
-        for idx, addrs in enumerate(ll_addrs):
-            config.append(self._make_server_block(self.achalls[idx], addrs))
+        config = [self._make_server_block(pair[0], pair[1])
+                  for pair in itertools.izip(self.achalls, ll_addrs)]
 
         self.configurator.reverter.register_file_creation(
             True, self.challenge_conf)
@@ -126,17 +126,15 @@ class NginxDvsni(ApacheDvsni):
         :rtype: list
 
         """
-        block = []
-        for addr in addrs:
-            block.append(['listen', str(addr)])
-
-        block.append(['server_name', achall.nonce_domain])
-        block.append(['include', self.configurator.parser.loc["ssl_options"]])
-        block.append(['ssl_certificate', self.get_cert_file(achall)])
-        block.append(['ssl_certificate_key', achall.key.file])
-
         document_root = os.path.join(
             self.configurator.config.config_dir, "dvsni_page")
-        block.append([['location', '/'], [['root', document_root]]])
+
+        block = [['listen', str(addr)] for addr in addrs]
+
+        block.extend([['server_name', achall.nonce_domain],
+                      ['include', self.configurator.parser.loc["ssl_options"]],
+                      ['ssl_certificate', self.get_cert_file(achall)],
+                      ['ssl_certificate_key', achall.key.file],
+                      [['location', '/'], [['root', document_root]]]])
 
         return [['server'], block]

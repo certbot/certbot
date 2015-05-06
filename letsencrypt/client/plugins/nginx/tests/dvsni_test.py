@@ -79,7 +79,7 @@ class DvsniPerformTest(util.NginxTest):
     def test_perform(self, mock_save):
         self.sni.add_chall(self.achalls[1])
         responses = self.sni.perform()
-        self.assertEqual(None, responses)
+        self.assertTrue(responses is None)
         self.assertEqual(mock_save.call_count, 1)
 
     def test_perform0(self):
@@ -153,10 +153,7 @@ class DvsniPerformTest(util.NginxTest):
         self.assertTrue(['include', self.sni.challenge_conf] in http[1])
 
         vhosts = self.sni.configurator.parser.get_vhosts()
-        vhs = []
-        for vhost in vhosts:
-            if vhost.filep == self.sni.challenge_conf:
-                vhs.append(vhost)
+        vhs = [vh for vh in vhosts if vh.filep == self.sni.challenge_conf]
 
         for vhost in vhs:
             if vhost.addrs == set(v_addr1):
