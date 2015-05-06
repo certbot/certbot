@@ -98,8 +98,8 @@ def run(args, config, plugins):
         return "Configurator could not be determined"
 
     acme, doms = _common_run(args, config, acc, authenticator, installer)
-    cert_path, chain_path = acme.obtain_certificate(doms)
-    acme.deploy_certificate(doms, acc.key, cert_path, chain_path)
+    cert_key, cert_path, chain_path = acme.obtain_certificate(doms)
+    acme.deploy_certificate(doms, cert_key, cert_path, chain_path)
     acme.enhance_config(doms, args.redirect)
 
 
