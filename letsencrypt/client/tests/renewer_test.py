@@ -558,6 +558,25 @@ class RenewableCertTests(unittest.TestCase):
                           "other-example.com", "cert4", "privkey4", "chain4",
                           self.defaults)
 
+    def test_new_lineage_nonexistent_dirs(self):
+        """Test that directories can be created if they don't exist."""
+        from letsencrypt.client import renewer
+        config_dir = self.defaults["renewal_configs_dir"]
+        archive_dir = self.defaults["official_archive_dir"]
+        live_dir = self.defaults["live_dir"]
+        shutil.rmtree(config_dir)
+        shutil.rmtree(archive_dir)
+        shutil.rmtree(live_dir)
+        result = renewer.RenewableCert.new_lineage("the-lineage.com", "cert2",
+                                                   "privkey2", "chain2",
+                                                   self.defaults)
+        self.assertTrue(os.path.exists(
+            os.path.join(config_dir, "the-lineage.com.conf")))
+        self.assertTrue(os.path.exists(
+            os.path.join(live_dir, "the-lineage.com", "privkey.pem")))
+        self.assertTrue(os.path.exists(
+            os.path.join(archive_dir, "the-lineage.com", "privkey1.pem")))
+
     @mock.patch("letsencrypt.client.renewer.le_util.unique_lineage_name")
     def test_invalid_config_filename(self, mock_uln):
         from letsencrypt.client import renewer
