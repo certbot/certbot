@@ -20,6 +20,7 @@ import datetime
 import os
 import OpenSSL
 import parsedatetime
+import pkg_resources
 import pyrfc3339
 import pytz
 import re
@@ -106,7 +107,10 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             # file (it may itself be a symlink). But we should probably
             # do a recursive check that ultimately the target does
             # exist?
-        # XXX: Additional possible consistency checks
+        # XXX: Additional possible consistency checks (e.g.
+        #      cryptographic validation of the chain being a chain,
+        #      the chain matching the cert, and the cert matching
+        #      the subject key)
         # XXX: All four of the targets are in the same directory
         #      (This check is redundant with the check that they
         #      are all in the desired directory!)
@@ -330,6 +334,9 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         configs_dir = config["renewal_configs_dir"]
         archive_dir = config["official_archive_dir"]
         live_dir = config["live_dir"]
+        for i in (configs_dir, archive_dir, live_dir):
+            if not os.path.exists(i):
+                os.makedirs(i, 0700)
         config_file, config_filename = le_util.unique_lineage_name(configs_dir,
                                                                    lineagename)
         if not config_filename.endswith(".conf"):
@@ -388,6 +395,8 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         #      the prior chain's target
         # XXX: assumes official archive location rather than examining links
         # XXX: consider using os.open for availablity of os.O_EXCL
+        # XXX: ensure file permissions are correct; also create directories
+        #      if needed (ensuring their permissions are correct)
         target_version = self.next_free_version()
         archive = self.configuration["official_archive_dir"]
         prefix = os.path.join(archive, self.lineagename)
@@ -416,20 +425,44 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             f.write(new_cert + new_chain)
         return target_version
 
-def renew(cert, old_version): # pylint: disable=no-self-use,unused-argument
+def renew(cert, old_version):
     """Perform automated renewal of the referenced cert, if possible."""
-    # Try to create Account object, if available
-    # via account.Account.from_config(config.get("renewal_account")) or
-    # something
-    # Instantiate relevant authenticator
-    # Instantiate client
-    # Call client.obtain_certificate
-    # if it_worked:
-    #     self.save_successor(old_version, new_cert, new_chain)
-    #     Update relevant config files to note what was done
-    #     Notify results
-    # else:
-    #     Notify negative results
+    # TODO: handle partial success
+    # TODO: handle obligatory key rotation
+    # XXX: Deserialize config here
+
+    for entrypoint in pkg_resources.iter_entry_points(
+            SETUPTOOLS_AUTHENTICATORS_ENTRY_POINT):
+        auth_cls = entrypoint.load()
+        # XXX: need to regenerate "config" from serialized authenticator
+        #      config!
+        auth = auth_cls(config)
+        try:
+            zope.interface.verify.verifyObject(interfaces.IAuthenticator, auth)
+        except zope.interface.exceptions.BrokenImplementation:
+            pass
+        else:
+            if entrypoint.name == cert.configuration["authenticator"]:
+                break
+    else:
+        # TODO: Notify failure to instantiate the authenticator
+        return False
+    auth.prepare()
+
+    client = Client(config, None, auth, None)
+    new_cert, new_key, new_chain = client.obtain_certificate(domains)
+    if new_cert and new_key and new_chain:
+        # XXX: Assumes that there was no key change.  We need logic
+        #      for figuring out whether there was or not.  Probably
+        #      best is to have obtain_certificate return None for
+        #      new_key if the old key is to be used (since save_successor
+        #      already understands this distinction!)
+        self.save_successor(old_version, new_cert, new_chain)
+    #    Notify results
+    else:
+    #    Notify negative results
+        pass
+    # TODO: Consider the case where the renewal was partially successful
 
 def main(config=DEFAULTS):
     """main function for autorenewer script."""

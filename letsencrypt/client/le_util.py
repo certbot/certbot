@@ -90,16 +90,18 @@ def unique_lineage_name(path, filename, mode=0o777):
     try:
         file_d = os.open(fname, os.O_CREAT | os.O_EXCL | os.O_RDWR, mode)
         return os.fdopen(file_d, "w"), fname
-    except OSError:
-        pass
+    except OSError as e:
+        if e.errno != 17:   # file exists
+            raise e
     count = 1
     while True:
         fname = os.path.join(path, "%s-%04d.conf" % (filename, count))
         try:
             file_d = os.open(fname, os.O_CREAT | os.O_EXCL | os.O_RDWR, mode)
             return os.fdopen(file_d, "w"), fname
-        except OSError:
-            pass
+        except OSError as e:
+            if e.errno != 17:   # file exists
+                raise e
         count += 1
 
 

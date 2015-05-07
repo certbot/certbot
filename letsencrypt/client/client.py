@@ -17,6 +17,7 @@ from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
 from letsencrypt.client import network2
+from letsencrypt.client import renewer
 from letsencrypt.client import reverter
 from letsencrypt.client import revoker
 
@@ -67,6 +68,10 @@ class Client(object):
 
         self.config = config
 
+        # TODO: Check if self.config.enroll_autorenew is None. If
+        # so, set it based to the default: figure out if dv_auth is
+        # standalone (then default is False, otherwise default is True)
+
         if dv_auth is not None:
             cont_auth = continuity_auth.ContinuityAuthenticator(config)
             self.auth_handler = auth_handler.AuthHandler(
@@ -94,7 +99,7 @@ class Client(object):
 
         self.account.save()
 
-    def obtain_certificate(self, domains, csr=None):
+    def _obtain_certificate(self, domains, csr=None):
         """Obtains a certificate from the ACME server.
 
         :meth:`.register` must be called before :meth:`.obtain_certificate`
@@ -102,6 +107,10 @@ class Client(object):
         .. todo:: This function does not currently handle csr correctly...
 
         :param set domains: domains to get a certificate
+
+        :param bool renewal: whether this request is a renewal (which avoids
+            attempting to enroll the resulting certificate in the renewal
+            database)
 
         :param csr: CSR must contain requested domains, the key used to generate
             this CSR can be different than self.authkey
@@ -135,20 +144,32 @@ class Client(object):
                 M2Crypto.X509.load_request_der_string(csr.data)),
             authzr)
 
-        # Save Certificate
-        cert_path, chain_path = self.save_certificate(
-            certr, self.config.cert_path, self.config.chain_path)
+        cert_pem = certr.body.as_pem()
+        chain_pem = None
+        if certr.cert_chain_uri:
+            chain_pem = self.network.fetch_chain(certr.cert_chain_uri)
 
-        revoker.Revoker.store_cert_key(
-            cert_path, self.account.key.file, self.config)
+        if chain_pem is None:
+            # XXX: just to stop RenewableCert from complaining; this is
+            #      probably not a good solution
+            chain_pem = ""
+        return cert_pem, cert_key.pem, chain_pem
 
-        return cert_key, cert_path, chain_path
+    def obtain_and_enroll_certificate(self, domains, csr=None):
+        cert_pem, privkey, chain_pem = self._obtain_certificate(domains, csr)
+        return renewer.RenewableCert.new_lineage(domains[0], cert_pem,
+                                                 privkey, chain_pem)
+        # XXX: self.account.key.file is totally wrong here, that's
+        #      the account key and not the cert key!
+
+    def obtain_certificate(self, domains):
+        return self._obtain_certificate(domains, None)
 
     def save_certificate(self, certr, cert_path, chain_path):
         # pylint: disable=no-self-use
         """Saves the certificate received from the ACME server.
 
-        :param certr: ACME "certificate" resource.
+        :param certr: ACME "certifica" resource.
         :type certr: :class:`letsencrypt.acme.messages.Certificate`
 
         :param str cert_path: Path to attempt to save the cert file
@@ -191,30 +212,31 @@ class Client(object):
 
         return os.path.abspath(act_cert_path), cert_chain_abspath
 
-    def deploy_certificate(self, domains, privkey, cert_file, chain_file=None):
+    def deploy_certificate(self, domains, lineage):
         """Install certificate
 
         :param list domains: list of domains to install the certificate
 
-        :param privkey: private key for certificate
-        :type privkey: :class:`letsencrypt.client.le_util.Key`
-
-        :param str cert_file: certificate file path
-        :param str chain_file: chain file path
-
+        :param lineage: RenewableCert object representing the certificate
         """
         if self.installer is None:
             logging.warning("No installer specified, client is unable to deploy"
                             "the certificate")
             raise errors.LetsEncryptClientError("No installer available")
 
-        chain = None if chain_file is None else os.path.abspath(chain_file)
+        # TODO: Is it possible not to have a chain at all? (The
+        # RenewableCert class currently doesn't support this case, but
+        # perhaps the CA can issue according to ACME without providing
+        # a chain, which would currently be a problem for instantiating
+        # RenewableCert, and subsequently also for this method.)
 
         for dom in domains:
+            # TODO: Provide a fullchain reference for installers like
+            #       nginx that want it
             self.installer.deploy_cert(dom,
-                                       os.path.abspath(cert_file),
-                                       os.path.abspath(privkey.file),
-                                       chain)
+                                       lineage.cert,
+                                       lineage.privkey,
+                                       lineage.chain)
 
         self.installer.save("Deployed Let's Encrypt Certificate")
         # sites may have been enabled / final cleanup

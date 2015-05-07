@@ -123,6 +123,10 @@ class IConfig(zope.interface.Interface):
     cert_path = zope.interface.Attribute("Let's Encrypt certificate file.")
     chain_path = zope.interface.Attribute("Let's Encrypt chain file.")
 
+    enroll_autorenew = zope.interface.Attribute(
+        "Register this certificate in the database to be renewed"
+        " automatically.")
+
     apache_server_root = zope.interface.Attribute(
         "Apache server root directory.")
     apache_ctl = zope.interface.Attribute(

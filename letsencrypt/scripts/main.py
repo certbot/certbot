@@ -122,6 +122,9 @@ def create_parser():
     add("--chain-path", default="/etc/letsencrypt/certs/chain-letsencrypt.pem",
         help=config_help("chain_path"))
 
+    add("--enroll-autorenew", default=None, action="store_true",
+        help=config_help("enroll_autorenew"))
+
     add("--apache-server-root", default="/etc/apache2",
         help=config_help("apache_server_root"))
     add("--apache-mod-ssl-conf", default="/etc/letsencrypt/options-ssl.conf",
@@ -244,9 +247,10 @@ def main():  # pylint: disable=too-many-branches, too-many-statements
                 acme.register()
             except errors.LetsEncryptClientError:
                 sys.exit(0)
-        cert_key, cert_file, chain_file = acme.obtain_certificate(doms)
-    if installer is not None and cert_file is not None:
-        acme.deploy_certificate(doms, cert_key, cert_file, chain_file)
+        # TODO: decide whether to enroll or not from config/policy
+        lineage = acme.obtain_and_enroll_certificate(doms)
+    if installer is not None and lineage is not None:
+        acme.deploy_certificate(doms, lineage)
     if installer is not None:
         acme.enhance_config(doms, args.redirect)
 
