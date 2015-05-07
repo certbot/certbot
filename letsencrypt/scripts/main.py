@@ -244,9 +244,9 @@ def main():  # pylint: disable=too-many-branches, too-many-statements
                 acme.register()
             except errors.LetsEncryptClientError:
                 sys.exit(0)
-        cert_file, chain_file = acme.obtain_certificate(doms)
+        cert_key, cert_file, chain_file = acme.obtain_certificate(doms)
     if installer is not None and cert_file is not None:
-        acme.deploy_certificate(doms, acc.key, cert_file, chain_file)
+        acme.deploy_certificate(doms, cert_key, cert_file, chain_file)
     if installer is not None:
         acme.enhance_config(doms, args.redirect)
 
