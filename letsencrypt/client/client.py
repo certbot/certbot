@@ -147,7 +147,7 @@ class Client(object):
         cert_pem = certr.body.as_pem()
         chain_pem = None
         if certr.cert_chain_uri:
-            chain_pem = self.network.fetch_chain(certr.cert_chain_uri)
+            chain_pem = self.network.fetch_chain(certr)
 
         if chain_pem is None:
             # XXX: just to stop RenewableCert from complaining; this is
@@ -158,7 +158,8 @@ class Client(object):
     def obtain_and_enroll_certificate(self, domains, csr=None):
         cert_pem, privkey, chain_pem = self._obtain_certificate(domains, csr)
         return renewer.RenewableCert.new_lineage(domains[0], cert_pem,
-                                                 privkey, chain_pem)
+                                                 privkey, chain_pem, None,
+                                                 vars(self.config.namespace))
         # XXX: self.account.key.file is totally wrong here, that's
         #      the account key and not the cert key!
 

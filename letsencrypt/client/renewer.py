@@ -323,14 +323,19 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             return False
 
     @classmethod
-    def new_lineage(cls, lineagename, cert, privkey, chain, config=DEFAULTS):
+    def new_lineage(cls, lineagename, cert, privkey, chain, configurator=None,
+                    renewalparams=None, config=DEFAULTS):
         # pylint: disable=too-many-locals
         """Create a new certificate lineage with the (suggested) lineage name
         lineagename, and the associated cert, privkey, and chain (the
-        associated fullchain will be created automatically).  Returns a new
-        RenewableCert object referring to the created lineage.  (The actual
-        lineage name, as well as all the relevant file paths, will be
-        available within this object.)"""
+        associated fullchain will be created automatically).  Optional
+        configurator and renewalparams record the configuration that was
+        originally used to obtain this cert, so that it can be reused later
+        during automated renewal.
+
+        Returns a new RenewableCert object referring to the created
+        lineage. (The actual lineage name, as well as all the relevant
+        file paths, will be available within this object.)"""
         configs_dir = config["renewal_configs_dir"]
         archive_dir = config["official_archive_dir"]
         live_dir = config["live_dir"]
@@ -380,6 +385,8 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         new_config["privkey"] = privkey_target
         new_config["chain"] = chain_target
         new_config["fullchain"] = fullchain_target
+        if configurator: new_config["configurator"] = configurator
+        if renewalparams: new_config["renewalparams"] = renewalparams
         # TODO: add human-readable comments explaining other available
         #       parameters
         new_config.write()
