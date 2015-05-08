@@ -32,7 +32,7 @@ class ContinuityAuthenticator(object):
 
     def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use
         """Return list of challenge preferences."""
-        return [challenges.RecoveryToken]
+        return [challenges.ProofOfPossession, challenges.RecoveryToken]
 
     def perform(self, achalls):
         """Perform client specific challenges for IAuthenticator"""
