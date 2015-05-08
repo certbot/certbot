@@ -86,16 +86,16 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     @classmethod
     def add_parser_arguments(cls, add):
-        add("server-root", default=constants.DEFAULT_SERVER_ROOT,
+        add("server-root", default=constants.CLI_DEFAULTS["server_root"],
             help="Apache server root directory.")
-        add("mod-ssl-conf", default=constants.DEFAULT_MOD_SSL_CONF,
+        add("mod-ssl-conf", default=constants.CLI_DEFAULTS["mod_ssl_conf"],
             help="Contains standard Apache SSL directives.")
-        add("ctl", default=constants.DEFAULT_CTL,
+        add("ctl", default=constants.CLI_DEFAULTS["ctl"],
             help="Path to the 'apache2ctl' binary, used for 'configtest' and "
                  "retrieving Apache2 version number.")
-        add("enmod", default=constants.DEFAULT_ENMOD,
+        add("enmod", default=constants.CLI_DEFAULTS["enmod"],
             help="Path to the Apache 'a2enmod' binary.")
-        add("init-script", default=constants.DEFAULT_INIT_SCRIPT,
+        add("init-script", default=constants.CLI_DEFAULTS["init_script"],
             help="Path to the Apache init script (used for server "
             "reload/restart).")
 

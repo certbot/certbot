@@ -2,12 +2,14 @@
 import pkg_resources
 
 
-# CLI/IConfig defaults
-DEFAULT_SERVER_ROOT = "/etc/apache2"
-DEFAULT_MOD_SSL_CONF = "/etc/letsencrypt/options-ssl.conf"
-DEFAULT_CTL = "apache2ctl"
-DEFAULT_ENMOD = "a2enmod"
-DEFAULT_INIT_SCRIPT = "/etc/init.d/apache2"
+CLI_DEFAULTS = dict(
+    server_root="/etc/apache2",
+    mod_ssl_conf="/etc/letsencrypt/options-ssl.conf",
+    ctl="apache2ctl",
+    enmod="a2enmod",
+    init_script="/etc/init.d/apache2",
+)
+"""CLI defaults."""
 
 
 MOD_SSL_CONF = pkg_resources.resource_filename(

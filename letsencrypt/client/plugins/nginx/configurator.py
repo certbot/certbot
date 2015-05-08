@@ -55,11 +55,11 @@ class NginxConfigurator(common.Plugin):
 
     @classmethod
     def add_parser_arguments(cls, add):
-        add("server-root", default=constants.DEFAULT_SERVER_ROOT,
+        add("server-root", default=constants.CLI_DEFAULTS["server_root"],
             help="Nginx server root directory.")
-        add("mod-ssl-conf", default=constants.DEFAULT_MOD_SSL_CONF,
+        add("mod-ssl-conf", default=constants.CLI_DEFAULTS["mod_ssl_conf"],
             help="Contains standard nginx SSL directives.")
-        add("ctl", default=constants.DEFAULT_CTL, help="Path to the "
+        add("ctl", default=constants.CLI_DEFAULTS["ctl"], help="Path to the "
             "'nginx' binary, used for 'configtest' and retrieving nginx "
             "version number.")
 

@@ -2,9 +2,12 @@
 import pkg_resources
 
 
-DEFAULT_SERVER_ROOT = "/etc/nginx"
-DEFAULT_MOD_SSL_CONF = "/etc/letsencrypt/options-ssl-nginx.conf"
-DEFAULT_CTL = "nginx"
+CLI_DEFAULTS = dict(
+    server_root="/etc/nginx",
+    mod_ssl_conf="/etc/letsencrypt/options-ssl-nginx.conf",
+    ctl="nginx",
+)
+"""CLI defaults."""
 
 
 MOD_SSL_CONF = pkg_resources.resource_filename(
