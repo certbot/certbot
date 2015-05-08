@@ -261,6 +261,20 @@ class NginxConfiguratorTest(util.NginxTest):
 
     @mock.patch("letsencrypt.client.plugins.nginx.configurator."
                 "subprocess.Popen")
+    def test_nginx_restart_fail(self, mock_popen):
+        mocked = mock_popen()
+        mocked.communicate.return_value = ('', '')
+        mocked.returncode = 1
+        self.assertFalse(self.config.restart())
+
+    @mock.patch("letsencrypt.client.plugins.nginx.configurator."
+                "subprocess.Popen")
+    def test_no_nginx_start(self, mock_popen):
+        mock_popen.side_effect = OSError("Can't find program")
+        self.assertRaises(SystemExit, self.config.restart)
+
+    @mock.patch("letsencrypt.client.plugins.nginx.configurator."
+                "subprocess.Popen")
     def test_config_test(self, mock_popen):
         mocked = mock_popen()
         mocked.communicate.return_value = ('', '')

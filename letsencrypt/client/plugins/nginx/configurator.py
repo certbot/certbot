@@ -545,11 +545,18 @@ def nginx_restart(nginx_ctl):
         stdout, stderr = proc.communicate()
 
         if proc.returncode != 0:
-            # Enter recovery routine...
-            logging.error("Nginx Restart Failed!")
-            logging.error(stdout)
-            logging.error(stderr)
-            return False
+            # Maybe Nginx isn't running
+            nginx_proc = subprocess.Popen([nginx_ctl],
+                                          stdout=subprocess.PIPE,
+                                          stderr=subprocess.PIPE)
+            stdout, stderr = nginx_proc.communicate()
+
+            if nginx_proc.returncode != 0:
+                # Enter recovery routine...
+                logging.error("Nginx Restart Failed!")
+                logging.error(stdout)
+                logging.error(stderr)
+                return False
 
     except (OSError, ValueError):
         logging.fatal(
