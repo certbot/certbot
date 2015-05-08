@@ -20,6 +20,7 @@ from letsencrypt.client import reverter
 
 from letsencrypt.client.plugins.nginx import dvsni
 from letsencrypt.client.plugins.nginx import parser
+from letsencrypt.client.plugins.nginx import obj
 
 
 class NginxConfigurator(object):
@@ -170,7 +171,7 @@ class NginxConfigurator(object):
 
         if vhost is not None:
             if not vhost.ssl:
-                self._make_server_ssl(vhost.filep, vhost.names)
+                self._make_server_ssl(vhost)
 
         return vhost
 
@@ -245,23 +246,28 @@ class NginxConfigurator(object):
 
         return all_names
 
-    def _make_server_ssl(self, filename, names):
+    def _make_server_ssl(self, vhost):
         """Makes a server SSL based on server_name and filename by adding
         a 'listen 443 ssl' directive to the server block.
 
         .. todo:: Maybe this should create a new block instead of modifying
         the existing one?
 
-        :param str filename: The absolute filename of the config file.
-        :param set names: The server names of the block to add SSL in
+        :param vhost: The vhost to add SSL to.
+        :type vhost: :class:`~letsencrypt.client.plugins.nginx.obj.VirtualHost`
 
         """
+        ssl_block = [['listen', '443 ssl'],
+                     ['ssl_certificate',
+                      '/etc/ssl/certs/ssl-cert-snakeoil.pem'],
+                     ['ssl_certificate_key',
+                      '/etc/ssl/private/ssl-cert-snakeoil.key'],
+                     ['include', self.parser.loc["ssl_options"]]]
         self.parser.add_server_directives(
-            filename, names,
-            [['listen', '443 ssl'],
-             ['ssl_certificate', '/etc/ssl/certs/ssl-cert-snakeoil.pem'],
-             ['ssl_certificate_key', '/etc/ssl/private/ssl-cert-snakeoil.key'],
-             ['include', self.parser.loc["ssl_options"]]])
+            vhost.filep, vhost.names, ssl_block)
+        vhost.ssl = True
+        vhost.raw.extend(ssl_block)
+        vhost.addrs.add(obj.Addr('', '443', True, False))
 
     def get_all_certs_keys(self):
         """Find all existing keys, certs from configuration.
