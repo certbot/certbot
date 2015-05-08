@@ -166,7 +166,7 @@ class NginxParser(object):
             except IOError:
                 logging.warn("Could not open file: %s", item)
             except pyparsing.ParseException:
-                logging.warn("Could not parse file: %s", item)
+                logging.debug("Could not parse file: %s", item)
         return trees
 
     def _set_locations(self, ssl_options):
