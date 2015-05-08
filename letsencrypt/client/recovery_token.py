@@ -8,6 +8,7 @@ from letsencrypt.acme import challenges
 
 from letsencrypt.client import le_util
 from letsencrypt.client import interfaces
+from letsencrypt.client import display
 
 
 class RecoveryToken(object):
@@ -34,10 +35,10 @@ class RecoveryToken(object):
             with open(token_fp) as token_fd:
                 return challenges.RecoveryTokenResponse(token=token_fd.read())
 
-        cancel, token = zope.component.getUtility(
+        code, token = zope.component.getUtility(
             interfaces.IDisplay).input(
                 "%s - Input Recovery Token: " % chall.domain)
-        if cancel != 1:
+        if code != display.CANCEL:
             return challenges.RecoveryTokenResponse(token=token)
 
         return None
