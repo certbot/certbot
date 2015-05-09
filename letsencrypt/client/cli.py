@@ -236,7 +236,7 @@ def create_parser(plugins):
         help="Turn off confirmation screens, currently used for --revoke")
     add("-e", "--agree-tos", dest="tos", action="store_true",
         help="Skip the end user license agreement screen.")
-    add("-t", "--text", dest="use_curses", action="store_false",
+    add("-t", "--text", dest="text_mode", action="store_true",
         help="Use the text output instead of the curses UI.")
 
     subparsers = parser.add_subparsers(metavar="SUBCOMMAND")
@@ -339,10 +339,10 @@ def main(args=sys.argv[1:]):
     config = configuration.NamespaceConfig(args)
 
     # Displayer
-    if args.use_curses:
-        displayer = display_util.NcursesDisplay()
-    else:
+    if args.text_mode:
         displayer = display_util.FileDisplay(sys.stdout)
+    else:
+        displayer = display_util.NcursesDisplay()
     zope.component.provideUtility(displayer)
 
     # Logging
@@ -350,7 +350,7 @@ def main(args=sys.argv[1:]):
     logger = logging.getLogger()
     logger.setLevel(level)
     logging.debug("Logging level set at %d", level)
-    if args.use_curses:
+    if not args.text_mode:
         logger.addHandler(log.DialogHandler())
 
     logging.debug("Discovered plugins: %r", plugins)
