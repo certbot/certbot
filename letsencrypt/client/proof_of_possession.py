@@ -29,7 +29,7 @@ class ProofOfPossession(object): # pylint: disable=too-few-public-methods
         :type achall: :class:`letsencrypt.client.achallenges.ProofOfPossession`
 
         :returns: Response or None/False if the challenge cannot be completed
-        :rtype: :class:`letsencrypt.acme.challenges.ProofOfPossessionResponse'
+        :rtype: :class:`letsencrypt.acme.challenges.ProofOfPossessionResponse`
             or False
 
         """
@@ -64,7 +64,7 @@ class ProofOfPossession(object): # pylint: disable=too-few-public-methods
             public key.
 
         :returns: Response or None/False if the challenge cannot be completed
-        :rtype: :class:`letsencrypt.acme.challenges.ProofOfPossessionResponse'
+        :rtype: :class:`letsencrypt.acme.challenges.ProofOfPossessionResponse`
             or False
 
         """

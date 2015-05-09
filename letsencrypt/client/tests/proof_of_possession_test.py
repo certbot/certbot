@@ -43,6 +43,19 @@ class ProofOfPossessionTest(unittest.TestCase):
         self.achall = achallenges.ProofOfPossession(
             challb=challenge, domain="example.com")
 
+    def test_perform_bad_challenge(self):
+        hints = challenges.ProofOfPossession.Hints(
+            jwk=jose.jwk.JWKOct(key=KEY), cert_fingerprints=(),
+            certs=(), serial_numbers=(), subject_key_identifiers=(),
+            issuers=(), authorized_for=())
+        challenge = challenges.ProofOfPossession(
+            alg=jose.HS512, nonce='zczv4HMLVe_0kimJ25Juig', hints=hints)
+        self.achall = achallenges.ProofOfPossession(
+            challb=challenge, domain="example.com")
+
+        response = self.proof_of_pos.perform(self.achall)
+        self.assertEqual(response, None)
+
     def test_perform_no_input(self):
         response = self.proof_of_pos.perform(self.achall)
         self.assertTrue(response.verify())
@@ -64,15 +77,6 @@ class ProofOfPossessionTest(unittest.TestCase):
         response = self.proof_of_pos.perform(self.achall)
         self.assertTrue(response.verify())
 
-    def test_perform_bad_challenge(self):
-        hints = challenges.ProofOfPossession.Hints(
-            jwk=jose.jwk.JWKOct(key=KEY), cert_fingerprints=(),
-            certs=(), serial_numbers=(), subject_key_identifiers=(),
-            issuers=(), authorized_for=())
-        challenge = challenges.ProofOfPossession(
-            alg=jose.HS512, nonce='zczv4HMLVe_0kimJ25Juig', hints=hints)
-        self.achall = achallenges.ProofOfPossession(
-            challb=challenge, domain="example.com")
 
-        response = self.proof_of_pos.perform(self.achall)
-        self.assertEqual(response, None)
+if __name__ == "__main__":
+    unittest.main()
