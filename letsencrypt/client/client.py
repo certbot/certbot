@@ -77,7 +77,7 @@ class Client(object):
     def register(self):
         """New Registration with the ACME server."""
         self.account = self.network.register_from_account(self.account)
-        if self.account.terms_of_service:
+        if self.account.terms_of_service is not None:
             if not self.config.tos:
                 # TODO: Replace with self.account.terms_of_service
                 eula = pkg_resources.resource_string("letsencrypt", "EULA")
@@ -172,13 +172,13 @@ class Client(object):
         logging.info("Server issued certificate; certificate written to %s",
                      act_cert_path)
 
-        if certr.cert_chain_uri:
+        if certr.cert_chain_uri is not None:
             # TODO: Except
-            chain_cert = self.network.fetch_chain(certr.cert_chain_uri)
-            if chain_cert:
+            chain_cert = self.network.fetch_chain(certr)
+            if chain_cert is not None:
                 chain_file, act_chain_path = le_util.unique_file(
                     chain_path, 0o644)
-                chain_pem = chain_cert.to_pem()
+                chain_pem = chain_cert.as_pem()
                 try:
                     chain_file.write(chain_pem)
                 finally:
