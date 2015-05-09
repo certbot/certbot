@@ -6,6 +6,7 @@ from letsencrypt.acme import challenges
 from letsencrypt.client import achallenges
 from letsencrypt.client import errors
 from letsencrypt.client import interfaces
+from letsencrypt.client import proof_of_possession
 from letsencrypt.client import recovery_token
 
 
@@ -13,22 +14,30 @@ class ContinuityAuthenticator(object):
     """IAuthenticator for
     :const:`~letsencrypt.acme.challenges.ContinuityChallenge` class challenges.
 
-    :ivar rec_token: Performs "recoveryToken" challenges
+    :ivar rec_token: Performs "recoveryToken" challenges.
     :type rec_token: :class:`letsencrypt.client.recovery_token.RecoveryToken`
+
+    :ivar proof_of_pos: Performs "proofOfPossession" challenges.
+    :type proof_of_pos:
+        :class:`letsencrypt.client.proof_of_possession.Proof_of_Possession`
 
     """
     zope.interface.implements(interfaces.IAuthenticator)
 
     # This will have an installer soon for get_key/cert purposes
-    def __init__(self, config):
+    def __init__(self, config, installer):
         """Initialize Client Authenticator.
 
         :param config: Configuration.
         :type config: :class:`letsencrypt.client.interfaces.IConfig`
 
+        :param installer: Let's Encrypt Installer.
+        :type installer: :class:`letsencrypt.client.interfaces.IInstaller`
+
         """
         self.rec_token = recovery_token.RecoveryToken(
             config.server, config.rec_token_dir)
+        self.proof_of_pos = proof_of_possession.ProofOfPossession(installer)
 
     def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use
         """Return list of challenge preferences."""
@@ -38,7 +47,9 @@ class ContinuityAuthenticator(object):
         """Perform client specific challenges for IAuthenticator"""
         responses = []
         for achall in achalls:
-            if isinstance(achall, achallenges.RecoveryToken):
+            if isinstance(achall, achallenges.ProofOfPossession):
+                responses.append(self.proof_of_pos.perform(achall))
+            elif isinstance(achall, achallenges.RecoveryToken):
                 responses.append(self.rec_token.perform(achall))
             else:
                 raise errors.LetsEncryptContAuthError("Unexpected Challenge")
@@ -49,5 +60,5 @@ class ContinuityAuthenticator(object):
         for achall in achalls:
             if isinstance(achall, achallenges.RecoveryToken):
                 self.rec_token.cleanup(achall)
-            else:
+            elif not isinstance(achall, achallenges.ProofOfPossession):
                 raise errors.LetsEncryptContAuthError("Unexpected Challenge")
