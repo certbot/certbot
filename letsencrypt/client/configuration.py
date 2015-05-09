@@ -1,5 +1,7 @@
 """Let's Encrypt user-supplied configuration."""
 import os
+import urlparse
+
 import zope.interface
 
 from letsencrypt.client import constants
@@ -28,8 +30,6 @@ class NamespaceConfig(object):
     zope.interface.implements(interfaces.IConfig)
 
     def __init__(self, namespace):
-        assert not namespace.server.startswith('https://')
-        assert not namespace.server.startswith('http://')
         self.namespace = namespace
 
     def __getattr__(self, name):
@@ -47,12 +47,8 @@ class NamespaceConfig(object):
     @property
     def server_path(self):
         """File path based on ``server``."""
-        return self.namespace.server.replace('/', os.path.sep)
-
-    @property
-    def server_url(self):
-        """Full server URL (including HTTPS scheme)."""
-        return 'https://' + self.namespace.server
+        parsed = urlparse.urlparse(self.namespace.server)
+        return (parsed.netloc + parsed.path).replace('/', os.path.sep)
 
     @property
     def cert_key_backup(self):  # pylint: disable=missing-docstring
