@@ -39,9 +39,10 @@ class NetworkTest(unittest.TestCase):
 
     def setUp(self):
         from letsencrypt.client.network2 import Network
+        self.verify_ssl = mock.MagicMock()
         self.net = Network(
             new_reg_uri='https://www.letsencrypt-demo.org/acme/new-reg',
-            key=KEY, alg=jose.RS256)
+            key=KEY, alg=jose.RS256, verify_ssl=self.verify_ssl)
         self.response = mock.MagicMock(ok=True, status_code=httplib.OK)
         self.response.headers = {}
         self.response.links = {}
@@ -83,6 +84,9 @@ class NetworkTest(unittest.TestCase):
         # pylint: disable=protected-access
         self.net._post = mock.MagicMock(return_value=self.response)
         self.net._get = mock.MagicMock(return_value=self.response)
+
+    def test_init(self):
+        self.assertTrue(self.net.verify_ssl is self.verify_ssl)
 
     def test_wrap_in_jws(self):
         class MockJSONDeSerializable(jose.JSONDeSerializable):
@@ -171,6 +175,20 @@ class NetworkTest(unittest.TestCase):
         self.net._post('uri', 'data', content_type='ct')
         self.net._check_response.assert_called_once_with(
             requests_mock.post('uri', 'data'), content_type='ct')
+
+    @mock.patch('letsencrypt.client.network2.requests')
+    def test_get_post_verify_ssl(self, requests_mock):
+        # pylint: disable=protected-access
+        self.net._check_response = mock.MagicMock()
+
+        for verify_ssl in [True, False]:
+            self.net.verify_ssl = verify_ssl
+            self.net._get('uri')
+            self.net._post('uri', 'data')
+            requests_mock.get.assert_called_once_with('uri', verify=verify_ssl)
+            requests_mock.post.assert_called_once_with(
+                'uri', data='data', verify=verify_ssl)
+            requests_mock.reset_mock()
 
     def test_register(self):
         self.response.status_code = httplib.CREATED

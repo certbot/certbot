@@ -178,6 +178,9 @@ class IConfig(zope.interface.Interface):
     cert_path = zope.interface.Attribute("Let's Encrypt certificate file path.")
     chain_path = zope.interface.Attribute("Let's Encrypt chain file path.")
 
+    test_mode = zope.interface.Attribute(
+        "Test mode. Disables certificate verification.")
+
 
 class IInstaller(IPlugin):
     """Generic Let's Encrypt Installer Interface.
