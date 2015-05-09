@@ -216,6 +216,12 @@ class PluginsRegistryTest(unittest.TestCase):
         self.plugin_ep.available = False
         self.assertEqual({}, self.reg.available().plugins)
 
+    def test_find_init(self):
+        self.assertTrue(self.reg.find_init(mock.Mock()) is None)
+        self.plugin_ep.initalized = True
+        self.assertTrue(
+            self.reg.find_init(self.plugin_ep.init()) is self.plugin_ep)
+
     def test_repr(self):
         self.plugin_ep.__repr__ = lambda _: "PluginEntryPoint#mock"
         self.assertEqual("PluginsRegistry(set([PluginEntryPoint#mock]))",

@@ -16,6 +16,9 @@ class PluginEntryPoint(object):
     PREFIX_FREE_DISTRIBUTIONS = ["letsencrypt"]
     """Distributions for which prefix will be omitted."""
 
+    # this object is mutable, don't allow it to be hashed!
+    __hash__ = None
+
     def __init__(self, entry_point):
         self.name = self.entry_point_to_plugin_name(entry_point)
         self.plugin_cls = entry_point.load()
@@ -187,6 +190,29 @@ class PluginsRegistry(collections.Mapping):
         """Filter plugins based on availability."""
         return self.filter(lambda p_ep: p_ep.available)
         # succefully prepared + misconfigured
+
+    def find_init(self, plugin):
+        """Find an initialized plugin.
+
+        This is particularly useful for finding a name for the plugin
+        (although `.IPluginFactory.__call__` takes ``name`` as one of
+        the arguments, ``IPlugin.name`` is not part of the interface)::
+
+          # plugin is an instance providing IPlugin, initialized
+          # somewhere else in the code
+          plugin_registry.find_init(plugin).name
+
+        Returns ``None`` if ``plugin`` is not found in the registry.
+
+        """
+        # use list instead of set beacse PluginEntryPoint is not hashable
+        candidates = [plugin_ep for plugin_ep in self.plugins.itervalues()
+                      if plugin_ep.initialized and plugin_ep.init() is plugin]
+        assert len(candidates) <= 1
+        if candidates:
+            return candidates[0]
+        else:
+            return None
 
     def __repr__(self):
         return "{0}({1!r})".format(
