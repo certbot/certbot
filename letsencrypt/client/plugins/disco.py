@@ -135,7 +135,7 @@ class PluginsRegistry(collections.Mapping):
     """Plugins registry."""
 
     def __init__(self, plugins):
-        self.plugins = plugins
+        self._plugins = plugins
 
     @classmethod
     def find_all(cls):
@@ -155,23 +155,23 @@ class PluginsRegistry(collections.Mapping):
         return cls(plugins)
 
     def __getitem__(self, name):
-        return self.plugins[name]
+        return self._plugins[name]
 
     def __iter__(self):
-        return iter(self.plugins)
+        return iter(self._plugins)
 
     def __len__(self):
-        return len(self.plugins)
+        return len(self._plugins)
 
     def init(self, config):
         """Initialize all plugins in the registry."""
         return [plugin_ep.init(config) for plugin_ep
-                in self.plugins.itervalues()]
+                in self._plugins.itervalues()]
 
     def filter(self, pred):
         """Filter plugins based on predicate."""
         return type(self)(dict((name, plugin_ep) for name, plugin_ep
-                               in self.plugins.iteritems() if pred(plugin_ep)))
+                               in self._plugins.iteritems() if pred(plugin_ep)))
 
     def ifaces(self, *ifaces_groups):
         """Filter plugins based on interfaces."""
@@ -184,7 +184,7 @@ class PluginsRegistry(collections.Mapping):
 
     def prepare(self):
         """Prepare all plugins in the registry."""
-        return [plugin_ep.prepare() for plugin_ep in self.plugins.itervalues()]
+        return [plugin_ep.prepare() for plugin_ep in self._plugins.itervalues()]
 
     def available(self):
         """Filter plugins based on availability."""
@@ -206,7 +206,7 @@ class PluginsRegistry(collections.Mapping):
 
         """
         # use list instead of set beacse PluginEntryPoint is not hashable
-        candidates = [plugin_ep for plugin_ep in self.plugins.itervalues()
+        candidates = [plugin_ep for plugin_ep in self._plugins.itervalues()
                       if plugin_ep.initialized and plugin_ep.init() is plugin]
         assert len(candidates) <= 1
         if candidates:
@@ -216,9 +216,9 @@ class PluginsRegistry(collections.Mapping):
 
     def __repr__(self):
         return "{0}({1!r})".format(
-            self.__class__.__name__, set(self.plugins.itervalues()))
+            self.__class__.__name__, set(self._plugins.itervalues()))
 
     def __str__(self):
-        if not self.plugins:
+        if not self._plugins:
             return "No plugins"
-        return "\n\n".join(str(p_ep) for p_ep in self.plugins.itervalues())
+        return "\n\n".join(str(p_ep) for p_ep in self._plugins.itervalues())
