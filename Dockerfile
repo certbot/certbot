@@ -51,5 +51,6 @@ RUN virtualenv --no-site-packages -p python2 /opt/letsencrypt && \
 # this might also help in debugging: you can "docker run --entrypoint
 # bash" and investigate, apply patches, etc.
 
+ENV PATH /opt/letsencrypt/bin:$PATH
 # TODO: is --text really necessary?
-ENTRYPOINT [ "/opt/letsencrypt/bin/letsencrypt", "--text" ]
+ENTRYPOINT [ "letsencrypt", "--text" ]
