@@ -80,7 +80,7 @@ class PluginEntryPoint(object):
     def prepared(self):
         """Has the plugin been prepared already?"""
         if not self.initialized:
-            logging.debug(".prepared called on uninitialized %s", self)
+            logging.debug(".prepared called on uninitialized %r", self)
         return self._prepared is not None
 
     def prepare(self):
@@ -90,10 +90,10 @@ class PluginEntryPoint(object):
             try:
                 self._initialized.prepare()
             except errors.LetsEncryptMisconfigurationError as error:
-                logging.debug("Misconfigured %s: %s", self, error)
+                logging.debug("Misconfigured %r: %s", self, error)
                 self._prepared = error
             except errors.LetsEncryptNoInstallationError as error:
-                logging.debug("No installation (%s): %s", self, error)
+                logging.debug("No installation (%r): %s", self, error)
                 self._prepared = error
             else:
                 self._prepared = True
@@ -150,8 +150,8 @@ class PluginsRegistry(collections.Mapping):
             if interfaces.IPluginFactory.providedBy(plugin_ep.plugin_cls):
                 plugins[plugin_ep.name] = plugin_ep
             else:  # pragma: no cover
-                logging.warning("Plugin entry point %s does not provide "
-                                "IPluginFactory, skipping", plugin_ep)
+                logging.warning(
+                    "%r does not provide IPluginFactory, skipping", plugin_ep)
         return cls(plugins)
 
     def __getitem__(self, name):
