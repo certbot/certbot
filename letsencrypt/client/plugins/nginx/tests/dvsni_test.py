@@ -75,12 +75,12 @@ class DvsniPerformTest(util.NginxTest):
         self.assertEqual([0], self.sni.indices)
 
     @mock.patch("letsencrypt.client.plugins.nginx.configurator."
-                "NginxConfigurator.save")
-    def test_perform(self, mock_save):
+                "NginxConfigurator.choose_vhost")
+    def test_perform(self, mock_choose):
         self.sni.add_chall(self.achalls[1])
-        responses = self.sni.perform()
-        self.assertTrue(responses is None)
-        self.assertEqual(mock_save.call_count, 1)
+        mock_choose.return_value = None
+        result = self.sni.perform()
+        self.assertTrue(result is None)
 
     def test_perform0(self):
         responses = self.sni.perform()
@@ -108,30 +108,31 @@ class DvsniPerformTest(util.NginxTest):
         self.assertTrue(['include', self.sni.challenge_conf] in http[1])
 
     def test_perform2(self):
-        self.sni.add_chall(self.achalls[0])
-        self.sni.add_chall(self.achalls[2])
+        for achall in self.achalls:
+            self.sni.add_chall(achall)
 
         mock_setup_cert = mock.MagicMock(side_effect=[
             challenges.DVSNIResponse(s="nginxS0"),
-            challenges.DVSNIResponse(s="nginxS1")])
+            challenges.DVSNIResponse(s="nginxS1"),
+            challenges.DVSNIResponse(s="nginxS2")])
         # pylint: disable=protected-access
         self.sni._setup_challenge_cert = mock_setup_cert
 
         responses = self.sni.perform()
 
-        self.assertEqual(mock_setup_cert.call_count, 2)
+        self.assertEqual(mock_setup_cert.call_count, 3)
 
-        self.assertEqual(
-            mock_setup_cert.call_args_list[0], mock.call(self.achalls[0]))
-        self.assertEqual(
-            mock_setup_cert.call_args_list[1], mock.call(self.achalls[2]))
+        for index, achall in enumerate(self.achalls):
+            self.assertEqual(
+                mock_setup_cert.call_args_list[index], mock.call(achall))
 
         http = self.sni.configurator.parser.parsed[
             self.sni.configurator.parser.loc["root"]][-1]
         self.assertTrue(['include', self.sni.challenge_conf] in http[1])
+        self.assertTrue(['server_name', 'blah'] in http[1][-2][1])
 
-        self.assertEqual(len(responses), 2)
-        for i in xrange(2):
+        self.assertEqual(len(responses), 3)
+        for i in xrange(3):
             self.assertEqual(responses[i].s, "nginxS%d" % i)
 
     def test_mod_config(self):

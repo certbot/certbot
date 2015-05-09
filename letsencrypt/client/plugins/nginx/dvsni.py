@@ -52,9 +52,8 @@ class NginxDvsni(ApacheDvsni):
             vhost = self.configurator.choose_vhost(achall.domain)
             if vhost is None:
                 logging.error(
-                    "No nginx vhost exists with server_name or alias of: %s",
+                    "No nginx vhost exists with server_name matching: %s",
                     achall.domain)
-                logging.error("No default 443 nginx vhost exists")
                 logging.error("Please specify server_names in the Nginx config")
                 return None
 
