@@ -268,4 +268,4 @@ class NginxConfiguratorTest(util.NginxTest):
         self.assertTrue(self.config.config_test())
 
 if __name__ == "__main__":
-    unittest.main()
+    unittest.main()  # pragma: no cover

@@ -26,10 +26,10 @@ class JWASignatureTest(unittest.TestCase):
             # pylint: disable=missing-docstring,too-few-public-methods
             # pylint: disable=abstract-class-not-used
             def sign(self, key, msg):
-                raise NotImplementedError()
+                raise NotImplementedError()  # pragma: no cover
 
             def verify(self, key, msg, sig):
-                raise NotImplementedError()
+                raise NotImplementedError()  # pragma: no cover
 
         # pylint: disable=invalid-name
         self.Sig1 = MockSig('Sig1')
@@ -102,4 +102,4 @@ class JWARSTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest.main()  # pragma: no cover
