@@ -13,11 +13,12 @@ from letsencrypt.acme import challenges
 
 from letsencrypt.client import achallenges
 from letsencrypt.client import augeas_configurator
-from letsencrypt.client import constants
+from letsencrypt.client import constants as core_constants
 from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
 
+from letsencrypt.client.plugins.apache import constants
 from letsencrypt.client.plugins.apache import dvsni
 from letsencrypt.client.plugins.apache import obj
 from letsencrypt.client.plugins.apache import parser
@@ -79,17 +80,34 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     """
     zope.interface.implements(interfaces.IAuthenticator, interfaces.IInstaller)
+    zope.interface.classProvides(interfaces.IPluginFactory)
 
     description = "Apache Web Server"
 
-    def __init__(self, config, version=None):
+    @classmethod
+    def add_parser_arguments(cls, add):
+        add("server-root", default=constants.CLI_DEFAULTS["server_root"],
+            help="Apache server root directory.")
+        add("mod-ssl-conf", default=constants.CLI_DEFAULTS["mod_ssl_conf"],
+            help="Contains standard Apache SSL directives.")
+        add("ctl", default=constants.CLI_DEFAULTS["ctl"],
+            help="Path to the 'apache2ctl' binary, used for 'configtest' and "
+                 "retrieving Apache2 version number.")
+        add("enmod", default=constants.CLI_DEFAULTS["enmod"],
+            help="Path to the Apache 'a2enmod' binary.")
+        add("init-script", default=constants.CLI_DEFAULTS["init_script"],
+            help="Path to the Apache init script (used for server "
+            "reload/restart).")
+
+    def __init__(self, *args, **kwargs):
         """Initialize an Apache Configurator.
 
         :param tup version: version of Apache as a tuple (2, 4, 7)
             (used mostly for unittesting)
 
         """
-        super(ApacheConfigurator, self).__init__(config)
+        version = kwargs.pop('version', None)
+        super(ApacheConfigurator, self).__init__(*args, **kwargs)
 
         # Verify that all directories and files exist with proper permissions
         if os.geteuid() == 0:
@@ -109,8 +127,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     def prepare(self):
         """Prepare the authenticator/installer."""
         self.parser = parser.ApacheParser(
-            self.aug, self.config.apache_server_root,
-            self.config.apache_mod_ssl_conf)
+            self.aug, self.conf('server-root'), self.conf('mod-ssl-conf'))
         # Check for errors in parsing files with Augeas
         self.check_parsing_errors("httpd.aug")
 
@@ -128,9 +145,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         #     on initialization
         self._prepare_server_https()
 
-        temp_install(self.config.apache_mod_ssl_conf)
+        temp_install(self.conf('mod-ssl-conf'))
 
-    def deploy_cert(self, domain, cert, key, cert_chain=None):
+    def deploy_cert(self, domain, cert_path, key, chain_path=None):
         """Deploys certificate to specified virtual host.
 
         Currently tries to find the last directives to deploy the cert in
@@ -146,25 +163,26 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                   This shouldn't happen within letsencrypt though
 
         :param str domain: domain to deploy certificate
-        :param str cert: certificate filename
+        :param str cert_path: certificate filename
         :param str key: private key filename
-        :param str cert_chain: certificate chain filename
+        :param str chain_path: certificate chain filename
 
         """
         vhost = self.choose_vhost(domain)
+        # TODO(jdkasten): vhost might be None
         path = {}
 
-        path["cert_file"] = self.parser.find_dir(parser.case_i(
+        path["cert_path"] = self.parser.find_dir(parser.case_i(
             "SSLCertificateFile"), None, vhost.path)
         path["cert_key"] = self.parser.find_dir(parser.case_i(
             "SSLCertificateKeyFile"), None, vhost.path)
 
         # Only include if a certificate chain is specified
-        if cert_chain is not None:
-            path["cert_chain"] = self.parser.find_dir(
+        if chain_path is not None:
+            path["chain_path"] = self.parser.find_dir(
                 parser.case_i("SSLCertificateChainFile"), None, vhost.path)
 
-        if len(path["cert_file"]) == 0 or len(path["cert_key"]) == 0:
+        if not path["cert_path"] or not path["cert_key"]:
             # Throw some can't find all of the directives error"
             logging.warn(
                 "Cannot find a cert or key directive in %s", vhost.path)
@@ -174,22 +192,22 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         logging.info("Deploying Certificate to VirtualHost %s", vhost.filep)
 
-        self.aug.set(path["cert_file"][0], cert)
+        self.aug.set(path["cert_path"][0], cert_path)
         self.aug.set(path["cert_key"][0], key)
-        if cert_chain is not None:
-            if len(path["cert_chain"]) == 0:
+        if chain_path is not None:
+            if not path["chain_path"]:
                 self.parser.add_dir(
-                    vhost.path, "SSLCertificateChainFile", cert_chain)
+                    vhost.path, "SSLCertificateChainFile", chain_path)
             else:
-                self.aug.set(path["cert_chain"][0], cert_chain)
+                self.aug.set(path["chain_path"][0], chain_path)
 
         self.save_notes += ("Changed vhost at %s with addresses of %s\n" %
                             (vhost.filep,
                              ", ".join(str(addr) for addr in vhost.addrs)))
-        self.save_notes += "\tSSLCertificateFile %s\n" % cert
+        self.save_notes += "\tSSLCertificateFile %s\n" % cert_path
         self.save_notes += "\tSSLCertificateKeyFile %s\n" % key
-        if cert_chain:
-            self.save_notes += "\tSSLCertificateChainFile %s\n" % cert_chain
+        if chain_path is not None:
+            self.save_notes += "\tSSLCertificateChainFile %s\n" % chain_path
 
         # Make sure vhost is enabled
         if not vhost.enabled:
@@ -386,10 +404,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         is appropriately listening on port 443.
 
         """
-        if not mod_loaded("ssl_module", self.config.apache_ctl):
+        if not mod_loaded("ssl_module", self.conf('ctl')):
             logging.info("Loading mod_ssl into Apache Server")
-            enable_mod("ssl", self.config.apache_init_script,
-                       self.config.apache_enmod)
+            enable_mod("ssl", self.conf('init-script'),
+                       self.conf('enmod'))
 
         # Check for Listen 443
         # Note: This could be made to also look for ip:443 combo
@@ -572,9 +590,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             :class:`~letsencrypt.client.plugins.apache.obj.VirtualHost`)
 
         """
-        if not mod_loaded("rewrite_module", self.config.apache_ctl):
-            enable_mod("rewrite", self.config.apache_init_script,
-                       self.config.apache_enmod)
+        if not mod_loaded("rewrite_module", self.conf('ctl')):
+            enable_mod("rewrite", self.conf('init-script'), self.conf('enmod'))
 
         general_v = self._general_vhost(ssl_vhost)
         if general_v is None:
@@ -599,7 +616,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # Add directives to server
             self.parser.add_dir(general_v.path, "RewriteEngine", "On")
             self.parser.add_dir(general_v.path, "RewriteRule",
-                                constants.APACHE_REWRITE_HTTPS_ARGS)
+                                constants.REWRITE_HTTPS_ARGS)
             self.save_notes += ("Redirecting host in %s to ssl vhost in %s\n" %
                                 (general_v.filep, ssl_vhost.filep))
             self.save()
@@ -638,10 +655,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if not rewrite_path:
             # "No existing redirection for virtualhost"
             return False, -1
-        if len(rewrite_path) == len(constants.APACHE_REWRITE_HTTPS_ARGS):
+        if len(rewrite_path) == len(constants.REWRITE_HTTPS_ARGS):
             for idx, match in enumerate(rewrite_path):
                 if (self.aug.get(match) !=
-                        constants.APACHE_REWRITE_HTTPS_ARGS[idx]):
+                        constants.REWRITE_HTTPS_ARGS[idx]):
                     # Not a letsencrypt https rewrite
                     return True, 2
             # Existing letsencrypt https rewrite rule is in place
@@ -693,7 +710,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                          "LogLevel warn\n"
                          "</VirtualHost>\n"
                          % (servername, serveralias,
-                            " ".join(constants.APACHE_REWRITE_HTTPS_ARGS)))
+                            " ".join(constants.REWRITE_HTTPS_ARGS)))
 
         # Write out the file
         # This is the default name
@@ -897,7 +914,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: bool
 
         """
-        return apache_restart(self.config.apache_init_script)
+        return apache_restart(self.conf('init-script'))
 
     def config_test(self):  # pylint: disable=no-self-use
         """Check the configuration of Apache for errors.
@@ -908,7 +925,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         try:
             proc = subprocess.Popen(
-                [self.config.apache_ctl, "configtest"],
+                [self.conf('ctl'), "configtest"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
             stdout, stderr = proc.communicate()
@@ -935,11 +952,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         uid = os.geteuid()
         le_util.make_or_verify_dir(
-            self.config.config_dir, constants.CONFIG_DIRS_MODE, uid)
+            self.config.config_dir, core_constants.CONFIG_DIRS_MODE, uid)
         le_util.make_or_verify_dir(
-            self.config.work_dir, constants.CONFIG_DIRS_MODE, uid)
+            self.config.work_dir, core_constants.CONFIG_DIRS_MODE, uid)
         le_util.make_or_verify_dir(
-            self.config.backup_dir, constants.CONFIG_DIRS_MODE, uid)
+            self.config.backup_dir, core_constants.CONFIG_DIRS_MODE, uid)
 
     def get_version(self):
         """Return version of Apache Server.
@@ -955,13 +972,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         try:
             proc = subprocess.Popen(
-                [self.config.apache_ctl, "-v"],
+                [self.conf('ctl'), "-v"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
             text = proc.communicate()[0]
         except (OSError, ValueError):
             raise errors.LetsEncryptConfiguratorError(
-                "Unable to run %s -v" % self.config.apache_ctl)
+                "Unable to run %s -v" % self.conf('ctl'))
 
         regex = re.compile(r"Apache/([0-9\.]*)", re.IGNORECASE)
         matches = regex.findall(text)
@@ -1165,4 +1182,4 @@ def temp_install(options_ssl):
 
     # Check to make sure options-ssl.conf is installed
     if not os.path.isfile(options_ssl):
-        shutil.copyfile(constants.APACHE_MOD_SSL_CONF, options_ssl)
+        shutil.copyfile(constants.MOD_SSL_CONF, options_ssl)

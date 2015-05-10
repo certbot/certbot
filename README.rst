@@ -17,11 +17,15 @@ It's all automated:
 * If domain control has been proven, a certificate will get issued and the tool
   will automatically install it.
 
-All you need to do is:
+All you need to do is::
 
-::
+  user@www:~$ sudo letsencrypt -d www.example.org auth
 
-   user@www:~$ sudo letsencrypt -d www.example.org
+and if you have a compatbile web server (Apache), Let's Encrypt can
+not only get a new certificate, but also deploy it and configure your
+server automatically!::
+
+  user@www:~$ sudo letsencrypt -d www.example.org run
 
 
 **Encrypt ALL the things!**

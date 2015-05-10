@@ -46,6 +46,11 @@ class Error(jose.JSONObjectWithFields, Exception):
         """Hardcoded error description based on its type."""
         return self.ERROR_TYPE_DESCRIPTIONS[self.typ]
 
+    def __str__(self):
+        if self.typ is not None:
+            return ' :: '.join([self.typ, self.description, self.detail])
+        else:
+            return str(self.detail)
 
 class _Constant(jose.JSONDeSerializable):
     """ACME constant."""
