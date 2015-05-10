@@ -28,7 +28,8 @@ install_requires = [
     'mock',
     'psutil>=2.1.0',  # net_connections introduced in 2.1.0
     'pycrypto',
-    'PyOpenSSL',
+    # https://pyopenssl.readthedocs.org/en/latest/api/crypto.html#OpenSSL.crypto.X509Req.get_extensions
+    'PyOpenSSL>=0.15',
     'python-augeas',
     'python2-pythondialog',
     'requests',

@@ -5,6 +5,7 @@ import pkg_resources
 import unittest
 
 import M2Crypto
+import OpenSSL
 
 
 RSA256_KEY = pkg_resources.resource_string(__name__, 'testdata/rsa256_key.pem')
@@ -120,24 +121,15 @@ class GetSansFromCsrTest(unittest.TestCase):
 
     def test_parse_non_csr(self):
         from letsencrypt.client.crypto_util import get_sans_from_csr
-        self.assertRaises(M2Crypto.X509.X509Error, get_sans_from_csr,
+        self.assertRaises(OpenSSL.crypto.Error, get_sans_from_csr,
                           "hello there")
 
     def test_parse_no_sans(self):
         from letsencrypt.client.crypto_util import get_sans_from_csr
         csr = pkg_resources.resource_string(
             __name__, os.path.join('testdata', 'csr-nosans.pem'))
-        self.assertRaises(ValueError, get_sans_from_csr, csr)
+        self.assertEqual([], get_sans_from_csr(csr))
 
-    @mock.patch("M2Crypto.X509.load_request_string")
-    def test_parse_weird_m2crypto_output(self, mock_lrs):
-        # It's not clear how to reach this exception with invalid input,
-        # because M2Crypto is likely to raise X509Error rather than
-        # returning invalid output, but we can test the possibility with
-        # mock.
-        mock_lrs.as_text.return_value = "Something other than OpenSSL output"
-        from letsencrypt.client.crypto_util import get_sans_from_csr
-        self.assertRaises(ValueError, get_sans_from_csr, "input")
 
 class MakeCSRTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
     """Tests for letsencrypt.client.crypto_util.make_csr."""

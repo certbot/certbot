@@ -4,6 +4,7 @@
     is capable of handling the signatures.
 
 """
+import logging
 import time
 
 import Crypto.Hash.SHA256
@@ -11,6 +12,7 @@ import Crypto.PublicKey.RSA
 import Crypto.Signature.PKCS1_v1_5
 
 import M2Crypto
+import OpenSSL
 
 
 def make_csr(key_str, domains):
@@ -163,7 +165,29 @@ def make_ss_cert(key_str, domains, not_before=None,
     return cert.as_pem()
 
 
-def get_sans_from_csr(csr):
+def _request_san(req):  # TODO: implement directly in PyOpenSSL!
+    # constants based on implementation of
+    # OpenSSL.crypto.X509Error._subjectAltNameString
+    parts_separator = ", "
+    part_separator = ":"
+    extension_short_name = "subjectAltName"
+
+    # pylint: disable=protected-access,no-member
+    label = OpenSSL.crypto.X509Extension._prefixes[OpenSSL.crypto._lib.GEN_DNS]
+    assert parts_separator not in label
+    prefix = label + part_separator
+
+    extensions = [ext._subjectAltNameString().split(parts_separator)
+                  for ext in req.get_extensions()
+                  if ext.get_short_name() == extension_short_name]
+    # WARNING: this function assumes that no SAN can include
+    # parts_separator, hence the split!
+
+    return [part.split(part_separator)[1] for parts in extensions
+            for part in parts if part.startswith(prefix)]
+
+
+def get_sans_from_csr(csr, typ=OpenSSL.crypto.FILETYPE_PEM):
     """Get list of Subject Alternative Names from signing request.
 
     :param str csr: Certificate Signing Request in PEM format (must contain
@@ -172,39 +196,11 @@ def get_sans_from_csr(csr):
 
     :returns: List of referenced subject alternative names
     :rtype: list
-    """
-    # TODO: This is a temporary solution involving parsing the .as_text()
-    #       output because there doesn't seem to be a built-in feature in
-    #       any Python cryptography module that performs this function.
-    #       In the future we should try to replace this with a more direct
-    #       use of relevant OpenSSL or other X509-parsing APIs.
-    req = M2Crypto.X509.load_request_string(csr)
-    text = req.as_text().split("\n")
-    if (len(text) < 2 or text[0] != "Certificate Request:" or
-            text[1] != "    Data:"):
-        raise ValueError("Unable to parse CSR")
-    text = text[2:]
-    while text and text[0] != "        Attributes:":
-        text = text[1:]
-    while text and text[0] != "        Requested Extensions:":
-        text = text[1:]
-    while text and text[0] != "            X509v3 Subject Alternative Name: ":
-        text = text[1:]
-    text = text[1:]
-    if not text:
-        raise ValueError("Unable to parse CSR")
 
-    # XXX: This might break for non-ASCII hostnames and for non-DNS
-    #      names in SANs.  There is also a parser safety concern about
-    #      whether the CSR's contents are interpreted in the same way
-    #      by this code and by any other code that might interpret the
-    #      CSR for a different purpose.  Also, if there is a non-DNS
-    #      name in a SAN that contains ", DNS:example.com, " as part
-    #      of the name (for example, in the comment field of an e-mail
-    #      SAN), this code will be fooled into returning that name as
-    #      if it were an additional DNS SAN.  The severity of this is
-    #      unclear, because the client currently presents the results of
-    #      this list to the user for confirmation before requesting the
-    #      cert from the server.
-    return [san.split(":")[1] for san in text[0].strip().split(", ")
-            if san.startswith("DNS:")]
+    """
+    try:
+        request = OpenSSL.crypto.load_certificate_request(typ, csr)
+    except OpenSSL.crypto.Error as error:
+        logging.exception(error)
+        raise
+    return _request_san(request)
