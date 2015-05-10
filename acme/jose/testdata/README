@@ -4,7 +4,7 @@ The following command has been used to generate test keys:
 
 and for the CSR:
 
-  python -c from 'letsencrypt.client.crypto_util import make_csr;
+  python -c from 'letsencrypt.crypto_util import make_csr;
   import pkg_resources; open("csr2.pem",
-  "w").write(make_csr(pkg_resources.resource_string("letsencrypt.client.tests",
+  "w").write(make_csr(pkg_resources.resource_string("letsencrypt.tests",
   "testdata/rsa512_key.pem"), ["example2.com"])[0])'

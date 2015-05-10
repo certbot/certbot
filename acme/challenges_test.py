@@ -12,7 +12,7 @@ from acme import other
 
 CERT = jose.ComparableX509(M2Crypto.X509.load_cert(
     pkg_resources.resource_filename(
-        'letsencrypt.client.tests', os.path.join('testdata', 'cert.pem'))))
+        'letsencrypt.tests', os.path.join('testdata', 'cert.pem'))))
 KEY = jose.HashableRSAKey(Crypto.PublicKey.RSA.importKey(
     pkg_resources.resource_string(
         'acme.jose', os.path.join('testdata', 'rsa512_key.pem'))))

@@ -12,9 +12,9 @@ from acme.jose import util
 
 
 CERT = M2Crypto.X509.load_cert(pkg_resources.resource_filename(
-    'letsencrypt.client.tests', os.path.join('testdata', 'cert.pem')))
+    'letsencrypt.tests', os.path.join('testdata', 'cert.pem')))
 CSR = M2Crypto.X509.load_request(pkg_resources.resource_filename(
-    'letsencrypt.client.tests', os.path.join('testdata', 'csr.pem')))
+    'letsencrypt.tests', os.path.join('testdata', 'csr.pem')))
 
 
 class FieldTest(unittest.TestCase):

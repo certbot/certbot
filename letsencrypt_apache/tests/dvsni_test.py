@@ -7,10 +7,10 @@ import mock
 
 from acme import challenges
 
-from letsencrypt.client import achallenges
-from letsencrypt.client import le_util
+from letsencrypt import achallenges
+from letsencrypt import le_util
 
-from letsencrypt.client.tests import acme_util
+from letsencrypt.tests import acme_util
 
 from letsencrypt_apache import obj
 from letsencrypt_apache.tests import util

@@ -17,10 +17,10 @@ KEY = jose.HashableRSAKey(Crypto.PublicKey.RSA.importKey(
         'acme.jose', os.path.join('testdata', 'rsa512_key.pem'))))
 CERT = jose.ComparableX509(M2Crypto.X509.load_cert(
     pkg_resources.resource_filename(
-        'letsencrypt.client.tests', os.path.join('testdata', 'cert.pem'))))
+        'letsencrypt.tests', os.path.join('testdata', 'cert.pem'))))
 CSR = jose.ComparableX509(M2Crypto.X509.load_request(
     pkg_resources.resource_filename(
-        'letsencrypt.client.tests', os.path.join('testdata', 'csr.pem'))))
+        'letsencrypt.tests', os.path.join('testdata', 'csr.pem'))))
 CSR2 = jose.ComparableX509(M2Crypto.X509.load_request(
     pkg_resources.resource_filename(
         'acme.jose', os.path.join('testdata', 'csr2.pem'))))

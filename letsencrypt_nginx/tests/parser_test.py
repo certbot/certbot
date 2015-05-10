@@ -5,7 +5,7 @@ import re
 import shutil
 import unittest
 
-from letsencrypt.client.errors import LetsEncryptMisconfigurationError
+from letsencrypt.errors import LetsEncryptMisconfigurationError
 
 from letsencrypt_nginx import nginxparser
 from letsencrypt_nginx import obj

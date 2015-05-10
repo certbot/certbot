@@ -111,11 +111,11 @@ setup(
 
     entry_points={
         'console_scripts': [
-            'letsencrypt = letsencrypt.client.cli:main',
+            'letsencrypt = letsencrypt.cli:main',
             'jws = letsencrypt.acme.jose.jws:CLI.run',
         ],
         'letsencrypt.plugins': [
-            'standalone = letsencrypt.client.plugins.standalone.authenticator'
+            'standalone = letsencrypt.plugins.standalone.authenticator'
             ':StandaloneAuthenticator',
 
             # to be moved to separate pypi packages

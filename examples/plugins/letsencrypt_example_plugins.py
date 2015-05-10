@@ -1,12 +1,12 @@
 """Example Let's Encrypt plugins.
 
-For full examples, see `letsencrypt.client.plugins`.
+For full examples, see `letsencrypt.plugins`.
 
 """
 import zope.interface
 
-from letsencrypt.client import interfaces
-from letsencrypt.client.plugins import common
+from letsencrypt import interfaces
+from letsencrypt.plugins import common
 
 
 class Authenticator(common.Plugin):

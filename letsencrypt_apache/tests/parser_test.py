@@ -8,8 +8,8 @@ import augeas
 import mock
 import zope.component
 
-from letsencrypt.client import errors
-from letsencrypt.client.display import util as display_util
+from letsencrypt import errors
+from letsencrypt.display import util as display_util
 
 from letsencrypt_apache.tests import util
 

@@ -7,7 +7,7 @@ import M2Crypto
 from letsencrypt.acme import messages2
 from letsencrypt.acme import jose
 
-from letsencrypt.client import network2
+from letsencrypt import network2
 
 
 logger = logging.getLogger()
@@ -35,7 +35,7 @@ logging.debug(authzr)
 authzr, authzr_response = net.poll(authzr)
 
 csr = M2Crypto.X509.load_request_string(pkg_resources.resource_string(
-    'letsencrypt.client.tests', os.path.join('testdata', 'csr.pem')))
+    'letsencrypt.tests', os.path.join('testdata', 'csr.pem')))
 try:
     net.request_issuance(csr, (authzr,))
 except messages2.Error as error:

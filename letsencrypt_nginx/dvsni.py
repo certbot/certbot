@@ -13,7 +13,7 @@ class NginxDvsni(ApacheDvsni):
     :ivar configurator: NginxConfigurator object
     :type configurator: :class:`~nginx.configurator.NginxConfigurator`
 
-    :ivar list achalls: Annotated :class:`~letsencrypt.client.achallenges.DVSNI`
+    :ivar list achalls: Annotated :class:`~letsencrypt.achallenges.DVSNI`
         challenges.
 
     :param list indices: Meant to hold indices of challenges in a

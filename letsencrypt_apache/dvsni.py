@@ -11,7 +11,7 @@ class ApacheDvsni(object):
     :ivar configurator: ApacheConfigurator object
     :type configurator: :class:`~apache.configurator.ApacheConfigurator`
 
-    :ivar list achalls: Annotated :class:`~letsencrypt.client.achallenges.DVSNI`
+    :ivar list achalls: Annotated :class:`~letsencrypt.achallenges.DVSNI`
         challenges.
 
     :param list indices: Meant to hold indices of challenges in a
@@ -54,7 +54,7 @@ class ApacheDvsni(object):
         """Add challenge to DVSNI object to perform at once.
 
         :param achall: Annotated DVSNI challenge.
-        :type achall: :class:`letsencrypt.client.achallenges.DVSNI`
+        :type achall: :class:`letsencrypt.achallenges.DVSNI`
 
         :param int idx: index to challenge in a larger array
 
@@ -128,7 +128,7 @@ class ApacheDvsni(object):
         Result: Apache config includes virtual servers for issued challs
 
         :param list ll_addrs: list of list of
-            :class:`letsencrypt.client.plugins.apache.obj.Addr` to apply
+            :class:`letsencrypt.plugins.apache.obj.Addr` to apply
 
         """
         # TODO: Use ip address of existing vhost instead of relying on FQDN
@@ -164,7 +164,7 @@ class ApacheDvsni(object):
         """Chocolate virtual server configuration text
 
         :param achall: Annotated DVSNI challenge.
-        :type achall: :class:`letsencrypt.client.achallenges.DVSNI`
+        :type achall: :class:`letsencrypt.achallenges.DVSNI`
 
         :param list ip_addrs: addresses of challenged domain
             :class:`list` of type :class:`~apache.obj.Addr`
@@ -191,7 +191,7 @@ class ApacheDvsni(object):
         """Returns standardized name for challenge certificate.
 
         :param achall: Annotated DVSNI challenge.
-        :type achall: :class:`letsencrypt.client.achallenges.DVSNI`
+        :type achall: :class:`letsencrypt.achallenges.DVSNI`
 
         :returns: certificate file name
         :rtype: str

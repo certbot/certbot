@@ -5,7 +5,7 @@ import os
 import pyparsing
 import re
 
-from letsencrypt.client import errors
+from letsencrypt import errors
 
 from letsencrypt_nginx import obj
 from letsencrypt_nginx import nginxparser

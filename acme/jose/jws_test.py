@@ -17,7 +17,7 @@ from acme.jose import util
 
 CERT = util.ComparableX509(M2Crypto.X509.load_cert(
     pkg_resources.resource_filename(
-        'letsencrypt.client.tests', 'testdata/cert.pem')))
+        'letsencrypt.tests', 'testdata/cert.pem')))
 RSA512_KEY = Crypto.PublicKey.RSA.importKey(pkg_resources.resource_string(
     __name__, os.path.join('testdata', 'rsa512_key.pem')))
 

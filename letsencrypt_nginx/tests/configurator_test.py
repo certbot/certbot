@@ -7,9 +7,9 @@ import mock
 from acme import challenges
 from acme import messages2
 
-from letsencrypt.client import achallenges
-from letsencrypt.client import errors
-from letsencrypt.client import le_util
+from letsencrypt import achallenges
+from letsencrypt import errors
+from letsencrypt import le_util
 
 from letsencrypt_nginx.tests import util
 

@@ -11,14 +11,14 @@ import zope.interface
 
 from acme import challenges
 
-from letsencrypt.client import achallenges
-from letsencrypt.client import constants as core_constants
-from letsencrypt.client import errors
-from letsencrypt.client import interfaces
-from letsencrypt.client import le_util
-from letsencrypt.client import reverter
+from letsencrypt import achallenges
+from letsencrypt import constants as core_constants
+from letsencrypt import errors
+from letsencrypt import interfaces
+from letsencrypt import le_util
+from letsencrypt import reverter
 
-from letsencrypt.client.plugins import common
+from letsencrypt.plugins import common
 
 from letsencrypt_nginx import constants
 from letsencrypt_nginx import dvsni
@@ -35,7 +35,7 @@ class NginxConfigurator(common.Plugin):
         config files modified by the configurator will lose all their comments.
 
     :ivar config: Configuration.
-    :type config: :class:`~letsencrypt.client.interfaces.IConfig`
+    :type config: :class:`~letsencrypt.interfaces.IConfig`
 
     :ivar parser: Handles low level parsing
     :type parser: :class:`~letsencrypt_nginx.parser`
@@ -43,7 +43,7 @@ class NginxConfigurator(common.Plugin):
     :ivar str save_notes: Human-readable config change notes
 
     :ivar reverter: saves and reverts checkpoints
-    :type reverter: :class:`letsencrypt.client.reverter.Reverter`
+    :type reverter: :class:`letsencrypt.reverter.Reverter`
 
     :ivar tup version: version of Nginx
 
@@ -302,9 +302,9 @@ class NginxConfigurator(common.Plugin):
 
         :param str domain: domain to enhance
         :param str enhancement: enhancement type defined in
-            :const:`~letsencrypt.client.constants.ENHANCEMENTS`
+            :const:`~letsencrypt.constants.ENHANCEMENTS`
         :param options: options for the enhancement
-            See :const:`~letsencrypt.client.constants.ENHANCEMENTS`
+            See :const:`~letsencrypt.constants.ENHANCEMENTS`
             documentation for appropriate parameter.
 
         """

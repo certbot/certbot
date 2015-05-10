@@ -1,11 +1,11 @@
-:mod:`letsencrypt.client.plugins.standalone`
---------------------------------------------
+:mod:`letsencrypt.plugins.standalone`
+-------------------------------------
 
-.. automodule:: letsencrypt.client.plugins.standalone
+.. automodule:: letsencrypt.plugins.standalone
    :members:
 
-:mod:`letsencrypt.client.plugins.standalone.authenticator`
-==========================================================
+:mod:`letsencrypt.plugins.standalone.authenticator`
+===================================================
 
-.. automodule:: letsencrypt.client.plugins.standalone.authenticator
+.. automodule:: letsencrypt.plugins.standalone.authenticator
    :members:

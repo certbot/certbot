@@ -2,7 +2,7 @@
 import os
 import re
 
-from letsencrypt.client import errors
+from letsencrypt import errors
 
 
 class ApacheParser(object):

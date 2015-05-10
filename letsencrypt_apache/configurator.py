@@ -11,12 +11,12 @@ import zope.interface
 
 from acme import challenges
 
-from letsencrypt.client import achallenges
-from letsencrypt.client import augeas_configurator
-from letsencrypt.client import constants as core_constants
-from letsencrypt.client import errors
-from letsencrypt.client import interfaces
-from letsencrypt.client import le_util
+from letsencrypt import achallenges
+from letsencrypt import augeas_configurator
+from letsencrypt import constants as core_constants
+from letsencrypt import errors
+from letsencrypt import interfaces
+from letsencrypt import le_util
 
 from letsencrypt_apache import constants
 from letsencrypt_apache import dvsni
@@ -66,7 +66,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     needs of clients are clarified with the new and developing protocol.
 
     :ivar config: Configuration.
-    :type config: :class:`~letsencrypt.client.interfaces.IConfig`
+    :type config: :class:`~letsencrypt.interfaces.IConfig`
 
     :ivar parser: Handles low level parsing
     :type parser: :class:`~letsencrypt_apache.parser`
@@ -547,9 +547,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         :param str domain: domain to enhance
         :param str enhancement: enhancement type defined in
-            :const:`~letsencrypt.client.constants.ENHANCEMENTS`
+            :const:`~letsencrypt.constants.ENHANCEMENTS`
         :param options: options for the enhancement
-            See :const:`~letsencrypt.client.constants.ENHANCEMENTS`
+            See :const:`~letsencrypt.constants.ENHANCEMENTS`
             documentation for appropriate parameter.
 
         """

@@ -1,5 +1,5 @@
-:mod:`letsencrypt.client.plugins.disco`
----------------------------------------
+:mod:`letsencrypt.plugins.disco`
+--------------------------------
 
-.. automodule:: letsencrypt.client.plugins.disco
+.. automodule:: letsencrypt.plugins.disco
    :members:

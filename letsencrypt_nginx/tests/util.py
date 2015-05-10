@@ -1,4 +1,4 @@
-"""Common utilities for letsencrypt.client.nginx."""
+"""Common utilities for letsencrypt_nginx."""
 import os
 import pkg_resources
 import shutil
