@@ -152,6 +152,9 @@ class Client(object):
             # XXX: just to stop RenewableCert from complaining; this is
             #      probably not a good solution
             chain_pem = ""
+        else:
+            chain_pem = chain_pem.as_pem()
+
         return cert_pem, cert_key.pem, chain_pem
 
     def obtain_and_enroll_certificate(self, domains, csr=None):
