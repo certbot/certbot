@@ -98,7 +98,8 @@ def run(args, config, plugins):
         return "Configurator could not be determined"
 
     acme, doms = _common_run(args, config, acc, authenticator, installer)
-    lineage = acme.obtain_and_enroll_certificate(doms)
+    lineage = acme.obtain_and_enroll_certificate(doms, authenticator,
+                                                 installer)
     # TODO: Decide whether to enroll or not from config/policy
     acme.deploy_certificate(doms, lineage)
     acme.enhance_config(doms, args.redirect)

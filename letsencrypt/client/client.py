@@ -107,16 +107,12 @@ class Client(object):
 
         :param set domains: domains to get a certificate
 
-        :param bool renewal: whether this request is a renewal (which avoids
-            attempting to enroll the resulting certificate in the renewal
-            database)
-
         :param csr: CSR must contain requested domains, the key used to generate
             this CSR can be different than self.authkey
         :type csr: :class:`CSR`
 
-        :returns: cert_key, cert_path, chain_path
-        :rtype: `tuple` of (:class:`letsencrypt.client.le_util.Key`, str, str)
+        :returns: cert_pem, cert_pem, chain_pem
+        :rtype: `tuple` of (str, str, str)
 
         """
         if self.auth_handler is None:
@@ -157,13 +153,16 @@ class Client(object):
 
         return cert_pem, cert_key.pem, chain_pem
 
-    def obtain_and_enroll_certificate(self, domains, csr=None):
+    def obtain_and_enroll_certificate(self, domains, authenticator, installer,
+                                      csr=None):
         cert_pem, privkey, chain_pem = self._obtain_certificate(domains, csr)
+        # TODO: Add IPlugin.name or use PluginsFactory.find_init instead
+        #       of assuming that each plugin has a .name attribute
+        self.config.namespace.authenticator = authenticator.name
+        self.config.namespace.installer = installer.name
         return renewer.RenewableCert.new_lineage(domains[0], cert_pem,
-                                                 privkey, chain_pem, None,
+                                                 privkey, chain_pem,
                                                  vars(self.config.namespace))
-        # XXX: self.account.key.file is totally wrong here, that's
-        #      the account key and not the cert key!
 
     def obtain_certificate(self, domains):
         return self._obtain_certificate(domains, None)
