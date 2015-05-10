@@ -12,17 +12,20 @@ import zope.interface
 from letsencrypt.acme import challenges
 
 from letsencrypt.client import achallenges
-from letsencrypt.client import constants
+from letsencrypt.client import constants as core_constants
 from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
 from letsencrypt.client import reverter
 
+from letsencrypt.client.plugins import common
+
+from letsencrypt.client.plugins.nginx import constants
 from letsencrypt.client.plugins.nginx import dvsni
 from letsencrypt.client.plugins.nginx import parser
 
 
-class NginxConfigurator(object):
+class NginxConfigurator(common.Plugin):
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
     """Nginx configurator.
 
@@ -46,17 +49,29 @@ class NginxConfigurator(object):
 
     """
     zope.interface.implements(interfaces.IAuthenticator, interfaces.IInstaller)
+    zope.interface.classProvides(interfaces.IPluginFactory)
 
     description = "Nginx Web Server"
 
-    def __init__(self, config, version=None):
+    @classmethod
+    def add_parser_arguments(cls, add):
+        add("server-root", default=constants.CLI_DEFAULTS["server_root"],
+            help="Nginx server root directory.")
+        add("mod-ssl-conf", default=constants.CLI_DEFAULTS["mod_ssl_conf"],
+            help="Contains standard nginx SSL directives.")
+        add("ctl", default=constants.CLI_DEFAULTS["ctl"], help="Path to the "
+            "'nginx' binary, used for 'configtest' and retrieving nginx "
+            "version number.")
+
+    def __init__(self, *args, **kwargs):
         """Initialize an Nginx Configurator.
 
         :param tup version: version of Nginx as a tuple (1, 4, 7)
             (used mostly for unittesting)
 
         """
-        self.config = config
+        version = kwargs.pop("version", None)
+        super(NginxConfigurator, self).__init__(*args, **kwargs)
 
         # Verify that all directories and files exist with proper permissions
         if os.geteuid() == 0:
@@ -74,21 +89,21 @@ class NginxConfigurator(object):
         self._enhance_func = {}  # TODO: Support at least redirects
 
         # Set up reverter
-        self.reverter = reverter.Reverter(config)
+        self.reverter = reverter.Reverter(self.config)
         self.reverter.recovery_routine()
 
     # This is called in determine_authenticator and determine_installer
     def prepare(self):
         """Prepare the authenticator/installer."""
         self.parser = parser.NginxParser(
-            self.config.nginx_server_root,
-            self.config.nginx_mod_ssl_conf)
+            self.conf('server-root'),
+            self.conf('mod-ssl-conf'))
 
         # Set Version
         if self.version is None:
             self.version = self.get_version()
 
-        temp_install(self.config.nginx_mod_ssl_conf)
+        temp_install(self.conf('mod-ssl-conf'))
 
     # Entry point in main.py for installing cert
     def deploy_cert(self, domain, cert, key, cert_chain=None):
@@ -312,7 +327,7 @@ class NginxConfigurator(object):
         :rtype: bool
 
         """
-        return nginx_restart(self.config.nginx_ctl)
+        return nginx_restart(self.conf('ctl'))
 
     def config_test(self):  # pylint: disable=no-self-use
         """Check the configuration of Nginx for errors.
@@ -323,7 +338,7 @@ class NginxConfigurator(object):
         """
         try:
             proc = subprocess.Popen(
-                [self.config.nginx_ctl, "-t"],
+                [self.conf('ctl'), "-t"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
             stdout, stderr = proc.communicate()
@@ -350,11 +365,11 @@ class NginxConfigurator(object):
         """
         uid = os.geteuid()
         le_util.make_or_verify_dir(
-            self.config.work_dir, constants.CONFIG_DIRS_MODE, uid)
+            self.config.work_dir, core_constants.CONFIG_DIRS_MODE, uid)
         le_util.make_or_verify_dir(
-            self.config.backup_dir, constants.CONFIG_DIRS_MODE, uid)
+            self.config.backup_dir, core_constants.CONFIG_DIRS_MODE, uid)
         le_util.make_or_verify_dir(
-            self.config.config_dir, constants.CONFIG_DIRS_MODE, uid)
+            self.config.config_dir, core_constants.CONFIG_DIRS_MODE, uid)
 
     def get_version(self):
         """Return version of Nginx Server.
@@ -370,13 +385,13 @@ class NginxConfigurator(object):
         """
         try:
             proc = subprocess.Popen(
-                [self.config.nginx_ctl, "-V"],
+                [self.conf('ctl'), "-V"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
             text = proc.communicate()[1]  # nginx prints output to stderr
         except (OSError, ValueError):
             raise errors.LetsEncryptConfiguratorError(
-                "Unable to run %s -V" % self.config.nginx_ctl)
+                "Unable to run %s -V" % self.conf('ctl'))
 
         version_regex = re.compile(r"nginx/([0-9\.]*)", re.IGNORECASE)
         version_matches = version_regex.findall(text)
@@ -561,4 +576,4 @@ def temp_install(options_ssl):
 
     # Check to make sure options-ssl.conf is installed
     if not os.path.isfile(options_ssl):
-        shutil.copyfile(constants.NGINX_MOD_SSL_CONF, options_ssl)
+        shutil.copyfile(constants.MOD_SSL_CONF, options_ssl)

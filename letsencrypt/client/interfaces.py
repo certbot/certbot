@@ -5,29 +5,94 @@ import zope.interface
 # pylint: disable=too-few-public-methods
 
 
-class IAuthenticator(zope.interface.Interface):
+class IPluginFactory(zope.interface.Interface):
+    """IPlugin factory.
+
+    Objects providing this interface will be called without satisfying
+    any entry point "extras" (extra dependencies) you might have defined
+    for your plugin, e.g (excerpt from ``setup.py`` script)::
+
+      setup(
+          ...
+          entry_points={
+              'letsencrypt.plugins': [
+                  'name=example_project.plugin[plugin_deps]',
+              ],
+          },
+          extras_require={
+              'plugin_deps': ['dep1', 'dep2'],
+          }
+      )
+
+    Therefore, make sure such objects are importable and usable without
+    extras. This is necessary, because CLI does the following operations
+    (in order):
+
+      - loads an entry point,
+      - calls `inject_parser_options`,
+      - requires an entry point,
+      - creates plugin instance (`__call__`).
+
+    """
+
+    description = zope.interface.Attribute("Short plugin description")
+
+    def __call__(config, name):
+        """Create new `IPlugin`.
+
+        :param IConfig config: Configuration.
+        :param str name: Unique plugin name.
+
+        """
+
+    def inject_parser_options(parser, name):
+        """Inject argument parser options (flags).
+
+        1. Be nice and prepend all options and destinations with
+        `~.option_namespace` and `~.dest_namespace`.
+
+        2. Inject options (flags) only. Positional arguments are not
+        allowed, as this would break the CLI.
+
+        :param ArgumentParser parser: (Almost) top-level CLI parser.
+        :param str name: Unique plugin name.
+
+        """
+
+
+class IPlugin(zope.interface.Interface):
+    """Let's Encrypt plugin."""
+
+    def prepare():
+        """Prepare the plugin.
+
+         Finish up any additional initialization.
+
+         :raises letsencrypt.client.errors.LetsEncryptMisconfigurationError:
+             when full initialization cannot be completed. Plugin will be
+             displayed on a list of available plugins.
+         :raises letsencrypt.client.errors.LetsEncryptNoInstallationError:
+             when the necessary programs/files cannot be located. Plugin
+             will NOT be displayed on a list of available plugins.
+
+        """
+
+    def more_info():
+        """Human-readable string to help the user.
+
+        Should describe the steps taken and any relevant info to help the user
+        decide which plugin to use.
+
+        """
+
+
+class IAuthenticator(IPlugin):
     """Generic Let's Encrypt Authenticator.
 
     Class represents all possible tools processes that have the
     ability to perform challenges and attain a certificate.
 
     """
-
-    description = zope.interface.Attribute(
-        "Short description of this authenticator. "
-        "Used in interactive configuration.")
-
-    def prepare():
-        """Prepare the authenticator.
-
-         Finish up any additional initialization.
-
-         :raises letsencrypt.client.errors.LetsEncryptMisconfigurationError:
-             when full initialization cannot be completed.
-         :raises letsencrypt.client.errors.LetsEncryptNoInstallationError:
-             when the necessary programs/files cannot be located.
-
-        """
 
     def get_chall_pref(domain):
         """Return list of challenge preferences.
@@ -74,14 +139,6 @@ class IAuthenticator(zope.interface.Interface):
 
         """
 
-    def more_info():
-        """Human-readable string to help the user.
-
-        Should describe the steps taken and any relevant info to help the user
-        decide which Authenticator to use.
-
-        """
-
 
 class IConfig(zope.interface.Interface):
     """Let's Encrypt user-supplied configuration.
@@ -93,8 +150,6 @@ class IConfig(zope.interface.Interface):
     server = zope.interface.Attribute(
         "CA hostname (and optionally :port). The server certificate must "
         "be trusted in order to avoid further modifications to the client.")
-    authenticator = zope.interface.Attribute(
-        "Authenticator to use for responding to challenges.")
     email = zope.interface.Attribute(
         "Email used for registration and recovery contact.")
     rsa_key_size = zope.interface.Attribute("Size of the RSA key.")
@@ -120,48 +175,16 @@ class IConfig(zope.interface.Interface):
 
     le_vhost_ext = zope.interface.Attribute(
         "SSL vhost configuration extension.")
-    cert_path = zope.interface.Attribute("Let's Encrypt certificate file.")
-    chain_path = zope.interface.Attribute("Let's Encrypt chain file.")
-
-    apache_server_root = zope.interface.Attribute(
-        "Apache server root directory.")
-    apache_ctl = zope.interface.Attribute(
-        "Path to the 'apache2ctl' binary, used for 'configtest' and "
-        "retrieving Apache2 version number.")
-    apache_enmod = zope.interface.Attribute(
-        "Path to the Apache 'a2enmod' binary.")
-    apache_init_script = zope.interface.Attribute(
-        "Path to the Apache init script (used for server reload/restart).")
-    apache_mod_ssl_conf = zope.interface.Attribute(
-        "Contains standard Apache SSL directives.")
-
-    nginx_server_root = zope.interface.Attribute(
-        "Nginx server root directory.")
-    nginx_ctl = zope.interface.Attribute(
-        "Path to the 'nginx' binary, used for 'configtest' and "
-        "retrieving nginx version number.")
-    nginx_mod_ssl_conf = zope.interface.Attribute(
-        "Contains standard nginx SSL directives.")
+    cert_path = zope.interface.Attribute("Let's Encrypt certificate file path.")
+    chain_path = zope.interface.Attribute("Let's Encrypt chain file path.")
 
 
-class IInstaller(zope.interface.Interface):
+class IInstaller(IPlugin):
     """Generic Let's Encrypt Installer Interface.
 
     Represents any server that an X509 certificate can be placed.
 
     """
-
-    def prepare():
-        """Prepare the installer.
-
-         Finish up any additional initialization.
-
-         :raises letsencrypt.client.errors.LetsEncryptMisconfigurationError`:
-             when full initialization cannot be completed.
-         :raises letsencrypt.errors.LetsEncryptNoInstallationError`:
-             when the necessary programs/files cannot be located.
-
-        """
 
     def get_all_names():
         """Returns all names that may be authenticated."""

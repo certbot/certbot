@@ -20,7 +20,6 @@ from letsencrypt.client import network2
 from letsencrypt.client import reverter
 from letsencrypt.client import revoker
 
-from letsencrypt.client.plugins.apache import configurator
 from letsencrypt.client.display import ops as display_ops
 from letsencrypt.client.display import enhancements
 
@@ -154,7 +153,7 @@ class Client(object):
         :param str cert_path: Path to attempt to save the cert file
         :param str chain_path: Path to attempt to save the chain file
 
-        :returns: cert_file, chain_file (absolute paths to the actual files)
+        :returns: cert_path, chain_path (absolute paths to the actual files)
         :rtype: `tuple` of `str`
 
         :raises IOError: If unable to find room to write the cert files
@@ -191,7 +190,7 @@ class Client(object):
 
         return os.path.abspath(act_cert_path), cert_chain_abspath
 
-    def deploy_certificate(self, domains, privkey, cert_file, chain_file=None):
+    def deploy_certificate(self, domains, privkey, cert_path, chain_path=None):
         """Install certificate
 
         :param list domains: list of domains to install the certificate
@@ -199,8 +198,8 @@ class Client(object):
         :param privkey: private key for certificate
         :type privkey: :class:`letsencrypt.client.le_util.Key`
 
-        :param str cert_file: certificate file path
-        :param str chain_file: chain file path
+        :param str cert_path: certificate file path
+        :param str chain_path: chain file path
 
         """
         if self.installer is None:
@@ -208,13 +207,12 @@ class Client(object):
                             "the certificate")
             raise errors.LetsEncryptClientError("No installer available")
 
-        chain = None if chain_file is None else os.path.abspath(chain_file)
+        chain_path = None if chain_path is None else os.path.abspath(chain_path)
 
         for dom in domains:
-            self.installer.deploy_cert(dom,
-                                       os.path.abspath(cert_file),
-                                       os.path.abspath(privkey.file),
-                                       chain)
+            self.installer.deploy_cert(
+                dom, os.path.abspath(cert_path),
+                os.path.abspath(privkey.file), chain_path)
 
         self.installer.save("Deployed Let's Encrypt Certificate")
         # sites may have been enabled / final cleanup
@@ -313,74 +311,6 @@ def validate_key_csr(privkey, csr=None):
                     "The key and CSR do not match")
 
 
-def list_available_authenticators(avail_auths):
-    """Return a pretty-printed list of authenticators.
-
-    This is used to provide helpful feedback in the case where a user
-    specifies an invalid authenticator on the command line.
-
-    """
-    output_lines = ["Available authenticators:"]
-    for auth_name, auth in avail_auths.iteritems():
-        output_lines.append(" - %s : %s" % (auth_name, auth.description))
-    return '\n'.join(output_lines)
-
-
-# This should be controlled by commandline parameters
-def determine_authenticator(all_auths, config):
-    """Returns a valid IAuthenticator.
-
-    :param list all_auths: Where each is a
-        :class:`letsencrypt.client.interfaces.IAuthenticator` object
-
-    :param config: Used if an authenticator was specified on the command line.
-    :type config: :class:`letsencrypt.client.interfaces.IConfig`
-
-    :returns: Valid Authenticator object or None
-
-    :raises letsencrypt.client.errors.LetsEncryptClientError: If no
-        authenticator is available.
-
-    """
-    # Available Authenticator objects
-    avail_auths = {}
-    # Error messages for misconfigured authenticators
-    errs = {}
-
-    for auth_name, auth in all_auths.iteritems():
-        try:
-            auth.prepare()
-        except errors.LetsEncryptMisconfigurationError as err:
-            errs[auth] = err
-        except errors.LetsEncryptNoInstallationError:
-            continue
-        avail_auths[auth_name] = auth
-
-    # If an authenticator was specified on the command line, try to use it
-    if config.authenticator:
-        try:
-            auth = avail_auths[config.authenticator]
-        except KeyError:
-            logging.info(list_available_authenticators(avail_auths))
-            raise errors.LetsEncryptClientError(
-                "The specified authenticator '%s' could not be found" %
-                config.authenticator)
-    elif len(avail_auths) > 1:
-        auth = display_ops.choose_authenticator(avail_auths.values(), errs)
-    elif len(avail_auths.keys()) == 1:
-        auth = avail_auths[avail_auths.keys()[0]]
-    else:
-        raise errors.LetsEncryptClientError("No Authenticators available.")
-
-    if auth is not None and auth in errs:
-        logging.error("Please fix the configuration for the Authenticator. "
-                      "The following error message was received: "
-                      "%s", errs[auth])
-        return
-
-    return auth
-
-
 def determine_account(config):
     """Determine which account to use.
 
@@ -403,29 +333,7 @@ def determine_account(config):
     return account.Account.from_prompts(config)
 
 
-def determine_installer(config):
-    """Returns a valid installer if one exists.
-
-    :param config: Configuration.
-    :type config: :class:`letsencrypt.client.interfaces.IConfig`
-
-    :returns: IInstaller or `None`
-    :rtype: :class:`~letsencrypt.client.interfaces.IInstaller` or `None`
-
-    """
-    installer = configurator.ApacheConfigurator(config)
-    try:
-        installer.prepare()
-        return installer
-    except errors.LetsEncryptNoInstallationError:
-        logging.info("Unable to find a way to install the certificate.")
-        return
-    except errors.LetsEncryptMisconfigurationError:
-        # This will have to be changed in the future...
-        return installer
-
-
-def rollback(checkpoints, config):
+def rollback(default_installer, checkpoints, config, plugins):
     """Revert configuration the specified number of checkpoints.
 
     :param int checkpoints: Number of checkpoints to revert.
@@ -435,7 +343,9 @@ def rollback(checkpoints, config):
 
     """
     # Misconfigurations are only a slight problems... allow the user to rollback
-    installer = determine_installer(config)
+    installer = display_ops.pick_installer(
+        config, default_installer, plugins, question="Which installer "
+        "should be used for rollback?")
 
     # No Errors occurred during init... proceed normally
     # If installer is None... couldn't find an installer... there shouldn't be
@@ -445,18 +355,16 @@ def rollback(checkpoints, config):
         installer.restart()
 
 
-def revoke(config, no_confirm, cert, authkey):
+def revoke(default_installer, config, plugins, no_confirm, cert, authkey):
     """Revoke certificates.
 
     :param config: Configuration.
     :type config: :class:`letsencrypt.client.interfaces.IConfig`
 
     """
-    # Misconfigurations don't really matter. Determine installer better choose
-    # correctly though.
-    # This will need some better prepared or properly configured parameter...
-    # I will figure it out later...
-    installer = determine_installer(config)
+    installer = display_ops.pick_installer(
+        config, default_installer, plugins, question="Which installer "
+        "should be used for certificate revocation?")
 
     revoc = revoker.Revoker(installer, config, no_confirm)
     # Cert is most selective, so it is chosen first.
