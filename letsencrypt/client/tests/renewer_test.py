@@ -533,8 +533,8 @@ class RenewableCertTests(unittest.TestCase):
         archive_dir = self.defaults["official_archive_dir"]
         live_dir = self.defaults["live_dir"]
         result = renewer.RenewableCert.new_lineage("the-lineage.com", "cert",
-                                                   "privkey", "chain",
-                                                   self.defaults)
+                                                   "privkey", "chain", None,
+                                                   None, self.defaults)
         # This consistency check tests most relevant properties about the
         # newly created cert lineage.
         self.assertTrue(result.consistent())
@@ -544,19 +544,19 @@ class RenewableCertTests(unittest.TestCase):
             self.assertEqual(f.read(), "cert" + "chain")
         # Let's do it again and make sure it makes a different lineage
         result = renewer.RenewableCert.new_lineage("the-lineage.com", "cert2",
-                                                   "privkey2", "chain2",
-                                                   self.defaults)
+                                                   "privkey2", "chain2", None,
+                                                   None, self.defaults)
         self.assertTrue(os.path.exists(
             os.path.join(config_dir, "the-lineage.com-0001.conf")))
         # Now trigger the detection of already existing files
         os.mkdir(os.path.join(live_dir, "the-lineage.com-0002"))
         self.assertRaises(ValueError, renewer.RenewableCert.new_lineage,
                           "the-lineage.com", "cert3", "privkey3", "chain3",
-                          self.defaults)
+                          None, None, self.defaults)
         os.mkdir(os.path.join(archive_dir, "other-example.com"))
         self.assertRaises(ValueError, renewer.RenewableCert.new_lineage,
                           "other-example.com", "cert4", "privkey4", "chain4",
-                          self.defaults)
+                          None, None, self.defaults)
 
     def test_new_lineage_nonexistent_dirs(self):
         """Test that directories can be created if they don't exist."""
@@ -569,7 +569,7 @@ class RenewableCertTests(unittest.TestCase):
         shutil.rmtree(live_dir)
         result = renewer.RenewableCert.new_lineage("the-lineage.com", "cert2",
                                                    "privkey2", "chain2",
-                                                   self.defaults)
+                                                   None, None, self.defaults)
         self.assertTrue(os.path.exists(
             os.path.join(config_dir, "the-lineage.com.conf")))
         self.assertTrue(os.path.exists(
@@ -583,7 +583,7 @@ class RenewableCertTests(unittest.TestCase):
         mock_uln.return_value = "this_does_not_end_with_dot_conf", "yikes"
         self.assertRaises(ValueError, renewer.RenewableCert.new_lineage,
                           "example.com", "cert", "privkey", "chain",
-                          self.defaults)
+                          None, None, self.defaults)
 
     def test_bad_kind(self):
         self.assertRaises(ValueError, self.test_rc.current_target, "elephant")
