@@ -3,6 +3,14 @@ include CHANGES.rst
 include CONTRIBUTING.md
 include linter_plugin.py
 include letsencrypt/EULA
-recursive-include letsencrypt *.json
-recursive-include letsencrypt *.conf
+
 recursive-include letsencrypt/client/tests/testdata *
+
+recursive-include letsencrypt/acme/schemata *.json
+recursive-include letsencrypt/acme/jose/testdata *
+
+recursive-include letsencrypt/client/plugins/apache/tests/testdata *
+include letsencrypt/client/plugins/apache/options-ssl.conf
+
+recursive-include letsencrypt/client/plugins/nginx/tests/testdata *
+include letsencrypt/client/plugins/nginx/options-ssl.conf
