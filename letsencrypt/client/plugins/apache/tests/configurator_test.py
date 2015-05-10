@@ -6,7 +6,7 @@ import unittest
 
 import mock
 
-from letsencrypt.acme import challenges
+from acme import challenges
 
 from letsencrypt.client import achallenges
 from letsencrypt.client import errors

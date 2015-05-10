@@ -5,8 +5,8 @@ import time
 
 import requests
 
-from letsencrypt.acme import jose
-from letsencrypt.acme import messages
+from acme import jose
+from acme import messages
 
 from letsencrypt.client import errors
 
@@ -35,12 +35,12 @@ class Network(object):
         """Send ACME message to server.
 
         :param msg: ACME message.
-        :type msg: :class:`letsencrypt.acme.messages.Message`
+        :type msg: :class:`acme.messages.Message`
 
         :returns: Server response message.
-        :rtype: :class:`letsencrypt.acme.messages.Message`
+        :rtype: :class:`acme.messages.Message`
 
-        :raises letsencrypt.acme.errors.ValidationError: if `msg` is not
+        :raises acme.errors.ValidationError: if `msg` is not
             valid serializable ACME JSON message.
         :raises errors.LetsEncryptClientError: in case of connection error
             or if response from server is not a valid ACME message.
@@ -68,10 +68,10 @@ class Network(object):
         """Send ACME message to server and return expected message.
 
         :param msg: ACME message.
-        :type msg: :class:`letsencrypt.acme.Message`
+        :type msg: :class:`acme.Message`
 
         :returns: ACME response message of expected type.
-        :rtype: :class:`letsencrypt.acme.messages.Message`
+        :rtype: :class:`acme.messages.Message`
 
         :raises errors.LetsEncryptClientError: An exception is thrown
 
@@ -84,10 +84,10 @@ class Network(object):
         """Is response expected ACME message?
 
         :param response: ACME response message from server.
-        :type response: :class:`letsencrypt.acme.messages.Message`
+        :type response: :class:`acme.messages.Message`
 
         :param expected: Expected response type.
-        :type expected: subclass of :class:`letsencrypt.acme.messages.Message`
+        :type expected: subclass of :class:`acme.messages.Message`
 
         :param int delay: Number of seconds to delay before next round
             in case of ACME "defer" response message.
@@ -95,7 +95,7 @@ class Network(object):
             response message.
 
         :returns: ACME response message from server.
-        :rtype: :class:`letsencrypt.acme.messages.Message`
+        :rtype: :class:`acme.messages.Message`
 
         :raises LetsEncryptClientError: if server sent ACME "error" message
 

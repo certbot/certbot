@@ -107,7 +107,7 @@ setup(
     },
 
     tests_require=install_requires,
-    test_suite='letsencrypt',
+    test_suite='letsencrypt',  # TODO: test acme (this is run by tox.ini)
 
     entry_points={
         'console_scripts': [

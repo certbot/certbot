@@ -6,7 +6,7 @@ import re
 import configobj
 import zope.component
 
-from letsencrypt.acme import messages2
+from acme import messages2
 
 from letsencrypt.client import crypto_util
 from letsencrypt.client import errors
@@ -28,7 +28,7 @@ class Account(object):
     :ivar str phone: Client's phone number
 
     :ivar regr: Registration Resource
-    :type regr: :class:`~letsencrypt.acme.messages2.RegistrationResource`
+    :type regr: :class:`~acme.messages2.RegistrationResource`
 
     """
 

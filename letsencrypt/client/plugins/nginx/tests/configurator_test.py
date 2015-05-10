@@ -4,8 +4,8 @@ import unittest
 
 import mock
 
-from letsencrypt.acme import challenges
-from letsencrypt.acme import messages2
+from acme import challenges
+from acme import messages2
 
 from letsencrypt.client import achallenges
 from letsencrypt.client import errors

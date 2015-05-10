@@ -1,11 +1,11 @@
 """Client annotated ACME challenges.
 
 Please use names such as ``achall`` to distiguish from variables "of type"
-:class:`letsencrypt.acme.challenges.Challenge` (denoted by ``chall``)
+:class:`acme.challenges.Challenge` (denoted by ``chall``)
 and :class:`.ChallengeBody` (denoted by ``challb``)::
 
-  from letsencrypt.acme import challenges
-  from letsencrypt.acme import messages2
+  from acme import challenges
+  from acme import messages2
   from letsencrypt.client import achallenges
 
   chall = challenges.DNS(token='foo')
@@ -17,8 +17,8 @@ Note, that all annotated challenges act as a proxy objects::
   achall.token == challb.token
 
 """
-from letsencrypt.acme import challenges
-from letsencrypt.acme.jose import util as jose_util
+from acme import challenges
+from acme.jose import util as jose_util
 
 from letsencrypt.client import crypto_util
 
@@ -52,7 +52,7 @@ class DVSNI(AnnotatedChallenge):
 
         :returns: ``(cert_pem, response)`` tuple,  where ``cert_pem`` is the PEM
             encoded  certificate and ``response`` is an instance
-            :class:`letsencrypt.acme.challenges.DVSNIResponse`.
+            :class:`acme.challenges.DVSNIResponse`.
         :rtype: tuple
 
         """

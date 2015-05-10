@@ -6,7 +6,7 @@ import tempfile
 
 import mock
 
-from letsencrypt.acme import challenges
+from acme import challenges
 
 from letsencrypt.client import achallenges
 

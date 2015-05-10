@@ -5,8 +5,8 @@ import unittest
 
 import mock
 
-from letsencrypt.acme import challenges
-from letsencrypt.acme import messages2
+from acme import challenges
+from acme import messages2
 
 from letsencrypt.client import errors
 from letsencrypt.client import le_util
@@ -447,9 +447,9 @@ def gen_path(required, challs):
     """Generate a combination by picking ``required`` from ``challs``.
 
     :param required: Required types of challenges (subclasses of
-        :class:`~letsencrypt.acme.challenges.Challenge`).
+        :class:`~acme.challenges.Challenge`).
     :param challs: Sequence of ACME challenge messages, corresponding to
-        :attr:`letsencrypt.acme.messages.Challenge.challenges`.
+        :attr:`acme.messages.Challenge.challenges`.
 
     :return: :class:`list` of :class:`int`
 

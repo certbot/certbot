@@ -10,7 +10,7 @@ import mock
 import OpenSSL.crypto
 import OpenSSL.SSL
 
-from letsencrypt.acme import challenges
+from acme import challenges
 
 from letsencrypt.client import achallenges
 from letsencrypt.client import le_util
@@ -19,7 +19,7 @@ from letsencrypt.client.tests import acme_util
 
 
 KEY = le_util.Key("foo", pkg_resources.resource_string(
-    "letsencrypt.acme.jose", os.path.join("testdata", "rsa512_key.pem")))
+    "acme.jose", os.path.join("testdata", "rsa512_key.pem")))
 PRIVATE_KEY = OpenSSL.crypto.load_privatekey(
     OpenSSL.crypto.FILETYPE_PEM, KEY.pem)
 

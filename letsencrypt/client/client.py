@@ -6,8 +6,8 @@ import pkg_resources
 import M2Crypto
 import zope.component
 
-from letsencrypt.acme import jose
-from letsencrypt.acme.jose import jwk
+from acme import jose
+from acme.jose import jwk
 
 from letsencrypt.client import account
 from letsencrypt.client import auth_handler
@@ -148,7 +148,7 @@ class Client(object):
         """Saves the certificate received from the ACME server.
 
         :param certr: ACME "certificate" resource.
-        :type certr: :class:`letsencrypt.acme.messages.Certificate`
+        :type certr: :class:`acme.messages.Certificate`
 
         :param str cert_path: Path to attempt to save the cert file
         :param str chain_path: Path to attempt to save the chain file

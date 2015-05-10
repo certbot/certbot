@@ -1,7 +1,7 @@
 """Let's Encrypt constants."""
 import logging
 
-from letsencrypt.acme import challenges
+from acme import challenges
 
 
 SETUPTOOLS_PLUGINS_ENTRY_POINT = "letsencrypt.plugins"

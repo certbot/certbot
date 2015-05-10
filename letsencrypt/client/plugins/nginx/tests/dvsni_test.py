@@ -5,8 +5,8 @@ import shutil
 
 import mock
 
-from letsencrypt.acme import challenges
-from letsencrypt.acme import messages2
+from acme import challenges
+from acme import messages2
 
 from letsencrypt.client import achallenges
 from letsencrypt.client import le_util
@@ -25,9 +25,9 @@ class DvsniPerformTest(util.NginxTest):
             self.ssl_options)
 
         rsa256_file = pkg_resources.resource_filename(
-            "letsencrypt.acme.jose", "testdata/rsa256_key.pem")
+            "acme.jose", "testdata/rsa256_key.pem")
         rsa256_pem = pkg_resources.resource_string(
-            "letsencrypt.acme.jose", "testdata/rsa256_key.pem")
+            "acme.jose", "testdata/rsa256_key.pem")
 
         auth_key = le_util.Key(rsa256_file, rsa256_pem)
 

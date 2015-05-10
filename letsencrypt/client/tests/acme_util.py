@@ -6,14 +6,14 @@ import pkg_resources
 
 import Crypto.PublicKey.RSA
 
-from letsencrypt.acme import challenges
-from letsencrypt.acme import jose
-from letsencrypt.acme import messages2
+from acme import challenges
+from acme import jose
+from acme import messages2
 
 
 KEY = jose.HashableRSAKey(Crypto.PublicKey.RSA.importKey(
     pkg_resources.resource_string(
-        "letsencrypt.acme.jose", os.path.join("testdata", "rsa512_key.pem"))))
+        "acme.jose", os.path.join("testdata", "rsa512_key.pem"))))
 
 # Challenges
 SIMPLE_HTTPS = challenges.SimpleHTTPS(
@@ -106,7 +106,7 @@ def gen_authzr(authz_status, domain, challs, statuses, combos=True):
     """Generate an authorization resource.
 
     :param authz_status: Status object
-    :type authz_status: :class:`letsencrypt.acme.messages2.Status`
+    :type authz_status: :class:`acme.messages2.Status`
     :param list challs: Challenge objects
     :param list statuses: status of each challenge object
     :param bool combos: Whether or not to add combinations

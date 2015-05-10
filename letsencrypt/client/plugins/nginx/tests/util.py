@@ -25,9 +25,9 @@ class NginxTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
             self.temp_dir, "testdata")
 
         self.rsa256_file = pkg_resources.resource_filename(
-            "letsencrypt.acme.jose", "testdata/rsa256_key.pem")
+            "acme.jose", "testdata/rsa256_key.pem")
         self.rsa256_pem = pkg_resources.resource_string(
-            "letsencrypt.acme.jose", "testdata/rsa256_key.pem")
+            "acme.jose", "testdata/rsa256_key.pem")
 
 
 def get_data_filename(filename):

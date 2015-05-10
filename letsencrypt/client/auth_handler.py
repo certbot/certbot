@@ -3,8 +3,8 @@ import itertools
 import logging
 import time
 
-from letsencrypt.acme import challenges
-from letsencrypt.acme import messages2
+from acme import challenges
+from acme import messages2
 
 from letsencrypt.client import achallenges
 from letsencrypt.client import constants
@@ -15,11 +15,11 @@ class AuthHandler(object):
     """ACME Authorization Handler for a client.
 
     :ivar dv_auth: Authenticator capable of solving
-        :class:`~letsencrypt.acme.challenges.DVChallenge` types
+        :class:`~acme.challenges.DVChallenge` types
     :type dv_auth: :class:`letsencrypt.client.interfaces.IAuthenticator`
 
     :ivar cont_auth: Authenticator capable of solving
-        :class:`~letsencrypt.acme.challenges.ContinuityChallenge` types
+        :class:`~acme.challenges.ContinuityChallenge` types
     :type cont_auth: :class:`letsencrypt.client.interfaces.IAuthenticator`
 
     :ivar network: Network object for sending and receiving authorization
@@ -30,7 +30,7 @@ class AuthHandler(object):
     :type account: :class:`letsencrypt.client.account.Account`
 
     :ivar dict authzr: ACME Authorization Resource dict where keys are domains
-        and values are :class:`letsencrypt.acme.messages2.AuthorizationResource`
+        and values are :class:`acme.messages2.AuthorizationResource`
     :ivar list dv_c: DV challenges in the form of
         :class:`letsencrypt.client.achallenges.AnnotatedChallenge`
     :ivar list cont_c: Continuity challenges in the
@@ -219,7 +219,7 @@ class AuthHandler(object):
             each challenge resource.
 
         :param authzr: Authorization Resource
-        :type authzr: :class:`letsencrypt.acme.messages2.AuthorizationResource`
+        :type authzr: :class:`acme.messages2.AuthorizationResource`
 
         :param achall: Annotated challenge for which to get status
         :type achall: :class:`letsencrypt.client.achallenges.AnnotatedChallenge`
@@ -319,7 +319,7 @@ def challb_to_achall(challb, key, domain):
     """Converts a ChallengeBody object to an AnnotatedChallenge.
 
     :param challb: ChallengeBody
-    :type challb: :class:`letsencrypt.acme.messages2.ChallengeBody`
+    :type challb: :class:`acme.messages2.ChallengeBody`
 
     :param key: Key
     :type key: :class:`letsencrypt.client.le_util.Key`
@@ -368,16 +368,16 @@ def gen_challenge_path(challbs, preferences, combinations):
     .. todo:: This can be possibly be rewritten to use resolved_combinations.
 
     :param tuple challbs: A tuple of challenges
-        (:class:`letsencrypt.acme.messages2.Challenge`) from
-        :class:`letsencrypt.acme.messages2.AuthorizationResource` to be
+        (:class:`acme.messages2.Challenge`) from
+        :class:`acme.messages2.AuthorizationResource` to be
         fulfilled by the client in order to prove possession of the
         identifier.
 
     :param list preferences: List of challenge preferences for domain
-        (:class:`letsencrypt.acme.challenges.Challenge` subclasses)
+        (:class:`acme.challenges.Challenge` subclasses)
 
     :param tuple combinations: A collection of sets of challenges from
-        :class:`letsencrypt.acme.messages.Challenge`, each of which would
+        :class:`acme.messages.Challenge`, each of which would
         be sufficient to prove possession of the identifier.
 
     :returns: tuple of indices from ``challenges``.

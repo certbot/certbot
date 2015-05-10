@@ -6,7 +6,7 @@ import unittest
 
 import M2Crypto
 
-from letsencrypt.acme import challenges
+from acme import challenges
 from letsencrypt.client import le_util
 from letsencrypt.client.tests import acme_util
 
@@ -19,8 +19,7 @@ class DVSNITest(unittest.TestCase):
             challenges.DVSNI(r="r_value", nonce="12345ABCDE"), "pending")
         self.response = challenges.DVSNIResponse()
         key = le_util.Key("path", pkg_resources.resource_string(
-            "letsencrypt.acme.jose",
-            os.path.join("testdata", "rsa512_key.pem")))
+            "acme.jose", os.path.join("testdata", "rsa512_key.pem")))
 
         from letsencrypt.client.achallenges import DVSNI
         self.achall = DVSNI(challb=self.chall, domain="example.com", key=key)

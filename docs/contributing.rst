@@ -67,7 +67,7 @@ Support for other Linux distributions coming soon.
 Code components and layout
 ==========================
 
-letsencrypt/acme
+acme
   contains all protocol specific code
 letsencrypt/client
   all client code

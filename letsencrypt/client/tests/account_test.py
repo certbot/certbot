@@ -7,7 +7,7 @@ import shutil
 import tempfile
 import unittest
 
-from letsencrypt.acme import messages2
+from acme import messages2
 
 from letsencrypt.client import configuration
 from letsencrypt.client import errors
@@ -34,9 +34,9 @@ class AccountTest(unittest.TestCase):
             server="letsencrypt-demo.org")
 
         key_file = pkg_resources.resource_filename(
-            "letsencrypt.acme.jose", os.path.join("testdata", "rsa512_key.pem"))
+            "acme.jose", os.path.join("testdata", "rsa512_key.pem"))
         key_pem = pkg_resources.resource_string(
-            "letsencrypt.acme.jose", os.path.join("testdata", "rsa512_key.pem"))
+            "acme.jose", os.path.join("testdata", "rsa512_key.pem"))
 
         self.key = le_util.Key(key_file, key_pem)
         self.email = "client@letsencrypt.org"

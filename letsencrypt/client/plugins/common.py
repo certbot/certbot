@@ -1,7 +1,7 @@
 """Plugin common functions."""
 import zope.interface
 
-from letsencrypt.acme.jose import util as jose_util
+from acme.jose import util as jose_util
 
 from letsencrypt.client import interfaces
 

@@ -16,8 +16,8 @@ import tempfile
 import Crypto.PublicKey.RSA
 import M2Crypto
 
-from letsencrypt.acme import messages
-from letsencrypt.acme.jose import util as jose_util
+from acme import messages
+from acme.jose import util as jose_util
 
 from letsencrypt.client import errors
 from letsencrypt.client import le_util

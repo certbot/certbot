@@ -12,7 +12,7 @@ import OpenSSL.SSL
 import zope.component
 import zope.interface
 
-from letsencrypt.acme import challenges
+from acme import challenges
 
 from letsencrypt.client import achallenges
 from letsencrypt.client import interfaces

@@ -9,9 +9,9 @@ import M2Crypto
 import mock
 import requests
 
-from letsencrypt.acme import challenges
-from letsencrypt.acme import jose
-from letsencrypt.acme import messages2
+from acme import challenges
+from acme import jose
+from acme import messages2
 
 from letsencrypt.client import account
 from letsencrypt.client import errors
@@ -27,9 +27,9 @@ CSR = jose.ComparableX509(M2Crypto.X509.load_request_string(
     pkg_resources.resource_string(
         __name__, os.path.join('testdata', 'csr.pem'))))
 KEY = jose.JWKRSA.load(pkg_resources.resource_string(
-    'letsencrypt.acme.jose', os.path.join('testdata', 'rsa512_key.pem')))
+    'acme.jose', os.path.join('testdata', 'rsa512_key.pem')))
 KEY2 = jose.JWKRSA.load(pkg_resources.resource_string(
-    'letsencrypt.acme.jose', os.path.join('testdata', 'rsa256_key.pem')))
+    'acme.jose', os.path.join('testdata', 'rsa256_key.pem')))
 
 
 class NetworkTest(unittest.TestCase):

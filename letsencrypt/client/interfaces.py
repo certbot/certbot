@@ -100,7 +100,7 @@ class IAuthenticator(IPlugin):
         :param str domain: Domain for which challenge preferences are sought.
 
         :returns: List of challege types (subclasses of
-            :class:`letsencrypt.acme.challenges.Challenge`) with the most
+            :class:`acme.challenges.Challenge`) with the most
             preferred challenges first. If a type is not specified, it means the
             Authenticator cannot perform the challenge.
         :rtype: list
@@ -116,8 +116,8 @@ class IAuthenticator(IPlugin):
             :func:`get_chall_pref` only.
 
         :returns: List of ACME
-            :class:`~letsencrypt.acme.challenges.ChallengeResponse` instances
-            or if the :class:`~letsencrypt.acme.challenges.Challenge` cannot
+            :class:`~acme.challenges.ChallengeResponse` instances
+            or if the :class:`~acme.challenges.Challenge` cannot
             be fulfilled then:
 
             ``None``
@@ -126,7 +126,7 @@ class IAuthenticator(IPlugin):
               Authenticator will never be able to perform (error).
 
         :rtype: :class:`list` of
-            :class:`letsencrypt.acme.challenges.ChallengeResponse`
+            :class:`acme.challenges.ChallengeResponse`
 
         """
 

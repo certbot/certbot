@@ -9,8 +9,8 @@ import M2Crypto
 import requests
 import werkzeug
 
-from letsencrypt.acme import jose
-from letsencrypt.acme import messages2
+from acme import jose
+from acme import messages2
 
 from letsencrypt.client import errors
 
@@ -127,7 +127,7 @@ class Network(object):
 
         :param str content_type: Expected ``Content-Type``, fails if not set.
 
-        :raises letsencrypt.acme.messages2.NetworkError:
+        :raises acme.messages2.NetworkError:
 
         :returns: HTTP Response
         :rtype: `requests.Response`
@@ -467,7 +467,7 @@ class Network(object):
         :param str uri: URI of certificate
 
         :returns: tuple of the form
-            (response, :class:`letsencrypt.acme.jose.ComparableX509`)
+            (response, :class:`acme.jose.ComparableX509`)
         :rtype: tuple
 
         """

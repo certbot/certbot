@@ -4,7 +4,7 @@ import os
 
 import zope.component
 
-from letsencrypt.acme import challenges
+from acme import challenges
 
 from letsencrypt.client import le_util
 from letsencrypt.client import interfaces

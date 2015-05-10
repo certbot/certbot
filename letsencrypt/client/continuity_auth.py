@@ -1,7 +1,7 @@
 """Continuity Authenticator"""
 import zope.interface
 
-from letsencrypt.acme import challenges
+from acme import challenges
 
 from letsencrypt.client import achallenges
 from letsencrypt.client import errors
@@ -11,7 +11,7 @@ from letsencrypt.client import recovery_token
 
 class ContinuityAuthenticator(object):
     """IAuthenticator for
-    :const:`~letsencrypt.acme.challenges.ContinuityChallenge` class challenges.
+    :const:`~acme.challenges.ContinuityChallenge` class challenges.
 
     :ivar rec_token: Performs "recoveryToken" challenges
     :type rec_token: :class:`letsencrypt.client.recovery_token.RecoveryToken`

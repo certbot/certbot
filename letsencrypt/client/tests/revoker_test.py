@@ -99,8 +99,7 @@ class RevokerTest(RevokerBase):
         mock_display().confirm_revocation.return_value = True
 
         key_path = pkg_resources.resource_filename(
-            "letsencrypt.acme.jose", os.path.join(
-                "testdata", "rsa256_key.pem"))
+            "acme.jose", os.path.join("testdata", "rsa256_key.pem"))
 
         wrong_key = le_util.Key(key_path, open(key_path).read())
         self.revoker.revoke_from_key(wrong_key)
