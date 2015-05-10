@@ -20,9 +20,9 @@ class ChoosePluginTest(unittest.TestCase):
     def setUp(self):
         zope.component.provideUtility(display_util.FileDisplay(sys.stdout))
         self.mock_apache = mock.Mock(
-            name_with_description="a", misconfigured=True)
+            description_with_name="a", misconfigured=True)
         self.mock_stand = mock.Mock(
-            name_with_description="s", misconfigured=False)
+            description_with_name="s", misconfigured=False)
         self.mock_stand.init().more_info.return_value = "standalone"
         self.plugins = [
             self.mock_apache,

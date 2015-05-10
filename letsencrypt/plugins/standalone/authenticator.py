@@ -410,7 +410,7 @@ class StandaloneAuthenticator(common.Plugin):
     def more_info(self):  # pylint: disable=no-self-use
         """Human-readable string that describes the Authenticator."""
         return ("The Standalone Authenticator uses PyOpenSSL to listen "
-                "on port 443 and perform DVSNI challenges. Once a certificate"
+                "on port 443 and perform DVSNI challenges. Once a certificate "
                 "is attained, it will be saved in the "
                 "(TODO) current working directory.{0}{0}"
                 "TCP port 443 must be available in order to use the "

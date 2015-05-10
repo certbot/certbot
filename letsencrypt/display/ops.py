@@ -22,7 +22,7 @@ def choose_plugin(prepared, question):
     :rtype: `~.PluginEntryPoint`
 
     """
-    opts = [plugin_ep.name_with_description
+    opts = [plugin_ep.description_with_name
             + (" [Misconfigured]" if plugin_ep.misconfigured else "")
             for plugin_ep in prepared]
 
