@@ -107,7 +107,9 @@ setup(
     },
 
     tests_require=install_requires,
-    test_suite='letsencrypt',  # TODO: test acme (this is run by tox.ini)
+    # to test all packages run "python setup.py test -s
+    # {acme,letsencrypt_apache,letsencrypt_nginx}"
+    test_suite='letsencrypt',
 
     entry_points={
         'console_scripts': [
