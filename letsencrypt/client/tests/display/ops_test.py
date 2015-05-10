@@ -8,34 +8,35 @@ import mock
 import zope.component
 
 from letsencrypt.client import account
+from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
+
 from letsencrypt.client.display import util as display_util
 
-class ChooseAuthenticatorTest(unittest.TestCase):
-    """Test choose_authenticator function."""
+
+class ChoosePluginTest(unittest.TestCase):
+    """Tests for letsencrypt.client.display.ops.choose_plugin."""
+
     def setUp(self):
         zope.component.provideUtility(display_util.FileDisplay(sys.stdout))
-        self.mock_apache = mock.Mock()
-        self.mock_stand = mock.Mock()
-        self.mock_apache().more_info.return_value = "Apache Info"
-        self.mock_stand().more_info.return_value = "Standalone Info"
+        self.mock_apache = mock.Mock(
+            name_with_description="a", misconfigured=True)
+        self.mock_stand = mock.Mock(
+            name_with_description="s", misconfigured=False)
+        self.mock_stand.init().more_info.return_value = "standalone"
+        self.plugins = [
+            self.mock_apache,
+            self.mock_stand,
+        ]
 
-        self.auths = [self.mock_apache, self.mock_stand]
-
-        self.errs = {self.mock_apache: "This is an error message."}
-
-    @classmethod
-    def _call(cls, auths, errs):
-        from letsencrypt.client.display.ops import choose_authenticator
-        return choose_authenticator(auths, errs)
+    def _call(self):
+        from letsencrypt.client.display.ops import choose_plugin
+        return choose_plugin(self.plugins, "Question?")
 
     @mock.patch("letsencrypt.client.display.ops.util")
     def test_successful_choice(self, mock_util):
         mock_util().menu.return_value = (display_util.OK, 0)
-
-        ret = self._call(self.auths, {})
-
-        self.assertEqual(ret, self.mock_apache)
+        self.assertEqual(self.mock_apache, self._call())
 
     @mock.patch("letsencrypt.client.display.ops.util")
     def test_more_info(self, mock_util):
@@ -45,15 +46,89 @@ class ChooseAuthenticatorTest(unittest.TestCase):
             (display_util.OK, 1),
         ]
 
-        ret = self._call(self.auths, self.errs)
-
+        self.assertEqual(self.mock_stand, self._call())
         self.assertEqual(mock_util().notification.call_count, 2)
-        self.assertEqual(ret, self.mock_stand)
 
     @mock.patch("letsencrypt.client.display.ops.util")
     def test_no_choice(self, mock_util):
         mock_util().menu.return_value = (display_util.CANCEL, 0)
-        self.assertTrue(self._call(self.auths, {}) is None)
+        self.assertTrue(self._call() is None)
+
+
+class PickPluginTest(unittest.TestCase):
+    """Tests for letsencrypt.client.display.ops.pick_plugin."""
+
+    def setUp(self):
+        self.config = mock.Mock()
+        self.default = None
+        self.reg = mock.MagicMock()
+        self.question = "Question?"
+        self.ifaces = []
+
+    def _call(self):
+        from letsencrypt.client.display.ops import pick_plugin
+        return pick_plugin(self.config, self.default, self.reg,
+                           self.question, self.ifaces)
+
+    def test_default_provided(self):
+        self.default = "foo"
+        self._call()
+        self.reg.filter.assert_called_once()
+
+    def test_no_default(self):
+        self._call()
+        self.reg.filter.assert_called_once()
+
+    def test_no_candidate(self):
+        self.assertTrue(self._call() is None)
+
+    def test_single(self):
+        plugin_ep = mock.MagicMock()
+        plugin_ep.init.return_value = "foo"
+        self.reg.ifaces().verify().available.return_value = {"bar": plugin_ep}
+        self.assertEqual("foo", self._call())
+
+    def test_multiple(self):
+        plugin_ep = mock.MagicMock()
+        plugin_ep.init.return_value = "foo"
+        self.reg.ifaces().verify().available.return_value = {
+            "bar": plugin_ep,
+            "baz": plugin_ep,
+        }
+        with mock.patch("letsencrypt.client.display"
+                        ".ops.choose_plugin") as mock_choose:
+            mock_choose.return_value = plugin_ep
+            self.assertEqual("foo", self._call())
+        mock_choose.assert_called_once_with(
+            [plugin_ep, plugin_ep], self.question)
+
+
+class ConveniencePickPluginTest(unittest.TestCase):
+    """Tests for letsencrypt.client.display.ops.pick_*."""
+
+    def _test(self, fun, ifaces):
+        config = mock.Mock()
+        default = mock.Mock()
+        plugins = mock.Mock()
+
+        with mock.patch("letsencrypt.client.display.ops.pick_plugin") as mock_p:
+            mock_p.return_value = "foo"
+            self.assertEqual("foo", fun(config, default, plugins, "Question?"))
+        mock_p.assert_called_once_with(
+            config, default, plugins, "Question?", ifaces)
+
+    def test_authenticator(self):
+        from letsencrypt.client.display.ops import pick_authenticator
+        self._test(pick_authenticator, (interfaces.IAuthenticator,))
+
+    def test_installer(self):
+        from letsencrypt.client.display.ops import pick_installer
+        self._test(pick_installer, (interfaces.IInstaller,))
+
+    def test_configurator(self):
+        from letsencrypt.client.display.ops import pick_configurator
+        self._test(pick_configurator, (
+            interfaces.IAuthenticator, interfaces.IInstaller))
 
 
 class ChooseAccountTest(unittest.TestCase):

@@ -1,4 +1,5 @@
 """Contains UI methods for LE user operations."""
+import logging
 import os
 
 import zope.component
@@ -6,41 +7,103 @@ import zope.component
 from letsencrypt.client import interfaces
 from letsencrypt.client.display import util as display_util
 
+
 # Define a helper function to avoid verbose code
 util = zope.component.getUtility  # pylint: disable=invalid-name
 
 
-def choose_authenticator(auths, errs):
-    """Allow the user to choose their authenticator.
+def choose_plugin(prepared, question):
+    """Allow the user to choose ther plugin.
 
-    :param list auths: Where each of type
-        :class:`letsencrypt.client.interfaces.IAuthenticator` object
-    :param dict errs: Mapping IAuthenticator objects to error messages
+    :param list prepared: List of `~.PluginEntryPoint`.
+    :param str question: Question to be presented to the user.
 
-    :returns: Authenticator selected
-    :rtype: :class:`letsencrypt.client.interfaces.IAuthenticator` or `None`
+    :returns: Plugin entry point chosen by the user.
+    :rtype: `~.PluginEntryPoint`
 
     """
-    descs = [auth.description if auth not in errs
-             else "%s (Misconfigured)" % auth.description
-             for auth in auths]
+    opts = [plugin_ep.name_with_description
+            + (" [Misconfigured]" if plugin_ep.misconfigured else "")
+            for plugin_ep in prepared]
 
     while True:
         code, index = util(interfaces.IDisplay).menu(
-            "How would you like to authenticate with the Let's Encrypt CA?",
-            descs, help_label="More Info")
+            question, opts, help_label="More Info")
 
         if code == display_util.OK:
-            return auths[index]
+            return prepared[index]
         elif code == display_util.HELP:
-            if auths[index] in errs:
-                msg = "Reported Error: %s" % errs[auths[index]]
+            if prepared[index].misconfigured:
+                msg = "Reported Error: %s" % prepared[index].prepare()
             else:
-                msg = auths[index].more_info()
+                msg = prepared[index].init().more_info()
             util(interfaces.IDisplay).notification(
                 msg, height=display_util.HEIGHT)
         else:
-            return
+            return None
+
+
+def pick_plugin(config, default, plugins, question, ifaces):
+    """Pick plugin.
+
+    :param letsencrypt.client.interfaces.IConfig: Configuration
+    :param str default: Plugin name supplied by user or ``None``.
+    :param letsencrypt.client.plugins.disco.PluginsRegistry plugins:
+        All plugins registered as entry points.
+    :param str question: Question to be presented to the user in case
+        multiple candidates are found.
+    :param list ifaces: Interfaces that plugins must provide.
+
+    :returns: Initialized plugin.
+    :rtype: IPlugin
+
+    """
+    if default is not None:
+        # throw more UX-friendly error if default not in plugins
+        filtered = plugins.filter(lambda p_ep: p_ep.name == default)
+    else:
+        filtered = plugins.ifaces(ifaces)
+
+    filtered.init(config)
+    verified = filtered.verify(ifaces)
+    verified.prepare()
+    prepared = verified.available()
+
+    if len(prepared) > 1:
+        logging.debug("Multiple candidate plugins: %s", prepared)
+        return choose_plugin(prepared.values(), question).init()
+    elif len(prepared) == 1:
+        plugin_ep = prepared.values()[0]
+        logging.debug("Single candidate plugin: %s", plugin_ep)
+        return plugin_ep.init()
+    else:
+        logging.debug("No candidate plugin")
+        return None
+
+
+def pick_authenticator(
+        config, default, plugins, question="How would you "
+        "like to authenticate with Let's Encrypt CA?"):
+    """Pick authentication plugin."""
+    return pick_plugin(
+        config, default, plugins, question, (interfaces.IAuthenticator,))
+
+
+def pick_installer(config, default, plugins,
+                   question="How would you like to install certificates?"):
+    """Pick installer plugin."""
+    return pick_plugin(
+        config, default, plugins, question, (interfaces.IInstaller,))
+
+
+def pick_configurator(
+        config, default, plugins,
+        question="How would you like to authenticate and install "
+                 "certificates?"):
+    """Pick configurator plugin."""
+    return pick_plugin(
+        config, default, plugins, question,
+        (interfaces.IAuthenticator, interfaces.IInstaller))
 
 
 def choose_account(accounts):
@@ -76,6 +139,7 @@ def choose_names(installer):
 
     """
     if installer is None:
+        logging.debug("No installer, picking names manually")
         return _choose_names_manually()
 
     names = list(installer.get_all_names())

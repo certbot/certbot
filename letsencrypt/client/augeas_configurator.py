@@ -4,9 +4,10 @@ import logging
 import augeas
 
 from letsencrypt.client import reverter
+from letsencrypt.client.plugins import common
 
 
-class AugeasConfigurator(object):
+class AugeasConfigurator(common.Plugin):
     """Base Augeas Configurator class.
 
     :ivar config: Configuration.
@@ -21,8 +22,8 @@ class AugeasConfigurator(object):
 
     """
 
-    def __init__(self, config):
-        self.config = config
+    def __init__(self, *args, **kwargs):
+        super(AugeasConfigurator, self).__init__(*args, **kwargs)
 
         # Set Augeas flags to not save backup (we do it ourselves)
         # Set Augeas to not load anything by default
@@ -34,7 +35,7 @@ class AugeasConfigurator(object):
         # This needs to occur before VirtualHost objects are setup...
         # because this will change the underlying configuration and potential
         # vhosts
-        self.reverter = reverter.Reverter(config)
+        self.reverter = reverter.Reverter(self.config)
         self.reverter.recovery_routine()
 
     def check_parsing_errors(self, lens):

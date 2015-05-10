@@ -29,7 +29,7 @@ changes = read_file(os.path.join(here, 'CHANGES.rst'))
 
 install_requires = [
     'argparse',
-    'ConfArgParse',
+    'ConfigArgParse',
     'configobj',
     'jsonschema',
     'mock',
@@ -113,7 +113,6 @@ setup(
         'letsencrypt.client.plugins.standalone.tests',
         'letsencrypt.client.tests',
         'letsencrypt.client.tests.display',
-        'letsencrypt.scripts',
     ],
 
     install_requires=install_requires,
@@ -128,10 +127,10 @@ setup(
 
     entry_points={
         'console_scripts': [
-            'letsencrypt = letsencrypt.scripts.main:main',
+            'letsencrypt = letsencrypt.client.cli:main',
             'jws = letsencrypt.acme.jose.jws:CLI.run',
         ],
-        'letsencrypt.authenticators': [
+        'letsencrypt.plugins': [
             'apache = letsencrypt.client.plugins.apache.configurator'
             ':ApacheConfigurator',
             'nginx = letsencrypt.client.plugins.nginx.configurator'
