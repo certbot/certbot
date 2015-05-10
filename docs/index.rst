@@ -8,14 +8,12 @@ Welcome to the Let's Encrypt client documentation!
    using
    contributing
    plugins
-   acme
-   letsencrypt_apache
-   letsencrypt_nginx
 
 .. toctree::
    :maxdepth: 1
 
    api
+   pkgs
 
 
 Indices and tables
