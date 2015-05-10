@@ -9,6 +9,8 @@ Welcome to the Let's Encrypt client documentation!
    contributing
    plugins
    acme
+   letsencrypt_apache
+   letsencrypt_nginx
 
 .. toctree::
    :maxdepth: 1

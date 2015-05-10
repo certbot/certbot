@@ -1,4 +1,4 @@
-"""Test for letsencrypt.client.plugins.nginx.configurator."""
+"""Test for letsencrypt_nginx.configurator."""
 import shutil
 import unittest
 
@@ -11,7 +11,7 @@ from letsencrypt.client import achallenges
 from letsencrypt.client import errors
 from letsencrypt.client import le_util
 
-from letsencrypt.client.plugins.nginx.tests import util
+from letsencrypt_nginx.tests import util
 
 
 class NginxConfiguratorTest(util.NginxTest):
@@ -158,10 +158,8 @@ class NginxConfiguratorTest(util.NginxTest):
             ('/etc/nginx/cert.pem', '/etc/nginx/key.pem', nginx_conf),
         ]), self.config.get_all_certs_keys())
 
-    @mock.patch("letsencrypt.client.plugins.nginx.configurator."
-                "dvsni.NginxDvsni.perform")
-    @mock.patch("letsencrypt.client.plugins.nginx.configurator."
-                "NginxConfigurator.restart")
+    @mock.patch("letsencrypt_nginx.configurator.dvsni.NginxDvsni.perform")
+    @mock.patch("letsencrypt_nginx.configurator.NginxConfigurator.restart")
     def test_perform(self, mock_restart, mock_dvsni_perform):
         # Only tests functionality specific to configurator.perform
         # Note: As more challenges are offered this will have to be expanded
@@ -195,8 +193,7 @@ class NginxConfiguratorTest(util.NginxTest):
         self.assertEqual(responses, dvsni_ret_val)
         self.assertEqual(mock_restart.call_count, 1)
 
-    @mock.patch("letsencrypt.client.plugins.nginx.configurator."
-                "subprocess.Popen")
+    @mock.patch("letsencrypt_nginx.configurator.subprocess.Popen")
     def test_get_version(self, mock_popen):
         mock_popen().communicate.return_value = (
             "", "\n".join(["nginx version: nginx/1.4.2",
@@ -251,16 +248,14 @@ class NginxConfiguratorTest(util.NginxTest):
         self.assertRaises(
             errors.LetsEncryptConfiguratorError, self.config.get_version)
 
-    @mock.patch("letsencrypt.client.plugins.nginx.configurator."
-                "subprocess.Popen")
+    @mock.patch("letsencrypt_nginx.configurator.subprocess.Popen")
     def test_nginx_restart(self, mock_popen):
         mocked = mock_popen()
         mocked.communicate.return_value = ('', '')
         mocked.returncode = 0
         self.assertTrue(self.config.restart())
 
-    @mock.patch("letsencrypt.client.plugins.nginx.configurator."
-                "subprocess.Popen")
+    @mock.patch("letsencrypt_nginx.configurator.subprocess.Popen")
     def test_config_test(self, mock_popen):
         mocked = mock_popen()
         mocked.communicate.return_value = ('', '')

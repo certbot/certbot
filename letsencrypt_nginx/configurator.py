@@ -20,9 +20,9 @@ from letsencrypt.client import reverter
 
 from letsencrypt.client.plugins import common
 
-from letsencrypt.client.plugins.nginx import constants
-from letsencrypt.client.plugins.nginx import dvsni
-from letsencrypt.client.plugins.nginx import parser
+from letsencrypt_nginx import constants
+from letsencrypt_nginx import dvsni
+from letsencrypt_nginx import parser
 
 
 class NginxConfigurator(common.Plugin):
@@ -38,7 +38,7 @@ class NginxConfigurator(common.Plugin):
     :type config: :class:`~letsencrypt.client.interfaces.IConfig`
 
     :ivar parser: Handles low level parsing
-    :type parser: :class:`~letsencrypt.client.plugins.nginx.parser`
+    :type parser: :class:`~letsencrypt_nginx.parser`
 
     :ivar str save_notes: Human-readable config change notes
 
@@ -166,7 +166,7 @@ class NginxConfigurator(common.Plugin):
         :param str target_name: domain name
 
         :returns: ssl vhost associated with name
-        :rtype: :class:`~letsencrypt.client.plugins.nginx.obj.VirtualHost`
+        :rtype: :class:`~letsencrypt_nginx.obj.VirtualHost`
 
         """
         vhost = None

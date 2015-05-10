@@ -1,4 +1,4 @@
-"""Test for letsencrypt.client.plugins.nginx.dvsni."""
+"""Test for letsencrypt_nginx.dvsni."""
 import pkg_resources
 import unittest
 import shutil
@@ -11,7 +11,7 @@ from acme import messages2
 from letsencrypt.client import achallenges
 from letsencrypt.client import le_util
 
-from letsencrypt.client.plugins.nginx.tests import util
+from letsencrypt_nginx.tests import util
 
 
 class DvsniPerformTest(util.NginxTest):
@@ -31,7 +31,7 @@ class DvsniPerformTest(util.NginxTest):
 
         auth_key = le_util.Key(rsa256_file, rsa256_pem)
 
-        from letsencrypt.client.plugins.nginx import dvsni
+        from letsencrypt_nginx import dvsni
         self.sni = dvsni.NginxDvsni(config)
 
         self.achalls = [
@@ -67,8 +67,7 @@ class DvsniPerformTest(util.NginxTest):
         self.assertEqual(1, len(self.sni.achalls))
         self.assertEqual([0], self.sni.indices)
 
-    @mock.patch("letsencrypt.client.plugins.nginx.configurator."
-                "NginxConfigurator.save")
+    @mock.patch("letsencrypt_nginx.configurator.NginxConfigurator.save")
     def test_perform0(self, mock_save):
         self.sni.add_chall(self.achalls[0])
         responses = self.sni.perform()
@@ -82,8 +81,7 @@ class DvsniPerformTest(util.NginxTest):
         # http://www.voidspace.org.uk/python/mock/helpers.html#mock.mock_open
         pass
 
-    @mock.patch("letsencrypt.client.plugins.nginx.configurator."
-                "NginxConfigurator.save")
+    @mock.patch("letsencrypt_nginx.configurator.NginxConfigurator.save")
     def test_perform1(self, mock_save):
         self.sni.add_chall(self.achalls[1])
         responses = self.sni.perform()

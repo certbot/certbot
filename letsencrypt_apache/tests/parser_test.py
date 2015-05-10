@@ -1,4 +1,4 @@
-"""Tests for letsencrypt.client.plugins.apache.parser."""
+"""Tests for letsencrypt_apache.parser."""
 import os
 import shutil
 import sys
@@ -11,7 +11,7 @@ import zope.component
 from letsencrypt.client import errors
 from letsencrypt.client.display import util as display_util
 
-from letsencrypt.client.plugins.apache.tests import util
+from letsencrypt_apache.tests import util
 
 
 class ApacheParserTest(util.ApacheTest):
@@ -22,7 +22,7 @@ class ApacheParserTest(util.ApacheTest):
 
         zope.component.provideUtility(display_util.FileDisplay(sys.stdout))
 
-        from letsencrypt.client.plugins.apache.parser import ApacheParser
+        from letsencrypt_apache.parser import ApacheParser
         self.aug = augeas.Augeas(flags=augeas.Augeas.NONE)
         self.parser = ApacheParser(self.aug, self.config_path, self.ssl_options)
 
@@ -32,19 +32,19 @@ class ApacheParserTest(util.ApacheTest):
         shutil.rmtree(self.work_dir)
 
     def test_root_normalized(self):
-        from letsencrypt.client.plugins.apache.parser import ApacheParser
+        from letsencrypt_apache.parser import ApacheParser
         path = os.path.join(self.temp_dir, "debian_apache_2_4/////"
                             "two_vhost_80/../two_vhost_80/apache2")
         parser = ApacheParser(self.aug, path, None)
         self.assertEqual(parser.root, self.config_path)
 
     def test_root_absolute(self):
-        from letsencrypt.client.plugins.apache.parser import ApacheParser
+        from letsencrypt_apache.parser import ApacheParser
         parser = ApacheParser(self.aug, os.path.relpath(self.config_path), None)
         self.assertEqual(parser.root, self.config_path)
 
     def test_root_no_trailing_slash(self):
-        from letsencrypt.client.plugins.apache.parser import ApacheParser
+        from letsencrypt_apache.parser import ApacheParser
         parser = ApacheParser(self.aug, self.config_path + os.path.sep, None)
         self.assertEqual(parser.root, self.config_path)
 
@@ -67,7 +67,7 @@ class ApacheParserTest(util.ApacheTest):
         self.assertTrue(matches)
 
     def test_find_dir(self):
-        from letsencrypt.client.plugins.apache.parser import case_i
+        from letsencrypt_apache.parser import case_i
         test = self.parser.find_dir(case_i("Listen"), "443")
         # This will only look in enabled hosts
         test2 = self.parser.find_dir(case_i("documentroot"))
@@ -92,7 +92,7 @@ class ApacheParserTest(util.ApacheTest):
         Path must be valid before attempting to add to augeas
 
         """
-        from letsencrypt.client.plugins.apache.parser import get_aug_path
+        from letsencrypt_apache.parser import get_aug_path
         self.parser.add_dir_to_ifmodssl(
             get_aug_path(self.parser.loc["default"]),
             "FakeDirective", "123")
@@ -103,12 +103,11 @@ class ApacheParserTest(util.ApacheTest):
         self.assertTrue("IfModule" in matches[0])
 
     def test_get_aug_path(self):
-        from letsencrypt.client.plugins.apache.parser import get_aug_path
+        from letsencrypt_apache.parser import get_aug_path
         self.assertEqual("/files/etc/apache", get_aug_path("/etc/apache"))
 
     def test_set_locations(self):
-        with mock.patch("letsencrypt.client.plugins.apache.parser."
-                        "os.path") as mock_path:
+        with mock.patch("letsencrypt_apache.parser.os.path") as mock_path:
 
             mock_path.isfile.return_value = False
 

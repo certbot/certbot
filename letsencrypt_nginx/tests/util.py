@@ -7,8 +7,8 @@ import unittest
 
 import mock
 
-from letsencrypt.client.plugins.nginx import constants
-from letsencrypt.client.plugins.nginx import configurator
+from letsencrypt_nginx import constants
+from letsencrypt_nginx import configurator
 
 
 class NginxTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
@@ -33,7 +33,7 @@ class NginxTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
 def get_data_filename(filename):
     """Gets the filename of a test data file."""
     return pkg_resources.resource_filename(
-        "letsencrypt.client.plugins.nginx.tests", "testdata/%s" % filename)
+        "letsencrypt_nginx.tests", "testdata/%s" % filename)
 
 
 def dir_setup(test_dir="debian_nginx/two_vhost_80"):
@@ -43,7 +43,7 @@ def dir_setup(test_dir="debian_nginx/two_vhost_80"):
     work_dir = tempfile.mkdtemp("work")
 
     test_configs = pkg_resources.resource_filename(
-        "letsencrypt.client.plugins.nginx.tests", test_dir)
+        "letsencrypt_nginx.tests", test_dir)
 
     shutil.copytree(
         test_configs, os.path.join(temp_dir, test_dir), symlinks=True)

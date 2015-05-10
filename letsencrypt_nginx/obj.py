@@ -1,7 +1,7 @@
 """Module contains classes used by the Nginx Configurator."""
 import re
 
-from letsencrypt.client.plugins.apache.obj import Addr as ApacheAddr
+from letsencrypt_apache.obj import Addr as ApacheAddr
 
 
 class Addr(ApacheAddr):

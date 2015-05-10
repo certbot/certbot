@@ -1,11 +1,11 @@
-"""Test the helper objects in letsencrypt.client.plugins.nginx.obj."""
+"""Test the helper objects in letsencrypt_nginx.obj."""
 import unittest
 
 
 class AddrTest(unittest.TestCase):
     """Test the Addr class."""
     def setUp(self):
-        from letsencrypt.client.plugins.nginx.obj import Addr
+        from letsencrypt_nginx.obj import Addr
         self.addr1 = Addr.fromstring("192.168.1.1")
         self.addr2 = Addr.fromstring("192.168.1.1:* ssl")
         self.addr3 = Addr.fromstring("192.168.1.1:80")
@@ -56,14 +56,14 @@ class AddrTest(unittest.TestCase):
         self.assertEqual(str(self.addr6), "80")
 
     def test_eq(self):
-        from letsencrypt.client.plugins.nginx.obj import Addr
+        from letsencrypt_nginx.obj import Addr
         new_addr1 = Addr.fromstring("192.168.1.1 spdy")
         self.assertEqual(self.addr1, new_addr1)
         self.assertNotEqual(self.addr1, self.addr2)
         self.assertFalse(self.addr1 == 3333)
 
     def test_set_inclusion(self):
-        from letsencrypt.client.plugins.nginx.obj import Addr
+        from letsencrypt_nginx.obj import Addr
         set_a = set([self.addr1, self.addr2])
         addr1b = Addr.fromstring("192.168.1.1")
         addr2b = Addr.fromstring("192.168.1.1:* ssl")
@@ -75,16 +75,16 @@ class AddrTest(unittest.TestCase):
 class VirtualHostTest(unittest.TestCase):
     """Test the VirtualHost class."""
     def setUp(self):
-        from letsencrypt.client.plugins.nginx.obj import VirtualHost
-        from letsencrypt.client.plugins.nginx.obj import Addr
+        from letsencrypt_nginx.obj import VirtualHost
+        from letsencrypt_nginx.obj import Addr
         self.vhost1 = VirtualHost(
             "filep",
             set([Addr.fromstring("localhost")]), False, False,
             set(['localhost']), [])
 
     def test_eq(self):
-        from letsencrypt.client.plugins.nginx.obj import Addr
-        from letsencrypt.client.plugins.nginx.obj import VirtualHost
+        from letsencrypt_nginx.obj import Addr
+        from letsencrypt_nginx.obj import VirtualHost
         vhost1b = VirtualHost(
             "filep",
             set([Addr.fromstring("localhost blah")]), False, False,

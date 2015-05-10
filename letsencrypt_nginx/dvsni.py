@@ -1,7 +1,7 @@
 """NginxDVSNI"""
 import logging
 
-from letsencrypt.client.plugins.apache.dvsni import ApacheDvsni
+from letsencrypt_apache.dvsni import ApacheDvsni
 
 
 class NginxDvsni(ApacheDvsni):

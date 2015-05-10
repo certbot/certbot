@@ -10,8 +10,9 @@ import mock
 
 from letsencrypt.client import errors
 from letsencrypt.client import le_util
-from letsencrypt.client.plugins.apache import configurator
 from letsencrypt.client.display import util as display_util
+
+from letsencrypt_apache import configurator
 
 
 class RevokerBase(unittest.TestCase):  # pylint: disable=too-few-public-methods

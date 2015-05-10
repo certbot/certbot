@@ -6,8 +6,9 @@ import pyparsing
 import re
 
 from letsencrypt.client import errors
-from letsencrypt.client.plugins.nginx import obj
-from letsencrypt.client.plugins.nginx.nginxparser import dump, load
+
+from letsencrypt_nginx import obj
+from letsencrypt_nginx import nginxparser
 
 
 class NginxParser(object):
@@ -85,9 +86,8 @@ class NginxParser(object):
         Technically this is a misnomer because Nginx does not have virtual
         hosts, it has 'server blocks'.
 
-        :returns: List of
-            :class:`~letsencrypt.client.plugins.nginx.obj.VirtualHost` objects
-            found in configuration
+        :returns: List of :class:`~letsencrypt_nginx.obj.VirtualHost`
+            objects found in configuration
         :rtype: list
 
         """
@@ -159,7 +159,7 @@ class NginxParser(object):
                 continue
             try:
                 with open(item) as _file:
-                    parsed = load(_file)
+                    parsed = nginxparser.load(_file)
                     self.parsed[item] = parsed
                     trees.append(parsed)
             except IOError:
@@ -213,7 +213,7 @@ class NginxParser(object):
                 filename = filename + os.path.extsep + ext
             try:
                 with open(filename, 'w') as _file:
-                    dump(tree, _file)
+                    nginxparser.dump(tree, _file)
             except IOError:
                 logging.error("Could not open file for writing: %s", filename)
 

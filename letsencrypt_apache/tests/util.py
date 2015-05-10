@@ -1,4 +1,4 @@
-"""Common utilities for letsencrypt.client.plugins.apache."""
+"""Common utilities for letsencrypt_apache."""
 import os
 import pkg_resources
 import shutil
@@ -7,9 +7,9 @@ import unittest
 
 import mock
 
-from letsencrypt.client.plugins.apache import configurator
-from letsencrypt.client.plugins.apache import constants
-from letsencrypt.client.plugins.apache import obj
+from letsencrypt_apache import configurator
+from letsencrypt_apache import constants
+from letsencrypt_apache import obj
 
 
 class ApacheTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
@@ -38,7 +38,7 @@ def dir_setup(test_dir="debian_apache_2_4/two_vhost_80"):
     work_dir = tempfile.mkdtemp("work")
 
     test_configs = pkg_resources.resource_filename(
-        "letsencrypt.client.plugins.apache.tests", "testdata/%s" % test_dir)
+        "letsencrypt_apache.tests", "testdata/%s" % test_dir)
 
     shutil.copytree(
         test_configs, os.path.join(temp_dir, test_dir), symlinks=True)
@@ -59,7 +59,7 @@ def get_apache_configurator(
 
     backups = os.path.join(work_dir, "backups")
 
-    with mock.patch("letsencrypt.client.plugins.apache.configurator."
+    with mock.patch("letsencrypt_apache.configurator."
                     "subprocess.Popen") as mock_popen:
         # This just states that the ssl module is already loaded
         mock_popen().communicate.return_value = ("ssl_module", "")

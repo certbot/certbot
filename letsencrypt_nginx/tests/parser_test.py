@@ -1,4 +1,4 @@
-"""Tests for letsencrypt.client.plugins.nginx.parser."""
+"""Tests for letsencrypt_nginx.parser."""
 import glob
 import os
 import re
@@ -6,10 +6,11 @@ import shutil
 import unittest
 
 from letsencrypt.client.errors import LetsEncryptMisconfigurationError
-from letsencrypt.client.plugins.nginx import nginxparser
-from letsencrypt.client.plugins.nginx import obj
-from letsencrypt.client.plugins.nginx import parser
-from letsencrypt.client.plugins.nginx.tests import util
+
+from letsencrypt_nginx import nginxparser
+from letsencrypt_nginx import obj
+from letsencrypt_nginx import parser
+from letsencrypt_nginx.tests import util
 
 
 class NginxParserTest(util.NginxTest):

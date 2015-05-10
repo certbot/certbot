@@ -115,12 +115,12 @@ setup(
             'jws = letsencrypt.acme.jose.jws:CLI.run',
         ],
         'letsencrypt.plugins': [
-            'apache = letsencrypt.client.plugins.apache.configurator'
-            ':ApacheConfigurator',
-            'nginx = letsencrypt.client.plugins.nginx.configurator'
-            ':NginxConfigurator',
             'standalone = letsencrypt.client.plugins.standalone.authenticator'
             ':StandaloneAuthenticator',
+
+            # to be moved to separate pypi packages
+            'apache = letsencrypt_apache.configurator:ApacheConfigurator',
+            'nginx = letsencrypt_nginx.configurator:NginxConfigurator',
         ],
     },
 

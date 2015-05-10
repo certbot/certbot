@@ -1,4 +1,4 @@
-"""Test for letsencrypt.client.plugins.apache.dvsni."""
+"""Test for letsencrypt_apache.dvsni."""
 import pkg_resources
 import unittest
 import shutil
@@ -10,11 +10,10 @@ from acme import challenges
 from letsencrypt.client import achallenges
 from letsencrypt.client import le_util
 
-from letsencrypt.client.plugins.apache.obj import Addr
-
-from letsencrypt.client.plugins.apache.tests import util
-
 from letsencrypt.client.tests import acme_util
+
+from letsencrypt_apache import obj
+from letsencrypt_apache.tests import util
 
 
 class DvsniPerformTest(util.ApacheTest):
@@ -23,14 +22,14 @@ class DvsniPerformTest(util.ApacheTest):
     def setUp(self):
         super(DvsniPerformTest, self).setUp()
 
-        with mock.patch("letsencrypt.client.plugins.apache.configurator."
+        with mock.patch("letsencrypt_apache.configurator."
                         "mod_loaded") as mock_load:
             mock_load.return_value = True
             config = util.get_apache_configurator(
                 self.config_path, self.config_dir, self.work_dir,
                 self.ssl_options)
 
-        from letsencrypt.client.plugins.apache import dvsni
+        from letsencrypt_apache import dvsni
         self.sni = dvsni.ApacheDvsni(config)
 
         rsa256_file = pkg_resources.resource_filename(
@@ -80,8 +79,7 @@ class DvsniPerformTest(util.ApacheTest):
                                 nonce_domain=self.achalls[0].nonce_domain)
         achall.gen_cert_and_response.return_value = ("pem", response)
 
-        with mock.patch("letsencrypt.client.plugins.apache.dvsni.open",
-                        m_open, create=True):
+        with mock.patch("letsencrypt_apache.dvsni.open", m_open, create=True):
             # pylint: disable=protected-access
             self.assertEqual(response, self.sni._setup_challenge_cert(
                 achall, "randomS1"))
@@ -142,8 +140,8 @@ class DvsniPerformTest(util.ApacheTest):
     def test_mod_config(self):
         for achall in self.achalls:
             self.sni.add_chall(achall)
-        v_addr1 = [Addr(("1.2.3.4", "443")), Addr(("5.6.7.8", "443"))]
-        v_addr2 = [Addr(("127.0.0.1", "443"))]
+        v_addr1 = [obj.Addr(("1.2.3.4", "443")), obj.Addr(("5.6.7.8", "443"))]
+        v_addr2 = [obj.Addr(("127.0.0.1", "443"))]
         ll_addr = []
         ll_addr.append(v_addr1)
         ll_addr.append(v_addr2)

@@ -1,4 +1,4 @@
-"""Test for letsencrypt.client.plugins.apache.configurator."""
+"""Test for letsencrypt_apache.configurator."""
 import os
 import re
 import shutil
@@ -12,13 +12,13 @@ from letsencrypt.client import achallenges
 from letsencrypt.client import errors
 from letsencrypt.client import le_util
 
-from letsencrypt.client.plugins.apache import configurator
-from letsencrypt.client.plugins.apache import obj
-from letsencrypt.client.plugins.apache import parser
-
-from letsencrypt.client.plugins.apache.tests import util
-
 from letsencrypt.client.tests import acme_util
+
+from letsencrypt_apache import configurator
+from letsencrypt_apache import obj
+from letsencrypt_apache import parser
+
+from letsencrypt_apache.tests import util
 
 
 class TwoVhost80Test(util.ApacheTest):
@@ -27,7 +27,7 @@ class TwoVhost80Test(util.ApacheTest):
     def setUp(self):
         super(TwoVhost80Test, self).setUp()
 
-        with mock.patch("letsencrypt.client.plugins.apache.configurator."
+        with mock.patch("letsencrypt_apache.configurator."
                         "mod_loaded") as mock_load:
             mock_load.return_value = True
             self.config = util.get_apache_configurator(
@@ -150,10 +150,8 @@ class TwoVhost80Test(util.ApacheTest):
 
         self.assertEqual(len(self.config.vhosts), 5)
 
-    @mock.patch("letsencrypt.client.plugins.apache.configurator."
-                "dvsni.ApacheDvsni.perform")
-    @mock.patch("letsencrypt.client.plugins.apache.configurator."
-                "ApacheConfigurator.restart")
+    @mock.patch("letsencrypt_apache.configurator.dvsni.ApacheDvsni.perform")
+    @mock.patch("letsencrypt_apache.configurator.ApacheConfigurator.restart")
     def test_perform(self, mock_restart, mock_dvsni_perform):
         # Only tests functionality specific to configurator.perform
         # Note: As more challenges are offered this will have to be expanded
@@ -186,8 +184,7 @@ class TwoVhost80Test(util.ApacheTest):
 
         self.assertEqual(mock_restart.call_count, 1)
 
-    @mock.patch("letsencrypt.client.plugins.apache.configurator."
-                "subprocess.Popen")
+    @mock.patch("letsencrypt_apache.configurator.subprocess.Popen")
     def test_get_version(self, mock_popen):
         mock_popen().communicate.return_value = (
             "Server Version: Apache/2.4.2 (Debian)", "")

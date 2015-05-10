@@ -1,10 +1,10 @@
-"""Test for letsencrypt.client.plugins.nginx.nginxparser."""
+"""Test for letsencrypt_nginx.nginxparser."""
 import operator
 import unittest
 
-from letsencrypt.client.plugins.nginx.nginxparser import (RawNginxParser,
-                                                          load, dumps, dump)
-from letsencrypt.client.plugins.nginx.tests import util
+from letsencrypt_nginx.nginxparser import (
+    RawNginxParser, load, dumps, dump)
+from letsencrypt_nginx.tests import util
 
 
 FIRST = operator.itemgetter(0)

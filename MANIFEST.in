@@ -9,8 +9,8 @@ recursive-include letsencrypt/client/tests/testdata *
 recursive-include acme/schemata *.json
 recursive-include acme/jose/testdata *
 
-recursive-include letsencrypt/client/plugins/apache/tests/testdata *
-include letsencrypt/client/plugins/apache/options-ssl.conf
+recursive-include letsencrypt_apache/tests/testdata *
+include letsencrypt_apache/options-ssl.conf
 
-recursive-include letsencrypt/client/plugins/nginx/tests/testdata *
-include letsencrypt/client/plugins/nginx/options-ssl.conf
+recursive-include letsencrypt_nginx/tests/testdata *
+include letsencrypt_nginx/options-ssl.conf

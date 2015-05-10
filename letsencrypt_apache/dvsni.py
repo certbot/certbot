@@ -2,7 +2,7 @@
 import logging
 import os
 
-from letsencrypt.client.plugins.apache import parser
+from letsencrypt_apache import parser
 
 
 class ApacheDvsni(object):
