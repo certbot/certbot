@@ -44,8 +44,7 @@ class JSONDeSerializableTest(unittest.TestCase):
 
             @classmethod
             def from_json(cls, jobj):
-                return cls(Basic.from_json(jobj.keys()[0]),
-                           Basic.from_json(jobj.values()[0]))
+                pass  # pragma: no cover
 
         self.basic1 = Basic('foo1')
         self.basic2 = Basic('foo2')
