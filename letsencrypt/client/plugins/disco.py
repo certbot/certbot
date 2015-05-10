@@ -16,6 +16,9 @@ class PluginEntryPoint(object):
     PREFIX_FREE_DISTRIBUTIONS = ["letsencrypt"]
     """Distributions for which prefix will be omitted."""
 
+    # this object is mutable, don't allow it to be hashed!
+    __hash__ = None
+
     def __init__(self, entry_point):
         self.name = self.entry_point_to_plugin_name(entry_point)
         self.plugin_cls = entry_point.load()
@@ -77,7 +80,7 @@ class PluginEntryPoint(object):
     def prepared(self):
         """Has the plugin been prepared already?"""
         if not self.initialized:
-            logging.debug(".prepared called on uninitialized %s", self)
+            logging.debug(".prepared called on uninitialized %r", self)
         return self._prepared is not None
 
     def prepare(self):
@@ -87,10 +90,10 @@ class PluginEntryPoint(object):
             try:
                 self._initialized.prepare()
             except errors.LetsEncryptMisconfigurationError as error:
-                logging.debug("Misconfigured %s: %s", self, error)
+                logging.debug("Misconfigured %r: %s", self, error)
                 self._prepared = error
             except errors.LetsEncryptNoInstallationError as error:
-                logging.debug("No installation (%s): %s", self, error)
+                logging.debug("No installation (%r): %s", self, error)
                 self._prepared = error
             else:
                 self._prepared = True
@@ -132,7 +135,7 @@ class PluginsRegistry(collections.Mapping):
     """Plugins registry."""
 
     def __init__(self, plugins):
-        self.plugins = plugins
+        self._plugins = plugins
 
     @classmethod
     def find_all(cls):
@@ -147,28 +150,28 @@ class PluginsRegistry(collections.Mapping):
             if interfaces.IPluginFactory.providedBy(plugin_ep.plugin_cls):
                 plugins[plugin_ep.name] = plugin_ep
             else:  # pragma: no cover
-                logging.warning("Plugin entry point %s does not provide "
-                                "IPluginFactory, skipping", plugin_ep)
+                logging.warning(
+                    "%r does not provide IPluginFactory, skipping", plugin_ep)
         return cls(plugins)
 
     def __getitem__(self, name):
-        return self.plugins[name]
+        return self._plugins[name]
 
     def __iter__(self):
-        return iter(self.plugins)
+        return iter(self._plugins)
 
     def __len__(self):
-        return len(self.plugins)
+        return len(self._plugins)
 
     def init(self, config):
         """Initialize all plugins in the registry."""
         return [plugin_ep.init(config) for plugin_ep
-                in self.plugins.itervalues()]
+                in self._plugins.itervalues()]
 
     def filter(self, pred):
         """Filter plugins based on predicate."""
         return type(self)(dict((name, plugin_ep) for name, plugin_ep
-                               in self.plugins.iteritems() if pred(plugin_ep)))
+                               in self._plugins.iteritems() if pred(plugin_ep)))
 
     def ifaces(self, *ifaces_groups):
         """Filter plugins based on interfaces."""
@@ -181,18 +184,41 @@ class PluginsRegistry(collections.Mapping):
 
     def prepare(self):
         """Prepare all plugins in the registry."""
-        return [plugin_ep.prepare() for plugin_ep in self.plugins.itervalues()]
+        return [plugin_ep.prepare() for plugin_ep in self._plugins.itervalues()]
 
     def available(self):
         """Filter plugins based on availability."""
         return self.filter(lambda p_ep: p_ep.available)
         # succefully prepared + misconfigured
 
+    def find_init(self, plugin):
+        """Find an initialized plugin.
+
+        This is particularly useful for finding a name for the plugin
+        (although `.IPluginFactory.__call__` takes ``name`` as one of
+        the arguments, ``IPlugin.name`` is not part of the interface)::
+
+          # plugin is an instance providing IPlugin, initialized
+          # somewhere else in the code
+          plugin_registry.find_init(plugin).name
+
+        Returns ``None`` if ``plugin`` is not found in the registry.
+
+        """
+        # use list instead of set beacse PluginEntryPoint is not hashable
+        candidates = [plugin_ep for plugin_ep in self._plugins.itervalues()
+                      if plugin_ep.initialized and plugin_ep.init() is plugin]
+        assert len(candidates) <= 1
+        if candidates:
+            return candidates[0]
+        else:
+            return None
+
     def __repr__(self):
         return "{0}({1!r})".format(
-            self.__class__.__name__, set(self.plugins.itervalues()))
+            self.__class__.__name__, set(self._plugins.itervalues()))
 
     def __str__(self):
-        if not self.plugins:
+        if not self._plugins:
             return "No plugins"
-        return "\n\n".join(str(p_ep) for p_ep in self.plugins.itervalues())
+        return "\n\n".join(str(p_ep) for p_ep in self._plugins.itervalues())

@@ -102,6 +102,17 @@ class PickPluginTest(unittest.TestCase):
         mock_choose.assert_called_once_with(
             [plugin_ep, plugin_ep], self.question)
 
+    def test_choose_plugin_none(self):
+        self.reg.ifaces().verify().available.return_value = {
+            "bar": None,
+            "baz": None,
+        }
+
+        with mock.patch("letsencrypt.client.display"
+                        ".ops.choose_plugin") as mock_choose:
+            mock_choose.return_value = None
+            self.assertTrue(self._call() is None)
+
 
 class ConveniencePickPluginTest(unittest.TestCase):
     """Tests for letsencrypt.client.display.ops.pick_*."""

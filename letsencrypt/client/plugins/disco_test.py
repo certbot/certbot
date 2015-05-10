@@ -194,16 +194,18 @@ class PluginsRegistryTest(unittest.TestCase):
 
     def test_ifaces(self):
         self.plugin_ep.ifaces.return_value = True
-        self.assertEqual(self.plugins, self.reg.ifaces().plugins)
+        # pylint: disable=protected-access
+        self.assertEqual(self.plugins, self.reg.ifaces()._plugins)
         self.plugin_ep.ifaces.return_value = False
-        self.assertEqual({}, self.reg.ifaces().plugins)
+        self.assertEqual({}, self.reg.ifaces()._plugins)
 
     def test_verify(self):
         self.plugin_ep.verify.return_value = True
+        # pylint: disable=protected-access
         self.assertEqual(
-            self.plugins, self.reg.verify(mock.MagicMock()).plugins)
+            self.plugins, self.reg.verify(mock.MagicMock())._plugins)
         self.plugin_ep.verify.return_value = False
-        self.assertEqual({}, self.reg.verify(mock.MagicMock()).plugins)
+        self.assertEqual({}, self.reg.verify(mock.MagicMock())._plugins)
 
     def test_prepare(self):
         self.plugin_ep.prepare.return_value = "baz"
@@ -212,9 +214,16 @@ class PluginsRegistryTest(unittest.TestCase):
 
     def test_available(self):
         self.plugin_ep.available = True
-        self.assertEqual(self.plugins, self.reg.available().plugins)
+        # pylint: disable=protected-access
+        self.assertEqual(self.plugins, self.reg.available()._plugins)
         self.plugin_ep.available = False
-        self.assertEqual({}, self.reg.available().plugins)
+        self.assertEqual({}, self.reg.available()._plugins)
+
+    def test_find_init(self):
+        self.assertTrue(self.reg.find_init(mock.Mock()) is None)
+        self.plugin_ep.initalized = True
+        self.assertTrue(
+            self.reg.find_init(self.plugin_ep.init()) is self.plugin_ep)
 
     def test_repr(self):
         self.plugin_ep.__repr__ = lambda _: "PluginEntryPoint#mock"
