@@ -33,3 +33,7 @@ class RFC3339FieldTest(unittest.TestCase):
         from acme.fields import RFC3339Field
         self.assertRaises(
             jose.DeserializationError, RFC3339Field.default_decoder, '')
+
+
+if __name__ == '__main__':
+    unittest.main()  # pragma: no cover

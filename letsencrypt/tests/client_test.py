@@ -27,11 +27,11 @@ class DetermineAccountTest(unittest.TestCase):
 
     @mock.patch("letsencrypt.account.Account.from_prompts")
     @mock.patch("letsencrypt.client.display_ops.choose_account")
-    def determine_account(self, mock_op, mock_prompt):
+    def test_determine_account(self, mock_op, mock_prompt):
         """Test determine account"""
         from letsencrypt import client
 
-        key = le_util.Key("file", "pem")
+        key = le_util.Key(tempfile.mkstemp()[1], "pem")
         test_acc = account.Account(self.config, key, "email1@gmail.com")
         mock_op.return_value = test_acc
 
@@ -77,4 +77,4 @@ class RollbackTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    unittest.main()  # pragma: no cover

@@ -80,4 +80,4 @@ def gen_client_resp(chall):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest.main()  # pragma: no cover

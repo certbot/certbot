@@ -9,13 +9,14 @@ cover () {
   # --with-cover add up, --cover-erase must not be set for coveralls
   # to get all the data); --with-cover scopes coverage to only
   # specific package, positional argument scopes tests only to
-  # specific package directory
-  nosetests -c /dev/null --with-cover --cover-package "$1" \
-            --cover-min-percentage="$2" "$1"
+  # specific package directory; --cover-tests makes sure every tests
+  # is run (c.f. #403)
+  nosetests -c /dev/null --with-cover --cover-tests --cover-package  \
+            "$1" --cover-min-percentage="$2" "$1"
 }
 
 # don't use sequential composition (;), if letsencrypt_nginx returns
 # 0, coveralls submit will be triggered (c.f. .travis.yml,
 # after_success)
-cover letsencrypt 88 && cover acme 100 && \
-    cover letsencrypt_apache 67 && cover letsencrypt_nginx 90
+cover letsencrypt 94 && cover acme 99 && \
+    cover letsencrypt_apache 78 && cover letsencrypt_nginx 94
