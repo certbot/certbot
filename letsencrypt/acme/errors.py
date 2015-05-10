@@ -1,13 +1,8 @@
 """ACME errors."""
+from letsencrypt.acme.jose import errors as jose_errors
 
 class Error(Exception):
     """Generic ACME error."""
 
-class ValidationError(Error):
-    """ACME message validation error."""
-
-class UnrecognizedMessageTypeError(ValidationError):
-    """Unrecognized ACME message type error."""
-
-class SchemaValidationError(ValidationError):
-    """JSON schema ACME message validation error."""
+class SchemaValidationError(jose_errors.DeserializationError):
+    """JSON schema ACME object validation error."""

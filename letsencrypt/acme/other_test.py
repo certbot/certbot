@@ -1,4 +1,5 @@
 """Tests for letsencrypt.acme.sig."""
+import os
 import pkg_resources
 import unittest
 
@@ -7,23 +8,25 @@ import Crypto.PublicKey.RSA
 from letsencrypt.acme import jose
 
 
-RSA256_KEY = Crypto.PublicKey.RSA.importKey(pkg_resources.resource_string(
-    'letsencrypt.client.tests', 'testdata/rsa256_key.pem'))
+KEY = jose.HashableRSAKey(Crypto.PublicKey.RSA.importKey(
+    pkg_resources.resource_string(
+        'letsencrypt.acme.jose', os.path.join('testdata', 'rsa512_key.pem'))))
 
 
-class SigatureTest(unittest.TestCase):
+class SignatureTest(unittest.TestCase):
     # pylint: disable=too-many-instance-attributes
     """Tests for letsencrypt.acme.sig.Signature."""
 
     def setUp(self):
         self.msg = 'message'
-        self.alg = 'RS256'
         self.sig = ('IC\xd8*\xe7\x14\x9e\x19S\xb7\xcf\xec3\x12\xe2\x8a\x03'
                     '\x98u\xff\xf0\x94\xe2\xd7<\x8f\xa8\xed\xa4KN\xc3\xaa'
                     '\xb9X\xc3w\xaa\xc0_\xd0\x05$y>l#\x10<\x96\xd2\xcdr\xa3'
                     '\x1b\xa1\xf5!f\xef\xc64\xb6\x13')
         self.nonce = '\xec\xd6\xf2oYH\xeb\x13\xd5#q\xe0\xdd\xa2\x92\xa9'
-        self.jwk = jose.JWK(key=RSA256_KEY.publickey())
+
+        self.alg = jose.RS256
+        self.jwk = jose.JWKRSA(key=KEY.publickey())
 
         b64sig = ('SUPYKucUnhlTt8_sMxLiigOYdf_wlOLXPI-o7aRLTsOquVjDd6r'
                   'AX9AFJHk-bCMQPJbSzXKjG6H1IWbvxjS2Ew')
@@ -37,8 +40,8 @@ class SigatureTest(unittest.TestCase):
 
         self.jsig_from = {
             'nonce': b64nonce,
-            'alg': self.alg,
-            'jwk': self.jwk.to_json(),
+            'alg': self.alg.to_partial_json(),
+            'jwk': self.jwk.to_partial_json(),
             'sig': b64sig,
         }
 
@@ -64,23 +67,32 @@ class SigatureTest(unittest.TestCase):
         return Signature.from_msg(*args, **kwargs)
 
     def test_create_from_msg(self):
-        signature = self._from_msg(self.msg, RSA256_KEY, self.nonce)
+        signature = self._from_msg(self.msg, KEY, self.nonce)
         self.assertEqual(self.signature, signature)
 
     def test_create_from_msg_random_nonce(self):
-        signature = self._from_msg(self.msg, RSA256_KEY)
+        signature = self._from_msg(self.msg, KEY)
         self.assertEqual(signature.alg, self.alg)
         self.assertEqual(signature.jwk, self.jwk)
         self.assertTrue(signature.verify(self.msg))
 
-    def test_to_json(self):
-        self.assertEqual(self.signature.to_json(), self.jsig_to)
+    def test_to_partial_json(self):
+        self.assertEqual(self.signature.to_partial_json(), self.jsig_to)
 
     def test_from_json(self):
         from letsencrypt.acme.other import Signature
-        # pylint: disable=protected-access
         self.assertEqual(
-            self.signature, Signature._from_valid_json(self.jsig_from))
+            self.signature, Signature.from_json(self.jsig_from))
+
+    def test_from_json_non_schema_errors(self):
+        from letsencrypt.acme.other import Signature
+        jwk = self.jwk.to_partial_json()
+        self.assertRaises(
+            jose.DeserializationError, Signature.from_json, {
+                'alg': 'RS256', 'sig': 'x', 'nonce': '', 'jwk': jwk})
+        self.assertRaises(
+            jose.DeserializationError, Signature.from_json, {
+                'alg': 'RS256', 'sig': '', 'nonce': 'x', 'jwk': jwk})
 
 
 if __name__ == '__main__':

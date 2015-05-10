@@ -13,6 +13,10 @@ class IAuthenticator(zope.interface.Interface):
 
     """
 
+    description = zope.interface.Attribute(
+        "Short description of this authenticator. "
+        "Used in interactive configuration.")
+
     def prepare():
         """Prepare the authenticator.
 
@@ -30,43 +34,43 @@ class IAuthenticator(zope.interface.Interface):
 
         :param str domain: Domain for which challenge preferences are sought.
 
-        :returns: list of strings with the most preferred challenges first.
-            If a type is not specified, it means the Authenticator cannot
-            perform the challenge.
+        :returns: List of challege types (subclasses of
+            :class:`letsencrypt.acme.challenges.Challenge`) with the most
+            preferred challenges first. If a type is not specified, it means the
+            Authenticator cannot perform the challenge.
         :rtype: list
 
         """
 
-    def perform(chall_list):
+    def perform(achalls):
         """Perform the given challenge.
 
-        :param list chall_list: List of namedtuple types defined in
-            :mod:`letsencrypt.client.challenge_util` (``DvsniChall``, etc.).
+        :param list achalls: Non-empty (guaranteed) list of
+            :class:`~letsencrypt.client.achallenges.AnnotatedChallenge`
+            instances, such that it contains types found within
+            :func:`get_chall_pref` only.
 
-            - chall_list will never be empty
-            - chall_list will only contain types found within
-              :func:`get_chall_pref`
-
-        :returns: ACME Challenge responses or if it cannot be completed then:
+        :returns: List of ACME
+            :class:`~letsencrypt.acme.challenges.ChallengeResponse` instances
+            or if the :class:`~letsencrypt.acme.challenges.Challenge` cannot
+            be fulfilled then:
 
             ``None``
-              Authenticator can perform challenge, but can't at this time
+              Authenticator can perform challenge, but not at this time.
             ``False``
-              Authenticator will never be able to perform (error)
+              Authenticator will never be able to perform (error).
 
-        :rtype: :class:`list` of :class:`dict`
+        :rtype: :class:`list` of
+            :class:`letsencrypt.acme.challenges.ChallengeResponse`
 
         """
 
-    def cleanup(chall_list):
+    def cleanup(achalls):
         """Revert changes and shutdown after challenges complete.
 
-        :param list chall_list: List of namedtuple types defined in
-            :mod:`letsencrypt.client.challenge_util` (``DvsniChall``, etc.)
-
-            - Only challenges given previously in the perform function will be
-              found in chall_list.
-            - chall_list will never be empty
+        :param list achalls: Non-empty (guaranteed) list of
+            :class:`~letsencrypt.client.achallenges.AnnotatedChallenge`
+            instances, a subset of those previously passed to :func:`perform`.
 
         """
 
@@ -89,6 +93,10 @@ class IConfig(zope.interface.Interface):
     server = zope.interface.Attribute(
         "CA hostname (and optionally :port). The server certificate must "
         "be trusted in order to avoid further modifications to the client.")
+    authenticator = zope.interface.Attribute(
+        "Authenticator to use for responding to challenges.")
+    email = zope.interface.Attribute(
+        "Email used for registration and recovery contact.")
     rsa_key_size = zope.interface.Attribute("Size of the RSA key.")
 
     config_dir = zope.interface.Attribute("Configuration directory.")
@@ -101,6 +109,10 @@ class IConfig(zope.interface.Interface):
     cert_key_backup = zope.interface.Attribute(
         "Directory where all certificates and keys are stored. "
         "Used for easy revocation.")
+    accounts_dir = zope.interface.Attribute(
+        "Directory where all account information is stored.")
+    account_keys_dir = zope.interface.Attribute(
+        "Directory where all account keys are stored.")
     rec_token_dir = zope.interface.Attribute(
         "Directory where all recovery tokens are saved.")
     key_dir = zope.interface.Attribute("Keys storage.")
@@ -122,6 +134,14 @@ class IConfig(zope.interface.Interface):
         "Path to the Apache init script (used for server reload/restart).")
     apache_mod_ssl_conf = zope.interface.Attribute(
         "Contains standard Apache SSL directives.")
+
+    nginx_server_root = zope.interface.Attribute(
+        "Nginx server root directory.")
+    nginx_ctl = zope.interface.Attribute(
+        "Path to the 'nginx' binary, used for 'configtest' and "
+        "retrieving nginx version number.")
+    nginx_mod_ssl_conf = zope.interface.Attribute(
+        "Contains standard nginx SSL directives.")
 
 
 class IInstaller(zope.interface.Interface):
@@ -275,13 +295,13 @@ class IDisplay(zope.interface.Interface):
 
         """
 
-    def checklist(message, choices):
+    def checklist(message, tags, default_state):
         """Allow for multiple selections from a menu.
 
         :param str message: message to display to the user
-
-        :param tags: tags
-        :type tags: :class:`list` of :class:`str`
+        :param list tags: where each is of type :class:`str` len(tags) > 0
+        :param bool default_status: If True, items are in a selected state by
+            default.
 
         """
 

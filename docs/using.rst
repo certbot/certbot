@@ -5,46 +5,56 @@ Using the Let's Encrypt client
 Prerequisites
 =============
 
-The demo code is supported and known to work on **Ubuntu only** (even
-closely related `Debian is known to fail`_).
-
-Therefore, prerequisites for other platforms listed below are provided
-mainly for the :ref:`developers <hacking>` reference.
+The demo code is supported and known to work on **Ubuntu and
+Debian**. Therefore, prerequisites for other platforms listed below
+are provided mainly for the :ref:`developers <hacking>` reference.
 
 In general:
 
+* ``sudo`` is required as a suggested way of running privileged process
 * `swig`_ is required for compiling `m2crypto`_
 * `augeas`_ is required for the ``python-augeas`` bindings
 
-.. _Debian is known to fail: https://github.com/letsencrypt/lets-encrypt-preview/issues/68
 
 Ubuntu
 ------
 
-::
+.. code-block:: shell
 
-    sudo apt-get install python python-setuptools python-virtualenv python-dev \
-                 gcc swig dialog libaugeas0 libssl-dev libffi-dev \
-                 ca-certificates
+   sudo ./bootstrap/ubuntu.sh
 
-.. Please keep the above command in sync with .travis.yml (before_install)
+
+Debian
+------
+
+.. code-block:: shell
+
+   sudo ./bootstrap/debian.sh
+
+For squezze you will need to:
+
+- Use ``virtualenv --no-site-packages -p python`` instead of ``-p python2``.
+
+
+.. _`#280`: https://github.com/letsencrypt/lets-encrypt-preview/issues/280
+
 
 Mac OSX
 -------
 
-::
+.. code-block:: shell
 
-    sudo brew install augeas swig
+   sudo ./bootstrap/mac.sh
 
 
 Installation
 ============
 
-::
+.. code-block:: shell
 
-    virtualenv --no-site-packages -p python2 venv
-    ./venv/bin/python setup.py install
-    sudo ./venv/bin/letsencrypt
+   virtualenv --no-site-packages -p python2 venv
+   ./venv/bin/python setup.py install
+   sudo ./venv/bin/letsencrypt
 
 
 Usage
@@ -52,7 +62,7 @@ Usage
 
 The letsencrypt commandline tool has a builtin help:
 
-::
+.. code-block:: shell
 
    ./venv/bin/letsencrypt --help
 

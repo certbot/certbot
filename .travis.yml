@@ -1,10 +1,7 @@
 language: python
 
-# please keep this in sync with docs/using.rst (Ubuntu section, apt-get)
-before_install: >
-  travis_retry sudo apt-get install python python-setuptools
-  python-virtualenv python-dev gcc swig dialog libaugeas0 libssl-dev
-  libffi-dev ca-certificates
+# http://docs.travis-ci.com/user/ci-environment/#CI-environment-OS
+before_install: travis_retry sudo ./bootstrap/ubuntu.sh
 
 install: "travis_retry pip install tox coveralls"
 script: "travis_retry tox"
@@ -22,4 +19,10 @@ env:
 
 notifications:
   email: false
-  irc: "chat.freenode.net#letsencrypt"
+  irc:
+    channels:
+      - "chat.freenode.net#letsencrypt"
+    on_success: never
+    on_failure: always
+    use_notice: true
+    skip_join: true

@@ -6,9 +6,11 @@ import time
 
 import zope.component
 
+from letsencrypt.client import constants
 from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
+
 from letsencrypt.client.display import util as display_util
 
 
@@ -83,7 +85,8 @@ class Reverter(object):
     def view_config_changes(self):
         """Displays all saved checkpoints.
 
-        All checkpoints are printed to the console.
+        All checkpoints are printed by
+        :meth:`letsencrypt.client.interfaces.IDisplay.notification`.
 
         .. todo:: Decide on a policy for error handling, OSError IOError...
 
@@ -130,17 +133,17 @@ class Reverter(object):
             os.linesep.join(output), display_util.HEIGHT)
 
     def add_to_temp_checkpoint(self, save_files, save_notes):
-        """Add files to temporary checkpoint
+        """Add files to temporary checkpoint.
 
-        param set save_files: set of filepaths to save
-        param str save_notes: notes about changes during the save
+        :param set save_files: set of filepaths to save
+        :param str save_notes: notes about changes during the save
 
         """
         self._add_to_checkpoint_dir(
             self.config.temp_checkpoint_dir, save_files, save_notes)
 
     def add_to_checkpoint(self, save_files, save_notes):
-        """Add files to a permanent checkpoint
+        """Add files to a permanent checkpoint.
 
         :param set save_files: set of filepaths to save
         :param str save_notes: notes about changes during the save
@@ -163,7 +166,8 @@ class Reverter(object):
             unable to add checkpoint
 
         """
-        le_util.make_or_verify_dir(cp_dir, 0o755, os.geteuid())
+        le_util.make_or_verify_dir(
+            cp_dir, constants.CONFIG_DIRS_MODE, os.geteuid())
 
         op_fd, existing_filepaths = self._read_and_append(
             os.path.join(cp_dir, "FILEPATHS"))
@@ -304,7 +308,8 @@ class Reverter(object):
         else:
             cp_dir = self.config.in_progress_dir
 
-        le_util.make_or_verify_dir(cp_dir, 0o755, os.geteuid())
+        le_util.make_or_verify_dir(
+            cp_dir, constants.CONFIG_DIRS_MODE, os.geteuid())
 
         # Append all new files (that aren't already registered)
         new_fd = None
@@ -324,15 +329,18 @@ class Reverter(object):
                 new_fd.close()
 
     def recovery_routine(self):
-        """Revert all previously modified files.
+        """Revert configuration to most recent finalized checkpoint.
 
-        First, any changes found in IConfig.temp_checkpoint_dir are removed,
-        then IN_PROGRESS changes are removed The order is important.
-        IN_PROGRESS is unable to add files that are already added by a TEMP
-        change.  Thus TEMP must be rolled back first because that will be the
-        'latest' occurrence of the file.
+        Remove all changes (temporary and permanent) that have not been
+        finalized. This is useful to protect against crashes and other
+        execution interruptions.
 
         """
+        # First, any changes found in IConfig.temp_checkpoint_dir are removed,
+        # then IN_PROGRESS changes are removed The order is important.
+        # IN_PROGRESS is unable to add files that are already added by a TEMP
+        # change.  Thus TEMP must be rolled back first because that will be the
+        # 'latest' occurrence of the file.
         self.revert_temporary_config()
         if os.path.isdir(self.config.in_progress_dir):
             try:
@@ -385,11 +393,10 @@ class Reverter(object):
         return True
 
     def finalize_checkpoint(self, title):
-        """Move IN_PROGRESS checkpoint to timestamped checkpoint.
+        """Finalize the checkpoint.
 
-        Adds title to self.config.in_progress_dir CHANGES_SINCE
-        Move self.config.in_progress_dir to Backups directory and
-        rename the directory as a timestamp
+        Timestamps and permanently saves all changes made through the use
+        of :func:`~add_to_checkpoint` and :func:`~register_file_creation`
 
         :param str title: Title describing checkpoint
 
@@ -397,6 +404,9 @@ class Reverter(object):
             checkpoint is not able to be finalized.
 
         """
+        # Adds title to self.config.in_progress_dir CHANGES_SINCE
+        # Move self.config.in_progress_dir to Backups directory and
+        # rename the directory as a timestamp
         # Check to make sure an "in progress" directory exists
         if not os.path.isdir(self.config.in_progress_dir):
             return

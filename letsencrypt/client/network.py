@@ -5,10 +5,14 @@ import time
 
 import requests
 
+from letsencrypt.acme import jose
 from letsencrypt.acme import messages
 
 from letsencrypt.client import errors
 
+
+# https://urllib3.readthedocs.org/en/latest/security.html#insecureplatformwarning
+requests.packages.urllib3.contrib.pyopenssl.inject_into_urllib3()
 
 logging.getLogger("requests").setLevel(logging.WARNING)
 
@@ -36,8 +40,8 @@ class Network(object):
         :returns: Server response message.
         :rtype: :class:`letsencrypt.acme.messages.Message`
 
-        :raises TypeError: if `msg` is not JSON serializable
-        :raises jsonschema.ValidationError: if not valid ACME message
+        :raises letsencrypt.acme.errors.ValidationError: if `msg` is not
+            valid serializable ACME JSON message.
         :raises errors.LetsEncryptClientError: in case of connection error
             or if response from server is not a valid ACME message.
 
@@ -53,7 +57,12 @@ class Network(object):
             raise errors.LetsEncryptClientError(
                 'Sending ACME message to server has failed: %s' % error)
 
-        return messages.Message.from_json(response.json(), validate=True)
+        json_string = response.json()
+        try:
+            return messages.Message.from_json(json_string)
+        except jose.DeserializationError as error:
+            logging.error(json_string)
+            raise  # TODO
 
     def send_and_receive_expected(self, msg, expected):
         """Send ACME message to server and return expected message.

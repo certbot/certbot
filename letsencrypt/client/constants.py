@@ -1,25 +1,12 @@
 """Let's Encrypt constants."""
 import pkg_resources
 
-
-S_SIZE = 32
-"""Size (in bytes) of secret base64-encoded octet string "s" used in
-challanges."""
-
-NONCE_SIZE = 16
-"""Size of nonce used in JWS objects (in bytes)."""
+from letsencrypt.acme import challenges
 
 
-EXCLUSIVE_CHALLENGES = [frozenset(["dvsni", "simpleHttps"])]
+EXCLUSIVE_CHALLENGES = frozenset([frozenset([
+    challenges.DVSNI, challenges.SimpleHTTPS])])
 """Mutually exclusive challenges."""
-
-DV_CHALLENGES = frozenset(["dvsni", "simpleHttps", "dns"])
-"""Challenges that must be solved by a
-:class:`letsencrypt.client.interfaces.IAuthenticator` object."""
-
-CLIENT_CHALLENGES = frozenset(
-    ["recoveryToken", "recoveryContact", "proofOfPossession"])
-"""Challenges that are handled by the Let's Encrypt client."""
 
 
 ENHANCEMENTS = ["redirect", "http-header", "ocsp-stapling", "spdy"]
@@ -36,7 +23,7 @@ List of expected options parameters:
 
 
 APACHE_MOD_SSL_CONF = pkg_resources.resource_filename(
-    "letsencrypt.client.apache", "options-ssl.conf")
+    "letsencrypt.client.plugins.apache", "options-ssl.conf")
 """Path to the Apache mod_ssl config file found in the Let's Encrypt
 distribution."""
 
@@ -45,12 +32,14 @@ APACHE_REWRITE_HTTPS_ARGS = [
 """Apache rewrite rule arguments used for redirections to https vhost"""
 
 
-DVSNI_CHALLENGE_PORT = 443
-"""Port to perform DVSNI challenge."""
+NGINX_MOD_SSL_CONF = pkg_resources.resource_filename(
+    "letsencrypt.client.plugins.nginx", "options-ssl.conf")
+"""Path to the Nginx mod_ssl config file found in the Let's Encrypt
+distribution."""
 
-DVSNI_DOMAIN_SUFFIX = ".acme.invalid"
-"""Suffix appended to domains in DVSNI validation."""
 
+CONFIG_DIRS_MODE = 0o755
+"""Directory mode for ``.IConfig.config_dir`` et al."""
 
 TEMP_CHECKPOINT_DIR = "temp_checkpoint"
 """Temporary checkpoint directory (relative to IConfig.work_dir)."""
@@ -62,6 +51,12 @@ IConfig.work_dir)."""
 CERT_KEY_BACKUP_DIR = "keys-certs"
 """Directory where all certificates and keys are stored (relative to
 IConfig.work_dir. Used for easy revocation."""
+
+ACCOUNTS_DIR = "accounts"
+"""Directory where all accounts are saved."""
+
+ACCOUNT_KEYS_DIR = "keys"
+"""Directory where account keys are saved. Relative to ACCOUNTS_DIR."""
 
 REC_TOKEN_DIR = "recovery_tokens"
 """Directory where all recovery tokens are saved (relative to

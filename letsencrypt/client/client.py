@@ -1,24 +1,26 @@
 """ACME protocol client class and helper functions."""
 import logging
 import os
-import sys
+import pkg_resources
 
-import Crypto.PublicKey.RSA
 import M2Crypto
+import zope.component
 
-from letsencrypt.acme import messages
-from letsencrypt.acme import util as acme_util
+from letsencrypt.acme import jose
+from letsencrypt.acme.jose import jwk
 
+from letsencrypt.client import account
 from letsencrypt.client import auth_handler
-from letsencrypt.client import client_authenticator
+from letsencrypt.client import continuity_auth
 from letsencrypt.client import crypto_util
 from letsencrypt.client import errors
+from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
-from letsencrypt.client import network
+from letsencrypt.client import network2
 from letsencrypt.client import reverter
 from letsencrypt.client import revoker
 
-from letsencrypt.client.apache import configurator
+from letsencrypt.client.plugins.apache import configurator
 from letsencrypt.client.display import ops as display_ops
 from letsencrypt.client.display import enhancements
 
@@ -27,13 +29,14 @@ class Client(object):
     """ACME protocol client.
 
     :ivar network: Network object for sending and receiving messages
-    :type network: :class:`letsencrypt.client.network.Network`
+    :type network: :class:`letsencrypt.client.network2.Network`
 
-    :ivar authkey: Authorization Key
-    :type authkey: :class:`letsencrypt.client.le_util.Key`
+    :ivar account: Account object used for registration
+    :type account: :class:`letsencrypt.client.account.Account`
 
     :ivar auth_handler: Object that supports the IAuthenticator interface.
-        auth_handler contains both a dv_authenticator and a client_authenticator
+        auth_handler contains both a dv_authenticator and a
+        continuity_authenticator
     :type auth_handler: :class:`letsencrypt.client.auth_handler.AuthHandler`
 
     :ivar installer: Object supporting the IInstaller interface.
@@ -44,7 +47,7 @@ class Client(object):
 
     """
 
-    def __init__(self, config, authkey, dv_auth, installer):
+    def __init__(self, config, account_, dv_auth, installer):
         """Initialize a client.
 
         :param dv_auth: IAuthenticator that can solve the
@@ -54,93 +57,99 @@ class Client(object):
         :type dv_auth: :class:`letsencrypt.client.interfaces.IAuthenticator`
 
         """
-        self.network = network.Network(config.server)
-        self.authkey = authkey
+        self.account = account_
+
         self.installer = installer
+
+        # TODO: Allow for other alg types besides RS256
+        self.network = network2.Network(
+            config.server_url, jwk.JWKRSA.load(self.account.key.pem))
+
         self.config = config
 
         if dv_auth is not None:
-            client_auth = client_authenticator.ClientAuthenticator(config)
+            cont_auth = continuity_auth.ContinuityAuthenticator(config)
             self.auth_handler = auth_handler.AuthHandler(
-                dv_auth, client_auth, self.network)
+                dv_auth, cont_auth, self.network, self.account)
         else:
             self.auth_handler = None
+
+    def register(self):
+        """New Registration with the ACME server."""
+        self.account = self.network.register_from_account(self.account)
+        if self.account.terms_of_service:
+            if not self.config.tos:
+                # TODO: Replace with self.account.terms_of_service
+                eula = pkg_resources.resource_string("letsencrypt", "EULA")
+                agree = zope.component.getUtility(interfaces.IDisplay).yesno(
+                    eula, "Agree", "Cancel")
+            else:
+                agree = True
+
+            if agree:
+                self.account.regr = self.network.agree_to_tos(self.account.regr)
+            else:
+                # What is the proper response here...
+                raise errors.LetsEncryptClientError("Must agree to TOS")
+
+        self.account.save()
 
     def obtain_certificate(self, domains, csr=None):
         """Obtains a certificate from the ACME server.
 
-        :param str domains: list of domains to get a certificate
+        :meth:`.register` must be called before :meth:`.obtain_certificate`
+
+        .. todo:: This function does not currently handle csr correctly...
+
+        :param set domains: domains to get a certificate
 
         :param csr: CSR must contain requested domains, the key used to generate
             this CSR can be different than self.authkey
         :type csr: :class:`CSR`
 
-        :returns: cert_file, chain_file (paths to respective files)
-        :rtype: `tuple` of `str`
+        :returns: cert_key, cert_path, chain_path
+        :rtype: `tuple` of (:class:`letsencrypt.client.le_util.Key`, str, str)
 
         """
         if self.auth_handler is None:
-            logging.warning("Unable to obtain a certificate, because client "
-                            "does not have a valid auth handler.")
-
-        # Request Challenges
-        for name in domains:
-            self.auth_handler.add_chall_msg(
-                name, self.acme_challenge(name), self.authkey)
+            msg = ("Unable to obtain certificate because authenticator is "
+                   "not set.")
+            logging.warning(msg)
+            raise errors.LetsEncryptClientError(msg)
+        if self.account.regr is None:
+            raise errors.LetsEncryptClientError(
+                "Please register with the ACME server first.")
 
         # Perform Challenges/Get Authorizations
-        self.auth_handler.get_authorizations()
+        authzr = self.auth_handler.get_authorizations(domains)
 
         # Create CSR from names
-        if csr is None:
-            csr = init_csr(self.authkey, domains, self.config.cert_dir)
+        cert_key = crypto_util.init_save_key(
+            self.config.rsa_key_size, self.config.key_dir)
+        csr = crypto_util.init_save_csr(
+            cert_key, domains, self.config.cert_dir)
 
         # Retrieve certificate
-        certificate_msg = self.acme_certificate(csr.data)
+        certr = self.network.request_issuance(
+            jose.ComparableX509(
+                M2Crypto.X509.load_request_der_string(csr.data)),
+            authzr)
 
         # Save Certificate
-        cert_file, chain_file = self.save_certificate(
-            certificate_msg, self.config.cert_path, self.config.chain_path)
+        cert_path, chain_path = self.save_certificate(
+            certr, self.config.cert_path, self.config.chain_path)
 
         revoker.Revoker.store_cert_key(
-            cert_file, self.authkey.file, self.config)
+            cert_path, self.account.key.file, self.config)
 
-        return cert_file, chain_file
+        return cert_key, cert_path, chain_path
 
-    def acme_challenge(self, domain):
-        """Handle ACME "challenge" phase.
-
-        :returns: ACME "challenge" message.
-        :rtype: :class:`letsencrypt.acme.messages.Challenge`
-
-        """
-        return self.network.send_and_receive_expected(
-            messages.ChallengeRequest(identifier=domain),
-            messages.Challenge)
-
-    def acme_certificate(self, csr_der):
-        """Handle ACME "certificate" phase.
-
-        :param str csr_der: CSR in DER format.
-
-        :returns: ACME "certificate" message.
-        :rtype: :class:`letsencrypt.acme.message.Certificate`
-
-        """
-        logging.info("Preparing and sending CSR...")
-        return self.network.send_and_receive_expected(
-            messages.CertificateRequest.create(
-                csr=acme_util.ComparableX509(
-                    M2Crypto.X509.load_request_der_string(csr_der)),
-                key=Crypto.PublicKey.RSA.importKey(self.authkey.pem)),
-            messages.Certificate)
-
-    def save_certificate(self, certificate_msg, cert_path, chain_path):
+    def save_certificate(self, certr, cert_path, chain_path):
         # pylint: disable=no-self-use
         """Saves the certificate received from the ACME server.
 
-        :param certificate_msg: ACME "certificate" message from server.
-        :type certificate_msg: :class:`letsencrypt.acme.messages.Certificate`
+        :param certr: ACME "certificate" resource.
+        :type certr: :class:`letsencrypt.acme.messages.Certificate`
 
         :param str cert_path: Path to attempt to save the cert file
         :param str chain_path: Path to attempt to save the chain file
@@ -151,25 +160,36 @@ class Client(object):
         :raises IOError: If unable to find room to write the cert files
 
         """
+        # try finally close
         cert_chain_abspath = None
-        cert_fd, cert_file = le_util.unique_file(cert_path, 0o644)
-        cert_fd.write(certificate_msg.certificate.as_pem())
-        cert_fd.close()
-        logging.info(
-            "Server issued certificate; certificate written to %s", cert_file)
+        cert_file, act_cert_path = le_util.unique_file(cert_path, 0o644)
+        # TODO: Except
+        cert_pem = certr.body.as_pem()
+        try:
+            cert_file.write(cert_pem)
+        finally:
+            cert_file.close()
+        logging.info("Server issued certificate; certificate written to %s",
+                     act_cert_path)
 
-        if certificate_msg.chain:
-            chain_fd, chain_fn = le_util.unique_file(chain_path, 0o644)
-            for cert in certificate_msg.chain:
-                chain_fd.write(cert.to_pem())
-            chain_fd.close()
+        if certr.cert_chain_uri:
+            # TODO: Except
+            chain_cert = self.network.fetch_chain(certr.cert_chain_uri)
+            if chain_cert:
+                chain_file, act_chain_path = le_util.unique_file(
+                    chain_path, 0o644)
+                chain_pem = chain_cert.to_pem()
+                try:
+                    chain_file.write(chain_pem)
+                finally:
+                    chain_file.close()
 
-            logging.info("Cert chain written to %s", chain_fn)
+                logging.info("Cert chain written to %s", act_chain_path)
 
-            # This expects a valid chain file
-            cert_chain_abspath = os.path.abspath(chain_fn)
+                # This expects a valid chain file
+                cert_chain_abspath = os.path.abspath(act_chain_path)
 
-        return os.path.abspath(cert_file), cert_chain_abspath
+        return os.path.abspath(act_cert_path), cert_chain_abspath
 
     def deploy_certificate(self, domains, privkey, cert_file, chain_file=None):
         """Install certificate
@@ -293,66 +313,28 @@ def validate_key_csr(privkey, csr=None):
                     "The key and CSR do not match")
 
 
-def init_key(key_size, key_dir):
-    """Initializes privkey.
+def list_available_authenticators(avail_auths):
+    """Return a pretty-printed list of authenticators.
 
-    Inits key and CSR using provided files or generating new files
-    if necessary. Both will be saved in PEM format on the
-    filesystem. The CSR is placed into DER format to allow
-    the namedtuple to easily work with the protocol.
-
-    :param str key_dir: Key save directory.
+    This is used to provide helpful feedback in the case where a user
+    specifies an invalid authenticator on the command line.
 
     """
-    try:
-        key_pem = crypto_util.make_key(key_size)
-    except ValueError as err:
-        logging.fatal(str(err))
-        sys.exit(1)
-
-    # Save file
-    le_util.make_or_verify_dir(key_dir, 0o700)
-    key_f, key_filename = le_util.unique_file(
-        os.path.join(key_dir, "key-letsencrypt.pem"), 0o600)
-    key_f.write(key_pem)
-    key_f.close()
-
-    logging.info("Generating key (%d bits): %s", key_size, key_filename)
-
-    return le_util.Key(key_filename, key_pem)
-
-
-def init_csr(privkey, names, cert_dir):
-    """Initialize a CSR with the given private key.
-
-    :param privkey: Key to include in the CSR
-    :type privkey: :class:`letsencrypt.client.le_util.Key`
-
-    :param list names: `str` names to include in the CSR
-
-    :param str cert_dir: Certificate save directory.
-
-    """
-    csr_pem, csr_der = crypto_util.make_csr(privkey.pem, names)
-
-    # Save CSR
-    le_util.make_or_verify_dir(cert_dir, 0o755)
-    csr_f, csr_filename = le_util.unique_file(
-        os.path.join(cert_dir, "csr-letsencrypt.pem"), 0o644)
-    csr_f.write(csr_pem)
-    csr_f.close()
-
-    logging.info("Creating CSR: %s", csr_filename)
-
-    return le_util.CSR(csr_filename, csr_der, "der")
+    output_lines = ["Available authenticators:"]
+    for auth_name, auth in avail_auths.iteritems():
+        output_lines.append(" - %s : %s" % (auth_name, auth.description))
+    return '\n'.join(output_lines)
 
 
 # This should be controlled by commandline parameters
-def determine_authenticator(all_auths):
+def determine_authenticator(all_auths, config):
     """Returns a valid IAuthenticator.
 
     :param list all_auths: Where each is a
         :class:`letsencrypt.client.interfaces.IAuthenticator` object
+
+    :param config: Used if an authenticator was specified on the command line.
+    :type config: :class:`letsencrypt.client.interfaces.IConfig`
 
     :returns: Valid Authenticator object or None
 
@@ -361,23 +343,32 @@ def determine_authenticator(all_auths):
 
     """
     # Available Authenticator objects
-    avail_auths = []
+    avail_auths = {}
     # Error messages for misconfigured authenticators
     errs = {}
 
-    for pot_auth in all_auths:
+    for auth_name, auth in all_auths.iteritems():
         try:
-            pot_auth.prepare()
+            auth.prepare()
         except errors.LetsEncryptMisconfigurationError as err:
-            errs[pot_auth] = err
+            errs[auth] = err
         except errors.LetsEncryptNoInstallationError:
             continue
-        avail_auths.append(pot_auth)
+        avail_auths[auth_name] = auth
 
-    if len(avail_auths) > 1:
-        auth = display_ops.choose_authenticator(avail_auths, errs)
-    elif len(avail_auths) == 1:
-        auth = avail_auths[0]
+    # If an authenticator was specified on the command line, try to use it
+    if config.authenticator:
+        try:
+            auth = avail_auths[config.authenticator]
+        except KeyError:
+            logging.info(list_available_authenticators(avail_auths))
+            raise errors.LetsEncryptClientError(
+                "The specified authenticator '%s' could not be found" %
+                config.authenticator)
+    elif len(avail_auths) > 1:
+        auth = display_ops.choose_authenticator(avail_auths.values(), errs)
+    elif len(avail_auths.keys()) == 1:
+        auth = avail_auths[avail_auths.keys()[0]]
     else:
         raise errors.LetsEncryptClientError("No Authenticators available.")
 
@@ -388,6 +379,28 @@ def determine_authenticator(all_auths):
         return
 
     return auth
+
+
+def determine_account(config):
+    """Determine which account to use.
+
+    Will create an account if necessary.
+
+    :param config: Configuration object
+    :type config: :class:`letsencrypt.client.interfaces.IConfig`
+
+    :returns: Account
+    :rtype: :class:`letsencrypt.client.account.Account`
+
+    """
+    accounts = account.Account.get_accounts(config)
+
+    if len(accounts) == 1:
+        return accounts[0]
+    elif len(accounts) > 1:
+        return display_ops.choose_account(accounts)
+
+    return account.Account.from_prompts(config)
 
 
 def determine_installer(config):

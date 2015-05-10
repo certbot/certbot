@@ -21,7 +21,7 @@ All you need to do is:
 
 ::
 
-   user@www:~$ sudo letsencrypt www.example.org
+   user@www:~$ sudo letsencrypt -d www.example.org
 
 
 **Encrypt ALL the things!**
@@ -57,6 +57,7 @@ Current Features
 * web servers supported:
 
   - apache2.x (tested and working on Ubuntu Linux)
+  - standalone (runs its own webserver to prove you control the domain)
 
 * the private key is generated locally on your system
 * can talk to the Let's Encrypt (demo) CA or optionally to other ACME
@@ -79,6 +80,8 @@ Documentation: https://letsencrypt.readthedocs.org/
 
 Software project: https://github.com/letsencrypt/lets-encrypt-preview
 
+Notes for developers: CONTRIBUTING.md_
+
 Main Website: https://letsencrypt.org/
 
 IRC Channel: #letsencrypt on `Freenode`_
@@ -88,3 +91,4 @@ email to client-dev+subscribe@letsencrypt.org)
 
 .. _Freenode: https://freenode.net
 .. _client-dev: https://groups.google.com/a/letsencrypt.org/forum/#!forum/client-dev
+.. _CONTRIBUTING.md: https://github.com/letsencrypt/lets-encrypt-preview/blob/master/CONTRIBUTING.md
