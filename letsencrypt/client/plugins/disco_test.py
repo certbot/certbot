@@ -52,9 +52,10 @@ class PluginEntryPointTest(unittest.TestCase):
     def test_description(self):
         self.assertEqual("Standalone Authenticator", self.plugin_ep.description)
 
-    def test_name_with_description(self):
-        self.assertTrue(
-            self.plugin_ep.name_with_description.startswith("sa ("))
+    def test_description_with_name(self):
+        self.plugin_ep.plugin_cls = mock.MagicMock(description="Desc")
+        self.assertEqual(
+            "Desc (sa)", self.plugin_ep.description_with_name)
 
     def test_ifaces(self):
         self.assertTrue(self.plugin_ep.ifaces((interfaces.IAuthenticator,)))

@@ -39,9 +39,9 @@ class PluginEntryPoint(object):
         return self.plugin_cls.description
 
     @property
-    def name_with_description(self):
-        """Name with description. Handy for UI."""
-        return "{0} ({1})".format(self.name, self.description)
+    def description_with_name(self):
+        """Description with name. Handy for UI."""
+        return "{0} ({1})".format(self.description, self.name)
 
     def ifaces(self, *ifaces_groups):
         """Does plugin implements specified interface groups?"""
