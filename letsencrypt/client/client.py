@@ -155,6 +155,9 @@ class Client(object):
 
     def obtain_and_enroll_certificate(self, domains, authenticator, installer,
                                       csr=None):
+        """Get a new certificate for the specified domains using the specified
+        authenticator and installer, and then create a new renewable lineage
+        containing it."""
         cert_pem, privkey, chain_pem = self._obtain_certificate(domains, csr)
         # TODO: Add IPlugin.name or use PluginsFactory.find_init instead
         #       of assuming that each plugin has a .name attribute
@@ -165,6 +168,8 @@ class Client(object):
                                                  vars(self.config.namespace))
 
     def obtain_certificate(self, domains):
+        """Public method to obtain a certificate for the specified domains
+        using this client object.  Returns the tuple (cert, privkey, chain)."""
         return self._obtain_certificate(domains, None)
 
     def save_certificate(self, certr, cert_path, chain_path):

@@ -140,7 +140,8 @@ def install(args, config, plugins):
     acme, doms = _common_run(
         args, config, acc, authenticator=None, installer=installer)
     assert args.cert_path is not None
-    acme.deploy_certificate(doms, acc.key, args.cert_path, args.chain_path)
+    # XXX: This API has changed as a result of RenewableCert!
+    # acme.deploy_certificate(doms, acc.key, args.cert_path, args.chain_path)
     acme.enhance_config(doms, args.redirect)
 
 

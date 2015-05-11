@@ -1,3 +1,6 @@
+"""The RenewableCert class, representing renewable lineages of
+certificates and storing the associated cert data and metadata."""
+
 import configobj
 import copy
 import datetime
@@ -313,7 +316,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
     @classmethod
     def new_lineage(cls, lineagename, cert, privkey, chain,
                     renewalparams=None, config=DEFAULTS):
-        # pylint: disable=too-many-locals
+        # pylint: disable=too-many-locals,too-many-arguments
         """Create a new certificate lineage with the (suggested) lineage name
         lineagename, and the associated cert, privkey, and chain (the
         associated fullchain will be created automatically).  Optional

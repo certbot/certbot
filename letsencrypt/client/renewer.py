@@ -15,20 +15,11 @@ configuration."""
 #       memorialize the fact that it happened
 
 import configobj
-import copy
-import datetime
 import os
-import OpenSSL
-import pkg_resources
-import pyrfc3339
-import pytz
-import re
-import time
 
 from letsencrypt.client import configuration
 from letsencrypt.client import client
 from letsencrypt.client import crypto_util
-from letsencrypt.client import le_util
 from letsencrypt.client import notify
 from letsencrypt.client import storage
 from letsencrypt.client.plugins import disco as plugins_disco
@@ -39,6 +30,8 @@ DEFAULTS["official_archive_dir"] = "/tmp/etc/letsencrypt/archive"
 DEFAULTS["live_dir"] = "/tmp/etc/letsencrypt/live"
 
 class AttrDict(dict):
+    """A trick to allow accessing dictionary keys as object
+    attributes."""
     def __init__(self, *args, **kwargs):
         super(AttrDict, self).__init__(*args, **kwargs)
         self.__dict__ = self

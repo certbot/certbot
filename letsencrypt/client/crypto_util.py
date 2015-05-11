@@ -238,7 +238,7 @@ def get_sans_from_cert(pem):
     """
     x509 = M2Crypto.X509.load_cert_string(pem)
     try:
-        ext=x509.get_ext("subjectAltName")
+        ext = x509.get_ext("subjectAltName")
     except LookupError:
         return []
     return [x[4:] for x in ext.get_value().split(", ") if x.startswith("DNS:")]

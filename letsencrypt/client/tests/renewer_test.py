@@ -551,7 +551,6 @@ class RenewableCertTests(unittest.TestCase):
 
     def test_new_lineage(self):
         """Test for new_lineage() class method."""
-        from letsencrypt.client import renewer
         from letsencrypt.client import storage
         config_dir = self.defaults["renewal_configs_dir"]
         archive_dir = self.defaults["official_archive_dir"]
@@ -591,7 +590,6 @@ class RenewableCertTests(unittest.TestCase):
 
     def test_new_lineage_nonexistent_dirs(self):
         """Test that directories can be created if they don't exist."""
-        from letsencrypt.client import renewer
         from letsencrypt.client import storage
         config_dir = self.defaults["renewal_configs_dir"]
         archive_dir = self.defaults["official_archive_dir"]
@@ -599,9 +597,9 @@ class RenewableCertTests(unittest.TestCase):
         shutil.rmtree(config_dir)
         shutil.rmtree(archive_dir)
         shutil.rmtree(live_dir)
-        result = storage.RenewableCert.new_lineage("the-lineage.com", "cert2",
-                                                   "privkey2", "chain2",
-                                                   None, self.defaults)
+        storage.RenewableCert.new_lineage("the-lineage.com", "cert2",
+                                          "privkey2", "chain2",
+                                          None, self.defaults)
         self.assertTrue(os.path.exists(
             os.path.join(config_dir, "the-lineage.com.conf")))
         self.assertTrue(os.path.exists(
@@ -609,9 +607,8 @@ class RenewableCertTests(unittest.TestCase):
         self.assertTrue(os.path.exists(
             os.path.join(archive_dir, "the-lineage.com", "privkey1.pem")))
 
-    @mock.patch("letsencrypt.client.renewer.le_util.unique_lineage_name")
+    @mock.patch("letsencrypt.client.storage.le_util.unique_lineage_name")
     def test_invalid_config_filename(self, mock_uln):
-        from letsencrypt.client import renewer
         from letsencrypt.client import storage
         mock_uln.return_value = "this_does_not_end_with_dot_conf", "yikes"
         self.assertRaises(ValueError, storage.RenewableCert.new_lineage,
@@ -705,6 +702,7 @@ class RenewableCertTests(unittest.TestCase):
         self.assertEqual(2, renewer.renew(self.test_rc, 1))
         # TODO: We could also make several assertions about calls that should
         #       have been made to the mock functions here.
+        self.assertEqual(mock_da.call_count, 1)
         mock_client.obtain_certificate.return_value = (None, None, None)
         # This should fail because the renewal itself appears to fail
         self.assertEqual(False, renewer.renew(self.test_rc, 1))
