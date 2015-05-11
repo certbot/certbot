@@ -35,29 +35,19 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
     associated renewal configuration file."""
 
     def __init__(self, configfile, defaults=DEFAULTS):
-        if isinstance(configfile, str):
-            if not os.path.exists(configfile):
-                raise ValueError(
-                    "renewal config file {0} doesn't exist".format(configfile))
-            if not configfile.endswith(".conf"):
+        if isinstance(configfile, configobj.ConfigObj):
+            if not os.path.basename(configfile.filename).endswith(".conf"):
                 raise ValueError("renewal config file name must end in .conf")
-            self.lineagename = os.path.basename(configfile)[:-5]
-            self.configfilename = os.path.basename(configfile)
-        elif isinstance(configfile, configobj.ConfigObj):
             self.lineagename = os.path.basename(configfile.filename)[:-5]
-            self.configfilename = os.path.basename(configfile.filename)
-            if not self.configfilename.endswith(".conf"):
-                raise ValueError("renewal config file name must end in .conf")
         else:
-            raise TypeError("RenewableCert config must be file path "
-                            "or ConfigObj object")
+            raise TypeError("RenewableCert config must be ConfigObj object")
 
         # self.configuration should be used to read parameters that
         # may have been chosen based on default values from the
         # systemwide renewal configuration; self.configfile should be
         # used to make and save changes.
+        self.configfile = configfile
         self.configuration = copy.deepcopy(defaults)
-        self.configfile = configobj.ConfigObj(configfile)
         self.configuration.merge(self.configfile)
 
         if not all(self.configuration.has_key(x) for x in ALL_FOUR):

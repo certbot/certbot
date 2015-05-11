@@ -73,14 +73,6 @@ class RenewableCertTests(unittest.TestCase):
         config["fullchain"] = "/tmp/fullchain.pem"
         config.filename = "/tmp/sillyfile"
         self.assertRaises(ValueError, storage.RenewableCert, config, defaults)
-        self.assertRaises(ValueError, storage.RenewableCert, "/tmp", defaults)
-
-    def test_renewal_config_filename_exists(self):
-        """Test that the RenewableCert constructor will complain if
-        the renewal configuration file doesn't exist."""
-        from letsencrypt.client import storage
-        defaults = configobj.ConfigObj()
-        self.assertRaises(ValueError, storage.RenewableCert, "XXXXX", defaults)
 
     def test_consistent(self): # pylint: disable=too-many-statements
         oldcert = self.test_rc.cert
