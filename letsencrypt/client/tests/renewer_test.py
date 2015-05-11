@@ -660,6 +660,56 @@ class RenewableCertTests(unittest.TestCase):
         self.assertEqual(storage.parse_time_interval("4 years"),
                          datetime.timedelta(1461))
 
+    @mock.patch("letsencrypt.client.renewer.plugins_disco")
+    @mock.patch("letsencrypt.client.client.determine_account")
+    @mock.patch("letsencrypt.client.client.Client")
+    def test_renew(self, mock_c, mock_da, mock_pd):
+        """Tests for renew()."""
+        from letsencrypt.client import renewer
+
+        test_cert = pkg_resources.resource_string(
+            "letsencrypt.client.tests", "testdata/cert-san.pem")
+        os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                "cert1.pem"), self.test_rc.cert)
+        os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                "privkey1.pem"), self.test_rc.privkey)
+        os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                "chain1.pem"), self.test_rc.chain)
+        os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                "fullchain1.pem"), self.test_rc.fullchain)
+        with open(self.test_rc.cert, "w") as f:
+            f.write(test_cert)
+        with open(self.test_rc.privkey, "w") as f:
+            f.write("privkey")
+        with open(self.test_rc.chain, "w") as f:
+            f.write("chain")
+        with open(self.test_rc.fullchain, "w") as f:
+            f.write("fullchain")
+
+        # Fails because renewalparams are missing
+        self.assertFalse(renewer.renew(self.test_rc, 1))
+        self.test_rc.configfile["renewalparams"] = {"some": "stuff"}
+        # Fails because there's no authenticator specified
+        self.assertFalse(renewer.renew(self.test_rc, 1))
+        self.test_rc.configfile["renewalparams"]["rsa_key_size"] = "2048"
+        self.test_rc.configfile["renewalparams"]["server"] = "acme.example.com"
+        self.test_rc.configfile["renewalparams"]["authenticator"] = "fake"
+        mock_auth = mock.MagicMock()
+        mock_pd.PluginsRegistry.find_all.return_value = {"apache": mock_auth}
+        # Fails because "fake" != "apache"
+        self.assertFalse(renewer.renew(self.test_rc, 1))
+        self.test_rc.configfile["renewalparams"]["authenticator"] = "apache"
+        mock_client = mock.MagicMock()
+        mock_client.obtain_certificate.return_value = ("cert", "key", "chain")
+        mock_c.return_value = mock_client
+        self.assertEqual(2, renewer.renew(self.test_rc, 1))
+        # TODO: We could also make several assertions about calls that should
+        #       have been made to the mock functions here.
+        mock_client.obtain_certificate.return_value = (None, None, None)
+        # This should fail because the renewal itself appears to fail
+        self.assertEqual(False, renewer.renew(self.test_rc, 1))
+
+
     @mock.patch("letsencrypt.client.renewer.notify")
     @mock.patch("letsencrypt.client.storage.RenewableCert")
     @mock.patch("letsencrypt.client.renewer.renew")
@@ -704,6 +754,14 @@ class RenewableCertTests(unittest.TestCase):
         self.assertEqual(mock_happy_instance.update_all_links_to.call_count, 0)
         self.assertEqual(mock_notify.notify.call_count, 4)
         self.assertEqual(mock_renew.call_count, 2)
+
+    def test_bad_config_file(self):
+        from letsencrypt.client import renewer
+        with open(os.path.join(self.defaults["renewal_configs_dir"],
+                               "bad.conf"), "w") as f:
+            f.write("incomplete = configfile\n")
+        renewer.main(self.defaults)
+        # The ValueError is caught inside and nothing happens.
 
 if __name__ == "__main__":
     unittest.main()

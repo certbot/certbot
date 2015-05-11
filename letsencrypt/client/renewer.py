@@ -84,12 +84,13 @@ def renew(cert, old_version):
         #      best is to have obtain_certificate return None for
         #      new_key if the old key is to be used (since save_successor
         #      already understands this distinction!)
-        cert.save_successor(old_version, new_cert, new_key, new_chain)
+        return cert.save_successor(old_version, new_cert, new_key, new_chain)
     #    TODO: Notify results
     else:
     #    TODO: Notify negative results
-        pass
+        return False
     # TODO: Consider the case where the renewal was partially successful
+    #       (where fewer than all names were renewed)
 
 def main(config=DEFAULTS):
     """main function for autorenewer script."""
@@ -98,8 +99,8 @@ def main(config=DEFAULTS):
         if not i.endswith(".conf"):
             continue
         try:
-            cert = storage.RenewableCert(
-                os.path.join(config["renewal_configs_dir"], i))
+            cert = storage.RenewableCert(configobj.ConfigObj(
+                os.path.join(config["renewal_configs_dir"], i)))
         except ValueError:
             # This indicates an invalid renewal configuration file, such
             # as one missing a required parameter (in the future, perhaps
