@@ -14,8 +14,6 @@ configuration."""
 # TODO: when renewing or deploying, update config file to
 #       memorialize the fact that it happened
 
-import code #XXX: remove
-
 import configobj
 import copy
 import datetime
@@ -70,7 +68,6 @@ def renew(cert, old_version):
         # TODO: Notify user? (authenticator could not be found)
         return False
 
-
     authenticator.prepare()
     account = client.determine_account(config)
     # TODO: are there other ways to get the right account object, e.g.
@@ -78,7 +75,6 @@ def renew(cert, old_version):
     #       renewalparams?
 
     our_client = client.Client(config, account, authenticator, None)
-    # XXX: find the domains
     with open(cert.version("cert", old_version)) as f:
         sans = crypto_util.get_sans_from_cert(f.read())
     new_cert, new_key, new_chain = our_client.obtain_certificate(sans)
@@ -89,9 +85,9 @@ def renew(cert, old_version):
         #      new_key if the old key is to be used (since save_successor
         #      already understands this distinction!)
         cert.save_successor(old_version, new_cert, new_key, new_chain)
-    #    Notify results
+    #    TODO: Notify results
     else:
-    #    Notify negative results
+    #    TODO: Notify negative results
         pass
     # TODO: Consider the case where the renewal was partially successful
 
