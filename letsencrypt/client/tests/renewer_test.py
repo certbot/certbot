@@ -17,7 +17,7 @@ class RenewableCertTests(unittest.TestCase):
     """Tests for the RenewableCert class as well as other functions
     within renewer.py."""
     def setUp(self):
-        from letsencrypt.client import renewer
+        from letsencrypt.client import storage
         self.tempdir = tempfile.mkdtemp()
         os.makedirs(os.path.join(self.tempdir, "live", "example.org"))
         os.makedirs(os.path.join(self.tempdir, "archive", "example.org"))
@@ -38,7 +38,7 @@ class RenewableCertTests(unittest.TestCase):
         config.filename = os.path.join(self.tempdir, "configs",
                                        "example.org.conf")
         self.defaults = defaults     # for main() test
-        self.test_rc = renewer.RenewableCert(config, defaults)
+        self.test_rc = storage.RenewableCert(config, defaults)
 
     def tearDown(self):
         shutil.rmtree(self.tempdir)
@@ -65,6 +65,7 @@ class RenewableCertTests(unittest.TestCase):
         """Test that the RenewableCert constructor will complain if
         the renewal configuration file doesn't end in ".conf"."""
         from letsencrypt.client import renewer
+        from letsencrypt.client import storage
         defaults = configobj.ConfigObj()
         config = configobj.ConfigObj()
         config["cert"] = "/tmp/cert.pem"
@@ -72,7 +73,7 @@ class RenewableCertTests(unittest.TestCase):
         config["chain"] = "/tmp/chain.pem"
         config["fullchain"] = "/tmp/fullchain.pem"
         config.filename = "/tmp/sillyfile"
-        self.assertRaises(ValueError, renewer.RenewableCert, config, defaults)
+        self.assertRaises(ValueError, storage.RenewableCert, config, defaults)
 
     def test_consistent(self): # pylint: disable=too-many-statements
         oldcert = self.test_rc.cert
@@ -404,7 +405,7 @@ class RenewableCertTests(unittest.TestCase):
         self.assertTrue(self.test_rc.should_autodeploy())
 
     @mock.patch("letsencrypt.client.renewer.datetime")
-    @mock.patch("letsencrypt.client.renewer.RenewableCert.ocsp_revoked")
+    @mock.patch("letsencrypt.client.storage.RenewableCert.ocsp_revoked")
     def test_should_autorenew(self, mock_ocsp, mock_datetime):
         # pylint: disable=too-many-statements
         # Autorenewal turned off
@@ -483,7 +484,7 @@ class RenewableCertTests(unittest.TestCase):
                 with open(where, "w") as f:
                     f.write(kind)
         self.test_rc.update_all_links_to(3)
-        self.assertEqual(6, self.test_rc.save_successor(3, "new cert",
+        self.assertEqual(6, self.test_rc.save_successor(3, "new cert", "key",
                                                         "new chain"))
         with open(self.test_rc.version("cert", 6)) as f:
             self.assertEqual(f.read(), "new cert")
@@ -495,9 +496,9 @@ class RenewableCertTests(unittest.TestCase):
         self.assertFalse(os.path.islink(self.test_rc.version("privkey", 3)))
         self.assertTrue(os.path.islink(self.test_rc.version("privkey", 6)))
         # Let's try two more updates
-        self.assertEqual(7, self.test_rc.save_successor(6, "again",
+        self.assertEqual(7, self.test_rc.save_successor(6, "again", "key",
                                                         "newer chain"))
-        self.assertEqual(8, self.test_rc.save_successor(7, "hello",
+        self.assertEqual(8, self.test_rc.save_successor(7, "hello", "key",
                                                         "other chain"))
         # All of the subsequent versions should link directly to the original
         # privkey.
@@ -518,7 +519,8 @@ class RenewableCertTests(unittest.TestCase):
             self.assertEqual(self.test_rc.current_version(kind), 3)
         # Test updating from latest version rather than old version
         self.test_rc.update_all_links_to(8)
-        self.assertEqual(9, self.test_rc.save_successor(8, "last", "attempt"))
+        self.assertEqual(9, self.test_rc.save_successor(8, "a", "last",
+                                                        "attempt"))
         for kind in ALL_FOUR:
             self.assertEqual(self.test_rc.available_versions(kind),
                              range(1, 10))
@@ -529,12 +531,13 @@ class RenewableCertTests(unittest.TestCase):
     def test_new_lineage(self):
         """Test for new_lineage() class method."""
         from letsencrypt.client import renewer
+        from letsencrypt.client import storage
         config_dir = self.defaults["renewal_configs_dir"]
         archive_dir = self.defaults["official_archive_dir"]
         live_dir = self.defaults["live_dir"]
-        result = renewer.RenewableCert.new_lineage("the-lineage.com", "cert",
+        result = storage.RenewableCert.new_lineage("the-lineage.com", "cert",
                                                    "privkey", "chain", None,
-                                                   None, self.defaults)
+                                                   self.defaults)
         # This consistency check tests most relevant properties about the
         # newly created cert lineage.
         self.assertTrue(result.consistent())
@@ -543,33 +546,34 @@ class RenewableCertTests(unittest.TestCase):
         with open(result.fullchain) as f:
             self.assertEqual(f.read(), "cert" + "chain")
         # Let's do it again and make sure it makes a different lineage
-        result = renewer.RenewableCert.new_lineage("the-lineage.com", "cert2",
+        result = storage.RenewableCert.new_lineage("the-lineage.com", "cert2",
                                                    "privkey2", "chain2", None,
-                                                   None, self.defaults)
+                                                   self.defaults)
         self.assertTrue(os.path.exists(
             os.path.join(config_dir, "the-lineage.com-0001.conf")))
         # Now trigger the detection of already existing files
         os.mkdir(os.path.join(live_dir, "the-lineage.com-0002"))
-        self.assertRaises(ValueError, renewer.RenewableCert.new_lineage,
+        self.assertRaises(ValueError, storage.RenewableCert.new_lineage,
                           "the-lineage.com", "cert3", "privkey3", "chain3",
-                          None, None, self.defaults)
+                          None, self.defaults)
         os.mkdir(os.path.join(archive_dir, "other-example.com"))
-        self.assertRaises(ValueError, renewer.RenewableCert.new_lineage,
+        self.assertRaises(ValueError, storage.RenewableCert.new_lineage,
                           "other-example.com", "cert4", "privkey4", "chain4",
-                          None, None, self.defaults)
+                          None, self.defaults)
 
     def test_new_lineage_nonexistent_dirs(self):
         """Test that directories can be created if they don't exist."""
         from letsencrypt.client import renewer
+        from letsencrypt.client import storage
         config_dir = self.defaults["renewal_configs_dir"]
         archive_dir = self.defaults["official_archive_dir"]
         live_dir = self.defaults["live_dir"]
         shutil.rmtree(config_dir)
         shutil.rmtree(archive_dir)
         shutil.rmtree(live_dir)
-        result = renewer.RenewableCert.new_lineage("the-lineage.com", "cert2",
+        result = storage.RenewableCert.new_lineage("the-lineage.com", "cert2",
                                                    "privkey2", "chain2",
-                                                   None, None, self.defaults)
+                                                   None, self.defaults)
         self.assertTrue(os.path.exists(
             os.path.join(config_dir, "the-lineage.com.conf")))
         self.assertTrue(os.path.exists(
@@ -580,10 +584,11 @@ class RenewableCertTests(unittest.TestCase):
     @mock.patch("letsencrypt.client.renewer.le_util.unique_lineage_name")
     def test_invalid_config_filename(self, mock_uln):
         from letsencrypt.client import renewer
+        from letsencrypt.client import storage
         mock_uln.return_value = "this_does_not_end_with_dot_conf", "yikes"
-        self.assertRaises(ValueError, renewer.RenewableCert.new_lineage,
+        self.assertRaises(ValueError, storage.RenewableCert.new_lineage,
                           "example.com", "cert", "privkey", "chain",
-                          None, None, self.defaults)
+                          None, self.defaults)
 
     def test_bad_kind(self):
         self.assertRaises(ValueError, self.test_rc.current_target, "elephant")
@@ -602,33 +607,33 @@ class RenewableCertTests(unittest.TestCase):
         self.assertEqual(self.test_rc.ocsp_revoked(), False)
 
     def test_parse_time_interval(self):
-        from letsencrypt.client import renewer
+        from letsencrypt.client import storage
         # XXX: I'm not sure if intervals related to years and months
         #      take account of the current date (if so, some of these
         #      may fail in the future, like in leap years or even in
         #      months of different lengths!)
-        self.assertEqual(renewer.parse_time_interval(""),
+        self.assertEqual(storage.parse_time_interval(""),
                          datetime.timedelta(0))
-        self.assertEqual(renewer.parse_time_interval("1 hour"),
+        self.assertEqual(storage.parse_time_interval("1 hour"),
                          datetime.timedelta(0, 3600))
-        self.assertEqual(renewer.parse_time_interval("17 days"),
+        self.assertEqual(storage.parse_time_interval("17 days"),
                          datetime.timedelta(17))
         # Days are assumed if no unit is specified.
-        self.assertEqual(renewer.parse_time_interval("23"),
+        self.assertEqual(storage.parse_time_interval("23"),
                          datetime.timedelta(23))
-        self.assertEqual(renewer.parse_time_interval("1 month"),
+        self.assertEqual(storage.parse_time_interval("1 month"),
                          datetime.timedelta(31))
-        self.assertEqual(renewer.parse_time_interval("7 weeks"),
+        self.assertEqual(storage.parse_time_interval("7 weeks"),
                          datetime.timedelta(49))
-        self.assertEqual(renewer.parse_time_interval("1 year 1 day"),
+        self.assertEqual(storage.parse_time_interval("1 year 1 day"),
                          datetime.timedelta(366))
-        self.assertEqual(renewer.parse_time_interval("1 year-1 day"),
+        self.assertEqual(storage.parse_time_interval("1 year-1 day"),
                          datetime.timedelta(364))
-        self.assertEqual(renewer.parse_time_interval("4 years"),
+        self.assertEqual(storage.parse_time_interval("4 years"),
                          datetime.timedelta(1461))
 
     @mock.patch("letsencrypt.client.renewer.notify")
-    @mock.patch("letsencrypt.client.renewer.RenewableCert")
+    @mock.patch("letsencrypt.client.storage.RenewableCert")
     @mock.patch("letsencrypt.client.renewer.renew")
     def test_main(self, mock_renew, mock_rc, mock_notify):
         """Test for main() function."""

@@ -231,3 +231,14 @@ def make_ss_cert(key_str, domains, not_before=None,
     assert cert.verify()
     # print check_purpose(,0
     return cert.as_pem()
+
+
+def get_sans_from_cert(pem):
+    """Extracts the DNS subjectAltName values from a cert in PEM format.
+    """
+    x509 = M2Crypto.X509.load_cert_string(pem)
+    try:
+        ext=x509.get_ext("subjectAltName")
+    except LookupError:
+        return []
+    return [x[4:] for x in ext.get_value().split(", ") if x.startswith("DNS:")]

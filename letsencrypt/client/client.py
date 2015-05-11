@@ -17,9 +17,9 @@ from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
 from letsencrypt.client import network2
-from letsencrypt.client import renewer
 from letsencrypt.client import reverter
 from letsencrypt.client import revoker
+from letsencrypt.client import storage
 
 from letsencrypt.client.display import ops as display_ops
 from letsencrypt.client.display import enhancements
@@ -160,7 +160,7 @@ class Client(object):
         #       of assuming that each plugin has a .name attribute
         self.config.namespace.authenticator = authenticator.name
         self.config.namespace.installer = installer.name
-        return renewer.RenewableCert.new_lineage(domains[0], cert_pem,
+        return storage.RenewableCert.new_lineage(domains[0], cert_pem,
                                                  privkey, chain_pem,
                                                  vars(self.config.namespace))
 
