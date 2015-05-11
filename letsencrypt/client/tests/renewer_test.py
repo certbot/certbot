@@ -61,9 +61,10 @@ class RenewableCertTests(unittest.TestCase):
                                                               "example.org",
                                                               "fullchain.pem"))
 
-    def test_renewal_config_filename_not_ending_in_conf(self):
+    def test_renewal_bad_config(self):
         """Test that the RenewableCert constructor will complain if
-        the renewal configuration file doesn't end in ".conf"."""
+        the renewal configuration file doesn't end in ".conf" or if it
+        isn't a ConfigObj."""
         from letsencrypt.client import storage
         defaults = configobj.ConfigObj()
         config = configobj.ConfigObj()
@@ -73,6 +74,21 @@ class RenewableCertTests(unittest.TestCase):
         config["fullchain"] = "/tmp/fullchain.pem"
         config.filename = "/tmp/sillyfile"
         self.assertRaises(ValueError, storage.RenewableCert, config, defaults)
+        self.assertRaises(TypeError, storage.RenewableCert, "fun", defaults)
+
+    def test_renewal_incomplete_config(self):
+        """Test that the RenewableCert constructor will complain if
+        the renewal configuration file is missing a required file element."""
+        from letsencrypt.client import storage
+        defaults = configobj.ConfigObj()
+        config = configobj.ConfigObj()
+        config["cert"] = "/tmp/cert.pem"
+        # Here the required privkey is missing.
+        config["chain"] = "/tmp/chain.pem"
+        config["fullchain"] = "/tmp/fullchain.pem"
+        config.filename = "/tmp/genuineconfig.conf"
+        self.assertRaises(ValueError, storage.RenewableCert, config, defaults)
+
 
     def test_consistent(self): # pylint: disable=too-many-statements
         oldcert = self.test_rc.cert
@@ -565,6 +581,13 @@ class RenewableCertTests(unittest.TestCase):
         self.assertRaises(ValueError, storage.RenewableCert.new_lineage,
                           "other-example.com", "cert4", "privkey4", "chain4",
                           None, self.defaults)
+        # Make sure it can accept renewal parameters
+        params = {"stuff": "properties of stuff", "great": "awesome"}
+        result = storage.RenewableCert.new_lineage("the-lineage.com", "cert2",
+                                                   "privkey2", "chain2",
+                                                   params, self.defaults)
+        # TODO: Conceivably we could test that the renewal parameters actually
+        #       got saved
 
     def test_new_lineage_nonexistent_dirs(self):
         """Test that directories can be created if they don't exist."""
