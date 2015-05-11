@@ -342,7 +342,7 @@ class RenewableCertTests(unittest.TestCase):
             self.assertEqual(result.utcoffset(), datetime.timedelta(0))
         # 2014-12-18 22:34:45+00:00 = Unix time 1418942085
 
-    @mock.patch("letsencrypt.client.renewer.datetime")
+    @mock.patch("letsencrypt.client.storage.datetime")
     def test_should_autodeploy(self, mock_datetime):
         # pylint: disable=too-many-statements
         # Autodeployment turned off
@@ -411,7 +411,7 @@ class RenewableCertTests(unittest.TestCase):
         self.test_rc.configuration["deploy_before_expiry"] = "300 months"
         self.assertTrue(self.test_rc.should_autodeploy())
 
-    @mock.patch("letsencrypt.client.renewer.datetime")
+    @mock.patch("letsencrypt.client.storage.datetime")
     @mock.patch("letsencrypt.client.storage.RenewableCert.ocsp_revoked")
     def test_should_autorenew(self, mock_ocsp, mock_datetime):
         # pylint: disable=too-many-statements
