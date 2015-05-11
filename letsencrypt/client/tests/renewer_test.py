@@ -64,7 +64,6 @@ class RenewableCertTests(unittest.TestCase):
     def test_renewal_config_filename_not_ending_in_conf(self):
         """Test that the RenewableCert constructor will complain if
         the renewal configuration file doesn't end in ".conf"."""
-        from letsencrypt.client import renewer
         from letsencrypt.client import storage
         defaults = configobj.ConfigObj()
         config = configobj.ConfigObj()
@@ -74,6 +73,14 @@ class RenewableCertTests(unittest.TestCase):
         config["fullchain"] = "/tmp/fullchain.pem"
         config.filename = "/tmp/sillyfile"
         self.assertRaises(ValueError, storage.RenewableCert, config, defaults)
+        self.assertRaises(ValueError, storage.RenewableCert, "/tmp", defaults)
+
+    def test_renewal_config_filename_exists(self):
+        """Test that the RenewableCert constructor will complain if
+        the renewal configuration file doesn't exist."""
+        from letsencrypt.client import storage
+        defaults = configobj.ConfigObj()
+        self.assertRaises(ValueError, storage.RenewableCert, "XXXXX", defaults)
 
     def test_consistent(self): # pylint: disable=too-many-statements
         oldcert = self.test_rc.cert
@@ -484,7 +491,7 @@ class RenewableCertTests(unittest.TestCase):
                 with open(where, "w") as f:
                     f.write(kind)
         self.test_rc.update_all_links_to(3)
-        self.assertEqual(6, self.test_rc.save_successor(3, "new cert", "key",
+        self.assertEqual(6, self.test_rc.save_successor(3, "new cert", None,
                                                         "new chain"))
         with open(self.test_rc.version("cert", 6)) as f:
             self.assertEqual(f.read(), "new cert")
@@ -496,9 +503,9 @@ class RenewableCertTests(unittest.TestCase):
         self.assertFalse(os.path.islink(self.test_rc.version("privkey", 3)))
         self.assertTrue(os.path.islink(self.test_rc.version("privkey", 6)))
         # Let's try two more updates
-        self.assertEqual(7, self.test_rc.save_successor(6, "again", "key",
+        self.assertEqual(7, self.test_rc.save_successor(6, "again", None,
                                                         "newer chain"))
-        self.assertEqual(8, self.test_rc.save_successor(7, "hello", "key",
+        self.assertEqual(8, self.test_rc.save_successor(7, "hello", None,
                                                         "other chain"))
         # All of the subsequent versions should link directly to the original
         # privkey.
@@ -519,7 +526,7 @@ class RenewableCertTests(unittest.TestCase):
             self.assertEqual(self.test_rc.current_version(kind), 3)
         # Test updating from latest version rather than old version
         self.test_rc.update_all_links_to(8)
-        self.assertEqual(9, self.test_rc.save_successor(8, "a", "last",
+        self.assertEqual(9, self.test_rc.save_successor(8, "last", None,
                                                         "attempt"))
         for kind in ALL_FOUR:
             self.assertEqual(self.test_rc.available_versions(kind),
@@ -527,6 +534,12 @@ class RenewableCertTests(unittest.TestCase):
             self.assertEqual(self.test_rc.current_version(kind), 8)
         with open(self.test_rc.version("fullchain", 9)) as f:
             self.assertEqual(f.read(), "last" + "attempt")
+        # Test updating when providing a new privkey.  The key should
+        # be saved in a new file rather than creating a new symlink.
+        self.assertEqual(10, self.test_rc.save_successor(9, "with", "a",
+                                                         "key"))
+        self.assertTrue(os.path.exists(self.test_rc.version("privkey", 10)))
+        self.assertFalse(os.path.islink(self.test_rc.version("privkey", 10)))
 
     def test_new_lineage(self):
         """Test for new_lineage() class method."""
