@@ -6,7 +6,6 @@ import shutil
 import mock
 
 from acme import challenges
-from acme import messages2
 
 from letsencrypt import achallenges
 from letsencrypt import errors
