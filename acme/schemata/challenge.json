@@ -1,0 +1,36 @@
+{
+    "id": "https://letsencrypt.org/schema/01/challenge#",
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "description": "Schema for a challenge message",
+    "type": "object",
+    "required": ["type", "sessionID", "nonce", "challenges"],
+    "properties": {
+        "type" : {
+            "enum" : [ "challenge" ]
+        },
+        "sessionID" : {
+            "type" : "string" 
+        },
+        "nonce" : {
+            "type": "string"
+        },
+        "challenges": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "$ref": "file:acme/schemata/challengeobject.json"
+            }
+        },
+        "combinations": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                    "type": "integer" 
+                }
+            }
+        }
+    }
+}

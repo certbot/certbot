@@ -1,0 +1,19 @@
+{
+    "id": "https://letsencrypt.org/schema/01/certificateRequest#",
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "description": "Schema for a certificateRequest message",
+    "type": "object",
+    "required": ["type", "csr", "signature"],
+    "properties": {
+        "type" : {
+            "enum" : [ "certificateRequest" ]
+        },
+        "csr" : {
+            "type" : "string" ,
+            "pattern": "^[-_=0-9A-Za-z]+$"
+        },
+        "signature" : {
+            "$ref": "file:acme/schemata/signature.json"
+        }
+    }
+}
