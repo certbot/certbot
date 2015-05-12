@@ -4,10 +4,10 @@ import pkg_resources
 
 import M2Crypto
 
-from letsencrypt.acme import messages2
-from letsencrypt.acme import jose
+from acme import messages2
+from acme import jose
 
-from letsencrypt.client import network2
+from letsencrypt import network2
 
 
 logger = logging.getLogger()
@@ -16,7 +16,7 @@ logger.setLevel(logging.DEBUG)
 NEW_REG_URL = 'https://www.letsencrypt-demo.org/acme/new-reg'
 
 key = jose.JWKRSA.load(pkg_resources.resource_string(
-    'letsencrypt.acme.jose', os.path.join('testdata', 'rsa512_key.pem')))
+    'acme.jose', os.path.join('testdata', 'rsa512_key.pem')))
 net = network2.Network(NEW_REG_URL, key)
 
 regr = net.register(contact=(
@@ -29,13 +29,13 @@ logging.debug(regr)
 authzr = net.request_challenges(
     identifier=messages2.Identifier(
         typ=messages2.IDENTIFIER_FQDN, value='example1.com'),
-    regr=regr)
+    new_authzr_uri=regr.new_authzr_uri)
 logging.debug(authzr)
 
 authzr, authzr_response = net.poll(authzr)
 
 csr = M2Crypto.X509.load_request_string(pkg_resources.resource_string(
-    'letsencrypt.client.tests', os.path.join('testdata', 'csr.pem')))
+    'letsencrypt.tests', os.path.join('testdata', 'csr.pem')))
 try:
     net.request_issuance(csr, (authzr,))
 except messages2.Error as error:
