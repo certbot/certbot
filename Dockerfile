@@ -41,6 +41,9 @@ COPY setup.py README.rst CHANGES.rst MANIFEST.in /opt/letsencrypt/src/
 # more likely to be cached than the whole project directory
 
 COPY letsencrypt /opt/letsencrypt/src/letsencrypt/
+COPY acme /opt/letsencrypt/src/acme/
+COPY letsencrypt_apache /opt/letsencrypt/src/letsencrypt_apache/
+COPY letsencrypt_nginx /opt/letsencrypt/src/letsencrypt_nginx/
 
 
 RUN virtualenv --no-site-packages -p python2 /opt/letsencrypt && \
