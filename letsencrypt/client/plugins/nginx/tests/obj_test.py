@@ -49,11 +49,11 @@ class AddrTest(unittest.TestCase):
 
     def test_str(self):
         self.assertEqual(str(self.addr1), "192.168.1.1")
-        self.assertEqual(str(self.addr2), "192.168.1.1:*")
+        self.assertEqual(str(self.addr2), "192.168.1.1:* ssl")
         self.assertEqual(str(self.addr3), "192.168.1.1:80")
-        self.assertEqual(str(self.addr4), "*:80")
+        self.assertEqual(str(self.addr4), "*:80 default_server ssl")
         self.assertEqual(str(self.addr5), "myhost")
-        self.assertEqual(str(self.addr6), "80")
+        self.assertEqual(str(self.addr6), "80 default_server")
 
     def test_eq(self):
         from letsencrypt.client.plugins.nginx.obj import Addr
