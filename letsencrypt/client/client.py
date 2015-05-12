@@ -72,7 +72,8 @@ class Client(object):
         # standalone (then default is False, otherwise default is True)
 
         if dv_auth is not None:
-            cont_auth = continuity_auth.ContinuityAuthenticator(config)
+            cont_auth = continuity_auth.ContinuityAuthenticator(config,
+                                                                installer)
             self.auth_handler = auth_handler.AuthHandler(
                 dv_auth, cont_auth, self.network, self.account)
         else:

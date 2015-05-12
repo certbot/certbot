@@ -16,9 +16,11 @@ class PerformTest(unittest.TestCase):
         from letsencrypt.client.continuity_auth import ContinuityAuthenticator
 
         self.auth = ContinuityAuthenticator(
-            mock.MagicMock(server="demo_server.org"))
+            mock.MagicMock(server="demo_server.org"), None)
         self.auth.rec_token.perform = mock.MagicMock(
             name="rec_token_perform", side_effect=gen_client_resp)
+        self.auth.proof_of_pos.perform = mock.MagicMock(
+            name="proof_of_pos_perform", side_effect=gen_client_resp)
 
     def test_rec_token1(self):
         token = achallenges.RecoveryToken(challb=None, domain="0")
@@ -36,6 +38,24 @@ class PerformTest(unittest.TestCase):
         for i in xrange(5):
             self.assertEqual(responses[i], "RecoveryToken%d" % i)
 
+    def test_pop_and_rec_token(self):
+        achalls = []
+        for i in xrange(4):
+            if i % 2 == 0:
+                achalls.append(achallenges.RecoveryToken(challb=None,
+                                                         domain=str(i)))
+            else:
+                achalls.append(achallenges.ProofOfPossession(challb=None,
+                                                             domain=str(i)))
+        responses = self.auth.perform(achalls)
+
+        self.assertEqual(len(responses), 4)
+        for i in xrange(4):
+            if i % 2 == 0:
+                self.assertEqual(responses[i], "RecoveryToken%d" % i)
+            else:
+                self.assertEqual(responses[i], "ProofOfPossession%d" % i)
+
     def test_unexpected(self):
         self.assertRaises(
             errors.LetsEncryptContAuthError, self.auth.perform, [
@@ -43,7 +63,8 @@ class PerformTest(unittest.TestCase):
 
     def test_chall_pref(self):
         self.assertEqual(
-            self.auth.get_chall_pref("example.com"), [challenges.RecoveryToken])
+            self.auth.get_chall_pref("example.com"),
+            [challenges.ProofOfPossession, challenges.RecoveryToken])
 
 
 class CleanupTest(unittest.TestCase):
@@ -53,7 +74,7 @@ class CleanupTest(unittest.TestCase):
         from letsencrypt.client.continuity_auth import ContinuityAuthenticator
 
         self.auth = ContinuityAuthenticator(
-            mock.MagicMock(server="demo_server.org"))
+            mock.MagicMock(server="demo_server.org"), None)
         self.mock_cleanup = mock.MagicMock(name="rec_token_cleanup")
         self.auth.rec_token.cleanup = self.mock_cleanup
 
