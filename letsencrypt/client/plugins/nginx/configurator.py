@@ -12,17 +12,21 @@ import zope.interface
 from letsencrypt.acme import challenges
 
 from letsencrypt.client import achallenges
-from letsencrypt.client import constants
+from letsencrypt.client import constants as core_constants
 from letsencrypt.client import errors
 from letsencrypt.client import interfaces
 from letsencrypt.client import le_util
 from letsencrypt.client import reverter
 
+from letsencrypt.client.plugins import common
+
+from letsencrypt.client.plugins.nginx import constants
 from letsencrypt.client.plugins.nginx import dvsni
 from letsencrypt.client.plugins.nginx import parser
+from letsencrypt.client.plugins.nginx import obj
 
 
-class NginxConfigurator(object):
+class NginxConfigurator(common.Plugin):
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
     """Nginx configurator.
 
@@ -46,17 +50,29 @@ class NginxConfigurator(object):
 
     """
     zope.interface.implements(interfaces.IAuthenticator, interfaces.IInstaller)
+    zope.interface.classProvides(interfaces.IPluginFactory)
 
     description = "Nginx Web Server"
 
-    def __init__(self, config, version=None):
+    @classmethod
+    def add_parser_arguments(cls, add):
+        add("server-root", default=constants.CLI_DEFAULTS["server_root"],
+            help="Nginx server root directory.")
+        add("mod-ssl-conf", default=constants.CLI_DEFAULTS["mod_ssl_conf"],
+            help="Contains standard nginx SSL directives.")
+        add("ctl", default=constants.CLI_DEFAULTS["ctl"], help="Path to the "
+            "'nginx' binary, used for 'configtest' and retrieving nginx "
+            "version number.")
+
+    def __init__(self, *args, **kwargs):
         """Initialize an Nginx Configurator.
 
         :param tup version: version of Nginx as a tuple (1, 4, 7)
             (used mostly for unittesting)
 
         """
-        self.config = config
+        version = kwargs.pop("version", None)
+        super(NginxConfigurator, self).__init__(*args, **kwargs)
 
         # Verify that all directories and files exist with proper permissions
         if os.geteuid() == 0:
@@ -74,21 +90,21 @@ class NginxConfigurator(object):
         self._enhance_func = {}  # TODO: Support at least redirects
 
         # Set up reverter
-        self.reverter = reverter.Reverter(config)
+        self.reverter = reverter.Reverter(self.config)
         self.reverter.recovery_routine()
 
     # This is called in determine_authenticator and determine_installer
     def prepare(self):
         """Prepare the authenticator/installer."""
         self.parser = parser.NginxParser(
-            self.config.nginx_server_root,
-            self.config.nginx_mod_ssl_conf)
+            self.conf('server-root'),
+            self.conf('mod-ssl-conf'))
 
         # Set Version
         if self.version is None:
             self.version = self.get_version()
 
-        temp_install(self.config.nginx_mod_ssl_conf)
+        temp_install(self.conf('mod-ssl-conf'))
 
     # Entry point in main.py for installing cert
     def deploy_cert(self, domain, cert, key, cert_chain=None):
@@ -158,8 +174,12 @@ class NginxConfigurator(object):
 
         matches = self._get_ranked_matches(target_name)
         if not matches:
-            # No matches at all :'(
-            pass
+            # No matches. Create a new vhost with this name in nginx.conf.
+            filep = self.parser.loc["root"]
+            new_block = [['server'], [['server_name', target_name]]]
+            self.parser.add_http_directives(filep, new_block)
+            vhost = obj.VirtualHost(filep, set([]), False, True,
+                                    set([target_name]), list(new_block[1]))
         elif matches[0]['rank'] in xrange(2, 6):
             # Wildcard match - need to find the longest one
             rank = matches[0]['rank']
@@ -170,7 +190,7 @@ class NginxConfigurator(object):
 
         if vhost is not None:
             if not vhost.ssl:
-                self._make_server_ssl(vhost.filep, vhost.names)
+                self._make_server_ssl(vhost)
 
         return vhost
 
@@ -245,23 +265,28 @@ class NginxConfigurator(object):
 
         return all_names
 
-    def _make_server_ssl(self, filename, names):
+    def _make_server_ssl(self, vhost):
         """Makes a server SSL based on server_name and filename by adding
         a 'listen 443 ssl' directive to the server block.
 
         .. todo:: Maybe this should create a new block instead of modifying
         the existing one?
 
-        :param str filename: The absolute filename of the config file.
-        :param set names: The server names of the block to add SSL in
+        :param vhost: The vhost to add SSL to.
+        :type vhost: :class:`~letsencrypt.client.plugins.nginx.obj.VirtualHost`
 
         """
+        ssl_block = [['listen', '443 ssl'],
+                     ['ssl_certificate',
+                      '/etc/ssl/certs/ssl-cert-snakeoil.pem'],
+                     ['ssl_certificate_key',
+                      '/etc/ssl/private/ssl-cert-snakeoil.key'],
+                     ['include', self.parser.loc["ssl_options"]]]
         self.parser.add_server_directives(
-            filename, names,
-            [['listen', '443 ssl'],
-             ['ssl_certificate', '/etc/ssl/certs/ssl-cert-snakeoil.pem'],
-             ['ssl_certificate_key', '/etc/ssl/private/ssl-cert-snakeoil.key'],
-             ['include', self.parser.loc["ssl_options"]]])
+            vhost.filep, vhost.names, ssl_block)
+        vhost.ssl = True
+        vhost.raw.extend(ssl_block)
+        vhost.addrs.add(obj.Addr('', '443', True, False))
 
     def get_all_certs_keys(self):
         """Find all existing keys, certs from configuration.
@@ -312,7 +337,7 @@ class NginxConfigurator(object):
         :rtype: bool
 
         """
-        return nginx_restart(self.config.nginx_ctl)
+        return nginx_restart(self.conf('ctl'))
 
     def config_test(self):  # pylint: disable=no-self-use
         """Check the configuration of Nginx for errors.
@@ -323,7 +348,7 @@ class NginxConfigurator(object):
         """
         try:
             proc = subprocess.Popen(
-                [self.config.nginx_ctl, "-t"],
+                [self.conf('ctl'), "-t"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
             stdout, stderr = proc.communicate()
@@ -350,11 +375,11 @@ class NginxConfigurator(object):
         """
         uid = os.geteuid()
         le_util.make_or_verify_dir(
-            self.config.work_dir, constants.CONFIG_DIRS_MODE, uid)
+            self.config.work_dir, core_constants.CONFIG_DIRS_MODE, uid)
         le_util.make_or_verify_dir(
-            self.config.backup_dir, constants.CONFIG_DIRS_MODE, uid)
+            self.config.backup_dir, core_constants.CONFIG_DIRS_MODE, uid)
         le_util.make_or_verify_dir(
-            self.config.config_dir, constants.CONFIG_DIRS_MODE, uid)
+            self.config.config_dir, core_constants.CONFIG_DIRS_MODE, uid)
 
     def get_version(self):
         """Return version of Nginx Server.
@@ -370,13 +395,13 @@ class NginxConfigurator(object):
         """
         try:
             proc = subprocess.Popen(
-                [self.config.nginx_ctl, "-V"],
+                [self.conf('ctl'), "-V"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
             text = proc.communicate()[1]  # nginx prints output to stderr
         except (OSError, ValueError):
             raise errors.LetsEncryptConfiguratorError(
-                "Unable to run %s -V" % self.config.nginx_ctl)
+                "Unable to run %s -V" % self.conf('ctl'))
 
         version_regex = re.compile(r"nginx/([0-9\.]*)", re.IGNORECASE)
         version_matches = version_regex.findall(text)
@@ -399,10 +424,11 @@ class NginxConfigurator(object):
 
         nginx_version = tuple([int(i) for i in version_matches[0].split(".")])
 
-        # nginx < 0.8.21 doesn't use default_server
-        if nginx_version < (0, 8, 21):
+        # nginx < 0.8.48 uses machine hostname as default server_name instead of
+        # the empty string
+        if nginx_version < (0, 8, 48):
             raise errors.LetsEncryptConfiguratorError(
-                "Nginx version must be 0.8.21+")
+                "Nginx version must be 0.8.48+")
 
         return nginx_version
 
@@ -538,11 +564,18 @@ def nginx_restart(nginx_ctl):
         stdout, stderr = proc.communicate()
 
         if proc.returncode != 0:
-            # Enter recovery routine...
-            logging.error("Nginx Restart Failed!")
-            logging.error(stdout)
-            logging.error(stderr)
-            return False
+            # Maybe Nginx isn't running
+            nginx_proc = subprocess.Popen([nginx_ctl],
+                                          stdout=subprocess.PIPE,
+                                          stderr=subprocess.PIPE)
+            stdout, stderr = nginx_proc.communicate()
+
+            if nginx_proc.returncode != 0:
+                # Enter recovery routine...
+                logging.error("Nginx Restart Failed!")
+                logging.error(stdout)
+                logging.error(stderr)
+                return False
 
     except (OSError, ValueError):
         logging.fatal(
@@ -561,4 +594,4 @@ def temp_install(options_ssl):
 
     # Check to make sure options-ssl.conf is installed
     if not os.path.isfile(options_ssl):
-        shutil.copyfile(constants.NGINX_MOD_SSL_CONF, options_ssl)
+        shutil.copyfile(constants.MOD_SSL_CONF, options_ssl)

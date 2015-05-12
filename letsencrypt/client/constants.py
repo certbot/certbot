@@ -1,7 +1,28 @@
 """Let's Encrypt constants."""
-import pkg_resources
+import logging
 
 from letsencrypt.acme import challenges
+
+
+SETUPTOOLS_PLUGINS_ENTRY_POINT = "letsencrypt.plugins"
+"""Setuptools entry point group name for plugins."""
+
+
+CLI_DEFAULTS = dict(
+    config_files=["/etc/letsencrypt/cli.ini"],
+    verbose_count=-(logging.WARNING / 10),
+    server="www.letsencrypt-demo.org/acme/new-reg",
+    rsa_key_size=2048,
+    rollback_checkpoints=0,
+    config_dir="/etc/letsencrypt",
+    work_dir="/var/lib/letsencrypt",
+    backup_dir="/var/lib/letsencrypt/backups",
+    key_dir="/etc/letsencrypt/keys",
+    certs_dir="/etc/letsencrypt/certs",
+    cert_path="/etc/letsencrypt/certs/cert-letsencrypt.pem",
+    chain_path="/etc/letsencrypt/certs/chain-letsencrypt.pem",
+)
+"""Defaults for CLI flags and `.IConfig` attributes."""
 
 
 EXCLUSIVE_CHALLENGES = frozenset([frozenset([
@@ -20,22 +41,6 @@ List of expected options parameters:
 - spdy: TODO
 
 """
-
-
-APACHE_MOD_SSL_CONF = pkg_resources.resource_filename(
-    "letsencrypt.client.plugins.apache", "options-ssl.conf")
-"""Path to the Apache mod_ssl config file found in the Let's Encrypt
-distribution."""
-
-APACHE_REWRITE_HTTPS_ARGS = [
-    "^.*$", "https://%{SERVER_NAME}%{REQUEST_URI}", "[L,R=permanent]"]
-"""Apache rewrite rule arguments used for redirections to https vhost"""
-
-
-NGINX_MOD_SSL_CONF = pkg_resources.resource_filename(
-    "letsencrypt.client.plugins.nginx", "options-ssl.conf")
-"""Path to the Nginx mod_ssl config file found in the Let's Encrypt
-distribution."""
 
 
 CONFIG_DIRS_MODE = 0o755

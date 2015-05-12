@@ -33,6 +33,7 @@ class NginxParser(object):
         """Loads Nginx files into a parsed tree.
 
         """
+        self.parsed = {}
         self._parse_recursively(self.loc["root"])
 
     def _parse_recursively(self, filepath):
@@ -165,7 +166,7 @@ class NginxParser(object):
             except IOError:
                 logging.warn("Could not open file: %s", item)
             except pyparsing.ParseException:
-                logging.warn("Could not parse file: %s", item)
+                logging.debug("Could not parse file: %s", item)
         return trees
 
     def _set_locations(self, ssl_options):
@@ -252,8 +253,9 @@ class NginxParser(object):
 
     def add_server_directives(self, filename, names, directives,
                               replace=False):
-        """Add or replace directives in server blocks whose server_name set
-        is 'names'. If replace is True, this raises a misconfiguration error
+        """Add or replace directives in the first server block with names.
+
+        ..note :: If replace is True, this raises a misconfiguration error
         if the directive does not already exist.
 
         ..todo :: Doesn't match server blocks whose server_name directives are
@@ -265,14 +267,20 @@ class NginxParser(object):
         :param bool replace: Whether to only replace existing directives
 
         """
-        if replace:
-            _do_for_subarray(self.parsed[filename],
-                             lambda x: self._has_server_names(x, names),
-                             lambda x: _replace_directives(x, directives))
-        else:
-            _do_for_subarray(self.parsed[filename],
-                             lambda x: self._has_server_names(x, names),
-                             lambda x: x.extend(directives))
+        _do_for_subarray(self.parsed[filename],
+                         lambda x: self._has_server_names(x, names),
+                         lambda x: _add_directives(x, directives, replace))
+
+    def add_http_directives(self, filename, directives):
+        """Adds directives to the first encountered HTTP block in filename.
+
+        :param str filename: The absolute filename of the config file
+        :param list directives: The directives to add
+
+        """
+        _do_for_subarray(self.parsed[filename],
+                         lambda x: x[0] == ['http'],
+                         lambda x: _add_directives(x[1], [directives], False))
 
     def get_all_certs_keys(self):
         """Gets all certs and keys in the nginx config.
@@ -461,24 +469,28 @@ def _parse_server(server):
     return parsed_server
 
 
-def _replace_directives(block, directives):
-    """Replaces directives in a block. If the directive doesn't exist in
+def _add_directives(block, directives, replace=False):
+    """Adds or replaces directives in a block. If the directive doesn't exist in
     the entry already, raises a misconfiguration error.
 
     ..todo :: Find directives that are in included files.
 
     :param list block: The block to replace in
     :param list directives: The new directives.
+
     """
-    for directive in directives:
-        changed = False
-        if len(directive) == 0:
-            continue
-        for index, line in enumerate(block):
-            if len(line) > 0 and line[0] == directive[0]:
-                block[index] = directive
-                changed = True
-        if not changed:
-            raise errors.LetsEncryptMisconfigurationError(
-                'LetsEncrypt expected directive for %s in the Nginx config '
-                'but did not find it.' % directive[0])
+    if replace:
+        for directive in directives:
+            changed = False
+            if len(directive) == 0:
+                continue
+            for index, line in enumerate(block):
+                if len(line) > 0 and line[0] == directive[0]:
+                    block[index] = directive
+                    changed = True
+            if not changed:
+                raise errors.LetsEncryptMisconfigurationError(
+                    'LetsEncrypt expected directive for %s in the Nginx '
+                    'config but did not find it.' % directive[0])
+    else:
+        block.extend(directives)

@@ -140,6 +140,16 @@ class NginxParserTest(util.NginxTest):
                           ['foo', 'bar'],
                           ['ssl_certificate', '/etc/ssl/cert2.pem']])
 
+    def test_add_http_directives(self):
+        nparser = parser.NginxParser(self.config_path, self.ssl_options)
+        filep = nparser.abs_path('nginx.conf')
+        block = [['server'],
+                 [['listen', '80'],
+                  ['server_name', 'localhost']]]
+        nparser.add_http_directives(filep, block)
+        self.assertEqual(nparser.parsed[filep][-1][0], ['http'])
+        self.assertEqual(nparser.parsed[filep][-1][1][-1], block)
+
     def test_replace_server_directives(self):
         nparser = parser.NginxParser(self.config_path, self.ssl_options)
         target = set(['.example.com', 'example.*'])
@@ -203,4 +213,4 @@ class NginxParserTest(util.NginxTest):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    unittest.main()  # pragma: no cover

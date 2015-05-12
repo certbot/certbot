@@ -7,7 +7,7 @@ import unittest
 
 import mock
 
-from letsencrypt.client import constants
+from letsencrypt.client.plugins.nginx import constants
 from letsencrypt.client.plugins.nginx import configurator
 
 
@@ -54,7 +54,7 @@ def dir_setup(test_dir="debian_nginx/two_vhost_80"):
 def setup_nginx_ssl_options(config_dir):
     """Move the ssl_options into position and return the path."""
     option_path = os.path.join(config_dir, "options-ssl.conf")
-    shutil.copyfile(constants.NGINX_MOD_SSL_CONF, option_path)
+    shutil.copyfile(constants.MOD_SSL_CONF, option_path)
     return option_path
 
 
@@ -65,12 +65,13 @@ def get_nginx_configurator(
     backups = os.path.join(work_dir, "backups")
 
     config = configurator.NginxConfigurator(
-        mock.MagicMock(
+        config=mock.MagicMock(
             nginx_server_root=config_path, nginx_mod_ssl_conf=ssl_options,
             le_vhost_ext="-le-ssl.conf", backup_dir=backups,
             config_dir=config_dir, work_dir=work_dir,
             temp_checkpoint_dir=os.path.join(work_dir, "temp_checkpoints"),
             in_progress_dir=os.path.join(backups, "IN_PROGRESS")),
-        version)
+        name="nginx",
+        version=version)
     config.prepare()
     return config

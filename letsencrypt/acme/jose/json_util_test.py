@@ -45,10 +45,10 @@ class FieldTest(unittest.TestCase):
         class MockField(interfaces.JSONDeSerializable):
             # pylint: disable=missing-docstring
             def to_partial_json(self):
-                return 'foo'
+                return 'foo'  # pragma: no cover
             @classmethod
             def from_json(cls, jobj):
-                pass
+                pass  # pragma: no cover
         mock_field = MockField()
 
         from letsencrypt.acme.jose.json_util import Field
@@ -294,4 +294,4 @@ class TypedJSONObjectWithFieldsTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest.main()  # pragma: no cover
