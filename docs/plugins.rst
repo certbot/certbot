@@ -5,8 +5,8 @@ Plugins
 Let's Encrypt client supports dynamic discovery of plugins through the
 `setuptools entry points`_. This way you can, for example, create a
 custom implementation of
-`~letsencrypt.client.interfaces.IAuthenticator` or the
-'~letsencrypt.client.interfaces.IInstaller' without having to
+`~letsencrypt.interfaces.IAuthenticator` or the
+'~letsencrypt.interfaces.IInstaller' without having to
 merge it with the core upstream source code. An example is provided in
 ``examples/plugins/`` directory.
 
