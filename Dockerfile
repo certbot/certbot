@@ -1,4 +1,4 @@
-FROM buildpack-deps:jessie
+FROM debian:jessie
 MAINTAINER Jakub Warmuz <jakub@warmuz.org>
 
 # You neccesarily have to bind to 443@host as well! (ACME spec)
