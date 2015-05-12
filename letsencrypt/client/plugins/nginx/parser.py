@@ -41,9 +41,6 @@ class NginxParser(object):
         directives inside 'http' and 'server' blocks. Note that this only
         reads Nginx files that potentially declare a virtual host.
 
-        .. todo:: Can Nginx 'virtual hosts' be defined somewhere other than in
-        the server context?
-
         :param str filepath: The path to the files to parse, as a glob
 
         """
