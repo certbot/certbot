@@ -3,6 +3,7 @@ import os
 import re
 
 from setuptools import setup
+from setuptools import find_packages
 
 # Workaround for http://bugs.python.org/issue8876, see
 # http://bugs.python.org/issue8876#msg208792
@@ -29,7 +30,7 @@ changes = read_file(os.path.join(here, 'CHANGES.rst'))
 
 install_requires = [
     'argparse',
-    'ConfArgParse',
+    'ConfigArgParse',
     'configobj',
     'jsonschema',
     'mock',
@@ -98,24 +99,7 @@ setup(
         'Topic :: Utilities',
     ],
 
-    packages=[
-        'letsencrypt',
-        'letsencrypt.acme',
-        'letsencrypt.acme.jose',
-        'letsencrypt.client',
-        'letsencrypt.client.display',
-        'letsencrypt.client.plugins',
-        'letsencrypt.client.plugins.apache',
-        'letsencrypt.client.plugins.apache.tests',
-        'letsencrypt.client.plugins.nginx',
-        'letsencrypt.client.plugins.nginx.tests',
-        'letsencrypt.client.plugins.standalone',
-        'letsencrypt.client.plugins.standalone.tests',
-        'letsencrypt.client.tests',
-        'letsencrypt.client.tests.display',
-        'letsencrypt.scripts',
-    ],
-
+    packages=find_packages(exclude=['docs', 'examples', 'tests', 'venv']),
     install_requires=install_requires,
     extras_require={
         'dev': dev_extras,
@@ -124,20 +108,22 @@ setup(
     },
 
     tests_require=install_requires,
+    # to test all packages run "python setup.py test -s
+    # {acme,letsencrypt_apache,letsencrypt_nginx}"
     test_suite='letsencrypt',
 
     entry_points={
         'console_scripts': [
-            'letsencrypt = letsencrypt.scripts.main:main',
+            'letsencrypt = letsencrypt.cli:main',
             'jws = letsencrypt.acme.jose.jws:CLI.run',
         ],
-        'letsencrypt.authenticators': [
-            'apache = letsencrypt.client.plugins.apache.configurator'
-            ':ApacheConfigurator',
-            'nginx = letsencrypt.client.plugins.nginx.configurator'
-            ':NginxConfigurator',
-            'standalone = letsencrypt.client.plugins.standalone.authenticator'
+        'letsencrypt.plugins': [
+            'standalone = letsencrypt.plugins.standalone.authenticator'
             ':StandaloneAuthenticator',
+
+            # to be moved to separate pypi packages
+            'apache = letsencrypt_apache.configurator:ApacheConfigurator',
+            'nginx = letsencrypt_nginx.configurator:NginxConfigurator',
         ],
     },
 
