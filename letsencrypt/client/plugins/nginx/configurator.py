@@ -30,8 +30,6 @@ class NginxConfigurator(common.Plugin):
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
     """Nginx configurator.
 
-    .. warning:: This plugin is a stub, does not support DVSNI yet!
-
     .. todo:: Add proper support for comments in the config. Currently,
         config files modified by the configurator will lose all their comments.
 
@@ -270,7 +268,7 @@ class NginxConfigurator(common.Plugin):
         a 'listen 443 ssl' directive to the server block.
 
         .. todo:: Maybe this should create a new block instead of modifying
-        the existing one?
+            the existing one?
 
         :param vhost: The vhost to add SSL to.
         :type vhost: :class:`~letsencrypt.client.plugins.nginx.obj.VirtualHost`
@@ -553,6 +551,10 @@ class NginxConfigurator(common.Plugin):
 
 def nginx_restart(nginx_ctl):
     """Restarts the Nginx Server.
+
+    .. todo:: Nginx restart is fatal if the configuration references
+        non-existent SSL cert/key files. Remove references to /etc/letsencrypt
+        before restart.
 
     :param str nginx_ctl: Path to the Nginx binary.
 
