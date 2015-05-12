@@ -67,12 +67,20 @@ class Addr(ApacheAddr):
         return cls(host, port, ssl, default)
 
     def __str__(self):
+        parts = ''
         if self.tup[0] and self.tup[1]:
-            return "%s:%s" % self.tup
+            parts = "%s:%s" % self.tup
         elif self.tup[0]:
-            return self.tup[0]
+            parts = self.tup[0]
         else:
-            return self.tup[1]
+            parts = self.tup[1]
+
+        if self.default:
+            parts += ' default_server'
+        if self.ssl:
+            parts += ' ssl'
+
+        return parts
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
@@ -89,7 +97,7 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
     :ivar set addrs: Virtual Host addresses (:class:`set` of :class:`Addr`)
     :ivar set names: Server names/aliases of vhost
         (:class:`list` of :class:`str`)
-    :ivar array raw: The raw form of the parsed server block
+    :ivar list raw: The raw form of the parsed server block
 
     :ivar bool ssl: SSLEngine on in vhost
     :ivar bool enabled: Virtual host is enabled
