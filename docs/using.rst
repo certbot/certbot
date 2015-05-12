@@ -53,8 +53,7 @@ Installation
 .. code-block:: shell
 
    virtualenv --no-site-packages -p python2 venv
-   ./venv/bin/python setup.py install
-   sudo ./venv/bin/letsencrypt
+   ./venv/bin/pip install -r requirements.txt
 
 
 Usage

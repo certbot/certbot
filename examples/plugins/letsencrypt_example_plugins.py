@@ -1,18 +1,31 @@
-"""Example Let's Encrypt plugins."""
+"""Example Let's Encrypt plugins.
+
+For full examples, see `letsencrypt.plugins`.
+
+"""
 import zope.interface
 
-from letsencrypt.client import interfaces
+from letsencrypt import interfaces
+from letsencrypt.plugins import common
 
 
-class Authenticator(object):
+class Authenticator(common.Plugin):
+    """Example Authenticator."""
     zope.interface.implements(interfaces.IAuthenticator)
+    zope.interface.classProvides(interfaces.IPluginFactory)
 
-    description = 'Example Authenticator plugin'
-
-    def __init__(self, config):
-        self.config = config
+    description = "Example Authenticator plugin"
 
     # Implement all methods from IAuthenticator, remembering to add
     # "self" as first argument, e.g. def prepare(self)...
 
-    # For full examples, see letsencrypt.client.plugins
+
+class Installer(common.Plugins):
+    """Example Installer."""
+    zope.interface.implements(interfaces.IInstaller)
+    zope.interface.classProvides(interfaces.IPluginFactory)
+
+    description = "Example Installer plugin"
+
+    # Implement all methods from IInstaller, remembering to add
+    # "self" as first argument, e.g. def get_all_names(self)...

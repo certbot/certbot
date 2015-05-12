@@ -15,7 +15,7 @@ Now you can install the development packages:
 
 .. code-block:: shell
 
-   ./venv/bin/python setup.py dev
+   ./venv/bin/pip install -r requirements.txt -e .[dev,docs,testing]
 
 The code base, including your pull requests, **must** have 100% test
 statement coverage **and** be compliant with the :ref:`coding style
@@ -48,7 +48,7 @@ synced to ``/vagrant``, so you can get started with:
 
   vagrant ssh
   cd /vagrant
-  ./venv/bin/python setup.py install
+  ./venv/bin/pip install -r requirements.txt
   sudo ./venv/bin/letsencrypt
 
 Support for other Linux distributions coming soon.
@@ -67,12 +67,10 @@ Support for other Linux distributions coming soon.
 Code components and layout
 ==========================
 
-letsencrypt/acme
+acme
   contains all protocol specific code
-letsencrypt/client
+letsencrypt
   all client code
-letsencrypt/scripts
-  just the starting point of the code, main.py
 
 
 Plugin-architecture
@@ -84,14 +82,14 @@ The interfaces available for plugins to implement are defined in
 `interfaces.py`_.
 
 The most common kind of plugin is a "Configurator", which is likely to
-implement the `~letsencrypt.client.interfaces.IAuthenticator` and
-`~letsencrypt.client.interfaces.IInstaller` interfaces (though some
+implement the `~letsencrypt.interfaces.IAuthenticator` and
+`~letsencrypt.interfaces.IInstaller` interfaces (though some
 Configurators may implement just one of those).
 
-There are also `~letsencrypt.client.interfaces.IDisplay` plugins,
+There are also `~letsencrypt.interfaces.IDisplay` plugins,
 which implement bindings to alternative UI libraries.
 
-.. _interfaces.py: https://github.com/letsencrypt/lets-encrypt-preview/blob/master/letsencrypt/client/interfaces.py
+.. _interfaces.py: https://github.com/letsencrypt/lets-encrypt-preview/blob/master/letsencrypt/interfaces.py
 
 
 Authenticators
@@ -138,7 +136,7 @@ Installer Development
 ---------------------
 
 There are a few existing classes that may be beneficial while
-developing a new `~letsencrypt.client.interfaces.IInstaller`.
+developing a new `~letsencrypt.interfaces.IInstaller`.
 Installers aimed to reconfigure UNIX servers may use Augeas for
 configuration parsing and can inherit from `~.AugeasConfigurator` class
 to handle much of the interface. Installers that are unable to use
@@ -150,7 +148,7 @@ Display
 ~~~~~~~
 
 We currently offer a pythondialog and "text" mode for displays. Display
-plugins implement the `~letsencrypt.client.interfaces.IDisplay`
+plugins implement the `~letsencrypt.interfaces.IDisplay`
 interface.
 
 

@@ -17,11 +17,15 @@ It's all automated:
 * If domain control has been proven, a certificate will get issued and the tool
   will automatically install it.
 
-All you need to do is:
+All you need to do is::
 
-::
+  user@www:~$ sudo letsencrypt -d www.example.org auth
 
-   user@www:~$ sudo letsencrypt -d www.example.org
+and if you have a compatbile web server (Apache or Nginx), Let's Encrypt can
+not only get a new certificate, but also deploy it and configure your
+server automatically!::
+
+  user@www:~$ sudo letsencrypt -d www.example.org run
 
 
 **Encrypt ALL the things!**
@@ -56,7 +60,8 @@ Current Features
 
 * web servers supported:
 
-  - apache2.x (tested and working on Ubuntu Linux)
+  - apache/2.x (tested and working on Ubuntu Linux)
+  - nginx/0.8.48+ (tested and mostly working on Ubuntu Linux)
   - standalone (runs its own webserver to prove you control the domain)
 
 * the private key is generated locally on your system
@@ -66,7 +71,7 @@ Current Features
 * can revoke certificates
 * adjustable RSA key bitlength (2048 (default), 4096, ...)
 * optionally can install a http->https redirect, so your site effectively
-  runs https only
+  runs https only (Apache only)
 * fully automated
 * configuration changes are logged and can be reverted using the CLI
 * text and ncurses UI
