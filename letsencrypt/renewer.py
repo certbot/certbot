@@ -2,11 +2,6 @@
 certs within lineages of successor certificates, according to
 configuration."""
 
-# os.path.islink
-# os.readlink
-# os.path.dirname / os.path.basename
-# os.path.join
-
 # TODO: sanity checking consistency, validity, freshness?
 
 # TODO: call new installer API to restart servers after deployment
@@ -87,6 +82,11 @@ def renew(cert, old_version):
 
 def main(config=DEFAULTS):
     """main function for autorenewer script."""
+    # TODO: Distinguish automated invocation from manual invocation,
+    #       perhaps by looking at sys.argv[0] and inhibiting automated
+    #       invocations if /etc/letsencrypt/renewal.conf defaults have
+    #       turned it off. (The boolean parameter should probably be
+    #       called renewer_enabled.)
     for i in os.listdir(config["renewal_configs_dir"]):
         print "Processing", i
         if not i.endswith(".conf"):

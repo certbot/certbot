@@ -115,6 +115,7 @@ setup(
     entry_points={
         'console_scripts': [
             'letsencrypt = letsencrypt.cli:main',
+            'letsencrypt-renewer = letsencrypt.renewer:main',
             'jws = letsencrypt.acme.jose.jws:CLI.run',
         ],
         'letsencrypt.plugins': [
