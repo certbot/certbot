@@ -12,6 +12,19 @@ import unittest
 
 ALL_FOUR = ("cert", "privkey", "chain", "fullchain")
 
+def unlink_all(rc_object):
+    """Unlink all four items associated with this RenewableCert.
+    (Helper function.)"""
+    for kind in ALL_FOUR:
+        os.unlink(rc_object.__getattribute__(kind))
+
+def fill_with_sample_data(rc_object):
+    """Put dummy data into all four files of this RenewableCert.
+    (Helper function.)"""
+    for kind in ALL_FOUR:
+        with open(rc_object.__getattribute__(kind), "w") as f:
+            f.write(kind)
+
 class RenewableCertTests(unittest.TestCase):
     # pylint: disable=too-many-public-methods
     """Tests for the RenewableCert class as well as other functions
@@ -24,17 +37,14 @@ class RenewableCertTests(unittest.TestCase):
         os.makedirs(os.path.join(self.tempdir, "configs"))
         defaults = configobj.ConfigObj()
         defaults["live_dir"] = os.path.join(self.tempdir, "live")
-        defaults["official_archive_dir"] = os.path.join(self.tempdir, "archive")
-        defaults["renewal_configs_dir"] = os.path.join(self.tempdir, "configs")
+        defaults["official_archive_dir"] = os.path.join(self.tempdir,
+                                                        "archive")
+        defaults["renewal_configs_dir"] = os.path.join(self.tempdir,
+                                                       "configs")
         config = configobj.ConfigObj()
-        config["cert"] = os.path.join(self.tempdir, "live", "example.org",
-                                      "cert.pem")
-        config["privkey"] = os.path.join(self.tempdir, "live", "example.org",
-                                         "privkey.pem")
-        config["chain"] = os.path.join(self.tempdir, "live", "example.org",
-                                       "chain.pem")
-        config["fullchain"] = os.path.join(self.tempdir, "live", "example.org",
-                                           "fullchain.pem")
+        for kind in ALL_FOUR:
+            config[kind] = os.path.join(self.tempdir, "live", "example.org",
+                                        kind + ".pem")
         config.filename = os.path.join(self.tempdir, "configs",
                                        "example.org.conf")
         self.defaults = defaults     # for main() test
@@ -68,10 +78,8 @@ class RenewableCertTests(unittest.TestCase):
         from letsencrypt import storage
         defaults = configobj.ConfigObj()
         config = configobj.ConfigObj()
-        config["cert"] = "/tmp/cert.pem"
-        config["privkey"] = "/tmp/privkey.pem"
-        config["chain"] = "/tmp/chain.pem"
-        config["fullchain"] = "/tmp/fullchain.pem"
+        for kind in ALL_FOUR:
+            config["cert"] = "/tmp/" + kind + ".pem"
         config.filename = "/tmp/sillyfile"
         self.assertRaises(ValueError, storage.RenewableCert, config, defaults)
         self.assertRaises(TypeError, storage.RenewableCert, "fun", defaults)
@@ -89,7 +97,6 @@ class RenewableCertTests(unittest.TestCase):
         config.filename = "/tmp/genuineconfig.conf"
         self.assertRaises(ValueError, storage.RenewableCert, config, defaults)
 
-
     def test_consistent(self): # pylint: disable=too-many-statements
         oldcert = self.test_rc.cert
         self.test_rc.cert = "relative/path"
@@ -99,62 +106,29 @@ class RenewableCertTests(unittest.TestCase):
         # Items must exist requirement
         self.assertEqual(self.test_rc.consistent(), False)
         # Items must be symlinks requirements
-        with open(self.test_rc.cert, "w") as f:
-            f.write("hello")
-        with open(self.test_rc.privkey, "w") as f:
-            f.write("hello")
-        with open(self.test_rc.chain, "w") as f:
-            f.write("hello")
-        with open(self.test_rc.fullchain, "w") as f:
-            f.write("hello")
+        fill_with_sample_data(self.test_rc)
         self.assertEqual(self.test_rc.consistent(), False)
-        os.unlink(self.test_rc.cert)
-        os.unlink(self.test_rc.privkey)
-        os.unlink(self.test_rc.chain)
-        os.unlink(self.test_rc.fullchain)
+        unlink_all(self.test_rc)
         # Items must point to desired place if they are relative
-        os.symlink(os.path.join("..", "cert17.pem"), self.test_rc.cert)
-        os.symlink(os.path.join("..", "privkey17.pem"), self.test_rc.privkey)
-        os.symlink(os.path.join("..", "chain17.pem"), self.test_rc.chain)
-        os.symlink(os.path.join("..", "fullchain17.pem"),
-                   self.test_rc.fullchain)
+        for kind in ALL_FOUR:
+            os.symlink(os.path.join("..", kind + "17.pem"),
+                       self.test_rc.__getattribute__(kind))
         self.assertEqual(self.test_rc.consistent(), False)
-        os.unlink(self.test_rc.cert)
-        os.unlink(self.test_rc.privkey)
-        os.unlink(self.test_rc.chain)
-        os.unlink(self.test_rc.fullchain)
+        unlink_all(self.test_rc)
         # Items must point to desired place if they are absolute
-        os.symlink(os.path.join(self.tempdir, "cert17.pem"), self.test_rc.cert)
-        os.symlink(os.path.join(self.tempdir, "privkey17.pem"),
-                   self.test_rc.privkey)
-        os.symlink(os.path.join(self.tempdir, "chain17.pem"),
-                   self.test_rc.chain)
-        os.symlink(os.path.join(self.tempdir, "fullchain17.pem"),
-                   self.test_rc.fullchain)
+        for kind in ALL_FOUR:
+            os.symlink(os.path.join(self.tempdir, kind + "17.pem"),
+                       self.test_rc.__getattribute__(kind))
         self.assertEqual(self.test_rc.consistent(), False)
-        os.unlink(self.test_rc.cert)
-        os.unlink(self.test_rc.privkey)
-        os.unlink(self.test_rc.chain)
-        os.unlink(self.test_rc.fullchain)
+        unlink_all(self.test_rc)
         # Items must point to things that exist
-        os.symlink(os.path.join("..", "..", "archive", "example.org",
-                                "cert17.pem"), self.test_rc.cert)
-        os.symlink(os.path.join("..", "..", "archive", "example.org",
-                                "privkey17.pem"), self.test_rc.privkey)
-        os.symlink(os.path.join("..", "..", "archive", "example.org",
-                                "chain17.pem"), self.test_rc.chain)
-        os.symlink(os.path.join("..", "..", "archive", "example.org",
-                                "fullchain17.pem"), self.test_rc.fullchain)
+        for kind in ALL_FOUR:
+            os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                    kind + "17.pem"),
+                       self.test_rc.__getattribute__(kind))
         self.assertEqual(self.test_rc.consistent(), False)
         # This version should work
-        with open(self.test_rc.cert, "w") as f:
-            f.write("cert")
-        with open(self.test_rc.privkey, "w") as f:
-            f.write("privkey")
-        with open(self.test_rc.chain, "w") as f:
-            f.write("chain")
-        with open(self.test_rc.fullchain, "w") as f:
-            f.write("fullchain")
+        fill_with_sample_data(self.test_rc)
         self.assertEqual(self.test_rc.consistent(), True)
         # Items must point to things that follow the naming convention
         os.unlink(self.test_rc.fullchain)
@@ -265,8 +239,7 @@ class RenewableCertTests(unittest.TestCase):
         self.assertEqual(2, self.test_rc.current_version("privkey"))
         self.assertEqual(5, self.test_rc.current_version("chain"))
         self.assertEqual(5, self.test_rc.current_version("fullchain"))
-        # Currently we are allowed to update to a version that doesn't
-        # exist
+        # Currently we are allowed to update to a version that doesn't exist
         self.test_rc.update_link_to("chain", 3000)
         # However, current_version doesn't allow querying the resulting
         # version (because it's a broken link).
@@ -351,7 +324,74 @@ class RenewableCertTests(unittest.TestCase):
         # 2014-12-18 22:34:45+00:00 = Unix time 1418942085
 
     @mock.patch("letsencrypt.storage.datetime")
-    def test_should_autodeploy(self, mock_datetime):
+    def test_time_interval_judgments(self, mock_datetime):
+        """Test should_autodeploy() and should_autorenew() on the basis
+        of expiry time windows."""
+        test_cert = pkg_resources.resource_string(
+            "letsencrypt.tests", "testdata/cert.pem")
+        for kind in ALL_FOUR:
+            where = self.test_rc.__getattribute__(kind)
+            os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                    "{0}12.pem".format(kind)), where)
+            with open(where, "w") as f:
+                f.write(kind)
+            os.unlink(where)
+            os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                    "{0}11.pem".format(kind)), where)
+            with open(where, "w") as f:
+                f.write(kind)
+        self.test_rc.update_all_links_to(12)
+        with open(self.test_rc.cert, "w") as f:
+            f.write(test_cert)
+        self.test_rc.update_all_links_to(11)
+        with open(self.test_rc.cert, "w") as f:
+            f.write(test_cert)
+
+        mock_datetime.timedelta = datetime.timedelta
+        # 2014-12-13 12:00:00+00:00 (about 5 days prior to expiry)
+        sometime = datetime.datetime.utcfromtimestamp(1418472000)
+        mock_datetime.datetime.utcnow.return_value = sometime
+        # Times that should result in autorenewal/autodeployment
+        for when in ("2 months", "1 week"):
+            self.test_rc.configuration["deploy_before_expiry"] = when
+            self.test_rc.configuration["renew_before_expiry"] = when
+            self.assertTrue(self.test_rc.should_autodeploy())
+            self.assertTrue(self.test_rc.should_autorenew())
+        # Times that should not
+        for when in ("4 days", "2 days"):
+            self.test_rc.configuration["deploy_before_expiry"] = when
+            self.test_rc.configuration["renew_before_expiry"] = when
+            self.assertFalse(self.test_rc.should_autodeploy())
+            self.assertFalse(self.test_rc.should_autorenew())
+        # 2009-05-01 12:00:00+00:00 (about 5 years prior to expiry)
+        sometime = datetime.datetime.utcfromtimestamp(1241179200)
+        mock_datetime.datetime.utcnow.return_value = sometime
+        # Times that should result in autorenewal/autodeployment
+        for when in ("7 years", "11 years 2 months"):
+            self.test_rc.configuration["deploy_before_expiry"] = when
+            self.test_rc.configuration["renew_before_expiry"] = when
+            self.assertTrue(self.test_rc.should_autodeploy())
+            self.assertTrue(self.test_rc.should_autorenew())
+        # Times that should not
+        for when in ("8 hours", "2 days", "40 days", "9 months"):
+            self.test_rc.configuration["deploy_before_expiry"] = when
+            self.test_rc.configuration["renew_before_expiry"] = when
+            self.assertFalse(self.test_rc.should_autodeploy())
+            self.assertFalse(self.test_rc.should_autorenew())
+        # 2015-01-01 (after expiry has already happened, so all intervals
+        #             should result in autorenewal/autodeployment)
+        sometime = datetime.datetime.utcfromtimestamp(1420070400)
+        mock_datetime.datetime.utcnow.return_value = sometime
+        for when in ("0 seconds", "10 seconds", "10 minutes", "10 weeks",
+                     "10 months", "10 years", "300 months"):
+            self.test_rc.configuration["deploy_before_expiry"] = when
+            self.test_rc.configuration["renew_before_expiry"] = when
+            self.assertTrue(self.test_rc.should_autodeploy())
+            self.assertTrue(self.test_rc.should_autorenew())
+
+    def test_should_autodeploy(self):
+        """Test should_autodeploy() on the basis of reasons other than
+        expiry time window."""
         # pylint: disable=too-many-statements
         # Autodeployment turned off
         self.test_rc.configuration["autodeploy"] = "0"
@@ -368,60 +408,11 @@ class RenewableCertTests(unittest.TestCase):
                 with open(where, "w") as f:
                     f.write(kind)
         self.assertFalse(self.test_rc.should_autodeploy())
-        test_cert = pkg_resources.resource_string(
-            "letsencrypt.tests", "testdata/cert.pem")
-        mock_datetime.timedelta = datetime.timedelta
-        # 2014-12-13 12:00:00+00:00 (about 5 days prior to expiry)
-        sometime = datetime.datetime.utcfromtimestamp(1418472000)
-        mock_datetime.datetime.utcnow.return_value = sometime
-        self.test_rc.update_all_links_to(3)
-        with open(self.test_rc.cert, "w") as f:
-            f.write(test_cert)
-        self.test_rc.configuration["deploy_before_expiry"] = "2 months"
-        self.assertTrue(self.test_rc.should_autodeploy())
-        self.test_rc.configuration["deploy_before_expiry"] = "1 week"
-        self.assertTrue(self.test_rc.should_autodeploy())
-        self.test_rc.configuration["deploy_before_expiry"] = "4 days"
-        self.assertFalse(self.test_rc.should_autodeploy())
-        self.test_rc.configuration["deploy_before_expiry"] = "2 days"
-        self.assertFalse(self.test_rc.should_autodeploy())
-        # 2009-05-01 12:00:00+00:00 (about 5 years prior to expiry)
-        sometime = datetime.datetime.utcfromtimestamp(1241179200)
-        mock_datetime.datetime.utcnow.return_value = sometime
-        self.test_rc.configuration["deploy_before_expiry"] = "8 hours"
-        self.assertFalse(self.test_rc.should_autodeploy())
-        self.test_rc.configuration["deploy_before_expiry"] = "2 days"
-        self.assertFalse(self.test_rc.should_autodeploy())
-        self.test_rc.configuration["deploy_before_expiry"] = "40 days"
-        self.assertFalse(self.test_rc.should_autodeploy())
-        self.test_rc.configuration["deploy_before_expiry"] = "9 months"
-        self.assertFalse(self.test_rc.should_autodeploy())
-        self.test_rc.configuration["deploy_before_expiry"] = "7 years"
-        self.assertTrue(self.test_rc.should_autodeploy())
-        self.test_rc.configuration["deploy_before_expiry"] = "11 years "
-        self.test_rc.configuration["deploy_before_expiry"] += "2 months"
-        self.assertTrue(self.test_rc.should_autodeploy())
-        # 2015-01-01 (after expiry has already happened)
-        sometime = datetime.datetime.utcfromtimestamp(1420070400)
-        mock_datetime.datetime.utcnow.return_value = sometime
-        self.test_rc.configuration["deploy_before_expiry"] = "0 seconds"
-        self.assertTrue(self.test_rc.should_autodeploy())
-        self.test_rc.configuration["deploy_before_expiry"] = "10 seconds"
-        self.assertTrue(self.test_rc.should_autodeploy())
-        self.test_rc.configuration["deploy_before_expiry"] = "10 minutes"
-        self.assertTrue(self.test_rc.should_autodeploy())
-        self.test_rc.configuration["deploy_before_expiry"] = "10 weeks"
-        self.assertTrue(self.test_rc.should_autodeploy())
-        self.test_rc.configuration["deploy_before_expiry"] = "10 months"
-        self.assertTrue(self.test_rc.should_autodeploy())
-        self.test_rc.configuration["deploy_before_expiry"] = "10 years"
-        self.assertTrue(self.test_rc.should_autodeploy())
-        self.test_rc.configuration["deploy_before_expiry"] = "300 months"
-        self.assertTrue(self.test_rc.should_autodeploy())
 
-    @mock.patch("letsencrypt.storage.datetime")
     @mock.patch("letsencrypt.storage.RenewableCert.ocsp_revoked")
-    def test_should_autorenew(self, mock_ocsp, mock_datetime):
+    def test_should_autorenew(self, mock_ocsp):
+        """Test should_autorenew on the basis of reasons other than
+        expiry time window."""
         # pylint: disable=too-many-statements
         # Autorenewal turned off
         self.test_rc.configuration["autorenew"] = "0"
@@ -433,60 +424,10 @@ class RenewableCertTests(unittest.TestCase):
                                     "{0}12.pem".format(kind)), where)
             with open(where, "w") as f:
                 f.write(kind)
-        test_cert = pkg_resources.resource_string(
-            "letsencrypt.tests", "testdata/cert.pem")
         # Mandatory renewal on the basis of OCSP revocation
         mock_ocsp.return_value = True
         self.assertTrue(self.test_rc.should_autorenew())
         mock_ocsp.return_value = False
-        # On the basis of expiry time
-        mock_datetime.timedelta = datetime.timedelta
-        # 2014-12-13 12:00:00+00:00 (about 5 days prior to expiry)
-        sometime = datetime.datetime.utcfromtimestamp(1418472000)
-        mock_datetime.datetime.utcnow.return_value = sometime
-        self.test_rc.update_all_links_to(12)
-        with open(self.test_rc.cert, "w") as f:
-            f.write(test_cert)
-        self.test_rc.configuration["renew_before_expiry"] = "2 months"
-        self.assertTrue(self.test_rc.should_autorenew())
-        self.test_rc.configuration["renew_before_expiry"] = "1 week"
-        self.assertTrue(self.test_rc.should_autorenew())
-        self.test_rc.configuration["renew_before_expiry"] = "4 days"
-        self.assertFalse(self.test_rc.should_autorenew())
-        self.test_rc.configuration["renew_before_expiry"] = "2 days"
-        self.assertFalse(self.test_rc.should_autorenew())
-        # 2009-05-01 12:00:00+00:00 (about 5 years prior to expiry)
-        sometime = datetime.datetime.utcfromtimestamp(1241179200)
-        mock_datetime.datetime.utcnow.return_value = sometime
-        self.test_rc.configuration["renew_before_expiry"] = "8 hours"
-        self.assertFalse(self.test_rc.should_autorenew())
-        self.test_rc.configuration["renew_before_expiry"] = "2 days"
-        self.assertFalse(self.test_rc.should_autorenew())
-        self.test_rc.configuration["renew_before_expiry"] = "40 days"
-        self.assertFalse(self.test_rc.should_autorenew())
-        self.test_rc.configuration["renew_before_expiry"] = "9 months"
-        self.assertFalse(self.test_rc.should_autorenew())
-        self.test_rc.configuration["renew_before_expiry"] = "7 years"
-        self.assertTrue(self.test_rc.should_autorenew())
-        self.test_rc.configuration["renew_before_expiry"] = "11 years 2 months"
-        self.assertTrue(self.test_rc.should_autorenew())
-        # 2015-01-01 (after expiry has already happened)
-        sometime = datetime.datetime.utcfromtimestamp(1420070400)
-        mock_datetime.datetime.utcnow.return_value = sometime
-        self.test_rc.configuration["renew_before_expiry"] = "0 seconds"
-        self.assertTrue(self.test_rc.should_autorenew())
-        self.test_rc.configuration["renew_before_expiry"] = "10 seconds"
-        self.assertTrue(self.test_rc.should_autorenew())
-        self.test_rc.configuration["renew_before_expiry"] = "10 minutes"
-        self.assertTrue(self.test_rc.should_autorenew())
-        self.test_rc.configuration["renew_before_expiry"] = "10 weeks"
-        self.assertTrue(self.test_rc.should_autorenew())
-        self.test_rc.configuration["renew_before_expiry"] = "10 months"
-        self.assertTrue(self.test_rc.should_autorenew())
-        self.test_rc.configuration["renew_before_expiry"] = "10 years"
-        self.assertTrue(self.test_rc.should_autorenew())
-        self.test_rc.configuration["renew_before_expiry"] = "300 months"
-        self.assertTrue(self.test_rc.should_autorenew())
 
     def test_save_successor(self):
         for ver in range(1, 6):
@@ -637,25 +578,12 @@ class RenewableCertTests(unittest.TestCase):
         #      take account of the current date (if so, some of these
         #      may fail in the future, like in leap years or even in
         #      months of different lengths!)
-        self.assertEqual(storage.parse_time_interval(""),
-                         datetime.timedelta(0))
-        self.assertEqual(storage.parse_time_interval("1 hour"),
-                         datetime.timedelta(0, 3600))
-        self.assertEqual(storage.parse_time_interval("17 days"),
-                         datetime.timedelta(17))
-        # Days are assumed if no unit is specified.
-        self.assertEqual(storage.parse_time_interval("23"),
-                         datetime.timedelta(23))
-        self.assertEqual(storage.parse_time_interval("1 month"),
-                         datetime.timedelta(31))
-        self.assertEqual(storage.parse_time_interval("7 weeks"),
-                         datetime.timedelta(49))
-        self.assertEqual(storage.parse_time_interval("1 year 1 day"),
-                         datetime.timedelta(366))
-        self.assertEqual(storage.parse_time_interval("1 year-1 day"),
-                         datetime.timedelta(364))
-        self.assertEqual(storage.parse_time_interval("4 years"),
-                         datetime.timedelta(1461))
+        intended = {"": 0, "17 days": 17, "23": 23, "1 month": 31,
+                    "7 weeks": 49, "1 year 1 day": 366, "1 year-1 day": 364,
+                    "4 years": 1461}
+        for time in intended:
+            self.assertEqual(storage.parse_time_interval(time),
+                             datetime.timedelta(intended[time]))
 
     @mock.patch("letsencrypt.renewer.plugins_disco")
     @mock.patch("letsencrypt.client.determine_account")
@@ -666,22 +594,13 @@ class RenewableCertTests(unittest.TestCase):
 
         test_cert = pkg_resources.resource_string(
             "letsencrypt.tests", "testdata/cert-san.pem")
-        os.symlink(os.path.join("..", "..", "archive", "example.org",
-                                "cert1.pem"), self.test_rc.cert)
-        os.symlink(os.path.join("..", "..", "archive", "example.org",
-                                "privkey1.pem"), self.test_rc.privkey)
-        os.symlink(os.path.join("..", "..", "archive", "example.org",
-                                "chain1.pem"), self.test_rc.chain)
-        os.symlink(os.path.join("..", "..", "archive", "example.org",
-                                "fullchain1.pem"), self.test_rc.fullchain)
+        for kind in ALL_FOUR:
+            os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                    kind + "1.pem"),
+                       self.test_rc.__getattribute__(kind))
+        fill_with_sample_data(self.test_rc)
         with open(self.test_rc.cert, "w") as f:
             f.write(test_cert)
-        with open(self.test_rc.privkey, "w") as f:
-            f.write("privkey")
-        with open(self.test_rc.chain, "w") as f:
-            f.write("chain")
-        with open(self.test_rc.fullchain, "w") as f:
-            f.write("fullchain")
 
         # Fails because renewalparams are missing
         self.assertFalse(renewer.renew(self.test_rc, 1))
