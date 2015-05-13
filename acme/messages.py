@@ -312,7 +312,7 @@ class CertificateRequest(jose.JSONObjectWithFields):
     """ACME new-cert request.
 
     :ivar acme.jose.util.ComparableX509 csr:
-        `M2Crypto.X509.Request` wrapped in `.ComparableX509`
+        `OpenSSL.crypto.X509Req` wrapped in `.ComparableX509`
     :ivar tuple authorizations: `tuple` of URIs (`str`)
 
     """
@@ -324,7 +324,7 @@ class CertificateResource(ResourceWithURI):
     """Certificate Resource.
 
     :ivar acme.jose.util.ComparableX509 body:
-        `M2Crypto.X509.X509` wrapped in `.ComparableX509`
+        `OpenSSL.crypto.X509` wrapped in `.ComparableX509`
     :ivar str cert_chain_uri: URI found in the 'up' ``Link`` header
     :ivar tuple authzrs: `tuple` of `AuthorizationResource`.
 
@@ -336,7 +336,7 @@ class CertificateResource(ResourceWithURI):
 class Revocation(jose.JSONObjectWithFields):
     """Revocation message.
 
-    :ivar .ComparableX509 certificate: `M2Crypto.X509.X509` wrapped in
+    :ivar .ComparableX509 certificate: `OpenSSL.crypto.X509` wrapped in
         `.ComparableX509`
 
     """

@@ -10,7 +10,7 @@ import abc
 import binascii
 import logging
 
-import M2Crypto
+import OpenSSL
 
 from acme.jose import b64
 from acme.jose import errors
@@ -321,26 +321,28 @@ def encode_cert(cert):
     :type cert: :class:`acme.jose.util.ComparableX509`
 
     """
-    return b64.b64encode(cert.as_der())
+    return b64.b64encode(OpenSSL.crypto.dump_certificate(
+        OpenSSL.crypto.FILETYPE_ASN1, cert))
 
 def decode_cert(b64der):
     """Decode JOSE Base-64 DER-encoded certificate."""
     try:
-        return util.ComparableX509(M2Crypto.X509.load_cert_der_string(
-            decode_b64jose(b64der)))
-    except M2Crypto.X509.X509Error as error:
+        return util.ComparableX509(OpenSSL.crypto.load_certificate(
+            OpenSSL.crypto.FILETYPE_ASN1, decode_b64jose(b64der)))
+    except OpenSSL.crypto.Error as error:
         raise errors.DeserializationError(error)
 
 def encode_csr(csr):
     """Encode CSR as JOSE Base-64 DER."""
-    return encode_cert(csr)
+    return b64.b64encode(OpenSSL.crypto.dump_certificate_request(
+        OpenSSL.crypto.FILETYPE_ASN1, csr))
 
 def decode_csr(b64der):
     """Decode JOSE Base-64 DER-encoded CSR."""
     try:
-        return util.ComparableX509(M2Crypto.X509.load_request_der_string(
-            decode_b64jose(b64der)))
-    except M2Crypto.X509.X509Error as error:
+        return util.ComparableX509(OpenSSL.crypto.load_certificate_request(
+            OpenSSL.crypto.FILETYPE_ASN1, decode_b64jose(b64der)))
+    except OpenSSL.crypto.Error as error:
         raise errors.DeserializationError(error)
 
 

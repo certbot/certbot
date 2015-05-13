@@ -43,10 +43,10 @@ acme_install_requires = [
     'pyrfc3339',
     'ndg-httpsclient',  # urllib3 InsecurePlatformWarning (#304)
     'pyasn1',  # urllib3 InsecurePlatformWarning (#304)
+    #'PyOpenSSL',  # version pin would cause mismatch
     'pytz',
     'requests',
     'werkzeug',
-    'M2Crypto',
 ]
 letsencrypt_install_requires = [
     #'acme',

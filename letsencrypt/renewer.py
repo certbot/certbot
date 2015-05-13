@@ -12,6 +12,7 @@ import os
 import sys
 
 import configobj
+import OpenSSL
 import zope.component
 
 from letsencrypt import configuration
@@ -90,8 +91,11 @@ def renew(cert, old_version):
         #      best is to have obtain_certificate return None for
         #      new_key if the old key is to be used (since save_successor
         #      already understands this distinction!)
-        return cert.save_successor(old_version, new_certr.body.as_pem(),
-                                   new_key.pem, new_chain.as_pem())
+        return cert.save_successor(
+            old_version, OpenSSL.crypto.dump_certificate(
+                OpenSSL.crypto.FILETYPE_PEM, new_certr.body),
+            new_key.pem, OpenSSL.crypto.dump_certificate(
+                OpenSSL.crypto.FILETYPE_PEM, new_chain))
         # TODO: Notify results
     else:
         # TODO: Notify negative results

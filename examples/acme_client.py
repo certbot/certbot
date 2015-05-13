@@ -5,7 +5,7 @@ import pkg_resources
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
-import M2Crypto
+import OpenSSL
 
 from acme import client
 from acme import messages
@@ -39,9 +39,9 @@ logging.debug(authzr)
 
 authzr, authzr_response = acme.poll(authzr)
 
-csr = M2Crypto.X509.load_request_string(pkg_resources.resource_string(
-    'acme.jose', os.path.join('testdata', 'csr.der')),
-    M2Crypto.X509.FORMAT_DER)
+csr = OpenSSL.crypto.load_certificate_request(
+    OpenSSL.crypto.FILETYPE_ASN1, pkg_resources.resource_string(
+        'acme.jose', os.path.join('testdata', 'csr.der')))
 try:
     acme.request_issuance(csr, (authzr,))
 except messages.Error as error:

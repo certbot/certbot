@@ -5,8 +5,8 @@ import unittest
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
-import M2Crypto
 import mock
+import OpenSSL
 import requests
 import urlparse
 
@@ -14,8 +14,8 @@ from acme import jose
 from acme import other
 
 
-CERT = jose.ComparableX509(M2Crypto.X509.load_cert(
-    pkg_resources.resource_filename(
+CERT = jose.ComparableX509(OpenSSL.crypto.load_certificate(
+    OpenSSL.crypto.FILETYPE_PEM, pkg_resources.resource_string(
         'letsencrypt.tests', os.path.join('testdata', 'cert.pem'))))
 KEY = jose.ComparableRSAKey(serialization.load_pem_private_key(
     pkg_resources.resource_string(
@@ -370,7 +370,8 @@ class ProofOfPossessionHintsTest(unittest.TestCase):
         self.jmsg_to = {
             'jwk': jwk,
             'certFingerprints': cert_fingerprints,
-            'certs': (jose.b64encode(CERT.as_der()),),
+            'certs': (jose.b64encode(OpenSSL.crypto.dump_certificate(
+                OpenSSL.crypto.FILETYPE_ASN1, CERT)),),
             'subjectKeyIdentifiers': subject_key_identifiers,
             'serialNumbers': serial_numbers,
             'issuers': issuers,

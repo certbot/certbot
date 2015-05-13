@@ -6,8 +6,8 @@ import unittest
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
-import M2Crypto
 import mock
+import OpenSSL
 
 from acme.jose import b64
 from acme.jose import errors
@@ -16,8 +16,8 @@ from acme.jose import jwk
 from acme.jose import util
 
 
-CERT = util.ComparableX509(M2Crypto.X509.load_cert(
-    pkg_resources.resource_filename(
+CERT = util.ComparableX509(OpenSSL.crypto.load_certificate(
+    OpenSSL.crypto.FILETYPE_PEM, pkg_resources.resource_string(
         'letsencrypt.tests', 'testdata/cert.pem')))
 RSA512_KEY = util.ComparableRSAKey(serialization.load_pem_private_key(
     pkg_resources.resource_string(
@@ -76,10 +76,13 @@ class HeaderTest(unittest.TestCase):
         from acme.jose.jws import Header
         header = Header(x5c=(CERT, CERT))
         jobj = header.to_partial_json()
-        cert_b64 = base64.b64encode(CERT.as_der())
+        cert_b64 = base64.b64encode(OpenSSL.crypto.dump_certificate(
+            OpenSSL.crypto.FILETYPE_ASN1, CERT))
         self.assertEqual(jobj, {'x5c': [cert_b64, cert_b64]})
         self.assertEqual(header, Header.from_json(jobj))
-        jobj['x5c'][0] = base64.b64encode('xxx' + CERT.as_der())
+        jobj['x5c'][0] = base64.b64encode(
+            'xxx' + OpenSSL.crypto.dump_certificate(
+                OpenSSL.crypto.FILETYPE_ASN1, CERT))
         self.assertRaises(errors.DeserializationError, Header.from_json, jobj)
 
     def test_find_key(self):

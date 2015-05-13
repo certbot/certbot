@@ -6,6 +6,38 @@ import unittest
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
+import OpenSSL
+
+
+class ComparableX509Test(unittest.TestCase):
+    """Tests for acme.jose.util.ComparableX509."""
+
+    def setUp(self):
+        from acme.jose.util import ComparableX509
+        def load_cert():  # pylint: disable=missing-docstring
+            return ComparableX509(OpenSSL.crypto.load_certificate_request(
+                OpenSSL.crypto.FILETYPE_ASN1, pkg_resources.resource_string(
+                    __name__, os.path.join('testdata', 'csr.der'))))
+        self.cert = load_cert()
+        self.cert_same = load_cert()
+        self.cert2 = ComparableX509(OpenSSL.crypto.load_certificate_request(
+            OpenSSL.crypto.FILETYPE_PEM, pkg_resources.resource_string(
+                'letsencrypt.tests', os.path.join('testdata', 'csr-san.pem'))))
+
+    def test_eq(self):
+        self.assertEqual(self.cert, self.cert_same)
+
+    def test_not_eq(self):
+        self.assertNotEqual(self.cert, self.cert2)
+
+    def test_eq_wrong_types(self):
+        from acme.jose.util import ComparableX509
+        self.assertRaises(
+            TypeError, ComparableX509(5).__eq__, ComparableX509(5))
+
+    def test_repr(self):
+        self.assertTrue(repr(self.cert).startswith(
+            '<ComparableX509(<OpenSSL.crypto.X509'))
 
 
 class ComparableRSAKeyTest(unittest.TestCase):

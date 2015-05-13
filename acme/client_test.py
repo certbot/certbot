@@ -16,6 +16,8 @@ from acme import messages
 from acme import messages_test
 
 
+CERT_DER = pkg_resources.resource_string(
+    'acme.jose', os.path.join('testdata', 'cert.der'))
 KEY = jose.JWKRSA.load(pkg_resources.resource_string(
     'acme.jose', os.path.join('testdata', 'rsa512_key.pem')))
 KEY2 = jose.JWKRSA.load(pkg_resources.resource_string(
@@ -204,7 +206,7 @@ class ClientTest(unittest.TestCase):
             errors.UnexpectedUpdate, self.client.poll, self.authzr)
 
     def test_request_issuance(self):
-        self.response.content = messages_test.CERT.as_der()
+        self.response.content = CERT_DER
         self.response.headers['Location'] = self.certr.uri
         self.response.links['up'] = {'url': self.certr.cert_chain_uri}
         self.assertEqual(self.certr, self.client.request_issuance(
@@ -212,7 +214,7 @@ class ClientTest(unittest.TestCase):
         # TODO: check POST args
 
     def test_request_issuance_missing_up(self):
-        self.response.content = messages_test.CERT.as_der()
+        self.response.content = CERT_DER
         self.response.headers['Location'] = self.certr.uri
         self.assertEqual(
             self.certr.update(cert_chain_uri=None),
@@ -306,7 +308,7 @@ class ClientTest(unittest.TestCase):
 
     def test_check_cert(self):
         self.response.headers['Location'] = self.certr.uri
-        self.response.content = messages_test.CERT.as_der()
+        self.response.content = CERT_DER
         self.assertEqual(self.certr.update(body=messages_test.CERT),
                          self.client.check_cert(self.certr))
 
@@ -316,7 +318,7 @@ class ClientTest(unittest.TestCase):
             errors.UnexpectedUpdate, self.client.check_cert, self.certr)
 
     def test_check_cert_missing_location(self):
-        self.response.content = messages_test.CERT.as_der()
+        self.response.content = CERT_DER
         self.assertRaises(
             errors.ClientError, self.client.check_cert, self.certr)
 

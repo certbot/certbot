@@ -5,27 +5,25 @@ import unittest
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
-import M2Crypto
 import mock
+import OpenSSL
 
 from acme import challenges
 from acme import jose
 
 
-CERT = jose.ComparableX509(M2Crypto.X509.load_cert_string(
-    pkg_resources.resource_string(
-        'acme.jose', os.path.join('testdata', 'cert.der')),
-    M2Crypto.X509.FORMAT_DER))
-CSR = jose.ComparableX509(M2Crypto.X509.load_request_string(
-    pkg_resources.resource_string(
-        'acme.jose', os.path.join('testdata', 'csr.der')),
-    M2Crypto.X509.FORMAT_DER))
+CERT = jose.ComparableX509(OpenSSL.crypto.load_certificate(
+    OpenSSL.crypto.FILETYPE_ASN1, pkg_resources.resource_string(
+        'acme.jose', os.path.join('testdata', 'cert.der'))))
+CSR = jose.ComparableX509(OpenSSL.crypto.load_certificate_request(
+    OpenSSL.crypto.FILETYPE_ASN1, pkg_resources.resource_string(
+        'acme.jose', os.path.join('testdata', 'csr.der'))))
 KEY = jose.util.ComparableRSAKey(serialization.load_pem_private_key(
     pkg_resources.resource_string(
         'acme.jose', os.path.join('testdata', 'rsa512_key.pem')),
     password=None, backend=default_backend()))
-CERT = jose.ComparableX509(M2Crypto.X509.load_cert(
-    format=M2Crypto.X509.FORMAT_DER, file=pkg_resources.resource_filename(
+CERT = jose.ComparableX509(OpenSSL.crypto.load_certificate(
+    OpenSSL.crypto.FILETYPE_ASN1, pkg_resources.resource_string(
         'acme.jose', os.path.join('testdata', 'cert.der'))))
 
 

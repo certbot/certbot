@@ -2,6 +2,7 @@
 import collections
 
 from cryptography.hazmat.primitives.asymmetric import rsa
+import OpenSSL
 
 
 class abstractclassmethod(classmethod):
@@ -25,12 +26,12 @@ class abstractclassmethod(classmethod):
 
 
 class ComparableX509(object):  # pylint: disable=too-few-public-methods
-    """Wrapper for M2Crypto.X509.* objects that supports __eq__.
+    """Wrapper for OpenSSL.crypto.X509** objects that supports __eq__.
 
     Wraps around:
 
-      - :class:`M2Crypto.X509.X509`
-      - :class:`M2Crypto.X509.Request`
+      - :class:`OpenSSL.crypto.X509`
+      - :class:`OpenSSL.crypto.X509Req`
 
     """
     def __init__(self, wrapped):
@@ -40,7 +41,23 @@ class ComparableX509(object):  # pylint: disable=too-few-public-methods
         return getattr(self._wrapped, name)
 
     def __eq__(self, other):
-        return self.as_der() == other.as_der()
+        filetype = OpenSSL.crypto.FILETYPE_ASN1
+        def as_der(obj):
+            # pylint: disable=missing-docstring,protected-access
+            if isinstance(obj, type(self)):
+                obj = obj._wrapped
+            if isinstance(obj, OpenSSL.crypto.X509):
+                func = OpenSSL.crypto.dump_certificate
+            elif isinstance(obj, OpenSSL.crypto.X509Req):
+                func = OpenSSL.crypto.dump_certificate_request
+            else:
+                raise TypeError(
+                    "Equality for {0} not provided".format(obj.__class__))
+            return func(filetype, obj)
+        return as_der(self) == as_der(other)
+
+    def __repr__(self):
+        return '<{0}({1!r})>'.format(self.__class__.__name__, self._wrapped)
 
 
 class ComparableRSAKey(object):  # pylint: disable=too-few-public-methods

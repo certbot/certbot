@@ -5,7 +5,7 @@ import httplib
 import logging
 import time
 
-import M2Crypto
+import OpenSSL
 import requests
 import werkzeug
 
@@ -256,7 +256,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         """Request issuance.
 
         :param csr: CSR
-        :type csr: `M2Crypto.X509.Request` wrapped in `.ComparableX509`
+        :type csr: `OpenSSL.crypto.X509Req` wrapped in `.ComparableX509`
 
         :param authzrs: `list` of `.AuthorizationResource`
 
@@ -287,8 +287,8 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
 
         return messages.CertificateResource(
             uri=uri, authzrs=authzrs, cert_chain_uri=cert_chain_uri,
-            body=jose.ComparableX509(
-                M2Crypto.X509.load_cert_der_string(response.content)))
+            body=jose.ComparableX509(OpenSSL.crypto.load_certificate(
+                OpenSSL.crypto.FILETYPE_ASN1, response.content)))
 
     def poll_and_request_issuance(self, csr, authzrs, mintime=5):
         """Poll and request issuance.
@@ -300,7 +300,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         .. todo:: add `max_attempts` or `timeout`
 
         :param csr: CSR.
-        :type csr: `M2Crypto.X509.Request` wrapped in `.ComparableX509`
+        :type csr: `OpenSSL.crypto.X509Req` wrapped in `.ComparableX509`
 
         :param authzrs: `list` of `.AuthorizationResource`
 
@@ -359,8 +359,8 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         content_type = self.DER_CONTENT_TYPE  # TODO: make it a param
         response = self.net.get(uri, headers={'Accept': content_type},
                                 content_type=content_type)
-        return response, jose.ComparableX509(
-            M2Crypto.X509.load_cert_der_string(response.content))
+        return response, jose.ComparableX509(OpenSSL.crypto.load_certificate(
+            OpenSSL.crypto.FILETYPE_ASN1, response.content))
 
     def check_cert(self, certr):
         """Check for new cert.
@@ -403,7 +403,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         :type certr: `.CertificateResource`
 
         :returns: Certificate chain, or `None` if no "up" Link was provided.
-        :rtype: `M2Crypto.X509.X509` wrapped in `.ComparableX509`
+        :rtype: `OpenSSL.crypto.X509` wrapped in `.ComparableX509`
 
         """
         if certr.cert_chain_uri is not None:
@@ -414,7 +414,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
     def revoke(self, cert):
         """Revoke certificate.
 
-        :param .ComparableX509 cert: `M2Crypto.X509.X509` wrapped in
+        :param .ComparableX509 cert: `OpenSSL.crypto.X509` wrapped in
             `.ComparableX509`
 
         :raises .ClientError: If revocation is unsuccessful.

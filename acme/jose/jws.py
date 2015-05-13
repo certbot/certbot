@@ -3,7 +3,7 @@ import argparse
 import base64
 import sys
 
-import M2Crypto
+import OpenSSL
 
 from acme.jose import b64
 from acme.jose import errors
@@ -122,14 +122,16 @@ class Header(json_util.JSONObjectWithFields):
 
     @x5c.encoder
     def x5c(value):  # pylint: disable=missing-docstring,no-self-argument
-        return [base64.b64encode(cert.as_der()) for cert in value]
+        return [base64.b64encode(OpenSSL.crypto.dump_certificate(
+            OpenSSL.crypto.FILETYPE_ASN1, cert)) for cert in value]
 
     @x5c.decoder
     def x5c(value):  # pylint: disable=missing-docstring,no-self-argument
         try:
-            return tuple(util.ComparableX509(M2Crypto.X509.load_cert_der_string(
+            return tuple(util.ComparableX509(OpenSSL.crypto.load_certificate(
+                OpenSSL.crypto.FILETYPE_ASN1,
                 base64.b64decode(cert))) for cert in value)
-        except M2Crypto.X509.X509Error as error:
+        except OpenSSL.crypto.Error as error:
             raise errors.DeserializationError(error)
 
 
