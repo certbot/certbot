@@ -1,4 +1,4 @@
-"""Tests for letsencrypt.client.renewer.py"""
+"""Tests for letsencrypt/renewer.py"""
 
 import configobj
 import datetime
@@ -17,7 +17,7 @@ class RenewableCertTests(unittest.TestCase):
     """Tests for the RenewableCert class as well as other functions
     within renewer.py."""
     def setUp(self):
-        from letsencrypt.client import storage
+        from letsencrypt import storage
         self.tempdir = tempfile.mkdtemp()
         os.makedirs(os.path.join(self.tempdir, "live", "example.org"))
         os.makedirs(os.path.join(self.tempdir, "archive", "example.org"))
@@ -65,7 +65,7 @@ class RenewableCertTests(unittest.TestCase):
         """Test that the RenewableCert constructor will complain if
         the renewal configuration file doesn't end in ".conf" or if it
         isn't a ConfigObj."""
-        from letsencrypt.client import storage
+        from letsencrypt import storage
         defaults = configobj.ConfigObj()
         config = configobj.ConfigObj()
         config["cert"] = "/tmp/cert.pem"
@@ -79,7 +79,7 @@ class RenewableCertTests(unittest.TestCase):
     def test_renewal_incomplete_config(self):
         """Test that the RenewableCert constructor will complain if
         the renewal configuration file is missing a required file element."""
-        from letsencrypt.client import storage
+        from letsencrypt import storage
         defaults = configobj.ConfigObj()
         config = configobj.ConfigObj()
         config["cert"] = "/tmp/cert.pem"
@@ -324,7 +324,7 @@ class RenewableCertTests(unittest.TestCase):
 
     def test_notbefore(self):
         test_cert = pkg_resources.resource_string(
-            "letsencrypt.client.tests", "testdata/cert.pem")
+            "letsencrypt.tests", "testdata/cert.pem")
         os.symlink(os.path.join("..", "..", "archive", "example.org",
                                 "cert12.pem"), self.test_rc.cert)
         with open(self.test_rc.cert, "w") as f:
@@ -338,7 +338,7 @@ class RenewableCertTests(unittest.TestCase):
 
     def test_notafter(self):
         test_cert = pkg_resources.resource_string(
-            "letsencrypt.client.tests", "testdata/cert.pem")
+            "letsencrypt.tests", "testdata/cert.pem")
         os.symlink(os.path.join("..", "..", "archive", "example.org",
                                 "cert12.pem"), self.test_rc.cert)
         with open(self.test_rc.cert, "w") as f:
@@ -350,7 +350,7 @@ class RenewableCertTests(unittest.TestCase):
             self.assertEqual(result.utcoffset(), datetime.timedelta(0))
         # 2014-12-18 22:34:45+00:00 = Unix time 1418942085
 
-    @mock.patch("letsencrypt.client.storage.datetime")
+    @mock.patch("letsencrypt.storage.datetime")
     def test_should_autodeploy(self, mock_datetime):
         # pylint: disable=too-many-statements
         # Autodeployment turned off
@@ -369,7 +369,7 @@ class RenewableCertTests(unittest.TestCase):
                     f.write(kind)
         self.assertFalse(self.test_rc.should_autodeploy())
         test_cert = pkg_resources.resource_string(
-            "letsencrypt.client.tests", "testdata/cert.pem")
+            "letsencrypt.tests", "testdata/cert.pem")
         mock_datetime.timedelta = datetime.timedelta
         # 2014-12-13 12:00:00+00:00 (about 5 days prior to expiry)
         sometime = datetime.datetime.utcfromtimestamp(1418472000)
@@ -419,8 +419,8 @@ class RenewableCertTests(unittest.TestCase):
         self.test_rc.configuration["deploy_before_expiry"] = "300 months"
         self.assertTrue(self.test_rc.should_autodeploy())
 
-    @mock.patch("letsencrypt.client.storage.datetime")
-    @mock.patch("letsencrypt.client.storage.RenewableCert.ocsp_revoked")
+    @mock.patch("letsencrypt.storage.datetime")
+    @mock.patch("letsencrypt.storage.RenewableCert.ocsp_revoked")
     def test_should_autorenew(self, mock_ocsp, mock_datetime):
         # pylint: disable=too-many-statements
         # Autorenewal turned off
@@ -434,7 +434,7 @@ class RenewableCertTests(unittest.TestCase):
             with open(where, "w") as f:
                 f.write(kind)
         test_cert = pkg_resources.resource_string(
-            "letsencrypt.client.tests", "testdata/cert.pem")
+            "letsencrypt.tests", "testdata/cert.pem")
         # Mandatory renewal on the basis of OCSP revocation
         mock_ocsp.return_value = True
         self.assertTrue(self.test_rc.should_autorenew())
@@ -551,7 +551,7 @@ class RenewableCertTests(unittest.TestCase):
 
     def test_new_lineage(self):
         """Test for new_lineage() class method."""
-        from letsencrypt.client import storage
+        from letsencrypt import storage
         config_dir = self.defaults["renewal_configs_dir"]
         archive_dir = self.defaults["official_archive_dir"]
         live_dir = self.defaults["live_dir"]
@@ -590,7 +590,7 @@ class RenewableCertTests(unittest.TestCase):
 
     def test_new_lineage_nonexistent_dirs(self):
         """Test that directories can be created if they don't exist."""
-        from letsencrypt.client import storage
+        from letsencrypt import storage
         config_dir = self.defaults["renewal_configs_dir"]
         archive_dir = self.defaults["official_archive_dir"]
         live_dir = self.defaults["live_dir"]
@@ -607,9 +607,9 @@ class RenewableCertTests(unittest.TestCase):
         self.assertTrue(os.path.exists(
             os.path.join(archive_dir, "the-lineage.com", "privkey1.pem")))
 
-    @mock.patch("letsencrypt.client.storage.le_util.unique_lineage_name")
+    @mock.patch("letsencrypt.storage.le_util.unique_lineage_name")
     def test_invalid_config_filename(self, mock_uln):
-        from letsencrypt.client import storage
+        from letsencrypt import storage
         mock_uln.return_value = "this_does_not_end_with_dot_conf", "yikes"
         self.assertRaises(ValueError, storage.RenewableCert.new_lineage,
                           "example.com", "cert", "privkey", "chain",
@@ -632,7 +632,7 @@ class RenewableCertTests(unittest.TestCase):
         self.assertEqual(self.test_rc.ocsp_revoked(), False)
 
     def test_parse_time_interval(self):
-        from letsencrypt.client import storage
+        from letsencrypt import storage
         # XXX: I'm not sure if intervals related to years and months
         #      take account of the current date (if so, some of these
         #      may fail in the future, like in leap years or even in
@@ -657,15 +657,15 @@ class RenewableCertTests(unittest.TestCase):
         self.assertEqual(storage.parse_time_interval("4 years"),
                          datetime.timedelta(1461))
 
-    @mock.patch("letsencrypt.client.renewer.plugins_disco")
-    @mock.patch("letsencrypt.client.client.determine_account")
-    @mock.patch("letsencrypt.client.client.Client")
+    @mock.patch("letsencrypt.renewer.plugins_disco")
+    @mock.patch("letsencrypt.client.determine_account")
+    @mock.patch("letsencrypt.client.Client")
     def test_renew(self, mock_c, mock_da, mock_pd):
         """Tests for renew()."""
-        from letsencrypt.client import renewer
+        from letsencrypt import renewer
 
         test_cert = pkg_resources.resource_string(
-            "letsencrypt.client.tests", "testdata/cert-san.pem")
+            "letsencrypt.tests", "testdata/cert-san.pem")
         os.symlink(os.path.join("..", "..", "archive", "example.org",
                                 "cert1.pem"), self.test_rc.cert)
         os.symlink(os.path.join("..", "..", "archive", "example.org",
@@ -708,12 +708,12 @@ class RenewableCertTests(unittest.TestCase):
         self.assertEqual(False, renewer.renew(self.test_rc, 1))
 
 
-    @mock.patch("letsencrypt.client.renewer.notify")
-    @mock.patch("letsencrypt.client.storage.RenewableCert")
-    @mock.patch("letsencrypt.client.renewer.renew")
+    @mock.patch("letsencrypt.renewer.notify")
+    @mock.patch("letsencrypt.storage.RenewableCert")
+    @mock.patch("letsencrypt.renewer.renew")
     def test_main(self, mock_renew, mock_rc, mock_notify):
         """Test for main() function."""
-        from letsencrypt.client import renewer
+        from letsencrypt import renewer
         mock_rc_instance = mock.MagicMock()
         mock_rc_instance.should_autodeploy.return_value = True
         mock_rc_instance.should_autorenew.return_value = True
@@ -754,7 +754,7 @@ class RenewableCertTests(unittest.TestCase):
         self.assertEqual(mock_renew.call_count, 2)
 
     def test_bad_config_file(self):
-        from letsencrypt.client import renewer
+        from letsencrypt import renewer
         with open(os.path.join(self.defaults["renewal_configs_dir"],
                                "bad.conf"), "w") as f:
             f.write("incomplete = configfile\n")

@@ -17,12 +17,12 @@ configuration."""
 import configobj
 import os
 
-from letsencrypt.client import configuration
-from letsencrypt.client import client
-from letsencrypt.client import crypto_util
-from letsencrypt.client import notify
-from letsencrypt.client import storage
-from letsencrypt.client.plugins import disco as plugins_disco
+from letsencrypt import configuration
+from letsencrypt import client
+from letsencrypt import crypto_util
+from letsencrypt import notify
+from letsencrypt import storage
+from letsencrypt.plugins import disco as plugins_disco
 
 DEFAULTS = configobj.ConfigObj("renewal.conf")
 DEFAULTS["renewal_configs_dir"] = "/tmp/etc/letsencrypt/configs"

@@ -12,7 +12,7 @@ import pytz
 import re
 import time
 
-from letsencrypt.client import le_util
+from letsencrypt import le_util
 
 DEFAULTS = configobj.ConfigObj("renewal.conf")
 DEFAULTS["renewal_configs_dir"] = "/tmp/etc/letsencrypt/configs"
