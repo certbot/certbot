@@ -93,11 +93,11 @@ class RenewableCertTests(unittest.TestCase):
         from letsencrypt import storage
         defaults = configobj.ConfigObj()
         config = configobj.ConfigObj()
-        config["cert"] = "/tmp/cert.pem"
+        config["cert"] = "imaginary_cert.pem"
         # Here the required privkey is missing.
-        config["chain"] = "/tmp/chain.pem"
-        config["fullchain"] = "/tmp/fullchain.pem"
-        config.filename = "/tmp/genuineconfig.conf"
+        config["chain"] = "imaginary_chain.pem"
+        config["fullchain"] = "imaginary_fullchain.pem"
+        config.filename = "imaginary_config.conf"
         self.assertRaises(ValueError, storage.RenewableCert, config, defaults)
 
     def test_consistent(self): # pylint: disable=too-many-statements
