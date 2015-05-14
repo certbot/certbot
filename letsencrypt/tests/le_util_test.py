@@ -1,4 +1,5 @@
 """Tests for letsencrypt.le_util."""
+import errno
 import os
 import shutil
 import stat
@@ -78,7 +79,7 @@ class CheckPermissionsTest(unittest.TestCase):
 
 
 class UniqueFileTest(unittest.TestCase):
-    """Tests for letsencrypt.class.le_util.unique_file."""
+    """Tests for letsencrypt.le_util.unique_file."""
 
     def setUp(self):
         self.root_path = tempfile.mkdtemp()
@@ -121,6 +122,46 @@ class UniqueFileTest(unittest.TestCase):
         basename3 = os.path.basename(name3)
         self.assertTrue(basename3.endswith('foo.txt'))
 
+
+class UniqueLineageNameTest(unittest.TestCase):
+    """Tests for letsencrypt.le_util.unique_lineage_name."""
+
+    def setUp(self):
+        self.root_path = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.root_path, ignore_errors=True)
+
+    def _call(self, filename, mode=0o777):
+        from letsencrypt.le_util import unique_lineage_name
+        return unique_lineage_name(self.root_path, filename, mode)
+
+    def test_basic(self):
+        f, name = self._call("wow")
+        self.assertTrue(isinstance(f, file))
+        self.assertTrue(isinstance(name, str))
+
+    def test_multiple(self):
+        for _ in range(10):
+            f, name = self._call("wow")
+        self.assertTrue(isinstance(f, file))
+        self.assertTrue(isinstance(name, str))
+        self.assertTrue("wow-0009.conf" in name)
+
+    @mock.patch("letsencrypt.le_util.os.fdopen")
+    def test_failure(self, mock_fdopen):
+        err = OSError("whoops")
+        err.errno = errno.EIO
+        mock_fdopen.side_effect = err
+        self.assertRaises(OSError, self._call, "wow")
+
+    @mock.patch("letsencrypt.le_util.os.fdopen")
+    def test_subsequent_failure(self, mock_fdopen):
+        self._call("wow")
+        err = OSError("whoops")
+        err.errno = errno.EIO
+        mock_fdopen.side_effect = err
+        self.assertRaises(OSError, self._call, "wow")
 
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover
