@@ -45,16 +45,16 @@ def renew(cert, old_version):
         return False
     # Instantiate the appropriate authenticator
     plugins = plugins_disco.PluginsRegistry.find_all()
+    config = configuration.NamespaceConfig(AttrDict(renewalparams))
+    # XXX: this loses type data (for example, the fact that key_size
+    #      was an int, not a str)
+    config.rsa_key_size = int(config.rsa_key_size)
     try:
-        config = configuration.NamespaceConfig(AttrDict(renewalparams))
-        # XXX: this loses type data (for example, the fact that key_size
-        #      was an int, not a str)
-        config.rsa_key_size = int(config.rsa_key_size)
         authenticator = plugins[renewalparams["authenticator"]]
-        authenticator = authenticator.init(config)
     except KeyError:
         # TODO: Notify user? (authenticator could not be found)
         return False
+    authenticator = authenticator.init(config)
 
     authenticator.prepare()
     account = client.determine_account(config)
