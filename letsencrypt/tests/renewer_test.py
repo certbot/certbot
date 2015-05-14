@@ -10,7 +10,7 @@ import pytz
 import shutil
 import unittest
 
-ALL_FOUR = ("cert", "privkey", "chain", "fullchain")
+from letsencrypt.storage import ALL_FOUR
 
 def unlink_all(rc_object):
     """Unlink all four items associated with this RenewableCert.
