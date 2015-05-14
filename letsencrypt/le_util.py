@@ -91,7 +91,7 @@ def unique_lineage_name(path, filename, mode=0o777):
         file_d = os.open(fname, os.O_CREAT | os.O_EXCL | os.O_RDWR, mode)
         return os.fdopen(file_d, "w"), fname
     except OSError as err:
-        if err.errno != 17:   # file exists
+        if err.errno != errno.EEXIST:
             raise err
     count = 1
     while True:
@@ -100,7 +100,7 @@ def unique_lineage_name(path, filename, mode=0o777):
             file_d = os.open(fname, os.O_CREAT | os.O_EXCL | os.O_RDWR, mode)
             return os.fdopen(file_d, "w"), fname
         except OSError as err:
-            if err.errno != 17:   # file exists
+            if err.errno != errno.EEXIST:
                 raise err
         count += 1
 
