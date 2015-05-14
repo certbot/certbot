@@ -59,7 +59,7 @@ class RenewableCertTests(unittest.TestCase):
         for kind in ALL_FOUR:
             self.assertEqual(
                 self.test_rc.__getattribute__(kind), os.path.join(
-                     self.tempdir, "live", "example.org", kind + ".pem"))
+                    self.tempdir, "live", "example.org", kind + ".pem"))
 
     def test_renewal_bad_config(self):
         """Test that the RenewableCert constructor will complain if
@@ -336,24 +336,26 @@ class RenewableCertTests(unittest.TestCase):
         mock_datetime.timedelta = datetime.timedelta
 
         for (current_time, interval, result) in [
-            # 2014-12-13 12:00:00+00:00 (about 5 days prior to expiry)
-            # Times that should result in autorenewal/autodeployment
-            (1418472000, "2 months", True), (1418472000, "1 week", True),
-            # Times that should not
-            (1418472000, "4 days", False), (1418472000, "2 days", False),
-            # 2009-05-01 12:00:00+00:00 (about 5 years prior to expiry)
-            # Times that should result in autorenewal/autodeployment
-            (1241179200, "7 years", True),
-            (1241179200, "11 years 2 months", True),
-            # Times that should not
-            (1241179200, "8 hours", False), (1241179200, "2 days", False),
-            (1241179200, "40 days", False), (1241179200, "9 months", False),
-            # 2015-01-01 (after expiry has already happened, so all intervals
-            #             should result in autorenewal/autodeployment)
-            (1420070400, "0 seconds", True), (1420070400, "10 seconds", True),
-            (1420070400, "10 minutes", True), (1420070400, "10 weeks", True),
-            (1420070400, "10 months", True), (1420070400, "10 years", True),
-            (1420070400, "300 months", True), ]:
+                # 2014-12-13 12:00:00+00:00 (about 5 days prior to expiry)
+                # Times that should result in autorenewal/autodeployment
+                (1418472000, "2 months", True), (1418472000, "1 week", True),
+                # Times that should not
+                (1418472000, "4 days", False), (1418472000, "2 days", False),
+                # 2009-05-01 12:00:00+00:00 (about 5 years prior to expiry)
+                # Times that should result in autorenewal/autodeployment
+                (1241179200, "7 years", True),
+                (1241179200, "11 years 2 months", True),
+                # Times that should not
+                (1241179200, "8 hours", False), (1241179200, "2 days", False),
+                (1241179200, "40 days", False), (1241179200, "9 months", False),
+                # 2015-01-01 (after expiry has already happened, so all
+                #            intervals should cause autorenewal/autodeployment)
+                (1420070400, "0 seconds", True),
+                (1420070400, "10 seconds", True),
+                (1420070400, "10 minutes", True),
+                (1420070400, "10 weeks", True), (1420070400, "10 months", True),
+                (1420070400, "10 years", True), (1420070400, "99 months", True),
+        ]:
             sometime = datetime.datetime.utcfromtimestamp(current_time)
             mock_datetime.datetime.utcnow.return_value = sometime
             self.test_rc.configuration["deploy_before_expiry"] = interval
