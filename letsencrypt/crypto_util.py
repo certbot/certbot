@@ -241,4 +241,6 @@ def get_sans_from_cert(pem):
         ext = x509.get_ext("subjectAltName")
     except LookupError:
         return []
-    return [x[4:] for x in ext.get_value().split(", ") if x.startswith("DNS:")]
+    prefix = "DNS:"
+    return [x[len(prefix):] for x in ext.get_value().split(", ")
+            if x.startswith(prefix)]
