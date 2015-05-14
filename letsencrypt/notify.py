@@ -24,7 +24,6 @@ def notify(subject, whom, what):
             proc = subprocess.Popen(["/usr/sbin/sendmail", "-t"],
                                     stdin=subprocess.PIPE)
             proc.communicate(msg)
-        except OSError, err:
-            print err
+        except OSError:
             return False
     return True

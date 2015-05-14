@@ -14,6 +14,10 @@ RSA256_KEY = pkg_resources.resource_string(
     'acme.jose', os.path.join('testdata', 'rsa256_key.pem'))
 RSA512_KEY = pkg_resources.resource_string(
     'acme.jose', os.path.join('testdata', 'rsa512_key.pem'))
+CERT = pkg_resources.resource_string(
+    'letsencrypt.tests', os.path.join('testdata', 'cert.pem'))
+SAN_CERT = pkg_resources.resource_string(
+    'letsencrypt.tests', os.path.join('testdata', 'cert-san.pem'))
 
 
 class InitSaveKeyTest(unittest.TestCase):
@@ -149,6 +153,15 @@ class MakeSSCertTest(unittest.TestCase):
         from letsencrypt.crypto_util import make_ss_cert
         make_ss_cert(RSA512_KEY, ['example.com', 'www.example.com'])
 
+
+class GetSansFromCertTest(unittest.TestCase):
+    # pylint: disable=too-few-public-methods
+    """Tests for letsencrypt.crypto_util.get_sans_from_cert."""
+    def test_it(self):
+        from letsencrypt.crypto_util import get_sans_from_cert
+        self.assertEqual(get_sans_from_cert(CERT), [])
+        self.assertEqual(get_sans_from_cert(SAN_CERT),
+                         ['example.com', 'www.example.com'])
 
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover
