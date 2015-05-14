@@ -142,7 +142,7 @@ class Client(object):
 
         cert_pem = certr.body.as_pem()
         chain_pem = None
-        if certr.cert_chain_uri:
+        if certr.cert_chain_uri is not None:
             chain_pem = self.network.fetch_chain(certr)
 
         if chain_pem is None:
