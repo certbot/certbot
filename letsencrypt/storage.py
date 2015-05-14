@@ -41,7 +41,8 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         if isinstance(configfile, configobj.ConfigObj):
             if not os.path.basename(configfile.filename).endswith(".conf"):
                 raise ValueError("renewal config file name must end in .conf")
-            self.lineagename = os.path.basename(configfile.filename)[:-5]
+            self.lineagename = os.path.basename(
+                                   configfile.filename)[:-len(".conf")]
         else:
             raise TypeError("RenewableCert config must be ConfigObj object")
 
@@ -334,7 +335,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             raise ValueError("renewal config file name must end in .conf")
         # lineagename will now potentially be modified based on what
         # renewal configuration file could actually be created
-        lineagename = os.path.basename(config_filename)[:-5]
+        lineagename = os.path.basename(config_filename)[:-len(".conf")]
         archive = os.path.join(archive_dir, lineagename)
         live_dir = os.path.join(live_dir, lineagename)
         if os.path.exists(archive):
