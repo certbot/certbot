@@ -3,6 +3,8 @@ import datetime
 import httplib
 import os
 import pkg_resources
+import shutil
+import tempfile
 import unittest
 
 import M2Crypto
@@ -49,6 +51,8 @@ class NetworkTest(unittest.TestCase):
         self.identifier = messages2.Identifier(
             typ=messages2.IDENTIFIER_FQDN, value='example.com')
 
+        self.config = mock.Mock(accounts_dir=tempfile.mkdtemp())
+
         # Registration
         self.contact = ('mailto:cert-admin@example.com', 'tel:+12025551212')
         reg = messages2.Registration(
@@ -78,6 +82,9 @@ class NetworkTest(unittest.TestCase):
             body=CERT, authzrs=(self.authzr,),
             uri='https://www.letsencrypt-demo.org/acme/cert/1',
             cert_chain_uri='https://www.letsencrypt-demo.org/ca')
+
+    def tearDown(self):
+        shutil.rmtree(self.config.accounts_dir)
 
     def _mock_post_get(self):
         # pylint: disable=protected-access
@@ -200,8 +207,8 @@ class NetworkTest(unittest.TestCase):
     def test_register_from_account(self):
         self.net.register = mock.Mock()
         acc = account.Account(
-            mock.Mock(accounts_dir='mock_dir'), 'key',
-            email='cert-admin@example.com', phone='+12025551212')
+            self.config, 'key', email='cert-admin@example.com',
+            phone='+12025551212')
 
         self.net.register_from_account(acc)
 
@@ -210,9 +217,8 @@ class NetworkTest(unittest.TestCase):
     def test_register_from_account_partial_info(self):
         self.net.register = mock.Mock()
         acc = account.Account(
-            mock.Mock(accounts_dir='mock_dir'), 'key',
-            email='cert-admin@example.com')
-        acc2 = account.Account(mock.Mock(accounts_dir='mock_dir'), 'key')
+            self.config, 'key', email='cert-admin@example.com')
+        acc2 = account.Account(self.config, 'key')
 
         self.net.register_from_account(acc)
         self.net.register.assert_called_with(
