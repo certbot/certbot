@@ -78,9 +78,12 @@ class RenewableCertTests(unittest.TestCase):
         from letsencrypt import storage
         defaults = configobj.ConfigObj()
         config = configobj.ConfigObj()
+        # These files don't exist and aren't created here; the point of the test
+        # is to confirm that the constructor rejects them outright because of
+        # the configfile's name.
         for kind in ALL_FOUR:
-            config["cert"] = "/tmp/" + kind + ".pem"
-        config.filename = "/tmp/sillyfile"
+            config["cert"] = "nonexistent_" + kind + ".pem"
+        config.filename = "nonexistent_sillyfile"
         self.assertRaises(ValueError, storage.RenewableCert, config, defaults)
         self.assertRaises(TypeError, storage.RenewableCert, "fun", defaults)
 
