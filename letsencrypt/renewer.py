@@ -9,8 +9,9 @@ configuration."""
 # TODO: when renewing or deploying, update config file to
 #       memorialize the fact that it happened
 
-import configobj
 import os
+
+import configobj
 
 from letsencrypt import configuration
 from letsencrypt import client

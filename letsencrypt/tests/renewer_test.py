@@ -1,14 +1,15 @@
 """Tests for letsencrypt/renewer.py"""
 
-import configobj
 import datetime
-import mock
 import os
 import tempfile
 import pkg_resources
-import pytz
 import shutil
 import unittest
+
+import configobj
+import mock
+import pytz
 
 from letsencrypt.storage import ALL_FOUR
 

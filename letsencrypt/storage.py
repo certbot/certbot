@@ -1,16 +1,17 @@
 """The RenewableCert class, representing renewable lineages of
 certificates and storing the associated cert data and metadata."""
 
-import configobj
 import copy
 import datetime
 import os
-import OpenSSL
-import parsedatetime
-import pyrfc3339
-import pytz
 import re
 import time
+
+import configobj
+import OpenSSL
+import parsedatetime
+import pytz
+import pyrfc3339
 
 from letsencrypt import le_util
 
