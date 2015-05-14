@@ -147,7 +147,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             raise ValueError("unknown kind of item")
         pattern = re.compile(r"^{0}([0-9]+)\.pem$".format(kind))
         target = self.current_target(kind)
-        if not target or not os.path.exists(target):
+        if target is None or not os.path.exists(target):
             target = ""
         matches = pattern.match(os.path.basename(target))
         if matches:
