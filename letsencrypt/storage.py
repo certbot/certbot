@@ -231,35 +231,30 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         for kind in ALL_FOUR:
             self.update_link_to(kind, version)
 
-    def notbefore(self, version=None):
-        """When is the beginning validity time of the specified version of the
-        cert in this lineage?  (If no version is specified, use the current
-        version.)"""
-        if version == None:
+    def _notafterbefore(self, method, version):
+        """Internal helper function for finding notbefore/notafter."""
+        if version is None:
             target = self.current_target("cert")
         else:
             target = self.version("cert", version)
         pem = open(target).read()
         x509 = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM,
                                                pem)
-        i = x509.get_notBefore()
+        i = method(x509)
         return pyrfc3339.parse(i[0:4] + "-" + i[4:6] + "-" + i[6:8] + "T" +
                                i[8:10] + ":" + i[10:12] +":" +i[12:])
+
+    def notbefore(self, version=None):
+        """When is the beginning validity time of the specified version of the
+        cert in this lineage?  (If no version is specified, use the current
+        version.)"""
+        return self._notafterbefore(lambda x509: x509.get_notBefore(), version)
 
     def notafter(self, version=None):
         """When is the ending validity time of the specified version of the
         cert in this lineage?  (If no version is specified, use the current
         version.)"""
-        if version == None:
-            target = self.current_target("cert")
-        else:
-            target = self.version("cert", version)
-        pem = open(target).read()
-        x509 = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM,
-                                               pem)
-        i = x509.get_notAfter()
-        return pyrfc3339.parse(i[0:4] + "-" + i[4:6] + "-" + i[6:8] + "T" +
-                               i[8:10] + ":" + i[10:12] +":" +i[12:])
+        return self._notafterbefore(lambda x509: x509.get_notAfter(), version)
 
     def should_autodeploy(self):
         """Should this certificate lineage be updated automatically to
