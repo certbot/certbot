@@ -152,9 +152,6 @@ class StandaloneAuthenticator(common.Plugin):
         :rtype: bool
 
         """
-        signal.signal(signal.SIGIO, self.client_signal_handler)
-        signal.signal(signal.SIGUSR1, self.client_signal_handler)
-        signal.signal(signal.SIGUSR2, self.client_signal_handler)
 
         display = zope.component.getUtility(interfaces.IDisplay)
 
@@ -259,6 +256,16 @@ class StandaloneAuthenticator(common.Plugin):
         :rtype: bool
 
         """
+        # In order to avoid a race condition, we set the signal handler
+        # that will be needed by the parent process now, and undo this
+        # action if we turn out to be the child process.  (This needs
+        # to happen before the fork because the child will send one of
+        # these signals to the parent almost immediately after the
+        # fork, and the parent must already be ready to receive it.)
+        signal.signal(signal.SIGIO, self.client_signal_handler)
+        signal.signal(signal.SIGUSR1, self.client_signal_handler)
+        signal.signal(signal.SIGUSR2, self.client_signal_handler)
+
         fork_result = os.fork()
         Crypto.Random.atfork()
         if fork_result:
@@ -269,6 +276,12 @@ class StandaloneAuthenticator(common.Plugin):
             return self.do_parent_process(port)
         else:
             # CHILD process (the TCP listener subprocess)
+            # Undo the parent's signal handler settings, which aren't
+            # applicable to us.
+            signal.signal(signal.SIGIO, signal.SIG_DFL)
+            signal.signal(signal.SIGUSR1, signal.SIG_DFL)
+            signal.signal(signal.SIGUSR2, signal.SIG_DFL)
+
             self.child_pid = os.getpid()
             # do_child_process() is normally not expected to return but
             # should terminate via sys.exit().
