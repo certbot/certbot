@@ -91,9 +91,10 @@ def main(config=DEFAULTS):
         print "Processing", i
         if not i.endswith(".conf"):
             continue
+        rc_config = configobj.ConfigObj(
+            os.path.join(config["renewal_configs_dir"], i))
         try:
-            cert = storage.RenewableCert(configobj.ConfigObj(
-                os.path.join(config["renewal_configs_dir"], i)))
+            cert = storage.RenewableCert(rc_config)
         except ValueError:
             # This indicates an invalid renewal configuration file, such
             # as one missing a required parameter (in the future, perhaps
