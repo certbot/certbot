@@ -681,4 +681,4 @@ class RenewableCertTests(unittest.TestCase):
         # The ValueError is caught inside and nothing happens.
 
 if __name__ == "__main__":
-    unittest.main()
+    unittest.main()  # pragma: no cover
