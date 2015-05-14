@@ -55,21 +55,14 @@ class RenewableCertTests(unittest.TestCase):
 
     def test_initialization(self):
         self.assertEqual(self.test_rc.lineagename, "example.org")
-        self.assertEqual(self.test_rc.cert, os.path.join(self.tempdir, "live",
-                                                         "example.org",
-                                                         "cert.pem"))
-        self.assertEqual(self.test_rc.privkey, os.path.join(self.tempdir,
-                                                            "live",
-                                                            "example.org",
-                                                            "privkey.pem"))
-        self.assertEqual(self.test_rc.chain, os.path.join(self.tempdir,
-                                                          "live",
-                                                          "example.org",
-                                                          "chain.pem"))
-        self.assertEqual(self.test_rc.fullchain, os.path.join(self.tempdir,
-                                                              "live",
-                                                              "example.org",
-                                                              "fullchain.pem"))
+        self.assertEqual(self.test_rc.cert, os.path.join(
+            self.tempdir, "live", "example.org", "cert.pem"))
+        self.assertEqual(self.test_rc.privkey, os.path.join(
+            self.tempdir, "live", "example.org", "privkey.pem"))
+        self.assertEqual(self.test_rc.chain, os.path.join(
+            self.tempdir, "live", "example.org", "chain.pem"))
+        self.assertEqual(self.test_rc.fullchain, os.path.join(
+            self.tempdir, "live", "example.org", "fullchain.pem"))
 
     def test_renewal_bad_config(self):
         """Test that the RenewableCert constructor will complain if
@@ -104,42 +97,42 @@ class RenewableCertTests(unittest.TestCase):
         oldcert = self.test_rc.cert
         self.test_rc.cert = "relative/path"
         # Absolute path for item requirement
-        self.assertEqual(self.test_rc.consistent(), False)
+        self.assertFalse(self.test_rc.consistent())
         self.test_rc.cert = oldcert
         # Items must exist requirement
-        self.assertEqual(self.test_rc.consistent(), False)
+        self.assertFalse(self.test_rc.consistent())
         # Items must be symlinks requirements
         fill_with_sample_data(self.test_rc)
-        self.assertEqual(self.test_rc.consistent(), False)
+        self.assertFalse(self.test_rc.consistent())
         unlink_all(self.test_rc)
         # Items must point to desired place if they are relative
         for kind in ALL_FOUR:
             os.symlink(os.path.join("..", kind + "17.pem"),
                        self.test_rc.__getattribute__(kind))
-        self.assertEqual(self.test_rc.consistent(), False)
+        self.assertFalse(self.test_rc.consistent())
         unlink_all(self.test_rc)
         # Items must point to desired place if they are absolute
         for kind in ALL_FOUR:
             os.symlink(os.path.join(self.tempdir, kind + "17.pem"),
                        self.test_rc.__getattribute__(kind))
-        self.assertEqual(self.test_rc.consistent(), False)
+        self.assertFalse(self.test_rc.consistent())
         unlink_all(self.test_rc)
         # Items must point to things that exist
         for kind in ALL_FOUR:
             os.symlink(os.path.join("..", "..", "archive", "example.org",
                                     kind + "17.pem"),
                        self.test_rc.__getattribute__(kind))
-        self.assertEqual(self.test_rc.consistent(), False)
+        self.assertFalse(self.test_rc.consistent())
         # This version should work
         fill_with_sample_data(self.test_rc)
-        self.assertEqual(self.test_rc.consistent(), True)
+        self.assertTrue(self.test_rc.consistent())
         # Items must point to things that follow the naming convention
         os.unlink(self.test_rc.fullchain)
         os.symlink(os.path.join("..", "..", "archive", "example.org",
                                 "fullchain_17.pem"), self.test_rc.fullchain)
         with open(self.test_rc.fullchain, "w") as f:
             f.write("wrongly-named fullchain")
-        self.assertEqual(self.test_rc.consistent(), False)
+        self.assertFalse(self.test_rc.consistent())
 
     def test_current_target(self):
         # Relative path logic
@@ -566,7 +559,7 @@ class RenewableCertTests(unittest.TestCase):
     def test_ocsp_revoked(self):
         # XXX: This is currently hardcoded to False due to a lack of an
         #      OCSP server to test against.
-        self.assertEqual(self.test_rc.ocsp_revoked(), False)
+        self.assertFalse(self.test_rc.ocsp_revoked())
 
     def test_parse_time_interval(self):
         from letsencrypt import storage
