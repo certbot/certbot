@@ -56,14 +56,10 @@ class RenewableCertTests(unittest.TestCase):
 
     def test_initialization(self):
         self.assertEqual(self.test_rc.lineagename, "example.org")
-        self.assertEqual(self.test_rc.cert, os.path.join(
-            self.tempdir, "live", "example.org", "cert.pem"))
-        self.assertEqual(self.test_rc.privkey, os.path.join(
-            self.tempdir, "live", "example.org", "privkey.pem"))
-        self.assertEqual(self.test_rc.chain, os.path.join(
-            self.tempdir, "live", "example.org", "chain.pem"))
-        self.assertEqual(self.test_rc.fullchain, os.path.join(
-            self.tempdir, "live", "example.org", "fullchain.pem"))
+        for kind in ALL_FOUR:
+            self.assertEqual(
+                self.test_rc.__getattribute__(kind), os.path.join(
+                     self.tempdir, "live", "example.org", kind + ".pem"))
 
     def test_renewal_bad_config(self):
         """Test that the RenewableCert constructor will complain if
@@ -292,32 +288,25 @@ class RenewableCertTests(unittest.TestCase):
             else:
                 self.assertFalse(self.test_rc.has_pending_deployment())
 
-    def test_notbefore(self):
+    def _test_notafterbefore(self, function, timestamp):
         test_cert = pkg_resources.resource_string(
             "letsencrypt.tests", "testdata/cert.pem")
         os.symlink(os.path.join("..", "..", "archive", "example.org",
                                 "cert12.pem"), self.test_rc.cert)
         with open(self.test_rc.cert, "w") as f:
             f.write(test_cert)
-        desired_time = datetime.datetime.utcfromtimestamp(1418337285)
+        desired_time = datetime.datetime.utcfromtimestamp(timestamp)
         desired_time = desired_time.replace(tzinfo=pytz.UTC)
-        for result in (self.test_rc.notbefore(), self.test_rc.notbefore(12)):
+        for result in (function(), function(12)):
             self.assertEqual(result, desired_time)
             self.assertEqual(result.utcoffset(), datetime.timedelta(0))
+
+    def test_notbefore(self):
+        self._test_notafterbefore(self.test_rc.notbefore, 1418337285)
         # 2014-12-11 22:34:45+00:00 = Unix time 1418337285
 
     def test_notafter(self):
-        test_cert = pkg_resources.resource_string(
-            "letsencrypt.tests", "testdata/cert.pem")
-        os.symlink(os.path.join("..", "..", "archive", "example.org",
-                                "cert12.pem"), self.test_rc.cert)
-        with open(self.test_rc.cert, "w") as f:
-            f.write(test_cert)
-        desired_time = datetime.datetime.utcfromtimestamp(1418942085)
-        desired_time = desired_time.replace(tzinfo=pytz.UTC)
-        for result in (self.test_rc.notafter(), self.test_rc.notafter(12)):
-            self.assertEqual(result, desired_time)
-            self.assertEqual(result.utcoffset(), datetime.timedelta(0))
+        self._test_notafterbefore(self.test_rc.notafter, 1418942085)
         # 2014-12-18 22:34:45+00:00 = Unix time 1418942085
 
     @mock.patch("letsencrypt.storage.datetime")
@@ -345,46 +334,32 @@ class RenewableCertTests(unittest.TestCase):
             f.write(test_cert)
 
         mock_datetime.timedelta = datetime.timedelta
-        # 2014-12-13 12:00:00+00:00 (about 5 days prior to expiry)
-        sometime = datetime.datetime.utcfromtimestamp(1418472000)
-        mock_datetime.datetime.utcnow.return_value = sometime
-        # Times that should result in autorenewal/autodeployment
-        for when in ("2 months", "1 week"):
-            self.test_rc.configuration["deploy_before_expiry"] = when
-            self.test_rc.configuration["renew_before_expiry"] = when
-            self.assertTrue(self.test_rc.should_autodeploy())
-            self.assertTrue(self.test_rc.should_autorenew())
-        # Times that should not
-        for when in ("4 days", "2 days"):
-            self.test_rc.configuration["deploy_before_expiry"] = when
-            self.test_rc.configuration["renew_before_expiry"] = when
-            self.assertFalse(self.test_rc.should_autodeploy())
-            self.assertFalse(self.test_rc.should_autorenew())
-        # 2009-05-01 12:00:00+00:00 (about 5 years prior to expiry)
-        sometime = datetime.datetime.utcfromtimestamp(1241179200)
-        mock_datetime.datetime.utcnow.return_value = sometime
-        # Times that should result in autorenewal/autodeployment
-        for when in ("7 years", "11 years 2 months"):
-            self.test_rc.configuration["deploy_before_expiry"] = when
-            self.test_rc.configuration["renew_before_expiry"] = when
-            self.assertTrue(self.test_rc.should_autodeploy())
-            self.assertTrue(self.test_rc.should_autorenew())
-        # Times that should not
-        for when in ("8 hours", "2 days", "40 days", "9 months"):
-            self.test_rc.configuration["deploy_before_expiry"] = when
-            self.test_rc.configuration["renew_before_expiry"] = when
-            self.assertFalse(self.test_rc.should_autodeploy())
-            self.assertFalse(self.test_rc.should_autorenew())
-        # 2015-01-01 (after expiry has already happened, so all intervals
-        #             should result in autorenewal/autodeployment)
-        sometime = datetime.datetime.utcfromtimestamp(1420070400)
-        mock_datetime.datetime.utcnow.return_value = sometime
-        for when in ("0 seconds", "10 seconds", "10 minutes", "10 weeks",
-                     "10 months", "10 years", "300 months"):
-            self.test_rc.configuration["deploy_before_expiry"] = when
-            self.test_rc.configuration["renew_before_expiry"] = when
-            self.assertTrue(self.test_rc.should_autodeploy())
-            self.assertTrue(self.test_rc.should_autorenew())
+
+        for (current_time, interval, result) in [
+            # 2014-12-13 12:00:00+00:00 (about 5 days prior to expiry)
+            # Times that should result in autorenewal/autodeployment
+            (1418472000, "2 months", True), (1418472000, "1 week", True),
+            # Times that should not
+            (1418472000, "4 days", False), (1418472000, "2 days", False),
+            # 2009-05-01 12:00:00+00:00 (about 5 years prior to expiry)
+            # Times that should result in autorenewal/autodeployment
+            (1241179200, "7 years", True),
+            (1241179200, "11 years 2 months", True),
+            # Times that should not
+            (1241179200, "8 hours", False), (1241179200, "2 days", False),
+            (1241179200, "40 days", False), (1241179200, "9 months", False),
+            # 2015-01-01 (after expiry has already happened, so all intervals
+            #             should result in autorenewal/autodeployment)
+            (1420070400, "0 seconds", True), (1420070400, "10 seconds", True),
+            (1420070400, "10 minutes", True), (1420070400, "10 weeks", True),
+            (1420070400, "10 months", True), (1420070400, "10 years", True),
+            (1420070400, "300 months", True), ]:
+            sometime = datetime.datetime.utcfromtimestamp(current_time)
+            mock_datetime.datetime.utcnow.return_value = sometime
+            self.test_rc.configuration["deploy_before_expiry"] = interval
+            self.test_rc.configuration["renew_before_expiry"] = interval
+            self.assertEqual(self.test_rc.should_autodeploy(), result)
+            self.assertEqual(self.test_rc.should_autorenew(), result)
 
     def test_should_autodeploy(self):
         """Test should_autodeploy() on the basis of reasons other than
