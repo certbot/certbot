@@ -464,7 +464,7 @@ class RenewableCertTests(unittest.TestCase):
         for i in (6, 7, 8):
             self.assertTrue(os.path.islink(self.test_rc.version("privkey", i)))
             self.assertEqual("privkey3.pem", os.path.basename(os.readlink(
-                                 self.test_rc.version("privkey", i))))
+                self.test_rc.version("privkey", i))))
 
         for kind in ALL_FOUR:
             self.assertEqual(self.test_rc.available_versions(kind), range(1, 9))

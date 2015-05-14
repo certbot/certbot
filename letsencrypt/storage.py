@@ -42,7 +42,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             if not os.path.basename(configfile.filename).endswith(".conf"):
                 raise ValueError("renewal config file name must end in .conf")
             self.lineagename = os.path.basename(
-                                   configfile.filename)[:-len(".conf")]
+                configfile.filename)[:-len(".conf")]
         else:
             raise TypeError("RenewableCert config must be ConfigObj object")
 
