@@ -100,7 +100,7 @@ class NetworkTest(unittest.TestCase):
                 return self.value
             @classmethod
             def from_json(cls, value):
-                return cls(value)
+                pass  # pragma: no cover
         # pylint: disable=protected-access
         jws = self.net._wrap_in_jws(MockJSONDeSerializable('foo'))
         self.assertEqual(jose.JWS.json_loads(jws).payload, '"foo"')
