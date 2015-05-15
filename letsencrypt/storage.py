@@ -69,10 +69,12 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
     def consistent(self):
         """Is the structure of the archived files and links related to this
         lineage correct and self-consistent?"""
+
         # Each element must be referenced with an absolute path
         if any(not os.path.isabs(x) for x in
                (self.cert, self.privkey, self.chain, self.fullchain)):
             return False
+
         # Each element must exist and be a symbolic link
         if any(not os.path.islink(x) for x in
                (self.cert, self.privkey, self.chain, self.fullchain)):
@@ -83,6 +85,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             target = os.readlink(link)
             if not os.path.isabs(target):
                 target = os.path.join(where, target)
+
             # Each element's link must point within the cert lineage's
             # directory within the official archive directory
             desired_directory = os.path.join(
@@ -90,14 +93,17 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             if not os.path.samefile(os.path.dirname(target),
                                     desired_directory):
                 return False
+
             # The link must point to a file that exists
             if not os.path.exists(target):
                 return False
+
             # The link must point to a file that follows the archive
             # naming convention
             pattern = re.compile(r"^{0}([0-9]+)\.pem$".format(kind))
             if not pattern.match(os.path.basename(target)):
                 return False
+
             # It is NOT required that the link's target be a regular
             # file (it may itself be a symlink). But we should probably
             # do a recursive check that ultimately the target does
@@ -109,8 +115,8 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         # XXX: All four of the targets are in the same directory
         #      (This check is redundant with the check that they
         #      are all in the desired directory!)
-        # len(set(os.path.basename(self.current_target(x)
-        # for x in ALL_FOUR))) == 1
+        #      len(set(os.path.basename(self.current_target(x)
+        #      for x in ALL_FOUR))) == 1
         return True
 
     def fix(self):
@@ -299,9 +305,11 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             # XXX: both self.ocsp_revoked() and self.notafter() are bugs
             #      here because we should be looking at the latest version, not
             #      the current version!
+
             # Renewals on the basis of revocation
             if self.ocsp_revoked():
                 return True
+
             # Renewals on the basis of expiry time
             interval = self.configuration.get("renew_before_expiry", "10 days")
             autorenew_interval = parse_time_interval(interval)
@@ -326,6 +334,8 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         Returns a new RenewableCert object referring to the created
         lineage. (The actual lineage name, as well as all the relevant
         file paths, will be available within this object.)"""
+
+        # Examine the configuration and find the new lineage's name
         configs_dir = config["renewal_configs_dir"]
         archive_dir = config["official_archive_dir"]
         live_dir = config["live_dir"]
@@ -336,7 +346,9 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
                                                                    lineagename)
         if not config_filename.endswith(".conf"):
             raise ValueError("renewal config file name must end in .conf")
-        # lineagename will now potentially be modified based on what
+
+        # Determine where on disk everything will go
+        # lineagename will now potentially be modified based on which
         # renewal configuration file could actually be created
         lineagename = os.path.basename(config_filename)[:-len(".conf")]
         archive = os.path.join(archive_dir, lineagename)
@@ -348,33 +360,28 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         os.mkdir(archive)
         os.mkdir(live_dir)
         relative_archive = os.path.join("..", "..", "archive", lineagename)
-        cert_target = os.path.join(live_dir, "cert.pem")
-        privkey_target = os.path.join(live_dir, "privkey.pem")
-        chain_target = os.path.join(live_dir, "chain.pem")
-        fullchain_target = os.path.join(live_dir, "fullchain.pem")
-        os.symlink(os.path.join(relative_archive, "cert1.pem"),
-                   cert_target)
-        os.symlink(os.path.join(relative_archive, "privkey1.pem"),
-                   privkey_target)
-        os.symlink(os.path.join(relative_archive, "chain1.pem"),
-                   chain_target)
-        os.symlink(os.path.join(relative_archive, "fullchain1.pem"),
-                   fullchain_target)
-        with open(cert_target, "w") as f:
+
+        # Put the data into the appropriate files on disk
+        target = dict([(kind, os.path.join(live_dir, kind + ".pem"))
+                       for kind in ALL_FOUR])
+        for kind in ALL_FOUR:
+            os.symlink(os.path.join(relative_archive, kind + "1.pem"),
+                       target[kind])
+        with open(target["cert"], "w") as f:
             f.write(cert)
-        with open(privkey_target, "w") as f:
+        with open(target["privkey"], "w") as f:
             f.write(privkey)
             # XXX: Let's make sure to get the file permissions right here
-        with open(chain_target, "w") as f:
+        with open(target["chain"], "w") as f:
             f.write(chain)
-        with open(fullchain_target, "w") as f:
+        with open(target["fullchain"], "w") as f:
             f.write(cert + chain)
+
+        # Document what we've done in a new renewal config file
         config_file.close()
         new_config = configobj.ConfigObj(config_filename, create_empty=True)
-        new_config["cert"] = cert_target
-        new_config["privkey"] = privkey_target
-        new_config["chain"] = chain_target
-        new_config["fullchain"] = fullchain_target
+        for kind in ALL_FOUR:
+            new_config[kind] = target[kind]
         if renewalparams:
             new_config["renewalparams"] = renewalparams
             new_config.comments["renewalparams"] = ["",
@@ -385,6 +392,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         new_config.write()
         return cls(new_config, config)
 
+
     def save_successor(self, prior_version, new_cert, new_privkey, new_chain):
         """Save a new cert and chain as a successor of a specific prior
         version in this lineage.  Returns the new version number that was
@@ -393,19 +401,19 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         # XXX: consider using os.open for availablity of os.O_EXCL
         # XXX: ensure file permissions are correct; also create directories
         #      if needed (ensuring their permissions are correct)
+        # Figure out what the new version is and hence where to save things
+
         target_version = self.next_free_version()
         archive = self.configuration["official_archive_dir"]
         prefix = os.path.join(archive, self.lineagename)
-        cert_target = os.path.join(
-            prefix, "cert{0}.pem".format(target_version))
-        privkey_target = os.path.join(
-            prefix, "privkey{0}.pem".format(target_version))
-        chain_target = os.path.join(
-            prefix, "chain{0}.pem".format(target_version))
-        fullchain_target = os.path.join(
-            prefix, "fullchain{0}.pem".format(target_version))
-        with open(cert_target, "w") as f:
-            f.write(new_cert)
+        target = dict(
+            [(kind,
+              os.path.join(prefix, "{0}{1}.pem".format(kind, target_version)))
+             for kind in ALL_FOUR])
+
+        # Distinguish the cases where the privkey has changed and where it
+        # has not changed (in the latter case, making an appropriate symlink
+        # to an earlier privkey version)
         if new_privkey is None:
             # The behavior below keeps the prior key by creating a new
             # symlink to the old key or the target of the old key symlink.
@@ -415,12 +423,16 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
                 old_privkey = os.readlink(old_privkey)
             else:
                 old_privkey = "privkey{0}.pem".format(prior_version)
-            os.symlink(old_privkey, privkey_target)
+            os.symlink(old_privkey, target["privkey"])
         else:
-            with open(privkey_target, "w") as f:
+            with open(target["privkey"], "w") as f:
                 f.write(new_privkey)
-        with open(chain_target, "w") as f:
+
+        # Save everything else
+        with open(target["cert"], "w") as f:
+            f.write(new_cert)
+        with open(target["chain"], "w") as f:
             f.write(new_chain)
-        with open(fullchain_target, "w") as f:
+        with open(target["fullchain"], "w") as f:
             f.write(new_cert + new_chain)
         return target_version
