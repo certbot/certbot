@@ -6,9 +6,6 @@ configuration."""
 
 # TODO: call new installer API to restart servers after deployment
 
-# TODO: when renewing or deploying, update config file to
-#       memorialize the fact that it happened
-
 import os
 
 import configobj
