@@ -1,4 +1,6 @@
 """Let's Encrypt DNS Authenticator"""
+import logging
+
 import dns.exception
 import dns.query
 import dns.rcode
@@ -147,29 +149,28 @@ def send_request(gen_request, zone, token, keyring, server, port):
         resp = dns.query.tcp(dns_request, server, port=port,
                              source_port=constants.CHALLENGE_SOURCE_PORT,
                              timeout=constants.CHALLENGE_TIMEOUT)
+    except dns.resolver.NoAnswer as error:
+        logging.exception(error)
+        raise errors.Error("Did not recieve a response to DNS request!")
+    except dns.query.UnexpectedSource as error:
+        logging.exception(error)
+        raise errors.Error(
+            "Recieved response to DNS request from unexpected source!")
+    except dns.query.BadResponse as error:
+        logging.exception(error)
+        raise errors.Error("Recieved malformed response to DNS request!")
+    except OSError as error:
+        logging.exception(error)
+        # TODO(rolandshoemaker)
+        raise errors.Error("I forgot what an OSError means in this context...")
+    except dns.exception.Timeout as error:
+        logging.exception(error)
+        raise errors.Error("DNS request timed out!")
 
-        if resp.rcode() == 0:
-            return True
-        else:
-            raise errors.Error(
-                "DNS Error: %s" % (rcode_errors.get(resp.rcode())))
-
-    except (dns.resolver.NoAnswer, dns.query.UnexpectedSource,
-            dns.query.BadResponse, OSError, dns.exception.Timeout) as err:
-        if isinstance(err, dns.resolver.NoAnswer):
-            dns_error = "DNS Error: Did not recieve a response to DNS request!"
-        elif isinstance(err, dns.query.UnexpectedSource):
-            dns_error = ("DNS Error: Recieved response to DNS request from "
-                         "unexpected source!")
-        elif isinstance(err, dns.query.BadResponse):
-            dns_error = ("DNS Error: Recieved malformed response to DNS "
-                         "request!")
-        elif isinstance(err, OSError):
-            dns_error = ("DNS Error: I forgot what an OSError means in this"
-                         " context...")
-        elif isinstance(err, dns.exception.Timeout):
-            dns_error = "DNS Error: DNS request timed out!"
-        raise errors.Error(dns_error)
+    if resp.rcode() == 0:
+        return True
+    else:
+        raise errors.Error("DNS Error: %s" % (rcode_errors.get(resp.rcode())))
 
 
 class DNSAuthenticator(core_plugins_common.Plugin):
