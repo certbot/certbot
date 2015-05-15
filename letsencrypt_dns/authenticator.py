@@ -57,10 +57,10 @@ def add_record(zone, token, keyring):
     """
     challenge_request = dns.update.Update(zone, keyring=keyring)
     # check challenge_subdomain is absent
-    challenge_request.absent(constants.CHALLENGE_SUBDOMAIN)
+    challenge_request.absent(challenges.DNS.LABEL)
     # add challenge_subdomain TXT with token
-    challenge_request.add(constants.CHALLENGE_SUBDOMAIN,
-                          constants.CHALLENGE_TTL, "TXT", token)
+    challenge_request.add(
+        challenges.DNS.LABEL, constants.TTL, "TXT", token)
 
     # return req
     return challenge_request
@@ -84,9 +84,9 @@ def del_record(zone, token, keyring): # pylint: disable=unused-argument
     """
     challenge_request = dns.update.Update(zone, keyring=keyring)
     # check challenge_subdomain is present
-    challenge_request.present(constants.CHALLENGE_SUBDOMAIN)
+    challenge_request.present(challenges.DNS.LABEL)
     # delete challegen_subdomain TXT
-    challenge_request.delete(constants.CHALLENGE_SUBDOMAIN)
+    challenge_request.delete(challenges.DNS.LABEL)
 
     # return req
     return challenge_request
@@ -127,11 +127,11 @@ def send_request(gen_request, zone, token, keyring, server, port):
         dns.rcode.REFUSED: ('DNS server refuses to perform the specified '
                             'operation for policy or security reasons'),
         dns.rcode.YXDOMAIN: ('Name exists when it should not (%s.%s)'
-                             % (constants.CHALLENGE_SUBDOMAIN, zone)),
+                             % (challenges.DNS.LABEL, zone)),
         dns.rcode.YXRRSET: ('Records that should not exist do exist (%s.%s)'
-                            % (constants.CHALLENGE_SUBDOMAIN, zone)),
+                            % (challenges.DNS.LABEL, zone)),
         dns.rcode.NXRRSET: ('Records that should exist do not exist (%s.%s)'
-                            % (constants.CHALLENGE_SUBDOMAIN, zone)),
+                            % (challenges.DNS.LABEL, zone)),
         dns.rcode.NOTAUTH: ('Server is not authorized or was supplied bad TSIG'
                             ' key to make updates to zone "%s" [key: %s]'
                             % (zone, dns.tsigkeyring.to_text(keyring))),
@@ -147,8 +147,8 @@ def send_request(gen_request, zone, token, keyring, server, port):
 
     try:
         resp = dns.query.tcp(dns_request, server, port=port,
-                             source_port=constants.CHALLENGE_SOURCE_PORT,
-                             timeout=constants.CHALLENGE_TIMEOUT)
+                             source_port=constants.SOURCE_PORT,
+                             timeout=constants.TIMEOUT)
     except dns.resolver.NoAnswer as error:
         logging.exception(error)
         raise errors.Error("Did not recieve a response to DNS request!")
@@ -186,9 +186,10 @@ class DNSAuthenticator(core_plugins_common.Plugin):
 
     @classmethod
     def add_parser_arguments(cls, add):
-        add("server", default="localhost",
+        add("server", default=constants.CLI_DEFAULTS["server"],
             help="DNS server hostname used to create challenge subdomains.")
-        add("server-port", default=53, help="DNS server port to use.")
+        add("server-port", default=constants.CLI_DEFAULTS["server_port"],
+            help="DNS server port to use.")
         add("tsig-keys", nargs="+", type=util.split_tsig_keys, help="DNS "
             "TSIG keys for updates in the format: keyname,keysecret,domains+")
 
