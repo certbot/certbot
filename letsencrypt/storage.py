@@ -21,6 +21,7 @@ DEFAULTS["official_archive_dir"] = "/tmp/etc/letsencrypt/archive"
 DEFAULTS["live_dir"] = "/tmp/etc/letsencrypt/live"
 ALL_FOUR = ("cert", "privkey", "chain", "fullchain")
 
+
 def parse_time_interval(interval, textparser=parsedatetime.Calendar()):
     """Parse the time specified time interval, which can be in the
     English-language format understood by parsedatetime, e.g., '10 days',
@@ -32,6 +33,7 @@ def parse_time_interval(interval, textparser=parsedatetime.Calendar()):
         interval += " days"
     return datetime.timedelta(0, time.mktime(textparser.parse(
         interval, time.localtime(0))[0]))
+
 
 class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
     """Represents a lineage of certificates that is under the management
@@ -55,7 +57,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         self.configuration = copy.deepcopy(defaults)
         self.configuration.merge(self.configfile)
 
-        if not all(self.configuration.has_key(x) for x in ALL_FOUR):
+        if not all(x in self.configuration for x in ALL_FOUR):
             raise ValueError("renewal config file {0} is missing a required "
                              "file reference".format(configfile))
 
@@ -244,7 +246,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
                                                pem)
         i = method(x509)
         return pyrfc3339.parse(i[0:4] + "-" + i[4:6] + "-" + i[6:8] + "T" +
-                               i[8:10] + ":" + i[10:12] +":" +i[12:])
+                               i[8:10] + ":" + i[10:12] + ":" + i[12:])
 
     def notbefore(self, version=None):
         """When is the beginning validity time of the specified version of the
@@ -264,7 +266,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         autodeployment is enabled, whether a relevant newer version
         exists, and whether the time interval for autodeployment has
         been reached.)"""
-        if (not self.configuration.has_key("autodeploy") or
+        if ("autodeploy" not in self.configuration or
                 self.configuration.as_bool("autodeploy")):
             if self.has_pending_deployment():
                 interval = self.configuration.get("deploy_before_expiry",
@@ -291,7 +293,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
     def should_autorenew(self):
         """Should an attempt be made to automatically renew the most
         recent certificate in this certificate lineage right now?"""
-        if (not self.configuration.has_key("autorenew")
+        if ("autorenew" not in self.configuration
                 or self.configuration.as_bool("autorenew")):
             # Consider whether to attempt to autorenew this cert now
             # XXX: both self.ocsp_revoked() and self.notafter() are bugs

@@ -5,6 +5,7 @@ import smtplib
 import socket
 import subprocess
 
+
 def notify(subject, whom, what):
     """Try to notify the addressee (whom) by e-mail, with Subject:
     defined by subject and message body by what."""

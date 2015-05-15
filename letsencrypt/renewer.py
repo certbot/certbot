@@ -25,6 +25,7 @@ DEFAULTS["renewal_configs_dir"] = "/tmp/etc/letsencrypt/configs"
 DEFAULTS["official_archive_dir"] = "/tmp/etc/letsencrypt/archive"
 DEFAULTS["live_dir"] = "/tmp/etc/letsencrypt/live"
 
+
 class AttrDict(dict):
     """A trick to allow accessing dictionary keys as object
     attributes."""
@@ -32,16 +33,17 @@ class AttrDict(dict):
         super(AttrDict, self).__init__(*args, **kwargs)
         self.__dict__ = self
 
+
 def renew(cert, old_version):
     """Perform automated renewal of the referenced cert, if possible."""
     # TODO: handle partial success
     # TODO: handle obligatory key rotation vs. optional key rotation vs.
     #       requested key rotation
-    if not cert.configfile.has_key("renewalparams"):
+    if "renewalparams" not in cert.configfile:
         # TODO: notify user?
         return False
     renewalparams = cert.configfile["renewalparams"]
-    if not renewalparams.has_key("authenticator"):
+    if "authenticator" not in renewalparams:
         # TODO: notify user?
         return False
     # Instantiate the appropriate authenticator
@@ -74,12 +76,13 @@ def renew(cert, old_version):
         #      new_key if the old key is to be used (since save_successor
         #      already understands this distinction!)
         return cert.save_successor(old_version, new_cert, new_key, new_chain)
-    #    TODO: Notify results
+        # TODO: Notify results
     else:
-    #    TODO: Notify negative results
+        # TODO: Notify negative results
         return False
     # TODO: Consider the case where the renewal was partially successful
     #       (where fewer than all names were renewed)
+
 
 def main(config=DEFAULTS):
     """main function for autorenewer script."""
