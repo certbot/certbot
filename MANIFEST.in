@@ -3,8 +3,7 @@ include CHANGES.rst
 include CONTRIBUTING.md
 include linter_plugin.py
 include letsencrypt/EULA
-
-recursive-include letsencrypt/client/tests/testdata *
+recursive-include letsencrypt/tests/testdata *
 
 recursive-include acme/schemata *.json
 recursive-include acme/jose/testdata *

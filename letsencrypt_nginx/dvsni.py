@@ -78,7 +78,7 @@ class NginxDvsni(ApacheDvsni):
         """Modifies Nginx config to include challenge server blocks.
 
         :param list ll_addrs: list of lists of
-            :class:`letsencrypt_apache.obj.Addr` to apply
+            :class:`letsencrypt_nginx.obj.Addr` to apply
 
         :raises errors.LetsEncryptMisconfigurationError:
             Unable to find a suitable HTTP block to include DVSNI hosts.
@@ -115,7 +115,7 @@ class NginxDvsni(ApacheDvsni):
         """Creates a server block for a DVSNI challenge.
 
         :param achall: Annotated DVSNI challenge.
-        :type achall: :class:`letsencrypt.client.achallenges.DVSNI`
+        :type achall: :class:`letsencrypt.achallenges.DVSNI`
 
         :param list addrs: addresses of challenged domain
             :class:`list` of type :class:`~nginx.obj.Addr`

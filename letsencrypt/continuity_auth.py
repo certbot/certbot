@@ -19,7 +19,7 @@ class ContinuityAuthenticator(object):
 
     :ivar proof_of_pos: Performs "proofOfPossession" challenges.
     :type proof_of_pos:
-        :class:`letsencrypt.client.proof_of_possession.Proof_of_Possession`
+        :class:`letsencrypt.proof_of_possession.Proof_of_Possession`
 
     """
     zope.interface.implements(interfaces.IAuthenticator)
@@ -32,7 +32,7 @@ class ContinuityAuthenticator(object):
         :type config: :class:`letsencrypt.interfaces.IConfig`
 
         :param installer: Let's Encrypt Installer.
-        :type installer: :class:`letsencrypt.client.interfaces.IInstaller`
+        :type installer: :class:`letsencrypt.interfaces.IInstaller`
 
         """
         self.rec_token = recovery_token.RecoveryToken(
