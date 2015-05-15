@@ -80,7 +80,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
                (self.cert, self.privkey, self.chain, self.fullchain)):
             return False
         for kind in ALL_FOUR:
-            link = self.__getattribute__(kind)
+            link = getattr(self, kind)
             where = os.path.dirname(link)
             target = os.readlink(link)
             if not os.path.isabs(target):
@@ -139,7 +139,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         kind currently points."""
         if kind not in ALL_FOUR:
             raise ValueError("unknown kind of item")
-        link = self.__getattribute__(kind)
+        link = getattr(self, kind)
         if not os.path.exists(link):
             return None
         target = os.readlink(link)
@@ -222,7 +222,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         that the specified version exists.)"""
         if kind not in ALL_FOUR:
             raise ValueError("unknown kind of item")
-        link = self.__getattribute__(kind)
+        link = getattr(self, kind)
         filename = "{0}{1}.pem".format(kind, version)
         # Relative rather than absolute target directory
         target_directory = os.path.dirname(os.readlink(link))

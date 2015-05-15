@@ -17,13 +17,13 @@ def unlink_all(rc_object):
     """Unlink all four items associated with this RenewableCert.
     (Helper function.)"""
     for kind in ALL_FOUR:
-        os.unlink(rc_object.__getattribute__(kind))
+        os.unlink(getattr(rc_object, kind))
 
 def fill_with_sample_data(rc_object):
     """Put dummy data into all four files of this RenewableCert.
     (Helper function.)"""
     for kind in ALL_FOUR:
-        with open(rc_object.__getattribute__(kind), "w") as f:
+        with open(getattr(rc_object, kind), "w") as f:
             f.write(kind)
 
 class RenewableCertTests(unittest.TestCase):
@@ -58,7 +58,7 @@ class RenewableCertTests(unittest.TestCase):
         self.assertEqual(self.test_rc.lineagename, "example.org")
         for kind in ALL_FOUR:
             self.assertEqual(
-                self.test_rc.__getattribute__(kind), os.path.join(
+                getattr(self.test_rc, kind), os.path.join(
                     self.tempdir, "live", "example.org", kind + ".pem"))
 
     def test_renewal_bad_config(self):
@@ -105,20 +105,20 @@ class RenewableCertTests(unittest.TestCase):
         # Items must point to desired place if they are relative
         for kind in ALL_FOUR:
             os.symlink(os.path.join("..", kind + "17.pem"),
-                       self.test_rc.__getattribute__(kind))
+                       getattr(self.test_rc, kind))
         self.assertFalse(self.test_rc.consistent())
         unlink_all(self.test_rc)
         # Items must point to desired place if they are absolute
         for kind in ALL_FOUR:
             os.symlink(os.path.join(self.tempdir, kind + "17.pem"),
-                       self.test_rc.__getattribute__(kind))
+                       getattr(self.test_rc, kind))
         self.assertFalse(self.test_rc.consistent())
         unlink_all(self.test_rc)
         # Items must point to things that exist
         for kind in ALL_FOUR:
             os.symlink(os.path.join("..", "..", "archive", "example.org",
                                     kind + "17.pem"),
-                       self.test_rc.__getattribute__(kind))
+                       getattr(self.test_rc, kind))
         self.assertFalse(self.test_rc.consistent())
         # This version should work
         fill_with_sample_data(self.test_rc)
@@ -170,7 +170,7 @@ class RenewableCertTests(unittest.TestCase):
     def test_latest_and_next_versions(self):
         for ver in range(1, 6):
             for kind in ALL_FOUR:
-                where = self.test_rc.__getattribute__(kind)
+                where = getattr(self.test_rc, kind)
                 if os.path.islink(where):
                     os.unlink(where)
                 os.symlink(os.path.join("..", "..", "archive", "example.org",
@@ -205,7 +205,7 @@ class RenewableCertTests(unittest.TestCase):
         # the result
         ver = 17
         for kind in ALL_FOUR:
-            where = self.test_rc.__getattribute__(kind)
+            where = getattr(self.test_rc, kind)
             if os.path.islink(where):
                 os.unlink(where)
             os.symlink(os.path.join("..", "..", "archive", "example.org",
@@ -218,7 +218,7 @@ class RenewableCertTests(unittest.TestCase):
     def test_update_link_to(self):
         for ver in range(1, 6):
             for kind in ALL_FOUR:
-                where = self.test_rc.__getattribute__(kind)
+                where = getattr(self.test_rc, kind)
                 if os.path.islink(where):
                     os.unlink(where)
                 os.symlink(os.path.join("..", "..", "archive", "example.org",
@@ -253,7 +253,7 @@ class RenewableCertTests(unittest.TestCase):
     def test_update_all_links_to(self):
         for ver in range(1, 6):
             for kind in ALL_FOUR:
-                where = self.test_rc.__getattribute__(kind)
+                where = getattr(self.test_rc, kind)
                 if os.path.islink(where):
                     os.unlink(where)
                 os.symlink(os.path.join("..", "..", "archive", "example.org",
@@ -271,7 +271,7 @@ class RenewableCertTests(unittest.TestCase):
     def test_has_pending_deployment(self):
         for ver in range(1, 6):
             for kind in ALL_FOUR:
-                where = self.test_rc.__getattribute__(kind)
+                where = getattr(self.test_rc, kind)
                 if os.path.islink(where):
                     os.unlink(where)
                 os.symlink(os.path.join("..", "..", "archive", "example.org",
@@ -316,7 +316,7 @@ class RenewableCertTests(unittest.TestCase):
         test_cert = pkg_resources.resource_string(
             "letsencrypt.tests", "testdata/cert.pem")
         for kind in ALL_FOUR:
-            where = self.test_rc.__getattribute__(kind)
+            where = getattr(self.test_rc, kind)
             os.symlink(os.path.join("..", "..", "archive", "example.org",
                                     "{0}12.pem".format(kind)), where)
             with open(where, "w") as f:
@@ -374,7 +374,7 @@ class RenewableCertTests(unittest.TestCase):
         # No pending deployment
         for ver in range(1, 6):
             for kind in ALL_FOUR:
-                where = self.test_rc.__getattribute__(kind)
+                where = getattr(self.test_rc, kind)
                 if os.path.islink(where):
                     os.unlink(where)
                 os.symlink(os.path.join("..", "..", "archive", "example.org",
@@ -393,7 +393,7 @@ class RenewableCertTests(unittest.TestCase):
         self.assertFalse(self.test_rc.should_autorenew())
         self.test_rc.configuration["autorenew"] = "1"
         for kind in ALL_FOUR:
-            where = self.test_rc.__getattribute__(kind)
+            where = getattr(self.test_rc, kind)
             os.symlink(os.path.join("..", "..", "archive", "example.org",
                                     "{0}12.pem".format(kind)), where)
             with open(where, "w") as f:
@@ -406,7 +406,7 @@ class RenewableCertTests(unittest.TestCase):
     def test_save_successor(self):
         for ver in range(1, 6):
             for kind in ALL_FOUR:
-                where = self.test_rc.__getattribute__(kind)
+                where = getattr(self.test_rc, kind)
                 if os.path.islink(where):
                     os.unlink(where)
                 os.symlink(os.path.join("..", "..", "archive", "example.org",
@@ -564,7 +564,7 @@ class RenewableCertTests(unittest.TestCase):
         for kind in ALL_FOUR:
             os.symlink(os.path.join("..", "..", "archive", "example.org",
                                     kind + "1.pem"),
-                       self.test_rc.__getattribute__(kind))
+                       getattr(self.test_rc, kind))
         fill_with_sample_data(self.test_rc)
         with open(self.test_rc.cert, "w") as f:
             f.write(test_cert)
