@@ -1,9 +1,9 @@
-#!/usr/bin/env python
 import codecs
 import os
 import re
 
 from setuptools import setup
+from setuptools import find_packages
 
 # Workaround for http://bugs.python.org/issue8876, see
 # http://bugs.python.org/issue8876#msg208792
@@ -11,6 +11,7 @@ from setuptools import setup
 # https://hg.python.org/cpython/raw-file/v2.7.9/Misc/NEWS
 if os.path.abspath(__file__).split(os.path.sep)[1] == 'vagrant':
     del os.link
+
 
 def read_file(filename, encoding='utf8'):
     """Read unicode from given file."""
@@ -29,16 +30,23 @@ changes = read_file(os.path.join(here, 'CHANGES.rst'))
 
 install_requires = [
     'argparse',
-    'ConfArgParse',
+    'ConfigArgParse',
+    'configobj',
     'dnspython',
     'jsonschema',
     'mock',
+    'ndg-httpsclient',  # urllib3 InsecurePlatformWarning (#304)
     'psutil>=2.1.0',  # net_connections introduced in 2.1.0
+    'pyasn1',  # urllib3 InsecurePlatformWarning (#304)
     'pycrypto',
     'PyOpenSSL',
+    'pyparsing>=1.5.5',  # Python3 support; perhaps unnecessary?
+    'pyrfc3339',
     'python-augeas',
-    'python2-pythondialog',
+    'python2-pythondialog>=3.2.2rc1',  # Debian squeeze support, cf. #280
+    'pytz',
     'requests',
+    'werkzeug',
     'zope.component',
     'zope.interface',
     # order of items in install_requires DOES matter and M2Crypto has
@@ -91,18 +99,7 @@ setup(
         'Topic :: Utilities',
     ],
 
-    packages=[
-        'letsencrypt',
-        'letsencrypt.acme',
-        'letsencrypt.client',
-        'letsencrypt.client.apache',
-        'letsencrypt.client.display',
-        'letsencrypt.client.tests',
-        'letsencrypt.client.tests.apache',
-        'letsencrypt.client.tests.display',
-        'letsencrypt.scripts',
-    ],
-
+    packages=find_packages(exclude=['docs', 'examples', 'tests', 'venv']),
     install_requires=install_requires,
     extras_require={
         'dev': dev_extras,
@@ -111,11 +108,22 @@ setup(
     },
 
     tests_require=install_requires,
+    # to test all packages run "python setup.py test -s
+    # {acme,letsencrypt_apache,letsencrypt_nginx}"
     test_suite='letsencrypt',
 
     entry_points={
         'console_scripts': [
-            'letsencrypt = letsencrypt.scripts.main:main',
+            'letsencrypt = letsencrypt.cli:main',
+            'jws = letsencrypt.acme.jose.jws:CLI.run',
+        ],
+        'letsencrypt.plugins': [
+            'standalone = letsencrypt.plugins.standalone.authenticator'
+            ':StandaloneAuthenticator',
+
+            # to be moved to separate pypi packages
+            'apache = letsencrypt_apache.configurator:ApacheConfigurator',
+            'nginx = letsencrypt_nginx.configurator:NginxConfigurator',
         ],
     },
 
