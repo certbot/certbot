@@ -245,6 +245,9 @@ class DNS(DVChallenge):
     typ = "dns"
     token = jose.Field("token")
 
+    LABEL = "_acme-challenge"
+    """Challenge "subdomain" label."""
+
 
 @ChallengeResponse.register
 class DNSResponse(ChallengeResponse):
