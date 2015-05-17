@@ -98,9 +98,11 @@ def run(args, config, plugins):
         return "Configurator could not be determined"
 
     acme, doms = _common_run(args, config, acc, authenticator, installer)
+    # TODO: Handle errors from _common_run?
     lineage = acme.obtain_and_enroll_certificate(doms, authenticator,
                                                  installer)
-    # TODO: Decide whether to enroll or not from config/policy
+    if not lineage:
+        return "Certificate could not be obtained"
     acme.deploy_certificate(doms, lineage)
     acme.enhance_config(doms, args.redirect)
 
@@ -122,9 +124,11 @@ def auth(args, config, plugins):
     else:
         installer = None
 
+    # TODO: Handle errors from _common_run?
     acme, doms = _common_run(
         args, config, acc, authenticator=authenticator, installer=installer)
-    acme.obtain_certificate(doms)
+    if not acme.obtain_and_enroll_certificate(doms, authenticator, installer):
+        return "Certificate could not be obtained"
 
 
 def install(args, config, plugins):

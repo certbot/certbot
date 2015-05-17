@@ -163,7 +163,8 @@ class Client(object):
         # TODO: Add IPlugin.name or use PluginsFactory.find_init instead
         #       of assuming that each plugin has a .name attribute
         self.config.namespace.authenticator = authenticator.name
-        self.config.namespace.installer = installer.name
+        if installer is not None:
+            self.config.namespace.installer = installer.name
         return storage.RenewableCert.new_lineage(domains[0], cert_pem,
                                                  privkey, chain_pem,
                                                  vars(self.config.namespace))
