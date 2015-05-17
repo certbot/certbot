@@ -56,8 +56,7 @@ class DetermineAccountTest(unittest.TestCase):
 class RollbackTest(unittest.TestCase):
     """Test the rollback function."""
     def setUp(self):
-        from letsencrypt_apache.configurator import ApacheConfigurator
-        self.m_install = mock.MagicMock(spec=ApacheConfigurator)
+        self.m_install = mock.MagicMock()
 
     @classmethod
     def _call(cls, checkpoints, side_effect):
