@@ -31,7 +31,7 @@ Debian
 
    sudo ./bootstrap/debian.sh
 
-For squezze you will need to:
+For squeeze you will need to:
 
 - Use ``virtualenv --no-site-packages -p python`` instead of ``-p python2``.
 
