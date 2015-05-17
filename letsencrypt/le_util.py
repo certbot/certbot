@@ -60,7 +60,7 @@ def unique_file(path, mode=0o777):
     :param str path: path/filename.ext
     :param int mode: File mode
 
-    :return: tuple of file object and file name
+    :returns: tuple of file object and file name
 
     """
     path, tail = os.path.split(path)
@@ -79,11 +79,16 @@ def unique_lineage_name(path, filename, mode=0o777):
     """Safely finds a unique file for writing only (by default).  Uses a
     file lineage convention.
 
-    :param str path: path
-    :param str filename: filename
-    :param int mode: File mode
+    :param str path: directory path
+    :param str filename: proposed filename
+    :param int mode: file mode
 
-    :return: tuple of file object and file name
+    :returns: tuple of file object and file name (which may be modified from
+        the requested one by appending digits to ensure uniqueness)
+
+    :raises OSError: if writing files fails for an unanticipated reason,
+        such as a full disk or a lack of permission to write to specified
+        location.
 
     """
     fname = os.path.join(path, "%s.conf" % (filename))

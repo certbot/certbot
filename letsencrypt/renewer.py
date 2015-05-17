@@ -32,8 +32,18 @@ class AttrDict(dict):
 
 
 def renew(cert, old_version):
-    """Perform automated renewal of the referenced cert, if possible."""
-    # TODO: handle partial success
+    """Perform automated renewal of the referenced cert, if possible.
+
+    :param class:`letsencrypt.storage.RenewableCert` cert: the certificate
+        lineage to attempt to renew.
+    :param int old_version: the version of the certificate lineage relative
+        to which the renewal should be attempted.
+
+    :returns: int referring to newly created version of this cert lineage,
+        or False if renewal was not successful."""
+
+    # TODO: handle partial success (some names can be renewed but not
+    #       others)
     # TODO: handle obligatory key rotation vs. optional key rotation vs.
     #       requested key rotation
     if "renewalparams" not in cert.configfile:
@@ -106,7 +116,7 @@ def main(config=DEFAULTS):
             continue
         if cert.should_autodeploy():
             cert.update_all_links_to(cert.latest_common_version())
-            # TODO: restart web server
+            # TODO: restart web server (invoke IInstaller.restart() method)
             notify.notify("Autodeployed a cert!!!", "root", "It worked!")
             # TODO: explain what happened
         if cert.should_autorenew():
