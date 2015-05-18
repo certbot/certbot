@@ -445,12 +445,15 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         return False
 
     def should_autorenew(self):
-        """Should we now try to autorenew the most recent the most cert version?
+        """Should we now try to autorenew the most recent cert version?
 
         This is a policy question and does not only depend on whether the
         cert is expired.  (This considers whether autorenewal is enabled,
         whether the cert is revoked, and whether the time interval for
         autorenewal has been reached.)
+
+        Note that this examines the numerically most recent cert version,
+        not the currently deployed version.
 
         :returns: whether an attempt should now be made to autorenew the
             most current cert version in this lineage
@@ -459,18 +462,15 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         if ("autorenew" not in self.configuration
                 or self.configuration.as_bool("autorenew")):
             # Consider whether to attempt to autorenew this cert now
-            # XXX: both self.ocsp_revoked() and self.notafter() are bugs
-            #      here because we should be looking at the latest version, not
-            #      the current version!
 
             # Renewals on the basis of revocation
-            if self.ocsp_revoked():
+            if self.ocsp_revoked(self.latest_common_version()):
                 return True
 
             # Renewals on the basis of expiry time
             interval = self.configuration.get("renew_before_expiry", "10 days")
             autorenew_interval = parse_time_interval(interval)
-            expiry = self.notafter()
+            expiry = self.notafter(self.latest_common_version())
             now = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
             remaining = expiry - now
             if remaining < autorenew_interval:
