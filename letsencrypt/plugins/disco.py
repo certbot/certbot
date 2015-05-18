@@ -215,8 +215,9 @@ class PluginsRegistry(collections.Mapping):
             return None
 
     def __repr__(self):
-        return "{0}({1!r})".format(
-            self.__class__.__name__, set(self._plugins.itervalues()))
+        return "{0}({1})".format(
+            self.__class__.__name__, ','.join(
+                repr(p_ep) for p_ep in self._plugins.itervalues()))
 
     def __str__(self):
         if not self._plugins:
