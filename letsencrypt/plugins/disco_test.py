@@ -154,6 +154,7 @@ class PluginsRegistryTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.plugins.disco import PluginsRegistry
         self.plugin_ep = mock.MagicMock(name="mock")
+        self.plugin_ep.__hash__.side_effect = TypeError
         self.plugins = {"mock": self.plugin_ep}
         self.reg = PluginsRegistry(self.plugins)
 
@@ -227,7 +228,7 @@ class PluginsRegistryTest(unittest.TestCase):
 
     def test_repr(self):
         self.plugin_ep.__repr__ = lambda _: "PluginEntryPoint#mock"
-        self.assertEqual("PluginsRegistry(set([PluginEntryPoint#mock]))",
+        self.assertEqual("PluginsRegistry(PluginEntryPoint#mock)",
                          repr(self.reg))
 
     def test_str(self):

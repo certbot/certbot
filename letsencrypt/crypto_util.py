@@ -1,4 +1,4 @@
-"""Let's Encrypt client crypto utility functions
+"""Let's Encrypt client crypto utility functions.
 
 .. todo:: Make the transition to use PSS rather than PKCS1_v1_5 when the server
     is capable of handling the signatures.
@@ -13,6 +13,7 @@ import Crypto.PublicKey.RSA
 import Crypto.Signature.PKCS1_v1_5
 
 import M2Crypto
+import OpenSSL
 
 from letsencrypt import le_util
 
@@ -244,3 +245,43 @@ def get_sans_from_cert(pem):
     prefix = "DNS:"
     return [x[len(prefix):] for x in ext.get_value().split(", ")
             if x.startswith(prefix)]
+
+def _request_san(req):  # TODO: implement directly in PyOpenSSL!
+    # constants based on implementation of
+    # OpenSSL.crypto.X509Error._subjectAltNameString
+    parts_separator = ", "
+    part_separator = ":"
+    extension_short_name = "subjectAltName"
+
+    # pylint: disable=protected-access,no-member
+    label = OpenSSL.crypto.X509Extension._prefixes[OpenSSL.crypto._lib.GEN_DNS]
+    assert parts_separator not in label
+    prefix = label + part_separator
+
+    extensions = [ext._subjectAltNameString().split(parts_separator)
+                  for ext in req.get_extensions()
+                  if ext.get_short_name() == extension_short_name]
+    # WARNING: this function assumes that no SAN can include
+    # parts_separator, hence the split!
+
+    return [part.split(part_separator)[1] for parts in extensions
+            for part in parts if part.startswith(prefix)]
+
+
+def get_sans_from_csr(csr, typ=OpenSSL.crypto.FILETYPE_PEM):
+    """Get list of Subject Alternative Names from signing request.
+
+    :param str csr: Certificate Signing Request in PEM format (must contain
+        one or more subjectAlternativeNames, or the function will fail,
+        raising ValueError)
+
+    :returns: List of referenced subject alternative names
+    :rtype: list
+
+    """
+    try:
+        request = OpenSSL.crypto.load_certificate_request(typ, csr)
+    except OpenSSL.crypto.Error as error:
+        logging.exception(error)
+        raise
+    return _request_san(request)

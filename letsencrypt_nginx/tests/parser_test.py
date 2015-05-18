@@ -25,8 +25,8 @@ class NginxParserTest(util.NginxTest):
         shutil.rmtree(self.work_dir)
 
     def test_root_normalized(self):
-        path = os.path.join(self.temp_dir, "foo/////"
-                            "bar/../../testdata")
+        path = os.path.join(self.temp_dir, "etc_nginx/////"
+                            "ubuntu_nginx/../../etc_nginx")
         nparser = parser.NginxParser(path, None)
         self.assertEqual(nparser.root, self.config_path)
 

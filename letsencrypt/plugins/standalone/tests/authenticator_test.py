@@ -404,47 +404,39 @@ class DoParentProcessTest(unittest.TestCase):
             StandaloneAuthenticator
         self.authenticator = StandaloneAuthenticator(config=None, name=None)
 
-    @mock.patch("letsencrypt.plugins.standalone.authenticator.signal.signal")
     @mock.patch("letsencrypt.plugins.standalone.authenticator."
                 "zope.component.getUtility")
-    def test_do_parent_process_ok(self, mock_get_utility, mock_signal):
+    def test_do_parent_process_ok(self, mock_get_utility):
         self.authenticator.subproc_state = "ready"
         result = self.authenticator.do_parent_process(1717)
         self.assertTrue(result)
         self.assertEqual(mock_get_utility.call_count, 1)
-        self.assertEqual(mock_signal.call_count, 3)
 
-    @mock.patch("letsencrypt.plugins.standalone.authenticator.signal.signal")
     @mock.patch("letsencrypt.plugins.standalone.authenticator."
                 "zope.component.getUtility")
-    def test_do_parent_process_inuse(self, mock_get_utility, mock_signal):
+    def test_do_parent_process_inuse(self, mock_get_utility):
         self.authenticator.subproc_state = "inuse"
         result = self.authenticator.do_parent_process(1717)
         self.assertFalse(result)
         self.assertEqual(mock_get_utility.call_count, 1)
-        self.assertEqual(mock_signal.call_count, 3)
 
-    @mock.patch("letsencrypt.plugins.standalone.authenticator.signal.signal")
     @mock.patch("letsencrypt.plugins.standalone.authenticator."
                 "zope.component.getUtility")
-    def test_do_parent_process_cantbind(self, mock_get_utility, mock_signal):
+    def test_do_parent_process_cantbind(self, mock_get_utility):
         self.authenticator.subproc_state = "cantbind"
         result = self.authenticator.do_parent_process(1717)
         self.assertFalse(result)
         self.assertEqual(mock_get_utility.call_count, 1)
-        self.assertEqual(mock_signal.call_count, 3)
 
-    @mock.patch("letsencrypt.plugins.standalone.authenticator.signal.signal")
     @mock.patch("letsencrypt.plugins.standalone.authenticator."
                 "zope.component.getUtility")
-    def test_do_parent_process_timeout(self, mock_get_utility, mock_signal):
+    def test_do_parent_process_timeout(self, mock_get_utility):
         # Normally times out in 5 seconds and returns False.  We can
         # now set delay_amount to a lower value so that it times out
         # faster than it would under normal use.
         result = self.authenticator.do_parent_process(1717, delay_amount=1)
         self.assertFalse(result)
         self.assertEqual(mock_get_utility.call_count, 1)
-        self.assertEqual(mock_signal.call_count, 3)
 
 
 class DoChildProcessTest(unittest.TestCase):

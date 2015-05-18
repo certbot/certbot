@@ -21,7 +21,7 @@ All you need to do is::
 
   user@www:~$ sudo letsencrypt -d www.example.org auth
 
-and if you have a compatbile web server (Apache or Nginx), Let's Encrypt can
+and if you have a compatible web server (Apache or Nginx), Let's Encrypt can
 not only get a new certificate, but also deploy it and configure your
 server automatically!::
 
