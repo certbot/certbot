@@ -13,12 +13,9 @@ import parsedatetime
 import pytz
 import pyrfc3339
 
+from letsencrypt import constants
 from letsencrypt import le_util
 
-DEFAULTS = configobj.ConfigObj("renewal.conf")
-DEFAULTS["renewal_configs_dir"] = "/tmp/etc/letsencrypt/configs"
-DEFAULTS["official_archive_dir"] = "/tmp/etc/letsencrypt/archive"
-DEFAULTS["live_dir"] = "/tmp/etc/letsencrypt/live"
 ALL_FOUR = ("cert", "privkey", "chain", "fullchain")
 
 
@@ -81,7 +78,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         and/or systemwide defaults.
     :type configuration: :class:`configobj.ConfigObj`"""
 
-    def __init__(self, configfile, defaults=DEFAULTS):
+    def __init__(self, configfile, defaults=constants.RENEWER_DEFAULTS):
         """Instantiate a RenewableCert object from an existing lineage.
 
         :param :class:`configobj.ConfigObj` configfile: an already-parsed
@@ -109,6 +106,9 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         # systemwide renewal configuration; self.configfile should be
         # used to make and save changes.
         self.configfile = configfile
+        # TODO: Do we actually use anything from defaults and do we want to
+        #       read further defaults from the systemwide renewal configuration
+        #       file at this stage?
         self.configuration = copy.deepcopy(defaults)
         self.configuration.merge(self.configfile)
 
@@ -147,7 +147,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             # Each element's link must point within the cert lineage's
             # directory within the official archive directory
             desired_directory = os.path.join(
-                self.configuration["official_archive_dir"], self.lineagename)
+                self.configuration["archive_dir"], self.lineagename)
             if not os.path.samefile(os.path.dirname(target),
                                     desired_directory):
                 return False
@@ -479,7 +479,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def new_lineage(cls, lineagename, cert, privkey, chain,
-                    renewalparams=None, config=DEFAULTS):
+                    renewalparams=None, config=constants.RENEWER_DEFAULTS):
         # pylint: disable=too-many-locals,too-many-arguments
         """Create a new certificate lineage.
 
@@ -511,9 +511,15 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         :returns: the newly-created RenewalCert object
         :rtype: :class:`storage.renewableCert`"""
 
+        # This attempts to read the renewer config file and augment or replace
+        # the renewer defaults with any options contained in that file.  If
+        # renewer_config_file is undefined or if the file is nonexistent or
+        # empty, this .merge() will have no effect.
+        config.merge(configobj.ConfigObj(config.get("renewer_config_file", "")))
+
         # Examine the configuration and find the new lineage's name
         configs_dir = config["renewal_configs_dir"]
-        archive_dir = config["official_archive_dir"]
+        archive_dir = config["archive_dir"]
         live_dir = config["live_dir"]
         for i in (configs_dir, archive_dir, live_dir):
             if not os.path.exists(i):
@@ -594,7 +600,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         # Figure out what the new version is and hence where to save things
 
         target_version = self.next_free_version()
-        archive = self.configuration["official_archive_dir"]
+        archive = self.configuration["archive_dir"]
         prefix = os.path.join(archive, self.lineagename)
         target = dict(
             [(kind,

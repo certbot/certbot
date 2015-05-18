@@ -11,16 +11,12 @@ import os
 import configobj
 
 from letsencrypt import configuration
+from letsencrypt import constants
 from letsencrypt import client
 from letsencrypt import crypto_util
 from letsencrypt import notify
 from letsencrypt import storage
 from letsencrypt.plugins import disco as plugins_disco
-
-DEFAULTS = configobj.ConfigObj("renewal.conf")
-DEFAULTS["renewal_configs_dir"] = "/tmp/etc/letsencrypt/configs"
-DEFAULTS["official_archive_dir"] = "/tmp/etc/letsencrypt/archive"
-DEFAULTS["live_dir"] = "/tmp/etc/letsencrypt/live"
 
 
 class AttrDict(dict):
@@ -91,13 +87,20 @@ def renew(cert, old_version):
     #       (where fewer than all names were renewed)
 
 
-def main(config=DEFAULTS):
+def main(config=constants.RENEWER_DEFAULTS):
     """main function for autorenewer script."""
     # TODO: Distinguish automated invocation from manual invocation,
     #       perhaps by looking at sys.argv[0] and inhibiting automated
     #       invocations if /etc/letsencrypt/renewal.conf defaults have
     #       turned it off. (The boolean parameter should probably be
     #       called renewer_enabled.)
+
+    # This attempts to read the renewer config file and augment or replace
+    # the renewer defaults with any options contained in that file.  If
+    # renewer_config_file is undefined or if the file is nonexistent or
+    # empty, this .merge() will have no effect.
+    config.merge(configobj.ConfigObj(config.get("renewer_config_file", "")))
+
     for i in os.listdir(config["renewal_configs_dir"]):
         print "Processing", i
         if not i.endswith(".conf"):

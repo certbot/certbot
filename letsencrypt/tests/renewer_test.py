@@ -38,8 +38,7 @@ class RenewableCertTests(unittest.TestCase):
         os.makedirs(os.path.join(self.tempdir, "configs"))
         defaults = configobj.ConfigObj()
         defaults["live_dir"] = os.path.join(self.tempdir, "live")
-        defaults["official_archive_dir"] = os.path.join(self.tempdir,
-                                                        "archive")
+        defaults["archive_dir"] = os.path.join(self.tempdir, "archive")
         defaults["renewal_configs_dir"] = os.path.join(self.tempdir,
                                                        "configs")
         config = configobj.ConfigObj()
@@ -461,7 +460,7 @@ class RenewableCertTests(unittest.TestCase):
         """Test for new_lineage() class method."""
         from letsencrypt import storage
         config_dir = self.defaults["renewal_configs_dir"]
-        archive_dir = self.defaults["official_archive_dir"]
+        archive_dir = self.defaults["archive_dir"]
         live_dir = self.defaults["live_dir"]
         result = storage.RenewableCert.new_lineage("the-lineage.com", "cert",
                                                    "privkey", "chain", None,
@@ -500,7 +499,7 @@ class RenewableCertTests(unittest.TestCase):
         """Test that directories can be created if they don't exist."""
         from letsencrypt import storage
         config_dir = self.defaults["renewal_configs_dir"]
-        archive_dir = self.defaults["official_archive_dir"]
+        archive_dir = self.defaults["archive_dir"]
         live_dir = self.defaults["live_dir"]
         shutil.rmtree(config_dir)
         shutil.rmtree(archive_dir)
