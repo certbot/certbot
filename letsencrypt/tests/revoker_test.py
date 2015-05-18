@@ -12,8 +12,6 @@ from letsencrypt import errors
 from letsencrypt import le_util
 from letsencrypt.display import util as display_util
 
-from letsencrypt_apache import configurator
-
 
 class RevokerBase(unittest.TestCase):  # pylint: disable=too-few-public-methods
     """Base Class for Revoker Tests."""
@@ -60,8 +58,7 @@ class RevokerTest(RevokerBase):
         self._store_certs()
 
         self.revoker = Revoker(
-            mock.MagicMock(spec=configurator.ApacheConfigurator),
-            self.mock_config)
+            installer=mock.MagicMock(), config=self.mock_config)
 
     def tearDown(self):
         shutil.rmtree(self.backup_dir)
