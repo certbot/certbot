@@ -7,6 +7,8 @@ import unittest
 
 import mock
 
+from letsencrypt import constants as core_constants
+
 from letsencrypt_apache import configurator
 from letsencrypt_apache import constants
 from letsencrypt_apache import obj
@@ -20,7 +22,7 @@ class ApacheTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
         self.temp_dir, self.config_dir, self.work_dir = dir_setup(
             "debian_apache_2_4/two_vhost_80")
 
-        self.ssl_options = setup_apache_ssl_options(self.config_dir)
+        self.ssl_options = setup_ssl_options(self.config_dir)
 
         self.config_path = os.path.join(
             self.temp_dir, "debian_apache_2_4/two_vhost_80/apache2")
@@ -31,14 +33,19 @@ class ApacheTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
             "acme.jose", "testdata/rsa256_key.pem")
 
 
-def dir_setup(test_dir="debian_apache_2_4/two_vhost_80"):
+def dir_setup(test_dir="debian_apache_2_4/two_vhost_80",
+              pkg="letsencrypt_apache.tests"):
     """Setup the directories necessary for the configurator."""
     temp_dir = tempfile.mkdtemp("temp")
     config_dir = tempfile.mkdtemp("config")
     work_dir = tempfile.mkdtemp("work")
 
+    os.chmod(temp_dir, core_constants.CONFIG_DIRS_MODE)
+    os.chmod(config_dir, core_constants.CONFIG_DIRS_MODE)
+    os.chmod(work_dir, core_constants.CONFIG_DIRS_MODE)
+
     test_configs = pkg_resources.resource_filename(
-        "letsencrypt_apache.tests", "testdata/%s" % test_dir)
+        pkg, os.path.join("testdata", test_dir))
 
     shutil.copytree(
         test_configs, os.path.join(temp_dir, test_dir), symlinks=True)
@@ -46,10 +53,11 @@ def dir_setup(test_dir="debian_apache_2_4/two_vhost_80"):
     return temp_dir, config_dir, work_dir
 
 
-def setup_apache_ssl_options(config_dir):
+def setup_ssl_options(
+        config_dir, mod_ssl_conf=constants.MOD_SSL_CONF):
     """Move the ssl_options into position and return the path."""
     option_path = os.path.join(config_dir, "options-ssl.conf")
-    shutil.copyfile(constants.MOD_SSL_CONF, option_path)
+    shutil.copyfile(mod_ssl_conf, option_path)
     return option_path
 
 
