@@ -19,7 +19,7 @@ class Error(jose.JSONObjectWithFields, Exception):
     }
 
     typ = jose.Field('type')
-    title = jose.Field('title')
+    title = jose.Field('title', omitempty=True)
     detail = jose.Field('detail')
 
     @typ.encoder
