@@ -18,8 +18,8 @@ class Error(jose.JSONObjectWithFields, Exception):
         'badCSR': 'The CSR is unacceptable (e.g., due to a short key)',
     }
 
-    typ = jose.Field('type', omitempty=True)
-    title = jose.Field('title', omitempty=True)
+    typ = jose.Field('type')
+    title = jose.Field('title')
     detail = jose.Field('detail')
 
     @typ.encoder

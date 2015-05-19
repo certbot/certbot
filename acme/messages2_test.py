@@ -21,7 +21,7 @@ class ErrorTest(unittest.TestCase):
 
     def setUp(self):
         from acme.messages2 import Error
-        self.error = Error(detail='foo', typ='malformed')
+        self.error = Error(detail='foo', typ='malformed', title='title')
 
     def test_typ_prefix(self):
         self.assertEqual('malformed', self.error.typ)

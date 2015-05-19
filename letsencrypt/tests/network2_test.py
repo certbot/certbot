@@ -114,7 +114,8 @@ class NetworkTest(unittest.TestCase):
 
     def test_check_response_not_ok_jobj_error(self):
         self.response.ok = False
-        self.response.json.return_value = messages2.Error(detail='foo')
+        self.response.json.return_value = messages2.Error(
+            detail='foo', typ='serverInternal', title='some title').to_json()
         # pylint: disable=protected-access
         self.assertRaises(
             messages2.Error, self.net._check_response, self.response)
