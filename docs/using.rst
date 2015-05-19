@@ -12,8 +12,8 @@ download docker, and issue the following command
 .. code-block:: shell
 
    sudo docker run -it --rm -p 443:443 --name letsencrypt \
-               -v "/etc/letsenecrypt:/etc/letsencrypt" \
-               -v "/var/lib/letsenecrypt:/var/lib/letsencrypt" \
+               -v "/etc/letsencrypt:/etc/letsencrypt" \
+               -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
                quay.io/letsencrypt/lets-encrypt-preview:latest
 
 And follow the instructions. Your new cert will be available in
