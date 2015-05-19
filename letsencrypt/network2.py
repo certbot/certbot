@@ -115,6 +115,7 @@ class Network(object):
         :rtype: `requests.Response`
 
         """
+        logging.debug('Sending GET request to %s', uri)
         try:
             response = requests.get(uri, **kwargs)
         except requests.exceptions.RequestException as error:
@@ -133,7 +134,7 @@ class Network(object):
         :rtype: `requests.Response`
 
         """
-        logging.debug('Sending POST data: %s', data)
+        logging.debug('Sending POST data to %s: %s', uri, data)
         try:
             response = requests.post(uri, data=data, **kwargs)
         except requests.exceptions.RequestException as error:
