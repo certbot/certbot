@@ -22,6 +22,7 @@ class ErrorTest(unittest.TestCase):
     def setUp(self):
         from acme.messages2 import Error
         self.error = Error(detail='foo', typ='malformed', title='title')
+        self.jobj = {'detail': 'foo', 'title': 'some title'}
 
     def test_typ_prefix(self):
         self.assertEqual('malformed', self.error.typ)
@@ -32,15 +33,15 @@ class ErrorTest(unittest.TestCase):
 
     def test_typ_decoder_missing_prefix(self):
         from acme.messages2 import Error
-        self.assertRaises(jose.DeserializationError, Error.from_json,
-                          {'detail': 'foo', 'type': 'malformed'})
-        self.assertRaises(jose.DeserializationError, Error.from_json,
-                          {'detail': 'foo', 'type': 'not valid bare type'})
+        self.jobj['type'] = 'malfomed'
+        self.assertRaises(jose.DeserializationError, Error.from_json, self.jobj)
+        self.jobj['type'] = 'not balid bare type'
+        self.assertRaises(jose.DeserializationError, Error.from_json, self.jobj)
 
     def test_typ_decoder_not_recognized(self):
         from acme.messages2 import Error
-        self.assertRaises(jose.DeserializationError, Error.from_json,
-                          {'detail': 'foo', 'type': 'urn:acme:error:baz'})
+        self.jobj['type'] = 'urn:acme:error:baz'
+        self.assertRaises(jose.DeserializationError, Error.from_json, self.jobj)
 
     def test_description(self):
         self.assertEqual(
