@@ -4,7 +4,8 @@
 FROM ubuntu:trusty
 MAINTAINER Jakub Warmuz <jakub@warmuz.org>
 
-# You neccesarily have to bind to 443@host as well! (ACME spec)
+# Note: this only exposes the port to other docker containers. You
+# still have to bind to 443@host at runtime, as per the ACME spec.
 EXPOSE 443
 
 # TODO: make sure --config-dir and --work-dir cannot be changed
