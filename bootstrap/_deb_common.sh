@@ -16,7 +16,7 @@ apt-get update
 #           #276, https://github.com/martinpaljak/M2Crypto/issues/62,
 #           M2Crypto setup.py:add_multiarch_paths
 
-common_packages="python python-setuptools python-dev gcc swig dialog libaugeas0 libssl-dev openssl libffi-dev"
+common_packages="python python-setuptools python-dev gcc swig dialog libaugeas0 libssl-dev openssl libffi-dev dpkg-dev ca-certificates"
 
 if [ "$1" = "no_venv" ]
 then
