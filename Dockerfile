@@ -22,8 +22,8 @@ WORKDIR /opt/letsencrypt
 # The following copies too much than we need...
 #COPY . /opt/letsencrypt/
 
-COPY bootstrap/debian.sh /opt/letsencrypt/src/
-RUN /opt/letsencrypt/src/debian.sh && \
+COPY bootstrap/ubuntu.sh /opt/letsencrypt/src/
+RUN /opt/letsencrypt/src/ubuntu.sh && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* \
            /tmp/* \
