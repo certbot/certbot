@@ -84,6 +84,26 @@ class TestRawNginxParser(unittest.TestCase):
               ]]]]]
         )
 
+    def test_parse_from_file2(self):
+        parsed = load(open(util.get_data_filename('edge_cases.conf')))
+        self.assertEqual(
+            parsed,
+            [[['server'], [['server_name', 'simple']]],
+             [['server'],
+              [['server_name', 'with.if'],
+               [['location', '~', '^/services/.+$'],
+                [[['if', '($request_filename ~* \\.(ttf|woff)$)'],
+                  [['add_header', 'Access-Control-Allow-Origin "*"']]]]]]],
+             [['server'],
+              [['server_name', 'with.complicated.headers'],
+               [['location', '~*', '\\.(?:gif|jpe?g|png)$'],
+                [['add_header', 'Pragma public'],
+                 ['add_header',
+                  'Cache-Control  \'public, must-revalidate, proxy-revalidate\''
+                  ' "test,;{}" foo'],
+                 ['blah', '"hello;world"'],
+                 ['try_files', '$uri @rewrites']]]]]])
+
     def test_dump_as_file(self):
         parsed = load(open(util.get_data_filename('nginx.conf')))
         parsed[-1][-1].append([['server'],
