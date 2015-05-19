@@ -72,7 +72,7 @@ class NetworkTest(unittest.TestCase):
         self.authz = messages2.Authorization(
             identifier=messages2.Identifier(
                 typ=messages2.IDENTIFIER_FQDN, value='example.com'),
-            challenges=(challb,), combinations=None, key=KEY.public())
+            challenges=(challb,), combinations=None)
         self.authzr = messages2.AuthorizationResource(
             body=self.authz, uri=authzr_uri,
             new_cert_uri='https://www.letsencrypt-demo.org/acme/new-cert')
@@ -258,11 +258,10 @@ class NetworkTest(unittest.TestCase):
         # TODO: test POST call arguments
 
         # TODO: split here and separate test
-        authz_wrong_key = self.authz.update(key=KEY2.public())
-        self.response.json.return_value = authz_wrong_key.to_json()
-        self.assertRaises(
-            errors.UnexpectedUpdate, self.net.request_challenges,
-            self.identifier, self.regr)
+        self.response.json.return_value = self.authz.update(
+            identifier=self.identifier.update(value='foo')).to_json()
+        self.assertRaises(errors.UnexpectedUpdate, self.net.request_challenges,
+                          self.identifier, self.authzr.uri)
 
     def test_request_challenges_missing_next(self):
         self.response.status_code = httplib.CREATED
@@ -335,6 +334,11 @@ class NetworkTest(unittest.TestCase):
         self._mock_post_get()
         self.assertEqual((self.authzr, self.response),
                          self.net.poll(self.authzr))
+
+        # TODO: split here and separate test
+        self.response.json.return_value = self.authz.update(
+            identifier=self.identifier.update(value='foo')).to_json()
+        self.assertRaises(errors.UnexpectedUpdate, self.net.poll, self.authzr)
 
     def test_request_issuance(self):
         self.response.content = CERT.as_der()

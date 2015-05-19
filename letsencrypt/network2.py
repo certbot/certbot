@@ -248,6 +248,7 @@ class Network(object):
 
     def _authzr_from_response(self, response, identifier,
                               uri=None, new_cert_uri=None):
+        # pylint: disable=no-self-use
         if new_cert_uri is None:
             try:
                 new_cert_uri = response.links['next']['url']
@@ -258,8 +259,7 @@ class Network(object):
             body=messages2.Authorization.from_json(response.json()),
             uri=response.headers.get('Location', uri),
             new_cert_uri=new_cert_uri)
-        if (authzr.body.key != self.key.public()
-                or authzr.body.identifier != identifier):
+        if authzr.body.identifier != identifier:
             raise errors.UnexpectedUpdate(authzr)
         return authzr
 
