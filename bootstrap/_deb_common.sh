@@ -42,5 +42,3 @@ else
 fi
 
 apt-get install -y --no-install-recommends $packages
-
-ln -s /usr/include/x86_64-linux-gnu/openssl/opensslconf.h /usr/include/openssl/
