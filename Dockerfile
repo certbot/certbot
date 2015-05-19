@@ -1,4 +1,7 @@
-FROM debian:jessie
+# https://github.com/letsencrypt/lets-encrypt-preview/pull/431#issuecomment-103659297
+# it is more likely developers will already have ubuntu:trusty rather
+# than e.g. debian:jessie and image size differences are negligible
+FROM ubuntu:trusty
 MAINTAINER Jakub Warmuz <jakub@warmuz.org>
 
 # You neccesarily have to bind to 443@host as well! (ACME spec)
@@ -20,7 +23,7 @@ WORKDIR /opt/letsencrypt
 #COPY . /opt/letsencrypt/
 
 COPY bootstrap/debian.sh /opt/letsencrypt/src/
-RUN /opt/letsencrypt/src/debian.sh newer && \
+RUN /opt/letsencrypt/src/debian.sh && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* \
            /tmp/* \

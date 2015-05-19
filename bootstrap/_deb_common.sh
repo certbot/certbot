@@ -29,6 +29,8 @@ newer () {
   fi
 }
 
+# you can force newer if lsb_release is not available (e.g. Docker
+# debian:jessie base image)
 if [ "$1" = "newer" ] || newer
 then
   virtualenv="virtualenv"
