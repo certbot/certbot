@@ -139,7 +139,7 @@ class Network(object):
             response = requests.post(uri, data=data, **kwargs)
         except requests.exceptions.RequestException as error:
             raise errors.NetworkError(error)
-        logging.debug('Received response %s: %s', response, response.text)
+        logging.debug('Received response %s: %r', response, response.text)
 
         self._check_response(response, content_type=content_type)
         return response
