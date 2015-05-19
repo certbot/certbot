@@ -3,6 +3,7 @@
 # than e.g. debian:jessie and image size differences are negligible
 FROM ubuntu:trusty
 MAINTAINER Jakub Warmuz <jakub@warmuz.org>
+MAINTAINER William Budington <bill@eff.org>
 
 # Note: this only exposes the port to other docker containers. You
 # still have to bind to 443@host at runtime, as per the ACME spec.
