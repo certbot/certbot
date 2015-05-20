@@ -48,14 +48,14 @@ COPY letsencrypt_apache /opt/letsencrypt/src/letsencrypt_apache/
 COPY letsencrypt_nginx /opt/letsencrypt/src/letsencrypt_nginx/
 
 
-RUN virtualenv --no-site-packages -p python2 /opt/letsencrypt && \
-    /opt/letsencrypt/bin/pip install -e /opt/letsencrypt/src
+RUN virtualenv --no-site-packages -p python2 /opt/letsencrypt/venv && \
+    /opt/letsencrypt/venv/bin/pip install -e /opt/letsencrypt/src
 
 # install in editable mode (-e) to save space: it's not possible to
 # "rm -rf /opt/letsencrypt/src" (it's stays in the underlaying image);
 # this might also help in debugging: you can "docker run --entrypoint
 # bash" and investigate, apply patches, etc.
 
-ENV PATH /opt/letsencrypt/bin:$PATH
+ENV PATH /opt/letsencrypt/venv/bin:$PATH
 # TODO: is --text really necessary?
 ENTRYPOINT [ "letsencrypt", "--text" ]

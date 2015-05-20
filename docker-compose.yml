@@ -11,3 +11,4 @@ development:
     - "443:443"
   volumes:
     - .:/opt/letsencrypt/src
+    - /opt/letsencrypt/venv
