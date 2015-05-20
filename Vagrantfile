@@ -8,9 +8,11 @@ VAGRANTFILE_API_VERSION = "2"
 $ubuntu_setup_script = <<SETUP_SCRIPT
 cd /vagrant
 sudo ./bootstrap/ubuntu.sh
+
+# For some reason running setup.py w/o virtualenv in vagrant fails
 if [ ! -d "venv" ]; then
   virtualenv --no-site-packages -p python2 venv
-  ./venv/bin/pip install -r requirements.txt -e .[dev,docs,testing]
+  ./venv/bin/python setup.py install
 fi
 SETUP_SCRIPT
 

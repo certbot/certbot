@@ -1,0 +1,12 @@
+production:
+  build: .
+  ports:
+    - "443:443"
+
+# a more vagrant-like setup for development
+development:
+  build: .
+  ports:
+    - "443:443"
+  volumes:
+    - .:/opt/

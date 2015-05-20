@@ -48,7 +48,6 @@ synced to ``/vagrant``, so you can get started with:
 
   vagrant ssh
   cd /vagrant
-  ./venv/bin/pip install -r requirements.txt
   sudo ./venv/bin/letsencrypt
 
 Support for other Linux distributions coming soon.
@@ -62,6 +61,17 @@ Support for other Linux distributions coming soon.
 
 .. _use NFS: http://docs.vagrantup.com/v2/synced-folders/nfs.html
 .. _related issue: https://github.com/ClusterHQ/flocker/issues/516
+
+
+Docker
+------
+
+If you use Docker, Let's Encrypt provides a Dockerfile to simplify
+setup of your development environment in an Ubuntu 14.04 LTS
+container. To set it up, you'll need both docker and docker-compose.
+Simply run ``docker-compose run development``. All requirements are
+installed globally in the container, so from there all you need to
+run is ``letsencrypt``.
 
 
 Code components and layout
