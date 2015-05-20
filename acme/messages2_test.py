@@ -33,9 +33,9 @@ class ErrorTest(unittest.TestCase):
 
     def test_typ_decoder_missing_prefix(self):
         from acme.messages2 import Error
-        self.jobj['type'] = 'malfomed'
+        self.jobj['type'] = 'malformed'
         self.assertRaises(jose.DeserializationError, Error.from_json, self.jobj)
-        self.jobj['type'] = 'not balid bare type'
+        self.jobj['type'] = 'not valid bare type'
         self.assertRaises(jose.DeserializationError, Error.from_json, self.jobj)
 
     def test_typ_decoder_not_recognized(self):
