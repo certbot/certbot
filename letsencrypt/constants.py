@@ -11,7 +11,7 @@ SETUPTOOLS_PLUGINS_ENTRY_POINT = "letsencrypt.plugins"
 CLI_DEFAULTS = dict(
     config_files=["/etc/letsencrypt/cli.ini"],
     verbose_count=-(logging.WARNING / 10),
-    server="www.letsencrypt-demo.org/acme/new-reg",
+    server="https://www.letsencrypt-demo.org/acme/new-reg",
     rsa_key_size=2048,
     rollback_checkpoints=0,
     config_dir="/etc/letsencrypt",
@@ -21,6 +21,7 @@ CLI_DEFAULTS = dict(
     certs_dir="/etc/letsencrypt/certs",
     cert_path="/etc/letsencrypt/certs/cert-letsencrypt.pem",
     chain_path="/etc/letsencrypt/certs/chain-letsencrypt.pem",
+    test_mode=False,
 )
 """Defaults for CLI flags and `.IConfig` attributes."""
 

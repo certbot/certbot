@@ -10,10 +10,10 @@ class NamespaceConfigTest(unittest.TestCase):
 
     def setUp(self):
         from letsencrypt.configuration import NamespaceConfig
-        namespace = mock.MagicMock(
+        self.namespace = mock.MagicMock(
             config_dir='/tmp/config', work_dir='/tmp/foo', foo='bar',
-            server='acme-server.org:443/new')
-        self.config = NamespaceConfig(namespace)
+            server='https://acme-server.org:443/new')
+        self.config = NamespaceConfig(self.namespace)
 
     def test_proxy_getattr(self):
         self.assertEqual(self.config.foo, 'bar')
@@ -23,9 +23,10 @@ class NamespaceConfigTest(unittest.TestCase):
         self.assertEqual(['acme-server.org:443', 'new'],
                          self.config.server_path.split(os.path.sep))
 
-    def test_server_url(self):
-        self.assertEqual(
-            self.config.server_url, 'https://acme-server.org:443/new')
+        self.namespace.server = ('http://user:pass@acme.server:443'
+                                 '/p/a/t/h;parameters?query#fragment')
+        self.assertEqual(['user:pass@acme.server:443', 'p', 'a', 't', 'h'],
+                         self.config.server_path.split(os.path.sep))
 
     @mock.patch('letsencrypt.configuration.constants')
     def test_dynamic_dirs(self, constants):
