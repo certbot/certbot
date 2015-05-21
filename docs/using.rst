@@ -2,6 +2,24 @@
 Using the Let's Encrypt client
 ==============================
 
+Quick start
+===========
+
+Using docker you can quickly get yourself a testing cert. From the
+server that the domain your requesting a cert for resolves to,
+download docker, and issue the following command
+
+.. code-block:: shell
+
+   sudo docker run -it --rm -p 443:443 --name letsencrypt \
+               -v "/etc/letsencrypt:/etc/letsencrypt" \
+               -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
+               quay.io/letsencrypt/lets-encrypt-preview:latest
+
+And follow the instructions. Your new cert will be available in
+``/etc/letsencrypt/certs``.
+
+
 Prerequisites
 =============
 
