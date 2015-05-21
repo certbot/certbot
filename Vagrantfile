@@ -8,9 +8,10 @@ VAGRANTFILE_API_VERSION = "2"
 $ubuntu_setup_script = <<SETUP_SCRIPT
 cd /vagrant
 sudo ./bootstrap/ubuntu.sh
+sudo apt-get -y --no-install-recommends install git
 if [ ! -d "venv" ]; then
   virtualenv --no-site-packages -p python2 venv
-  ./venv/bin/pip install -e .
+  ./venv/bin/pip install -r requirements.txt -e .[dev,docs,testing]
 fi
 SETUP_SCRIPT
 
