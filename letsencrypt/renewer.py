@@ -6,6 +6,7 @@ configuration."""
 
 # TODO: call new installer API to restart servers after deployment
 
+import copy
 import os
 
 import configobj
@@ -87,7 +88,7 @@ def renew(cert, old_version):
     #       (where fewer than all names were renewed)
 
 
-def main(config=constants.RENEWER_DEFAULTS):
+def main(config=None):
     """main function for autorenewer script."""
     # TODO: Distinguish automated invocation from manual invocation,
     #       perhaps by looking at sys.argv[0] and inhibiting automated
@@ -95,10 +96,17 @@ def main(config=constants.RENEWER_DEFAULTS):
     #       turned it off. (The boolean parameter should probably be
     #       called renewer_enabled.)
 
-    # This attempts to read the renewer config file and augment or replace
+    # Merge supplied config, if provided, on top of builtin defaults
+    defaults_copy = copy.deepcopy(constants.RENEWER_DEFAULTS)
+    defaults_copy.merge(config if config is not None else configobj.ConfigObj())
+    config = defaults_copy
+    # Now attempt to read the renewer config file and augment or replace
     # the renewer defaults with any options contained in that file.  If
     # renewer_config_file is undefined or if the file is nonexistent or
-    # empty, this .merge() will have no effect.
+    # empty, this .merge() will have no effect.  TODO: when we have a more
+    # elaborate renewer command line, we will presumably also be able to
+    # specify a config file on the command line, which, if provided, should
+    # take precedence over this one.
     config.merge(configobj.ConfigObj(config.get("renewer_config_file", "")))
 
     for i in os.listdir(config["renewal_configs_dir"]):

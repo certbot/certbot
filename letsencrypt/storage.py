@@ -78,13 +78,13 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         and/or systemwide defaults.
     :type configuration: :class:`configobj.ConfigObj`"""
 
-    def __init__(self, configfile, defaults=constants.RENEWER_DEFAULTS):
+    def __init__(self, configfile, config_opts=None):
         """Instantiate a RenewableCert object from an existing lineage.
 
         :param :class:`configobj.ConfigObj` configfile: an already-parsed
             ConfigObj object made from reading the renewal config file that
             defines this lineage.
-        :param :class:`configobj.ConfigObj` defaults: systemwide defaults
+        :param :class:`configobj.ConfigObj` config_opts: systemwide defaults
             for renewal properties not otherwise specified in the individual
             renewal config file.
 
@@ -109,7 +109,10 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         # TODO: Do we actually use anything from defaults and do we want to
         #       read further defaults from the systemwide renewal configuration
         #       file at this stage?
-        self.configuration = copy.deepcopy(defaults)
+        defaults_copy = copy.deepcopy(constants.RENEWER_DEFAULTS)
+        defaults_copy.merge(config_opts if config_opts is not None
+                            else configobj.ConfigObj())
+        self.configuration = defaults_copy
         self.configuration.merge(self.configfile)
 
         if not all(x in self.configuration for x in ALL_FOUR):
@@ -479,7 +482,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def new_lineage(cls, lineagename, cert, privkey, chain,
-                    renewalparams=None, config=constants.RENEWER_DEFAULTS):
+                    renewalparams=None, config=None):
         # pylint: disable=too-many-locals,too-many-arguments
         """Create a new certificate lineage.
 
@@ -511,6 +514,10 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         :returns: the newly-created RenewalCert object
         :rtype: :class:`storage.renewableCert`"""
 
+        defaults_copy = copy.deepcopy(constants.RENEWER_DEFAULTS)
+        defaults_copy.merge(config if config is not None
+                            else configobj.ConfigObj())
+        config = defaults_copy
         # This attempts to read the renewer config file and augment or replace
         # the renewer defaults with any options contained in that file.  If
         # renewer_config_file is undefined or if the file is nonexistent or
