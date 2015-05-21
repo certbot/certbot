@@ -115,6 +115,7 @@ class Network(object):
         :rtype: `requests.Response`
 
         """
+        logging.debug('Sending GET request to %s', uri)
         try:
             response = requests.get(uri, **kwargs)
         except requests.exceptions.RequestException as error:
@@ -133,12 +134,12 @@ class Network(object):
         :rtype: `requests.Response`
 
         """
-        logging.debug('Sending POST data: %s', data)
+        logging.debug('Sending POST data to %s: %s', uri, data)
         try:
             response = requests.post(uri, data=data, **kwargs)
         except requests.exceptions.RequestException as error:
             raise errors.NetworkError(error)
-        logging.debug('Received response %s: %s', response, response.text)
+        logging.debug('Received response %s: %r', response, response.text)
 
         self._check_response(response, content_type=content_type)
         return response
@@ -247,6 +248,7 @@ class Network(object):
 
     def _authzr_from_response(self, response, identifier,
                               uri=None, new_cert_uri=None):
+        # pylint: disable=no-self-use
         if new_cert_uri is None:
             try:
                 new_cert_uri = response.links['next']['url']
@@ -257,8 +259,7 @@ class Network(object):
             body=messages2.Authorization.from_json(response.json()),
             uri=response.headers.get('Location', uri),
             new_cert_uri=new_cert_uri)
-        if (authzr.body.key != self.key.public()
-                or authzr.body.identifier != identifier):
+        if authzr.body.identifier != identifier:
             raise errors.UnexpectedUpdate(authzr)
         return authzr
 
