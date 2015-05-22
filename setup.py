@@ -38,7 +38,8 @@ install_requires = [
     'psutil>=2.1.0',  # net_connections introduced in 2.1.0
     'pyasn1',  # urllib3 InsecurePlatformWarning (#304)
     'pycrypto',
-    'PyOpenSSL',
+    # https://pyopenssl.readthedocs.org/en/latest/api/crypto.html#OpenSSL.crypto.X509Req.get_extensions
+    'PyOpenSSL>=0.15',
     'pyparsing>=1.5.5',  # Python3 support; perhaps unnecessary?
     'pyrfc3339',
     'python-augeas',

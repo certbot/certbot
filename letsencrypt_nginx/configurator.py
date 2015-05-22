@@ -271,7 +271,7 @@ class NginxConfigurator(common.Plugin):
             the existing one?
 
         :param vhost: The vhost to add SSL to.
-        :type vhost: :class:`~letsencrypt.client.plugins.nginx.obj.VirtualHost`
+        :type vhost: :class:`~letsencrypt_nginx.obj.VirtualHost`
 
         """
         ssl_block = [['listen', '443 ssl'],

@@ -10,20 +10,34 @@
 #     - 7.8 "wheezy" (x64)
 #     - 8.0 "jessie" (x64)
 
+
 # virtualenv binary can be found in different packages depending on
 # distro version (#346)
-distro=$(lsb_release -si)
-# 6.0.10 => 60, 14.04 => 1404
-version=$(lsb_release -sr | awk -F '.' '{print $1 $2}')
-if [ "$distro" = "Ubuntu" -a "$version" -ge 1410 ]
-then
-  virtualenv="virtualenv"
-elif [ "$distro" = "Debian" -a "$version" -ge 80 ]
+newer () {
+  distro=$(lsb_release -si)
+  # 6.0.10 => 60, 14.04 => 1404
+  # TODO: in sid version==unstable
+  version=$(lsb_release -sr | awk -F '.' '{print $1 $2}')
+  if [ "$distro" = "Ubuntu" -a "$version" -ge 1410 ]
+  then
+    return 0;
+  elif [ "$distro" = "Debian" -a "$version" -ge 80 ]
+  then
+    return 0;
+  else
+    return 1;
+  fi
+}
+
+# you can force newer if lsb_release is not available (e.g. Docker
+# debian:jessie base image)
+if [ "$1" = "newer" ] || newer
 then
   virtualenv="virtualenv"
 else
   virtualenv="python-virtualenv"
 fi
+
 
 # dpkg-dev: dpkg-architecture binary necessary to compile M2Crypto, c.f.
 #           #276, https://github.com/martinpaljak/M2Crypto/issues/62,

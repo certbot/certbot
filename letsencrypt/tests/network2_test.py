@@ -3,6 +3,8 @@ import datetime
 import httplib
 import os
 import pkg_resources
+import shutil
+import tempfile
 import unittest
 
 import M2Crypto
@@ -50,6 +52,8 @@ class NetworkTest(unittest.TestCase):
         self.identifier = messages2.Identifier(
             typ=messages2.IDENTIFIER_FQDN, value='example.com')
 
+        self.config = mock.Mock(accounts_dir=tempfile.mkdtemp())
+
         # Registration
         self.contact = ('mailto:cert-admin@example.com', 'tel:+12025551212')
         reg = messages2.Registration(
@@ -69,7 +73,7 @@ class NetworkTest(unittest.TestCase):
         self.authz = messages2.Authorization(
             identifier=messages2.Identifier(
                 typ=messages2.IDENTIFIER_FQDN, value='example.com'),
-            challenges=(challb,), combinations=None, key=KEY.public())
+            challenges=(challb,), combinations=None)
         self.authzr = messages2.AuthorizationResource(
             body=self.authz, uri=authzr_uri,
             new_cert_uri='https://www.letsencrypt-demo.org/acme/new-cert')
@@ -79,6 +83,9 @@ class NetworkTest(unittest.TestCase):
             body=CERT, authzrs=(self.authzr,),
             uri='https://www.letsencrypt-demo.org/acme/cert/1',
             cert_chain_uri='https://www.letsencrypt-demo.org/ca')
+
+    def tearDown(self):
+        shutil.rmtree(self.config.accounts_dir)
 
     def _mock_post_get(self):
         # pylint: disable=protected-access
@@ -97,7 +104,7 @@ class NetworkTest(unittest.TestCase):
                 return self.value
             @classmethod
             def from_json(cls, value):
-                return cls(value)
+                pass  # pragma: no cover
         # pylint: disable=protected-access
         jws = self.net._wrap_in_jws(MockJSONDeSerializable('foo'))
         self.assertEqual(jose.JWS.json_loads(jws).payload, '"foo"')
@@ -111,7 +118,8 @@ class NetworkTest(unittest.TestCase):
 
     def test_check_response_not_ok_jobj_error(self):
         self.response.ok = False
-        self.response.json.return_value = messages2.Error(detail='foo')
+        self.response.json.return_value = messages2.Error(
+            detail='foo', typ='serverInternal', title='some title').to_json()
         # pylint: disable=protected-access
         self.assertRaises(
             messages2.Error, self.net._check_response, self.response)
@@ -218,8 +226,8 @@ class NetworkTest(unittest.TestCase):
     def test_register_from_account(self):
         self.net.register = mock.Mock()
         acc = account.Account(
-            mock.Mock(accounts_dir='mock_dir'), 'key',
-            email='cert-admin@example.com', phone='+12025551212')
+            self.config, 'key', email='cert-admin@example.com',
+            phone='+12025551212')
 
         self.net.register_from_account(acc)
 
@@ -228,9 +236,8 @@ class NetworkTest(unittest.TestCase):
     def test_register_from_account_partial_info(self):
         self.net.register = mock.Mock()
         acc = account.Account(
-            mock.Mock(accounts_dir='mock_dir'), 'key',
-            email='cert-admin@example.com')
-        acc2 = account.Account(mock.Mock(accounts_dir='mock_dir'), 'key')
+            self.config, 'key', email='cert-admin@example.com')
+        acc2 = account.Account(self.config, 'key')
 
         self.net.register_from_account(acc)
         self.net.register.assert_called_with(
@@ -270,11 +277,10 @@ class NetworkTest(unittest.TestCase):
         # TODO: test POST call arguments
 
         # TODO: split here and separate test
-        authz_wrong_key = self.authz.update(key=KEY2.public())
-        self.response.json.return_value = authz_wrong_key.to_json()
-        self.assertRaises(
-            errors.UnexpectedUpdate, self.net.request_challenges,
-            self.identifier, self.regr)
+        self.response.json.return_value = self.authz.update(
+            identifier=self.identifier.update(value='foo')).to_json()
+        self.assertRaises(errors.UnexpectedUpdate, self.net.request_challenges,
+                          self.identifier, self.authzr.uri)
 
     def test_request_challenges_missing_next(self):
         self.response.status_code = httplib.CREATED
@@ -347,6 +353,11 @@ class NetworkTest(unittest.TestCase):
         self._mock_post_get()
         self.assertEqual((self.authzr, self.response),
                          self.net.poll(self.authzr))
+
+        # TODO: split here and separate test
+        self.response.json.return_value = self.authz.update(
+            identifier=self.identifier.update(value='foo')).to_json()
+        self.assertRaises(errors.UnexpectedUpdate, self.net.poll, self.authzr)
 
     def test_request_issuance(self):
         self.response.content = CERT.as_der()

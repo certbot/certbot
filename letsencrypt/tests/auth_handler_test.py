@@ -156,14 +156,6 @@ class GetAuthorizationsTest(unittest.TestCase):
         self.assertRaises(errors.AuthorizationError,
                           self.handler.get_authorizations, ["0"])
 
-    def _get_exp_response(self, domain, path, challs):
-        # pylint: disable=no-self-use
-        exp_resp = [None] * len(challs)
-        for i in path:
-            exp_resp[i] = TRANSLATE[challs[i].typ] + str(domain)
-
-        return exp_resp
-
     def _validate_all(self, unused_1, unused_2):
         for dom in self.handler.authzr.keys():
             azr = self.handler.authzr[dom]
@@ -284,8 +276,6 @@ class PollChallengesTest(unittest.TestCase):
                 identifier=authzr.body.identifier,
                 challenges=new_challbs,
                 combinations=authzr.body.combinations,
-                key=authzr.body.key,
-                contact=authzr.body.contact,
                 status=status_,
             ),
         )
@@ -441,20 +431,6 @@ def gen_dom_authzr(domain, unused_new_authzr_uri, challs):
     return acme_util.gen_authzr(
         messages2.STATUS_PENDING, domain, challs,
         [messages2.STATUS_PENDING]*len(challs))
-
-
-def gen_path(required, challs):
-    """Generate a combination by picking ``required`` from ``challs``.
-
-    :param required: Required types of challenges (subclasses of
-        :class:`~acme.challenges.Challenge`).
-    :param challs: Sequence of ACME challenge messages, corresponding to
-        :attr:`acme.messages.Challenge.challenges`.
-
-    :return: :class:`list` of :class:`int`
-
-    """
-    return [challs.index(chall) for chall in required]
 
 
 if __name__ == "__main__":

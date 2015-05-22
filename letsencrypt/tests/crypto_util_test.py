@@ -7,6 +7,7 @@ import tempfile
 import unittest
 
 import M2Crypto
+import OpenSSL
 import mock
 
 
@@ -148,6 +149,42 @@ class MakeSSCertTest(unittest.TestCase):
     def test_it(self):  # pylint: disable=no-self-use
         from letsencrypt.crypto_util import make_ss_cert
         make_ss_cert(RSA512_KEY, ['example.com', 'www.example.com'])
+
+
+class GetSansFromCsrTest(unittest.TestCase):
+    """Tests for letsencrypt.crypto_util.get_sans_from_csr."""
+    def test_extract_one_san(self):
+        from letsencrypt.crypto_util import get_sans_from_csr
+        csr = pkg_resources.resource_string(
+            __name__, os.path.join('testdata', 'csr.pem'))
+        self.assertEqual(get_sans_from_csr(csr), ['example.com'])
+
+    def test_extract_two_sans(self):
+        from letsencrypt.crypto_util import get_sans_from_csr
+        csr = pkg_resources.resource_string(
+            __name__, os.path.join('testdata', 'csr-san.pem'))
+        self.assertEqual(get_sans_from_csr(csr), ['example.com',
+                                                  'www.example.com'])
+
+    def test_extract_six_sans(self):
+        from letsencrypt.crypto_util import get_sans_from_csr
+        csr = pkg_resources.resource_string(
+            __name__, os.path.join('testdata', 'csr-6sans.pem'))
+        self.assertEqual(get_sans_from_csr(csr),
+                         ["example.com", "example.org", "example.net",
+                          "example.info", "subdomain.example.com",
+                          "other.subdomain.example.com"])
+
+    def test_parse_non_csr(self):
+        from letsencrypt.crypto_util import get_sans_from_csr
+        self.assertRaises(OpenSSL.crypto.Error, get_sans_from_csr,
+                          "hello there")
+
+    def test_parse_no_sans(self):
+        from letsencrypt.crypto_util import get_sans_from_csr
+        csr = pkg_resources.resource_string(
+            __name__, os.path.join('testdata', 'csr-nosans.pem'))
+        self.assertEqual([], get_sans_from_csr(csr))
 
 
 if __name__ == '__main__':
