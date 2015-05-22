@@ -156,16 +156,28 @@ class Client(object):
         return cert_pem, cert_key.pem, chain_pem
 
     def obtain_and_enroll_certificate(self, domains, authenticator, installer,
-                                      csr=None):
+                                      plugins, csr=None):
         """Get a new certificate for the specified domains using the specified
         authenticator and installer, and then create a new renewable lineage
-        containing it."""
+        containing it.
+
+        :param list domains: Domains to request.
+        :param authenticator: The authenticator to use.
+        :type authenticator: :class:`letsencrypt.interfaces.IAuthenticator`
+
+        :param installer: The installer to use.
+        :type installer: :class:`letsencrypt.interfaces.IInstaller`
+
+        :param plugins: A PluginsFactory object.
+
+        :param str csr: A preexisting CSR to use with this request.
+        """
+        #  TODO: fully identify object types in docstring.
         cert_pem, privkey, chain_pem = self._obtain_certificate(domains, csr)
-        # TODO: Add IPlugin.name or use PluginsFactory.find_init instead
-        #       of assuming that each plugin has a .name attribute
-        self.config.namespace.authenticator = authenticator.name
+        self.config.namespace.authenticator = plugins.find_init(
+            authenticator).name
         if installer is not None:
-            self.config.namespace.installer = installer.name
+            self.config.namespace.installer = plugins.find_init(installer).name
         return storage.RenewableCert.new_lineage(domains[0], cert_pem,
                                                  privkey, chain_pem,
                                                  vars(self.config.namespace))

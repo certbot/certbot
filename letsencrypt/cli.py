@@ -100,7 +100,7 @@ def run(args, config, plugins):
     acme, doms = _common_run(args, config, acc, authenticator, installer)
     # TODO: Handle errors from _common_run?
     lineage = acme.obtain_and_enroll_certificate(doms, authenticator,
-                                                 installer)
+                                                 installer, plugins)
     if not lineage:
         return "Certificate could not be obtained"
     acme.deploy_certificate(doms, lineage)
@@ -127,7 +127,8 @@ def auth(args, config, plugins):
     # TODO: Handle errors from _common_run?
     acme, doms = _common_run(
         args, config, acc, authenticator=authenticator, installer=installer)
-    if not acme.obtain_and_enroll_certificate(doms, authenticator, installer):
+    if not acme.obtain_and_enroll_certificate(doms, authenticator, installer,
+                                              plugins):
         return "Certificate could not be obtained"
 
 
