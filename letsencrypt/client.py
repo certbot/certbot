@@ -171,6 +171,10 @@ class Client(object):
         :param plugins: A PluginsFactory object.
 
         :param str csr: A preexisting CSR to use with this request.
+
+        :returns: A new :class:`letsencrypt.storage.RenewableCert` instance
+            referred to the enrolled cert lineage, or False if the cert could
+            not be obtained.
         """
         #  TODO: fully identify object types in docstring.
         cert_pem, privkey, chain_pem = self._obtain_certificate(domains, csr)
