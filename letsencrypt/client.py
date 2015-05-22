@@ -95,7 +95,7 @@ class Client(object):
 
         self.account.save()
 
-    def obtain_certificate(self, domains, csr=None):
+    def obtain_certificate(self, domains, cert_path, chain_path, csr=None):
         """Obtains a certificate from the ACME server.
 
         :meth:`.register` must be called before :meth:`.obtain_certificate`
@@ -103,6 +103,9 @@ class Client(object):
         .. todo:: This function does not currently handle csr correctly...
 
         :param set domains: domains to get a certificate
+
+        :param str cert_path: Candidate path to a certificate.
+        :param str chain_path: Candidate path to a certificate chain.
 
         :param csr: CSR must contain requested domains, the key used to generate
             this CSR can be different than self.authkey
@@ -137,13 +140,13 @@ class Client(object):
             authzr)
 
         # Save Certificate
-        cert_path, chain_path = self.save_certificate(
-            certr, self.config.cert_path, self.config.chain_path)
+        act_cert_path, act_chain_path = self.save_certificate(
+            certr, cert_path, chain_path)
 
         revoker.Revoker.store_cert_key(
-            cert_path, self.account.key.file, self.config)
+            act_cert_path, self.account.key.file, self.config)
 
-        return cert_key, cert_path, chain_path
+        return cert_key, act_cert_path, act_chain_path
 
     def save_certificate(self, certr, cert_path, chain_path):
         # pylint: disable=no-self-use
@@ -152,8 +155,8 @@ class Client(object):
         :param certr: ACME "certificate" resource.
         :type certr: :class:`acme.messages.Certificate`
 
-        :param str cert_path: Path to attempt to save the cert file
-        :param str chain_path: Path to attempt to save the chain file
+        :param str cert_path: Candidate path to a certificate.
+        :param str chain_path: Candidate path to a certificate chain.
 
         :returns: cert_path, chain_path (absolute paths to the actual files)
         :rtype: `tuple` of `str`

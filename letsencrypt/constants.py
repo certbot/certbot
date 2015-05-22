@@ -1,5 +1,6 @@
 """Let's Encrypt constants."""
 import logging
+import os
 
 from acme import challenges
 
@@ -8,19 +9,22 @@ SETUPTOOLS_PLUGINS_ENTRY_POINT = "letsencrypt.plugins"
 """Setuptools entry point group name for plugins."""
 
 
+_CLI_DEFAULT_CONFIG_DIR = "/etc/letsencrypt"
+_CLI_DEFAULT_WORK_DIR = "/var/lib/letsencrypt"
+_CLI_DEFAULT_CERT_DIR = os.path.join(_CLI_DEFAULT_CONFIG_DIR, "certs")
 CLI_DEFAULTS = dict(
     config_files=["/etc/letsencrypt/cli.ini"],
     verbose_count=-(logging.WARNING / 10),
     server="https://www.letsencrypt-demo.org/acme/new-reg",
     rsa_key_size=2048,
     rollback_checkpoints=0,
-    config_dir="/etc/letsencrypt",
-    work_dir="/var/lib/letsencrypt",
-    backup_dir="/var/lib/letsencrypt/backups",
-    key_dir="/etc/letsencrypt/keys",
-    certs_dir="/etc/letsencrypt/certs",
-    cert_path="/etc/letsencrypt/certs/cert-letsencrypt.pem",
-    chain_path="/etc/letsencrypt/certs/chain-letsencrypt.pem",
+    config_dir=_CLI_DEFAULT_CONFIG_DIR,
+    work_dir=_CLI_DEFAULT_CONFIG_DIR,
+    backup_dir=os.path.join(_CLI_DEFAULT_WORK_DIR, "backups"),
+    key_dir=os.path.join(_CLI_DEFAULT_CONFIG_DIR, "keys"),
+    certs_dir=_CLI_DEFAULT_CERT_DIR,
+    cert_path=os.path.join(_CLI_DEFAULT_CERT_DIR, "cert-letsencrypt.pem"),
+    chain_path=os.path.join(_CLI_DEFAULT_CERT_DIR, "chain-letsencrypt.pem"),
     test_mode=False,
 )
 """Defaults for CLI flags and `.IConfig` attributes."""

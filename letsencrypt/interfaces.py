@@ -170,13 +170,9 @@ class IConfig(zope.interface.Interface):
         "Directory where all account keys are stored.")
     rec_token_dir = zope.interface.Attribute(
         "Directory where all recovery tokens are saved.")
-    key_dir = zope.interface.Attribute("Keys storage.")
-    cert_dir = zope.interface.Attribute("Certificates storage.")
 
-    le_vhost_ext = zope.interface.Attribute(
-        "SSL vhost configuration extension.")
-    cert_path = zope.interface.Attribute("Let's Encrypt certificate file path.")
-    chain_path = zope.interface.Attribute("Let's Encrypt chain file path.")
+    key_dir = zope.interface.Attribute("Keys storage.")
+    cert_dir = zope.interface.Attribute("Certificates and CSRs storage.")
 
     test_mode = zope.interface.Attribute(
         "Test mode. Disables certificate verification.")
