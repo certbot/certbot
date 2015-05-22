@@ -71,3 +71,7 @@ IConfig.work_dir)."""
 NETSTAT = "/bin/netstat"
 """Location of netstat binary for checking whether a listener is already
 running on the specified port (Linux-specific)."""
+
+BOULDER_TEST_MODE_CHALLENGE_PORT = 5001
+"""Port that Boulder will connect on for validations in test mode."""
+

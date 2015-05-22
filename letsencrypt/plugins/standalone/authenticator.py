@@ -15,6 +15,7 @@ import zope.interface
 from acme import challenges
 
 from letsencrypt import achallenges
+from letsencrypt import constants
 from letsencrypt import interfaces
 
 from letsencrypt.plugins import common
@@ -380,7 +381,7 @@ class StandaloneAuthenticator(common.Plugin):
             raise ValueError("nothing for .perform() to do")
         port = challenges.DVSNI.PORT
         if self.config.test_mode:
-            port = 5001
+            port = constants.BOULDER_TEST_MODE_CHALLENGE_PORT
         if self.already_listening(port):
             # If we know a process is already listening on this port,
             # tell the user, and don't even attempt to bind it.  (This

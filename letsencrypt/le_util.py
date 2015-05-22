@@ -71,8 +71,8 @@ def unique_file(path, mode=0o777):
             file_d = os.open(fname, os.O_CREAT | os.O_EXCL | os.O_RDWR, mode)
             return os.fdopen(file_d, "w"), fname
         except OSError, e:
-            # Errno 17, "File exists," is okay.
-            if e.errno != 17:
+            # "File exists," is okay, try a different name.
+            if exception.errno != errno.EEXIST:
                 raise
         count += 1
 
