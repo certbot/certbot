@@ -242,50 +242,6 @@ def create_parser(plugins):
     add("--test-mode", action="store_true", help=config_help("test_mode"),
         default=flag_default("test_mode"))
 
-    subparsers = parser.add_subparsers(metavar="SUBCOMMAND")
-    def add_subparser(name, func):  # pylint: disable=missing-docstring
-        subparser = subparsers.add_parser(
-            name, help=func.__doc__.splitlines()[0], description=func.__doc__)
-        subparser.set_defaults(func=func)
-        return subparser
-
-    parser_run = add_subparser("run", run)
-    parser_auth = add_subparser("auth", auth)
-    add_subparser("config_changes", config_changes)
-
-    for subparser in (parser_run, parser_auth):
-        subparser.add_argument(
-            "--cert-path", default=flag_default("cert_path"),
-            help="Candidate path where a freshly issued certificate will "
-                 "be saved to. If a file already exists at the provided "
-                 "path, dirpath/0001_filename.ext will be attempted "
-                 "(securely).")
-        subparser.add_argument(
-            "--chain-path", default=flag_default("chain_path"),
-            help="Candidate path (see --cert-path help) where an "
-                 "accompanying certificate chain will be saved.")
-
-    parser_install = add_subparser("install", install)
-    parser_install.add_argument(
-        "--cert-path", required=True, help="Path to a certificate that "
-        "is going to be installed.")
-    parser_install.add_argument(
-        "--chain-path", help="Accompanying path to a certificate chain.")
-
-    parser_plugins = add_subparser("plugins", plugins_cmd)
-    parser_plugins.add_argument("--init", action="store_true")
-    parser_plugins.add_argument("--prepare", action="store_true")
-    parser_plugins.add_argument(
-        "--authenticators", action="append_const", dest="ifaces",
-        const=interfaces.IAuthenticator)
-    parser_plugins.add_argument(
-        "--installers", action="append_const", dest="ifaces",
-        const=interfaces.IInstaller)
-
-    parser.add_argument("--configurator")
-    parser.add_argument("-a", "--authenticator")
-    parser.add_argument("-i", "--installer")
-
     # positional arg shadows --domains, instead of appending, and
     # --domains is useful, because it can be stored in config
     #for subparser in parser_run, parser_auth, parser_install:
@@ -304,28 +260,74 @@ def create_parser(plugins):
         help="Automatically redirect all HTTP traffic to HTTPS for the newly "
              "authenticated vhost.")
 
+    _paths_parser(parser.add_argument_group("paths"))
+    # _plugins_parsing should be the last thing to act upon the main
+    # parser (--help should display plugin-specific options last)
+    _plugins_parsing(parser, plugins)
+
+    _create_subparsers(parser)
+
+    return parser
+
+
+def _create_subparsers(parser):
+    subparsers = parser.add_subparsers(metavar="SUBCOMMAND")
+    def add_subparser(name, func):  # pylint: disable=missing-docstring
+        subparser = subparsers.add_parser(
+            name, help=func.__doc__.splitlines()[0], description=func.__doc__)
+        subparser.set_defaults(func=func)
+        return subparser
+
+    # the order of add_subparser() calls is important: it defines the
+    # order in which subparser names will be displayed in --help
+    parser_run = add_subparser("run", run)
+    parser_auth = add_subparser("auth", auth)
+    parser_install = add_subparser("install", install)
+    parser_plugins = add_subparser("plugins", plugins_cmd)
     parser_revoke = add_subparser("revoke", revoke)
+    parser_rollback = add_subparser("rollback", rollback)
+    add_subparser("config_changes", config_changes)
+
+    for subparser in (parser_run, parser_auth):
+        subparser.add_argument(
+            "--cert-path", default=flag_default("cert_path"),
+            help="Candidate path where a freshly issued certificate will "
+                 "be saved to. If a file already exists at the provided "
+                 "path, dirpath/0001_filename.ext will be attempted "
+                 "(securely).")
+        subparser.add_argument(
+            "--chain-path", default=flag_default("chain_path"),
+            help="Candidate path (see --cert-path help) where an "
+                 "accompanying certificate chain will be saved.")
+
+    parser_install.add_argument(
+        "--cert-path", required=True, help="Path to a certificate that "
+        "is going to be installed.")
+    parser_install.add_argument(
+        "--chain-path", help="Accompanying path to a certificate chain.")
+
+    parser_plugins.add_argument(
+        "--init", action="store_true", help="Initialize plugins.")
+    parser_plugins.add_argument("--prepare", action="store_true",
+                                help="Initialize and prepare plugins.")
+    parser_plugins.add_argument(
+        "--authenticators", action="append_const", dest="ifaces",
+        const=interfaces.IAuthenticator,
+        help="Limit to authenticator plugins only.")
+    parser_plugins.add_argument(
+        "--installers", action="append_const", dest="ifaces",
+        const=interfaces.IInstaller, help="Limit to installer plugins only.")
+
     parser_revoke.add_argument(
         "--cert-path", type=read_file, help="Revoke a specific certificate.")
     parser_revoke.add_argument(
         "--key-path", type=read_file,
         help="Revoke all certs generated by the provided authorized key.")
 
-    parser_rollback = add_subparser("rollback", rollback)
     parser_rollback.add_argument(
         "--checkpoints", type=int, metavar="N",
         default=flag_default("rollback_checkpoints"),
         help="Revert configuration N number of checkpoints.")
-
-    _paths_parser(parser.add_argument_group("paths"))
-
-    # TODO: plugin_parser should be called for every detected plugin
-    for name, plugin_ep in plugins.iteritems():
-        plugin_ep.plugin_cls.inject_parser_options(
-            parser.add_argument_group(
-                name, description=plugin_ep.description), name)
-
-    return parser
 
 
 def _paths_parser(parser):
@@ -343,6 +345,34 @@ def _paths_parser(parser):
         help=config_help("cert_dir"))
 
     return parser
+
+
+def _plugins_parsing(parser, plugins):
+    plugins_group = parser.add_argument_group(
+        "plugins", description="Let's Encrypt client supports an extensible "
+        "plugins architecture. See '%(prog)s plugins' for a list of all "
+        "available plugins and their names. You can force a particular "
+        "plugin by setting options provided below. Futher down this help "
+        "message you will find plugin-specific options (prefixed by "
+        "--{plugin_name}.")
+    plugins_group.add_argument(
+        "-a", "--authenticator", help="Authenticator plugin name.")
+    plugins_group.add_argument(
+        "-i", "--installer", help="Installer plugin name.")
+    plugins_group.add_argument(
+        "--configurator", help="Name of the plugin that is both "
+        "an authenticator and an installer. Should not be used together "
+        "with --authenticator or --installer.")
+
+    # things should not be reorder past/pre this comment:
+    # plugins_group should be displayed in --help before plugin
+    # specific groups (so that plugins_group.description makes sense)
+
+    for name, plugin_ep in plugins.iteritems():
+        plugin_ep.plugin_cls.inject_parser_options(
+            parser.add_argument_group(
+                "plugins: {0}".format(name),
+                description=plugin_ep.description), name)
 
 
 def main(args=sys.argv[1:]):
