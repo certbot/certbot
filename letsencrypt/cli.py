@@ -247,6 +247,8 @@ def create_parser(plugins):
         help="Skip the end user license agreement screen.")
     add("-t", "--text", dest="text_mode", action="store_true",
         help="Use the text output instead of the curses UI.")
+    add("--test-mode", action="store_true", help=config_help("test_mode"),
+        default=flag_default("test_mode"))
 
     subparsers = parser.add_subparsers(metavar="SUBCOMMAND")
     def add_subparser(name, func):  # pylint: disable=missing-docstring

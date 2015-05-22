@@ -29,6 +29,7 @@ class Network(object):
     :ivar str new_reg_uri: Location of new-reg
     :ivar key: `.JWK` (private)
     :ivar alg: `.JWASignature`
+    :ivar bool verify_ssl: Verify SSL certificates?
 
     """
 
@@ -36,10 +37,11 @@ class Network(object):
     JSON_CONTENT_TYPE = 'application/json'
     JSON_ERROR_CONTENT_TYPE = 'application/problem+json'
 
-    def __init__(self, new_reg_uri, key, alg=jose.RS256):
+    def __init__(self, new_reg_uri, key, alg=jose.RS256, verify_ssl=True):
         self.new_reg_uri = new_reg_uri
         self.key = key
         self.alg = alg
+        self.verify_ssl = verify_ssl
 
     def _wrap_in_jws(self, obj):
         """Wrap `JSONDeSerializable` object in JWS.
@@ -116,6 +118,7 @@ class Network(object):
 
         """
         logging.debug('Sending GET request to %s', uri)
+        kwargs.setdefault('verify', self.verify_ssl)
         try:
             response = requests.get(uri, **kwargs)
         except requests.exceptions.RequestException as error:
@@ -135,6 +138,7 @@ class Network(object):
 
         """
         logging.debug('Sending POST data to %s: %s', uri, data)
+        kwargs.setdefault('verify', self.verify_ssl)
         try:
             response = requests.post(uri, data=data, **kwargs)
         except requests.exceptions.RequestException as error:
