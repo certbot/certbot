@@ -138,22 +138,22 @@ class Client(object):
 
         # Save Certificate
         cert_path, chain_path = self.save_certificate(
-            certr, self.config.cert_path, self.config.chain_path)
+            certr, self.config.cert_dir, self.config.cert_dir)
 
         revoker.Revoker.store_cert_key(
             cert_path, self.account.key.file, self.config)
 
         return cert_key, cert_path, chain_path
 
-    def save_certificate(self, certr, cert_path, chain_path):
+    def save_certificate(self, certr, cert_dir, chain_dir):
         # pylint: disable=no-self-use
         """Saves the certificate received from the ACME server.
 
         :param certr: ACME "certificate" resource.
         :type certr: :class:`acme.messages.Certificate`
 
-        :param str cert_path: Path to attempt to save the cert file
-        :param str chain_path: Path to attempt to save the chain file
+        :param str cert_dir: Path to attempt to save the cert file
+        :param str chain_dir: Path to attempt to save the chain file
 
         :returns: cert_path, chain_path (absolute paths to the actual files)
         :rtype: `tuple` of `str`
@@ -163,7 +163,7 @@ class Client(object):
         """
         # try finally close
         cert_chain_abspath = None
-        cert_file, act_cert_path = le_util.unique_file(cert_path, 0o644)
+        cert_file, act_cert_path = le_util.unique_file(cert_dir, 0o644)
         # TODO: Except
         cert_pem = certr.body.as_pem()
         try:
@@ -178,7 +178,7 @@ class Client(object):
             chain_cert = self.network.fetch_chain(certr)
             if chain_cert is not None:
                 chain_file, act_chain_path = le_util.unique_file(
-                    chain_path, 0o644)
+                    chain_dir, 0o644)
                 chain_pem = chain_cert.as_pem()
                 try:
                     chain_file.write(chain_pem)

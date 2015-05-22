@@ -45,6 +45,10 @@ class NamespaceConfig(object):
         return os.path.join(self.namespace.work_dir, constants.IN_PROGRESS_DIR)
 
     @property
+    def server_url(self):
+        return self.namespace.server
+
+    @property
     def server_path(self):
         """File path based on ``server``."""
         parsed = urlparse.urlparse(self.namespace.server)
