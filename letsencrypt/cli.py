@@ -318,13 +318,11 @@ def _paths_parser(parser):
         help=config_help("work_dir"))
     add("--backup-dir", default=flag_default("backup_dir"),
         help=config_help("backup_dir"))
+
     add("--key-dir", default=flag_default("key_dir"),
         help=config_help("key_dir"))
     add("--cert-dir", default=flag_default("certs_dir"),
         help=config_help("cert_dir"))
-
-    add("--le-vhost-ext", default="-le-ssl.conf",
-        help=config_help("le_vhost_ext"))
     add("--cert-path", default=flag_default("cert_path"),
         help=config_help("cert_path"))
     add("--chain-path", default=flag_default("chain_path"),

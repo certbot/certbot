@@ -75,7 +75,7 @@ def get_apache_configurator(
             config=mock.MagicMock(
                 apache_server_root=config_path,
                 apache_mod_ssl_conf=ssl_options,
-                le_vhost_ext="-le-ssl.conf",
+                apache_le_vhost_ext=constants.CLI_DEFAULTS["le_vhost_ext"],
                 backup_dir=backups,
                 config_dir=config_dir,
                 temp_checkpoint_dir=os.path.join(work_dir, "temp_checkpoints"),

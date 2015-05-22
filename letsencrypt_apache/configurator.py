@@ -97,6 +97,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         add("init-script", default=constants.CLI_DEFAULTS["init_script"],
             help="Path to the Apache init script (used for server "
             "reload/restart).")
+        add("le-vhost-ext", default=constants.CLI_DEFAULTS["le_vhost_ext"],
+            help="SSL vhost configuration extension.")
+
 
     def __init__(self, *args, **kwargs):
         """Initialize an Apache Configurator.
@@ -448,7 +451,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """Makes an ssl_vhost version of a nonssl_vhost.
 
         Duplicates vhost and adds default ssl options
-        New vhost will reside as (nonssl_vhost.path) + ``IConfig.le_vhost_ext``
+        New vhost will reside as (nonssl_vhost.path) +
+        ``letsencrypt_apache.constants.CLI_DEFAULTS["le_vhost_ext"]``
 
         .. note:: This function saves the configuration
 
@@ -462,9 +466,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         avail_fp = nonssl_vhost.filep
         # Get filepath of new ssl_vhost
         if avail_fp.endswith(".conf"):
-            ssl_fp = avail_fp[:-(len(".conf"))] + self.config.le_vhost_ext
+            ssl_fp = avail_fp[:-(len(".conf"))] + self.conf("le_vhost_ext")
         else:
-            ssl_fp = avail_fp + self.config.le_vhost_ext
+            ssl_fp = avail_fp + self.conf("le_vhost_ext")
 
         # First register the creation so that it is properly removed if
         # configuration is rolled back
