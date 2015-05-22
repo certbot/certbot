@@ -380,7 +380,7 @@ class StandaloneAuthenticator(common.Plugin):
         if not self.tasks:
             raise ValueError("nothing for .perform() to do")
         port = challenges.DVSNI.PORT
-        if self.config.test_mode:
+        if self.config and self.config.test_mode:
             port = constants.BOULDER_TEST_MODE_CHALLENGE_PORT
         if self.already_listening(port):
             # If we know a process is already listening on this port,
