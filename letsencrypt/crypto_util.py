@@ -72,7 +72,7 @@ def init_save_csr(privkey, names, cert_dir, csrname="csr-letsencrypt.pem"):
     csr_pem, csr_der = make_csr(privkey.pem, names)
 
     # Save CSR
-    le_util.make_or_verify_dir(cert_dir, 0o755)
+    le_util.make_or_verify_dir(cert_dir, 0o755, os.geteuid())
     csr_f, csr_filename = le_util.unique_file(
         os.path.join(cert_dir, csrname), 0o644)
     csr_f.write(csr_pem)
