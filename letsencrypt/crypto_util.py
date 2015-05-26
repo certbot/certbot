@@ -72,7 +72,7 @@ def init_save_csr(privkey, names, cert_dir, csrname="csr-letsencrypt.pem"):
     csr_pem, csr_der = make_csr(privkey.pem, names)
 
     # Save CSR
-    le_util.make_or_verify_dir(cert_dir, 0o755)
+    le_util.make_or_verify_dir(cert_dir, 0o755, os.geteuid())
     csr_f, csr_filename = le_util.unique_file(
         os.path.join(cert_dir, csrname), 0o644)
     csr_f.write(csr_pem)
@@ -234,42 +234,78 @@ def make_ss_cert(key_str, domains, not_before=None,
     return cert.as_pem()
 
 
-def _request_san(req):  # TODO: implement directly in PyOpenSSL!
+def _pyopenssl_cert_or_req_san(cert_or_req):
+    """Get Subject Alternative Names from certificate or CSR using pyOpenSSL.
+
+    .. todo:: Implement directly in PyOpenSSL!
+
+    :param cert_or_req: Certificate or CSR.
+    :type cert_or_req: `OpenSSL.crypto.X509` or `OpenSSL.crypto.X509Req`.
+
+    :returns: A list of Subject Alternative Names.
+    :rtype: list
+
+    """
     # constants based on implementation of
     # OpenSSL.crypto.X509Error._subjectAltNameString
     parts_separator = ", "
     part_separator = ":"
     extension_short_name = "subjectAltName"
 
+    if hasattr(cert_or_req, 'get_extensions'):  # X509Req
+        extensions = cert_or_req.get_extensions()
+    else:  # X509
+        extensions = [cert_or_req.get_extension(i)
+                      for i in xrange(cert_or_req.get_extension_count())]
+
     # pylint: disable=protected-access,no-member
     label = OpenSSL.crypto.X509Extension._prefixes[OpenSSL.crypto._lib.GEN_DNS]
     assert parts_separator not in label
     prefix = label + part_separator
 
-    extensions = [ext._subjectAltNameString().split(parts_separator)
-                  for ext in req.get_extensions()
-                  if ext.get_short_name() == extension_short_name]
+    san_extensions = [
+        ext._subjectAltNameString().split(parts_separator)
+        for ext in extensions if ext.get_short_name() == extension_short_name]
     # WARNING: this function assumes that no SAN can include
     # parts_separator, hence the split!
 
-    return [part.split(part_separator)[1] for parts in extensions
+    return [part.split(part_separator)[1] for parts in san_extensions
             for part in parts if part.startswith(prefix)]
 
 
-def get_sans_from_csr(csr, typ=OpenSSL.crypto.FILETYPE_PEM):
-    """Get list of Subject Alternative Names from signing request.
-
-    :param str csr: Certificate Signing Request in PEM format (must contain
-        one or more subjectAlternativeNames, or the function will fail,
-        raising ValueError)
-
-    :returns: List of referenced subject alternative names
-    :rtype: list
-
-    """
+def _get_sans_from_cert_or_req(
+        cert_or_req_str, load_func, typ=OpenSSL.crypto.FILETYPE_PEM):
     try:
-        request = OpenSSL.crypto.load_certificate_request(typ, csr)
+        cert_or_req = load_func(typ, cert_or_req_str)
     except OpenSSL.crypto.Error as error:
         logging.exception(error)
         raise
-    return _request_san(request)
+    return _pyopenssl_cert_or_req_san(cert_or_req)
+
+
+def get_sans_from_cert(cert, typ=OpenSSL.crypto.FILETYPE_PEM):
+    """Get a list of Subject Alternative Names from a certificate.
+
+    :param str csr: Certificate (encoded).
+    :param typ: `OpenSSL.crypto.FILETYPE_PEM` or `OpenSSL.crypto.FILETYPE_ASN1`
+
+    :returns: A list of Subject Alternative Names.
+    :rtype: list
+
+    """
+    return _get_sans_from_cert_or_req(
+        cert, OpenSSL.crypto.load_certificate, typ)
+
+
+def get_sans_from_csr(csr, typ=OpenSSL.crypto.FILETYPE_PEM):
+    """Get a list of Subject Alternative Names from a CSR.
+
+    :param str csr: CSR (encoded).
+    :param typ: `OpenSSL.crypto.FILETYPE_PEM` or `OpenSSL.crypto.FILETYPE_ASN1`
+
+    :returns: A list of Subject Alternative Names.
+    :rtype: list
+
+    """
+    return _get_sans_from_cert_or_req(
+        csr, OpenSSL.crypto.load_certificate_request, typ)

@@ -19,6 +19,7 @@ from letsencrypt import le_util
 from letsencrypt import network2
 from letsencrypt import reverter
 from letsencrypt import revoker
+from letsencrypt import storage
 
 from letsencrypt.display import ops as display_ops
 from letsencrypt.display import enhancements
@@ -67,6 +68,10 @@ class Client(object):
 
         self.config = config
 
+        # TODO: Check if self.config.enroll_autorenew is None. If
+        # so, set it based to the default: figure out if dv_auth is
+        # standalone (then default is False, otherwise default is True)
+
         if dv_auth is not None:
             cont_auth = continuity_auth.ContinuityAuthenticator(config,
                                                                 installer)
@@ -95,7 +100,7 @@ class Client(object):
 
         self.account.save()
 
-    def obtain_certificate(self, domains, csr=None):
+    def _obtain_certificate(self, domains, csr=None):
         """Obtains a certificate from the ACME server.
 
         :meth:`.register` must be called before :meth:`.obtain_certificate`
@@ -108,8 +113,8 @@ class Client(object):
             this CSR can be different than self.authkey
         :type csr: :class:`CSR`
 
-        :returns: cert_key, cert_path, chain_path
-        :rtype: `tuple` of (:class:`letsencrypt.le_util.Key`, str, str)
+        :returns: cert_pem, key_pem, chain_pem
+        :rtype: `tuple` of (str, str, str)
 
         """
         if self.auth_handler is None:
@@ -136,14 +141,55 @@ class Client(object):
                 M2Crypto.X509.load_request_der_string(csr.data)),
             authzr)
 
-        # Save Certificate
-        cert_path, chain_path = self.save_certificate(
-            certr, self.config.cert_path, self.config.chain_path)
+        cert_pem = certr.body.as_pem()
+        chain_pem = None
+        if certr.cert_chain_uri is not None:
+            chain_pem = self.network.fetch_chain(certr)
 
-        revoker.Revoker.store_cert_key(
-            cert_path, self.account.key.file, self.config)
+        if chain_pem is None:
+            # XXX: just to stop RenewableCert from complaining; this is
+            #      probably not a good solution
+            chain_pem = ""
+        else:
+            chain_pem = chain_pem.as_pem()
 
-        return cert_key, cert_path, chain_path
+        return cert_pem, cert_key.pem, chain_pem
+
+    def obtain_and_enroll_certificate(self, domains, authenticator, installer,
+                                      plugins, csr=None):
+        """Get a new certificate for the specified domains using the specified
+        authenticator and installer, and then create a new renewable lineage
+        containing it.
+
+        :param list domains: Domains to request.
+        :param authenticator: The authenticator to use.
+        :type authenticator: :class:`letsencrypt.interfaces.IAuthenticator`
+
+        :param installer: The installer to use.
+        :type installer: :class:`letsencrypt.interfaces.IInstaller`
+
+        :param plugins: A PluginsFactory object.
+
+        :param str csr: A preexisting CSR to use with this request.
+
+        :returns: A new :class:`letsencrypt.storage.RenewableCert` instance
+            referred to the enrolled cert lineage, or False if the cert could
+            not be obtained.
+        """
+        #  TODO: fully identify object types in docstring.
+        cert_pem, privkey, chain_pem = self._obtain_certificate(domains, csr)
+        self.config.namespace.authenticator = plugins.find_init(
+            authenticator).name
+        if installer is not None:
+            self.config.namespace.installer = plugins.find_init(installer).name
+        return storage.RenewableCert.new_lineage(domains[0], cert_pem,
+                                                 privkey, chain_pem,
+                                                 vars(self.config.namespace))
+
+    def obtain_certificate(self, domains):
+        """Public method to obtain a certificate for the specified domains
+        using this client object.  Returns the tuple (cert, privkey, chain)."""
+        return self._obtain_certificate(domains, None)
 
     def save_certificate(self, certr, cert_path, chain_path):
         # pylint: disable=no-self-use
@@ -192,29 +238,32 @@ class Client(object):
 
         return os.path.abspath(act_cert_path), cert_chain_abspath
 
-    def deploy_certificate(self, domains, privkey, cert_path, chain_path=None):
+    def deploy_certificate(self, domains, lineage):
         """Install certificate
 
         :param list domains: list of domains to install the certificate
 
-        :param privkey: private key for certificate
-        :type privkey: :class:`letsencrypt.le_util.Key`
-
-        :param str cert_path: certificate file path
-        :param str chain_path: chain file path
-
+        :param lineage: RenewableCert object representing the certificate
+        :type lineage: :class:`letsencrypt.storage.RenewableCert`
         """
         if self.installer is None:
             logging.warning("No installer specified, client is unable to deploy"
                             "the certificate")
             raise errors.LetsEncryptClientError("No installer available")
 
-        chain_path = None if chain_path is None else os.path.abspath(chain_path)
+        # TODO: Is it possible not to have a chain at all? (The
+        # RenewableCert class currently doesn't support this case, but
+        # perhaps the CA can issue according to ACME without providing
+        # a chain, which would currently be a problem for instantiating
+        # RenewableCert, and subsequently also for this method.)
 
         for dom in domains:
-            self.installer.deploy_cert(
-                dom, os.path.abspath(cert_path),
-                os.path.abspath(privkey.file), chain_path)
+            # TODO: Provide a fullchain reference for installers like
+            #       nginx that want it
+            self.installer.deploy_cert(dom,
+                                       lineage.cert,
+                                       lineage.privkey,
+                                       lineage.chain)
 
         self.installer.save("Deployed Let's Encrypt Certificate")
         # sites may have been enabled / final cleanup

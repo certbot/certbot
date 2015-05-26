@@ -98,13 +98,18 @@ def run(args, config, plugins):
         return "Configurator could not be determined"
 
     acme, doms = _common_run(args, config, acc, authenticator, installer)
-    cert_key, cert_path, chain_path = acme.obtain_certificate(doms)
-    acme.deploy_certificate(doms, cert_key, cert_path, chain_path)
+    # TODO: Handle errors from _common_run?
+    lineage = acme.obtain_and_enroll_certificate(doms, authenticator,
+                                                 installer, plugins)
+    if not lineage:
+        return "Certificate could not be obtained"
+    acme.deploy_certificate(doms, lineage)
     acme.enhance_config(doms, args.redirect)
 
 
 def auth(args, config, plugins):
     """Obtain a certificate (no install)."""
+    # XXX: Update for renewer / RenewableCert
     acc = _account_init(args, config)
     if acc is None:
         return None
@@ -119,13 +124,17 @@ def auth(args, config, plugins):
     else:
         installer = None
 
+    # TODO: Handle errors from _common_run?
     acme, doms = _common_run(
         args, config, acc, authenticator=authenticator, installer=installer)
-    acme.obtain_certificate(doms)
+    if not acme.obtain_and_enroll_certificate(doms, authenticator, installer,
+                                              plugins):
+        return "Certificate could not be obtained"
 
 
 def install(args, config, plugins):
     """Install (no auth)."""
+    # XXX: Update for renewer/RenewableCert
     acc = _account_init(args, config)
     if acc is None:
         return None
@@ -136,7 +145,8 @@ def install(args, config, plugins):
     acme, doms = _common_run(
         args, config, acc, authenticator=None, installer=installer)
     assert args.cert_path is not None
-    acme.deploy_certificate(doms, acc.key, args.cert_path, args.chain_path)
+    # XXX: This API has changed as a result of RenewableCert!
+    # acme.deploy_certificate(doms, acc.key, args.cert_path, args.chain_path)
     acme.enhance_config(doms, args.redirect)
 
 
@@ -329,6 +339,9 @@ def _paths_parser(parser):
         help=config_help("cert_path"))
     add("--chain-path", default=flag_default("chain_path"),
         help=config_help("chain_path"))
+
+    add("--enroll-autorenew", default=None, action="store_true",
+        help=config_help("enroll_autorenew"))
 
     return parser
 
