@@ -182,9 +182,19 @@ class Client(object):
             authenticator).name
         if installer is not None:
             self.config.namespace.installer = plugins.find_init(installer).name
+
+        # XXX: We clearly need a more general and correct way of getting
+        # options into the configobj for the RenewableCert instance.
+        # This is a quick-and-dirty way to do it to allow integration
+        # testing to start.  (Note that the config parameter to new_lineage
+        # ideally should be a ConfigObj, but in this case a dict will be
+        # accepted in practice.)
+        params = vars(self.config.namespace)
+        config = {"renewer_config_file":
+                  params["renewer_config_file"]} if "renewer_config_file" in params else None
         return storage.RenewableCert.new_lineage(domains[0], cert_pem,
                                                  privkey, chain_pem,
-                                                 vars(self.config.namespace))
+                                                 params, config)
 
     def obtain_certificate(self, domains):
         """Public method to obtain a certificate for the specified domains

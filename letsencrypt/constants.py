@@ -22,6 +22,7 @@ CLI_DEFAULTS = dict(
     certs_dir="/etc/letsencrypt/certs",
     cert_path="/etc/letsencrypt/certs/cert-letsencrypt.pem",
     chain_path="/etc/letsencrypt/certs/chain-letsencrypt.pem",
+    renewer_config_file="/etc/letsencrypt/renewer.conf",
     test_mode=False,
 )
 """Defaults for CLI flags and `.IConfig` attributes."""

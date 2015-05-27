@@ -176,6 +176,9 @@ class IConfig(zope.interface.Interface):
     le_vhost_ext = zope.interface.Attribute(
         "SSL vhost configuration extension.")
 
+    renewer_config_file = zope.interface.Attribute(
+        "Location of renewal configuration file.")
+
     enroll_autorenew = zope.interface.Attribute(
         "Register this certificate in the database to be renewed"
         " automatically.")
