@@ -60,7 +60,7 @@ def unique_file(path, mode=0o777):
     :param str path: path/filename.ext
     :param int mode: File mode
 
-    :return: tuple of file object and file name
+    :returns: tuple of file object and file name
 
     """
     path, tail = os.path.split(path)
@@ -70,8 +70,45 @@ def unique_file(path, mode=0o777):
         try:
             file_d = os.open(fname, os.O_CREAT | os.O_EXCL | os.O_RDWR, mode)
             return os.fdopen(file_d, "w"), fname
-        except OSError:
-            pass
+        except OSError as exception:
+            # "File exists," is okay, try a different name.
+            if exception.errno != errno.EEXIST:
+                raise
+        count += 1
+
+
+def unique_lineage_name(path, filename, mode=0o777):
+    """Safely finds a unique file for writing only (by default).  Uses a
+    file lineage convention.
+
+    :param str path: directory path
+    :param str filename: proposed filename
+    :param int mode: file mode
+
+    :returns: tuple of file object and file name (which may be modified from
+        the requested one by appending digits to ensure uniqueness)
+
+    :raises OSError: if writing files fails for an unanticipated reason,
+        such as a full disk or a lack of permission to write to specified
+        location.
+
+    """
+    fname = os.path.join(path, "%s.conf" % (filename))
+    try:
+        file_d = os.open(fname, os.O_CREAT | os.O_EXCL | os.O_RDWR, mode)
+        return os.fdopen(file_d, "w"), fname
+    except OSError as err:
+        if err.errno != errno.EEXIST:
+            raise err
+    count = 1
+    while True:
+        fname = os.path.join(path, "%s-%04d.conf" % (filename, count))
+        try:
+            file_d = os.open(fname, os.O_CREAT | os.O_EXCL | os.O_RDWR, mode)
+            return os.fdopen(file_d, "w"), fname
+        except OSError as err:
+            if err.errno != errno.EEXIST:
+                raise err
         count += 1
 
 

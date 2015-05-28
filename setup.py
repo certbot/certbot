@@ -35,6 +35,7 @@ install_requires = [
     'jsonschema',
     'mock',
     'ndg-httpsclient',  # urllib3 InsecurePlatformWarning (#304)
+    'parsedatetime',
     'psutil>=2.1.0',  # net_connections introduced in 2.1.0
     'pyasn1',  # urllib3 InsecurePlatformWarning (#304)
     'pycrypto',
@@ -115,6 +116,7 @@ setup(
     entry_points={
         'console_scripts': [
             'letsencrypt = letsencrypt.cli:main',
+            'letsencrypt-renewer = letsencrypt.renewer:main',
             'jws = letsencrypt.acme.jose.jws:CLI.run',
         ],
         'letsencrypt.plugins': [
