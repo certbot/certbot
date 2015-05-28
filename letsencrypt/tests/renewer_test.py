@@ -588,7 +588,7 @@ class RenewableCertTests(unittest.TestCase):
         self.assertEqual(mock_da.call_count, 1)
         mock_client.obtain_certificate.return_value = (None, None, None)
         # This should fail because the renewal itself appears to fail
-        self.assertEqual(False, renewer.renew(self.test_rc, 1))
+        self.assertFalse(renewer.renew(self.test_rc, 1))
 
 
     @mock.patch("letsencrypt.renewer.notify")
