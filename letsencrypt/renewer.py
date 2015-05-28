@@ -1,18 +1,17 @@
-"""Renewer tool to handle autorenewal and autodeployment of renewed
-certs within lineages of successor certificates, according to
-configuration."""
+"""Renewer tool.
 
-# TODO: sanity checking consistency, validity, freshness?
+Renewer tool handles autorenewal and autodeployment of renewed certs
+within lineages of successor certificates, according to configuration.
 
-# TODO: call new installer API to restart servers after deployment
+.. todo:: Sanity checking consistency, validity, freshness?
+.. todo:: Call new installer API to restart servers after deployment
 
-import copy
+"""
 import os
 
 import configobj
 
 from letsencrypt import configuration
-from letsencrypt import constants
 from letsencrypt import client
 from letsencrypt import crypto_util
 from letsencrypt import notify
@@ -20,25 +19,30 @@ from letsencrypt import storage
 from letsencrypt.plugins import disco as plugins_disco
 
 
-class AttrDict(dict):
-    """A trick to allow accessing dictionary keys as object
-    attributes."""
+class _AttrDict(dict):
+    """Attribute dictionary.
+
+    A trick to allow accessing dictionary keys as object attributes.
+
+    """
     def __init__(self, *args, **kwargs):
-        super(AttrDict, self).__init__(*args, **kwargs)
+        super(_AttrDict, self).__init__(*args, **kwargs)
         self.__dict__ = self
 
 
 def renew(cert, old_version):
     """Perform automated renewal of the referenced cert, if possible.
 
-    :param class:`letsencrypt.storage.RenewableCert` cert: the certificate
+    :param letsencrypt.storage.RenewableCert cert: The certificate
         lineage to attempt to renew.
-    :param int old_version: the version of the certificate lineage relative
-        to which the renewal should be attempted.
+    :param int old_version: The version of the certificate lineage
+        relative to which the renewal should be attempted.
 
-    :returns: int referring to newly created version of this cert lineage,
-        or False if renewal was not successful."""
+    :returns: A number referring to newly created version of this cert
+        lineage, or ``False`` if renewal was not successful.
+    :rtype: `int` or `bool`
 
+    """
     # TODO: handle partial success (some names can be renewed but not
     #       others)
     # TODO: handle obligatory key rotation vs. optional key rotation vs.
@@ -52,7 +56,7 @@ def renew(cert, old_version):
         return False
     # Instantiate the appropriate authenticator
     plugins = plugins_disco.PluginsRegistry.find_all()
-    config = configuration.NamespaceConfig(AttrDict(renewalparams))
+    config = configuration.NamespaceConfig(_AttrDict(renewalparams))
     # XXX: this loses type data (for example, the fact that key_size
     #      was an int, not a str)
     config.rsa_key_size = int(config.rsa_key_size)
@@ -89,17 +93,14 @@ def renew(cert, old_version):
 
 
 def main(config=None):
-    """main function for autorenewer script."""
+    """Main function for autorenewer script."""
     # TODO: Distinguish automated invocation from manual invocation,
     #       perhaps by looking at sys.argv[0] and inhibiting automated
     #       invocations if /etc/letsencrypt/renewal.conf defaults have
     #       turned it off. (The boolean parameter should probably be
     #       called renewer_enabled.)
 
-    # Merge supplied config, if provided, on top of builtin defaults
-    defaults_copy = copy.deepcopy(constants.RENEWER_DEFAULTS)
-    defaults_copy.merge(config if config is not None else configobj.ConfigObj())
-    config = defaults_copy
+    config = storage.config_with_defaults(config)
     # Now attempt to read the renewer config file and augment or replace
     # the renewer defaults with any options contained in that file.  If
     # renewer_config_file is undefined or if the file is nonexistent or

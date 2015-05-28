@@ -105,7 +105,7 @@ class NginxConfigurator(common.Plugin):
         temp_install(self.conf('mod-ssl-conf'))
 
     # Entry point in main.py for installing cert
-    def deploy_cert(self, domain, cert, key, cert_chain=None):
+    def deploy_cert(self, domain, cert_path, key_path, chain_path=None):
         # pylint: disable=unused-argument
         """Deploys certificate to specified virtual host.
 
@@ -118,14 +118,10 @@ class NginxConfigurator(common.Plugin):
 
         .. note:: This doesn't save the config files!
 
-        :param str domain: domain to deploy certificate
-        :param str cert: certificate filename
-        :param str key: private key filename
-        :param str cert_chain: certificate chain filename
-
         """
         vhost = self.choose_vhost(domain)
-        directives = [['ssl_certificate', cert], ['ssl_certificate_key', key]]
+        directives = [['ssl_certificate', cert_path],
+                      ['ssl_certificate_key', key_path]]
 
         try:
             self.parser.add_server_directives(vhost.filep, vhost.names,
@@ -143,8 +139,8 @@ class NginxConfigurator(common.Plugin):
         self.save_notes += ("Changed vhost at %s with addresses of %s\n" %
                             (vhost.filep,
                              ", ".join(str(addr) for addr in vhost.addrs)))
-        self.save_notes += "\tssl_certificate %s\n" % cert
-        self.save_notes += "\tssl_certificate_key %s\n" % key
+        self.save_notes += "\tssl_certificate %s\n" % cert_path
+        self.save_notes += "\tssl_certificate_key %s\n" % key_path
 
     #######################
     # Vhost parsing methods

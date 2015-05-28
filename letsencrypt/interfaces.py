@@ -176,10 +176,6 @@ class IConfig(zope.interface.Interface):
     le_vhost_ext = zope.interface.Attribute(
         "SSL vhost configuration extension.")
 
-    enroll_autorenew = zope.interface.Attribute(
-        "Register this certificate in the database to be renewed"
-        " automatically.")
-
     cert_path = zope.interface.Attribute("Let's Encrypt certificate file path.")
     chain_path = zope.interface.Attribute("Let's Encrypt chain file path.")
 
@@ -197,12 +193,13 @@ class IInstaller(IPlugin):
     def get_all_names():
         """Returns all names that may be authenticated."""
 
-    def deploy_cert(domain, cert, key, cert_chain=None):
+    def deploy_cert(domain, cert_path, key_path, chain_path=None):
         """Deploy certificate.
 
-        :param str domain: domain to deploy certificate
-        :param str cert: certificate filename
-        :param str key: private key filename
+        :param str domain: domain to deploy certificate file
+        :param str cert_path: absolute path to the certificate file
+        :param str key_path: absolute path to the private key file
+        :param str chain_path: absolute path to the certificate chain file
 
         """
 
