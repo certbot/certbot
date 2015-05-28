@@ -7,13 +7,11 @@ within lineages of successor certificates, according to configuration.
 .. todo:: Call new installer API to restart servers after deployment
 
 """
-import copy
 import os
 
 import configobj
 
 from letsencrypt import configuration
-from letsencrypt import constants
 from letsencrypt import client
 from letsencrypt import crypto_util
 from letsencrypt import notify
@@ -102,10 +100,7 @@ def main(config=None):
     #       turned it off. (The boolean parameter should probably be
     #       called renewer_enabled.)
 
-    # Merge supplied config, if provided, on top of builtin defaults
-    defaults_copy = copy.deepcopy(constants.RENEWER_DEFAULTS)
-    defaults_copy.merge(config if config is not None else configobj.ConfigObj())
-    config = defaults_copy
+    config = storage.config_with_defaults(config)
     # Now attempt to read the renewer config file and augment or replace
     # the renewer defaults with any options contained in that file.  If
     # renewer_config_file is undefined or if the file is nonexistent or

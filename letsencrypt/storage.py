@@ -1,5 +1,4 @@
 """Renewable certificates storage."""
-import copy
 import datetime
 import os
 import re
@@ -15,6 +14,13 @@ from letsencrypt import constants
 from letsencrypt import le_util
 
 ALL_FOUR = ("cert", "privkey", "chain", "fullchain")
+
+
+def config_with_defaults(config=None):
+    """Merge supplied config, if provided, on top of builtin defaults."""
+    defaults_copy = configobj.ConfigObj(constants.RENEWER_DEFAULTS)
+    defaults_copy.merge(config if config is not None else configobj.ConfigObj())
+    return defaults_copy
 
 
 def parse_time_interval(interval, textparser=parsedatetime.Calendar()):
@@ -103,10 +109,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         # TODO: Do we actually use anything from defaults and do we want to
         #       read further defaults from the systemwide renewal configuration
         #       file at this stage?
-        defaults_copy = copy.deepcopy(constants.RENEWER_DEFAULTS)
-        defaults_copy.merge(config_opts if config_opts is not None
-                            else configobj.ConfigObj())
-        self.configuration = defaults_copy
+        self.configuration = config_with_defaults(config_opts)
         self.configuration.merge(self.configfile)
 
         if not all(x in self.configuration for x in ALL_FOUR):
@@ -528,10 +531,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         :returns: the newly-created RenewalCert object
         :rtype: :class:`storage.renewableCert`"""
 
-        defaults_copy = copy.deepcopy(constants.RENEWER_DEFAULTS)
-        defaults_copy.merge(config if config is not None
-                            else configobj.ConfigObj())
-        config = defaults_copy
+        config = config_with_defaults(config)
         # This attempts to read the renewer config file and augment or replace
         # the renewer defaults with any options contained in that file.  If
         # renewer_config_file is undefined or if the file is nonexistent or
