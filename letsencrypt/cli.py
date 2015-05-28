@@ -339,9 +339,6 @@ def _paths_parser(parser):
     add("--chain-path", default=flag_default("chain_path"),
         help=config_help("chain_path"))
 
-    add("--enroll-autorenew", default=None, action="store_true",
-        help=config_help("enroll_autorenew"))
-
     return parser
 
 
