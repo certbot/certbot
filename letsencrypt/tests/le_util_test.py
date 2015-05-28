@@ -142,7 +142,7 @@ class UniqueLineageNameTest(unittest.TestCase):
         self.assertTrue(isinstance(name, str))
 
     def test_multiple(self):
-        for _ in range(10):
+        for _ in xrange(10):
             f, name = self._call("wow")
         self.assertTrue(isinstance(f, file))
         self.assertTrue(isinstance(name, str))

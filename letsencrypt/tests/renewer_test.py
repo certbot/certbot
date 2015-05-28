@@ -167,7 +167,7 @@ class RenewableCertTests(unittest.TestCase):
         self.assertEqual(self.test_rc.current_version("cert"), None)
 
     def test_latest_and_next_versions(self):
-        for ver in range(1, 6):
+        for ver in xrange(1, 6):
             for kind in ALL_FOUR:
                 where = getattr(self.test_rc, kind)
                 if os.path.islink(where):
@@ -215,7 +215,7 @@ class RenewableCertTests(unittest.TestCase):
         self.assertEqual(self.test_rc.next_free_version(), 18)
 
     def test_update_link_to(self):
-        for ver in range(1, 6):
+        for ver in xrange(1, 6):
             for kind in ALL_FOUR:
                 where = getattr(self.test_rc, kind)
                 if os.path.islink(where):
@@ -250,7 +250,7 @@ class RenewableCertTests(unittest.TestCase):
                          os.path.basename(self.test_rc.version("cert", 8)))
 
     def test_update_all_links_to(self):
-        for ver in range(1, 6):
+        for ver in xrange(1, 6):
             for kind in ALL_FOUR:
                 where = getattr(self.test_rc, kind)
                 if os.path.islink(where):
@@ -261,14 +261,14 @@ class RenewableCertTests(unittest.TestCase):
                     f.write(kind)
                 self.assertEqual(ver, self.test_rc.current_version(kind))
         self.assertEqual(self.test_rc.latest_common_version(), 5)
-        for ver in range(1, 6):
+        for ver in xrange(1, 6):
             self.test_rc.update_all_links_to(ver)
             for kind in ALL_FOUR:
                 self.assertEqual(ver, self.test_rc.current_version(kind))
             self.assertEqual(self.test_rc.latest_common_version(), 5)
 
     def test_has_pending_deployment(self):
-        for ver in range(1, 6):
+        for ver in xrange(1, 6):
             for kind in ALL_FOUR:
                 where = getattr(self.test_rc, kind)
                 if os.path.islink(where):
@@ -278,7 +278,7 @@ class RenewableCertTests(unittest.TestCase):
                 with open(where, "w") as f:
                     f.write(kind)
                 self.assertEqual(ver, self.test_rc.current_version(kind))
-        for ver in range(1, 6):
+        for ver in xrange(1, 6):
             self.test_rc.update_all_links_to(ver)
             for kind in ALL_FOUR:
                 self.assertEqual(ver, self.test_rc.current_version(kind))
@@ -371,7 +371,7 @@ class RenewableCertTests(unittest.TestCase):
         self.assertFalse(self.test_rc.should_autodeploy())
         self.test_rc.configuration["autodeploy"] = "1"
         # No pending deployment
-        for ver in range(1, 6):
+        for ver in xrange(1, 6):
             for kind in ALL_FOUR:
                 where = getattr(self.test_rc, kind)
                 if os.path.islink(where):
@@ -403,7 +403,7 @@ class RenewableCertTests(unittest.TestCase):
         mock_ocsp.return_value = False
 
     def test_save_successor(self):
-        for ver in range(1, 6):
+        for ver in xrange(1, 6):
             for kind in ALL_FOUR:
                 where = getattr(self.test_rc, kind)
                 if os.path.islink(where):
