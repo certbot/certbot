@@ -1,5 +1,4 @@
-"""Tests for letsencrypt/renewer.py"""
-
+"""Tests for letsencrypt.renewer."""
 import datetime
 import os
 import tempfile
@@ -13,23 +12,22 @@ import pytz
 
 from letsencrypt.storage import ALL_FOUR
 
+
 def unlink_all(rc_object):
-    """Unlink all four items associated with this RenewableCert.
-    (Helper function.)"""
+    """Unlink all four items associated with this RenewableCert."""
     for kind in ALL_FOUR:
         os.unlink(getattr(rc_object, kind))
 
 def fill_with_sample_data(rc_object):
-    """Put dummy data into all four files of this RenewableCert.
-    (Helper function.)"""
+    """Put dummy data into all four files of this RenewableCert."""
     for kind in ALL_FOUR:
         with open(getattr(rc_object, kind), "w") as f:
             f.write(kind)
 
+
 class RenewableCertTests(unittest.TestCase):
     # pylint: disable=too-many-public-methods
-    """Tests for the RenewableCert class as well as other functions
-    within renewer.py."""
+    """Tests for letsencrypt.renewer.*."""
     def setUp(self):
         from letsencrypt import storage
         self.tempdir = tempfile.mkdtemp()
@@ -645,6 +643,7 @@ class RenewableCertTests(unittest.TestCase):
             f.write("incomplete = configfile\n")
         renewer.main(self.defaults)
         # The ValueError is caught inside and nothing happens.
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

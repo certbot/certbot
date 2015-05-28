@@ -155,9 +155,11 @@ class Client(object):
 
         return cert_pem, cert_key.pem, chain_pem
 
-    def obtain_and_enroll_certificate(self, domains, authenticator, installer,
-                                      plugins, csr=None):
-        """Get a new certificate for the specified domains using the specified
+    def obtain_and_enroll_certificate(
+            self, domains, authenticator, installer, plugins, csr=None):
+        """Obtain and enroll certificate.
+
+        Get a new certificate for the specified domains using the specified
         authenticator and installer, and then create a new renewable lineage
         containing it.
 
@@ -175,8 +177,8 @@ class Client(object):
         :returns: A new :class:`letsencrypt.storage.RenewableCert` instance
             referred to the enrolled cert lineage, or False if the cert could
             not be obtained.
+
         """
-        #  TODO: fully identify object types in docstring.
         cert_pem, privkey, chain_pem = self._obtain_certificate(domains, csr)
         self.config.namespace.authenticator = plugins.find_init(
             authenticator).name
@@ -187,8 +189,13 @@ class Client(object):
                                                  vars(self.config.namespace))
 
     def obtain_certificate(self, domains):
-        """Public method to obtain a certificate for the specified domains
-        using this client object.  Returns the tuple (cert, privkey, chain)."""
+        """Obtain certificate.
+
+        Public method to obtain a certificate for the specified domains
+        using this client object.  Returns the tuple (cert, privkey,
+        chain).
+
+        """
         return self._obtain_certificate(domains, None)
 
     def save_certificate(self, certr, cert_path, chain_path):

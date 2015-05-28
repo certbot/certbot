@@ -1,11 +1,12 @@
-"""Renewer tool to handle autorenewal and autodeployment of renewed
-certs within lineages of successor certificates, according to
-configuration."""
+"""Renewer tool.
 
-# TODO: sanity checking consistency, validity, freshness?
+Renewer tool handles autorenewal and autodeployment of renewed certs
+within lineages of successor certificates, according to configuration.
 
-# TODO: call new installer API to restart servers after deployment
+.. todo:: Sanity checking consistency, validity, freshness?
+.. todo:: Call new installer API to restart servers after deployment
 
+"""
 import copy
 import os
 
@@ -21,8 +22,11 @@ from letsencrypt.plugins import disco as plugins_disco
 
 
 class AttrDict(dict):
-    """A trick to allow accessing dictionary keys as object
-    attributes."""
+    """Attribute dictionary.
+
+    A trick to allow accessing dictionary keys as object attributes.
+
+    """
     def __init__(self, *args, **kwargs):
         super(AttrDict, self).__init__(*args, **kwargs)
         self.__dict__ = self
@@ -31,14 +35,16 @@ class AttrDict(dict):
 def renew(cert, old_version):
     """Perform automated renewal of the referenced cert, if possible.
 
-    :param class:`letsencrypt.storage.RenewableCert` cert: the certificate
+    :param letsencrypt.storage.RenewableCert cert: The certificate
         lineage to attempt to renew.
-    :param int old_version: the version of the certificate lineage relative
-        to which the renewal should be attempted.
+    :param int old_version: The version of the certificate lineage
+        relative to which the renewal should be attempted.
 
-    :returns: int referring to newly created version of this cert lineage,
-        or False if renewal was not successful."""
+    :returns: A number referring to newly created version of this cert
+        lineage, or ``False`` if renewal was not successful.
+    :rtype: `int` or `bool`
 
+    """
     # TODO: handle partial success (some names can be renewed but not
     #       others)
     # TODO: handle obligatory key rotation vs. optional key rotation vs.
@@ -89,7 +95,7 @@ def renew(cert, old_version):
 
 
 def main(config=None):
-    """main function for autorenewer script."""
+    """Main function for autorenewer script."""
     # TODO: Distinguish automated invocation from manual invocation,
     #       perhaps by looking at sys.argv[0] and inhibiting automated
     #       invocations if /etc/letsencrypt/renewal.conf defaults have

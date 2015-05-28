@@ -7,8 +7,12 @@ import subprocess
 
 
 def notify(subject, whom, what):
-    """Try to notify the addressee (whom) by e-mail, with Subject:
-    defined by subject and message body by what."""
+    """Send email notification.
+
+    Try to notify the addressee (``whom``) by e-mail, with Subject:
+    defined by ``subject`` and message body by ``what``.
+
+    """
     msg = email.message_from_string(what)
     msg.add_header("From", "Let's Encrypt renewal agent <root>")
     msg.add_header("To", whom)
