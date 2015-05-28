@@ -19,6 +19,7 @@ from letsencrypt import le_util
 from letsencrypt import network2
 from letsencrypt import reverter
 from letsencrypt import revoker
+from letsencrypt import storage
 
 from letsencrypt.display import ops as display_ops
 from letsencrypt.display import enhancements
@@ -67,6 +68,10 @@ class Client(object):
 
         self.config = config
 
+        # TODO: Check if self.config.enroll_autorenew is None. If
+        # so, set it based to the default: figure out if dv_auth is
+        # standalone (then default is False, otherwise default is True)
+
         if dv_auth is not None:
             cont_auth = continuity_auth.ContinuityAuthenticator(config,
                                                                 installer)
@@ -100,7 +105,7 @@ class Client(object):
 
         :meth:`.register` must be called before :meth:`.obtain_certificate`
 
-        .. todo:: This function does not currently handle csr correctly...
+        .. todo:: This function does not currently handle CSR correctly.
 
         :param set domains: domains to get a certificate
 
@@ -111,8 +116,9 @@ class Client(object):
             this CSR can be different than self.authkey
         :type csr: :class:`CSR`
 
-        :returns: cert_key, cert_path, chain_path
-        :rtype: `tuple` of (:class:`letsencrypt.le_util.Key`, str, str)
+        :returns: Certificate, private key, and certificate chain (all
+            PEM-encoded).
+        :rtype: `tuple` of `str`
 
         """
         if self.auth_handler is None:
@@ -139,14 +145,51 @@ class Client(object):
                 M2Crypto.X509.load_request_der_string(csr.data)),
             authzr)
 
-        # Save Certificate
-        act_cert_path, act_chain_path = self.save_certificate(
-            certr, cert_path, chain_path)
+        cert_pem = certr.body.as_pem()
+        chain_pem = None
+        if certr.cert_chain_uri is not None:
+            chain_pem = self.network.fetch_chain(certr)
 
-        revoker.Revoker.store_cert_key(
-            act_cert_path, self.account.key.file, self.config)
+        if chain_pem is None:
+            # XXX: just to stop RenewableCert from complaining; this is
+            #      probably not a good solution
+            chain_pem = ""
+        else:
+            chain_pem = chain_pem.as_pem()
 
-        return cert_key, act_cert_path, act_chain_path
+        return cert_pem, cert_key.pem, chain_pem
+
+    def obtain_and_enroll_certificate(
+            self, domains, authenticator, installer, plugins, csr=None):
+        """Obtain and enroll certificate.
+
+        Get a new certificate for the specified domains using the specified
+        authenticator and installer, and then create a new renewable lineage
+        containing it.
+
+        :param list domains: Domains to request.
+        :param authenticator: The authenticator to use.
+        :type authenticator: :class:`letsencrypt.interfaces.IAuthenticator`
+
+        :param installer: The installer to use.
+        :type installer: :class:`letsencrypt.interfaces.IInstaller`
+
+        :param plugins: A PluginsFactory object.
+
+        :param str csr: A preexisting CSR to use with this request.
+
+        :returns: A new :class:`letsencrypt.storage.RenewableCert` instance
+            referred to the enrolled cert lineage, or False if the cert could
+            not be obtained.
+
+        """
+        cert, privkey, chain = self.obtain_certificate(domains, csr)
+        self.config.namespace.authenticator = plugins.find_init(
+            authenticator).name
+        if installer is not None:
+            self.config.namespace.installer = plugins.find_init(installer).name
+        return storage.RenewableCert.new_lineage(
+            domains[0], cert, privkey, chain, vars(self.config.namespace))
 
     def save_certificate(self, certr, cert_path, chain_path):
         # pylint: disable=no-self-use
@@ -195,15 +238,12 @@ class Client(object):
 
         return os.path.abspath(act_cert_path), cert_chain_abspath
 
-    def deploy_certificate(self, domains, privkey, cert_path, chain_path=None):
+    def deploy_certificate(self, domains, privkey_path, cert_path, chain_path):
         """Install certificate
 
         :param list domains: list of domains to install the certificate
-
-        :param privkey: private key for certificate
-        :type privkey: :class:`letsencrypt.le_util.Key`
-
-        :param str cert_path: certificate file path
+        :param str privkey_path: path to certificate private key
+        :param str cert_path: certificate file path (optional)
         :param str chain_path: chain file path
 
         """
@@ -215,9 +255,11 @@ class Client(object):
         chain_path = None if chain_path is None else os.path.abspath(chain_path)
 
         for dom in domains:
+            # TODO: Provide a fullchain reference for installers like
+            #       nginx that want it
             self.installer.deploy_cert(
                 dom, os.path.abspath(cert_path),
-                os.path.abspath(privkey.file), chain_path)
+                os.path.abspath(privkey_path), chain_path)
 
         self.installer.save("Deployed Let's Encrypt Certificate")
         # sites may have been enabled / final cleanup

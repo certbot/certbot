@@ -98,14 +98,18 @@ def run(args, config, plugins):
         return "Configurator could not be determined"
 
     acme, doms = _common_run(args, config, acc, authenticator, installer)
-    cert_key, act_cert_path, act_chain_path = acme.obtain_certificate(
-        doms, args.cert_path, args.chain_path)
-    acme.deploy_certificate(doms, cert_key, act_cert_path, act_chain_path)
+    # TODO: Handle errors from _common_run?
+    lineage = acme.obtain_and_enroll_certificate(doms, authenticator,
+                                                 installer, plugins)
+    if not lineage:
+        return "Certificate could not be obtained"
+    acme.deploy_certificate(doms, lineage.privkey, lineage.cert, lineage.chain)
     acme.enhance_config(doms, args.redirect)
 
 
 def auth(args, config, plugins):
     """Obtain a certificate (no install)."""
+    # XXX: Update for renewer / RenewableCert
     acc = _account_init(args, config)
     if acc is None:
         return None
@@ -120,13 +124,17 @@ def auth(args, config, plugins):
     else:
         installer = None
 
+    # TODO: Handle errors from _common_run?
     acme, doms = _common_run(
         args, config, acc, authenticator=authenticator, installer=installer)
-    acme.obtain_certificate(doms, args.cert_path, args.chain_path)
+    if not acme.obtain_and_enroll_certificate(doms, authenticator, installer,
+                                              plugins):
+        return "Certificate could not be obtained"
 
 
 def install(args, config, plugins):
     """Install (no auth)."""
+    # XXX: Update for renewer/RenewableCert
     acc = _account_init(args, config)
     if acc is None:
         return None
@@ -287,18 +295,6 @@ def _create_subparsers(parser):
     parser_revoke = add_subparser("revoke", revoke)
     parser_rollback = add_subparser("rollback", rollback)
     add_subparser("config_changes", config_changes)
-
-    for subparser in (parser_run, parser_auth):
-        subparser.add_argument(
-            "--cert-path", default=flag_default("cert_path"),
-            help="Candidate path where a freshly issued certificate will "
-                 "be saved to. If a file already exists at the provided "
-                 "path, dirpath/0001_filename.ext will be attempted "
-                 "(securely).")
-        subparser.add_argument(
-            "--chain-path", default=flag_default("chain_path"),
-            help="Candidate path (see --cert-path help) where an "
-                 "accompanying certificate chain will be saved.")
 
     parser_install.add_argument(
         "--cert-path", required=True, help="Path to a certificate that "
