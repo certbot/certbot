@@ -49,7 +49,7 @@ class IPluginFactory(zope.interface.Interface):
         """Inject argument parser options (flags).
 
         1. Be nice and prepend all options and destinations with
-        `~.option_namespace` and `~.dest_namespace`.
+        `~.common.option_namespace` and `~common.dest_namespace`.
 
         2. Inject options (flags) only. Positional arguments are not
         allowed, as this would break the CLI.
