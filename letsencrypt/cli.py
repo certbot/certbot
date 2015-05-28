@@ -288,8 +288,8 @@ def _create_subparsers(parser):
 
     # the order of add_subparser() calls is important: it defines the
     # order in which subparser names will be displayed in --help
-    parser_run = add_subparser("run", run)
-    parser_auth = add_subparser("auth", auth)
+    add_subparser("run", run)
+    add_subparser("auth", auth)
     parser_install = add_subparser("install", install)
     parser_plugins = add_subparser("plugins", plugins_cmd)
     parser_revoke = add_subparser("revoke", revoke)

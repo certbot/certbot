@@ -100,7 +100,7 @@ class Client(object):
 
         self.account.save()
 
-    def obtain_certificate(self, domains, cert_path, chain_path, csr=None):
+    def obtain_certificate(self, domains, csr=None):
         """Obtains a certificate from the ACME server.
 
         :meth:`.register` must be called before :meth:`.obtain_certificate`
@@ -108,9 +108,6 @@ class Client(object):
         .. todo:: This function does not currently handle CSR correctly.
 
         :param set domains: domains to get a certificate
-
-        :param str cert_path: Candidate path to a certificate.
-        :param str chain_path: Candidate path to a certificate chain.
 
         :param csr: CSR must contain requested domains, the key used to generate
             this CSR can be different than self.authkey
