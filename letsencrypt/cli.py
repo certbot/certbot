@@ -103,7 +103,7 @@ def run(args, config, plugins):
                                                  installer, plugins)
     if not lineage:
         return "Certificate could not be obtained"
-    acme.deploy_certificate(doms, lineage)
+    acme.deploy_certificate(doms, lineage.privkey, lineage.cert, lineage.chain)
     acme.enhance_config(doms, args.redirect)
 
 
@@ -145,8 +145,7 @@ def install(args, config, plugins):
     acme, doms = _common_run(
         args, config, acc, authenticator=None, installer=installer)
     assert args.cert_path is not None
-    # XXX: This API has changed as a result of RenewableCert!
-    # acme.deploy_certificate(doms, acc.key, args.cert_path, args.chain_path)
+    acme.deploy_certificate(doms, acc.key, args.cert_path, args.chain_path)
     acme.enhance_config(doms, args.redirect)
 
 
@@ -342,9 +341,6 @@ def _paths_parser(parser):
 
     add("--renewer-config-file", default=flag_default("renewer_config_file"),
         help=config_help("renewer_config_file"))
-
-    add("--enroll-autorenew", default=None, action="store_true",
-        help=config_help("enroll_autorenew"))
 
     return parser
 

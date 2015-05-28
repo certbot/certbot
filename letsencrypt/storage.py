@@ -1,7 +1,4 @@
-"""The RenewableCert class, representing renewable lineages of
-certificates and storing the associated cert data and metadata."""
-
-import copy
+"""Renewable certificates storage."""
 import datetime
 import os
 import re
@@ -19,18 +16,25 @@ from letsencrypt import le_util
 ALL_FOUR = ("cert", "privkey", "chain", "fullchain")
 
 
+def config_with_defaults(config=None):
+    """Merge supplied config, if provided, on top of builtin defaults."""
+    defaults_copy = configobj.ConfigObj(constants.RENEWER_DEFAULTS)
+    defaults_copy.merge(config if config is not None else configobj.ConfigObj())
+    return defaults_copy
+
+
 def parse_time_interval(interval, textparser=parsedatetime.Calendar()):
     """Parse the time specified time interval.
 
     The interval can be in the English-language format understood by
-    parsedatetime, e.g., '10 days', '3 weeks', '6 months', '9 hours',
-    or a sequence of such intervals like '6 months 1 week' or '3 days
-    12 hours'.  If an integer is found with no associated unit, it is
+    parsedatetime, e.g., '10 days', '3 weeks', '6 months', '9 hours', or
+    a sequence of such intervals like '6 months 1 week' or '3 days 12
+    hours'. If an integer is found with no associated unit, it is
     interpreted by default as a number of days.
 
-    :param str interval: the time interval to parse.
+    :param str interval: The time interval to parse.
 
-    :returns: the interpretation of the time interval.
+    :returns: The interpretation of the time interval.
     :rtype: :class:`datetime.timedelta`"""
 
     if interval.strip().isdigit():
@@ -40,59 +44,55 @@ def parse_time_interval(interval, textparser=parsedatetime.Calendar()):
 
 
 class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
-    """Represents a lineage of certificates that is under the management
+    """Renewable certificate.
+
+    Represents a lineage of certificates that is under the management
     of the Let's Encrypt client, indicated by the existence of an
     associated renewal configuration file.
 
-    Note that the notion of "current version" for a lineage is maintained
-    on disk in the structure of symbolic links, and is not explicitly
-    stored in any instance variable in this object.  The RenewableCert
-    object is able to determine information about the current (or other)
-    version by accessing data on disk, but does not inherently know any
-    of this information except by examining the symbolic links as needed.
-    The instance variables mentioned below point to symlinks that reflect
-    the notion of "current version" of each managed object, and it is
-    these paths that should be used when configuring servers to use the
-    certificate managed in a lineage.  These paths are normally within
-    the "live" directory, and their symlink targets -- the actual cert
-    files -- are normally found within the "archive" directory.
+    Note that the notion of "current version" for a lineage is
+    maintained on disk in the structure of symbolic links, and is not
+    explicitly stored in any instance variable in this object. The
+    RenewableCert object is able to determine information about the
+    current (or other) version by accessing data on disk, but does not
+    inherently know any of this information except by examining the
+    symbolic links as needed. The instance variables mentioned below
+    point to symlinks that reflect the notion of "current version" of
+    each managed object, and it is these paths that should be used when
+    configuring servers to use the certificate managed in a lineage.
+    These paths are normally within the "live" directory, and their
+    symlink targets -- the actual cert files -- are normally found
+    within the "archive" directory.
 
-    :ivar cert: The path to the symlink representing the current version
-        of the certificate managed by this lineage.
-    :type cert: str
-
-    :ivar privkey: The path to the symlink representing the current version
-        of the private key managed by this lineage.
-    :type privkey: str
-
-    :ivar chain: The path to the symlink representing the current version
+    :ivar str cert: The path to the symlink representing the current
+        version of the certificate managed by this lineage.
+    :ivar str privkey: The path to the symlink representing the current
+        version of the private key managed by this lineage.
+    :ivar str chain: The path to the symlink representing the current version
         of the chain managed by this lineage.
-    :type chain: str
+    :ivar str fullchain: The path to the symlink representing the
+        current version of the fullchain (combined chain and cert)
+        managed by this lineage.
+    :ivar configobj.ConfigObj configuration: The renewal configuration
+        options associated with this lineage, obtained from parsing the
+        renewal configuration file and/or systemwide defaults.
 
-    :ivar fullchain: The path to the symlink representing the current version
-        of the fullchain (combined chain and cert) managed by this lineage.
-    :type fullchain: str
-
-    :ivar configuration: The renewal configuration options associated with
-        this lineage, obtained from parsing the renewal configuration file
-        and/or systemwide defaults.
-    :type configuration: :class:`configobj.ConfigObj`"""
-
+    """
     def __init__(self, configfile, config_opts=None):
         """Instantiate a RenewableCert object from an existing lineage.
 
-        :param :class:`configobj.ConfigObj` configfile: an already-parsed
-            ConfigObj object made from reading the renewal config file that
-            defines this lineage.
-        :param :class:`configobj.ConfigObj` config_opts: systemwide defaults
-            for renewal properties not otherwise specified in the individual
-            renewal config file.
+        :param configobj.ConfigObj configfile: an already-parsed
+        ConfigObj object made from reading the renewal config file
+        that defines this lineage.  :param configobj.ConfigObj
+        config_opts: systemwide defaults for renewal properties not
+        otherwise specified in the individual renewal config file.
 
-        :raises ValueError: if the configuration file's name didn't end in
-            ".conf", or the file is missing or broken.
+        :raises ValueError: if the configuration file's name didn't end
+            in ".conf", or the file is missing or broken.
         :raises TypeError: if the provided renewal configuration isn't a
-            ConfigObj object."""
+            ConfigObj object.
 
+        """
         if isinstance(configfile, configobj.ConfigObj):
             if not os.path.basename(configfile.filename).endswith(".conf"):
                 raise ValueError("renewal config file name must end in .conf")
@@ -109,10 +109,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         # TODO: Do we actually use anything from defaults and do we want to
         #       read further defaults from the systemwide renewal configuration
         #       file at this stage?
-        defaults_copy = copy.deepcopy(constants.RENEWER_DEFAULTS)
-        defaults_copy.merge(config_opts if config_opts is not None
-                            else configobj.ConfigObj())
-        self.configuration = defaults_copy
+        self.configuration = config_with_defaults(config_opts)
         self.configuration.merge(self.configfile)
 
         if not all(x in self.configuration for x in ALL_FOUR):
@@ -127,10 +124,12 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
     def consistent(self):
         """Are the files associated with this lineage self-consistent?
 
-        :returns: whether the files stored in connection with this
-            lineage appear to be correct and consistent with one another.
-        :rtype: bool"""
+        :returns: Whether the files stored in connection with this
+            lineage appear to be correct and consistent with one
+            another.
+        :rtype: bool
 
+        """
         # Each element must be referenced with an absolute path
         if any(not os.path.isabs(x) for x in
                (self.cert, self.privkey, self.chain, self.fullchain)):
@@ -182,7 +181,10 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
     def fix(self):
         """Attempt to fix defects or inconsistencies in this lineage.
-        (Currently unimplemented.)"""
+
+        .. todo:: Currently unimplemented.
+
+        """
         # TODO: Figure out what kinds of fixes are possible.  For
         #       example, checking if there is a valid version that
         #       we can update the symlinks to.  (Maybe involve
@@ -201,9 +203,11 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         :param str kind: the lineage member item ("cert", "privkey",
             "chain", or "fullchain")
 
-        :returns: the path to the current version of the specified member.
-        :rtype: str"""
+        :returns: The path to the current version of the specified
+            member.
+        :rtype: str
 
+        """
         if kind not in ALL_FOUR:
             raise ValueError("unknown kind of item")
         link = getattr(self, kind)
@@ -217,16 +221,16 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
     def current_version(self, kind):
         """Returns numerical version of the specified item.
 
-        For example, if kind
-        is "chain" and the current chain link points to a file named
-        "chain7.pem", returns the integer 7.
+        For example, if kind is "chain" and the current chain link
+        points to a file named "chain7.pem", returns the integer 7.
 
         :param str kind: the lineage member item ("cert", "privkey",
             "chain", or "fullchain")
 
         :returns: the current version of the specified member.
-        :rtype: int"""
+        :rtype: int
 
+        """
         if kind not in ALL_FOUR:
             raise ValueError("unknown kind of item")
         pattern = re.compile(r"^{0}([0-9]+)\.pem$".format(kind))
@@ -242,34 +246,36 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
     def version(self, kind, version):
         """The filename that corresponds to the specified version and kind.
 
-        Warning: the specified version may not exist in this lineage.  There
-        is no guarantee that the file path returned by this method actually
-        exists.
+        .. warning:: The specified version may not exist in this
+           lineage. There is no guarantee that the file path returned
+           by this method actually exists.
 
         :param str kind: the lineage member item ("cert", "privkey",
             "chain", or "fullchain")
         :param int version: the desired version
 
-        :returns: the path to the specified version of the specified member.
-        :rtype: str"""
+        :returns: The path to the specified version of the specified member.
+        :rtype: str
 
+        """
         if kind not in ALL_FOUR:
             raise ValueError("unknown kind of item")
         where = os.path.dirname(self.current_target(kind))
         return os.path.join(where, "{0}{1}.pem".format(kind, version))
 
     def available_versions(self, kind):
-        """Which alternative versions of the specified kind of item exist?
+        """Which lternative versions of the specified kind of item exist?
 
         The archive directory where the current version is stored is
         consulted to obtain the list of alternatives.
 
-        :param str kind: the lineage member item ("cert", "privkey",
-            "chain", or "fullchain")
+        :param str kind: the lineage member item (
+            ``cert``, ``privkey``, ``chain``, or ``fullchain``)
 
         :returns: all of the version numbers that currently exist
-        :rtype: list of int"""
+        :rtype: `list` of `int`
 
+        """
         if kind not in ALL_FOUR:
             raise ValueError("unknown kind of item")
         where = os.path.dirname(self.current_target(kind))
@@ -279,23 +285,25 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         return sorted([int(m.groups()[0]) for m in matches if m])
 
     def newest_available_version(self, kind):
-        """What is the newest available version of the specified kind of item?
+        """Newest available version of the specified kind of item?
 
-        :param str kind: the lineage member item ("cert", "privkey",
-            "chain", or "fullchain")
+        :param str kind: the lineage member item (``cert``,
+            ``privkey``, ``chain``, or ``fullchain``)
 
         :returns: the newest available version of this member
-        :rtype: int"""
+        :rtype: int
 
+        """
         return max(self.available_versions(kind))
 
     def latest_common_version(self):
-        """What is the newest version for which all items are available?
+        """Newest version for which all items are available?
 
-        :returns: the newest available version for which all members (cert,
-            privkey, chain, and fullchain) exist
-        :rtype: int"""
+        :returns: the newest available version for which all members
+            (``cert, ``privkey``, ``chain``, and ``fullchain``) exist
+        :rtype: int
 
+        """
         # TODO: this can raise ValueError if there is no version overlap
         #       (it should probably return None instead)
         # TODO: this can raise a spurious AttributeError if the current
@@ -304,13 +312,13 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         return max(n for n in versions[0] if all(n in v for v in versions[1:]))
 
     def next_free_version(self):
-        """What is the smallest version newer than all full or partial versions?
+        """Smallest version newer than all full or partial versions?
 
-        :returns: the smallest version number that is larger than any version
-            of any item currently stored in this lineage
+        :returns: the smallest version number that is larger than any
+            version of any item currently stored in this lineage
         :rtype: int
-        """
 
+        """
         # TODO: consider locking/mutual exclusion between updating processes
         # This isn't self.latest_common_version() + 1 because we don't want
         # collide with a version that might exist for one file type but not
@@ -320,11 +328,12 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
     def has_pending_deployment(self):
         """Is there a later version of all of the managed items?
 
-        :returns: True if there is a complete version of this lineage with
-            a larger version number than the current version, and False
-            otherwise
-        :rtype: bool"""
+        :returns: ``True`` if there is a complete version of this
+            lineage with a larger version number than the current
+            version, and ``False`` otherwis
+        :rtype: bool
 
+        """
         # TODO: consider whether to assume consistency or treat
         #       inconsistent/consistent versions differently
         smallest_current = min(self.current_version(x) for x in ALL_FOUR)
@@ -338,8 +347,9 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
         :param str kind: the lineage member item ("cert", "privkey",
             "chain", or "fullchain")
-        :param int version: the desired version"""
+        :param int version: the desired version
 
+        """
         if kind not in ALL_FOUR:
             raise ValueError("unknown kind of item")
         link = getattr(self, kind)
@@ -383,10 +393,11 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
         :param int version: the desired version number
 
-        :returns: the notBefore value from the specified cert version in this
-            lineage
-        :rtype: :class:`datetime.datetime`"""
+        :returns: the notBefore value from the specified cert version in
+            this lineage
+        :rtype: :class:`datetime.datetime`
 
+        """
         return self._notafterbefore(lambda x509: x509.get_notBefore(), version)
 
     def notafter(self, version=None):
@@ -396,24 +407,27 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
         :param int version: the desired version number
 
-        :returns: the notAfter value from the specified cert version in this
-            lineage
-        :rtype: :class:`datetime.datetime`"""
+        :returns: the notAfter value from the specified cert version in
+            this lineage
+        :rtype: :class:`datetime.datetime`
 
+        """
         return self._notafterbefore(lambda x509: x509.get_notAfter(), version)
 
     def should_autodeploy(self):
         """Should this lineage now automatically deploy a newer version?
 
-        This is a policy question and does not only depend on whether there
-        is a newer version of the cert.  (This considers whether autodeployment
-        is enabled, whether a relevant newer version exists, and whether the
-        time interval for autodeployment has been reached.)
+        This is a policy question and does not only depend on whether
+        there is a newer version of the cert. (This considers whether
+        autodeployment is enabled, whether a relevant newer version
+        exists, and whether the time interval for autodeployment has
+        been reached.)
 
-        :returns: whether the lineage now ought to autodeploy an existing
-            newer cert version
-        :rtype: bool"""
+        :returns: whether the lineage now ought to autodeploy an
+            existing newer cert version
+        :rtype: bool
 
+        """
         if ("autodeploy" not in self.configuration or
                 self.configuration.as_bool("autodeploy")):
             if self.has_pending_deployment():
@@ -431,17 +445,19 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         # pylint: disable=no-self-use,unused-argument
         """Is the specified cert version revoked according to OCSP?
 
-        Also returns True if the cert version is declared as intended to be
-        revoked according to Let's Encrypt OCSP extensions.  (If no version
-        is specified, uses the current version.)
+        Also returns True if the cert version is declared as intended
+        to be revoked according to Let's Encrypt OCSP extensions.
+        (If no version is specified, uses the current version.)
 
-        This method is not yet implemented and currently always returns False.
+        This method is not yet implemented and currently always returns
+        False.
 
         :param int version: the desired version number
 
         :returns: whether the certificate is or will be revoked
-        :rtype: bool"""
+        :rtype: bool
 
+        """
         # XXX: This query and its associated network service aren't
         # implemented yet, so we currently return False (indicating that the
         # certificate is not revoked).
@@ -450,18 +466,19 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
     def should_autorenew(self):
         """Should we now try to autorenew the most recent cert version?
 
-        This is a policy question and does not only depend on whether the
-        cert is expired.  (This considers whether autorenewal is enabled,
-        whether the cert is revoked, and whether the time interval for
-        autorenewal has been reached.)
+        This is a policy question and does not only depend on whether
+        the cert is expired. (This considers whether autorenewal is
+        enabled, whether the cert is revoked, and whether the time
+        interval for autorenewal has been reached.)
 
         Note that this examines the numerically most recent cert version,
         not the currently deployed version.
 
         :returns: whether an attempt should now be made to autorenew the
             most current cert version in this lineage
-        :rtype: bool"""
+        :rtype: bool
 
+        """
         if ("autorenew" not in self.configuration
                 or self.configuration.as_bool("autorenew")):
             # Consider whether to attempt to autorenew this cert now
@@ -486,38 +503,35 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         # pylint: disable=too-many-locals,too-many-arguments
         """Create a new certificate lineage.
 
-        Attempts to create a certificate lineage -- enrolled for potential
-        future renewal -- with the (suggested) lineage name lineagename,
-        and the associated cert, privkey, and chain (the associated
-        fullchain will be created automatically).  Optional configurator
-        and renewalparams record the configuration that was originally
-        used to obtain this cert, so that it can be reused later during
-        automated renewal.
+        Attempts to create a certificate lineage -- enrolled for
+        potential future renewal -- with the (suggested) lineage name
+        lineagename, and the associated cert, privkey, and chain (the
+        associated fullchain will be created automatically). Optional
+        configurator and renewalparams record the configuration that was
+        originally used to obtain this cert, so that it can be reused
+        later during automated renewal.
 
         Returns a new RenewableCert object referring to the created
         lineage. (The actual lineage name, as well as all the relevant
         file paths, will be available within this object.)
 
         :param str lineagename: the suggested name for this lineage
-             (normally the current cert's first subject DNS name)
+            (normally the current cert's first subject DNS name)
         :param str cert: the initial certificate version in PEM format
         :param str privkey: the private key in PEM format
         :param str chain: the certificate chain in PEM format
-        :param :class:`configobj.ConfigObj` renewalparams: parameters that
+        :param configobj.ConfigObj renewalparams: parameters that
             should be used when instantiating authenticator and installer
             objects in the future to attempt to renew this cert or deploy
             new versions of it
-        :param :class:`configobj.ConfigObj` config: renewal configuration
+        :param configobj.ConfigObj config: renewal configuration
             defaults, affecting, for example, the locations of the
             directories where the associated files will be saved
 
         :returns: the newly-created RenewalCert object
         :rtype: :class:`storage.renewableCert`"""
 
-        defaults_copy = copy.deepcopy(constants.RENEWER_DEFAULTS)
-        defaults_copy.merge(config if config is not None
-                            else configobj.ConfigObj())
-        config = defaults_copy
+        config = config_with_defaults(config)
         # This attempts to read the renewer config file and augment or replace
         # the renewer defaults with any options contained in that file.  If
         # renewer_config_file is undefined or if the file is nonexistent or
@@ -585,21 +599,24 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
     def save_successor(self, prior_version, new_cert, new_privkey, new_chain):
         """Save new cert and chain as a successor of a prior version.
 
-        Returns the new version number that was created.  Note: does NOT
-        update links to deploy this version.
+        Returns the new version number that was created.
 
-        :param int prior_version: the old version to which this version is
-            regarded as a successor (used to choose a privkey, if the key
-            has not changed, but otherwise this information is not permanently
-            recorded anywhere)
+        .. note:: this function does NOT update links to deploy this
+                  version
+
+        :param int prior_version: the old version to which this version
+            is regarded as a successor (used to choose a privkey, if the
+            key has not changed, but otherwise this information is not
+            permanently recorded anywhere)
         :param str new_cert: the new certificate, in PEM format
-        :param str new_privkey: the new private key, in PEM format, or None,
-            if the private key has not changed
+        :param str new_privkey: the new private key, in PEM format,
+            or ``None``, if the private key has not changed
         :param str new_chain: the new chain, in PEM format
 
         :returns: the new version number that was created
-        :rtype: int"""
+        :rtype: int
 
+        """
         # XXX: assumes official archive location rather than examining links
         # XXX: consider using os.open for availablity of os.O_EXCL
         # XXX: ensure file permissions are correct; also create directories
