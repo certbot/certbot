@@ -100,12 +100,12 @@ class Client(object):
 
         self.account.save()
 
-    def _obtain_certificate(self, domains, csr=None):
+    def obtain_certificate(self, domains, csr=None):
         """Obtains a certificate from the ACME server.
 
         :meth:`.register` must be called before :meth:`.obtain_certificate`
 
-        .. todo:: This function does not currently handle csr correctly...
+        .. todo:: This function does not currently handle CSR correctly.
 
         :param set domains: domains to get a certificate
 
@@ -113,8 +113,9 @@ class Client(object):
             this CSR can be different than self.authkey
         :type csr: :class:`CSR`
 
-        :returns: cert_pem, key_pem, chain_pem
-        :rtype: `tuple` of (str, str, str)
+        :returns: Certificate, private key, and certificate chain (all
+            PEM-encoded).
+        :rtype: `tuple` of `str`
 
         """
         if self.auth_handler is None:
@@ -179,24 +180,13 @@ class Client(object):
             not be obtained.
 
         """
-        cert_pem, privkey, chain_pem = self._obtain_certificate(domains, csr)
+        cert, privkey, chain = self.obtain_certificate(domains, csr)
         self.config.namespace.authenticator = plugins.find_init(
             authenticator).name
         if installer is not None:
             self.config.namespace.installer = plugins.find_init(installer).name
-        return storage.RenewableCert.new_lineage(domains[0], cert_pem,
-                                                 privkey, chain_pem,
-                                                 vars(self.config.namespace))
-
-    def obtain_certificate(self, domains):
-        """Obtain certificate.
-
-        Public method to obtain a certificate for the specified domains
-        using this client object.  Returns the tuple (cert, privkey,
-        chain).
-
-        """
-        return self._obtain_certificate(domains, None)
+        return storage.RenewableCert.new_lineage(
+            domains[0], cert, privkey, chain, vars(self.config.namespace))
 
     def save_certificate(self, certr, cert_path, chain_path):
         # pylint: disable=no-self-use
