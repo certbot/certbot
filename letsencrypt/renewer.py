@@ -21,14 +21,14 @@ from letsencrypt import storage
 from letsencrypt.plugins import disco as plugins_disco
 
 
-class AttrDict(dict):
+class _AttrDict(dict):
     """Attribute dictionary.
 
     A trick to allow accessing dictionary keys as object attributes.
 
     """
     def __init__(self, *args, **kwargs):
-        super(AttrDict, self).__init__(*args, **kwargs)
+        super(_AttrDict, self).__init__(*args, **kwargs)
         self.__dict__ = self
 
 
@@ -58,7 +58,7 @@ def renew(cert, old_version):
         return False
     # Instantiate the appropriate authenticator
     plugins = plugins_disco.PluginsRegistry.find_all()
-    config = configuration.NamespaceConfig(AttrDict(renewalparams))
+    config = configuration.NamespaceConfig(_AttrDict(renewalparams))
     # XXX: this loses type data (for example, the fact that key_size
     #      was an int, not a str)
     config.rsa_key_size = int(config.rsa_key_size)
