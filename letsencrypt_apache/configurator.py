@@ -146,7 +146,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         temp_install(self.conf('mod-ssl-conf'))
 
-    def deploy_cert(self, domain, cert_path, key, chain_path=None):
+    def deploy_cert(self, domain, cert_path, key_path, chain_path=None):
         """Deploys certificate to specified virtual host.
 
         Currently tries to find the last directives to deploy the cert in
@@ -160,11 +160,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         .. todo:: Might be nice to remove chain directive if none exists
                   This shouldn't happen within letsencrypt though
-
-        :param str domain: domain to deploy certificate
-        :param str cert_path: certificate filename
-        :param str key: private key filename
-        :param str chain_path: certificate chain filename
 
         """
         vhost = self.choose_vhost(domain)
@@ -192,7 +187,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         logging.info("Deploying Certificate to VirtualHost %s", vhost.filep)
 
         self.aug.set(path["cert_path"][0], cert_path)
-        self.aug.set(path["cert_key"][0], key)
+        self.aug.set(path["cert_key"][0], key_path)
         if chain_path is not None:
             if not path["chain_path"]:
                 self.parser.add_dir(
@@ -204,7 +199,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                             (vhost.filep,
                              ", ".join(str(addr) for addr in vhost.addrs)))
         self.save_notes += "\tSSLCertificateFile %s\n" % cert_path
-        self.save_notes += "\tSSLCertificateKeyFile %s\n" % key
+        self.save_notes += "\tSSLCertificateKeyFile %s\n" % key_path
         if chain_path is not None:
             self.save_notes += "\tSSLCertificateChainFile %s\n" % chain_path
 
