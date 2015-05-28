@@ -238,32 +238,29 @@ class Client(object):
 
         return os.path.abspath(act_cert_path), cert_chain_abspath
 
-    def deploy_certificate(self, domains, lineage):
+    def deploy_certificate(self, domains, privkey, cert_path, chain_path):
         """Install certificate
 
         :param list domains: list of domains to install the certificate
 
-        :param lineage: RenewableCert object representing the certificate
-        :type lineage: :class:`letsencrypt.storage.RenewableCert`
+        :param privkey: private key for certificate
+        :type privkey: :class:`letsencrypt.le_util.Key`
+
+        :param str cert_path: certificate file path (optional)
+        :param str chain_path: chain file path
+
         """
         if self.installer is None:
             logging.warning("No installer specified, client is unable to deploy"
                             "the certificate")
             raise errors.LetsEncryptClientError("No installer available")
 
-        # TODO: Is it possible not to have a chain at all? (The
-        # RenewableCert class currently doesn't support this case, but
-        # perhaps the CA can issue according to ACME without providing
-        # a chain, which would currently be a problem for instantiating
-        # RenewableCert, and subsequently also for this method.)
+        chain_path = None if chain_path is None else os.path.abspath(chain_path)
 
         for dom in domains:
             # TODO: Provide a fullchain reference for installers like
             #       nginx that want it
-            self.installer.deploy_cert(dom,
-                                       lineage.cert,
-                                       lineage.privkey,
-                                       lineage.chain)
+            self.installer.deploy_cert(dom, cert_path, privkey, chain_path)
 
         self.installer.save("Deployed Let's Encrypt Certificate")
         # sites may have been enabled / final cleanup
