@@ -361,7 +361,7 @@ def main(args=sys.argv[1:]):
         displayer = display_util.NcursesDisplay()
     zope.component.provideUtility(displayer)
 
-    # Notifier
+    # Reporter
     report = reporter.Reporter()
     zope.component.provideUtility(report)
     atexit.register(report.print_messages)
