@@ -1,5 +1,6 @@
 """Let's Encrypt CLI."""
 # TODO: Sanity check all input.  Be sure to avoid shell code etc...
+import atexit
 import argparse
 import logging
 import os
@@ -20,6 +21,7 @@ from letsencrypt import errors
 from letsencrypt import interfaces
 from letsencrypt import le_util
 from letsencrypt import log
+from letsencrypt import reporter
 
 from letsencrypt.display import util as display_util
 from letsencrypt.display import ops as display_ops
@@ -358,6 +360,11 @@ def main(args=sys.argv[1:]):
     else:
         displayer = display_util.NcursesDisplay()
     zope.component.provideUtility(displayer)
+
+    # Reporter
+    report = reporter.Reporter()
+    zope.component.provideUtility(report)
+    atexit.register(report.print_messages)
 
     # Logging
     level = -args.verbose_count * 10
