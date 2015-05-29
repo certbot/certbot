@@ -5,22 +5,25 @@ from letsencrypt_apache.obj import Addr as ApacheAddr
 
 
 class Addr(ApacheAddr):
-    """Represents an Nginx address, i.e. what comes after the 'listen'
+    r"""Represents an Nginx address, i.e. what comes after the 'listen'
     directive.
 
-    According to http://nginx.org/en/docs/http/ngx_http_core_module.html#listen,
-    this may be address[:port], port, or unix:path. The latter is ignored here.
+    According to the `documentation`_, this may be address[:port], port,
+    or unix:path. The latter is ignored here.
 
-    The default value if no directive is specified is *:80 (superuser) or
-    *:8000 (otherwise). If no port is specified, the default is 80. If no
-    address is specified, listen on all addresses.
+    The default value if no directive is specified is \*:80 (superuser)
+    or \*:8000 (otherwise). If no port is specified, the default is
+    80. If no address is specified, listen on all addresses.
 
-    .. todo:: Old-style nginx configs define SSL vhosts in a separate block
-    instead of using 'ssl' in the listen directive
+    .. _documentation:
+       http://nginx.org/en/docs/http/ngx_http_core_module.html#listen
+
+    .. todo:: Old-style nginx configs define SSL vhosts in a separate
+              block instead of using 'ssl' in the listen directive.
 
     :param str addr: addr part of vhost address, may be hostname, IPv4, IPv6,
-        "", or "*"
-    :param str port: port number or "*" or ""
+        "", or "\*"
+    :param str port: port number or "\*" or ""
     :param bool ssl: Whether the directive includes 'ssl'
     :param bool default: Whether the directive includes 'default_server'
 

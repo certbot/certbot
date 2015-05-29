@@ -1,5 +1,4 @@
 """Let's Encrypt constants."""
-import configobj
 import logging
 
 from acme import challenges
@@ -22,12 +21,13 @@ CLI_DEFAULTS = dict(
     certs_dir="/etc/letsencrypt/certs",
     cert_path="/etc/letsencrypt/certs/cert-letsencrypt.pem",
     chain_path="/etc/letsencrypt/certs/chain-letsencrypt.pem",
+    renewer_config_file="/etc/letsencrypt/renewer.conf",
     test_mode=False,
 )
 """Defaults for CLI flags and `.IConfig` attributes."""
 
 
-RENEWER_DEFAULTS = configobj.ConfigObj(dict(
+RENEWER_DEFAULTS = dict(
     renewer_config_file="/etc/letsencrypt/renewer.conf",
     renewal_configs_dir="/etc/letsencrypt/configs",
     archive_dir="/etc/letsencrypt/archive",
@@ -35,7 +35,7 @@ RENEWER_DEFAULTS = configobj.ConfigObj(dict(
     renewer_enabled="yes",
     renew_before_expiry="30 days",
     deploy_before_expiry="20 days",
-))
+)
 """Defaults for renewer script."""
 
 

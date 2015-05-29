@@ -49,7 +49,7 @@ class IPluginFactory(zope.interface.Interface):
         """Inject argument parser options (flags).
 
         1. Be nice and prepend all options and destinations with
-        `~.option_namespace` and `~.dest_namespace`.
+        `~.common.option_namespace` and `~common.dest_namespace`.
 
         2. Inject options (flags) only. Positional arguments are not
         allowed, as this would break the CLI.
@@ -176,9 +176,8 @@ class IConfig(zope.interface.Interface):
     le_vhost_ext = zope.interface.Attribute(
         "SSL vhost configuration extension.")
 
-    enroll_autorenew = zope.interface.Attribute(
-        "Register this certificate in the database to be renewed"
-        " automatically.")
+    renewer_config_file = zope.interface.Attribute(
+        "Location of renewal configuration file.")
 
     cert_path = zope.interface.Attribute("Let's Encrypt certificate file path.")
     chain_path = zope.interface.Attribute("Let's Encrypt chain file path.")
@@ -197,12 +196,13 @@ class IInstaller(IPlugin):
     def get_all_names():
         """Returns all names that may be authenticated."""
 
-    def deploy_cert(domain, cert, key, cert_chain=None):
+    def deploy_cert(domain, cert_path, key_path, chain_path=None):
         """Deploy certificate.
 
-        :param str domain: domain to deploy certificate
-        :param str cert: certificate filename
-        :param str key: private key filename
+        :param str domain: domain to deploy certificate file
+        :param str cert_path: absolute path to the certificate file
+        :param str key_path: absolute path to the private key file
+        :param str chain_path: absolute path to the certificate chain file
 
         """
 

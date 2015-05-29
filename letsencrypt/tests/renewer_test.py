@@ -1,5 +1,4 @@
-"""Tests for letsencrypt/renewer.py"""
-
+"""Tests for letsencrypt.renewer."""
 import datetime
 import os
 import tempfile
@@ -13,23 +12,22 @@ import pytz
 
 from letsencrypt.storage import ALL_FOUR
 
+
 def unlink_all(rc_object):
-    """Unlink all four items associated with this RenewableCert.
-    (Helper function.)"""
+    """Unlink all four items associated with this RenewableCert."""
     for kind in ALL_FOUR:
         os.unlink(getattr(rc_object, kind))
 
 def fill_with_sample_data(rc_object):
-    """Put dummy data into all four files of this RenewableCert.
-    (Helper function.)"""
+    """Put dummy data into all four files of this RenewableCert."""
     for kind in ALL_FOUR:
         with open(getattr(rc_object, kind), "w") as f:
             f.write(kind)
 
+
 class RenewableCertTests(unittest.TestCase):
     # pylint: disable=too-many-public-methods
-    """Tests for the RenewableCert class as well as other functions
-    within renewer.py."""
+    """Tests for letsencrypt.renewer.*."""
     def setUp(self):
         from letsencrypt import storage
         self.tempdir = tempfile.mkdtemp()
@@ -167,7 +165,7 @@ class RenewableCertTests(unittest.TestCase):
         self.assertEqual(self.test_rc.current_version("cert"), None)
 
     def test_latest_and_next_versions(self):
-        for ver in range(1, 6):
+        for ver in xrange(1, 6):
             for kind in ALL_FOUR:
                 where = getattr(self.test_rc, kind)
                 if os.path.islink(where):
@@ -215,7 +213,7 @@ class RenewableCertTests(unittest.TestCase):
         self.assertEqual(self.test_rc.next_free_version(), 18)
 
     def test_update_link_to(self):
-        for ver in range(1, 6):
+        for ver in xrange(1, 6):
             for kind in ALL_FOUR:
                 where = getattr(self.test_rc, kind)
                 if os.path.islink(where):
@@ -250,7 +248,7 @@ class RenewableCertTests(unittest.TestCase):
                          os.path.basename(self.test_rc.version("cert", 8)))
 
     def test_update_all_links_to(self):
-        for ver in range(1, 6):
+        for ver in xrange(1, 6):
             for kind in ALL_FOUR:
                 where = getattr(self.test_rc, kind)
                 if os.path.islink(where):
@@ -261,14 +259,14 @@ class RenewableCertTests(unittest.TestCase):
                     f.write(kind)
                 self.assertEqual(ver, self.test_rc.current_version(kind))
         self.assertEqual(self.test_rc.latest_common_version(), 5)
-        for ver in range(1, 6):
+        for ver in xrange(1, 6):
             self.test_rc.update_all_links_to(ver)
             for kind in ALL_FOUR:
                 self.assertEqual(ver, self.test_rc.current_version(kind))
             self.assertEqual(self.test_rc.latest_common_version(), 5)
 
     def test_has_pending_deployment(self):
-        for ver in range(1, 6):
+        for ver in xrange(1, 6):
             for kind in ALL_FOUR:
                 where = getattr(self.test_rc, kind)
                 if os.path.islink(where):
@@ -278,7 +276,7 @@ class RenewableCertTests(unittest.TestCase):
                 with open(where, "w") as f:
                     f.write(kind)
                 self.assertEqual(ver, self.test_rc.current_version(kind))
-        for ver in range(1, 6):
+        for ver in xrange(1, 6):
             self.test_rc.update_all_links_to(ver)
             for kind in ALL_FOUR:
                 self.assertEqual(ver, self.test_rc.current_version(kind))
@@ -371,7 +369,7 @@ class RenewableCertTests(unittest.TestCase):
         self.assertFalse(self.test_rc.should_autodeploy())
         self.test_rc.configuration["autodeploy"] = "1"
         # No pending deployment
-        for ver in range(1, 6):
+        for ver in xrange(1, 6):
             for kind in ALL_FOUR:
                 where = getattr(self.test_rc, kind)
                 if os.path.islink(where):
@@ -403,7 +401,7 @@ class RenewableCertTests(unittest.TestCase):
         mock_ocsp.return_value = False
 
     def test_save_successor(self):
-        for ver in range(1, 6):
+        for ver in xrange(1, 6):
             for kind in ALL_FOUR:
                 where = getattr(self.test_rc, kind)
                 if os.path.islink(where):
@@ -590,7 +588,7 @@ class RenewableCertTests(unittest.TestCase):
         self.assertEqual(mock_da.call_count, 1)
         mock_client.obtain_certificate.return_value = (None, None, None)
         # This should fail because the renewal itself appears to fail
-        self.assertEqual(False, renewer.renew(self.test_rc, 1))
+        self.assertFalse(renewer.renew(self.test_rc, 1))
 
 
     @mock.patch("letsencrypt.renewer.notify")
@@ -645,6 +643,7 @@ class RenewableCertTests(unittest.TestCase):
             f.write("incomplete = configfile\n")
         renewer.main(self.defaults)
         # The ValueError is caught inside and nothing happens.
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
