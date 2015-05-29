@@ -174,6 +174,9 @@ class IConfig(zope.interface.Interface):
     key_dir = zope.interface.Attribute("Keys storage.")
     cert_dir = zope.interface.Attribute("Certificates and CSRs storage.")
 
+    renewer_config_file = zope.interface.Attribute(
+        "Location of renewal configuration file.")
+
     test_mode = zope.interface.Attribute(
         "Test mode. Disables certificate verification.")
 

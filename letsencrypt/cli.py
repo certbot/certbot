@@ -340,6 +340,9 @@ def _paths_parser(parser):
     add("--cert-dir", default=flag_default("certs_dir"),
         help=config_help("cert_dir"))
 
+    add("--renewer-config-file", default=flag_default("renewer_config_file"),
+        help=config_help("renewer_config_file"))
+
     return parser
 
 

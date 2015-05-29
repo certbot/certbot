@@ -25,6 +25,7 @@ CLI_DEFAULTS = dict(
     certs_dir=_CLI_DEFAULT_CERT_DIR,
     cert_path=os.path.join(_CLI_DEFAULT_CERT_DIR, "cert-letsencrypt.pem"),
     chain_path=os.path.join(_CLI_DEFAULT_CERT_DIR, "chain-letsencrypt.pem"),
+    renewer_config_file=os.path.join(_CLI_DEFAULT_CONFIG_DIR, "renewer.conf"),
     test_mode=False,
 )
 """Defaults for CLI flags and `.IConfig` attributes."""
