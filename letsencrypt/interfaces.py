@@ -353,7 +353,7 @@ class IValidator(zope.interface.Interface):
         """Verify HSTS header is enabled."""
 
 
-class INotify(zope.interface.Interface):
+class IReporter(zope.interface.Interface):
     """Interface to collect and display information to the user."""
 
     HIGH_PRIORITY = zope.interface.Attribute(

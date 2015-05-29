@@ -21,7 +21,7 @@ from letsencrypt import errors
 from letsencrypt import interfaces
 from letsencrypt import le_util
 from letsencrypt import log
-from letsencrypt import notifier
+from letsencrypt import reporter
 
 from letsencrypt.display import util as display_util
 from letsencrypt.display import ops as display_ops
@@ -363,9 +363,9 @@ def main(args=sys.argv[1:]):
     zope.component.provideUtility(displayer)
 
     # Notifier
-    notify = notifier.Notifier()
-    zope.component.provideUtility(notify)
-    atexit.register(notify.print_messages)
+    report = reporter.Reporter()
+    zope.component.provideUtility(report)
+    atexit.register(report.print_messages)
 
     # Logging
     level = -args.verbose_count * 10

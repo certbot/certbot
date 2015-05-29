@@ -9,16 +9,18 @@ import zope.interface
 from letsencrypt import interfaces
 
 
-class Notifier(object):
+class Reporter(object):
     """Collects and displays information to the user.
 
     :ivar `Queue.PriorityQueue` messages: Messages to be displayed to the user.
 
     """
 
-    zope.interface.implements(interfaces.INotify)
+    zope.interface.implements(interfaces.IReporter)
 
     HIGH_PRIORITY, MEDIUM_PRIORITY, LOW_PRIORITY = xrange(3)
+    _RESET = '\033[0m'
+    _BOLD = '\033[1m'
     _msg_type = collections.namedtuple('Msg', 'priority, text, on_crash')
 
     def __init__(self):
@@ -46,12 +48,21 @@ class Notifier(object):
         True are printed.
 
         """
+        bold_on = False
         if not self.messages.empty():
             no_exception = sys.exc_info()[0] is None
+            bold_on = sys.stdout.isatty()
+            if bold_on:
+                sys.stdout.write(self._BOLD)
             print 'IMPORTANT NOTES:'
             wrapper = textwrap.TextWrapper(initial_indent=' - ',
                                            subsequent_indent=' '*3)
         while not self.messages.empty():
             msg = self.messages.get()
             if no_exception or msg.on_crash:
+                if bold_on and msg.priority > self.HIGH_PRIORITY:
+                    sys.stdout.write(self._RESET)
+                    bold_on = False
                 print wrapper.fill(msg.text)
+        if bold_on:
+            sys.stdout.write(self._RESET)
