@@ -3,13 +3,13 @@ Section: web
 Priority: optional
 Maintainer: Debian letsencrypt <letsencrypt-devel@lists.alioth.debian.org>
 Uploaders: Francois Marier <francois@debian.org>
-Build-Depends: debhelper (>= 9), python-all, dh-python, python-nose, python-nosexcover, python-tox, python-docutils, python-sphinx, python-sphinx-rtd-theme, python-repoze.sphinx.autointerface
+Build-Depends: debhelper (>= 9), python-all, dh-python, python-nose, python-nosexcover, python-tox, python-docutils, python-sphinx, python-sphinx-rtd-theme, python-repoze.sphinx.autointerface, python-zope.component, python-parsedatetime, python-werkzeug
 Standards-Version: 3.9.6
 Homepage: https://www.letsencrypt.org/
 
 Package: letsencrypt
 Architecture: all
-Depends: ${misc:Depends}, ${python:Depends}, apache2, openssl, python-m2crypto, python-zope.component, python-augeas, python-psutil, python-jsonschema, python-requests, python-openssl, python-crypto, python-mock, python-confargparse, python-dialog
+Depends: ${misc:Depends}, ${python:Depends}, apache2, openssl, python-m2crypto, python-zope.component, python-augeas, python-psutil, python-jsonschema, python-requests, python-openssl, python-crypto, python-mock, python-confargparse, python-dialog, python-parsedatetime
 Suggests: letsencrypt-doc
 Description: Let's Encrypt client that can update Apache configurations (client)
  The objective of Let's Encrypt and the ACME (Automated Certificate Management
