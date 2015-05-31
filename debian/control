@@ -3,13 +3,46 @@ Section: web
 Priority: optional
 Maintainer: Debian letsencrypt <letsencrypt-devel@lists.alioth.debian.org>
 Uploaders: Francois Marier <francois@debian.org>
-Build-Depends: debhelper (>= 9), python-all, dh-python, python-nose, python-nosexcover, python-tox, python-docutils, python-sphinx, python-sphinx-rtd-theme, python-repoze.sphinx.autointerface, python-zope.component, python-parsedatetime, python-werkzeug, python-dialog (>=3.2.2rc1), python-rfc3339, python-configargparse, python-openssl (>= 0.15)
+Build-Depends: debhelper (>= 9),
+               dh-python,
+               python-all,
+               python-configargparse,
+               python-dialog (>=3.2.2rc1),
+               python-docutils,
+               python-nose,
+               python-nosexcover,
+               python-openssl (>= 0.15),
+               python-parsedatetime,
+               python-repoze.sphinx.autointerface,
+               python-rfc3339,
+               python-sphinx,
+               python-sphinx-rtd-theme,
+               python-tox,
+               python-werkzeug,
+               python-zope.component
 Standards-Version: 3.9.6
 Homepage: https://www.letsencrypt.org/
 
 Package: letsencrypt
 Architecture: all
-Depends: ${misc:Depends}, ${python:Depends}, apache2, openssl, python-m2crypto, python-zope.component, python-augeas, python-psutil, python-jsonschema, python-requests, python-openssl, python-crypto, python-mock, python-configargparse, python-dialog, python-parsedatetime, python-rfc3339, python-openssl (>= 0.15)
+Depends: apache2,
+         openssl,
+         python-augeas,
+         python-configargparse,
+         python-crypto,
+         python-dialog,
+         python-jsonschema,
+         python-m2crypto,
+         python-mock,
+         python-openssl,
+         python-openssl (>= 0.15),
+         python-parsedatetime,
+         python-psutil,
+         python-requests,
+         python-rfc3339,
+         python-zope.component,
+         ${misc:Depends},
+         ${python:Depends}
 Suggests: letsencrypt-doc
 Description: Let's Encrypt client that can update Apache configurations (client)
  The objective of Let's Encrypt and the ACME (Automated Certificate Management
@@ -30,7 +63,7 @@ Description: Let's Encrypt client that can update Apache configurations (client)
 Package: letsencrypt-doc
 Section: doc
 Architecture: all
-Depends: ${misc:Depends}, libjs-modernizr
+Depends: libjs-modernizr, ${misc:Depends}
 Description: Let's Encrypt client that can update Apache configurations (docs)
  The objective of Let's Encrypt and the ACME (Automated Certificate Management
  Environment) protocol is to make it possible to set up an HTTPS server and have
