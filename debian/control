@@ -3,7 +3,7 @@ Section: web
 Priority: optional
 Maintainer: Debian letsencrypt <letsencrypt-devel@lists.alioth.debian.org>
 Uploaders: Francois Marier <francois@debian.org>
-Build-Depends: debhelper (>= 9), python-all, dh-python, python-nose, python-nosexcover, python-tox, python-docutils, python-sphinx, python-sphinx-rtd-theme, python-repoze.sphinx.autointerface, python-zope.component, python-parsedatetime, python-werkzeug
+Build-Depends: debhelper (>= 9), python-all, dh-python, python-nose, python-nosexcover, python-tox, python-docutils, python-sphinx, python-sphinx-rtd-theme, python-repoze.sphinx.autointerface, python-zope.component, python-parsedatetime, python-werkzeug, python-dialog (>=3.2.2rc1)
 Standards-Version: 3.9.6
 Homepage: https://www.letsencrypt.org/
 
