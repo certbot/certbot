@@ -28,9 +28,13 @@ override_dh_auto_install:
 	dh_auto_install
 	 
 	# Don't install the tests 
-	rm -rf $(CURDIR)/debian/letsencrypt/usr/lib/python2.7/dist-packages/letsencrypt/tests/
-	rm -rf $(CURDIR)/debian/letsencrypt/usr/lib/python2.7/dist-packages/letsencrypt_apache/tests/
-	rm -rf $(CURDIR)/debian/letsencrypt/usr/lib/python2.7/dist-packages/letsencrypt_nginx/tests/
+	rm -rf $(CURDIR)/debian/letsencrypt-build/usr/lib/python2.7/dist-packages/letsencrypt/tests/
+	rm -rf $(CURDIR)/debian/letsencrypt-build/usr/lib/python2.7/dist-packages/letsencrypt_apache/tests/
+	rm -rf $(CURDIR)/debian/letsencrypt-build/usr/lib/python2.7/dist-packages/letsencrypt_nginx/tests/
+	 
+	# Remove duplicate copy of the config files
+	rm -rf $(CURDIR)/debian/letsencrypt-build/usr/lib/python2.7/dist-packages/letsencrypt_apache/options-ssl.conf
+	rm -rf $(CURDIR)/debian/letsencrypt-build/usr/lib/python2.7/dist-packages/letsencrypt_nginx/options-ssl.conf
 
 override_dh_installchangelogs:
 	dh_installchangelogs CHANGES.rst
