@@ -242,7 +242,9 @@ def create_parser(plugins):
     add("--version", action="version", version="%(prog)s {0}".format(
         letsencrypt.__version__))
     add("-v", "--verbose", dest="verbose_count", action="count",
-        default=flag_default("verbose_count"))
+        default=flag_default("verbose_count"), help="This flag can be used "
+        "multiple times to incrementally increase the verbosity of output, "
+        "e.g. -vvv.")
     add("--no-confirm", dest="no_confirm", action="store_true",
         help="Turn off confirmation screens, currently used for --revoke")
     add("-e", "--agree-tos", dest="tos", action="store_true",
