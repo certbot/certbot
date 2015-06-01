@@ -29,4 +29,7 @@ override_dh_auto_install:
 	# Don't install the tests 
 	rm -rf $(CURDIR)/debian/letsencrypt/usr/lib/python2.7/dist-packages/letsencrypt/client/tests/
 
+override_dh_installchangelogs:
+	dh_installchangelogs CHANGES.rst
+
 override_dh_auto_test:
