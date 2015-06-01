@@ -3,7 +3,7 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
-export PYBUILD_NAME=letsencrypt
+export PYBUILD_DESTDIR=$(CURDIR)/debian/letsencrypt-build
 
 %:
 	dh $@ --with python2,sphinxdoc --buildsystem=pybuild
@@ -28,7 +28,9 @@ override_dh_auto_install:
 	dh_auto_install
 	 
 	# Don't install the tests 
-	rm -rf $(CURDIR)/debian/letsencrypt/usr/lib/python2.7/dist-packages/letsencrypt/client/tests/
+	rm -rf $(CURDIR)/debian/letsencrypt/usr/lib/python2.7/dist-packages/letsencrypt/tests/
+	rm -rf $(CURDIR)/debian/letsencrypt/usr/lib/python2.7/dist-packages/letsencrypt_apache/tests/
+	rm -rf $(CURDIR)/debian/letsencrypt/usr/lib/python2.7/dist-packages/letsencrypt_nginx/tests/
 
 override_dh_installchangelogs:
 	dh_installchangelogs CHANGES.rst
