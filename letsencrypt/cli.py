@@ -332,16 +332,6 @@ def _paths_parser(parser):
         help=config_help("config_dir"))
     add("--work-dir", default=flag_default("work_dir"),
         help=config_help("work_dir"))
-    add("--backup-dir", default=flag_default("backup_dir"),
-        help=config_help("backup_dir"))
-
-    add("--key-dir", default=flag_default("key_dir"),
-        help=config_help("key_dir"))
-    add("--cert-dir", default=flag_default("certs_dir"),
-        help=config_help("cert_dir"))
-
-    add("--renewer-config-file", default=flag_default("renewer_config_file"),
-        help=config_help("renewer_config_file"))
 
     return parser
 

@@ -156,23 +156,23 @@ class IConfig(zope.interface.Interface):
 
     config_dir = zope.interface.Attribute("Configuration directory.")
     work_dir = zope.interface.Attribute("Working directory.")
-    backup_dir = zope.interface.Attribute("Configuration backups directory.")
-    temp_checkpoint_dir = zope.interface.Attribute(
-        "Temporary checkpoint directory.")
-    in_progress_dir = zope.interface.Attribute(
-        "Directory used before a permanent checkpoint is finalized.")
-    cert_key_backup = zope.interface.Attribute(
-        "Directory where all certificates and keys are stored. "
-        "Used for easy revocation.")
+
     accounts_dir = zope.interface.Attribute(
         "Directory where all account information is stored.")
     account_keys_dir = zope.interface.Attribute(
         "Directory where all account keys are stored.")
+    backup_dir = zope.interface.Attribute("Configuration backups directory.")
+    cert_dir = zope.interface.Attribute("Certificates and CSRs storage.")
+    cert_key_backup = zope.interface.Attribute(
+        "Directory where all certificates and keys are stored. "
+        "Used for easy revocation.")
+    in_progress_dir = zope.interface.Attribute(
+        "Directory used before a permanent checkpoint is finalized.")
+    key_dir = zope.interface.Attribute("Keys storage.")
     rec_token_dir = zope.interface.Attribute(
         "Directory where all recovery tokens are saved.")
-
-    key_dir = zope.interface.Attribute("Keys storage.")
-    cert_dir = zope.interface.Attribute("Certificates and CSRs storage.")
+    temp_checkpoint_dir = zope.interface.Attribute(
+        "Temporary checkpoint directory.")
 
     renewer_config_file = zope.interface.Attribute(
         "Location of renewal configuration file.")

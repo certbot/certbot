@@ -76,10 +76,7 @@ def get_apache_configurator(
                 apache_server_root=config_path,
                 apache_mod_ssl_conf=ssl_options,
                 apache_le_vhost_ext=constants.CLI_DEFAULTS["le_vhost_ext"],
-                backup_dir=backups,
                 config_dir=config_dir,
-                temp_checkpoint_dir=os.path.join(work_dir, "temp_checkpoints"),
-                in_progress_dir=os.path.join(backups, "IN_PROGRESS"),
                 work_dir=work_dir),
             name="apache",
             version=version)
