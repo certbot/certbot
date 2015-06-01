@@ -18,7 +18,13 @@ class Reporter(object):
     """
     zope.interface.implements(interfaces.IReporter)
 
-    HIGH_PRIORITY, MEDIUM_PRIORITY, LOW_PRIORITY = xrange(3)
+    HIGH_PRIORITY = 0
+    """High priority constant. See `add_message`."""
+    MEDIUM_PRIORITY = 1
+    """Medium priority constant. See `add_message`."""
+    LOW_PRIORITY = 2
+    """Low priority constant. See `add_message`."""
+
     _RESET = '\033[0m'
     _BOLD = '\033[1m'
     _msg_type = collections.namedtuple('ReporterMsg', 'priority text on_crash')
