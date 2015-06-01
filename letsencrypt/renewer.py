@@ -117,6 +117,14 @@ def main(config=None):
         rc_config = configobj.ConfigObj(
             os.path.join(config["renewal_configs_dir"], i))
         try:
+            # TODO: Before trying to initialize the RenewableCert object,
+            #       we could check here whether the combination of the config
+            #       and the rc_config together disables all autorenewal and
+            #       autodeployment applicable to this cert.  In that case, we
+            #       can simply continue and don't need to instantiate a
+            #       RenewableCert object for this cert at all, which could
+            #       dramatically improve performance for large deployments
+            #       where autorenewal is widely turned off.
             cert = storage.RenewableCert(rc_config)
         except ValueError:
             # This indicates an invalid renewal configuration file, such
