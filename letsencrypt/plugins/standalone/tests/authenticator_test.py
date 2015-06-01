@@ -22,7 +22,7 @@ KEY = le_util.Key("foo", pkg_resources.resource_string(
     "acme.jose", os.path.join("testdata", "rsa512_key.pem")))
 PRIVATE_KEY = OpenSSL.crypto.load_privatekey(
     OpenSSL.crypto.FILETYPE_PEM, KEY.pem)
-CONFIG = mock.Mock(port=5001)
+CONFIG = mock.Mock(dvsni_port=5001)
 
 
 # Classes based on to allow interrupting infinite loop under test
@@ -329,7 +329,7 @@ class PerformTest(unittest.TestCase):
         self.assertTrue(isinstance(result[1], challenges.ChallengeResponse))
         self.assertFalse(result[2])
         self.authenticator.start_listener.assert_called_once_with(
-            CONFIG.port, KEY)
+            CONFIG.dvsni_port, KEY)
 
     def test_cannot_perform(self):
         """What happens if start_listener() returns False."""
@@ -345,7 +345,7 @@ class PerformTest(unittest.TestCase):
         self.assertEqual(len(result), 3)
         self.assertEqual(result, [None, None, False])
         self.authenticator.start_listener.assert_called_once_with(
-            CONFIG.port, KEY)
+            CONFIG.dvsni_port, KEY)
 
     def test_perform_with_pending_tasks(self):
         self.authenticator.tasks = {"foononce.acme.invalid": "cert_data"}

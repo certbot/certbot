@@ -379,7 +379,7 @@ class StandaloneAuthenticator(common.Plugin):
         if not self.tasks:
             raise ValueError("nothing for .perform() to do")
 
-        if self.already_listening(self.config.port):
+        if self.already_listening(self.config.dvsni_port):
             # If we know a process is already listening on this port,
             # tell the user, and don't even attempt to bind it.  (This
             # test is Linux-specific and won't indicate that the port
@@ -387,7 +387,7 @@ class StandaloneAuthenticator(common.Plugin):
             return results_if_failure
         # Try to do the authentication; note that this creates
         # the listener subprocess via os.fork()
-        if self.start_listener(self.config.port, key):
+        if self.start_listener(self.config.dvsni_port, key):
             return results_if_success
         else:
             # TODO: This should probably raise a DVAuthError exception
@@ -424,9 +424,9 @@ class StandaloneAuthenticator(common.Plugin):
     def more_info(self):  # pylint: disable=no-self-use
         """Human-readable string that describes the Authenticator."""
         return ("The Standalone Authenticator uses PyOpenSSL to listen "
-                "on port {port} and perform DVSNI challenges. Once a certificate "
-                "is attained, it will be saved in the "
+                "on port {port} and perform DVSNI challenges. Once a "
+                "certificate is attained, it will be saved in the "
                 "(TODO) current working directory.{linesep}{linesep}"
                 "TCP port {port} must be available in order to use the "
                 "Standalone Authenticator.".format(
-                    linesep=os.linesep, port=self.config.port))
+                    linesep=os.linesep, port=self.config.dvsni_port))
