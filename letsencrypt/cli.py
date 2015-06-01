@@ -249,8 +249,19 @@ def create_parser(plugins):
         help="Skip the end user license agreement screen.")
     add("-t", "--text", dest="text_mode", action="store_true",
         help="Use the text output instead of the curses UI.")
-    add("--test-mode", action="store_true", help=config_help("test_mode"),
-        default=flag_default("test_mode"))
+
+    testing_group = parser.add_argument_group(
+        "testing", description="The following flags are meant for "
+        "testing purposes only! Do NOT change them, unless you "
+        "really know what you're doing!")
+    testing_group.add_argument(
+        "--no-verify-ssl", action="store_true",
+        help=config_help("no_verify_ssl"),
+        default=flag_default("no_verify_ssl"))
+    # TODO: apache and nginx plugins do NOT respect it
+    testing_group.add_argument(
+        "--dvsni-port", type=int, help=config_help("dvsni_port"),
+        default=flag_default("dvsni_port"))
 
     subparsers = parser.add_subparsers(metavar="SUBCOMMAND")
     def add_subparser(name, func):  # pylint: disable=missing-docstring

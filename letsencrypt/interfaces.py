@@ -182,8 +182,11 @@ class IConfig(zope.interface.Interface):
     cert_path = zope.interface.Attribute("Let's Encrypt certificate file path.")
     chain_path = zope.interface.Attribute("Let's Encrypt chain file path.")
 
-    test_mode = zope.interface.Attribute(
-        "Test mode. Disables certificate verification.")
+    no_verify_ssl = zope.interface.Attribute(
+        "Disable SSL certificate verification.")
+    dvsni_port = zope.interface.Attribute(
+        "Port number to perform DVSNI challenge. "
+        "Boulder in testing mode defaults to 5001.")
 
 
 class IInstaller(IPlugin):

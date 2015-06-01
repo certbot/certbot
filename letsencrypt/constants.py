@@ -22,7 +22,8 @@ CLI_DEFAULTS = dict(
     cert_path="/etc/letsencrypt/certs/cert-letsencrypt.pem",
     chain_path="/etc/letsencrypt/certs/chain-letsencrypt.pem",
     renewer_config_file="/etc/letsencrypt/renewer.conf",
-    test_mode=False,
+    no_verify_ssl=False,
+    dvsni_port=challenges.DVSNI.PORT,
 )
 """Defaults for CLI flags and `.IConfig` attributes."""
 
@@ -84,7 +85,3 @@ IConfig.work_dir)."""
 NETSTAT = "/bin/netstat"
 """Location of netstat binary for checking whether a listener is already
 running on the specified port (Linux-specific)."""
-
-BOULDER_TEST_MODE_CHALLENGE_PORT = 5001
-"""Port that Boulder will connect on for validations in test mode."""
-
