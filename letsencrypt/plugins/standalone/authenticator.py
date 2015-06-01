@@ -15,7 +15,6 @@ import zope.interface
 from acme import challenges
 
 from letsencrypt import achallenges
-from letsencrypt import constants
 from letsencrypt import interfaces
 
 from letsencrypt.plugins import common
@@ -379,10 +378,8 @@ class StandaloneAuthenticator(common.Plugin):
                 results_if_failure.append(False)
         if not self.tasks:
             raise ValueError("nothing for .perform() to do")
-        port = challenges.DVSNI.PORT
-        if self.config and self.config.test_mode:
-            port = constants.BOULDER_TEST_MODE_CHALLENGE_PORT
-        if self.already_listening(port):
+
+        if self.already_listening(self.config.dvsni_port):
             # If we know a process is already listening on this port,
             # tell the user, and don't even attempt to bind it.  (This
             # test is Linux-specific and won't indicate that the port
@@ -390,7 +387,7 @@ class StandaloneAuthenticator(common.Plugin):
             return results_if_failure
         # Try to do the authentication; note that this creates
         # the listener subprocess via os.fork()
-        if self.start_listener(port, key):
+        if self.start_listener(self.config.dvsni_port, key):
             return results_if_success
         else:
             # TODO: This should probably raise a DVAuthError exception
@@ -427,8 +424,9 @@ class StandaloneAuthenticator(common.Plugin):
     def more_info(self):  # pylint: disable=no-self-use
         """Human-readable string that describes the Authenticator."""
         return ("The Standalone Authenticator uses PyOpenSSL to listen "
-                "on port 443 and perform DVSNI challenges. Once a certificate "
-                "is attained, it will be saved in the "
-                "(TODO) current working directory.{0}{0}"
-                "TCP port 443 must be available in order to use the "
-                "Standalone Authenticator.".format(os.linesep))
+                "on port {port} and perform DVSNI challenges. Once a "
+                "certificate is attained, it will be saved in the "
+                "(TODO) current working directory.{linesep}{linesep}"
+                "TCP port {port} must be available in order to use the "
+                "Standalone Authenticator.".format(
+                    linesep=os.linesep, port=self.config.dvsni_port))
