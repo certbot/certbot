@@ -22,6 +22,7 @@ override_dh_auto_build:
 	sed -i -e 's|<img alt="Travis CI status" src="https://travis-ci.org/letsencrypt/lets-encrypt-preview.svg?branch=master" />|Travis CI status|' $(CURDIR)/debian/doc-build/html/intro.html
 	sed -i -e 's|<img alt="Coverage status" src="https://coveralls.io/repos/letsencrypt/lets-encrypt-preview/badge.svg?branch=master" />|Coverage status|' $(CURDIR)/debian/doc-build/html/intro.html
 	sed -i -e 's|<img alt="Documentation status" src="https://readthedocs.org/projects/letsencrypt/badge/" />|Documentation status|' $(CURDIR)/debian/doc-build/html/intro.html
+	sed -i -e 's|<img alt="Docker Repository on Quay.io" src="https://quay.io/repository/letsencrypt/lets-encrypt-preview/status" />|Docker Repository status|' $(CURDIR)/debian/doc-build/html/intro.html
 
 override_dh_auto_install:
 	dh_auto_install
