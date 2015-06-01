@@ -1,4 +1,4 @@
-"""Tests for proof_of_possession.py"""
+"""Tests for letsencrypt.proof_of_possession."""
 import Crypto.PublicKey.RSA
 import os
 import pkg_resources

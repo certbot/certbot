@@ -1,7 +1,7 @@
 """Let's Encrypt CLI."""
 # TODO: Sanity check all input.  Be sure to avoid shell code etc...
-import atexit
 import argparse
+import atexit
 import logging
 import os
 import sys

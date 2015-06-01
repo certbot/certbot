@@ -1,4 +1,4 @@
-"""Tests for letsencrypt/notify.py"""
+"""Tests for letsencrypt.notify."""
 
 import mock
 import socket

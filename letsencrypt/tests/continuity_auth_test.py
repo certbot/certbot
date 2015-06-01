@@ -1,4 +1,4 @@
-"""Test the ContinuityAuthenticator dispatcher."""
+"""Test for letsencrypt.continuity_auth."""
 import unittest
 
 import mock

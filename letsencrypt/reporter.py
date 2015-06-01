@@ -12,16 +12,22 @@ from letsencrypt import interfaces
 class Reporter(object):
     """Collects and displays information to the user.
 
-    :ivar `Queue.PriorityQueue` messages: Messages to be displayed to the user.
+    :ivar `Queue.PriorityQueue` messages: Messages to be displayed to
+        the user.
 
     """
-
     zope.interface.implements(interfaces.IReporter)
 
-    HIGH_PRIORITY, MEDIUM_PRIORITY, LOW_PRIORITY = xrange(3)
+    HIGH_PRIORITY = 0
+    """High priority constant. See `add_message`."""
+    MEDIUM_PRIORITY = 1
+    """Medium priority constant. See `add_message`."""
+    LOW_PRIORITY = 2
+    """Low priority constant. See `add_message`."""
+
     _RESET = '\033[0m'
     _BOLD = '\033[1m'
-    _msg_type = collections.namedtuple('Msg', 'priority, text, on_crash')
+    _msg_type = collections.namedtuple('ReporterMsg', 'priority text on_crash')
 
     def __init__(self):
         self.messages = Queue.PriorityQueue()
@@ -31,21 +37,21 @@ class Reporter(object):
 
         :param str msg: Message to be displayed to the user.
 
-        :param int priority: One of HIGH_PRIORITY, MEDIUM_PRIORITY, or
-            LOW_PRIORITY.
+        :param int priority: One of `HIGH_PRIORITY`, `MEDIUM_PRIORITY`,
+            or `LOW_PRIORITY`.
 
-        :param bool on_crash: Whether or not the message should be printed if
-            the program exits abnormally.
+        :param bool on_crash: Whether or not the message should be
+            printed if the program exits abnormally.
 
         """
-        assert priority >= self.HIGH_PRIORITY and priority <= self.LOW_PRIORITY
+        assert self.HIGH_PRIORITY <= priority <= self.LOW_PRIORITY
         self.messages.put(self._msg_type(priority, msg, on_crash))
 
     def print_messages(self):
         """Prints messages to the user and clears the message queue.
 
-        If there is an unhandled exception, only messages for which on_crash is
-        True are printed.
+        If there is an unhandled exception, only messages for which
+        ``on_crash`` is ``True`` are printed.
 
         """
         bold_on = False
@@ -56,7 +62,7 @@ class Reporter(object):
                 sys.stdout.write(self._BOLD)
             print 'IMPORTANT NOTES:'
             wrapper = textwrap.TextWrapper(initial_indent=' - ',
-                                           subsequent_indent=' '*3)
+                                           subsequent_indent=(' ' * 3))
         while not self.messages.empty():
             msg = self.messages.get()
             if no_exception or msg.on_crash:
