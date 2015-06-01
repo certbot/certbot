@@ -1,10 +1,12 @@
-"""Tests for letsencrypt/reporter.py"""
+"""Tests for letsencrypt.reporter."""
 import StringIO
 import sys
 import unittest
 
 
 class ReporterTest(unittest.TestCase):
+    """Tests for letsencrypt.reporter.Reporter."""
+
     def setUp(self):
         from letsencrypt import reporter
         self.reporter = reporter.Reporter()
@@ -70,4 +72,4 @@ class ReporterTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main() # pragma: no cover
+    unittest.main()  # pragma: no cover
