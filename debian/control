@@ -25,8 +25,7 @@ Homepage: https://www.letsencrypt.org/
 
 Package: letsencrypt
 Architecture: all
-Depends: apache2,
-         openssl,
+Depends: openssl,
          python-augeas,
          python-configargparse,
          python-crypto,
@@ -44,7 +43,7 @@ Depends: apache2,
          ${misc:Depends},
          ${python:Depends}
 Suggests: letsencrypt-doc
-Description: Let's Encrypt client that can update Apache configurations (client)
+Description: Let's Encrypt standalone client
  The objective of Let's Encrypt and the ACME (Automated Certificate Management
  Environment) protocol is to make it possible to set up an HTTPS server and have
  it automatically obtain a browser-trusted certificate, without any human
@@ -58,7 +57,44 @@ Description: Let's Encrypt client that can update Apache configurations (client)
   - Keep track of when your certificate is going to expire, and renew it
   - Help you revoke the certificate if that ever becomes necessary.
  .
- This package contains the client.
+ This package contains the standalone client.
+
+Package: letsencrypt-apache
+Architecture: all
+Depends: apache2,
+         letsencrypt,
+         openssl,
+         python-augeas,
+         python-configargparse,
+         python-crypto,
+         python-dialog,
+         python-jsonschema,
+         python-m2crypto,
+         python-mock,
+         python-openssl,
+         python-openssl (>= 0.15),
+         python-parsedatetime,
+         python-psutil,
+         python-requests,
+         python-rfc3339,
+         python-zope.component,
+         ${misc:Depends},
+         ${python:Depends}
+Description: Let's Encrypt client that can update Apache configurations
+ The objective of Let's Encrypt and the ACME (Automated Certificate Management
+ Environment) protocol is to make it possible to set up an HTTPS server and have
+ it automatically obtain a browser-trusted certificate, without any human
+ intervention. This is accomplished by running a certificate management agent on
+ the web server.
+ .
+ This agent is used to:
+ .
+  - Automatically prove to the Let's Encrypt CA that you control the website
+  - Obtain a browser-trusted certificate and set it up on your web server
+  - Keep track of when your certificate is going to expire, and renew it
+  - Help you revoke the certificate if that ever becomes necessary.
+ .
+ This package contains the Apache client.
 
 Package: letsencrypt-doc
 Section: doc
