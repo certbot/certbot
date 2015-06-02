@@ -19,4 +19,4 @@ cover () {
 # 0, coveralls submit will be triggered (c.f. .travis.yml,
 # after_success)
 cover letsencrypt 95 && cover acme 100 && \
-    cover letsencrypt_apache 78 && cover letsencrypt_nginx 96
+    cover letsencrypt_apache 76 && cover letsencrypt_nginx 96
