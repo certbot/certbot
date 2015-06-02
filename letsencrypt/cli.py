@@ -112,7 +112,8 @@ def _init_acme(config, acc, authenticator, installer):
         if acc.regr is None:
             try:
                 acme.register()
-            except errors.LetsEncryptClientError:
+            except errors.LetsEncryptClientError as error:
+                logging.debug(error)
                 sys.exit("Unable to register an account with ACME server")
 
     return acme
