@@ -54,10 +54,11 @@ def dir_setup(test_dir="debian_apache_2_4/two_vhost_80",
 
 
 def setup_ssl_options(
-        config_dir, mod_ssl_conf=constants.MOD_SSL_CONF):
+        config_dir, src=constants.MOD_SSL_CONF_SRC,
+        dest=constants.MOD_SSL_CONF_DEST):
     """Move the ssl_options into position and return the path."""
-    option_path = os.path.join(config_dir, "options-ssl.conf")
-    shutil.copyfile(mod_ssl_conf, option_path)
+    option_path = os.path.join(config_dir, dest)
+    shutil.copyfile(src, option_path)
     return option_path
 
 
@@ -75,7 +76,10 @@ def get_apache_configurator(
             config=mock.MagicMock(
                 apache_server_root=config_path,
                 apache_le_vhost_ext=constants.CLI_DEFAULTS["le_vhost_ext"],
+                backup_dir=backups,
                 config_dir=config_dir,
+                temp_checkpoint_dir=os.path.join(work_dir, "temp_checkpoints"),
+                in_progress_dir=os.path.join(backups, "IN_PROGRESS"),
                 work_dir=work_dir),
             name="apache",
             version=version)

@@ -20,7 +20,8 @@ class NginxTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
             "etc_nginx", "letsencrypt_nginx.tests")
 
         self.ssl_options = apache_util.setup_ssl_options(
-            self.config_dir, constants.MOD_SSL_CONF)
+            self.config_dir, constants.MOD_SSL_CONF_SRC,
+            constants.MOD_SSL_CONF_DEST)
 
         self.config_path = os.path.join(self.temp_dir, "etc_nginx")
 
@@ -44,8 +45,15 @@ def get_nginx_configurator(
     backups = os.path.join(work_dir, "backups")
 
     config = configurator.NginxConfigurator(
-        config=mock.MagicMock(nginx_server_root=config_path,
-                              config_dir=config_dir, work_dir=work_dir),
+        config=mock.MagicMock(
+            nginx_server_root=config_path,
+            le_vhost_ext="-le-ssl.conf",
+            config_dir=config_dir,
+            work_dir=work_dir,
+            backup_dir=backups,
+            temp_checkpoint_dir=os.path.join(work_dir, "temp_checkpoints"),
+            in_progress_dir=os.path.join(backups, "IN_PROGRESS"),
+        ),
         name="nginx",
         version=version)
     config.prepare()
