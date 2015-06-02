@@ -99,6 +99,15 @@ class Client(object):
                 raise errors.LetsEncryptClientError("Must agree to TOS")
 
         self.account.save()
+        reporter = zope.component.getUtility(interfaces.IReporter)
+        reporter.add_message(
+            "Your account credentials have been saved in your Let's Encrypt "
+            "configuration directory at {0}. You should make a secure backup "
+            "of this folder now. This configuration directory will also "
+            "contain certificates and private keys obtained by Let's Encrypt "
+            "so making regular backups of this folder is ideal.".format(
+                self.config.config_dir),
+            reporter.HIGH_PRIORITY, True)
 
     def obtain_certificate(self, domains, csr=None):
         """Obtains a certificate from the ACME server.
