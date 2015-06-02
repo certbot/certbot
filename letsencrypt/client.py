@@ -64,7 +64,7 @@ class Client(object):
         # TODO: Allow for other alg types besides RS256
         self.network = network2.Network(
             config.server, jwk.JWKRSA.load(self.account.key.pem),
-            verify_ssl=config.no_verify_ssl)
+            verify_ssl=(not config.no_verify_ssl))
 
         self.config = config
 
