@@ -91,6 +91,7 @@ class NginxConfigurator(common.Plugin):
 
     @property
     def mod_ssl_conf(self):
+        """Full absolute path to SSL configuration file."""
         return os.path.join(self.config.config_dir, constants.MOD_SSL_CONF_DEST)
 
     # This is called in determine_authenticator and determine_installer

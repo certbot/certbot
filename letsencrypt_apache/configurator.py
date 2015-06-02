@@ -126,6 +126,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     @property
     def mod_ssl_conf(self):
+        """Full absolute path to SSL configuration file."""
         return os.path.join(self.config.config_dir, constants.MOD_SSL_CONF_DEST)
 
     def prepare(self):
