@@ -152,7 +152,6 @@ class StandaloneAuthenticator(common.Plugin):
         :rtype: bool
 
         """
-
         display = zope.component.getUtility(interfaces.IDisplay)
 
         start_time = time.time()
