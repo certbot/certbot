@@ -51,6 +51,7 @@ class Error(jose.JSONObjectWithFields, Exception):
         else:
             return str(self.detail)
 
+
 class _Constant(jose.JSONDeSerializable):
     """ACME constant."""
     __slots__ = ('name',)
@@ -107,29 +108,27 @@ class Identifier(jose.JSONObjectWithFields):
     value = jose.Field('value')
 
 
-class Resource(jose.ImmutableMap):
+class Resource(jose.JSONObjectWithFields):
     """ACME Resource.
 
+    :ivar str uri: Location of the resource.
     :ivar acme.messages.ResourceBody body: Resource body.
+
+    """
+    body = jose.Field('body')
+
+
+class ResourceWithURI(Resource):
+    """ACME Resource with URI.
+
     :ivar str uri: Location of the resource.
 
     """
-    __slots__ = ('body', 'uri')
+    uri = jose.Field('uri')  # no ChallengeResource.uri
 
 
 class ResourceBody(jose.JSONObjectWithFields):
     """ACME Resource Body."""
-
-
-class RegistrationResource(Resource):
-    """Registration Resource.
-
-    :ivar acme.messages.Registration body:
-    :ivar str new_authzr_uri: URI found in the 'next' ``Link`` header
-    :ivar str terms_of_service: URL for the CA TOS.
-
-    """
-    __slots__ = ('body', 'uri', 'new_authzr_uri', 'terms_of_service')
 
 
 class Registration(ResourceBody):
@@ -146,21 +145,59 @@ class Registration(ResourceBody):
     recovery_token = jose.Field('recoveryToken', omitempty=True)
     agreement = jose.Field('agreement', omitempty=True)
 
+    phone_prefix = 'tel:'
+    email_prefix = 'mailto:'
 
-class ChallengeResource(Resource, jose.JSONObjectWithFields):
-    """Challenge Resource.
+    @classmethod
+    def from_data(cls, phone=None, email=None, **kwargs):
+        """Create registration resource from contact detauls."""
+        details = list(kwargs.pop('contact', ()))
+        if phone is not None:
+            details.append(cls.phone_prefix + phone)
+        if email is not None:
+            details.append(cls.email_prefix + email)
+        kwargs['contact'] = tuple(details)
+        return cls(**kwargs)
 
-    :ivar acme.messages.ChallengeBody body:
-    :ivar str authzr_uri: URI found in the 'up' ``Link`` header.
-
-    """
-    __slots__ = ('body', 'authzr_uri')
+    def _filter_contact(self, prefix):
+        return tuple(
+            detail[len(prefix):] for detail in self.contact
+            if detail.startswith(prefix))
 
     @property
-    def uri(self):  # pylint: disable=missing-docstring,no-self-argument
-        # bug? 'method already defined line None'
-        # pylint: disable=function-redefined
-        return self.body.uri
+    def phones(self):
+        """All phones found in the ``contact`` field."""
+        return self._filter_contact(self.phone_prefix)
+
+    @property
+    def emails(self):
+        """All emails found in the ``contact`` field."""
+        return self._filter_contact(self.email_prefix)
+
+    @property
+    def phone(self):
+        """Phone."""
+        assert len(self.phones) == 1
+        return self.phones[0]
+
+    @property
+    def email(self):
+        """Email."""
+        assert len(self.emails) == 1
+        return self.emails[0]
+
+
+class RegistrationResource(ResourceWithURI):
+    """Registration Resource.
+
+    :ivar acme.messages.Registration body:
+    :ivar str new_authzr_uri: URI found in the 'next' ``Link`` header
+    :ivar str terms_of_service: URL for the CA TOS.
+
+    """
+    body = jose.Field('body', decoder=Registration.from_json)
+    new_authzr_uri = jose.Field('new_authzr_uri')
+    terms_of_service = jose.Field('terms_of_service', omitempty=True)
 
 
 class ChallengeBody(ResourceBody):
@@ -199,14 +236,21 @@ class ChallengeBody(ResourceBody):
         return getattr(self.chall, name)
 
 
-class AuthorizationResource(Resource):
-    """Authorization Resource.
+class ChallengeResource(Resource, jose.JSONObjectWithFields):
+    """Challenge Resource.
 
-    :ivar acme.messages.Authorization body:
-    :ivar str new_cert_uri: URI found in the 'next' ``Link`` header
+    :ivar acme.messages.ChallengeBody body:
+    :ivar str authzr_uri: URI found in the 'up' ``Link`` header.
 
     """
-    __slots__ = ('body', 'uri', 'new_cert_uri')
+    body = jose.Field('body', decoder=ChallengeBody.from_json)
+    authzr_uri = jose.Field('authzr_uri')
+
+    @property
+    def uri(self):  # pylint: disable=missing-docstring,no-self-argument
+        # bug? 'method already defined line None'
+        # pylint: disable=function-redefined
+        return self.body.uri  # pylint: disable=no-member
 
 
 class Authorization(ResourceBody):
@@ -244,6 +288,17 @@ class Authorization(ResourceBody):
                      for combo in self.combinations)
 
 
+class AuthorizationResource(ResourceWithURI):
+    """Authorization Resource.
+
+    :ivar acme.messages.Authorization body:
+    :ivar str new_cert_uri: URI found in the 'next' ``Link`` header
+
+    """
+    body = jose.Field('body', decoder=Authorization.from_json)
+    new_cert_uri = jose.Field('new_cert_uri')
+
+
 class CertificateRequest(jose.JSONObjectWithFields):
     """ACME new-cert request.
 
@@ -256,7 +311,7 @@ class CertificateRequest(jose.JSONObjectWithFields):
     authorizations = jose.Field('authorizations', decoder=tuple)
 
 
-class CertificateResource(Resource):
+class CertificateResource(ResourceWithURI):
     """Certificate Resource.
 
     :ivar acme.jose.util.ComparableX509 body:
@@ -265,7 +320,8 @@ class CertificateResource(Resource):
     :ivar tuple authzrs: `tuple` of `AuthorizationResource`.
 
     """
-    __slots__ = ('body', 'uri', 'cert_chain_uri', 'authzrs')
+    cert_chain_uri = jose.Field('cert_chain_uri')
+    authzrs = jose.Field('authzrs')
 
 
 class Revocation(jose.JSONObjectWithFields):

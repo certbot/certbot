@@ -4,14 +4,23 @@ import os
 import pkg_resources
 import unittest
 
+from Crypto.PublicKey import RSA
+import M2Crypto
 import mock
 import pytz
-from Crypto.PublicKey import RSA
 
 from acme import challenges
 from acme import jose
 
 
+CERT = jose.ComparableX509(M2Crypto.X509.load_cert_string(
+    pkg_resources.resource_string(
+        'acme.jose', os.path.join('testdata', 'cert.der')),
+    M2Crypto.X509.FORMAT_DER))
+CSR = jose.ComparableX509(M2Crypto.X509.load_request_string(
+    pkg_resources.resource_string(
+        'acme.jose', os.path.join('testdata', 'csr.der')),
+    M2Crypto.X509.FORMAT_DER))
 KEY = jose.util.HashableRSAKey(RSA.importKey(pkg_resources.resource_string(
     'acme.jose', os.path.join('testdata', 'rsa512_key.pem'))))
 
@@ -94,12 +103,16 @@ class ConstantTest(unittest.TestCase):
         self.assertTrue(self.const_a != self.const_b)
         self.assertFalse(self.const_a != const_a_prime)
 
+
 class RegistrationTest(unittest.TestCase):
     """Tests for acme.messages.Registration."""
 
     def setUp(self):
         key = jose.jwk.JWKRSA(key=KEY.publickey())
-        contact = ('mailto:letsencrypt-client@letsencrypt.org',)
+        contact = (
+            'mailto:admin@foo.com',
+            'tel:1234',
+        )
         recovery_token = 'XYZ'
         agreement = 'https://letsencrypt.org/terms'
 
@@ -117,6 +130,26 @@ class RegistrationTest(unittest.TestCase):
         self.jobj_from = self.jobj_to.copy()
         self.jobj_from['key'] = key.to_json()
 
+    def test_from_data(self):
+        from acme.messages import Registration
+        reg = Registration.from_data(phone='1234', email='admin@foo.com')
+        self.assertEqual(reg.contact, (
+            'tel:1234',
+            'mailto:admin@foo.com',
+        ))
+
+    def test_phones(self):
+        self.assertEqual(('1234',), self.reg.phones)
+
+    def test_emails(self):
+        self.assertEqual(('admin@foo.com',), self.reg.emails)
+
+    def test_phone(self):
+        self.assertEqual('1234', self.reg.phone)
+
+    def test_email(self):
+        self.assertEqual('admin@foo.com', self.reg.email)
+
     def test_to_partial_json(self):
         self.assertEqual(self.jobj_to, self.reg.to_partial_json())
 
@@ -127,6 +160,25 @@ class RegistrationTest(unittest.TestCase):
     def test_from_json_hashable(self):
         from acme.messages import Registration
         hash(Registration.from_json(self.jobj_from))
+
+
+class RegistrationResourceTest(unittest.TestCase):
+    """Tests for acme.messages.RegistrationResource."""
+
+    def setUp(self):
+        from acme.messages import RegistrationResource
+        self.regr = RegistrationResource(
+            body=mock.sentinel.body, uri=mock.sentinel.uri,
+            new_authzr_uri=mock.sentinel.new_authzr_uri,
+            terms_of_service=mock.sentinel.terms_of_service)
+
+    def test_to_partial_json(self):
+        self.assertEqual(self.regr.to_json(), {
+            'body': mock.sentinel.body,
+            'uri': mock.sentinel.uri,
+            'new_authzr_uri': mock.sentinel.new_authzr_uri,
+            'terms_of_service': mock.sentinel.terms_of_service,
+        })
 
 
 class ChallengeResourceTest(unittest.TestCase):
@@ -218,6 +270,49 @@ class AuthorizationTest(unittest.TestCase):
             (self.challbs[0], self.challbs[2]),
             (self.challbs[1], self.challbs[2]),
         ))
+
+
+class AuthorizationResourceTest(unittest.TestCase):
+    """Tests for acme.messages.AuthorizationResource."""
+
+    def test_json_de_serializable(self):
+        from acme.messages import AuthorizationResource
+        authzr = AuthorizationResource(
+            uri=mock.sentinel.uri,
+            body=mock.sentinel.body,
+            new_cert_uri=mock.sentinel.new_cert_uri,
+        )
+        self.assertTrue(isinstance(authzr, jose.JSONDeSerializable))
+
+
+class CertificateRequestTest(unittest.TestCase):
+    """Tests for acme.messages.CertificateRequest."""
+
+    def setUp(self):
+        from acme.messages import CertificateRequest
+        self.req = CertificateRequest(csr=CSR, authorizations=('foo',))
+
+    def test_json_de_serializable(self):
+        self.assertTrue(isinstance(self.req, jose.JSONDeSerializable))
+        from acme.messages import CertificateRequest
+        self.assertEqual(
+            self.req, CertificateRequest.from_json(self.req.to_json()))
+
+
+class CertificateResourceTest(unittest.TestCase):
+    """Tests for acme.messages.CertificateResourceTest."""
+
+    def setUp(self):
+        from acme.messages import CertificateResource
+        self.certr = CertificateResource(
+            body=CERT, uri=mock.sentinel.uri, authzrs=(),
+            cert_chain_uri=mock.sentinel.cert_chain_uri)
+
+    def test_json_de_serializable(self):
+        self.assertTrue(isinstance(self.certr, jose.JSONDeSerializable))
+        from acme.messages import CertificateResource
+        self.assertEqual(
+            self.certr, CertificateResource.from_json(self.certr.to_json()))
 
 
 class RevocationTest(unittest.TestCase):
