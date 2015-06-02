@@ -2,10 +2,12 @@
 import logging
 import os
 
+from letsencrypt.plugins import common
+
 from letsencrypt_apache import parser
 
 
-class ApacheDvsni(object):
+class ApacheDvsni(common.Dvsni):
     """Class performs DVSNI challenges within the Apache configurator.
 
     :ivar configurator: ApacheConfigurator object
@@ -42,26 +44,6 @@ class ApacheDvsni(object):
 </VirtualHost>
 
 """
-    def __init__(self, configurator):
-        self.configurator = configurator
-        self.achalls = []
-        self.indices = []
-        self.challenge_conf = os.path.join(
-            configurator.config.config_dir, "le_dvsni_cert_challenge.conf")
-        # self.completed = 0
-
-    def add_chall(self, achall, idx=None):
-        """Add challenge to DVSNI object to perform at once.
-
-        :param achall: Annotated DVSNI challenge.
-        :type achall: :class:`letsencrypt.achallenges.DVSNI`
-
-        :param int idx: index to challenge in a larger array
-
-        """
-        self.achalls.append(achall)
-        if idx is not None:
-            self.indices.append(idx)
 
     def perform(self):
         """Peform a DVSNI challenge."""
@@ -107,28 +89,12 @@ class ApacheDvsni(object):
 
         return responses
 
-    def _setup_challenge_cert(self, achall, s=None):
-        # pylint: disable=invalid-name
-        """Generate and write out challenge certificate."""
-        cert_path = self.get_cert_file(achall)
-        # Register the path before you write out the file
-        self.configurator.reverter.register_file_creation(True, cert_path)
-
-        cert_pem, response = achall.gen_cert_and_response(s)
-
-        # Write out challenge cert
-        with open(cert_path, "w") as cert_chall_fd:
-            cert_chall_fd.write(cert_pem)
-
-        return response
-
     def _mod_config(self, ll_addrs):
         """Modifies Apache config files to include challenge vhosts.
 
         Result: Apache config includes virtual servers for issued challs
 
-        :param list ll_addrs: list of list of
-            :class:`letsencrypt.plugins.apache.obj.Addr` to apply
+        :param list ll_addrs: list of list of `~.common.Addr` to apply
 
         """
         # TODO: Use ip address of existing vhost instead of relying on FQDN
@@ -167,7 +133,7 @@ class ApacheDvsni(object):
         :type achall: :class:`letsencrypt.achallenges.DVSNI`
 
         :param list ip_addrs: addresses of challenged domain
-            :class:`list` of type :class:`~apache.obj.Addr`
+            :class:`list` of type `~.common.Addr`
 
         :returns: virtual host configuration text
         :rtype: str
@@ -186,16 +152,3 @@ class ApacheDvsni(object):
             ssl_options_conf_path=self.configurator.parser.loc["ssl_options"],
             cert_path=self.get_cert_file(achall), key_path=achall.key.file,
             document_root=document_root).replace("\n", os.linesep)
-
-    def get_cert_file(self, achall):
-        """Returns standardized name for challenge certificate.
-
-        :param achall: Annotated DVSNI challenge.
-        :type achall: :class:`letsencrypt.achallenges.DVSNI`
-
-        :returns: certificate file name
-        :rtype: str
-
-        """
-        return os.path.join(
-            self.configurator.config.work_dir, achall.nonce_domain + ".crt")
