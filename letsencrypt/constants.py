@@ -15,7 +15,8 @@ CLI_DEFAULTS = dict(
     rollback_checkpoints=0,
     config_dir="/etc/letsencrypt",
     work_dir="/var/lib/letsencrypt",
-    test_mode=False,
+    no_verify_ssl=False,
+    dvsni_port=challenges.DVSNI.PORT,
 )
 """Defaults for CLI flags and `.IConfig` attributes."""
 
@@ -91,7 +92,3 @@ RENEWER_CONFIG_FILENAME = "renewer.conf"
 NETSTAT = "/bin/netstat"
 """Location of netstat binary for checking whether a listener is already
 running on the specified port (Linux-specific)."""
-
-BOULDER_TEST_MODE_CHALLENGE_PORT = 5001
-"""Port that Boulder will connect on for validations in test mode."""
-

@@ -1,4 +1,4 @@
-"""Class helps construct valid ACME messages for testing."""
+"""ACME utilities for testing."""
 import datetime
 import itertools
 import os

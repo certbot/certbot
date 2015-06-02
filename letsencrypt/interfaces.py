@@ -177,8 +177,11 @@ class IConfig(zope.interface.Interface):
     renewer_config_file = zope.interface.Attribute(
         "Location of renewal configuration file.")
 
-    test_mode = zope.interface.Attribute(
-        "Test mode. Disables certificate verification.")
+    no_verify_ssl = zope.interface.Attribute(
+        "Disable SSL certificate verification.")
+    dvsni_port = zope.interface.Attribute(
+        "Port number to perform DVSNI challenge. "
+        "Boulder in testing mode defaults to 5001.")
 
 
 class IInstaller(IPlugin):
@@ -346,3 +349,30 @@ class IValidator(zope.interface.Interface):
 
     def hsts(name):
         """Verify HSTS header is enabled."""
+
+
+class IReporter(zope.interface.Interface):
+    """Interface to collect and display information to the user."""
+
+    HIGH_PRIORITY = zope.interface.Attribute(
+        "Used to denote high priority messages")
+    MEDIUM_PRIORITY = zope.interface.Attribute(
+        "Used to denote medium priority messages")
+    LOW_PRIORITY = zope.interface.Attribute(
+        "Used to denote low priority messages")
+
+    def add_message(self, msg, priority, on_crash=False):
+        """Adds msg to the list of messages to be printed.
+
+        :param str msg: Message to be displayed to the user.
+
+        :param int priority: One of HIGH_PRIORITY, MEDIUM_PRIORITY, or
+            LOW_PRIORITY.
+
+        :param bool on_crash: Whether or not the message should be printed if
+            the program exits abnormally.
+
+        """
+
+    def print_messages(self):
+        """Prints messages to the user and clears the message queue."""
