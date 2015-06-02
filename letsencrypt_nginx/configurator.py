@@ -56,8 +56,6 @@ class NginxConfigurator(common.Plugin):
     def add_parser_arguments(cls, add):
         add("server-root", default=constants.CLI_DEFAULTS["server_root"],
             help="Nginx server root directory.")
-        add("mod-ssl-conf", default=constants.CLI_DEFAULTS["mod_ssl_conf"],
-            help="Contains standard nginx SSL directives.")
         add("ctl", default=constants.CLI_DEFAULTS["ctl"], help="Path to the "
             "'nginx' binary, used for 'configtest' and retrieving nginx "
             "version number.")
@@ -91,18 +89,21 @@ class NginxConfigurator(common.Plugin):
         self.reverter = reverter.Reverter(self.config)
         self.reverter.recovery_routine()
 
+    @property
+    def mod_ssl_conf(self):
+        return os.path.join(self.config.config_dir, constants.MOD_SSL_CONF_DEST)
+
     # This is called in determine_authenticator and determine_installer
     def prepare(self):
         """Prepare the authenticator/installer."""
         self.parser = parser.NginxParser(
-            self.conf('server-root'),
-            self.conf('mod-ssl-conf'))
+            self.conf('server-root'), self.mod_ssl_conf)
 
         # Set Version
         if self.version is None:
             self.version = self.get_version()
 
-        temp_install(self.conf('mod-ssl-conf'))
+        temp_install(self.mod_ssl_conf)
 
     # Entry point in main.py for installing cert
     def deploy_cert(self, domain, cert_path, key_path, chain_path=None):
@@ -592,4 +593,4 @@ def temp_install(options_ssl):
 
     # Check to make sure options-ssl.conf is installed
     if not os.path.isfile(options_ssl):
-        shutil.copyfile(constants.MOD_SSL_CONF, options_ssl)
+        shutil.copyfile(constants.MOD_SSL_CONF_SRC, options_ssl)

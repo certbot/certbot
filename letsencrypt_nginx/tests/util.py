@@ -44,9 +44,8 @@ def get_nginx_configurator(
     backups = os.path.join(work_dir, "backups")
 
     config = configurator.NginxConfigurator(
-        config=mock.MagicMock(
-            nginx_server_root=config_path, nginx_mod_ssl_conf=ssl_options,
-            config_dir=config_dir, work_dir=work_dir),
+        config=mock.MagicMock(nginx_server_root=config_path,
+                              config_dir=config_dir, work_dir=work_dir),
         name="nginx",
         version=version)
     config.prepare()

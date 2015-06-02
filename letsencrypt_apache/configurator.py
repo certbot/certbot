@@ -87,8 +87,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     def add_parser_arguments(cls, add):
         add("server-root", default=constants.CLI_DEFAULTS["server_root"],
             help="Apache server root directory.")
-        add("mod-ssl-conf", default=constants.CLI_DEFAULTS["mod_ssl_conf"],
-            help="Contains standard Apache SSL directives.")
         add("ctl", default=constants.CLI_DEFAULTS["ctl"],
             help="Path to the 'apache2ctl' binary, used for 'configtest' and "
                  "retrieving Apache2 version number.")
@@ -126,10 +124,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.vhosts = None
         self._enhance_func = {"redirect": self._enable_redirect}
 
+    @property
+    def mod_ssl_conf(self):
+        return os.path.join(self.config.config_dir, constants.MOD_SSL_CONF_DEST)
+
     def prepare(self):
         """Prepare the authenticator/installer."""
         self.parser = parser.ApacheParser(
-            self.aug, self.conf('server-root'), self.conf('mod-ssl-conf'))
+            self.aug, self.conf('server-root'), self.mod_ssl_conf)
         # Check for errors in parsing files with Augeas
         self.check_parsing_errors("httpd.aug")
 
@@ -147,7 +149,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         #     on initialization
         self._prepare_server_https()
 
-        temp_install(self.conf('mod-ssl-conf'))
+        temp_install(self.mod_ssl_conf)
 
     def deploy_cert(self, domain, cert_path, key_path, chain_path=None):
         """Deploys certificate to specified virtual host.
@@ -1171,4 +1173,4 @@ def temp_install(options_ssl):
 
     # Check to make sure options-ssl.conf is installed
     if not os.path.isfile(options_ssl):
-        shutil.copyfile(constants.MOD_SSL_CONF, options_ssl)
+        shutil.copyfile(constants.MOD_SSL_CONF_SRC, options_ssl)
