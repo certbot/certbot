@@ -134,7 +134,7 @@ class Client(object):
         cert_key = crypto_util.init_save_key(
             self.config.rsa_key_size, self.config.key_dir)
         csr = crypto_util.init_save_csr(
-            cert_key, domains, self.config.cert_dir)
+            cert_key, domains, self.config.csr_dir)
 
         # Retrieve certificate
         certr = self.network.request_issuance(
