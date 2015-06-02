@@ -1,6 +1,7 @@
 """Tests for letsencrypt.client."""
 import os
 import unittest
+import pkg_resources
 import shutil
 import tempfile
 
@@ -11,7 +12,33 @@ from letsencrypt import configuration
 from letsencrypt import le_util
 
 
+KEY = pkg_resources.resource_string(
+    __name__, os.path.join("testdata", "rsa512_key.pem"))
+
+
+class ClientTest(unittest.TestCase):
+    """Tests for letsencrypt.client.Client."""
+
+    def setUp(self):
+        self.config = mock.MagicMock(no_verify_ssl=False)
+        # pylint: disable=star-args
+        self.account = mock.MagicMock(**{"key.pem": KEY})
+
+        from letsencrypt.client import Client
+        with mock.patch("letsencrypt.client.network2") as network2:
+            self.client = Client(
+                config=self.config, account_=self.account, dv_auth=None,
+                installer=None)
+        self.network2 = network2
+
+    def test_init_network_verify_ssl(self):
+        self.network2.Network.assert_called_once_with(
+            mock.ANY, mock.ANY, verify_ssl=True)
+
+
 class DetermineAccountTest(unittest.TestCase):
+    """Tests for letsencrypt.client.determine_authenticator."""
+
     def setUp(self):
         self.accounts_dir = tempfile.mkdtemp("accounts")
         account_keys_dir = os.path.join(self.accounts_dir, "keys")
@@ -54,7 +81,8 @@ class DetermineAccountTest(unittest.TestCase):
 
 
 class RollbackTest(unittest.TestCase):
-    """Test the rollback function."""
+    """Tests for letsencrypt.client.rollback."""
+
     def setUp(self):
         self.m_install = mock.MagicMock()
 
