@@ -283,7 +283,7 @@ def create_parser(plugins):
         help="Automatically redirect all HTTP traffic to HTTPS for the newly "
              "authenticated vhost.")
 
-    _paths_parser(parser.add_argument_group("paths"))
+    _paths_parser(parser)
     # _plugins_parsing should be the last thing to act upon the main
     # parser (--help should display plugin-specific options last)
     _plugins_parsing(parser, plugins)
@@ -342,7 +342,7 @@ def _create_subparsers(parser):
 
 
 def _paths_parser(parser):
-    add = parser.add_argument
+    add = parser.add_argument_group("paths").add_argument
     add("--config-dir", default=flag_default("config_dir"),
         help=config_help("config_dir"))
     add("--work-dir", default=flag_default("work_dir"),

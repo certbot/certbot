@@ -78,14 +78,16 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         renewal configuration file and/or systemwide defaults.
 
     """
-    def __init__(self, configfile, config_opts=None):
+    def __init__(self, configfile, config_opts=None, cli_config=None):
         """Instantiate a RenewableCert object from an existing lineage.
 
         :param configobj.ConfigObj configfile: an already-parsed
-        ConfigObj object made from reading the renewal config file
-        that defines this lineage.  :param configobj.ConfigObj
-        config_opts: systemwide defaults for renewal properties not
-        otherwise specified in the individual renewal config file.
+            ConfigObj object made from reading the renewal config file
+            that defines this lineage.
+
+        :param configobj.ConfigObj config_opts: systemwide defaults for
+            renewal properties not otherwise specified in the individual
+            renewal config file.
 
         :raises ValueError: if the configuration file's name didn't end
             in ".conf", or the file is missing or broken.
@@ -93,6 +95,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             ConfigObj object.
 
         """
+        self.cli_config = cli_config
         if isinstance(configfile, configobj.ConfigObj):
             if not os.path.basename(configfile.filename).endswith(".conf"):
                 raise ValueError("renewal config file name must end in .conf")
@@ -149,7 +152,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             # Each element's link must point within the cert lineage's
             # directory within the official archive directory
             desired_directory = os.path.join(
-                self.configuration["archive_dir"], self.lineagename)
+                self.cli_config.archive_dir, self.lineagename)
             if not os.path.samefile(os.path.dirname(target),
                                     desired_directory):
                 return False
@@ -499,7 +502,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def new_lineage(cls, lineagename, cert, privkey, chain,
-                    renewalparams=None, config=None):
+                    renewalparams=None, config=None, cli_config=None):
         # pylint: disable=too-many-locals,too-many-arguments
         """Create a new certificate lineage.
 
@@ -536,17 +539,15 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         # the renewer defaults with any options contained in that file.  If
         # renewer_config_file is undefined or if the file is nonexistent or
         # empty, this .merge() will have no effect.
-        config.merge(configobj.ConfigObj(config.get("renewer_config_file", "")))
+        config.merge(configobj.ConfigObj(cli_config.renewer_config_file))
 
         # Examine the configuration and find the new lineage's name
-        configs_dir = config["renewal_configs_dir"]
-        archive_dir = config["archive_dir"]
-        live_dir = config["live_dir"]
-        for i in (configs_dir, archive_dir, live_dir):
+        for i in (cli_config.renewal_configs_dir, cli_config.archive_dir,
+                  cli_config.live_dir):
             if not os.path.exists(i):
                 os.makedirs(i, 0700)
-        config_file, config_filename = le_util.unique_lineage_name(configs_dir,
-                                                                   lineagename)
+        config_file, config_filename = le_util.unique_lineage_name(
+            cli_config.renewal_configs_dir, lineagename)
         if not config_filename.endswith(".conf"):
             raise ValueError("renewal config file name must end in .conf")
 
@@ -554,8 +555,8 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         # lineagename will now potentially be modified based on which
         # renewal configuration file could actually be created
         lineagename = os.path.basename(config_filename)[:-len(".conf")]
-        archive = os.path.join(archive_dir, lineagename)
-        live_dir = os.path.join(live_dir, lineagename)
+        archive = os.path.join(cli_config.archive_dir, lineagename)
+        live_dir = os.path.join(cli_config.live_dir, lineagename)
         if os.path.exists(archive):
             raise ValueError("archive directory exists for " + lineagename)
         if os.path.exists(live_dir):
@@ -593,7 +594,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         # TODO: add human-readable comments explaining other available
         #       parameters
         new_config.write()
-        return cls(new_config, config)
+        return cls(new_config, config, cli_config)
 
 
     def save_successor(self, prior_version, new_cert, new_privkey, new_chain):
@@ -624,7 +625,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         # Figure out what the new version is and hence where to save things
 
         target_version = self.next_free_version()
-        archive = self.configuration["archive_dir"]
+        archive = self.cli_config.archive_dir
         prefix = os.path.join(archive, self.lineagename)
         target = dict(
             [(kind,

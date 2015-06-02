@@ -90,3 +90,31 @@ class NamespaceConfig(object):
     def temp_checkpoint_dir(self):  # pylint: disable=missing-docstring
         return os.path.join(
             self.namespace.work_dir, constants.TEMP_CHECKPOINT_DIR)
+
+
+class RenewerConfiguration(object):
+    """Configuration wrapper for renewer."""
+
+    def __init__(self, namespace):
+        self.namespace = namespace
+
+    def __getattr__(self, name):
+        return getattr(self.namespace, name)
+
+    @property
+    def archive_dir(self):  # pylint: disable=missing-docstring
+        return os.path.join(self.namespace.config_dir, constants.ARCHIVE_DIR)
+
+    @property
+    def live_dir(self):  # pylint: disable=missing-docstring
+        return os.path.join(self.namespace.config_dir, constants.LIVE_DIR)
+
+    @property
+    def renewal_configs_dir(self):  # pylint: disable=missing-docstring
+        return os.path.join(
+            self.namespace.config_dir, constants.RENEWAL_CONFIGS_DIR)
+
+    @property
+    def renewer_config_file(self):  # pylint: disable=missing-docstring
+        return os.path.join(
+            self.namespace.config_dir, constants.RENEWER_CONFIG_FILENAME)

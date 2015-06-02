@@ -22,10 +22,6 @@ CLI_DEFAULTS = dict(
 
 
 RENEWER_DEFAULTS = dict(
-    renewer_config_file="/etc/letsencrypt/renewer.conf",
-    renewal_configs_dir="/etc/letsencrypt/configs",
-    archive_dir="/etc/letsencrypt/archive",
-    live_dir="/etc/letsencrypt/live",
     renewer_enabled="yes",
     renew_before_expiry="30 days",
     deploy_before_expiry="20 days",
@@ -50,6 +46,8 @@ List of expected options parameters:
 
 """
 
+ARCHIVE_DIR = "archive"
+"""TODO relative to `IConfig.config_dir`."""
 
 CONFIG_DIRS_MODE = 0o755
 """Directory mode for ``.IConfig.config_dir`` et al."""
@@ -77,6 +75,9 @@ IN_PROGRESS_DIR = "IN_PROGRESS"
 KEY_DIR = "keys"
 """Directory (relative to `IConfig.config_dir`) where keys are saved."""
 
+LIVE_DIR = "live"
+"""TODO relative to `IConfig.config_dir`."""
+
 TEMP_CHECKPOINT_DIR = "temp_checkpoint"
 """Temporary checkpoint directory (relative to `IConfig.work_dir`)."""
 
@@ -84,6 +85,8 @@ REC_TOKEN_DIR = "recovery_tokens"
 """Directory where all recovery tokens are saved (relative to
 `IConfig.work_dir`)."""
 
+RENEWAL_CONFIGS_DIR = "configs"
+"""TODO relative to `IConfig.config_dir`."""
 
 RENEWER_CONFIG_FILENAME = "renewer.conf"
 """Renewer config file name (relative to `IConfig.config_dir`)."""

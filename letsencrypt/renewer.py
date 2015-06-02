@@ -7,15 +7,19 @@ within lineages of successor certificates, according to configuration.
 .. todo:: Call new installer API to restart servers after deployment
 
 """
+import argparse
 import os
+import sys
 
 import configobj
 
 from letsencrypt import configuration
+from letsencrypt import cli
 from letsencrypt import client
 from letsencrypt import crypto_util
 from letsencrypt import notify
 from letsencrypt import storage
+
 from letsencrypt.plugins import disco as plugins_disco
 
 
@@ -92,13 +96,21 @@ def renew(cert, old_version):
     #       (where fewer than all names were renewed)
 
 
-def main(config=None):
+def _create_parser():
+    parser = argparse.ArgumentParser()
+    #parser.add_argument("--cron", action="store_true", help="Run as cronjob.")
+    return cli._paths_parser(parser)  # pylint: disable=protected-access
+
+def main(config=None, args=sys.argv[1:]):
     """Main function for autorenewer script."""
     # TODO: Distinguish automated invocation from manual invocation,
     #       perhaps by looking at sys.argv[0] and inhibiting automated
     #       invocations if /etc/letsencrypt/renewal.conf defaults have
     #       turned it off. (The boolean parameter should probably be
     #       called renewer_enabled.)
+
+    cli_config = configuration.RenewerConfiguration(
+        _create_parser().parse_args(args))
 
     config = storage.config_with_defaults(config)
     # Now attempt to read the renewer config file and augment or replace
@@ -108,14 +120,14 @@ def main(config=None):
     # elaborate renewer command line, we will presumably also be able to
     # specify a config file on the command line, which, if provided, should
     # take precedence over this one.
-    config.merge(configobj.ConfigObj(config.get("renewer_config_file", "")))
+    config.merge(configobj.ConfigObj(cli_config.renewer_config_file))
 
-    for i in os.listdir(config["renewal_configs_dir"]):
+    for i in os.listdir(cli_config.renewal_configs_dir):
         print "Processing", i
         if not i.endswith(".conf"):
             continue
         rc_config = configobj.ConfigObj(
-            os.path.join(config["renewal_configs_dir"], i))
+            os.path.join(cli_config.renewal_configs_dir, i))
         try:
             # TODO: Before trying to initialize the RenewableCert object,
             #       we could check here whether the combination of the config
