@@ -73,7 +73,7 @@ IN_PROGRESS_DIR = "IN_PROGRESS"
 """Directory used before a permanent checkpoint is finalized (relative to
 `IConfig.work_dir`)."""
 
-KEYS_DIR = "keys"
+KEY_DIR = "keys"
 """Directory (relative to `IConfig.config_dir`) where keys are saved."""
 
 TEMP_CHECKPOINT_DIR = "temp_checkpoint"
