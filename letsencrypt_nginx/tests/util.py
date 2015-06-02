@@ -39,7 +39,7 @@ def get_data_filename(filename):
 
 
 def get_nginx_configurator(
-        config_path, config_dir, work_dir, ssl_options, version=(1, 6, 2)):
+        config_path, config_dir, work_dir, version=(1, 6, 2)):
     """Create an Nginx Configurator with the specified options."""
 
     backups = os.path.join(work_dir, "backups")

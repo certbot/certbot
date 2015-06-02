@@ -21,8 +21,7 @@ class NginxConfiguratorTest(util.NginxTest):
         super(NginxConfiguratorTest, self).setUp()
 
         self.config = util.get_nginx_configurator(
-            self.config_path, self.config_dir, self.work_dir,
-            self.ssl_options)
+            self.config_path, self.config_dir, self.work_dir)
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir)

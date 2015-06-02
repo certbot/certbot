@@ -23,8 +23,7 @@ class DvsniPerformTest(util.NginxTest):
         super(DvsniPerformTest, self).setUp()
 
         config = util.get_nginx_configurator(
-            self.config_path, self.config_dir, self.work_dir,
-            self.ssl_options)
+            self.config_path, self.config_dir, self.work_dir)
 
         rsa256_file = pkg_resources.resource_filename(
             "acme.jose", "testdata/rsa256_key.pem")

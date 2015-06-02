@@ -26,8 +26,7 @@ class DvsniPerformTest(util.ApacheTest):
                         "mod_loaded") as mock_load:
             mock_load.return_value = True
             config = util.get_apache_configurator(
-                self.config_path, self.config_dir, self.work_dir,
-                self.ssl_options)
+                self.config_path, self.config_dir, self.work_dir)
 
         from letsencrypt_apache import dvsni
         self.sni = dvsni.ApacheDvsni(config)

@@ -63,7 +63,7 @@ def setup_ssl_options(
 
 
 def get_apache_configurator(
-        config_path, config_dir, work_dir, ssl_options, version=(2, 4, 7)):
+        config_path, config_dir, work_dir, version=(2, 4, 7)):
     """Create an Apache Configurator with the specified options."""
 
     backups = os.path.join(work_dir, "backups")
