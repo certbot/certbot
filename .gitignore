@@ -1,13 +1,18 @@
 *.pyc
-*.egg-info
+*.egg-info/
 .eggs/
 build/
 dist/
-venv/
-.tox/
+/venv/
+/.tox/
+
+# coverage
 .coverage
-m3
+/htmlcov/
+
+/.vagrant
+
+# editor temporary files
 *~
-.vagrant
 *.swp
 \#*#
