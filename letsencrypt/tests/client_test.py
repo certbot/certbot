@@ -38,6 +38,7 @@ class ClientTest(unittest.TestCase):
 
     @mock.patch("letsencrypt.client.zope.component.getUtility")
     def test_report_new_account(self, mock_zope):
+        # pylint: disable=protected-access
         self.config.config_dir = "/usr/bin/coffee"
         self.account.recovery_token = "ECCENTRIC INVISIBILITY RHINOCEROS"
         self.account.email = "rhino@jungle.io"
@@ -50,6 +51,7 @@ class ClientTest(unittest.TestCase):
 
     @mock.patch("letsencrypt.client.zope.component.getUtility")
     def test_report_renewal_status(self, mock_zope):
+        # pylint: disable=protected-access
         cert = mock.MagicMock()
         cert.configuration = configobj.ConfigObj()
         cert.configuration["renewal_configs_dir"] = "/etc/letsencrypt/configs"
@@ -66,7 +68,7 @@ class ClientTest(unittest.TestCase):
         msg = mock_zope().add_message.call_args[0][0]
         self.assertTrue("deployment but not automatic renewal" in msg)
         self.assertTrue(cert.configuration["renewal_configs_dir"] in msg)
-    
+
         cert.configuration["autodeploy"] = "False"
         self.client._report_renewal_status(cert)
         msg = mock_zope().add_message.call_args[0][0]
