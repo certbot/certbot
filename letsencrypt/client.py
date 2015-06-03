@@ -99,6 +99,10 @@ class Client(object):
                 raise errors.LetsEncryptClientError("Must agree to TOS")
 
         self.account.save()
+        self._report_new_account()
+
+    def _report_new_account(self):
+        """Informs the user about their new Let's Encrypt account."""
         reporter = zope.component.getUtility(interfaces.IReporter)
         reporter.add_message(
             "Your account credentials have been saved in your Let's Encrypt "
@@ -107,7 +111,17 @@ class Client(object):
             "contain certificates and private keys obtained by Let's Encrypt "
             "so making regular backups of this folder is ideal.".format(
                 self.config.config_dir),
-            reporter.HIGH_PRIORITY, True)
+            reporter.MEDIUM_PRIORITY, True)
+
+        assert self.account.recovery_token is not None
+        recovery_msg = ("If you lose your account credentials, you can recover "
+                        "them using the token \"{0}\". You must write that down "
+                        "and put it in a safe place.".format(
+                            self.account.recovery_token))
+        if self.account.email is not None:
+            recovery_msg += (" Another recovery method will be e-mails sent to "
+                             "{0}.".format(self.account.email))
+        reporter.add_message(recovery_msg, reporter.HIGH_PRIORITY, True)
 
     def obtain_certificate(self, domains, csr=None):
         """Obtains a certificate from the ACME server.
@@ -204,9 +218,38 @@ class Client(object):
         params = vars(self.config.namespace)
         config = {"renewer_config_file":
                   params["renewer_config_file"]} if "renewer_config_file" in params else None
-        return storage.RenewableCert.new_lineage(domains[0], cert, privkey,
-                                                 chain, params, config)
+        renewable_cert = storage.RenewableCert.new_lineage(domains[0], cert, privkey,
+                                                           chain, params, config)
+        self._report_renewal_status(renewable_cert)
+        return renewable_cert
 
+    def _report_renewal_status(self, cert):
+        # pylint: disable=no-self-use
+        """Informs the user about automatic renewal and deployment.
+
+        :param cert: Newly issued certificate
+        :type cert: :class:`letsencrypt.storage.RenewableCert`
+
+        """
+        if ("autorenew" not in cert.configuration
+                or cert.configuration.as_bool("autorenew")):
+            if ("autodeploy" not in cert.configuration or
+                    cert.configuration.as_bool("autodeploy")):
+                msg = "Automatic renewal and deployment has "
+            else:
+                msg = "Automatic renewal but not automatic deployment has "
+        else:
+            if ("autodeploy" not in cert.configuration or
+                    cert.configuration.as_bool("autodeploy")):
+                msg = "Automatic deployment but not automatic renewal has "
+            else:
+                msg = "Automatic renewal and deployment has not "
+
+        msg += ("been enabled for your certificate. These settings can be "
+                "configured in the directories under {0}.").format(
+                    cert.configuration["renewal_configs_dir"])
+        reporter = zope.component.getUtility(interfaces.IReporter)
+        reporter.add_message(msg, reporter.LOW_PRIORITY, True)
 
     def save_certificate(self, certr, cert_path, chain_path):
         # pylint: disable=no-self-use

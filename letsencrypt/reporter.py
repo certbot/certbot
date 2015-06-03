@@ -56,6 +56,8 @@ class Reporter(object):
         :param int pid: Process ID
 
         """
+        # This ensures that messages are only printed from the process that
+        # created the Reporter.
         if pid == os.getpid():
             self.print_messages()
 
@@ -64,8 +66,7 @@ class Reporter(object):
 
         If there is an unhandled exception, only messages for which
         ``on_crash`` is ``True`` are printed.
-
-        """
+"""
         bold_on = False
         if not self.messages.empty():
             no_exception = sys.exc_info()[0] is None
