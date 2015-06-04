@@ -1,5 +1,7 @@
 """Collects and displays information to the user."""
 import collections
+import logging
+import os
 import Queue
 import sys
 import textwrap
@@ -46,20 +48,31 @@ class Reporter(object):
         """
         assert self.HIGH_PRIORITY <= priority <= self.LOW_PRIORITY
         self.messages.put(self._msg_type(priority, msg, on_crash))
+        logging.info("Reporting to user: %s", msg)
+
+    def atexit_print_messages(self, pid=os.getpid()):
+        """Function to be registered with atexit to print messages.
+
+        :param int pid: Process ID
+
+        """
+        # This ensures that messages are only printed from the process that
+        # created the Reporter.
+        if pid == os.getpid():
+            self.print_messages()
 
     def print_messages(self):
         """Prints messages to the user and clears the message queue.
 
         If there is an unhandled exception, only messages for which
         ``on_crash`` is ``True`` are printed.
-
-        """
+"""
         bold_on = False
         if not self.messages.empty():
             no_exception = sys.exc_info()[0] is None
             bold_on = sys.stdout.isatty()
             if bold_on:
-                sys.stdout.write(self._BOLD)
+                print self._BOLD
             print 'IMPORTANT NOTES:'
             wrapper = textwrap.TextWrapper(initial_indent=' - ',
                                            subsequent_indent=(' ' * 3))
