@@ -186,7 +186,7 @@ class Account(object):
         """
         while True:
             code, email = zope.component.getUtility(interfaces.IDisplay).input(
-                "Enter email address (optional, press Enter to skip)")
+                "Enter email address")
 
             if code == display_util.OK:
                 try:
