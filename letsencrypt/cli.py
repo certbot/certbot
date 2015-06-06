@@ -135,7 +135,7 @@ def auth(args, config, plugins):
 
 
 def install(args, config, plugins):
-    """Install (no auth)."""
+    """Install cert in server software (no auth)."""
     # XXX: Update for renewer/RenewableCert
     acc = _account_init(args, config)
     if acc is None:
@@ -224,9 +224,12 @@ def flag_default(name):
     """Default value for CLI flag."""
     return constants.CLI_DEFAULTS[name]
 
-def config_help(name):
+def config_help(name, hidden=False):
     """Help message for `.IConfig` attribute."""
-    return interfaces.IConfig[name].__doc__
+    if hidden:
+        return argparse.SUPPRESS
+    else:
+        return interfaces.IConfig[name].__doc__
 
 
 def create_parser(plugins):
@@ -238,17 +241,19 @@ def create_parser(plugins):
         default_config_files=flag_default("config_files"))
     add = parser.add_argument
 
+    auto_group = parser.add_argument_group(
+        "auto", description="Arguments for automating execution")
     # --help is automatically provided by argparse
-    add("--version", action="version", version="%(prog)s {0}".format(
-        letsencrypt.__version__))
+    auto_group.add_argument("--version", action="version", 
+        version="%(prog)s {0}".format(letsencrypt.__version__))
     add("-v", "--verbose", dest="verbose_count", action="count",
         default=flag_default("verbose_count"), help="This flag can be used "
         "multiple times to incrementally increase the verbosity of output, "
         "e.g. -vvv.")
-    add("--no-confirm", dest="no_confirm", action="store_true",
+    auto_group.add_argument("--no-confirm", dest="no_confirm", action="store_true",
         help="Turn off confirmation screens, currently used for --revoke")
-    add("-e", "--agree-tos", dest="tos", action="store_true",
-        help="Skip the end user license agreement screen.")
+    add("--agree-eula", "-e", dest="tos", action="store_true",
+        help="Agree to the Let's Encrypt Subscriber Agreement")
     add("-t", "--text", dest="text_mode", action="store_true",
         help="Use the text output instead of the curses UI.")
 
@@ -258,11 +263,11 @@ def create_parser(plugins):
         "really know what you're doing!")
     testing_group.add_argument(
         "--no-verify-ssl", action="store_true",
-        help=config_help("no_verify_ssl"),
+        help=config_help("no_verify_ssl",hidden=True),
         default=flag_default("no_verify_ssl"))
     # TODO: apache and nginx plugins do NOT respect it
     testing_group.add_argument(
-        "--dvsni-port", type=int, help=config_help("dvsni_port"),
+        "--dvsni-port", type=int, help=config_help("dvsni_port",hidden=True),
         default=flag_default("dvsni_port"))
 
     subparsers = parser.add_subparsers(metavar="SUBCOMMAND")
@@ -301,8 +306,8 @@ def create_parser(plugins):
     add("-d", "--domains", metavar="DOMAIN", action="append")
     add("-s", "--server", default=flag_default("server"),
         help=config_help("server"))
-    add("-k", "--authkey", type=read_file,
-        help="Path to the authorized key file")
+    add("-k", "--accountkey", type=read_file,
+        help="Path to the account key file")
     add("-m", "--email", help=config_help("email"))
     add("-B", "--rsa-key-size", type=int, metavar="N",
         default=flag_default("rsa_key_size"), help=config_help("rsa_key_size"))
@@ -336,26 +341,27 @@ def create_parser(plugins):
 
 def _paths_parser(parser):
     add = parser.add_argument
+    hidden = True
     add("--config-dir", default=flag_default("config_dir"),
-        help=config_help("config_dir"))
+        help=config_help("config_dir", hidden))
     add("--work-dir", default=flag_default("work_dir"),
-        help=config_help("work_dir"))
+        help=config_help("work_dir", hidden))
     add("--backup-dir", default=flag_default("backup_dir"),
-        help=config_help("backup_dir"))
+        help=config_help("backup_dir", hidden))
     add("--key-dir", default=flag_default("key_dir"),
-        help=config_help("key_dir"))
+        help=config_help("key_dir", hidden))
     add("--cert-dir", default=flag_default("certs_dir"),
-        help=config_help("cert_dir"))
+        help=config_help("cert_dir", hidden))
 
     add("--le-vhost-ext", default="-le-ssl.conf",
-        help=config_help("le_vhost_ext"))
+        help=config_help("le_vhost_ext", hidden))
     add("--cert-path", default=flag_default("cert_path"),
-        help=config_help("cert_path"))
+        help=config_help("cert_path", hidden))
     add("--chain-path", default=flag_default("chain_path"),
-        help=config_help("chain_path"))
+        help=config_help("chain_path", hidden))
 
     add("--renewer-config-file", default=flag_default("renewer_config_file"),
-        help=config_help("renewer_config_file"))
+        help=config_help("renewer_config_file", hidden))
 
     return parser
 

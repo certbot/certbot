@@ -1,5 +1,6 @@
 """Plugin common functions."""
 import zope.interface
+import argparse
 
 from acme.jose import util as jose_util
 
@@ -55,6 +56,7 @@ class Plugin(object):
         # dummy function, doesn't check if dest.startswith(self.dest_namespace)
         def add(arg_name_no_prefix, *args, **kwargs):
             # pylint: disable=missing-docstring
+            kwargs["help"] = argparse.SUPPRESS
             return parser.add_argument(
                 "--{0}{1}".format(option_namespace(name), arg_name_no_prefix),
                 *args, **kwargs)

@@ -23,7 +23,7 @@ CLI_DEFAULTS = dict(
     chain_path="/etc/letsencrypt/certs/chain-letsencrypt.pem",
     renewer_config_file="/etc/letsencrypt/renewer.conf",
     no_verify_ssl=False,
-    dvsni_port=challenges.DVSNI.PORT,
+    dvsni_port=443,
 )
 """Defaults for CLI flags and `.IConfig` attributes."""
 
