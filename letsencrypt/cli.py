@@ -5,6 +5,7 @@ import atexit
 import logging
 import os
 import sys
+import types
 
 import configargparse
 import zope.component
@@ -231,46 +232,154 @@ def config_help(name, hidden=False):
     else:
         return interfaces.IConfig[name].__doc__
 
+class SilentParser:
+    """An a mini parser wrapper that doesn't print help for its
+    arguments... this one is just needed to the use of callbacks to define
+    arguments within plugins"""
+    def __init__(self, parser):
+        self.parser = parser
+    def add_argument(self, *args, **kwargs):
+        kwargs["help"] = argparse.SUPPRESS
+        self.parser.add_argument(*args, **kwargs)
 
-def create_parser(plugins):
+HELP_TOPICS = ["all","security","paths","automation","testing"]
+class HelpfulArgumentParser:
+    """This class wraps argparse, adding the ability to make --help less
+    verbose, and request help on specific subcategories at a time, eg
+    'letsencrypt --help security' for security options."""
+
+    def __init__(self, args, plugins):
+        self.args = args
+        plugin_names = [name for name, p in plugins.iteritems()]
+        self.help_topics = HELP_TOPICS + plugin_names
+        self.parser = configargparse.ArgParser(
+            description=__doc__,
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+            args_for_setting_config_path=["-c", "--config"],
+            default_config_files=flag_default("config_files"))
+        self.silent_parser = SilentParser(self.parser)
+
+        h1 = self.prescan_for_flag("-h", self.help_topics)
+        h2 = self.prescan_for_flag("--h", self.help_topics)
+        assert max(True,"a") == "a", "Gravity changed direction"
+        help_arg = max(h1, h2)
+        self.visible_topics = self.determine_help_topics(help_arg)
+        print self.visible_topics
+        self.groups = {}  # elements are added by .add_group()
+        self.add_plugin_args(plugins)
+
+    def prescan_for_flag(self, flag, possible_arguments):
+        """check for a flag, which accepts a fixed set of possible arguments, in
+        the command line; we will use this information to configure argparse's
+        help correctly.  Return the flag's argument, if it has one that matches
+        the sequence @possible_arguments; otherwise return whether the flag is
+        present"""
+        if flag not in self.args:
+            return False
+        pos = self.args.index(flag)
+        try:    
+            nxt = self.args[pos + 1]
+            if nxt in possible_arguments:
+                return nxt
+        except: 
+            pass
+        return True
+
+    def add(self, topic, *args, **kwargs):
+        """Add a new command line argument. @topic is required, to indicate
+        which part of the help will document it, but can be None for `always
+        documented'."""
+        
+        if topic and self.visible_topics[topic]:
+            g = self.groups[topic]
+            g.add_argument(*args, **kwargs)
+        else:
+            kwargs["help"] = argparse.SUPPRESS
+            self.parser.add_argument(*args, **kwargs)
+
+    def add_group(self, topic, **kwargs):
+        """This has to be called once for every topic; but we leave those calls
+        next to the argument definitions for clarity. Return something
+        arguments can be added to if necessary, either the parser or an argument 
+        group."""
+        if self.visible_topics[topic]:
+            #print "Adding visible group " + topic 
+            g = self.parser.add_argument_group(topic, **kwargs)
+            self.groups[topic] = g
+            #def silencing_shim(self2, *args,**kwargs):
+            #    kwargs["help"] = argparse.SUPPRESS
+            #    self2._real_add_argument(*args, **kwargs)
+            #g._real_add_argument = g.add_argument
+            #g.add_argument = types.MethodType(silencing_shim, g)
+            return g
+        else:
+            #print "Invisible group " + topic 
+            # The plugins is going to try to add non-silent arguments; we have
+            # to stop that...
+            return self.silent_parser
+
+    def add_plugin_args(self, plugins):
+        # TODO: plugin_parser should be called for every detected plugin
+        for name, plugin_ep in plugins.iteritems():
+            parser_or_group = self.add_group(name, description=plugin_ep.description)
+            #print parser_or_group
+            plugin_ep.plugin_cls.inject_parser_options(parser_or_group, name)
+
+    def determine_help_topics(self, chosen_topic):
+        """The user may have requested help on a topic, return a dict of which
+        topics to dislpay. @chosen_topic has prescan_for_flag's return type"""
+
+        # topics maps each topic to whether it should be documented by
+        # argparse on the command line
+        if chosen_topic == "all":
+            return dict([(t,True) for t in self.help_topics])
+        elif not chosen_topic:
+            return dict([(t,False) for t in self.help_topics])
+        else:
+            return dict([(t,t == chosen_topic) for t in self.help_topics])
+
+
+def create_parser(plugins, args):
     """Create parser."""
-    parser = configargparse.ArgParser(
-        description=__doc__,
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        args_for_setting_config_path=["-c", "--config"],
-        default_config_files=flag_default("config_files"))
-    add = parser.add_argument
+    helpful = HelpfulArgumentParser(args, plugins)
 
-    auto_group = parser.add_argument_group(
-        "auto", description="Arguments for automating execution")
-    # --help is automatically provided by argparse
-    auto_group.add_argument("--version", action="version", 
-        version="%(prog)s {0}".format(letsencrypt.__version__))
-    add("-v", "--verbose", dest="verbose_count", action="count",
+    helpful.add(
+        None, "-v", "--verbose", dest="verbose_count", action="count",
         default=flag_default("verbose_count"), help="This flag can be used "
         "multiple times to incrementally increase the verbosity of output, "
         "e.g. -vvv.")
-    auto_group.add_argument("--no-confirm", dest="no_confirm", action="store_true",
+    # --help is automatically provided by argparse
+
+    helpful.add_group( "automation", 
+        description="Arguments for automating execution & other tweaks")
+    helpful.add(
+        "automation", "--version", action="version", 
+        version="%(prog)s {0}".format(letsencrypt.__version__),
+        help="show program's version number and exit")
+    helpful.add(
+        "automation", "--no-confirm", dest="no_confirm", action="store_true",
         help="Turn off confirmation screens, currently used for --revoke")
-    add("--agree-eula", "-e", dest="tos", action="store_true",
+    helpful.add(
+        "automation", "--agree-eula", "-e", dest="tos", action="store_true",
         help="Agree to the Let's Encrypt Subscriber Agreement")
-    add("-t", "--text", dest="text_mode", action="store_true",
+    helpful.add(
+        None, "-t", "--text", dest="text_mode", action="store_true",
         help="Use the text output instead of the curses UI.")
 
-    testing_group = parser.add_argument_group(
+    helpful.add_group(
         "testing", description="The following flags are meant for "
         "testing purposes only! Do NOT change them, unless you "
         "really know what you're doing!")
-    testing_group.add_argument(
-        "--no-verify-ssl", action="store_true",
+    helpful.add(
+        "testing", "--no-verify-ssl", action="store_true", 
         help=config_help("no_verify_ssl",hidden=True),
         default=flag_default("no_verify_ssl"))
     # TODO: apache and nginx plugins do NOT respect it
-    testing_group.add_argument(
-        "--dvsni-port", type=int, help=config_help("dvsni_port",hidden=True),
-        default=flag_default("dvsni_port"))
+    helpful.add(
+        "testing", "--dvsni-port", type=int, default=flag_default("dvsni_port"),
+        help=config_help("dvsni_port",hidden=True))
 
-    subparsers = parser.add_subparsers(metavar="SUBCOMMAND")
+    subparsers = helpful.parser.add_subparsers(metavar="SUBCOMMAND")
     def add_subparser(name, func):  # pylint: disable=missing-docstring
         subparser = subparsers.add_parser(
             name, help=func.__doc__.splitlines()[0], description=func.__doc__)
@@ -294,25 +403,27 @@ def create_parser(plugins):
         "--installers", action="append_const", dest="ifaces",
         const=interfaces.IInstaller)
 
-    parser.add_argument("--configurator")
-    parser.add_argument("-a", "--authenticator")
-    parser.add_argument("-i", "--installer")
+    helpful.add(None, "--configurator")
+    helpful.add(None, "-a", "--authenticator")
+    helpful.add(None, "-i", "--installer")
 
     # positional arg shadows --domains, instead of appending, and
     # --domains is useful, because it can be stored in config
     #for subparser in parser_run, parser_auth, parser_install:
     #    subparser.add_argument("domains", nargs="*", metavar="domain")
 
-    add("-d", "--domains", metavar="DOMAIN", action="append")
-    add("-s", "--server", default=flag_default("server"),
-        help=config_help("server"))
-    add("-k", "--accountkey", type=read_file,
+    helpful.add(None, "-d", "--domains", metavar="DOMAIN", action="append")
+    helpful.add(None, "-k", "--accountkey", type=read_file,
         help="Path to the account key file")
-    add("-m", "--email", help=config_help("email"))
-    add("-B", "--rsa-key-size", type=int, metavar="N",
-        default=flag_default("rsa_key_size"), help=config_help("rsa_key_size"))
+    helpful.add(None, "-m", "--email", help=config_help("email"))
+
+    helpful.add_group(
+        "security", description="Security parameters & server settings")
+    helpful.add("security", "-B", "--rsa-key-size", type=int, metavar="N",
+        default=flag_default("rsa_key_size"),
+        help=config_help("rsa_key_size",True))
     # TODO: resolve - assumes binary logic while client.py assumes ternary.
-    add("-r", "--redirect", action="store_true",
+    helpful.add("security", "-r", "--redirect", action="store_true",
         help="Automatically redirect all HTTP traffic to HTTPS for the newly "
              "authenticated vhost.")
 
@@ -328,49 +439,42 @@ def create_parser(plugins):
         default=flag_default("rollback_checkpoints"),
         help="Revert configuration N number of checkpoints.")
 
-    _paths_parser(parser.add_argument_group("paths"))
-
-    # TODO: plugin_parser should be called for every detected plugin
-    for name, plugin_ep in plugins.iteritems():
-        plugin_ep.plugin_cls.inject_parser_options(
-            parser.add_argument_group(
-                name, description=plugin_ep.description), name)
-
-    return parser
+    _paths_parser(helpful)
 
 
-def _paths_parser(parser):
-    add = parser.add_argument
-    hidden = True
-    add("--config-dir", default=flag_default("config_dir"),
-        help=config_help("config_dir", hidden))
-    add("--work-dir", default=flag_default("work_dir"),
-        help=config_help("work_dir", hidden))
-    add("--backup-dir", default=flag_default("backup_dir"),
-        help=config_help("backup_dir", hidden))
-    add("--key-dir", default=flag_default("key_dir"),
-        help=config_help("key_dir", hidden))
-    add("--cert-dir", default=flag_default("certs_dir"),
-        help=config_help("cert_dir", hidden))
+    return helpful.parser
 
-    add("--le-vhost-ext", default="-le-ssl.conf",
-        help=config_help("le_vhost_ext", hidden))
-    add("--cert-path", default=flag_default("cert_path"),
-        help=config_help("cert_path", hidden))
-    add("--chain-path", default=flag_default("chain_path"),
-        help=config_help("chain_path", hidden))
 
-    add("--renewer-config-file", default=flag_default("renewer_config_file"),
-        help=config_help("renewer_config_file", hidden))
+def _paths_parser(helpful):
+    add = helpful.add
+    helpful.add_group("paths", description="Arguments changing execution paths & servers")
+    add("paths", "--config-dir", default=flag_default("config_dir"),
+        help=config_help("config_dir"))
+    add("paths", "--work-dir", default=flag_default("work_dir"),
+        help=config_help("work_dir"))
+    add("paths", "--backup-dir", default=flag_default("backup_dir"),
+        help=config_help("backup_dir"))
+    add("paths", "--key-dir", default=flag_default("key_dir"),
+        help=config_help("key_dir"))
+    add("paths", "--cert-dir", default=flag_default("certs_dir"),
+        help=config_help("cert_dir"))
+    add("paths", "--le-vhost-ext", default="-le-ssl.conf",
+        help=config_help("le_vhost_ext"))
+    add("paths", "--cert-path", default=flag_default("cert_path"),
+        help=config_help("cert_path"))
+    add("paths", "--chain-path", default=flag_default("chain_path"),
+        help=config_help("chain_path"))
+    add("paths", "--renewer-config-file", default=flag_default("renewer_config_file"),
+        help=config_help("renewer_config_file"))
 
-    return parser
-
+    add("paths","-s", "--server", default=flag_default("server"),
+        help=config_help("server"))
 
 def main(args=sys.argv[1:]):
     """Command line argument parsing and main script execution."""
     # note: arg parser internally handles --help (and exits afterwards)
     plugins = plugins_disco.PluginsRegistry.find_all()
-    args = create_parser(plugins).parse_args(args)
+    args = create_parser(plugins,args).parse_args(args)
     config = configuration.NamespaceConfig(args)
 
     # Displayer
