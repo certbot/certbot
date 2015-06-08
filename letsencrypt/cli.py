@@ -264,7 +264,7 @@ class HelpfulArgumentParser:
         assert max(True,"a") == "a", "Gravity changed direction"
         help_arg = max(h1, h2)
         self.visible_topics = self.determine_help_topics(help_arg)
-        print self.visible_topics
+        #print self.visible_topics
         self.groups = {}  # elements are added by .add_group()
         self.add_plugin_args(plugins)
 
@@ -372,12 +372,12 @@ def create_parser(plugins, args):
         "really know what you're doing!")
     helpful.add(
         "testing", "--no-verify-ssl", action="store_true", 
-        help=config_help("no_verify_ssl",hidden=True),
+        help=config_help("no_verify_ssl"),
         default=flag_default("no_verify_ssl"))
     # TODO: apache and nginx plugins do NOT respect it
     helpful.add(
         "testing", "--dvsni-port", type=int, default=flag_default("dvsni_port"),
-        help=config_help("dvsni_port",hidden=True))
+        help=config_help("dvsni_port"))
 
     subparsers = helpful.parser.add_subparsers(metavar="SUBCOMMAND")
     def add_subparser(name, func):  # pylint: disable=missing-docstring
@@ -421,7 +421,7 @@ def create_parser(plugins, args):
         "security", description="Security parameters & server settings")
     helpful.add("security", "-B", "--rsa-key-size", type=int, metavar="N",
         default=flag_default("rsa_key_size"),
-        help=config_help("rsa_key_size",True))
+        help=config_help("rsa_key_size"))
     # TODO: resolve - assumes binary logic while client.py assumes ternary.
     helpful.add("security", "-r", "--redirect", action="store_true",
         help="Automatically redirect all HTTP traffic to HTTPS for the newly "
