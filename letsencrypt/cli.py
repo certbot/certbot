@@ -5,7 +5,6 @@ import atexit
 import logging
 import os
 import sys
-import types
 
 import configargparse
 import zope.component
@@ -306,16 +305,9 @@ class HelpfulArgumentParser:
             #print "Adding visible group " + topic 
             g = self.parser.add_argument_group(topic, **kwargs)
             self.groups[topic] = g
-            #def silencing_shim(self2, *args,**kwargs):
-            #    kwargs["help"] = argparse.SUPPRESS
-            #    self2._real_add_argument(*args, **kwargs)
-            #g._real_add_argument = g.add_argument
-            #g.add_argument = types.MethodType(silencing_shim, g)
             return g
         else:
             #print "Invisible group " + topic 
-            # The plugins is going to try to add non-silent arguments; we have
-            # to stop that...
             return self.silent_parser
 
     def add_plugin_args(self, plugins):
