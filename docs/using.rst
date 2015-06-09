@@ -71,7 +71,7 @@ Installation
 .. code-block:: shell
 
    virtualenv --no-site-packages -p python2 venv
-   ./venv/bin/pip install -r requirements.txt
+   ./venv/bin/pip install -r requirements.txt .
 
 
 Usage
