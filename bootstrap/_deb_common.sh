@@ -45,5 +45,15 @@ fi
 
 apt-get update
 apt-get install -y --no-install-recommends \
-  python python-setuptools "$virtualenv" python-dev gcc swig \
-  dialog libaugeas0 libssl-dev libffi-dev ca-certificates dpkg-dev
+  python \
+  python-setuptools \
+  "$virtualenv" \
+  python-dev \
+  gcc \
+  swig \
+  dialog \
+  libaugeas0 \
+  libssl-dev \
+  libffi-dev \
+  ca-certificates \
+  dpkg-dev \
