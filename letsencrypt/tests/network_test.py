@@ -14,7 +14,7 @@ import requests
 from acme import challenges
 from acme import jose
 from acme import jws as acme_jws
-from acme import messages2
+from acme import messages
 
 from letsencrypt import account
 from letsencrypt import errors
@@ -58,37 +58,37 @@ class NetworkTest(unittest.TestCase):
         self.post = mock.MagicMock(return_value=self.response)
         self.get = mock.MagicMock(return_value=self.response)
 
-        self.identifier = messages2.Identifier(
-            typ=messages2.IDENTIFIER_FQDN, value='example.com')
+        self.identifier = messages.Identifier(
+            typ=messages.IDENTIFIER_FQDN, value='example.com')
 
         self.config = mock.Mock(accounts_dir=tempfile.mkdtemp())
 
         # Registration
         self.contact = ('mailto:cert-admin@example.com', 'tel:+12025551212')
-        reg = messages2.Registration(
+        reg = messages.Registration(
             contact=self.contact, key=KEY.public(), recovery_token='t')
-        self.regr = messages2.RegistrationResource(
+        self.regr = messages.RegistrationResource(
             body=reg, uri='https://www.letsencrypt-demo.org/acme/reg/1',
             new_authzr_uri='https://www.letsencrypt-demo.org/acme/new-reg',
             terms_of_service='https://www.letsencrypt-demo.org/tos')
 
         # Authorization
         authzr_uri = 'https://www.letsencrypt-demo.org/acme/authz/1'
-        challb = messages2.ChallengeBody(
-            uri=(authzr_uri + '/1'), status=messages2.STATUS_VALID,
+        challb = messages.ChallengeBody(
+            uri=(authzr_uri + '/1'), status=messages.STATUS_VALID,
             chall=challenges.DNS(token='foo'))
-        self.challr = messages2.ChallengeResource(
+        self.challr = messages.ChallengeResource(
             body=challb, authzr_uri=authzr_uri)
-        self.authz = messages2.Authorization(
-            identifier=messages2.Identifier(
-                typ=messages2.IDENTIFIER_FQDN, value='example.com'),
+        self.authz = messages.Authorization(
+            identifier=messages.Identifier(
+                typ=messages.IDENTIFIER_FQDN, value='example.com'),
             challenges=(challb,), combinations=None)
-        self.authzr = messages2.AuthorizationResource(
+        self.authzr = messages.AuthorizationResource(
             body=self.authz, uri=authzr_uri,
             new_cert_uri='https://www.letsencrypt-demo.org/acme/new-cert')
 
         # Request issuance
-        self.certr = messages2.CertificateResource(
+        self.certr = messages.CertificateResource(
             body=CERT, authzrs=(self.authzr,),
             uri='https://www.letsencrypt-demo.org/acme/cert/1',
             cert_chain_uri='https://www.letsencrypt-demo.org/ca')
@@ -131,11 +131,11 @@ class NetworkTest(unittest.TestCase):
 
     def test_check_response_not_ok_jobj_error(self):
         self.response.ok = False
-        self.response.json.return_value = messages2.Error(
+        self.response.json.return_value = messages.Error(
             detail='foo', typ='serverInternal', title='some title').to_json()
         # pylint: disable=protected-access
         self.assertRaises(
-            messages2.Error, self.net._check_response, self.response)
+            messages.Error, self.net._check_response, self.response)
 
     def test_check_response_not_ok_no_jobj(self):
         self.response.ok = False
@@ -462,7 +462,7 @@ class NetworkTest(unittest.TestCase):
 
             if not authzr.retries:  # no more retries
                 done = mock.MagicMock(uri=authzr.uri, times=authzr.times)
-                done.body.status = messages2.STATUS_VALID
+                done.body.status = messages.STATUS_VALID
                 return done, []
 
             # response (2nd result tuple element) is reduced to only
@@ -550,7 +550,7 @@ class NetworkTest(unittest.TestCase):
 
     def test_revoke(self):
         self._mock_post_get()
-        self.net.revoke(self.certr, when=messages2.Revocation.NOW)
+        self.net.revoke(self.certr, when=messages.Revocation.NOW)
         self.post.assert_called_once_with(self.certr.uri, mock.ANY)
 
     def test_revoke_bad_status_raises_error(self):

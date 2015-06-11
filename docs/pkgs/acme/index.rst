@@ -10,16 +10,7 @@
 Messages
 --------
 
-v00
-~~~
-
 .. automodule:: acme.messages
-   :members:
-
-v02
-~~~
-
-.. automodule:: acme.messages2
    :members:
 
 

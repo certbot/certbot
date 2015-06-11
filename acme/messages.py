@@ -100,7 +100,7 @@ IDENTIFIER_FQDN = IdentifierType('dns')  # IdentifierDNS in Boulder
 class Identifier(jose.JSONObjectWithFields):
     """ACME identifier.
 
-    :ivar acme.messages2.IdentifierType typ:
+    :ivar acme.messages.IdentifierType typ:
 
     """
     typ = jose.Field('type', decoder=IdentifierType.from_json)
@@ -110,7 +110,7 @@ class Identifier(jose.JSONObjectWithFields):
 class Resource(jose.ImmutableMap):
     """ACME Resource.
 
-    :ivar acme.messages2.ResourceBody body: Resource body.
+    :ivar acme.messages.ResourceBody body: Resource body.
     :ivar str uri: Location of the resource.
 
     """
@@ -124,7 +124,7 @@ class ResourceBody(jose.JSONObjectWithFields):
 class RegistrationResource(Resource):
     """Registration Resource.
 
-    :ivar acme.messages2.Registration body:
+    :ivar acme.messages.Registration body:
     :ivar str new_authzr_uri: URI found in the 'next' ``Link`` header
     :ivar str terms_of_service: URL for the CA TOS.
 
@@ -150,7 +150,7 @@ class Registration(ResourceBody):
 class ChallengeResource(Resource, jose.JSONObjectWithFields):
     """Challenge Resource.
 
-    :ivar acme.messages2.ChallengeBody body:
+    :ivar acme.messages.ChallengeBody body:
     :ivar str authzr_uri: URI found in the 'up' ``Link`` header.
 
     """
@@ -175,7 +175,7 @@ class ChallengeBody(ResourceBody):
     :ivar acme.challenges.Challenge: Wrapped challenge.
         Conveniently, all challenge fields are proxied, i.e. you can
         call ``challb.x`` to get ``challb.chall.x`` contents.
-    :ivar acme.messages2.Status status:
+    :ivar acme.messages.Status status:
     :ivar datetime.datetime validated:
 
     """
@@ -202,7 +202,7 @@ class ChallengeBody(ResourceBody):
 class AuthorizationResource(Resource):
     """Authorization Resource.
 
-    :ivar acme.messages2.Authorization body:
+    :ivar acme.messages.Authorization body:
     :ivar str new_cert_uri: URI found in the 'next' ``Link`` header
 
     """
@@ -212,13 +212,13 @@ class AuthorizationResource(Resource):
 class Authorization(ResourceBody):
     """Authorization Resource Body.
 
-    :ivar acme.messages2.Identifier identifier:
+    :ivar acme.messages.Identifier identifier:
     :ivar list challenges: `list` of `.ChallengeBody`
     :ivar tuple combinations: Challenge combinations (`tuple` of `tuple`
         of `int`, as opposed to `list` of `list` from the spec).
     :ivar acme.jose.jwk.JWK key: Public key.
     :ivar tuple contact:
-    :ivar acme.messages2.Status status:
+    :ivar acme.messages.Status status:
     :ivar datetime.datetime expires:
 
     """

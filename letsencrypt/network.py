@@ -11,7 +11,7 @@ import werkzeug
 
 from acme import jose
 from acme import jws as acme_jws
-from acme import messages2
+from acme import messages
 
 from letsencrypt import errors
 
@@ -75,7 +75,7 @@ class Network(object):
             function will raise an error. Otherwise, wrong Content-Type
             is ignored, but logged.
 
-        :raises letsencrypt.messages2.Error: If server response body
+        :raises letsencrypt.messages.Error: If server response body
             carries HTTP Problem (draft-ietf-appsawg-http-problem-00).
         :raises letsencrypt.errors.NetworkError: In case of other
             networking errors.
@@ -98,7 +98,7 @@ class Network(object):
                 try:
                     logging.error("Error: %s", jobj)
                     logging.error("Response from server: %s", response.content)
-                    raise messages2.Error.from_json(jobj)
+                    raise messages.Error.from_json(jobj)
                 except jose.DeserializationError as error:
                     # Couldn't deserialize JSON object
                     raise errors.NetworkError((response, error))
@@ -160,7 +160,7 @@ class Network(object):
         :param JSONDeSerializable obj: Will be wrapped in JWS.
         :param str content_type: Expected ``Content-Type``, fails if not set.
 
-        :raises acme.messages2.NetworkError:
+        :raises acme.messages.NetworkError:
 
         :returns: HTTP Response
         :rtype: `requests.Response`
@@ -192,13 +192,13 @@ class Network(object):
             except KeyError:
                 raise errors.NetworkError('"next" link missing')
 
-        return messages2.RegistrationResource(
-            body=messages2.Registration.from_json(response.json()),
+        return messages.RegistrationResource(
+            body=messages.Registration.from_json(response.json()),
             uri=response.headers.get('Location', uri),
             new_authzr_uri=new_authzr_uri,
             terms_of_service=terms_of_service)
 
-    def register(self, contact=messages2.Registration._fields[
+    def register(self, contact=messages.Registration._fields[
             'contact'].default):
         """Register.
 
@@ -211,7 +211,7 @@ class Network(object):
         :raises letsencrypt.errors.UnexpectedUpdate:
 
         """
-        new_reg = messages2.Registration(contact=contact)
+        new_reg = messages.Registration(contact=contact)
 
         response = self._post(self.new_reg_uri, new_reg)
         assert response.status_code == httplib.CREATED  # TODO: handle errors
@@ -289,8 +289,8 @@ class Network(object):
             except KeyError:
                 raise errors.NetworkError('"next" link missing')
 
-        authzr = messages2.AuthorizationResource(
-            body=messages2.Authorization.from_json(response.json()),
+        authzr = messages.AuthorizationResource(
+            body=messages.Authorization.from_json(response.json()),
             uri=response.headers.get('Location', uri),
             new_cert_uri=new_cert_uri)
         if authzr.body.identifier != identifier:
@@ -301,7 +301,7 @@ class Network(object):
         """Request challenges.
 
         :param identifier: Identifier to be challenged.
-        :type identifier: `.messages2.Identifier`
+        :type identifier: `.messages.Identifier`
 
         :param str new_authzr_uri: new-authorization URI
 
@@ -309,7 +309,7 @@ class Network(object):
         :rtype: `.AuthorizationResource`
 
         """
-        new_authz = messages2.Authorization(identifier=identifier)
+        new_authz = messages.Authorization(identifier=identifier)
         response = self._post(new_authzr_uri, new_authz)
         assert response.status_code == httplib.CREATED  # TODO: handle errors
         return self._authzr_from_response(response, identifier)
@@ -328,8 +328,8 @@ class Network(object):
         :rtype: `.AuthorizationResource`
 
         """
-        return self.request_challenges(messages2.Identifier(
-            typ=messages2.IDENTIFIER_FQDN, value=domain), new_authz_uri)
+        return self.request_challenges(messages.Identifier(
+            typ=messages.IDENTIFIER_FQDN, value=domain), new_authz_uri)
 
     def answer_challenge(self, challb, response):
         """Answer challenge.
@@ -351,9 +351,9 @@ class Network(object):
             authzr_uri = response.links['up']['url']
         except KeyError:
             raise errors.NetworkError('"up" Link header missing')
-        challr = messages2.ChallengeResource(
+        challr = messages.ChallengeResource(
             authzr_uri=authzr_uri,
-            body=messages2.ChallengeBody.from_json(response.json()))
+            body=messages.ChallengeBody.from_json(response.json()))
         # TODO: check that challr.uri == response.headers['Location']?
         if challr.uri != challb.uri:
             raise errors.UnexpectedUpdate(challr.uri)
@@ -412,14 +412,14 @@ class Network(object):
         :param authzrs: `list` of `.AuthorizationResource`
 
         :returns: Issued certificate
-        :rtype: `.messages2.CertificateResource`
+        :rtype: `.messages.CertificateResource`
 
         """
         assert authzrs, "Authorizations list is empty"
         logging.debug("Requesting issuance...")
 
         # TODO: assert len(authzrs) == number of SANs
-        req = messages2.CertificateRequest(
+        req = messages.CertificateRequest(
             csr=csr, authorizations=tuple(authzr.uri for authzr in authzrs))
 
         content_type = self.DER_CONTENT_TYPE  # TODO: add 'cert_type 'argument
@@ -436,7 +436,7 @@ class Network(object):
         except KeyError:
             raise errors.NetworkError('"Location" Header missing')
 
-        return messages2.CertificateResource(
+        return messages.CertificateResource(
             uri=uri, authzrs=authzrs, cert_chain_uri=cert_chain_uri,
             body=jose.ComparableX509(
                 M2Crypto.X509.load_cert_der_string(response.content)))
@@ -459,7 +459,7 @@ class Network(object):
             ``Retry-After`` is not present in the response.
 
         :returns: ``(cert, updated_authzrs)`` `tuple` where ``cert`` is
-            the issued certificate (`.messages2.CertificateResource.),
+            the issued certificate (`.messages.CertificateResource.),
             and ``updated_authzrs`` is a `tuple` consisting of updated
             Authorization Resources (`.AuthorizationResource`) as
             present in the responses from server, and in the same order
@@ -488,7 +488,7 @@ class Network(object):
             updated_authzr, response = self.poll(updated[authzr])
             updated[authzr] = updated_authzr
 
-            if updated_authzr.body.status != messages2.STATUS_VALID:
+            if updated_authzr.body.status != messages.STATUS_VALID:
                 # push back to the priority queue, with updated retry_after
                 heapq.heappush(waiting, (self.retry_after(
                     response, default=mintime), authzr))
@@ -561,20 +561,20 @@ class Network(object):
         else:
             return None
 
-    def revoke(self, certr, when=messages2.Revocation.NOW):
+    def revoke(self, certr, when=messages.Revocation.NOW):
         """Revoke certificate.
 
         :param certr: Certificate Resource
         :type certr: `.CertificateResource`
 
         :param when: When should the revocation take place? Takes
-           the same values as `.messages2.Revocation.revoke`.
+           the same values as `.messages.Revocation.revoke`.
 
         :raises letsencrypt.errors.NetworkError: If revocation is
             unsuccessful.
 
         """
-        rev = messages2.Revocation(revoke=when, authorizations=tuple(
+        rev = messages.Revocation(revoke=when, authorizations=tuple(
             authzr.uri for authzr in certr.authzrs))
         response = self._post(certr.uri, rev)
         if response.status_code != httplib.OK:

@@ -1,4 +1,4 @@
-"""Tests for acme.messages2."""
+"""Tests for acme.messages."""
 import datetime
 import os
 import pkg_resources
@@ -17,10 +17,10 @@ KEY = jose.util.HashableRSAKey(RSA.importKey(pkg_resources.resource_string(
 
 
 class ErrorTest(unittest.TestCase):
-    """Tests for acme.messages2.Error."""
+    """Tests for acme.messages.Error."""
 
     def setUp(self):
-        from acme.messages2 import Error
+        from acme.messages import Error
         self.error = Error(detail='foo', typ='malformed', title='title')
         self.jobj = {'detail': 'foo', 'title': 'some title'}
 
@@ -32,14 +32,14 @@ class ErrorTest(unittest.TestCase):
             'malformed', self.error.from_json(self.error.to_partial_json()).typ)
 
     def test_typ_decoder_missing_prefix(self):
-        from acme.messages2 import Error
+        from acme.messages import Error
         self.jobj['type'] = 'malformed'
         self.assertRaises(jose.DeserializationError, Error.from_json, self.jobj)
         self.jobj['type'] = 'not valid bare type'
         self.assertRaises(jose.DeserializationError, Error.from_json, self.jobj)
 
     def test_typ_decoder_not_recognized(self):
-        from acme.messages2 import Error
+        from acme.messages import Error
         self.jobj['type'] = 'urn:acme:error:baz'
         self.assertRaises(jose.DeserializationError, Error.from_json, self.jobj)
 
@@ -48,7 +48,7 @@ class ErrorTest(unittest.TestCase):
             'The request message was malformed', self.error.description)
 
     def test_from_json_hashable(self):
-        from acme.messages2 import Error
+        from acme.messages import Error
         hash(Error.from_json(self.error.to_json()))
 
     def test_str(self):
@@ -59,10 +59,10 @@ class ErrorTest(unittest.TestCase):
 
 
 class ConstantTest(unittest.TestCase):
-    """Tests for acme.messages2._Constant."""
+    """Tests for acme.messages._Constant."""
 
     def setUp(self):
-        from acme.messages2 import _Constant
+        from acme.messages import _Constant
         class MockConstant(_Constant):  # pylint: disable=missing-docstring
             POSSIBLE_NAMES = {}
 
@@ -95,7 +95,7 @@ class ConstantTest(unittest.TestCase):
         self.assertFalse(self.const_a != const_a_prime)
 
 class RegistrationTest(unittest.TestCase):
-    """Tests for acme.messages2.Registration."""
+    """Tests for acme.messages.Registration."""
 
     def setUp(self):
         key = jose.jwk.JWKRSA(key=KEY.publickey())
@@ -103,7 +103,7 @@ class RegistrationTest(unittest.TestCase):
         recovery_token = 'XYZ'
         agreement = 'https://letsencrypt.org/terms'
 
-        from acme.messages2 import Registration
+        from acme.messages import Registration
         self.reg = Registration(
             key=key, contact=contact, recovery_token=recovery_token,
             agreement=agreement)
@@ -121,31 +121,31 @@ class RegistrationTest(unittest.TestCase):
         self.assertEqual(self.jobj_to, self.reg.to_partial_json())
 
     def test_from_json(self):
-        from acme.messages2 import Registration
+        from acme.messages import Registration
         self.assertEqual(self.reg, Registration.from_json(self.jobj_from))
 
     def test_from_json_hashable(self):
-        from acme.messages2 import Registration
+        from acme.messages import Registration
         hash(Registration.from_json(self.jobj_from))
 
 
 class ChallengeResourceTest(unittest.TestCase):
-    """Tests for acme.messages2.ChallengeResource."""
+    """Tests for acme.messages.ChallengeResource."""
 
     def test_uri(self):
-        from acme.messages2 import ChallengeResource
+        from acme.messages import ChallengeResource
         self.assertEqual('http://challb', ChallengeResource(body=mock.MagicMock(
             uri='http://challb'), authzr_uri='http://authz').uri)
 
 
 class ChallengeBodyTest(unittest.TestCase):
-    """Tests for acme.messages2.ChallengeBody."""
+    """Tests for acme.messages.ChallengeBody."""
 
     def setUp(self):
         self.chall = challenges.DNS(token='foo')
 
-        from acme.messages2 import ChallengeBody
-        from acme.messages2 import STATUS_VALID
+        from acme.messages import ChallengeBody
+        from acme.messages import STATUS_VALID
         self.status = STATUS_VALID
         self.challb = ChallengeBody(
             uri='http://challb', chall=self.chall, status=self.status)
@@ -163,11 +163,11 @@ class ChallengeBodyTest(unittest.TestCase):
         self.assertEqual(self.jobj_to, self.challb.to_partial_json())
 
     def test_from_json(self):
-        from acme.messages2 import ChallengeBody
+        from acme.messages import ChallengeBody
         self.assertEqual(self.challb, ChallengeBody.from_json(self.jobj_from))
 
     def test_from_json_hashable(self):
-        from acme.messages2 import ChallengeBody
+        from acme.messages import ChallengeBody
         hash(ChallengeBody.from_json(self.jobj_from))
 
     def test_proxy(self):
@@ -175,11 +175,11 @@ class ChallengeBodyTest(unittest.TestCase):
 
 
 class AuthorizationTest(unittest.TestCase):
-    """Tests for acme.messages2.Authorization."""
+    """Tests for acme.messages.Authorization."""
 
     def setUp(self):
-        from acme.messages2 import ChallengeBody
-        from acme.messages2 import STATUS_VALID
+        from acme.messages import ChallengeBody
+        from acme.messages import STATUS_VALID
         self.challbs = (
             ChallengeBody(
                 uri='http://challb1', status=STATUS_VALID,
@@ -191,9 +191,9 @@ class AuthorizationTest(unittest.TestCase):
         )
         combinations = ((0, 2), (1, 2))
 
-        from acme.messages2 import Authorization
-        from acme.messages2 import Identifier
-        from acme.messages2 import IDENTIFIER_FQDN
+        from acme.messages import Authorization
+        from acme.messages import Identifier
+        from acme.messages import IDENTIFIER_FQDN
         identifier = Identifier(typ=IDENTIFIER_FQDN, value='example.com')
         self.authz = Authorization(
             identifier=identifier, combinations=combinations,
@@ -206,11 +206,11 @@ class AuthorizationTest(unittest.TestCase):
         }
 
     def test_from_json(self):
-        from acme.messages2 import Authorization
+        from acme.messages import Authorization
         Authorization.from_json(self.jobj_from)
 
     def test_from_json_hashable(self):
-        from acme.messages2 import Authorization
+        from acme.messages import Authorization
         hash(Authorization.from_json(self.jobj_from))
 
     def test_resolved_combinations(self):
@@ -221,10 +221,10 @@ class AuthorizationTest(unittest.TestCase):
 
 
 class RevocationTest(unittest.TestCase):
-    """Tests for acme.messages2.RevocationTest."""
+    """Tests for acme.messages.RevocationTest."""
 
     def setUp(self):
-        from acme.messages2 import Revocation
+        from acme.messages import Revocation
         self.rev_now = Revocation(authorizations=(), revoke=Revocation.NOW)
         self.rev_date = Revocation(authorizations=(), revoke=datetime.datetime(
             2015, 3, 27, tzinfo=pytz.utc))
@@ -233,7 +233,7 @@ class RevocationTest(unittest.TestCase):
                           'revoke': '2015-03-27T00:00:00Z'}
 
     def test_revoke_decoder(self):
-        from acme.messages2 import Revocation
+        from acme.messages import Revocation
         self.assertEqual(self.rev_now, Revocation.from_json(self.jobj_now))
         self.assertEqual(self.rev_date, Revocation.from_json(self.jobj_date))
 
@@ -242,7 +242,7 @@ class RevocationTest(unittest.TestCase):
         self.assertEqual(self.jobj_date, self.rev_date.to_partial_json())
 
     def test_from_json_hashable(self):
-        from acme.messages2 import Revocation
+        from acme.messages import Revocation
         hash(Revocation.from_json(self.rev_now.to_json()))
 
 
