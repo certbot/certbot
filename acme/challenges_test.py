@@ -18,14 +18,14 @@ KEY = jose.HashableRSAKey(Crypto.PublicKey.RSA.importKey(
         'acme.jose', os.path.join('testdata', 'rsa512_key.pem'))))
 
 
-class SimpleHTTPSTest(unittest.TestCase):
+class SimpleHTTPTest(unittest.TestCase):
 
     def setUp(self):
-        from acme.challenges import SimpleHTTPS
-        self.msg = SimpleHTTPS(
+        from acme.challenges import SimpleHTTP
+        self.msg = SimpleHTTP(
             token='evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ+PCt92wr+oA')
         self.jmsg = {
-            'type': 'simpleHttps',
+            'type': 'simpleHttp',
             'token': 'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ+PCt92wr+oA',
         }
 
@@ -33,21 +33,21 @@ class SimpleHTTPSTest(unittest.TestCase):
         self.assertEqual(self.jmsg, self.msg.to_partial_json())
 
     def test_from_json(self):
-        from acme.challenges import SimpleHTTPS
-        self.assertEqual(self.msg, SimpleHTTPS.from_json(self.jmsg))
+        from acme.challenges import SimpleHTTP
+        self.assertEqual(self.msg, SimpleHTTP.from_json(self.jmsg))
 
     def test_from_json_hashable(self):
-        from acme.challenges import SimpleHTTPS
-        hash(SimpleHTTPS.from_json(self.jmsg))
+        from acme.challenges import SimpleHTTP
+        hash(SimpleHTTP.from_json(self.jmsg))
 
 
-class SimpleHTTPSResponseTest(unittest.TestCase):
+class SimpleHTTPResponseTest(unittest.TestCase):
 
     def setUp(self):
-        from acme.challenges import SimpleHTTPSResponse
-        self.msg = SimpleHTTPSResponse(path='6tbIMBC5Anhl5bOlWT5ZFA')
+        from acme.challenges import SimpleHTTPResponse
+        self.msg = SimpleHTTPResponse(path='6tbIMBC5Anhl5bOlWT5ZFA')
         self.jmsg = {
-            'type': 'simpleHttps',
+            'type': 'simpleHttp',
             'path': '6tbIMBC5Anhl5bOlWT5ZFA',
         }
 
@@ -59,13 +59,13 @@ class SimpleHTTPSResponseTest(unittest.TestCase):
         self.assertEqual(self.jmsg, self.msg.to_partial_json())
 
     def test_from_json(self):
-        from acme.challenges import SimpleHTTPSResponse
+        from acme.challenges import SimpleHTTPResponse
         self.assertEqual(
-            self.msg, SimpleHTTPSResponse.from_json(self.jmsg))
+            self.msg, SimpleHTTPResponse.from_json(self.jmsg))
 
     def test_from_json_hashable(self):
-        from acme.challenges import SimpleHTTPSResponse
-        hash(SimpleHTTPSResponse.from_json(self.jmsg))
+        from acme.challenges import SimpleHTTPResponse
+        hash(SimpleHTTPResponse.from_json(self.jmsg))
 
 
 class DVSNITest(unittest.TestCase):
