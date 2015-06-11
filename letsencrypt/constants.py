@@ -11,7 +11,7 @@ SETUPTOOLS_PLUGINS_ENTRY_POINT = "letsencrypt.plugins"
 CLI_DEFAULTS = dict(
     config_files=["/etc/letsencrypt/cli.ini"],
     verbose_count=-(logging.WARNING / 10),
-    server="www.letsencrypt-demo.org/acme/new-reg",
+    server="https://www.letsencrypt-demo.org/acme/new-reg",
     rsa_key_size=2048,
     rollback_checkpoints=0,
     config_dir="/etc/letsencrypt",
@@ -21,8 +21,23 @@ CLI_DEFAULTS = dict(
     certs_dir="/etc/letsencrypt/certs",
     cert_path="/etc/letsencrypt/certs/cert-letsencrypt.pem",
     chain_path="/etc/letsencrypt/certs/chain-letsencrypt.pem",
+    renewer_config_file="/etc/letsencrypt/renewer.conf",
+    no_verify_ssl=False,
+    dvsni_port=challenges.DVSNI.PORT,
 )
 """Defaults for CLI flags and `.IConfig` attributes."""
+
+
+RENEWER_DEFAULTS = dict(
+    renewer_config_file="/etc/letsencrypt/renewer.conf",
+    renewal_configs_dir="/etc/letsencrypt/configs",
+    archive_dir="/etc/letsencrypt/archive",
+    live_dir="/etc/letsencrypt/live",
+    renewer_enabled="yes",
+    renew_before_expiry="30 days",
+    deploy_before_expiry="20 days",
+)
+"""Defaults for renewer script."""
 
 
 EXCLUSIVE_CHALLENGES = frozenset([frozenset([

@@ -7,6 +7,7 @@ import tempfile
 import unittest
 
 import M2Crypto
+import OpenSSL
 import mock
 
 
@@ -14,6 +15,10 @@ RSA256_KEY = pkg_resources.resource_string(
     'acme.jose', os.path.join('testdata', 'rsa256_key.pem'))
 RSA512_KEY = pkg_resources.resource_string(
     'acme.jose', os.path.join('testdata', 'rsa512_key.pem'))
+CERT = pkg_resources.resource_string(
+    'letsencrypt.tests', os.path.join('testdata', 'cert.pem'))
+SAN_CERT = pkg_resources.resource_string(
+    'letsencrypt.tests', os.path.join('testdata', 'cert-san.pem'))
 
 
 class InitSaveKeyTest(unittest.TestCase):
@@ -66,6 +71,27 @@ class InitSaveCSRTest(unittest.TestCase):
 
         self.assertEqual(csr.data, 'csr_der')
         self.assertTrue('csr-letsencrypt.pem' in csr.file)
+
+
+class MakeCSRTest(unittest.TestCase):
+    """Tests for letsencrypt.crypto_util.make_csr."""
+
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from letsencrypt.crypto_util import make_csr
+        return make_csr(*args, **kwargs)
+
+    def test_san(self):
+        from letsencrypt.crypto_util import get_sans_from_csr
+        # TODO: Fails for RSA256_KEY
+        csr_pem, csr_der = self._call(
+            RSA512_KEY, ['example.com', 'www.example.com'])
+        self.assertEqual(
+            ['example.com', 'www.example.com'], get_sans_from_csr(csr_pem))
+        self.assertEqual(
+            ['example.com', 'www.example.com'], get_sans_from_csr(
+                csr_der, OpenSSL.crypto.FILETYPE_ASN1))
+
 
 class ValidCSRTest(unittest.TestCase):
     """Tests for letsencrypt.crypto_util.valid_csr."""
@@ -148,6 +174,61 @@ class MakeSSCertTest(unittest.TestCase):
     def test_it(self):  # pylint: disable=no-self-use
         from letsencrypt.crypto_util import make_ss_cert
         make_ss_cert(RSA512_KEY, ['example.com', 'www.example.com'])
+
+
+class GetSANsFromCertTest(unittest.TestCase):
+    """Tests for letsencrypt.crypto_util.get_sans_from_cert."""
+
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from letsencrypt.crypto_util import get_sans_from_cert
+        return get_sans_from_cert(*args, **kwargs)
+
+    def test_single(self):
+        self.assertEqual([], self._call(pkg_resources.resource_string(
+            __name__, os.path.join('testdata', 'cert.pem'))))
+
+    def test_san(self):
+        self.assertEqual(
+            ['example.com', 'www.example.com'],
+            self._call(pkg_resources.resource_string(
+                __name__, os.path.join('testdata', 'cert-san.pem'))))
+
+
+class GetSANsFromCSRTest(unittest.TestCase):
+    """Tests for letsencrypt.crypto_util.get_sans_from_csr."""
+    def test_extract_one_san(self):
+        from letsencrypt.crypto_util import get_sans_from_csr
+        csr = pkg_resources.resource_string(
+            __name__, os.path.join('testdata', 'csr.pem'))
+        self.assertEqual(get_sans_from_csr(csr), ['example.com'])
+
+    def test_extract_two_sans(self):
+        from letsencrypt.crypto_util import get_sans_from_csr
+        csr = pkg_resources.resource_string(
+            __name__, os.path.join('testdata', 'csr-san.pem'))
+        self.assertEqual(get_sans_from_csr(csr), ['example.com',
+                                                  'www.example.com'])
+
+    def test_extract_six_sans(self):
+        from letsencrypt.crypto_util import get_sans_from_csr
+        csr = pkg_resources.resource_string(
+            __name__, os.path.join('testdata', 'csr-6sans.pem'))
+        self.assertEqual(get_sans_from_csr(csr),
+                         ["example.com", "example.org", "example.net",
+                          "example.info", "subdomain.example.com",
+                          "other.subdomain.example.com"])
+
+    def test_parse_non_csr(self):
+        from letsencrypt.crypto_util import get_sans_from_csr
+        self.assertRaises(OpenSSL.crypto.Error, get_sans_from_csr,
+                          "hello there")
+
+    def test_parse_no_sans(self):
+        from letsencrypt.crypto_util import get_sans_from_csr
+        csr = pkg_resources.resource_string(
+            __name__, os.path.join('testdata', 'csr-nosans.pem'))
+        self.assertEqual([], get_sans_from_csr(csr))
 
 
 if __name__ == '__main__':

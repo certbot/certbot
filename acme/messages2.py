@@ -18,11 +18,9 @@ class Error(jose.JSONObjectWithFields, Exception):
         'badCSR': 'The CSR is unacceptable (e.g., due to a short key)',
     }
 
-    # TODO: Boulder omits 'type' and 'instance', spec requires, boulder#128
-    typ = jose.Field('type', omitempty=True)
+    typ = jose.Field('type')
     title = jose.Field('title', omitempty=True)
     detail = jose.Field('detail')
-    instance = jose.Field('instance', omitempty=True)
 
     @typ.encoder
     def typ(value):  # pylint: disable=missing-docstring,no-self-argument
@@ -226,10 +224,6 @@ class Authorization(ResourceBody):
     identifier = jose.Field('identifier', decoder=Identifier.from_json)
     challenges = jose.Field('challenges', omitempty=True)
     combinations = jose.Field('combinations', omitempty=True)
-
-    # TODO: acme-spec #92, #98
-    key = Registration._fields['key']
-    contact = Registration._fields['contact']
 
     status = jose.Field('status', omitempty=True, decoder=Status.from_json)
     # TODO: 'expires' is allowed for Authorization Resources in

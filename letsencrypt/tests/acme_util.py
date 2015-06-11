@@ -1,4 +1,4 @@
-"""Class helps construct valid ACME messages for testing."""
+"""ACME utilities for testing."""
 import datetime
 import itertools
 import os
@@ -125,10 +125,9 @@ def gen_authzr(authz_status, domain, challs, statuses, combos=True):
     if combos:
         authz_kwargs.update({"combinations": gen_combos(challbs)})
     if authz_status == messages2.STATUS_VALID:
-        now = datetime.datetime.now()
         authz_kwargs.update({
             "status": authz_status,
-            "expires": datetime.datetime(now.year, now.month + 1, now.day),
+            "expires": datetime.datetime.now() + datetime.timedelta(days=31),
         })
     else:
         authz_kwargs.update({

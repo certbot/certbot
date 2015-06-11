@@ -3,7 +3,7 @@ import string
 
 from pyparsing import (
     Literal, White, Word, alphanums, CharsNotIn, Forward, Group,
-    Optional, OneOrMore, ZeroOrMore, pythonStyleComment)
+    Optional, OneOrMore, Regex, ZeroOrMore, pythonStyleComment)
 
 
 class RawNginxParser(object):
@@ -16,17 +16,21 @@ class RawNginxParser(object):
     semicolon = Literal(";").suppress()
     space = White().suppress()
     key = Word(alphanums + "_/")
-    value = CharsNotIn("{};,")
+    # Matches anything that is not a special character AND any chars in single
+    # or double quotes
+    value = Regex(r"((\".*\")?(\'.*\')?[^\{\};,]?)+")
     location = CharsNotIn("{};," + string.whitespace)
     # modifier for location uri [ = | ~ | ~* | ^~ ]
     modifier = Literal("=") | Literal("~*") | Literal("~") | Literal("^~")
 
     # rules
     assignment = (key + Optional(space + value) + semicolon)
+    location_statement = Optional(space + modifier) + Optional(space + location)
+    if_statement = Literal("if") + space + Regex(r"\(.+\)") + space
     block = Forward()
 
     block << Group(
-        Group(key + Optional(space + modifier) + Optional(space + location))
+        (Group(key + location_statement) ^ Group(if_statement))
         + left_bracket
         + Group(ZeroOrMore(Group(assignment) | block))
         + right_bracket)

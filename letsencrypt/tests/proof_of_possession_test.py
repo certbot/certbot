@@ -1,4 +1,4 @@
-"""Tests for proof_of_possession.py"""
+"""Tests for letsencrypt.proof_of_possession."""
 import Crypto.PublicKey.RSA
 import os
 import pkg_resources
@@ -69,7 +69,7 @@ class ProofOfPossessionTest(unittest.TestCase):
     def test_perform_no_input(self):
         self.assertTrue(self.proof_of_pos.perform(self.achall).verify())
 
-    @mock.patch("letsencrypt.recovery_token.zope.component.getUtility")
+    @mock.patch("letsencrypt.proof_of_possession.zope.component.getUtility")
     def test_perform_with_input(self, mock_input):
         # Remove the matching certificate
         self.installer.get_all_certs_keys.return_value.pop()

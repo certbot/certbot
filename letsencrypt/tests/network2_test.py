@@ -41,9 +41,10 @@ class NetworkTest(unittest.TestCase):
 
     def setUp(self):
         from letsencrypt.network2 import Network
+        self.verify_ssl = mock.MagicMock()
         self.net = Network(
             new_reg_uri='https://www.letsencrypt-demo.org/acme/new-reg',
-            key=KEY, alg=jose.RS256)
+            key=KEY, alg=jose.RS256, verify_ssl=self.verify_ssl)
         self.response = mock.MagicMock(ok=True, status_code=httplib.OK)
         self.response.headers = {}
         self.response.links = {}
@@ -72,7 +73,7 @@ class NetworkTest(unittest.TestCase):
         self.authz = messages2.Authorization(
             identifier=messages2.Identifier(
                 typ=messages2.IDENTIFIER_FQDN, value='example.com'),
-            challenges=(challb,), combinations=None, key=KEY.public())
+            challenges=(challb,), combinations=None)
         self.authzr = messages2.AuthorizationResource(
             body=self.authz, uri=authzr_uri,
             new_cert_uri='https://www.letsencrypt-demo.org/acme/new-cert')
@@ -90,6 +91,9 @@ class NetworkTest(unittest.TestCase):
         # pylint: disable=protected-access
         self.net._post = mock.MagicMock(return_value=self.response)
         self.net._get = mock.MagicMock(return_value=self.response)
+
+    def test_init(self):
+        self.assertTrue(self.net.verify_ssl is self.verify_ssl)
 
     def test_wrap_in_jws(self):
         class MockJSONDeSerializable(jose.JSONDeSerializable):
@@ -114,7 +118,8 @@ class NetworkTest(unittest.TestCase):
 
     def test_check_response_not_ok_jobj_error(self):
         self.response.ok = False
-        self.response.json.return_value = messages2.Error(detail='foo')
+        self.response.json.return_value = messages2.Error(
+            detail='foo', typ='serverInternal', title='some title').to_json()
         # pylint: disable=protected-access
         self.assertRaises(
             messages2.Error, self.net._check_response, self.response)
@@ -178,6 +183,20 @@ class NetworkTest(unittest.TestCase):
         self.net._post('uri', 'data', content_type='ct')
         self.net._check_response.assert_called_once_with(
             requests_mock.post('uri', 'data'), content_type='ct')
+
+    @mock.patch('letsencrypt.client.network2.requests')
+    def test_get_post_verify_ssl(self, requests_mock):
+        # pylint: disable=protected-access
+        self.net._check_response = mock.MagicMock()
+
+        for verify_ssl in [True, False]:
+            self.net.verify_ssl = verify_ssl
+            self.net._get('uri')
+            self.net._post('uri', 'data')
+            requests_mock.get.assert_called_once_with('uri', verify=verify_ssl)
+            requests_mock.post.assert_called_once_with(
+                'uri', data='data', verify=verify_ssl)
+            requests_mock.reset_mock()
 
     def test_register(self):
         self.response.status_code = httplib.CREATED
@@ -258,11 +277,10 @@ class NetworkTest(unittest.TestCase):
         # TODO: test POST call arguments
 
         # TODO: split here and separate test
-        authz_wrong_key = self.authz.update(key=KEY2.public())
-        self.response.json.return_value = authz_wrong_key.to_json()
-        self.assertRaises(
-            errors.UnexpectedUpdate, self.net.request_challenges,
-            self.identifier, self.regr)
+        self.response.json.return_value = self.authz.update(
+            identifier=self.identifier.update(value='foo')).to_json()
+        self.assertRaises(errors.UnexpectedUpdate, self.net.request_challenges,
+                          self.identifier, self.authzr.uri)
 
     def test_request_challenges_missing_next(self):
         self.response.status_code = httplib.CREATED
@@ -335,6 +353,11 @@ class NetworkTest(unittest.TestCase):
         self._mock_post_get()
         self.assertEqual((self.authzr, self.response),
                          self.net.poll(self.authzr))
+
+        # TODO: split here and separate test
+        self.response.json.return_value = self.authz.update(
+            identifier=self.identifier.update(value='foo')).to_json()
+        self.assertRaises(errors.UnexpectedUpdate, self.net.poll, self.authzr)
 
     def test_request_issuance(self):
         self.response.content = CERT.as_der()

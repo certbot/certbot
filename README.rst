@@ -1,7 +1,7 @@
 About the Let's Encrypt Client
 ==============================
 
-|build-status| |coverage| |docs|
+|build-status| |coverage| |docs| |container|
 
 In short: getting and installing SSL/TLS certificates made easy (`watch demo video`_).
 
@@ -21,7 +21,7 @@ All you need to do is::
 
   user@www:~$ sudo letsencrypt -d www.example.org auth
 
-and if you have a compatbile web server (Apache or Nginx), Let's Encrypt can
+and if you have a compatible web server (Apache or Nginx), Let's Encrypt can
 not only get a new certificate, but also deploy it and configure your
 server automatically!::
 
@@ -42,6 +42,10 @@ server automatically!::
 .. |docs| image:: https://readthedocs.org/projects/letsencrypt/badge/
    :target: https://readthedocs.org/projects/letsencrypt/
    :alt: Documentation status
+
+.. |container| image:: https://quay.io/repository/letsencrypt/lets-encrypt-preview/status
+   :target: https://quay.io/repository/letsencrypt/lets-encrypt-preview
+   :alt: Docker Repository on Quay.io
 
 .. _watch demo video: https://www.youtube.com/watch?v=Gas_sSB-5SU
 

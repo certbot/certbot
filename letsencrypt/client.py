@@ -19,6 +19,7 @@ from letsencrypt import le_util
 from letsencrypt import network2
 from letsencrypt import reverter
 from letsencrypt import revoker
+from letsencrypt import storage
 
 from letsencrypt.display import ops as display_ops
 from letsencrypt.display import enhancements
@@ -62,9 +63,14 @@ class Client(object):
 
         # TODO: Allow for other alg types besides RS256
         self.network = network2.Network(
-            config.server_url, jwk.JWKRSA.load(self.account.key.pem))
+            config.server, jwk.JWKRSA.load(self.account.key.pem),
+            verify_ssl=(not config.no_verify_ssl))
 
         self.config = config
+
+        # TODO: Check if self.config.enroll_autorenew is None. If
+        # so, set it based to the default: figure out if dv_auth is
+        # standalone (then default is False, otherwise default is True)
 
         if dv_auth is not None:
             cont_auth = continuity_auth.ContinuityAuthenticator(config,
@@ -93,13 +99,36 @@ class Client(object):
                 raise errors.LetsEncryptClientError("Must agree to TOS")
 
         self.account.save()
+        self._report_new_account()
+
+    def _report_new_account(self):
+        """Informs the user about their new Let's Encrypt account."""
+        reporter = zope.component.getUtility(interfaces.IReporter)
+        reporter.add_message(
+            "Your account credentials have been saved in your Let's Encrypt "
+            "configuration directory at {0}. You should make a secure backup "
+            "of this folder now. This configuration directory will also "
+            "contain certificates and private keys obtained by Let's Encrypt "
+            "so making regular backups of this folder is ideal.".format(
+                self.config.config_dir),
+            reporter.MEDIUM_PRIORITY, True)
+
+        assert self.account.recovery_token is not None
+        recovery_msg = ("If you lose your account credentials, you can recover "
+                        "them using the token \"{0}\". You must write that down "
+                        "and put it in a safe place.".format(
+                            self.account.recovery_token))
+        if self.account.email is not None:
+            recovery_msg += (" Another recovery method will be e-mails sent to "
+                             "{0}.".format(self.account.email))
+        reporter.add_message(recovery_msg, reporter.HIGH_PRIORITY, True)
 
     def obtain_certificate(self, domains, csr=None):
         """Obtains a certificate from the ACME server.
 
         :meth:`.register` must be called before :meth:`.obtain_certificate`
 
-        .. todo:: This function does not currently handle csr correctly...
+        .. todo:: This function does not currently handle CSR correctly.
 
         :param set domains: domains to get a certificate
 
@@ -107,8 +136,9 @@ class Client(object):
             this CSR can be different than self.authkey
         :type csr: :class:`CSR`
 
-        :returns: cert_key, cert_path, chain_path
-        :rtype: `tuple` of (:class:`letsencrypt.le_util.Key`, str, str)
+        :returns: Certificate, private key, and certificate chain (all
+            PEM-encoded).
+        :rtype: `tuple` of `str`
 
         """
         if self.auth_handler is None:
@@ -135,14 +165,91 @@ class Client(object):
                 M2Crypto.X509.load_request_der_string(csr.data)),
             authzr)
 
-        # Save Certificate
-        cert_path, chain_path = self.save_certificate(
-            certr, self.config.cert_path, self.config.chain_path)
+        cert_pem = certr.body.as_pem()
+        chain_pem = None
+        if certr.cert_chain_uri is not None:
+            chain_pem = self.network.fetch_chain(certr)
 
-        revoker.Revoker.store_cert_key(
-            cert_path, self.account.key.file, self.config)
+        if chain_pem is None:
+            # XXX: just to stop RenewableCert from complaining; this is
+            #      probably not a good solution
+            chain_pem = ""
+        else:
+            chain_pem = chain_pem.as_pem()
 
-        return cert_key, cert_path, chain_path
+        return cert_pem, cert_key.pem, chain_pem
+
+    def obtain_and_enroll_certificate(
+            self, domains, authenticator, installer, plugins, csr=None):
+        """Obtain and enroll certificate.
+
+        Get a new certificate for the specified domains using the specified
+        authenticator and installer, and then create a new renewable lineage
+        containing it.
+
+        :param list domains: Domains to request.
+        :param authenticator: The authenticator to use.
+        :type authenticator: :class:`letsencrypt.interfaces.IAuthenticator`
+
+        :param installer: The installer to use.
+        :type installer: :class:`letsencrypt.interfaces.IInstaller`
+
+        :param plugins: A PluginsFactory object.
+
+        :param str csr: A preexisting CSR to use with this request.
+
+        :returns: A new :class:`letsencrypt.storage.RenewableCert` instance
+            referred to the enrolled cert lineage, or False if the cert could
+            not be obtained.
+
+        """
+        cert, privkey, chain = self.obtain_certificate(domains, csr)
+        self.config.namespace.authenticator = plugins.find_init(
+            authenticator).name
+        if installer is not None:
+            self.config.namespace.installer = plugins.find_init(installer).name
+
+        # XXX: We clearly need a more general and correct way of getting
+        # options into the configobj for the RenewableCert instance.
+        # This is a quick-and-dirty way to do it to allow integration
+        # testing to start.  (Note that the config parameter to new_lineage
+        # ideally should be a ConfigObj, but in this case a dict will be
+        # accepted in practice.)
+        params = vars(self.config.namespace)
+        config = {"renewer_config_file":
+                  params["renewer_config_file"]} if "renewer_config_file" in params else None
+        renewable_cert = storage.RenewableCert.new_lineage(domains[0], cert, privkey,
+                                                           chain, params, config)
+        self._report_renewal_status(renewable_cert)
+        return renewable_cert
+
+    def _report_renewal_status(self, cert):
+        # pylint: disable=no-self-use
+        """Informs the user about automatic renewal and deployment.
+
+        :param cert: Newly issued certificate
+        :type cert: :class:`letsencrypt.storage.RenewableCert`
+
+        """
+        if ("autorenew" not in cert.configuration
+                or cert.configuration.as_bool("autorenew")):
+            if ("autodeploy" not in cert.configuration or
+                    cert.configuration.as_bool("autodeploy")):
+                msg = "Automatic renewal and deployment has "
+            else:
+                msg = "Automatic renewal but not automatic deployment has "
+        else:
+            if ("autodeploy" not in cert.configuration or
+                    cert.configuration.as_bool("autodeploy")):
+                msg = "Automatic deployment but not automatic renewal has "
+            else:
+                msg = "Automatic renewal and deployment has not "
+
+        msg += ("been enabled for your certificate. These settings can be "
+                "configured in the directories under {0}.").format(
+                    cert.configuration["renewal_configs_dir"])
+        reporter = zope.component.getUtility(interfaces.IReporter)
+        reporter.add_message(msg, reporter.LOW_PRIORITY, True)
 
     def save_certificate(self, certr, cert_path, chain_path):
         # pylint: disable=no-self-use
@@ -191,15 +298,12 @@ class Client(object):
 
         return os.path.abspath(act_cert_path), cert_chain_abspath
 
-    def deploy_certificate(self, domains, privkey, cert_path, chain_path=None):
+    def deploy_certificate(self, domains, privkey_path, cert_path, chain_path):
         """Install certificate
 
         :param list domains: list of domains to install the certificate
-
-        :param privkey: private key for certificate
-        :type privkey: :class:`letsencrypt.le_util.Key`
-
-        :param str cert_path: certificate file path
+        :param str privkey_path: path to certificate private key
+        :param str cert_path: certificate file path (optional)
         :param str chain_path: chain file path
 
         """
@@ -211,9 +315,11 @@ class Client(object):
         chain_path = None if chain_path is None else os.path.abspath(chain_path)
 
         for dom in domains:
+            # TODO: Provide a fullchain reference for installers like
+            #       nginx that want it
             self.installer.deploy_cert(
                 dom, os.path.abspath(cert_path),
-                os.path.abspath(privkey.file), chain_path)
+                os.path.abspath(privkey_path), chain_path)
 
         self.installer.save("Deployed Let's Encrypt Certificate")
         # sites may have been enabled / final cleanup

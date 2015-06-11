@@ -22,6 +22,7 @@ KEY = le_util.Key("foo", pkg_resources.resource_string(
     "acme.jose", os.path.join("testdata", "rsa512_key.pem")))
 PRIVATE_KEY = OpenSSL.crypto.load_privatekey(
     OpenSSL.crypto.FILETYPE_PEM, KEY.pem)
+CONFIG = mock.Mock(dvsni_port=5001)
 
 
 # Classes based on to allow interrupting infinite loop under test
@@ -59,7 +60,7 @@ class ChallPrefTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.plugins.standalone.authenticator import \
             StandaloneAuthenticator
-        self.authenticator = StandaloneAuthenticator(config=None, name=None)
+        self.authenticator = StandaloneAuthenticator(config=CONFIG, name=None)
 
     def test_chall_pref(self):
         self.assertEqual(self.authenticator.get_chall_pref("example.com"),
@@ -71,7 +72,7 @@ class SNICallbackTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.plugins.standalone.authenticator import \
             StandaloneAuthenticator
-        self.authenticator = StandaloneAuthenticator(config=None, name=None)
+        self.authenticator = StandaloneAuthenticator(config=CONFIG, name=None)
         self.cert = achallenges.DVSNI(
             challb=acme_util.DVSNI_P,
             domain="example.com", key=KEY).gen_cert_and_response()[0]
@@ -109,7 +110,7 @@ class ClientSignalHandlerTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.plugins.standalone.authenticator import \
             StandaloneAuthenticator
-        self.authenticator = StandaloneAuthenticator(config=None, name=None)
+        self.authenticator = StandaloneAuthenticator(config=CONFIG, name=None)
         self.authenticator.tasks = {"foononce.acme.invalid": "stuff"}
         self.authenticator.child_pid = 12345
 
@@ -138,7 +139,7 @@ class SubprocSignalHandlerTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.plugins.standalone.authenticator import \
             StandaloneAuthenticator
-        self.authenticator = StandaloneAuthenticator(config=None, name=None)
+        self.authenticator = StandaloneAuthenticator(config=CONFIG, name=None)
         self.authenticator.tasks = {"foononce.acme.invalid": "stuff"}
         self.authenticator.child_pid = 12345
         self.authenticator.parent_pid = 23456
@@ -190,7 +191,7 @@ class AlreadyListeningTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.plugins.standalone.authenticator import \
             StandaloneAuthenticator
-        self.authenticator = StandaloneAuthenticator(config=None, name=None)
+        self.authenticator = StandaloneAuthenticator(config=CONFIG, name=None)
 
     @mock.patch("letsencrypt.plugins.standalone.authenticator.psutil."
                 "net_connections")
@@ -293,7 +294,7 @@ class PerformTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.plugins.standalone.authenticator import \
             StandaloneAuthenticator
-        self.authenticator = StandaloneAuthenticator(config=None, name=None)
+        self.authenticator = StandaloneAuthenticator(config=CONFIG, name=None)
 
         self.achall1 = achallenges.DVSNI(
             challb=acme_util.chall_to_challb(
@@ -316,6 +317,7 @@ class PerformTest(unittest.TestCase):
         """What happens if start_listener() returns True."""
         self.authenticator.start_listener = mock.Mock()
         self.authenticator.start_listener.return_value = True
+        self.authenticator.already_listening = mock.Mock(return_value=False)
         result = self.authenticator.perform(self.achalls)
         self.assertEqual(len(self.authenticator.tasks), 2)
         self.assertTrue(
@@ -327,12 +329,14 @@ class PerformTest(unittest.TestCase):
         self.assertTrue(isinstance(result[0], challenges.ChallengeResponse))
         self.assertTrue(isinstance(result[1], challenges.ChallengeResponse))
         self.assertFalse(result[2])
-        self.authenticator.start_listener.assert_called_once_with(443, KEY)
+        self.authenticator.start_listener.assert_called_once_with(
+            CONFIG.dvsni_port, KEY)
 
     def test_cannot_perform(self):
         """What happens if start_listener() returns False."""
         self.authenticator.start_listener = mock.Mock()
         self.authenticator.start_listener.return_value = False
+        self.authenticator.already_listening = mock.Mock(return_value=False)
         result = self.authenticator.perform(self.achalls)
         self.assertEqual(len(self.authenticator.tasks), 2)
         self.assertTrue(
@@ -342,7 +346,8 @@ class PerformTest(unittest.TestCase):
         self.assertTrue(isinstance(result, list))
         self.assertEqual(len(result), 3)
         self.assertEqual(result, [None, None, False])
-        self.authenticator.start_listener.assert_called_once_with(443, KEY)
+        self.authenticator.start_listener.assert_called_once_with(
+            CONFIG.dvsni_port, KEY)
 
     def test_perform_with_pending_tasks(self):
         self.authenticator.tasks = {"foononce.acme.invalid": "cert_data"}
@@ -367,7 +372,7 @@ class StartListenerTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.plugins.standalone.authenticator import \
             StandaloneAuthenticator
-        self.authenticator = StandaloneAuthenticator(config=None, name=None)
+        self.authenticator = StandaloneAuthenticator(config=CONFIG, name=None)
 
     @mock.patch("letsencrypt.plugins.standalone.authenticator."
                 "Crypto.Random.atfork")
@@ -402,49 +407,41 @@ class DoParentProcessTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.plugins.standalone.authenticator import \
             StandaloneAuthenticator
-        self.authenticator = StandaloneAuthenticator(config=None, name=None)
+        self.authenticator = StandaloneAuthenticator(config=CONFIG, name=None)
 
-    @mock.patch("letsencrypt.plugins.standalone.authenticator.signal.signal")
     @mock.patch("letsencrypt.plugins.standalone.authenticator."
                 "zope.component.getUtility")
-    def test_do_parent_process_ok(self, mock_get_utility, mock_signal):
+    def test_do_parent_process_ok(self, mock_get_utility):
         self.authenticator.subproc_state = "ready"
         result = self.authenticator.do_parent_process(1717)
         self.assertTrue(result)
         self.assertEqual(mock_get_utility.call_count, 1)
-        self.assertEqual(mock_signal.call_count, 3)
 
-    @mock.patch("letsencrypt.plugins.standalone.authenticator.signal.signal")
     @mock.patch("letsencrypt.plugins.standalone.authenticator."
                 "zope.component.getUtility")
-    def test_do_parent_process_inuse(self, mock_get_utility, mock_signal):
+    def test_do_parent_process_inuse(self, mock_get_utility):
         self.authenticator.subproc_state = "inuse"
         result = self.authenticator.do_parent_process(1717)
         self.assertFalse(result)
         self.assertEqual(mock_get_utility.call_count, 1)
-        self.assertEqual(mock_signal.call_count, 3)
 
-    @mock.patch("letsencrypt.plugins.standalone.authenticator.signal.signal")
     @mock.patch("letsencrypt.plugins.standalone.authenticator."
                 "zope.component.getUtility")
-    def test_do_parent_process_cantbind(self, mock_get_utility, mock_signal):
+    def test_do_parent_process_cantbind(self, mock_get_utility):
         self.authenticator.subproc_state = "cantbind"
         result = self.authenticator.do_parent_process(1717)
         self.assertFalse(result)
         self.assertEqual(mock_get_utility.call_count, 1)
-        self.assertEqual(mock_signal.call_count, 3)
 
-    @mock.patch("letsencrypt.plugins.standalone.authenticator.signal.signal")
     @mock.patch("letsencrypt.plugins.standalone.authenticator."
                 "zope.component.getUtility")
-    def test_do_parent_process_timeout(self, mock_get_utility, mock_signal):
+    def test_do_parent_process_timeout(self, mock_get_utility):
         # Normally times out in 5 seconds and returns False.  We can
         # now set delay_amount to a lower value so that it times out
         # faster than it would under normal use.
         result = self.authenticator.do_parent_process(1717, delay_amount=1)
         self.assertFalse(result)
         self.assertEqual(mock_get_utility.call_count, 1)
-        self.assertEqual(mock_signal.call_count, 3)
 
 
 class DoChildProcessTest(unittest.TestCase):
@@ -452,7 +449,7 @@ class DoChildProcessTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.plugins.standalone.authenticator import \
             StandaloneAuthenticator
-        self.authenticator = StandaloneAuthenticator(config=None, name=None)
+        self.authenticator = StandaloneAuthenticator(config=CONFIG, name=None)
         self.cert = achallenges.DVSNI(
             challb=acme_util.chall_to_challb(
                 challenges.DVSNI(r=("x" * 32), nonce="abcdef"), "pending"),
@@ -538,7 +535,7 @@ class CleanupTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.plugins.standalone.authenticator import \
             StandaloneAuthenticator
-        self.authenticator = StandaloneAuthenticator(config=None, name=None)
+        self.authenticator = StandaloneAuthenticator(config=CONFIG, name=None)
         self.achall = achallenges.DVSNI(
             challb=acme_util.chall_to_challb(
                 challenges.DVSNI(r="whee", nonce="foononce"), "pending"),
@@ -570,7 +567,7 @@ class MoreInfoTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.plugins.standalone.authenticator import (
             StandaloneAuthenticator)
-        self.authenticator = StandaloneAuthenticator(config=None, name=None)
+        self.authenticator = StandaloneAuthenticator(config=CONFIG, name=None)
 
     def test_more_info(self):
         """Make sure exceptions aren't raised."""
@@ -582,7 +579,7 @@ class InitTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.plugins.standalone.authenticator import (
             StandaloneAuthenticator)
-        self.authenticator = StandaloneAuthenticator(config=None, name=None)
+        self.authenticator = StandaloneAuthenticator(config=CONFIG, name=None)
 
     def test_prepare(self):
         """Make sure exceptions aren't raised.

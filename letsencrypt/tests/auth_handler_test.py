@@ -276,8 +276,6 @@ class PollChallengesTest(unittest.TestCase):
                 identifier=authzr.body.identifier,
                 challenges=new_challbs,
                 combinations=authzr.body.combinations,
-                key=authzr.body.key,
-                contact=authzr.body.contact,
                 status=status_,
             ),
         )

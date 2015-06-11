@@ -20,7 +20,7 @@ class Authenticator(common.Plugin):
     # "self" as first argument, e.g. def prepare(self)...
 
 
-class Installer(common.Plugins):
+class Installer(common.Plugin):
     """Example Installer."""
     zope.interface.implements(interfaces.IInstaller)
     zope.interface.classProvides(interfaces.IPluginFactory)

@@ -152,10 +152,6 @@ class StandaloneAuthenticator(common.Plugin):
         :rtype: bool
 
         """
-        signal.signal(signal.SIGIO, self.client_signal_handler)
-        signal.signal(signal.SIGUSR1, self.client_signal_handler)
-        signal.signal(signal.SIGUSR2, self.client_signal_handler)
-
         display = zope.component.getUtility(interfaces.IDisplay)
 
         start_time = time.time()
@@ -259,6 +255,17 @@ class StandaloneAuthenticator(common.Plugin):
         :rtype: bool
 
         """
+        # In order to avoid a race condition, we set the signal handler
+        # that will be needed by the parent process now, and undo this
+        # action if we turn out to be the child process.  (This needs
+        # to happen before the fork because the child will send one of
+        # these signals to the parent almost immediately after the
+        # fork, and the parent must already be ready to receive it.)
+        signal.signal(signal.SIGIO, self.client_signal_handler)
+        signal.signal(signal.SIGUSR1, self.client_signal_handler)
+        signal.signal(signal.SIGUSR2, self.client_signal_handler)
+
+        sys.stdout.flush()
         fork_result = os.fork()
         Crypto.Random.atfork()
         if fork_result:
@@ -269,6 +276,12 @@ class StandaloneAuthenticator(common.Plugin):
             return self.do_parent_process(port)
         else:
             # CHILD process (the TCP listener subprocess)
+            # Undo the parent's signal handler settings, which aren't
+            # applicable to us.
+            signal.signal(signal.SIGIO, signal.SIG_DFL)
+            signal.signal(signal.SIGUSR1, signal.SIG_DFL)
+            signal.signal(signal.SIGUSR2, signal.SIG_DFL)
+
             self.child_pid = os.getpid()
             # do_child_process() is normally not expected to return but
             # should terminate via sys.exit().
@@ -365,7 +378,8 @@ class StandaloneAuthenticator(common.Plugin):
                 results_if_failure.append(False)
         if not self.tasks:
             raise ValueError("nothing for .perform() to do")
-        if self.already_listening(challenges.DVSNI.PORT):
+
+        if self.already_listening(self.config.dvsni_port):
             # If we know a process is already listening on this port,
             # tell the user, and don't even attempt to bind it.  (This
             # test is Linux-specific and won't indicate that the port
@@ -373,7 +387,7 @@ class StandaloneAuthenticator(common.Plugin):
             return results_if_failure
         # Try to do the authentication; note that this creates
         # the listener subprocess via os.fork()
-        if self.start_listener(challenges.DVSNI.PORT, key):
+        if self.start_listener(self.config.dvsni_port, key):
             return results_if_success
         else:
             # TODO: This should probably raise a DVAuthError exception
@@ -410,8 +424,9 @@ class StandaloneAuthenticator(common.Plugin):
     def more_info(self):  # pylint: disable=no-self-use
         """Human-readable string that describes the Authenticator."""
         return ("The Standalone Authenticator uses PyOpenSSL to listen "
-                "on port 443 and perform DVSNI challenges. Once a certificate "
-                "is attained, it will be saved in the "
-                "(TODO) current working directory.{0}{0}"
-                "TCP port 443 must be available in order to use the "
-                "Standalone Authenticator.".format(os.linesep))
+                "on port {port} and perform DVSNI challenges. Once a "
+                "certificate is attained, it will be saved in the "
+                "(TODO) current working directory.{linesep}{linesep}"
+                "TCP port {port} must be available in order to use the "
+                "Standalone Authenticator.".format(
+                    linesep=os.linesep, port=self.config.dvsni_port))
