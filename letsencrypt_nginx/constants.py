@@ -13,6 +13,6 @@ MOD_SSL_CONF_DEST = "options-ssl-nginx.conf"
 """Name of the mod_ssl config file as saved in `IConfig.config_dir`."""
 
 MOD_SSL_CONF_SRC = pkg_resources.resource_filename(
-    "letsencrypt_nginx", "options-ssl.conf")
+    "letsencrypt_nginx", "options-ssl-nginx.conf")
 """Path to the nginx mod_ssl config file found in the Let's Encrypt
 distribution."""

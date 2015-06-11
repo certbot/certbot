@@ -15,7 +15,7 @@ MOD_SSL_CONF_DEST = "options-ssl-apache.conf"
 """Name of the mod_ssl config file as saved in `IConfig.config_dir`."""
 
 MOD_SSL_CONF_SRC = pkg_resources.resource_filename(
-    "letsencrypt_apache", "options-ssl.conf")
+    "letsencrypt_apache", "options-ssl-apache.conf")
 """Path to the Apache mod_ssl config file found in the Let's Encrypt
 distribution."""
 

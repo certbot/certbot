@@ -152,7 +152,6 @@ class StandaloneAuthenticator(common.Plugin):
         :rtype: bool
 
         """
-
         display = zope.component.getUtility(interfaces.IDisplay)
 
         start_time = time.time()
@@ -266,6 +265,7 @@ class StandaloneAuthenticator(common.Plugin):
         signal.signal(signal.SIGUSR1, self.client_signal_handler)
         signal.signal(signal.SIGUSR2, self.client_signal_handler)
 
+        sys.stdout.flush()
         fork_result = os.fork()
         Crypto.Random.atfork()
         if fork_result:

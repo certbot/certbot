@@ -8,6 +8,8 @@ import unittest
 
 import mock
 
+from letsencrypt import errors
+
 
 class MakeOrVerifyDirTest(unittest.TestCase):
     """Tests for letsencrypt.le_util.make_or_verify_dir.
@@ -42,7 +44,8 @@ class MakeOrVerifyDirTest(unittest.TestCase):
         self.assertEqual(stat.S_IMODE(os.stat(self.path).st_mode), 0o400)
 
     def test_existing_wrong_mode_fails(self):
-        self.assertRaises(Exception, self._call, self.path, 0o600)
+        self.assertRaises(
+            errors.LetsEncryptClientError, self._call, self.path, 0o600)
 
     def test_reraises_os_error(self):
         with mock.patch.object(os, 'makedirs') as makedirs:

@@ -317,6 +317,7 @@ class PerformTest(unittest.TestCase):
         """What happens if start_listener() returns True."""
         self.authenticator.start_listener = mock.Mock()
         self.authenticator.start_listener.return_value = True
+        self.authenticator.already_listening = mock.Mock(return_value=False)
         result = self.authenticator.perform(self.achalls)
         self.assertEqual(len(self.authenticator.tasks), 2)
         self.assertTrue(
@@ -335,6 +336,7 @@ class PerformTest(unittest.TestCase):
         """What happens if start_listener() returns False."""
         self.authenticator.start_listener = mock.Mock()
         self.authenticator.start_listener.return_value = False
+        self.authenticator.already_listening = mock.Mock(return_value=False)
         result = self.authenticator.perform(self.achalls)
         self.assertEqual(len(self.authenticator.tasks), 2)
         self.assertTrue(
