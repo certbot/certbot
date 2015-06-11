@@ -200,17 +200,22 @@ class NetworkTest(unittest.TestCase):
         # pylint: disable=protected-access
         self.net._check_response = mock.MagicMock()
         self._mock_wrap_in_jws()
+        requests_mock.post().headers = {
+            self.net.REPLAY_NONCE_HEADER: self.nonce}
         self.net._post('uri', mock.sentinel.obj, content_type='ct')
         self.net._check_response.assert_called_once_with(
             requests_mock.post('uri', mock.sentinel.wrapped), content_type='ct')
 
     @mock.patch('letsencrypt.network2.requests')
-    def test_post_reply_nonce_handling(self, requests_mock):
+    def test_post_replay_nonce_handling(self, requests_mock):
         # pylint: disable=protected-access
         self.net._check_response = mock.MagicMock()
         self._mock_wrap_in_jws()
 
         self.net._nonces.clear()
+        self.assertRaises(
+            errors.NetworkError, self.net._post, 'uri', mock.sentinel.obj)
+
         nonce2 = jose.b64encode('Nonce2')
         requests_mock.head('uri').headers = {
             self.net.REPLAY_NONCE_HEADER: nonce2}
@@ -238,9 +243,11 @@ class NetworkTest(unittest.TestCase):
             self.net.verify_ssl = verify_ssl
             self.net._get('uri')
             self.net._nonces.add('N')
+            requests_mock.post().headers = {
+                self.net.REPLAY_NONCE_HEADER: self.nonce}
             self.net._post('uri', mock.sentinel.obj)
             requests_mock.get.assert_called_once_with('uri', verify=verify_ssl)
-            requests_mock.post.assert_called_once_with(
+            requests_mock.post.assert_called_with(
                 'uri', data=mock.sentinel.wrapped, verify=verify_ssl)
             requests_mock.reset_mock()
 

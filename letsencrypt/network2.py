@@ -143,6 +143,10 @@ class Network(object):
             else:
                 raise errors.NetworkError('Invalid nonce ({0}): {1}'.format(
                     nonce, error))
+        else:
+            raise errors.NetworkError(
+                'Server {0} response did not include a replay nonce'.format(
+                    response.request.method))
 
     def _get_nonce(self, uri):
         if not self._nonces:
