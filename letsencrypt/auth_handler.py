@@ -24,7 +24,7 @@ class AuthHandler(object):
 
     :ivar network: Network object for sending and receiving authorization
         messages
-    :type network: :class:`letsencrypt.network2.Network`
+    :type network: :class:`letsencrypt.network.Network`
 
     :ivar account: Client's Account
     :type account: :class:`letsencrypt.account.Account`

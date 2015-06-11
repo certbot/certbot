@@ -10,7 +10,7 @@ from acme import messages2
 
 from letsencrypt import errors
 from letsencrypt import le_util
-from letsencrypt import network2
+from letsencrypt import network
 
 from letsencrypt.tests import acme_util
 
@@ -86,7 +86,7 @@ class GetAuthorizationsTest(unittest.TestCase):
         self.mock_dv_auth.perform.side_effect = gen_auth_resp
 
         self.mock_account = mock.Mock(key=le_util.Key("file_path", "PEM"))
-        self.mock_net = mock.MagicMock(spec=network2.Network)
+        self.mock_net = mock.MagicMock(spec=network.Network)
 
         self.handler = AuthHandler(
             self.mock_dv_auth, self.mock_cont_auth,

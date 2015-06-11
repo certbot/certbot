@@ -20,7 +20,7 @@ from acme.jose import util as jose_util
 
 from letsencrypt import errors
 from letsencrypt import le_util
-from letsencrypt import network2
+from letsencrypt import network
 
 from letsencrypt.display import util as display_util
 from letsencrypt.display import revocation
@@ -45,7 +45,7 @@ class Revoker(object):
     """
     def __init__(self, installer, config, no_confirm=False):
         # XXX
-        self.network = network2.Network(new_reg_uri=None, key=None, alg=None)
+        self.network = network.Network(new_reg_uri=None, key=None, alg=None)
 
         self.installer = installer
         self.config = config

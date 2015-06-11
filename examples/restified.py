@@ -7,7 +7,7 @@ import M2Crypto
 from acme import messages2
 from acme import jose
 
-from letsencrypt import network2
+from letsencrypt import network
 
 
 logger = logging.getLogger()
@@ -17,7 +17,7 @@ NEW_REG_URL = 'https://www.letsencrypt-demo.org/acme/new-reg'
 
 key = jose.JWKRSA.load(pkg_resources.resource_string(
     'acme.jose', os.path.join('testdata', 'rsa512_key.pem')))
-net = network2.Network(NEW_REG_URL, key)
+net = network.Network(NEW_REG_URL, key)
 
 regr = net.register(contact=(
     'mailto:cert-admin@example.com', 'tel:+12025551212'))

@@ -1,4 +1,4 @@
-"""Tests for letsencrypt.network2."""
+"""Tests for letsencrypt.network."""
 import datetime
 import httplib
 import os
@@ -36,7 +36,7 @@ KEY2 = jose.JWKRSA.load(pkg_resources.resource_string(
 
 
 class NetworkTest(unittest.TestCase):
-    """Tests for letsencrypt.network2.Network."""
+    """Tests for letsencrypt.network.Network."""
 
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
 
@@ -44,7 +44,7 @@ class NetworkTest(unittest.TestCase):
         self.verify_ssl = mock.MagicMock()
         self.wrap_in_jws = mock.MagicMock(return_value=mock.sentinel.wrapped)
 
-        from letsencrypt.network2 import Network
+        from letsencrypt.network import Network
         self.net = Network(
             new_reg_uri='https://www.letsencrypt-demo.org/acme/new-reg',
             key=KEY, alg=jose.RS256, verify_ssl=self.verify_ssl)
@@ -167,14 +167,14 @@ class NetworkTest(unittest.TestCase):
             # pylint: disable=protected-access
             self.net._check_response(self.response)
 
-    @mock.patch('letsencrypt.network2.requests')
+    @mock.patch('letsencrypt.network.requests')
     def test_get_requests_error_passthrough(self, requests_mock):
         requests_mock.exceptions = requests.exceptions
         requests_mock.get.side_effect = requests.exceptions.RequestException
         # pylint: disable=protected-access
         self.assertRaises(errors.NetworkError, self.net._get, 'uri')
 
-    @mock.patch('letsencrypt.network2.requests')
+    @mock.patch('letsencrypt.network.requests')
     def test_get(self, requests_mock):
         # pylint: disable=protected-access
         self.net._check_response = mock.MagicMock()
@@ -186,7 +186,7 @@ class NetworkTest(unittest.TestCase):
         # pylint: disable=protected-access
         self.net._wrap_in_jws = self.wrap_in_jws
 
-    @mock.patch('letsencrypt.network2.requests')
+    @mock.patch('letsencrypt.network.requests')
     def test_post_requests_error_passthrough(self, requests_mock):
         requests_mock.exceptions = requests.exceptions
         requests_mock.post.side_effect = requests.exceptions.RequestException
@@ -195,7 +195,7 @@ class NetworkTest(unittest.TestCase):
         self.assertRaises(
             errors.NetworkError, self.net._post, 'uri', mock.sentinel.obj)
 
-    @mock.patch('letsencrypt.network2.requests')
+    @mock.patch('letsencrypt.network.requests')
     def test_post(self, requests_mock):
         # pylint: disable=protected-access
         self.net._check_response = mock.MagicMock()
@@ -206,7 +206,7 @@ class NetworkTest(unittest.TestCase):
         self.net._check_response.assert_called_once_with(
             requests_mock.post('uri', mock.sentinel.wrapped), content_type='ct')
 
-    @mock.patch('letsencrypt.network2.requests')
+    @mock.patch('letsencrypt.network.requests')
     def test_post_replay_nonce_handling(self, requests_mock):
         # pylint: disable=protected-access
         self.net._check_response = mock.MagicMock()
@@ -233,7 +233,7 @@ class NetworkTest(unittest.TestCase):
         self.assertRaises(
             errors.NetworkError, self.net._post, 'uri', mock.sentinel.obj)
 
-    @mock.patch('letsencrypt.client.network2.requests')
+    @mock.patch('letsencrypt.client.network.requests')
     def test_get_post_verify_ssl(self, requests_mock):
         # pylint: disable=protected-access
         self._mock_wrap_in_jws()
@@ -372,7 +372,7 @@ class NetworkTest(unittest.TestCase):
             datetime.datetime(1999, 12, 31, 23, 59, 59),
             self.net.retry_after(response=self.response, default=10))
 
-    @mock.patch('letsencrypt.network2.datetime')
+    @mock.patch('letsencrypt.network.datetime')
     def test_retry_after_invalid(self, dt_mock):
         dt_mock.datetime.now.return_value = datetime.datetime(2015, 3, 27)
         dt_mock.timedelta = datetime.timedelta
@@ -382,7 +382,7 @@ class NetworkTest(unittest.TestCase):
             datetime.datetime(2015, 3, 27, 0, 0, 10),
             self.net.retry_after(response=self.response, default=10))
 
-    @mock.patch('letsencrypt.network2.datetime')
+    @mock.patch('letsencrypt.network.datetime')
     def test_retry_after_seconds(self, dt_mock):
         dt_mock.datetime.now.return_value = datetime.datetime(2015, 3, 27)
         dt_mock.timedelta = datetime.timedelta
@@ -392,7 +392,7 @@ class NetworkTest(unittest.TestCase):
             datetime.datetime(2015, 3, 27, 0, 0, 50),
             self.net.retry_after(response=self.response, default=10))
 
-    @mock.patch('letsencrypt.network2.datetime')
+    @mock.patch('letsencrypt.network.datetime')
     def test_retry_after_missing(self, dt_mock):
         dt_mock.datetime.now.return_value = datetime.datetime(2015, 3, 27)
         dt_mock.timedelta = datetime.timedelta
@@ -435,8 +435,8 @@ class NetworkTest(unittest.TestCase):
             errors.NetworkError, self.net.request_issuance,
             CSR, (self.authzr,))
 
-    @mock.patch('letsencrypt.network2.datetime')
-    @mock.patch('letsencrypt.network2.time')
+    @mock.patch('letsencrypt.network.datetime')
+    @mock.patch('letsencrypt.network.time')
     def test_poll_and_request_issuance(self, time_mock, dt_mock):
         # clock.dt | pylint: disable=no-member
         clock = mock.MagicMock(dt=datetime.datetime(2015, 3, 27))
