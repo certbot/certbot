@@ -12,4 +12,4 @@ recursive-include letsencrypt_apache/tests/testdata *
 include letsencrypt_apache/options-ssl.conf
 
 recursive-include letsencrypt_nginx/tests/testdata *
-include letsencrypt_nginx/options-ssl.conf
+include letsencrypt_nginx/options-ssl-nginx.conf

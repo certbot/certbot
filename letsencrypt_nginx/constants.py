@@ -11,6 +11,6 @@ CLI_DEFAULTS = dict(
 
 
 MOD_SSL_CONF = pkg_resources.resource_filename(
-    "letsencrypt_nginx", "options-ssl.conf")
+    "letsencrypt_nginx", "options-ssl-nginx.conf")
 """Path to the Nginx mod_ssl config file found in the Let's Encrypt
 distribution."""
