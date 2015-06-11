@@ -13,6 +13,7 @@ import requests
 
 from acme import challenges
 from acme import jose
+from acme import jws as acme_jws
 from acme import messages2
 
 from letsencrypt import account
@@ -40,14 +41,22 @@ class NetworkTest(unittest.TestCase):
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
 
     def setUp(self):
-        from letsencrypt.network2 import Network
         self.verify_ssl = mock.MagicMock()
+        self.wrap_in_jws = mock.MagicMock(return_value=mock.sentinel.wrapped)
+
+        from letsencrypt.network2 import Network
         self.net = Network(
             new_reg_uri='https://www.letsencrypt-demo.org/acme/new-reg',
             key=KEY, alg=jose.RS256, verify_ssl=self.verify_ssl)
+        self.nonce = jose.b64encode('Nonce')
+        self.net._nonces.add(self.nonce)  # pylint: disable=protected-access
+
         self.response = mock.MagicMock(ok=True, status_code=httplib.OK)
         self.response.headers = {}
         self.response.links = {}
+
+        self.post = mock.MagicMock(return_value=self.response)
+        self.get = mock.MagicMock(return_value=self.response)
 
         self.identifier = messages2.Identifier(
             typ=messages2.IDENTIFIER_FQDN, value='example.com')
@@ -89,8 +98,8 @@ class NetworkTest(unittest.TestCase):
 
     def _mock_post_get(self):
         # pylint: disable=protected-access
-        self.net._post = mock.MagicMock(return_value=self.response)
-        self.net._get = mock.MagicMock(return_value=self.response)
+        self.net._post = self.post
+        self.net._get = self.get
 
     def test_init(self):
         self.assertTrue(self.net.verify_ssl is self.verify_ssl)
@@ -106,8 +115,12 @@ class NetworkTest(unittest.TestCase):
             def from_json(cls, value):
                 pass  # pragma: no cover
         # pylint: disable=protected-access
-        jws = self.net._wrap_in_jws(MockJSONDeSerializable('foo'))
-        self.assertEqual(jose.JWS.json_loads(jws).payload, '"foo"')
+        jws_dump = self.net._wrap_in_jws(
+            MockJSONDeSerializable('foo'), nonce='Tg')
+        jws = acme_jws.JWS.json_loads(jws_dump)
+        self.assertEqual(jws.payload, '"foo"')
+        self.assertEqual(jws.signature.combined.nonce, 'Tg')
+        # TODO: check that nonce is in protected header
 
     def test_check_response_not_ok_jobj_no_error(self):
         self.response.ok = False
@@ -169,33 +182,66 @@ class NetworkTest(unittest.TestCase):
         self.net._check_response.assert_called_once_with(
             requests_mock.get('uri'), content_type='ct')
 
+    def _mock_wrap_in_jws(self):
+        # pylint: disable=protected-access
+        self.net._wrap_in_jws = self.wrap_in_jws
+
     @mock.patch('letsencrypt.network2.requests')
     def test_post_requests_error_passthrough(self, requests_mock):
         requests_mock.exceptions = requests.exceptions
         requests_mock.post.side_effect = requests.exceptions.RequestException
         # pylint: disable=protected-access
-        self.assertRaises(errors.NetworkError, self.net._post, 'uri', 'data')
+        self._mock_wrap_in_jws()
+        self.assertRaises(
+            errors.NetworkError, self.net._post, 'uri', mock.sentinel.obj)
 
     @mock.patch('letsencrypt.network2.requests')
     def test_post(self, requests_mock):
         # pylint: disable=protected-access
         self.net._check_response = mock.MagicMock()
-        self.net._post('uri', 'data', content_type='ct')
+        self._mock_wrap_in_jws()
+        self.net._post('uri', mock.sentinel.obj, content_type='ct')
         self.net._check_response.assert_called_once_with(
-            requests_mock.post('uri', 'data'), content_type='ct')
+            requests_mock.post('uri', mock.sentinel.wrapped), content_type='ct')
+
+    @mock.patch('letsencrypt.network2.requests')
+    def test_post_reply_nonce_handling(self, requests_mock):
+        # pylint: disable=protected-access
+        self.net._check_response = mock.MagicMock()
+        self._mock_wrap_in_jws()
+
+        self.net._nonces.clear()
+        nonce2 = jose.b64encode('Nonce2')
+        requests_mock.head('uri').headers = {
+            self.net.REPLAY_NONCE_HEADER: nonce2}
+        requests_mock.post('uri').headers = {
+            self.net.REPLAY_NONCE_HEADER: self.nonce}
+
+        self.net._post('uri', mock.sentinel.obj)
+
+        requests_mock.head.assert_called_with('uri')
+        self.wrap_in_jws.assert_called_once_with(mock.sentinel.obj, nonce2)
+        self.assertEqual(self.net._nonces, set([self.nonce]))
+
+        # wrong nonce
+        requests_mock.post('uri').headers = {self.net.REPLAY_NONCE_HEADER: 'F'}
+        self.assertRaises(
+            errors.NetworkError, self.net._post, 'uri', mock.sentinel.obj)
 
     @mock.patch('letsencrypt.client.network2.requests')
     def test_get_post_verify_ssl(self, requests_mock):
         # pylint: disable=protected-access
+        self._mock_wrap_in_jws()
         self.net._check_response = mock.MagicMock()
 
         for verify_ssl in [True, False]:
             self.net.verify_ssl = verify_ssl
             self.net._get('uri')
-            self.net._post('uri', 'data')
+            self.net._nonces.add('N')
+            self.net._post('uri', mock.sentinel.obj)
             requests_mock.get.assert_called_once_with('uri', verify=verify_ssl)
             requests_mock.post.assert_called_once_with(
-                'uri', data='data', verify=verify_ssl)
+                'uri', data=mock.sentinel.wrapped, verify=verify_ssl)
             requests_mock.reset_mock()
 
     def test_register(self):
@@ -498,8 +544,7 @@ class NetworkTest(unittest.TestCase):
     def test_revoke(self):
         self._mock_post_get()
         self.net.revoke(self.certr, when=messages2.Revocation.NOW)
-        # pylint: disable=protected-access
-        self.net._post.assert_called_once_with(self.certr.uri, mock.ANY)
+        self.post.assert_called_once_with(self.certr.uri, mock.ANY)
 
     def test_revoke_bad_status_raises_error(self):
         self.response.status_code = httplib.METHOD_NOT_ALLOWED
