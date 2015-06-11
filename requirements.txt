@@ -4,6 +4,6 @@
 # Support swig 3.0.5
 # https://github.com/M2Crypto/M2Crypto/issues/24
 # https://github.com/M2Crypto/M2Crypto/pull/30
-git+https://github.com/M2Crypto/M2Crypto/commit/d13a3a46c8934c5f50b31d5f95b23e6e06f845c3#egg=M2Crypto
+git+https://github.com/M2Crypto/M2Crypto.git@d13a3a46c8934c5f50b31d5f95b23e6e06f845c3#egg=M2Crypto
 
 -e .
