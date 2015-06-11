@@ -18,6 +18,9 @@ from acme.jose import interfaces
 from acme.jose import util
 
 
+logger = logging.getLogger(__name__)
+
+
 class Field(object):
     """JSON object field.
 
@@ -233,7 +236,7 @@ class JSONObjectWithFields(util.ImmutableMap, interfaces.JSONDeSerializable):
                             slot, value, error))
         if omitted:
             # pylint: disable=star-args
-            logging.debug('Omitted empty fields: %s', ', '.join(
+            logger.debug('Omitted empty fields: %s', ', '.join(
                 '{0!s}={1!r}'.format(*field) for field in omitted))
         return jobj
 

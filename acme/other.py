@@ -8,6 +8,9 @@ import Crypto.PublicKey.RSA
 from acme import jose
 
 
+logger = logging.getLogger(__name__)
+
+
 class Signature(jose.JSONObjectWithFields):
     """ACME signature.
 
@@ -54,7 +57,7 @@ class Signature(jose.JSONObjectWithFields):
 
         msg_with_nonce = nonce + msg
         sig = alg.sign(key, nonce + msg)
-        logging.debug('%s signed as %s', msg_with_nonce, sig)
+        logger.debug('%s signed as %s', msg_with_nonce, sig)
 
         return cls(alg=alg, sig=sig, nonce=nonce,
                    jwk=alg.kty(key=key.publickey()))

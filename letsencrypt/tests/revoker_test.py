@@ -162,7 +162,7 @@ class RevokerTest(RevokerBase):
         self.assertEqual(mock_net.call_count, 1)
         self.assertEqual(mock_display.more_info_cert.call_count, 1)
 
-    @mock.patch("letsencrypt.revoker.logging")
+    @mock.patch("letsencrypt.revoker.logger")
     @mock.patch("letsencrypt.network.Network.revoke")
     @mock.patch("letsencrypt.revoker.revocation")
     def test_revoke_by_menu_delete_all(self, mock_display, mock_net, mock_log):
@@ -183,7 +183,7 @@ class RevokerTest(RevokerBase):
 
     @mock.patch("letsencrypt.revoker.revocation")
     @mock.patch("letsencrypt.revoker.Revoker._acme_revoke")
-    @mock.patch("letsencrypt.revoker.logging")
+    @mock.patch("letsencrypt.revoker.logger")
     def test_safe_revoke_acme_fail(self, mock_log, mock_revoke, mock_display):
         # pylint: disable=protected-access
         mock_revoke.side_effect = errors.Error

@@ -14,6 +14,9 @@ from letsencrypt import interfaces
 from letsencrypt.plugins import common
 
 
+logger = logging.getLogger(__name__)
+
+
 class ManualAuthenticator(common.Plugin):
     """Manual Authenticator.
 
@@ -120,17 +123,17 @@ binary for temporary key/certificate generation.""".replace("\n", "")
 
     def _verify(self, achall, chall_response):  # pylint: disable=no-self-use
         uri = chall_response.uri(achall.domain)
-        logging.debug("Verifying %s...", uri)
+        logger.debug("Verifying %s...", uri)
         try:
             response = requests.get(uri, verify=False)
         except requests.exceptions.ConnectionError as error:
-            logging.exception(error)
+            logger.exception(error)
             return False
 
         ret = response.text == achall.token
         if not ret:
-            logging.error("Unable to verify %s! Expected: %r, returned: %r.",
-                          uri, achall.token, response.text)
+            logger.error("Unable to verify %s! Expected: %r, returned: %r.",
+                         uri, achall.token, response.text)
 
         return ret
 

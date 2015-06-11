@@ -71,6 +71,9 @@ More detailed help:
 
 
 
+logger = logging.getLogger(__name__)
+
+
 def _account_init(args, config):
     # Prepare for init of Client
     if args.email is None:
@@ -112,7 +115,7 @@ def _init_acme(config, acc, authenticator, installer):
             try:
                 acme.register()
             except errors.LetsEncryptClientError as error:
-                logging.debug(error)
+                logger.debug(error)
                 sys.exit("Unable to register an account with ACME server")
 
     return acme
@@ -235,11 +238,11 @@ def config_changes(unused_args, config, unused_plugins):
 
 def plugins_cmd(args, config, plugins):  # TODO: Use IDiplay rathern than print
     """List server software plugins."""
-    logging.debug("Expected interfaces: %s", args.ifaces)
+    logger.debug("Expected interfaces: %s", args.ifaces)
 
     ifaces = [] if args.ifaces is None else args.ifaces
     filtered = plugins.ifaces(ifaces)
-    logging.debug("Filtered plugins: %r", filtered)
+    logger.debug("Filtered plugins: %r", filtered)
 
     if not args.init and not args.prepare:
         print str(filtered)
@@ -247,7 +250,7 @@ def plugins_cmd(args, config, plugins):  # TODO: Use IDiplay rathern than print
 
     filtered.init(config)
     verified = filtered.verify(ifaces)
-    logging.debug("Verified plugins: %r", verified)
+    logger.debug("Verified plugins: %r", verified)
 
     if not args.prepare:
         print str(verified)
@@ -255,7 +258,7 @@ def plugins_cmd(args, config, plugins):  # TODO: Use IDiplay rathern than print
 
     verified.prepare()
     available = verified.available()
-    logging.debug("Prepared plugins: %s", available)
+    logger.debug("Prepared plugins: %s", available)
     print str(available)
 
 
@@ -607,8 +610,8 @@ def _setup_logging(args):
     root_logger.addHandler(handler)
     root_logger.addHandler(file_handler)
 
-    logging.debug("Root logging level set at %d", level)
-    logging.info("Saving debug log to %s", log_file_name)
+    logger.debug("Root logging level set at %d", level)
+    logger.info("Saving debug log to %s", log_file_name)
 
 
 def main(cli_args=sys.argv[1:]):
@@ -634,8 +637,8 @@ def main(cli_args=sys.argv[1:]):
 
     _setup_logging(args)
     # do not log `args`, as it contains sensitive data (e.g. revoke --key)!
-    logging.debug("Arguments: %r", cli_args)
-    logging.debug("Discovered plugins: %r", plugins)
+    logger.debug("Arguments: %r", cli_args)
+    logger.debug("Discovered plugins: %r", plugins)
 
     # Reporter
     report = reporter.Reporter()
@@ -643,7 +646,7 @@ def main(cli_args=sys.argv[1:]):
     atexit.register(report.atexit_print_messages)
 
     if not os.geteuid() == 0:
-        logging.warning(
+        logger.warning(
             "Root (sudo) is required to run most of letsencrypt functionality.")
         # check must be done after arg parsing as --help should work
         # w/o root; on the other hand, e.g. "letsencrypt run

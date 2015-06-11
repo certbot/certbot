@@ -26,6 +26,9 @@ from letsencrypt.display import util as display_util
 from letsencrypt.display import revocation
 
 
+logger = logging.getLogger(__name__)
+
+
 class Revoker(object):
     """A revocation class for LE.
 
@@ -97,7 +100,7 @@ class Revoker(object):
         if certs:
             self._safe_revoke(certs)
         else:
-            logging.info("No certificates using the authorized key were found.")
+            logger.info("No certificates using the authorized key were found.")
 
     def revoke_from_cert(self, cert_path):
         """Revoke a certificate by specifying a file path.
@@ -121,7 +124,7 @@ class Revoker(object):
                     self._safe_revoke([cert])
                     return
 
-        logging.info("Associated ACME certificate was not found.")
+        logger.info("Associated ACME certificate was not found.")
 
     def revoke_from_menu(self):
         """List trusted Let's Encrypt certificates."""
@@ -143,7 +146,7 @@ class Revoker(object):
                 else:
                     return
             else:
-                logging.info(
+                logger.info(
                     "There are not any trusted Let's Encrypt "
                     "certificates for this server.")
                 return
@@ -219,7 +222,7 @@ class Revoker(object):
                         self._acme_revoke(cert)
                     except errors.Error:
                         # TODO: Improve error handling when networking is set...
-                        logging.error(
+                        logger.error(
                             "Unable to revoke cert:%s%s", os.linesep, str(cert))
                     success_list.append(cert)
                     revocation.success_revocation(cert)

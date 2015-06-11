@@ -187,7 +187,7 @@ class ApacheParser(object):
         # validChars = re.compile("[a-zA-Z0-9.*?_-/]*")
         # matchObj = validChars.match(arg)
         # if matchObj.group() != arg:
-        #     logging.error("Error: Invalid regexp characters in %s", arg)
+        #     logger.error("Error: Invalid regexp characters in %s", arg)
         #     return []
 
         # Standardize the include argument based on server root
