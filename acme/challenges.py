@@ -46,6 +46,7 @@ class SimpleHTTP(DVChallenge):
     """ACME "simpleHttp" challenge."""
     typ = "simpleHttp"
     token = jose.Field("token")
+    tls = jose.Field("tls", default=True, omitempty=True)
 
 
 @ChallengeResponse.register
