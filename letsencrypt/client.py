@@ -66,7 +66,7 @@ class Client(object):
         # TODO: Allow for other alg types besides RS256
         self.network = network2.Network(
             config.server, jwk.JWKRSA.load(self.account.key.pem),
-            verify_ssl=config.no_verify_ssl)
+            verify_ssl=(not config.no_verify_ssl))
 
         self.config = config
 
@@ -136,7 +136,7 @@ class Client(object):
         cert_key = crypto_util.init_save_key(
             self.config.rsa_key_size, self.config.key_dir)
         csr = crypto_util.init_save_csr(
-            cert_key, domains, self.config.cert_dir)
+            cert_key, domains, self.config.csr_dir)
 
         # Retrieve certificate
         certr = self.network.request_issuance(
