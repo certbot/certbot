@@ -396,7 +396,7 @@ def main(args=sys.argv[1:]):
     # Reporter
     report = reporter.Reporter()
     zope.component.provideUtility(report)
-    atexit.register(report.print_messages)
+    atexit.register(report.atexit_print_messages)
 
     # Logging
     level = -args.verbose_count * 10

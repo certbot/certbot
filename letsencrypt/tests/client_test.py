@@ -5,6 +5,7 @@ import pkg_resources
 import shutil
 import tempfile
 
+import configobj
 import mock
 
 from letsencrypt import account
@@ -35,6 +36,50 @@ class ClientTest(unittest.TestCase):
         self.network2.Network.assert_called_once_with(
             mock.ANY, mock.ANY, verify_ssl=True)
 
+    @mock.patch("letsencrypt.client.zope.component.getUtility")
+    def test_report_new_account(self, mock_zope):
+        # pylint: disable=protected-access
+        self.config.config_dir = "/usr/bin/coffee"
+        self.account.recovery_token = "ECCENTRIC INVISIBILITY RHINOCEROS"
+        self.account.email = "rhino@jungle.io"
+
+        self.client._report_new_account()
+        call_list = mock_zope().add_message.call_args_list
+        self.assertTrue(self.config.config_dir in call_list[0][0][0])
+        self.assertTrue(self.account.recovery_token in call_list[1][0][0])
+        self.assertTrue(self.account.email in call_list[1][0][0])
+
+    @mock.patch("letsencrypt.client.zope.component.getUtility")
+    def test_report_renewal_status(self, mock_zope):
+        # pylint: disable=protected-access
+        cert = mock.MagicMock()
+        cert.configuration = configobj.ConfigObj()
+        cert.configuration["renewal_configs_dir"] = "/etc/letsencrypt/configs"
+
+        cert.configuration["autorenew"] = "True"
+        cert.configuration["autodeploy"] = "True"
+        self.client._report_renewal_status(cert)
+        msg = mock_zope().add_message.call_args[0][0]
+        self.assertTrue("renewal and deployment has been" in msg)
+        self.assertTrue(cert.configuration["renewal_configs_dir"] in msg)
+
+        cert.configuration["autorenew"] = "False"
+        self.client._report_renewal_status(cert)
+        msg = mock_zope().add_message.call_args[0][0]
+        self.assertTrue("deployment but not automatic renewal" in msg)
+        self.assertTrue(cert.configuration["renewal_configs_dir"] in msg)
+
+        cert.configuration["autodeploy"] = "False"
+        self.client._report_renewal_status(cert)
+        msg = mock_zope().add_message.call_args[0][0]
+        self.assertTrue("renewal and deployment has not" in msg)
+        self.assertTrue(cert.configuration["renewal_configs_dir"] in msg)
+
+        cert.configuration["autorenew"] = "True"
+        self.client._report_renewal_status(cert)
+        msg = mock_zope().add_message.call_args[0][0]
+        self.assertTrue("renewal but not automatic deployment" in msg)
+        self.assertTrue(cert.configuration["renewal_configs_dir"] in msg)
 
 class DetermineAccountTest(unittest.TestCase):
     """Tests for letsencrypt.client.determine_authenticator."""
