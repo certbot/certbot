@@ -45,9 +45,10 @@ fi
 
 apt-get update
 apt-get install -y --no-install-recommends \
+  git-core \
   python \
-  "$virtualenv" \
   python-dev \
+  "$virtualenv" \
   gcc \
   swig \
   dialog \
