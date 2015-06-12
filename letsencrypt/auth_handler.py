@@ -336,9 +336,9 @@ def challb_to_achall(challb, key, domain):
         logging.info("  DVSNI challenge for %s.", domain)
         return achallenges.DVSNI(
             challb=challb, domain=domain, key=key)
-    elif isinstance(chall, challenges.SimpleHTTPS):
-        logging.info("  SimpleHTTPS challenge for %s.", domain)
-        return achallenges.SimpleHTTPS(
+    elif isinstance(chall, challenges.SimpleHTTP):
+        logging.info("  SimpleHTTP challenge for %s.", domain)
+        return achallenges.SimpleHTTP(
             challb=challb, domain=domain, key=key)
     elif isinstance(chall, challenges.DNS):
         logging.info("  DNS challenge for %s.", domain)

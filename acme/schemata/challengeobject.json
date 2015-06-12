@@ -7,7 +7,7 @@
                  "required": ["type", "token"],
                  "properties": {
                      "type": {
-                         "enum" : [ "simpleHttps" ]
+                         "enum" : [ "simpleHttp" ]
                      },
                      "token": {
                          "type": "string"

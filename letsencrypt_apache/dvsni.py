@@ -18,7 +18,7 @@ class ApacheDvsni(object):
         larger array. ApacheDvsni is capable of solving many challenges
         at once which causes an indexing issue within ApacheConfigurator
         who must return all responses in order.  Imagine ApacheConfigurator
-        maintaining state about where all of the SimpleHTTPS Challenges,
+        maintaining state about where all of the SimpleHTTP Challenges,
         Dvsni Challenges belong in the response array.  This is an optional
         utility.
 
