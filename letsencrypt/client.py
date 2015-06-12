@@ -236,8 +236,7 @@ class Client(object):
         # pylint: disable=no-self-use
         """Informs the user about automatic renewal and deployment.
 
-        :param cert: Newly issued certificate
-        :type cert: :class:`letsencrypt.storage.RenewableCert`
+        :param .RenewableCert cert: Newly issued certificate
 
         """
         if ("autorenew" not in cert.configuration
@@ -256,7 +255,7 @@ class Client(object):
 
         msg += ("been enabled for your certificate. These settings can be "
                 "configured in the directories under {0}.").format(
-                    cert.configuration["renewal_configs_dir"])
+                    cert.cli_config.renewal_configs_dir)
         reporter = zope.component.getUtility(interfaces.IReporter)
         reporter.add_message(msg, reporter.LOW_PRIORITY, True)
 

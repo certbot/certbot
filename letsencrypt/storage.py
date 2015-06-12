@@ -88,6 +88,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         :param configobj.ConfigObj config_opts: systemwide defaults for
             renewal properties not otherwise specified in the individual
             renewal config file.
+        :param .RenewerConfiguration cli_config:
 
         :raises ValueError: if the configuration file's name didn't end
             in ".conf", or the file is missing or broken.

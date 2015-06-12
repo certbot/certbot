@@ -82,11 +82,6 @@ class NamespaceConfig(object):
         return os.path.join(self.namespace.work_dir, constants.REC_TOKEN_DIR)
 
     @property
-    def renewer_config_file(self):  # pylint: disable=missing-docstring
-        return os.path.join(
-            self.namespace.config_dir, constants.RENEWER_CONFIG_FILENAME)
-
-    @property
     def temp_checkpoint_dir(self):  # pylint: disable=missing-docstring
         return os.path.join(
             self.namespace.work_dir, constants.TEMP_CHECKPOINT_DIR)
