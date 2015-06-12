@@ -1,4 +1,5 @@
 """Tests for acme.jose.json_util."""
+import itertools
 import os
 import pkg_resources
 import unittest
@@ -19,6 +20,13 @@ CSR = M2Crypto.X509.load_request(pkg_resources.resource_filename(
 
 class FieldTest(unittest.TestCase):
     """Tests for acme.jose.json_util.Field."""
+
+    def test_no_omit_boolean(self):
+        from acme.jose.json_util import Field
+        for default, omitempty, value in itertools.product(
+                [True, False], [True, False], [True, False]):
+            self.assertFalse(
+                Field("foo", default=default, omitempty=omitempty).omit(value))
 
     def test_descriptors(self):
         mock_value = mock.MagicMock()

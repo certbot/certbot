@@ -27,7 +27,16 @@ class SimpleHTTPTest(unittest.TestCase):
         self.jmsg = {
             'type': 'simpleHttp',
             'token': 'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ+PCt92wr+oA',
+            'tls': True,
         }
+
+    def test_no_tls(self):
+        from acme.challenges import SimpleHTTP
+        self.assertEqual(SimpleHTTP(token='tok', tls=False).to_json(), {
+            'tls': False,
+            'token': 'tok',
+            'type': 'simpleHttp',
+        })
 
     def test_to_partial_json(self):
         self.assertEqual(self.jmsg, self.msg.to_partial_json())

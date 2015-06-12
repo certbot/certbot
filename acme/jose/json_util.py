@@ -62,7 +62,7 @@ class Field(object):
         definition of being empty, e.g. for some more exotic data types.
 
         """
-        return not value
+        return not isinstance(value, bool) and not value
 
     def omit(self, value):
         """Omit the value in output?"""
