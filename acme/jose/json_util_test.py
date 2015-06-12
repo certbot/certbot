@@ -77,6 +77,47 @@ class FieldTest(unittest.TestCase):
         self.assertTrue(Field.default_decoder(mock_value) is mock_value)
 
 
+class JSONObjectWithFieldsMetaTest(unittest.TestCase):
+    """Tests for acme.jose.json_util.JSONObjectWithFieldsMeta."""
+
+    def setUp(self):
+        from acme.jose.json_util import Field
+        from acme.jose.json_util import JSONObjectWithFieldsMeta
+        self.field = Field('Baz')
+        self.field2 = Field('Baz2')
+        # pylint: disable=invalid-name,missing-docstring,too-few-public-methods
+        # pylint: disable=blacklisted-name
+        class A(object):
+            __metaclass__ = JSONObjectWithFieldsMeta
+            __slots__ = ('bar',)
+            baz = self.field
+        class B(A):
+            pass
+        class C(A):
+            baz = self.field2
+        self.a_cls = A
+        self.b_cls = B
+        self.c_cls = C
+
+    def test_fields(self):
+        # pylint: disable=protected-access,no-member
+        self.assertEqual({'baz': self.field}, self.a_cls._fields)
+        self.assertEqual({'baz': self.field}, self.b_cls._fields)
+
+    def test_fields_inheritance(self):
+        # pylint: disable=protected-access,no-member
+        self.assertEqual({'baz': self.field2}, self.c_cls._fields)
+
+    def test_slots(self):
+        self.assertEqual(('bar', 'baz'), self.a_cls.__slots__)
+        self.assertEqual(('baz',), self.b_cls.__slots__)
+
+    def test_orig_slots(self):
+        # pylint: disable=protected-access,no-member
+        self.assertEqual(('bar',), self.a_cls._orig_slots)
+        self.assertEqual((), self.b_cls._orig_slots)
+
+
 class JSONObjectWithFieldsTest(unittest.TestCase):
     """Tests for acme.jose.json_util.JSONObjectWithFields."""
     # pylint: disable=protected-access
