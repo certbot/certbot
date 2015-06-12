@@ -80,12 +80,12 @@ class RevokerTest(RevokerBase):
     @mock.patch("letsencrypt.revoker.Crypto.PublicKey.RSA.importKey")
     def test_revoke_by_invalid_keys(self, mock_import):
         mock_import.side_effect = ValueError
-        self.assertRaises(errors.LetsEncryptRevokerError,
+        self.assertRaises(errors.RevokerError,
                           self.revoker.revoke_from_key,
                           self.key)
 
         mock_import.side_effect = [mock.Mock(), IndexError]
-        self.assertRaises(errors.LetsEncryptRevokerError,
+        self.assertRaises(errors.RevokerError,
                           self.revoker.revoke_from_key,
                           self.key)
 
@@ -188,7 +188,7 @@ class RevokerTest(RevokerBase):
     @mock.patch("letsencrypt.revoker.logging")
     def test_safe_revoke_acme_fail(self, mock_log, mock_revoke, mock_display):
         # pylint: disable=protected-access
-        mock_revoke.side_effect = errors.LetsEncryptClientError
+        mock_revoke.side_effect = errors.Error
         mock_display().confirm_revocation.return_value = True
 
         self.revoker._safe_revoke(self.certs)
@@ -198,7 +198,7 @@ class RevokerTest(RevokerBase):
     def test_acme_revoke_failure(self, mock_crypto):
         # pylint: disable=protected-access
         mock_crypto.side_effect = ValueError
-        self.assertRaises(errors.LetsEncryptClientError,
+        self.assertRaises(errors.Error,
                           self.revoker._acme_revoke,
                           self.certs[0])
 
@@ -215,7 +215,7 @@ class RevokerTest(RevokerBase):
         new_cert.orig = Cert.PathStatus("false path", "not here")
         new_cert.orig_key = Cert.PathStatus("false path", "not here")
 
-        self.assertRaises(errors.LetsEncryptRevokerError,
+        self.assertRaises(errors.RevokerError,
                           self.revoker._remove_certs_from_list,
                           [new_cert])
 
@@ -330,7 +330,7 @@ class CertTest(unittest.TestCase):
 
     def test_failed_load(self):
         from letsencrypt.revoker import Cert
-        self.assertRaises(errors.LetsEncryptRevokerError, Cert, self.key_path)
+        self.assertRaises(errors.RevokerError, Cert, self.key_path)
 
     def test_no_row(self):
         self.assertEqual(self.certs[0].get_row(), None)

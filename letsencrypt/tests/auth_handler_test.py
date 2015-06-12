@@ -61,7 +61,7 @@ class ChallengeFactoryTest(unittest.TestCase):
             [mock.Mock(chall="chall", typ="unrecognized")],
             [messages.STATUS_PENDING])
 
-        self.assertRaises(errors.LetsEncryptClientError,
+        self.assertRaises(errors.Error,
                           self.handler._challenge_factory, "failure.com", [0])
 
 

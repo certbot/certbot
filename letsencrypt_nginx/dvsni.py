@@ -79,7 +79,7 @@ class NginxDvsni(common.Dvsni):
         :param list ll_addrs: list of lists of
             :class:`letsencrypt_nginx.obj.Addr` to apply
 
-        :raises errors.LetsEncryptMisconfigurationError:
+        :raises errors.MisconfigurationError:
             Unable to find a suitable HTTP block to include DVSNI hosts.
 
         """
@@ -97,7 +97,7 @@ class NginxDvsni(common.Dvsni):
                 included = True
                 break
         if not included:
-            raise errors.LetsEncryptMisconfigurationError(
+            raise errors.MisconfigurationError(
                 'LetsEncrypt could not find an HTTP block to include DVSNI '
                 'challenges in %s.' % root)
 

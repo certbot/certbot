@@ -41,11 +41,11 @@ def _account_init(args, config):
             # The way to get the default would be args.email = ""
             # First try existing account
             return account.Account.from_existing_account(config, args.email)
-        except errors.LetsEncryptClientError:
+        except errors.Error:
             try:
                 # Try to make an account based on the email address
                 return account.Account.from_email(config, args.email)
-            except errors.LetsEncryptClientError:
+            except errors.Error:
                 return None
 
 
@@ -68,7 +68,7 @@ def _common_run(args, config, acc, authenticator, installer):
         if acc.regr is None:
             try:
                 acme.register()
-            except errors.LetsEncryptClientError:
+            except errors.Error:
                 sys.exit("Unable to register an account with ACME server")
 
     return acme, doms

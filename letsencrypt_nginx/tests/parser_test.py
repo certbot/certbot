@@ -5,7 +5,7 @@ import re
 import shutil
 import unittest
 
-from letsencrypt.errors import LetsEncryptMisconfigurationError
+from letsencrypt import errors
 
 from letsencrypt_nginx import nginxparser
 from letsencrypt_nginx import obj
@@ -163,7 +163,7 @@ class NginxParserTest(util.NginxTest):
                            ['listen', '127.0.0.1'],
                            ['server_name', 'foo bar'],
                            ['server_name', 'foo bar']]]])
-        self.assertRaises(LetsEncryptMisconfigurationError,
+        self.assertRaises(errors.MisconfigurationError,
                           nparser.add_server_directives,
                           filep, set(['foo', 'bar']),
                           [['ssl_certificate', 'cert.pem']], True)

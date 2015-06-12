@@ -52,7 +52,7 @@ class ContinuityAuthenticator(object):
             elif isinstance(achall, achallenges.RecoveryToken):
                 responses.append(self.rec_token.perform(achall))
             else:
-                raise errors.LetsEncryptContAuthError("Unexpected Challenge")
+                raise errors.ContAuthError("Unexpected Challenge")
         return responses
 
     def cleanup(self, achalls):
@@ -61,4 +61,4 @@ class ContinuityAuthenticator(object):
             if isinstance(achall, achallenges.RecoveryToken):
                 self.rec_token.cleanup(achall)
             elif not isinstance(achall, achallenges.ProofOfPossession):
-                raise errors.LetsEncryptContAuthError("Unexpected Challenge")
+                raise errors.ContAuthError("Unexpected Challenge")

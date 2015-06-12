@@ -58,7 +58,7 @@ class PerformTest(unittest.TestCase):
 
     def test_unexpected(self):
         self.assertRaises(
-            errors.LetsEncryptContAuthError, self.auth.perform, [
+            errors.ContAuthError, self.auth.perform, [
                 achallenges.DVSNI(challb=None, domain="0", key="invalid_key")])
 
     def test_chall_pref(self):
@@ -91,7 +91,7 @@ class CleanupTest(unittest.TestCase):
         token = achallenges.RecoveryToken(challb=None, domain="0")
         unexpected = achallenges.DVSNI(challb=None, domain="0", key="dummy_key")
 
-        self.assertRaises(errors.LetsEncryptContAuthError,
+        self.assertRaises(errors.ContAuthError,
                           self.auth.cleanup, [token, unexpected])
 
 

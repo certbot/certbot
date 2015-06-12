@@ -1,44 +1,44 @@
 """Let's Encrypt client errors."""
 
 
-class LetsEncryptClientError(Exception):
+class Error(Exception):
     """Generic Let's Encrypt client error."""
 
 
-class LetsEncryptReverterError(LetsEncryptClientError):
+class ReverterError(Error):
     """Let's Encrypt Reverter error."""
 
 
 # Auth Handler Errors
-class AuthorizationError(LetsEncryptClientError):
+class AuthorizationError(Error):
     """Authorization error."""
 
 
-class LetsEncryptContAuthError(AuthorizationError):
+class ContAuthError(AuthorizationError):
     """Let's Encrypt Continuity Authenticator error."""
 
 
-class LetsEncryptDvAuthError(AuthorizationError):
+class DvAuthError(AuthorizationError):
     """Let's Encrypt DV Authenticator error."""
 
 
 # Authenticator - Challenge specific errors
-class LetsEncryptDvsniError(LetsEncryptDvAuthError):
+class DvsniError(DvAuthError):
     """Let's Encrypt DVSNI error."""
 
 
 # Configurator Errors
-class LetsEncryptConfiguratorError(LetsEncryptClientError):
+class ConfiguratorError(Error):
     """Let's Encrypt Configurator error."""
 
 
-class LetsEncryptNoInstallationError(LetsEncryptConfiguratorError):
+class NoInstallationError(ConfiguratorError):
     """Let's Encrypt No Installation error."""
 
 
-class LetsEncryptMisconfigurationError(LetsEncryptConfiguratorError):
+class MisconfigurationError(ConfiguratorError):
     """Let's Encrypt Misconfiguration error."""
 
 
-class LetsEncryptRevokerError(LetsEncryptClientError):
+class RevokerError(Error):
     """Let's Encrypt Revoker error."""

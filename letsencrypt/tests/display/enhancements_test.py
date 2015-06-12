@@ -28,7 +28,7 @@ class AskTest(unittest.TestCase):
 
     def test_key_error(self):
         self.assertRaises(
-            errors.LetsEncryptClientError, self._call, "unknown_enhancement")
+            errors.Error, self._call, "unknown_enhancement")
 
 
 class RedirectTest(unittest.TestCase):

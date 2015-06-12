@@ -296,7 +296,7 @@ class AuthHandler(object):
             :class:`letsencrypt.achallenges.Indexed`
         :rtype: tuple
 
-        :raises errors.LetsEncryptClientError: If Challenge type is not
+        :raises errors.Error: If Challenge type is not
             recognized
 
         """
@@ -353,7 +353,7 @@ def challb_to_achall(challb, key, domain):
             challb=challb, domain=domain)
 
     else:
-        raise errors.LetsEncryptClientError(
+        raise errors.Error(
             "Received unsupported challenge of type: %s",
             chall.typ)
 

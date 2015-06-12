@@ -68,10 +68,10 @@ class IPlugin(zope.interface.Interface):
 
          Finish up any additional initialization.
 
-         :raises letsencrypt.errors.LetsEncryptMisconfigurationError:
+         :raises letsencrypt.errors.MisconfigurationError:
              when full initialization cannot be completed. Plugin will be
              displayed on a list of available plugins.
-         :raises letsencrypt.errors.LetsEncryptNoInstallationError:
+         :raises letsencrypt.errors.NoInstallationError:
              when the necessary programs/files cannot be located. Plugin
              will NOT be displayed on a list of available plugins.
 
