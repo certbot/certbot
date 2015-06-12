@@ -89,8 +89,7 @@ class Revoker(object):
                     # This should never happen given the assumptions of the
                     # module. If it does, it is probably best to delete the
                     # the offending key/cert. For now... just raise an exception
-                    raise errors.RevokerError(
-                        "%s - backup file is corrupted.")
+                    raise errors.RevokerError("%s - backup file is corrupted.")
 
                 if clean_pem == test_pem:
                     certs.append(

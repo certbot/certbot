@@ -102,8 +102,7 @@ class PluginEntryPoint(object):
     @property
     def misconfigured(self):
         """Is plugin misconfigured?"""
-        return isinstance(
-            self._prepared, errors.MisconfigurationError)
+        return isinstance(self._prepared, errors.MisconfigurationError)
 
     @property
     def available(self):

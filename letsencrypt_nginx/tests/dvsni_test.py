@@ -163,8 +163,8 @@ class DvsniPerformTest(util.NginxTest):
         root = self.sni.configurator.parser.loc["root"]
         self.sni.configurator.parser.parsed[root] = [['include', 'foo.conf']]
         # pylint: disable=protected-access
-        self.assertRaises(errors.MisconfigurationError,
-                          self.sni._mod_config, [])
+        self.assertRaises(
+            errors.MisconfigurationError, self.sni._mod_config, [])
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

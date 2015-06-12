@@ -80,14 +80,12 @@ class RevokerTest(RevokerBase):
     @mock.patch("letsencrypt.revoker.Crypto.PublicKey.RSA.importKey")
     def test_revoke_by_invalid_keys(self, mock_import):
         mock_import.side_effect = ValueError
-        self.assertRaises(errors.RevokerError,
-                          self.revoker.revoke_from_key,
-                          self.key)
+        self.assertRaises(
+            errors.RevokerError, self.revoker.revoke_from_key, self.key)
 
         mock_import.side_effect = [mock.Mock(), IndexError]
-        self.assertRaises(errors.RevokerError,
-                          self.revoker.revoke_from_key,
-                          self.key)
+        self.assertRaises(
+            errors.RevokerError, self.revoker.revoke_from_key, self.key)
 
     @mock.patch("letsencrypt.network.Network.revoke")
     @mock.patch("letsencrypt.revoker.revocation")
@@ -198,9 +196,8 @@ class RevokerTest(RevokerBase):
     def test_acme_revoke_failure(self, mock_crypto):
         # pylint: disable=protected-access
         mock_crypto.side_effect = ValueError
-        self.assertRaises(errors.Error,
-                          self.revoker._acme_revoke,
-                          self.certs[0])
+        self.assertRaises(
+            errors.Error, self.revoker._acme_revoke, self.certs[0])
 
     def test_remove_certs_from_list_bad_certs(self):
         # pylint: disable=protected-access
@@ -216,8 +213,7 @@ class RevokerTest(RevokerBase):
         new_cert.orig_key = Cert.PathStatus("false path", "not here")
 
         self.assertRaises(errors.RevokerError,
-                          self.revoker._remove_certs_from_list,
-                          [new_cert])
+                          self.revoker._remove_certs_from_list, [new_cert])
 
     def _backups_exist(self, row):
         # pylint: disable=protected-access

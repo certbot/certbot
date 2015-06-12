@@ -347,8 +347,7 @@ class ApacheParser(object):
             if os.path.isfile(os.path.join(self.root, name)):
                 return os.path.join(self.root, name)
 
-        raise errors.NoInstallationError(
-            "Could not find configuration root")
+        raise errors.NoInstallationError("Could not find configuration root")
 
     def _set_user_config_file(self, root):
         """Set the appropriate user configuration file

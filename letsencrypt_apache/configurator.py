@@ -674,8 +674,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         conflict, host_or_addrs = self._conflicting_host(ssl_vhost)
         if conflict:
             raise errors.ConfiguratorError(
-                "Unable to create a redirection vhost "
-                "- {}".format(host_or_addrs))
+                "Unable to create a redirection vhost - {}".format(
+                    host_or_addrs))
 
         redirect_addrs = host_or_addrs
 
@@ -951,8 +951,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :returns: version
         :rtype: tuple
 
-        :raises errors.ConfiguratorError:
-            Unable to find Apache version
+        :raises .ConfiguratorError: if unable to find Apache version
 
         """
         try:
@@ -969,8 +968,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         matches = regex.findall(text)
 
         if len(matches) != 1:
-            raise errors.ConfiguratorError(
-                "Unable to find Apache version")
+            raise errors.ConfiguratorError("Unable to find Apache version")
 
         return tuple([int(i) for i in matches[0].split(".")])
 
@@ -1079,8 +1077,7 @@ def mod_loaded(module, apache_ctl):
     except (OSError, ValueError):
         logging.error(
             "Error accessing %s for loaded modules!", apache_ctl)
-        raise errors.ConfiguratorError(
-            "Error accessing loaded modules")
+        raise errors.ConfiguratorError("Error accessing loaded modules")
     # Small errors that do not impede
     if proc.returncode != 0:
         logging.warn("Error in checking loaded module list: %s", stderr)

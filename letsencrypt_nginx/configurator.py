@@ -380,7 +380,7 @@ class NginxConfigurator(common.Plugin):
         :returns: version
         :rtype: tuple
 
-        :raises errors.ConfiguratorError:
+        :raises .ConfiguratorError:
             Unable to find Nginx version or version is unsupported
 
         """
@@ -404,22 +404,19 @@ class NginxConfigurator(common.Plugin):
         ssl_matches = ssl_regex.findall(text)
 
         if not version_matches:
-            raise errors.ConfiguratorError(
-                "Unable to find Nginx version")
+            raise errors.ConfiguratorError("Unable to find Nginx version")
         if not ssl_matches:
             raise errors.ConfiguratorError(
                 "Nginx build is missing SSL module (--with-http_ssl_module).")
         if not sni_matches:
-            raise errors.ConfiguratorError(
-                "Nginx build doesn't support SNI")
+            raise errors.ConfiguratorError("Nginx build doesn't support SNI")
 
         nginx_version = tuple([int(i) for i in version_matches[0].split(".")])
 
         # nginx < 0.8.48 uses machine hostname as default server_name instead of
         # the empty string
         if nginx_version < (0, 8, 48):
-            raise errors.ConfiguratorError(
-                "Nginx version must be 0.8.48+")
+            raise errors.ConfiguratorError("Nginx version must be 0.8.48+")
 
         return nginx_version
 

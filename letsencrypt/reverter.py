@@ -30,8 +30,7 @@ class Reverter(object):
         This function should reinstall the users original configuration files
         for all saves with temporary=True
 
-        :raises letsencrypt.errors.ReverterError: when
-            unable to revert config
+        :raises .ReverterError: when unable to revert config
 
         """
         if os.path.isdir(self.config.temp_checkpoint_dir):
@@ -41,8 +40,7 @@ class Reverter(object):
                 # We have a partial or incomplete recovery
                 logging.fatal("Incomplete or failed recovery for %s",
                               self.config.temp_checkpoint_dir)
-                raise errors.ReverterError(
-                    "Unable to revert temporary config")
+                raise errors.ReverterError("Unable to revert temporary config")
 
     def rollback_checkpoints(self, rollback=1):
         """Revert 'rollback' number of configuration checkpoints.
@@ -50,9 +48,9 @@ class Reverter(object):
         :param int rollback: Number of checkpoints to reverse. A str num will be
            cast to an integer. So "2" is also acceptable.
 
-        :raises letsencrypt.errors.ReverterError: If
-            there is a problem with the input or if the function is unable to
-            correctly revert the configuration checkpoints.
+        :raises .ReverterError:
+            if there is a problem with the input or if the function is
+            unable to correctly revert the configuration checkpoints
 
         """
         try:
@@ -161,9 +159,8 @@ class Reverter(object):
         :param set save_files: set of files to save
         :param str save_notes: notes about changes made during the save
 
-        :raises IOError: If unable to open cp_dir + FILEPATHS file
-        :raises letsencrypt.errors.ReverterError: If
-            unable to add checkpoint
+        :raises IOError: if unable to open cp_dir + FILEPATHS file
+        :raises .ReverterError: if unable to add checkpoint
 
         """
         le_util.make_or_verify_dir(

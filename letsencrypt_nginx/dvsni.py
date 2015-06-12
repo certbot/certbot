@@ -79,7 +79,7 @@ class NginxDvsni(common.Dvsni):
         :param list ll_addrs: list of lists of
             :class:`letsencrypt_nginx.obj.Addr` to apply
 
-        :raises errors.MisconfigurationError:
+        :raises .MisconfigurationError:
             Unable to find a suitable HTTP block to include DVSNI hosts.
 
         """

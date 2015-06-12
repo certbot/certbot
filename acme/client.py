@@ -321,7 +321,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         :returns: Challenge Resource with updated body.
         :rtype: `.ChallengeResource`
 
-        :raises errors.UnexpectedUpdate:
+        :raises .UnexpectedUpdate:
 
         """
         response = self._post(challb.uri, response)

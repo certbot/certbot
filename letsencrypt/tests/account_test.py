@@ -102,8 +102,8 @@ class AccountTest(unittest.TestCase):
     def test_from_email(self):
         from letsencrypt.account import Account
 
-        self.assertRaises(errors.Error,
-                          Account.from_email, self.config, "not_valid...email")
+        self.assertRaises(
+            errors.Error, Account.from_email, self.config, "not_valid...email")
 
     def test_save_from_existing_account(self):
         from letsencrypt.account import Account
@@ -170,10 +170,8 @@ class AccountTest(unittest.TestCase):
     def test_failed_existing_account(self):
         from letsencrypt.account import Account
 
-        self.assertRaises(
-            errors.Error,
-            Account.from_existing_account,
-            self.config, "non-existant@email.org")
+        self.assertRaises(errors.Error, Account.from_existing_account,
+                          self.config, "non-existant@email.org")
 
 class SafeEmailTest(unittest.TestCase):
     """Test safe_email."""

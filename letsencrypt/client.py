@@ -147,8 +147,7 @@ class Client(object):
             logging.warning(msg)
             raise errors.Error(msg)
         if self.account.regr is None:
-            raise errors.Error(
-                "Please register with the ACME server first.")
+            raise errors.Error("Please register with the ACME server first.")
 
         # Perform Challenges/Get Authorizations
         authzr = self.auth_handler.get_authorizations(domains)
@@ -339,8 +338,8 @@ class Client(object):
         :param redirect: If traffic should be forwarded from HTTP to HTTPS.
         :type redirect: bool or None
 
-        :raises letsencrypt.errors.Error: if
-            no installer is specified in the client.
+        :raises .errors.Error: if no installer is specified in the
+            client.
 
         """
         if self.installer is None:
@@ -386,8 +385,7 @@ def validate_key_csr(privkey, csr=None):
     :param csr: CSR
     :type csr: :class:`letsencrypt.le_util.CSR`
 
-    :raises letsencrypt.errors.Error: when
-        validation fails
+    :raises .errors.Error: when validation fails
 
     """
     # TODO: Handle all of these problems appropriately
@@ -396,8 +394,7 @@ def validate_key_csr(privkey, csr=None):
 
     # Key must be readable and valid.
     if privkey.pem and not crypto_util.valid_privkey(privkey.pem):
-        raise errors.Error(
-            "The provided key is not a valid key")
+        raise errors.Error("The provided key is not a valid key")
 
     if csr:
         if csr.form == "der":
@@ -406,16 +403,14 @@ def validate_key_csr(privkey, csr=None):
 
         # If CSR is provided, it must be readable and valid.
         if csr.data and not crypto_util.valid_csr(csr.data):
-            raise errors.Error(
-                "The provided CSR is not a valid CSR")
+            raise errors.Error("The provided CSR is not a valid CSR")
 
         # If both CSR and key are provided, the key must be the same key used
         # in the CSR.
         if csr.data and privkey.pem:
             if not crypto_util.csr_matches_pubkey(
                     csr.data, privkey.pem):
-                raise errors.Error(
-                    "The key and CSR do not match")
+                raise errors.Error("The key and CSR do not match")
 
 
 def determine_account(config):

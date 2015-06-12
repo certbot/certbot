@@ -197,17 +197,14 @@ class TwoVhost80Test(util.ApacheTest):
 
         mock_popen().communicate.return_value = (
             "Server Version: Apache (Debian)", "")
-        self.assertRaises(
-            errors.ConfiguratorError, self.config.get_version)
+        self.assertRaises(errors.ConfiguratorError, self.config.get_version)
 
         mock_popen().communicate.return_value = (
             "Server Version: Apache/2.3{0} Apache/2.4.7".format(os.linesep), "")
-        self.assertRaises(
-            errors.ConfiguratorError, self.config.get_version)
+        self.assertRaises(errors.ConfiguratorError, self.config.get_version)
 
         mock_popen.side_effect = OSError("Can't find program")
-        self.assertRaises(
-            errors.ConfiguratorError, self.config.get_version)
+        self.assertRaises(errors.ConfiguratorError, self.config.get_version)
 
 
 if __name__ == "__main__":

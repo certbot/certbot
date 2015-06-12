@@ -61,8 +61,8 @@ class ChallengeFactoryTest(unittest.TestCase):
             [mock.Mock(chall="chall", typ="unrecognized")],
             [messages.STATUS_PENDING])
 
-        self.assertRaises(errors.Error,
-                          self.handler._challenge_factory, "failure.com", [0])
+        self.assertRaises(
+            errors.Error, self.handler._challenge_factory, "failure.com", [0])
 
 
 class GetAuthorizationsTest(unittest.TestCase):
@@ -153,8 +153,8 @@ class GetAuthorizationsTest(unittest.TestCase):
             gen_dom_authzr, challs=acme_util.CHALLENGES)
         self.mock_dv_auth.perform.side_effect = errors.AuthorizationError
 
-        self.assertRaises(errors.AuthorizationError,
-                          self.handler.get_authorizations, ["0"])
+        self.assertRaises(
+            errors.AuthorizationError, self.handler.get_authorizations, ["0"])
 
     def _validate_all(self, unused_1, unused_2):
         for dom in self.handler.authzr.keys():
@@ -218,9 +218,9 @@ class PollChallengesTest(unittest.TestCase):
     @mock.patch("letsencrypt.auth_handler.time")
     def test_poll_challenges_failure(self, unused_mock_time):
         self.mock_net.poll.side_effect = self._mock_poll_solve_one_invalid
-        self.assertRaises(errors.AuthorizationError,
-                          self.handler._poll_challenges,
-                          self.chall_update, False)
+        self.assertRaises(
+            errors.AuthorizationError, self.handler._poll_challenges,
+            self.chall_update, False)
 
     @mock.patch("letsencrypt.auth_handler.time")
     def test_unable_to_find_challenge_status(self, unused_mock_time):
@@ -229,8 +229,8 @@ class PollChallengesTest(unittest.TestCase):
         self.chall_update[self.doms[0]].append(
             challb_to_achall(acme_util.RECOVERY_CONTACT_P, "key", self.doms[0]))
         self.assertRaises(
-            errors.AuthorizationError,
-            self.handler._poll_challenges, self.chall_update, False)
+            errors.AuthorizationError, self.handler._poll_challenges,
+            self.chall_update, False)
 
     def test_verify_authzr_failure(self):
         self.assertRaises(
@@ -348,8 +348,8 @@ class GenChallengePathTest(unittest.TestCase):
         prefs = [challenges.DVSNI]
         combos = ((0, 1),)
 
-        self.assertRaises(errors.AuthorizationError,
-                          self._call, challbs, prefs, combos)
+        self.assertRaises(
+            errors.AuthorizationError, self._call, challbs, prefs, combos)
 
 
 class MutuallyExclusiveTest(unittest.TestCase):

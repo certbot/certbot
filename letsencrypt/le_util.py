@@ -19,7 +19,7 @@ def make_or_verify_dir(directory, mode=0o755, uid=0):
     :param int mode: Directory mode.
     :param int uid: Directory owner.
 
-    :raises Error: if a directory already exists,
+    :raises .errors.Error: if a directory already exists,
         but has wrong permissions or owner
 
     :raises OSError: if invalid or inaccessible file names and

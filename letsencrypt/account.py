@@ -205,8 +205,7 @@ class Account(object):
 
         :param str email: Email address
 
-        :raises letsencrypt.errors.Error: If invalid
-            email address is given.
+        :raises .errors.Error: If invalid email address is given.
 
         """
         if not email or cls.safe_email(email):
