@@ -31,6 +31,12 @@ In general:
 
 * ``sudo`` is required as a suggested way of running privileged process
 * `swig`_ is required for compiling `m2crypto`_
+
+  .. note:: If your operating system uses SWIG 3.0.5+, you will need
+            to run ``pip install -r requirements-swig-3.0.5.txt -r
+            requirements.txt`` instead of the standard ``pip
+            install -r requirements.txt``.
+
 * `augeas`_ is required for the ``python-augeas`` bindings
 
 
