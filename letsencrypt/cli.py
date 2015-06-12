@@ -573,11 +573,11 @@ def _paths_parser(helpful):
         help=config_help("server"))
 
 
-def main(args=sys.argv[1:]):
+def main(cli_args=sys.argv[1:]):
     """Command line argument parsing and main script execution."""
     # note: arg parser internally handles --help (and exits afterwards)
     plugins = plugins_disco.PluginsRegistry.find_all()
-    args = create_parser(plugins, args).parse_args(args)
+    args = create_parser(plugins, cli_args).parse_args(cli_args)
     config = configuration.NamespaceConfig(args)
 
     # Displayer
@@ -600,6 +600,8 @@ def main(args=sys.argv[1:]):
     if not args.text_mode:
         logger.addHandler(log.DialogHandler())
 
+    # do not log `args`, as it contains sensitive data (e.g. revoke --key)!
+    logging.debug("Arguments: %r", cli_args)
     logging.debug("Discovered plugins: %r", plugins)
 
     if not os.geteuid() == 0:
