@@ -95,8 +95,6 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
                         'Ignoring wrong Content-Type (%r) for JSON Error',
                         response_ct)
                 try:
-                    logging.error("Error: %s", jobj)
-                    logging.error("Response from server: %s", response.content)
                     raise messages.Error.from_json(jobj)
                 except jose.DeserializationError as error:
                     # Couldn't deserialize JSON object

@@ -59,10 +59,9 @@ class ApacheDvsni(common.Dvsni):
             vhost = self.configurator.choose_vhost(achall.domain)
             if vhost is None:
                 logging.error(
-                    "No vhost exists with servername or alias of: %s",
-                    achall.domain)
-                logging.error("No _default_:443 vhost exists")
-                logging.error("Please specify servernames in the Apache config")
+                    "No vhost exists with servername or alias of: %s. "
+                    "No _default_:443 vhost exists. Please specify servernames "
+                    "in the Apache config", achall.domain)
                 return None
 
             # TODO - @jdkasten review this code to make sure it makes sense
