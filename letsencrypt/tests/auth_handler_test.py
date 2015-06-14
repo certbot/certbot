@@ -300,7 +300,7 @@ class GenChallengePathTest(unittest.TestCase):
 
     def test_common_case(self):
         """Given DVSNI and SimpleHTTP with appropriate combos."""
-        challbs = (acme_util.DVSNI_P, acme_util.SIMPLE_HTTPS_P)
+        challbs = (acme_util.DVSNI_P, acme_util.SIMPLE_HTTP_P)
         prefs = [challenges.DVSNI]
         combos = ((0,), (1,))
 
@@ -315,7 +315,7 @@ class GenChallengePathTest(unittest.TestCase):
         challbs = (acme_util.RECOVERY_TOKEN_P,
                    acme_util.RECOVERY_CONTACT_P,
                    acme_util.DVSNI_P,
-                   acme_util.SIMPLE_HTTPS_P)
+                   acme_util.SIMPLE_HTTP_P)
         prefs = [challenges.RecoveryToken, challenges.DVSNI]
         combos = acme_util.gen_combos(challbs)
         self.assertEqual(self._call(challbs, prefs, combos), (0, 2))
@@ -328,7 +328,7 @@ class GenChallengePathTest(unittest.TestCase):
                    acme_util.RECOVERY_CONTACT_P,
                    acme_util.POP_P,
                    acme_util.DVSNI_P,
-                   acme_util.SIMPLE_HTTPS_P,
+                   acme_util.SIMPLE_HTTP_P,
                    acme_util.DNS_P)
         # Typical webserver client that can do everything except DNS
         # Attempted to make the order realistic
@@ -413,7 +413,7 @@ class IsPreferredTest(unittest.TestCase):
     def test_mutually_exclusvie(self):
         self.assertFalse(
             self._call(
-                acme_util.DVSNI_P, frozenset([acme_util.SIMPLE_HTTPS_P])))
+                acme_util.DVSNI_P, frozenset([acme_util.SIMPLE_HTTP_P])))
 
     def test_mutually_exclusive_same_type(self):
         self.assertTrue(
