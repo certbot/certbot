@@ -49,16 +49,20 @@ def _account_init(args, config):
                 return None
 
 
-def _common_run(args, config, acc, authenticator, installer):
+def _find_domains(args, installer):
     if args.domains is None:
-        doms = display_ops.choose_names(installer)
+        domains = display_ops.choose_names(installer)
     else:
-        doms = args.domains
+        domains = args.domains
 
-    if not doms:
+    if not domains:
         sys.exit("Please specify --domains, or --installer that will "
                  "help in domain names autodiscovery")
 
+    return domains
+
+
+def _init_acme(config, acc, authenticator, installer):
     acme = client.Client(config, acc, authenticator, installer)
 
     # Validate the key and csr
@@ -71,7 +75,7 @@ def _common_run(args, config, acc, authenticator, installer):
             except errors.LetsEncryptClientError:
                 sys.exit("Unable to register an account with ACME server")
 
-    return acme, doms
+    return acme
 
 
 def run(args, config, plugins):
@@ -99,18 +103,24 @@ def run(args, config, plugins):
     if installer is None or authenticator is None:
         return "Configurator could not be determined"
 
-    acme, doms = _common_run(args, config, acc, authenticator, installer)
-    # TODO: Handle errors from _common_run?
-    lineage = acme.obtain_and_enroll_certificate(doms, authenticator,
-                                                 installer, plugins)
+    domains = _find_domains(args, installer)
+    # TODO: Handle errors from _init_acme?
+    acme = _init_acme(config, acc, authenticator, installer)
+    lineage = acme.obtain_and_enroll_certificate(
+        domains, authenticator, installer, plugins)
     if not lineage:
         return "Certificate could not be obtained"
-    acme.deploy_certificate(doms, lineage.privkey, lineage.cert, lineage.chain)
-    acme.enhance_config(doms, args.redirect)
+    acme.deploy_certificate(domains, lineage.privkey, lineage.cert, lineage.chain)
+    acme.enhance_config(domains, args.redirect)
 
 
 def auth(args, config, plugins):
     """Obtain a certificate (no install)."""
+    if args.domains is not None and args.csr is not None:
+        # TODO: --csr could have a priority, when --domains is
+        # supplied, check if CSR matches given domains?
+        return "--domains and --csr are mutually exclusive"
+
     # XXX: Update for renewer / RenewableCert
     acc = _account_init(args, config)
     if acc is None:
@@ -126,13 +136,18 @@ def auth(args, config, plugins):
     else:
         installer = None
 
-    # TODO: Handle errors from _common_run?
-    acme, doms = _common_run(
-        args, config, acc, authenticator=authenticator, installer=installer)
-    if not acme.obtain_and_enroll_certificate(doms, authenticator, installer,
-                                              plugins):
-        return "Certificate could not be obtained"
+    # TODO: Handle errors from _init_acme?
+    acme = _init_acme(config, acc, authenticator, installer)
 
+    if args.csr is not None:
+        certr, chain = acme.obtain_certificate_from_csr(le_util.CSR(
+            file=args.csr[0], data=args.csr[1], form="der"))
+        acme.save_certificate(certr, chain, args.cert_path, args.chain_path)
+    else:
+        domains = _find_domains(args, installer)
+        if not acme.obtain_and_enroll_certificate(
+                domains, authenticator, installer, plugins):
+            return "Certificate could not be obtained"
 
 def install(args, config, plugins):
     """Install (no auth)."""
@@ -144,11 +159,11 @@ def install(args, config, plugins):
     installer = display_ops.pick_installer(config, args.installer, plugins)
     if installer is None:
         return "Installer could not be determined"
-    acme, doms = _common_run(
-        args, config, acc, authenticator=None, installer=installer)
+    domains = _find_domains(args, installer)
+    acme = _init_acme(config, acc, authenticator=None, installer=installer)
     assert args.cert_path is not None
-    acme.deploy_certificate(doms, acc.key.file, args.cert_path, args.chain_path)
-    acme.enhance_config(doms, args.redirect)
+    acme.deploy_certificate(domains, acc.key.file, args.cert_path, args.chain_path)
+    acme.enhance_config(domains, args.redirect)
 
 
 def revoke(args, unused_config, unused_plugins):
@@ -203,10 +218,11 @@ def plugins_cmd(args, config, plugins):  # TODO: Use IDiplay rathern than print
     print str(available)
 
 
-def read_file(filename):
-    """Returns the given file's contents with universal new line support.
+def read_file(filename, mode="rb"):
+    """Returns the given file's contents.
 
     :param str filename: Filename
+    :param str mode: open mode (see `open`)
 
     :returns: A tuple of filename and its contents
     :rtype: tuple
@@ -215,7 +231,7 @@ def read_file(filename):
 
     """
     try:
-        return filename, open(filename, "rU").read()
+        return filename, open(filename, mode).read()
     except IOError as exc:
         raise argparse.ArgumentTypeError(exc.strerror)
 
@@ -276,11 +292,15 @@ def create_parser(plugins):
         return subparser
 
     add_subparser("run", run)
-    add_subparser("auth", auth)
+    parser_auth = add_subparser("auth", auth)
     add_subparser("install", install)
     parser_revoke = add_subparser("revoke", revoke)
     parser_rollback = add_subparser("rollback", rollback)
     add_subparser("config_changes", config_changes)
+
+    parser_auth.add_argument(
+        "--csr", type=read_file, help="Path to a Certificate Signing "
+        "Request (CSR) in DER format.")
 
     parser_plugins = add_subparser("plugins", plugins_cmd)
     parser_plugins.add_argument("--init", action="store_true")

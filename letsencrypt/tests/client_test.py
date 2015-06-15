@@ -6,7 +6,10 @@ import shutil
 import tempfile
 
 import configobj
+import M2Crypto.X509
 import mock
+
+from acme import jose
 
 from letsencrypt import account
 from letsencrypt import configuration
@@ -15,6 +18,8 @@ from letsencrypt import le_util
 
 KEY = pkg_resources.resource_string(
     __name__, os.path.join("testdata", "rsa512_key.pem"))
+CSR_SAN = pkg_resources.resource_string(
+    __name__, os.path.join("testdata", "csr-san.der"))
 
 
 class ClientTest(unittest.TestCase):
@@ -26,15 +31,57 @@ class ClientTest(unittest.TestCase):
         self.account = mock.MagicMock(**{"key.pem": KEY})
 
         from letsencrypt.client import Client
-        with mock.patch("letsencrypt.client.network2") as network2:
+        with mock.patch("letsencrypt.client.network2.Network") as network:
             self.client = Client(
-                config=self.config, account_=self.account, dv_auth=None,
-                installer=None)
-        self.network2 = network2
+                config=self.config, account_=self.account,
+                dv_auth=None, installer=None)
+        self.network = network
 
     def test_init_network_verify_ssl(self):
-        self.network2.Network.assert_called_once_with(
+        self.network.assert_called_once_with(
             mock.ANY, mock.ANY, verify_ssl=True)
+
+    def _mock_obtain_certificate(self):
+        self.client.auth_handler = mock.MagicMock()
+        self.network().request_issuance.return_value = mock.sentinel.certr
+        self.network().fetch_chain.return_value = mock.sentinel.chain
+
+    def _check_obtain_certificate(self):
+        self.client.auth_handler.get_authorizations.assert_called_once_with(
+            ["example.com", "www.example.com"])
+        self.network.request_issuance.assert_callend_once_with(
+            jose.ComparableX509(
+                M2Crypto.X509.load_request_der_string(CSR_SAN)),
+            self.client.auth_handler.get_authorizations())
+        self.network().fetch_chain.assert_called_once_with(mock.sentinel.certr)
+
+    def test_obtain_certificate_from_csr(self):
+        self._mock_obtain_certificate()
+        self.assertEqual(
+            (mock.sentinel.certr, mock.sentinel.chain),
+            self.client.obtain_certificate_from_csr(le_util.CSR(
+                form="der", file=None, data=CSR_SAN)))
+        self._check_obtain_certificate()
+
+    @mock.patch("letsencrypt.client.crypto_util")
+    def test_obtain_certificate(self, mock_crypto_util):
+        self._mock_obtain_certificate()
+
+        csr = le_util.CSR(form="der", file=None, data=CSR_SAN)
+        mock_crypto_util.init_save_csr.return_value = csr
+        mock_crypto_util.init_save_key.return_value = mock.sentinel.key
+        domains = ["example.com", "www.example.com"]
+
+        self.assertEqual(
+            self.client.obtain_certificate(domains),
+            (mock.sentinel.key, csr, (
+                mock.sentinel.certr, mock.sentinel.chain)))
+
+        mock_crypto_util.init_save_key.assert_called_once_with(
+            self.config.rsa_key_size, self.config.key_dir)
+        mock_crypto_util.init_save_csr.assert_called_once_with(
+            mock.sentinel.key, domains, self.config.cert_dir)
+        self._check_obtain_certificate()
 
     @mock.patch("letsencrypt.client.zope.component.getUtility")
     def test_report_new_account(self, mock_zope):
