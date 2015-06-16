@@ -362,7 +362,7 @@ def create_parser(plugins, args):
         help="Use the text output instead of the curses UI.")
 
 
-    testing_group = parser.add_argument_group(
+    helpful.add_group(
         "testing", description="The following flags are meant for "
         "testing purposes only! Do NOT change them, unless you "
         "really know what you're doing!")
