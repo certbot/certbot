@@ -74,8 +74,7 @@ class ClientTest(unittest.TestCase):
 
         self.assertEqual(
             self.client.obtain_certificate(domains),
-            (mock.sentinel.key, csr, (
-                mock.sentinel.certr, mock.sentinel.chain)))
+            (mock.sentinel.certr, mock.sentinel.chain, mock.sentinel.key, csr))
 
         mock_crypto_util.init_save_key.assert_called_once_with(
             self.config.rsa_key_size, self.config.key_dir)

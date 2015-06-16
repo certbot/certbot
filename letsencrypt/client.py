@@ -130,11 +130,14 @@ class Client(object):
         Internal function with precondition that `domains` are
         consistent with identifiers present in the `csr`.
 
-        :param .le_util.CSR csr: Certificate Signing Request must
-            contain requested domains, the key used to generate this CSR
-            can be different than self.authkey.
+        :param list domains: Domain names.
+        :param .le_util.CSR csr: DER-encoded Certificate Signing
+            Request. The key used to generate this CSR can be different
+            than `authkey`.
 
-        :returns: Certificate Resource and certificate chain.
+        :returns: `.CertificateResource` and certificate chain (as
+            returned by `.fetch_chain`).
+        :rtype: tuple
 
         """
         if self.auth_handler is None:
@@ -158,7 +161,12 @@ class Client(object):
     def obtain_certificate_from_csr(self, csr):
         """Obtain certficiate from CSR.
 
-        :param .le_util.CSR csr: Certificate Signing Request.
+        :param .le_util.CSR csr: DER-encoded Certificate Signing
+            Request.
+
+        :returns: `.CertificateResource` and certificate chain (as
+            returned by `.fetch_chain`).
+        :rtype: tuple
 
         """
         return self._obtain_certificate(
@@ -169,13 +177,15 @@ class Client(object):
     def obtain_certificate(self, domains):
         """Obtains a certificate from the ACME server.
 
-        :meth:`.register` must be called before :meth:`.obtain_certificate`
+        `.register` must be called before `.obtain_certificate`
 
         :param set domains: domains to get a certificate
 
-        :returns: Certificate, private key, and certificate chain (all
-            PEM-encoded).
-        :rtype: `tuple` of `str`
+        :returns: `.CertificateResource`, certificate chain (as
+            returned by `.fetch_chain`), and newly generated private key
+            (`.le_util.Key`) and DER-encoded Certificate Signing Request
+            (`.le_util.CSR`).
+        :rtype: tuple
 
         """
         # Create CSR from names
@@ -183,7 +193,7 @@ class Client(object):
             self.config.rsa_key_size, self.config.key_dir)
         csr = crypto_util.init_save_csr(key, domains, self.config.cert_dir)
 
-        return key, csr, self._obtain_certificate(domains, csr)
+        return self._obtain_certificate(domains, csr) + (key, csr)
 
     def obtain_and_enroll_certificate(
             self, domains, authenticator, installer, plugins):
@@ -207,7 +217,7 @@ class Client(object):
             not be obtained.
 
         """
-        key, _, (certr, chain) = self.obtain_certificate(domains)
+        certr, chain, key, _ = self.obtain_certificate(domains)
 
         # TODO: remove this dirty hack
         self.config.namespace.authenticator = plugins.find_init(
