@@ -66,7 +66,11 @@ from acme.jose.jwk import (
     JWKRSA,
 )
 
-from acme.jose.jws import JWS
+from acme.jose.jws import (
+    Header,
+    JWS,
+    Signature,
+)
 
 from acme.jose.util import (
     ComparableX509,

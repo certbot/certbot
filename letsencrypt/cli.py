@@ -361,7 +361,8 @@ def create_parser(plugins, args):
         None, "-t", "--text", dest="text_mode", action="store_true",
         help="Use the text output instead of the curses UI.")
 
-    helpful.add_group(
+
+    testing_group = parser.add_argument_group(
         "testing", description="The following flags are meant for "
         "testing purposes only! Do NOT change them, unless you "
         "really know what you're doing!")
@@ -373,6 +374,9 @@ def create_parser(plugins, args):
     helpful.add(
         "testing", "--dvsni-port", type=int, default=flag_default("dvsni_port"),
         help=config_help("dvsni_port"))
+
+    helpful.add("testing", "--no-simple-http-tls", action="store_true",
+        help=config_help("no_simple_http_tls"))
 
     subparsers = helpful.parser.add_subparsers(metavar="SUBCOMMAND")
     def add_subparser(name, func):  # pylint: disable=missing-docstring
