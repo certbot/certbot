@@ -231,25 +231,26 @@ def config_help(name, hidden=False):
     else:
         return interfaces.IConfig[name].__doc__
 
-class SilentParser:
+class SilentParser(object):
     """An a mini parser wrapper that doesn't print help for its
     arguments... this one is just needed to the use of callbacks to define
     arguments within plugins"""
     def __init__(self, parser):
         self.parser = parser
     def add_argument(self, *args, **kwargs):
+        """Wrap, but silence help"""
         kwargs["help"] = argparse.SUPPRESS
         self.parser.add_argument(*args, **kwargs)
 
-HELP_TOPICS = ["all","security","paths","automation","testing"]
-class HelpfulArgumentParser:
+HELP_TOPICS = ["all", "security", "paths", "automation", "testing"]
+class HelpfulArgumentParser(object):
     """This class wraps argparse, adding the ability to make --help less
     verbose, and request help on specific subcategories at a time, eg
     'letsencrypt --help security' for security options."""
 
     def __init__(self, args, plugins):
         self.args = args
-        plugin_names = [name for name, p in plugins.iteritems()]
+        plugin_names = [name for name, _p in plugins.iteritems()]
         self.help_topics = HELP_TOPICS + plugin_names
         self.parser = configargparse.ArgParser(
             description=__doc__,
@@ -259,8 +260,8 @@ class HelpfulArgumentParser:
         self.silent_parser = SilentParser(self.parser)
 
         h1 = self.prescan_for_flag("-h", self.help_topics)
-        h2 = self.prescan_for_flag("--h", self.help_topics)
-        assert max(True,"a") == "a", "Gravity changed direction"
+        h2 = self.prescan_for_flag("--help", self.help_topics)
+        assert max(True, "a") == "a", "Gravity changed direction"
         help_arg = max(h1, h2)
         self.visible_topics = self.determine_help_topics(help_arg)
         #print self.visible_topics
@@ -276,11 +277,11 @@ class HelpfulArgumentParser:
         if flag not in self.args:
             return False
         pos = self.args.index(flag)
-        try:    
+        try:
             nxt = self.args[pos + 1]
             if nxt in possible_arguments:
                 return nxt
-        except: 
+        except IndexError:
             pass
         return True
 
@@ -288,10 +289,10 @@ class HelpfulArgumentParser:
         """Add a new command line argument. @topic is required, to indicate
         which part of the help will document it, but can be None for `always
         documented'."""
-        
+
         if topic and self.visible_topics[topic]:
-            g = self.groups[topic]
-            g.add_argument(*args, **kwargs)
+            group = self.groups[topic]
+            group.add_argument(*args, **kwargs)
         else:
             kwargs["help"] = argparse.SUPPRESS
             self.parser.add_argument(*args, **kwargs)
@@ -299,18 +300,20 @@ class HelpfulArgumentParser:
     def add_group(self, topic, **kwargs):
         """This has to be called once for every topic; but we leave those calls
         next to the argument definitions for clarity. Return something
-        arguments can be added to if necessary, either the parser or an argument 
+        arguments can be added to if necessary, either the parser or an argument
         group."""
         if self.visible_topics[topic]:
-            #print "Adding visible group " + topic 
-            g = self.parser.add_argument_group(topic, **kwargs)
-            self.groups[topic] = g
-            return g
+            #print "Adding visible group " + topic
+            group = self.parser.add_argument_group(topic, **kwargs)
+            self.groups[topic] = group
+            return group
         else:
-            #print "Invisible group " + topic 
+            #print "Invisible group " + topic
             return self.silent_parser
 
     def add_plugin_args(self, plugins):
+        """Let each of the plugins add its own command line arguments, which
+        may or may not be displayed as help topics."""
         # TODO: plugin_parser should be called for every detected plugin
         for name, plugin_ep in plugins.iteritems():
             parser_or_group = self.add_group(name, description=plugin_ep.description)
@@ -324,11 +327,11 @@ class HelpfulArgumentParser:
         # topics maps each topic to whether it should be documented by
         # argparse on the command line
         if chosen_topic == "all":
-            return dict([(t,True) for t in self.help_topics])
+            return dict([(t, True) for t in self.help_topics])
         elif not chosen_topic:
-            return dict([(t,False) for t in self.help_topics])
+            return dict([(t, False) for t in self.help_topics])
         else:
-            return dict([(t,t == chosen_topic) for t in self.help_topics])
+            return dict([(t, t == chosen_topic) for t in self.help_topics])
 
 
 def create_parser(plugins, args):
@@ -342,10 +345,10 @@ def create_parser(plugins, args):
         "e.g. -vvv.")
     # --help is automatically provided by argparse
 
-    helpful.add_group( "automation", 
+    helpful.add_group("automation",
         description="Arguments for automating execution & other tweaks")
     helpful.add(
-        "automation", "--version", action="version", 
+        "automation", "--version", action="version",
         version="%(prog)s {0}".format(letsencrypt.__version__),
         help="show program's version number and exit")
     helpful.add(
@@ -363,7 +366,7 @@ def create_parser(plugins, args):
         "testing purposes only! Do NOT change them, unless you "
         "really know what you're doing!")
     helpful.add(
-        "testing", "--no-verify-ssl", action="store_true", 
+        "testing", "--no-verify-ssl", action="store_true",
         help=config_help("no_verify_ssl"),
         default=flag_default("no_verify_ssl"))
     # TODO: apache and nginx plugins do NOT respect it
@@ -458,15 +461,14 @@ def _paths_parser(helpful):
         help=config_help("chain_path"))
     add("paths", "--renewer-config-file", default=flag_default("renewer_config_file"),
         help=config_help("renewer_config_file"))
-
-    add("paths","-s", "--server", default=flag_default("server"),
+    add("paths", "-s", "--server", default=flag_default("server"),
         help=config_help("server"))
 
 def main(args=sys.argv[1:]):
     """Command line argument parsing and main script execution."""
     # note: arg parser internally handles --help (and exits afterwards)
     plugins = plugins_disco.PluginsRegistry.find_all()
-    args = create_parser(plugins,args).parse_args(args)
+    args = create_parser(plugins, args).parse_args(args)
     config = configuration.NamespaceConfig(args)
 
     # Displayer
