@@ -517,8 +517,9 @@ class ClientTest(unittest.TestCase):
 
     def test_revoke(self):
         self._mock_post_get()
-        self.net.revoke(self.certr, when=messages.Revocation.NOW)
-        self.post.assert_called_once_with(self.certr.uri, mock.ANY)
+        self.net.revoke(self.certr.body)
+        self.post.assert_called_once_with(messages.Revocation.url(
+            self.net.new_reg_uri), mock.ANY)
 
     def test_revoke_bad_status_raises_error(self):
         self.response.status_code = httplib.METHOD_NOT_ALLOWED
