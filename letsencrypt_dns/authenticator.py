@@ -184,14 +184,23 @@ class DNSAuthenticator(core_plugins_common.Plugin):
     zope.interface.implements(interfaces.IAuthenticator)
     zope.interface.classProvides(interfaces.IPluginFactory)
 
+    description = "DNS Authenticator"
+
+    def prepare(self):
+        pass
+
+    def more_info(self):
+        return ""  # TODO
+
     @classmethod
     def add_parser_arguments(cls, add):
         add("server", default=constants.CLI_DEFAULTS["server"],
             help="DNS server hostname used to create challenge subdomains.")
         add("server-port", default=constants.CLI_DEFAULTS["server_port"],
             help="DNS server port to use.")
-        add("tsig-keys", nargs="+", type=util.split_tsig_keys, help="DNS "
-            "TSIG keys for updates in the format: keyname,keysecret,domains+")
+        add("tsig-keys", action="append", type=util.split_tsig_keys,
+            required=True, help="DNS TSIG keys for updates in the format: "
+            "keyname,keysecret,domains+. Can be used multiple times.")
 
     def __init__(self, *args, **kwargs):
         super(DNSAuthenticator, self).__init__(*args, **kwargs)

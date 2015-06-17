@@ -126,6 +126,7 @@ setup(
 
             # to be moved to separate pypi packages
             'apache = letsencrypt_apache.configurator:ApacheConfigurator',
+            'dns = letsencrypt_dns.authenticator:DNSAuthenticator',
             'nginx = letsencrypt_nginx.configurator:NginxConfigurator',
         ],
     },
