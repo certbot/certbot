@@ -16,7 +16,7 @@ KEY = jose.HashableRSAKey(Crypto.PublicKey.RSA.importKey(
         "acme.jose", os.path.join("testdata", "rsa512_key.pem"))))
 
 # Challenges
-SIMPLE_HTTPS = challenges.SimpleHTTPS(
+SIMPLE_HTTPS = challenges.SimpleHTTP(
     token="evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ+PCt92wr+oA")
 DVSNI = challenges.DVSNI(
     r="O*\xb4-\xad\xec\x95>\xed\xa9\r0\x94\xe8\x97\x9c&6\xbf'\xb3"

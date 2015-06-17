@@ -42,16 +42,17 @@ class ChallengeResponse(jose.TypedJSONObjectWithFields):
 
 
 @Challenge.register
-class SimpleHTTPS(DVChallenge):
-    """ACME "simpleHttps" challenge."""
-    typ = "simpleHttps"
+class SimpleHTTP(DVChallenge):
+    """ACME "simpleHttp" challenge."""
+    typ = "simpleHttp"
     token = jose.Field("token")
+    tls = jose.Field("tls", default=True, omitempty=True)
 
 
 @ChallengeResponse.register
-class SimpleHTTPSResponse(ChallengeResponse):
-    """ACME "simpleHttps" challenge response."""
-    typ = "simpleHttps"
+class SimpleHTTPResponse(ChallengeResponse):
+    """ACME "simpleHttp" challenge response."""
+    typ = "simpleHttp"
     path = jose.Field("path")
 
     URI_TEMPLATE = "https://{domain}/.well-known/acme-challenge/{path}"
@@ -61,7 +62,7 @@ class SimpleHTTPSResponse(ChallengeResponse):
         """Create an URI to the provisioned resource.
 
         Forms an URI to the HTTPS server provisioned resource (containing
-        :attr:`~SimpleHTTPS.token`) by populating the :attr:`URI_TEMPLATE`.
+        :attr:`~SimpleHTTP.token`) by populating the :attr:`URI_TEMPLATE`.
 
         :param str domain: Domain name being verified.
 

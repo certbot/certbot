@@ -62,7 +62,7 @@ class Field(object):
         definition of being empty, e.g. for some more exotic data types.
 
         """
-        return not value
+        return not isinstance(value, bool) and not value
 
     def omit(self, value):
         """Omit the value in output?"""
@@ -129,7 +129,8 @@ class JSONObjectWithFieldsMeta(abc.ABCMeta):
        keys are field attribute names and values are fields themselves.
 
     2. ``cls.__slots__`` is extended by all field attribute names
-       (i.e. not :attr:`Field.json_name`).
+       (i.e. not :attr:`Field.json_name`). Original ``cls.__slots__``
+       are stored in ``cls._orig_slots``.
 
     In a consequence, for a field attribute name ``some_field``,
     ``cls.some_field`` will be a slot descriptor and not an instance
@@ -143,6 +144,7 @@ class JSONObjectWithFieldsMeta(abc.ABCMeta):
           some_field = some_field
 
       assert Foo.__slots__ == ('some_field', 'baz')
+      assert Foo._orig_slots == ()
       assert Foo.some_field is not Field
 
       assert Foo._fields.keys() == ['some_field']
@@ -158,12 +160,16 @@ class JSONObjectWithFieldsMeta(abc.ABCMeta):
 
     def __new__(mcs, name, bases, dikt):
         fields = {}
+
+        for base in bases:
+            fields.update(getattr(base, '_fields', {}))
+        # Do not reorder, this class might override fields from base classes!
         for key, value in dikt.items():  # not iterkeys() (in-place edit!)
             if isinstance(value, Field):
                 fields[key] = dikt.pop(key)
 
-        dikt['__slots__'] = tuple(
-            list(dikt.get('__slots__', ())) + fields.keys())
+        dikt['_orig_slots'] = dikt.get('__slots__', ())
+        dikt['__slots__'] = tuple(list(dikt['_orig_slots']) + fields.keys())
         dikt['_fields'] = fields
 
         return abc.ABCMeta.__new__(mcs, name, bases, dikt)
