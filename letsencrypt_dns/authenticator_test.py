@@ -99,6 +99,12 @@ class PerformCleanupTest(unittest.TestCase): # pylint: disable=too-many-public-m
             dns.exception.Timeout,
         ]
 
+    def test_prepare(self):
+        self.authenticator.prepare()
+
+    def test_more_info(self):
+        self.assertTrue(isinstance(self.authenticator.more_info(), str))
+
     def test_add_parser_arguments(self):  # pylint: disable=no-self-use
         from letsencrypt_dns.authenticator import DNSAuthenticator
         DNSAuthenticator.add_parser_arguments(mock.MagicMock())
@@ -176,11 +182,8 @@ class PerformCleanupTest(unittest.TestCase): # pylint: disable=too-many-public-m
 
     def test_no_tsig_keys(self):
         # no TSIG keys at all
-        from letsencrypt_dns.authenticator import DNSAuthenticator
-        config = mock.MagicMock(dns_server="localhost", dns_server_port=53,
-                                dns_tsig_keys=None)
-        self.assertRaises(
-            errors.Error, DNSAuthenticator, name="dns", config=config)
+        self.authenticator.config.dns_tsig_keys = None
+        self.assertRaises(errors.Error, self.authenticator.perform, [])
 
 
 if __name__ == '__main__':

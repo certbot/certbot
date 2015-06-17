@@ -209,13 +209,8 @@ class DNSAuthenticator(core_plugins_common.Plugin):
         add("server-port", default=constants.CLI_DEFAULTS["server_port"],
             help="DNS server port to use.")
         add("tsig-keys", action="append", type=util.split_tsig_keys,
-            required=True, help="DNS TSIG keys for updates in the format: "
+            help="DNS TSIG keys for updates in the format: "
             "keyname,keysecret,domains+. Can be used multiple times.")
-
-    def __init__(self, *args, **kwargs):
-        super(DNSAuthenticator, self).__init__(*args, **kwargs)
-        if self.conf("tsig_keys") is None:
-            raise errors.Error("No TSIG keys provided.")
 
     @staticmethod
     def get_chall_pref(unused_domain):
@@ -228,6 +223,9 @@ class DNSAuthenticator(core_plugins_common.Plugin):
 
     def perform(self, achalls):
         """Perform the challenges."""
+        if self.conf("tsig_keys") is None:
+            raise errors.Error("No TSIG keys provided.")
+
         responses = []
         for achall in achalls:
             zone = achall.domain
