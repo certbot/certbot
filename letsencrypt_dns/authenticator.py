@@ -187,9 +187,19 @@ class DNSAuthenticator(core_plugins_common.Plugin):
     description = "DNS Authenticator"
 
     def prepare(self):
+        """Prepare the plugin.
+
+        See `.IPlugin.prepare` for more info.
+
+        """
         pass
 
-    def more_info(self):
+    def more_info(self):  # pylint: disable=no-self-use
+        """Human-readable string to help the user.
+
+        See `.IPlugin.more_info` for more info.
+
+        """
         return ""  # TODO
 
     @classmethod
