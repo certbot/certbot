@@ -111,7 +111,7 @@ setup(
 
     tests_require=install_requires,
     # to test all packages run "python setup.py test -s
-    # {acme,letsencrypt_apache,letsencrypt_nginx}"
+    # {acme,letsencrypt_apache,letsencrypt_dns,letsencrypt_nginx}"
     test_suite='letsencrypt',
 
     entry_points={

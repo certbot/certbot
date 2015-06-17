@@ -45,6 +45,7 @@ COPY setup.py README.rst CHANGES.rst MANIFEST.in /opt/letsencrypt/src/
 COPY letsencrypt /opt/letsencrypt/src/letsencrypt/
 COPY acme /opt/letsencrypt/src/acme/
 COPY letsencrypt_apache /opt/letsencrypt/src/letsencrypt_apache/
+COPY letsencrypt_dns /opt/letsencrypt/src/letsencrypt_dns/
 COPY letsencrypt_nginx /opt/letsencrypt/src/letsencrypt_nginx/
 
 
