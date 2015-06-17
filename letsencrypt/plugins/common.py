@@ -55,6 +55,7 @@ class Plugin(object):
         # dummy function, doesn't check if dest.startswith(self.dest_namespace)
         def add(arg_name_no_prefix, *args, **kwargs):
             # pylint: disable=missing-docstring
+            assert kwargs.get("nargs") != "+"  # TODO: better error handling
             return parser.add_argument(
                 "--{0}{1}".format(option_namespace(name), arg_name_no_prefix),
                 *args, **kwargs)
