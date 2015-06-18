@@ -62,10 +62,10 @@ class DVSNI(AnnotatedChallenge):
         return cert_pem, response
 
 
-class SimpleHTTPS(AnnotatedChallenge):
-    """Client annotated "simpleHttps" ACME challenge."""
+class SimpleHTTP(AnnotatedChallenge):
+    """Client annotated "simpleHttp" ACME challenge."""
     __slots__ = ('challb', 'domain', 'key')
-    acme_type = challenges.SimpleHTTPS
+    acme_type = challenges.SimpleHTTP
 
 
 class DNS(AnnotatedChallenge):

@@ -7,7 +7,7 @@
                  "required": ["type", "path"],
                  "properties": {
                      "type": {
-                         "enum" : [ "simpleHttps" ]
+                         "enum" : [ "simpleHttp" ]
                      },
                      "path": {
                          "type": "string"
