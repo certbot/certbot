@@ -51,9 +51,6 @@ Errors
    :members:
 
 
-   :members:
-
-
 Utilities
 ---------
 
