@@ -30,7 +30,7 @@ are provided mainly for the :ref:`developers <hacking>` reference.
 In general:
 
 * ``sudo`` is required as a suggested way of running privileged process
-* `swig`_ is required for compiling `m2crypto`_
+* `SWIG`_ is required for compiling `M2Crypto`_
 
   .. _new-swig:
   .. note:: If your operating system uses SWIG 3.0.5+, you will need
@@ -38,7 +38,7 @@ In general:
             requirements.txt`` instead of the standard ``pip
             install -r requirements.txt``.
 
-* `augeas`_ is required for the ``python-augeas`` bindings
+* `Augeas`_ is required for the Python bindings
 
 
 Ubuntu
@@ -117,6 +117,6 @@ The letsencrypt commandline tool has a builtin help:
    ./venv/bin/letsencrypt --help
 
 
-.. _augeas: http://augeas.net/
-.. _m2crypto: https://github.com/M2Crypto/M2Crypto
-.. _swig: http://www.swig.org/
+.. _Augeas: http://augeas.net/
+.. _M2Crypto: https://github.com/M2Crypto/M2Crypto
+.. _SWIG: http://www.swig.org/
