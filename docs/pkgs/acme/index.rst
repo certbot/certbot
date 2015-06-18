@@ -7,6 +7,13 @@
    :members:
 
 
+Client
+------
+
+.. automodule:: acme.client
+   :members:
+
+
 Messages
 --------
 
