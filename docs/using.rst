@@ -70,11 +70,22 @@ Mac OSX
 
    sudo ./bootstrap/mac.sh
 
+
 Centos 7
 --------
+
 .. code-block:: shell
 
    sudo ./bootstrap/centos.sh
+
+For installation run this modified command (note the trailing
+backslash):
+
+.. code-block:: shell
+
+   SWIG_FEATURES="-includeall -D__`uname -m`__-I/usr/include/openssl" \
+   ./venv/bin/pip install -r requirements.txt functools32
+
 
 Installation
 ============
@@ -84,13 +95,6 @@ Installation
    virtualenv --no-site-packages -p python2 venv
    ./venv/bin/pip install -r requirements.txt
 
-Installation on Centos 7
-============
-
-.. code-block:: shell
-
-   virtualenv --no-site-packages -p python2 venv
-   env SWIG_FEATURES="-cpperraswarn -includeall -D__`uname -m`__ -I/usr/include/openssl" ./venv/bin/python setup.py install
 
 Usage
 =====
