@@ -12,7 +12,7 @@ yum install -y \
   gcc \
   swig \
   dialog \
-  augeas \
+  augeas-libs \
   openssl-devel \
   libffi-devel \
   ca-certificates \
