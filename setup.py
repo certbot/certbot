@@ -32,7 +32,7 @@ install_requires = [
     'argparse',
     'ConfigArgParse',
     'configobj',
-    'jsonschema',
+    'jsonschema<2.5.1',  # https://github.com/Julian/jsonschema/issues/233
     'mock',
     'ndg-httpsclient',  # urllib3 InsecurePlatformWarning (#304)
     'parsedatetime',
@@ -53,7 +53,6 @@ install_requires = [
     # order of items in install_requires DOES matter and M2Crypto has
     # to go last, see #152
     'M2Crypto',
-    'functools32'
 ]
 
 dev_extras = [
