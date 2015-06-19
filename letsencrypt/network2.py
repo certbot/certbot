@@ -25,7 +25,7 @@ class Network(object):
 
     .. todo::
        Clean up raised error types hierarchy, document, and handle (wrap)
-       instances of `.DeserializationError` raised in `from_json()``.
+       instances of `.DeserializationError` raised in `from_json()`.
 
     :ivar str new_reg_uri: Location of new-reg
     :ivar key: `.JWK` (private)
