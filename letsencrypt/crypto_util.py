@@ -11,6 +11,7 @@ import os
 from cryptography.hazmat.primitives import serialization
 import OpenSSL
 
+from acme import crypto_util as acme_crypto_util
 from acme import jose
 
 from letsencrypt import errors
@@ -260,45 +261,6 @@ def make_ss_cert(key, domains, not_before=None,
     return OpenSSL.crypto.dump_certificate(OpenSSL.crypto.FILETYPE_PEM, cert)
 
 
-def _pyopenssl_cert_or_req_san(cert_or_req):
-    """Get Subject Alternative Names from certificate or CSR using pyOpenSSL.
-
-    .. todo:: Implement directly in PyOpenSSL!
-
-    :param cert_or_req: Certificate or CSR.
-    :type cert_or_req: `OpenSSL.crypto.X509` or `OpenSSL.crypto.X509Req`.
-
-    :returns: A list of Subject Alternative Names.
-    :rtype: list
-
-    """
-    # constants based on implementation of
-    # OpenSSL.crypto.X509Error._subjectAltNameString
-    parts_separator = ", "
-    part_separator = ":"
-    extension_short_name = "subjectAltName"
-
-    if hasattr(cert_or_req, 'get_extensions'):  # X509Req
-        extensions = cert_or_req.get_extensions()
-    else:  # X509
-        extensions = [cert_or_req.get_extension(i)
-                      for i in xrange(cert_or_req.get_extension_count())]
-
-    # pylint: disable=protected-access,no-member
-    label = OpenSSL.crypto.X509Extension._prefixes[OpenSSL.crypto._lib.GEN_DNS]
-    assert parts_separator not in label
-    prefix = label + part_separator
-
-    san_extensions = [
-        ext._subjectAltNameString().split(parts_separator)
-        for ext in extensions if ext.get_short_name() == extension_short_name]
-    # WARNING: this function assumes that no SAN can include
-    # parts_separator, hence the split!
-
-    return [part.split(part_separator)[1] for parts in san_extensions
-            for part in parts if part.startswith(prefix)]
-
-
 def _get_sans_from_cert_or_req(
         cert_or_req_str, load_func, typ=OpenSSL.crypto.FILETYPE_PEM):
     try:
@@ -306,7 +268,8 @@ def _get_sans_from_cert_or_req(
     except OpenSSL.crypto.Error as error:
         logger.exception(error)
         raise
-    return _pyopenssl_cert_or_req_san(cert_or_req)
+    # pylint: disable=protected-access
+    return acme_crypto_util._pyopenssl_cert_or_req_san(cert_or_req)
 
 
 def get_sans_from_cert(cert, typ=OpenSSL.crypto.FILETYPE_PEM):

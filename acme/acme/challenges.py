@@ -14,8 +14,6 @@ from acme import interfaces
 from acme import jose
 from acme import other
 
-from letsencrypt import crypto_util as le_crypto_util
-
 
 logger = logging.getLogger(__name__)
 
@@ -267,7 +265,7 @@ class DVSNIResponse(ChallengeResponse):
         # return False if not
 
         # pylint: disable=protected-access
-        sans = le_crypto_util._pyopenssl_cert_or_req_san(cert)
+        sans = crypto_util._pyopenssl_cert_or_req_san(cert)
         logging.debug('Certificate %s. SANs: %s', cert.digest('sha1'), sans)
 
         key_filetype = OpenSSL.crypto.FILETYPE_ASN1

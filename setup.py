@@ -37,8 +37,7 @@ install_requires = [
     'mock<1.1.0',  # py26
     'parsedatetime',
     'psutil>=2.1.0',  # net_connections introduced in 2.1.0
-    # https://pyopenssl.readthedocs.org/en/latest/api/crypto.html#OpenSSL.crypto.X509Req.get_extensions
-    'PyOpenSSL>=0.15',
+    'PyOpenSSL',
     'pyrfc3339',
     'python2-pythondialog>=3.2.2rc1',  # Debian squeeze support, cf. #280
     'pytz',

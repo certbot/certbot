@@ -4,6 +4,7 @@ import unittest
 import OpenSSL
 
 from acme import challenges
+from acme import crypto_util as acme_crypto_util
 from acme import jose
 
 from letsencrypt import crypto_util
@@ -35,7 +36,7 @@ class DVSNITest(unittest.TestCase):
             OpenSSL.crypto.FILETYPE_PEM, cert_pem)
         self.assertEqual(cert.get_subject().CN, "example.com")
         # pylint: disable=protected-access
-        self.assertEqual(crypto_util._pyopenssl_cert_or_req_san(cert), [
+        self.assertEqual(acme_crypto_util._pyopenssl_cert_or_req_san(cert), [
             "example.com", self.chall.nonce_domain,
             self.response.z_domain(self.chall)])
 
