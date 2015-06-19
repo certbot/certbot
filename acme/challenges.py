@@ -46,7 +46,6 @@ class SimpleHTTP(DVChallenge):
     """ACME "simpleHttp" challenge."""
     typ = "simpleHttp"
     token = jose.Field("token")
-    tls = jose.Field("tls", default=True, omitempty=True)
 
 
 @ChallengeResponse.register
@@ -54,20 +53,43 @@ class SimpleHTTPResponse(ChallengeResponse):
     """ACME "simpleHttp" challenge response."""
     typ = "simpleHttp"
     path = jose.Field("path")
+    tls = jose.Field("tls", default=True, omitempty=True)
 
-    URI_TEMPLATE = "https://{domain}/.well-known/acme-challenge/{path}"
-    """URI template for HTTPS server provisioned resource."""
+    URI_ROOT_PATH = ".well-known/acme-challenge"
+    """URI root path for the server provisioned resource."""
+
+    _URI_TEMPLATE = "{scheme}://{domain}/" + URI_ROOT_PATH + "/{path}"
+
+    MAX_PATH_LEN = 25
+    """Maximum allowed `path` length."""
+
+    @property
+    def good_path(self):
+        """Is `path` good?
+
+        .. todo:: acme-spec: "The value MUST be comprised entirely of
+           characters from the URL-safe alphabet for Base64 encoding
+           [RFC4648]", base64.b64decode ignores those characters
+
+        """
+        return len(self.path) <= 25
+
+    @property
+    def scheme(self):
+        """URL scheme for the provisioned resource."""
+        return "https" if self.tls else "http"
 
     def uri(self, domain):
         """Create an URI to the provisioned resource.
 
-        Forms an URI to the HTTPS server provisioned resource (containing
-        :attr:`~SimpleHTTP.token`) by populating the :attr:`URI_TEMPLATE`.
+        Forms an URI to the HTTPS server provisioned resource
+        (containing :attr:`~SimpleHTTP.token`).
 
         :param str domain: Domain name being verified.
 
         """
-        return self.URI_TEMPLATE.format(domain=domain, path=self.path)
+        return self._URI_TEMPLATE.format(
+            scheme=self.scheme, domain=domain, path=self.path)
 
 
 @Challenge.register
