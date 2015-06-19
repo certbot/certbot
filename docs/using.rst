@@ -35,8 +35,8 @@ In general:
   .. _new-swig:
   .. note:: If your operating system uses SWIG 3.0.5+, you will need
             to run ``pip install -r requirements-swig-3.0.5.txt -r
-            requirements.txt`` instead of the standard ``pip
-            install -r requirements.txt``.
+            requirements.txt .`` instead of the standard ``pip
+            install -r requirements.txt .``.
 
 * `Augeas`_ is required for the Python bindings
 
@@ -95,7 +95,7 @@ backslash):
 .. code-block:: shell
 
    SWIG_FEATURES="-includeall -D__`uname -m`__-I/usr/include/openssl" \
-   ./venv/bin/pip install -r requirements.txt functools32
+   ./venv/bin/pip install -r requirements.txt functools32 .
 
 
 Installation
