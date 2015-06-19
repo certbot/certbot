@@ -4,12 +4,17 @@ import functools
 import hashlib
 import logging
 import os
+import socket
 
+import OpenSSL
 import requests
 
+from acme import crypto_util
 from acme import interfaces
 from acme import jose
 from acme import other
+
+from letsencrypt import crypto_util as le_crypto_util
 
 
 logger = logging.getLogger(__name__)
@@ -192,6 +197,18 @@ class DVSNI(DVChallenge):
         """Domain name used in SNI."""
         return binascii.hexlify(self.nonce) + self.DOMAIN_SUFFIX
 
+    def probe_cert(self, domain, **kwargs):
+        """Probe DVSNI challenge certificate."""
+        host = socket.gethostbyname(domain)
+        logging.debug('%s resolved to %s', domain, host)
+
+        kwargs.setdefault("port", self.PORT)
+        kwargs.setdefault("host", host)
+        kwargs["server_hostname"] = self.nonce_domain
+        # TODO: try different methods?
+        # pylint: disable=protected-access
+        return crypto_util._probe_sni(**kwargs)
+
 
 @ChallengeResponse.register
 class DVSNIResponse(ChallengeResponse):
@@ -230,6 +247,39 @@ class DVSNIResponse(ChallengeResponse):
     def z_domain(self, chall):
         """Domain name for certificate subjectAltName."""
         return self.z(chall) + self.DOMAIN_SUFFIX
+
+    def simple_verify(self, chall, domain, key, **kwargs):
+        """Verify DVSNI.
+
+        :param .challenges.DVSNI chall: Corresponding challenge.
+        :param str domain: Domain name being validated.
+        :param OpenSSL.crypto.PKey key: Public key for the key pair
+            being authorized. If ``None`` key verification is not
+            performed!
+
+        :returns: ``True`` iff client's control of the domain has been
+            verified, ``False`` otherwise.
+        :rtype: bool
+
+        """
+        cert = chall.probe_cert(domain=domain, **kwargs)
+        # TODO: check "It is a valid self-signed certificate" and
+        # return False if not
+
+        # pylint: disable=protected-access
+        sans = le_crypto_util._pyopenssl_cert_or_req_san(cert)
+        logging.debug('Certificate %s. SANs: %s', cert.digest('sha1'), sans)
+
+        key_filetype = OpenSSL.crypto.FILETYPE_ASN1
+        if key is None:
+            logging.warn('No key verification is performed')
+        keys_match = key is None or OpenSSL.crypto.dump_privatekey(
+            key_filetype, key) == OpenSSL.crypto.dump_privatekey(
+                key_filetype, cert.get_pubkey())
+
+        return (keys_match and domain in sans and
+                self.z_domain(chall) in sans)
+
 
 @Challenge.register
 class RecoveryContact(ContinuityChallenge):

@@ -181,6 +181,33 @@ class DVSNITest(unittest.TestCase):
         self.assertRaises(
             jose.DeserializationError, DVSNI.from_json, self.jmsg)
 
+    @mock.patch('acme.challenges.socket.gethostbyname')
+    @mock.patch('acme.challenges.crypto_util._probe_sni')
+    def test_probe_cert(self, mock_probe_sni, mock_gethostbyname):
+        mock_gethostbyname.return_value = '127.0.0.1'
+        self.msg.probe_cert('foo.com')
+        mock_gethostbyname.assert_called_once_with('foo.com')
+        mock_probe_sni.assert_called_once_with(
+            host='127.0.0.1', port=self.msg.PORT,
+            server_hostname='a82d5ff8ef740d12881f6d3c2277ab2e.acme.invalid')
+
+        self.msg.probe_cert('foo.com', host='8.8.8.8')
+        mock_probe_sni.assert_called_with(
+            host='8.8.8.8', port=mock.ANY, server_hostname=mock.ANY)
+
+        self.msg.probe_cert('foo.com', port=1234)
+        mock_probe_sni.assert_called_with(
+            host=mock.ANY, port=1234, server_hostname=mock.ANY)
+
+        self.msg.probe_cert('foo.com', bar='baz')
+        mock_probe_sni.assert_called_with(
+            host=mock.ANY, port=mock.ANY, server_hostname=mock.ANY, bar='baz')
+
+        self.msg.probe_cert('foo.com', server_hostname='xxx')
+        mock_probe_sni.assert_called_with(
+            host=mock.ANY, port=mock.ANY,
+            server_hostname='a82d5ff8ef740d12881f6d3c2277ab2e.acme.invalid')
+
 
 class DVSNIResponseTest(unittest.TestCase):
 
@@ -217,6 +244,13 @@ class DVSNIResponseTest(unittest.TestCase):
     def test_from_json_hashable(self):
         from acme.challenges import DVSNIResponse
         hash(DVSNIResponse.from_json(self.jmsg))
+
+    def test_simple_verify(self):  # TODO
+        chall = mock.MagicMock()
+        chall.probe_cert.return_value = OpenSSL.crypto.load_certificate(
+            OpenSSL.crypto.FILETYPE_PEM, test_util.load_vector('cert.pem'))
+        self.assertFalse(self.msg.simple_verify(chall, "example.com", key=None))
+        # TODO: key not None
 
 
 class RecoveryContactTest(unittest.TestCase):

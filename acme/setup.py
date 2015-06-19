@@ -11,7 +11,7 @@ install_requires = [
     'pyrfc3339',
     'ndg-httpsclient',  # urllib3 InsecurePlatformWarning (#304)
     'pyasn1',  # urllib3 InsecurePlatformWarning (#304)
-    'PyOpenSSL',
+    'PyOpenSSL>=0.13',  # Connection.set_tlsext_host_name
     'pytz',
     'requests',
     'werkzeug',
