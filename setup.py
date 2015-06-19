@@ -53,6 +53,7 @@ install_requires = [
     # order of items in install_requires DOES matter and M2Crypto has
     # to go last, see #152
     'M2Crypto',
+    'functools32'
 ]
 
 dev_extras = [
