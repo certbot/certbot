@@ -108,7 +108,7 @@ backslash):
 .. code-block:: shell
 
    SWIG_FEATURES="-includeall -D__`uname -m`__-I/usr/include/openssl" \
-   ./venv/bin/pip install -r requirements.txt functools32
+   ./venv/bin/pip install -r requirements.txt .
 
 
 Installation
@@ -129,7 +129,7 @@ Installation
 
 .. note:: If your operating system uses SWIG 3.0.5+, you will need to
           run ``pip install -r requirements-swig-3.0.5.txt -r
-          requirements.txt`` instead. Known affected systems:
+          requirements.txt .`` instead. Known affected systems:
 
           * Fedora 22
           * some versions of Mac OS X
