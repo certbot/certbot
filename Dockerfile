@@ -48,6 +48,7 @@ COPY letsencrypt_apache /opt/letsencrypt/src/letsencrypt_apache/
 COPY letsencrypt_nginx /opt/letsencrypt/src/letsencrypt_nginx/
 
 
+# requirements.txt not installed!
 RUN virtualenv --no-site-packages -p python2 /opt/letsencrypt/venv && \
     /opt/letsencrypt/venv/bin/pip install -e /opt/letsencrypt/src
 
