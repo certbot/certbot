@@ -31,13 +31,6 @@ In general:
 
 * ``sudo`` is required as a suggested way of running privileged process
 * `SWIG`_ is required for compiling `M2Crypto`_
-
-  .. _new-swig:
-  .. note:: If your operating system uses SWIG 3.0.5+, you will need
-            to run ``pip install -r requirements-swig-3.0.5.txt -r
-            requirements.txt`` instead of the standard ``pip
-            install -r requirements.txt``.
-
 * `Augeas`_ is required for the Python bindings
 
 
@@ -79,8 +72,6 @@ Fedora
 
    sudo ./bootstrap/fedora.sh
 
-.. note:: Fedora 22 uses SWIG 3.0.5+, use the :ref:`modified pip
-          command for installation <new-swig>`.
 
 Centos 7
 --------
@@ -105,6 +96,13 @@ Installation
 
    virtualenv --no-site-packages -p python2 venv
    ./venv/bin/pip install -r requirements.txt .
+
+.. note:: If your operating system uses SWIG 3.0.5+, you will need to
+          run ``pip install -r requirements-swig-3.0.5.txt -r
+          requirements.txt`` instead. Known affected systems:
+
+          * Fedora 22
+          * some versions of Mac OS X
 
 
 Usage
