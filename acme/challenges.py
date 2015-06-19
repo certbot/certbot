@@ -68,7 +68,7 @@ class SimpleHTTPResponse(ChallengeResponse):
         """Is `path` good?
 
         .. todo:: acme-spec: "The value MUST be comprised entirely of
-           haracters from the URL-safe alphabet for Base64 encoding
+           characters from the URL-safe alphabet for Base64 encoding
            [RFC4648]", base64.b64decode ignores those characters
 
         """
