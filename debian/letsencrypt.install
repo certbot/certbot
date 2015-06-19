@@ -1,1 +1,4 @@
-letsencrypt/client/apache/options-ssl.conf		etc/letsencrypt
+debian/letsencrypt-build/usr/bin usr/
+debian/letsencrypt-build/usr/lib/python2.7/dist-packages/acme usr/lib/python2.7/dist-packages/
+debian/letsencrypt-build/usr/lib/python2.7/dist-packages/letsencrypt usr/lib/python2.7/dist-packages/
+debian/letsencrypt-build/usr/lib/python2.7/dist-packages/letsencrypt-*egg* usr/lib/python2.7/dist-packages/

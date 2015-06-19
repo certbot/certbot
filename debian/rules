@@ -3,7 +3,7 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
-export PYBUILD_NAME=letsencrypt
+export PYBUILD_DESTDIR=$(CURDIR)/debian/letsencrypt-build
 
 %:
 	dh $@ --with python2,sphinxdoc --buildsystem=pybuild
@@ -22,9 +22,21 @@ override_dh_auto_build:
 	sed -i -e 's|<img alt="Travis CI status" src="https://travis-ci.org/letsencrypt/lets-encrypt-preview.svg?branch=master" />|Travis CI status|' $(CURDIR)/debian/doc-build/html/intro.html
 	sed -i -e 's|<img alt="Coverage status" src="https://coveralls.io/repos/letsencrypt/lets-encrypt-preview/badge.svg?branch=master" />|Coverage status|' $(CURDIR)/debian/doc-build/html/intro.html
 	sed -i -e 's|<img alt="Documentation status" src="https://readthedocs.org/projects/letsencrypt/badge/" />|Documentation status|' $(CURDIR)/debian/doc-build/html/intro.html
+	sed -i -e 's|<img alt="Docker Repository on Quay.io" src="https://quay.io/repository/letsencrypt/lets-encrypt-preview/status" />|Docker Repository status|' $(CURDIR)/debian/doc-build/html/intro.html
 
 override_dh_auto_install:
 	dh_auto_install
 	 
 	# Don't install the tests 
-	rm -rf $(CURDIR)/debian/letsencrypt/usr/lib/python2.7/dist-packages/letsencrypt/client/tests/
+	rm -rf $(CURDIR)/debian/letsencrypt-build/usr/lib/python2.7/dist-packages/letsencrypt/tests/
+	rm -rf $(CURDIR)/debian/letsencrypt-build/usr/lib/python2.7/dist-packages/letsencrypt_apache/tests/
+	rm -rf $(CURDIR)/debian/letsencrypt-build/usr/lib/python2.7/dist-packages/letsencrypt_nginx/tests/
+	 
+	# Remove duplicate copy of the config files
+	rm -rf $(CURDIR)/debian/letsencrypt-build/usr/lib/python2.7/dist-packages/letsencrypt_apache/options-ssl.conf
+	rm -rf $(CURDIR)/debian/letsencrypt-build/usr/lib/python2.7/dist-packages/letsencrypt_nginx/options-ssl.conf
+
+override_dh_installchangelogs:
+	dh_installchangelogs CHANGES.rst
+
+override_dh_auto_test:
