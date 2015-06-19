@@ -95,7 +95,7 @@ backslash):
 .. code-block:: shell
 
    SWIG_FEATURES="-includeall -D__`uname -m`__-I/usr/include/openssl" \
-   ./venv/bin/pip install -r requirements.txt functools32 .
+   ./venv/bin/pip install -r requirements.txt .
 
 
 Installation
