@@ -97,6 +97,14 @@ Installation
    virtualenv --no-site-packages -p python2 venv
    ./venv/bin/pip install -r requirements.txt .
 
+.. warning:: Please do **not** use ``python setup.py install``. Please
+             do **not** attempt the installation commands as
+             superuser/root and/or without Virtualenv_, e.g. ``sudo
+             python setup.py install``, ``sudo pip install``, ``sudo
+             ./venv/bin/...``. These modes of operation might corrupt
+             your operating system and are **not supported** by the
+             Let's Encrypt team!
+
 .. note:: If your operating system uses SWIG 3.0.5+, you will need to
           run ``pip install -r requirements-swig-3.0.5.txt -r
           requirements.txt`` instead. Known affected systems:
@@ -118,3 +126,4 @@ The letsencrypt commandline tool has a builtin help:
 .. _Augeas: http://augeas.net/
 .. _M2Crypto: https://github.com/M2Crypto/M2Crypto
 .. _SWIG: http://www.swig.org/
+.. _Virtualenv: https://virtualenv.pypa.io
