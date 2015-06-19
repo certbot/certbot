@@ -12,7 +12,6 @@ after_success: '[ "$TOXENV" == "cover" ] && coveralls'
 # matrix, which allows us to clearly distinguish which component under
 # test has failed
 env:
-  - TOXENV=py26
   - TOXENV=py27
   - TOXENV=lint
   - TOXENV=cover
