@@ -138,7 +138,7 @@ Installation
 Usage
 =====
 
-The letsencrypt commandline tool has a builtin help:
+The ``letsencrypt`` commandline tool has a builtin help:
 
 .. code-block:: shell
 
