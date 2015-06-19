@@ -20,6 +20,25 @@ And follow the instructions. Your new cert will be available in
 ``/etc/letsencrypt/certs``.
 
 
+Getting the code
+================
+
+Please `install Git`_ and run the following commands:
+
+.. code-block:: shell
+
+   git clone https://github.com/letsencrypt/lets-encrypt-preview
+   cd lets-encrypt-preview
+
+Alternatively you could `download the ZIP archive`_ and extract the
+snapshot of our repository, but it's strongly recommended to use the
+above method instead.
+
+.. _`install Git`: https://git-scm.com/book/en/v2/Getting-Started-Installing-Git
+.. _`download the ZIP archive`:
+   https://github.com/letsencrypt/lets-encrypt-preview/archive/master.zip
+
+
 Prerequisites
 =============
 
