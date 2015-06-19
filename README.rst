@@ -3,6 +3,10 @@
 Official **documentation**, including `installation instructions`_, is
 available at https://letsencrypt.readthedocs.org.
 
+Generic information about Let's Encrypt project can be found at
+https://letsencrypt.org. Please read `Frequently Asked Questions (FAQ)
+<https://letsencrypt.org/faq/>`_.
+
 
 About the Let's Encrypt Client
 ==============================
