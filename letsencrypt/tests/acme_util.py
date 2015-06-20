@@ -16,7 +16,7 @@ KEY = jose.HashableRSAKey(Crypto.PublicKey.RSA.importKey(
         "acme.jose", os.path.join("testdata", "rsa512_key.pem"))))
 
 # Challenges
-SIMPLE_HTTPS = challenges.SimpleHTTPS(
+SIMPLE_HTTP = challenges.SimpleHTTP(
     token="evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ+PCt92wr+oA")
 DVSNI = challenges.DVSNI(
     r="O*\xb4-\xad\xec\x95>\xed\xa9\r0\x94\xe8\x97\x9c&6\xbf'\xb3"
@@ -47,7 +47,7 @@ POP = challenges.ProofOfPossession(
     )
 )
 
-CHALLENGES = [SIMPLE_HTTPS, DVSNI, DNS, RECOVERY_CONTACT, RECOVERY_TOKEN, POP]
+CHALLENGES = [SIMPLE_HTTP, DVSNI, DNS, RECOVERY_CONTACT, RECOVERY_TOKEN, POP]
 DV_CHALLENGES = [chall for chall in CHALLENGES
                  if isinstance(chall, challenges.DVChallenge)]
 CONT_CHALLENGES = [chall for chall in CHALLENGES
@@ -86,13 +86,13 @@ def chall_to_challb(chall, status):  # pylint: disable=redefined-outer-name
 
 # Pending ChallengeBody objects
 DVSNI_P = chall_to_challb(DVSNI, messages2.STATUS_PENDING)
-SIMPLE_HTTPS_P = chall_to_challb(SIMPLE_HTTPS, messages2.STATUS_PENDING)
+SIMPLE_HTTP_P = chall_to_challb(SIMPLE_HTTP, messages2.STATUS_PENDING)
 DNS_P = chall_to_challb(DNS, messages2.STATUS_PENDING)
 RECOVERY_CONTACT_P = chall_to_challb(RECOVERY_CONTACT, messages2.STATUS_PENDING)
 RECOVERY_TOKEN_P = chall_to_challb(RECOVERY_TOKEN, messages2.STATUS_PENDING)
 POP_P = chall_to_challb(POP, messages2.STATUS_PENDING)
 
-CHALLENGES_P = [SIMPLE_HTTPS_P, DVSNI_P, DNS_P,
+CHALLENGES_P = [SIMPLE_HTTP_P, DVSNI_P, DNS_P,
                 RECOVERY_CONTACT_P, RECOVERY_TOKEN_P, POP_P]
 DV_CHALLENGES_P = [challb for challb in CHALLENGES_P
                    if isinstance(challb.chall, challenges.DVChallenge)]

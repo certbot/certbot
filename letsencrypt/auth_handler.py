@@ -134,9 +134,11 @@ class AuthHandler(object):
             self._send_responses(self.cont_c, cont_resp, chall_update))
 
         # Check for updated status...
-        self._poll_challenges(chall_update, best_effort)
-        # This removes challenges from self.dv_c and self.cont_c
-        self._cleanup_challenges(active_achalls)
+        try:
+            self._poll_challenges(chall_update, best_effort)
+        finally:
+            # This removes challenges from self.dv_c and self.cont_c
+            self._cleanup_challenges(active_achalls)
 
     def _send_responses(self, achalls, resps, chall_update):
         """Send responses and make sure errors are handled.
@@ -336,9 +338,9 @@ def challb_to_achall(challb, key, domain):
         logging.info("  DVSNI challenge for %s.", domain)
         return achallenges.DVSNI(
             challb=challb, domain=domain, key=key)
-    elif isinstance(chall, challenges.SimpleHTTPS):
-        logging.info("  SimpleHTTPS challenge for %s.", domain)
-        return achallenges.SimpleHTTPS(
+    elif isinstance(chall, challenges.SimpleHTTP):
+        logging.info("  SimpleHTTP challenge for %s.", domain)
+        return achallenges.SimpleHTTP(
             challb=challb, domain=domain, key=key)
     elif isinstance(chall, challenges.DNS):
         logging.info("  DNS challenge for %s.", domain)

@@ -16,6 +16,7 @@ class Error(jose.JSONObjectWithFields, Exception):
         'unauthorized': 'The client lacks sufficient authorization',
         'serverInternal': 'The server experienced an internal error',
         'badCSR': 'The CSR is unacceptable (e.g., due to a short key)',
+        'badNonce': 'The client sent an unacceptable anti-replay nonce',
     }
 
     typ = jose.Field('type')

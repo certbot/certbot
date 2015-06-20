@@ -10,6 +10,7 @@ import requests
 import werkzeug
 
 from acme import jose
+from acme import jws as acme_jws
 from acme import messages2
 
 from letsencrypt import errors
@@ -24,7 +25,7 @@ class Network(object):
 
     .. todo::
        Clean up raised error types hierarchy, document, and handle (wrap)
-       instances of `.DeserializationError` raised in `from_json()``.
+       instances of `.DeserializationError` raised in `from_json()`.
 
     :ivar str new_reg_uri: Location of new-reg
     :ivar key: `.JWK` (private)
@@ -33,26 +34,32 @@ class Network(object):
 
     """
 
+    # TODO: Move below to acme module?
     DER_CONTENT_TYPE = 'application/pkix-cert'
     JSON_CONTENT_TYPE = 'application/json'
     JSON_ERROR_CONTENT_TYPE = 'application/problem+json'
+    REPLAY_NONCE_HEADER = 'Replay-Nonce'
 
     def __init__(self, new_reg_uri, key, alg=jose.RS256, verify_ssl=True):
         self.new_reg_uri = new_reg_uri
         self.key = key
         self.alg = alg
         self.verify_ssl = verify_ssl
+        self._nonces = set()
 
-    def _wrap_in_jws(self, obj):
+    def _wrap_in_jws(self, obj, nonce):
         """Wrap `JSONDeSerializable` object in JWS.
 
+        .. todo:: Implement ``acmePath``.
+
+        :param JSONDeSerializable obj:
         :rtype: `.JWS`
 
         """
         dumps = obj.json_dumps()
         logging.debug('Serialized JSON: %s', dumps)
-        return jose.JWS.sign(
-            payload=dumps, key=self.key, alg=self.alg).json_dumps()
+        return acme_jws.JWS.sign(
+            payload=dumps, key=self.key, alg=self.alg, nonce=nonce).json_dumps()
 
     @classmethod
     def _check_response(cls, response, content_type=None):
@@ -126,9 +133,31 @@ class Network(object):
         self._check_response(response, content_type=content_type)
         return response
 
-    def _post(self, uri, data, content_type=JSON_CONTENT_TYPE, **kwargs):
+    def _add_nonce(self, response):
+        if self.REPLAY_NONCE_HEADER in response.headers:
+            nonce = response.headers[self.REPLAY_NONCE_HEADER]
+            error = acme_jws.Header.validate_nonce(nonce)
+            if error is None:
+                logging.debug('Storing nonce: %r', nonce)
+                self._nonces.add(nonce)
+            else:
+                raise errors.NetworkError('Invalid nonce ({0}): {1}'.format(
+                    nonce, error))
+        else:
+            raise errors.NetworkError(
+                'Server {0} response did not include a replay nonce'.format(
+                    response.request.method))
+
+    def _get_nonce(self, uri):
+        if not self._nonces:
+            logging.debug('Requesting fresh nonce by sending HEAD to %s', uri)
+            self._add_nonce(requests.head(uri))
+        return self._nonces.pop()
+
+    def _post(self, uri, obj, content_type=JSON_CONTENT_TYPE, **kwargs):
         """Send POST data.
 
+        :param JSONDeSerializable obj: Will be wrapped in JWS.
         :param str content_type: Expected ``Content-Type``, fails if not set.
 
         :raises acme.messages2.NetworkError:
@@ -137,6 +166,7 @@ class Network(object):
         :rtype: `requests.Response`
 
         """
+        data = self._wrap_in_jws(obj, self._get_nonce(uri))
         logging.debug('Sending POST data to %s: %s', uri, data)
         kwargs.setdefault('verify', self.verify_ssl)
         try:
@@ -145,6 +175,7 @@ class Network(object):
             raise errors.NetworkError(error)
         logging.debug('Received response %s: %r', response, response.text)
 
+        self._add_nonce(response)
         self._check_response(response, content_type=content_type)
         return response
 
@@ -182,7 +213,7 @@ class Network(object):
         """
         new_reg = messages2.Registration(contact=contact)
 
-        response = self._post(self.new_reg_uri, self._wrap_in_jws(new_reg))
+        response = self._post(self.new_reg_uri, new_reg)
         assert response.status_code == httplib.CREATED  # TODO: handle errors
 
         regr = self._regr_from_response(response)
@@ -219,20 +250,19 @@ class Network(object):
         :rtype: `.RegistrationResource`
 
         """
-        response = self._post(regr.uri, self._wrap_in_jws(regr.body))
+        response = self._post(regr.uri, regr.body)
 
         # TODO: Boulder returns httplib.ACCEPTED
         #assert response.status_code == httplib.OK
 
         # TODO: Boulder does not set Location or Link on update
         # (c.f. acme-spec #94)
-
         updated_regr = self._regr_from_response(
             response, uri=regr.uri, new_authzr_uri=regr.new_authzr_uri,
             terms_of_service=regr.terms_of_service)
         if updated_regr != regr:
-            # TODO: Boulder reregisters with new recoveryToken and new URI
             raise errors.UnexpectedUpdate(regr)
+
         return updated_regr
 
     def agree_to_tos(self, regr):
@@ -280,7 +310,7 @@ class Network(object):
 
         """
         new_authz = messages2.Authorization(identifier=identifier)
-        response = self._post(new_authzr_uri, self._wrap_in_jws(new_authz))
+        response = self._post(new_authzr_uri, new_authz)
         assert response.status_code == httplib.CREATED  # TODO: handle errors
         return self._authzr_from_response(response, identifier)
 
@@ -316,7 +346,7 @@ class Network(object):
         :raises errors.UnexpectedUpdate:
 
         """
-        response = self._post(challb.uri, self._wrap_in_jws(response))
+        response = self._post(challb.uri, response)
         try:
             authzr_uri = response.links['up']['url']
         except KeyError:
@@ -395,7 +425,7 @@ class Network(object):
         content_type = self.DER_CONTENT_TYPE  # TODO: add 'cert_type 'argument
         response = self._post(
             authzrs[0].new_cert_uri,  # TODO: acme-spec #90
-            self._wrap_in_jws(req),
+            req,
             content_type=content_type,
             headers={'Accept': content_type})
 
@@ -546,7 +576,7 @@ class Network(object):
         """
         rev = messages2.Revocation(revoke=when, authorizations=tuple(
             authzr.uri for authzr in certr.authzrs))
-        response = self._post(certr.uri, self._wrap_in_jws(rev))
+        response = self._post(certr.uri, rev)
         if response.status_code != httplib.OK:
             raise errors.NetworkError(
                 'Successful revocation must return HTTP OK status')

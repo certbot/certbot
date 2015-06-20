@@ -247,6 +247,8 @@ class JWS(json_util.JSONObjectWithFields):
     """
     __slots__ = ('payload', 'signatures')
 
+    signature_cls = Signature
+
     def verify(self, key=None):
         """Verify."""
         return all(sig.verify(self.payload, key) for sig in self.signatures)
@@ -255,13 +257,13 @@ class JWS(json_util.JSONObjectWithFields):
     def sign(cls, payload, **kwargs):
         """Sign."""
         return cls(payload=payload, signatures=(
-            Signature.sign(payload=payload, **kwargs),))
+            cls.signature_cls.sign(payload=payload, **kwargs),))
 
     @property
     def signature(self):
         """Get a singleton signature.
 
-        :rtype: :class:`Signature`
+        :rtype: `signature_cls`
 
         """
         assert len(self.signatures) == 1
@@ -288,8 +290,8 @@ class JWS(json_util.JSONObjectWithFields):
             raise errors.DeserializationError(
                 'Compact JWS serialization should comprise of exactly'
                 ' 3 dot-separated components')
-        sig = Signature(protected=json_util.decode_b64jose(protected),
-                        signature=json_util.decode_b64jose(signature))
+        sig = cls.signature_cls(protected=json_util.decode_b64jose(protected),
+                                signature=json_util.decode_b64jose(signature))
         return cls(payload=json_util.decode_b64jose(payload), signatures=(sig,))
 
     def to_partial_json(self, flat=True):  # pylint: disable=arguments-differ
@@ -312,10 +314,10 @@ class JWS(json_util.JSONObjectWithFields):
             raise errors.DeserializationError('Flat mixed with non-flat')
         elif 'signature' in jobj:  # flat
             return cls(payload=json_util.decode_b64jose(jobj.pop('payload')),
-                       signatures=(Signature.from_json(jobj),))
+                       signatures=(cls.signature_cls.from_json(jobj),))
         else:
             return cls(payload=json_util.decode_b64jose(jobj['payload']),
-                       signatures=tuple(Signature.from_json(sig)
+                       signatures=tuple(cls.signature_cls.from_json(sig)
                                         for sig in jobj['signatures']))
 
 class CLI(object):

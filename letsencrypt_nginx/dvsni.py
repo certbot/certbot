@@ -4,14 +4,13 @@ import logging
 import os
 
 from letsencrypt import errors
-
-from letsencrypt_apache.dvsni import ApacheDvsni
+from letsencrypt.plugins import common
 
 from letsencrypt_nginx import obj
 from letsencrypt_nginx import nginxparser
 
 
-class NginxDvsni(ApacheDvsni):
+class NginxDvsni(common.Dvsni):
     """Class performs DVSNI challenges within the Nginx configurator.
 
     :ivar configurator: NginxConfigurator object
@@ -24,7 +23,7 @@ class NginxDvsni(ApacheDvsni):
         larger array. NginxDvsni is capable of solving many challenges
         at once which causes an indexing issue within NginxConfigurator
         who must return all responses in order.  Imagine NginxConfigurator
-        maintaining state about where all of the SimpleHTTPS Challenges,
+        maintaining state about where all of the SimpleHTTP Challenges,
         Dvsni Challenges belong in the response array.  This is an optional
         utility.
 

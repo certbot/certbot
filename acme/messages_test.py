@@ -63,7 +63,7 @@ class ChallengeTest(unittest.TestCase):
 
     def setUp(self):
         challs = (
-            challenges.SimpleHTTPS(token='IlirfxKKXAsHtmzK29Pj8A'),
+            challenges.SimpleHTTP(token='IlirfxKKXAsHtmzK29Pj8A'),
             challenges.DNS(token='DGyRejmCefe7v4NfDGDKfA'),
             challenges.RecoveryToken(),
         )
@@ -94,7 +94,7 @@ class ChallengeTest(unittest.TestCase):
     def test_resolved_combinations(self):
         self.assertEqual(self.msg.resolved_combinations, (
             (
-                challenges.SimpleHTTPS(token='IlirfxKKXAsHtmzK29Pj8A'),
+                challenges.SimpleHTTP(token='IlirfxKKXAsHtmzK29Pj8A'),
                 challenges.RecoveryToken()
             ),
             (
@@ -183,7 +183,7 @@ class AuthorizationRequestTest(unittest.TestCase):
 
     def setUp(self):
         self.responses = (
-            challenges.SimpleHTTPSResponse(path='Hf5GrX4Q7EBax9hc2jJnfw'),
+            challenges.SimpleHTTPResponse(path='Hf5GrX4Q7EBax9hc2jJnfw'),
             None,  # null
             challenges.RecoveryTokenResponse(token='23029d88d9e123e'),
         )

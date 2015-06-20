@@ -18,6 +18,8 @@ from letsencrypt import errors
 from letsencrypt import interfaces
 from letsencrypt import le_util
 
+from letsencrypt.plugins import common
+
 from letsencrypt_apache import constants
 from letsencrypt_apache import dvsni
 from letsencrypt_apache import obj
@@ -236,7 +238,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 return vhost
         # Checking for domain name in vhost address
         # This technique is not recommended by Apache but is technically valid
-        target_addr = obj.Addr((target_name, "443"))
+        target_addr = common.Addr((target_name, "443"))
         for vhost in self.vhosts:
             if target_addr in vhost.addrs:
                 self.assoc[target_name] = vhost
@@ -327,7 +329,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         addrs = set()
         args = self.aug.match(path + "/arg")
         for arg in args:
-            addrs.add(obj.Addr.fromstring(self.aug.get(arg)))
+            addrs.add(common.Addr.fromstring(self.aug.get(arg)))
         is_ssl = False
 
         if self.parser.find_dir(
@@ -493,7 +495,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             addr_match % (ssl_fp, parser.case_i("VirtualHost")))
 
         for addr in ssl_addr_p:
-            old_addr = obj.Addr.fromstring(
+            old_addr = common.Addr.fromstring(
                 str(self.aug.get(addr)))
             ssl_addr = old_addr.get_addr_obj("443")
             self.aug.set(addr, str(ssl_addr))
@@ -796,8 +798,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Instead... should look for vhost of the form *:80
         # Should we prompt the user?
         ssl_addrs = ssl_vhost.addrs
-        if ssl_addrs == obj.Addr.fromstring("_default_:443"):
-            ssl_addrs = [obj.Addr.fromstring("*:443")]
+        if ssl_addrs == common.Addr.fromstring("_default_:443"):
+            ssl_addrs = [common.Addr.fromstring("*:443")]
 
         for vhost in self.vhosts:
             found = 0

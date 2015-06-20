@@ -5,7 +5,7 @@ import unittest
 
 import mock
 
-from letsencrypt_apache.tests import util as apache_util
+from letsencrypt.plugins import common
 
 from letsencrypt_nginx import constants
 from letsencrypt_nginx import configurator
@@ -16,10 +16,10 @@ class NginxTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
     def setUp(self):
         super(NginxTest, self).setUp()
 
-        self.temp_dir, self.config_dir, self.work_dir = apache_util.dir_setup(
+        self.temp_dir, self.config_dir, self.work_dir = common.dir_setup(
             "etc_nginx", "letsencrypt_nginx.tests")
 
-        self.ssl_options = apache_util.setup_ssl_options(
+        self.ssl_options = common.setup_ssl_options(
             self.config_dir, constants.MOD_SSL_CONF_SRC,
             constants.MOD_SSL_CONF_DEST)
 

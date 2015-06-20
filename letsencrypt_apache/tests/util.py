@@ -1,13 +1,11 @@
 """Common utilities for letsencrypt_apache."""
 import os
 import pkg_resources
-import shutil
-import tempfile
 import unittest
 
 import mock
 
-from letsencrypt import constants as core_constants
+from letsencrypt.plugins import common
 
 from letsencrypt_apache import configurator
 from letsencrypt_apache import constants
@@ -19,10 +17,13 @@ class ApacheTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
     def setUp(self):
         super(ApacheTest, self).setUp()
 
-        self.temp_dir, self.config_dir, self.work_dir = dir_setup(
-            "debian_apache_2_4/two_vhost_80")
+        self.temp_dir, self.config_dir, self.work_dir = common.dir_setup(
+            test_dir="debian_apache_2_4/two_vhost_80",
+            pkg="letsencrypt_apache.tests")
 
-        self.ssl_options = setup_ssl_options(self.config_dir)
+        self.ssl_options = common.setup_ssl_options(
+            self.config_dir, constants.MOD_SSL_CONF_SRC,
+            constants.MOD_SSL_CONF_DEST)
 
         self.config_path = os.path.join(
             self.temp_dir, "debian_apache_2_4/two_vhost_80/apache2")
@@ -31,35 +32,6 @@ class ApacheTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
             "acme.jose", "testdata/rsa256_key.pem")
         self.rsa256_pem = pkg_resources.resource_string(
             "acme.jose", "testdata/rsa256_key.pem")
-
-
-def dir_setup(test_dir="debian_apache_2_4/two_vhost_80",
-              pkg="letsencrypt_apache.tests"):
-    """Setup the directories necessary for the configurator."""
-    temp_dir = tempfile.mkdtemp("temp")
-    config_dir = tempfile.mkdtemp("config")
-    work_dir = tempfile.mkdtemp("work")
-
-    os.chmod(temp_dir, core_constants.CONFIG_DIRS_MODE)
-    os.chmod(config_dir, core_constants.CONFIG_DIRS_MODE)
-    os.chmod(work_dir, core_constants.CONFIG_DIRS_MODE)
-
-    test_configs = pkg_resources.resource_filename(
-        pkg, os.path.join("testdata", test_dir))
-
-    shutil.copytree(
-        test_configs, os.path.join(temp_dir, test_dir), symlinks=True)
-
-    return temp_dir, config_dir, work_dir
-
-
-def setup_ssl_options(
-        config_dir, src=constants.MOD_SSL_CONF_SRC,
-        dest=constants.MOD_SSL_CONF_DEST):
-    """Move the ssl_options into position and return the path."""
-    option_path = os.path.join(config_dir, dest)
-    shutil.copyfile(src, option_path)
-    return option_path
 
 
 def get_apache_configurator(
@@ -99,21 +71,21 @@ def get_vh_truth(temp_dir, config_name):
             obj.VirtualHost(
                 os.path.join(prefix, "encryption-example.conf"),
                 os.path.join(aug_pre, "encryption-example.conf/VirtualHost"),
-                set([obj.Addr.fromstring("*:80")]),
+                set([common.Addr.fromstring("*:80")]),
                 False, True, set(["encryption-example.demo"])),
             obj.VirtualHost(
                 os.path.join(prefix, "default-ssl.conf"),
                 os.path.join(aug_pre, "default-ssl.conf/IfModule/VirtualHost"),
-                set([obj.Addr.fromstring("_default_:443")]), True, False),
+                set([common.Addr.fromstring("_default_:443")]), True, False),
             obj.VirtualHost(
                 os.path.join(prefix, "000-default.conf"),
                 os.path.join(aug_pre, "000-default.conf/VirtualHost"),
-                set([obj.Addr.fromstring("*:80")]), False, True,
+                set([common.Addr.fromstring("*:80")]), False, True,
                 set(["ip-172-30-0-17"])),
             obj.VirtualHost(
                 os.path.join(prefix, "letsencrypt.conf"),
                 os.path.join(aug_pre, "letsencrypt.conf/VirtualHost"),
-                set([obj.Addr.fromstring("*:80")]), False, True,
+                set([common.Addr.fromstring("*:80")]), False, True,
                 set(["letsencrypt.demo"])),
         ]
         return vh_truth

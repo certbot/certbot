@@ -183,6 +183,10 @@ class IConfig(zope.interface.Interface):
         "Port number to perform DVSNI challenge. "
         "Boulder in testing mode defaults to 5001.")
 
+    # TODO: not implemented
+    no_simple_http_tls = zope.interface.Attribute(
+        "Do not use TLS when solving SimpleHTTP challenges.")
+
 
 class IInstaller(IPlugin):
     """Generic Let's Encrypt Installer Interface.

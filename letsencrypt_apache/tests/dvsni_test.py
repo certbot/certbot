@@ -1,5 +1,4 @@
 """Test for letsencrypt_apache.dvsni."""
-import pkg_resources
 import unittest
 import shutil
 
@@ -7,17 +6,16 @@ import mock
 
 from acme import challenges
 
-from letsencrypt import achallenges
-from letsencrypt import le_util
+from letsencrypt.plugins import common
+from letsencrypt.plugins import common_test
 
-from letsencrypt.tests import acme_util
-
-from letsencrypt_apache import obj
 from letsencrypt_apache.tests import util
 
 
 class DvsniPerformTest(util.ApacheTest):
     """Test the ApacheDVSNI challenge."""
+
+    achalls = common_test.DvsniTest.achalls
 
     def setUp(self):
         super(DvsniPerformTest, self).setUp()
@@ -31,32 +29,6 @@ class DvsniPerformTest(util.ApacheTest):
         from letsencrypt_apache import dvsni
         self.sni = dvsni.ApacheDvsni(config)
 
-        rsa256_file = pkg_resources.resource_filename(
-            "acme.jose", "testdata/rsa256_key.pem")
-        rsa256_pem = pkg_resources.resource_string(
-            "acme.jose", "testdata/rsa256_key.pem")
-
-        auth_key = le_util.Key(rsa256_file, rsa256_pem)
-        self.achalls = [
-            achallenges.DVSNI(
-                challb=acme_util.chall_to_challb(
-                    challenges.DVSNI(
-                        r="\x8c\x8a\xbf_-f\\cw\xee\xd6\xf8/\xa5\xe3\xfd\xeb9"
-                          "\xf1\xf5\xb9\xefVM\xc9w\xa4u\x9c\xe1\x87\xb4",
-                        nonce="7\xbc^\xb7]>\x00\xa1\x9bOcU\x84^Z\x18",
-                    ), "pending"),
-                domain="encryption-example.demo", key=auth_key),
-            achallenges.DVSNI(
-                challb=acme_util.chall_to_challb(
-                    challenges.DVSNI(
-                        r="\xba\xa9\xda?<m\xaewmx\xea\xad\xadv\xf4\x02\xc9y\x80"
-                        "\xe2_X\t\xe7\xc7\xa4\t\xca\xf7&\x945",
-                        nonce="Y\xed\x01L\xac\x95\xf7pW\xb1\xd7\xa1\xb2\xc5"
-                              "\x96\xba",
-                    ), "pending"),
-                domain="letsencrypt.demo", key=auth_key),
-        ]
-
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
         shutil.rmtree(self.config_dir)
@@ -65,28 +37,6 @@ class DvsniPerformTest(util.ApacheTest):
     def test_perform0(self):
         resp = self.sni.perform()
         self.assertEqual(len(resp), 0)
-
-    def test_setup_challenge_cert(self):
-        # This is a helper function that can be used for handling
-        # open context managers more elegantly. It avoids dealing with
-        # __enter__ and __exit__ calls.
-        # http://www.voidspace.org.uk/python/mock/helpers.html#mock.mock_open
-        m_open = mock.mock_open()
-
-        response = challenges.DVSNIResponse(s="randomS1")
-        achall = mock.MagicMock(nonce=self.achalls[0].nonce,
-                                nonce_domain=self.achalls[0].nonce_domain)
-        achall.gen_cert_and_response.return_value = ("pem", response)
-
-        with mock.patch("letsencrypt_apache.dvsni.open", m_open, create=True):
-            # pylint: disable=protected-access
-            self.assertEqual(response, self.sni._setup_challenge_cert(
-                achall, "randomS1"))
-
-            self.assertTrue(m_open.called)
-            self.assertEqual(
-                m_open.call_args[0], (self.sni.get_cert_file(achall), "w"))
-            self.assertEqual(m_open().write.call_args[0][0], "pem")
 
     def test_perform1(self):
         achall = self.achalls[0]
@@ -139,8 +89,9 @@ class DvsniPerformTest(util.ApacheTest):
     def test_mod_config(self):
         for achall in self.achalls:
             self.sni.add_chall(achall)
-        v_addr1 = [obj.Addr(("1.2.3.4", "443")), obj.Addr(("5.6.7.8", "443"))]
-        v_addr2 = [obj.Addr(("127.0.0.1", "443"))]
+        v_addr1 = [common.Addr(("1.2.3.4", "443")),
+                   common.Addr(("5.6.7.8", "443"))]
+        v_addr2 = [common.Addr(("127.0.0.1", "443"))]
         ll_addr = []
         ll_addr.append(v_addr1)
         ll_addr.append(v_addr2)

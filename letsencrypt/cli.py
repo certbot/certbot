@@ -252,6 +252,9 @@ def create_parser(plugins):
     add("-t", "--text", dest="text_mode", action="store_true",
         help="Use the text output instead of the curses UI.")
 
+    add("--no-simple-http-tls", action="store_true",
+        help=config_help("no_simple_http_tls"))
+
     testing_group = parser.add_argument_group(
         "testing", description="The following flags are meant for "
         "testing purposes only! Do NOT change them, unless you "

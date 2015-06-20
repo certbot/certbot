@@ -17,7 +17,7 @@ from letsencrypt.tests import acme_util
 
 TRANSLATE = {
     "dvsni": "DVSNI",
-    "simpleHttps": "SimpleHTTPS",
+    "simpleHttp": "SimpleHTTP",
     "dns": "DNS",
     "recoveryToken": "RecoveryToken",
     "recoveryContact": "RecoveryContact",
@@ -299,8 +299,8 @@ class GenChallengePathTest(unittest.TestCase):
         return gen_challenge_path(challbs, preferences, combinations)
 
     def test_common_case(self):
-        """Given DVSNI and SimpleHTTPS with appropriate combos."""
-        challbs = (acme_util.DVSNI_P, acme_util.SIMPLE_HTTPS_P)
+        """Given DVSNI and SimpleHTTP with appropriate combos."""
+        challbs = (acme_util.DVSNI_P, acme_util.SIMPLE_HTTP_P)
         prefs = [challenges.DVSNI]
         combos = ((0,), (1,))
 
@@ -315,7 +315,7 @@ class GenChallengePathTest(unittest.TestCase):
         challbs = (acme_util.RECOVERY_TOKEN_P,
                    acme_util.RECOVERY_CONTACT_P,
                    acme_util.DVSNI_P,
-                   acme_util.SIMPLE_HTTPS_P)
+                   acme_util.SIMPLE_HTTP_P)
         prefs = [challenges.RecoveryToken, challenges.DVSNI]
         combos = acme_util.gen_combos(challbs)
         self.assertEqual(self._call(challbs, prefs, combos), (0, 2))
@@ -328,13 +328,13 @@ class GenChallengePathTest(unittest.TestCase):
                    acme_util.RECOVERY_CONTACT_P,
                    acme_util.POP_P,
                    acme_util.DVSNI_P,
-                   acme_util.SIMPLE_HTTPS_P,
+                   acme_util.SIMPLE_HTTP_P,
                    acme_util.DNS_P)
         # Typical webserver client that can do everything except DNS
         # Attempted to make the order realistic
         prefs = [challenges.RecoveryToken,
                  challenges.ProofOfPossession,
-                 challenges.SimpleHTTPS,
+                 challenges.SimpleHTTP,
                  challenges.DVSNI,
                  challenges.RecoveryContact]
         combos = acme_util.gen_combos(challbs)
@@ -403,8 +403,8 @@ class IsPreferredTest(unittest.TestCase):
     def _call(cls, chall, satisfied):
         from letsencrypt.auth_handler import is_preferred
         return is_preferred(chall, satisfied, exclusive_groups=frozenset([
-            frozenset([challenges.DVSNI, challenges.SimpleHTTPS]),
-            frozenset([challenges.DNS, challenges.SimpleHTTPS]),
+            frozenset([challenges.DVSNI, challenges.SimpleHTTP]),
+            frozenset([challenges.DNS, challenges.SimpleHTTP]),
         ]))
 
     def test_empty_satisfied(self):
@@ -413,7 +413,7 @@ class IsPreferredTest(unittest.TestCase):
     def test_mutually_exclusvie(self):
         self.assertFalse(
             self._call(
-                acme_util.DVSNI_P, frozenset([acme_util.SIMPLE_HTTPS_P])))
+                acme_util.DVSNI_P, frozenset([acme_util.SIMPLE_HTTP_P])))
 
     def test_mutually_exclusive_same_type(self):
         self.assertTrue(

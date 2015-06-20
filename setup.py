@@ -32,7 +32,7 @@ install_requires = [
     'argparse',
     'ConfigArgParse',
     'configobj',
-    'jsonschema',
+    'jsonschema<2.5.1',  # https://github.com/Julian/jsonschema/issues/233
     'mock',
     'ndg-httpsclient',  # urllib3 InsecurePlatformWarning (#304)
     'parsedatetime',
@@ -120,6 +120,7 @@ setup(
             'jws = letsencrypt.acme.jose.jws:CLI.run',
         ],
         'letsencrypt.plugins': [
+            'manual = letsencrypt.plugins.manual:ManualAuthenticator',
             'standalone = letsencrypt.plugins.standalone.authenticator'
             ':StandaloneAuthenticator',
 
