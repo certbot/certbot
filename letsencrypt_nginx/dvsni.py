@@ -4,14 +4,13 @@ import logging
 import os
 
 from letsencrypt import errors
-
-from letsencrypt_apache.dvsni import ApacheDvsni
+from letsencrypt.plugins import common
 
 from letsencrypt_nginx import obj
 from letsencrypt_nginx import nginxparser
 
 
-class NginxDvsni(ApacheDvsni):
+class NginxDvsni(common.Dvsni):
     """Class performs DVSNI challenges within the Nginx configurator.
 
     :ivar configurator: NginxConfigurator object
