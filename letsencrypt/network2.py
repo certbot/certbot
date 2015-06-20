@@ -25,7 +25,7 @@ class Network(object):
 
     .. todo::
        Clean up raised error types hierarchy, document, and handle (wrap)
-       instances of `.DeserializationError` raised in `from_json()``.
+       instances of `.DeserializationError` raised in `from_json()`.
 
     :ivar str new_reg_uri: Location of new-reg
     :ivar key: `.JWK` (private)
@@ -257,13 +257,12 @@ class Network(object):
 
         # TODO: Boulder does not set Location or Link on update
         # (c.f. acme-spec #94)
-
         updated_regr = self._regr_from_response(
             response, uri=regr.uri, new_authzr_uri=regr.new_authzr_uri,
             terms_of_service=regr.terms_of_service)
         if updated_regr != regr:
-            # TODO: Boulder reregisters with new recoveryToken and new URI
             raise errors.UnexpectedUpdate(regr)
+
         return updated_regr
 
     def agree_to_tos(self, regr):

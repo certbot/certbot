@@ -5,9 +5,9 @@ Using the Let's Encrypt client
 Quick start
 ===========
 
-Using docker you can quickly get yourself a testing cert. From the
+Using Docker_ you can quickly get yourself a testing cert. From the
 server that the domain your requesting a cert for resolves to,
-download docker, and issue the following command
+`install Docker`_, issue the following command:
 
 .. code-block:: shell
 
@@ -16,8 +16,30 @@ download docker, and issue the following command
                -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
                quay.io/letsencrypt/lets-encrypt-preview:latest
 
-And follow the instructions. Your new cert will be available in
+and follow the instructions. Your new cert will be available in
 ``/etc/letsencrypt/certs``.
+
+.. _Docker: https://docker.com
+.. _`install Docker`: https://docs.docker.com/docker/userguide/
+
+
+Getting the code
+================
+
+Please `install Git`_ and run the following commands:
+
+.. code-block:: shell
+
+   git clone https://github.com/letsencrypt/lets-encrypt-preview
+   cd lets-encrypt-preview
+
+Alternatively you could `download the ZIP archive`_ and extract the
+snapshot of our repository, but it's strongly recommended to use the
+above method instead.
+
+.. _`install Git`: https://git-scm.com/book/en/v2/Getting-Started-Installing-Git
+.. _`download the ZIP archive`:
+   https://github.com/letsencrypt/lets-encrypt-preview/archive/master.zip
 
 
 Prerequisites
@@ -31,13 +53,6 @@ In general:
 
 * ``sudo`` is required as a suggested way of running privileged process
 * `SWIG`_ is required for compiling `M2Crypto`_
-
-  .. _new-swig:
-  .. note:: If your operating system uses SWIG 3.0.5+, you will need
-            to run ``pip install -r requirements-swig-3.0.5.txt -r
-            requirements.txt .`` instead of the standard ``pip
-            install -r requirements.txt .``.
-
 * `Augeas`_ is required for the Python bindings
 
 
@@ -79,8 +94,6 @@ Fedora
 
    sudo ./bootstrap/fedora.sh
 
-.. note:: Fedora 22 uses SWIG 3.0.5+, use the :ref:`modified pip
-          command for installation <new-swig>`.
 
 Centos 7
 --------
@@ -106,11 +119,32 @@ Installation
    virtualenv --no-site-packages -p python2 venv
    ./venv/bin/pip install -r requirements.txt .
 
+.. warning:: Please do **not** use ``python setup.py install``. Please
+             do **not** attempt the installation commands as
+             superuser/root and/or without Virtualenv_, e.g. ``sudo
+             python setup.py install``, ``sudo pip install``, ``sudo
+             ./venv/bin/...``. These modes of operation might corrupt
+             your operating system and are **not supported** by the
+             Let's Encrypt team!
+
+.. note:: If your operating system uses SWIG 3.0.5+, you will need to
+          run ``pip install -r requirements-swig-3.0.5.txt -r
+          requirements.txt .`` instead. Known affected systems:
+
+          * Fedora 22
+          * some versions of Mac OS X
+
 
 Usage
 =====
 
-The letsencrypt commandline tool has a builtin help:
+To get a new certificate run:
+
+.. code-block:: shell
+
+   ./venv/bin/letsencrypt auth
+
+The ``letsencrypt`` commandline tool has a builtin help:
 
 .. code-block:: shell
 
@@ -120,3 +154,4 @@ The letsencrypt commandline tool has a builtin help:
 .. _Augeas: http://augeas.net/
 .. _M2Crypto: https://github.com/M2Crypto/M2Crypto
 .. _SWIG: http://www.swig.org/
+.. _Virtualenv: https://virtualenv.pypa.io
