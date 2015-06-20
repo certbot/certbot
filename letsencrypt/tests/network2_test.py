@@ -158,14 +158,16 @@ class NetworkTest(unittest.TestCase):
         for response_ct in [self.net.JSON_CONTENT_TYPE, 'foo']:
             self.response.headers['Content-Type'] = response_ct
             # pylint: disable=protected-access
-            self.net._check_response(self.response)
+            self.assertEqual(
+                self.response, self.net._check_response(self.response))
 
     def test_check_response_jobj(self):
         self.response.json.return_value = {}
         for response_ct in [self.net.JSON_CONTENT_TYPE, 'foo']:
             self.response.headers['Content-Type'] = response_ct
             # pylint: disable=protected-access
-            self.net._check_response(self.response)
+            self.assertEqual(
+                self.response, self.net._check_response(self.response))
 
     @mock.patch('letsencrypt.network2.requests')
     def test_get_requests_error_passthrough(self, requests_mock):
@@ -209,12 +211,14 @@ class NetworkTest(unittest.TestCase):
     @mock.patch('letsencrypt.network2.requests')
     def test_post_replay_nonce_handling(self, requests_mock):
         # pylint: disable=protected-access
-        self.net._check_response = mock.MagicMock()
+        self.net._check_response = mock.MagicMock(side_effect=(
+            lambda response, content_type=None: response))
         self._mock_wrap_in_jws()
 
         self.net._nonces.clear()
         self.assertRaises(
             errors.NetworkError, self.net._post, 'uri', mock.sentinel.obj)
+        self.net._check_response.assert_called_once_with(requests_mock.head())
 
         nonce2 = jose.b64encode('Nonce2')
         requests_mock.head('uri').headers = {

@@ -115,6 +115,8 @@ class Network(object):
                 raise errors.NetworkError(
                     'Unexpected response Content-Type: {0}'.format(response_ct))
 
+        return response
+
     def _get(self, uri, content_type=JSON_CONTENT_TYPE, **kwargs):
         """Send GET request.
 
@@ -130,8 +132,7 @@ class Network(object):
             response = requests.get(uri, **kwargs)
         except requests.exceptions.RequestException as error:
             raise errors.NetworkError(error)
-        self._check_response(response, content_type=content_type)
-        return response
+        return self._check_response(response, content_type=content_type)
 
     def _add_nonce(self, response):
         if self.REPLAY_NONCE_HEADER in response.headers:
@@ -151,7 +152,7 @@ class Network(object):
     def _get_nonce(self, uri):
         if not self._nonces:
             logging.debug('Requesting fresh nonce by sending HEAD to %s', uri)
-            self._add_nonce(requests.head(uri))
+            self._add_nonce(self._check_response(requests.head(uri)))
         return self._nonces.pop()
 
     def _post(self, uri, obj, content_type=JSON_CONTENT_TYPE, **kwargs):
@@ -176,8 +177,7 @@ class Network(object):
         logging.debug('Received response %s: %r', response, response.text)
 
         self._add_nonce(response)
-        self._check_response(response, content_type=content_type)
-        return response
+        return self._check_response(response, content_type=content_type)
 
     @classmethod
     def _regr_from_response(cls, response, uri=None, new_authzr_uri=None,
