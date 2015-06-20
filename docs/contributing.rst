@@ -20,8 +20,7 @@ Now you can install the development packages:
 .. note:: `-e` (short for `--editable`) turns on *editable mode* in
           which any source code changes in the current working
           directory are "live" and no further `pip install ...`
-          invocations are necessary while developing. Any `pip install
-          .` call will re-install Let's Encrypt in non-editable mode.
+          invocations are necessary while developing.
 
           This is roughly equivalent to `python setup.py develop`. For
           more info see `man pip`.
