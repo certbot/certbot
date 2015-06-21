@@ -141,7 +141,7 @@ class ApacheDvsni(common.Dvsni):
         """
         ips = " ".join(str(i) for i in ip_addrs)
         document_root = os.path.join(
-            self.configurator.config.config_dir, "dvsni_page/")
+            self.configurator.config.work_dir, "dvsni_page/")
         # TODO: Python docs is not clear how mutliline string literal
         # newlines are parsed on different platforms. At least on
         # Linux (Debian sid), when source file uses CRLF, Python still

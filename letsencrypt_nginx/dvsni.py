@@ -124,7 +124,7 @@ class NginxDvsni(common.Dvsni):
 
         """
         document_root = os.path.join(
-            self.configurator.config.config_dir, "dvsni_page")
+            self.configurator.config.work_dir, "dvsni_page")
 
         block = [['listen', str(addr)] for addr in addrs]
 
