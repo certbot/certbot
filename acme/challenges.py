@@ -72,6 +72,8 @@ class SimpleHTTPResponse(ChallengeResponse):
            [RFC4648]", base64.b64decode ignores those characters
 
         """
+        # TODO: check that path combined with uri does not go above
+        # URI_ROOT_PATH!
         return len(self.path) <= 25
 
     @property
