@@ -152,7 +152,7 @@ class Registration(ResourceBody):
 
     @classmethod
     def from_data(cls, phone=None, email=None, **kwargs):
-        """Create registration resource from contact detauls."""
+        """Create registration resource from contact details."""
         details = list(kwargs.pop('contact', ()))
         if phone is not None:
             details.append(cls.phone_prefix + phone)
@@ -238,7 +238,7 @@ class ChallengeBody(ResourceBody):
         return getattr(self.chall, name)
 
 
-class ChallengeResource(Resource, jose.JSONObjectWithFields):
+class ChallengeResource(Resource):
     """Challenge Resource.
 
     :ivar acme.messages.ChallengeBody body:
