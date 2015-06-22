@@ -32,7 +32,6 @@ install_requires = [
     'argparse',
     'ConfigArgParse',
     'configobj',
-    'jsonschema<2.5.1',  # https://github.com/Julian/jsonschema/issues/233
     'mock',
     'ndg-httpsclient',  # urllib3 InsecurePlatformWarning (#304)
     'parsedatetime',

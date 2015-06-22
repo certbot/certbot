@@ -16,7 +16,6 @@ import tempfile
 import Crypto.PublicKey.RSA
 import M2Crypto
 
-from acme import messages
 from acme.jose import util as jose_util
 
 from letsencrypt import errors
@@ -45,7 +44,9 @@ class Revoker(object):
 
     """
     def __init__(self, installer, config, no_confirm=False):
-        self.network = network.Network(config.server)
+        # XXX
+        self.network = network.Network(new_reg_uri=None, key=None, alg=None)
+
         self.installer = installer
         self.config = config
         self.no_confirm = no_confirm
@@ -238,6 +239,8 @@ class Revoker(object):
         :returns: TODO
 
         """
+        # XXX | pylint: disable=unused-variable
+
         # These will both have to change in the future away from M2Crypto
         # pylint: disable=protected-access
         certificate = jose_util.ComparableX509(cert._cert)
@@ -250,10 +253,7 @@ class Revoker(object):
             raise errors.LetsEncryptRevokerError(
                 "Corrupted backup key file: %s" % cert.backup_key_path)
 
-        # TODO: Catch error associated with already revoked and proceed.
-        return self.network.send_and_receive_expected(
-            messages.RevocationRequest.create(certificate=certificate, key=key),
-            messages.Revocation)
+        return self.network.revoke(certr=None)  # XXX
 
     def _remove_certs_keys(self, cert_list):  # pylint: disable=no-self-use
         """Remove certificate and key.

@@ -5,7 +5,7 @@ import unittest
 import mock
 
 from acme import challenges
-from acme import messages2
+from acme import messages
 
 from letsencrypt import achallenges
 from letsencrypt import errors
@@ -165,20 +165,20 @@ class NginxConfiguratorTest(util.NginxTest):
         # Note: As more challenges are offered this will have to be expanded
         auth_key = le_util.Key(self.rsa256_file, self.rsa256_pem)
         achall1 = achallenges.DVSNI(
-            challb=messages2.ChallengeBody(
+            challb=messages.ChallengeBody(
                 chall=challenges.DVSNI(
                     r="foo",
                     nonce="bar"),
                 uri="https://ca.org/chall0_uri",
-                status=messages2.Status("pending"),
+                status=messages.Status("pending"),
             ), domain="localhost", key=auth_key)
         achall2 = achallenges.DVSNI(
-            challb=messages2.ChallengeBody(
+            challb=messages.ChallengeBody(
                 chall=challenges.DVSNI(
                     r="abc",
                     nonce="def"),
                 uri="https://ca.org/chall1_uri",
-                status=messages2.Status("pending"),
+                status=messages.Status("pending"),
             ), domain="example.com", key=auth_key)
 
         dvsni_ret_val = [
