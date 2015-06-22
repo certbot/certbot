@@ -19,7 +19,7 @@ from acme import messages
 requests.packages.urllib3.contrib.pyopenssl.inject_into_urllib3()
 
 
-class Client(object):
+class Client(object):  # pylint: disable=too-many-instance-attributes
     """ACME client.
 
     .. todo::
