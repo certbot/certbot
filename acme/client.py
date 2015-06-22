@@ -542,7 +542,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
     def revoke(self, cert):
         """Revoke certificate.
 
-        :param .ComparableX509 body: `M2Crypto.X509.X509` wrapped in
+        :param .ComparableX509 cert: `M2Crypto.X509.X509` wrapped in
             `.ComparableX509`
 
         :raises .ClientError: If revocation is unsuccessful.
