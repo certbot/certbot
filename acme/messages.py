@@ -1,4 +1,6 @@
 """ACME protocol messages."""
+import urlparse
+
 from acme import challenges
 from acme import fields
 from acme import jose
@@ -327,28 +329,22 @@ class CertificateResource(ResourceWithURI):
 class Revocation(jose.JSONObjectWithFields):
     """Revocation message.
 
-    :ivar revoke: Either a `datetime.datetime` or `Revocation.NOW`.
-    :ivar tuple authorizations: Same as `CertificateRequest.authorizations`
+    :ivar .ComparableX509 certificate: `M2Crypto.X509.X509` wrapped in
+        `.ComparableX509`
 
     """
+    certificate = jose.Field(
+        'certificate', decoder=jose.decode_cert, encoder=jose.encode_cert)
 
-    NOW = 'now'
-    """A possible value for `revoke`, denoting that certificate should
-    be revoked now."""
+    # TODO: acme-spec#138, this allows only one ACME server instance per domain
+    PATH = '/acme/revoke-cert'
+    """Path to revocation URL, see `url`"""
 
-    revoke = jose.Field('revoke')
-    authorizations = CertificateRequest._fields['authorizations']
+    @classmethod
+    def url(cls, base):
+        """Get revocation URL.
 
-    @revoke.decoder
-    def revoke(value):  # pylint: disable=missing-docstring,no-self-argument
-        if value == Revocation.NOW:
-            return value
-        else:
-            return fields.RFC3339Field.default_decoder(value)
+        :param str base: New Registration Resource or server (root) URL.
 
-    @revoke.encoder
-    def revoke(value):  # pylint: disable=missing-docstring,no-self-argument
-        if value == Revocation.NOW:
-            return value
-        else:
-            return fields.RFC3339Field.default_encoder(value)
+        """
+        return urlparse.urljoin(base, cls.PATH)

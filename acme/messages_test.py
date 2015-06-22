@@ -1,5 +1,4 @@
 """Tests for acme.messages."""
-import datetime
 import os
 import pkg_resources
 import unittest
@@ -7,7 +6,6 @@ import unittest
 from Crypto.PublicKey import RSA
 import M2Crypto
 import mock
-import pytz
 
 from acme import challenges
 from acme import jose
@@ -23,6 +21,9 @@ CSR = jose.ComparableX509(M2Crypto.X509.load_request_string(
     M2Crypto.X509.FORMAT_DER))
 KEY = jose.util.HashableRSAKey(RSA.importKey(pkg_resources.resource_string(
     'acme.jose', os.path.join('testdata', 'rsa512_key.pem'))))
+CERT = jose.ComparableX509(M2Crypto.X509.load_cert(
+    format=M2Crypto.X509.FORMAT_DER, file=pkg_resources.resource_filename(
+        'acme.jose', os.path.join('testdata', 'cert.der'))))
 
 
 class ErrorTest(unittest.TestCase):
@@ -318,27 +319,20 @@ class CertificateResourceTest(unittest.TestCase):
 class RevocationTest(unittest.TestCase):
     """Tests for acme.messages.RevocationTest."""
 
+    def test_url(self):
+        from acme.messages import Revocation
+        url = 'https://letsencrypt-demo.org/acme/revoke-cert'
+        self.assertEqual(url, Revocation.url('https://letsencrypt-demo.org'))
+        self.assertEqual(
+            url, Revocation.url('https://letsencrypt-demo.org/acme/new-reg'))
+
     def setUp(self):
         from acme.messages import Revocation
-        self.rev_now = Revocation(authorizations=(), revoke=Revocation.NOW)
-        self.rev_date = Revocation(authorizations=(), revoke=datetime.datetime(
-            2015, 3, 27, tzinfo=pytz.utc))
-        self.jobj_now = {'authorizations': (), 'revoke': Revocation.NOW}
-        self.jobj_date = {'authorizations': (),
-                          'revoke': '2015-03-27T00:00:00Z'}
-
-    def test_revoke_decoder(self):
-        from acme.messages import Revocation
-        self.assertEqual(self.rev_now, Revocation.from_json(self.jobj_now))
-        self.assertEqual(self.rev_date, Revocation.from_json(self.jobj_date))
-
-    def test_revoke_encoder(self):
-        self.assertEqual(self.jobj_now, self.rev_now.to_partial_json())
-        self.assertEqual(self.jobj_date, self.rev_date.to_partial_json())
+        self.rev = Revocation(certificate=CERT)
 
     def test_from_json_hashable(self):
         from acme.messages import Revocation
-        hash(Revocation.from_json(self.rev_now.to_json()))
+        hash(Revocation.from_json(self.rev.to_json()))
 
 
 if __name__ == '__main__':
