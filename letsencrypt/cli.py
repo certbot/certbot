@@ -573,6 +573,18 @@ def _paths_parser(helpful):
         help=config_help("server"))
 
 
+def _setup_logging(args):
+    level = -args.verbose_count * 10
+    logging.getLogger().setLevel(level)
+    if args.text_mode:
+        handler = logging.StreamHandler()
+    else:
+        handler = log.DialogHandler()
+    handler.setFormatter(logging.Formatter(logging.BASIC_FORMAT))
+    logging.getLogger().addHandler(handler)
+    logging.debug("Root logging level set at %d", level)
+
+
 def main(cli_args=sys.argv[1:]):
     """Command line argument parsing and main script execution."""
     # note: arg parser internally handles --help (and exits afterwards)
@@ -587,22 +599,15 @@ def main(cli_args=sys.argv[1:]):
         displayer = display_util.NcursesDisplay()
     zope.component.provideUtility(displayer)
 
+    _setup_logging(args)
+    # do not log `args`, as it contains sensitive data (e.g. revoke --key)!
+    logging.debug("Arguments: %r", cli_args)
+    logging.debug("Discovered plugins: %r", plugins)
+
     # Reporter
     report = reporter.Reporter()
     zope.component.provideUtility(report)
     atexit.register(report.atexit_print_messages)
-
-    # Logging
-    level = -args.verbose_count * 10
-    logger = logging.getLogger()
-    logger.setLevel(level)
-    logging.debug("Logging level set at %d", level)
-    if not args.text_mode:
-        logger.addHandler(log.DialogHandler())
-
-    # do not log `args`, as it contains sensitive data (e.g. revoke --key)!
-    logging.debug("Arguments: %r", cli_args)
-    logging.debug("Discovered plugins: %r", plugins)
 
     if not os.geteuid() == 0:
         logging.warning(
