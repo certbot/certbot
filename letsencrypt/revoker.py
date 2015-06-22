@@ -253,7 +253,7 @@ class Revoker(object):
             raise errors.LetsEncryptRevokerError(
                 "Corrupted backup key file: %s" % cert.backup_key_path)
 
-        return self.network.revoke(certr=None)  # XXX
+        return self.network.revoke(cert=None)  # XXX
 
     def _remove_certs_keys(self, cert_list):  # pylint: disable=no-self-use
         """Remove certificate and key.

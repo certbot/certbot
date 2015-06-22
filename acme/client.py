@@ -539,21 +539,17 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         else:
             return None
 
-    def revoke(self, certr, when=messages.Revocation.NOW):
+    def revoke(self, cert):
         """Revoke certificate.
 
-        :param certr: Certificate Resource
-        :type certr: `.CertificateResource`
-
-        :param when: When should the revocation take place? Takes
-           the same values as `.messages.Revocation.revoke`.
+        :param .ComparableX509 cert: `M2Crypto.X509.X509` wrapped in
+            `.ComparableX509`
 
         :raises .ClientError: If revocation is unsuccessful.
 
         """
-        rev = messages.Revocation(revoke=when, authorizations=tuple(
-            authzr.uri for authzr in certr.authzrs))
-        response = self._post(certr.uri, rev)
+        response = self._post(messages.Revocation.url(self.new_reg_uri),
+                              messages.Revocation(certificate=cert))
         if response.status_code != httplib.OK:
             raise errors.ClientError(
                 'Successful revocation must return HTTP OK status')
