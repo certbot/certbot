@@ -28,6 +28,38 @@ from letsencrypt.display import ops as display_ops
 
 from letsencrypt.plugins import disco as plugins_disco
 
+USAGE = """
+  letsencrypt [SUBCOMMAND] [options] [domains]
+
+The Let's Encrypt agent can obtain and install HTTPS/TLS/SSL certificates.  By
+default, it will attempt to use a webserver both for obtaining and installing
+the cert.  Major SUBCOMMANDS are:
+
+  (default)         Obtain & install a cert in your current webserver
+  auth              Authenticate & obtain cert, but do not install it
+  install           Install a previously obtained cert in a server
+  revoke            Revoke a previously obtained certificate
+  rollback          Rollback server configuration changes made during install
+  config-changes    Show changes made to server config during installation
+
+Choice of server for authentication/installation:
+
+  --apache          Use the Apache plugin for authentication & installation
+  --nginx           Use the Nginx plugin for authentication & installation
+  --standalone      Run a standalone HTTPS server (for authentication only)
+  OR:
+  --authenticator standalone --installer nginx
+
+More detailed help:
+
+  -h, --help [topic]    print this message, or detailed help on a topic; 
+                        the available topics are:
+
+   all, apache, automation, nginx, paths, security, testing, or any of the
+   sucommands
+"""
+
+
 
 def _account_init(args, config):
     le_util.make_or_verify_dir(
