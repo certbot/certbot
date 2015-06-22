@@ -3,6 +3,7 @@
 
 class Error(Exception):
     """Generic Let's Encrypt client error."""
+LetsEncryptClientError = Error  # TODO: blocked by #485
 
 
 class ReverterError(Error):
