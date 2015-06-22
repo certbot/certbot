@@ -466,6 +466,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             updated_authzr, response = self.poll(updated[authzr])
             updated[authzr] = updated_authzr
 
+            # pylint: disable=no-member
             if updated_authzr.body.status != messages.STATUS_VALID:
                 # push back to the priority queue, with updated retry_after
                 heapq.heappush(waiting, (self.retry_after(

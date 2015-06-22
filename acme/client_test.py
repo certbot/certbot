@@ -5,7 +5,6 @@ import os
 import pkg_resources
 import unittest
 
-import M2Crypto
 import mock
 import requests
 
@@ -14,16 +13,9 @@ from acme import errors
 from acme import jose
 from acme import jws as acme_jws
 from acme import messages
+from acme import messages_test
 
 
-CERT = jose.ComparableX509(M2Crypto.X509.load_cert_string(
-    pkg_resources.resource_string(
-        'acme.jose', os.path.join('testdata', 'cert.der')),
-    M2Crypto.X509.FORMAT_DER))
-CSR = jose.ComparableX509(M2Crypto.X509.load_request_string(
-    pkg_resources.resource_string(
-        'acme.jose', os.path.join('testdata', 'csr.der')),
-    M2Crypto.X509.FORMAT_DER))
 KEY = jose.JWKRSA.load(pkg_resources.resource_string(
     'acme.jose', os.path.join('testdata', 'rsa512_key.pem')))
 KEY2 = jose.JWKRSA.load(pkg_resources.resource_string(
@@ -82,7 +74,7 @@ class ClientTest(unittest.TestCase):
 
         # Request issuance
         self.certr = messages.CertificateResource(
-            body=CERT, authzrs=(self.authzr,),
+            body=messages_test.CERT, authzrs=(self.authzr,),
             uri='https://www.letsencrypt-demo.org/acme/cert/1',
             cert_chain_uri='https://www.letsencrypt-demo.org/ca')
 
@@ -380,27 +372,27 @@ class ClientTest(unittest.TestCase):
         self.assertRaises(errors.UnexpectedUpdate, self.net.poll, self.authzr)
 
     def test_request_issuance(self):
-        self.response.content = CERT.as_der()
+        self.response.content = messages_test.CERT.as_der()
         self.response.headers['Location'] = self.certr.uri
         self.response.links['up'] = {'url': self.certr.cert_chain_uri}
         self._mock_post_get()
-        self.assertEqual(
-            self.certr, self.net.request_issuance(CSR, (self.authzr,)))
+        self.assertEqual(self.certr, self.net.request_issuance(
+            messages_test.CSR, (self.authzr,)))
         # TODO: check POST args
 
     def test_request_issuance_missing_up(self):
-        self.response.content = CERT.as_der()
+        self.response.content = messages_test.CERT.as_der()
         self.response.headers['Location'] = self.certr.uri
         self._mock_post_get()
         self.assertEqual(
             self.certr.update(cert_chain_uri=None),
-            self.net.request_issuance(CSR, (self.authzr,)))
+            self.net.request_issuance(messages_test.CSR, (self.authzr,)))
 
     def test_request_issuance_missing_location(self):
         self._mock_post_get()
         self.assertRaises(
             errors.ClientError, self.net.request_issuance,
-            CSR, (self.authzr,))
+            messages_test.CSR, (self.authzr,))
 
     @mock.patch('acme.client.datetime')
     @mock.patch('acme.client.time')
@@ -484,10 +476,10 @@ class ClientTest(unittest.TestCase):
 
     def test_check_cert(self):
         self.response.headers['Location'] = self.certr.uri
-        self.response.content = CERT.as_der()
+        self.response.content = messages_test.CERT.as_der()
         self._mock_post_get()
-        self.assertEqual(
-            self.certr.update(body=CERT), self.net.check_cert(self.certr))
+        self.assertEqual(self.certr.update(body=messages_test.CERT),
+                         self.net.check_cert(self.certr))
 
         # TODO: split here and separate test
         self.response.headers['Location'] = 'foo'
@@ -495,7 +487,7 @@ class ClientTest(unittest.TestCase):
             errors.UnexpectedUpdate, self.net.check_cert, self.certr)
 
     def test_check_cert_missing_location(self):
-        self.response.content = CERT.as_der()
+        self.response.content = messages_test.CERT.as_der()
         self._mock_post_get()
         self.assertRaises(errors.ClientError, self.net.check_cert, self.certr)
 
