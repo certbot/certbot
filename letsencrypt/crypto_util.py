@@ -40,7 +40,7 @@ def init_save_key(key_size, key_dir, keyname="key-letsencrypt.pem"):
     try:
         key_pem = make_key(key_size)
     except ValueError as err:
-        logging.fatal(str(err))
+        logging.exception(err)
         raise err
 
     # Save file

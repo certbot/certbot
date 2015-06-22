@@ -333,28 +333,22 @@ def challb_to_achall(challb, key, domain):
 
     """
     chall = challb.chall
+    logging.info("%s challenge for %s", chall.typ, domain)
 
     if isinstance(chall, challenges.DVSNI):
-        logging.info("  DVSNI challenge for %s.", domain)
         return achallenges.DVSNI(
             challb=challb, domain=domain, key=key)
     elif isinstance(chall, challenges.SimpleHTTP):
-        logging.info("  SimpleHTTP challenge for %s.", domain)
         return achallenges.SimpleHTTP(
             challb=challb, domain=domain, key=key)
     elif isinstance(chall, challenges.DNS):
-        logging.info("  DNS challenge for %s.", domain)
         return achallenges.DNS(challb=challb, domain=domain)
-
     elif isinstance(chall, challenges.RecoveryToken):
-        logging.info("  Recovery Token Challenge for %s.", domain)
         return achallenges.RecoveryToken(challb=challb, domain=domain)
     elif isinstance(chall, challenges.RecoveryContact):
-        logging.info("  Recovery Contact Challenge for %s.", domain)
         return achallenges.RecoveryContact(
             challb=challb, domain=domain)
     elif isinstance(chall, challenges.ProofOfPossession):
-        logging.info("  Proof-of-Possession Challenge for %s", domain)
         return achallenges.ProofOfPossession(
             challb=challb, domain=domain)
 

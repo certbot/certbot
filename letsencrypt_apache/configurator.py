@@ -181,8 +181,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if not path["cert_path"] or not path["cert_key"]:
             # Throw some can't find all of the directives error"
             logging.warn(
-                "Cannot find a cert or key directive in %s", vhost.path)
-            logging.warn("VirtualHost was not modified")
+                "Cannot find a cert or key directive in %s. "
+                "VirtualHost was not modified", vhost.path)
             # Presumably break here so that the virtualhost is not modified
             return False
 
@@ -408,8 +408,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Note: This could be made to also look for ip:443 combo
         # TODO: Need to search only open directives and IfMod mod_ssl.c
         if len(self.parser.find_dir(parser.case_i("Listen"), "443")) == 0:
-            logging.debug("No Listen 443 directive found")
-            logging.debug("Setting the Apache Server to Listen on port 443")
+            logging.debug("No Listen 443 directive found. Setting the "
+                          "Apache Server to Listen on port 443")
             path = self.parser.add_dir_to_ifmodssl(
                 parser.get_aug_path(self.parser.loc["listen"]), "Listen", "443")
             self.save_notes += "Added Listen 443 directive to %s\n" % path
@@ -922,9 +922,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         if proc.returncode != 0:
             # Enter recovery routine...
-            logging.error("Configtest failed")
-            logging.error(stdout)
-            logging.error(stderr)
+            logging.error("Configtest failed\n%s\n%s", stdout, stderr)
             return False
 
         return True
@@ -1054,9 +1052,8 @@ def enable_mod(mod_name, apache_init_script, apache_enmod):
                               stdout=open("/dev/null", "w"),
                               stderr=open("/dev/null", "w"))
         apache_restart(apache_init_script)
-    except (OSError, subprocess.CalledProcessError) as err:
-        logging.error("Error enabling mod_%s", mod_name)
-        logging.error("Exception: %s", err)
+    except (OSError, subprocess.CalledProcessError):
+        logging.exception("Error enabling mod_%s", mod_name)
         sys.exit(1)
 
 
@@ -1119,9 +1116,7 @@ def apache_restart(apache_init_script):
 
         if proc.returncode != 0:
             # Enter recovery routine...
-            logging.error("Apache Restart Failed!")
-            logging.error(stdout)
-            logging.error(stderr)
+            logging.error("Apache Restart Failed!\n%s\n%s", stdout, stderr)
             return False
 
     except (OSError, ValueError):

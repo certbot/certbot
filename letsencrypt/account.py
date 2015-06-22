@@ -227,5 +227,5 @@ class Account(object):
         if cls.EMAIL_REGEX.match(email):
             return not email.startswith(".") and ".." not in email
         else:
-            logging.warn("Invalid email address.")
+            logging.warn("Invalid email address: %s.", email)
             return False

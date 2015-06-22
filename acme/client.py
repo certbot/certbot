@@ -77,6 +77,9 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         :raises .ClientError: In case of other networking errors.
 
         """
+        logging.debug('Received response %s (headers: %s): %r',
+                      response, response.headers, response.content)
+
         response_ct = response.headers.get('Content-Type')
         try:
             # TODO: response.json() is called twice, once here, and
@@ -92,8 +95,6 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
                         'Ignoring wrong Content-Type (%r) for JSON Error',
                         response_ct)
                 try:
-                    logging.error("Error: %s", jobj)
-                    logging.error("Response from server: %s", response.content)
                     raise messages.Error.from_json(jobj)
                 except jose.DeserializationError as error:
                     # Couldn't deserialize JSON object
@@ -169,7 +170,6 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             response = requests.post(uri, data=data, **kwargs)
         except requests.exceptions.RequestException as error:
             raise errors.ClientError(error)
-        logging.debug('Received response %s: %r', response, response.text)
 
         self._add_nonce(response)
         self._check_response(response, content_type=content_type)
