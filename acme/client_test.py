@@ -1,96 +1,87 @@
-"""Tests for letsencrypt.network2."""
+"""Tests for acme.client."""
 import datetime
 import httplib
 import os
 import pkg_resources
-import shutil
-import tempfile
 import unittest
 
-import M2Crypto
 import mock
 import requests
 
 from acme import challenges
+from acme import errors
 from acme import jose
-from acme import messages2
+from acme import jws as acme_jws
+from acme import messages
+from acme import messages_test
 
-from letsencrypt import account
-from letsencrypt import errors
 
-
-CERT = jose.ComparableX509(M2Crypto.X509.load_cert_string(
-    pkg_resources.resource_string(
-        __name__, os.path.join('testdata', 'cert.pem'))))
-CERT2 = jose.ComparableX509(M2Crypto.X509.load_cert_string(
-    pkg_resources.resource_string(
-        __name__, os.path.join('testdata', 'cert-san.pem'))))
-CSR = jose.ComparableX509(M2Crypto.X509.load_request_string(
-    pkg_resources.resource_string(
-        __name__, os.path.join('testdata', 'csr.pem'))))
 KEY = jose.JWKRSA.load(pkg_resources.resource_string(
     'acme.jose', os.path.join('testdata', 'rsa512_key.pem')))
 KEY2 = jose.JWKRSA.load(pkg_resources.resource_string(
     'acme.jose', os.path.join('testdata', 'rsa256_key.pem')))
 
 
-class NetworkTest(unittest.TestCase):
-    """Tests for letsencrypt.network2.Network."""
+class ClientTest(unittest.TestCase):
+    """Tests for acme.client.Client."""
 
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
 
     def setUp(self):
-        from letsencrypt.network2 import Network
         self.verify_ssl = mock.MagicMock()
-        self.net = Network(
+        self.wrap_in_jws = mock.MagicMock(return_value=mock.sentinel.wrapped)
+
+        from acme.client import Client
+        self.net = Client(
             new_reg_uri='https://www.letsencrypt-demo.org/acme/new-reg',
             key=KEY, alg=jose.RS256, verify_ssl=self.verify_ssl)
+        self.nonce = jose.b64encode('Nonce')
+        self.net._nonces.add(self.nonce)  # pylint: disable=protected-access
+
         self.response = mock.MagicMock(ok=True, status_code=httplib.OK)
         self.response.headers = {}
         self.response.links = {}
 
-        self.identifier = messages2.Identifier(
-            typ=messages2.IDENTIFIER_FQDN, value='example.com')
+        self.post = mock.MagicMock(return_value=self.response)
+        self.get = mock.MagicMock(return_value=self.response)
 
-        self.config = mock.Mock(accounts_dir=tempfile.mkdtemp())
+        self.identifier = messages.Identifier(
+            typ=messages.IDENTIFIER_FQDN, value='example.com')
 
         # Registration
         self.contact = ('mailto:cert-admin@example.com', 'tel:+12025551212')
-        reg = messages2.Registration(
+        reg = messages.Registration(
             contact=self.contact, key=KEY.public(), recovery_token='t')
-        self.regr = messages2.RegistrationResource(
+        self.regr = messages.RegistrationResource(
             body=reg, uri='https://www.letsencrypt-demo.org/acme/reg/1',
             new_authzr_uri='https://www.letsencrypt-demo.org/acme/new-reg',
             terms_of_service='https://www.letsencrypt-demo.org/tos')
 
         # Authorization
         authzr_uri = 'https://www.letsencrypt-demo.org/acme/authz/1'
-        challb = messages2.ChallengeBody(
-            uri=(authzr_uri + '/1'), status=messages2.STATUS_VALID,
+        challb = messages.ChallengeBody(
+            uri=(authzr_uri + '/1'), status=messages.STATUS_VALID,
             chall=challenges.DNS(token='foo'))
-        self.challr = messages2.ChallengeResource(
+        self.challr = messages.ChallengeResource(
             body=challb, authzr_uri=authzr_uri)
-        self.authz = messages2.Authorization(
-            identifier=messages2.Identifier(
-                typ=messages2.IDENTIFIER_FQDN, value='example.com'),
+        self.authz = messages.Authorization(
+            identifier=messages.Identifier(
+                typ=messages.IDENTIFIER_FQDN, value='example.com'),
             challenges=(challb,), combinations=None)
-        self.authzr = messages2.AuthorizationResource(
+        self.authzr = messages.AuthorizationResource(
             body=self.authz, uri=authzr_uri,
             new_cert_uri='https://www.letsencrypt-demo.org/acme/new-cert')
 
         # Request issuance
-        self.certr = messages2.CertificateResource(
-            body=CERT, authzrs=(self.authzr,),
+        self.certr = messages.CertificateResource(
+            body=messages_test.CERT, authzrs=(self.authzr,),
             uri='https://www.letsencrypt-demo.org/acme/cert/1',
             cert_chain_uri='https://www.letsencrypt-demo.org/ca')
 
-    def tearDown(self):
-        shutil.rmtree(self.config.accounts_dir)
-
     def _mock_post_get(self):
         # pylint: disable=protected-access
-        self.net._post = mock.MagicMock(return_value=self.response)
-        self.net._get = mock.MagicMock(return_value=self.response)
+        self.net._post = self.post
+        self.net._get = self.get
 
     def test_init(self):
         self.assertTrue(self.net.verify_ssl is self.verify_ssl)
@@ -106,30 +97,34 @@ class NetworkTest(unittest.TestCase):
             def from_json(cls, value):
                 pass  # pragma: no cover
         # pylint: disable=protected-access
-        jws = self.net._wrap_in_jws(MockJSONDeSerializable('foo'))
-        self.assertEqual(jose.JWS.json_loads(jws).payload, '"foo"')
+        jws_dump = self.net._wrap_in_jws(
+            MockJSONDeSerializable('foo'), nonce='Tg')
+        jws = acme_jws.JWS.json_loads(jws_dump)
+        self.assertEqual(jws.payload, '"foo"')
+        self.assertEqual(jws.signature.combined.nonce, 'Tg')
+        # TODO: check that nonce is in protected header
 
     def test_check_response_not_ok_jobj_no_error(self):
         self.response.ok = False
         self.response.json.return_value = {}
         # pylint: disable=protected-access
         self.assertRaises(
-            errors.NetworkError, self.net._check_response, self.response)
+            errors.ClientError, self.net._check_response, self.response)
 
     def test_check_response_not_ok_jobj_error(self):
         self.response.ok = False
-        self.response.json.return_value = messages2.Error(
+        self.response.json.return_value = messages.Error(
             detail='foo', typ='serverInternal', title='some title').to_json()
         # pylint: disable=protected-access
         self.assertRaises(
-            messages2.Error, self.net._check_response, self.response)
+            messages.Error, self.net._check_response, self.response)
 
     def test_check_response_not_ok_no_jobj(self):
         self.response.ok = False
         self.response.json.side_effect = ValueError
         # pylint: disable=protected-access
         self.assertRaises(
-            errors.NetworkError, self.net._check_response, self.response)
+            errors.ClientError, self.net._check_response, self.response)
 
     def test_check_response_ok_no_jobj_ct_required(self):
         self.response.json.side_effect = ValueError
@@ -137,7 +132,7 @@ class NetworkTest(unittest.TestCase):
             self.response.headers['Content-Type'] = response_ct
             # pylint: disable=protected-access
             self.assertRaises(
-                errors.NetworkError, self.net._check_response, self.response,
+                errors.ClientError, self.net._check_response, self.response,
                 content_type=self.net.JSON_CONTENT_TYPE)
 
     def test_check_response_ok_no_jobj_no_ct(self):
@@ -154,14 +149,14 @@ class NetworkTest(unittest.TestCase):
             # pylint: disable=protected-access
             self.net._check_response(self.response)
 
-    @mock.patch('letsencrypt.network2.requests')
+    @mock.patch('acme.client.requests')
     def test_get_requests_error_passthrough(self, requests_mock):
         requests_mock.exceptions = requests.exceptions
         requests_mock.get.side_effect = requests.exceptions.RequestException
         # pylint: disable=protected-access
-        self.assertRaises(errors.NetworkError, self.net._get, 'uri')
+        self.assertRaises(errors.ClientError, self.net._get, 'uri')
 
-    @mock.patch('letsencrypt.network2.requests')
+    @mock.patch('acme.client.requests')
     def test_get(self, requests_mock):
         # pylint: disable=protected-access
         self.net._check_response = mock.MagicMock()
@@ -169,33 +164,73 @@ class NetworkTest(unittest.TestCase):
         self.net._check_response.assert_called_once_with(
             requests_mock.get('uri'), content_type='ct')
 
-    @mock.patch('letsencrypt.network2.requests')
+    def _mock_wrap_in_jws(self):
+        # pylint: disable=protected-access
+        self.net._wrap_in_jws = self.wrap_in_jws
+
+    @mock.patch('acme.client.requests')
     def test_post_requests_error_passthrough(self, requests_mock):
         requests_mock.exceptions = requests.exceptions
         requests_mock.post.side_effect = requests.exceptions.RequestException
         # pylint: disable=protected-access
-        self.assertRaises(errors.NetworkError, self.net._post, 'uri', 'data')
+        self._mock_wrap_in_jws()
+        self.assertRaises(
+            errors.ClientError, self.net._post, 'uri', mock.sentinel.obj)
 
-    @mock.patch('letsencrypt.network2.requests')
+    @mock.patch('acme.client.requests')
     def test_post(self, requests_mock):
         # pylint: disable=protected-access
         self.net._check_response = mock.MagicMock()
-        self.net._post('uri', 'data', content_type='ct')
+        self._mock_wrap_in_jws()
+        requests_mock.post().headers = {
+            self.net.REPLAY_NONCE_HEADER: self.nonce}
+        self.net._post('uri', mock.sentinel.obj, content_type='ct')
         self.net._check_response.assert_called_once_with(
-            requests_mock.post('uri', 'data'), content_type='ct')
+            requests_mock.post('uri', mock.sentinel.wrapped), content_type='ct')
 
-    @mock.patch('letsencrypt.client.network2.requests')
+    @mock.patch('acme.client.requests')
+    def test_post_replay_nonce_handling(self, requests_mock):
+        # pylint: disable=protected-access
+        self.net._check_response = mock.MagicMock()
+        self._mock_wrap_in_jws()
+
+        self.net._nonces.clear()
+        self.assertRaises(
+            errors.ClientError, self.net._post, 'uri', mock.sentinel.obj)
+
+        nonce2 = jose.b64encode('Nonce2')
+        requests_mock.head('uri').headers = {
+            self.net.REPLAY_NONCE_HEADER: nonce2}
+        requests_mock.post('uri').headers = {
+            self.net.REPLAY_NONCE_HEADER: self.nonce}
+
+        self.net._post('uri', mock.sentinel.obj)
+
+        requests_mock.head.assert_called_with('uri')
+        self.wrap_in_jws.assert_called_once_with(mock.sentinel.obj, nonce2)
+        self.assertEqual(self.net._nonces, set([self.nonce]))
+
+        # wrong nonce
+        requests_mock.post('uri').headers = {self.net.REPLAY_NONCE_HEADER: 'F'}
+        self.assertRaises(
+            errors.ClientError, self.net._post, 'uri', mock.sentinel.obj)
+
+    @mock.patch('acme.client.requests')
     def test_get_post_verify_ssl(self, requests_mock):
         # pylint: disable=protected-access
+        self._mock_wrap_in_jws()
         self.net._check_response = mock.MagicMock()
 
         for verify_ssl in [True, False]:
             self.net.verify_ssl = verify_ssl
             self.net._get('uri')
-            self.net._post('uri', 'data')
+            self.net._nonces.add('N')
+            requests_mock.post().headers = {
+                self.net.REPLAY_NONCE_HEADER: self.nonce}
+            self.net._post('uri', mock.sentinel.obj)
             requests_mock.get.assert_called_once_with('uri', verify=verify_ssl)
-            requests_mock.post.assert_called_once_with(
-                'uri', data='data', verify=verify_ssl)
+            requests_mock.post.assert_called_with(
+                'uri', data=mock.sentinel.wrapped, verify=verify_ssl)
             requests_mock.reset_mock()
 
     def test_register(self):
@@ -221,30 +256,7 @@ class NetworkTest(unittest.TestCase):
         self.response.status_code = httplib.CREATED
         self._mock_post_get()
         self.assertRaises(
-            errors.NetworkError, self.net.register, self.regr.body)
-
-    def test_register_from_account(self):
-        self.net.register = mock.Mock()
-        acc = account.Account(
-            self.config, 'key', email='cert-admin@example.com',
-            phone='+12025551212')
-
-        self.net.register_from_account(acc)
-
-        self.net.register.assert_called_with(contact=self.contact)
-
-    def test_register_from_account_partial_info(self):
-        self.net.register = mock.Mock()
-        acc = account.Account(
-            self.config, 'key', email='cert-admin@example.com')
-        acc2 = account.Account(self.config, 'key')
-
-        self.net.register_from_account(acc)
-        self.net.register.assert_called_with(
-            contact=('mailto:cert-admin@example.com',))
-
-        self.net.register_from_account(acc2)
-        self.net.register.assert_called_with(contact=())
+            errors.ClientError, self.net.register, self.regr.body)
 
     def test_update_registration(self):
         self.response.headers['Location'] = self.regr.uri
@@ -286,7 +298,7 @@ class NetworkTest(unittest.TestCase):
         self.response.status_code = httplib.CREATED
         self._mock_post_get()
         self.assertRaises(
-            errors.NetworkError, self.net.request_challenges,
+            errors.ClientError, self.net.request_challenges,
             self.identifier, self.regr)
 
     def test_request_domain_challenges(self):
@@ -310,7 +322,7 @@ class NetworkTest(unittest.TestCase):
 
     def test_answer_challenge_missing_next(self):
         self._mock_post_get()
-        self.assertRaises(errors.NetworkError, self.net.answer_challenge,
+        self.assertRaises(errors.ClientError, self.net.answer_challenge,
                           self.challr.body, challenges.DNSResponse())
 
     def test_retry_after_date(self):
@@ -319,7 +331,7 @@ class NetworkTest(unittest.TestCase):
             datetime.datetime(1999, 12, 31, 23, 59, 59),
             self.net.retry_after(response=self.response, default=10))
 
-    @mock.patch('letsencrypt.network2.datetime')
+    @mock.patch('acme.client.datetime')
     def test_retry_after_invalid(self, dt_mock):
         dt_mock.datetime.now.return_value = datetime.datetime(2015, 3, 27)
         dt_mock.timedelta = datetime.timedelta
@@ -329,7 +341,7 @@ class NetworkTest(unittest.TestCase):
             datetime.datetime(2015, 3, 27, 0, 0, 10),
             self.net.retry_after(response=self.response, default=10))
 
-    @mock.patch('letsencrypt.network2.datetime')
+    @mock.patch('acme.client.datetime')
     def test_retry_after_seconds(self, dt_mock):
         dt_mock.datetime.now.return_value = datetime.datetime(2015, 3, 27)
         dt_mock.timedelta = datetime.timedelta
@@ -339,7 +351,7 @@ class NetworkTest(unittest.TestCase):
             datetime.datetime(2015, 3, 27, 0, 0, 50),
             self.net.retry_after(response=self.response, default=10))
 
-    @mock.patch('letsencrypt.network2.datetime')
+    @mock.patch('acme.client.datetime')
     def test_retry_after_missing(self, dt_mock):
         dt_mock.datetime.now.return_value = datetime.datetime(2015, 3, 27)
         dt_mock.timedelta = datetime.timedelta
@@ -360,30 +372,30 @@ class NetworkTest(unittest.TestCase):
         self.assertRaises(errors.UnexpectedUpdate, self.net.poll, self.authzr)
 
     def test_request_issuance(self):
-        self.response.content = CERT.as_der()
+        self.response.content = messages_test.CERT.as_der()
         self.response.headers['Location'] = self.certr.uri
         self.response.links['up'] = {'url': self.certr.cert_chain_uri}
         self._mock_post_get()
-        self.assertEqual(
-            self.certr, self.net.request_issuance(CSR, (self.authzr,)))
+        self.assertEqual(self.certr, self.net.request_issuance(
+            messages_test.CSR, (self.authzr,)))
         # TODO: check POST args
 
     def test_request_issuance_missing_up(self):
-        self.response.content = CERT.as_der()
+        self.response.content = messages_test.CERT.as_der()
         self.response.headers['Location'] = self.certr.uri
         self._mock_post_get()
         self.assertEqual(
             self.certr.update(cert_chain_uri=None),
-            self.net.request_issuance(CSR, (self.authzr,)))
+            self.net.request_issuance(messages_test.CSR, (self.authzr,)))
 
     def test_request_issuance_missing_location(self):
         self._mock_post_get()
         self.assertRaises(
-            errors.NetworkError, self.net.request_issuance,
-            CSR, (self.authzr,))
+            errors.ClientError, self.net.request_issuance,
+            messages_test.CSR, (self.authzr,))
 
-    @mock.patch('letsencrypt.network2.datetime')
-    @mock.patch('letsencrypt.network2.time')
+    @mock.patch('acme.client.datetime')
+    @mock.patch('acme.client.time')
     def test_poll_and_request_issuance(self, time_mock, dt_mock):
         # clock.dt | pylint: disable=no-member
         clock = mock.MagicMock(dt=datetime.datetime(2015, 3, 27))
@@ -409,7 +421,7 @@ class NetworkTest(unittest.TestCase):
 
             if not authzr.retries:  # no more retries
                 done = mock.MagicMock(uri=authzr.uri, times=authzr.times)
-                done.body.status = messages2.STATUS_VALID
+                done.body.status = messages.STATUS_VALID
                 return done, []
 
             # response (2nd result tuple element) is reduced to only
@@ -464,10 +476,10 @@ class NetworkTest(unittest.TestCase):
 
     def test_check_cert(self):
         self.response.headers['Location'] = self.certr.uri
-        self.response.content = CERT2.as_der()
+        self.response.content = messages_test.CERT.as_der()
         self._mock_post_get()
-        self.assertEqual(
-            self.certr.update(body=CERT2), self.net.check_cert(self.certr))
+        self.assertEqual(self.certr.update(body=messages_test.CERT),
+                         self.net.check_cert(self.certr))
 
         # TODO: split here and separate test
         self.response.headers['Location'] = 'foo'
@@ -475,9 +487,9 @@ class NetworkTest(unittest.TestCase):
             errors.UnexpectedUpdate, self.net.check_cert, self.certr)
 
     def test_check_cert_missing_location(self):
-        self.response.content = CERT2.as_der()
+        self.response.content = messages_test.CERT.as_der()
         self._mock_post_get()
-        self.assertRaises(errors.NetworkError, self.net.check_cert, self.certr)
+        self.assertRaises(errors.ClientError, self.net.check_cert, self.certr)
 
     def test_refresh(self):
         self.net.check_cert = mock.MagicMock()
@@ -497,14 +509,14 @@ class NetworkTest(unittest.TestCase):
 
     def test_revoke(self):
         self._mock_post_get()
-        self.net.revoke(self.certr, when=messages2.Revocation.NOW)
-        # pylint: disable=protected-access
-        self.net._post.assert_called_once_with(self.certr.uri, mock.ANY)
+        self.net.revoke(self.certr.body)
+        self.post.assert_called_once_with(messages.Revocation.url(
+            self.net.new_reg_uri), mock.ANY)
 
     def test_revoke_bad_status_raises_error(self):
         self.response.status_code = httplib.METHOD_NOT_ALLOWED
         self._mock_post_get()
-        self.assertRaises(errors.NetworkError, self.net.revoke, self.certr)
+        self.assertRaises(errors.ClientError, self.net.revoke, self.certr)
 
 
 if __name__ == '__main__':

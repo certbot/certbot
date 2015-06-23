@@ -8,7 +8,7 @@ import Crypto.PublicKey.RSA
 
 from acme import challenges
 from acme import jose
-from acme import messages2
+from acme import messages
 
 
 KEY = jose.HashableRSAKey(Crypto.PublicKey.RSA.importKey(
@@ -16,7 +16,7 @@ KEY = jose.HashableRSAKey(Crypto.PublicKey.RSA.importKey(
         "acme.jose", os.path.join("testdata", "rsa512_key.pem"))))
 
 # Challenges
-SIMPLE_HTTPS = challenges.SimpleHTTPS(
+SIMPLE_HTTP = challenges.SimpleHTTP(
     token="evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ+PCt92wr+oA")
 DVSNI = challenges.DVSNI(
     r="O*\xb4-\xad\xec\x95>\xed\xa9\r0\x94\xe8\x97\x9c&6\xbf'\xb3"
@@ -47,7 +47,7 @@ POP = challenges.ProofOfPossession(
     )
 )
 
-CHALLENGES = [SIMPLE_HTTPS, DVSNI, DNS, RECOVERY_CONTACT, RECOVERY_TOKEN, POP]
+CHALLENGES = [SIMPLE_HTTP, DVSNI, DNS, RECOVERY_CONTACT, RECOVERY_TOKEN, POP]
 DV_CHALLENGES = [chall for chall in CHALLENGES
                  if isinstance(chall, challenges.DVChallenge)]
 CONT_CHALLENGES = [chall for chall in CHALLENGES
@@ -78,21 +78,21 @@ def chall_to_challb(chall, status):  # pylint: disable=redefined-outer-name
         "status": status,
     }
 
-    if status == messages2.STATUS_VALID:
+    if status == messages.STATUS_VALID:
         kwargs.update({"validated": datetime.datetime.now()})
 
-    return messages2.ChallengeBody(**kwargs)  # pylint: disable=star-args
+    return messages.ChallengeBody(**kwargs)  # pylint: disable=star-args
 
 
 # Pending ChallengeBody objects
-DVSNI_P = chall_to_challb(DVSNI, messages2.STATUS_PENDING)
-SIMPLE_HTTPS_P = chall_to_challb(SIMPLE_HTTPS, messages2.STATUS_PENDING)
-DNS_P = chall_to_challb(DNS, messages2.STATUS_PENDING)
-RECOVERY_CONTACT_P = chall_to_challb(RECOVERY_CONTACT, messages2.STATUS_PENDING)
-RECOVERY_TOKEN_P = chall_to_challb(RECOVERY_TOKEN, messages2.STATUS_PENDING)
-POP_P = chall_to_challb(POP, messages2.STATUS_PENDING)
+DVSNI_P = chall_to_challb(DVSNI, messages.STATUS_PENDING)
+SIMPLE_HTTP_P = chall_to_challb(SIMPLE_HTTP, messages.STATUS_PENDING)
+DNS_P = chall_to_challb(DNS, messages.STATUS_PENDING)
+RECOVERY_CONTACT_P = chall_to_challb(RECOVERY_CONTACT, messages.STATUS_PENDING)
+RECOVERY_TOKEN_P = chall_to_challb(RECOVERY_TOKEN, messages.STATUS_PENDING)
+POP_P = chall_to_challb(POP, messages.STATUS_PENDING)
 
-CHALLENGES_P = [SIMPLE_HTTPS_P, DVSNI_P, DNS_P,
+CHALLENGES_P = [SIMPLE_HTTP_P, DVSNI_P, DNS_P,
                 RECOVERY_CONTACT_P, RECOVERY_TOKEN_P, POP_P]
 DV_CHALLENGES_P = [challb for challb in CHALLENGES_P
                    if isinstance(challb.chall, challenges.DVChallenge)]
@@ -106,7 +106,7 @@ def gen_authzr(authz_status, domain, challs, statuses, combos=True):
     """Generate an authorization resource.
 
     :param authz_status: Status object
-    :type authz_status: :class:`acme.messages2.Status`
+    :type authz_status: :class:`acme.messages.Status`
     :param list challs: Challenge objects
     :param list statuses: status of each challenge object
     :param bool combos: Whether or not to add combinations
@@ -118,13 +118,13 @@ def gen_authzr(authz_status, domain, challs, statuses, combos=True):
         for chall, status in itertools.izip(challs, statuses)
     )
     authz_kwargs = {
-        "identifier": messages2.Identifier(
-            typ=messages2.IDENTIFIER_FQDN, value=domain),
+        "identifier": messages.Identifier(
+            typ=messages.IDENTIFIER_FQDN, value=domain),
         "challenges": challbs,
     }
     if combos:
         authz_kwargs.update({"combinations": gen_combos(challbs)})
-    if authz_status == messages2.STATUS_VALID:
+    if authz_status == messages.STATUS_VALID:
         authz_kwargs.update({
             "status": authz_status,
             "expires": datetime.datetime.now() + datetime.timedelta(days=31),
@@ -135,8 +135,8 @@ def gen_authzr(authz_status, domain, challs, statuses, combos=True):
         })
 
     # pylint: disable=star-args
-    return messages2.AuthorizationResource(
+    return messages.AuthorizationResource(
         uri="https://trusted.ca/new-authz-resource",
         new_cert_uri="https://trusted.ca/new-cert",
-        body=messages2.Authorization(**authz_kwargs)
+        body=messages.Authorization(**authz_kwargs)
     )

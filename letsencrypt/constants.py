@@ -17,6 +17,14 @@ CLI_DEFAULTS = dict(
     work_dir="/var/lib/letsencrypt",
     no_verify_ssl=False,
     dvsni_port=challenges.DVSNI.PORT,
+
+    # TODO: blocked by #485, values ignored
+    backup_dir="not used",
+    key_dir="not used",
+    certs_dir="not used",
+    cert_path="not used",
+    chain_path="not used",
+    renewer_config_file="not used",
 )
 """Defaults for CLI flags and `.IConfig` attributes."""
 
@@ -30,7 +38,7 @@ RENEWER_DEFAULTS = dict(
 
 
 EXCLUSIVE_CHALLENGES = frozenset([frozenset([
-    challenges.DVSNI, challenges.SimpleHTTPS])])
+    challenges.DVSNI, challenges.SimpleHTTP])])
 """Mutually exclusive challenges."""
 
 
@@ -65,8 +73,8 @@ CERT_KEY_BACKUP_DIR = "keys-certs"
 """Directory where all certificates and keys are stored (relative to
 `IConfig.work_dir`). Used for easy revocation."""
 
-CSR_DIR = "csrs"
-"""Directory (relative to `IConfig.config_dir`) where CSRs are saved."""
+CERT_DIR = "certs"
+"""See `.IConfig.cert_dir`."""
 
 IN_PROGRESS_DIR = "IN_PROGRESS"
 """Directory used before a permanent checkpoint is finalized (relative to
@@ -90,8 +98,3 @@ RENEWAL_CONFIGS_DIR = "configs"
 
 RENEWER_CONFIG_FILENAME = "renewer.conf"
 """Renewer config file name (relative to `IConfig.config_dir`)."""
-
-
-NETSTAT = "/bin/netstat"
-"""Location of netstat binary for checking whether a listener is already
-running on the specified port (Linux-specific)."""

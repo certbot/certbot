@@ -132,9 +132,8 @@ class NginxConfigurator(common.Plugin):
                          vhost.filep, vhost.names)
         except errors.LetsEncryptMisconfigurationError:
             logging.warn(
-                "Cannot find a cert or key directive in %s for %s",
-                vhost.filep, vhost.names)
-            logging.warn("VirtualHost was not modified")
+                "Cannot find a cert or key directive in %s for %s. "
+                "VirtualHost was not modified.", vhost.filep, vhost.names)
             # Presumably break here so that the virtualhost is not modified
             return False
 
@@ -354,9 +353,7 @@ class NginxConfigurator(common.Plugin):
 
         if proc.returncode != 0:
             # Enter recovery routine...
-            logging.error("Config test failed")
-            logging.error(stdout)
-            logging.error(stderr)
+            logging.error("Config test failed\n%s\n%s", stdout, stderr)
             return False
 
         return True
@@ -572,14 +569,11 @@ def nginx_restart(nginx_ctl):
 
             if nginx_proc.returncode != 0:
                 # Enter recovery routine...
-                logging.error("Nginx Restart Failed!")
-                logging.error(stdout)
-                logging.error(stderr)
+                logging.error("Nginx Restart Failed!\n%s\n%s", stdout, stderr)
                 return False
 
     except (OSError, ValueError):
-        logging.fatal(
-            "Nginx Restart Failed - Please Check the Configuration")
+        logging.fatal("Nginx Restart Failed - Please Check the Configuration")
         sys.exit(1)
 
     return True

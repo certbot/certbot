@@ -27,14 +27,14 @@ class ClientTest(unittest.TestCase):
         self.account = mock.MagicMock(**{"key.pem": KEY})
 
         from letsencrypt.client import Client
-        with mock.patch("letsencrypt.client.network2") as network2:
+        with mock.patch("letsencrypt.client.network") as network:
             self.client = Client(
                 config=self.config, account_=self.account, dv_auth=None,
                 installer=None)
-        self.network2 = network2
+        self.network = network
 
     def test_init_network_verify_ssl(self):
-        self.network2.Network.assert_called_once_with(
+        self.network.Network.assert_called_once_with(
             mock.ANY, mock.ANY, verify_ssl=True)
 
     @mock.patch("letsencrypt.client.zope.component.getUtility")

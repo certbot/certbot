@@ -4,7 +4,7 @@ import logging
 import time
 
 from acme import challenges
-from acme import messages2
+from acme import messages
 
 from letsencrypt import achallenges
 from letsencrypt import constants
@@ -24,13 +24,13 @@ class AuthHandler(object):
 
     :ivar network: Network object for sending and receiving authorization
         messages
-    :type network: :class:`letsencrypt.network2.Network`
+    :type network: :class:`letsencrypt.network.Network`
 
     :ivar account: Client's Account
     :type account: :class:`letsencrypt.account.Account`
 
     :ivar dict authzr: ACME Authorization Resource dict where keys are domains
-        and values are :class:`acme.messages2.AuthorizationResource`
+        and values are :class:`acme.messages.AuthorizationResource`
     :ivar list dv_c: DV challenges in the form of
         :class:`letsencrypt.achallenges.AnnotatedChallenge`
     :ivar list cont_c: Continuity challenges in the
@@ -82,7 +82,7 @@ class AuthHandler(object):
         self.verify_authzr_complete()
         # Only return valid authorizations
         return [authzr for authzr in self.authzr.values()
-                if authzr.body.status == messages2.STATUS_VALID]
+                if authzr.body.status == messages.STATUS_VALID]
 
     def _choose_challenges(self, domains):
         """Retrieve necessary challenges to satisfy server."""
@@ -134,9 +134,11 @@ class AuthHandler(object):
             self._send_responses(self.cont_c, cont_resp, chall_update))
 
         # Check for updated status...
-        self._poll_challenges(chall_update, best_effort)
-        # This removes challenges from self.dv_c and self.cont_c
-        self._cleanup_challenges(active_achalls)
+        try:
+            self._poll_challenges(chall_update, best_effort)
+        finally:
+            # This removes challenges from self.dv_c and self.cont_c
+            self._cleanup_challenges(active_achalls)
 
     def _send_responses(self, achalls, resps, chall_update):
         """Send responses and make sure errors are handled.
@@ -196,7 +198,7 @@ class AuthHandler(object):
         failed = []
 
         self.authzr[domain], _ = self.network.poll(self.authzr[domain])
-        if self.authzr[domain].body.status == messages2.STATUS_VALID:
+        if self.authzr[domain].body.status == messages.STATUS_VALID:
             return achalls, []
 
         # Note: if the whole authorization is invalid, the individual failed
@@ -205,9 +207,9 @@ class AuthHandler(object):
             status = self._get_chall_status(self.authzr[domain], achall)
 
             # This does nothing for challenges that have yet to be decided yet.
-            if status == messages2.STATUS_VALID:
+            if status == messages.STATUS_VALID:
                 completed.append(achall)
-            elif status == messages2.STATUS_INVALID:
+            elif status == messages.STATUS_INVALID:
                 failed.append(achall)
 
         return completed, failed
@@ -219,7 +221,7 @@ class AuthHandler(object):
             each challenge resource.
 
         :param authzr: Authorization Resource
-        :type authzr: :class:`acme.messages2.AuthorizationResource`
+        :type authzr: :class:`acme.messages.AuthorizationResource`
 
         :param achall: Annotated challenge for which to get status
         :type achall: :class:`letsencrypt.achallenges.AnnotatedChallenge`
@@ -277,8 +279,8 @@ class AuthHandler(object):
 
         """
         for authzr in self.authzr.values():
-            if (authzr.body.status != messages2.STATUS_VALID and
-                    authzr.body.status != messages2.STATUS_INVALID):
+            if (authzr.body.status != messages.STATUS_VALID and
+                    authzr.body.status != messages.STATUS_INVALID):
                 raise errors.AuthorizationError("Incomplete authorizations")
 
     def _challenge_factory(self, domain, path):
@@ -319,7 +321,7 @@ def challb_to_achall(challb, key, domain):
     """Converts a ChallengeBody object to an AnnotatedChallenge.
 
     :param challb: ChallengeBody
-    :type challb: :class:`acme.messages2.ChallengeBody`
+    :type challb: :class:`acme.messages.ChallengeBody`
 
     :param key: Key
     :type key: :class:`letsencrypt.le_util.Key`
@@ -331,28 +333,22 @@ def challb_to_achall(challb, key, domain):
 
     """
     chall = challb.chall
+    logging.info("%s challenge for %s", chall.typ, domain)
 
     if isinstance(chall, challenges.DVSNI):
-        logging.info("  DVSNI challenge for %s.", domain)
         return achallenges.DVSNI(
             challb=challb, domain=domain, key=key)
-    elif isinstance(chall, challenges.SimpleHTTPS):
-        logging.info("  SimpleHTTPS challenge for %s.", domain)
-        return achallenges.SimpleHTTPS(
+    elif isinstance(chall, challenges.SimpleHTTP):
+        return achallenges.SimpleHTTP(
             challb=challb, domain=domain, key=key)
     elif isinstance(chall, challenges.DNS):
-        logging.info("  DNS challenge for %s.", domain)
         return achallenges.DNS(challb=challb, domain=domain)
-
     elif isinstance(chall, challenges.RecoveryToken):
-        logging.info("  Recovery Token Challenge for %s.", domain)
         return achallenges.RecoveryToken(challb=challb, domain=domain)
     elif isinstance(chall, challenges.RecoveryContact):
-        logging.info("  Recovery Contact Challenge for %s.", domain)
         return achallenges.RecoveryContact(
             challb=challb, domain=domain)
     elif isinstance(chall, challenges.ProofOfPossession):
-        logging.info("  Proof-of-Possession Challenge for %s", domain)
         return achallenges.ProofOfPossession(
             challb=challb, domain=domain)
 
@@ -368,8 +364,8 @@ def gen_challenge_path(challbs, preferences, combinations):
     .. todo:: This can be possibly be rewritten to use resolved_combinations.
 
     :param tuple challbs: A tuple of challenges
-        (:class:`acme.messages2.Challenge`) from
-        :class:`acme.messages2.AuthorizationResource` to be
+        (:class:`acme.messages.Challenge`) from
+        :class:`acme.messages.AuthorizationResource` to be
         fulfilled by the client in order to prove possession of the
         identifier.
 

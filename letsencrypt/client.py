@@ -18,7 +18,7 @@ from letsencrypt import crypto_util
 from letsencrypt import errors
 from letsencrypt import interfaces
 from letsencrypt import le_util
-from letsencrypt import network2
+from letsencrypt import network
 from letsencrypt import reverter
 from letsencrypt import revoker
 from letsencrypt import storage
@@ -31,7 +31,7 @@ class Client(object):
     """ACME protocol client.
 
     :ivar network: Network object for sending and receiving messages
-    :type network: :class:`letsencrypt.network2.Network`
+    :type network: :class:`letsencrypt.network.Network`
 
     :ivar account: Account object used for registration
     :type account: :class:`letsencrypt.account.Account`
@@ -64,7 +64,7 @@ class Client(object):
         self.installer = installer
 
         # TODO: Allow for other alg types besides RS256
-        self.network = network2.Network(
+        self.network = network.Network(
             config.server, jwk.JWKRSA.load(self.account.key.pem),
             verify_ssl=(not config.no_verify_ssl))
 
@@ -159,7 +159,7 @@ class Client(object):
         cert_key = crypto_util.init_save_key(
             self.config.rsa_key_size, self.config.key_dir)
         csr = crypto_util.init_save_csr(
-            cert_key, domains, self.config.csr_dir)
+            cert_key, domains, self.config.cert_dir)
 
         # Retrieve certificate
         certr = self.network.request_issuance(

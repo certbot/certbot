@@ -18,14 +18,21 @@ KEY = jose.HashableRSAKey(Crypto.PublicKey.RSA.importKey(
         'acme.jose', os.path.join('testdata', 'rsa512_key.pem'))))
 
 
-class SimpleHTTPSTest(unittest.TestCase):
+class ChallengeResponseTest(unittest.TestCase):
+
+    def test_from_json_none(self):
+        from acme.challenges import ChallengeResponse
+        self.assertTrue(ChallengeResponse.from_json(None) is None)
+
+
+class SimpleHTTPTest(unittest.TestCase):
 
     def setUp(self):
-        from acme.challenges import SimpleHTTPS
-        self.msg = SimpleHTTPS(
+        from acme.challenges import SimpleHTTP
+        self.msg = SimpleHTTP(
             token='evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ+PCt92wr+oA')
         self.jmsg = {
-            'type': 'simpleHttps',
+            'type': 'simpleHttp',
             'token': 'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ+PCt92wr+oA',
         }
 
@@ -33,39 +40,63 @@ class SimpleHTTPSTest(unittest.TestCase):
         self.assertEqual(self.jmsg, self.msg.to_partial_json())
 
     def test_from_json(self):
-        from acme.challenges import SimpleHTTPS
-        self.assertEqual(self.msg, SimpleHTTPS.from_json(self.jmsg))
+        from acme.challenges import SimpleHTTP
+        self.assertEqual(self.msg, SimpleHTTP.from_json(self.jmsg))
 
     def test_from_json_hashable(self):
-        from acme.challenges import SimpleHTTPS
-        hash(SimpleHTTPS.from_json(self.jmsg))
+        from acme.challenges import SimpleHTTP
+        hash(SimpleHTTP.from_json(self.jmsg))
 
 
-class SimpleHTTPSResponseTest(unittest.TestCase):
+class SimpleHTTPResponseTest(unittest.TestCase):
 
     def setUp(self):
-        from acme.challenges import SimpleHTTPSResponse
-        self.msg = SimpleHTTPSResponse(path='6tbIMBC5Anhl5bOlWT5ZFA')
-        self.jmsg = {
-            'type': 'simpleHttps',
+        from acme.challenges import SimpleHTTPResponse
+        self.msg_http = SimpleHTTPResponse(
+            path='6tbIMBC5Anhl5bOlWT5ZFA', tls=False)
+        self.msg_https = SimpleHTTPResponse(path='6tbIMBC5Anhl5bOlWT5ZFA')
+        self.jmsg_http = {
+            'type': 'simpleHttp',
             'path': '6tbIMBC5Anhl5bOlWT5ZFA',
+            'tls': False,
+        }
+        self.jmsg_https = {
+            'type': 'simpleHttp',
+            'path': '6tbIMBC5Anhl5bOlWT5ZFA',
+            'tls': True,
         }
 
+    def test_good_path(self):
+        self.assertTrue(self.msg_http.good_path)
+        self.assertTrue(self.msg_https.good_path)
+        self.assertFalse(
+            self.msg_http.update(path=(self.msg_http.path * 10)).good_path)
+
+    def test_scheme(self):
+        self.assertEqual('http', self.msg_http.scheme)
+        self.assertEqual('https', self.msg_https.scheme)
+
     def test_uri(self):
+        self.assertEqual('http://example.com/.well-known/acme-challenge/'
+                         '6tbIMBC5Anhl5bOlWT5ZFA', self.msg_http.uri('example.com'))
         self.assertEqual('https://example.com/.well-known/acme-challenge/'
-                         '6tbIMBC5Anhl5bOlWT5ZFA', self.msg.uri('example.com'))
+                         '6tbIMBC5Anhl5bOlWT5ZFA', self.msg_https.uri('example.com'))
 
     def test_to_partial_json(self):
-        self.assertEqual(self.jmsg, self.msg.to_partial_json())
+        self.assertEqual(self.jmsg_http, self.msg_http.to_partial_json())
+        self.assertEqual(self.jmsg_https, self.msg_https.to_partial_json())
 
     def test_from_json(self):
-        from acme.challenges import SimpleHTTPSResponse
+        from acme.challenges import SimpleHTTPResponse
         self.assertEqual(
-            self.msg, SimpleHTTPSResponse.from_json(self.jmsg))
+            self.msg_http, SimpleHTTPResponse.from_json(self.jmsg_http))
+        self.assertEqual(
+            self.msg_https, SimpleHTTPResponse.from_json(self.jmsg_https))
 
     def test_from_json_hashable(self):
-        from acme.challenges import SimpleHTTPSResponse
-        hash(SimpleHTTPSResponse.from_json(self.jmsg))
+        from acme.challenges import SimpleHTTPResponse
+        hash(SimpleHTTPResponse.from_json(self.jmsg_http))
+        hash(SimpleHTTPResponse.from_json(self.jmsg_https))
 
 
 class DVSNITest(unittest.TestCase):

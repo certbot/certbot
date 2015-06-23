@@ -99,7 +99,9 @@ def renew(cert, old_version):
 def _create_parser():
     parser = argparse.ArgumentParser()
     #parser.add_argument("--cron", action="store_true", help="Run as cronjob.")
-    return cli._paths_parser(parser)  # pylint: disable=protected-access
+    # pylint: disable=protected-access
+    cli._paths_parser(parser.add_argument_group("paths"))
+    return parser
 
 def main(config=None, args=sys.argv[1:]):
     """Main function for autorenewer script."""

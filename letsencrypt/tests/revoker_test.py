@@ -63,7 +63,7 @@ class RevokerTest(RevokerBase):
     def tearDown(self):
         shutil.rmtree(self.backup_dir)
 
-    @mock.patch("letsencrypt.revoker.network.Network.send_and_receive_expected")
+    @mock.patch("letsencrypt.network.Network.revoke")
     @mock.patch("letsencrypt.revoker.revocation")
     def test_revoke_by_key_all(self, mock_display, mock_net):
         mock_display().confirm_revocation.return_value = True
@@ -89,7 +89,7 @@ class RevokerTest(RevokerBase):
                           self.revoker.revoke_from_key,
                           self.key)
 
-    @mock.patch("letsencrypt.revoker.network.Network.send_and_receive_expected")
+    @mock.patch("letsencrypt.network.Network.revoke")
     @mock.patch("letsencrypt.revoker.revocation")
     def test_revoke_by_wrong_key(self, mock_display, mock_net):
         mock_display().confirm_revocation.return_value = True
@@ -105,7 +105,7 @@ class RevokerTest(RevokerBase):
         # No revocation went through
         self.assertEqual(mock_net.call_count, 0)
 
-    @mock.patch("letsencrypt.revoker.network.Network.send_and_receive_expected")
+    @mock.patch("letsencrypt.network.Network.revoke")
     @mock.patch("letsencrypt.revoker.revocation")
     def test_revoke_by_cert(self, mock_display, mock_net):
         mock_display().confirm_revocation.return_value = True
@@ -122,7 +122,7 @@ class RevokerTest(RevokerBase):
 
         self.assertEqual(mock_net.call_count, 1)
 
-    @mock.patch("letsencrypt.revoker.network.Network.send_and_receive_expected")
+    @mock.patch("letsencrypt.network.Network.revoke")
     @mock.patch("letsencrypt.revoker.revocation")
     def test_revoke_by_cert_not_found(self, mock_display, mock_net):
         mock_display().confirm_revocation.return_value = True
@@ -141,7 +141,7 @@ class RevokerTest(RevokerBase):
 
         self.assertEqual(mock_net.call_count, 1)
 
-    @mock.patch("letsencrypt.revoker.network.Network.send_and_receive_expected")
+    @mock.patch("letsencrypt.network.Network.revoke")
     @mock.patch("letsencrypt.revoker.revocation")
     def test_revoke_by_menu(self, mock_display, mock_net):
         mock_display().confirm_revocation.return_value = True
@@ -165,7 +165,7 @@ class RevokerTest(RevokerBase):
         self.assertEqual(mock_display.more_info_cert.call_count, 1)
 
     @mock.patch("letsencrypt.revoker.logging")
-    @mock.patch("letsencrypt.revoker.network.Network.send_and_receive_expected")
+    @mock.patch("letsencrypt.network.Network.revoke")
     @mock.patch("letsencrypt.revoker.revocation")
     def test_revoke_by_menu_delete_all(self, mock_display, mock_net, mock_log):
         mock_display().confirm_revocation.return_value = True

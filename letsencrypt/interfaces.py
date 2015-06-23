@@ -148,8 +148,7 @@ class IConfig(zope.interface.Interface):
 
     """
     server = zope.interface.Attribute(
-        "CA hostname (and optionally :port). The server certificate must "
-        "be trusted in order to avoid further modifications to the client.")
+        "ACME new registration URI (including /acme/new-reg).")
     email = zope.interface.Attribute(
         "Email used for registration and recovery contact.")
     rsa_key_size = zope.interface.Attribute("Size of the RSA key.")
@@ -162,7 +161,9 @@ class IConfig(zope.interface.Interface):
     account_keys_dir = zope.interface.Attribute(
         "Directory where all account keys are stored.")
     backup_dir = zope.interface.Attribute("Configuration backups directory.")
-    csr_dir = zope.interface.Attribute("CSRs storage.")
+    cert_dir = zope.interface.Attribute(
+        "Directory where newly generated Certificate Signing Requests "
+        "(CSRs) and certificates not enrolled in the renewer are saved.")
     cert_key_backup = zope.interface.Attribute(
         "Directory where all certificates and keys are stored. "
         "Used for easy revocation.")
@@ -182,6 +183,15 @@ class IConfig(zope.interface.Interface):
     dvsni_port = zope.interface.Attribute(
         "Port number to perform DVSNI challenge. "
         "Boulder in testing mode defaults to 5001.")
+
+    # TODO: not implemented
+    no_simple_http_tls = zope.interface.Attribute(
+        "Do not use TLS when solving SimpleHTTP challenges.")
+
+    # TODO: the following are not used, but blocked by #485
+    le_vhost_ext = zope.interface.Attribute("not used")
+    cert_path = zope.interface.Attribute("not used")
+    chain_path = zope.interface.Attribute("not used")
 
 
 class IInstaller(IPlugin):

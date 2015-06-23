@@ -6,7 +6,7 @@ import re
 import configobj
 import zope.component
 
-from acme import messages2
+from acme import messages
 
 from letsencrypt import crypto_util
 from letsencrypt import errors
@@ -28,7 +28,7 @@ class Account(object):
     :ivar str phone: Client's phone number
 
     :ivar regr: Registration Resource
-    :type regr: :class:`~acme.messages2.RegistrationResource`
+    :type regr: :class:`~acme.messages.RegistrationResource`
 
     """
 
@@ -141,11 +141,11 @@ class Account(object):
 
         if "RegistrationResource" in acc_config:
             acc_config_rr = acc_config["RegistrationResource"]
-            regr = messages2.RegistrationResource(
+            regr = messages.RegistrationResource(
                 uri=acc_config_rr["uri"],
                 new_authzr_uri=acc_config_rr["new_authzr_uri"],
                 terms_of_service=acc_config_rr["terms_of_service"],
-                body=messages2.Registration.from_json(acc_config_rr["body"]))
+                body=messages.Registration.from_json(acc_config_rr["body"]))
         else:
             regr = None
 
@@ -186,7 +186,7 @@ class Account(object):
         """
         while True:
             code, email = zope.component.getUtility(interfaces.IDisplay).input(
-                "Enter email address (optional, press Enter to skip)")
+                "Enter email address")
 
             if code == display_util.OK:
                 try:
@@ -227,5 +227,5 @@ class Account(object):
         if cls.EMAIL_REGEX.match(email):
             return not email.startswith(".") and ".." not in email
         else:
-            logging.warn("Invalid email address.")
+            logging.warn("Invalid email address: %s.", email)
             return False

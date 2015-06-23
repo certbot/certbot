@@ -5,11 +5,11 @@ Please use names such as ``achall`` to distiguish from variables "of type"
 and :class:`.ChallengeBody` (denoted by ``challb``)::
 
   from acme import challenges
-  from acme import messages2
+  from acme import messages
   from letsencrypt import achallenges
 
   chall = challenges.DNS(token='foo')
-  challb = messages2.ChallengeBody(chall=chall)
+  challb = messages.ChallengeBody(chall=chall)
   achall = achallenges.DNS(chall=challb, domain='example.com')
 
 Note, that all annotated challenges act as a proxy objects::
@@ -62,10 +62,10 @@ class DVSNI(AnnotatedChallenge):
         return cert_pem, response
 
 
-class SimpleHTTPS(AnnotatedChallenge):
-    """Client annotated "simpleHttps" ACME challenge."""
+class SimpleHTTP(AnnotatedChallenge):
+    """Client annotated "simpleHttp" ACME challenge."""
     __slots__ = ('challb', 'domain', 'key')
-    acme_type = challenges.SimpleHTTPS
+    acme_type = challenges.SimpleHTTP
 
 
 class DNS(AnnotatedChallenge):
