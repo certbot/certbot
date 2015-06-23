@@ -152,6 +152,9 @@ class AuthHandler(object):
             # Don't send challenges for None and False authenticator responses
             if resp:
                 self.network.answer_challenge(achall.challb, resp)
+                # TODO: answer_challenge returns challr, with URI,
+                # that can be used in _find_updated_challr
+                # comparisons...
                 active_achalls.append(achall)
                 if achall.domain in chall_update:
                     chall_update[achall.domain].append(achall)
@@ -170,23 +173,27 @@ class AuthHandler(object):
         while dom_to_check and rounds < max_rounds:
             # TODO: Use retry-after...
             time.sleep(min_sleep)
+            all_failed_achalls = set()
             for domain in dom_to_check:
-                comp_challs, failed_challs = self._handle_check(
+                comp_achalls, failed_achalls = self._handle_check(
                     domain, chall_update[domain])
 
-                if len(comp_challs) == len(chall_update[domain]):
+                if len(comp_achalls) == len(chall_update[domain]):
                     comp_domains.add(domain)
-                elif not failed_challs:
-                    for chall in comp_challs:
-                        chall_update[domain].remove(chall)
+                elif not failed_achalls:
+                    for achall, _ in comp_achalls:
+                        chall_update[domain].remove(achall)
                 # We failed some challenges... damage control
                 else:
                     # Right now... just assume a loss and carry on...
                     if best_effort:
                         comp_domains.add(domain)
                     else:
-                        raise errors.AuthorizationError(
-                            "Failed Authorization procedure for %s" % domain)
+                        all_failed_achalls.update(
+                            updated for _, updated in failed_achalls)
+
+            if all_failed_achalls:
+                raise errors.FailedChallenges(all_failed_achalls)
 
             dom_to_check -= comp_domains
             comp_domains.clear()
@@ -204,32 +211,31 @@ class AuthHandler(object):
         # Note: if the whole authorization is invalid, the individual failed
         #     challenges will be determined here...
         for achall in achalls:
-            status = self._get_chall_status(self.authzr[domain], achall)
+            updated_achall = achall.update(challb=self._find_updated_challb(
+                self.authzr[domain], achall))
 
             # This does nothing for challenges that have yet to be decided yet.
-            if status == messages.STATUS_VALID:
-                completed.append(achall)
-            elif status == messages.STATUS_INVALID:
-                failed.append(achall)
+            if updated_achall.status == messages.STATUS_VALID:
+                completed.append((achall, updated_achall))
+            elif updated_achall.status == messages.STATUS_INVALID:
+                failed.append((achall, updated_achall))
 
         return completed, failed
 
-    def _get_chall_status(self, authzr, achall):  # pylint: disable=no-self-use
-        """Get the status of the challenge.
+    def _find_updated_challb(self, authzr, achall):  # pylint: disable=no-self-use
+        """Find updated challenge body within Authorization Resource.
 
         .. warning:: This assumes only one instance of type of challenge in
             each challenge resource.
 
-        :param authzr: Authorization Resource
-        :type authzr: :class:`acme.messages.AuthorizationResource`
-
-        :param achall: Annotated challenge for which to get status
-        :type achall: :class:`letsencrypt.achallenges.AnnotatedChallenge`
+        :param .AuthorizationResource authzr: Authorization Resource
+        :param .AnnotatedChallenge achall: Annotated challenge for which
+            to get status
 
         """
         for authzr_challb in authzr.body.challenges:
             if type(authzr_challb.chall) is type(achall.challb.chall):
-                return authzr_challb.status
+                return authzr_challb
         raise errors.AuthorizationError(
             "Target challenge not found in authorization resource")
 
