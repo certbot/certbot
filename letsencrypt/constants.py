@@ -17,6 +17,14 @@ CLI_DEFAULTS = dict(
     work_dir="/var/lib/letsencrypt",
     no_verify_ssl=False,
     dvsni_port=challenges.DVSNI.PORT,
+
+    # TODO: blocked by #485, values ignored
+    backup_dir="not used",
+    key_dir="not used",
+    certs_dir="not used",
+    cert_path="not used",
+    chain_path="not used",
+    renewer_config_file="not used",
 )
 """Defaults for CLI flags and `.IConfig` attributes."""
 

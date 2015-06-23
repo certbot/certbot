@@ -146,21 +146,21 @@ def install(args, config, plugins):
         return "Installer could not be determined"
     acme, doms = _common_run(
         args, config, acc, authenticator=None, installer=installer)
-    assert args.cert_path is not None  # required=True in the subparser
+    assert args.cert_path is not None
     acme.deploy_certificate(doms, acc.key.file, args.cert_path, args.chain_path)
     acme.enhance_config(doms, args.redirect)
 
 
 def revoke(args, unused_config, unused_plugins):
     """Revoke."""
-    if args.cert_path is None and args.key_path is None:
-        return "At least one of --cert-path or --key-path is required"
+    if args.rev_cert is None and args.rev_key is None:
+        return "At least one of --certificate or --key is required"
 
     # This depends on the renewal config and cannot be completed yet.
     zope.component.getUtility(interfaces.IDisplay).notification(
         "Revocation is not available with the new Boulder server yet.")
     #client.revoke(args.installer, config, plugins, args.no_confirm,
-    #              args.cert_path, args.key_path)
+    #              args.rev_cert, args.rev_key)
 
 
 def rollback(args, config, plugins):
@@ -268,6 +268,34 @@ def create_parser(plugins):
         "--dvsni-port", type=int, help=config_help("dvsni_port"),
         default=flag_default("dvsni_port"))
 
+    subparsers = parser.add_subparsers(metavar="SUBCOMMAND")
+    def add_subparser(name, func):  # pylint: disable=missing-docstring
+        subparser = subparsers.add_parser(
+            name, help=func.__doc__.splitlines()[0], description=func.__doc__)
+        subparser.set_defaults(func=func)
+        return subparser
+
+    add_subparser("run", run)
+    add_subparser("auth", auth)
+    add_subparser("install", install)
+    parser_revoke = add_subparser("revoke", revoke)
+    parser_rollback = add_subparser("rollback", rollback)
+    add_subparser("config_changes", config_changes)
+
+    parser_plugins = add_subparser("plugins", plugins_cmd)
+    parser_plugins.add_argument("--init", action="store_true")
+    parser_plugins.add_argument("--prepare", action="store_true")
+    parser_plugins.add_argument(
+        "--authenticators", action="append_const", dest="ifaces",
+        const=interfaces.IAuthenticator)
+    parser_plugins.add_argument(
+        "--installers", action="append_const", dest="ifaces",
+        const=interfaces.IInstaller)
+
+    parser.add_argument("--configurator")
+    parser.add_argument("-a", "--authenticator")
+    parser.add_argument("-i", "--installer")
+
     # positional arg shadows --domains, instead of appending, and
     # --domains is useful, because it can be stored in config
     #for subparser in parser_run, parser_auth, parser_install:
@@ -286,62 +314,27 @@ def create_parser(plugins):
         help="Automatically redirect all HTTP traffic to HTTPS for the newly "
              "authenticated vhost.")
 
-    _paths_parser(parser.add_argument_group("paths"))
-    # _plugins_parsing should be the last thing to act upon the main
-    # parser (--help should display plugin-specific options last)
-    _plugins_parsing(parser, plugins)
-
-    _create_subparsers(parser)
-
-    return parser
-
-
-def _create_subparsers(parser):
-    subparsers = parser.add_subparsers(metavar="SUBCOMMAND")
-    def add_subparser(name, func):  # pylint: disable=missing-docstring
-        subparser = subparsers.add_parser(
-            name, help=func.__doc__.splitlines()[0], description=func.__doc__)
-        subparser.set_defaults(func=func)
-        return subparser
-
-    # the order of add_subparser() calls is important: it defines the
-    # order in which subparser names will be displayed in --help
-    add_subparser("run", run)
-    add_subparser("auth", auth)
-    parser_install = add_subparser("install", install)
-    parser_plugins = add_subparser("plugins", plugins_cmd)
-    parser_revoke = add_subparser("revoke", revoke)
-    parser_rollback = add_subparser("rollback", rollback)
-    add_subparser("config_changes", config_changes)
-
-    parser_install.add_argument(
-        "--cert-path", required=True, help="Path to a certificate that "
-        "is going to be installed.")
-    parser_install.add_argument(
-        "--chain-path", help="Accompanying path to a certificate chain.")
-
-    parser_plugins.add_argument(
-        "--init", action="store_true", help="Initialize plugins.")
-    parser_plugins.add_argument("--prepare", action="store_true",
-                                help="Initialize and prepare plugins.")
-    parser_plugins.add_argument(
-        "--authenticators", action="append_const", dest="ifaces",
-        const=interfaces.IAuthenticator,
-        help="Limit to authenticator plugins only.")
-    parser_plugins.add_argument(
-        "--installers", action="append_const", dest="ifaces",
-        const=interfaces.IInstaller, help="Limit to installer plugins only.")
-
     parser_revoke.add_argument(
-        "--cert-path", type=read_file, help="Revoke a specific certificate.")
+        "--certificate", dest="rev_cert", type=read_file, metavar="CERT_PATH",
+        help="Revoke a specific certificate.")
     parser_revoke.add_argument(
-        "--key-path", type=read_file,
+        "--key", dest="rev_key", type=read_file, metavar="KEY_PATH",
         help="Revoke all certs generated by the provided authorized key.")
 
     parser_rollback.add_argument(
         "--checkpoints", type=int, metavar="N",
         default=flag_default("rollback_checkpoints"),
         help="Revert configuration N number of checkpoints.")
+
+    _paths_parser(parser.add_argument_group("paths"))
+
+    # TODO: plugin_parser should be called for every detected plugin
+    for name, plugin_ep in plugins.iteritems():
+        plugin_ep.plugin_cls.inject_parser_options(
+            parser.add_argument_group(
+                name, description=plugin_ep.description), name)
+
+    return parser
 
 
 def _paths_parser(parser):
@@ -350,36 +343,24 @@ def _paths_parser(parser):
         help=config_help("config_dir"))
     add("--work-dir", default=flag_default("work_dir"),
         help=config_help("work_dir"))
+    add("--backup-dir", default=flag_default("backup_dir"),
+        help=config_help("backup_dir"))
+    add("--key-dir", default=flag_default("key_dir"),
+        help=config_help("key_dir"))
+    add("--cert-dir", default=flag_default("certs_dir"),
+        help=config_help("cert_dir"))
+
+    add("--le-vhost-ext", default="-le-ssl.conf",
+        help=config_help("le_vhost_ext"))
+    add("--cert-path", default=flag_default("cert_path"),
+        help=config_help("cert_path"))
+    add("--chain-path", default=flag_default("chain_path"),
+        help=config_help("chain_path"))
+
+    add("--renewer-config-file", default=flag_default("renewer_config_file"),
+        help=config_help("renewer_config_file"))
 
     return parser
-
-
-def _plugins_parsing(parser, plugins):
-    plugins_group = parser.add_argument_group(
-        "plugins", description="Let's Encrypt client supports an extensible "
-        "plugins architecture. See '%(prog)s plugins' for a list of all "
-        "available plugins and their names. You can force a particular "
-        "plugin by setting options provided below. Futher down this help "
-        "message you will find plugin-specific options (prefixed by "
-        "--{plugin_name}.")
-    plugins_group.add_argument(
-        "-a", "--authenticator", help="Authenticator plugin name.")
-    plugins_group.add_argument(
-        "-i", "--installer", help="Installer plugin name.")
-    plugins_group.add_argument(
-        "--configurator", help="Name of the plugin that is both "
-        "an authenticator and an installer. Should not be used together "
-        "with --authenticator or --installer.")
-
-    # things should not be reorder past/pre this comment:
-    # plugins_group should be displayed in --help before plugin
-    # specific groups (so that plugins_group.description makes sense)
-
-    for name, plugin_ep in plugins.iteritems():
-        plugin_ep.plugin_cls.inject_parser_options(
-            parser.add_argument_group(
-                "plugins: {0}".format(name),
-                description=plugin_ep.description), name)
 
 
 def main(args=sys.argv[1:]):
