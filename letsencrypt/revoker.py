@@ -71,7 +71,7 @@ class Revoker(object):
                 authkey.pem).exportKey("PEM")
         # https://www.dlitz.net/software/pycrypto/api/current/Crypto.PublicKey.RSA-module.html
         except (IndexError, ValueError, TypeError):
-            raise errors.LetsEncryptRevokerError(
+            raise errors.RevokerError(
                 "Invalid key file specified to revoke_from_key")
 
         with open(self.list_path, "rb") as csvfile:
@@ -89,8 +89,7 @@ class Revoker(object):
                     # This should never happen given the assumptions of the
                     # module. If it does, it is probably best to delete the
                     # the offending key/cert. For now... just raise an exception
-                    raise errors.LetsEncryptRevokerError(
-                        "%s - backup file is corrupted.")
+                    raise errors.RevokerError("%s - backup file is corrupted.")
 
                 if clean_pem == test_pem:
                     certs.append(
@@ -218,7 +217,7 @@ class Revoker(object):
                 if self.no_confirm or revocation.confirm_revocation(cert):
                     try:
                         self._acme_revoke(cert)
-                    except errors.LetsEncryptClientError:
+                    except errors.Error:
                         # TODO: Improve error handling when networking is set...
                         logging.error(
                             "Unable to revoke cert:%s%s", os.linesep, str(cert))
@@ -250,7 +249,7 @@ class Revoker(object):
 
         # If the key file doesn't exist... or is corrupted
         except (IndexError, ValueError, TypeError):
-            raise errors.LetsEncryptRevokerError(
+            raise errors.RevokerError(
                 "Corrupted backup key file: %s" % cert.backup_key_path)
 
         return self.network.revoke(cert=None)  # XXX
@@ -293,7 +292,7 @@ class Revoker(object):
 
         # This should never happen...
         if idx != len(cert_list):
-            raise errors.LetsEncryptRevokerError(
+            raise errors.RevokerError(
                 "Did not find all cert_list items to remove from LIST")
 
         shutil.copy2(list_path2, self.list_path)
@@ -398,7 +397,7 @@ class Cert(object):
         try:
             self._cert = M2Crypto.X509.load_cert(cert_path)
         except (IOError, M2Crypto.X509.X509Error):
-            raise errors.LetsEncryptRevokerError(
+            raise errors.RevokerError(
                 "Error loading certificate: %s" % cert_path)
 
         self.idx = -1

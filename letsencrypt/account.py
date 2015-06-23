@@ -127,7 +127,7 @@ class Account(object):
             acc_config = configobj.ConfigObj(
                 infile=config_fp, file_error=True, create_empty=False)
         except IOError:
-            raise errors.LetsEncryptClientError(
+            raise errors.Error(
                 "Account for %s does not exist" % os.path.basename(config_fp))
 
         if os.path.basename(config_fp) != "default":
@@ -191,7 +191,7 @@ class Account(object):
             if code == display_util.OK:
                 try:
                     return cls.from_email(config, email)
-                except errors.LetsEncryptClientError:
+                except errors.Error:
                     continue
             else:
                 return None
@@ -205,8 +205,7 @@ class Account(object):
 
         :param str email: Email address
 
-        :raises letsencrypt.errors.LetsEncryptClientError: If invalid
-            email address is given.
+        :raises .errors.Error: If invalid email address is given.
 
         """
         if not email or cls.safe_email(email):
@@ -219,7 +218,7 @@ class Account(object):
                 cls._get_config_filename(email))
             return cls(config, key, email)
 
-        raise errors.LetsEncryptClientError("Invalid email address.")
+        raise errors.Error("Invalid email address.")
 
     @classmethod
     def safe_email(cls, email):

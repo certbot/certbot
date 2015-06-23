@@ -73,7 +73,7 @@ class AccountTest(unittest.TestCase):
     def test_prompts_bad_email(self, mock_from_email, mock_util):
         from letsencrypt.account import Account
 
-        mock_from_email.side_effect = (errors.LetsEncryptClientError, "acc")
+        mock_from_email.side_effect = (errors.Error, "acc")
         mock_util().input.return_value = (display_util.OK, self.email)
 
         self.assertEqual(Account.from_prompts(self.config), "acc")
@@ -102,8 +102,8 @@ class AccountTest(unittest.TestCase):
     def test_from_email(self):
         from letsencrypt.account import Account
 
-        self.assertRaises(errors.LetsEncryptClientError,
-                          Account.from_email, self.config, "not_valid...email")
+        self.assertRaises(
+            errors.Error, Account.from_email, self.config, "not_valid...email")
 
     def test_save_from_existing_account(self):
         from letsencrypt.account import Account
@@ -170,10 +170,8 @@ class AccountTest(unittest.TestCase):
     def test_failed_existing_account(self):
         from letsencrypt.account import Account
 
-        self.assertRaises(
-            errors.LetsEncryptClientError,
-            Account.from_existing_account,
-            self.config, "non-existant@email.org")
+        self.assertRaises(errors.Error, Account.from_existing_account,
+                          self.config, "non-existant@email.org")
 
 class SafeEmailTest(unittest.TestCase):
     """Test safe_email."""

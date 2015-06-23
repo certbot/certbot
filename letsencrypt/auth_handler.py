@@ -60,7 +60,7 @@ class AuthHandler(object):
             form of (`completed`, `failed`)
         :rtype: tuple
 
-        :raises AuthorizationError: If unable to retrieve all
+        :raises .AuthorizationError: If unable to retrieve all
             authorizations
 
         """
@@ -296,8 +296,7 @@ class AuthHandler(object):
             :class:`letsencrypt.achallenges.Indexed`
         :rtype: tuple
 
-        :raises errors.LetsEncryptClientError: If Challenge type is not
-            recognized
+        :raises .errors.Error: if challenge type is not recognized
 
         """
         dv_chall = []
@@ -353,9 +352,8 @@ def challb_to_achall(challb, key, domain):
             challb=challb, domain=domain)
 
     else:
-        raise errors.LetsEncryptClientError(
-            "Received unsupported challenge of type: %s",
-            chall.typ)
+        raise errors.Error(
+            "Received unsupported challenge of type: %s", chall.typ)
 
 
 def gen_challenge_path(challbs, preferences, combinations):

@@ -21,8 +21,7 @@ def ask(enhancement):
     :returns: True if feature is desired, False otherwise
     :rtype: bool
 
-    :raises letsencrypt.errors.LetsEncryptClientError: If
-        the enhancement provided is not supported.
+    :raises .errors.Error: if the enhancement provided is not supported
 
     """
     try:
@@ -30,7 +29,7 @@ def ask(enhancement):
         return DISPATCH[enhancement]()
     except KeyError:
         logging.error("Unsupported enhancement given to ask(): %s", enhancement)
-        raise errors.LetsEncryptClientError("Unsupported Enhancement")
+        raise errors.Error("Unsupported Enhancement")
 
 
 def redirect_by_default():

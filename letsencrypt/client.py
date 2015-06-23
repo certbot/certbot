@@ -96,7 +96,7 @@ class Client(object):
                 self.account.regr = self.network.agree_to_tos(self.account.regr)
             else:
                 # What is the proper response here...
-                raise errors.LetsEncryptClientError("Must agree to TOS")
+                raise errors.Error("Must agree to TOS")
 
         self.account.save()
         self._report_new_account()
@@ -145,10 +145,9 @@ class Client(object):
             msg = ("Unable to obtain certificate because authenticator is "
                    "not set.")
             logging.warning(msg)
-            raise errors.LetsEncryptClientError(msg)
+            raise errors.Error(msg)
         if self.account.regr is None:
-            raise errors.LetsEncryptClientError(
-                "Please register with the ACME server first.")
+            raise errors.Error("Please register with the ACME server first.")
 
         # Perform Challenges/Get Authorizations
         authzr = self.auth_handler.get_authorizations(domains)
@@ -310,7 +309,7 @@ class Client(object):
         if self.installer is None:
             logging.warning("No installer specified, client is unable to deploy"
                             "the certificate")
-            raise errors.LetsEncryptClientError("No installer available")
+            raise errors.Error("No installer available")
 
         chain_path = None if chain_path is None else os.path.abspath(chain_path)
 
@@ -339,14 +338,14 @@ class Client(object):
         :param redirect: If traffic should be forwarded from HTTP to HTTPS.
         :type redirect: bool or None
 
-        :raises letsencrypt.errors.LetsEncryptClientError: if
-            no installer is specified in the client.
+        :raises .errors.Error: if no installer is specified in the
+            client.
 
         """
         if self.installer is None:
             logging.warning("No installer is specified, there isn't any "
                             "configuration to enhance.")
-            raise errors.LetsEncryptClientError("No installer available")
+            raise errors.Error("No installer available")
 
         if redirect is None:
             redirect = enhancements.ask("redirect")
@@ -364,7 +363,7 @@ class Client(object):
         for dom in domains:
             try:
                 self.installer.enhance(dom, "redirect")
-            except errors.LetsEncryptConfiguratorError:
+            except errors.ConfiguratorError:
                 logging.warn("Unable to perform redirect for %s", dom)
 
         self.installer.save("Add Redirects")
@@ -386,8 +385,7 @@ def validate_key_csr(privkey, csr=None):
     :param csr: CSR
     :type csr: :class:`letsencrypt.le_util.CSR`
 
-    :raises letsencrypt.errors.LetsEncryptClientError: when
-        validation fails
+    :raises .errors.Error: when validation fails
 
     """
     # TODO: Handle all of these problems appropriately
@@ -396,8 +394,7 @@ def validate_key_csr(privkey, csr=None):
 
     # Key must be readable and valid.
     if privkey.pem and not crypto_util.valid_privkey(privkey.pem):
-        raise errors.LetsEncryptClientError(
-            "The provided key is not a valid key")
+        raise errors.Error("The provided key is not a valid key")
 
     if csr:
         if csr.form == "der":
@@ -406,16 +403,14 @@ def validate_key_csr(privkey, csr=None):
 
         # If CSR is provided, it must be readable and valid.
         if csr.data and not crypto_util.valid_csr(csr.data):
-            raise errors.LetsEncryptClientError(
-                "The provided CSR is not a valid CSR")
+            raise errors.Error("The provided CSR is not a valid CSR")
 
         # If both CSR and key are provided, the key must be the same key used
         # in the CSR.
         if csr.data and privkey.pem:
             if not crypto_util.csr_matches_pubkey(
                     csr.data, privkey.pem):
-                raise errors.LetsEncryptClientError(
-                    "The key and CSR do not match")
+                raise errors.Error("The key and CSR do not match")
 
 
 def determine_account(config):
