@@ -1,5 +1,4 @@
 """Test for letsencrypt_nginx.dvsni."""
-import pkg_resources
 import unittest
 import shutil
 
@@ -9,7 +8,8 @@ from acme import challenges
 
 from letsencrypt import achallenges
 from letsencrypt import errors
-from letsencrypt import le_util
+
+from letsencrypt.plugins import common_test
 from letsencrypt.tests import acme_util
 
 from letsencrypt_nginx import obj
@@ -19,6 +19,34 @@ from letsencrypt_nginx.tests import util
 class DvsniPerformTest(util.NginxTest):
     """Test the NginxDVSNI challenge."""
 
+    achalls = [
+        achallenges.DVSNI(
+            challb=acme_util.chall_to_challb(
+                challenges.DVSNI(
+                    r="foo",
+                    nonce="bar"
+                ), "pending"),
+            domain="www.example.com", key=common_test.DvsniTest.auth_key),
+        achallenges.DVSNI(
+            challb=acme_util.chall_to_challb(
+                challenges.DVSNI(
+                    r="\xba\xa9\xda?<m\xaewmx\xea\xad\xadv\xf4\x02\xc9y\x80"
+                      "\xe2_X\t\xe7\xc7\xa4\t\xca\xf7&\x945",
+                    nonce="Y\xed\x01L\xac\x95\xf7pW\xb1\xd7"
+                          "\xa1\xb2\xc5\x96\xba"
+                ), "pending"),
+            domain="blah", key=common_test.DvsniTest.auth_key),
+        achallenges.DVSNI(
+            challb=acme_util.chall_to_challb(
+                challenges.DVSNI(
+                    r="\x8c\x8a\xbf_-f\\cw\xee\xd6\xf8/\xa5\xe3\xfd\xeb9"
+                      "\xf1\xf5\xb9\xefVM\xc9w\xa4u\x9c\xe1\x87\xb4",
+                    nonce="7\xbc^\xb7]>\x00\xa1\x9bOcU\x84^Z\x18"
+                ), "pending"),
+            domain="www.example.org", key=common_test.DvsniTest.auth_key)
+    ]
+
+
     def setUp(self):
         super(DvsniPerformTest, self).setUp()
 
@@ -26,42 +54,8 @@ class DvsniPerformTest(util.NginxTest):
             self.config_path, self.config_dir, self.work_dir,
             self.ssl_options)
 
-        rsa256_file = pkg_resources.resource_filename(
-            "acme.jose", "testdata/rsa256_key.pem")
-        rsa256_pem = pkg_resources.resource_string(
-            "acme.jose", "testdata/rsa256_key.pem")
-
-        auth_key = le_util.Key(rsa256_file, rsa256_pem)
-
         from letsencrypt_nginx import dvsni
         self.sni = dvsni.NginxDvsni(config)
-
-        self.achalls = [
-            achallenges.DVSNI(
-                challb=acme_util.chall_to_challb(
-                    challenges.DVSNI(
-                        r="foo",
-                        nonce="bar"
-                    ), "pending"),
-                domain="www.example.com", key=auth_key),
-            achallenges.DVSNI(
-                challb=acme_util.chall_to_challb(
-                    challenges.DVSNI(
-                        r="\xba\xa9\xda?<m\xaewmx\xea\xad\xadv\xf4\x02\xc9y\x80"
-                          "\xe2_X\t\xe7\xc7\xa4\t\xca\xf7&\x945",
-                        nonce="Y\xed\x01L\xac\x95\xf7pW\xb1\xd7"
-                              "\xa1\xb2\xc5\x96\xba"
-                    ), "pending"),
-                domain="blah", key=auth_key),
-            achallenges.DVSNI(
-                challb=acme_util.chall_to_challb(
-                    challenges.DVSNI(
-                        r="\x8c\x8a\xbf_-f\\cw\xee\xd6\xf8/\xa5\xe3\xfd\xeb9"
-                          "\xf1\xf5\xb9\xefVM\xc9w\xa4u\x9c\xe1\x87\xb4",
-                        nonce="7\xbc^\xb7]>\x00\xa1\x9bOcU\x84^Z\x18"
-                    ), "pending"),
-                domain="www.example.org", key=auth_key)
-        ]
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
@@ -169,8 +163,8 @@ class DvsniPerformTest(util.NginxTest):
         root = self.sni.configurator.parser.loc["root"]
         self.sni.configurator.parser.parsed[root] = [['include', 'foo.conf']]
         # pylint: disable=protected-access
-        self.assertRaises(errors.LetsEncryptMisconfigurationError,
-                          self.sni._mod_config, [])
+        self.assertRaises(
+            errors.MisconfigurationError, self.sni._mod_config, [])
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

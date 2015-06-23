@@ -128,11 +128,10 @@ class NginxConfigurator(common.Plugin):
                                               directives, True)
             logging.info("Deployed Certificate to VirtualHost %s for %s",
                          vhost.filep, vhost.names)
-        except errors.LetsEncryptMisconfigurationError:
+        except errors.MisconfigurationError:
             logging.warn(
-                "Cannot find a cert or key directive in %s for %s",
-                vhost.filep, vhost.names)
-            logging.warn("VirtualHost was not modified")
+                "Cannot find a cert or key directive in %s for %s. "
+                "VirtualHost was not modified.", vhost.filep, vhost.names)
             # Presumably break here so that the virtualhost is not modified
             return False
 
@@ -316,9 +315,9 @@ class NginxConfigurator(common.Plugin):
             return self._enhance_func[enhancement](
                 self.choose_vhost(domain), options)
         except (KeyError, ValueError):
-            raise errors.LetsEncryptConfiguratorError(
+            raise errors.ConfiguratorError(
                 "Unsupported enhancement: {0}".format(enhancement))
-        except errors.LetsEncryptConfiguratorError:
+        except errors.ConfiguratorError:
             logging.warn("Failed %s for %s", enhancement, domain)
 
     ######################################
@@ -352,9 +351,7 @@ class NginxConfigurator(common.Plugin):
 
         if proc.returncode != 0:
             # Enter recovery routine...
-            logging.error("Config test failed")
-            logging.error(stdout)
-            logging.error(stderr)
+            logging.error("Config test failed\n%s\n%s", stdout, stderr)
             return False
 
         return True
@@ -383,7 +380,7 @@ class NginxConfigurator(common.Plugin):
         :returns: version
         :rtype: tuple
 
-        :raises errors.LetsEncryptConfiguratorError:
+        :raises .ConfiguratorError:
             Unable to find Nginx version or version is unsupported
 
         """
@@ -394,7 +391,7 @@ class NginxConfigurator(common.Plugin):
                 stderr=subprocess.PIPE)
             text = proc.communicate()[1]  # nginx prints output to stderr
         except (OSError, ValueError):
-            raise errors.LetsEncryptConfiguratorError(
+            raise errors.ConfiguratorError(
                 "Unable to run %s -V" % self.conf('ctl'))
 
         version_regex = re.compile(r"nginx/([0-9\.]*)", re.IGNORECASE)
@@ -407,22 +404,19 @@ class NginxConfigurator(common.Plugin):
         ssl_matches = ssl_regex.findall(text)
 
         if not version_matches:
-            raise errors.LetsEncryptConfiguratorError(
-                "Unable to find Nginx version")
+            raise errors.ConfiguratorError("Unable to find Nginx version")
         if not ssl_matches:
-            raise errors.LetsEncryptConfiguratorError(
+            raise errors.ConfiguratorError(
                 "Nginx build is missing SSL module (--with-http_ssl_module).")
         if not sni_matches:
-            raise errors.LetsEncryptConfiguratorError(
-                "Nginx build doesn't support SNI")
+            raise errors.ConfiguratorError("Nginx build doesn't support SNI")
 
         nginx_version = tuple([int(i) for i in version_matches[0].split(".")])
 
         # nginx < 0.8.48 uses machine hostname as default server_name instead of
         # the empty string
         if nginx_version < (0, 8, 48):
-            raise errors.LetsEncryptConfiguratorError(
-                "Nginx version must be 0.8.48+")
+            raise errors.ConfiguratorError("Nginx version must be 0.8.48+")
 
         return nginx_version
 
@@ -570,14 +564,11 @@ def nginx_restart(nginx_ctl):
 
             if nginx_proc.returncode != 0:
                 # Enter recovery routine...
-                logging.error("Nginx Restart Failed!")
-                logging.error(stdout)
-                logging.error(stderr)
+                logging.error("Nginx Restart Failed!\n%s\n%s", stdout, stderr)
                 return False
 
     except (OSError, ValueError):
-        logging.fatal(
-            "Nginx Restart Failed - Please Check the Configuration")
+        logging.fatal("Nginx Restart Failed - Please Check the Configuration")
         sys.exit(1)
 
     return True

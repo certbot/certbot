@@ -15,8 +15,10 @@ cover () {
             "$1" --cover-min-percentage="$2" "$1"
 }
 
+rm -f .coverage  # --cover-erase is off, make sure stats are correct
+
 # don't use sequential composition (;), if letsencrypt_nginx returns
 # 0, coveralls submit will be triggered (c.f. .travis.yml,
 # after_success)
 cover letsencrypt 95 && cover acme 100 && \
-    cover letsencrypt_apache 78 && cover letsencrypt_nginx 96
+    cover letsencrypt_apache 76 && cover letsencrypt_nginx 96

@@ -12,10 +12,11 @@ from letsencrypt import achallenges
 from letsencrypt import errors
 from letsencrypt import le_util
 
+from letsencrypt.plugins import common
+
 from letsencrypt.tests import acme_util
 
 from letsencrypt_apache import configurator
-from letsencrypt_apache import obj
 from letsencrypt_apache import parser
 
 from letsencrypt_apache.tests import util
@@ -112,7 +113,7 @@ class TwoVhost80Test(util.ApacheTest):
                          self.vh_truth[1].filep)
 
     def test_is_name_vhost(self):
-        addr = obj.Addr.fromstring("*:80")
+        addr = common.Addr.fromstring("*:80")
         self.assertTrue(self.config.is_name_vhost(addr))
         self.config.version = (2, 2)
         self.assertFalse(self.config.is_name_vhost(addr))
@@ -133,7 +134,7 @@ class TwoVhost80Test(util.ApacheTest):
         self.assertEqual(ssl_vhost.path,
                          "/files" + ssl_vhost.filep + "/IfModule/VirtualHost")
         self.assertEqual(len(ssl_vhost.addrs), 1)
-        self.assertEqual(set([obj.Addr.fromstring("*:443")]), ssl_vhost.addrs)
+        self.assertEqual(set([common.Addr.fromstring("*:443")]), ssl_vhost.addrs)
         self.assertEqual(ssl_vhost.names, set(["encryption-example.demo"]))
         self.assertTrue(ssl_vhost.ssl)
         self.assertFalse(ssl_vhost.enabled)
@@ -196,17 +197,14 @@ class TwoVhost80Test(util.ApacheTest):
 
         mock_popen().communicate.return_value = (
             "Server Version: Apache (Debian)", "")
-        self.assertRaises(
-            errors.LetsEncryptConfiguratorError, self.config.get_version)
+        self.assertRaises(errors.ConfiguratorError, self.config.get_version)
 
         mock_popen().communicate.return_value = (
             "Server Version: Apache/2.3{0} Apache/2.4.7".format(os.linesep), "")
-        self.assertRaises(
-            errors.LetsEncryptConfiguratorError, self.config.get_version)
+        self.assertRaises(errors.ConfiguratorError, self.config.get_version)
 
         mock_popen.side_effect = OSError("Can't find program")
-        self.assertRaises(
-            errors.LetsEncryptConfiguratorError, self.config.get_version)
+        self.assertRaises(errors.ConfiguratorError, self.config.get_version)
 
 
 if __name__ == "__main__":

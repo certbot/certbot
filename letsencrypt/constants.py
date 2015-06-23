@@ -81,7 +81,3 @@ ACCOUNT_KEYS_DIR = "keys"
 REC_TOKEN_DIR = "recovery_tokens"
 """Directory where all recovery tokens are saved (relative to
 IConfig.work_dir)."""
-
-NETSTAT = "/bin/netstat"
-"""Location of netstat binary for checking whether a listener is already
-running on the specified port (Linux-specific)."""
