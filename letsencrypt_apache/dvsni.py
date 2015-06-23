@@ -59,10 +59,9 @@ class ApacheDvsni(common.Dvsni):
             vhost = self.configurator.choose_vhost(achall.domain)
             if vhost is None:
                 logging.error(
-                    "No vhost exists with servername or alias of: %s",
-                    achall.domain)
-                logging.error("No _default_:443 vhost exists")
-                logging.error("Please specify servernames in the Apache config")
+                    "No vhost exists with servername or alias of: %s. "
+                    "No _default_:443 vhost exists. Please specify servernames "
+                    "in the Apache config", achall.domain)
                 return None
 
             # TODO - @jdkasten review this code to make sure it makes sense
@@ -141,7 +140,7 @@ class ApacheDvsni(common.Dvsni):
         """
         ips = " ".join(str(i) for i in ip_addrs)
         document_root = os.path.join(
-            self.configurator.config.config_dir, "dvsni_page/")
+            self.configurator.config.work_dir, "dvsni_page/")
         # TODO: Python docs is not clear how mutliline string literal
         # newlines are parsed on different platforms. At least on
         # Linux (Debian sid), when source file uses CRLF, Python still

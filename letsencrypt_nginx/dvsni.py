@@ -50,9 +50,9 @@ class NginxDvsni(common.Dvsni):
             vhost = self.configurator.choose_vhost(achall.domain)
             if vhost is None:
                 logging.error(
-                    "No nginx vhost exists with server_name matching: %s",
+                    "No nginx vhost exists with server_name matching: %s. "
+                    "Please specify server_names in the Nginx config.",
                     achall.domain)
-                logging.error("Please specify server_names in the Nginx config")
                 return None
 
             for addr in vhost.addrs:
@@ -124,7 +124,7 @@ class NginxDvsni(common.Dvsni):
 
         """
         document_root = os.path.join(
-            self.configurator.config.config_dir, "dvsni_page")
+            self.configurator.config.work_dir, "dvsni_page")
 
         block = [['listen', str(addr)] for addr in addrs]
 

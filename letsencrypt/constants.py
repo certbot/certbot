@@ -87,8 +87,3 @@ REC_TOKEN_DIR = "recovery_tokens"
 
 RENEWER_CONFIG_FILENAME = "renewer.conf"
 """Renewer config file name (relative to `IConfig.config_dir`)."""
-
-
-NETSTAT = "/bin/netstat"
-"""Location of netstat binary for checking whether a listener is already
-running on the specified port (Linux-specific)."""

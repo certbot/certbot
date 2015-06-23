@@ -148,8 +148,7 @@ class IConfig(zope.interface.Interface):
 
     """
     server = zope.interface.Attribute(
-        "CA hostname (and optionally :port). The server certificate must "
-        "be trusted in order to avoid further modifications to the client.")
+        "ACME new registration URI (including /acme/new-reg).")
     email = zope.interface.Attribute(
         "Email used for registration and recovery contact.")
     rsa_key_size = zope.interface.Attribute("Size of the RSA key.")

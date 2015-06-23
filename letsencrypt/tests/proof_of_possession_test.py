@@ -8,7 +8,7 @@ import mock
 
 from acme import challenges
 from acme import jose
-from acme import messages2
+from acme import messages
 
 from letsencrypt import achallenges
 from letsencrypt import proof_of_possession
@@ -48,8 +48,8 @@ class ProofOfPossessionTest(unittest.TestCase):
             issuers=(), authorized_for=())
         chall = challenges.ProofOfPossession(
             alg=jose.RS256, nonce='zczv4HMLVe_0kimJ25Juig', hints=hints)
-        challb = messages2.ChallengeBody(
-            chall=chall, uri="http://example", status=messages2.STATUS_PENDING)
+        challb = messages.ChallengeBody(
+            chall=chall, uri="http://example", status=messages.STATUS_PENDING)
         self.achall = achallenges.ProofOfPossession(
             challb=challb, domain="example.com")
 
@@ -60,8 +60,8 @@ class ProofOfPossessionTest(unittest.TestCase):
             issuers=(), authorized_for=())
         chall = challenges.ProofOfPossession(
             alg=jose.HS512, nonce='zczv4HMLVe_0kimJ25Juig', hints=hints)
-        challb = messages2.ChallengeBody(
-            chall=chall, uri="http://example", status=messages2.STATUS_PENDING)
+        challb = messages.ChallengeBody(
+            chall=chall, uri="http://example", status=messages.STATUS_PENDING)
         self.achall = achallenges.ProofOfPossession(
             challb=challb, domain="example.com")
         self.assertEqual(self.proof_of_pos.perform(self.achall), None)

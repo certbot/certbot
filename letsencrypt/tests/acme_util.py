@@ -8,7 +8,7 @@ import Crypto.PublicKey.RSA
 
 from acme import challenges
 from acme import jose
-from acme import messages2
+from acme import messages
 
 
 KEY = jose.HashableRSAKey(Crypto.PublicKey.RSA.importKey(
@@ -78,19 +78,19 @@ def chall_to_challb(chall, status):  # pylint: disable=redefined-outer-name
         "status": status,
     }
 
-    if status == messages2.STATUS_VALID:
+    if status == messages.STATUS_VALID:
         kwargs.update({"validated": datetime.datetime.now()})
 
-    return messages2.ChallengeBody(**kwargs)  # pylint: disable=star-args
+    return messages.ChallengeBody(**kwargs)  # pylint: disable=star-args
 
 
 # Pending ChallengeBody objects
-DVSNI_P = chall_to_challb(DVSNI, messages2.STATUS_PENDING)
-SIMPLE_HTTP_P = chall_to_challb(SIMPLE_HTTP, messages2.STATUS_PENDING)
-DNS_P = chall_to_challb(DNS, messages2.STATUS_PENDING)
-RECOVERY_CONTACT_P = chall_to_challb(RECOVERY_CONTACT, messages2.STATUS_PENDING)
-RECOVERY_TOKEN_P = chall_to_challb(RECOVERY_TOKEN, messages2.STATUS_PENDING)
-POP_P = chall_to_challb(POP, messages2.STATUS_PENDING)
+DVSNI_P = chall_to_challb(DVSNI, messages.STATUS_PENDING)
+SIMPLE_HTTP_P = chall_to_challb(SIMPLE_HTTP, messages.STATUS_PENDING)
+DNS_P = chall_to_challb(DNS, messages.STATUS_PENDING)
+RECOVERY_CONTACT_P = chall_to_challb(RECOVERY_CONTACT, messages.STATUS_PENDING)
+RECOVERY_TOKEN_P = chall_to_challb(RECOVERY_TOKEN, messages.STATUS_PENDING)
+POP_P = chall_to_challb(POP, messages.STATUS_PENDING)
 
 CHALLENGES_P = [SIMPLE_HTTP_P, DVSNI_P, DNS_P,
                 RECOVERY_CONTACT_P, RECOVERY_TOKEN_P, POP_P]
@@ -106,7 +106,7 @@ def gen_authzr(authz_status, domain, challs, statuses, combos=True):
     """Generate an authorization resource.
 
     :param authz_status: Status object
-    :type authz_status: :class:`acme.messages2.Status`
+    :type authz_status: :class:`acme.messages.Status`
     :param list challs: Challenge objects
     :param list statuses: status of each challenge object
     :param bool combos: Whether or not to add combinations
@@ -118,13 +118,13 @@ def gen_authzr(authz_status, domain, challs, statuses, combos=True):
         for chall, status in itertools.izip(challs, statuses)
     )
     authz_kwargs = {
-        "identifier": messages2.Identifier(
-            typ=messages2.IDENTIFIER_FQDN, value=domain),
+        "identifier": messages.Identifier(
+            typ=messages.IDENTIFIER_FQDN, value=domain),
         "challenges": challbs,
     }
     if combos:
         authz_kwargs.update({"combinations": gen_combos(challbs)})
-    if authz_status == messages2.STATUS_VALID:
+    if authz_status == messages.STATUS_VALID:
         authz_kwargs.update({
             "status": authz_status,
             "expires": datetime.datetime.now() + datetime.timedelta(days=31),
@@ -135,8 +135,8 @@ def gen_authzr(authz_status, domain, challs, statuses, combos=True):
         })
 
     # pylint: disable=star-args
-    return messages2.AuthorizationResource(
+    return messages.AuthorizationResource(
         uri="https://trusted.ca/new-authz-resource",
         new_cert_uri="https://trusted.ca/new-cert",
-        body=messages2.Authorization(**authz_kwargs)
+        body=messages.Authorization(**authz_kwargs)
     )
