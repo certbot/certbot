@@ -198,19 +198,29 @@ class ChallengeBodyTest(unittest.TestCase):
         self.chall = challenges.DNS(token='foo')
 
         from acme.messages import ChallengeBody
-        from acme.messages import STATUS_VALID
-        self.status = STATUS_VALID
+        from acme.messages import Error
+        from acme.messages import STATUS_INVALID
+        self.status = STATUS_INVALID
+        error = Error(typ='serverInternal',
+                      detail='Unable to communicate with DNS server')
         self.challb = ChallengeBody(
-            uri='http://challb', chall=self.chall, status=self.status)
+            uri='http://challb', chall=self.chall, status=self.status,
+            error=error)
 
         self.jobj_to = {
             'uri': 'http://challb',
             'status': self.status,
             'type': 'dns',
             'token': 'foo',
+            'error': error,
         }
         self.jobj_from = self.jobj_to.copy()
-        self.jobj_from['status'] = 'valid'
+        self.jobj_from['status'] = 'invalid'
+        self.jobj_from['error'] = {
+            'type': 'urn:acme:error:serverInternal',
+            'detail': 'Unable to communicate with DNS server',
+        }
+
 
     def test_to_partial_json(self):
         self.assertEqual(self.jobj_to, self.challb.to_partial_json())
