@@ -9,7 +9,11 @@
 #     - 6.0.10 "squeeze" (x64)
 #     - 7.8 "wheezy" (x64)
 #     - 8.0 "jessie" (x64)
+#   - Raspbian:
+#     - 7.8 (armhf)
 
+apt-get update
+apt-get install -y lsb-release
 
 # virtualenv binary can be found in different packages depending on
 # distro version (#346)
@@ -43,7 +47,6 @@ fi
 #           #276, https://github.com/martinpaljak/M2Crypto/issues/62,
 #           M2Crypto setup.py:add_multiarch_paths
 
-apt-get update
 apt-get install -y --no-install-recommends \
   git-core \
   python \
