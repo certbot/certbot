@@ -161,7 +161,9 @@ class IConfig(zope.interface.Interface):
     account_keys_dir = zope.interface.Attribute(
         "Directory where all account keys are stored.")
     backup_dir = zope.interface.Attribute("Configuration backups directory.")
-    csr_dir = zope.interface.Attribute("CSRs storage.")
+    cert_dir = zope.interface.Attribute(
+        "Directory where newly generated Certificate Signing Requests "
+        "(CSRs) and certificates not enrolled in the renewer are saved.")
     cert_key_backup = zope.interface.Attribute(
         "Directory where all certificates and keys are stored. "
         "Used for easy revocation.")

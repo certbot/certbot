@@ -67,8 +67,8 @@ CERT_KEY_BACKUP_DIR = "keys-certs"
 """Directory where all certificates and keys are stored (relative to
 `IConfig.work_dir`). Used for easy revocation."""
 
-CSR_DIR = "csrs"
-"""Directory (relative to `IConfig.config_dir`) where CSRs are saved."""
+CERT_DIR = "certs"
+"""See `.IConfig.cert_dir`."""
 
 IN_PROGRESS_DIR = "IN_PROGRESS"
 """Directory used before a permanent checkpoint is finalized (relative to
