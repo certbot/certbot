@@ -14,11 +14,15 @@ class Error(jose.JSONObjectWithFields, Exception):
     """
     ERROR_TYPE_NAMESPACE = 'urn:acme:error:'
     ERROR_TYPE_DESCRIPTIONS = {
-        'malformed': 'The request message was malformed',
-        'unauthorized': 'The client lacks sufficient authorization',
-        'serverInternal': 'The server experienced an internal error',
         'badCSR': 'The CSR is unacceptable (e.g., due to a short key)',
         'badNonce': 'The client sent an unacceptable anti-replay nonce',
+        'connection': 'The server could not connect to the client for DV',
+        'dnssec': 'The server could not validate a DNSSEC signed domain',
+        'malformed': 'The request message was malformed',
+        'serverInternal': 'The server experienced an internal error',
+        'tls': 'The server experienced a TLS error during DV',
+        'unauthorized': 'The client lacks sufficient authorization',
+        'unknownHost': 'The server could not resolve a domain name',
     }
 
     typ = jose.Field('type')
@@ -220,8 +224,11 @@ class ChallengeBody(ResourceBody):
     """
     __slots__ = ('chall',)
     uri = jose.Field('uri')
-    status = jose.Field('status', decoder=Status.from_json)
+    status = jose.Field('status', decoder=Status.from_json,
+                        omitempty=True, default=STATUS_PENDING)
     validated = fields.RFC3339Field('validated', omitempty=True)
+    error = jose.Field('error', decoder=Error.from_json,
+                       omitempty=True, default=None)
 
     def to_partial_json(self):
         jobj = super(ChallengeBody, self).to_partial_json()
