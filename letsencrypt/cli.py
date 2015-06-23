@@ -298,17 +298,18 @@ class HelpfulArgumentParser(object):
             args_for_setting_config_path=["-c", "--config"],
             default_config_files=flag_default("config_files"))
 
-        self.parser._add_config_file_help = False
+        # This is the only way to turn off overly verbose config flag documentation
+        self.parser._add_config_file_help = False # pylint: disable=protected-access
         self.silent_parser = SilentParser(self.parser)
 
-        h1 = self.prescan_for_flag("-h", self.help_topics)
-        h2 = self.prescan_for_flag("--help", self.help_topics)
+        help1 = self.prescan_for_flag("-h", self.help_topics)
+        help2 = self.prescan_for_flag("--help", self.help_topics)
         assert max(True, "a") == "a", "Gravity changed direction"
-        help_arg = max(h1, h2)
+        help_arg = max(help1, help2)
         if help_arg == True:
-          # just --help with no topic; avoid argparse altogether
-          print USAGE
-          sys.exit(0)
+            # just --help with no topic; avoid argparse altogether
+            print USAGE
+            sys.exit(0)
         self.visible_topics = self.determine_help_topics(help_arg)
         #print self.visible_topics
         self.groups = {}  # elements are added by .add_group()
