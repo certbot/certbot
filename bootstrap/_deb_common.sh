@@ -12,12 +12,11 @@
 #   - Raspbian:
 #     - 7.8 (armhf)
 
-apt-get update
-apt-get install -y lsb-release
 
 # virtualenv binary can be found in different packages depending on
 # distro version (#346)
 newer () {
+  apt-get install -y lsb-release --no-install-recommends
   distro=$(lsb_release -si)
   # 6.0.10 => 60, 14.04 => 1404
   # TODO: in sid version==unstable
@@ -32,6 +31,8 @@ newer () {
     return 1;
   fi
 }
+
+apt-get update
 
 # you can force newer if lsb_release is not available (e.g. Docker
 # debian:jessie base image)
