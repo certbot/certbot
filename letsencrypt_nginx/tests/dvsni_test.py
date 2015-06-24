@@ -51,8 +51,7 @@ class DvsniPerformTest(util.NginxTest):
         super(DvsniPerformTest, self).setUp()
 
         config = util.get_nginx_configurator(
-            self.config_path, self.config_dir, self.work_dir,
-            self.ssl_options)
+            self.config_path, self.config_dir, self.work_dir)
 
         from letsencrypt_nginx import dvsni
         self.sni = dvsni.NginxDvsni(config)

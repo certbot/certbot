@@ -89,8 +89,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     def add_parser_arguments(cls, add):
         add("server-root", default=constants.CLI_DEFAULTS["server_root"],
             help="Apache server root directory.")
-        add("mod-ssl-conf", default=constants.CLI_DEFAULTS["mod_ssl_conf"],
-            help="Contains standard Apache SSL directives.")
         add("ctl", default=constants.CLI_DEFAULTS["ctl"],
             help="Path to the 'apache2ctl' binary, used for 'configtest' and "
                  "retrieving Apache2 version number.")
@@ -99,6 +97,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         add("init-script", default=constants.CLI_DEFAULTS["init_script"],
             help="Path to the Apache init script (used for server "
             "reload/restart).")
+        add("le-vhost-ext", default=constants.CLI_DEFAULTS["le_vhost_ext"],
+            help="SSL vhost configuration extension.")
+
 
     def __init__(self, *args, **kwargs):
         """Initialize an Apache Configurator.
@@ -125,10 +126,15 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.vhosts = None
         self._enhance_func = {"redirect": self._enable_redirect}
 
+    @property
+    def mod_ssl_conf(self):
+        """Full absolute path to SSL configuration file."""
+        return os.path.join(self.config.config_dir, constants.MOD_SSL_CONF_DEST)
+
     def prepare(self):
         """Prepare the authenticator/installer."""
         self.parser = parser.ApacheParser(
-            self.aug, self.conf('server-root'), self.conf('mod-ssl-conf'))
+            self.aug, self.conf('server-root'), self.mod_ssl_conf)
         # Check for errors in parsing files with Augeas
         self.check_parsing_errors("httpd.aug")
 
@@ -146,7 +152,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         #     on initialization
         self._prepare_server_https()
 
-        temp_install(self.conf('mod-ssl-conf'))
+        temp_install(self.mod_ssl_conf)
 
     def deploy_cert(self, domain, cert_path, key_path, chain_path=None):
         """Deploys certificate to specified virtual host.
@@ -445,7 +451,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """Makes an ssl_vhost version of a nonssl_vhost.
 
         Duplicates vhost and adds default ssl options
-        New vhost will reside as (nonssl_vhost.path) + ``IConfig.le_vhost_ext``
+        New vhost will reside as (nonssl_vhost.path) +
+        ``letsencrypt_apache.constants.CLI_DEFAULTS["le_vhost_ext"]``
 
         .. note:: This function saves the configuration
 
@@ -459,9 +466,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         avail_fp = nonssl_vhost.filep
         # Get filepath of new ssl_vhost
         if avail_fp.endswith(".conf"):
-            ssl_fp = avail_fp[:-(len(".conf"))] + self.config.le_vhost_ext
+            ssl_fp = avail_fp[:-(len(".conf"))] + self.conf("le_vhost_ext")
         else:
-            ssl_fp = avail_fp + self.config.le_vhost_ext
+            ssl_fp = avail_fp + self.conf("le_vhost_ext")
 
         # First register the creation so that it is properly removed if
         # configuration is rolled back
@@ -1161,4 +1168,4 @@ def temp_install(options_ssl):
 
     # Check to make sure options-ssl.conf is installed
     if not os.path.isfile(options_ssl):
-        shutil.copyfile(constants.MOD_SSL_CONF, options_ssl)
+        shutil.copyfile(constants.MOD_SSL_CONF_SRC, options_ssl)

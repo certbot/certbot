@@ -175,10 +175,10 @@ class Dvsni(object):
 
 # test utils
 
-def setup_ssl_options(config_dir, mod_ssl_conf):
+def setup_ssl_options(config_dir, src, dest):
     """Move the ssl_options into position and return the path."""
-    option_path = os.path.join(config_dir, "options-ssl.conf")
-    shutil.copyfile(mod_ssl_conf, option_path)
+    option_path = os.path.join(config_dir, dest)
+    shutil.copyfile(src, option_path)
     return option_path
 
 
