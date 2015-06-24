@@ -205,11 +205,12 @@ def success_installation(domains):
 
     """
     util(interfaces.IDisplay).notification(
-        "Congratulations! You have successfully enabled {0}! You should test your configuration:{1}"
-        "{2}".format(
+        "Congratulations! You have successfully enabled {0}!{1}{1}"
+        "You should test your configuration at:{1}{2}".format(
             _gen_https_names(domains),
             os.linesep,
             os.linesep.join(_gen_ssl_lab_urls(domains))),
+        height=(10 + len(domains)),
         pause=False)
 
 
@@ -219,7 +220,7 @@ def _gen_ssl_lab_urls(domains):
     :param list domains: Each domain is a 'str'
 
     """
-    return ["https://www.ssllabs.com/ssltest/analyze.html?d=%s", dom for dom in domains]
+    return ["https://www.ssllabs.com/ssltest/analyze.html?d=%s" % dom for dom in domains]
 
 
 def _gen_https_names(domains):

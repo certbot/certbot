@@ -195,9 +195,6 @@ class GenSSLLabURLs(unittest.TestCase):
     def test_zero(self):
         self.assertEqual(self._call([]), [])
 
-    def test_one(self):
-        self.assertTrue("eff.org" in self._call(["eff.org"])[0])
-
     def test_two(self):
         urls = self._call(["eff.org", "umich.edu"])
         self.assertTrue("eff.org" in urls[0])
@@ -328,7 +325,7 @@ class SuccessInstallationTest(unittest.TestCase):
         names = ["example.com", "abc.com"]
 
         self._call(names)
-
+        
         self.assertEqual(mock_util().notification.call_count, 1)
         arg = mock_util().notification.call_args_list[0][0][0]
 
