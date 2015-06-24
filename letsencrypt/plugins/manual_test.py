@@ -14,7 +14,8 @@ class ManualAuthenticatorTest(unittest.TestCase):
 
     def setUp(self):
         from letsencrypt.plugins.manual import ManualAuthenticator
-        self.config = mock.MagicMock(no_simple_http_tls=True)
+        self.config = mock.MagicMock(
+            no_simple_http_tls=True, simple_http_port=4430)
         self.auth = ManualAuthenticator(config=self.config, name="manual")
         self.achalls = [achallenges.SimpleHTTP(
             challb=acme_util.SIMPLE_HTTP, domain="foo.com", key=None)]
@@ -41,7 +42,7 @@ class ManualAuthenticatorTest(unittest.TestCase):
         resp = challenges.SimpleHTTPResponse(tls=False, path='Zm9v')
         self.assertEqual([resp], self.auth.perform(self.achalls))
         mock_raw_input.assert_called_once()
-        mock_verify.assert_called_with(self.achalls[0].challb, "foo.com")
+        mock_verify.assert_called_with(self.achalls[0].challb, "foo.com", 4430)
 
         message = mock_stdout.write.mock_calls[0][1][0]
         self.assertTrue(self.achalls[0].token in message)

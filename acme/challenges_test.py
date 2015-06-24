@@ -7,6 +7,7 @@ import Crypto.PublicKey.RSA
 import M2Crypto
 import mock
 import requests
+import urlparse
 
 from acme import jose
 from acme import other
@@ -85,6 +86,10 @@ class SimpleHTTPResponseTest(unittest.TestCase):
         self.assertEqual('http', self.msg_http.scheme)
         self.assertEqual('https', self.msg_https.scheme)
 
+    def test_port(self):
+        self.assertEqual(80, self.msg_http.port)
+        self.assertEqual(443, self.msg_https.port)
+
     def test_uri(self):
         self.assertEqual(
             'http://example.com/.well-known/acme-challenge/'
@@ -133,6 +138,12 @@ class SimpleHTTPResponseTest(unittest.TestCase):
     def test_simple_verify_connection_error(self, mock_get):
         mock_get.side_effect = requests.exceptions.RequestException
         self.assertFalse(self.resp_http.simple_verify(self.chall, "local"))
+
+    @mock.patch("acme.challenges.requests.get")
+    def test_simple_verify_port(self, mock_get):
+        self.resp_http.simple_verify(self.chall, "local", 4430)
+        self.assertEqual("local:4430", urlparse.urlparse(
+            mock_get.mock_calls[0][1][0]).netloc)
 
 
 class DVSNITest(unittest.TestCase):

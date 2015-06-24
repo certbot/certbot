@@ -49,7 +49,7 @@ echo -n {achall.token} > {response.URI_ROOT_PATH}/{response.path}
 # run only once per server:
 python -c "import BaseHTTPServer, SimpleHTTPServer; \\
 SimpleHTTPServer.SimpleHTTPRequestHandler.extensions_map = {{'': '{ct}'}}; \\
-s = BaseHTTPServer.HTTPServer(('', 80), SimpleHTTPServer.SimpleHTTPRequestHandler); \\
+s = BaseHTTPServer.HTTPServer(('', {port}), SimpleHTTPServer.SimpleHTTPRequestHandler); \\
 s.serve_forever()" """
     """Non-TLS command template."""
 
@@ -62,7 +62,7 @@ echo -n {achall.token} > {response.URI_ROOT_PATH}/{response.path}
 openssl req -new -newkey rsa:4096 -subj "/" -days 1 -nodes -x509 -keyout ../key.pem -out ../cert.pem
 python -c "import BaseHTTPServer, SimpleHTTPServer, ssl; \\
 SimpleHTTPServer.SimpleHTTPRequestHandler.extensions_map = {{'': '{ct}'}}; \\
-s = BaseHTTPServer.HTTPServer(('', 443), SimpleHTTPServer.SimpleHTTPRequestHandler); \\
+s = BaseHTTPServer.HTTPServer(('', {port}), SimpleHTTPServer.SimpleHTTPRequestHandler); \\
 s.socket = ssl.wrap_socket(s.socket, keyfile='../key.pem', certfile='../cert.pem'); \\
 s.serve_forever()" """
     """TLS command template.
@@ -113,9 +113,12 @@ binary for temporary key/certificate generation.""".replace("\n", "")
         self._notify_and_wait(self.MESSAGE_TEMPLATE.format(
             achall=achall, response=response, uri=response.uri(achall.domain),
             ct=response.CONTENT_TYPE, command=self.template.format(
-                achall=achall, response=response, ct=response.CONTENT_TYPE)))
+                achall=achall, response=response, ct=response.CONTENT_TYPE,
+                port=(response.port if self.config.simple_http_port is None
+                      else self.config.simple_http_port))))
 
-        if response.simple_verify(achall.challb, achall.domain):
+        if response.simple_verify(
+                achall.challb, achall.domain, self.config.simple_http_port):
             return response
         else:
             return None

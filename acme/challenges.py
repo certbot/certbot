@@ -88,6 +88,11 @@ class SimpleHTTPResponse(ChallengeResponse):
         """URL scheme for the provisioned resource."""
         return "https" if self.tls else "http"
 
+    @property
+    def port(self):
+        """Port that the ACME client should be listening for validation."""
+        return 443 if self.tls else 80
+
     def uri(self, domain):
         """Create an URI to the provisioned resource.
 
@@ -100,7 +105,7 @@ class SimpleHTTPResponse(ChallengeResponse):
         return self._URI_TEMPLATE.format(
             scheme=self.scheme, domain=domain, path=self.path)
 
-    def simple_verify(self, chall, domain):
+    def simple_verify(self, chall, domain, port=None):
         """Simple verify.
 
         According to the ACME specification, "the ACME server MUST
@@ -109,12 +114,21 @@ class SimpleHTTPResponse(ChallengeResponse):
 
         :param .SimpleHTTP chall: Corresponding challenge.
         :param str domain: Domain name being verified.
+        :param int port: Port used in the validation.
 
         :returns: ``True`` iff validation is successful, ``False``
             otherwise.
         :rtype: bool
 
         """
+        # TODO: ACME specification defines URI template that doesn't
+        # allow to use a custom port... Make sure port is not in the
+        # request URI, if it's standard.
+        if port is not None and port != self.port:
+            logger.warn(
+                "Using non-standard port for SimpleHTTP verification: %s", port)
+            domain += ":{0}".format(port)
+
         uri = self.uri(domain)
         logger.debug("Verifying %s at %s...", chall.typ, uri)
         try:
