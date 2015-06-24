@@ -33,8 +33,7 @@ def make_or_verify_dir(directory, mode=0o755, uid=0):
         if exception.errno == errno.EEXIST:
             if not check_permissions(directory, mode, uid):
                 raise errors.Error(
-                    "%s exists, but does not have the proper "
-                    "permissions or owner" % directory)
+                    "%s exists, this client can't access it" % directory)
         else:
             raise
 
