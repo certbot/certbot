@@ -32,14 +32,8 @@ def make_or_verify_dir(directory, mode=0o755, uid=0):
     except OSError as exception:
         if exception.errno == errno.EEXIST:
             if not check_permissions(directory, mode, uid):
-<<<<<<< HEAD
-                raise errors.LetsEncryptClientError(
-                    "%s exists, this client can't access it" % directory)
-=======
                 raise errors.Error(
-                    "%s exists, but does not have the proper "
-                    "permissions or owner" % directory)
->>>>>>> letsencrypt/master
+                    "%s exists, this client can't access it" % directory)
         else:
             raise
 
