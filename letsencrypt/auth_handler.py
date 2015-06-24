@@ -489,8 +489,7 @@ def is_preferred(offered_challb, satisfied,
 _ERROR_HELP_COMMON = (
     'To fix these errors, please make sure that your domain name was entered '
     'correctly and the DNS A/AAAA record(s) for that domain contains the '
-    'right IP address.'
-)
+    'right IP address.')
 
 
 _ERROR_HELP = {
@@ -515,8 +514,7 @@ _ERROR_HELP = {
     'unauthorized' : _ERROR_HELP_COMMON,
     'unknownHost' :
         'To fix these errors, please make sure that your domain name was '
-        'entered correctly.',
-}
+        'entered correctly.',}
 
 
 def _report_failed_challs(failed_achalls):
@@ -533,7 +531,8 @@ def _report_failed_challs(failed_achalls):
 
     reporter = zope.component.getUtility(interfaces.IReporter)
     for achalls in problems.itervalues():
-        reporter.add_message(_generate_failed_chall_msg(achalls), 1, True)
+        reporter.add_message(
+            _generate_failed_chall_msg(achalls), reporter.MEDIUM_PRIORITY, True)
 
 
 def _generate_failed_chall_msg(failed_achalls):
@@ -549,8 +548,7 @@ def _generate_failed_chall_msg(failed_achalls):
     """
     typ = failed_achalls[0].error.typ
     msg = [
-        'The following \'{0}\' errors were reported by the server:'.format(typ)
-    ]
+        "The following '{0}' errors were reported by the server:".format(typ)]
 
     problems = dict()
     for achall in failed_achalls:
