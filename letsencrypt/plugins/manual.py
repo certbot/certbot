@@ -37,8 +37,14 @@ command on the target server (as root):
 {command}
 """
 
+    # "cd /tmp/letsencrypt" makes sure user doesn't serve /root,
+    # separate "public_html" ensures that cert.pem/key.pem are not
+    # served and makes it more obvious that Python command will serve
+    # anything recursively under the cwd
+
     HTTP_TEMPLATE = """\
-mkdir -p {response.URI_ROOT_PATH}
+mkdir -p /tmp/letsencrypt/public_html/{response.URI_ROOT_PATH}
+cd /tmp/letsencrypt/public_html
 echo -n {achall.token} > {response.URI_ROOT_PATH}/{response.path}
 # run only once per server:
 python -c "import BaseHTTPServer, SimpleHTTPServer; \\
@@ -49,14 +55,15 @@ s.serve_forever()" """
 
     # https://www.piware.de/2011/01/creating-an-https-server-in-python/
     HTTPS_TEMPLATE = """\
-mkdir -p {response.URI_ROOT_PATH}  # run only once per server
+mkdir -p /tmp/letsencrypt/public_html/{response.URI_ROOT_PATH}
+cd /tmp/letsencrypt/public_html
 echo -n {achall.token} > {response.URI_ROOT_PATH}/{response.path}
 # run only once per server:
-openssl req -new -newkey rsa:4096 -subj "/" -days 1 -nodes -x509 -keyout key.pem -out cert.pem
+openssl req -new -newkey rsa:4096 -subj "/" -days 1 -nodes -x509 -keyout ../key.pem -out ../cert.pem
 python -c "import BaseHTTPServer, SimpleHTTPServer, ssl; \\
 SimpleHTTPServer.SimpleHTTPRequestHandler.extensions_map = {{'': '{ct}'}}; \\
 s = BaseHTTPServer.HTTPServer(('', 443), SimpleHTTPServer.SimpleHTTPRequestHandler); \\
-s.socket = ssl.wrap_socket(s.socket, keyfile='key.pem', certfile='cert.pem'); \\
+s.socket = ssl.wrap_socket(s.socket, keyfile='../key.pem', certfile='../cert.pem'); \\
 s.serve_forever()" """
     """TLS command template.
 
