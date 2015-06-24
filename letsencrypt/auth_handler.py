@@ -512,9 +512,7 @@ _ERROR_HELP = {
         'to date TLS configuration that allows the server to communicate with '
         'the Let\'s Encrypt client.',
     'unauthorized' : _ERROR_HELP_COMMON,
-    'unknownHost' :
-        'To fix these errors, please make sure that your domain name was '
-        'entered correctly.',}
+    'unknownHost' : _ERROR_HELP_COMMON,}
 
 
 def _report_failed_challs(failed_achalls):
@@ -552,16 +550,14 @@ def _generate_failed_chall_msg(failed_achalls):
 
     problems = dict()
     for achall in failed_achalls:
-        problems.setdefault(achall.error.description, []).append(achall.domain)
+        problems.setdefault(achall.error.description, set()).add(achall.domain)
     for problem in problems:
-        domains = problems[problem]
-        domains.sort()
         msg.append('\n\nDomains: ')
-        msg.append(', '.join(domains))
+        msg.append(', '.join(sorted(problems[problem])))
         msg.append('\nError: {0}'.format(problem))
 
     if typ in _ERROR_HELP:
         msg.append('\n\n')
         msg.append(_ERROR_HELP[typ])
 
-    return "".join(msg)
+    return ''.join(msg)
