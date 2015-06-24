@@ -97,7 +97,7 @@ Configurators may implement just one of those).
 There are also `~letsencrypt.interfaces.IDisplay` plugins,
 which implement bindings to alternative UI libraries.
 
-.. _interfaces.py: https://github.com/letsencrypt/lets-encrypt-preview/blob/master/letsencrypt/interfaces.py
+.. _interfaces.py: https://github.com/letsencrypt/letsencrypt/blob/master/letsencrypt/interfaces.py
 
 
 Authenticators

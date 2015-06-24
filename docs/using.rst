@@ -14,7 +14,7 @@ server that the domain your requesting a cert for resolves to,
    sudo docker run -it --rm -p 443:443 --name letsencrypt \
                -v "/etc/letsencrypt:/etc/letsencrypt" \
                -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
-               quay.io/letsencrypt/lets-encrypt-preview:latest
+               quay.io/letsencrypt/letsencrypt:latest
 
 and follow the instructions. Your new cert will be available in
 ``/etc/letsencrypt/certs``.
@@ -30,8 +30,8 @@ Please `install Git`_ and run the following commands:
 
 .. code-block:: shell
 
-   git clone https://github.com/letsencrypt/lets-encrypt-preview
-   cd lets-encrypt-preview
+   git clone https://github.com/letsencrypt/letsencrypt
+   cd letsencrypt
 
 Alternatively you could `download the ZIP archive`_ and extract the
 snapshot of our repository, but it's strongly recommended to use the
@@ -39,7 +39,7 @@ above method instead.
 
 .. _`install Git`: https://git-scm.com/book/en/v2/Getting-Started-Installing-Git
 .. _`download the ZIP archive`:
-   https://github.com/letsencrypt/lets-encrypt-preview/archive/master.zip
+   https://github.com/letsencrypt/letsencrypt/archive/master.zip
 
 
 Prerequisites
@@ -76,7 +76,7 @@ For squeeze you will need to:
 - Use ``virtualenv --no-site-packages -p python`` instead of ``-p python2``.
 
 
-.. _`#280`: https://github.com/letsencrypt/lets-encrypt-preview/issues/280
+.. _`#280`: https://github.com/letsencrypt/letsencrypt/issues/280
 
 
 Mac OSX
