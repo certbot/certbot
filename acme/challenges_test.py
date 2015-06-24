@@ -86,10 +86,12 @@ class SimpleHTTPResponseTest(unittest.TestCase):
         self.assertEqual('https', self.msg_https.scheme)
 
     def test_uri(self):
-        self.assertEqual('http://example.com/.well-known/acme-challenge/'
-                         '6tbIMBC5Anhl5bOlWT5ZFA', self.msg_http.uri('example.com'))
-        self.assertEqual('https://example.com/.well-known/acme-challenge/'
-                         '6tbIMBC5Anhl5bOlWT5ZFA', self.msg_https.uri('example.com'))
+        self.assertEqual(
+            'http://example.com/.well-known/acme-challenge/'
+            '6tbIMBC5Anhl5bOlWT5ZFA', self.msg_http.uri('example.com'))
+        self.assertEqual(
+            'https://example.com/.well-known/acme-challenge/'
+            '6tbIMBC5Anhl5bOlWT5ZFA', self.msg_https.uri('example.com'))
 
     def test_to_partial_json(self):
         self.assertEqual(self.jmsg_http, self.msg_http.to_partial_json())
