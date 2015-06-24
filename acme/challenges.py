@@ -63,6 +63,8 @@ class SimpleHTTPResponse(ChallengeResponse):
     MAX_PATH_LEN = 25
     """Maximum allowed `path` length."""
 
+    CONTENT_TYPE = "text/plain"
+
     @property
     def good_path(self):
         """Is `path` good?

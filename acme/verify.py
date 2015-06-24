@@ -20,7 +20,7 @@ def simple_http_simple_verify(response, chall, domain):
     try:
         http_response = requests.get(uri, verify=False)
     except requests.exceptions.RequestException as error:
-        logger.error("Unable to verify %s: %s", uri, error)
+        logger.error("Unable to reach %s: %s", uri, error)
         return False
     logger.debug(
         'Received %s. Headers: %s', http_response, http_response.headers)
@@ -30,4 +30,8 @@ def simple_http_simple_verify(response, chall, domain):
         logger.error(
             "Unable to verify %s! Expected: %r, returned: %r.",
             uri, chall.token, http_response.text)
-    return response.good_path and http_response and good_token
+    # TODO: spec contradicts itself, c.f.
+    # https://github.com/letsencrypt/acme-spec/pull/156/files#r33136438
+    good_ct = response.CONTENT_TYPE == http_response.headers.get(
+        "Content-Type", response.CONTENT_TYPE)
+    return response.good_path and good_ct and good_token

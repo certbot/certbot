@@ -30,6 +30,8 @@ Make sure your web server displays the following content at
 
 {achall.token}
 
+Content-Type header MUST be set to {ct}.
+
 If you don't have HTTP server configured, you can run the following
 command on the target server (as root):
 
@@ -40,7 +42,10 @@ command on the target server (as root):
 mkdir -p {response.URI_ROOT_PATH}
 echo -n {achall.token} > {response.URI_ROOT_PATH}/{response.path}
 # run only once per server:
-python -m SimpleHTTPServer 80"""
+python -c "import BaseHTTPServer, SimpleHTTPServer; \\
+SimpleHTTPServer.SimpleHTTPRequestHandler.extensions_map = {{'': '{ct}'}}; \\
+s = BaseHTTPServer.HTTPServer(('', 80), SimpleHTTPServer.SimpleHTTPRequestHandler); \\
+s.serve_forever()" """
     """Non-TLS command template."""
 
     # https://www.piware.de/2011/01/creating-an-https-server-in-python/
@@ -50,6 +55,7 @@ echo -n {achall.token} > {response.URI_ROOT_PATH}/{response.path}
 # run only once per server:
 openssl req -new -newkey rsa:4096 -subj "/" -days 1 -nodes -x509 -keyout key.pem -out cert.pem
 python -c "import BaseHTTPServer, SimpleHTTPServer, ssl; \\
+SimpleHTTPServer.SimpleHTTPRequestHandler.extensions_map = {{'': '{ct}'}}; \\
 s = BaseHTTPServer.HTTPServer(('', 443), SimpleHTTPServer.SimpleHTTPRequestHandler); \\
 s.socket = ssl.wrap_socket(s.socket, keyfile='key.pem', certfile='cert.pem'); \\
 s.serve_forever()" """
@@ -99,9 +105,9 @@ binary for temporary key/certificate generation.""".replace("\n", "")
         assert response.good_path  # is encoded os.urandom(18) good?
 
         self._notify_and_wait(self.MESSAGE_TEMPLATE.format(
-            achall=achall, response=response,
-            uri=response.uri(achall.domain),
-            command=self.template.format(achall=achall, response=response)))
+            achall=achall, response=response, uri=response.uri(achall.domain),
+            ct=response.CONTENT_TYPE, command=self.template.format(
+                achall=achall, response=response, ct=response.CONTENT_TYPE)))
 
         if acme_verify.simple_http_simple_verify(
                 response, achall.challb, achall.domain):

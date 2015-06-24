@@ -14,6 +14,8 @@ class SimpleHTTPSimpleVerifyTest(unittest.TestCase):
         self.chall = challenges.SimpleHTTP(token="foo")
         self.resp_http = challenges.SimpleHTTPResponse(path="bar", tls=False)
         self.resp_https = challenges.SimpleHTTPResponse(path="bar", tls=True)
+        self.good_headers = {
+            'Content-Type': challenges.SimpleHTTPResponse.CONTENT_TYPE}
 
     @classmethod
     def _call(cls, *args, **kwargs):
@@ -24,13 +26,20 @@ class SimpleHTTPSimpleVerifyTest(unittest.TestCase):
     def test_good_token(self, mock_get):
         for resp in self.resp_http, self.resp_https:
             mock_get.reset_mock()
-            mock_get.return_value = mock.MagicMock(text=self.chall.token)
+            mock_get.return_value = mock.MagicMock(
+                text=self.chall.token, headers=self.good_headers)
             self.assertTrue(self._call(resp, self.chall, "local"))
             mock_get.assert_called_once_with(resp.uri("local"), verify=False)
 
     @mock.patch("acme.verify.requests.get")
     def test_bad_token(self, mock_get):
-        mock_get().text = self.chall.token + "!"
+        mock_get.return_value = mock.MagicMock(
+            text=self.chall.token + "!", headers=self.good_headers)
+        self.assertFalse(self._call(self.resp_http, self.chall, "local"))
+
+    @mock.patch("acme.verify.requests.get")
+    def test_bad_content_type(self, mock_get):
+        mock_get().text = self.chall.token
         self.assertFalse(self._call(self.resp_http, self.chall, "local"))
 
     @mock.patch("acme.verify.requests.get")
