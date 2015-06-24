@@ -5,6 +5,8 @@ import unittest
 
 import Crypto.PublicKey.RSA
 import M2Crypto
+import mock
+import requests
 
 from acme import jose
 from acme import other
@@ -49,6 +51,7 @@ class SimpleHTTPTest(unittest.TestCase):
 
 
 class SimpleHTTPResponseTest(unittest.TestCase):
+    # pylint: disable=too-many-instance-attributes
 
     def setUp(self):
         from acme.challenges import SimpleHTTPResponse
@@ -65,6 +68,12 @@ class SimpleHTTPResponseTest(unittest.TestCase):
             'path': '6tbIMBC5Anhl5bOlWT5ZFA',
             'tls': True,
         }
+
+        from acme.challenges import SimpleHTTP
+        self.chall = SimpleHTTP(token="foo")
+        self.resp_http = SimpleHTTPResponse(path="bar", tls=False)
+        self.resp_https = SimpleHTTPResponse(path="bar", tls=True)
+        self.good_headers = {'Content-Type': SimpleHTTPResponse.CONTENT_TYPE}
 
     def test_good_path(self):
         self.assertTrue(self.msg_http.good_path)
@@ -97,6 +106,31 @@ class SimpleHTTPResponseTest(unittest.TestCase):
         from acme.challenges import SimpleHTTPResponse
         hash(SimpleHTTPResponse.from_json(self.jmsg_http))
         hash(SimpleHTTPResponse.from_json(self.jmsg_https))
+
+    @mock.patch("acme.challenges.requests.get")
+    def test_simple_verify_good_token(self, mock_get):
+        for resp in self.resp_http, self.resp_https:
+            mock_get.reset_mock()
+            mock_get.return_value = mock.MagicMock(
+                text=self.chall.token, headers=self.good_headers)
+            self.assertTrue(resp.simple_verify(self.chall, "local"))
+            mock_get.assert_called_once_with(resp.uri("local"), verify=False)
+
+    @mock.patch("acme.challenges.requests.get")
+    def test_simple_verify_bad_token(self, mock_get):
+        mock_get.return_value = mock.MagicMock(
+            text=self.chall.token + "!", headers=self.good_headers)
+        self.assertFalse(self.resp_http.simple_verify(self.chall, "local"))
+
+    @mock.patch("acme.challenges.requests.get")
+    def test_simple_verify_bad_content_type(self, mock_get):
+        mock_get().text = self.chall.token
+        self.assertFalse(self.resp_http.simple_verify(self.chall, "local"))
+
+    @mock.patch("acme.challenges.requests.get")
+    def test_simple_verify_connection_error(self, mock_get):
+        mock_get.side_effect = requests.exceptions.RequestException
+        self.assertFalse(self.resp_http.simple_verify(self.chall, "local"))
 
 
 class DVSNITest(unittest.TestCase):

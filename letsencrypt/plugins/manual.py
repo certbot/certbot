@@ -7,7 +7,6 @@ import zope.interface
 
 from acme import challenges
 from acme import jose
-from acme import verify as acme_verify
 
 from letsencrypt import interfaces
 from letsencrypt.plugins import common
@@ -109,8 +108,7 @@ binary for temporary key/certificate generation.""".replace("\n", "")
             ct=response.CONTENT_TYPE, command=self.template.format(
                 achall=achall, response=response, ct=response.CONTENT_TYPE)))
 
-        if acme_verify.simple_http_simple_verify(
-                response, achall.challb, achall.domain):
+        if response.simple_verify(achall.challb, achall.domain):
             return response
         else:
             return None

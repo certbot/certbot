@@ -31,7 +31,7 @@ class ManualAuthenticatorTest(unittest.TestCase):
 
     @mock.patch("letsencrypt.plugins.manual.sys.stdout")
     @mock.patch("letsencrypt.plugins.manual.os.urandom")
-    @mock.patch("acme.verify.simple_http_simple_verify")
+    @mock.patch("acme.challenges.SimpleHTTPResponse.simple_verify")
     @mock.patch("__builtin__.raw_input")
     def test_perform(self, mock_raw_input, mock_verify, mock_urandom,
                      mock_stdout):
@@ -41,7 +41,7 @@ class ManualAuthenticatorTest(unittest.TestCase):
         resp = challenges.SimpleHTTPResponse(tls=False, path='Zm9v')
         self.assertEqual([resp], self.auth.perform(self.achalls))
         mock_raw_input.assert_called_once()
-        mock_verify.assert_called_with(resp, self.achalls[0].challb, "foo.com")
+        mock_verify.assert_called_with(self.achalls[0].challb, "foo.com")
 
         message = mock_stdout.write.mock_calls[0][1][0]
         self.assertTrue(self.achalls[0].token in message)
