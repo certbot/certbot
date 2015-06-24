@@ -45,16 +45,16 @@ server automatically!::
    :target: https://travis-ci.org/letsencrypt/letsencrypt
    :alt: Travis CI status
 
-.. |coverage| image:: https://coveralls.io/repos/letsencrypt/lets-encrypt-preview/badge.svg?branch=master
-   :target: https://coveralls.io/r/letsencrypt/lets-encrypt-preview
+.. |coverage| image:: https://coveralls.io/repos/letsencrypt/letsencrypt/badge.svg?branch=master
+   :target: https://coveralls.io/r/letsencrypt/letsencrypt
    :alt: Coverage status
 
 .. |docs| image:: https://readthedocs.org/projects/letsencrypt/badge/
    :target: https://readthedocs.org/projects/letsencrypt/
    :alt: Documentation status
 
-.. |container| image:: https://quay.io/repository/letsencrypt/lets-encrypt-preview/status
-   :target: https://quay.io/repository/letsencrypt/lets-encrypt-preview
+.. |container| image:: https://quay.io/repository/letsencrypt/letsencrypt/status
+   :target: https://quay.io/repository/letsencrypt/letsencrypt
    :alt: Docker Repository on Quay.io
 
 .. _`installation instructions`:
