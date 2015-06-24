@@ -183,7 +183,7 @@ class ChooseAccountTest(unittest.TestCase):
 
 
 class GenSSLLabURLs(unittest.TestCase):
-    """Loose test of _gen_ssl_lab_urls. URL can change easily in the future"""
+    """Loose test of _gen_ssl_lab_urls. URL can change easily in the future."""
     def setUp(self):
         zope.component.provideUtility(display_util.FileDisplay(sys.stdout))
 
@@ -325,7 +325,7 @@ class SuccessInstallationTest(unittest.TestCase):
         names = ["example.com", "abc.com"]
 
         self._call(names)
-        
+
         self.assertEqual(mock_util().notification.call_count, 1)
         arg = mock_util().notification.call_args_list[0][0][0]
 

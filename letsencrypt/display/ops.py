@@ -216,7 +216,7 @@ def success_installation(domains):
 
 def _gen_ssl_lab_urls(domains):
     """Returns a list of urls.
-    
+
     :param list domains: Each domain is a 'str'
 
     """
