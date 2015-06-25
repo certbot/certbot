@@ -377,6 +377,9 @@ class HelpfulArgumentParser(object):
         #print self.visible_topics
         self.groups = {}  # elements are added by .add_group()
 
+    def __getattr__(self, name):
+        return getattr(self.parser, name)
+
     def prescan_for_flag(self, flag, possible_arguments):
         """Checks cli input for flags.
 
@@ -566,7 +569,7 @@ def create_parser(plugins, args):
 
     _create_subparsers(parser)
 
-    return parser.parser
+    return parser
 
 
 def _create_subparsers(parser):
