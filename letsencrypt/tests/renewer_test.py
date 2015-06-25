@@ -10,6 +10,7 @@ import configobj
 import mock
 import pytz
 
+from letsencrypt import configuration
 from letsencrypt.storage import ALL_FOUR
 
 
@@ -31,22 +32,24 @@ class RenewableCertTests(unittest.TestCase):
     def setUp(self):
         from letsencrypt import storage
         self.tempdir = tempfile.mkdtemp()
+
+        self.cli_config = configuration.RenewerConfiguration(
+            namespace=mock.MagicMock(config_dir=self.tempdir))
+        # TODO: maybe provide RenewerConfiguration.make_dirs?
         os.makedirs(os.path.join(self.tempdir, "live", "example.org"))
         os.makedirs(os.path.join(self.tempdir, "archive", "example.org"))
         os.makedirs(os.path.join(self.tempdir, "configs"))
-        defaults = configobj.ConfigObj()
-        defaults["live_dir"] = os.path.join(self.tempdir, "live")
-        defaults["archive_dir"] = os.path.join(self.tempdir, "archive")
-        defaults["renewal_configs_dir"] = os.path.join(self.tempdir,
-                                                       "configs")
+
         config = configobj.ConfigObj()
         for kind in ALL_FOUR:
             config[kind] = os.path.join(self.tempdir, "live", "example.org",
                                         kind + ".pem")
         config.filename = os.path.join(self.tempdir, "configs",
                                        "example.org.conf")
-        self.defaults = defaults     # for main() test
-        self.test_rc = storage.RenewableCert(config, defaults)
+
+        self.defaults = configobj.ConfigObj()
+        self.test_rc = storage.RenewableCert(
+            config, self.defaults, self.cli_config)
 
     def tearDown(self):
         shutil.rmtree(self.tempdir)
@@ -457,60 +460,57 @@ class RenewableCertTests(unittest.TestCase):
     def test_new_lineage(self):
         """Test for new_lineage() class method."""
         from letsencrypt import storage
-        config_dir = self.defaults["renewal_configs_dir"]
-        archive_dir = self.defaults["archive_dir"]
-        live_dir = self.defaults["live_dir"]
-        result = storage.RenewableCert.new_lineage("the-lineage.com", "cert",
-                                                   "privkey", "chain", None,
-                                                   self.defaults)
+        result = storage.RenewableCert.new_lineage(
+            "the-lineage.com", "cert", "privkey", "chain", None,
+            self.defaults, self.cli_config)
         # This consistency check tests most relevant properties about the
         # newly created cert lineage.
         self.assertTrue(result.consistent())
-        self.assertTrue(os.path.exists(os.path.join(config_dir,
-                                                    "the-lineage.com.conf")))
+        self.assertTrue(os.path.exists(os.path.join(
+            self.cli_config.renewal_configs_dir, "the-lineage.com.conf")))
         with open(result.fullchain) as f:
             self.assertEqual(f.read(), "cert" + "chain")
         # Let's do it again and make sure it makes a different lineage
-        result = storage.RenewableCert.new_lineage("the-lineage.com", "cert2",
-                                                   "privkey2", "chain2", None,
-                                                   self.defaults)
-        self.assertTrue(os.path.exists(
-            os.path.join(config_dir, "the-lineage.com-0001.conf")))
+        result = storage.RenewableCert.new_lineage(
+            "the-lineage.com", "cert2", "privkey2", "chain2", None,
+            self.defaults, self.cli_config)
+        self.assertTrue(os.path.exists(os.path.join(
+            self.cli_config.renewal_configs_dir, "the-lineage.com-0001.conf")))
         # Now trigger the detection of already existing files
-        os.mkdir(os.path.join(live_dir, "the-lineage.com-0002"))
+        os.mkdir(os.path.join(
+            self.cli_config.live_dir, "the-lineage.com-0002"))
         self.assertRaises(ValueError, storage.RenewableCert.new_lineage,
                           "the-lineage.com", "cert3", "privkey3", "chain3",
-                          None, self.defaults)
-        os.mkdir(os.path.join(archive_dir, "other-example.com"))
+                          None, self.defaults, self.cli_config)
+        os.mkdir(os.path.join(self.cli_config.archive_dir, "other-example.com"))
         self.assertRaises(ValueError, storage.RenewableCert.new_lineage,
                           "other-example.com", "cert4", "privkey4", "chain4",
-                          None, self.defaults)
+                          None, self.defaults, self.cli_config)
         # Make sure it can accept renewal parameters
         params = {"stuff": "properties of stuff", "great": "awesome"}
-        result = storage.RenewableCert.new_lineage("the-lineage.com", "cert2",
-                                                   "privkey2", "chain2",
-                                                   params, self.defaults)
+        result = storage.RenewableCert.new_lineage(
+            "the-lineage.com", "cert2", "privkey2", "chain2",
+            params, self.defaults, self.cli_config)
         # TODO: Conceivably we could test that the renewal parameters actually
         #       got saved
 
     def test_new_lineage_nonexistent_dirs(self):
         """Test that directories can be created if they don't exist."""
         from letsencrypt import storage
-        config_dir = self.defaults["renewal_configs_dir"]
-        archive_dir = self.defaults["archive_dir"]
-        live_dir = self.defaults["live_dir"]
-        shutil.rmtree(config_dir)
-        shutil.rmtree(archive_dir)
-        shutil.rmtree(live_dir)
-        storage.RenewableCert.new_lineage("the-lineage.com", "cert2",
-                                          "privkey2", "chain2",
-                                          None, self.defaults)
+        shutil.rmtree(self.cli_config.renewal_configs_dir)
+        shutil.rmtree(self.cli_config.archive_dir)
+        shutil.rmtree(self.cli_config.live_dir)
+
+        storage.RenewableCert.new_lineage(
+            "the-lineage.com", "cert2", "privkey2", "chain2",
+            None, self.defaults, self.cli_config)
         self.assertTrue(os.path.exists(
-            os.path.join(config_dir, "the-lineage.com.conf")))
-        self.assertTrue(os.path.exists(
-            os.path.join(live_dir, "the-lineage.com", "privkey.pem")))
-        self.assertTrue(os.path.exists(
-            os.path.join(archive_dir, "the-lineage.com", "privkey1.pem")))
+            os.path.join(
+                self.cli_config.renewal_configs_dir, "the-lineage.com.conf")))
+        self.assertTrue(os.path.exists(os.path.join(
+            self.cli_config.live_dir, "the-lineage.com", "privkey.pem")))
+        self.assertTrue(os.path.exists(os.path.join(
+            self.cli_config.archive_dir, "the-lineage.com", "privkey1.pem")))
 
     @mock.patch("letsencrypt.storage.le_util.unique_lineage_name")
     def test_invalid_config_filename(self, mock_uln):
@@ -518,7 +518,7 @@ class RenewableCertTests(unittest.TestCase):
         mock_uln.return_value = "this_does_not_end_with_dot_conf", "yikes"
         self.assertRaises(ValueError, storage.RenewableCert.new_lineage,
                           "example.com", "cert", "privkey", "chain",
-                          None, self.defaults)
+                          None, self.defaults, self.cli_config)
 
     def test_bad_kind(self):
         self.assertRaises(ValueError, self.test_rc.current_target, "elephant")
@@ -602,22 +602,23 @@ class RenewableCertTests(unittest.TestCase):
         mock_rc_instance.should_autorenew.return_value = True
         mock_rc_instance.latest_common_version.return_value = 10
         mock_rc.return_value = mock_rc_instance
-        with open(os.path.join(self.defaults["renewal_configs_dir"],
+        with open(os.path.join(self.cli_config.renewal_configs_dir,
                                "README"), "w") as f:
             f.write("This is a README file to make sure that the renewer is")
             f.write("able to correctly ignore files that don't end in .conf.")
-        with open(os.path.join(self.defaults["renewal_configs_dir"],
+        with open(os.path.join(self.cli_config.renewal_configs_dir,
                                "example.org.conf"), "w") as f:
             # This isn't actually parsed in this test; we have a separate
             # test_initialization that tests the initialization, assuming
             # that configobj can correctly parse the config file.
             f.write("cert = cert.pem\nprivkey = privkey.pem\n")
             f.write("chain = chain.pem\nfullchain = fullchain.pem\n")
-        with open(os.path.join(self.defaults["renewal_configs_dir"],
+        with open(os.path.join(self.cli_config.renewal_configs_dir,
                                "example.com.conf"), "w") as f:
             f.write("cert = cert.pem\nprivkey = privkey.pem\n")
             f.write("chain = chain.pem\nfullchain = fullchain.pem\n")
-        renewer.main(self.defaults)
+        renewer.main(self.defaults, args=[
+            '--config-dir', self.cli_config.config_dir])
         self.assertEqual(mock_rc.call_count, 2)
         self.assertEqual(mock_rc_instance.update_all_links_to.call_count, 2)
         self.assertEqual(mock_notify.notify.call_count, 4)
@@ -630,7 +631,8 @@ class RenewableCertTests(unittest.TestCase):
         mock_happy_instance.should_autorenew.return_value = False
         mock_happy_instance.latest_common_version.return_value = 10
         mock_rc.return_value = mock_happy_instance
-        renewer.main(self.defaults)
+        renewer.main(self.defaults, args=[
+            '--config-dir', self.cli_config.config_dir])
         self.assertEqual(mock_rc.call_count, 4)
         self.assertEqual(mock_happy_instance.update_all_links_to.call_count, 0)
         self.assertEqual(mock_notify.notify.call_count, 4)
@@ -638,10 +640,11 @@ class RenewableCertTests(unittest.TestCase):
 
     def test_bad_config_file(self):
         from letsencrypt import renewer
-        with open(os.path.join(self.defaults["renewal_configs_dir"],
+        with open(os.path.join(self.cli_config.renewal_configs_dir,
                                "bad.conf"), "w") as f:
             f.write("incomplete = configfile\n")
-        renewer.main(self.defaults)
+        renewer.main(self.defaults, args=[
+            '--config-dir', self.cli_config.config_dir])
         # The ValueError is caught inside and nothing happens.
 
 
