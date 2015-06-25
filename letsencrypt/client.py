@@ -4,6 +4,7 @@ import os
 import pkg_resources
 
 import M2Crypto
+import OpenSSL.crypto
 import zope.component
 
 from acme import jose
@@ -125,22 +126,20 @@ class Client(object):
                              "{0}.".format(self.account.email))
         reporter.add_message(recovery_msg, reporter.HIGH_PRIORITY, True)
 
-    def obtain_certificate(self, domains, csr=None):
-        """Obtains a certificate from the ACME server.
+    def _obtain_certificate(self, domains, csr):
+        """Obtain certificate.
 
-        :meth:`.register` must be called before :meth:`.obtain_certificate`
+        Internal function with precondition that `domains` are
+        consistent with identifiers present in the `csr`.
 
-        .. todo:: This function does not currently handle CSR correctly.
+        :param list domains: Domain names.
+        :param .le_util.CSR csr: DER-encoded Certificate Signing
+            Request. The key used to generate this CSR can be different
+            than `authkey`.
 
-        :param set domains: domains to get a certificate
-
-        :param csr: CSR must contain requested domains, the key used to generate
-            this CSR can be different than self.authkey
-        :type csr: :class:`CSR`
-
-        :returns: Certificate, private key, and certificate chain (all
-            PEM-encoded).
-        :rtype: `tuple` of `str`
+        :returns: `.CertificateResource` and certificate chain (as
+            returned by `.fetch_chain`).
+        :rtype: tuple
 
         """
         if self.auth_handler is None:
@@ -151,37 +150,54 @@ class Client(object):
         if self.account.regr is None:
             raise errors.Error("Please register with the ACME server first.")
 
-        # Perform Challenges/Get Authorizations
+        logging.debug("CSR: %s, domains: %s", csr, domains)
+
         authzr = self.auth_handler.get_authorizations(domains)
-
-        # Create CSR from names
-        cert_key = crypto_util.init_save_key(
-            self.config.rsa_key_size, self.config.key_dir)
-        csr = crypto_util.init_save_csr(
-            cert_key, domains, self.config.cert_dir)
-
-        # Retrieve certificate
         certr = self.network.request_issuance(
             jose.ComparableX509(
                 M2Crypto.X509.load_request_der_string(csr.data)),
             authzr)
+        return certr, self.network.fetch_chain(certr)
 
-        cert_pem = certr.body.as_pem()
-        chain_pem = None
-        if certr.cert_chain_uri is not None:
-            chain_pem = self.network.fetch_chain(certr)
+    def obtain_certificate_from_csr(self, csr):
+        """Obtain certficiate from CSR.
 
-        if chain_pem is None:
-            # XXX: just to stop RenewableCert from complaining; this is
-            #      probably not a good solution
-            chain_pem = ""
-        else:
-            chain_pem = chain_pem.as_pem()
+        :param .le_util.CSR csr: DER-encoded Certificate Signing
+            Request.
 
-        return cert_pem, cert_key.pem, chain_pem
+        :returns: `.CertificateResource` and certificate chain (as
+            returned by `.fetch_chain`).
+        :rtype: tuple
+
+        """
+        return self._obtain_certificate(
+            # TODO: add CN to domains?
+            crypto_util.get_sans_from_csr(
+                csr.data, OpenSSL.crypto.FILETYPE_ASN1), csr)
+
+    def obtain_certificate(self, domains):
+        """Obtains a certificate from the ACME server.
+
+        `.register` must be called before `.obtain_certificate`
+
+        :param set domains: domains to get a certificate
+
+        :returns: `.CertificateResource`, certificate chain (as
+            returned by `.fetch_chain`), and newly generated private key
+            (`.le_util.Key`) and DER-encoded Certificate Signing Request
+            (`.le_util.CSR`).
+        :rtype: tuple
+
+        """
+        # Create CSR from names
+        key = crypto_util.init_save_key(
+            self.config.rsa_key_size, self.config.key_dir)
+        csr = crypto_util.init_save_csr(key, domains, self.config.cert_dir)
+
+        return self._obtain_certificate(domains, csr) + (key, csr)
 
     def obtain_and_enroll_certificate(
-            self, domains, authenticator, installer, plugins, csr=None):
+            self, domains, authenticator, installer, plugins):
         """Obtain and enroll certificate.
 
         Get a new certificate for the specified domains using the specified
@@ -197,14 +213,14 @@ class Client(object):
 
         :param plugins: A PluginsFactory object.
 
-        :param str csr: A preexisting CSR to use with this request.
-
         :returns: A new :class:`letsencrypt.storage.RenewableCert` instance
             referred to the enrolled cert lineage, or False if the cert could
             not be obtained.
 
         """
-        cert, privkey, chain = self.obtain_certificate(domains, csr)
+        certr, chain, key, _ = self.obtain_certificate(domains)
+
+        # TODO: remove this dirty hack
         self.config.namespace.authenticator = plugins.find_init(
             authenticator).name
         if installer is not None:
@@ -226,8 +242,12 @@ class Client(object):
                 "Non-standard path(s), might not work with crontab installed "
                 "by your operating system package manager")
 
+        # XXX: just to stop RenewableCert from complaining; this is
+        # probably not a good solution
+        chain_pem = "" if chain is None else chain.as_pem()
         lineage = storage.RenewableCert.new_lineage(
-            domains[0], cert, privkey, chain, params, config, cli_config)
+            domains[0], certr.body.as_pem(), key.pem, chain_pem, params,
+            config, cli_config)
         self._report_renewal_status(lineage)
         return lineage
 
@@ -258,13 +278,14 @@ class Client(object):
         reporter = zope.component.getUtility(interfaces.IReporter)
         reporter.add_message(msg, reporter.LOW_PRIORITY, True)
 
-    def save_certificate(self, certr, cert_path, chain_path):
+    def save_certificate(self, certr, chain_cert, cert_path, chain_path):
         # pylint: disable=no-self-use
         """Saves the certificate received from the ACME server.
 
         :param certr: ACME "certificate" resource.
         :type certr: :class:`acme.messages.Certificate`
 
+        :param chain_cert:
         :param str cert_path: Candidate path to a certificate.
         :param str chain_path: Candidate path to a certificate chain.
 
@@ -274,6 +295,10 @@ class Client(object):
         :raises IOError: If unable to find room to write the cert files
 
         """
+        for path in cert_path, chain_path:
+            le_util.make_or_verify_dir(
+                os.path.dirname(path), 0o755, os.geteuid())
+
         # try finally close
         cert_chain_abspath = None
         cert_file, act_cert_path = le_util.unique_file(cert_path, 0o644)
@@ -286,22 +311,20 @@ class Client(object):
         logging.info("Server issued certificate; certificate written to %s",
                      act_cert_path)
 
-        if certr.cert_chain_uri is not None:
+        if chain_cert is not None:
+            chain_file, act_chain_path = le_util.unique_file(
+                chain_path, 0o644)
             # TODO: Except
-            chain_cert = self.network.fetch_chain(certr)
-            if chain_cert is not None:
-                chain_file, act_chain_path = le_util.unique_file(
-                    chain_path, 0o644)
-                chain_pem = chain_cert.as_pem()
-                try:
-                    chain_file.write(chain_pem)
-                finally:
-                    chain_file.close()
+            chain_pem = chain_cert.as_pem()
+            try:
+                chain_file.write(chain_pem)
+            finally:
+                chain_file.close()
 
-                logging.info("Cert chain written to %s", act_chain_path)
+            logging.info("Cert chain written to %s", act_chain_path)
 
-                # This expects a valid chain file
-                cert_chain_abspath = os.path.abspath(act_chain_path)
+            # This expects a valid chain file
+            cert_chain_abspath = os.path.abspath(act_chain_path)
 
         return os.path.abspath(act_cert_path), cert_chain_abspath
 
@@ -390,8 +413,7 @@ def validate_key_csr(privkey, csr=None):
     :param privkey: Key associated with CSR
     :type privkey: :class:`letsencrypt.le_util.Key`
 
-    :param csr: CSR
-    :type csr: :class:`letsencrypt.le_util.CSR`
+    :param .le_util.CSR csr: CSR
 
     :raises .errors.Error: when validation fails
 

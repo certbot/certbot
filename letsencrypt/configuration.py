@@ -60,13 +60,13 @@ class NamespaceConfig(object):
         return os.path.join(self.namespace.work_dir, constants.BACKUP_DIR)
 
     @property
+    def cert_dir(self):  # pylint: disable=missing-docstring
+        return os.path.join(self.namespace.config_dir, constants.CERT_DIR)
+
+    @property
     def cert_key_backup(self):  # pylint: disable=missing-docstring
         return os.path.join(self.namespace.work_dir,
                             constants.CERT_KEY_BACKUP_DIR, self.server_path)
-
-    @property
-    def cert_dir(self):  # pylint: disable=missing-docstring
-        return os.path.join(self.namespace.config_dir, constants.CERT_DIR)
 
     @property
     def in_progress_dir(self):  # pylint: disable=missing-docstring

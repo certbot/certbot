@@ -16,3 +16,6 @@ dist/
 *~
 *.swp
 \#*#
+
+# auth --cert-path --chain-path
+/*.pem
