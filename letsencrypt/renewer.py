@@ -140,6 +140,8 @@ def main(config=None, args=sys.argv[1:]):
         rc_config = configobj.ConfigObj(cli_config.renewer_config_file)
         rc_config.merge(configobj.ConfigObj(
             os.path.join(cli_config.renewal_configs_dir, i)))
+        # TODO: this is a dirty hack!
+        rc_config.filename = os.path.join(cli_config.renewal_configs_dir, i)
         try:
             # TODO: Before trying to initialize the RenewableCert object,
             #       we could check here whether the combination of the config
