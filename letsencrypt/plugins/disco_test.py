@@ -124,22 +124,22 @@ class PluginEntryPointTest(unittest.TestCase):
 
     def test_prepare_misconfigured(self):
         plugin = mock.MagicMock()
-        plugin.prepare.side_effect = errors.LetsEncryptMisconfigurationError
+        plugin.prepare.side_effect = errors.MisconfigurationError
         # pylint: disable=protected-access
         self.plugin_ep._initialized = plugin
         self.assertTrue(isinstance(self.plugin_ep.prepare(),
-                                   errors.LetsEncryptMisconfigurationError))
+                                   errors.MisconfigurationError))
         self.assertTrue(self.plugin_ep.prepared)
         self.assertTrue(self.plugin_ep.misconfigured)
         self.assertTrue(self.plugin_ep.available)
 
     def test_prepare_no_installation(self):
         plugin = mock.MagicMock()
-        plugin.prepare.side_effect = errors.LetsEncryptNoInstallationError
+        plugin.prepare.side_effect = errors.NoInstallationError
         # pylint: disable=protected-access
         self.plugin_ep._initialized = plugin
         self.assertTrue(isinstance(self.plugin_ep.prepare(),
-                                   errors.LetsEncryptNoInstallationError))
+                                   errors.NoInstallationError))
         self.assertTrue(self.plugin_ep.prepared)
         self.assertFalse(self.plugin_ep.misconfigured)
         self.assertFalse(self.plugin_ep.available)

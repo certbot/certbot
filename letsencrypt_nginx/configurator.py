@@ -56,8 +56,6 @@ class NginxConfigurator(common.Plugin):
     def add_parser_arguments(cls, add):
         add("server-root", default=constants.CLI_DEFAULTS["server_root"],
             help="Nginx server root directory.")
-        add("mod-ssl-conf", default=constants.CLI_DEFAULTS["mod_ssl_conf"],
-            help="Contains standard nginx SSL directives.")
         add("ctl", default=constants.CLI_DEFAULTS["ctl"], help="Path to the "
             "'nginx' binary, used for 'configtest' and retrieving nginx "
             "version number.")
@@ -91,18 +89,22 @@ class NginxConfigurator(common.Plugin):
         self.reverter = reverter.Reverter(self.config)
         self.reverter.recovery_routine()
 
+    @property
+    def mod_ssl_conf(self):
+        """Full absolute path to SSL configuration file."""
+        return os.path.join(self.config.config_dir, constants.MOD_SSL_CONF_DEST)
+
     # This is called in determine_authenticator and determine_installer
     def prepare(self):
         """Prepare the authenticator/installer."""
         self.parser = parser.NginxParser(
-            self.conf('server-root'),
-            self.conf('mod-ssl-conf'))
+            self.conf('server-root'), self.mod_ssl_conf)
 
         # Set Version
         if self.version is None:
             self.version = self.get_version()
 
-        temp_install(self.conf('mod-ssl-conf'))
+        temp_install(self.mod_ssl_conf)
 
     # Entry point in main.py for installing cert
     def deploy_cert(self, domain, cert_path, key_path, chain_path=None):
@@ -128,11 +130,10 @@ class NginxConfigurator(common.Plugin):
                                               directives, True)
             logging.info("Deployed Certificate to VirtualHost %s for %s",
                          vhost.filep, vhost.names)
-        except errors.LetsEncryptMisconfigurationError:
+        except errors.MisconfigurationError:
             logging.warn(
-                "Cannot find a cert or key directive in %s for %s",
-                vhost.filep, vhost.names)
-            logging.warn("VirtualHost was not modified")
+                "Cannot find a cert or key directive in %s for %s. "
+                "VirtualHost was not modified.", vhost.filep, vhost.names)
             # Presumably break here so that the virtualhost is not modified
             return False
 
@@ -316,9 +317,9 @@ class NginxConfigurator(common.Plugin):
             return self._enhance_func[enhancement](
                 self.choose_vhost(domain), options)
         except (KeyError, ValueError):
-            raise errors.LetsEncryptConfiguratorError(
+            raise errors.ConfiguratorError(
                 "Unsupported enhancement: {0}".format(enhancement))
-        except errors.LetsEncryptConfiguratorError:
+        except errors.ConfiguratorError:
             logging.warn("Failed %s for %s", enhancement, domain)
 
     ######################################
@@ -352,9 +353,7 @@ class NginxConfigurator(common.Plugin):
 
         if proc.returncode != 0:
             # Enter recovery routine...
-            logging.error("Config test failed")
-            logging.error(stdout)
-            logging.error(stderr)
+            logging.error("Config test failed\n%s\n%s", stdout, stderr)
             return False
 
         return True
@@ -383,7 +382,7 @@ class NginxConfigurator(common.Plugin):
         :returns: version
         :rtype: tuple
 
-        :raises errors.LetsEncryptConfiguratorError:
+        :raises .ConfiguratorError:
             Unable to find Nginx version or version is unsupported
 
         """
@@ -394,7 +393,7 @@ class NginxConfigurator(common.Plugin):
                 stderr=subprocess.PIPE)
             text = proc.communicate()[1]  # nginx prints output to stderr
         except (OSError, ValueError):
-            raise errors.LetsEncryptConfiguratorError(
+            raise errors.ConfiguratorError(
                 "Unable to run %s -V" % self.conf('ctl'))
 
         version_regex = re.compile(r"nginx/([0-9\.]*)", re.IGNORECASE)
@@ -407,22 +406,19 @@ class NginxConfigurator(common.Plugin):
         ssl_matches = ssl_regex.findall(text)
 
         if not version_matches:
-            raise errors.LetsEncryptConfiguratorError(
-                "Unable to find Nginx version")
+            raise errors.ConfiguratorError("Unable to find Nginx version")
         if not ssl_matches:
-            raise errors.LetsEncryptConfiguratorError(
+            raise errors.ConfiguratorError(
                 "Nginx build is missing SSL module (--with-http_ssl_module).")
         if not sni_matches:
-            raise errors.LetsEncryptConfiguratorError(
-                "Nginx build doesn't support SNI")
+            raise errors.ConfiguratorError("Nginx build doesn't support SNI")
 
         nginx_version = tuple([int(i) for i in version_matches[0].split(".")])
 
         # nginx < 0.8.48 uses machine hostname as default server_name instead of
         # the empty string
         if nginx_version < (0, 8, 48):
-            raise errors.LetsEncryptConfiguratorError(
-                "Nginx version must be 0.8.48+")
+            raise errors.ConfiguratorError("Nginx version must be 0.8.48+")
 
         return nginx_version
 
@@ -570,14 +566,11 @@ def nginx_restart(nginx_ctl):
 
             if nginx_proc.returncode != 0:
                 # Enter recovery routine...
-                logging.error("Nginx Restart Failed!")
-                logging.error(stdout)
-                logging.error(stderr)
+                logging.error("Nginx Restart Failed!\n%s\n%s", stdout, stderr)
                 return False
 
     except (OSError, ValueError):
-        logging.fatal(
-            "Nginx Restart Failed - Please Check the Configuration")
+        logging.fatal("Nginx Restart Failed - Please Check the Configuration")
         sys.exit(1)
 
     return True
@@ -592,4 +585,4 @@ def temp_install(options_ssl):
 
     # Check to make sure options-ssl.conf is installed
     if not os.path.isfile(options_ssl):
-        shutil.copyfile(constants.MOD_SSL_CONF, options_ssl)
+        shutil.copyfile(constants.MOD_SSL_CONF_SRC, options_ssl)

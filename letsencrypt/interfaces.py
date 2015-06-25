@@ -68,10 +68,10 @@ class IPlugin(zope.interface.Interface):
 
          Finish up any additional initialization.
 
-         :raises letsencrypt.errors.LetsEncryptMisconfigurationError:
-             when full initialization cannot be completed. Plugin will be
-             displayed on a list of available plugins.
-         :raises letsencrypt.errors.LetsEncryptNoInstallationError:
+         :raises .MisconfigurationError:
+             when full initialization cannot be completed. Plugin will
+             be displayed on a list of available plugins.
+         :raises .NoInstallationError:
              when the necessary programs/files cannot be located. Plugin
              will NOT be displayed on a list of available plugins.
 
@@ -148,39 +148,35 @@ class IConfig(zope.interface.Interface):
 
     """
     server = zope.interface.Attribute(
-        "CA hostname (and optionally :port). The server certificate must "
-        "be trusted in order to avoid further modifications to the client.")
+        "ACME new registration URI (including /acme/new-reg).")
     email = zope.interface.Attribute(
         "Email used for registration and recovery contact.")
     rsa_key_size = zope.interface.Attribute("Size of the RSA key.")
 
     config_dir = zope.interface.Attribute("Configuration directory.")
     work_dir = zope.interface.Attribute("Working directory.")
-    backup_dir = zope.interface.Attribute("Configuration backups directory.")
-    temp_checkpoint_dir = zope.interface.Attribute(
-        "Temporary checkpoint directory.")
-    in_progress_dir = zope.interface.Attribute(
-        "Directory used before a permanent checkpoint is finalized.")
-    cert_key_backup = zope.interface.Attribute(
-        "Directory where all certificates and keys are stored. "
-        "Used for easy revocation.")
+
     accounts_dir = zope.interface.Attribute(
         "Directory where all account information is stored.")
     account_keys_dir = zope.interface.Attribute(
         "Directory where all account keys are stored.")
+    backup_dir = zope.interface.Attribute("Configuration backups directory.")
+    cert_dir = zope.interface.Attribute(
+        "Directory where newly generated Certificate Signing Requests "
+        "(CSRs) and certificates not enrolled in the renewer are saved.")
+    cert_key_backup = zope.interface.Attribute(
+        "Directory where all certificates and keys are stored. "
+        "Used for easy revocation.")
+    in_progress_dir = zope.interface.Attribute(
+        "Directory used before a permanent checkpoint is finalized.")
+    key_dir = zope.interface.Attribute("Keys storage.")
     rec_token_dir = zope.interface.Attribute(
         "Directory where all recovery tokens are saved.")
-    key_dir = zope.interface.Attribute("Keys storage.")
-    cert_dir = zope.interface.Attribute("Certificates storage.")
-
-    le_vhost_ext = zope.interface.Attribute(
-        "SSL vhost configuration extension.")
+    temp_checkpoint_dir = zope.interface.Attribute(
+        "Temporary checkpoint directory.")
 
     renewer_config_file = zope.interface.Attribute(
         "Location of renewal configuration file.")
-
-    cert_path = zope.interface.Attribute("Let's Encrypt certificate file path.")
-    chain_path = zope.interface.Attribute("Let's Encrypt chain file path.")
 
     no_verify_ssl = zope.interface.Attribute(
         "Disable SSL certificate verification.")
@@ -191,6 +187,9 @@ class IConfig(zope.interface.Interface):
     # TODO: not implemented
     no_simple_http_tls = zope.interface.Attribute(
         "Do not use TLS when solving SimpleHTTP challenges.")
+
+    # TODO: the following are not used, but blocked by #485
+    le_vhost_ext = zope.interface.Attribute("not used")
 
 
 class IInstaller(IPlugin):
