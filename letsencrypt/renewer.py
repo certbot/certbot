@@ -148,7 +148,7 @@ def main(config=None, args=sys.argv[1:]):
             #       RenewableCert object for this cert at all, which could
             #       dramatically improve performance for large deployments
             #       where autorenewal is widely turned off.
-            cert = storage.RenewableCert(rc_config)
+            cert = storage.RenewableCert(rc_config, cli_config=cli_config)
         except ValueError:
             # This indicates an invalid renewal configuration file, such
             # as one missing a required parameter (in the future, perhaps
