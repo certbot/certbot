@@ -492,22 +492,22 @@ class HelpfulArgumentParser(object):
 def create_parser(plugins, args):
     """Create parser."""
     parser = HelpfulArgumentParser(args, plugins)
+    add = parser.add_argument
 
     # --help is automatically provided by argparse
-    parser.add(
+    add(
         "-v", "--verbose", dest="verbose_count", action="count",
         default=flag_default("verbose_count"), help="This flag can be used "
         "multiple times to incrementally increase the verbosity of output, "
         "e.g. -vvv.")
-    parser.add_argument(
-        "-t", "--text", dest="text_mode", action="store_true",
+    add("-t", "--text", dest="text_mode", action="store_true",
         help="Use the text output instead of the curses UI.")
-    parser.add_argument("-m", "--email", help=config_help("email"))
+    add("-m", "--email", help=config_help("email"))
     # positional arg shadows --domains, instead of appending, and
     # --domains is useful, because it can be stored in config
     #for subparser in parser_run, parser_auth, parser_install:
     #    subparser.add_argument("domains", nargs="*", metavar="domain")
-    parser.add_argument("-d", "--domains", metavar="DOMAIN", action="append")
+    add("-d", "--domains", metavar="DOMAIN", action="append")
 
     automation = parser.add_argument_group(
         "automation",
