@@ -493,8 +493,13 @@ class HelpfulArgumentParser(object):
 
 def create_parser(plugins, args):
     """Create parser."""
-    parser = HelpfulArgumentParser(
-        args=args, plugins=plugins,
+    if "OLD_CLI" in os.environ:
+        ArgParser = configargparse.ArgParser
+    else:
+        ArgParser = functools.partial(
+            HelpfulArgumentParser, args=args, plugins=plugins)
+
+    parser = ArgParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         args_for_setting_config_path=["-c", "--config"],
         default_config_files=flag_default("config_files"))
