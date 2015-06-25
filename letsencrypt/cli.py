@@ -351,15 +351,14 @@ class HelpfulArgumentParser(object):
     'letsencrypt --help security' for security options.
 
     """
-    def __init__(self, args, plugins):
+    def __init__(self, *pargs, **kwargs):
+        args = kwargs.pop("args")
+        plugins = kwargs.pop("plugins")
+        kwargs["usage"] = SHORT_USAGE
         self.args = args
         plugin_names = [name for name, _p in plugins.iteritems()]
         self.help_topics = HELP_TOPICS + plugin_names + [None]
-        self.parser = configargparse.ArgParser(
-            usage=SHORT_USAGE,
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-            args_for_setting_config_path=["-c", "--config"],
-            default_config_files=flag_default("config_files"))
+        self.parser = configargparse.ArgParser(*pargs, **kwargs)
 
         # This is the only way to turn off overly verbose config flag documentation
         self.parser._add_config_file_help = False # pylint: disable=protected-access
@@ -494,7 +493,11 @@ class HelpfulArgumentParser(object):
 
 def create_parser(plugins, args):
     """Create parser."""
-    parser = HelpfulArgumentParser(args, plugins)
+    parser = HelpfulArgumentParser(
+        args=args, plugins=plugins,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        args_for_setting_config_path=["-c", "--config"],
+        default_config_files=flag_default("config_files"))
     add = parser.add_argument
 
     # --help is automatically provided by argparse
