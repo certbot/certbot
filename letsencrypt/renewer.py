@@ -137,8 +137,9 @@ def main(config=None, args=sys.argv[1:]):
         print "Processing", i
         if not i.endswith(".conf"):
             continue
-        rc_config = configobj.ConfigObj(
-            os.path.join(cli_config.renewal_configs_dir, i))
+        rc_config = configobj.ConfigObj(cli_config.renewer_config_file)
+        rc_config.merge(configobj.ConfigObj(
+            os.path.join(cli_config.renewal_configs_dir, i)))
         try:
             # TODO: Before trying to initialize the RenewableCert object,
             #       we could check here whether the combination of the config
