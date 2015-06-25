@@ -10,7 +10,7 @@ import dns.resolver
 import dns.rcode
 
 from acme import challenges
-from acme import messages2
+from acme import messages
 
 from letsencrypt import achallenges
 
@@ -41,25 +41,25 @@ class PerformCleanupTest(unittest.TestCase): # pylint: disable=too-many-public-m
         ))
 
         good_chall = achallenges.DNS(
-            challb=messages2.ChallengeBody(
+            challb=messages.ChallengeBody(
                 chall=challenges.DNS(token="17817c66b60ce2e4012dfad92657527"),
-                status=messages2.STATUS_VALID, uri=None),
+                status=messages.STATUS_VALID, uri=None),
             domain="example.com")
         second_good_chall = achallenges.DNS(
-            challb=messages2.ChallengeBody(
+            challb=messages.ChallengeBody(
                 chall=challenges.DNS(token="17817c66b60ce2e4012dfad92657527"),
-                status=messages2.STATUS_VALID, uri=None),
+                status=messages.STATUS_VALID, uri=None),
             domain="other-example.com")
         third_good_chall = achallenges.DNS(
-            challb=messages2.ChallengeBody(
+            challb=messages.ChallengeBody(
                 chall=challenges.DNS(token="17817c66b60ce2e4012dfad92657527"),
-                status=messages2.STATUS_VALID, uri=None),
+                status=messages.STATUS_VALID, uri=None),
             domain="final-example.com")
 
         no_key_chall = achallenges.DNS(
-            challb=messages2.ChallengeBody(
+            challb=messages.ChallengeBody(
                 chall=challenges.DNS(token="17817c66b60ce2e4012dfad92657527"),
-                status=messages2.STATUS_VALID, uri=None),
+                status=messages.STATUS_VALID, uri=None),
             domain="no-key-example.com")
 
         self.achalls = [
