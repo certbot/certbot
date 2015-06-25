@@ -17,12 +17,12 @@ do
   domains="$domains,DNS:$x"
 done
 
-SAN="$domains" openssl req -config openssl.cnf \
+SAN="$domains" openssl req -config "${OPENSSL_CNF:-openssl.cnf}" \
   -new -nodes -subj '/' -reqexts san \
-  -out csr.der \
+  -out "${CSR_PATH:-csr.der}" \
   -keyout key.pem \
   -newkey rsa:2048 \
   -outform DER
 # 512 or 1024 too low for Boulder, 2048 is smallest for tests
 
-echo "You can now run: letsencrypt auth --csr csr.der"
+echo "You can now run: letsencrypt auth --csr ${CSR_PATH:-csr.der}"
