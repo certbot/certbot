@@ -12,9 +12,10 @@ letsencrypt \
   --config-dir "$root/conf" \
   --work-dir "$root/work" \
   --text \
-  --agree-tos \
+  --agree-eula \
   --email "" \
   --domains le.wtf \
+  --authenticator standalone \
   -vvvvvvv \
   "$@"
 
