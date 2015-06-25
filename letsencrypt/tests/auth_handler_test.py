@@ -459,7 +459,7 @@ class ReportFailedChallsTest(unittest.TestCase):
         auth_handler._report_failed_challs([self.simple_http, self.dvsni_same])
         call_list = mock_zope().add_message.call_args_list
         self.assertTrue(len(call_list) == 1)
-        self.assertIn("Domains: example.com\n", call_list[0][0][0])
+        self.assertTrue("Domains: example.com\n" in call_list[0][0][0])
 
     @mock.patch("letsencrypt.auth_handler.zope.component.getUtility")
     def test_different_errors_and_domains(self, mock_zope):

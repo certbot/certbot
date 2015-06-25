@@ -46,10 +46,9 @@ class Reporter(object):
             printed if the program exits abnormally.
 
         """
-        if msg:
-            assert self.HIGH_PRIORITY <= priority <= self.LOW_PRIORITY
-            self.messages.put(self._msg_type(priority, msg, on_crash))
-            logging.info("Reporting to user: %s", msg)
+        assert self.HIGH_PRIORITY <= priority <= self.LOW_PRIORITY
+        self.messages.put(self._msg_type(priority, msg, on_crash))
+        logging.info("Reporting to user: %s", msg)
 
     def atexit_print_messages(self, pid=os.getpid()):
         """Function to be registered with atexit to print messages.
