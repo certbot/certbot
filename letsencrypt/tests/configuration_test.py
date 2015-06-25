@@ -34,7 +34,7 @@ class NamespaceConfigTest(unittest.TestCase):
         constants.ACCOUNT_KEYS_DIR = 'keys'
         constants.BACKUP_DIR = 'backups'
         constants.CERT_KEY_BACKUP_DIR = 'c/'
-        constants.CSR_DIR = 'csrs'
+        constants.CERT_DIR = 'certs'
         constants.IN_PROGRESS_DIR = '../p'
         constants.KEY_DIR = 'keys'
         constants.REC_TOKEN_DIR = '/r'
@@ -46,7 +46,7 @@ class NamespaceConfigTest(unittest.TestCase):
             self.config.account_keys_dir,
             '/tmp/config/acc/acme-server.org:443/new/keys')
         self.assertEqual(self.config.backup_dir, '/tmp/foo/backups')
-        self.assertEqual(self.config.csr_dir, '/tmp/config/csrs')
+        self.assertEqual(self.config.cert_dir, '/tmp/config/certs')
         self.assertEqual(
             self.config.cert_key_backup, '/tmp/foo/c/acme-server.org:443/new')
         self.assertEqual(self.config.in_progress_dir, '/tmp/foo/../p')

@@ -96,10 +96,21 @@ def renew(cert, old_version):
     #       (where fewer than all names were renewed)
 
 
+def _paths_parser(parser):
+    add = parser.add_argument_group("paths").add_argument
+    add("--config-dir", default=cli.flag_default("config_dir"),
+        help=cli.config_help("config_dir"))
+    add("--work-dir", default=cli.flag_default("work_dir"),
+        help=cli.config_help("work_dir"))
+    return parser
+
+
 def _create_parser():
     parser = argparse.ArgumentParser()
     #parser.add_argument("--cron", action="store_true", help="Run as cronjob.")
-    return cli._paths_parser(parser)  # pylint: disable=protected-access
+    # pylint: disable=protected-access
+    return _paths_parser(parser)
+
 
 def main(config=None, args=sys.argv[1:]):
     """Main function for autorenewer script."""
@@ -126,8 +137,9 @@ def main(config=None, args=sys.argv[1:]):
         print "Processing", i
         if not i.endswith(".conf"):
             continue
-        rc_config = configobj.ConfigObj(
-            os.path.join(cli_config.renewal_configs_dir, i))
+        rc_config = configobj.ConfigObj(cli_config.renewer_config_file)
+        rc_config.merge(configobj.ConfigObj(
+            os.path.join(cli_config.renewal_configs_dir, i)))
         try:
             # TODO: Before trying to initialize the RenewableCert object,
             #       we could check here whether the combination of the config
@@ -137,7 +149,7 @@ def main(config=None, args=sys.argv[1:]):
             #       RenewableCert object for this cert at all, which could
             #       dramatically improve performance for large deployments
             #       where autorenewal is widely turned off.
-            cert = storage.RenewableCert(rc_config)
+            cert = storage.RenewableCert(rc_config, cli_config=cli_config)
         except ValueError:
             # This indicates an invalid renewal configuration file, such
             # as one missing a required parameter (in the future, perhaps

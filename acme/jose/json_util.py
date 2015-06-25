@@ -62,7 +62,7 @@ class Field(object):
         definition of being empty, e.g. for some more exotic data types.
 
         """
-        return not value
+        return not isinstance(value, bool) and not value
 
     def omit(self, value):
         """Omit the value in output?"""
@@ -218,11 +218,12 @@ class JSONObjectWithFields(util.ImmutableMap, interfaces.JSONDeSerializable):
     def fields_to_partial_json(self):
         """Serialize fields to JSON."""
         jobj = {}
+        omitted = set()
         for slot, field in self._fields.iteritems():
             value = getattr(self, slot)
 
             if field.omit(value):
-                logging.debug('Omitting empty field "%s" (%s)', slot, value)
+                omitted.add((slot, value))
             else:
                 try:
                     jobj[field.json_name] = field.encode(value)
@@ -230,6 +231,10 @@ class JSONObjectWithFields(util.ImmutableMap, interfaces.JSONDeSerializable):
                     raise errors.SerializationError(
                         'Could not encode {0} ({1}): {2}'.format(
                             slot, value, error))
+        if omitted:
+            # pylint: disable=star-args
+            logging.debug('Omitted empty fields: %s', ', '.join(
+                '{0!s}={1!r}'.format(*field) for field in omitted))
         return jobj
 
     def to_partial_json(self):

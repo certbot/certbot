@@ -17,6 +17,14 @@ Now you can install the development packages:
 
    ./venv/bin/pip install -r requirements.txt -e .[dev,docs,testing]
 
+.. note:: `-e` (short for `--editable`) turns on *editable mode* in
+          which any source code changes in the current working
+          directory are "live" and no further `pip install ...`
+          invocations are necessary while developing.
+
+          This is roughly equivalent to `python setup.py develop`. For
+          more info see `man pip`.
+
 The code base, including your pull requests, **must** have 100% test
 statement coverage **and** be compliant with the :ref:`coding style
 <coding-style>`.
@@ -48,7 +56,7 @@ synced to ``/vagrant``, so you can get started with:
 
   vagrant ssh
   cd /vagrant
-  ./venv/bin/pip install -r requirements.txt
+  ./venv/bin/pip install -r requirements.txt .[dev,docs,testing]
   sudo ./venv/bin/letsencrypt
 
 Support for other Linux distributions coming soon.
@@ -89,7 +97,7 @@ Configurators may implement just one of those).
 There are also `~letsencrypt.interfaces.IDisplay` plugins,
 which implement bindings to alternative UI libraries.
 
-.. _interfaces.py: https://github.com/letsencrypt/lets-encrypt-preview/blob/master/letsencrypt/interfaces.py
+.. _interfaces.py: https://github.com/letsencrypt/letsencrypt/blob/master/letsencrypt/interfaces.py
 
 
 Authenticators

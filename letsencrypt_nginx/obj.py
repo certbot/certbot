@@ -1,10 +1,10 @@
 """Module contains classes used by the Nginx Configurator."""
 import re
 
-from letsencrypt_apache.obj import Addr as ApacheAddr
+from letsencrypt.plugins import common
 
 
-class Addr(ApacheAddr):
+class Addr(common.Addr):
     r"""Represents an Nginx address, i.e. what comes after the 'listen'
     directive.
 

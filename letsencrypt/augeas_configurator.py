@@ -52,10 +52,10 @@ class AugeasConfigurator(common.Plugin):
             lens_path = self.aug.get(path + "/lens")
             # As aug.get may return null
             if lens_path and lens in lens_path:
-                # Strip off /augeas/files and /error
-                logging.error("There has been an error in parsing the file: %s",
-                              path[13:len(path) - 6])
-                logging.error(self.aug.get(path + "/message"))
+                logging.error(
+                    "There has been an error in parsing the file (%s): %s",
+                    # Strip off /augeas/files and /error
+                    path[13:len(path) - 6], self.aug.get(path + "/message"))
 
     def save(self, title=None, temporary=False):
         """Saves all changes to the configuration files.
@@ -122,13 +122,10 @@ class AugeasConfigurator(common.Plugin):
         # Check for the root of save problems
         new_errs = self.aug.match("/augeas//error")
         # logging.error("During Save - %s", mod_conf)
-        # Only print new errors caused by recent save
-        for err in new_errs:
-            if err not in ex_errs:
-                logging.error(
-                    "Unable to save file - %s", err[13:len(err) - 6])
-        logging.error("Attempted Save Notes")
-        logging.error(self.save_notes)
+        logging.error("Unable to save files: %s. Attempted Save Notes: %s",
+                      ", ".join(err[13:len(err) - 6] for err in new_errs
+                                # Only new errors caused by recent save
+                                if err not in ex_errs), self.save_notes)
 
     # Wrapper functions for Reverter class
     def recovery_routine(self):
