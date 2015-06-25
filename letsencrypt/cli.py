@@ -398,13 +398,14 @@ class HelpfulArgumentParser(object):
             pass
         return True
 
-    def add(self, topic, *args, **kwargs):
+    def add(self, *args, **kwargs):
         """Add a new command line argument.
 
         @topic is required, to indicate which part of the help will document
         it, but can be None for `always documented'.
 
         """
+        topic = kwargs.pop("topic", None)
         if self.visible_topics[topic]:
             if topic in self.groups:
                 group = self.groups[topic]
@@ -415,7 +416,9 @@ class HelpfulArgumentParser(object):
             kwargs["help"] = argparse.SUPPRESS
             self.parser.add_argument(*args, **kwargs)
 
-    def add_group(self, topic, **kwargs):
+    add_argument = add
+
+    def add_group(self, topic, *args, **kwargs):
         """
 
         This has to be called once for every topic; but we leave those calls
@@ -426,12 +429,34 @@ class HelpfulArgumentParser(object):
         """
         if self.visible_topics[topic]:
             #print "Adding visible group " + topic
-            group = self.parser.add_argument_group(topic, **kwargs)
+            group = self.parser.add_argument_group(topic, *args, **kwargs)
             self.groups[topic] = group
             return group
         else:
             #print "Invisible group " + topic
             return self.silent_parser
+
+    def add_argument_group(self, topic, *args, **kwargs):
+        """Add helpful argument group."""
+        self.add_group(topic, *args, **kwargs)
+
+        class HelpfulGroupWrapper(object):
+            """Helpful group wrapper."""
+
+            def __init__(self, topic, helpful):
+                self.topic = topic
+                self.helpful = helpful
+
+            def add_argument(self, *args, **kwargs):
+                kwargs["topic"] = self.topic
+                return self.helpful.add(*args, **kwargs)
+
+            add = add_argument
+
+            def add_argument_group(self):
+                raise TypeError("Helpful parser cannot recurse")
+
+        return HelpfulGroupWrapper(topic=topic, helpful=self)
 
     def add_plugin_args(self, plugins):
         """
@@ -466,86 +491,86 @@ class HelpfulArgumentParser(object):
 
 def create_parser(plugins, args):
     """Create parser."""
-    helpful = HelpfulArgumentParser(args, plugins)
+    parser = HelpfulArgumentParser(args, plugins)
 
     # --help is automatically provided by argparse
-    helpful.add(
-        None, "-v", "--verbose", dest="verbose_count", action="count",
+    parser.add(
+        "-v", "--verbose", dest="verbose_count", action="count",
         default=flag_default("verbose_count"), help="This flag can be used "
         "multiple times to incrementally increase the verbosity of output, "
         "e.g. -vvv.")
-    helpful.add(
-        None, "-t", "--text", dest="text_mode", action="store_true",
+    parser.add_argument(
+        "-t", "--text", dest="text_mode", action="store_true",
         help="Use the text output instead of the curses UI.")
-    helpful.add(None, "-m", "--email", help=config_help("email"))
+    parser.add_argument("-m", "--email", help=config_help("email"))
     # positional arg shadows --domains, instead of appending, and
     # --domains is useful, because it can be stored in config
     #for subparser in parser_run, parser_auth, parser_install:
     #    subparser.add_argument("domains", nargs="*", metavar="domain")
-    helpful.add(None, "-d", "--domains", metavar="DOMAIN", action="append")
+    parser.add_argument("-d", "--domains", metavar="DOMAIN", action="append")
 
-    helpful.add_group(
+    automation = parser.add_argument_group(
         "automation",
         description="Arguments for automating execution & other tweaks")
-    helpful.add(
-        "automation", "--version", action="version",
+    automation.add_argument(
+        "--version", action="version",
         version="%(prog)s {0}".format(letsencrypt.__version__),
         help="show program's version number and exit")
-    helpful.add(
-        "automation", "--no-confirm", dest="no_confirm", action="store_true",
+    automation.add_argument(
+        "--no-confirm", dest="no_confirm", action="store_true",
         help="Turn off confirmation screens, currently used for --revoke")
-    helpful.add(
-        "automation", "--agree-eula", dest="eula", action="store_true",
+    automation.add(
+        "--agree-eula", dest="eula", action="store_true",
         help="Agree to the Let's Encrypt Developer Preview EULA")
-    helpful.add(
-        "automation", "--agree-tos", dest="tos", action="store_true",
+    automation.add_argument(
+        "--agree-tos", dest="tos", action="store_true",
         help="Agree to the Let's Encrypt Subscriber Agreement")
     helpful.add(
         "automation", "--account", metavar="ACCOUNT_ID",
         help="Account ID to use")
 
-    helpful.add_group(
+    testing = parser.add_argument_group(
         "testing", description="The following flags are meant for "
         "testing purposes only! Do NOT change them, unless you "
         "really know what you're doing!")
-    helpful.add(
-        "testing", "--debug", action="store_true",
+    testing.add_argument(
+        "--debug", action="store_true",
         help="Show tracebacks if the program exits abnormally")
-    helpful.add(
-        "testing", "--no-verify-ssl", action="store_true",
+    testing.add_argument(
+        "--no-verify-ssl", action="store_true",
         help=config_help("no_verify_ssl"),
         default=flag_default("no_verify_ssl"))
-    helpful.add(  # TODO: apache plugin does NOT respect it (#479)
-        "testing", "--dvsni-port", type=int, default=flag_default("dvsni_port"),
+    testing.add_argument(  # TODO: apache plugin does NOT respect it (#479)
+        "--dvsni-port", type=int, default=flag_default("dvsni_port"),
         help=config_help("dvsni_port"))
-    helpful.add("testing", "--simple-http-port", type=int,
-                help=config_help("simple_http_port"))
-    helpful.add("testing", "--no-simple-http-tls", action="store_true",
-                help=config_help("no_simple_http_tls"))
+    testing.add_argument("--simple-http-port", type=int,
+                         help=config_help("simple_http_port"))
+    testing.add_argument("--no-simple-http-tls", action="store_true",
+                         help=config_help("no_simple_http_tls"))
 
-    helpful.add_group(
+    security = parser.add_argument_group(
         "security", description="Security parameters & server settings")
-    helpful.add(
-        "security", "-B", "--rsa-key-size", type=int, metavar="N",
+    security.add_argument(
+        "-B", "--rsa-key-size", type=int, metavar="N",
         default=flag_default("rsa_key_size"), help=config_help("rsa_key_size"))
     # TODO: resolve - assumes binary logic while client.py assumes ternary.
-    helpful.add(
-        "security", "-r", "--redirect", action="store_true",
+    security.add_argument(
+        "-r", "--redirect", action="store_true",
         help="Automatically redirect all HTTP traffic to HTTPS for the newly "
              "authenticated vhost.")
 
-    _paths_parser(helpful)
+    _paths_parser(parser)
     # _plugins_parsing should be the last thing to act upon the main
     # parser (--help should display plugin-specific options last)
-    _plugins_parsing(helpful, plugins)
+    _plugins_parsing(parser, plugins)
 
-    _create_subparsers(helpful)
+    _create_subparsers(parser)
 
-    return helpful.parser
+    return parser.parser
 
 
-def _create_subparsers(helpful):
-    subparsers = helpful.parser.add_subparsers(metavar="SUBCOMMAND")
+def _create_subparsers(parser):
+    subparsers = parser.parser.add_subparsers(metavar="SUBCOMMAND")
     def add_subparser(name, func):  # pylint: disable=missing-docstring
         subparser = subparsers.add_parser(
             name, help=func.__doc__.splitlines()[0], description=func.__doc__)
@@ -604,34 +629,33 @@ def _create_subparsers(helpful):
         const=interfaces.IInstaller, help="Limit to installer plugins only.")
 
 
-def _paths_parser(helpful):
-    add = helpful.add
-    helpful.add_group(
+def _paths_parser(parser):
+    paths = parser.add_argument_group(
         "paths", description="Arguments changing execution paths & servers")
-    add("paths", "--config-dir", default=flag_default("config_dir"),
+    paths.add_argument("--config-dir", default=flag_default("config_dir"),
         help=config_help("config_dir"))
-    add("paths", "--work-dir", default=flag_default("work_dir"),
+    paths.add_argument("--work-dir", default=flag_default("work_dir"),
         help=config_help("work_dir"))
-    add("paths", "--logs-dir", default=flag_default("logs_dir"),
+    paths.add_argument("--logs-dir", default=flag_default("logs_dir"),
         help="Logs directory.")
-    add("paths", "--server", default=flag_default("server"),
+    paths.add_argument("--server", default=flag_default("server"),
         help=config_help("server"))
 
 
-def _plugins_parsing(helpful, plugins):
-    helpful.add_group(
+def _plugins_parsing(parser, plugins):
+    plugins_group = parser.add_argument_group(
         "plugins", description="Let's Encrypt client supports an "
         "extensible plugins architecture. See '%(prog)s plugins' for a "
         "list of all available plugins and their names. You can force "
         "a particular plugin by setting options provided below. Futher "
         "down this help message you will find plugin-specific options "
         "(prefixed by --{plugin_name}).")
-    helpful.add(
-        "plugins", "-a", "--authenticator", help="Authenticator plugin name.")
-    helpful.add(
-        "plugins", "-i", "--installer", help="Installer plugin name.")
-    helpful.add(
-        "plugins", "--configurator", help="Name of the plugin that is "
+    plugins_group.add_argument(
+        "-a", "--authenticator", help="Authenticator plugin name.")
+    plugins_group.add_argument(
+        "-i", "--installer", help="Installer plugin name.")
+    plugins_group.add_argument(
+        "--configurator", help="Name of the plugin that is "
         "both an authenticator and an installer. Should not be used "
         "together with --authenticator or --installer.")
 
@@ -639,7 +663,7 @@ def _plugins_parsing(helpful, plugins):
     # plugins_group should be displayed in --help before plugin
     # specific groups (so that plugins_group.description makes sense)
 
-    helpful.add_plugin_args(plugins)
+    parser.add_plugin_args(plugins)
 
 
 def _setup_logging(args):
