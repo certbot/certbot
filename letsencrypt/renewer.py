@@ -12,6 +12,7 @@ import os
 import sys
 
 import configobj
+import zope.component
 
 from letsencrypt import configuration
 from letsencrypt import cli
@@ -20,6 +21,7 @@ from letsencrypt import crypto_util
 from letsencrypt import notify
 from letsencrypt import storage
 
+from letsencrypt.display import util as display_util
 from letsencrypt.plugins import disco as plugins_disco
 
 
@@ -64,6 +66,7 @@ def renew(cert, old_version):
     # XXX: this loses type data (for example, the fact that key_size
     #      was an int, not a str)
     config.rsa_key_size = int(config.rsa_key_size)
+    config.dvsni_port = int(config.dvsni_port)
     try:
         authenticator = plugins[renewalparams["authenticator"]]
     except KeyError:
@@ -119,6 +122,8 @@ def main(config=None, args=sys.argv[1:]):
     #       invocations if /etc/letsencrypt/renewal.conf defaults have
     #       turned it off. (The boolean parameter should probably be
     #       called renewer_enabled.)
+
+    zope.component.provideUtility(display_util.FileDisplay(sys.stdout))
 
     cli_config = configuration.RenewerConfiguration(
         _create_parser().parse_args(args))
