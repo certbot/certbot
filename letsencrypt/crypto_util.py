@@ -40,7 +40,7 @@ def init_save_key(key_size, key_dir, keyname="key-letsencrypt.pem"):
     try:
         key_pem = make_key(key_size)
     except ValueError as err:
-        logging.fatal(str(err))
+        logging.exception(err)
         raise err
 
     # Save file
@@ -55,7 +55,7 @@ def init_save_key(key_size, key_dir, keyname="key-letsencrypt.pem"):
     return le_util.Key(key_path, key_pem)
 
 
-def init_save_csr(privkey, names, cert_dir, csrname="csr-letsencrypt.pem"):
+def init_save_csr(privkey, names, path, csrname="csr-letsencrypt.pem"):
     """Initialize a CSR with the given private key.
 
     :param privkey: Key to include in the CSR
@@ -63,7 +63,7 @@ def init_save_csr(privkey, names, cert_dir, csrname="csr-letsencrypt.pem"):
 
     :param set names: `str` names to include in the CSR
 
-    :param str cert_dir: Certificate save directory.
+    :param str path: Certificate save directory.
 
     :returns: CSR
     :rtype: :class:`letsencrypt.le_util.CSR`
@@ -72,9 +72,9 @@ def init_save_csr(privkey, names, cert_dir, csrname="csr-letsencrypt.pem"):
     csr_pem, csr_der = make_csr(privkey.pem, names)
 
     # Save CSR
-    le_util.make_or_verify_dir(cert_dir, 0o755, os.geteuid())
+    le_util.make_or_verify_dir(path, 0o755, os.geteuid())
     csr_f, csr_filename = le_util.unique_file(
-        os.path.join(cert_dir, csrname), 0o644)
+        os.path.join(path, csrname), 0o644)
     csr_f.write(csr_pem)
     csr_f.close()
 

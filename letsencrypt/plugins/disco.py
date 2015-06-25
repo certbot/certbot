@@ -89,10 +89,10 @@ class PluginEntryPoint(object):
         if self._prepared is None:
             try:
                 self._initialized.prepare()
-            except errors.LetsEncryptMisconfigurationError as error:
+            except errors.MisconfigurationError as error:
                 logging.debug("Misconfigured %r: %s", self, error)
                 self._prepared = error
-            except errors.LetsEncryptNoInstallationError as error:
+            except errors.NoInstallationError as error:
                 logging.debug("No installation (%r): %s", self, error)
                 self._prepared = error
             else:
@@ -102,8 +102,7 @@ class PluginEntryPoint(object):
     @property
     def misconfigured(self):
         """Is plugin misconfigured?"""
-        return isinstance(
-            self._prepared, errors.LetsEncryptMisconfigurationError)
+        return isinstance(self._prepared, errors.MisconfigurationError)
 
     @property
     def available(self):

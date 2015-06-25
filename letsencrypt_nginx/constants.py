@@ -4,13 +4,15 @@ import pkg_resources
 
 CLI_DEFAULTS = dict(
     server_root="/etc/nginx",
-    mod_ssl_conf="/etc/letsencrypt/options-ssl-nginx.conf",
     ctl="nginx",
 )
 """CLI defaults."""
 
 
-MOD_SSL_CONF = pkg_resources.resource_filename(
+MOD_SSL_CONF_DEST = "options-ssl-nginx.conf"
+"""Name of the mod_ssl config file as saved in `IConfig.config_dir`."""
+
+MOD_SSL_CONF_SRC = pkg_resources.resource_filename(
     "letsencrypt_nginx", "options-ssl-nginx.conf")
-"""Path to the Nginx mod_ssl config file found in the Let's Encrypt
+"""Path to the nginx mod_ssl config file found in the Let's Encrypt
 distribution."""

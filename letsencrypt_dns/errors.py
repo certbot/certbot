@@ -2,5 +2,5 @@
 from letsencrypt import errors as core_errors
 
 
-class Error(core_errors.LetsEncryptDvAuthError):
+class Error(core_errors.DvAuthError):
     """Let's Encrypt DNS error."""

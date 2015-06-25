@@ -195,7 +195,7 @@ class NginxParser(object):
             if os.path.isfile(os.path.join(self.root, name)):
                 return os.path.join(self.root, name)
 
-        raise errors.LetsEncryptNoInstallationError(
+        raise errors.NoInstallationError(
             "Could not find configuration root")
 
     def filedump(self, ext='tmp'):
@@ -486,7 +486,7 @@ def _add_directives(block, directives, replace=False):
                     block[index] = directive
                     changed = True
             if not changed:
-                raise errors.LetsEncryptMisconfigurationError(
+                raise errors.MisconfigurationError(
                     'LetsEncrypt expected directive for %s in the Nginx '
                     'config but did not find it.' % directive[0])
     else:

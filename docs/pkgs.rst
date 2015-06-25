@@ -6,7 +6,7 @@ Packages
   described in `#358`_. For the time being those packages are bundled
   together into a single repo, and single documentation.
 
-.. _`#358`: https://github.com/letsencrypt/lets-encrypt-preview/issues/358
+.. _`#358`: https://github.com/letsencrypt/letsencrypt/issues/358
 
 .. toctree::
    :glob:

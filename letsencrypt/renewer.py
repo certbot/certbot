@@ -7,15 +7,19 @@ within lineages of successor certificates, according to configuration.
 .. todo:: Call new installer API to restart servers after deployment
 
 """
+import argparse
 import os
+import sys
 
 import configobj
 
 from letsencrypt import configuration
+from letsencrypt import cli
 from letsencrypt import client
 from letsencrypt import crypto_util
 from letsencrypt import notify
 from letsencrypt import storage
+
 from letsencrypt.plugins import disco as plugins_disco
 
 
@@ -92,13 +96,32 @@ def renew(cert, old_version):
     #       (where fewer than all names were renewed)
 
 
-def main(config=None):
+def _paths_parser(parser):
+    add = parser.add_argument_group("paths").add_argument
+    add("--config-dir", default=cli.flag_default("config_dir"),
+        help=cli.config_help("config_dir"))
+    add("--work-dir", default=cli.flag_default("work_dir"),
+        help=cli.config_help("work_dir"))
+    return parser
+
+
+def _create_parser():
+    parser = argparse.ArgumentParser()
+    #parser.add_argument("--cron", action="store_true", help="Run as cronjob.")
+    # pylint: disable=protected-access
+    return _paths_parser(parser)
+
+
+def main(config=None, args=sys.argv[1:]):
     """Main function for autorenewer script."""
     # TODO: Distinguish automated invocation from manual invocation,
     #       perhaps by looking at sys.argv[0] and inhibiting automated
     #       invocations if /etc/letsencrypt/renewal.conf defaults have
     #       turned it off. (The boolean parameter should probably be
     #       called renewer_enabled.)
+
+    cli_config = configuration.RenewerConfiguration(
+        _create_parser().parse_args(args))
 
     config = storage.config_with_defaults(config)
     # Now attempt to read the renewer config file and augment or replace
@@ -108,14 +131,15 @@ def main(config=None):
     # elaborate renewer command line, we will presumably also be able to
     # specify a config file on the command line, which, if provided, should
     # take precedence over this one.
-    config.merge(configobj.ConfigObj(config.get("renewer_config_file", "")))
+    config.merge(configobj.ConfigObj(cli_config.renewer_config_file))
 
-    for i in os.listdir(config["renewal_configs_dir"]):
+    for i in os.listdir(cli_config.renewal_configs_dir):
         print "Processing", i
         if not i.endswith(".conf"):
             continue
-        rc_config = configobj.ConfigObj(
-            os.path.join(config["renewal_configs_dir"], i))
+        rc_config = configobj.ConfigObj(cli_config.renewer_config_file)
+        rc_config.merge(configobj.ConfigObj(
+            os.path.join(cli_config.renewal_configs_dir, i)))
         try:
             # TODO: Before trying to initialize the RenewableCert object,
             #       we could check here whether the combination of the config
@@ -125,7 +149,7 @@ def main(config=None):
             #       RenewableCert object for this cert at all, which could
             #       dramatically improve performance for large deployments
             #       where autorenewal is widely turned off.
-            cert = storage.RenewableCert(rc_config)
+            cert = storage.RenewableCert(rc_config, cli_config=cli_config)
         except ValueError:
             # This indicates an invalid renewal configuration file, such
             # as one missing a required parameter (in the future, perhaps

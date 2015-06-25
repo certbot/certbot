@@ -16,7 +16,6 @@ import tempfile
 import Crypto.PublicKey.RSA
 import M2Crypto
 
-from acme import messages
 from acme.jose import util as jose_util
 
 from letsencrypt import errors
@@ -45,7 +44,9 @@ class Revoker(object):
 
     """
     def __init__(self, installer, config, no_confirm=False):
-        self.network = network.Network(config.server)
+        # XXX
+        self.network = network.Network(new_reg_uri=None, key=None, alg=None)
+
         self.installer = installer
         self.config = config
         self.no_confirm = no_confirm
@@ -70,7 +71,7 @@ class Revoker(object):
                 authkey.pem).exportKey("PEM")
         # https://www.dlitz.net/software/pycrypto/api/current/Crypto.PublicKey.RSA-module.html
         except (IndexError, ValueError, TypeError):
-            raise errors.LetsEncryptRevokerError(
+            raise errors.RevokerError(
                 "Invalid key file specified to revoke_from_key")
 
         with open(self.list_path, "rb") as csvfile:
@@ -88,8 +89,7 @@ class Revoker(object):
                     # This should never happen given the assumptions of the
                     # module. If it does, it is probably best to delete the
                     # the offending key/cert. For now... just raise an exception
-                    raise errors.LetsEncryptRevokerError(
-                        "%s - backup file is corrupted.")
+                    raise errors.RevokerError("%s - backup file is corrupted.")
 
                 if clean_pem == test_pem:
                     certs.append(
@@ -217,7 +217,7 @@ class Revoker(object):
                 if self.no_confirm or revocation.confirm_revocation(cert):
                     try:
                         self._acme_revoke(cert)
-                    except errors.LetsEncryptClientError:
+                    except errors.Error:
                         # TODO: Improve error handling when networking is set...
                         logging.error(
                             "Unable to revoke cert:%s%s", os.linesep, str(cert))
@@ -238,6 +238,8 @@ class Revoker(object):
         :returns: TODO
 
         """
+        # XXX | pylint: disable=unused-variable
+
         # These will both have to change in the future away from M2Crypto
         # pylint: disable=protected-access
         certificate = jose_util.ComparableX509(cert._cert)
@@ -247,13 +249,10 @@ class Revoker(object):
 
         # If the key file doesn't exist... or is corrupted
         except (IndexError, ValueError, TypeError):
-            raise errors.LetsEncryptRevokerError(
+            raise errors.RevokerError(
                 "Corrupted backup key file: %s" % cert.backup_key_path)
 
-        # TODO: Catch error associated with already revoked and proceed.
-        return self.network.send_and_receive_expected(
-            messages.RevocationRequest.create(certificate=certificate, key=key),
-            messages.Revocation)
+        return self.network.revoke(cert=None)  # XXX
 
     def _remove_certs_keys(self, cert_list):  # pylint: disable=no-self-use
         """Remove certificate and key.
@@ -293,7 +292,7 @@ class Revoker(object):
 
         # This should never happen...
         if idx != len(cert_list):
-            raise errors.LetsEncryptRevokerError(
+            raise errors.RevokerError(
                 "Did not find all cert_list items to remove from LIST")
 
         shutil.copy2(list_path2, self.list_path)
@@ -398,7 +397,7 @@ class Cert(object):
         try:
             self._cert = M2Crypto.X509.load_cert(cert_path)
         except (IOError, M2Crypto.X509.X509Error):
-            raise errors.LetsEncryptRevokerError(
+            raise errors.RevokerError(
                 "Error loading certificate: %s" % cert_path)
 
         self.idx = -1

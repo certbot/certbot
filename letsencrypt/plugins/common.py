@@ -1,8 +1,14 @@
 """Plugin common functions."""
+import os
+import pkg_resources
+import shutil
+import tempfile
+
 import zope.interface
 
 from acme.jose import util as jose_util
 
+from letsencrypt import constants
 from letsencrypt import interfaces
 
 
@@ -70,3 +76,127 @@ class Plugin(object):
             with unique plugin name prefix.
 
         """
+
+# other
+
+class Addr(object):
+    r"""Represents an virtual host address.
+
+    :param str addr: addr part of vhost address
+    :param str port: port number or \*, or ""
+
+    """
+    def __init__(self, tup):
+        self.tup = tup
+
+    @classmethod
+    def fromstring(cls, str_addr):
+        """Initialize Addr from string."""
+        tup = str_addr.partition(':')
+        return cls((tup[0], tup[2]))
+
+    def __str__(self):
+        if self.tup[1]:
+            return "%s:%s" % self.tup
+        return self.tup[0]
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self.tup == other.tup
+        return False
+
+    def __hash__(self):
+        return hash(self.tup)
+
+    def get_addr(self):
+        """Return addr part of Addr object."""
+        return self.tup[0]
+
+    def get_port(self):
+        """Return port."""
+        return self.tup[1]
+
+    def get_addr_obj(self, port):
+        """Return new address object with same addr and new port."""
+        return self.__class__((self.tup[0], port))
+
+
+class Dvsni(object):
+    """Class that perform DVSNI challenges."""
+
+    def __init__(self, configurator):
+        self.configurator = configurator
+        self.achalls = []
+        self.indices = []
+        self.challenge_conf = os.path.join(
+            configurator.config.config_dir, "le_dvsni_cert_challenge.conf")
+        # self.completed = 0
+
+    def add_chall(self, achall, idx=None):
+        """Add challenge to DVSNI object to perform at once.
+
+        :param achall: Annotated DVSNI challenge.
+        :type achall: :class:`letsencrypt.achallenges.DVSNI`
+
+        :param int idx: index to challenge in a larger array
+
+        """
+        self.achalls.append(achall)
+        if idx is not None:
+            self.indices.append(idx)
+
+    def get_cert_file(self, achall):
+        """Returns standardized name for challenge certificate.
+
+        :param achall: Annotated DVSNI challenge.
+        :type achall: :class:`letsencrypt.achallenges.DVSNI`
+
+        :returns: certificate file name
+        :rtype: str
+
+        """
+        return os.path.join(
+            self.configurator.config.work_dir, achall.nonce_domain + ".crt")
+
+    def _setup_challenge_cert(self, achall, s=None):
+        # pylint: disable=invalid-name
+        """Generate and write out challenge certificate."""
+        cert_path = self.get_cert_file(achall)
+        # Register the path before you write out the file
+        self.configurator.reverter.register_file_creation(True, cert_path)
+
+        cert_pem, response = achall.gen_cert_and_response(s)
+
+        # Write out challenge cert
+        with open(cert_path, "w") as cert_chall_fd:
+            cert_chall_fd.write(cert_pem)
+
+        return response
+
+
+# test utils
+
+def setup_ssl_options(config_dir, src, dest):
+    """Move the ssl_options into position and return the path."""
+    option_path = os.path.join(config_dir, dest)
+    shutil.copyfile(src, option_path)
+    return option_path
+
+
+def dir_setup(test_dir, pkg):
+    """Setup the directories necessary for the configurator."""
+    temp_dir = tempfile.mkdtemp("temp")
+    config_dir = tempfile.mkdtemp("config")
+    work_dir = tempfile.mkdtemp("work")
+
+    os.chmod(temp_dir, constants.CONFIG_DIRS_MODE)
+    os.chmod(config_dir, constants.CONFIG_DIRS_MODE)
+    os.chmod(work_dir, constants.CONFIG_DIRS_MODE)
+
+    test_configs = pkg_resources.resource_filename(
+        pkg, os.path.join("testdata", test_dir))
+
+    shutil.copytree(
+        test_configs, os.path.join(temp_dir, test_dir), symlinks=True)
+
+    return temp_dir, config_dir, work_dir

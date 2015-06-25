@@ -5,7 +5,7 @@ import unittest
 import mock
 
 from acme import challenges
-from acme import messages2
+from acme import messages
 
 from letsencrypt import achallenges
 from letsencrypt import errors
@@ -21,8 +21,7 @@ class NginxConfiguratorTest(util.NginxTest):
         super(NginxConfiguratorTest, self).setUp()
 
         self.config = util.get_nginx_configurator(
-            self.config_path, self.config_dir, self.work_dir,
-            self.ssl_options)
+            self.config_path, self.config_dir, self.work_dir)
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
@@ -45,10 +44,8 @@ class NginxConfiguratorTest(util.NginxTest):
         self.assertEqual([], self.config.supported_enhancements())
 
     def test_enhance(self):
-        self.assertRaises(errors.LetsEncryptConfiguratorError,
-                          self.config.enhance,
-                          'myhost',
-                          'redirect')
+        self.assertRaises(
+            errors.ConfiguratorError, self.config.enhance, 'myhost', 'redirect')
 
     def test_get_chall_pref(self):
         self.assertEqual([challenges.DVSNI],
@@ -165,20 +162,20 @@ class NginxConfiguratorTest(util.NginxTest):
         # Note: As more challenges are offered this will have to be expanded
         auth_key = le_util.Key(self.rsa256_file, self.rsa256_pem)
         achall1 = achallenges.DVSNI(
-            challb=messages2.ChallengeBody(
+            challb=messages.ChallengeBody(
                 chall=challenges.DVSNI(
                     r="foo",
                     nonce="bar"),
                 uri="https://ca.org/chall0_uri",
-                status=messages2.Status("pending"),
+                status=messages.Status("pending"),
             ), domain="localhost", key=auth_key)
         achall2 = achallenges.DVSNI(
-            challb=messages2.ChallengeBody(
+            challb=messages.ChallengeBody(
                 chall=challenges.DVSNI(
                     r="abc",
                     nonce="def"),
                 uri="https://ca.org/chall1_uri",
-                status=messages2.Status("pending"),
+                status=messages.Status("pending"),
             ), domain="example.com", key=auth_key)
 
         dvsni_ret_val = [
@@ -218,22 +215,19 @@ class NginxConfiguratorTest(util.NginxTest):
                            " (based on LLVM 3.5svn)",
                            "TLS SNI support enabled",
                            "configure arguments: --with-http_ssl_module"]))
-        self.assertRaises(errors.LetsEncryptConfiguratorError,
-                          self.config.get_version)
+        self.assertRaises(errors.ConfiguratorError, self.config.get_version)
 
         mock_popen().communicate.return_value = (
             "", "\n".join(["nginx version: nginx/1.4.2",
                            "TLS SNI support enabled"]))
-        self.assertRaises(errors.LetsEncryptConfiguratorError,
-                          self.config.get_version)
+        self.assertRaises(errors.ConfiguratorError, self.config.get_version)
 
         mock_popen().communicate.return_value = (
             "", "\n".join(["nginx version: nginx/1.4.2",
                            "built by clang 6.0 (clang-600.0.56)"
                            " (based on LLVM 3.5svn)",
                            "configure arguments: --with-http_ssl_module"]))
-        self.assertRaises(errors.LetsEncryptConfiguratorError,
-                          self.config.get_version)
+        self.assertRaises(errors.ConfiguratorError, self.config.get_version)
 
         mock_popen().communicate.return_value = (
             "", "\n".join(["nginx version: nginx/0.8.1",
@@ -241,12 +235,10 @@ class NginxConfiguratorTest(util.NginxTest):
                            " (based on LLVM 3.5svn)",
                            "TLS SNI support enabled",
                            "configure arguments: --with-http_ssl_module"]))
-        self.assertRaises(errors.LetsEncryptConfiguratorError,
-                          self.config.get_version)
+        self.assertRaises(errors.ConfiguratorError, self.config.get_version)
 
         mock_popen.side_effect = OSError("Can't find program")
-        self.assertRaises(
-            errors.LetsEncryptConfiguratorError, self.config.get_version)
+        self.assertRaises(errors.ConfiguratorError, self.config.get_version)
 
     @mock.patch("letsencrypt_nginx.configurator.subprocess.Popen")
     def test_nginx_restart(self, mock_popen):
