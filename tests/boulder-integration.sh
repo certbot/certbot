@@ -1,8 +1,10 @@
-#!/bin/sh
-# Simple integration test, run as "./boulder-integration.sh auth" or
-# adjust parameters: "./boulder-integration.sh --domain bang auth".
+#!/bin/sh -xe
+# Simple integration test, make sure to activate virtualenv beforehand
+# (source venv/bin/activate) and that you are running Boulder test
+# instance (see ./boulder-start.sh).
 
 root="$(mktemp -d)"
+echo "\nRoot integration tests directory: $root"
 
 # first three flags required, rest is handy defaults
 letsencrypt \
@@ -17,7 +19,4 @@ letsencrypt \
   --domains le.wtf \
   --authenticator standalone \
   -vvvvvvv \
-  "$@"
-
-# print at the end, so it's more visible
-echo "\nRoot integration tests directory: $root"
+  auth
