@@ -190,8 +190,6 @@ class IConfig(zope.interface.Interface):
 
     # TODO: the following are not used, but blocked by #485
     le_vhost_ext = zope.interface.Attribute("not used")
-    cert_path = zope.interface.Attribute("not used")
-    chain_path = zope.interface.Attribute("not used")
 
 
 class IInstaller(IPlugin):
