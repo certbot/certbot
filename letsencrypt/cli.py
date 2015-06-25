@@ -150,7 +150,7 @@ def run(args, config, plugins):
 
 
 def auth(args, config, plugins):
-    """Authenticate & obtain cert, but do not install it"""
+    """Authenticate & obtain cert, but do not install it."""
     # XXX: Update for renewer / RenewableCert
     acc = _account_init(args, config)
     if acc is None:
@@ -169,13 +169,13 @@ def auth(args, config, plugins):
     # TODO: Handle errors from _common_run?
     acme, doms = _common_run(
         args, config, acc, authenticator=authenticator, installer=installer)
-    if not acme.obtain_and_enroll_certificate(doms, authenticator, installer,
-                                              plugins):
+    if not acme.obtain_and_enroll_certificate(
+            doms, authenticator, installer, plugins):
         return "Certificate could not be obtained"
 
 
 def install(args, config, plugins):
-    """Install a previously obtained cert in a server"""
+    """Install a previously obtained cert in a server."""
     # XXX: Update for renewer/RenewableCert
     acc = _account_init(args, config)
     if acc is None:
@@ -192,7 +192,7 @@ def install(args, config, plugins):
 
 
 def revoke(args, unused_config, unused_plugins):
-    """Revoke a previously obtained certificate"""
+    """Revoke a previously obtained certificate."""
     if args.rev_cert is None and args.rev_key is None:
         return "At least one of --certificate or --key is required"
 
@@ -204,7 +204,7 @@ def revoke(args, unused_config, unused_plugins):
 
 
 def rollback(args, config, plugins):
-    """Rollback server configuration changes made during install"""
+    """Rollback server configuration changes made during install."""
     client.rollback(args.installer, args.checkpoints, config, plugins)
 
 
@@ -218,7 +218,7 @@ def config_changes(unused_args, config, unused_plugins):
 
 
 def plugins_cmd(args, config, plugins):  # TODO: Use IDiplay rathern than print
-    """List server software plugins"""
+    """List server software plugins."""
     logging.debug("Expected interfaces: %s", args.ifaces)
 
     ifaces = [] if args.ifaces is None else args.ifaces
@@ -264,6 +264,7 @@ def flag_default(name):
     """Default value for CLI flag."""
     return constants.CLI_DEFAULTS[name]
 
+
 def config_help(name, hidden=False):
     """Help message for `.IConfig` attribute."""
     if hidden:
@@ -271,10 +272,15 @@ def config_help(name, hidden=False):
     else:
         return interfaces.IConfig[name].__doc__
 
-class SilentParser(object):
-    """An a mini parser wrapper that doesn't print help for its
-    arguments... this one is just needed to the use of callbacks to define
-    arguments within plugins"""
+
+class SilentParser(object):  # pylint: disable=too-few-public-methods
+    """Silent wrapper around argparse.
+
+    A mini parser wrapper that doesn't print help for its
+    arguments. This is needed for the use of callbacks to define
+    arguments within plugins.
+
+    """
     def __init__(self, parser):
         self.parser = parser
     def add_argument(self, *args, **kwargs):
@@ -282,12 +288,18 @@ class SilentParser(object):
         kwargs["help"] = argparse.SUPPRESS
         self.parser.add_argument(*args, **kwargs)
 
-HELP_TOPICS = ["all", "security", "paths", "automation", "testing"]
-class HelpfulArgumentParser(object):
-    """This class wraps argparse, adding the ability to make --help less
-    verbose, and request help on specific subcategories at a time, eg
-    'letsencrypt --help security' for security options."""
 
+HELP_TOPICS = ["all", "security", "paths", "automation", "testing"]
+
+
+class HelpfulArgumentParser(object):
+    """Argparse Wrapper.
+
+    This class wraps argparse, adding the ability to make --help less
+    verbose, and request help on specific subcategories at a time, eg
+    'letsencrypt --help security' for security options.
+
+    """
     def __init__(self, args, plugins):
         self.args = args
         plugin_names = [name for name, _p in plugins.iteritems()]
@@ -316,11 +328,15 @@ class HelpfulArgumentParser(object):
         self.add_plugin_args(plugins)
 
     def prescan_for_flag(self, flag, possible_arguments):
-        """check for a flag, which accepts a fixed set of possible arguments, in
+        """Checks cli input for flags.
+
+        Check for a flag, which accepts a fixed set of possible arguments, in
         the command line; we will use this information to configure argparse's
         help correctly.  Return the flag's argument, if it has one that matches
         the sequence @possible_arguments; otherwise return whether the flag is
-        present"""
+        present.
+
+        """
         if flag not in self.args:
             return False
         pos = self.args.index(flag)
@@ -333,10 +349,12 @@ class HelpfulArgumentParser(object):
         return True
 
     def add(self, topic, *args, **kwargs):
-        """Add a new command line argument. @topic is required, to indicate
-        which part of the help will document it, but can be None for `always
-        documented'."""
+        """Add a new command line argument.
 
+        @topic is required, to indicate which part of the help will document
+        it, but can be None for `always documented'.
+
+        """
         if topic and self.visible_topics[topic]:
             group = self.groups[topic]
             group.add_argument(*args, **kwargs)
@@ -345,10 +363,14 @@ class HelpfulArgumentParser(object):
             self.parser.add_argument(*args, **kwargs)
 
     def add_group(self, topic, **kwargs):
-        """This has to be called once for every topic; but we leave those calls
+        """
+
+        This has to be called once for every topic; but we leave those calls
         next to the argument definitions for clarity. Return something
         arguments can be added to if necessary, either the parser or an argument
-        group."""
+        group.
+
+        """
         if self.visible_topics[topic]:
             #print "Adding visible group " + topic
             group = self.parser.add_argument_group(topic, **kwargs)
@@ -359,8 +381,12 @@ class HelpfulArgumentParser(object):
             return self.silent_parser
 
     def add_plugin_args(self, plugins):
-        """Let each of the plugins add its own command line arguments, which
-        may or may not be displayed as help topics."""
+        """
+
+        Let each of the plugins add its own command line arguments, which
+        may or may not be displayed as help topics.
+
+        """
         # TODO: plugin_parser should be called for every detected plugin
         for name, plugin_ep in plugins.iteritems():
             parser_or_group = self.add_group(name, description=plugin_ep.description)
@@ -368,9 +394,14 @@ class HelpfulArgumentParser(object):
             plugin_ep.plugin_cls.inject_parser_options(parser_or_group, name)
 
     def determine_help_topics(self, chosen_topic):
-        """The user may have requested help on a topic, return a dict of which
-        topics to dislpay. @chosen_topic has prescan_for_flag's return type"""
+        """
 
+        The user may have requested help on a topic, return a dict of which
+        topics to display. @chosen_topic has prescan_for_flag's return type
+
+        :returns: dict
+
+        """
         # topics maps each topic to whether it should be documented by
         # argparse on the command line
         if chosen_topic == "all":
@@ -392,7 +423,8 @@ def create_parser(plugins, args):
         "e.g. -vvv.")
     # --help is automatically provided by argparse
 
-    helpful.add_group("automation",
+    helpful.add_group(
+        "automation",
         description="Arguments for automating execution & other tweaks")
     helpful.add(
         "automation", "--version", action="version",
@@ -423,9 +455,10 @@ def create_parser(plugins, args):
         help=config_help("dvsni_port"))
 
     helpful.add("testing", "--no-simple-http-tls", action="store_true",
-        help=config_help("no_simple_http_tls"))
+                help=config_help("no_simple_http_tls"))
 
     subparsers = helpful.parser.add_subparsers(metavar="SUBCOMMAND")
+
     def add_subparser(name, func):  # pylint: disable=missing-docstring
         subparser = subparsers.add_parser(
             name, help=func.__doc__.splitlines()[0], description=func.__doc__)
@@ -460,16 +493,17 @@ def create_parser(plugins, args):
 
     helpful.add(None, "-d", "--domains", metavar="DOMAIN", action="append")
     helpful.add(None, "-k", "--accountkey", type=read_file,
-        help="Path to the account key file")
+                help="Path to the account key file")
     helpful.add(None, "-m", "--email", help=config_help("email"))
 
     helpful.add_group(
         "security", description="Security parameters & server settings")
-    helpful.add("security", "-B", "--rsa-key-size", type=int, metavar="N",
-        default=flag_default("rsa_key_size"),
-        help=config_help("rsa_key_size"))
+    helpful.add(
+        "security", "-B", "--rsa-key-size", type=int, metavar="N",
+        default=flag_default("rsa_key_size"), help=config_help("rsa_key_size"))
     # TODO: resolve - assumes binary logic while client.py assumes ternary.
-    helpful.add("security", "-r", "--redirect", action="store_true",
+    helpful.add(
+        "security", "-r", "--redirect", action="store_true",
         help="Automatically redirect all HTTP traffic to HTTPS for the newly "
              "authenticated vhost.")
 
@@ -486,7 +520,6 @@ def create_parser(plugins, args):
         help="Revert configuration N number of checkpoints.")
 
     _paths_parser(helpful)
-
 
     return helpful.parser
 
@@ -514,6 +547,7 @@ def _paths_parser(helpful):
         help=config_help("renewer_config_file"))
     add("paths", "-s", "--server", default=flag_default("server"),
         help=config_help("server"))
+
 
 def main(args=sys.argv[1:]):
     """Command line argument parsing and main script execution."""

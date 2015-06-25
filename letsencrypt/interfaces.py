@@ -155,31 +155,28 @@ class IConfig(zope.interface.Interface):
 
     config_dir = zope.interface.Attribute("Configuration directory.")
     work_dir = zope.interface.Attribute("Working directory.")
-    backup_dir = zope.interface.Attribute("Configuration backups directory.")
-    temp_checkpoint_dir = zope.interface.Attribute(
-        "Temporary checkpoint directory.")
-    in_progress_dir = zope.interface.Attribute(
-        "Directory used before a permanent checkpoint is finalized.")
-    cert_key_backup = zope.interface.Attribute(
-        "Directory where all certificates and keys are stored. "
-        "Used for easy revocation.")
+
     accounts_dir = zope.interface.Attribute(
         "Directory where all account information is stored.")
     account_keys_dir = zope.interface.Attribute(
         "Directory where all account keys are stored.")
+    backup_dir = zope.interface.Attribute("Configuration backups directory.")
+    cert_dir = zope.interface.Attribute(
+        "Directory where newly generated Certificate Signing Requests "
+        "(CSRs) and certificates not enrolled in the renewer are saved.")
+    cert_key_backup = zope.interface.Attribute(
+        "Directory where all certificates and keys are stored. "
+        "Used for easy revocation.")
+    in_progress_dir = zope.interface.Attribute(
+        "Directory used before a permanent checkpoint is finalized.")
+    key_dir = zope.interface.Attribute("Keys storage.")
     rec_token_dir = zope.interface.Attribute(
         "Directory where all recovery tokens are saved.")
-    key_dir = zope.interface.Attribute("Keys storage.")
-    cert_dir = zope.interface.Attribute("Certificates storage.")
-
-    le_vhost_ext = zope.interface.Attribute(
-        "SSL vhost configuration extension.")
+    temp_checkpoint_dir = zope.interface.Attribute(
+        "Temporary checkpoint directory.")
 
     renewer_config_file = zope.interface.Attribute(
         "Location of renewal configuration file.")
-
-    cert_path = zope.interface.Attribute("Let's Encrypt certificate file path.")
-    chain_path = zope.interface.Attribute("Let's Encrypt chain file path.")
 
     no_verify_ssl = zope.interface.Attribute(
         "Disable SSL certificate verification.")
@@ -190,6 +187,11 @@ class IConfig(zope.interface.Interface):
     # TODO: not implemented
     no_simple_http_tls = zope.interface.Attribute(
         "Do not use TLS when solving SimpleHTTP challenges.")
+
+    # TODO: the following are not used, but blocked by #485
+    le_vhost_ext = zope.interface.Attribute("not used")
+    cert_path = zope.interface.Attribute("not used")
+    chain_path = zope.interface.Attribute("not used")
 
 
 class IInstaller(IPlugin):

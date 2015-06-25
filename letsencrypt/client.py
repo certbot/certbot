@@ -257,8 +257,8 @@ class Client(object):
         :param certr: ACME "certificate" resource.
         :type certr: :class:`acme.messages.Certificate`
 
-        :param str cert_path: Path to attempt to save the cert file
-        :param str chain_path: Path to attempt to save the chain file
+        :param str cert_path: Candidate path to a certificate.
+        :param str chain_path: Candidate path to a certificate chain.
 
         :returns: cert_path, chain_path (absolute paths to the actual files)
         :rtype: `tuple` of `str`

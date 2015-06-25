@@ -22,7 +22,8 @@ class ApacheTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
             pkg="letsencrypt_apache.tests")
 
         self.ssl_options = common.setup_ssl_options(
-            self.config_dir, constants.MOD_SSL_CONF)
+            self.config_dir, constants.MOD_SSL_CONF_SRC,
+            constants.MOD_SSL_CONF_DEST)
 
         self.config_path = os.path.join(
             self.temp_dir, "debian_apache_2_4/two_vhost_80/apache2")
@@ -34,7 +35,7 @@ class ApacheTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
 
 
 def get_apache_configurator(
-        config_path, config_dir, work_dir, ssl_options, version=(2, 4, 7)):
+        config_path, config_dir, work_dir, version=(2, 4, 7)):
     """Create an Apache Configurator with the specified options."""
 
     backups = os.path.join(work_dir, "backups")
@@ -46,8 +47,7 @@ def get_apache_configurator(
         config = configurator.ApacheConfigurator(
             config=mock.MagicMock(
                 apache_server_root=config_path,
-                apache_mod_ssl_conf=ssl_options,
-                le_vhost_ext="-le-ssl.conf",
+                apache_le_vhost_ext=constants.CLI_DEFAULTS["le_vhost_ext"],
                 backup_dir=backups,
                 config_dir=config_dir,
                 temp_checkpoint_dir=os.path.join(work_dir, "temp_checkpoints"),
