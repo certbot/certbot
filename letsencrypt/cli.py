@@ -676,10 +676,14 @@ def main(cli_args=sys.argv[1:]):
     except errors.Error as error:
         handle_exception_common()
         return error
-    except: # pylint: disable=bare-except
+    except KeyboardInterrupt:
         handle_exception_common()
         # Ensures a new line is printed
         return ""
+    except: # pylint: disable=bare-except
+        handle_exception_common()
+        return ("\nAn unexpected error occured. Please see the logfiles in {0} "
+                "for more details.".format(args.logs_dir))
 
 
 if __name__ == "__main__":
