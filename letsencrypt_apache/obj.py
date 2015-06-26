@@ -32,12 +32,12 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
 
     def __str__(self):
         addr_str = ", ".join(str(addr) for addr in self.addrs)
-        return ("file: %s\n"
-                "vh_path: %s\n"
-                "addrs: %s\n"
-                "names: %s\n"
-                "ssl: %s\n"
-                "enabled: %s" % (self.filep, self.path, addr_str,
+        return ("File: %s\n"
+                "Vhost path: %s\n"
+                "Addresses: %s\n"
+                "Names: %s\n"
+                "TLS: %s\n"
+                "Enabled: %s" % (self.filep, self.path, addr_str,
                                  self.names, self.ssl, self.enabled))
 
     def __eq__(self, other):
