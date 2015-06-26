@@ -324,7 +324,7 @@ class HelpfulArgumentParser(object):
     def __init__(self, args, plugins):
         self.args = args
         plugin_names = [name for name, _p in plugins.iteritems()]
-        self.help_topics = HELP_TOPICS + plugin_names
+        self.help_topics = HELP_TOPICS + plugin_names + [None]
         self.parser = configargparse.ArgParser(
             usage=SHORT_USAGE,
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -375,9 +375,12 @@ class HelpfulArgumentParser(object):
         it, but can be None for `always documented'.
 
         """
-        if topic is not None and self.visible_topics[topic]:
-            group = self.groups[topic]
-            group.add_argument(*args, **kwargs)
+        if self.visible_topics[topic]:
+            if topic in self.groups:
+                group = self.groups[topic]
+                group.add_argument(*args, **kwargs)
+            else:
+                self.parser.add_argument(*args, **kwargs)
         else:
             kwargs["help"] = argparse.SUPPRESS
             self.parser.add_argument(*args, **kwargs)
