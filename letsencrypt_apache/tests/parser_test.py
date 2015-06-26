@@ -112,7 +112,7 @@ class ApacheParserTest(util.ApacheTest):
             mock_path.isfile.return_value = False
 
             # pylint: disable=protected-access
-            self.assertRaises(errors.ConfiguratorError,
+            self.assertRaises(errors.PluginError,
                               self.parser._set_locations, self.ssl_options)
 
             mock_path.isfile.side_effect = [True, False, False]
