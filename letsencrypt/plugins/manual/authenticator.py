@@ -79,9 +79,10 @@ s.serve_forever()" """
         return """\
 This plugin requires user's manual intervention in setting up a HTTP
 server for solving SimpleHTTP challenges and thus does not need to be
-run as a privilidged process. Alternatively shows instructions on how
-to use Python's built-in HTTP server and, in case of HTTPS, openssl
-binary for temporary key/certificate generation.""".replace("\n", "")
+run as a privileged process. Alternatively, the manual authenticator
+shows instructions on how to use Python's built-in HTTP server and the
+openssl binary for temporary key/certificate generation, if HTTPS is
+needed.""".replace("\n", " ")
 
     def get_chall_pref(self, domain):
         # pylint: disable=missing-docstring,no-self-use,unused-argument

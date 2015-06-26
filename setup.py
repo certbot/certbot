@@ -180,7 +180,8 @@ setup(
             'jws = letsencrypt.acme.jose.jws:CLI.run',
         ],
         'letsencrypt.plugins': [
-            'manual = letsencrypt.plugins.manual:ManualAuthenticator',
+            'manual = letsencrypt.plugins.manual.authenticator'
+            ':ManualAuthenticator',
             'standalone = letsencrypt.plugins.standalone.authenticator'
             ':StandaloneAuthenticator',
 
