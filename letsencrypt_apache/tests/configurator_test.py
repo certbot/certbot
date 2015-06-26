@@ -28,7 +28,7 @@ class TwoVhost80Test(util.ApacheTest):
     def setUp(self):
         super(TwoVhost80Test, self).setUp()
 
-        with mock.patch("letsencrypt_apache.configurator."
+        with mock.patch("letsencrypt_apache.configurator.ApacheConfigurator."
                         "mod_loaded") as mock_load:
             mock_load.return_value = True
             self.config = util.get_apache_configurator(
