@@ -25,15 +25,16 @@ common() {
 
 common --domains le1.wtf auth
 common --domains le2.wtf run
-common --domains le3.wtf install
 
 export CSR_PATH="${root}/csr.der" OPENSSL_CNF=examples/openssl.cnf
-./examples/generate-csr.sh le4.wtf
+./examples/generate-csr.sh le3.wtf
 common auth --csr "$CSR_PATH" \
        --cert-path "${root}/csr/cert.pem" \
        --chain-path "${root}/csr/chain.pem"
 openssl x509 -in "${root}/csr/0000_cert.pem" -text
 openssl x509 -in "${root}/csr/0000_chain.pem" -text
+
+common --domain le3.wtf install --cert-path "${root}/csr/cert.pem"
 
 # the following assumes that Boulder issues certificates for less than
 # 10 years, otherwise renewal will not take place

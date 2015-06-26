@@ -206,7 +206,7 @@ def install(args, config, plugins):
         return "Installer could not be determined"
     domains = _find_domains(args, installer)
     acme = _init_acme(config, acc, authenticator=None, installer=installer)
-    assert args.cert_path is not None
+    assert args.cert_path is not None  # required=True in the subparser
     acme.deploy_certificate(domains, acc.key.file, args.cert_path, args.chain_path)
     acme.enhance_config(domains, args.redirect)
 
@@ -488,7 +488,7 @@ def create_parser(plugins, args):
 
     add_subparser("run", run)
     parser_auth = add_subparser("auth", auth)
-    add_subparser("install", install)
+    parser_install = add_subparser("install", install)
     parser_revoke = add_subparser("revoke", revoke)
     parser_rollback = add_subparser("rollback", rollback)
     add_subparser("config_changes", config_changes)
@@ -502,6 +502,12 @@ def create_parser(plugins, args):
     parser_auth.add_argument(
         "--chain-path", default=flag_default("chain_path"),
         help="When using --csr this is where certificate chain is saved.")
+
+    parser_install.add_argument(
+        "--cert-path", required=True, help="Path to a certificate that "
+        "is going to be installed.")
+    parser_install.add_argument(
+        "--chain-path", help="Accompanying path to a certificate chain.")
 
     parser_plugins = add_subparser("plugins", plugins_cmd)
     parser_plugins.add_argument("--init", action="store_true")
