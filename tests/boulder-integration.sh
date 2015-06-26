@@ -51,5 +51,5 @@ for x in cert chain fullchain privkey;
 do
     latest="$(ls -1t $dir/ | grep -e "^${x}" | head -n1)"
     live="$(readlink -f "$root/conf/live/le.wtf/${x}.pem")"
-    #[ "${dir}/${latest}" = "$live" ]  # renewer fails this test
+    [ "${dir}/${latest}" = "$live" ]
 done
