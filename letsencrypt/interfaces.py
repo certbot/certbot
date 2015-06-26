@@ -186,12 +186,8 @@ class IConfig(zope.interface.Interface):
         "Port number to perform DVSNI challenge. "
         "Boulder in testing mode defaults to 5001.")
 
-    # TODO: not implemented
     no_simple_http_tls = zope.interface.Attribute(
         "Do not use TLS when solving SimpleHTTP challenges.")
-
-    # TODO: the following are not used, but blocked by #485
-    le_vhost_ext = zope.interface.Attribute("not used")
 
 
 class IInstaller(IPlugin):
