@@ -207,7 +207,7 @@ def install(args, config, plugins):
     domains = _find_domains(args, installer)
     acme = _init_acme(config, acc, authenticator=None, installer=installer)
     assert args.cert_path is not None  # required=True in the subparser
-    acme.deploy_certificate(domains, acc.key.file, args.cert_path, args.chain_path)
+    acme.deploy_certificate(domains, args.key_path, args.cert_path, args.chain_path)
     acme.enhance_config(domains, args.redirect)
 
 
@@ -533,8 +533,9 @@ def _create_subparsers(helpful):
         "--cert-path", required=True, help="Path to a certificate that "
         "is going to be installed.")
     parser_install.add_argument(
+        "--key-path", required=True, help="Accompynying private key")
+    parser_install.add_argument(
         "--chain-path", help="Accompanying path to a certificate chain.")
-
     parser_revoke.add_argument(
         "--cert-path", type=read_file, help="Revoke a specific certificate.")
     parser_revoke.add_argument(
