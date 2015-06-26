@@ -5,7 +5,6 @@ import re
 import shutil
 import socket
 import subprocess
-import sys
 
 import zope.interface
 
@@ -480,7 +479,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: :class:`~letsencrypt_apache.obj.VirtualHost`
 
         :raises .errors.PluginError: If more than one virtual host is in
-            the file.
+            the file or if plugin is unable to write/read vhost files.
 
         """
         avail_fp = nonssl_vhost.filep
@@ -503,7 +502,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     new_file.write("</IfModule>\n")
         except IOError:
             logger.fatal("Error writing/reading to file in make_vhost_ssl")
-            sys.exit(49)
+            raise errors.PluginError("Unable to write/read in make_vhost_ssl")
 
         self.aug.load()
 
@@ -867,7 +866,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 if len(cert_path) != 1 or len(key_path) != 1:
                     logger.error("Too many cert or key directives in vhost %s",
                                  vhost.filep)
-                    sys.exit(40)
+                    errors.MisconfigurationError(
+                        "Too many cert/key directives in vhost")
 
                 cert = os.path.abspath(self.aug.get(cert_path[0]))
                 key = os.path.abspath(self.aug.get(key_path[0]))
@@ -938,7 +938,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             apache_restart(self.conf("init"))
         except (OSError, subprocess.CalledProcessError):
             logger.exception("Error enabling mod_%s", mod_name)
-            sys.exit(1)
+            raise errors.MisconfigurationError(
+                "Missing enable_mod binary or lack privileges")
 
     def mod_loaded(self, module):
         """Checks to see if mod_ssl is loaded
@@ -960,7 +961,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         except (OSError, ValueError):
             logger.error(
                 "Error accessing %s for loaded modules!", self.conf("ctl"))
-            raise errors.PluginError("Error accessing loaded modules")
+            raise errors.MisconfigurationError("Error accessing loaded modules")
         # Small errors that do not impede
         if proc.returncode != 0:
             logger.warn("Error in checking loaded module list: %s", stderr)
@@ -996,7 +997,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             stdout, stderr = proc.communicate()
         except (OSError, ValueError):
             logger.fatal("Unable to run /usr/sbin/apache2ctl configtest")
-            sys.exit(1)
+            raise errors.PluginError("Unable to run apache2ctl")
 
         if proc.returncode != 0:
             # Enter recovery routine...
@@ -1140,7 +1141,7 @@ def apache_restart(apache_init_script):
     except (OSError, ValueError):
         logger.fatal(
             "Apache Restart Failed - Please Check the Configuration")
-        sys.exit(1)
+        raise errors.MisconfigurationError("Unable to restart Apache process")
 
     return True
 
