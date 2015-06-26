@@ -1,1 +1,1 @@
-"""Let's Encrypt client.plugins.manual"""
+"""Let's Encrypt Manual Authenticator plugin."""
