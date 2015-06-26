@@ -11,20 +11,19 @@ from acme import challenges
 from acme import jose
 
 from letsencrypt import interfaces
-from letsencrypt.plugins import null
+from letsencrypt.plugins import common
 
 
 logger = logging.getLogger(__name__)
 
 
-class ManualAuthenticator(null.Installer):
+class ManualAuthenticator(common.Plugin):
     """Manual Authenticator.
 
     .. todo:: Support for `~.challenges.DVSNI`.
 
     """
-    zope.interface.implements(
-        interfaces.IAuthenticator, interfaces.IInstaller)
+    zope.interface.implements(interfaces.IAuthenticator)
     zope.interface.classProvides(interfaces.IPluginFactory)
 
     description = "Manual Authenticator"

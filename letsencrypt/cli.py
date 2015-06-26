@@ -454,7 +454,6 @@ def create_parser(plugins, args):
     #    subparser.add_argument("domains", nargs="*", metavar="domain")
     helpful.add(None, "-d", "--domains", metavar="DOMAIN", action="append")
 
-
     helpful.add_group(
         "automation",
         description="Arguments for automating execution & other tweaks")
