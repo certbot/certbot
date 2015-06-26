@@ -26,6 +26,9 @@ from letsencrypt_nginx import obj
 from letsencrypt_nginx import parser
 
 
+logger = logging.getLogger(__name__)
+
+
 class NginxConfigurator(common.Plugin):
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
     """Nginx configurator.
@@ -128,10 +131,10 @@ class NginxConfigurator(common.Plugin):
         try:
             self.parser.add_server_directives(vhost.filep, vhost.names,
                                               directives, True)
-            logging.info("Deployed Certificate to VirtualHost %s for %s",
-                         vhost.filep, vhost.names)
+            logger.info("Deployed Certificate to VirtualHost %s for %s",
+                        vhost.filep, vhost.names)
         except errors.MisconfigurationError:
-            logging.warn(
+            logger.warn(
                 "Cannot find a cert or key directive in %s for %s. "
                 "VirtualHost was not modified.", vhost.filep, vhost.names)
             # Presumably break here so that the virtualhost is not modified
@@ -320,7 +323,7 @@ class NginxConfigurator(common.Plugin):
             raise errors.ConfiguratorError(
                 "Unsupported enhancement: {0}".format(enhancement))
         except errors.ConfiguratorError:
-            logging.warn("Failed %s for %s", enhancement, domain)
+            logger.warn("Failed %s for %s", enhancement, domain)
 
     ######################################
     # Nginx server management (IInstaller)
@@ -348,12 +351,12 @@ class NginxConfigurator(common.Plugin):
                 stderr=subprocess.PIPE)
             stdout, stderr = proc.communicate()
         except (OSError, ValueError):
-            logging.fatal("Unable to run nginx config test")
+            logger.fatal("Unable to run nginx config test")
             sys.exit(1)
 
         if proc.returncode != 0:
             # Enter recovery routine...
-            logging.error("Config test failed\n%s\n%s", stdout, stderr)
+            logger.error("Config test failed\n%s\n%s", stdout, stderr)
             return False
 
         return True
@@ -566,11 +569,11 @@ def nginx_restart(nginx_ctl):
 
             if nginx_proc.returncode != 0:
                 # Enter recovery routine...
-                logging.error("Nginx Restart Failed!\n%s\n%s", stdout, stderr)
+                logger.error("Nginx Restart Failed!\n%s\n%s", stdout, stderr)
                 return False
 
     except (OSError, ValueError):
-        logging.fatal("Nginx Restart Failed - Please Check the Configuration")
+        logger.fatal("Nginx Restart Failed - Please Check the Configuration")
         sys.exit(1)
 
     return True

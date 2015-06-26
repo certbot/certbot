@@ -10,6 +10,9 @@ from letsencrypt_nginx import obj
 from letsencrypt_nginx import nginxparser
 
 
+logger = logging.getLogger(__name__)
+
+
 class NginxDvsni(common.Dvsni):
     """Class performs DVSNI challenges within the Nginx configurator.
 
@@ -49,7 +52,7 @@ class NginxDvsni(common.Dvsni):
         for achall in self.achalls:
             vhost = self.configurator.choose_vhost(achall.domain)
             if vhost is None:
-                logging.error(
+                logger.error(
                     "No nginx vhost exists with server_name matching: %s. "
                     "Please specify server_names in the Nginx config.",
                     achall.domain)

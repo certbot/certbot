@@ -15,6 +15,7 @@ CLI_DEFAULTS = dict(
     rollback_checkpoints=0,
     config_dir="/etc/letsencrypt",
     work_dir="/var/lib/letsencrypt",
+    logs_dir="/var/log/letsencrypt",
     no_verify_ssl=False,
     dvsni_port=challenges.DVSNI.PORT,
     cert_path="./cert.pem",

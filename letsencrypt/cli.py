@@ -3,8 +3,10 @@
 import argparse
 import atexit
 import logging
+import logging.handlers
 import os
 import sys
+import time
 
 import configargparse
 import zope.component
@@ -69,10 +71,10 @@ More detailed help:
 
 
 
-def _account_init(args, config):
-    le_util.make_or_verify_dir(
-        config.config_dir, constants.CONFIG_DIRS_MODE, os.geteuid())
+logger = logging.getLogger(__name__)
 
+
+def _account_init(args, config):
     # Prepare for init of Client
     if args.email is None:
         return client.determine_account(config)
@@ -112,7 +114,8 @@ def _init_acme(config, acc, authenticator, installer):
         if acc.regr is None:
             try:
                 acme.register()
-            except errors.LetsEncryptClientError:
+            except errors.LetsEncryptClientError as error:
+                logger.debug(error)
                 sys.exit("Unable to register an account with ACME server")
 
     return acme
@@ -235,11 +238,11 @@ def config_changes(unused_args, config, unused_plugins):
 
 def plugins_cmd(args, config, plugins):  # TODO: Use IDiplay rathern than print
     """List server software plugins."""
-    logging.debug("Expected interfaces: %s", args.ifaces)
+    logger.debug("Expected interfaces: %s", args.ifaces)
 
     ifaces = [] if args.ifaces is None else args.ifaces
     filtered = plugins.ifaces(ifaces)
-    logging.debug("Filtered plugins: %r", filtered)
+    logger.debug("Filtered plugins: %r", filtered)
 
     if not args.init and not args.prepare:
         print str(filtered)
@@ -247,7 +250,7 @@ def plugins_cmd(args, config, plugins):  # TODO: Use IDiplay rathern than print
 
     filtered.init(config)
     verified = filtered.verify(ifaces)
-    logging.debug("Verified plugins: %r", verified)
+    logger.debug("Verified plugins: %r", verified)
 
     if not args.prepare:
         print str(verified)
@@ -255,7 +258,7 @@ def plugins_cmd(args, config, plugins):  # TODO: Use IDiplay rathern than print
 
     verified.prepare()
     available = verified.available()
-    logging.debug("Prepared plugins: %s", available)
+    logger.debug("Prepared plugins: %s", available)
     print str(available)
 
 
@@ -558,6 +561,8 @@ def _paths_parser(helpful):
         help=config_help("config_dir"))
     add("paths", "--work-dir", default=flag_default("work_dir"),
         help=config_help("work_dir"))
+    add("paths", "--logs-dir", default=flag_default("logs_dir"),
+        help="Path to a directory where logs are stored.")
     add("paths", "--backup-dir", default=flag_default("backup_dir"),
         help=config_help("backup_dir"))
     add("paths", "--key-dir", default=flag_default("key_dir"),
@@ -572,11 +577,48 @@ def _paths_parser(helpful):
         help=config_help("server"))
 
 
-def main(args=sys.argv[1:]):
+def _setup_logging(args):
+    level = -args.verbose_count * 10
+    fmt = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
+    if args.text_mode:
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter(fmt))
+    else:
+        handler = log.DialogHandler()
+        # dialog box is small, display as less as possible
+        handler.setFormatter(logging.Formatter("%(message)s"))
+    handler.setLevel(level)
+
+    # TODO: use fileConfig?
+
+    # unconditionally log to file for debugging purposes
+    # TODO: change before release?
+    log_file_name = os.path.join(args.logs_dir, 'letsencrypt.log')
+    file_handler = logging.handlers.RotatingFileHandler(
+        log_file_name, maxBytes=2**20, backupCount=10)
+    # rotate on each invocation, rollover only possible when maxBytes
+    # is nonzero and backupCount is nonzero, so we set maxBytes as big
+    # as possible not to overrun in single CLI invocation (1MB).
+    file_handler.doRollover()  # TODO: creates empty letsencrypt.log.1 file
+    file_handler.setLevel(logging.DEBUG)
+    file_handler_formatter = logging.Formatter(fmt=fmt)
+    file_handler_formatter.converter = time.gmtime  # don't use localtime
+    file_handler.setFormatter(file_handler_formatter)
+
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.DEBUG)  # send all records to handlers
+    root_logger.addHandler(handler)
+    root_logger.addHandler(file_handler)
+
+    logger.debug("Root logging level set at %d", level)
+    logger.info("Saving debug log to %s", log_file_name)
+
+
+def main(cli_args=sys.argv[1:]):
     """Command line argument parsing and main script execution."""
     # note: arg parser internally handles --help (and exits afterwards)
     plugins = plugins_disco.PluginsRegistry.find_all()
-    args = create_parser(plugins, args).parse_args(args)
+    args = create_parser(plugins, cli_args).parse_args(cli_args)
     config = configuration.NamespaceConfig(args)
 
     # Displayer
@@ -586,23 +628,25 @@ def main(args=sys.argv[1:]):
         displayer = display_util.NcursesDisplay()
     zope.component.provideUtility(displayer)
 
+    for directory in config.config_dir, config.work_dir:
+        le_util.make_or_verify_dir(
+            directory, constants.CONFIG_DIRS_MODE, os.geteuid())
+    # TODO: logs might contain sensitive data such as contents of the
+    # private key! #525
+    le_util.make_or_verify_dir(args.logs_dir, 0o700, os.geteuid())
+
+    _setup_logging(args)
+    # do not log `args`, as it contains sensitive data (e.g. revoke --key)!
+    logger.debug("Arguments: %r", cli_args)
+    logger.debug("Discovered plugins: %r", plugins)
+
     # Reporter
     report = reporter.Reporter()
     zope.component.provideUtility(report)
     atexit.register(report.atexit_print_messages)
 
-    # Logging
-    level = -args.verbose_count * 10
-    logger = logging.getLogger()
-    logger.setLevel(level)
-    logging.debug("Logging level set at %d", level)
-    if not args.text_mode:
-        logger.addHandler(log.DialogHandler())
-
-    logging.debug("Discovered plugins: %r", plugins)
-
     if not os.geteuid() == 0:
-        logging.warning(
+        logger.warning(
             "Root (sudo) is required to run most of letsencrypt functionality.")
         # check must be done after arg parsing as --help should work
         # w/o root; on the other hand, e.g. "letsencrypt run

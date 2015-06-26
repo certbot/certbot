@@ -28,6 +28,9 @@ from letsencrypt.display import ops as display_ops
 from letsencrypt.display import enhancements
 
 
+logger = logging.getLogger(__name__)
+
+
 class Client(object):
     """ACME protocol client.
 
@@ -145,12 +148,12 @@ class Client(object):
         if self.auth_handler is None:
             msg = ("Unable to obtain certificate because authenticator is "
                    "not set.")
-            logging.warning(msg)
+            logger.warning(msg)
             raise errors.Error(msg)
         if self.account.regr is None:
             raise errors.Error("Please register with the ACME server first.")
 
-        logging.debug("CSR: %s, domains: %s", csr, domains)
+        logger.debug("CSR: %s, domains: %s", csr, domains)
 
         authzr = self.auth_handler.get_authorizations(domains)
         certr = self.network.request_issuance(
@@ -238,7 +241,7 @@ class Client(object):
 
         if (cli_config.config_dir != constants.CLI_DEFAULTS["config_dir"] or
                 cli_config.work_dir != constants.CLI_DEFAULTS["work_dir"]):
-            logging.warning(
+            logger.warning(
                 "Non-standard path(s), might not work with crontab installed "
                 "by your operating system package manager")
 
@@ -308,8 +311,8 @@ class Client(object):
             cert_file.write(cert_pem)
         finally:
             cert_file.close()
-        logging.info("Server issued certificate; certificate written to %s",
-                     act_cert_path)
+        logger.info("Server issued certificate; certificate written to %s",
+                    act_cert_path)
 
         if chain_cert is not None:
             chain_file, act_chain_path = le_util.unique_file(
@@ -321,7 +324,7 @@ class Client(object):
             finally:
                 chain_file.close()
 
-            logging.info("Cert chain written to %s", act_chain_path)
+            logger.info("Cert chain written to %s", act_chain_path)
 
             # This expects a valid chain file
             cert_chain_abspath = os.path.abspath(act_chain_path)
@@ -338,8 +341,8 @@ class Client(object):
 
         """
         if self.installer is None:
-            logging.warning("No installer specified, client is unable to deploy"
-                            "the certificate")
+            logger.warning("No installer specified, client is unable to deploy"
+                           "the certificate")
             raise errors.Error("No installer available")
 
         chain_path = None if chain_path is None else os.path.abspath(chain_path)
@@ -374,8 +377,8 @@ class Client(object):
 
         """
         if self.installer is None:
-            logging.warning("No installer is specified, there isn't any "
-                            "configuration to enhance.")
+            logger.warning("No installer is specified, there isn't any "
+                           "configuration to enhance.")
             raise errors.Error("No installer available")
 
         if redirect is None:
@@ -395,7 +398,7 @@ class Client(object):
             try:
                 self.installer.enhance(dom, "redirect")
             except errors.ConfiguratorError:
-                logging.warn("Unable to perform redirect for %s", dom)
+                logger.warn("Unable to perform redirect for %s", dom)
 
         self.installer.save("Add Redirects")
         self.installer.restart()

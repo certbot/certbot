@@ -6,6 +6,7 @@
 root="$(mktemp -d)"
 echo "\nRoot integration tests directory: $root"
 store_flags="--config-dir $root/conf --work-dir $root/work"
+store_flags="$store_flags --logs-dir $root/logs"
 
 common() {
     # first three flags required, rest is handy defaults

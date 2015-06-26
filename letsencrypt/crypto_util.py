@@ -18,6 +18,9 @@ import OpenSSL
 from letsencrypt import le_util
 
 
+logger = logging.getLogger(__name__)
+
+
 # High level functions
 def init_save_key(key_size, key_dir, keyname="key-letsencrypt.pem"):
     """Initializes and saves a privkey.
@@ -40,7 +43,7 @@ def init_save_key(key_size, key_dir, keyname="key-letsencrypt.pem"):
     try:
         key_pem = make_key(key_size)
     except ValueError as err:
-        logging.exception(err)
+        logger.exception(err)
         raise err
 
     # Save file
@@ -50,7 +53,7 @@ def init_save_key(key_size, key_dir, keyname="key-letsencrypt.pem"):
     key_f.write(key_pem)
     key_f.close()
 
-    logging.info("Generating key (%d bits): %s", key_size, key_path)
+    logger.info("Generating key (%d bits): %s", key_size, key_path)
 
     return le_util.Key(key_path, key_pem)
 
@@ -78,7 +81,7 @@ def init_save_csr(privkey, names, path, csrname="csr-letsencrypt.pem"):
     csr_f.write(csr_pem)
     csr_f.close()
 
-    logging.info("Creating CSR: %s", csr_filename)
+    logger.info("Creating CSR: %s", csr_filename)
 
     return le_util.CSR(csr_filename, csr_der, "der")
 
@@ -275,7 +278,7 @@ def _get_sans_from_cert_or_req(
     try:
         cert_or_req = load_func(typ, cert_or_req_str)
     except OpenSSL.crypto.Error as error:
-        logging.exception(error)
+        logger.exception(error)
         raise
     return _pyopenssl_cert_or_req_san(cert_or_req)
 

@@ -6,6 +6,8 @@ import augeas
 from letsencrypt import reverter
 from letsencrypt.plugins import common
 
+logger = logging.getLogger(__name__)
+
 
 class AugeasConfigurator(common.Plugin):
     """Base Augeas Configurator class.
@@ -52,7 +54,7 @@ class AugeasConfigurator(common.Plugin):
             lens_path = self.aug.get(path + "/lens")
             # As aug.get may return null
             if lens_path and lens in lens_path:
-                logging.error(
+                logger.error(
                     "There has been an error in parsing the file (%s): %s",
                     # Strip off /augeas/files and /error
                     path[13:len(path) - 6], self.aug.get(path + "/message"))
@@ -121,11 +123,11 @@ class AugeasConfigurator(common.Plugin):
         """
         # Check for the root of save problems
         new_errs = self.aug.match("/augeas//error")
-        # logging.error("During Save - %s", mod_conf)
-        logging.error("Unable to save files: %s. Attempted Save Notes: %s",
-                      ", ".join(err[13:len(err) - 6] for err in new_errs
-                                # Only new errors caused by recent save
-                                if err not in ex_errs), self.save_notes)
+        # logger.error("During Save - %s", mod_conf)
+        logger.error("Unable to save files: %s. Attempted Save Notes: %s",
+                     ", ".join(err[13:len(err) - 6] for err in new_errs
+                               # Only new errors caused by recent save
+                               if err not in ex_errs), self.save_notes)
 
     # Wrapper functions for Reverter class
     def recovery_routine(self):

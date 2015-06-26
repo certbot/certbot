@@ -8,6 +8,8 @@ from letsencrypt import interfaces
 from letsencrypt.display import util as display_util
 
 
+logger = logging.getLogger(__name__)
+
 # Define a helper function to avoid verbose code
 util = zope.component.getUtility  # pylint: disable=invalid-name
 
@@ -70,7 +72,7 @@ def pick_plugin(config, default, plugins, question, ifaces):
     prepared = verified.available()
 
     if len(prepared) > 1:
-        logging.debug("Multiple candidate plugins: %s", prepared)
+        logger.debug("Multiple candidate plugins: %s", prepared)
         plugin_ep = choose_plugin(prepared.values(), question)
         if plugin_ep is None:
             return None
@@ -78,10 +80,10 @@ def pick_plugin(config, default, plugins, question, ifaces):
             return plugin_ep.init()
     elif len(prepared) == 1:
         plugin_ep = prepared.values()[0]
-        logging.debug("Single candidate plugin: %s", plugin_ep)
+        logger.debug("Single candidate plugin: %s", plugin_ep)
         return plugin_ep.init()
     else:
-        logging.debug("No candidate plugin")
+        logger.debug("No candidate plugin")
         return None
 
 
@@ -143,7 +145,7 @@ def choose_names(installer):
 
     """
     if installer is None:
-        logging.debug("No installer, picking names manually")
+        logger.debug("No installer, picking names manually")
         return _choose_names_manually()
 
     names = list(installer.get_all_names())

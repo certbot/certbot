@@ -27,6 +27,9 @@ from letsencrypt_apache import obj
 from letsencrypt_apache import parser
 
 
+logger = logging.getLogger(__name__)
+
+
 # TODO: Augeas sections ie. <VirtualHost>, <IfModule> beginning and closing
 # tags need to be the same case, otherwise Augeas doesn't recognize them.
 # This is not able to be completely remedied by regular expressions because
@@ -186,13 +189,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         if not path["cert_path"] or not path["cert_key"]:
             # Throw some can't find all of the directives error"
-            logging.warn(
+            logger.warn(
                 "Cannot find a cert or key directive in %s. "
                 "VirtualHost was not modified", vhost.path)
             # Presumably break here so that the virtualhost is not modified
             return False
 
-        logging.info("Deploying Certificate to VirtualHost %s", vhost.filep)
+        logger.info("Deploying Certificate to VirtualHost %s", vhost.filep)
 
         self.aug.set(path["cert_path"][0], cert_path)
         self.aug.set(path["cert_key"][0], key_path)
@@ -257,7 +260,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if vhost is not None:
             self.assoc[target_name] = vhost
         else:
-            logging.error(
+            logger.error(
                 "No vhost exists with servername or alias of: %s. "
                 "No vhost was selected. Please specify servernames "
                 "in the Apache config", target_name)
@@ -421,15 +424,15 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         if not self.mod_loaded("ssl_module"):
-            logging.info("Loading mod_ssl into Apache Server")
+            logger.info("Loading mod_ssl into Apache Server")
             self.enable_mod("ssl")
 
         # Check for Listen 443
         # Note: This could be made to also look for ip:443 combo
         # TODO: Need to search only open directives and IfMod mod_ssl.c
         if len(self.parser.find_dir(parser.case_i("Listen"), "443")) == 0:
-            logging.debug("No Listen 443 directive found. Setting the "
-                          "Apache Server to Listen on port 443")
+            logger.debug("No Listen 443 directive found. Setting the "
+                         "Apache Server to Listen on port 443")
             path = self.parser.add_dir_to_ifmodssl(
                 parser.get_aug_path(self.parser.loc["listen"]), "Listen", "443")
             self.save_notes += "Added Listen 443 directive to %s\n" % path
@@ -450,15 +453,15 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         for addr in vhost.addrs:
             if addr.get_addr() == "_default_":
                 if not self.is_name_vhost(default_addr):
-                    logging.debug("Setting all VirtualHosts on %s to be "
-                                  "name based vhosts", default_addr)
+                    logger.debug("Setting all VirtualHosts on %s to be "
+                                 "name based vhosts", default_addr)
                     self.add_name_vhost(default_addr)
 
         # No default addresses... so set each one individually
         for addr in vhost.addrs:
             if not self.is_name_vhost(addr):
-                logging.debug("Setting VirtualHost at %s to be a name "
-                              "based virtual host", addr)
+                logger.debug("Setting VirtualHost at %s to be a name "
+                             "based virtual host", addr)
                 self.add_name_vhost(addr)
 
     def make_vhost_ssl(self, nonssl_vhost):  # pylint: disable=too-many-locals
@@ -499,7 +502,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                         new_file.write(line)
                     new_file.write("</IfModule>\n")
         except IOError:
-            logging.fatal("Error writing/reading to file in make_vhost_ssl")
+            logger.fatal("Error writing/reading to file in make_vhost_ssl")
             sys.exit(49)
 
         self.aug.load()
@@ -522,8 +525,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         vh_p = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
                               (ssl_fp, parser.case_i("VirtualHost")))
         if len(vh_p) != 1:
-            logging.error("Error: should only be one vhost in %s", avail_fp)
-            raise errors.ConfiguratorError
+            logger.error("Error: should only be one vhost in %s", avail_fp)
+            raise errors.ConfiguratorError("Only one vhost per file is allowed")
 
         self.parser.add_dir(vh_p[0], "SSLCertificateFile",
                             "/etc/ssl/certs/ssl-cert-snakeoil.pem")
@@ -532,7 +535,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.parser.add_dir(vh_p[0], "Include", self.parser.loc["ssl_options"])
 
         # Log actions and create save notes
-        logging.info("Created an SSL vhost at %s", ssl_fp)
+        logger.info("Created an SSL vhost at %s", ssl_fp)
         self.save_notes += "Created ssl vhost at %s\n" % ssl_fp
         self.save()
 
@@ -551,7 +554,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 if (ssl_vhost.filep != vhost.filep and addr in vhost.addrs and
                         not self.is_name_vhost(addr)):
                     self.add_name_vhost(addr)
-                    logging.info("Enabling NameVirtualHosts on %s", addr)
+                    logger.info("Enabling NameVirtualHosts on %s", addr)
                     need_to_save = True
 
         if need_to_save:
@@ -581,7 +584,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             raise errors.ConfiguratorError(
                 "Unsupported enhancement: {}".format(enhancement))
         except errors.ConfiguratorError:
-            logging.warn("Failed %s for %s", enhancement, domain)
+            logger.warn("Failed %s for %s", enhancement, domain)
 
     def _enable_redirect(self, ssl_vhost, unused_options):
         """Redirect all equivalent HTTP traffic to ssl_vhost.
@@ -612,7 +615,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         general_v = self._general_vhost(ssl_vhost)
         if general_v is None:
             # Add virtual_server with redirect
-            logging.debug(
+            logger.debug(
                 "Did not find http version of ssl virtual host... creating")
             return self._create_redirect_vhost(ssl_vhost)
         else:
@@ -620,12 +623,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             exists, code = self._existing_redirect(general_v)
             if exists:
                 if code == 0:
-                    logging.debug("Redirect already added")
-                    logging.info(
+                    logger.debug("Redirect already added")
+                    logger.info(
                         "Configuration is already redirecting traffic to HTTPS")
                     return
                 else:
-                    logging.info("Unknown redirect exists for this vhost")
+                    logger.info("Unknown redirect exists for this vhost")
                     raise errors.ConfiguratorError(
                         "Unknown redirect already exists "
                         "in {}".format(general_v.filep))
@@ -637,8 +640,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                                 (general_v.filep, ssl_vhost.filep))
             self.save()
 
-            logging.info("Redirecting vhost in %s to ssl vhost in %s",
-                         general_v.filep, ssl_vhost.filep)
+            logger.info("Redirecting vhost in %s to ssl vhost in %s",
+                        general_v.filep, ssl_vhost.filep)
 
     def _existing_redirect(self, vhost):
         """Checks to see if existing redirect is in place.
@@ -748,7 +751,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Write out file
         with open(redirect_filepath, "w") as redirect_fd:
             redirect_fd.write(redirect_file)
-        logging.info("Created redirect file: %s", redirect_filename)
+        logger.info("Created redirect file: %s", redirect_filename)
 
         self.aug.load()
         # Make a new vhost data structure and add it to the lists
@@ -862,8 +865,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
                 # Can be removed once find directive can return ordered results
                 if len(cert_path) != 1 or len(key_path) != 1:
-                    logging.error("Too many cert or key directives in vhost %s",
-                                  vhost.filep)
+                    logger.error("Too many cert or key directives in vhost %s",
+                                 vhost.filep)
                     sys.exit(40)
 
                 cert = os.path.abspath(self.aug.get(cert_path[0]))
@@ -913,7 +916,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.reverter.register_file_creation(False, enabled_path)
             os.symlink(vhost.filep, enabled_path)
             vhost.enabled = True
-            logging.info("Enabling available site: %s", vhost.filep)
+            logger.info("Enabling available site: %s", vhost.filep)
             self.save_notes += "Enabled site %s\n" % vhost.filep
             return True
         return False
@@ -934,7 +937,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                                   stderr=open("/dev/null", "w"))
             apache_restart(self.conf("init"))
         except (OSError, subprocess.CalledProcessError):
-            logging.exception("Error enabling mod_%s", mod_name)
+            logger.exception("Error enabling mod_%s", mod_name)
             sys.exit(1)
 
     def mod_loaded(self, module):
@@ -955,12 +958,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             stdout, stderr = proc.communicate()
 
         except (OSError, ValueError):
-            logging.error(
+            logger.error(
                 "Error accessing %s for loaded modules!", self.conf("ctl"))
             raise errors.ConfiguratorError("Error accessing loaded modules")
         # Small errors that do not impede
         if proc.returncode != 0:
-            logging.warn("Error in checking loaded module list: %s", stderr)
+            logger.warn("Error in checking loaded module list: %s", stderr)
             raise errors.MisconfigurationError(
                 "Apache is unable to check whether or not the module is "
                 "loaded because Apache is misconfigured.")
@@ -992,12 +995,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 stderr=subprocess.PIPE)
             stdout, stderr = proc.communicate()
         except (OSError, ValueError):
-            logging.fatal("Unable to run /usr/sbin/apache2ctl configtest")
+            logger.fatal("Unable to run /usr/sbin/apache2ctl configtest")
             sys.exit(1)
 
         if proc.returncode != 0:
             # Enter recovery routine...
-            logging.error("Configtest failed\n%s\n%s", stdout, stderr)
+            logger.error("Configtest failed\n%s\n%s", stdout, stderr)
             return False
 
         return True
@@ -1131,11 +1134,11 @@ def apache_restart(apache_init_script):
 
         if proc.returncode != 0:
             # Enter recovery routine...
-            logging.error("Apache Restart Failed!\n%s\n%s", stdout, stderr)
+            logger.error("Apache Restart Failed!\n%s\n%s", stdout, stderr)
             return False
 
     except (OSError, ValueError):
-        logging.fatal(
+        logger.fatal(
             "Apache Restart Failed - Please Check the Configuration")
         sys.exit(1)
 

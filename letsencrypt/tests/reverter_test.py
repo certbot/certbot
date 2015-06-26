@@ -175,7 +175,7 @@ class ReverterCheckpointLocalTest(unittest.TestCase):
             self.assertRaises(
                 errors.ReverterError, self.reverter.revert_temporary_config)
 
-    @mock.patch("letsencrypt.reverter.logging.warning")
+    @mock.patch("letsencrypt.reverter.logger.warning")
     def test_recover_checkpoint_missing_new_files(self, mock_warn):
         self.reverter.register_file_creation(
             True, os.path.join(self.dir1, "missing_file.txt"))
@@ -303,10 +303,10 @@ class TestFullCheckpointsReverter(unittest.TestCase):
         self.assertRaises(
             errors.ReverterError, self.reverter.finalize_checkpoint, "Title")
 
-    @mock.patch("letsencrypt.reverter.logging")
-    def test_rollback_too_many(self, mock_logging):
+    @mock.patch("letsencrypt.reverter.logger")
+    def test_rollback_too_many(self, mock_logger):
         self.reverter.rollback_checkpoints(1)
-        self.assertEqual(mock_logging.warning.call_count, 1)
+        self.assertEqual(mock_logger.warning.call_count, 1)
 
     def test_multi_rollback(self):
         config3 = self._setup_three_checkpoints()
@@ -327,10 +327,10 @@ class TestFullCheckpointsReverter(unittest.TestCase):
         # Make sure notification is output
         self.assertEqual(mock_output().notification.call_count, 1)
 
-    @mock.patch("letsencrypt.reverter.logging")
-    def test_view_config_changes_no_backups(self, mock_logging):
+    @mock.patch("letsencrypt.reverter.logger")
+    def test_view_config_changes_no_backups(self, mock_logger):
         self.reverter.view_config_changes()
-        self.assertTrue(mock_logging.info.call_count > 0)
+        self.assertTrue(mock_logger.info.call_count > 0)
 
     def test_view_config_changes_bad_backups_dir(self):
         # There shouldn't be any "in progess directories when this is called

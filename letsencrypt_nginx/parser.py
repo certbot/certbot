@@ -11,6 +11,9 @@ from letsencrypt_nginx import obj
 from letsencrypt_nginx import nginxparser
 
 
+logger = logging.getLogger(__name__)
+
+
 class NginxParser(object):
     """Class handles the fine details of parsing the Nginx Configuration.
 
@@ -161,9 +164,9 @@ class NginxParser(object):
                     self.parsed[item] = parsed
                     trees.append(parsed)
             except IOError:
-                logging.warn("Could not open file: %s", item)
+                logger.warn("Could not open file: %s", item)
             except pyparsing.ParseException:
-                logging.debug("Could not parse file: %s", item)
+                logger.debug("Could not parse file: %s", item)
         return trees
 
     def _set_locations(self, ssl_options):
@@ -213,7 +216,7 @@ class NginxParser(object):
                 with open(filename, 'w') as _file:
                     nginxparser.dump(tree, _file)
             except IOError:
-                logging.error("Could not open file for writing: %s", filename)
+                logger.error("Could not open file for writing: %s", filename)
 
     def _has_server_names(self, entry, names):
         """Checks if a server block has the given set of server_names. This
