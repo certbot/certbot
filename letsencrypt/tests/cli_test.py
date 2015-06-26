@@ -63,18 +63,18 @@ class CLITest(unittest.TestCase):
         cmd_arg = ['config_changes']
         error = [errors.Error('problem')]
         attrs = {'view_config_changes.side_effect' : error}
-        with self.assertRaises(errors.Error):
-            self._call(['--debug'] + cmd_arg, attrs)
+        self.assertRaises(
+            errors.Error, self._call, ['--debug'] + cmd_arg, attrs)
         self._call(cmd_arg, attrs)
 
         attrs['view_config_changes.side_effect'] = [KeyboardInterrupt]
-        with self.assertRaises(KeyboardInterrupt):
-            self._call(['--debug'] + cmd_arg, attrs)
+        self.assertRaises(
+            KeyboardInterrupt, self._call, ['--debug'] + cmd_arg, attrs)
         self._call(cmd_arg, attrs)
 
         attrs['view_config_changes.side_effect'] = [ValueError]
-        with self.assertRaises(ValueError):
-            self._call(['--debug'] + cmd_arg, attrs)
+        self.assertRaises(
+            ValueError, self._call, ['--debug'] + cmd_arg, attrs)
         self._call(cmd_arg, attrs)
 
 if __name__ == '__main__':
