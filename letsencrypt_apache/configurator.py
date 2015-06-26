@@ -929,7 +929,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         try:
             # Use check_output so the command will finish before reloading
             # TODO: a2enmod is debian specific...
-            self.
             subprocess.check_call([self.conf("enmod"), mod_name],
                                   stdout=open("/dev/null", "w"),
                                   stderr=open("/dev/null", "w"))

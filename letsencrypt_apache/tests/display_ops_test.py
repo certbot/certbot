@@ -1,7 +1,9 @@
 """Test letsencrypt_apache.display_ops."""
+import sys
 import unittest
 
 import mock
+import zope.component
 
 from letsencrypt_apache.tests import util
 
@@ -12,6 +14,7 @@ class SelectVhostTest(unittest.TestCase):
     """Tests for letsencrypt_apache.display_ops.select_vhost."""
 
     def setUp(self):
+        zope.component.provideUtility(display_util.FileDisplay(sys.stdout))
         self.base_dir = "/example_path"
         self.vhosts = util.get_vh_truth(
             self.base_dir, "debian_apache_2_4/two_vhost_80")
@@ -19,12 +22,12 @@ class SelectVhostTest(unittest.TestCase):
     @classmethod
     def _call(cls, vhosts):
         from letsencrypt_apache.display_ops import select_vhost
-        select_vhost("example.com", vhosts)
+        return select_vhost("example.com", vhosts)
 
     @mock.patch("letsencrypt_apache.display_ops.zope.component.getUtility")
     def test_successful_choice(self, mock_util):
-        mock_util().menu.return_value = (display_util.OK, 1)
-        self.assertEqual(self.vhosts[1], self._call(self.vhosts))
+        mock_util().menu.return_value = (display_util.OK, 3)
+        self.assertEqual(self.vhosts[3], self._call(self.vhosts))
 
     @mock.patch("letsencrypt_apache.display_ops.zope.component.getUtility")
     def test_more_info_cancel(self, mock_util):
@@ -34,8 +37,11 @@ class SelectVhostTest(unittest.TestCase):
             (display_util.CANCEL, -1),
         ]
 
-        self.assertEqual(None, self._call())
+        self.assertEqual(None, self._call(self.vhosts))
         self.assertEqual(mock_util().notification.call_count, 2)
 
     def test_no_vhosts(self):
         self.assertEqual(self._call([]), None)
+
+if __name__ == "__main__":
+    unittest.main()  # pragma: no cover

@@ -1,3 +1,4 @@
+"""Contains UI methods for Apache operations."""
 import os
 import zope.component
 
@@ -38,26 +39,31 @@ def _vhost_menu(domain, vhosts):
     :rtype: `tuple`
 
     """
+    filename_size = 24
+    disp_name_size = 17
     choices = []
     for vhost in vhosts:
-        if vhost.names == 1:
+        if len(vhost.names) == 1:
             disp_name = next(iter(vhost.names))
-        elif vhost.names == 0:
+        elif len(vhost.names) == 0:
             disp_name = ""
         else:
             disp_name = "Multiple Names"
 
         choices.append(
-            "%s | %s | %s | %s" % (
-                os.path.basename(vhost.filep),
-                disp_name,
-                "HTTPS" if vhost.ssl,
-                "Enabled" if vhost.enabled)
+            "{0:{4}s} | {1:{5}s} | {2:5s} | {3:7s}".format(
+                os.path.basename(vhost.filep)[:filename_size],
+                disp_name[:disp_name_size],
+                "HTTPS" if vhost.ssl else "",
+                "Enabled" if vhost.enabled else "",
+                filename_size,
+                disp_name_size)
         )
 
     code, tag = zope.component.getUtility(interfaces.IDisplay).menu(
-        "We were unable to find a vhost with a Servername or Address of %s."
-        "Which virtual host would you like to choose?" % domain,
+        "We were unable to find a vhost with a ServerName or Address of {0}.{1}"
+        "Which virtual host would you like to choose?".format(
+            domain, os.linesep),
         choices, help_label="More Info", ok_label="Select")
 
     return code, tag
@@ -65,6 +71,6 @@ def _vhost_menu(domain, vhosts):
 
 def _more_info_vhost(vhost):
     zope.component.getUtility(interfaces.IDisplay).notification(
-        "Virtual Host Information:{0}{1}".format(
-            os.linesep, str(vhost)),
+        "Virtual Host Information:{0}{1}{0}{2}".format(
+            os.linesep, "-" * (display_util.WIDTH - 4), str(vhost)),
         height=display_util.HEIGHT)

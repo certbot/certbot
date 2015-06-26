@@ -1,5 +1,4 @@
 """ApacheDVSNI"""
-import logging
 import os
 
 from letsencrypt.plugins import common

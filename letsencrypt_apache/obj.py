@@ -31,14 +31,19 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
         self.names.add(name)
 
     def __str__(self):
-        addr_str = ", ".join(str(addr) for addr in self.addrs)
-        return ("File: %s\n"
-                "Vhost path: %s\n"
-                "Addresses: %s\n"
-                "Names: %s\n"
-                "TLS: %s\n"
-                "Enabled: %s" % (self.filep, self.path, addr_str,
-                                 self.names, self.ssl, self.enabled))
+        return (
+            "File: %s\n"
+            "Vhost path: %s\n"
+            "Addresses: %s\n"
+            "Names: %s\n"
+            "TLS Enabled: %s\n"
+            "Site Enabled: %s" % (
+                self.filep,
+                self.path,
+                ", ".join(str(addr) for addr in self.addrs),
+                ", ".join(name for name in self.names),
+                "Yes" if self.ssl else "No",
+                "Yes" if self.enabled else "No"))
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
