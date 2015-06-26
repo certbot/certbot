@@ -12,7 +12,6 @@ import zope.interface
 from acme import challenges
 
 from letsencrypt import achallenges
-from letsencrypt import augeas_configurator
 from letsencrypt import constants as core_constants
 from letsencrypt import errors
 from letsencrypt import interfaces
@@ -20,6 +19,7 @@ from letsencrypt import le_util
 
 from letsencrypt.plugins import common
 
+from letsencrypt_apache import augeas_configurator
 from letsencrypt_apache import constants
 from letsencrypt_apache import display_ops
 from letsencrypt_apache import dvsni

@@ -90,6 +90,9 @@ def make_csr(key_str, domains):
     :param str key_str: RSA key.
     :param list domains: Domains included in the certificate.
 
+    .. todo:: Detect duplicates in `domains`? Using a set doesn't
+              preserve order...
+
     :returns: new CSR in PEM and DER form containing all domains
     :rtype: tuple
 
@@ -101,13 +104,7 @@ def make_csr(key_str, domains):
 
     csr = M2Crypto.X509.Request()
     csr.set_pubkey(pubkey)
-    name = csr.get_subject()
-    name.C = "US"
-    name.ST = "Michigan"
-    name.L = "Ann Arbor"
-    name.O = "EFF"
-    name.OU = "University of Michigan"
-    name.CN = domains[0]
+    # TODO: what to put into csr.get_subject()?
 
     extstack = M2Crypto.X509.X509_Extension_Stack()
     ext = M2Crypto.X509.new_extension(

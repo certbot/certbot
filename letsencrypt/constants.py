@@ -17,23 +17,19 @@ CLI_DEFAULTS = dict(
     work_dir="/var/lib/letsencrypt",
     no_verify_ssl=False,
     dvsni_port=challenges.DVSNI.PORT,
+    cert_path="./cert.pem",
+    chain_path="./chain.pem",
 
     # TODO: blocked by #485, values ignored
     backup_dir="not used",
     key_dir="not used",
     certs_dir="not used",
-    cert_path="not used",
-    chain_path="not used",
     renewer_config_file="not used",
 )
 """Defaults for CLI flags and `.IConfig` attributes."""
 
 
 RENEWER_DEFAULTS = dict(
-    renewer_config_file="/etc/letsencrypt/renewer.conf",
-    renewal_configs_dir="/etc/letsencrypt/configs",
-    archive_dir="/etc/letsencrypt/archive",
-    live_dir="/etc/letsencrypt/live",
     renewer_enabled="yes",
     renew_before_expiry="30 days",
     deploy_before_expiry="20 days",
@@ -58,6 +54,8 @@ List of expected options parameters:
 
 """
 
+ARCHIVE_DIR = "archive"
+"""Archive directory, relative to `IConfig.config_dir`."""
 
 CONFIG_DIRS_MODE = 0o755
 """Directory mode for ``.IConfig.config_dir`` et al."""
@@ -71,12 +69,12 @@ ACCOUNT_KEYS_DIR = "keys"
 BACKUP_DIR = "backups"
 """Directory (relative to `IConfig.work_dir`) where backups are kept."""
 
+CERT_DIR = "certs"
+"""See `.IConfig.cert_dir`."""
+
 CERT_KEY_BACKUP_DIR = "keys-certs"
 """Directory where all certificates and keys are stored (relative to
 `IConfig.work_dir`). Used for easy revocation."""
-
-CERT_DIR = "certs"
-"""See `.IConfig.cert_dir`."""
 
 IN_PROGRESS_DIR = "IN_PROGRESS"
 """Directory used before a permanent checkpoint is finalized (relative to
@@ -85,6 +83,9 @@ IN_PROGRESS_DIR = "IN_PROGRESS"
 KEY_DIR = "keys"
 """Directory (relative to `IConfig.config_dir`) where keys are saved."""
 
+LIVE_DIR = "live"
+"""Live directory, relative to `IConfig.config_dir`."""
+
 TEMP_CHECKPOINT_DIR = "temp_checkpoint"
 """Temporary checkpoint directory (relative to `IConfig.work_dir`)."""
 
@@ -92,6 +93,8 @@ REC_TOKEN_DIR = "recovery_tokens"
 """Directory where all recovery tokens are saved (relative to
 `IConfig.work_dir`)."""
 
+RENEWAL_CONFIGS_DIR = "configs"
+"""Renewal configs directory, relative to `IConfig.config_dir`."""
 
 RENEWER_CONFIG_FILENAME = "renewer.conf"
 """Renewer config file name (relative to `IConfig.config_dir`)."""

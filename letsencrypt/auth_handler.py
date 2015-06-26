@@ -3,12 +3,15 @@ import itertools
 import logging
 import time
 
+import zope.component
+
 from acme import challenges
 from acme import messages
 
 from letsencrypt import achallenges
 from letsencrypt import constants
 from letsencrypt import errors
+from letsencrypt import interfaces
 
 
 class AuthHandler(object):
@@ -193,6 +196,7 @@ class AuthHandler(object):
                             updated for _, updated in failed_achalls)
 
             if all_failed_achalls:
+                _report_failed_challs(all_failed_achalls)
                 raise errors.FailedChallenges(all_failed_achalls)
 
             dom_to_check -= comp_domains
@@ -480,3 +484,80 @@ def is_preferred(offered_challb, satisfied,
                 different=True):
             return False
     return True
+
+
+_ERROR_HELP_COMMON = (
+    "To fix these errors, please make sure that your domain name was entered "
+    "correctly and the DNS A/AAAA record(s) for that domain contains the "
+    "right IP address.")
+
+
+_ERROR_HELP = {
+    "connection" :
+        _ERROR_HELP_COMMON + " Additionally, please check that your computer "
+        "has publicly routable IP address and no firewalls are preventing the "
+        "server from communicating with the client.",
+    "dnssec" :
+        _ERROR_HELP_COMMON + " Additionally, if you have DNSSEC enabled for "
+        "your domain, please ensure the signature is valid.",
+    "malformed" :
+        "To fix these errors, please make sure that you did not provide any "
+        "invalid information to the client and try running Let's Encrypt "
+        "again.",
+    "serverInternal" :
+        "Unfortunately, an error on the ACME server prevented you from completing "
+        "authorization. Please try again later.",
+    "tls" :
+        _ERROR_HELP_COMMON + " Additionally, please check that you have an up "
+        "to date TLS configuration that allows the server to communicate with "
+        "the Let's Encrypt client.",
+    "unauthorized" : _ERROR_HELP_COMMON,
+    "unknownHost" : _ERROR_HELP_COMMON,}
+
+
+def _report_failed_challs(failed_achalls):
+    """Notifies the user about failed challenges.
+
+    :param set failed_achalls: A set of failed
+        :class:`letsencrypt.achallenges.AnnotatedChallenge`.
+
+    """
+    problems = dict()
+    for achall in failed_achalls:
+        if achall.error:
+            problems.setdefault(achall.error.typ, []).append(achall)
+
+    reporter = zope.component.getUtility(interfaces.IReporter)
+    for achalls in problems.itervalues():
+        reporter.add_message(
+            _generate_failed_chall_msg(achalls), reporter.MEDIUM_PRIORITY, True)
+
+
+def _generate_failed_chall_msg(failed_achalls):
+    """Creates a user friendly error message about failed challenges.
+
+    :param list failed_achalls: A list of failed
+        :class:`letsencrypt.achallenges.AnnotatedChallenge` with the same error
+        type.
+
+    :returns: A formatted error message for the client.
+    :rtype: str
+
+    """
+    typ = failed_achalls[0].error.typ
+    msg = [
+        "The following '{0}' errors were reported by the server:".format(typ)]
+
+    problems = dict()
+    for achall in failed_achalls:
+        problems.setdefault(achall.error.description, set()).add(achall.domain)
+    for problem in problems:
+        msg.append("\n\nDomains: ")
+        msg.append(", ".join(sorted(problems[problem])))
+        msg.append("\nError: {0}".format(problem))
+
+    if typ in _ERROR_HELP:
+        msg.append("\n\n")
+        msg.append(_ERROR_HELP[typ])
+
+    return "".join(msg)
