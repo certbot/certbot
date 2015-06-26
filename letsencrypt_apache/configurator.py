@@ -229,7 +229,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :returns: ssl vhost associated with name
         :rtype: :class:`~letsencrypt_apache.obj.VirtualHost`
 
-        :raises .errors.ConfiguratorError: If no vhost is available
+        :raises .errors.PluginError: If no vhost is available
 
         """
         # Allows for domain names to be associated with a virtual host
@@ -264,7 +264,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 "No vhost exists with servername or alias of: %s. "
                 "No vhost was selected. Please specify servernames "
                 "in the Apache config", target_name)
-            raise errors.ConfiguratorError("No vhost selected")
+            raise errors.PluginError("No vhost selected")
 
         # TODO: Ask the user if they would like to add ServerName/Alias to VH
 
@@ -479,7 +479,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :returns: SSL vhost
         :rtype: :class:`~letsencrypt_apache.obj.VirtualHost`
 
-        :raises .errors.ConfiguratorError: If more than one virtual host is in
+        :raises .errors.PluginError: If more than one virtual host is in
             the file.
 
         """
@@ -526,7 +526,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                               (ssl_fp, parser.case_i("VirtualHost")))
         if len(vh_p) != 1:
             logger.error("Error: should only be one vhost in %s", avail_fp)
-            raise errors.ConfiguratorError("Only one vhost per file is allowed")
+            raise errors.PluginError("Only one vhost per file is allowed")
 
         self.parser.add_dir(vh_p[0], "SSLCertificateFile",
                             "/etc/ssl/certs/ssl-cert-snakeoil.pem")
@@ -581,9 +581,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             return self._enhance_func[enhancement](
                 self.choose_vhost(domain), options)
         except ValueError:
-            raise errors.ConfiguratorError(
+            raise errors.PluginError(
                 "Unsupported enhancement: {}".format(enhancement))
-        except errors.ConfiguratorError:
+        except errors.PluginError:
             logger.warn("Failed %s for %s", enhancement, domain)
 
     def _enable_redirect(self, ssl_vhost, unused_options):
@@ -629,7 +629,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     return
                 else:
                     logger.info("Unknown redirect exists for this vhost")
-                    raise errors.ConfiguratorError(
+                    raise errors.PluginError(
                         "Unknown redirect already exists "
                         "in {}".format(general_v.filep))
             # Add directives to server
@@ -700,7 +700,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Make sure adding the vhost will be safe
         conflict, host_or_addrs = self._conflicting_host(ssl_vhost)
         if conflict:
-            raise errors.ConfiguratorError(
+            raise errors.PluginError(
                 "Unable to create a redirection vhost - {}".format(
                     host_or_addrs))
 
@@ -960,7 +960,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         except (OSError, ValueError):
             logger.error(
                 "Error accessing %s for loaded modules!", self.conf("ctl"))
-            raise errors.ConfiguratorError("Error accessing loaded modules")
+            raise errors.PluginError("Error accessing loaded modules")
         # Small errors that do not impede
         if proc.returncode != 0:
             logger.warn("Error in checking loaded module list: %s", stderr)
@@ -1029,7 +1029,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :returns: version
         :rtype: tuple
 
-        :raises .ConfiguratorError: if unable to find Apache version
+        :raises .PluginError: if unable to find Apache version
 
         """
         try:
@@ -1039,14 +1039,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 stderr=subprocess.PIPE)
             text = proc.communicate()[0]
         except (OSError, ValueError):
-            raise errors.ConfiguratorError(
+            raise errors.PluginError(
                 "Unable to run %s -v" % self.conf("ctl"))
 
         regex = re.compile(r"Apache/([0-9\.]*)", re.IGNORECASE)
         matches = regex.findall(text)
 
         if len(matches) != 1:
-            raise errors.ConfiguratorError("Unable to find Apache version")
+            raise errors.PluginError("Unable to find Apache version")
 
         return tuple([int(i) for i in matches[0].split(".")])
 
