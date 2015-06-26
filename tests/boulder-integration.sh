@@ -1,7 +1,14 @@
 #!/bin/sh -xe
-# Simple integration test, make sure to activate virtualenv beforehand
+# Simple integration test. Make sure to activate virtualenv beforehand
 # (source venv/bin/activate) and that you are running Boulder test
 # instance (see ./boulder-start.sh).
+#
+# Environment variables:
+#   SERVER: Passed as "letsencrypt --server" argument. Boulder
+#           monolithic defaults to :4000, AMQP defaults to :4300. This
+#           script defaults to monolithic.
+#
+# Note: this script is called by Boulder integration test suite!
 
 root="$(mktemp -d)"
 echo "\nRoot integration tests directory: $root"
@@ -11,7 +18,7 @@ store_flags="$store_flags --logs-dir $root/logs"
 common() {
     # first three flags required, rest is handy defaults
     letsencrypt \
-        --server http://localhost:4000/acme/new-reg \
+        --server "${SERVER:-http://localhost:4000/acme/new-reg}" \
         --no-verify-ssl \
         --dvsni-port 5001 \
         $store_flags \
