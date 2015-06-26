@@ -682,7 +682,7 @@ def main(cli_args=sys.argv[1:]):
         return ""
     except: # pylint: disable=bare-except
         handle_exception_common()
-        return ("\nAn unexpected error occured. Please see the logfiles in {0} "
+        return ("An unexpected error occured. Please see the logfiles in {0} "
                 "for more details.".format(args.logs_dir))
 
 
