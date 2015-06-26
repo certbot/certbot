@@ -133,6 +133,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     def prepare(self):
         """Prepare the authenticator/installer."""
+        self.config_test()
         self.parser = parser.ApacheParser(
             self.aug, self.conf('server-root'), self.mod_ssl_conf)
         # Check for errors in parsing files with Augeas
@@ -925,7 +926,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             stdout, stderr = proc.communicate()
         except (OSError, ValueError):
             logging.fatal("Unable to run /usr/sbin/apache2ctl configtest")
-            sys.exit(1)
+            raise errors.ConfiguratorError("Unable to run apache2ctl")
 
         if proc.returncode != 0:
             # Enter recovery routine...
@@ -1059,7 +1060,7 @@ def enable_mod(mod_name, apache_init_script, apache_enmod):
         apache_restart(apache_init_script)
     except (OSError, subprocess.CalledProcessError):
         logging.exception("Error enabling mod_%s", mod_name)
-        sys.exit(1)
+        raise errors.ConfiguratorError("Unable to initiate a2enmod")
 
 
 def mod_loaded(module, apache_ctl):
@@ -1125,8 +1126,9 @@ def apache_restart(apache_init_script):
 
     except (OSError, ValueError):
         logging.fatal(
-            "Apache Restart Failed - Please Check the Configuration")
-        sys.exit(1)
+            "Unable to initiate process to restart Apache")
+        raise errors.ConfiguratorError(
+            "Unable to initiate process to restart Apache")
 
     return True
 

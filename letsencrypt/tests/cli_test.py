@@ -4,6 +4,7 @@ import unittest
 
 import mock
 
+from letsencrypt import errors
 
 class CLITest(unittest.TestCase):
     """Tests for different commands."""
@@ -41,7 +42,11 @@ class CLITest(unittest.TestCase):
         for args in itertools.chain(
                 *(itertools.combinations(flags, r)
                   for r in xrange(len(flags)))):
-            self._call(['plugins',] + list(args))
+            try:
+                self._call(['plugins',] + list(args))
+            except errors.ConfiguratorError as err:
+                if "--prepare" not in args:
+                    raise err
 
 
 if __name__ == '__main__':
