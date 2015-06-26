@@ -82,7 +82,7 @@ required-attributes=
 bad-functions=map,filter,apply,input,file
 
 # Good variable names which should always be accepted, separated by a comma
-good-names=f,i,j,k,ex,Run,_,fd
+good-names=f,i,j,k,ex,Run,_,fd,logger
 
 # Bad variable names which should always be refused, separated by a comma
 bad-names=foo,bar,baz,toto,tutu,tata
@@ -173,7 +173,7 @@ notes=FIXME,XXX,TODO
 
 # Logging modules to check that the string format arguments are in logging
 # function parameter format
-logging-modules=logging
+logging-modules=logging,logger
 
 
 [VARIABLES]

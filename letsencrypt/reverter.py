@@ -14,6 +14,9 @@ from letsencrypt import le_util
 from letsencrypt.display import util as display_util
 
 
+logger = logging.getLogger(__name__)
+
+
 class Reverter(object):
     """Reverter Class - save and revert configuration checkpoints.
 
@@ -38,8 +41,8 @@ class Reverter(object):
                 self._recover_checkpoint(self.config.temp_checkpoint_dir)
             except errors.ReverterError:
                 # We have a partial or incomplete recovery
-                logging.fatal("Incomplete or failed recovery for %s",
-                              self.config.temp_checkpoint_dir)
+                logger.fatal("Incomplete or failed recovery for %s",
+                             self.config.temp_checkpoint_dir)
                 raise errors.ReverterError("Unable to revert temporary config")
 
     def rollback_checkpoints(self, rollback=1):
@@ -56,26 +59,26 @@ class Reverter(object):
         try:
             rollback = int(rollback)
         except ValueError:
-            logging.error("Rollback argument must be a positive integer")
+            logger.error("Rollback argument must be a positive integer")
             raise errors.ReverterError("Invalid Input")
         # Sanity check input
         if rollback < 0:
-            logging.error("Rollback argument must be a positive integer")
+            logger.error("Rollback argument must be a positive integer")
             raise errors.ReverterError("Invalid Input")
 
         backups = os.listdir(self.config.backup_dir)
         backups.sort()
 
         if len(backups) < rollback:
-            logging.warning("Unable to rollback %d checkpoints, only %d exist",
-                            rollback, len(backups))
+            logger.warning("Unable to rollback %d checkpoints, only %d exist",
+                           rollback, len(backups))
 
         while rollback > 0 and backups:
             cp_dir = os.path.join(self.config.backup_dir, backups.pop())
             try:
                 self._recover_checkpoint(cp_dir)
             except errors.ReverterError:
-                logging.fatal("Failed to load checkpoint during rollback")
+                logger.fatal("Failed to load checkpoint during rollback")
                 raise errors.ReverterError(
                     "Unable to load checkpoint during rollback")
             rollback -= 1
@@ -93,8 +96,8 @@ class Reverter(object):
         backups.sort(reverse=True)
 
         if not backups:
-            logging.info("The Let's Encrypt client has not saved any backups "
-                         "of your configuration")
+            logger.info("The Let's Encrypt client has not saved any backups "
+                        "of your configuration")
             return
         # Make sure there isn't anything unexpected in the backup folder
         # There should only be timestamped (float) directories
@@ -177,7 +180,7 @@ class Reverter(object):
             if filename not in existing_filepaths:
                 # Tag files with index so multiple files can
                 # have the same filename
-                logging.debug("Creating backup of %s", filename)
+                logger.debug("Creating backup of %s", filename)
                 try:
                     shutil.copy2(filename, os.path.join(
                         cp_dir, os.path.basename(filename) + "_" + str(idx)))
@@ -185,7 +188,7 @@ class Reverter(object):
                 # http://stackoverflow.com/questions/4726260/effective-use-of-python-shutil-copy2
                 except IOError:
                     op_fd.close()
-                    logging.error(
+                    logger.error(
                         "Unable to add file %s to checkpoint %s",
                         filename, cp_dir)
                     raise errors.ReverterError(
@@ -234,7 +237,7 @@ class Reverter(object):
                             os.path.basename(path) + "_" + str(idx)), path)
             except (IOError, OSError):
                 # This file is required in all checkpoints.
-                logging.error("Unable to recover files from %s", cp_dir)
+                logger.error("Unable to recover files from %s", cp_dir)
                 raise errors.ReverterError(
                     "Unable to recover files from %s" % cp_dir)
 
@@ -244,7 +247,7 @@ class Reverter(object):
         try:
             shutil.rmtree(cp_dir)
         except OSError:
-            logging.error("Unable to remove directory: %s", cp_dir)
+            logger.error("Unable to remove directory: %s", cp_dir)
             raise errors.ReverterError(
                 "Unable to remove directory: %s" % cp_dir)
 
@@ -318,7 +321,7 @@ class Reverter(object):
                 if path not in ex_files:
                     new_fd.write("{0}{1}".format(path, os.linesep))
         except (IOError, OSError):
-            logging.error("Unable to register file creation(s) - %s", files)
+            logger.error("Unable to register file creation(s) - %s", files)
             raise errors.ReverterError(
                 "Unable to register file creation(s) - {0}".format(files))
         finally:
@@ -344,9 +347,9 @@ class Reverter(object):
                 self._recover_checkpoint(self.config.in_progress_dir)
             except errors.ReverterError:
                 # We have a partial or incomplete recovery
-                logging.fatal("Incomplete or failed recovery for IN_PROGRESS "
-                              "checkpoint - %s",
-                              self.config.in_progress_dir)
+                logger.fatal("Incomplete or failed recovery for IN_PROGRESS "
+                             "checkpoint - %s",
+                             self.config.in_progress_dir)
                 raise errors.ReverterError(
                     "Incomplete or failed recovery for IN_PROGRESS checkpoint "
                     "- %s" % self.config.in_progress_dir)
@@ -376,12 +379,12 @@ class Reverter(object):
                     if os.path.lexists(path):
                         os.remove(path)
                     else:
-                        logging.warning(
+                        logger.warning(
                             "File: %s - Could not be found to be deleted%s"
                             "LE probably shut down unexpectedly",
                             os.linesep, path)
         except (IOError, OSError):
-            logging.fatal(
+            logger.fatal(
                 "Unable to remove filepaths contained within %s", file_list)
             raise errors.ReverterError(
                 "Unable to remove filepaths contained within "
@@ -422,7 +425,7 @@ class Reverter(object):
 
             shutil.move(changes_since_tmp_path, changes_since_path)
         except (IOError, OSError):
-            logging.error("Unable to finalize checkpoint - adding title")
+            logger.error("Unable to finalize checkpoint - adding title")
             raise errors.ReverterError("Unable to add title")
 
         self._timestamp_progress_dir()
@@ -445,7 +448,7 @@ class Reverter(object):
                 cur_time += .01
 
         # After 10 attempts... something is probably wrong here...
-        logging.error(
+        logger.error(
             "Unable to finalize checkpoint, %s -> %s",
             self.config.in_progress_dir, final_dir)
         raise errors.ReverterError(

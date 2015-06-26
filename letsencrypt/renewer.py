@@ -106,6 +106,9 @@ def _paths_parser(parser):
         help=cli.config_help("config_dir"))
     add("--work-dir", default=cli.flag_default("work_dir"),
         help=cli.config_help("work_dir"))
+    add("--logs-dir", default=cli.flag_default("logs_dir"),
+        help="Path to a directory where logs are stored.")
+
     return parser
 
 

@@ -7,6 +7,9 @@ from letsencrypt.plugins import common
 from letsencrypt_apache import parser
 
 
+logger = logging.getLogger(__name__)
+
+
 class ApacheDvsni(common.Dvsni):
     """Class performs DVSNI challenges within the Apache configurator.
 
@@ -58,7 +61,7 @@ class ApacheDvsni(common.Dvsni):
         for achall in self.achalls:
             vhost = self.configurator.choose_vhost(achall.domain)
             if vhost is None:
-                logging.error(
+                logger.error(
                     "No vhost exists with servername or alias of: %s. "
                     "No _default_:443 vhost exists. Please specify servernames "
                     "in the Apache config", achall.domain)

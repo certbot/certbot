@@ -1,5 +1,8 @@
 """Tests for letsencrypt.cli."""
 import itertools
+import os
+import shutil
+import tempfile
 import unittest
 
 import mock
@@ -8,10 +11,19 @@ import mock
 class CLITest(unittest.TestCase):
     """Tests for different commands."""
 
-    @classmethod
-    def _call(cls, args):
+    def setUp(self):
+        self.tmp_dir = tempfile.mkdtemp()
+        self.config_dir = os.path.join(self.tmp_dir, 'config')
+        self.work_dir = os.path.join(self.tmp_dir, 'work')
+        self.logs_dir = os.path.join(self.tmp_dir, 'logs')
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp_dir)
+
+    def _call(self, args):
         from letsencrypt import cli
-        args = ['--text'] + args
+        args = ['--text', '--config-dir', self.config_dir,
+                '--work-dir', self.work_dir, '--logs-dir', self.logs_dir] + args
         with mock.patch('letsencrypt.cli.sys.stdout') as stdout:
             with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
                 with mock.patch('letsencrypt.cli.client') as client:

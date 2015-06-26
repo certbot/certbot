@@ -16,6 +16,9 @@ from letsencrypt import le_util
 from letsencrypt.display import util as display_util
 
 
+logger = logging.getLogger(__name__)
+
+
 class Account(object):
     """ACME protocol registration.
 
@@ -226,5 +229,5 @@ class Account(object):
         if cls.EMAIL_REGEX.match(email):
             return not email.startswith(".") and ".." not in email
         else:
-            logging.warn("Invalid email address: %s.", email)
+            logger.warn("Invalid email address: %s.", email)
             return False
