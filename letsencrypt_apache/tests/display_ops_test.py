@@ -45,13 +45,13 @@ class SelectVhostTest(unittest.TestCase):
 
     @mock.patch("letsencrypt_apache.display_ops.display_util")
     @mock.patch("letsencrypt_apache.display_ops.zope.component.getUtility")
-    @mock.patch("letsencrypt_apache.display_ops.logging")
-    def test_small_display(self, mock_logging, mock_util, mock_display_util):
+    @mock.patch("letsencrypt_apache.display_ops.logger")
+    def test_small_display(self, mock_logger, mock_util, mock_display_util):
         mock_display_util.WIDTH = 20
         mock_util().menu.return_value = (display_util.OK, 0)
         self._call(self.vhosts)
 
-        self.assertTrue(mock_logging.is_called)
+        self.assertEqual(mock_logger.debug.call_count, 1)
 
 
 if __name__ == "__main__":
