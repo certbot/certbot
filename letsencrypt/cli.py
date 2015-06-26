@@ -193,6 +193,7 @@ def auth(args, config, plugins):
                 domains, authenticator, installer, plugins):
             return "Certificate could not be obtained"
 
+
 def install(args, config, plugins):
     """Install a previously obtained cert in a server."""
     # XXX: Update for renewer/RenewableCert
@@ -621,6 +622,16 @@ def main(cli_args=sys.argv[1:]):
     args = create_parser(plugins, cli_args).parse_args(cli_args)
     config = configuration.NamespaceConfig(args)
 
+    # Setup logging ASAP, otherwise "No handlers could be found for
+    # logger ..." TODO: this should be done before plugins discovery
+    for directory in config.config_dir, config.work_dir:
+        le_util.make_or_verify_dir(
+            directory, constants.CONFIG_DIRS_MODE, os.geteuid())
+    # TODO: logs might contain sensitive data such as contents of the
+    # private key! #525
+    le_util.make_or_verify_dir(args.logs_dir, 0o700, os.geteuid())
+    _setup_logging(args)
+
     # Displayer
     if args.text_mode:
         displayer = display_util.FileDisplay(sys.stdout)
@@ -628,14 +639,6 @@ def main(cli_args=sys.argv[1:]):
         displayer = display_util.NcursesDisplay()
     zope.component.provideUtility(displayer)
 
-    for directory in config.config_dir, config.work_dir:
-        le_util.make_or_verify_dir(
-            directory, constants.CONFIG_DIRS_MODE, os.geteuid())
-    # TODO: logs might contain sensitive data such as contents of the
-    # private key! #525
-    le_util.make_or_verify_dir(args.logs_dir, 0o700, os.geteuid())
-
-    _setup_logging(args)
     # do not log `args`, as it contains sensitive data (e.g. revoke --key)!
     logger.debug("Arguments: %r", cli_args)
     logger.debug("Discovered plugins: %r", plugins)

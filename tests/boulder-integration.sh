@@ -19,13 +19,16 @@ common() {
         --agree-eula \
         --email "" \
         --authenticator standalone \
+        --installer null \
         -vvvvvvv "$@"
 }
 
-common --domains le.wtf auth
+common --domains le1.wtf auth
+common --domains le2.wtf run
+common --domains le3.wtf install
 
 export CSR_PATH="${root}/csr.der" OPENSSL_CNF=examples/openssl.cnf
-./examples/generate-csr.sh le.wtf
+./examples/generate-csr.sh le4.wtf
 common auth --csr "$CSR_PATH" \
        --cert-path "${root}/csr/cert.pem" \
        --chain-path "${root}/csr/chain.pem"
@@ -39,10 +42,10 @@ renew_before_expiry = 10 years
 deploy_before_expiry = 10 years
 EOF
 letsencrypt-renewer $store_flags
-dir="$root/conf/archive/le.wtf"
+dir="$root/conf/archive/le1.wtf"
 for x in cert chain fullchain privkey;
 do
     latest="$(ls -1t $dir/ | grep -e "^${x}" | head -n1)"
-    live="$(readlink -f "$root/conf/live/le.wtf/${x}.pem")"
+    live="$(readlink -f "$root/conf/live/le1.wtf/${x}.pem")"
     #[ "${dir}/${latest}" = "$live" ]  # renewer fails this test
 done

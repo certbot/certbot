@@ -83,6 +83,8 @@ class IPlugin(zope.interface.Interface):
         Should describe the steps taken and any relevant info to help the user
         decide which plugin to use.
 
+        :rtype str:
+
         """
 
 
@@ -200,7 +202,11 @@ class IInstaller(IPlugin):
     """
 
     def get_all_names():
-        """Returns all names that may be authenticated."""
+        """Returns all names that may be authenticated.
+
+        :rtype: `list` of `str`
+
+        """
 
     def deploy_cert(domain, cert_path, key_path, chain_path=None):
         """Deploy certificate.
