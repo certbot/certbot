@@ -166,11 +166,6 @@ def main(config=None, args=sys.argv[1:]):
             # user about the existence of an invalid or corrupt renewal
             # config rather than simply ignoring it.
             continue
-        if cert.should_autodeploy():
-            cert.update_all_links_to(cert.latest_common_version())
-            # TODO: restart web server (invoke IInstaller.restart() method)
-            notify.notify("Autodeployed a cert!!!", "root", "It worked!")
-            # TODO: explain what happened
         if cert.should_autorenew():
             # Note: not cert.current_version() because the basis for
             # the renewal is the latest version, even if it hasn't been
@@ -178,4 +173,9 @@ def main(config=None, args=sys.argv[1:]):
             old_version = cert.latest_common_version()
             renew(cert, old_version)
             notify.notify("Autorenewed a cert!!!", "root", "It worked!")
+            # TODO: explain what happened
+        if cert.should_autodeploy():
+            cert.update_all_links_to(cert.latest_common_version())
+            # TODO: restart web server (invoke IInstaller.restart() method)
+            notify.notify("Autodeployed a cert!!!", "root", "It worked!")
             # TODO: explain what happened
