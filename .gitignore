@@ -16,6 +16,7 @@ dist/
 *~
 *.swp
 \#*#
+.idea
 
 # auth --cert-path --chain-path
 /*.pem
