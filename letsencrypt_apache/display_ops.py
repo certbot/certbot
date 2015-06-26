@@ -1,10 +1,15 @@
 """Contains UI methods for Apache operations."""
+import logging
 import os
+
 import zope.component
 
 from letsencrypt import interfaces
 
 import letsencrypt.display.util as display_util
+
+
+logger = logging.getLogger(__name__)
 
 
 def select_vhost(domain, vhosts):
@@ -13,8 +18,8 @@ def select_vhost(domain, vhosts):
     :param vhosts: Available Apache Virtual Hosts
     :type vhosts: :class:`list` of type `~obj.Vhost`
 
-    :returns: VirtualHost
-    :rtype: `~obj.Vhost`
+    :returns: VirtualHost or `None`
+    :rtype: `~obj.Vhost` or `None`
 
     """
     if not vhosts:
@@ -39,8 +44,20 @@ def _vhost_menu(domain, vhosts):
     :rtype: `tuple`
 
     """
-    filename_size = 24
-    disp_name_size = 17
+    # Free characters in the line of display text (9 is for ' | ' formatting)
+    free_chars = display_util.WIDTH - len("HTTPS") - len("Enabled") - 9
+
+    if free_chars < 2:
+        logger.debug("Display size is too small for "
+                     "letsencrypt_apache.display_ops._vhost_menu()")
+        # This runs the edge off the screen, but it doesn't cause an "error"
+        filename_size = 1
+        disp_name_size = 1
+    else:
+        # Filename is a bit more important and probably longer with 000-*
+        filename_size = int(free_chars * .6)
+        disp_name_size = free_chars - filename_size
+
     choices = []
     for vhost in vhosts:
         if len(vhost.names) == 1:
@@ -51,13 +68,14 @@ def _vhost_menu(domain, vhosts):
             disp_name = "Multiple Names"
 
         choices.append(
-            "{0:{4}s} | {1:{5}s} | {2:5s} | {3:7s}".format(
-                os.path.basename(vhost.filep)[:filename_size],
-                disp_name[:disp_name_size],
-                "HTTPS" if vhost.ssl else "",
-                "Enabled" if vhost.enabled else "",
-                filename_size,
-                disp_name_size)
+            "{fn:{fn_size}s} | {name:{name_size}s} | {https:5s} | "
+            "{active:7s}".format(
+                fn=os.path.basename(vhost.filep)[:filename_size],
+                name=disp_name[:disp_name_size],
+                https="HTTPS" if vhost.ssl else "",
+                active="Enabled" if vhost.enabled else "",
+                fn_size=filename_size,
+                name_size=disp_name_size)
         )
 
     code, tag = zope.component.getUtility(interfaces.IDisplay).menu(

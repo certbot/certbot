@@ -15,7 +15,6 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
     :ivar bool enabled: Virtual host is enabled
 
     """
-
     def __init__(self, filep, path, addrs, ssl, enabled, names=None):
         # pylint: disable=too-many-arguments
         """Initialize a VH."""
@@ -32,18 +31,18 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
 
     def __str__(self):
         return (
-            "File: %s\n"
-            "Vhost path: %s\n"
-            "Addresses: %s\n"
-            "Names: %s\n"
-            "TLS Enabled: %s\n"
-            "Site Enabled: %s" % (
-                self.filep,
-                self.path,
-                ", ".join(str(addr) for addr in self.addrs),
-                ", ".join(name for name in self.names),
-                "Yes" if self.ssl else "No",
-                "Yes" if self.enabled else "No"))
+            "File: {filename}\n"
+            "Vhost path: {vhpath}\n"
+            "Addresses: {addrs}\n"
+            "Names: {names}\n"
+            "TLS Enabled: {tls}\n"
+            "Site Enabled: {active}".format(
+                filename=self.filep,
+                vhpath=self.path,
+                addrs=", ".join(str(addr) for addr in self.addrs),
+                names=", ".join(name for name in self.names),
+                tls="Yes" if self.ssl else "No",
+                active="Yes" if self.enabled else "No"))
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):

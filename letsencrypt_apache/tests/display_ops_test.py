@@ -43,5 +43,16 @@ class SelectVhostTest(unittest.TestCase):
     def test_no_vhosts(self):
         self.assertEqual(self._call([]), None)
 
+    @mock.patch("letsencrypt_apache.display_ops.display_util")
+    @mock.patch("letsencrypt_apache.display_ops.zope.component.getUtility")
+    @mock.patch("letsencrypt_apache.display_ops.logging")
+    def test_small_display(self, mock_logging, mock_util, mock_display_util):
+        mock_display_util.WIDTH = 20
+        mock_util().menu.return_value = (display_util.OK, 0)
+        self._call(self.vhosts)
+
+        self.assertTrue(mock_logging.is_called)
+
+
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
