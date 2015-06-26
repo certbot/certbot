@@ -1,4 +1,4 @@
-"""Tests for letsencrypt.plugins.manual."""
+"""Tests for letsencrypt.plugins.manual.authenticator."""
 import unittest
 
 import mock
@@ -11,10 +11,10 @@ from letsencrypt.tests import acme_util
 
 
 class ManualAuthenticatorTest(unittest.TestCase):
-    """Tests for letsencrypt.plugins.manual.ManualAuthenticator."""
+    """Tests for letsencrypt.plugins.manual.authenticator.ManualAuthenticator."""
 
     def setUp(self):
-        from letsencrypt.plugins.manual import ManualAuthenticator
+        from letsencrypt.plugins.manual.authenticator import ManualAuthenticator
         self.config = mock.MagicMock(no_simple_http_tls=True)
         self.auth = ManualAuthenticator(config=self.config, name="manual")
         self.achalls = [achallenges.SimpleHTTP(
@@ -30,9 +30,9 @@ class ManualAuthenticatorTest(unittest.TestCase):
     def test_perform_empty(self):
         self.assertEqual([], self.auth.perform([]))
 
-    @mock.patch("letsencrypt.plugins.manual.sys.stdout")
-    @mock.patch("letsencrypt.plugins.manual.os.urandom")
-    @mock.patch("letsencrypt.plugins.manual.requests.get")
+    @mock.patch("letsencrypt.plugins.manual.authenticator.sys.stdout")
+    @mock.patch("letsencrypt.plugins.manual.authenticator.os.urandom")
+    @mock.patch("letsencrypt.plugins.manual.authenticator.requests.get")
     @mock.patch("__builtin__.raw_input")
     def test_perform(self, mock_raw_input, mock_get, mock_urandom, mock_stdout):
         mock_urandom.return_value = "foo"
@@ -54,6 +54,7 @@ class ManualAuthenticatorTest(unittest.TestCase):
 
         mock_get.side_effect = requests.exceptions.ConnectionError
         self.assertEqual([None], self.auth.perform(self.achalls))
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

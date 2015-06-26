@@ -81,7 +81,7 @@ This plugin requires user's manual intervention in setting up a HTTP
 server for solving SimpleHTTP challenges and thus does not need to be
 run as a privilidged process. Alternatively shows instructions on how
 to use Python's built-in HTTP server and, in case of HTTPS, openssl
-binary for temporary key/certificate generation.""".replace("\n", "")
+binary for temporary key/certificate generation.""".replace("\n", " ")
 
     def get_chall_pref(self, domain):
         # pylint: disable=missing-docstring,no-self-use,unused-argument
