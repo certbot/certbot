@@ -83,6 +83,8 @@ class IPlugin(zope.interface.Interface):
         Should describe the steps taken and any relevant info to help the user
         decide which plugin to use.
 
+        :rtype str:
+
         """
 
 
@@ -184,12 +186,8 @@ class IConfig(zope.interface.Interface):
         "Port number to perform DVSNI challenge. "
         "Boulder in testing mode defaults to 5001.")
 
-    # TODO: not implemented
     no_simple_http_tls = zope.interface.Attribute(
         "Do not use TLS when solving SimpleHTTP challenges.")
-
-    # TODO: the following are not used, but blocked by #485
-    le_vhost_ext = zope.interface.Attribute("not used")
 
 
 class IInstaller(IPlugin):
@@ -200,7 +198,11 @@ class IInstaller(IPlugin):
     """
 
     def get_all_names():
-        """Returns all names that may be authenticated."""
+        """Returns all names that may be authenticated.
+
+        :rtype: `list` of `str`
+
+        """
 
     def deploy_cert(domain, cert_path, key_path, chain_path=None):
         """Deploy certificate.

@@ -20,7 +20,7 @@ done
 SAN="$domains" openssl req -config "${OPENSSL_CNF:-openssl.cnf}" \
   -new -nodes -subj '/' -reqexts san \
   -out "${CSR_PATH:-csr.der}" \
-  -keyout key.pem \
+  -keyout "${KEY_PATH:-key.pem}" \
   -newkey rsa:2048 \
   -outform DER
 # 512 or 1024 too low for Boulder, 2048 is smallest for tests

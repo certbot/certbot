@@ -38,6 +38,7 @@ class CLITest(unittest.TestCase):
 
     def test_help(self):
         self.assertRaises(SystemExit, self._call, ['--help'])
+        self.assertRaises(SystemExit, self._call, ['--help all'])
 
     def test_rollback(self):
         _, _, _, client = self._call(['rollback'])
