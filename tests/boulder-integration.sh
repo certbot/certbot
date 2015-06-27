@@ -15,6 +15,9 @@ echo "\nRoot integration tests directory: $root"
 store_flags="--config-dir $root/conf --work-dir $root/work"
 store_flags="$store_flags --logs-dir $root/logs"
 
+export PATH="/usr/sbin:$PATH"  # /usr/sbin/nginx
+
+
 common() {
     # first three flags required, rest is handy defaults
     letsencrypt \
@@ -60,3 +63,9 @@ do
     live="$(readlink -f "$root/conf/live/le1.wtf/${x}.pem")"
     [ "${dir}/${latest}" = "$live" ]  # renewer fails this test
 done
+
+
+if type nginx;
+then
+    . ./tests/boulder-integration-nginx.sh
+fi

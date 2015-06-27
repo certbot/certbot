@@ -1,7 +1,9 @@
 language: python
 
 # http://docs.travis-ci.com/user/ci-environment/#CI-environment-OS
-before_install: travis_retry sudo ./bootstrap/ubuntu.sh
+before_install:
+  - travis_retry sudo ./bootstrap/ubuntu.sh
+  - apt-get install --no-install-recommends nginx-light openssl
 
 # using separate envs with different TOXENVs creates 4x1 Travis build
 # matrix, which allows us to clearly distinguish which component under
