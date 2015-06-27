@@ -5,7 +5,6 @@ import re
 import shutil
 import socket
 import subprocess
-import sys
 
 import zope.interface
 
@@ -21,6 +20,7 @@ from letsencrypt.plugins import common
 
 from letsencrypt_apache import augeas_configurator
 from letsencrypt_apache import constants
+from letsencrypt_apache import display_ops
 from letsencrypt_apache import dvsni
 from letsencrypt_apache import obj
 from letsencrypt_apache import parser
@@ -86,7 +86,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     zope.interface.implements(interfaces.IAuthenticator, interfaces.IInstaller)
     zope.interface.classProvides(interfaces.IPluginFactory)
 
-    description = "Apache Web Server"
+    description = "Apache Web Server - Alpha"
 
     @classmethod
     def add_parser_arguments(cls, add):
@@ -103,7 +103,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         add("le-vhost-ext", default=constants.CLI_DEFAULTS["le_vhost_ext"],
             help="SSL vhost configuration extension.")
 
-
     def __init__(self, *args, **kwargs):
         """Initialize an Apache Configurator.
 
@@ -111,7 +110,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             (used mostly for unittesting)
 
         """
-        version = kwargs.pop('version', None)
+        version = kwargs.pop("version", None)
         super(ApacheConfigurator, self).__init__(*args, **kwargs)
 
         # Verify that all directories and files exist with proper permissions
@@ -137,7 +136,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     def prepare(self):
         """Prepare the authenticator/installer."""
         self.parser = parser.ApacheParser(
-            self.aug, self.conf('server-root'), self.mod_ssl_conf)
+            self.aug, self.conf("server-root"), self.mod_ssl_conf)
         # Check for errors in parsing files with Augeas
         self.check_parsing_errors("httpd.aug")
 
@@ -174,7 +173,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         vhost = self.choose_vhost(domain)
-        # TODO(jdkasten): vhost might be None
+
         path = {}
 
         path["cert_path"] = self.parser.find_dir(parser.case_i(
@@ -221,13 +220,15 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     def choose_vhost(self, target_name):
         """Chooses a virtual host based on the given domain name.
 
-        .. todo:: This should maybe return list if no obvious answer
-            is presented.
+        If there is no clear virtual host to be selected, the user is prompted
+        with all available choices.
 
         :param str target_name: domain name
 
         :returns: ssl vhost associated with name
         :rtype: :class:`~letsencrypt_apache.obj.VirtualHost`
+
+        :raises .errors.PluginError: If no vhost is available
 
         """
         # Allows for domain names to be associated with a virtual host
@@ -254,11 +255,24 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 self.assoc[target_name] = vhost
                 return vhost
 
-        # No matches, search for the default
-        for vhost in self.vhosts:
-            if "_default_:443" in vhost.addrs:
-                return vhost
-        return None
+        vhost = display_ops.select_vhost(target_name, self.vhosts)
+        if vhost is not None:
+            self.assoc[target_name] = vhost
+        else:
+            logger.error(
+                "No vhost exists with servername or alias of: %s. "
+                "No vhost was selected. Please specify servernames "
+                "in the Apache config", target_name)
+            raise errors.PluginError("No vhost selected")
+
+        # TODO: Ask the user if they would like to add ServerName/Alias to VH
+
+        return vhost
+
+        # # No matches, search for the default
+        # for vhost in self.vhosts:
+        #     if "_default_:443" in vhost.addrs:
+        #         return vhost
 
     def create_dn_server_assoc(self, domain, vhost):
         """Create an association between a domain name and virtual host.
@@ -408,10 +422,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         is appropriately listening on port 443.
 
         """
-        if not mod_loaded("ssl_module", self.conf('ctl')):
+        if not self.mod_loaded("ssl_module"):
             logger.info("Loading mod_ssl into Apache Server")
-            enable_mod("ssl", self.conf('init-script'),
-                       self.conf('enmod'))
+            self.enable_mod("ssl")
 
         # Check for Listen 443
         # Note: This could be made to also look for ip:443 combo
@@ -465,6 +478,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :returns: SSL vhost
         :rtype: :class:`~letsencrypt_apache.obj.VirtualHost`
 
+        :raises .errors.PluginError: If more than one virtual host is in
+            the file or if plugin is unable to write/read vhost files.
+
         """
         avail_fp = nonssl_vhost.filep
         # Get filepath of new ssl_vhost
@@ -486,7 +502,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     new_file.write("</IfModule>\n")
         except IOError:
             logger.fatal("Error writing/reading to file in make_vhost_ssl")
-            sys.exit(49)
+            raise errors.PluginError("Unable to write/read in make_vhost_ssl")
 
         self.aug.load()
 
@@ -509,7 +525,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                               (ssl_fp, parser.case_i("VirtualHost")))
         if len(vh_p) != 1:
             logger.error("Error: should only be one vhost in %s", avail_fp)
-            sys.exit(1)
+            raise errors.PluginError("Only one vhost per file is allowed")
 
         self.parser.add_dir(vh_p[0], "SSLCertificateFile",
                             "/etc/ssl/certs/ssl-cert-snakeoil.pem")
@@ -564,9 +580,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             return self._enhance_func[enhancement](
                 self.choose_vhost(domain), options)
         except ValueError:
-            raise errors.ConfiguratorError(
+            raise errors.PluginError(
                 "Unsupported enhancement: {}".format(enhancement))
-        except errors.ConfiguratorError:
+        except errors.PluginError:
             logger.warn("Failed %s for %s", enhancement, domain)
 
     def _enable_redirect(self, ssl_vhost, unused_options):
@@ -592,8 +608,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: (bool, :class:`~letsencrypt_apache.obj.VirtualHost`)
 
         """
-        if not mod_loaded("rewrite_module", self.conf('ctl')):
-            enable_mod("rewrite", self.conf('init-script'), self.conf('enmod'))
+        if not self.mod_loaded("rewrite_module"):
+            self.enable_mod("rewrite")
 
         general_v = self._general_vhost(ssl_vhost)
         if general_v is None:
@@ -612,7 +628,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     return
                 else:
                     logger.info("Unknown redirect exists for this vhost")
-                    raise errors.ConfiguratorError(
+                    raise errors.PluginError(
                         "Unknown redirect already exists "
                         "in {}".format(general_v.filep))
             # Add directives to server
@@ -683,7 +699,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Make sure adding the vhost will be safe
         conflict, host_or_addrs = self._conflicting_host(ssl_vhost)
         if conflict:
-            raise errors.ConfiguratorError(
+            raise errors.PluginError(
                 "Unable to create a redirection vhost - {}".format(
                     host_or_addrs))
 
@@ -850,7 +866,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 if len(cert_path) != 1 or len(key_path) != 1:
                     logger.error("Too many cert or key directives in vhost %s",
                                  vhost.filep)
-                    sys.exit(40)
+                    errors.MisconfigurationError(
+                        "Too many cert/key directives in vhost")
 
                 cert = os.path.abspath(self.aug.get(cert_path[0]))
                 key = os.path.abspath(self.aug.get(key_path[0]))
@@ -904,6 +921,58 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             return True
         return False
 
+    def enable_mod(self, mod_name):
+        """Enables module in Apache.
+
+        Both enables and restarts Apache so module is active.
+
+        :param str mod_name: Name of the module to enable.
+
+        """
+        try:
+            # Use check_output so the command will finish before reloading
+            # TODO: a2enmod is debian specific...
+            subprocess.check_call([self.conf("enmod"), mod_name],
+                                  stdout=open("/dev/null", "w"),
+                                  stderr=open("/dev/null", "w"))
+            apache_restart(self.conf("init"))
+        except (OSError, subprocess.CalledProcessError):
+            logger.exception("Error enabling mod_%s", mod_name)
+            raise errors.MisconfigurationError(
+                "Missing enable_mod binary or lack privileges")
+
+    def mod_loaded(self, module):
+        """Checks to see if mod_ssl is loaded
+
+        Uses ``apache_ctl`` to get loaded module list. This also effectively
+        serves as a config_test.
+
+        :returns: If ssl_module is included and active in Apache
+        :rtype: bool
+
+        """
+        try:
+            proc = subprocess.Popen(
+                [self.conf("ctl"), "-M"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE)
+            stdout, stderr = proc.communicate()
+
+        except (OSError, ValueError):
+            logger.error(
+                "Error accessing %s for loaded modules!", self.conf("ctl"))
+            raise errors.MisconfigurationError("Error accessing loaded modules")
+        # Small errors that do not impede
+        if proc.returncode != 0:
+            logger.warn("Error in checking loaded module list: %s", stderr)
+            raise errors.MisconfigurationError(
+                "Apache is unable to check whether or not the module is "
+                "loaded because Apache is misconfigured.")
+
+        if module in stdout:
+            return True
+        return False
+
     def restart(self):
         """Restarts apache server.
 
@@ -911,7 +980,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: bool
 
         """
-        return apache_restart(self.conf('init-script'))
+        return apache_restart(self.conf("init-script"))
 
     def config_test(self):  # pylint: disable=no-self-use
         """Check the configuration of Apache for errors.
@@ -922,13 +991,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         try:
             proc = subprocess.Popen(
-                [self.conf('ctl'), "configtest"],
+                [self.conf("ctl"), "configtest"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
             stdout, stderr = proc.communicate()
         except (OSError, ValueError):
             logger.fatal("Unable to run /usr/sbin/apache2ctl configtest")
-            sys.exit(1)
+            raise errors.PluginError("Unable to run apache2ctl")
 
         if proc.returncode != 0:
             # Enter recovery routine...
@@ -961,24 +1030,24 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :returns: version
         :rtype: tuple
 
-        :raises .ConfiguratorError: if unable to find Apache version
+        :raises .PluginError: if unable to find Apache version
 
         """
         try:
             proc = subprocess.Popen(
-                [self.conf('ctl'), "-v"],
+                [self.conf("ctl"), "-v"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
             text = proc.communicate()[0]
         except (OSError, ValueError):
-            raise errors.ConfiguratorError(
-                "Unable to run %s -v" % self.conf('ctl'))
+            raise errors.PluginError(
+                "Unable to run %s -v" % self.conf("ctl"))
 
         regex = re.compile(r"Apache/([0-9\.]*)", re.IGNORECASE)
         matches = regex.findall(text)
 
         if len(matches) != 1:
-            raise errors.ConfiguratorError("Unable to find Apache version")
+            raise errors.PluginError("Unable to find Apache version")
 
         return tuple([int(i) for i in matches[0].split(".")])
 
@@ -1043,63 +1112,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.restart()
 
 
-def enable_mod(mod_name, apache_init_script, apache_enmod):
-    """Enables module in Apache.
-
-    Both enables and restarts Apache so module is active.
-
-    :param str mod_name: Name of the module to enable.
-    :param str apache_init_script: Path to the Apache init script.
-    :param str apache_enmod: Path to the Apache a2enmod script.
-
-    """
-    try:
-        # Use check_output so the command will finish before reloading
-        # TODO: a2enmod is debian specific...
-        subprocess.check_call([apache_enmod, mod_name],
-                              stdout=open("/dev/null", "w"),
-                              stderr=open("/dev/null", "w"))
-        apache_restart(apache_init_script)
-    except (OSError, subprocess.CalledProcessError):
-        logger.exception("Error enabling mod_%s", mod_name)
-        sys.exit(1)
-
-
-def mod_loaded(module, apache_ctl):
-    """Checks to see if mod_ssl is loaded
-
-    Uses ``apache_ctl`` to get loaded module list. This also effectively
-    serves as a config_test.
-
-    :param str apache_ctl: Path to apache2ctl binary.
-
-    :returns: If ssl_module is included and active in Apache
-    :rtype: bool
-
-    """
-    try:
-        proc = subprocess.Popen(
-            [apache_ctl, "-M"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE)
-        stdout, stderr = proc.communicate()
-
-    except (OSError, ValueError):
-        logger.error(
-            "Error accessing %s for loaded modules!", apache_ctl)
-        raise errors.ConfiguratorError("Error accessing loaded modules")
-    # Small errors that do not impede
-    if proc.returncode != 0:
-        logger.warn("Error in checking loaded module list: %s", stderr)
-        raise errors.MisconfigurationError(
-            "Apache is unable to check whether or not the module is "
-            "loaded because Apache is misconfigured.")
-
-    if module in stdout:
-        return True
-    return False
-
-
 def apache_restart(apache_init_script):
     """Restarts the Apache Server.
 
@@ -1129,7 +1141,7 @@ def apache_restart(apache_init_script):
     except (OSError, ValueError):
         logger.fatal(
             "Apache Restart Failed - Please Check the Configuration")
-        sys.exit(1)
+        raise errors.MisconfigurationError("Unable to restart Apache process")
 
     return True
 

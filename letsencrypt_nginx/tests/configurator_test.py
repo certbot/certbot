@@ -45,7 +45,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
     def test_enhance(self):
         self.assertRaises(
-            errors.ConfiguratorError, self.config.enhance, 'myhost', 'redirect')
+            errors.PluginError, self.config.enhance, 'myhost', 'redirect')
 
     def test_get_chall_pref(self):
         self.assertEqual([challenges.DVSNI],
@@ -215,19 +215,19 @@ class NginxConfiguratorTest(util.NginxTest):
                            " (based on LLVM 3.5svn)",
                            "TLS SNI support enabled",
                            "configure arguments: --with-http_ssl_module"]))
-        self.assertRaises(errors.ConfiguratorError, self.config.get_version)
+        self.assertRaises(errors.PluginError, self.config.get_version)
 
         mock_popen().communicate.return_value = (
             "", "\n".join(["nginx version: nginx/1.4.2",
                            "TLS SNI support enabled"]))
-        self.assertRaises(errors.ConfiguratorError, self.config.get_version)
+        self.assertRaises(errors.PluginError, self.config.get_version)
 
         mock_popen().communicate.return_value = (
             "", "\n".join(["nginx version: nginx/1.4.2",
                            "built by clang 6.0 (clang-600.0.56)"
                            " (based on LLVM 3.5svn)",
                            "configure arguments: --with-http_ssl_module"]))
-        self.assertRaises(errors.ConfiguratorError, self.config.get_version)
+        self.assertRaises(errors.PluginError, self.config.get_version)
 
         mock_popen().communicate.return_value = (
             "", "\n".join(["nginx version: nginx/0.8.1",
@@ -235,10 +235,10 @@ class NginxConfiguratorTest(util.NginxTest):
                            " (based on LLVM 3.5svn)",
                            "TLS SNI support enabled",
                            "configure arguments: --with-http_ssl_module"]))
-        self.assertRaises(errors.ConfiguratorError, self.config.get_version)
+        self.assertRaises(errors.PluginError, self.config.get_version)
 
         mock_popen.side_effect = OSError("Can't find program")
-        self.assertRaises(errors.ConfiguratorError, self.config.get_version)
+        self.assertRaises(errors.PluginError, self.config.get_version)
 
     @mock.patch("letsencrypt_nginx.configurator.subprocess.Popen")
     def test_nginx_restart(self, mock_popen):

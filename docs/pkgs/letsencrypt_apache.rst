@@ -10,6 +10,12 @@
 .. automodule:: letsencrypt_apache.configurator
    :members:
 
+:mod:`letsencrypt_apache.display_ops`
+=====================================
+
+.. automodule:: letsencrypt_apache.display_ops
+   :members:
+
 :mod:`letsencrypt_apache.dvsni`
 ===============================
 

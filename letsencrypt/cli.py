@@ -98,8 +98,8 @@ def _find_domains(args, installer):
         domains = args.domains
 
     if not domains:
-        sys.exit("Please specify --domains, or --installer that will "
-                 "help in domain names autodiscovery")
+        raise errors.Error("Please specify --domains, or --installer that "
+                           "will help in domain names autodiscovery")
 
     return domains
 
@@ -116,7 +116,8 @@ def _init_acme(config, acc, authenticator, installer):
                 acme.register()
             except errors.Error as error:
                 logger.debug(error)
-                sys.exit("Unable to register an account with ACME server")
+                raise errors.Error("Unable to register an account with ACME "
+                                   "server")
 
     return acme
 
@@ -473,6 +474,9 @@ def create_parser(plugins, args):
         "testing purposes only! Do NOT change them, unless you "
         "really know what you're doing!")
     helpful.add(
+        "testing", "--debug", action="store_true",
+        help="Show tracebacks if the program exits abnormally")
+    helpful.add(
         "testing", "--no-verify-ssl", action="store_true",
         help=config_help("no_verify_ssl"),
         default=flag_default("no_verify_ssl"))
@@ -638,22 +642,8 @@ def _setup_logging(args):
     logger.info("Saving debug log to %s", log_file_name)
 
 
-def main(cli_args=sys.argv[1:]):
-    """Command line argument parsing and main script execution."""
-    # note: arg parser internally handles --help (and exits afterwards)
-    plugins = plugins_disco.PluginsRegistry.find_all()
-    args = create_parser(plugins, cli_args).parse_args(cli_args)
-    config = configuration.NamespaceConfig(args)
-
-    # Setup logging ASAP, otherwise "No handlers could be found for
-    # logger ..." TODO: this should be done before plugins discovery
-    for directory in config.config_dir, config.work_dir:
-        le_util.make_or_verify_dir(
-            directory, constants.CONFIG_DIRS_MODE, os.geteuid())
-    # TODO: logs might contain sensitive data such as contents of the
-    # private key! #525
-    le_util.make_or_verify_dir(args.logs_dir, 0o700, os.geteuid())
-    _setup_logging(args)
+def main2(cli_args, args, config, plugins):
+    """Continued main script execution."""
 
     # Displayer
     if args.text_mode:
@@ -683,6 +673,44 @@ def main(cli_args=sys.argv[1:]):
         #    .format(os.linesep))
 
     return args.func(args, config, plugins)
+
+
+def main(cli_args=sys.argv[1:]):
+    """Command line argument parsing and main script execution."""
+    # note: arg parser internally handles --help (and exits afterwards)
+    plugins = plugins_disco.PluginsRegistry.find_all()
+    args = create_parser(plugins, cli_args).parse_args(cli_args)
+    config = configuration.NamespaceConfig(args)
+
+    # Setup logging ASAP, otherwise "No handlers could be found for
+    # logger ..." TODO: this should be done before plugins discovery
+    for directory in config.config_dir, config.work_dir:
+        le_util.make_or_verify_dir(
+            directory, constants.CONFIG_DIRS_MODE, os.geteuid())
+    # TODO: logs might contain sensitive data such as contents of the
+    # private key! #525
+    le_util.make_or_verify_dir(args.logs_dir, 0o700, os.geteuid())
+    _setup_logging(args)
+
+    def handle_exception_common():
+        """Logs the exception and reraises it if in debug mode."""
+        logger.debug("Exiting abnormally", exc_info=True)
+        if args.debug:
+            raise
+
+    try:
+        return main2(cli_args, args, config, plugins)
+    except errors.Error as error:
+        handle_exception_common()
+        return error
+    except KeyboardInterrupt:
+        handle_exception_common()
+        # Ensures a new line is printed
+        return ""
+    except: # pylint: disable=bare-except
+        handle_exception_common()
+        return ("An unexpected error occured. Please see the logfiles in {0} "
+                "for more details.".format(args.logs_dir))
 
 
 if __name__ == "__main__":

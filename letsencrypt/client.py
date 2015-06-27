@@ -397,7 +397,7 @@ class Client(object):
         for dom in domains:
             try:
                 self.installer.enhance(dom, "redirect")
-            except errors.ConfiguratorError:
+            except errors.PluginError:
                 logger.warn("Unable to perform redirect for %s", dom)
 
         self.installer.save("Add Redirects")

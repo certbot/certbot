@@ -45,16 +45,16 @@ class DvsniError(DvAuthError):
     """Let's Encrypt DVSNI error."""
 
 
-# Configurator Errors
-class ConfiguratorError(Error):
-    """Let's Encrypt Configurator error."""
+# Plugin Errors
+class PluginError(Error):
+    """Let's Encrypt Plugin error."""
 
 
-class NoInstallationError(ConfiguratorError):
+class NoInstallationError(PluginError):
     """Let's Encrypt No Installation error."""
 
 
-class MisconfigurationError(ConfiguratorError):
+class MisconfigurationError(PluginError):
     """Let's Encrypt Misconfiguration error."""
 
 

@@ -20,7 +20,7 @@ class DvsniPerformTest(util.ApacheTest):
     def setUp(self):
         super(DvsniPerformTest, self).setUp()
 
-        with mock.patch("letsencrypt_apache.configurator."
+        with mock.patch("letsencrypt_apache.configurator.ApacheConfigurator."
                         "mod_loaded") as mock_load:
             mock_load.return_value = True
             config = util.get_apache_configurator(
