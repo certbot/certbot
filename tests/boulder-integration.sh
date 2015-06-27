@@ -10,27 +10,15 @@
 #
 # Note: this script is called by Boulder integration test suite!
 
-root="$(mktemp -d)"
-echo "\nRoot integration tests directory: $root"
-store_flags="--config-dir $root/conf --work-dir $root/work"
-store_flags="$store_flags --logs-dir $root/logs"
-
+. ./tests/integration/_common.sh
 export PATH="/usr/sbin:$PATH"  # /usr/sbin/nginx
 
 
 common() {
-    # first three flags required, rest is handy defaults
-    letsencrypt \
-        --server "${SERVER:-http://localhost:4000/acme/new-reg}" \
-        --no-verify-ssl \
-        --dvsni-port 5001 \
-        $store_flags \
-        --text \
-        --agree-eula \
-        --email "" \
+    letsencrypt_test \
         --authenticator standalone \
         --installer null \
-        -vvvvvvv "$@"
+        "$@"
 }
 
 common --domains le1.wtf auth
@@ -67,5 +55,5 @@ done
 
 if type nginx;
 then
-    . ./tests/boulder-integration-nginx.sh
+    . ./tests/integration/nginx.sh
 fi
