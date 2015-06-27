@@ -64,6 +64,11 @@ class NginxConfigurator(common.Plugin):
             "'nginx' binary, used for 'configtest' and retrieving nginx "
             "version number.")
 
+    @property
+    def nginx_conf(self):
+        """Nginx config file path."""
+        return os.path.join(self.conf("server_root"), "nginx.conf")
+
     def __init__(self, *args, **kwargs):
         """Initialize an Nginx Configurator.
 
@@ -347,7 +352,7 @@ class NginxConfigurator(common.Plugin):
         :rtype: bool
 
         """
-        return nginx_restart(self.conf('ctl'))
+        return nginx_restart(self.conf('ctl'), self.nginx_conf)
 
     def config_test(self):  # pylint: disable=no-self-use
         """Check the configuration of Nginx for errors.
@@ -358,7 +363,7 @@ class NginxConfigurator(common.Plugin):
         """
         try:
             proc = subprocess.Popen(
-                [self.conf('ctl'), "-t"],
+                [self.conf('ctl'), "-c", self.nginx_conf, "-t"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
             stdout, stderr = proc.communicate()
@@ -403,11 +408,12 @@ class NginxConfigurator(common.Plugin):
         """
         try:
             proc = subprocess.Popen(
-                [self.conf('ctl'), "-V"],
+                [self.conf('ctl'), "-c", self.nginx_conf, "-V"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
             text = proc.communicate()[1]  # nginx prints output to stderr
-        except (OSError, ValueError):
+        except (OSError, ValueError) as error:
+            logging.debug(error, exc_info=True)
             raise errors.PluginError(
                 "Unable to run %s -V" % self.conf('ctl'))
 
@@ -556,7 +562,7 @@ class NginxConfigurator(common.Plugin):
             self.restart()
 
 
-def nginx_restart(nginx_ctl):
+def nginx_restart(nginx_ctl, nginx_conf="/etc/nginx.conf"):
     """Restarts the Nginx Server.
 
     .. todo:: Nginx restart is fatal if the configuration references
@@ -567,14 +573,14 @@ def nginx_restart(nginx_ctl):
 
     """
     try:
-        proc = subprocess.Popen([nginx_ctl, "-s", "reload"],
+        proc = subprocess.Popen([nginx_ctl, "-c", nginx_conf, "-s", "reload"],
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
         stdout, stderr = proc.communicate()
 
         if proc.returncode != 0:
             # Maybe Nginx isn't running
-            nginx_proc = subprocess.Popen([nginx_ctl],
+            nginx_proc = subprocess.Popen([nginx_ctl, "-c", nginx_conf],
                                           stdout=subprocess.PIPE,
                                           stderr=subprocess.PIPE)
             stdout, stderr = nginx_proc.communicate()
