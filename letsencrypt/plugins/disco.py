@@ -75,7 +75,7 @@ class PluginEntryPoint(object):
                 if iface.implementedBy(self.plugin_cls):
                     logger.debug(
                         "%s implements %s but object does not verify: %s",
-                        self.plugin_cls, iface.__name__, error)
+                        self.plugin_cls, iface.__name__, error, exc_info=True)
                 return False
         return True
 
@@ -93,10 +93,14 @@ class PluginEntryPoint(object):
             try:
                 self._initialized.prepare()
             except errors.MisconfigurationError as error:
-                logger.debug("Misconfigured %r: %s", self, error)
+                logger.debug("Misconfigured %r: %s", self, error, exc_info=True)
                 self._prepared = error
             except errors.NoInstallationError as error:
-                logger.debug("No installation (%r): %s", self, error)
+                logger.debug(
+                    "No installation (%r): %s", self, error, exc_info=True)
+                self._prepared = error
+            except errors.PluginError as error:
+                logger.debug("Other error:(%r): %s", self, error, exc_info=True)
                 self._prepared = error
             else:
                 self._prepared = True
