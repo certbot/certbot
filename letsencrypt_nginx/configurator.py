@@ -80,8 +80,7 @@ class NginxConfigurator(common.Plugin):
         super(NginxConfigurator, self).__init__(*args, **kwargs)
 
         # Verify that all directories and files exist with proper permissions
-        if os.geteuid() == 0:
-            self._verify_setup()
+        self._verify_setup()
 
         # Files to save
         self.save_notes = ""
@@ -294,6 +293,12 @@ class NginxConfigurator(common.Plugin):
         """
         snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
         ssl_block = [['listen', '{0} ssl'.format(self.config.dvsni_port)],
+                     # access and error logs necessary for integration
+                     # testing (non-root)
+                     ['access_log', os.path.join(
+                         self.config.work_dir, 'access.log')],
+                     ['error_log', os.path.join(
+                         self.config.work_dir, 'error.log')],
                      ['ssl_certificate', snakeoil_cert],
                      ['ssl_certificate_key', snakeoil_key],
                      ['include', self.parser.loc["ssl_options"]]]

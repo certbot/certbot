@@ -111,12 +111,16 @@ class NginxConfiguratorTest(util.NginxTest):
 
         self.config.parser.load()
 
+        access_log = os.path.join(self.work_dir, "access.log")
+        error_log = os.path.join(self.work_dir, "error.log")
         self.assertEqual([[['server'],
                            [['listen', '69.50.225.155:9000'],
                             ['listen', '127.0.0.1'],
                             ['server_name', '.example.com'],
                             ['server_name', 'example.*'],
                             ['listen', '5001 ssl'],
+                            ['access_log', access_log],
+                            ['error_log', error_log],
                             ['ssl_certificate', 'example/cert.pem'],
                             ['ssl_certificate_key', 'example/key.pem'],
                             ['include',
@@ -132,6 +136,8 @@ class NginxConfiguratorTest(util.NginxTest):
                             [['root', 'html'],
                              ['index', 'index.html index.htm']]],
                            ['listen', '5001 ssl'],
+                           ['access_log', access_log],
+                           ['error_log', error_log],
                            ['ssl_certificate', '/etc/nginx/cert.pem'],
                            ['ssl_certificate_key', '/etc/nginx/key.pem'],
                            ['include',

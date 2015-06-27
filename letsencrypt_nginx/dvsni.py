@@ -134,6 +134,12 @@ class NginxDvsni(common.Dvsni):
 
         block.extend([['server_name', achall.nonce_domain],
                       ['include', self.configurator.parser.loc["ssl_options"]],
+                      # access and error logs necessary for
+                      # integration testing (non-root)
+                      ['access_log', os.path.join(
+                          self.configurator.config.work_dir, 'access.log')],
+                      ['error_log', os.path.join(
+                          self.configurator.config.work_dir, 'error.log')],
                       ['ssl_certificate', self.get_cert_file(achall)],
                       ['ssl_certificate_key', achall.key.file],
                       [['location', '/'], [['root', document_root]]]])
