@@ -1,6 +1,12 @@
 """Manual plugin."""
 import os
+import logging
+import shutil
+import signal
+import subprocess
 import sys
+import tempfile
+import time
 
 import zope.component
 import zope.interface
@@ -8,8 +14,12 @@ import zope.interface
 from acme import challenges
 from acme import jose
 
+from letsencrypt import errors
 from letsencrypt import interfaces
 from letsencrypt.plugins import common
+
+
+logger = logging.getLogger(__name__)
 
 
 class ManualAuthenticator(common.Plugin):
@@ -43,8 +53,8 @@ command on the target server (as root):
     # anything recursively under the cwd
 
     HTTP_TEMPLATE = """\
-mkdir -p /tmp/letsencrypt/public_html/{response.URI_ROOT_PATH}
-cd /tmp/letsencrypt/public_html
+mkdir -p {root}/public_html/{response.URI_ROOT_PATH}
+cd {root}/public_html
 echo -n {achall.token} > {response.URI_ROOT_PATH}/{response.path}
 # run only once per server:
 python -c "import BaseHTTPServer, SimpleHTTPServer; \\
@@ -55,8 +65,8 @@ s.serve_forever()" """
 
     # https://www.piware.de/2011/01/creating-an-https-server-in-python/
     HTTPS_TEMPLATE = """\
-mkdir -p /tmp/letsencrypt/public_html/{response.URI_ROOT_PATH}
-cd /tmp/letsencrypt/public_html
+mkdir -p {root}/public_html/{response.URI_ROOT_PATH}
+cd {root}/public_html
 echo -n {achall.token} > {response.URI_ROOT_PATH}/{response.path}
 # run only once per server:
 openssl req -new -newkey rsa:4096 -subj "/" -days 1 -nodes -x509 -keyout ../key.pem -out ../cert.pem
@@ -77,6 +87,14 @@ s.serve_forever()" """
         super(ManualAuthenticator, self).__init__(*args, **kwargs)
         self.template = (self.HTTP_TEMPLATE if self.config.no_simple_http_tls
                          else self.HTTPS_TEMPLATE)
+        self._root = (tempfile.mkdtemp() if self.conf("test-mode")
+                      else "/tmp/letsencrypt")
+
+    @classmethod
+    def add_parser_arguments(cls, add):
+        add("test-mode", action="store_true",
+            help="Test mode. Executes the manual command in subprocess. "
+            "Requires openssl to be installed unless --no-simple-http-tls.")
 
     def prepare(self):  # pylint: disable=missing-docstring,no-self-use
         pass  # pragma: no cover
@@ -110,17 +128,44 @@ binary for temporary key/certificate generation.""".replace("\n", "")
             tls=(not self.config.no_simple_http_tls))
         assert response.good_path  # is encoded os.urandom(18) good?
 
-        self._notify_and_wait(self.MESSAGE_TEMPLATE.format(
-            achall=achall, response=response, uri=response.uri(achall.domain),
-            ct=response.CONTENT_TYPE, command=self.template.format(
-                achall=achall, response=response, ct=response.CONTENT_TYPE,
-                port=(response.port if self.config.simple_http_port is None
-                      else self.config.simple_http_port))))
+        command = self.template.format(
+            root=self._root, achall=achall, response=response,
+            ct=response.CONTENT_TYPE, port=(
+                response.port if self.config.simple_http_port is None
+                else self.config.simple_http_port))
+        if self.conf("test-mode"):
+            logger.debug("Test mode. Executing the manual command: %s", command)
+            try:
+                # pylint: disable=attribute-defined-outside-init
+                self._httpd = subprocess.Popen(
+                    command,
+                    # don't care about setting stdout and stderr,
+                    # we're in test mode anyway
+                    shell=True,
+                    # "preexec_fn" is UNIX specific, but so is "command"
+                    preexec_fn=os.setsid)
+            except OSError as error:  # ValueError should not happen!
+                logging.debug(
+                    "Couldn't execute manual command", error, exc_info=True)
+                return False
+            logger.debug("Manual command running as PID %s.", self._httpd.pid)
+            # give it some time to bootstrap, before we try to verify
+            # (cert generation in case of simpleHttpS might take time)
+            time.sleep(4)  # XXX
+            if self._httpd.poll():
+                raise errors.Error("Couldn't execute manual command")
+        else:
+            self._notify_and_wait(self.MESSAGE_TEMPLATE.format(
+                achall=achall, response=response,
+                uri=response.uri(achall.domain), ct=response.CONTENT_TYPE,
+                command=command))
 
         if response.simple_verify(
                 achall.challb, achall.domain, self.config.simple_http_port):
             return response
         else:
+            if self.conf("test-mode") and self._httpd.poll():
+                return False
             return None
 
     def _notify_and_wait(self, message):  # pylint: disable=no-self-use
@@ -130,5 +175,13 @@ binary for temporary key/certificate generation.""".replace("\n", "")
         sys.stdout.write(message)
         raw_input("Press ENTER to continue")
 
-    def cleanup(self, achalls):  # pylint: disable=missing-docstring,no-self-use
-        pass  # pragma: no cover
+    def cleanup(self, achalls):
+        # pylint: disable=missing-docstring,no-self-use,unused-argument
+        if self.conf("test-mode"):
+            if self._httpd.poll() is None:
+                logger.debug("Terminating manual command process")
+                os.killpg(self._httpd.pid, signal.SIGTERM)
+            else:
+                logger.debug("Manual command process already terminated "
+                             "with %s code", self._httpd.returncode)
+            shutil.rmtree(self._root)

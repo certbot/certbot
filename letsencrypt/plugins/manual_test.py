@@ -15,7 +15,8 @@ class ManualAuthenticatorTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.plugins.manual import ManualAuthenticator
         self.config = mock.MagicMock(
-            no_simple_http_tls=True, simple_http_port=4430)
+            no_simple_http_tls=True, simple_http_port=4430,
+            manual_test_mode=False)
         self.auth = ManualAuthenticator(config=self.config, name="manual")
         self.achalls = [achallenges.SimpleHTTP(
             challb=acme_util.SIMPLE_HTTP, domain="foo.com", key=None)]
