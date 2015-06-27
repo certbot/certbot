@@ -13,6 +13,7 @@ from acme import challenges
 
 from letsencrypt import achallenges
 from letsencrypt import constants as core_constants
+from letsencrypt import crypto_util
 from letsencrypt import errors
 from letsencrypt import interfaces
 from letsencrypt import le_util
@@ -263,6 +264,18 @@ class NginxConfigurator(common.Plugin):
 
         return all_names
 
+    def _get_snakeoil_paths(self):
+        # TODO: generate only once
+        tmp_dir = os.path.join(self.config.work_dir, "snakeoil")
+        key = crypto_util.init_save_key(
+            key_size=1024, key_dir=tmp_dir, keyname="key.pem")
+        cert_pem = crypto_util.make_ss_cert(
+            key.pem, domains=[socket.gethostname()])
+        cert = os.path.join(tmp_dir, "cert.pem")
+        with open(cert, 'w') as cert_file:
+            cert_file.write(cert_pem)
+        return cert, key.file
+
     def _make_server_ssl(self, vhost):
         """Makes a server SSL based on server_name and filename by adding
         a 'listen 443 ssl' directive to the server block.
@@ -274,11 +287,10 @@ class NginxConfigurator(common.Plugin):
         :type vhost: :class:`~letsencrypt_nginx.obj.VirtualHost`
 
         """
+        snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
         ssl_block = [['listen', '443 ssl'],
-                     ['ssl_certificate',
-                      '/etc/ssl/certs/ssl-cert-snakeoil.pem'],
-                     ['ssl_certificate_key',
-                      '/etc/ssl/private/ssl-cert-snakeoil.key'],
+                     ['ssl_certificate', snakeoil_cert],
+                     ['ssl_certificate_key', snakeoil_key],
                      ['include', self.parser.loc["ssl_options"]]]
         self.parser.add_server_directives(
             vhost.filep, vhost.names, ssl_block)

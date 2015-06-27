@@ -1,8 +1,10 @@
 """Test for letsencrypt_nginx.configurator."""
+import os
 import shutil
 import unittest
 
 import mock
+import OpenSSL
 
 from acme import challenges
 from acme import messages
@@ -265,6 +267,18 @@ class NginxConfiguratorTest(util.NginxTest):
         mocked.communicate.return_value = ('', '')
         mocked.returncode = 0
         self.assertTrue(self.config.config_test())
+
+    def test_get_snakeoil_paths(self):
+        # pylint: disable=protected-access
+        cert, key = self.config._get_snakeoil_paths()
+        self.assertTrue(os.path.exists(cert))
+        self.assertTrue(os.path.exists(key))
+        with open(cert) as cert_file:
+            OpenSSL.crypto.load_certificate(
+                OpenSSL.crypto.FILETYPE_PEM, cert_file.read())
+        with open(key) as key_file:
+            OpenSSL.crypto.load_privatekey(
+                OpenSSL.crypto.FILETYPE_PEM, key_file.read())
 
 
 if __name__ == "__main__":
