@@ -281,8 +281,10 @@ class NginxConfigurator(common.Plugin):
         return cert, key.file
 
     def _make_server_ssl(self, vhost):
-        """Makes a server SSL based on server_name and filename by adding
-        a 'listen 443 ssl' directive to the server block.
+        """Make a server SSL.
+
+        Make a server SSL based on server_name and filename by adding a
+        ``listen IConfig.dvsni_port ssl`` directive to the server block.
 
         .. todo:: Maybe this should create a new block instead of modifying
             the existing one?
