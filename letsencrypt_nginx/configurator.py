@@ -288,7 +288,7 @@ class NginxConfigurator(common.Plugin):
 
         """
         snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
-        ssl_block = [['listen', '443 ssl'],
+        ssl_block = [['listen', '{0} ssl'.format(self.config.dvsni_port)],
                      ['ssl_certificate', snakeoil_cert],
                      ['ssl_certificate_key', snakeoil_key],
                      ['include', self.parser.loc["ssl_options"]]]
@@ -296,7 +296,7 @@ class NginxConfigurator(common.Plugin):
             vhost.filep, vhost.names, ssl_block)
         vhost.ssl = True
         vhost.raw.extend(ssl_block)
-        vhost.addrs.add(obj.Addr('', '443', True, False))
+        vhost.addrs.add(obj.Addr('', str(self.config.dvsni_port), True, False))
 
     def get_all_certs_keys(self):
         """Find all existing keys, certs from configuration.

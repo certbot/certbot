@@ -53,6 +53,7 @@ def get_nginx_configurator(
             backup_dir=backups,
             temp_checkpoint_dir=os.path.join(work_dir, "temp_checkpoints"),
             in_progress_dir=os.path.join(backups, "IN_PROGRESS"),
+            dvsni_port=5001,
         ),
         name="nginx",
         version=version)

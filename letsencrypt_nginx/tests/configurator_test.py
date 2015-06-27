@@ -57,7 +57,7 @@ class NginxConfiguratorTest(util.NginxTest):
         filep = self.config.parser.abs_path('sites-enabled/example.com')
         self.config.parser.add_server_directives(
             filep, set(['.example.com', 'example.*']),
-            [['listen', '443 ssl']])
+            [['listen', '5001 ssl']])
         self.config.save()
 
         # pylint: disable=protected-access
@@ -66,7 +66,7 @@ class NginxConfiguratorTest(util.NginxTest):
                                         ['listen', '127.0.0.1'],
                                         ['server_name', '.example.com'],
                                         ['server_name', 'example.*'],
-                                        ['listen', '443 ssl']]]],
+                                        ['listen', '5001 ssl']]]],
                          parsed[0])
 
     def test_choose_vhost(self):
@@ -100,7 +100,7 @@ class NginxConfiguratorTest(util.NginxTest):
         nginx_conf = self.config.parser.abs_path('nginx.conf')
         example_conf = self.config.parser.abs_path('sites-enabled/example.com')
 
-        # Get the default 443 vhost
+        # Get the default SSL vhost
         self.config.deploy_cert(
             "www.example.com",
             "example/cert.pem", "example/key.pem")
@@ -116,7 +116,7 @@ class NginxConfiguratorTest(util.NginxTest):
                             ['listen', '127.0.0.1'],
                             ['server_name', '.example.com'],
                             ['server_name', 'example.*'],
-                            ['listen', '443 ssl'],
+                            ['listen', '5001 ssl'],
                             ['ssl_certificate', 'example/cert.pem'],
                             ['ssl_certificate_key', 'example/key.pem'],
                             ['include',
@@ -131,7 +131,7 @@ class NginxConfiguratorTest(util.NginxTest):
                            [['location', '/'],
                             [['root', 'html'],
                              ['index', 'index.html index.htm']]],
-                           ['listen', '443 ssl'],
+                           ['listen', '5001 ssl'],
                            ['ssl_certificate', '/etc/nginx/cert.pem'],
                            ['ssl_certificate_key', '/etc/nginx/key.pem'],
                            ['include',
@@ -142,7 +142,7 @@ class NginxConfiguratorTest(util.NginxTest):
         nginx_conf = self.config.parser.abs_path('nginx.conf')
         example_conf = self.config.parser.abs_path('sites-enabled/example.com')
 
-        # Get the default 443 vhost
+        # Get the default SSL vhost
         self.config.deploy_cert(
             "www.example.com",
             "example/cert.pem", "example/key.pem")

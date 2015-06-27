@@ -47,7 +47,8 @@ class NginxDvsni(common.Dvsni):
         self.configurator.save()
 
         addresses = []
-        default_addr = "443 default_server ssl"
+        default_addr = "{0} default_server ssl".format(
+            self.configurator.config.dvsni_port)
 
         for achall in self.achalls:
             vhost = self.configurator.choose_vhost(achall.domain)
