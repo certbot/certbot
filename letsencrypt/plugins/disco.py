@@ -71,11 +71,11 @@ class PluginEntryPoint(object):
         for iface in ifaces:  # zope.interface.providedBy(plugin)
             try:
                 zope.interface.verify.verifyObject(iface, self.init())
-            except zope.interface.exceptions.BrokenImplementation:
+            except zope.interface.exceptions.BrokenImplementation as error:
                 if iface.implementedBy(self.plugin_cls):
                     logger.debug(
-                        "%s implements %s but object does "
-                        "not verify", self.plugin_cls, iface.__name__)
+                        "%s implements %s but object does not verify: %s",
+                        self.plugin_cls, iface.__name__, error)
                 return False
         return True
 
