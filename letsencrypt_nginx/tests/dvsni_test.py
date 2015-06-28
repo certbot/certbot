@@ -61,11 +61,6 @@ class DvsniPerformTest(util.NginxTest):
         shutil.rmtree(self.config_dir)
         shutil.rmtree(self.work_dir)
 
-    def test_add_chall(self):
-        self.sni.add_chall(self.achalls[0], 0)
-        self.assertEqual(1, len(self.sni.achalls))
-        self.assertEqual([0], self.sni.indices)
-
     @mock.patch("letsencrypt_nginx.configurator"
                 ".NginxConfigurator.choose_vhost")
     def test_perform(self, mock_choose):
