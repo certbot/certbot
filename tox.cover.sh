@@ -22,5 +22,5 @@ rm -f .coverage  # --cover-erase is off, make sure stats are correct
 # after_success)
 cover letsencrypt 97 && \
     cover acme 100 && \
-    cover letsencrypt_apache 76 && \
+    cover letsencrypt_apache 78 && \
     cover letsencrypt_nginx 96
