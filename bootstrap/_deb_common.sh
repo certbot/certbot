@@ -61,3 +61,4 @@ apt-get install -y --no-install-recommends \
   libffi-dev \
   ca-certificates \
   dpkg-dev \
+  ssl-cert \
