@@ -7,35 +7,20 @@ import mock
 from letsencrypt.display import util as display_util
 
 
-class DisplayT(unittest.TestCase):
-    """Base class for both utility classes."""
-    # pylint: disable=too-few-public-methods
-    def setUp(self):
-        self.choices = [("First", "Description1"), ("Second", "Description2")]
-        self.tags = ["tag1", "tag2", "tag3"]
-        self.tags_choices = [("1", "tag1"), ("2", "tag2"), ("3", "tag3")]
+CHOICES = [("First", "Description1"), ("Second", "Description2")]
+TAGS = ["tag1", "tag2", "tag3"]
+TAGS_CHOICES = [("1", "tag1"), ("2", "tag2"), ("3", "tag3")]
 
 
-def visual(displayer, choices):
-    """Visually test all of the display functions."""
-    displayer.notification("Random notification!")
-    displayer.menu("Question?", choices,
-                   ok_label="O", cancel_label="Can", help_label="??")
-    displayer.menu("Question?", [choice[1] for choice in choices],
-                   ok_label="O", cancel_label="Can", help_label="??")
-    displayer.input("Input Message")
-    displayer.yesno("YesNo Message", yes_label="Yessir", no_label="Nosir")
-    displayer.checklist("Checklist Message", [choice[0] for choice in choices])
-
-
-class NcursesDisplayTest(DisplayT):
+class NcursesDisplayTest(unittest.TestCase):
     """Test ncurses display.
 
-    Since this is mostly a wrapper, it might be more helpful to test the actual
-    dialog boxes. The test_visual function will actually display the various
-    boxes but requires the user to do the verification. If something seems amiss
-    please use the test_visual function to debug it, the automatic tests rely
-    on too much mocking.
+    Since this is mostly a wrapper, it might be more helpful to test the
+    actual dialog boxes. The test file located in ./tests/display.py
+    (relative to the root of the repository) will actually display the
+    various boxes but requires the user to do the verification. If
+    something seems amiss please use that test script to debug it, the
+    automatic tests rely on too much mocking.
 
     """
     def setUp(self):
@@ -43,7 +28,7 @@ class NcursesDisplayTest(DisplayT):
         self.displayer = display_util.NcursesDisplay()
 
         self.default_menu_options = {
-            "choices": self.choices,
+            "choices": CHOICES,
             "ok_label": "OK",
             "cancel_label": "Cancel",
             "help_button": False,
@@ -63,7 +48,7 @@ class NcursesDisplayTest(DisplayT):
     def test_menu_tag_and_desc(self, mock_menu):
         mock_menu.return_value = (display_util.OK, "First")
 
-        ret = self.displayer.menu("Message", self.choices)
+        ret = self.displayer.menu("Message", CHOICES)
         mock_menu.assert_called_with("Message", **self.default_menu_options)
 
         self.assertEqual(ret, (display_util.OK, 0))
@@ -72,7 +57,7 @@ class NcursesDisplayTest(DisplayT):
     def test_menu_tag_and_desc_cancel(self, mock_menu):
         mock_menu.return_value = (display_util.CANCEL, "")
 
-        ret = self.displayer.menu("Message", self.choices)
+        ret = self.displayer.menu("Message", CHOICES)
 
         mock_menu.assert_called_with("Message", **self.default_menu_options)
 
@@ -82,10 +67,10 @@ class NcursesDisplayTest(DisplayT):
     def test_menu_desc_only(self, mock_menu):
         mock_menu.return_value = (display_util.OK, "1")
 
-        ret = self.displayer.menu("Message", self.tags, help_label="More Info")
+        ret = self.displayer.menu("Message", TAGS, help_label="More Info")
 
         self.default_menu_options.update(
-            choices=self.tags_choices, help_button=True, help_label="More Info")
+            choices=TAGS_CHOICES, help_button=True, help_label="More Info")
         mock_menu.assert_called_with("Message", **self.default_menu_options)
 
         self.assertEqual(ret, (display_util.OK, 0))
@@ -94,7 +79,7 @@ class NcursesDisplayTest(DisplayT):
     def test_menu_desc_only_help(self, mock_menu):
         mock_menu.return_value = (display_util.HELP, "2")
 
-        ret = self.displayer.menu("Message", self.tags, help_label="More Info")
+        ret = self.displayer.menu("Message", TAGS, help_label="More Info")
 
         self.assertEqual(ret, (display_util.HELP, 1))
 
@@ -102,7 +87,7 @@ class NcursesDisplayTest(DisplayT):
     def test_menu_desc_only_cancel(self, mock_menu):
         mock_menu.return_value = (display_util.CANCEL, "")
 
-        ret = self.displayer.menu("Message", self.tags, help_label="More Info")
+        ret = self.displayer.menu("Message", TAGS, help_label="More Info")
 
         self.assertEqual(ret, (display_util.CANCEL, -1))
 
@@ -125,22 +110,19 @@ class NcursesDisplayTest(DisplayT):
     @mock.patch("letsencrypt.display.util."
                 "dialog.Dialog.checklist")
     def test_checklist(self, mock_checklist):
-        self.displayer.checklist("message", self.tags)
+        self.displayer.checklist("message", TAGS)
 
         choices = [
-            (self.tags[0], "", True),
-            (self.tags[1], "", True),
-            (self.tags[2], "", True),
+            (TAGS[0], "", True),
+            (TAGS[1], "", True),
+            (TAGS[2], "", True),
         ]
         mock_checklist.assert_called_with(
             "message", width=display_util.WIDTH, height=display_util.HEIGHT,
             choices=choices)
 
-    # def test_visual(self):
-    #    visual(self.displayer, self.choices)
 
-
-class FileOutputDisplayTest(DisplayT):
+class FileOutputDisplayTest(unittest.TestCase):
     """Test stdout display.
 
     Most of this class has to deal with visual output.  In order to test how the
@@ -168,7 +150,7 @@ class FileOutputDisplayTest(DisplayT):
                 "FileDisplay._get_valid_int_ans")
     def test_menu(self, mock_ans):
         mock_ans.return_value = (display_util.OK, 1)
-        ret = self.displayer.menu("message", self.choices)
+        ret = self.displayer.menu("message", CHOICES)
         self.assertEqual(ret, (display_util.OK, 0))
 
     def test_input_cancel(self):
@@ -202,7 +184,7 @@ class FileOutputDisplayTest(DisplayT):
     @mock.patch("letsencrypt.display.util.FileDisplay.input")
     def test_checklist_valid(self, mock_input):
         mock_input.return_value = (display_util.OK, "2 1")
-        code, tag_list = self.displayer.checklist("msg", self.tags)
+        code, tag_list = self.displayer.checklist("msg", TAGS)
         self.assertEqual(
             (code, set(tag_list)), (display_util.OK, set(["tag1", "tag2"])))
 
@@ -214,7 +196,7 @@ class FileOutputDisplayTest(DisplayT):
             (display_util.OK, "1")
         ]
 
-        ret = self.displayer.checklist("msg", self.tags)
+        ret = self.displayer.checklist("msg", TAGS)
         self.assertEqual(ret, (display_util.OK, ["tag1"]))
 
     @mock.patch("letsencrypt.display.util.FileDisplay.input")
@@ -223,7 +205,7 @@ class FileOutputDisplayTest(DisplayT):
             (display_util.OK, "10"),
             (display_util.CANCEL, "1")
         ]
-        ret = self.displayer.checklist("msg", self.tags)
+        ret = self.displayer.checklist("msg", TAGS)
         self.assertEqual(ret, (display_util.CANCEL, []))
 
     def test_scrub_checklist_input_valid(self):
@@ -240,7 +222,7 @@ class FileOutputDisplayTest(DisplayT):
         ]
         for i, list_ in enumerate(indices):
             set_tags = set(
-                self.displayer._scrub_checklist_input(list_, self.tags))
+                self.displayer._scrub_checklist_input(list_, TAGS))
             self.assertEqual(set_tags, exp[i])
 
     def test_scrub_checklist_input_invalid(self):
@@ -254,13 +236,13 @@ class FileOutputDisplayTest(DisplayT):
         ]
         for list_ in indices:
             self.assertEqual(
-                self.displayer._scrub_checklist_input(list_, self.tags), [])
+                self.displayer._scrub_checklist_input(list_, TAGS), [])
 
     def test_print_menu(self):
         # pylint: disable=protected-access
         # This is purely cosmetic... just make sure there aren't any exceptions
-        self.displayer._print_menu("msg", self.choices)
-        self.displayer._print_menu("msg", self.tags)
+        self.displayer._print_menu("msg", CHOICES)
+        self.displayer._print_menu("msg", TAGS)
 
     def test_wrap_lines(self):
         # pylint: disable=protected-access
@@ -295,10 +277,6 @@ class FileOutputDisplayTest(DisplayT):
                 self.assertEqual(
                     self.displayer._get_valid_int_ans(3),
                     (display_util.CANCEL, -1))
-
-    # def test_visual(self):
-    #    self.displayer = display_util.FileDisplay(sys.stdout)
-    #    visual(self.displayer, self.choices)
 
 
 class SeparateListInputTest(unittest.TestCase):

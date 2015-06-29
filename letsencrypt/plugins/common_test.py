@@ -140,6 +140,11 @@ class DvsniTest(unittest.TestCase):
         from letsencrypt.plugins.common import Dvsni
         self.sni = Dvsni(configurator=mock.MagicMock())
 
+    def test_add_chall(self):
+        self.sni.add_chall(self.achalls[0], 0)
+        self.assertEqual(1, len(self.sni.achalls))
+        self.assertEqual([0], self.sni.indices)
+
     def test_setup_challenge_cert(self):
         # This is a helper function that can be used for handling
         # open context managers more elegantly. It avoids dealing with
