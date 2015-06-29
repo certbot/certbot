@@ -13,6 +13,7 @@ from acme import challenges
 
 from letsencrypt import achallenges
 from letsencrypt import constants as core_constants
+from letsencrypt import crypto_util
 from letsencrypt import errors
 from letsencrypt import interfaces
 from letsencrypt import le_util
@@ -63,6 +64,11 @@ class NginxConfigurator(common.Plugin):
             "'nginx' binary, used for 'configtest' and retrieving nginx "
             "version number.")
 
+    @property
+    def nginx_conf(self):
+        """Nginx config file path."""
+        return os.path.join(self.conf("server_root"), "nginx.conf")
+
     def __init__(self, *args, **kwargs):
         """Initialize an Nginx Configurator.
 
@@ -74,8 +80,7 @@ class NginxConfigurator(common.Plugin):
         super(NginxConfigurator, self).__init__(*args, **kwargs)
 
         # Verify that all directories and files exist with proper permissions
-        if os.geteuid() == 0:
-            self._verify_setup()
+        self._verify_setup()
 
         # Files to save
         self.save_notes = ""
@@ -263,9 +268,23 @@ class NginxConfigurator(common.Plugin):
 
         return all_names
 
+    def _get_snakeoil_paths(self):
+        # TODO: generate only once
+        tmp_dir = os.path.join(self.config.work_dir, "snakeoil")
+        key = crypto_util.init_save_key(
+            key_size=1024, key_dir=tmp_dir, keyname="key.pem")
+        cert_pem = crypto_util.make_ss_cert(
+            key.pem, domains=[socket.gethostname()])
+        cert = os.path.join(tmp_dir, "cert.pem")
+        with open(cert, 'w') as cert_file:
+            cert_file.write(cert_pem)
+        return cert, key.file
+
     def _make_server_ssl(self, vhost):
-        """Makes a server SSL based on server_name and filename by adding
-        a 'listen 443 ssl' directive to the server block.
+        """Make a server SSL.
+
+        Make a server SSL based on server_name and filename by adding a
+        ``listen IConfig.dvsni_port ssl`` directive to the server block.
 
         .. todo:: Maybe this should create a new block instead of modifying
             the existing one?
@@ -274,17 +293,22 @@ class NginxConfigurator(common.Plugin):
         :type vhost: :class:`~letsencrypt_nginx.obj.VirtualHost`
 
         """
-        ssl_block = [['listen', '443 ssl'],
-                     ['ssl_certificate',
-                      '/etc/ssl/certs/ssl-cert-snakeoil.pem'],
-                     ['ssl_certificate_key',
-                      '/etc/ssl/private/ssl-cert-snakeoil.key'],
+        snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
+        ssl_block = [['listen', '{0} ssl'.format(self.config.dvsni_port)],
+                     # access and error logs necessary for integration
+                     # testing (non-root)
+                     ['access_log', os.path.join(
+                         self.config.work_dir, 'access.log')],
+                     ['error_log', os.path.join(
+                         self.config.work_dir, 'error.log')],
+                     ['ssl_certificate', snakeoil_cert],
+                     ['ssl_certificate_key', snakeoil_key],
                      ['include', self.parser.loc["ssl_options"]]]
         self.parser.add_server_directives(
             vhost.filep, vhost.names, ssl_block)
         vhost.ssl = True
         vhost.raw.extend(ssl_block)
-        vhost.addrs.add(obj.Addr('', '443', True, False))
+        vhost.addrs.add(obj.Addr('', str(self.config.dvsni_port), True, False))
 
     def get_all_certs_keys(self):
         """Find all existing keys, certs from configuration.
@@ -335,7 +359,7 @@ class NginxConfigurator(common.Plugin):
         :rtype: bool
 
         """
-        return nginx_restart(self.conf('ctl'))
+        return nginx_restart(self.conf('ctl'), self.nginx_conf)
 
     def config_test(self):  # pylint: disable=no-self-use
         """Check the configuration of Nginx for errors.
@@ -346,7 +370,7 @@ class NginxConfigurator(common.Plugin):
         """
         try:
             proc = subprocess.Popen(
-                [self.conf('ctl'), "-t"],
+                [self.conf('ctl'), "-c", self.nginx_conf, "-t"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
             stdout, stderr = proc.communicate()
@@ -391,11 +415,12 @@ class NginxConfigurator(common.Plugin):
         """
         try:
             proc = subprocess.Popen(
-                [self.conf('ctl'), "-V"],
+                [self.conf('ctl'), "-c", self.nginx_conf, "-V"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
             text = proc.communicate()[1]  # nginx prints output to stderr
-        except (OSError, ValueError):
+        except (OSError, ValueError) as error:
+            logging.debug(error, exc_info=True)
             raise errors.PluginError(
                 "Unable to run %s -V" % self.conf('ctl'))
 
@@ -544,7 +569,7 @@ class NginxConfigurator(common.Plugin):
             self.restart()
 
 
-def nginx_restart(nginx_ctl):
+def nginx_restart(nginx_ctl, nginx_conf="/etc/nginx.conf"):
     """Restarts the Nginx Server.
 
     .. todo:: Nginx restart is fatal if the configuration references
@@ -555,14 +580,14 @@ def nginx_restart(nginx_ctl):
 
     """
     try:
-        proc = subprocess.Popen([nginx_ctl, "-s", "reload"],
+        proc = subprocess.Popen([nginx_ctl, "-c", nginx_conf, "-s", "reload"],
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
         stdout, stderr = proc.communicate()
 
         if proc.returncode != 0:
             # Maybe Nginx isn't running
-            nginx_proc = subprocess.Popen([nginx_ctl],
+            nginx_proc = subprocess.Popen([nginx_ctl, "-c", nginx_conf],
                                           stdout=subprocess.PIPE,
                                           stderr=subprocess.PIPE)
             stdout, stderr = nginx_proc.communicate()
