@@ -68,11 +68,6 @@ class CLITest(unittest.TestCase):
             errors.Error, self._call, ['--debug'] + cmd_arg, attrs)
         self._call(cmd_arg, attrs)
 
-        attrs['view_config_changes.side_effect'] = [KeyboardInterrupt]
-        self.assertRaises(
-            KeyboardInterrupt, self._call, ['--debug'] + cmd_arg, attrs)
-        self._call(cmd_arg, attrs)
-
         attrs['view_config_changes.side_effect'] = [ValueError]
         self.assertRaises(
             ValueError, self._call, ['--debug'] + cmd_arg, attrs)
