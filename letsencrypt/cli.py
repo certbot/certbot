@@ -652,6 +652,16 @@ def main2(cli_args, args, config, plugins):
         displayer = display_util.NcursesDisplay()
     zope.component.provideUtility(displayer)
 
+    # Setup logging ASAP, otherwise "No handlers could be found for
+    # logger ..." TODO: this should be done before plugins discovery
+    for directory in config.config_dir, config.work_dir:
+        le_util.make_or_verify_dir(
+            directory, constants.CONFIG_DIRS_MODE, os.geteuid())
+    # TODO: logs might contain sensitive data such as contents of the
+    # private key! #525
+    le_util.make_or_verify_dir(args.logs_dir, 0o700, os.geteuid())
+    _setup_logging(args)
+
     # do not log `args`, as it contains sensitive data (e.g. revoke --key)!
     logger.debug("Arguments: %r", cli_args)
     logger.debug("Discovered plugins: %r", plugins)
@@ -681,16 +691,6 @@ def main(cli_args=sys.argv[1:]):
     plugins = plugins_disco.PluginsRegistry.find_all()
     args = create_parser(plugins, cli_args).parse_args(cli_args)
     config = configuration.NamespaceConfig(args)
-
-    # Setup logging ASAP, otherwise "No handlers could be found for
-    # logger ..." TODO: this should be done before plugins discovery
-    for directory in config.config_dir, config.work_dir:
-        le_util.make_or_verify_dir(
-            directory, constants.CONFIG_DIRS_MODE, os.geteuid())
-    # TODO: logs might contain sensitive data such as contents of the
-    # private key! #525
-    le_util.make_or_verify_dir(args.logs_dir, 0o700, os.geteuid())
-    _setup_logging(args)
 
     def handle_exception_common():
         """Logs the exception and reraises it if in debug mode."""
