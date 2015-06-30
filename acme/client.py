@@ -506,23 +506,46 @@ class ClientNetwork(object):
                 raise errors.ClientError(
                     'Unexpected response Content-Type: {0}'.format(response_ct))
 
-    def get(self, uri, content_type=JSON_CONTENT_TYPE, **kwargs):
-        """Send GET request.
+        return response
 
-        :raises .ClientError:
+    def _send_request(self, method, url, *args, **kwargs):
+        """Send HTTP request.
+
+        Makes sure that `verify_ssl` is respected. Logs request and
+        response (with headers). For allowed parameters please see
+        `requests.request`.
+
+        :param str method: method for the new `requests.Request` object
+        :param str url: URL for the new `requests.Request` object
+
+        :raises requests.exceptions.RequestException: in case of any problems
 
         :returns: HTTP Response
         :rtype: `requests.Response`
 
+
         """
-        logger.debug('Sending GET request to %s', uri)
-        kwargs.setdefault('verify', self.verify_ssl)
-        try:
-            response = requests.get(uri, **kwargs)
-        except requests.exceptions.RequestException as error:
-            raise errors.ClientError(error)
-        self._check_response(response, content_type=content_type)
+        logging.debug('Sending %s request to %s', method, url)
+        kwargs['verify'] = self.verify_ssl
+        response = requests.request(method, url, *args, **kwargs)
+        logging.debug('Received %s. Headers: %s. Content: %r',
+                      response, response.headers, response.content)
         return response
+
+    def head(self, *args, **kwargs):
+        """Send HEAD request without checking the response.
+
+        Note, that `_check_response` is not called, as it is expected
+        that status code other than successfuly 2xx will be returned, or
+        messages2.Error will be raised by the server.
+
+        """
+        return self._send_request('HEAD', *args, **kwargs)
+
+    def get(self, url, content_type=JSON_CONTENT_TYPE, **kwargs):
+        """Send GET request and check response."""
+        return self._check_response(
+            self._send_request('GET', url, **kwargs), content_type=content_type)
 
     def _add_nonce(self, response):
         if self.REPLAY_NONCE_HEADER in response.headers:
@@ -532,39 +555,19 @@ class ClientNetwork(object):
                 logger.debug('Storing nonce: %r', nonce)
                 self._nonces.add(nonce)
             else:
-                raise errors.ClientError('Invalid nonce ({0}): {1}'.format(
-                    nonce, error))
+                raise errors.BadNonce(nonce, error)
         else:
-            raise errors.ClientError(
-                'Server {0} response did not include a replay nonce'.format(
-                    response.request.method))
+            raise errors.MissingNonce(response)
 
-    def _get_nonce(self, uri):
+    def _get_nonce(self, url):
         if not self._nonces:
-            logger.debug('Requesting fresh nonce by sending HEAD to %s', uri)
-            self._add_nonce(requests.head(uri))
+            logging.debug('Requesting fresh nonce')
+            self._add_nonce(self.head(url))
         return self._nonces.pop()
 
-    def post(self, uri, obj, content_type=JSON_CONTENT_TYPE, **kwargs):
-        """Send POST data.
-
-        :param JSONDeSerializable obj: Will be wrapped in JWS.
-        :param str content_type: Expected ``Content-Type``, fails if not set.
-
-        :raises acme.messages.ClientError:
-
-        :returns: HTTP Response
-        :rtype: `requests.Response`
-
-        """
-        data = self._wrap_in_jws(obj, self._get_nonce(uri))
-        logger.debug('Sending POST data to %s: %s', uri, data)
-        kwargs.setdefault('verify', self.verify_ssl)
-        try:
-            response = requests.post(uri, data=data, **kwargs)
-        except requests.exceptions.RequestException as error:
-            raise errors.ClientError(error)
-
+    def post(self, url, obj, content_type=JSON_CONTENT_TYPE, **kwargs):
+        """POST object wrapped in `.JWS` and check response."""
+        data = self._wrap_in_jws(obj, self._get_nonce(url))
+        response = self._send_request('POST', url, data=data, **kwargs)
         self._add_nonce(response)
-        self._check_response(response, content_type=content_type)
-        return response
+        return self._check_response(response, content_type=content_type)

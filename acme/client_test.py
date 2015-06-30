@@ -357,11 +357,6 @@ class ClientNetworkTest(unittest.TestCase):
         self.net = ClientNetwork(
             key=KEY, alg=jose.RS256, verify_ssl=self.verify_ssl)
 
-        self.nonce = jose.b64encode('Nonce')
-        # pylint: disable=protected-access
-        self.assertEqual(self.net._nonces, set())
-        self.net._nonces.add(self.nonce)
-
         self.response = mock.MagicMock(ok=True, status_code=httplib.OK)
         self.response.headers = {}
         self.response.links = {}
@@ -422,97 +417,127 @@ class ClientNetworkTest(unittest.TestCase):
         self.response.json.side_effect = ValueError
         for response_ct in [self.net.JSON_CONTENT_TYPE, 'foo']:
             self.response.headers['Content-Type'] = response_ct
-            # pylint: disable=protected-access
-            self.net._check_response(self.response)
+            # pylint: disable=protected-access,no-value-for-parameter
+            self.assertEqual(
+                self.response, self.net._check_response(self.response))
 
     def test_check_response_jobj(self):
         self.response.json.return_value = {}
         for response_ct in [self.net.JSON_CONTENT_TYPE, 'foo']:
             self.response.headers['Content-Type'] = response_ct
+            # pylint: disable=protected-access,no-value-for-parameter
+            self.assertEqual(
+                self.response, self.net._check_response(self.response))
+
+    @mock.patch('acme.client.requests')
+    def test_send_request(self, mock_requests):
+        mock_requests.request.return_value = self.response
+        # pylint: disable=protected-access
+        self.assertEqual(self.response, self.net._send_request(
+            'HEAD', 'url', 'foo', bar='baz'))
+        mock_requests.request.assert_called_once_with(
+            'HEAD', 'url', 'foo', verify=mock.ANY, bar='baz')
+
+    @mock.patch('acme.client.requests')
+    def test_send_request_verify_ssl(self, mock_requests):
+        # pylint: disable=protected-access
+        for verify in True, False:
+            mock_requests.request.reset_mock()
+            mock_requests.request.return_value = self.response
+            self.net.verify_ssl = verify
             # pylint: disable=protected-access
-            self.net._check_response(self.response)
+            self.assertEqual(
+                self.response, self.net._send_request('GET', 'url'))
+            mock_requests.request.assert_called_once_with(
+                'GET', 'url', verify=verify)
 
     @mock.patch('acme.client.requests')
-    def test_get_requests_error_passthrough(self, requests_mock):
-        requests_mock.exceptions = requests.exceptions
-        requests_mock.get.side_effect = requests.exceptions.RequestException
-        self.assertRaises(errors.ClientError, self.net.get, 'uri')
-
-    @mock.patch('acme.client.requests')
-    def test_get(self, requests_mock):
+    def test_requests_error_passthrough(self, mock_requests):
+        mock_requests.exceptions = requests.exceptions
+        mock_requests.request.side_effect = requests.exceptions.RequestException
         # pylint: disable=protected-access
-        self.net._check_response = mock.MagicMock()
-        self.net.get('uri', content_type='ct')
-        self.net._check_response.assert_called_once_with(
-            requests_mock.get('uri'), content_type='ct')
+        self.assertRaises(requests.exceptions.RequestException,
+                          self.net._send_request, 'GET', 'uri')
 
-    def _mock_wrap_in_jws(self):
+
+class ClientNetworkWithMockedResponseTest(unittest.TestCase):
+    """Tests for acme.client.ClientNetwork which mock out response."""
+    # pylint: disable=too-many-instance-attributes
+
+    def setUp(self):
+        from acme.client import ClientNetwork
+        self.net = ClientNetwork(key=None, alg=None)
+
+        self.response = mock.MagicMock(ok=True, status_code=httplib.OK)
+        self.response.headers = {}
+        self.response.links = {}
+        self.checked_response = mock.MagicMock()
+        self.obj = mock.MagicMock()
+        self.wrapped_obj = mock.MagicMock()
+        self.content_type = mock.sentinel.content_type
+
+        self.all_nonces = [jose.b64encode('Nonce'), jose.b64encode('Nonce2')]
+        self.available_nonces = self.all_nonces[:]
+        def send_request(*args, **kwargs):
+            # pylint: disable=unused-argument,missing-docstring
+            if self.available_nonces:
+                self.response.headers = {
+                    self.net.REPLAY_NONCE_HEADER: self.available_nonces.pop()}
+            else:
+                self.response.headers = {}
+            return self.response
+
         # pylint: disable=protected-access
-        self.net._wrap_in_jws = self.wrap_in_jws
+        self.net._send_request = self.send_request = mock.MagicMock(
+            side_effect=send_request)
+        self.net._check_response = self.check_response
+        self.net._wrap_in_jws = mock.MagicMock(return_value=self.wrapped_obj)
 
-    @mock.patch('acme.client.requests')
-    def test_post_requests_error_passthrough(self, requests_mock):
-        requests_mock.exceptions = requests.exceptions
-        requests_mock.post.side_effect = requests.exceptions.RequestException
-        self._mock_wrap_in_jws()
-        self.assertRaises(
-            errors.ClientError, self.net.post, 'uri', mock.sentinel.obj)
+    def check_response(self, response, content_type):
+        # pylint: disable=missing-docstring
+        self.assertEqual(self.response, response)
+        self.assertEqual(self.content_type, content_type)
+        return self.checked_response
 
-    @mock.patch('acme.client.requests')
-    def test_post(self, requests_mock):
+    def test_head(self):
+        self.assertEqual(self.response, self.net.head('url', 'foo', bar='baz'))
+        self.send_request.assert_called_once('HEAD', 'url', 'foo', bar='baz')
+
+    def test_get(self):
+        self.assertEqual(self.checked_response, self.net.get(
+            'url', content_type=self.content_type, bar='baz'))
+        self.send_request.assert_called_once_with('GET', 'url', bar='baz')
+
+    def test_post(self):
         # pylint: disable=protected-access
-        self.net._check_response = mock.MagicMock()
-        self._mock_wrap_in_jws()
-        requests_mock.post().headers = {
-            self.net.REPLAY_NONCE_HEADER: self.nonce}
-        self.net.post('uri', mock.sentinel.obj, content_type='ct')
-        self.net._check_response.assert_called_once_with(
-            requests_mock.post('uri', mock.sentinel.wrapped), content_type='ct')
+        self.assertEqual(self.checked_response, self.net.post(
+            'uri', self.obj, content_type=self.content_type))
+        self.net._wrap_in_jws.assert_called_once_with(
+            self.obj, self.all_nonces.pop())
 
-    @mock.patch('acme.client.requests')
-    def test_post_replay_nonce_handling(self, requests_mock):
-        # pylint: disable=protected-access
-        self.net._check_response = mock.MagicMock()
-        self._mock_wrap_in_jws()
+        assert not self.available_nonces
+        self.assertRaises(errors.MissingNonce, self.net.post,
+                          'uri', self.obj, content_type=self.content_type)
+        self.net._wrap_in_jws.assert_called_with(
+            self.obj, self.all_nonces.pop())
 
-        self.net._nonces.clear()
-        self.assertRaises(
-            errors.ClientError, self.net.post, 'uri', mock.sentinel.obj)
+    def test_post_wrong_initial_nonce(self):  # HEAD
+        self.available_nonces = ['f', jose.b64encode('good')]
+        self.assertRaises(errors.BadNonce, self.net.post, 'uri',
+                          self.obj, content_type=self.content_type)
 
-        nonce2 = jose.b64encode('Nonce2')
-        requests_mock.head('uri').headers = {
-            self.net.REPLAY_NONCE_HEADER: nonce2}
-        requests_mock.post('uri').headers = {
-            self.net.REPLAY_NONCE_HEADER: self.nonce}
+    def test_post_wrong_post_response_nonce(self):
+        self.available_nonces = [jose.b64encode('good'), 'f']
+        self.assertRaises(errors.BadNonce, self.net.post, 'uri',
+                          self.obj, content_type=self.content_type)
 
-        self.net.post('uri', mock.sentinel.obj)
-
-        requests_mock.head.assert_called_with('uri')
-        self.wrap_in_jws.assert_called_once_with(mock.sentinel.obj, nonce2)
-        self.assertEqual(self.net._nonces, set([self.nonce]))
-
-        # wrong nonce
-        requests_mock.post('uri').headers = {self.net.REPLAY_NONCE_HEADER: 'F'}
-        self.assertRaises(
-            errors.ClientError, self.net.post, 'uri', mock.sentinel.obj)
-
-    @mock.patch('acme.client.requests')
-    def test_get_post_verify_ssl(self, requests_mock):
-        # pylint: disable=protected-access
-        self._mock_wrap_in_jws()
-        self.net._check_response = mock.MagicMock()
-
-        for verify_ssl in [True, False]:
-            self.net.verify_ssl = verify_ssl
-            self.net.get('uri')
-            self.net._nonces.add('N')
-            requests_mock.post().headers = {
-                self.net.REPLAY_NONCE_HEADER: self.nonce}
-            self.net.post('uri', mock.sentinel.obj)
-            requests_mock.get.assert_called_once_with('uri', verify=verify_ssl)
-            requests_mock.post.assert_called_with(
-                'uri', data=mock.sentinel.wrapped, verify=verify_ssl)
-            requests_mock.reset_mock()
+    def test_head_get_post_error_passthrough(self):
+        self.send_request.side_effect = requests.exceptions.RequestException
+        for method in self.net.head, self.net.get:
+            self.assertRaises(
+                requests.exceptions.RequestException, method, 'GET', 'uri')
+        self.assertRaises(requests.exceptions.RequestException,
+                          self.net.post, 'uri', obj=self.obj)
 
 
 if __name__ == '__main__':
