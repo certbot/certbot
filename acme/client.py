@@ -32,150 +32,18 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
     :ivar key: `.JWK` (private)
     :ivar alg: `.JWASignature`
     :ivar bool verify_ssl: Verify SSL certificates?
+    :ivar .ClientNetwork net: Client network. Useful for testing. If not
+        supplied, it will be initialized using `key`, `alg` and
+        `verify_ssl`.
 
     """
     DER_CONTENT_TYPE = 'application/pkix-cert'
-    JSON_CONTENT_TYPE = 'application/json'
-    JSON_ERROR_CONTENT_TYPE = 'application/problem+json'
-    REPLAY_NONCE_HEADER = 'Replay-Nonce'
 
-    def __init__(self, new_reg_uri, key, alg=jose.RS256, verify_ssl=True):
+    def __init__(self, new_reg_uri, key, alg=jose.RS256,
+                 verify_ssl=True, net=None):
         self.new_reg_uri = new_reg_uri
         self.key = key
-        self.alg = alg
-        self.verify_ssl = verify_ssl
-        self._nonces = set()
-
-    def _wrap_in_jws(self, obj, nonce):
-        """Wrap `JSONDeSerializable` object in JWS.
-
-        .. todo:: Implement ``acmePath``.
-
-        :param JSONDeSerializable obj:
-        :rtype: `.JWS`
-
-        """
-        dumps = obj.json_dumps()
-        logger.debug('Serialized JSON: %s', dumps)
-        return jws.JWS.sign(
-            payload=dumps, key=self.key, alg=self.alg, nonce=nonce).json_dumps()
-
-    @classmethod
-    def _check_response(cls, response, content_type=None):
-        """Check response content and its type.
-
-        .. note::
-           Checking is not strict: wrong server response ``Content-Type``
-           HTTP header is ignored if response is an expected JSON object
-           (c.f. Boulder #56).
-
-        :param str content_type: Expected Content-Type response header.
-            If JSON is expected and not present in server response, this
-            function will raise an error. Otherwise, wrong Content-Type
-            is ignored, but logged.
-
-        :raises .messages.Error: If server response body
-            carries HTTP Problem (draft-ietf-appsawg-http-problem-00).
-        :raises .ClientError: In case of other networking errors.
-
-        """
-        logger.debug('Received response %s (headers: %s): %r',
-                     response, response.headers, response.content)
-
-        response_ct = response.headers.get('Content-Type')
-        try:
-            # TODO: response.json() is called twice, once here, and
-            # once in _get and _post clients
-            jobj = response.json()
-        except ValueError as error:
-            jobj = None
-
-        if not response.ok:
-            if jobj is not None:
-                if response_ct != cls.JSON_ERROR_CONTENT_TYPE:
-                    logger.debug(
-                        'Ignoring wrong Content-Type (%r) for JSON Error',
-                        response_ct)
-                try:
-                    raise messages.Error.from_json(jobj)
-                except jose.DeserializationError as error:
-                    # Couldn't deserialize JSON object
-                    raise errors.ClientError((response, error))
-            else:
-                # response is not JSON object
-                raise errors.ClientError(response)
-        else:
-            if jobj is not None and response_ct != cls.JSON_CONTENT_TYPE:
-                logger.debug(
-                    'Ignoring wrong Content-Type (%r) for JSON decodable '
-                    'response', response_ct)
-
-            if content_type == cls.JSON_CONTENT_TYPE and jobj is None:
-                raise errors.ClientError(
-                    'Unexpected response Content-Type: {0}'.format(response_ct))
-
-    def _get(self, uri, content_type=JSON_CONTENT_TYPE, **kwargs):
-        """Send GET request.
-
-        :raises .ClientError:
-
-        :returns: HTTP Response
-        :rtype: `requests.Response`
-
-        """
-        logger.debug('Sending GET request to %s', uri)
-        kwargs.setdefault('verify', self.verify_ssl)
-        try:
-            response = requests.get(uri, **kwargs)
-        except requests.exceptions.RequestException as error:
-            raise errors.ClientError(error)
-        self._check_response(response, content_type=content_type)
-        return response
-
-    def _add_nonce(self, response):
-        if self.REPLAY_NONCE_HEADER in response.headers:
-            nonce = response.headers[self.REPLAY_NONCE_HEADER]
-            error = jws.Header.validate_nonce(nonce)
-            if error is None:
-                logger.debug('Storing nonce: %r', nonce)
-                self._nonces.add(nonce)
-            else:
-                raise errors.ClientError('Invalid nonce ({0}): {1}'.format(
-                    nonce, error))
-        else:
-            raise errors.ClientError(
-                'Server {0} response did not include a replay nonce'.format(
-                    response.request.method))
-
-    def _get_nonce(self, uri):
-        if not self._nonces:
-            logger.debug('Requesting fresh nonce by sending HEAD to %s', uri)
-            self._add_nonce(requests.head(uri))
-        return self._nonces.pop()
-
-    def _post(self, uri, obj, content_type=JSON_CONTENT_TYPE, **kwargs):
-        """Send POST data.
-
-        :param JSONDeSerializable obj: Will be wrapped in JWS.
-        :param str content_type: Expected ``Content-Type``, fails if not set.
-
-        :raises acme.messages.ClientError:
-
-        :returns: HTTP Response
-        :rtype: `requests.Response`
-
-        """
-        data = self._wrap_in_jws(obj, self._get_nonce(uri))
-        logger.debug('Sending POST data to %s: %s', uri, data)
-        kwargs.setdefault('verify', self.verify_ssl)
-        try:
-            response = requests.post(uri, data=data, **kwargs)
-        except requests.exceptions.RequestException as error:
-            raise errors.ClientError(error)
-
-        self._add_nonce(response)
-        self._check_response(response, content_type=content_type)
-        return response
+        self.net = ClientNetwork(key, alg, verify_ssl) if net is None else net
 
     @classmethod
     def _regr_from_response(cls, response, uri=None, new_authzr_uri=None,
@@ -211,7 +79,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         """
         new_reg = messages.Registration(contact=contact)
 
-        response = self._post(self.new_reg_uri, new_reg)
+        response = self.net.post(self.new_reg_uri, new_reg)
         assert response.status_code == httplib.CREATED  # TODO: handle errors
 
         regr = self._regr_from_response(response)
@@ -230,7 +98,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         :rtype: `.RegistrationResource`
 
         """
-        response = self._post(regr.uri, regr.body)
+        response = self.net.post(regr.uri, regr.body)
 
         # TODO: Boulder returns httplib.ACCEPTED
         #assert response.status_code == httplib.OK
@@ -290,7 +158,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
 
         """
         new_authz = messages.Authorization(identifier=identifier)
-        response = self._post(new_authzr_uri, new_authz)
+        response = self.net.post(new_authzr_uri, new_authz)
         assert response.status_code == httplib.CREATED  # TODO: handle errors
         return self._authzr_from_response(response, identifier)
 
@@ -326,7 +194,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         :raises .UnexpectedUpdate:
 
         """
-        response = self._post(challb.uri, response)
+        response = self.net.post(challb.uri, response)
         try:
             authzr_uri = response.links['up']['url']
         except KeyError:
@@ -377,7 +245,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         :rtype: (`.AuthorizationResource`, `requests.Response`)
 
         """
-        response = self._get(authzr.uri)
+        response = self.net.get(authzr.uri)
         updated_authzr = self._authzr_from_response(
             response, authzr.body.identifier, authzr.uri, authzr.new_cert_uri)
         # TODO: check and raise UnexpectedUpdate
@@ -403,7 +271,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             csr=csr, authorizations=tuple(authzr.uri for authzr in authzrs))
 
         content_type = self.DER_CONTENT_TYPE  # TODO: add 'cert_type 'argument
-        response = self._post(
+        response = self.net.post(
             authzrs[0].new_cert_uri,  # TODO: acme-spec #90
             req,
             content_type=content_type,
@@ -488,8 +356,8 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
 
         """
         content_type = self.DER_CONTENT_TYPE  # TODO: make it a param
-        response = self._get(uri, headers={'Accept': content_type},
-                             content_type=content_type)
+        response = self.net.get(uri, headers={'Accept': content_type},
+                                content_type=content_type)
         return response, jose.ComparableX509(
             M2Crypto.X509.load_cert_der_string(response.content))
 
@@ -551,8 +419,152 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         :raises .ClientError: If revocation is unsuccessful.
 
         """
-        response = self._post(messages.Revocation.url(self.new_reg_uri),
-                              messages.Revocation(certificate=cert))
+        response = self.net.post(messages.Revocation.url(self.new_reg_uri),
+                                 messages.Revocation(certificate=cert))
         if response.status_code != httplib.OK:
             raise errors.ClientError(
                 'Successful revocation must return HTTP OK status')
+
+
+class ClientNetwork(object):
+    """Client network."""
+    JSON_CONTENT_TYPE = 'application/json'
+    JSON_ERROR_CONTENT_TYPE = 'application/problem+json'
+    REPLAY_NONCE_HEADER = 'Replay-Nonce'
+
+    def __init__(self, key, alg=jose.RS256, verify_ssl=True):
+        self.key = key
+        self.alg = alg
+        self.verify_ssl = verify_ssl
+        self._nonces = set()
+
+    def _wrap_in_jws(self, obj, nonce):
+        """Wrap `JSONDeSerializable` object in JWS.
+
+        .. todo:: Implement ``acmePath``.
+
+        :param JSONDeSerializable obj:
+        :rtype: `.JWS`
+
+        """
+        dumps = obj.json_dumps()
+        logger.debug('Serialized JSON: %s', dumps)
+        return jws.JWS.sign(
+            payload=dumps, key=self.key, alg=self.alg, nonce=nonce).json_dumps()
+
+    @classmethod
+    def _check_response(cls, response, content_type=None):
+        """Check response content and its type.
+
+        .. note::
+           Checking is not strict: wrong server response ``Content-Type``
+           HTTP header is ignored if response is an expected JSON object
+           (c.f. Boulder #56).
+
+        :param str content_type: Expected Content-Type response header.
+            If JSON is expected and not present in server response, this
+            function will raise an error. Otherwise, wrong Content-Type
+            is ignored, but logged.
+
+        :raises .messages.Error: If server response body
+            carries HTTP Problem (draft-ietf-appsawg-http-problem-00).
+        :raises .ClientError: In case of other networking errors.
+
+        """
+        logger.debug('Received response %s (headers: %s): %r',
+                     response, response.headers, response.content)
+
+        response_ct = response.headers.get('Content-Type')
+        try:
+            # TODO: response.json() is called twice, once here, and
+            # once in _get and _post clients
+            jobj = response.json()
+        except ValueError as error:
+            jobj = None
+
+        if not response.ok:
+            if jobj is not None:
+                if response_ct != cls.JSON_ERROR_CONTENT_TYPE:
+                    logger.debug(
+                        'Ignoring wrong Content-Type (%r) for JSON Error',
+                        response_ct)
+                try:
+                    raise messages.Error.from_json(jobj)
+                except jose.DeserializationError as error:
+                    # Couldn't deserialize JSON object
+                    raise errors.ClientError((response, error))
+            else:
+                # response is not JSON object
+                raise errors.ClientError(response)
+        else:
+            if jobj is not None and response_ct != cls.JSON_CONTENT_TYPE:
+                logger.debug(
+                    'Ignoring wrong Content-Type (%r) for JSON decodable '
+                    'response', response_ct)
+
+            if content_type == cls.JSON_CONTENT_TYPE and jobj is None:
+                raise errors.ClientError(
+                    'Unexpected response Content-Type: {0}'.format(response_ct))
+
+    def get(self, uri, content_type=JSON_CONTENT_TYPE, **kwargs):
+        """Send GET request.
+
+        :raises .ClientError:
+
+        :returns: HTTP Response
+        :rtype: `requests.Response`
+
+        """
+        logger.debug('Sending GET request to %s', uri)
+        kwargs.setdefault('verify', self.verify_ssl)
+        try:
+            response = requests.get(uri, **kwargs)
+        except requests.exceptions.RequestException as error:
+            raise errors.ClientError(error)
+        self._check_response(response, content_type=content_type)
+        return response
+
+    def _add_nonce(self, response):
+        if self.REPLAY_NONCE_HEADER in response.headers:
+            nonce = response.headers[self.REPLAY_NONCE_HEADER]
+            error = jws.Header.validate_nonce(nonce)
+            if error is None:
+                logger.debug('Storing nonce: %r', nonce)
+                self._nonces.add(nonce)
+            else:
+                raise errors.ClientError('Invalid nonce ({0}): {1}'.format(
+                    nonce, error))
+        else:
+            raise errors.ClientError(
+                'Server {0} response did not include a replay nonce'.format(
+                    response.request.method))
+
+    def _get_nonce(self, uri):
+        if not self._nonces:
+            logger.debug('Requesting fresh nonce by sending HEAD to %s', uri)
+            self._add_nonce(requests.head(uri))
+        return self._nonces.pop()
+
+    def post(self, uri, obj, content_type=JSON_CONTENT_TYPE, **kwargs):
+        """Send POST data.
+
+        :param JSONDeSerializable obj: Will be wrapped in JWS.
+        :param str content_type: Expected ``Content-Type``, fails if not set.
+
+        :raises acme.messages.ClientError:
+
+        :returns: HTTP Response
+        :rtype: `requests.Response`
+
+        """
+        data = self._wrap_in_jws(obj, self._get_nonce(uri))
+        logger.debug('Sending POST data to %s: %s', uri, data)
+        kwargs.setdefault('verify', self.verify_ssl)
+        try:
+            response = requests.post(uri, data=data, **kwargs)
+        except requests.exceptions.RequestException as error:
+            raise errors.ClientError(error)
+
+        self._add_nonce(response)
+        self._check_response(response, content_type=content_type)
+        return response
