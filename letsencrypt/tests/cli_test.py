@@ -2,10 +2,13 @@
 import itertools
 import os
 import shutil
+import traceback
 import tempfile
 import unittest
 
 import mock
+
+from letsencrypt import errors
 
 
 class CLITest(unittest.TestCase):
@@ -20,16 +23,13 @@ class CLITest(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tmp_dir)
 
-    def _call(self, args, client_mock_attrs=None):
+    def _call(self, args):
         from letsencrypt import cli
         args = ['--text', '--config-dir', self.config_dir,
                 '--work-dir', self.work_dir, '--logs-dir', self.logs_dir] + args
         with mock.patch('letsencrypt.cli.sys.stdout') as stdout:
             with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
                 with mock.patch('letsencrypt.cli.client') as client:
-                    if client_mock_attrs:
-                        # pylint: disable=star-args
-                        client.configure_mock(**client_mock_attrs)
                     ret = cli.main(args)
         return ret, stdout, stderr, client
 
@@ -59,36 +59,41 @@ class CLITest(unittest.TestCase):
                   for r in xrange(len(flags)))):
             self._call(['plugins',] + list(args))
 
-    def test_exceptions(self):
-        from letsencrypt import errors
-        cmd_arg = ['config_changes']
-        error = [errors.Error('problem')]
-        attrs = {'view_config_changes.side_effect' : error}
-        self.assertRaises(
-            errors.Error, self._call, ['--debug'] + cmd_arg, attrs)
-
-        attrs['view_config_changes.side_effect'] = [ValueError]
-        self.assertRaises(
-            ValueError, self._call, ['--debug'] + cmd_arg, attrs)
-
     @mock.patch("letsencrypt.cli.sys")
     def test_handle_exception(self, mock_sys):
         # pylint: disable=protected-access
-        import StringIO
         from letsencrypt import cli
-        from letsencrypt import errors
 
-        cli._handle_exception(errors.Error, "detail", None, None)
-        mock_sys.exit.assert_called_once_with("detail")
+        mock_open = mock.mock_open()
+        with mock.patch("letsencrypt.cli.open", mock_open, create=True):
+            exception = Exception("detail")
+            cli._handle_exception(
+                Exception, exc_value=exception, trace=None, args=None)
+            mock_open().write.assert_called_once_with("".join(
+                traceback.format_exception_only(Exception, exception)))
+            error_msg = mock_sys.exit.call_args_list[0][0][0]
+            self.assertTrue("unexpected error" in error_msg)
+
+        with mock.patch("letsencrypt.cli.open", mock_open, create=True):
+            mock_open.side_effect = [KeyboardInterrupt]
+            error = errors.Error("detail")
+            cli._handle_exception(
+                errors.Error, exc_value=error, trace=None, args=None)
+            # assert_any_call used because sys.exit doesn't exit in cli.py
+            mock_sys.exit.assert_any_call("".join(
+                traceback.format_exception_only(errors.Error, error)))
 
         args = mock.MagicMock(debug=False)
-        cli._handle_exception(ValueError, "detail", None, args)
-        self.assertTrue("logfile" in mock_sys.exit.call_args_list[1][0][0])
+        cli._handle_exception(
+            Exception, exc_value=Exception("detail"), trace=None, args=args)
+        error_msg = mock_sys.exit.call_args_list[-1][0][0]
+        self.assertTrue("unexpected error" in error_msg)
 
-        mock_sys.stderr = StringIO.StringIO()
-        exc_value = "A very specific string"
-        cli._handle_exception(KeyboardInterrupt, exc_value, None, None)
-        self.assertTrue(exc_value in mock_sys.stderr.getvalue())
+        interrupt = KeyboardInterrupt("detail")
+        cli._handle_exception(
+            KeyboardInterrupt, exc_value=interrupt, trace=None, args=None)
+        mock_sys.exit.assert_called_with("".join(
+            traceback.format_exception_only(KeyboardInterrupt, interrupt)))
 
 
 if __name__ == '__main__':
