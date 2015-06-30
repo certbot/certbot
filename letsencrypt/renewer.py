@@ -12,6 +12,7 @@ import os
 import sys
 
 import configobj
+import zope.component
 
 from letsencrypt import configuration
 from letsencrypt import cli
@@ -20,6 +21,7 @@ from letsencrypt import crypto_util
 from letsencrypt import notify
 from letsencrypt import storage
 
+from letsencrypt.display import util as display_util
 from letsencrypt.plugins import disco as plugins_disco
 
 
@@ -64,6 +66,7 @@ def renew(cert, old_version):
     # XXX: this loses type data (for example, the fact that key_size
     #      was an int, not a str)
     config.rsa_key_size = int(config.rsa_key_size)
+    config.dvsni_port = int(config.dvsni_port)
     try:
         authenticator = plugins[renewalparams["authenticator"]]
     except KeyError:
@@ -80,14 +83,15 @@ def renew(cert, old_version):
     our_client = client.Client(config, account, authenticator, None)
     with open(cert.version("cert", old_version)) as f:
         sans = crypto_util.get_sans_from_cert(f.read())
-    new_cert, new_key, new_chain = our_client.obtain_certificate(sans)
-    if new_cert and new_key and new_chain:
+    new_certr, new_chain, new_key, _ = our_client.obtain_certificate(sans)
+    if new_chain is not None:
         # XXX: Assumes that there was no key change.  We need logic
         #      for figuring out whether there was or not.  Probably
         #      best is to have obtain_certificate return None for
         #      new_key if the old key is to be used (since save_successor
         #      already understands this distinction!)
-        return cert.save_successor(old_version, new_cert, new_key, new_chain)
+        return cert.save_successor(old_version, new_certr.body.as_pem(),
+                                   new_key.pem, new_chain.as_pem())
         # TODO: Notify results
     else:
         # TODO: Notify negative results
@@ -102,6 +106,9 @@ def _paths_parser(parser):
         help=cli.config_help("config_dir"))
     add("--work-dir", default=cli.flag_default("work_dir"),
         help=cli.config_help("work_dir"))
+    add("--logs-dir", default=cli.flag_default("logs_dir"),
+        help="Path to a directory where logs are stored.")
+
     return parser
 
 
@@ -119,6 +126,8 @@ def main(config=None, args=sys.argv[1:]):
     #       invocations if /etc/letsencrypt/renewal.conf defaults have
     #       turned it off. (The boolean parameter should probably be
     #       called renewer_enabled.)
+
+    zope.component.provideUtility(display_util.FileDisplay(sys.stdout))
 
     cli_config = configuration.RenewerConfiguration(
         _create_parser().parse_args(args))
@@ -140,6 +149,8 @@ def main(config=None, args=sys.argv[1:]):
         rc_config = configobj.ConfigObj(cli_config.renewer_config_file)
         rc_config.merge(configobj.ConfigObj(
             os.path.join(cli_config.renewal_configs_dir, i)))
+        # TODO: this is a dirty hack!
+        rc_config.filename = os.path.join(cli_config.renewal_configs_dir, i)
         try:
             # TODO: Before trying to initialize the RenewableCert object,
             #       we could check here whether the combination of the config
@@ -158,11 +169,6 @@ def main(config=None, args=sys.argv[1:]):
             # user about the existence of an invalid or corrupt renewal
             # config rather than simply ignoring it.
             continue
-        if cert.should_autodeploy():
-            cert.update_all_links_to(cert.latest_common_version())
-            # TODO: restart web server (invoke IInstaller.restart() method)
-            notify.notify("Autodeployed a cert!!!", "root", "It worked!")
-            # TODO: explain what happened
         if cert.should_autorenew():
             # Note: not cert.current_version() because the basis for
             # the renewal is the latest version, even if it hasn't been
@@ -170,4 +176,9 @@ def main(config=None, args=sys.argv[1:]):
             old_version = cert.latest_common_version()
             renew(cert, old_version)
             notify.notify("Autorenewed a cert!!!", "root", "It worked!")
+            # TODO: explain what happened
+        if cert.should_autodeploy():
+            cert.update_all_links_to(cert.latest_common_version())
+            # TODO: restart web server (invoke IInstaller.restart() method)
+            notify.notify("Autodeployed a cert!!!", "root", "It worked!")
             # TODO: explain what happened

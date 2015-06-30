@@ -574,19 +574,25 @@ class RenewableCertTests(unittest.TestCase):
         self.test_rc.configfile["renewalparams"]["rsa_key_size"] = "2048"
         self.test_rc.configfile["renewalparams"]["server"] = "acme.example.com"
         self.test_rc.configfile["renewalparams"]["authenticator"] = "fake"
+        self.test_rc.configfile["renewalparams"]["dvsni_port"] = "4430"
         mock_auth = mock.MagicMock()
         mock_pd.PluginsRegistry.find_all.return_value = {"apache": mock_auth}
         # Fails because "fake" != "apache"
         self.assertFalse(renewer.renew(self.test_rc, 1))
         self.test_rc.configfile["renewalparams"]["authenticator"] = "apache"
         mock_client = mock.MagicMock()
-        mock_client.obtain_certificate.return_value = ("cert", "key", "chain")
+        # pylint: disable=star-args
+        mock_client.obtain_certificate.return_value = (
+            mock.Mock(**{'body.as_pem.return_value': 'cert'}),
+            mock.Mock(**{'as_pem.return_value': 'chain'}),
+            mock.Mock(pem="key"), mock.sentinel.csr)
         mock_c.return_value = mock_client
         self.assertEqual(2, renewer.renew(self.test_rc, 1))
         # TODO: We could also make several assertions about calls that should
         #       have been made to the mock functions here.
         self.assertEqual(mock_da.call_count, 1)
-        mock_client.obtain_certificate.return_value = (None, None, None)
+        mock_client.obtain_certificate.return_value = (
+            mock.sentinel.certr, None, mock.sentinel.key, mock.sentinel.csr)
         # This should fail because the renewal itself appears to fail
         self.assertFalse(renewer.renew(self.test_rc, 1))
 

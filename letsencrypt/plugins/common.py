@@ -174,16 +174,18 @@ class Dvsni(object):
         return response
 
 
-# test utils
+# test utils used by letsencrypt_apache/letsencrypt_nginx (hence
+# "pragma: no cover") TODO: this might quickly lead to dead code (also
+# c.f. #383)
 
-def setup_ssl_options(config_dir, src, dest):
+def setup_ssl_options(config_dir, src, dest):  # pragma: no cover
     """Move the ssl_options into position and return the path."""
     option_path = os.path.join(config_dir, dest)
     shutil.copyfile(src, option_path)
     return option_path
 
 
-def dir_setup(test_dir, pkg):
+def dir_setup(test_dir, pkg):  # pragma: no cover
     """Setup the directories necessary for the configurator."""
     temp_dir = tempfile.mkdtemp("temp")
     config_dir = tempfile.mkdtemp("config")

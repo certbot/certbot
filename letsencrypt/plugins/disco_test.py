@@ -144,6 +144,16 @@ class PluginEntryPointTest(unittest.TestCase):
         self.assertFalse(self.plugin_ep.misconfigured)
         self.assertFalse(self.plugin_ep.available)
 
+    def test_prepare_generic_plugin_error(self):
+        plugin = mock.MagicMock()
+        plugin.prepare.side_effect = errors.PluginError
+        # pylint: disable=protected-access
+        self.plugin_ep._initialized = plugin
+        self.assertTrue(isinstance(self.plugin_ep.prepare(), errors.PluginError))
+        self.assertTrue(self.plugin_ep.prepared)
+        self.assertFalse(self.plugin_ep.misconfigured)
+        self.assertFalse(self.plugin_ep.available)
+
     def test_repr(self):
         self.assertEqual("PluginEntryPoint#sa", repr(self.plugin_ep))
 

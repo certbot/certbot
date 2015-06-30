@@ -14,6 +14,9 @@ from letsencrypt import errors
 from letsencrypt import interfaces
 
 
+logger = logging.getLogger(__name__)
+
+
 class AuthHandler(object):
     """ACME Authorization Handler for a client.
 
@@ -76,7 +79,7 @@ class AuthHandler(object):
         # While there are still challenges remaining...
         while self.dv_c or self.cont_c:
             cont_resp, dv_resp = self._solve_challenges()
-            logging.info("Waiting for verification...")
+            logger.info("Waiting for verification...")
 
             # Send all Responses - this modifies dv_c and cont_c
             self._respond(cont_resp, dv_resp, best_effort)
@@ -89,7 +92,7 @@ class AuthHandler(object):
 
     def _choose_challenges(self, domains):
         """Retrieve necessary challenges to satisfy server."""
-        logging.info("Performing the following challenges:")
+        logger.info("Performing the following challenges:")
         for dom in domains:
             path = gen_challenge_path(
                 self.authzr[dom].body.challenges,
@@ -112,8 +115,8 @@ class AuthHandler(object):
                 dv_resp = self.dv_auth.perform(self.dv_c)
         # This will catch both specific types of errors.
         except errors.AuthorizationError:
-            logging.critical("Failure in setting up challenges.")
-            logging.info("Attempting to clean up outstanding challenges...")
+            logger.critical("Failure in setting up challenges.")
+            logger.info("Attempting to clean up outstanding challenges...")
             self._cleanup_challenges()
             raise
 
@@ -261,7 +264,7 @@ class AuthHandler(object):
         If achall_list is not provided, cleanup all achallenges.
 
         """
-        logging.info("Cleaning up challenges")
+        logger.info("Cleaning up challenges")
 
         if achall_list is None:
             dv_c = self.dv_c
@@ -342,7 +345,7 @@ def challb_to_achall(challb, key, domain):
 
     """
     chall = challb.chall
-    logging.info("%s challenge for %s", chall.typ, domain)
+    logger.info("%s challenge for %s", chall.typ, domain)
 
     if isinstance(chall, challenges.DVSNI):
         return achallenges.DVSNI(
@@ -432,7 +435,7 @@ def _find_smart_path(challbs, preferences, combinations):
     if not best_combo:
         msg = ("Client does not support any combination of challenges that "
                "will satisfy the CA.")
-        logging.fatal(msg)
+        logger.fatal(msg)
         raise errors.AuthorizationError(msg)
 
     return best_combo

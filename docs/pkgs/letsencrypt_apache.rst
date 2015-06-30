@@ -10,6 +10,12 @@
 .. automodule:: letsencrypt_apache.configurator
    :members:
 
+:mod:`letsencrypt_apache.display_ops`
+=====================================
+
+.. automodule:: letsencrypt_apache.display_ops
+   :members:
+
 :mod:`letsencrypt_apache.dvsni`
 ===============================
 
@@ -26,4 +32,11 @@
 ================================
 
 .. automodule:: letsencrypt_apache.parser
+   :members:
+
+
+:mod:`letsencrypt_apache.augeas_configurator`
+=============================================
+
+.. automodule:: letsencrypt_apache.augeas_configurator
    :members:

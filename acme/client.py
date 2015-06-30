@@ -15,6 +15,8 @@ from acme import jws
 from acme import messages
 
 
+logger = logging.getLogger(__name__)
+
 # https://urllib3.readthedocs.org/en/latest/security.html#insecureplatformwarning
 requests.packages.urllib3.contrib.pyopenssl.inject_into_urllib3()
 
@@ -54,7 +56,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
 
         """
         dumps = obj.json_dumps()
-        logging.debug('Serialized JSON: %s', dumps)
+        logger.debug('Serialized JSON: %s', dumps)
         return jws.JWS.sign(
             payload=dumps, key=self.key, alg=self.alg, nonce=nonce).json_dumps()
 
@@ -77,8 +79,8 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         :raises .ClientError: In case of other networking errors.
 
         """
-        logging.debug('Received response %s (headers: %s): %r',
-                      response, response.headers, response.content)
+        logger.debug('Received response %s (headers: %s): %r',
+                     response, response.headers, response.content)
 
         response_ct = response.headers.get('Content-Type')
         try:
@@ -91,7 +93,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         if not response.ok:
             if jobj is not None:
                 if response_ct != cls.JSON_ERROR_CONTENT_TYPE:
-                    logging.debug(
+                    logger.debug(
                         'Ignoring wrong Content-Type (%r) for JSON Error',
                         response_ct)
                 try:
@@ -104,7 +106,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
                 raise errors.ClientError(response)
         else:
             if jobj is not None and response_ct != cls.JSON_CONTENT_TYPE:
-                logging.debug(
+                logger.debug(
                     'Ignoring wrong Content-Type (%r) for JSON decodable '
                     'response', response_ct)
 
@@ -121,7 +123,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         :rtype: `requests.Response`
 
         """
-        logging.debug('Sending GET request to %s', uri)
+        logger.debug('Sending GET request to %s', uri)
         kwargs.setdefault('verify', self.verify_ssl)
         try:
             response = requests.get(uri, **kwargs)
@@ -135,7 +137,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             nonce = response.headers[self.REPLAY_NONCE_HEADER]
             error = jws.Header.validate_nonce(nonce)
             if error is None:
-                logging.debug('Storing nonce: %r', nonce)
+                logger.debug('Storing nonce: %r', nonce)
                 self._nonces.add(nonce)
             else:
                 raise errors.ClientError('Invalid nonce ({0}): {1}'.format(
@@ -147,7 +149,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
 
     def _get_nonce(self, uri):
         if not self._nonces:
-            logging.debug('Requesting fresh nonce by sending HEAD to %s', uri)
+            logger.debug('Requesting fresh nonce by sending HEAD to %s', uri)
             self._add_nonce(requests.head(uri))
         return self._nonces.pop()
 
@@ -164,7 +166,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
 
         """
         data = self._wrap_in_jws(obj, self._get_nonce(uri))
-        logging.debug('Sending POST data to %s: %s', uri, data)
+        logger.debug('Sending POST data to %s: %s', uri, data)
         kwargs.setdefault('verify', self.verify_ssl)
         try:
             response = requests.post(uri, data=data, **kwargs)
@@ -394,7 +396,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
 
         """
         assert authzrs, "Authorizations list is empty"
-        logging.debug("Requesting issuance...")
+        logger.debug("Requesting issuance...")
 
         # TODO: assert len(authzrs) == number of SANs
         req = messages.CertificateRequest(
@@ -458,7 +460,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             now = datetime.datetime.now()
             if when > now:
                 seconds = (when - now).seconds
-                logging.debug('Sleeping for %d seconds', seconds)
+                logger.debug('Sleeping for %d seconds', seconds)
                 time.sleep(seconds)
 
             # Note that we poll with the latest updated Authorization

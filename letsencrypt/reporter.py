@@ -11,6 +11,9 @@ import zope.interface
 from letsencrypt import interfaces
 
 
+logger = logging.getLogger(__name__)
+
+
 class Reporter(object):
     """Collects and displays information to the user.
 
@@ -48,7 +51,7 @@ class Reporter(object):
         """
         assert self.HIGH_PRIORITY <= priority <= self.LOW_PRIORITY
         self.messages.put(self._msg_type(priority, msg, on_crash))
-        logging.info("Reporting to user: %s", msg)
+        logger.info("Reporting to user: %s", msg)
 
     def atexit_print_messages(self, pid=os.getpid()):
         """Function to be registered with atexit to print messages.

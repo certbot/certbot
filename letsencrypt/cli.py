@@ -3,8 +3,10 @@
 import argparse
 import atexit
 import logging
+import logging.handlers
 import os
 import sys
+import time
 
 import configargparse
 import zope.component
@@ -26,6 +28,10 @@ from letsencrypt import reporter
 from letsencrypt.display import util as display_util
 from letsencrypt.display import ops as display_ops
 from letsencrypt.plugins import disco as plugins_disco
+
+
+logger = logging.getLogger(__name__)
+
 
 # Argparse's help formatting has a lot of unhelpful peculiarities, so we want
 # to replace as much of it as we can...
@@ -68,11 +74,7 @@ More detailed help:
 """
 
 
-
 def _account_init(args, config):
-    le_util.make_or_verify_dir(
-        config.config_dir, constants.CONFIG_DIRS_MODE, os.geteuid())
-
     # Prepare for init of Client
     if args.email is None:
         return client.determine_account(config)
@@ -81,24 +83,28 @@ def _account_init(args, config):
             # The way to get the default would be args.email = ""
             # First try existing account
             return account.Account.from_existing_account(config, args.email)
-        except errors.LetsEncryptClientError:
+        except errors.Error:
             try:
                 # Try to make an account based on the email address
                 return account.Account.from_email(config, args.email)
-            except errors.LetsEncryptClientError:
+            except errors.Error:
                 return None
 
 
-def _common_run(args, config, acc, authenticator, installer):
+def _find_domains(args, installer):
     if args.domains is None:
-        doms = display_ops.choose_names(installer)
+        domains = display_ops.choose_names(installer)
     else:
-        doms = args.domains
+        domains = args.domains
 
-    if not doms:
-        sys.exit("Please specify --domains, or --installer that will "
-                 "help in domain names autodiscovery")
+    if not domains:
+        raise errors.Error("Please specify --domains, or --installer that "
+                           "will help in domain names autodiscovery")
 
+    return domains
+
+
+def _init_acme(config, acc, authenticator, installer):
     acme = client.Client(config, acc, authenticator, installer)
 
     # Validate the key and csr
@@ -108,10 +114,12 @@ def _common_run(args, config, acc, authenticator, installer):
         if acc.regr is None:
             try:
                 acme.register()
-            except errors.LetsEncryptClientError:
-                sys.exit("Unable to register an account with ACME server")
+            except errors.Error as error:
+                logger.debug(error)
+                raise errors.Error("Unable to register an account with ACME "
+                                   "server")
 
-    return acme, doms
+    return acme
 
 
 def run(args, config, plugins):
@@ -139,19 +147,26 @@ def run(args, config, plugins):
     if installer is None or authenticator is None:
         return "Configurator could not be determined"
 
-    acme, doms = _common_run(args, config, acc, authenticator, installer)
-    # TODO: Handle errors from _common_run?
-    lineage = acme.obtain_and_enroll_certificate(doms, authenticator,
-                                                 installer, plugins)
+    domains = _find_domains(args, installer)
+    # TODO: Handle errors from _init_acme?
+    acme = _init_acme(config, acc, authenticator, installer)
+    lineage = acme.obtain_and_enroll_certificate(
+        domains, authenticator, installer, plugins)
     if not lineage:
         return "Certificate could not be obtained"
-    acme.deploy_certificate(doms, lineage.privkey, lineage.cert, lineage.chain)
-    acme.enhance_config(doms, args.redirect)
+    acme.deploy_certificate(domains, lineage.privkey, lineage.cert, lineage.chain)
+    acme.enhance_config(domains, args.redirect)
 
 
 def auth(args, config, plugins):
     """Authenticate & obtain cert, but do not install it."""
     # XXX: Update for renewer / RenewableCert
+
+    if args.domains is not None and args.csr is not None:
+        # TODO: --csr could have a priority, when --domains is
+        # supplied, check if CSR matches given domains?
+        return "--domains and --csr are mutually exclusive"
+
     acc = _account_init(args, config)
     if acc is None:
         return None
@@ -166,12 +181,18 @@ def auth(args, config, plugins):
     else:
         installer = None
 
-    # TODO: Handle errors from _common_run?
-    acme, doms = _common_run(
-        args, config, acc, authenticator=authenticator, installer=installer)
-    if not acme.obtain_and_enroll_certificate(
-            doms, authenticator, installer, plugins):
-        return "Certificate could not be obtained"
+    # TODO: Handle errors from _init_acme?
+    acme = _init_acme(config, acc, authenticator, installer)
+
+    if args.csr is not None:
+        certr, chain = acme.obtain_certificate_from_csr(le_util.CSR(
+            file=args.csr[0], data=args.csr[1], form="der"))
+        acme.save_certificate(certr, chain, args.cert_path, args.chain_path)
+    else:
+        domains = _find_domains(args, installer)
+        if not acme.obtain_and_enroll_certificate(
+                domains, authenticator, installer, plugins):
+            return "Certificate could not be obtained"
 
 
 def install(args, config, plugins):
@@ -184,23 +205,23 @@ def install(args, config, plugins):
     installer = display_ops.pick_installer(config, args.installer, plugins)
     if installer is None:
         return "Installer could not be determined"
-    acme, doms = _common_run(
-        args, config, acc, authenticator=None, installer=installer)
-    assert args.cert_path is not None
-    acme.deploy_certificate(doms, acc.key.file, args.cert_path, args.chain_path)
-    acme.enhance_config(doms, args.redirect)
+    domains = _find_domains(args, installer)
+    acme = _init_acme(config, acc, authenticator=None, installer=installer)
+    assert args.cert_path is not None  # required=True in the subparser
+    acme.deploy_certificate(domains, args.key_path, args.cert_path, args.chain_path)
+    acme.enhance_config(domains, args.redirect)
 
 
 def revoke(args, unused_config, unused_plugins):
     """Revoke a previously obtained certificate."""
-    if args.rev_cert is None and args.rev_key is None:
-        return "At least one of --certificate or --key is required"
+    if args.cert_path is None and args.key_path is None:
+        return "At least one of --cert-path or --key-path is required"
 
     # This depends on the renewal config and cannot be completed yet.
     zope.component.getUtility(interfaces.IDisplay).notification(
         "Revocation is not available with the new Boulder server yet.")
     #client.revoke(args.installer, config, plugins, args.no_confirm,
-    #              args.rev_cert, args.rev_key)
+    #              args.cert_path, args.key_path)
 
 
 def rollback(args, config, plugins):
@@ -217,13 +238,13 @@ def config_changes(unused_args, config, unused_plugins):
     client.view_config_changes(config)
 
 
-def plugins_cmd(args, config, plugins):  # TODO: Use IDiplay rathern than print
+def plugins_cmd(args, config, plugins):  # TODO: Use IDisplay rather than print
     """List server software plugins."""
-    logging.debug("Expected interfaces: %s", args.ifaces)
+    logger.debug("Expected interfaces: %s", args.ifaces)
 
     ifaces = [] if args.ifaces is None else args.ifaces
     filtered = plugins.ifaces(ifaces)
-    logging.debug("Filtered plugins: %r", filtered)
+    logger.debug("Filtered plugins: %r", filtered)
 
     if not args.init and not args.prepare:
         print str(filtered)
@@ -231,7 +252,7 @@ def plugins_cmd(args, config, plugins):  # TODO: Use IDiplay rathern than print
 
     filtered.init(config)
     verified = filtered.verify(ifaces)
-    logging.debug("Verified plugins: %r", verified)
+    logger.debug("Verified plugins: %r", verified)
 
     if not args.prepare:
         print str(verified)
@@ -239,14 +260,15 @@ def plugins_cmd(args, config, plugins):  # TODO: Use IDiplay rathern than print
 
     verified.prepare()
     available = verified.available()
-    logging.debug("Prepared plugins: %s", available)
+    logger.debug("Prepared plugins: %s", available)
     print str(available)
 
 
-def read_file(filename):
-    """Returns the given file's contents with universal new line support.
+def read_file(filename, mode="rb"):
+    """Returns the given file's contents.
 
     :param str filename: Filename
+    :param str mode: open mode (see `open`)
 
     :returns: A tuple of filename and its contents
     :rtype: tuple
@@ -255,7 +277,7 @@ def read_file(filename):
 
     """
     try:
-        return filename, open(filename, "rU").read()
+        return filename, open(filename, mode).read()
     except IOError as exc:
         raise argparse.ArgumentTypeError(exc.strerror)
 
@@ -289,7 +311,7 @@ class SilentParser(object):  # pylint: disable=too-few-public-methods
         self.parser.add_argument(*args, **kwargs)
 
 
-HELP_TOPICS = ["all", "security", "paths", "automation", "testing"]
+HELP_TOPICS = ["all", "security", "paths", "automation", "testing", "plugins"]
 
 
 class HelpfulArgumentParser(object):
@@ -303,7 +325,7 @@ class HelpfulArgumentParser(object):
     def __init__(self, args, plugins):
         self.args = args
         plugin_names = [name for name, _p in plugins.iteritems()]
-        self.help_topics = HELP_TOPICS + plugin_names
+        self.help_topics = HELP_TOPICS + plugin_names + [None]
         self.parser = configargparse.ArgParser(
             usage=SHORT_USAGE,
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -325,7 +347,6 @@ class HelpfulArgumentParser(object):
         self.visible_topics = self.determine_help_topics(help_arg)
         #print self.visible_topics
         self.groups = {}  # elements are added by .add_group()
-        self.add_plugin_args(plugins)
 
     def prescan_for_flag(self, flag, possible_arguments):
         """Checks cli input for flags.
@@ -355,9 +376,12 @@ class HelpfulArgumentParser(object):
         it, but can be None for `always documented'.
 
         """
-        if topic and self.visible_topics[topic]:
-            group = self.groups[topic]
-            group.add_argument(*args, **kwargs)
+        if self.visible_topics[topic]:
+            if topic in self.groups:
+                group = self.groups[topic]
+                group.add_argument(*args, **kwargs)
+            else:
+                self.parser.add_argument(*args, **kwargs)
         else:
             kwargs["help"] = argparse.SUPPRESS
             self.parser.add_argument(*args, **kwargs)
@@ -387,7 +411,6 @@ class HelpfulArgumentParser(object):
         may or may not be displayed as help topics.
 
         """
-        # TODO: plugin_parser should be called for every detected plugin
         for name, plugin_ep in plugins.iteritems():
             parser_or_group = self.add_group(name, description=plugin_ep.description)
             #print parser_or_group
@@ -416,12 +439,21 @@ def create_parser(plugins, args):
     """Create parser."""
     helpful = HelpfulArgumentParser(args, plugins)
 
+    # --help is automatically provided by argparse
     helpful.add(
         None, "-v", "--verbose", dest="verbose_count", action="count",
         default=flag_default("verbose_count"), help="This flag can be used "
         "multiple times to incrementally increase the verbosity of output, "
         "e.g. -vvv.")
-    # --help is automatically provided by argparse
+    helpful.add(
+        None, "-t", "--text", dest="text_mode", action="store_true",
+        help="Use the text output instead of the curses UI.")
+    helpful.add(None, "-m", "--email", help=config_help("email"))
+    # positional arg shadows --domains, instead of appending, and
+    # --domains is useful, because it can be stored in config
+    #for subparser in parser_run, parser_auth, parser_install:
+    #    subparser.add_argument("domains", nargs="*", metavar="domain")
+    helpful.add(None, "-d", "--domains", metavar="DOMAIN", action="append")
 
     helpful.add_group(
         "automation",
@@ -436,65 +468,23 @@ def create_parser(plugins, args):
     helpful.add(
         "automation", "--agree-eula", "-e", dest="tos", action="store_true",
         help="Agree to the Let's Encrypt Subscriber Agreement")
-    helpful.add(
-        None, "-t", "--text", dest="text_mode", action="store_true",
-        help="Use the text output instead of the curses UI.")
-
 
     helpful.add_group(
         "testing", description="The following flags are meant for "
         "testing purposes only! Do NOT change them, unless you "
         "really know what you're doing!")
     helpful.add(
+        "testing", "--debug", action="store_true",
+        help="Show tracebacks if the program exits abnormally")
+    helpful.add(
         "testing", "--no-verify-ssl", action="store_true",
         help=config_help("no_verify_ssl"),
         default=flag_default("no_verify_ssl"))
-    # TODO: apache and nginx plugins do NOT respect it
-    helpful.add(
+    helpful.add(    # TODO: apache and nginx plugins do NOT respect it (#479)
         "testing", "--dvsni-port", type=int, default=flag_default("dvsni_port"),
         help=config_help("dvsni_port"))
-
     helpful.add("testing", "--no-simple-http-tls", action="store_true",
                 help=config_help("no_simple_http_tls"))
-
-    subparsers = helpful.parser.add_subparsers(metavar="SUBCOMMAND")
-
-    def add_subparser(name, func):  # pylint: disable=missing-docstring
-        subparser = subparsers.add_parser(
-            name, help=func.__doc__.splitlines()[0], description=func.__doc__)
-        subparser.set_defaults(func=func)
-        return subparser
-
-    add_subparser("run", run)
-    add_subparser("auth", auth)
-    add_subparser("install", install)
-    parser_revoke = add_subparser("revoke", revoke)
-    parser_rollback = add_subparser("rollback", rollback)
-    add_subparser("config_changes", config_changes)
-
-    parser_plugins = add_subparser("plugins", plugins_cmd)
-    parser_plugins.add_argument("--init", action="store_true")
-    parser_plugins.add_argument("--prepare", action="store_true")
-    parser_plugins.add_argument(
-        "--authenticators", action="append_const", dest="ifaces",
-        const=interfaces.IAuthenticator)
-    parser_plugins.add_argument(
-        "--installers", action="append_const", dest="ifaces",
-        const=interfaces.IInstaller)
-
-    helpful.add(None, "--configurator")
-    helpful.add(None, "-a", "--authenticator")
-    helpful.add(None, "-i", "--installer")
-
-    # positional arg shadows --domains, instead of appending, and
-    # --domains is useful, because it can be stored in config
-    #for subparser in parser_run, parser_auth, parser_install:
-    #    subparser.add_argument("domains", nargs="*", metavar="domain")
-
-    helpful.add(None, "-d", "--domains", metavar="DOMAIN", action="append")
-    helpful.add(None, "-k", "--accountkey", type=read_file,
-                help="Path to the account key file")
-    helpful.add(None, "-m", "--email", help=config_help("email"))
 
     helpful.add_group(
         "security", description="Security parameters & server settings")
@@ -507,11 +497,55 @@ def create_parser(plugins, args):
         help="Automatically redirect all HTTP traffic to HTTPS for the newly "
              "authenticated vhost.")
 
+    _paths_parser(helpful)
+    # _plugins_parsing should be the last thing to act upon the main
+    # parser (--help should display plugin-specific options last)
+    _plugins_parsing(helpful, plugins)
+
+    _create_subparsers(helpful)
+
+    return helpful.parser
+
+
+def _create_subparsers(helpful):
+    subparsers = helpful.parser.add_subparsers(metavar="SUBCOMMAND")
+    def add_subparser(name, func):  # pylint: disable=missing-docstring
+        subparser = subparsers.add_parser(
+            name, help=func.__doc__.splitlines()[0], description=func.__doc__)
+        subparser.set_defaults(func=func)
+        return subparser
+
+    # the order of add_subparser() calls is important: it defines the
+    # order in which subparser names will be displayed in --help
+    add_subparser("run", run)
+    parser_auth = add_subparser("auth", auth)
+    parser_install = add_subparser("install", install)
+    parser_revoke = add_subparser("revoke", revoke)
+    parser_rollback = add_subparser("rollback", rollback)
+    add_subparser("config_changes", config_changes)
+    parser_plugins = add_subparser("plugins", plugins_cmd)
+
+    parser_auth.add_argument(
+        "--csr", type=read_file, help="Path to a Certificate Signing "
+        "Request (CSR) in DER format.")
+    parser_auth.add_argument(
+        "--cert-path", default=flag_default("auth_cert_path"),
+        help="When using --csr this is where certificate is saved.")
+    parser_auth.add_argument(
+        "--chain-path", default=flag_default("auth_chain_path"),
+        help="When using --csr this is where certificate chain is saved.")
+
+    parser_install.add_argument(
+        "--cert-path", required=True, help="Path to a certificate that "
+        "is going to be installed.")
+    parser_install.add_argument(
+        "--key-path", required=True, help="Accompynying private key")
+    parser_install.add_argument(
+        "--chain-path", help="Accompanying path to a certificate chain.")
     parser_revoke.add_argument(
-        "--certificate", dest="rev_cert", type=read_file, metavar="CERT_PATH",
-        help="Revoke a specific certificate.")
+        "--cert-path", type=read_file, help="Revoke a specific certificate.")
     parser_revoke.add_argument(
-        "--key", dest="rev_key", type=read_file, metavar="KEY_PATH",
+        "--key-path", type=read_file,
         help="Revoke all certs generated by the provided authorized key.")
 
     parser_rollback.add_argument(
@@ -519,42 +553,97 @@ def create_parser(plugins, args):
         default=flag_default("rollback_checkpoints"),
         help="Revert configuration N number of checkpoints.")
 
-    _paths_parser(helpful)
-
-    return helpful.parser
+    parser_plugins.add_argument(
+        "--init", action="store_true", help="Initialize plugins.")
+    parser_plugins.add_argument(
+        "--prepare", action="store_true",
+        help="Initialize and prepare plugins.")
+    parser_plugins.add_argument(
+        "--authenticators", action="append_const", dest="ifaces",
+        const=interfaces.IAuthenticator,
+        help="Limit to authenticator plugins only.")
+    parser_plugins.add_argument(
+        "--installers", action="append_const", dest="ifaces",
+        const=interfaces.IInstaller, help="Limit to installer plugins only.")
 
 
 def _paths_parser(helpful):
     add = helpful.add
-    helpful.add_group("paths", description="Arguments changing execution paths & servers")
+    helpful.add_group(
+        "paths", description="Arguments changing execution paths & servers")
     add("paths", "--config-dir", default=flag_default("config_dir"),
         help=config_help("config_dir"))
     add("paths", "--work-dir", default=flag_default("work_dir"),
         help=config_help("work_dir"))
-    add("paths", "--backup-dir", default=flag_default("backup_dir"),
-        help=config_help("backup_dir"))
-    add("paths", "--key-dir", default=flag_default("key_dir"),
-        help=config_help("key_dir"))
-    add("paths", "--cert-dir", default=flag_default("certs_dir"),
-        help=config_help("cert_dir"))
-    add("paths", "--le-vhost-ext", default="-le-ssl.conf",
-        help=config_help("le_vhost_ext"))
-    add("paths", "--cert-path", default=flag_default("cert_path"),
-        help=config_help("cert_path"))
-    add("paths", "--chain-path", default=flag_default("chain_path"),
-        help=config_help("chain_path"))
-    add("paths", "--renewer-config-file", default=flag_default("renewer_config_file"),
-        help=config_help("renewer_config_file"))
-    add("paths", "-s", "--server", default=flag_default("server"),
+    add("paths", "--logs-dir", default=flag_default("logs_dir"),
+        help="Logs directory.")
+    add("paths", "--server", default=flag_default("server"),
         help=config_help("server"))
 
 
-def main(args=sys.argv[1:]):
-    """Command line argument parsing and main script execution."""
-    # note: arg parser internally handles --help (and exits afterwards)
-    plugins = plugins_disco.PluginsRegistry.find_all()
-    args = create_parser(plugins, args).parse_args(args)
-    config = configuration.NamespaceConfig(args)
+def _plugins_parsing(helpful, plugins):
+    helpful.add_group(
+        "plugins", description="Let's Encrypt client supports an "
+        "extensible plugins architecture. See '%(prog)s plugins' for a "
+        "list of all available plugins and their names. You can force "
+        "a particular plugin by setting options provided below. Futher "
+        "down this help message you will find plugin-specific options "
+        "(prefixed by --{plugin_name}).")
+    helpful.add(
+        "plugins", "-a", "--authenticator", help="Authenticator plugin name.")
+    helpful.add(
+        "plugins", "-i", "--installer", help="Installer plugin name.")
+    helpful.add(
+        "plugins", "--configurator", help="Name of the plugin that is "
+        "both an authenticator and an installer. Should not be used "
+        "together with --authenticator or --installer.")
+
+    # things should not be reorder past/pre this comment:
+    # plugins_group should be displayed in --help before plugin
+    # specific groups (so that plugins_group.description makes sense)
+
+    helpful.add_plugin_args(plugins)
+
+
+def _setup_logging(args):
+    level = -args.verbose_count * 10
+    fmt = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
+    if args.text_mode:
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter(fmt))
+    else:
+        handler = log.DialogHandler()
+        # dialog box is small, display as less as possible
+        handler.setFormatter(logging.Formatter("%(message)s"))
+    handler.setLevel(level)
+
+    # TODO: use fileConfig?
+
+    # unconditionally log to file for debugging purposes
+    # TODO: change before release?
+    log_file_name = os.path.join(args.logs_dir, 'letsencrypt.log')
+    file_handler = logging.handlers.RotatingFileHandler(
+        log_file_name, maxBytes=2**20, backupCount=10)
+    # rotate on each invocation, rollover only possible when maxBytes
+    # is nonzero and backupCount is nonzero, so we set maxBytes as big
+    # as possible not to overrun in single CLI invocation (1MB).
+    file_handler.doRollover()  # TODO: creates empty letsencrypt.log.1 file
+    file_handler.setLevel(logging.DEBUG)
+    file_handler_formatter = logging.Formatter(fmt=fmt)
+    file_handler_formatter.converter = time.gmtime  # don't use localtime
+    file_handler.setFormatter(file_handler_formatter)
+
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.DEBUG)  # send all records to handlers
+    root_logger.addHandler(handler)
+    root_logger.addHandler(file_handler)
+
+    logger.debug("Root logging level set at %d", level)
+    logger.info("Saving debug log to %s", log_file_name)
+
+
+def main2(cli_args, args, config, plugins):
+    """Continued main script execution."""
 
     # Displayer
     if args.text_mode:
@@ -563,23 +652,17 @@ def main(args=sys.argv[1:]):
         displayer = display_util.NcursesDisplay()
     zope.component.provideUtility(displayer)
 
+    # do not log `args`, as it contains sensitive data (e.g. revoke --key)!
+    logger.debug("Arguments: %r", cli_args)
+    logger.debug("Discovered plugins: %r", plugins)
+
     # Reporter
     report = reporter.Reporter()
     zope.component.provideUtility(report)
     atexit.register(report.atexit_print_messages)
 
-    # Logging
-    level = -args.verbose_count * 10
-    logger = logging.getLogger()
-    logger.setLevel(level)
-    logging.debug("Logging level set at %d", level)
-    if not args.text_mode:
-        logger.addHandler(log.DialogHandler())
-
-    logging.debug("Discovered plugins: %r", plugins)
-
     if not os.geteuid() == 0:
-        logging.warning(
+        logger.warning(
             "Root (sudo) is required to run most of letsencrypt functionality.")
         # check must be done after arg parsing as --help should work
         # w/o root; on the other hand, e.g. "letsencrypt run
@@ -590,6 +673,40 @@ def main(args=sys.argv[1:]):
         #    .format(os.linesep))
 
     return args.func(args, config, plugins)
+
+
+def main(cli_args=sys.argv[1:]):
+    """Command line argument parsing and main script execution."""
+    # note: arg parser internally handles --help (and exits afterwards)
+    plugins = plugins_disco.PluginsRegistry.find_all()
+    args = create_parser(plugins, cli_args).parse_args(cli_args)
+    config = configuration.NamespaceConfig(args)
+
+    # Setup logging ASAP, otherwise "No handlers could be found for
+    # logger ..." TODO: this should be done before plugins discovery
+    for directory in config.config_dir, config.work_dir:
+        le_util.make_or_verify_dir(
+            directory, constants.CONFIG_DIRS_MODE, os.geteuid())
+    # TODO: logs might contain sensitive data such as contents of the
+    # private key! #525
+    le_util.make_or_verify_dir(args.logs_dir, 0o700, os.geteuid())
+    _setup_logging(args)
+
+    def handle_exception_common():
+        """Logs the exception and reraises it if in debug mode."""
+        logger.debug("Exiting abnormally", exc_info=True)
+        if args.debug:
+            raise
+
+    try:
+        return main2(cli_args, args, config, plugins)
+    except errors.Error as error:
+        handle_exception_common()
+        return error
+    except Exception: # pylint: disable=broad-except
+        handle_exception_common()
+        return ("An unexpected error occured. Please see the logfiles in {0} "
+                "for more details.".format(args.logs_dir))
 
 
 if __name__ == "__main__":

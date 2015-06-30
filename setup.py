@@ -59,7 +59,6 @@ letsencrypt_install_requires = [
     # https://pyopenssl.readthedocs.org/en/latest/api/crypto.html#OpenSSL.crypto.X509Req.get_extensions
     'PyOpenSSL>=0.15',
     'pyrfc3339',
-    'python-augeas',
     'python2-pythondialog>=3.2.2rc1',  # Debian squeeze support, cf. #280
     'pytz',
     'requests',
@@ -192,6 +191,8 @@ setup(
         ],
         'letsencrypt.plugins': [
             'manual = letsencrypt.plugins.manual:ManualAuthenticator',
+            # TODO: null should probably not be presented to the user
+            'null = letsencrypt.plugins.null:Installer',
             'standalone = letsencrypt.plugins.standalone.authenticator'
             ':StandaloneAuthenticator',
 

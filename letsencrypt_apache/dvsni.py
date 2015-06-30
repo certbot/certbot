@@ -1,5 +1,4 @@
 """ApacheDVSNI"""
-import logging
 import os
 
 from letsencrypt.plugins import common
@@ -57,12 +56,6 @@ class ApacheDvsni(common.Dvsni):
         default_addr = "*:443"
         for achall in self.achalls:
             vhost = self.configurator.choose_vhost(achall.domain)
-            if vhost is None:
-                logging.error(
-                    "No vhost exists with servername or alias of: %s. "
-                    "No _default_:443 vhost exists. Please specify servernames "
-                    "in the Apache config", achall.domain)
-                return None
 
             # TODO - @jdkasten review this code to make sure it makes sense
             self.configurator.make_server_sni_ready(vhost, default_addr)

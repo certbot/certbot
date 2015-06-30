@@ -1,5 +1,8 @@
 """Tests for letsencrypt.cli."""
 import itertools
+import os
+import shutil
+import tempfile
 import unittest
 
 import mock
@@ -8,13 +11,25 @@ import mock
 class CLITest(unittest.TestCase):
     """Tests for different commands."""
 
-    @classmethod
-    def _call(cls, args):
+    def setUp(self):
+        self.tmp_dir = tempfile.mkdtemp()
+        self.config_dir = os.path.join(self.tmp_dir, 'config')
+        self.work_dir = os.path.join(self.tmp_dir, 'work')
+        self.logs_dir = os.path.join(self.tmp_dir, 'logs')
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp_dir)
+
+    def _call(self, args, client_mock_attrs=None):
         from letsencrypt import cli
-        args = ['--text'] + args
+        args = ['--text', '--config-dir', self.config_dir,
+                '--work-dir', self.work_dir, '--logs-dir', self.logs_dir] + args
         with mock.patch('letsencrypt.cli.sys.stdout') as stdout:
             with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
                 with mock.patch('letsencrypt.cli.client') as client:
+                    if client_mock_attrs:
+                        # pylint: disable=star-args
+                        client.configure_mock(**client_mock_attrs)
                     ret = cli.main(args)
         return ret, stdout, stderr, client
 
@@ -23,6 +38,7 @@ class CLITest(unittest.TestCase):
 
     def test_help(self):
         self.assertRaises(SystemExit, self._call, ['--help'])
+        self.assertRaises(SystemExit, self._call, ['--help all'])
 
     def test_rollback(self):
         _, _, _, client = self._call(['rollback'])
@@ -43,6 +59,19 @@ class CLITest(unittest.TestCase):
                   for r in xrange(len(flags)))):
             self._call(['plugins',] + list(args))
 
+    def test_exceptions(self):
+        from letsencrypt import errors
+        cmd_arg = ['config_changes']
+        error = [errors.Error('problem')]
+        attrs = {'view_config_changes.side_effect' : error}
+        self.assertRaises(
+            errors.Error, self._call, ['--debug'] + cmd_arg, attrs)
+        self._call(cmd_arg, attrs)
+
+        attrs['view_config_changes.side_effect'] = [ValueError]
+        self.assertRaises(
+            ValueError, self._call, ['--debug'] + cmd_arg, attrs)
+        self._call(cmd_arg, attrs)
 
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover

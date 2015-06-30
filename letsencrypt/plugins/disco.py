@@ -10,6 +10,9 @@ from letsencrypt import errors
 from letsencrypt import interfaces
 
 
+logger = logging.getLogger(__name__)
+
+
 class PluginEntryPoint(object):
     """Plugin entry point."""
 
@@ -70,9 +73,9 @@ class PluginEntryPoint(object):
                 zope.interface.verify.verifyObject(iface, self.init())
             except zope.interface.exceptions.BrokenImplementation as error:
                 if iface.implementedBy(self.plugin_cls):
-                    logging.debug(
+                    logger.debug(
                         "%s implements %s but object does not verify: %s",
-                        self.plugin_cls, iface.__name__, error)
+                        self.plugin_cls, iface.__name__, error, exc_info=True)
                 return False
         return True
 
@@ -80,7 +83,7 @@ class PluginEntryPoint(object):
     def prepared(self):
         """Has the plugin been prepared already?"""
         if not self.initialized:
-            logging.debug(".prepared called on uninitialized %r", self)
+            logger.debug(".prepared called on uninitialized %r", self)
         return self._prepared is not None
 
     def prepare(self):
@@ -90,10 +93,14 @@ class PluginEntryPoint(object):
             try:
                 self._initialized.prepare()
             except errors.MisconfigurationError as error:
-                logging.debug("Misconfigured %r: %s", self, error)
+                logger.debug("Misconfigured %r: %s", self, error, exc_info=True)
                 self._prepared = error
             except errors.NoInstallationError as error:
-                logging.debug("No installation (%r): %s", self, error)
+                logger.debug(
+                    "No installation (%r): %s", self, error, exc_info=True)
+                self._prepared = error
+            except errors.PluginError as error:
+                logger.debug("Other error:(%r): %s", self, error, exc_info=True)
                 self._prepared = error
             else:
                 self._prepared = True
@@ -149,7 +156,7 @@ class PluginsRegistry(collections.Mapping):
             if interfaces.IPluginFactory.providedBy(plugin_ep.plugin_cls):
                 plugins[plugin_ep.name] = plugin_ep
             else:  # pragma: no cover
-                logging.warning(
+                logger.warning(
                     "%r does not provide IPluginFactory, skipping", plugin_ep)
         return cls(plugins)
 

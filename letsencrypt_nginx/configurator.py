@@ -13,6 +13,7 @@ from acme import challenges
 
 from letsencrypt import achallenges
 from letsencrypt import constants as core_constants
+from letsencrypt import crypto_util
 from letsencrypt import errors
 from letsencrypt import interfaces
 from letsencrypt import le_util
@@ -24,6 +25,9 @@ from letsencrypt_nginx import constants
 from letsencrypt_nginx import dvsni
 from letsencrypt_nginx import obj
 from letsencrypt_nginx import parser
+
+
+logger = logging.getLogger(__name__)
 
 
 class NginxConfigurator(common.Plugin):
@@ -60,6 +64,11 @@ class NginxConfigurator(common.Plugin):
             "'nginx' binary, used for 'configtest' and retrieving nginx "
             "version number.")
 
+    @property
+    def nginx_conf(self):
+        """Nginx config file path."""
+        return os.path.join(self.conf("server_root"), "nginx.conf")
+
     def __init__(self, *args, **kwargs):
         """Initialize an Nginx Configurator.
 
@@ -71,8 +80,7 @@ class NginxConfigurator(common.Plugin):
         super(NginxConfigurator, self).__init__(*args, **kwargs)
 
         # Verify that all directories and files exist with proper permissions
-        if os.geteuid() == 0:
-            self._verify_setup()
+        self._verify_setup()
 
         # Files to save
         self.save_notes = ""
@@ -128,10 +136,10 @@ class NginxConfigurator(common.Plugin):
         try:
             self.parser.add_server_directives(vhost.filep, vhost.names,
                                               directives, True)
-            logging.info("Deployed Certificate to VirtualHost %s for %s",
-                         vhost.filep, vhost.names)
+            logger.info("Deployed Certificate to VirtualHost %s for %s",
+                        vhost.filep, vhost.names)
         except errors.MisconfigurationError:
-            logging.warn(
+            logger.warn(
                 "Cannot find a cert or key directive in %s for %s. "
                 "VirtualHost was not modified.", vhost.filep, vhost.names)
             # Presumably break here so that the virtualhost is not modified
@@ -260,9 +268,23 @@ class NginxConfigurator(common.Plugin):
 
         return all_names
 
+    def _get_snakeoil_paths(self):
+        # TODO: generate only once
+        tmp_dir = os.path.join(self.config.work_dir, "snakeoil")
+        key = crypto_util.init_save_key(
+            key_size=1024, key_dir=tmp_dir, keyname="key.pem")
+        cert_pem = crypto_util.make_ss_cert(
+            key.pem, domains=[socket.gethostname()])
+        cert = os.path.join(tmp_dir, "cert.pem")
+        with open(cert, 'w') as cert_file:
+            cert_file.write(cert_pem)
+        return cert, key.file
+
     def _make_server_ssl(self, vhost):
-        """Makes a server SSL based on server_name and filename by adding
-        a 'listen 443 ssl' directive to the server block.
+        """Make a server SSL.
+
+        Make a server SSL based on server_name and filename by adding a
+        ``listen IConfig.dvsni_port ssl`` directive to the server block.
 
         .. todo:: Maybe this should create a new block instead of modifying
             the existing one?
@@ -271,17 +293,22 @@ class NginxConfigurator(common.Plugin):
         :type vhost: :class:`~letsencrypt_nginx.obj.VirtualHost`
 
         """
-        ssl_block = [['listen', '443 ssl'],
-                     ['ssl_certificate',
-                      '/etc/ssl/certs/ssl-cert-snakeoil.pem'],
-                     ['ssl_certificate_key',
-                      '/etc/ssl/private/ssl-cert-snakeoil.key'],
+        snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
+        ssl_block = [['listen', '{0} ssl'.format(self.config.dvsni_port)],
+                     # access and error logs necessary for integration
+                     # testing (non-root)
+                     ['access_log', os.path.join(
+                         self.config.work_dir, 'access.log')],
+                     ['error_log', os.path.join(
+                         self.config.work_dir, 'error.log')],
+                     ['ssl_certificate', snakeoil_cert],
+                     ['ssl_certificate_key', snakeoil_key],
                      ['include', self.parser.loc["ssl_options"]]]
         self.parser.add_server_directives(
             vhost.filep, vhost.names, ssl_block)
         vhost.ssl = True
         vhost.raw.extend(ssl_block)
-        vhost.addrs.add(obj.Addr('', '443', True, False))
+        vhost.addrs.add(obj.Addr('', str(self.config.dvsni_port), True, False))
 
     def get_all_certs_keys(self):
         """Find all existing keys, certs from configuration.
@@ -317,10 +344,10 @@ class NginxConfigurator(common.Plugin):
             return self._enhance_func[enhancement](
                 self.choose_vhost(domain), options)
         except (KeyError, ValueError):
-            raise errors.ConfiguratorError(
+            raise errors.PluginError(
                 "Unsupported enhancement: {0}".format(enhancement))
-        except errors.ConfiguratorError:
-            logging.warn("Failed %s for %s", enhancement, domain)
+        except errors.PluginError:
+            logger.warn("Failed %s for %s", enhancement, domain)
 
     ######################################
     # Nginx server management (IInstaller)
@@ -332,7 +359,7 @@ class NginxConfigurator(common.Plugin):
         :rtype: bool
 
         """
-        return nginx_restart(self.conf('ctl'))
+        return nginx_restart(self.conf('ctl'), self.nginx_conf)
 
     def config_test(self):  # pylint: disable=no-self-use
         """Check the configuration of Nginx for errors.
@@ -343,17 +370,17 @@ class NginxConfigurator(common.Plugin):
         """
         try:
             proc = subprocess.Popen(
-                [self.conf('ctl'), "-t"],
+                [self.conf('ctl'), "-c", self.nginx_conf, "-t"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
             stdout, stderr = proc.communicate()
         except (OSError, ValueError):
-            logging.fatal("Unable to run nginx config test")
+            logger.fatal("Unable to run nginx config test")
             sys.exit(1)
 
         if proc.returncode != 0:
             # Enter recovery routine...
-            logging.error("Config test failed\n%s\n%s", stdout, stderr)
+            logger.error("Config test failed\n%s\n%s", stdout, stderr)
             return False
 
         return True
@@ -382,18 +409,19 @@ class NginxConfigurator(common.Plugin):
         :returns: version
         :rtype: tuple
 
-        :raises .ConfiguratorError:
+        :raises .PluginError:
             Unable to find Nginx version or version is unsupported
 
         """
         try:
             proc = subprocess.Popen(
-                [self.conf('ctl'), "-V"],
+                [self.conf('ctl'), "-c", self.nginx_conf, "-V"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
             text = proc.communicate()[1]  # nginx prints output to stderr
-        except (OSError, ValueError):
-            raise errors.ConfiguratorError(
+        except (OSError, ValueError) as error:
+            logging.debug(error, exc_info=True)
+            raise errors.PluginError(
                 "Unable to run %s -V" % self.conf('ctl'))
 
         version_regex = re.compile(r"nginx/([0-9\.]*)", re.IGNORECASE)
@@ -406,19 +434,19 @@ class NginxConfigurator(common.Plugin):
         ssl_matches = ssl_regex.findall(text)
 
         if not version_matches:
-            raise errors.ConfiguratorError("Unable to find Nginx version")
+            raise errors.PluginError("Unable to find Nginx version")
         if not ssl_matches:
-            raise errors.ConfiguratorError(
+            raise errors.PluginError(
                 "Nginx build is missing SSL module (--with-http_ssl_module).")
         if not sni_matches:
-            raise errors.ConfiguratorError("Nginx build doesn't support SNI")
+            raise errors.PluginError("Nginx build doesn't support SNI")
 
         nginx_version = tuple([int(i) for i in version_matches[0].split(".")])
 
         # nginx < 0.8.48 uses machine hostname as default server_name instead of
         # the empty string
         if nginx_version < (0, 8, 48):
-            raise errors.ConfiguratorError("Nginx version must be 0.8.48+")
+            raise errors.PluginError("Nginx version must be 0.8.48+")
 
         return nginx_version
 
@@ -541,7 +569,7 @@ class NginxConfigurator(common.Plugin):
             self.restart()
 
 
-def nginx_restart(nginx_ctl):
+def nginx_restart(nginx_ctl, nginx_conf="/etc/nginx.conf"):
     """Restarts the Nginx Server.
 
     .. todo:: Nginx restart is fatal if the configuration references
@@ -552,25 +580,25 @@ def nginx_restart(nginx_ctl):
 
     """
     try:
-        proc = subprocess.Popen([nginx_ctl, "-s", "reload"],
+        proc = subprocess.Popen([nginx_ctl, "-c", nginx_conf, "-s", "reload"],
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
         stdout, stderr = proc.communicate()
 
         if proc.returncode != 0:
             # Maybe Nginx isn't running
-            nginx_proc = subprocess.Popen([nginx_ctl],
+            nginx_proc = subprocess.Popen([nginx_ctl, "-c", nginx_conf],
                                           stdout=subprocess.PIPE,
                                           stderr=subprocess.PIPE)
             stdout, stderr = nginx_proc.communicate()
 
             if nginx_proc.returncode != 0:
                 # Enter recovery routine...
-                logging.error("Nginx Restart Failed!\n%s\n%s", stdout, stderr)
+                logger.error("Nginx Restart Failed!\n%s\n%s", stdout, stderr)
                 return False
 
     except (OSError, ValueError):
-        logging.fatal("Nginx Restart Failed - Please Check the Configuration")
+        logger.fatal("Nginx Restart Failed - Please Check the Configuration")
         sys.exit(1)
 
     return True

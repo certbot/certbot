@@ -17,6 +17,13 @@ class ReporterTest(unittest.TestCase):
     def tearDown(self):
         sys.stdout = self.old_stdout
 
+    def test_multiline_message(self):
+        self.reporter.add_message("Line 1\nLine 2", self.reporter.LOW_PRIORITY)
+        self.reporter.atexit_print_messages()
+        output = sys.stdout.getvalue()
+        self.assertTrue("Line 1\n" in output)
+        self.assertTrue("Line 2" in output)
+
     def test_tty_print_empty(self):
         sys.stdout.isatty = lambda: True
         self.test_no_tty_print_empty()
