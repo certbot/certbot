@@ -94,18 +94,8 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
 
         return regr
 
-    def update_registration(self, regr):
-        """Update registration.
-
-        :pram regr: Registration Resource.
-        :type regr: `.RegistrationResource`
-
-        :returns: Updated Registration Resource.
-        :rtype: `.RegistrationResource`
-
-        """
-        response = self.net.post(
-            regr.uri, messages.UpdateRegistration(**dict(regr.body)))
+    def _send_recv_regr(self, regr, body):
+        response = self.net.post(regr.uri, body)
 
         # TODO: Boulder returns httplib.ACCEPTED
         #assert response.status_code == httplib.OK
@@ -113,12 +103,36 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         # TODO: Boulder does not set Location or Link on update
         # (c.f. acme-spec #94)
 
-        updated_regr = self._regr_from_response(
+        return self._regr_from_response(
             response, uri=regr.uri, new_authzr_uri=regr.new_authzr_uri,
             terms_of_service=regr.terms_of_service)
+
+    def update_registration(self, regr, update=None):
+        """Update registration.
+
+        :param messages.RegistrationResource regr: Registration Resource.
+        :param messages.Registration update: Updated body of the
+            resource. If not provided, body will be taken from `regr`.
+
+        :returns: Updated Registration Resource.
+        :rtype: `.RegistrationResource`
+
+        """
+        update = regr.body if update is None else update
+        updated_regr = self._send_recv_regr(
+            regr, body=messages.UpdateRegistration(**dict(update)))
         if updated_regr != regr:
             raise errors.UnexpectedUpdate(regr)
         return updated_regr
+
+    def query_registration(self, regr):
+        """Query server about registration.
+
+        :param messages.RegistrationResource: Existing Registration
+            Resource.
+
+        """
+        return self._send_recv_regr(regr, messages.UpdateRegistration())
 
     def agree_to_tos(self, regr):
         """Agree to the terms-of-service.
@@ -275,8 +289,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         logger.debug("Requesting issuance...")
 
         # TODO: assert len(authzrs) == number of SANs
-        req = messages.CertificateRequest(
-            csr=csr, authorizations=tuple(authzr.uri for authzr in authzrs))
+        req = messages.CertificateRequest(csr=csr)
 
         content_type = self.DER_CONTENT_TYPE  # TODO: add 'cert_type 'argument
         response = self.net.post(
