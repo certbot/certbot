@@ -66,12 +66,30 @@ class CLITest(unittest.TestCase):
         attrs = {'view_config_changes.side_effect' : error}
         self.assertRaises(
             errors.Error, self._call, ['--debug'] + cmd_arg, attrs)
-        self._call(cmd_arg, attrs)
 
         attrs['view_config_changes.side_effect'] = [ValueError]
         self.assertRaises(
             ValueError, self._call, ['--debug'] + cmd_arg, attrs)
-        self._call(cmd_arg, attrs)
+
+    @mock.patch("letsencrypt.cli.sys")
+    def test_handle_exception(self, mock_sys):
+        # pylint: disable=protected-access
+        import StringIO
+        from letsencrypt import cli
+        from letsencrypt import errors
+
+        cli._handle_exception(errors.Error, "detail", None, None)
+        mock_sys.exit.assert_called_once_with("detail")
+
+        args = mock.MagicMock(debug=False)
+        cli._handle_exception(ValueError, "detail", None, args)
+        self.assertTrue("logfile" in mock_sys.exit.call_args_list[1][0][0])
+
+        mock_sys.stderr = StringIO.StringIO()
+        exc_value = "A very specific string"
+        cli._handle_exception(KeyboardInterrupt, exc_value, None, None)
+        self.assertTrue(exc_value in mock_sys.stderr.getvalue())
+
 
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover
