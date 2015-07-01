@@ -1,8 +1,14 @@
 """ApacheParser is a member object of the ApacheConfigurator class."""
+import itertools
+import logging
 import os
 import re
+import subprocess
 
 from letsencrypt import errors
+
+
+logger = logging.getLogger(__name__)
 
 
 class ApacheParser(object):
@@ -12,8 +18,7 @@ class ApacheParser(object):
         directory. Without trailing slash.
 
     """
-
-    def __init__(self, aug, root, ssl_options):
+    def __init__(self, aug, root, ssl_options, ctl):
         # Find configuration root and make sure augeas can parse it.
         self.aug = aug
         self.root = os.path.abspath(root)
@@ -26,6 +31,46 @@ class ApacheParser(object):
 
         # This problem has been fixed in Augeas 1.0
         self.standardize_excl()
+        self.modules = self._init_modules()
+        self.parameters = self._init_parameters(ctl)
+
+    def _init_modules(self):
+        matches = self.find_dir(case_i("LoadModule"))
+
+        iterator = iter(matches)
+
+        modules = set()
+        for match_name, match_filename in itertools.izip(iterator, iterator):
+            modules.add(self.aug.get(match_name))
+            modules.add(
+                os.path.basename(self.aug.get(match_filename))[:-2] + "c")
+
+        return modules
+
+    def _init_parameters(self, ctl):
+        try:
+            proc = subprocess.Popen(
+                [ctl, "-D", "DUMP_RUN_CFG"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE)
+            stdout, stderr = proc.communicate()
+
+        except (OSError, ValueError):
+            logger.error(
+                "Error accessing {0} for runtime parameters!{1}".format(
+                    ctl, os.linesep))
+            raise errors.MisconfigurationError(
+                "Error accessing loaded Apache parameters: %s", ctl)
+        # Small errors that do not impede
+        if proc.returncode != 0:
+            logger.warn("Error in checking parameter list: %s", stderr)
+            raise errors.MisconfigurationError(
+                "Apache is unable to check whether or not the module is "
+                "loaded because Apache is misconfigured.")
+
+        matches = re.compile(r"Define: ([^ \n]*)").findall(stdout)
+        matches.remove("DUMP_RUN_CFG")
+        return set(matches)
 
     def add_dir_to_ifmodssl(self, aug_conf_path, directive, val):
         """Adds directive and value to IfMod ssl block.
@@ -135,8 +180,8 @@ class ApacheParser(object):
                                       "[self::arg=~regexp('%s')]" %
                                       (start, directive, arg)))
 
-        incl_regex = "(%s)|(%s)" % (case_i('Include'),
-                                    case_i('IncludeOptional'))
+        incl_regex = "(%s)|(%s)" % (case_i("Include"),
+                                    case_i("IncludeOptional"))
 
         includes = self.aug.match(("%s//* [self::directive=~regexp('%s')]/* "
                                    "[label()='arg']" % (start, incl_regex)))
@@ -233,13 +278,13 @@ class ApacheParser(object):
         # Checkout fnmatch.py in venv/local/lib/python2.7/fnmatch.py
         regex = ""
         for letter in clean_fn_match:
-            if letter == '.':
+            if letter == ".":
                 regex = regex + r"\."
-            elif letter == '*':
+            elif letter == "*":
                 regex = regex + ".*"
             # According to apache.org ? shouldn't appear
             # but in case it is valid...
-            elif letter == '?':
+            elif letter == "?":
                 regex = regex + "."
             else:
                 regex = regex + letter
@@ -360,12 +405,12 @@ class ApacheParser(object):
         # Basic check to see if httpd.conf exists and
         # in hierarchy via direct include
         # httpd.conf was very common as a user file in Apache 2.2
-        if (os.path.isfile(os.path.join(self.root, 'httpd.conf')) and
+        if (os.path.isfile(os.path.join(self.root, "httpd.conf")) and
                 self.find_dir(
                     case_i("Include"), case_i("httpd.conf"), root)):
-            return os.path.join(self.root, 'httpd.conf')
+            return os.path.join(self.root, "httpd.conf")
         else:
-            return os.path.join(self.root, 'apache2.conf')
+            return os.path.join(self.root, "apache2.conf")
 
 
 def case_i(string):

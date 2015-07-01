@@ -3,6 +3,7 @@ import logging
 
 import augeas
 
+from letsencrypt import errors
 from letsencrypt import reverter
 from letsencrypt.plugins import common
 
@@ -23,7 +24,6 @@ class AugeasConfigurator(common.Plugin):
     :type reverter: :class:`letsencrypt.reverter.Reverter`
 
     """
-
     def __init__(self, *args, **kwargs):
         super(AugeasConfigurator, self).__init__(*args, **kwargs)
 
@@ -54,10 +54,12 @@ class AugeasConfigurator(common.Plugin):
             lens_path = self.aug.get(path + "/lens")
             # As aug.get may return null
             if lens_path and lens in lens_path:
-                logger.error(
+                msg = (
                     "There has been an error in parsing the file (%s): %s",
                     # Strip off /augeas/files and /error
                     path[13:len(path) - 6], self.aug.get(path + "/message"))
+                logger.error(msg)
+                raise errors.PluginError(msg)
 
     def save(self, title=None, temporary=False):
         """Saves all changes to the configuration files.

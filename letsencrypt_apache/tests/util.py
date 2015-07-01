@@ -35,9 +35,13 @@ class ApacheTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
 
 
 def get_apache_configurator(
-        config_path, config_dir, work_dir, version=(2, 4, 7)):
-    """Create an Apache Configurator with the specified options."""
+        config_path, config_dir, work_dir, version=(2, 4, 7),
+        conf=mock.MagicMock()):
+    """Create an Apache Configurator with the specified options.
 
+    :param conf: Function that returns binary paths. self.conf in Configurator
+
+    """
     backups = os.path.join(work_dir, "backups")
 
     with mock.patch("letsencrypt_apache.configurator."
@@ -55,6 +59,7 @@ def get_apache_configurator(
                 work_dir=work_dir),
             name="apache",
             version=version)
+        config.conf = conf
 
     config.prepare()
 

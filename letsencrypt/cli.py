@@ -644,7 +644,6 @@ def _setup_logging(args):
 
 def main2(cli_args, args, config, plugins):
     """Continued main script execution."""
-
     # Displayer
     if args.text_mode:
         displayer = display_util.FileDisplay(sys.stdout)

@@ -93,8 +93,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         add("server-root", default=constants.CLI_DEFAULTS["server_root"],
             help="Apache server root directory.")
         add("ctl", default=constants.CLI_DEFAULTS["ctl"],
-            help="Path to the 'apache2ctl' binary, used for 'configtest' and "
-                 "retrieving Apache2 version number.")
+            help="Path to the 'apache2ctl' binary, used for 'configtest', "
+                 "retrieving the Apache2 version number, and initialization "
+                 "parameters.")
         add("enmod", default=constants.CLI_DEFAULTS["enmod"],
             help="Path to the Apache 'a2enmod' binary.")
         add("init-script", default=constants.CLI_DEFAULTS["init_script"],
@@ -136,7 +137,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     def prepare(self):
         """Prepare the authenticator/installer."""
         self.parser = parser.ApacheParser(
-            self.aug, self.conf("server-root"), self.mod_ssl_conf)
+            self.aug, self.conf("server-root"), self.mod_ssl_conf,
+            self.conf("ctl"))
         # Check for errors in parsing files with Augeas
         self.check_parsing_errors("httpd.aug")
 
@@ -528,9 +530,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             raise errors.PluginError("Only one vhost per file is allowed")
 
         self.parser.add_dir(vh_p[0], "SSLCertificateFile",
-                            "/etc/ssl/certs/ssl-cert-snakeoil.pem")
+                            "insert_cert_file_path")
         self.parser.add_dir(vh_p[0], "SSLCertificateKeyFile",
-                            "/etc/ssl/private/ssl-cert-snakeoil.key")
+                            "insert_key_file_path")
         self.parser.add_dir(vh_p[0], "Include", self.parser.loc["ssl_options"])
 
         # Log actions and create save notes
@@ -935,7 +937,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             subprocess.check_call([self.conf("enmod"), mod_name],
                                   stdout=open("/dev/null", "w"),
                                   stderr=open("/dev/null", "w"))
-            apache_restart(self.conf("init"))
+            apache_restart(self.conf("init_script"))
         except (OSError, subprocess.CalledProcessError):
             logger.exception("Error enabling mod_%s", mod_name)
             raise errors.MisconfigurationError(
