@@ -661,10 +661,11 @@ def _handle_exception(exc_type, exc_value, trace, args):
 
     if issubclass(exc_type, Exception) and (args is None or not args.debug):
         if args is None:
+            logfile = "letsencrypt.log"
             try:
-                with open("letsencrypt.log", "w") as logfile:
+                with open(logfile, "w") as logfd:
                     traceback.print_exception(
-                        exc_type, exc_value, trace, file=logfile)
+                        exc_type, exc_value, trace, file=logfd)
             except: # pylint: disable=bare-except
                 sys.exit("".join(
                     traceback.format_exception(exc_type, exc_value, trace)))
@@ -674,7 +675,7 @@ def _handle_exception(exc_type, exc_value, trace, args):
         elif args is None:
             sys.exit(
                 "An unexpected error occurred. Please see the logfile '{0}' "
-                "for more details.".format(os.path.abspath("letsencrypt.log")))
+                "for more details.".format(logfile))
         else:
             sys.exit(
                 "An unexpected error occurred. Please see the logfiles in {0} "
