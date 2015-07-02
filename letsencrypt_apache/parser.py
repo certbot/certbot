@@ -37,22 +37,24 @@ class ApacheParser(object):
 
         # Temporarily set modules to be empty, so that find_dirs can work
         self.modules = set()
-        self.modules = self._init_modules()
+        self._init_modules()
 
     def _init_modules(self):
-        # TODO: This needs to be iterative, until no new modules are loaded.
-        #    This is due to ifmod... load mod behavior.
+        """Iterates on the configuration until no new modules are loaded."""
         matches = self.find_dir(case_i("LoadModule"))
 
         iterator = iter(matches)
+        # Make sure prev_size != cur_size for do: while: iteration
+        prev_size = -1
 
-        modules = set()
-        for match_name, match_filename in itertools.izip(iterator, iterator):
-            modules.add(self.aug.get(match_name))
-            modules.add(
-                os.path.basename(self.aug.get(match_filename))[:-2] + "c")
+        while len(self.modules) != prev_size:
+            prev_size = len(self.modules)
 
-        return modules
+            for match_name, match_filename in itertools.izip(
+                    iterator, iterator):
+                self.modules.add(self.aug.get(match_name))
+                self.modules.add(
+                    os.path.basename(self.aug.get(match_filename))[:-2] + "c")
 
     def _init_parameters(self, ctl):
         try:
