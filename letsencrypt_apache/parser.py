@@ -19,6 +19,9 @@ class ApacheParser(object):
 
     """
     def __init__(self, aug, root, ssl_options, ctl):
+        # This uses the binary, so it can be done first.
+        self.parameters = self._init_parameters(ctl)
+
         # Find configuration root and make sure augeas can parse it.
         self.aug = aug
         self.root = os.path.abspath(root)
@@ -31,10 +34,14 @@ class ApacheParser(object):
 
         # This problem has been fixed in Augeas 1.0
         self.standardize_excl()
+
+        # Temporarily set modules to be empty, so that find_dirs can work
+        self.modules = set()
         self.modules = self._init_modules()
-        self.parameters = self._init_parameters(ctl)
 
     def _init_modules(self):
+        # TODO: This needs to be iterative, until no new modules are loaded.
+        #    This is due to ifmod... load mod behavior.
         matches = self.find_dir(case_i("LoadModule"))
 
         iterator = iter(matches)
@@ -137,6 +144,8 @@ class ApacheParser(object):
 
         .. todo:: Add order to directives returned. Last directive comes last..
         .. todo:: arg should probably be a list
+        .. todo:: Check //* notation for including directories not intended
+            to be included.
 
         Note: Augeas is inherently case sensitive while Apache is case
         insensitive.  Augeas 1.0 allows case insensitive regexes like
@@ -180,11 +189,15 @@ class ApacheParser(object):
                                       "[self::arg=~regexp('%s')]" %
                                       (start, directive, arg)))
 
+        matches = self._exclude_dirs(matches)
+
         incl_regex = "(%s)|(%s)" % (case_i("Include"),
                                     case_i("IncludeOptional"))
 
         includes = self.aug.match(("%s//* [self::directive=~regexp('%s')]/* "
                                    "[label()='arg']" % (start, incl_regex)))
+
+        includes = self._exclude_dirs(includes)
 
         # for inc in includes:
         #    print inc, self.aug.get(inc)
@@ -196,6 +209,44 @@ class ApacheParser(object):
                     strip_dir(start[6:]), self.aug.get(include))))
 
         return matches
+
+    def _exclude_dirs(self, matches):
+        """Exclude directives that are not loaded into the configuration."""
+        filters = [("ifmodule", self.modules), ("ifdefine", self.parameters)]
+
+        valid_matches = []
+
+        for match in matches:
+            for filter in filters:
+                if not self._pass_filter(match, filter):
+                    break
+            else:
+                valid_matches.append(match)
+        return valid_matches
+
+    def _pass_filter(self, match, filter):
+        """Determine if directive passes a filter.
+
+        :param str match: Augeas path
+        :param list filter: list of tuples of form
+            [("lowercase if directive", set of relevant parameters)]
+
+        """
+        match_l = match.lower()
+        last_match_idx = match_l.find(filter[0])
+
+        while last_match_idx != -1:
+            # Check args
+            end_of_if = match_l.find("/", last_match_idx)
+            expression = self.aug.get(match[:end_of_if] + "/arg")
+
+            expected = not expression.startswith("!")
+            if expected != expression in filter[1]:
+                return False
+
+            last_match_idx = match_l.find(filter[0], end_of_if)
+
+        return True
 
     def _get_include_path(self, cur_dir, arg):
         """Converts an Apache Include directive into Augeas path.
