@@ -2,11 +2,13 @@
 # TODO: Sanity check all input.  Be sure to avoid shell code etc...
 import argparse
 import atexit
+import functools
 import logging
 import logging.handlers
 import os
 import sys
 import time
+import traceback
 
 import configargparse
 import zope.component
@@ -644,8 +646,71 @@ def _setup_logging(args):
     logger.info("Saving debug log to %s", log_file_name)
 
 
-def main2(cli_args, args, config, plugins):
-    """Continued main script execution."""
+def _handle_exception(exc_type, exc_value, trace, args):
+    """Logs exceptions and reports them to the user.
+
+    Args is used to determine how to display exceptions to the user. In
+    general, if args.debug is True, then the full exception and traceback is
+    shown to the user, otherwise it is suppressed. If args itself is None,
+    then the traceback and exception is attempted to be written to a logfile.
+    If this is successful, the traceback is suppressed, otherwise it is shown
+    to the user. sys.exit is always called with a nonzero status.
+
+    """
+    logger.debug(
+        "Exiting abnormally:\n%s",
+        "".join(traceback.format_exception(exc_type, exc_value, trace)))
+
+    if issubclass(exc_type, Exception) and (args is None or not args.debug):
+        if args is None:
+            logfile = "letsencrypt.log"
+            try:
+                with open(logfile, "w") as logfd:
+                    traceback.print_exception(
+                        exc_type, exc_value, trace, file=logfd)
+            except: # pylint: disable=bare-except
+                sys.exit("".join(
+                    traceback.format_exception(exc_type, exc_value, trace)))
+
+        if issubclass(exc_type, errors.Error):
+            sys.exit(exc_value)
+        elif args is None:
+            sys.exit(
+                "An unexpected error occurred. Please see the logfile '{0}' "
+                "for more details.".format(logfile))
+        else:
+            sys.exit(
+                "An unexpected error occurred. Please see the logfiles in {0} "
+                "for more details.".format(args.logs_dir))
+    else:
+        sys.exit("".join(
+            traceback.format_exception(exc_type, exc_value, trace)))
+
+
+def main(cli_args=sys.argv[1:]):
+    """Command line argument parsing and main script execution."""
+    sys.excepthook = functools.partial(_handle_exception, args=None)
+
+    # note: arg parser internally handles --help (and exits afterwards)
+    plugins = plugins_disco.PluginsRegistry.find_all()
+    args = create_parser(plugins, cli_args).parse_args(cli_args)
+    config = configuration.NamespaceConfig(args)
+
+    # Setup logging ASAP, otherwise "No handlers could be found for
+    # logger ..." TODO: this should be done before plugins discovery
+    for directory in config.config_dir, config.work_dir:
+        le_util.make_or_verify_dir(
+            directory, constants.CONFIG_DIRS_MODE, os.geteuid())
+    # TODO: logs might contain sensitive data such as contents of the
+    # private key! #525
+    le_util.make_or_verify_dir(args.logs_dir, 0o700, os.geteuid())
+    _setup_logging(args)
+
+    # do not log `args`, as it contains sensitive data (e.g. revoke --key)!
+    logger.debug("Arguments: %r", cli_args)
+    logger.debug("Discovered plugins: %r", plugins)
+
+    sys.excepthook = functools.partial(_handle_exception, args=args)
 
     # Displayer
     if args.text_mode:
@@ -653,10 +718,6 @@ def main2(cli_args, args, config, plugins):
     else:
         displayer = display_util.NcursesDisplay()
     zope.component.provideUtility(displayer)
-
-    # do not log `args`, as it contains sensitive data (e.g. revoke --key)!
-    logger.debug("Arguments: %r", cli_args)
-    logger.debug("Discovered plugins: %r", plugins)
 
     # Reporter
     report = reporter.Reporter()
@@ -675,40 +736,6 @@ def main2(cli_args, args, config, plugins):
         #    .format(os.linesep))
 
     return args.func(args, config, plugins)
-
-
-def main(cli_args=sys.argv[1:]):
-    """Command line argument parsing and main script execution."""
-    # note: arg parser internally handles --help (and exits afterwards)
-    plugins = plugins_disco.PluginsRegistry.find_all()
-    args = create_parser(plugins, cli_args).parse_args(cli_args)
-    config = configuration.NamespaceConfig(args)
-
-    # Setup logging ASAP, otherwise "No handlers could be found for
-    # logger ..." TODO: this should be done before plugins discovery
-    for directory in config.config_dir, config.work_dir:
-        le_util.make_or_verify_dir(
-            directory, constants.CONFIG_DIRS_MODE, os.geteuid())
-    # TODO: logs might contain sensitive data such as contents of the
-    # private key! #525
-    le_util.make_or_verify_dir(args.logs_dir, 0o700, os.geteuid())
-    _setup_logging(args)
-
-    def handle_exception_common():
-        """Logs the exception and reraises it if in debug mode."""
-        logger.debug("Exiting abnormally", exc_info=True)
-        if args.debug:
-            raise
-
-    try:
-        return main2(cli_args, args, config, plugins)
-    except errors.Error as error:
-        handle_exception_common()
-        return error
-    except Exception: # pylint: disable=broad-except
-        handle_exception_common()
-        return ("An unexpected error occured. Please see the logfiles in {0} "
-                "for more details.".format(args.logs_dir))
 
 
 if __name__ == "__main__":
