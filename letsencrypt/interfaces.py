@@ -188,6 +188,8 @@ class IConfig(zope.interface.Interface):
 
     no_simple_http_tls = zope.interface.Attribute(
         "Do not use TLS when solving SimpleHTTP challenges.")
+    simple_http_port = zope.interface.Attribute(
+        "Port used in the SimpleHttp challenge.")
 
 
 class IInstaller(IPlugin):

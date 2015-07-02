@@ -1,9 +1,7 @@
 """Manual plugin."""
-import logging
 import os
 import sys
 
-import requests
 import zope.component
 import zope.interface
 
@@ -12,9 +10,6 @@ from acme import jose
 
 from letsencrypt import interfaces
 from letsencrypt.plugins import common
-
-
-logger = logging.getLogger(__name__)
 
 
 class ManualAuthenticator(common.Plugin):
@@ -34,36 +29,47 @@ Make sure your web server displays the following content at
 
 {achall.token}
 
+Content-Type header MUST be set to {ct}.
+
 If you don't have HTTP server configured, you can run the following
 command on the target server (as root):
 
 {command}
 """
 
+    # "cd /tmp/letsencrypt" makes sure user doesn't serve /root,
+    # separate "public_html" ensures that cert.pem/key.pem are not
+    # served and makes it more obvious that Python command will serve
+    # anything recursively under the cwd
+
     HTTP_TEMPLATE = """\
-mkdir -p {response.URI_ROOT_PATH}
+mkdir -p /tmp/letsencrypt/public_html/{response.URI_ROOT_PATH}
+cd /tmp/letsencrypt/public_html
 echo -n {achall.token} > {response.URI_ROOT_PATH}/{response.path}
 # run only once per server:
-python -m SimpleHTTPServer 80"""
+python -c "import BaseHTTPServer, SimpleHTTPServer; \\
+SimpleHTTPServer.SimpleHTTPRequestHandler.extensions_map = {{'': '{ct}'}}; \\
+s = BaseHTTPServer.HTTPServer(('', {port}), SimpleHTTPServer.SimpleHTTPRequestHandler); \\
+s.serve_forever()" """
     """Non-TLS command template."""
 
     # https://www.piware.de/2011/01/creating-an-https-server-in-python/
     HTTPS_TEMPLATE = """\
-mkdir -p {response.URI_ROOT_PATH}  # run only once per server
+mkdir -p /tmp/letsencrypt/public_html/{response.URI_ROOT_PATH}
+cd /tmp/letsencrypt/public_html
 echo -n {achall.token} > {response.URI_ROOT_PATH}/{response.path}
 # run only once per server:
-openssl req -new -newkey rsa:4096 -subj "/" -days 1 -nodes -x509 -keyout key.pem -out cert.pem
+openssl req -new -newkey rsa:4096 -subj "/" -days 1 -nodes -x509 -keyout ../key.pem -out ../cert.pem
 python -c "import BaseHTTPServer, SimpleHTTPServer, ssl; \\
-s = BaseHTTPServer.HTTPServer(('', 443), SimpleHTTPServer.SimpleHTTPRequestHandler); \\
-s.socket = ssl.wrap_socket(s.socket, keyfile='key.pem', certfile='cert.pem'); \\
+SimpleHTTPServer.SimpleHTTPRequestHandler.extensions_map = {{'': '{ct}'}}; \\
+s = BaseHTTPServer.HTTPServer(('', {port}), SimpleHTTPServer.SimpleHTTPRequestHandler); \\
+s.socket = ssl.wrap_socket(s.socket, keyfile='../key.pem', certfile='../cert.pem'); \\
 s.serve_forever()" """
     """TLS command template.
 
     According to the ACME specification, "the ACME server MUST ignore
     the certificate provided by the HTTPS server", so the first command
-    generates temporary self-signed certificate. For the same reason
-    ``requests.get`` in `_verify` sets ``verify=False``. Python HTTPS
-    server command serves the ``token`` on all URIs.
+    generates temporary self-signed certificate.
 
     """
 
@@ -105,11 +111,14 @@ binary for temporary key/certificate generation.""".replace("\n", "")
         assert response.good_path  # is encoded os.urandom(18) good?
 
         self._notify_and_wait(self.MESSAGE_TEMPLATE.format(
-            achall=achall, response=response,
-            uri=response.uri(achall.domain),
-            command=self.template.format(achall=achall, response=response)))
+            achall=achall, response=response, uri=response.uri(achall.domain),
+            ct=response.CONTENT_TYPE, command=self.template.format(
+                achall=achall, response=response, ct=response.CONTENT_TYPE,
+                port=(response.port if self.config.simple_http_port is None
+                      else self.config.simple_http_port))))
 
-        if self._verify(achall, response):
+        if response.simple_verify(
+                achall.challb, achall.domain, self.config.simple_http_port):
             return response
         else:
             return None
@@ -120,22 +129,6 @@ binary for temporary key/certificate generation.""".replace("\n", "")
         #    message=message, height=25, pause=True)
         sys.stdout.write(message)
         raw_input("Press ENTER to continue")
-
-    def _verify(self, achall, chall_response):  # pylint: disable=no-self-use
-        uri = chall_response.uri(achall.domain)
-        logger.debug("Verifying %s...", uri)
-        try:
-            response = requests.get(uri, verify=False)
-        except requests.exceptions.ConnectionError as error:
-            logger.exception(error)
-            return False
-
-        ret = response.text == achall.token
-        if not ret:
-            logger.error("Unable to verify %s! Expected: %r, returned: %r.",
-                         uri, achall.token, response.text)
-
-        return ret
 
     def cleanup(self, achalls):  # pylint: disable=missing-docstring,no-self-use
         pass  # pragma: no cover

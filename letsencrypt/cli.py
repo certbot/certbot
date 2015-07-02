@@ -480,9 +480,11 @@ def create_parser(plugins, args):
         "testing", "--no-verify-ssl", action="store_true",
         help=config_help("no_verify_ssl"),
         default=flag_default("no_verify_ssl"))
-    helpful.add(    # TODO: apache and nginx plugins do NOT respect it (#479)
+    helpful.add(  # TODO: apache plugin does NOT respect it (#479)
         "testing", "--dvsni-port", type=int, default=flag_default("dvsni_port"),
         help=config_help("dvsni_port"))
+    helpful.add("testing", "--simple-http-port", type=int,
+                help=config_help("simple_http_port"))
     helpful.add("testing", "--no-simple-http-tls", action="store_true",
                 help=config_help("no_simple_http_tls"))
 
