@@ -8,6 +8,8 @@ import unittest
 
 import mock
 
+from letsencrypt import account
+from letsencrypt import configuration
 from letsencrypt import errors
 
 
@@ -26,7 +28,8 @@ class CLITest(unittest.TestCase):
     def _call(self, args):
         from letsencrypt import cli
         args = ['--text', '--config-dir', self.config_dir,
-                '--work-dir', self.work_dir, '--logs-dir', self.logs_dir] + args
+                '--work-dir', self.work_dir, '--logs-dir', self.logs_dir,
+                '--agree-eula'] + args
         with mock.patch('letsencrypt.cli.sys.stdout') as stdout:
             with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
                 with mock.patch('letsencrypt.cli.client') as client:
@@ -94,6 +97,69 @@ class CLITest(unittest.TestCase):
             KeyboardInterrupt, exc_value=interrupt, trace=None, args=None)
         mock_sys.exit.assert_called_with("".join(
             traceback.format_exception_only(KeyboardInterrupt, interrupt)))
+
+
+class DetermineAccountTest(unittest.TestCase):
+    """Tests for letsencrypt.cli._determine_account."""
+
+    def setUp(self):
+        self.args = mock.MagicMock(account=None, email=None)
+        self.config = configuration.NamespaceConfig(self.args)
+        self.accs = [mock.MagicMock(id="x"), mock.MagicMock(id="y")]
+        self.account_storage = account.AccountMemoryStorage()
+
+    def _call(self):
+        # pylint: disable=protected-access
+        from letsencrypt.cli import _determine_account
+        with mock.patch("letsencrypt.cli.account.AccountFileStorage") as mock_storage:
+            mock_storage.return_value = self.account_storage
+            return _determine_account(self.args, self.config)
+
+    def test_args_account_set(self):
+        self.account_storage.save(self.accs[1])
+        self.args.account = self.accs[1].id
+        self.assertEqual((self.accs[1], None), self._call())
+        self.assertEqual(self.accs[1].id, self.args.account)
+        self.assertTrue(self.args.email is None)
+
+    def test_single_account(self):
+        self.account_storage.save(self.accs[0])
+        self.assertEqual((self.accs[0], None), self._call())
+        self.assertEqual(self.accs[0].id, self.args.account)
+        self.assertTrue(self.args.email is None)
+
+    @mock.patch("letsencrypt.client.display_ops.choose_account")
+    def test_multiple_accounts(self, mock_choose_accounts):
+        for acc in self.accs:
+            self.account_storage.save(acc)
+        mock_choose_accounts.return_value = self.accs[1]
+        self.assertEqual((self.accs[1], None), self._call())
+        self.assertEqual(
+            set(mock_choose_accounts.call_args[0][0]), set(self.accs))
+        self.assertEqual(self.accs[1].id, self.args.account)
+        self.assertTrue(self.args.email is None)
+
+    @mock.patch("letsencrypt.client.display_ops.get_email")
+    def test_no_accounts_no_email(self, mock_get_email):
+        mock_get_email.return_value = "foo@bar.baz"
+
+        with mock.patch("letsencrypt.cli.client") as client:
+            client.register.return_value = (
+                self.accs[0], mock.sentinel.acme)
+            self.assertEqual((self.accs[0], mock.sentinel.acme), self._call())
+        client.register.assert_called_once_with(
+            self.config, self.account_storage, tos_cb=mock.ANY)
+
+        self.assertEqual(self.accs[0].id, self.args.account)
+        self.assertEqual("foo@bar.baz", self.args.email)
+
+    def test_no_accounts_email(self):
+        self.args.email = "other email"
+        with mock.patch("letsencrypt.cli.client") as client:
+            client.register.return_value = (self.accs[1], mock.sentinel.acme)
+            self._call()
+        self.assertEqual(self.accs[1].id, self.args.account)
+        self.assertEqual("other email", self.args.email)
 
 
 if __name__ == '__main__':

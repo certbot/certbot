@@ -4,6 +4,7 @@ import pkg_resources
 import shutil
 import tempfile
 
+from cryptography.hazmat.primitives import serialization
 import zope.interface
 
 from acme.jose import util as jose_util
@@ -157,6 +158,11 @@ class Dvsni(object):
         return os.path.join(
             self.configurator.config.work_dir, achall.nonce_domain + ".crt")
 
+    def get_key_path(self, achall):
+        """Get standardized path to challenge key."""
+        return os.path.join(
+            self.configurator.config.work_dir, achall.nonce_domain + '.pem')
+
     def _setup_challenge_cert(self, achall, s=None):
         # pylint: disable=invalid-name
         """Generate and write out challenge certificate."""
@@ -169,6 +175,16 @@ class Dvsni(object):
         # Write out challenge cert
         with open(cert_path, "w") as cert_chall_fd:
             cert_chall_fd.write(cert_pem)
+
+        key_path = self.get_key_path(achall)
+        key_pem = achall.key.key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.TraditionalOpenSSL,
+            encryption_algorithm=serialization.NoEncryption())
+        # XXX: key_file chmods!  (SEC)
+        with open(key_path, 'w') as key_file:
+            key_file.write(key_pem)
+        self.configurator.reverter.register_file_creation(True, key_path)
 
         return response
 

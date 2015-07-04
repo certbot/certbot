@@ -15,12 +15,12 @@ import tempfile
 
 import OpenSSL
 
+from acme import client as acme_client
 from acme.jose import util as jose_util
 
 from letsencrypt import crypto_util
 from letsencrypt import errors
 from letsencrypt import le_util
-from letsencrypt import network
 
 from letsencrypt.display import util as display_util
 from letsencrypt.display import revocation
@@ -34,8 +34,7 @@ class Revoker(object):
 
     .. todo:: Add a method to specify your own certificate for revocation - CLI
 
-    :ivar network: Network object
-    :type network: :class:`letsencrypt.network`
+    :ivar .acme.client.Client acme: ACME client
 
     :ivar installer: Installer object
     :type installer: :class:`~letsencrypt.interfaces.IInstaller`
@@ -48,7 +47,7 @@ class Revoker(object):
     """
     def __init__(self, installer, config, no_confirm=False):
         # XXX
-        self.network = network.Network(new_reg_uri=None, key=None, alg=None)
+        self.acme = acme_client.Client(new_reg_uri=None, key=None, alg=None)
 
         self.installer = installer
         self.config = config
@@ -263,7 +262,7 @@ class Revoker(object):
             raise errors.RevokerError(
                 "Corrupted backup key file: %s" % cert.backup_key_path)
 
-        return self.network.revoke(cert=None)  # XXX
+        return self.acme.revoke(cert=None)  # XXX
 
     def _remove_certs_keys(self, cert_list):  # pylint: disable=no-self-use
         """Remove certificate and key.

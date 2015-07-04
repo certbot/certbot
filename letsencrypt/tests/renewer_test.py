@@ -556,9 +556,9 @@ class RenewableCertTests(unittest.TestCase):
                              datetime.timedelta(intended[time]))
 
     @mock.patch("letsencrypt.renewer.plugins_disco")
-    @mock.patch("letsencrypt.client.determine_account")
+    @mock.patch("letsencrypt.account.AccountFileStorage")
     @mock.patch("letsencrypt.client.Client")
-    def test_renew(self, mock_c, mock_da, mock_pd):
+    def test_renew(self, mock_c, mock_acc_storage, mock_pd):
         from letsencrypt import renewer
 
         test_cert = pkg_resources.resource_string(
@@ -580,6 +580,7 @@ class RenewableCertTests(unittest.TestCase):
         self.test_rc.configfile["renewalparams"]["server"] = "acme.example.com"
         self.test_rc.configfile["renewalparams"]["authenticator"] = "fake"
         self.test_rc.configfile["renewalparams"]["dvsni_port"] = "4430"
+        self.test_rc.configfile["renewalparams"]["account"] = "abcde"
         mock_auth = mock.MagicMock()
         mock_pd.PluginsRegistry.find_all.return_value = {"apache": mock_auth}
         # Fails because "fake" != "apache"
@@ -594,7 +595,7 @@ class RenewableCertTests(unittest.TestCase):
         self.assertEqual(2, renewer.renew(self.test_rc, 1))
         # TODO: We could also make several assertions about calls that should
         #       have been made to the mock functions here.
-        self.assertEqual(mock_da.call_count, 1)
+        mock_acc_storage().load.assert_called_once_with(account_id="abcde")
         mock_client.obtain_certificate.return_value = (
             mock.sentinel.certr, None, mock.sentinel.key, mock.sentinel.csr)
         # This should fail because the renewal itself appears to fail

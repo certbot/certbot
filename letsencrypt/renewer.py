@@ -15,6 +15,7 @@ import configobj
 import OpenSSL
 import zope.component
 
+from letsencrypt import account
 from letsencrypt import configuration
 from letsencrypt import cli
 from letsencrypt import client
@@ -76,15 +77,13 @@ def renew(cert, old_version):
     authenticator = authenticator.init(config)
 
     authenticator.prepare()
-    account = client.determine_account(config)
-    # TODO: are there other ways to get the right account object, e.g.
-    #       based on the email parameter that might be present in
-    #       renewalparams?
+    acc = account.AccountFileStorage(config).load(
+        account_id=renewalparams["account"])
 
-    our_client = client.Client(config, account, authenticator, None)
+    le_client = client.Client(config, acc, authenticator, None)
     with open(cert.version("cert", old_version)) as f:
         sans = crypto_util.get_sans_from_cert(f.read())
-    new_certr, new_chain, new_key, _ = our_client.obtain_certificate(sans)
+    new_certr, new_chain, new_key, _ = le_client.obtain_certificate(sans)
     if new_chain is not None:
         # XXX: Assumes that there was no key change.  We need logic
         #      for figuring out whether there was or not.  Probably

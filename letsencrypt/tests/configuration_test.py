@@ -31,7 +31,6 @@ class NamespaceConfigTest(unittest.TestCase):
     @mock.patch('letsencrypt.configuration.constants')
     def test_dynamic_dirs(self, constants):
         constants.ACCOUNTS_DIR = 'acc'
-        constants.ACCOUNT_KEYS_DIR = 'keys'
         constants.BACKUP_DIR = 'backups'
         constants.CERT_KEY_BACKUP_DIR = 'c/'
         constants.CERT_DIR = 'certs'
@@ -42,9 +41,6 @@ class NamespaceConfigTest(unittest.TestCase):
 
         self.assertEqual(
             self.config.accounts_dir, '/tmp/config/acc/acme-server.org:443/new')
-        self.assertEqual(
-            self.config.account_keys_dir,
-            '/tmp/config/acc/acme-server.org:443/new/keys')
         self.assertEqual(self.config.backup_dir, '/tmp/foo/backups')
         self.assertEqual(self.config.cert_dir, '/tmp/config/certs')
         self.assertEqual(

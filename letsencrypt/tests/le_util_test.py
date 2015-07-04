@@ -165,5 +165,32 @@ class UniqueLineageNameTest(unittest.TestCase):
         mock_fdopen.side_effect = err
         self.assertRaises(OSError, self._call, "wow")
 
+
+class SafeEmailTest(unittest.TestCase):
+    """Test safe_email."""
+    @classmethod
+    def _call(cls, addr):
+        from letsencrypt.le_util import safe_email
+        return safe_email(addr)
+
+    def test_valid_emails(self):
+        addrs = [
+            "letsencrypt@letsencrypt.org",
+            "tbd.ade@gmail.com",
+            "abc_def.jdk@hotmail.museum",
+        ]
+        for addr in addrs:
+            self.assertTrue(self._call(addr), "%s failed." % addr)
+
+    def test_invalid_emails(self):
+        addrs = [
+            "letsencrypt@letsencrypt..org",
+            ".tbd.ade@gmail.com",
+            "~/abc_def.jdk@hotmail.museum",
+        ]
+        for addr in addrs:
+            self.assertFalse(self._call(addr), "%s failed." % addr)
+
+
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover
