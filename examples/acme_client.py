@@ -26,7 +26,7 @@ key = jose.JWKRSA(key=rsa.generate_private_key(
     backend=default_backend()))
 acme = client.Client(NEW_REG_URL, key)
 
-regr = acme.register(contact=())
+regr = acme.register()
 logging.info('Auto-accepting TOS: %s', regr.terms_of_service)
 acme.update_registration(regr.update(
     body=regr.body.update(agreement=regr.terms_of_service)))

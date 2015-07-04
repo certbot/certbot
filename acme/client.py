@@ -64,8 +64,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             new_authzr_uri=new_authzr_uri,
             terms_of_service=terms_of_service)
 
-    def register(self, contact=messages.Registration._fields[
-            'contact'].default):
+    def register(self, new_reg=None):
         """Register.
 
         :param contact: Contact list, as accepted by `.Registration`
@@ -77,14 +76,14 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         :raises .UnexpectedUpdate:
 
         """
-        new_reg = messages.Registration(contact=contact)
+        new_reg = messages.Registration() if new_reg is None else new_reg
 
         response = self.net.post(self.new_reg_uri, new_reg)
         assert response.status_code == httplib.CREATED  # TODO: handle errors
 
         regr = self._regr_from_response(response)
-        if (regr.body.key != self.key.public_key()
-                or regr.body.contact != contact):
+        if (regr.body.key != self.key.public_key() or
+                regr.body.contact != new_reg.contact):
             raise errors.UnexpectedUpdate(regr)
 
         return regr
