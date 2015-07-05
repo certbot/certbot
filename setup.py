@@ -57,7 +57,6 @@ letsencrypt_install_requires = [
     'mock',
     'parsedatetime',
     'psutil>=2.1.0',  # net_connections introduced in 2.1.0
-    'pycrypto',
     # https://pyopenssl.readthedocs.org/en/latest/api/crypto.html#OpenSSL.crypto.X509Req.get_extensions
     'PyOpenSSL>=0.15',
     'pyrfc3339',
@@ -93,7 +92,6 @@ install_requires = [
     'parsedatetime',
     'psutil>=2.1.0',  # net_connections introduced in 2.1.0
     'pyasn1',  # urllib3 InsecurePlatformWarning (#304)
-    'pycrypto',
     # https://pyopenssl.readthedocs.org/en/latest/api/crypto.html#OpenSSL.crypto.X509Req.get_extensions
     'PyOpenSSL>=0.15',
     'pyparsing>=1.5.5',  # Python3 support; perhaps unnecessary?

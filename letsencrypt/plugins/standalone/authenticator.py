@@ -6,7 +6,6 @@ import socket
 import sys
 import time
 
-import Crypto.Random
 import OpenSSL.crypto
 import OpenSSL.SSL
 import zope.component
@@ -267,7 +266,6 @@ class StandaloneAuthenticator(common.Plugin):
 
         sys.stdout.flush()
         fork_result = os.fork()
-        Crypto.Random.atfork()
         if fork_result:
             # PARENT process (still the Let's Encrypt client process)
             self.child_pid = fork_result

@@ -8,10 +8,6 @@ import logging
 import os
 import time
 
-import Crypto.Hash.SHA256
-import Crypto.PublicKey.RSA
-import Crypto.Signature.PKCS1_v1_5
-
 import M2Crypto
 import OpenSSL
 
@@ -169,7 +165,10 @@ def make_key(bits):
     :rtype: str
 
     """
-    return Crypto.PublicKey.RSA.generate(bits).exportKey(format="PEM")
+    assert bits >= 1024  # XXX
+    key = OpenSSL.crypto.PKey()
+    key.generate_key(OpenSSL.crypto.TYPE_RSA, bits)
+    return OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM, key)
 
 
 def valid_privkey(privkey):

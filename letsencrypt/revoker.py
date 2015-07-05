@@ -13,8 +13,8 @@ import os
 import shutil
 import tempfile
 
-import Crypto.PublicKey.RSA
 import M2Crypto
+import OpenSSL
 
 from acme.jose import util as jose_util
 
@@ -70,10 +70,11 @@ class Revoker(object):
         """
         certs = []
         try:
-            clean_pem = Crypto.PublicKey.RSA.importKey(
-                authkey.pem).exportKey("PEM")
-        # https://www.dlitz.net/software/pycrypto/api/current/Crypto.PublicKey.RSA-module.html
-        except (IndexError, ValueError, TypeError):
+            clean_pem = OpenSSL.crypto.dump_privatekey(
+                OpenSSL.crypto.FILETYPE_PEM, OpenSSL.crypto.load_privatekey(
+                    OpenSSL.crypto.FILETYPE_PEM, authkey.pem))
+        except OpenSSL.crypto.Error as error:
+            logger.debug(error, exc_info=True)
             raise errors.RevokerError(
                 "Invalid key file specified to revoke_from_key")
 
@@ -86,9 +87,11 @@ class Revoker(object):
                 #    certificate.
                 _, b_k = self._row_to_backup(row)
                 try:
-                    test_pem = Crypto.PublicKey.RSA.importKey(
-                        open(b_k).read()).exportKey("PEM")
-                except (IndexError, ValueError, TypeError):
+                    test_pem = OpenSSL.crypto.dump_privatekey(
+                        OpenSSL.crypto.FILETYPE_PEM, OpenSSL.crypto.load_privatekey(
+                            OpenSSL.crypto.FILETYPE_PEM, open(b_k).read()))
+                except OpenSSL.crypto.Error as error:
+                    logger.debug(error, exc_info=True)
                     # This should never happen given the assumptions of the
                     # module. If it does, it is probably best to delete the
                     # the offending key/cert. For now... just raise an exception
@@ -248,10 +251,11 @@ class Revoker(object):
         certificate = jose_util.ComparableX509(cert._cert)
         try:
             with open(cert.backup_key_path, "rU") as backup_key_file:
-                key = Crypto.PublicKey.RSA.importKey(backup_key_file.read())
-
+                key = OpenSSL.crypto.load_privatekey(
+                    OpenSSL.crypto.FILETYPE_PEM, backup_key_file.read())
         # If the key file doesn't exist... or is corrupted
-        except (IndexError, ValueError, TypeError):
+        except OpenSSL.crypto.Error as error:
+            logger.debug(error, exc_info=True)
             raise errors.RevokerError(
                 "Corrupted backup key file: %s" % cert.backup_key_path)
 

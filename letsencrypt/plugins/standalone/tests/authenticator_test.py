@@ -374,10 +374,8 @@ class StartListenerTest(unittest.TestCase):
             StandaloneAuthenticator
         self.authenticator = StandaloneAuthenticator(config=CONFIG, name=None)
 
-    @mock.patch("letsencrypt.plugins.standalone.authenticator."
-                "Crypto.Random.atfork")
     @mock.patch("letsencrypt.plugins.standalone.authenticator.os.fork")
-    def test_start_listener_fork_parent(self, mock_fork, mock_atfork):
+    def test_start_listener_fork_parent(self, mock_fork):
         self.authenticator.do_parent_process = mock.Mock()
         self.authenticator.do_parent_process.return_value = True
         mock_fork.return_value = 22222
@@ -387,12 +385,9 @@ class StartListenerTest(unittest.TestCase):
         self.assertTrue(result)
         self.assertEqual(self.authenticator.child_pid, 22222)
         self.authenticator.do_parent_process.assert_called_once_with(1717)
-        mock_atfork.assert_called_once_with()
 
-    @mock.patch("letsencrypt.plugins.standalone.authenticator."
-                "Crypto.Random.atfork")
     @mock.patch("letsencrypt.plugins.standalone.authenticator.os.fork")
-    def test_start_listener_fork_child(self, mock_fork, mock_atfork):
+    def test_start_listener_fork_child(self, mock_fork):
         self.authenticator.do_parent_process = mock.Mock()
         self.authenticator.do_child_process = mock.Mock()
         mock_fork.return_value = 0
@@ -400,7 +395,7 @@ class StartListenerTest(unittest.TestCase):
         self.assertEqual(self.authenticator.child_pid, os.getpid())
         self.authenticator.do_child_process.assert_called_once_with(
             1717, "key")
-        mock_atfork.assert_called_once_with()
+
 
 class DoParentProcessTest(unittest.TestCase):
     """Tests for do_parent_process() method."""

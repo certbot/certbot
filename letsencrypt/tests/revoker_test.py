@@ -7,10 +7,16 @@ import tempfile
 import unittest
 
 import mock
+import OpenSSL
 
 from letsencrypt import errors
 from letsencrypt import le_util
 from letsencrypt.display import util as display_util
+
+
+KEY = OpenSSL.crypto.load_privatekey(
+    OpenSSL.crypto.FILETYPE_PEM, pkg_resources.resource_string(
+        __name__, os.path.join("testdata", "rsa512_key.pem")))
 
 
 class RevokerBase(unittest.TestCase):  # pylint: disable=too-few-public-methods
@@ -77,13 +83,13 @@ class RevokerTest(RevokerBase):
 
         self.assertEqual(mock_net.call_count, 2)
 
-    @mock.patch("letsencrypt.revoker.Crypto.PublicKey.RSA.importKey")
-    def test_revoke_by_invalid_keys(self, mock_import):
-        mock_import.side_effect = ValueError
+    @mock.patch("letsencrypt.revoker.OpenSSL.crypto.load_privatekey")
+    def test_revoke_by_invalid_keys(self, mock_load_privatekey):
+        mock_load_privatekey.side_effect = OpenSSL.crypto.Error
         self.assertRaises(
             errors.RevokerError, self.revoker.revoke_from_key, self.key)
 
-        mock_import.side_effect = [mock.Mock(), IndexError]
+        mock_load_privatekey.side_effect = [KEY, OpenSSL.crypto.Error]
         self.assertRaises(
             errors.RevokerError, self.revoker.revoke_from_key, self.key)
 
@@ -192,10 +198,10 @@ class RevokerTest(RevokerBase):
         self.revoker._safe_revoke(self.certs)
         self.assertTrue(mock_log.error.called)
 
-    @mock.patch("letsencrypt.revoker.Crypto.PublicKey.RSA.importKey")
-    def test_acme_revoke_failure(self, mock_crypto):
+    @mock.patch("letsencrypt.revoker.OpenSSL.crypto.load_privatekey")
+    def test_acme_revoke_failure(self, mock_load_privatekey):
         # pylint: disable=protected-access
-        mock_crypto.side_effect = ValueError
+        mock_load_privatekey.side_effect = OpenSSL.crypto.Error
         self.assertRaises(
             errors.Error, self.revoker._acme_revoke, self.certs[0])
 
