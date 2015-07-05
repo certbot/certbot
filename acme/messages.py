@@ -182,15 +182,27 @@ class Registration(ResourceBody):
 
     @property
     def phone(self):
-        """Phone."""
-        assert len(self.phones) == 1
-        return self.phones[0]
+        """Phone.
+
+        Picks any phone from `phones` or ``None`` if not available.
+
+        """
+        try:
+            return self.phones[0]
+        except IndexError:
+            return None
 
     @property
     def email(self):
-        """Email."""
-        assert len(self.emails) == 1
-        return self.emails[0]
+        """Email.
+
+        Picks any email from `emails` or ``None`` if not available.
+
+        """
+        try:
+            return self.emails[0]
+        except IndexError:
+            return None
 
 
 class RegistrationResource(ResourceWithURI):
