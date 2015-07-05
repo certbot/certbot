@@ -267,17 +267,27 @@ class RevokerInstallerTest(RevokerBase):
             self.assertEqual(
                 sha_vh[cert.get_fingerprint()], self.installs[i])
 
-    @mock.patch("letsencrypt.revoker.M2Crypto.X509.load_cert")
-    def test_get_installed_load_failure(self, mock_m2):
+    @mock.patch("letsencrypt.revoker.OpenSSL.crypto.load_certificate")
+    def test_get_installed_load_failure(self, mock_load_certificate):
         mock_installer = mock.MagicMock()
         mock_installer.get_all_certs_keys.return_value = self.certs_keys
 
-        mock_m2.side_effect = IOError
+        mock_load_certificate.side_effect = OpenSSL.crypto.Error
 
         revoker = self._get_revoker(mock_installer)
 
         # pylint: disable=protected-access
         self.assertEqual(revoker._get_installed_locations(), {})
+
+    def test_get_installed_load_failure_open(self):
+        tmp = tempfile.mkdtemp()
+        mock_installer = mock.MagicMock()
+        mock_installer.get_all_certs_keys.return_value = [(
+            os.path.join(tmp, 'missing'), None, None)]
+        revoker = self._get_revoker(mock_installer)
+        # pylint: disable=protected-access
+        self.assertEqual(revoker._get_installed_locations(), {})
+        os.rmdir(tmp)
 
 
 class RevokerClassMethodsTest(RevokerBase):
@@ -333,6 +343,13 @@ class CertTest(unittest.TestCase):
     def test_failed_load(self):
         from letsencrypt.revoker import Cert
         self.assertRaises(errors.RevokerError, Cert, self.key_path)
+
+    def test_failed_load_open(self):
+        tmp = tempfile.mkdtemp()
+        from letsencrypt.revoker import Cert
+        self.assertRaises(
+            errors.RevokerError, Cert, os.path.join(tmp, 'missing'))
+        os.rmdir(tmp)
 
     def test_no_row(self):
         self.assertEqual(self.certs[0].get_row(), None)

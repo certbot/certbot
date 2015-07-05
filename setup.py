@@ -53,7 +53,7 @@ letsencrypt_install_requires = [
     'argparse',
     'ConfigArgParse',
     'configobj',
-    'M2Crypto',
+    #'cryptography>=0.7',  # load_pem_x509_certificate, version pin mismatch
     'mock',
     'parsedatetime',
     'psutil>=2.1.0',  # net_connections introduced in 2.1.0
@@ -64,7 +64,6 @@ letsencrypt_install_requires = [
     'pytz',
     'zope.component',
     'zope.interface',
-    'M2Crypto',
 ]
 letsencrypt_apache_install_requires = [
     #'acme',
@@ -103,9 +102,6 @@ install_requires = [
     'werkzeug',
     'zope.component',
     'zope.interface',
-    # order of items in install_requires DOES matter and M2Crypto has
-    # to go last, see #152
-    'M2Crypto',
 ]
 
 assert set(install_requires) == set.union(*(set(ireq) for ireq in (

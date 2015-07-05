@@ -52,7 +52,6 @@ are provided mainly for the :ref:`developers <hacking>` reference.
 In general:
 
 * ``sudo`` is required as a suggested way of running privileged process
-* `SWIG`_ is required for compiling `M2Crypto`_
 * `Augeas`_ is required for the Python bindings
 
 
@@ -102,14 +101,6 @@ Centos 7
 
    sudo ./bootstrap/centos.sh
 
-For installation run this modified command (note the trailing
-backslash):
-
-.. code-block:: shell
-
-   SWIG_FEATURES="-includeall -D__`uname -m`__-I/usr/include/openssl" \
-   ./venv/bin/pip install -r requirements.txt .
-
 
 Installation
 ============
@@ -126,13 +117,6 @@ Installation
              ./venv/bin/...``. These modes of operation might corrupt
              your operating system and are **not supported** by the
              Let's Encrypt team!
-
-.. note:: If your operating system uses SWIG 3.0.5+, you will need to
-          run ``pip install -r requirements-swig-3.0.5.txt -r
-          requirements.txt .`` instead. Known affected systems:
-
-          * Fedora 22
-          * some versions of Mac OS X
 
 
 Usage
@@ -152,6 +136,4 @@ The ``letsencrypt`` commandline tool has a builtin help:
 
 
 .. _Augeas: http://augeas.net/
-.. _M2Crypto: https://github.com/M2Crypto/M2Crypto
-.. _SWIG: http://www.swig.org/
 .. _Virtualenv: https://virtualenv.pypa.io

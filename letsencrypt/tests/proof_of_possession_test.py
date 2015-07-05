@@ -1,6 +1,7 @@
 """Tests for letsencrypt.proof_of_possession."""
 import os
 import pkg_resources
+import tempfile
 import unittest
 
 from cryptography.hazmat.backends import default_backend
@@ -18,9 +19,7 @@ from letsencrypt.display import util as display_util
 
 BASE_PACKAGE = "letsencrypt.tests"
 CERT0_PATH = pkg_resources.resource_filename(
-    BASE_PACKAGE, os.path.join("testdata", "cert.pem"))
-CERT1_PATH = pkg_resources.resource_filename(
-    BASE_PACKAGE, os.path.join("testdata", "cert-san.pem"))
+    "acme.jose", os.path.join("testdata", "cert.der"))
 CERT2_PATH = pkg_resources.resource_filename(
     BASE_PACKAGE, os.path.join("testdata", "dsa_cert.pem"))
 CERT2_KEY_PATH = pkg_resources.resource_filename(
@@ -38,7 +37,8 @@ with open(CERT3_KEY_PATH) as cert3_file:
 class ProofOfPossessionTest(unittest.TestCase):
     def setUp(self):
         self.installer = mock.MagicMock()
-        certs = [CERT0_PATH, CERT1_PATH, CERT2_PATH, CERT3_PATH]
+        self.cert1_path = tempfile.mkstemp()[1]
+        certs = [CERT0_PATH, self.cert1_path, CERT2_PATH, CERT3_PATH]
         keys = [None, None, CERT2_KEY_PATH, CERT3_KEY_PATH]
         self.installer.get_all_certs_keys.return_value = zip(
             certs, keys, 4 * [None])
@@ -55,6 +55,9 @@ class ProofOfPossessionTest(unittest.TestCase):
             chall=chall, uri="http://example", status=messages.STATUS_PENDING)
         self.achall = achallenges.ProofOfPossession(
             challb=challb, domain="example.com")
+
+    def tearDown(self):
+        os.remove(self.cert1_path)
 
     def test_perform_bad_challenge(self):
         hints = challenges.ProofOfPossession.Hints(

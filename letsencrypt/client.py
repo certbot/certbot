@@ -3,7 +3,6 @@ import logging
 import os
 import pkg_resources
 
-import M2Crypto
 import OpenSSL.crypto
 import zope.component
 
@@ -435,8 +434,10 @@ def validate_key_csr(privkey, csr=None):
 
     if csr:
         if csr.form == "der":
-            csr_obj = M2Crypto.X509.load_request_der_string(csr.data)
-            csr = le_util.CSR(csr.file, csr_obj.as_pem(), "der")
+            csr_obj = OpenSSL.crypto.load_certificate_request(
+                OpenSSL.crypto.FILETYPE_ASN1, csr.data)
+            csr = le_util.CSR(csr.file, OpenSSL.crypto.dump_certificate(
+                OpenSSL.crypto.FILETYPE_PEM, csr_obj), "pem")
 
         # If CSR is provided, it must be readable and valid.
         if csr.data and not crypto_util.valid_csr(csr.data):

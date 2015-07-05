@@ -1,7 +1,9 @@
 """Proof of Possession Identifier Validation Challenge."""
-import M2Crypto
 import logging
 import os
+
+from cryptography import x509
+from cryptography.hazmat.backends import default_backend
 import zope.component
 
 from acme import challenges
@@ -43,15 +45,21 @@ class ProofOfPossession(object): # pylint: disable=too-few-public-methods
             return None
 
         for cert, key, _ in self.installer.get_all_certs_keys():
-            pkey = M2Crypto.X509.load_cert(cert).get_pubkey()
+            with open(cert) as cert_file:
+                cert_data = cert_file.read()
             try:
-                rsa_pkey = pkey.get_rsa()
+                cert_obj = x509.load_pem_x509_certificate(
+                    cert_data, default_backend())
             except ValueError:
-                logger.warn("Only RSA supported at this time")
-                continue
-            pem_cert_key = rsa_pkey.as_pem()
-            cert_key = achall.alg.kty.load(pem_cert_key)
-            # TODO: If JWKES.load raises other exceptions, they should be caught here
+                try:
+                    cert_obj = x509.load_der_x509_certificate(
+                        cert_data, default_backend())
+                except ValueError:
+                    logger.warn("Certificate is neither PER nor DER: %s", cert)
+
+            # TODO: only RSA is supported
+            cert_key = achall.alg.kty(key=jose.ComparableRSAKey(
+                cert_obj.public_key()))
             if cert_key == achall.hints.jwk:
                 return self._gen_response(achall, key)
 
