@@ -3,7 +3,8 @@ import logging
 import os
 import pkg_resources
 
-import Crypto.PublicKey.RSA
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric import rsa
 import M2Crypto
 
 from acme import client
@@ -18,8 +19,11 @@ NEW_REG_URL = 'https://www.letsencrypt-demo.org/acme/new-reg'
 BITS = 2048  # minimum for Boulder
 DOMAIN = 'example1.com'  # example.com is ignored by Boulder
 
-key = jose.JWKRSA.load(
-    Crypto.PublicKey.RSA.generate(BITS).exportKey(format="PEM"))
+# generate_private_key requires cryptography>=0.5
+key = jose.JWKRSA(key=jose.ComparableRSAKey(rsa.generate_private_key(
+    public_exponent=65537,
+    key_size=2048,
+    backend=default_backend())))
 acme = client.Client(NEW_REG_URL, key)
 
 regr = acme.register(contact=())

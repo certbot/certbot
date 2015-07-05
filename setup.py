@@ -35,9 +35,11 @@ changes = read_file(os.path.join(here, 'CHANGES.rst'))
 # maintainers. and will make the future migration a lot easier.
 acme_install_requires = [
     'argparse',
+    # load_pem_private/public_key (>=0.6)
+    # rsa_recover_prime_factors (>=0.8)
+    'cryptography>=0.8',
     #'letsencrypt'  # TODO: uses testdata vectors
     'mock',
-    'pycrypto',
     'pyrfc3339',
     'ndg-httpsclient',  # urllib3 InsecurePlatformWarning (#304)
     'pyasn1',  # urllib3 InsecurePlatformWarning (#304)
@@ -83,6 +85,7 @@ letsencrypt_nginx_install_requires = [
 
 install_requires = [
     'argparse',
+    'cryptography>=0.8',
     'ConfigArgParse',
     'configobj',
     'mock',

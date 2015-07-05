@@ -4,16 +4,18 @@ import itertools
 import os
 import pkg_resources
 
-import Crypto.PublicKey.RSA
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
 
 from acme import challenges
 from acme import jose
 from acme import messages
 
 
-KEY = jose.HashableRSAKey(Crypto.PublicKey.RSA.importKey(
+KEY = jose.ComparableRSAKey(serialization.load_pem_private_key(
     pkg_resources.resource_string(
-        "acme.jose", os.path.join("testdata", "rsa512_key.pem"))))
+        __name__, os.path.join('testdata', 'rsa512_key.pem')),
+    password=None, backend=default_backend()))
 
 # Challenges
 SIMPLE_HTTP = challenges.SimpleHTTP(
@@ -30,7 +32,7 @@ RECOVERY_TOKEN = challenges.RecoveryToken()
 POP = challenges.ProofOfPossession(
     alg="RS256", nonce="xD\xf9\xb9\xdbU\xed\xaa\x17\xf1y|\x81\x88\x99 ",
     hints=challenges.ProofOfPossession.Hints(
-        jwk=jose.JWKRSA(key=KEY.publickey()),
+        jwk=jose.JWKRSA(key=KEY.public_key()),
         cert_fingerprints=(
             "93416768eb85e33adc4277f4c9acd63e7418fcfe",
             "16d95b7b63f1972b980b14c20291f3c0d1855d95",

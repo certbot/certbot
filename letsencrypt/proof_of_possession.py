@@ -1,5 +1,6 @@
 """Proof of Possession Identifier Validation Challenge."""
 import M2Crypto
+import logging
 import os
 import zope.component
 
@@ -9,6 +10,9 @@ from acme import other
 
 from letsencrypt import interfaces
 from letsencrypt.display import util as display_util
+
+
+logger = logging.getLogger(__name__)
 
 
 class ProofOfPossession(object): # pylint: disable=too-few-public-methods
@@ -39,19 +43,22 @@ class ProofOfPossession(object): # pylint: disable=too-few-public-methods
             return None
 
         for cert, key, _ in self.installer.get_all_certs_keys():
-            der_cert_key = M2Crypto.X509.load_cert(cert).get_pubkey().as_der()
+            pkey = M2Crypto.X509.load_cert(cert).get_pubkey()
             try:
-                cert_key = achall.alg.kty.load(der_cert_key)
-            # If JWKES.load raises other exceptions, they should be caught here
-            except (IndexError, ValueError, TypeError):
+                rsa_pkey = pkey.get_rsa()
+            except ValueError:
+                logger.warn("Only RSA supported at this time")
                 continue
+            pem_cert_key = rsa_pkey.as_pem()
+            cert_key = achall.alg.kty.load(pem_cert_key)
+            # TODO: If JWKES.load raises other exceptions, they should be caught here
             if cert_key == achall.hints.jwk:
                 return self._gen_response(achall, key)
 
         # Is there are different prompt we should give the user?
         code, key = zope.component.getUtility(
             interfaces.IDisplay).input(
-                "Path to private key for identifier: %s " % achall.domain)
+                "QPath to private key for identifier: %s " % achall.domain)
         if code != display_util.CANCEL:
             return self._gen_response(achall, key)
 

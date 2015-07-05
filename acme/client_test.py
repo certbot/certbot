@@ -44,7 +44,7 @@ class ClientTest(unittest.TestCase):
         # Registration
         self.contact = ('mailto:cert-admin@example.com', 'tel:+12025551212')
         reg = messages.Registration(
-            contact=self.contact, key=KEY.public(), recovery_token='t')
+            contact=self.contact, key=KEY.public_key(), recovery_token='t')
         self.regr = messages.RegistrationResource(
             body=reg, uri='https://www.letsencrypt-demo.org/acme/reg/1',
             new_authzr_uri='https://www.letsencrypt-demo.org/acme/new-reg',
@@ -84,7 +84,7 @@ class ClientTest(unittest.TestCase):
         # TODO: test POST call arguments
 
         # TODO: split here and separate test
-        reg_wrong_key = self.regr.body.update(key=KEY2.public())
+        reg_wrong_key = self.regr.body.update(key=KEY2.public_key())
         self.response.json.return_value = reg_wrong_key.to_json()
         self.assertRaises(
             errors.UnexpectedUpdate, self.client.register, self.contact)

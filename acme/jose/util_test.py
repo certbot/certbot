@@ -4,32 +4,52 @@ import os
 import pkg_resources
 import unittest
 
-import Crypto.PublicKey.RSA
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
 
 
-class HashableRSAKeyTest(unittest.TestCase):
-    """Tests for acme.jose.util.HashableRSAKey."""
+class ComparableRSAKeyTest(unittest.TestCase):
+    """Tests for acme.jose.util.ComparableRSAKey."""
 
     def setUp(self):
-        from acme.jose.util import HashableRSAKey
-        self.key = HashableRSAKey(Crypto.PublicKey.RSA.importKey(
-            pkg_resources.resource_string(
-                __name__, os.path.join('testdata', 'rsa256_key.pem'))))
-        self.key_same = HashableRSAKey(Crypto.PublicKey.RSA.importKey(
-            pkg_resources.resource_string(
-                __name__, os.path.join('testdata', 'rsa256_key.pem'))))
+        from acme.jose.util import ComparableRSAKey
+        backend = default_backend()
+        def load_key():  # pylint: disable=missing-docstring
+            return ComparableRSAKey(serialization.load_pem_private_key(
+                pkg_resources.resource_string(
+                    __name__, os.path.join('testdata', 'rsa256_key.pem')),
+                password=None, backend=backend))
+        self.key = load_key()
+        self.key_same = load_key()
+
+    def test_getattr_proxy(self):
+        self.assertEqual(256, self.key.key_size)
 
     def test_eq(self):
-        # if __eq__ is not defined, then two HashableRSAKeys with same
-        # _wrapped do not equate
         self.assertEqual(self.key, self.key_same)
+
+    def test_not_eq_different_types(self):
+        self.assertFalse(self.key.__eq__(5))
+
+    def test_not_eq_not_wrapped(self):
+        # pylint: disable=protected-access
+        self.assertFalse(self.key.__eq__(self.key_same._wrapped))
+
+    def test_not_eq_no_serialization(self):
+        from acme.jose.util import ComparableRSAKey
+        self.assertFalse(ComparableRSAKey(5).__eq__(ComparableRSAKey(5)))
 
     def test_hash(self):
         self.assertTrue(isinstance(hash(self.key), int))
+        self.assertEqual(hash(self.key), hash(self.key_same))
 
-    def test_publickey(self):
-        from acme.jose.util import HashableRSAKey
-        self.assertTrue(isinstance(self.key.publickey(), HashableRSAKey))
+    def test_repr(self):
+        self.assertTrue(repr(self.key).startswith(
+            '<ComparableRSAKey(<cryptography.hazmat.'))
+
+    def test_public_key(self):
+        from acme.jose.util import ComparableRSAKey
+        self.assertTrue(isinstance(self.key.public_key(), ComparableRSAKey))
 
 
 class ImmutableMapTest(unittest.TestCase):

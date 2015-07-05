@@ -3,14 +3,17 @@ import os
 import pkg_resources
 import unittest
 
-import Crypto.PublicKey.RSA
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
 
 from acme import errors
 from acme import jose
 
 
-RSA512_KEY = Crypto.PublicKey.RSA.importKey(pkg_resources.resource_string(
-    'acme.jose', os.path.join('testdata', 'rsa512_key.pem')))
+RSA512_KEY = jose.ComparableRSAKey(serialization.load_pem_private_key(
+    pkg_resources.resource_string(
+        'acme.jose', os.path.join('testdata', 'rsa512_key.pem')),
+    password=None, backend=default_backend()))
 
 
 class HeaderTest(unittest.TestCase):
@@ -44,7 +47,7 @@ class JWSTest(unittest.TestCase):
 
     def setUp(self):
         self.privkey = jose.JWKRSA(key=RSA512_KEY)
-        self.pubkey = self.privkey.public()
+        self.pubkey = self.privkey.public_key()
         self.nonce = jose.b64encode('Nonce')
 
     def test_it(self):

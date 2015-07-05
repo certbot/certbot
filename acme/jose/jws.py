@@ -203,7 +203,7 @@ class Signature(json_util.JSONObjectWithFields):
         header_params = kwargs
         header_params['alg'] = alg
         if include_jwk:
-            header_params['jwk'] = key.public()
+            header_params['jwk'] = key.public_key()
 
         assert set(header_params).issubset(cls.header_cls._fields)
         assert protect.issubset(cls.header_cls._fields)
@@ -354,12 +354,12 @@ class CLI(object):
 
         if args.key is not None:
             assert args.kty is not None
-            key = args.kty.load(args.key.read())
+            key = args.kty.load(args.key.read()).public_key()
         else:
             key = None
 
         sys.stdout.write(sig.payload)
-        return int(not sig.verify(key=key))
+        return not sig.verify(key=key)
 
     @classmethod
     def _alg_type(cls, arg):

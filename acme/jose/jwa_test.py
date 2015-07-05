@@ -3,17 +3,24 @@ import os
 import pkg_resources
 import unittest
 
-from Crypto.PublicKey import RSA
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
 
 from acme.jose import errors
 
 
-RSA256_KEY = RSA.importKey(pkg_resources.resource_string(
-    __name__, os.path.join('testdata', 'rsa256_key.pem')))
-RSA512_KEY = RSA.importKey(pkg_resources.resource_string(
-    __name__, os.path.join('testdata', 'rsa512_key.pem')))
-RSA1024_KEY = RSA.importKey(pkg_resources.resource_string(
-    __name__, os.path.join('testdata', 'rsa1024_key.pem')))
+RSA256_KEY = serialization.load_pem_private_key(
+    pkg_resources.resource_string(
+        __name__, os.path.join('testdata', 'rsa256_key.pem')),
+    password=None, backend=default_backend())
+RSA512_KEY = serialization.load_pem_private_key(
+    pkg_resources.resource_string(
+        __name__, os.path.join('testdata', 'rsa512_key.pem')),
+    password=None, backend=default_backend())
+RSA1024_KEY = serialization.load_pem_private_key(
+    pkg_resources.resource_string(
+        __name__, os.path.join('testdata', 'rsa1024_key.pem')),
+    password=None, backend=default_backend())
 
 
 class JWASignatureTest(unittest.TestCase):
@@ -71,14 +78,13 @@ class JWARSTest(unittest.TestCase):
     def test_sign_no_private_part(self):
         from acme.jose.jwa import RS256
         self.assertRaises(
-            errors.Error, RS256.sign, RSA512_KEY.publickey(), 'foo')
+            errors.Error, RS256.sign, RSA512_KEY.public_key(), 'foo')
 
     def test_sign_key_too_small(self):
         from acme.jose.jwa import RS256
         from acme.jose.jwa import PS256
         self.assertRaises(errors.Error, RS256.sign, RSA256_KEY, 'foo')
         self.assertRaises(errors.Error, PS256.sign, RSA256_KEY, 'foo')
-        self.assertRaises(errors.Error, PS256.sign, RSA512_KEY, 'foo')
 
     def test_rs(self):
         from acme.jose.jwa import RS256
@@ -89,16 +95,14 @@ class JWARSTest(unittest.TestCase):
             '\xd2\xb9.>}\xfd'
         )
         self.assertEqual(RS256.sign(RSA512_KEY, 'foo'), sig)
-        # next tests guard that only True/False are return as oppossed
-        # to e.g. 1/0
-        self.assertTrue(RS256.verify(RSA512_KEY, 'foo', sig) is True)
-        self.assertFalse(RS256.verify(RSA512_KEY, 'foo', sig + '!') is False)
+        self.assertTrue(RS256.verify(RSA512_KEY.public_key(), 'foo', sig))
+        self.assertFalse(RS256.verify(RSA512_KEY.public_key(), 'foo', sig + '!'))
 
     def test_ps(self):
         from acme.jose.jwa import PS256
         sig = PS256.sign(RSA1024_KEY, 'foo')
-        self.assertTrue(PS256.verify(RSA1024_KEY, 'foo', sig) is True)
-        self.assertTrue(PS256.verify(RSA1024_KEY, 'foo', sig + '!') is False)
+        self.assertTrue(PS256.verify(RSA1024_KEY.public_key(), 'foo', sig))
+        self.assertFalse(PS256.verify(RSA1024_KEY.public_key(), 'foo', sig + '!'))
 
 
 if __name__ == '__main__':

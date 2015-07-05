@@ -1,9 +1,10 @@
 """Tests for letsencrypt.proof_of_possession."""
-import Crypto.PublicKey.RSA
 import os
 import pkg_resources
 import unittest
 
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
 import mock
 
 from acme import challenges
@@ -28,8 +29,10 @@ CERT3_PATH = pkg_resources.resource_filename(
     BASE_PACKAGE, os.path.join("testdata", "matching_cert.pem"))
 CERT3_KEY_PATH = pkg_resources.resource_filename(
     BASE_PACKAGE, os.path.join("testdata", "rsa512_key.pem"))
-CERT3_KEY = Crypto.PublicKey.RSA.importKey(pkg_resources.resource_string(
-    BASE_PACKAGE, os.path.join('testdata', 'rsa512_key.pem'))).publickey()
+with open(CERT3_KEY_PATH) as cert3_file:
+    CERT3_KEY = jose.ComparableRSAKey(serialization.load_pem_private_key(
+        cert3_file.read(), password=None,
+        backend=default_backend())).public_key()
 
 
 class ProofOfPossessionTest(unittest.TestCase):
@@ -55,7 +58,7 @@ class ProofOfPossessionTest(unittest.TestCase):
 
     def test_perform_bad_challenge(self):
         hints = challenges.ProofOfPossession.Hints(
-            jwk=jose.jwk.JWKOct(key=CERT3_KEY), cert_fingerprints=(),
+            jwk=jose.jwk.JWKOct(key="foo"), cert_fingerprints=(),
             certs=(), serial_numbers=(), subject_key_identifiers=(),
             issuers=(), authorized_for=())
         chall = challenges.ProofOfPossession(

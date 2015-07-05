@@ -3,7 +3,8 @@ import os
 import pkg_resources
 import unittest
 
-import Crypto.PublicKey.RSA
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
 import M2Crypto
 import mock
 import requests
@@ -16,9 +17,10 @@ from acme import other
 CERT = jose.ComparableX509(M2Crypto.X509.load_cert(
     pkg_resources.resource_filename(
         'letsencrypt.tests', os.path.join('testdata', 'cert.pem'))))
-KEY = jose.HashableRSAKey(Crypto.PublicKey.RSA.importKey(
+KEY = jose.ComparableRSAKey(serialization.load_pem_private_key(
     pkg_resources.resource_string(
-        'acme.jose', os.path.join('testdata', 'rsa512_key.pem'))))
+        'acme.jose', os.path.join('testdata', 'rsa512_key.pem')),
+    password=None, backend=default_backend()))
 
 
 class ChallengeResponseTest(unittest.TestCase):
@@ -345,7 +347,7 @@ class RecoveryTokenResponseTest(unittest.TestCase):
 class ProofOfPossessionHintsTest(unittest.TestCase):
 
     def setUp(self):
-        jwk = jose.JWKRSA(key=KEY.publickey())
+        jwk = jose.JWKRSA(key=KEY.public_key())
         issuers = (
             'C=US, O=SuperT LLC, CN=SuperTrustworthy Public CA',
             'O=LessTrustworthy CA Inc, CN=LessTrustworthy But StillSecure',
@@ -413,7 +415,7 @@ class ProofOfPossessionTest(unittest.TestCase):
     def setUp(self):
         from acme.challenges import ProofOfPossession
         hints = ProofOfPossession.Hints(
-            jwk=jose.JWKRSA(key=KEY.publickey()), cert_fingerprints=(),
+            jwk=jose.JWKRSA(key=KEY.public_key()), cert_fingerprints=(),
             certs=(), serial_numbers=(), subject_key_identifiers=(),
             issuers=(), authorized_for=())
         self.msg = ProofOfPossession(
@@ -453,7 +455,7 @@ class ProofOfPossessionResponseTest(unittest.TestCase):
         # nonce and challenge nonce are the same, don't make the same
         # mistake here...
         signature = other.Signature(
-            alg=jose.RS256, jwk=jose.JWKRSA(key=KEY.publickey()),
+            alg=jose.RS256, jwk=jose.JWKRSA(key=KEY.public_key()),
             sig='\xa7\xc1\xe7\xe82o\xbc\xcd\xd0\x1e\x010#Z|\xaf\x15\x83'
                 '\x94\x8f#\x9b\nQo(\x80\x15,\x08\xfcz\x1d\xfd\xfd.\xaap'
                 '\xfa\x06\xd1\xa2f\x8d8X2>%d\xbd%\xe1T\xdd\xaa0\x18\xde'

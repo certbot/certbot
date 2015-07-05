@@ -83,7 +83,8 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         assert response.status_code == httplib.CREATED  # TODO: handle errors
 
         regr = self._regr_from_response(response)
-        if regr.body.key != self.key.public() or regr.body.contact != contact:
+        if (regr.body.key != self.key.public_key()
+                or regr.body.contact != contact):
             raise errors.UnexpectedUpdate(regr)
 
         return regr

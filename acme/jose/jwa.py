@@ -4,18 +4,20 @@ https://tools.ietf.org/html/draft-ietf-jose-json-web-algorithms-40
 
 """
 import abc
+import logging
 
-from Crypto.Hash import HMAC
-from Crypto.Hash import SHA256
-from Crypto.Hash import SHA384
-from Crypto.Hash import SHA512
-
-from Crypto.Signature import PKCS1_PSS
-from Crypto.Signature import PKCS1_v1_5
+import cryptography.exceptions
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import hmac
+from cryptography.hazmat.primitives.asymmetric import padding
 
 from acme.jose import errors
 from acme.jose import interfaces
 from acme.jose import jwk
+
+
+logger = logging.getLogger(__name__)
 
 
 class JWA(interfaces.JSONDeSerializable): # pylint: disable=abstract-method
@@ -66,43 +68,79 @@ class _JWAHS(JWASignature):
 
     kty = jwk.JWKOct
 
-    def __init__(self, name, digestmod):
+    def __init__(self, name, hash_):
         super(_JWAHS, self).__init__(name)
-        self.digestmod = digestmod
+        self.hash = hash_()
 
     def sign(self, key, msg):
-        return HMAC.new(key, msg, self.digestmod).digest()
+        signer = hmac.HMAC(key, self.hash, backend=default_backend())
+        signer.update(msg)
+        return signer.finalize()
 
     def verify(self, key, msg, sig):
-        """Verify the signature.
+        verifier = hmac.HMAC(key, self.hash, backend=default_backend())
+        verifier.update(msg)
+        try:
+            verifier.verify(sig)
+        except cryptography.exceptions.InvalidSignature as error:
+            logger.debug(error, exc_info=True)
+            return False
+        else:
+            return True
 
-        .. warning::
-            Does not protect against timing attack (no constant compare).
 
-        """
-        return self.sign(key, msg) == sig
-
-
-class _JWARS(JWASignature):
+class _JWARSA(object):
 
     kty = jwk.JWKRSA
-
-    def __init__(self, name, padding, digestmod):
-        super(_JWARS, self).__init__(name)
-        self.padding = padding
-        self.digestmod = digestmod
+    padding = NotImplemented
+    hash = NotImplemented
 
     def sign(self, key, msg):
+        """Sign the ``msg`` using ``key``."""
         try:
-            return self.padding.new(key).sign(self.digestmod.new(msg))
-        except TypeError:
-            raise errors.Error('Key has no private part necessary for signing')
-        except (AttributeError, ValueError):
-            # ValueError for PS, AttributeError for RS
-            raise errors.Error('Key too small ({0})'.format(key.size()))
+            signer = key.signer(self.padding, self.hash)
+        except AttributeError as error:
+            logger.debug(error, exc_info=True)
+            raise errors.Error("Public key cannot be used for signing")
+        except ValueError as error:  # digest too large
+            logger.debug(error, exc_info=True)
+            raise errors.Error(str(error))
+        signer.update(msg)
+        try:
+            return signer.finalize()
+        except ValueError as error:
+            logger.debug(error, exc_info=True)
+            raise errors.Error(str(error))
 
     def verify(self, key, msg, sig):
-        return self.padding.new(key).verify(self.digestmod.new(msg), sig)
+        """Verify the ``msg` and ``sig`` using ``key``."""
+        verifier = key.verifier(sig, self.padding, self.hash)
+        verifier.update(msg)
+        try:
+            verifier.verify()
+        except cryptography.exceptions.InvalidSignature as error:
+            logger.debug(error, exc_info=True)
+            return False
+        else:
+            return True
+
+
+class _JWARS(_JWARSA, JWASignature):
+
+    def __init__(self, name, hash_):
+        super(_JWARS, self).__init__(name)
+        self.padding = padding.PKCS1v15()
+        self.hash = hash_()
+
+
+class _JWAPS(_JWARSA, JWASignature):
+
+    def __init__(self, name, hash_):
+        super(_JWAPS, self).__init__(name)
+        self.padding = padding.PSS(
+            mgf=padding.MGF1(hash_()),
+            salt_length=padding.PSS.MAX_LENGTH)
+        self.hash = hash_()
 
 
 class _JWAES(JWASignature):  # pylint: disable=abstract-class-not-used
@@ -116,17 +154,17 @@ class _JWAES(JWASignature):  # pylint: disable=abstract-class-not-used
         raise NotImplementedError()
 
 
-HS256 = JWASignature.register(_JWAHS('HS256', SHA256))
-HS384 = JWASignature.register(_JWAHS('HS384', SHA384))
-HS512 = JWASignature.register(_JWAHS('HS512', SHA512))
+HS256 = JWASignature.register(_JWAHS('HS256', hashes.SHA256))
+HS384 = JWASignature.register(_JWAHS('HS384', hashes.SHA384))
+HS512 = JWASignature.register(_JWAHS('HS512', hashes.SHA512))
 
-RS256 = JWASignature.register(_JWARS('RS256', PKCS1_v1_5, SHA256))
-RS384 = JWASignature.register(_JWARS('RS384', PKCS1_v1_5, SHA384))
-RS512 = JWASignature.register(_JWARS('RS512', PKCS1_v1_5, SHA512))
+RS256 = JWASignature.register(_JWARS('RS256', hashes.SHA256))
+RS384 = JWASignature.register(_JWARS('RS384', hashes.SHA384))
+RS512 = JWASignature.register(_JWARS('RS512', hashes.SHA512))
 
-PS256 = JWASignature.register(_JWARS('PS256', PKCS1_PSS, SHA256))
-PS384 = JWASignature.register(_JWARS('PS384', PKCS1_PSS, SHA384))
-PS512 = JWASignature.register(_JWARS('PS512', PKCS1_PSS, SHA512))
+PS256 = JWASignature.register(_JWAPS('PS256', hashes.SHA256))
+PS384 = JWASignature.register(_JWAPS('PS384', hashes.SHA384))
+PS512 = JWASignature.register(_JWAPS('PS512', hashes.SHA512))
 
 ES256 = JWASignature.register(_JWAES('ES256'))
 ES256 = JWASignature.register(_JWAES('ES384'))

@@ -4,7 +4,8 @@ import os
 import pkg_resources
 import unittest
 
-import Crypto.PublicKey.RSA
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
 import M2Crypto
 import mock
 
@@ -18,8 +19,10 @@ from acme.jose import util
 CERT = util.ComparableX509(M2Crypto.X509.load_cert(
     pkg_resources.resource_filename(
         'letsencrypt.tests', 'testdata/cert.pem')))
-RSA512_KEY = Crypto.PublicKey.RSA.importKey(pkg_resources.resource_string(
-    __name__, os.path.join('testdata', 'rsa512_key.pem')))
+RSA512_KEY = util.ComparableRSAKey(serialization.load_pem_private_key(
+    pkg_resources.resource_string(
+        __name__, os.path.join('testdata', 'rsa512_key.pem')),
+    password=None, backend=default_backend()))
 
 
 class MediaTypeTest(unittest.TestCase):
@@ -107,7 +110,7 @@ class JWSTest(unittest.TestCase):
 
     def setUp(self):
         self.privkey = jwk.JWKRSA(key=RSA512_KEY)
-        self.pubkey = self.privkey.public()
+        self.pubkey = self.privkey.public_key()
 
         from acme.jose.jws import JWS
         self.unprotected = JWS.sign(

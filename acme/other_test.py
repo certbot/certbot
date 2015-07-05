@@ -3,14 +3,16 @@ import os
 import pkg_resources
 import unittest
 
-import Crypto.PublicKey.RSA
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
 
 from acme import jose
 
 
-KEY = jose.HashableRSAKey(Crypto.PublicKey.RSA.importKey(
+KEY = jose.ComparableRSAKey(serialization.load_pem_private_key(
     pkg_resources.resource_string(
-        'acme.jose', os.path.join('testdata', 'rsa512_key.pem'))))
+        'acme.jose', os.path.join('testdata', 'rsa512_key.pem')),
+    password=None, backend=default_backend()))
 
 
 class SignatureTest(unittest.TestCase):
@@ -26,7 +28,7 @@ class SignatureTest(unittest.TestCase):
         self.nonce = '\xec\xd6\xf2oYH\xeb\x13\xd5#q\xe0\xdd\xa2\x92\xa9'
 
         self.alg = jose.RS256
-        self.jwk = jose.JWKRSA(key=KEY.publickey())
+        self.jwk = jose.JWKRSA(key=KEY.public_key())
 
         b64sig = ('SUPYKucUnhlTt8_sMxLiigOYdf_wlOLXPI-o7aRLTsOquVjDd6r'
                   'AX9AFJHk-bCMQPJbSzXKjG6H1IWbvxjS2Ew')

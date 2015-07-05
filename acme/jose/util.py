@@ -1,6 +1,8 @@
 """JOSE utilities."""
 import collections
 
+from cryptography.hazmat.primitives.asymmetric import rsa
+
 
 class abstractclassmethod(classmethod):
     # pylint: disable=invalid-name,too-few-public-methods
@@ -41,9 +43,14 @@ class ComparableX509(object):  # pylint: disable=too-few-public-methods
         return self.as_der() == other.as_der()
 
 
-class HashableRSAKey(object):  # pylint: disable=too-few-public-methods
-    """Wrapper for `Crypto.PublicKey.RSA` objects that supports hashing."""
+class ComparableRSAKey(object):  # pylint: disable=too-few-public-methods
+    """Wrapper for `cryptography` RSA keys.
 
+    Wraps around:
+    - `cryptography.hazmat.primitives.assymetric.RSAPrivateKey`
+    - `cryptography.hazmat.primitives.assymetric.RSAPublicKey`
+
+    """
     def __init__(self, wrapped):
         self._wrapped = wrapped
 
@@ -51,14 +58,36 @@ class HashableRSAKey(object):  # pylint: disable=too-few-public-methods
         return getattr(self._wrapped, name)
 
     def __eq__(self, other):
-        return self._wrapped == other
+        # pylint: disable=protected-access
+        if (not isinstance(other, self.__class__) or
+                self._wrapped.__class__ is not other._wrapped.__class__):
+            return False
+        # RSA*KeyWithSerialization requires cryptography>=0.8
+        if isinstance(self._wrapped, rsa.RSAPrivateKeyWithSerialization):
+            return self.private_numbers() == other.private_numbers()
+        elif isinstance(self._wrapped, rsa.RSAPublicKeyWithSerialization):
+            return self.public_numbers() == other.public_numbers()
+        else:
+            return False  # we shouldn't reach here...
+
 
     def __hash__(self):
-        return hash((type(self), self.exportKey(format='DER')))
+        # public_numbers() hasn't got stable hash!
+        if isinstance(self._wrapped, rsa.RSAPrivateKeyWithSerialization):
+            priv = self.private_numbers()
+            pub = priv.public_numbers
+            return hash((type(self), priv.p, priv.q, priv.dmp1,
+                         priv.dmq1, priv.iqmp, pub.n, pub.e))
+        elif isinstance(self._wrapped, rsa.RSAPublicKeyWithSerialization):
+            pub = self.public_numbers()
+            return hash((type(self), pub.n, pub.e))
 
-    def publickey(self):
+    def __repr__(self):
+        return '<{0}({1!r})>'.format(self.__class__.__name__, self._wrapped)
+
+    def public_key(self):
         """Get wrapped public key."""
-        return type(self)(self._wrapped.publickey())
+        return type(self)(self._wrapped.public_key())
 
 
 class ImmutableMap(collections.Mapping, collections.Hashable):

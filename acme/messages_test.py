@@ -3,7 +3,8 @@ import os
 import pkg_resources
 import unittest
 
-from Crypto.PublicKey import RSA
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
 import M2Crypto
 import mock
 
@@ -19,8 +20,10 @@ CSR = jose.ComparableX509(M2Crypto.X509.load_request_string(
     pkg_resources.resource_string(
         'acme.jose', os.path.join('testdata', 'csr.der')),
     M2Crypto.X509.FORMAT_DER))
-KEY = jose.util.HashableRSAKey(RSA.importKey(pkg_resources.resource_string(
-    'acme.jose', os.path.join('testdata', 'rsa512_key.pem'))))
+KEY = jose.util.ComparableRSAKey(serialization.load_pem_private_key(
+    pkg_resources.resource_string(
+        'acme.jose', os.path.join('testdata', 'rsa512_key.pem')),
+    password=None, backend=default_backend()))
 CERT = jose.ComparableX509(M2Crypto.X509.load_cert(
     format=M2Crypto.X509.FORMAT_DER, file=pkg_resources.resource_filename(
         'acme.jose', os.path.join('testdata', 'cert.der'))))
@@ -109,7 +112,7 @@ class RegistrationTest(unittest.TestCase):
     """Tests for acme.messages.Registration."""
 
     def setUp(self):
-        key = jose.jwk.JWKRSA(key=KEY.publickey())
+        key = jose.jwk.JWKRSA(key=KEY.public_key())
         contact = (
             'mailto:admin@foo.com',
             'tel:1234',
