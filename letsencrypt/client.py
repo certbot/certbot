@@ -3,7 +3,7 @@ import logging
 import os
 import pkg_resources
 
-import OpenSSL.crypto
+import OpenSSL
 import zope.component
 
 from acme import jose

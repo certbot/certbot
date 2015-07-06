@@ -7,8 +7,7 @@ import socket
 import unittest
 
 import mock
-import OpenSSL.crypto
-import OpenSSL.SSL
+import OpenSSL
 
 from acme import challenges
 

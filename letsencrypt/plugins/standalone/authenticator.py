@@ -6,8 +6,7 @@ import socket
 import sys
 import time
 
-import OpenSSL.crypto
-import OpenSSL.SSL
+import OpenSSL
 import zope.component
 import zope.interface
 
