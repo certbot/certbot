@@ -151,6 +151,27 @@ The ``letsencrypt`` commandline tool has a builtin help:
    ./venv/bin/letsencrypt --help
 
 
+Configuration file
+------------------
+
+It is possible to specify configuration file with
+``letsencrypt --config cli.ini`` (or shorter ``-c cli.ini``). For
+instance, if you are a contributor, you might find the following
+handy:
+
+.. include:: ../examples/dev-cli.ini
+   :code: ini
+
+By default, the following locations are searched:
+
+- ``/etc/letsencrypt/cli.ini``
+- ``$XDG_CONFIG_HOME/letsencrypt/cli.ini`` (or
+  ``~/.config/letsencrypt/cli.ini`` if ``$XDG_CONFIG_HOME`` is not
+  set).
+
+.. keep it up to date with constants.py
+
+
 .. _Augeas: http://augeas.net/
 .. _M2Crypto: https://github.com/M2Crypto/M2Crypto
 .. _SWIG: http://www.swig.org/
