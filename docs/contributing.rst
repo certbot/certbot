@@ -7,15 +7,26 @@ Contributing
 Hacking
 =======
 
-In order to start hacking, you will first have to create a development
-environment. Start by :doc:`installing dependencies and setting up
-Let's Encrypt <using>`.
+Start by :doc:`installing dependencies and setting up Let's Encrypt
+<using>`.
 
-Now you can install the development packages:
+When you're done activate the virtualenv:
 
 .. code-block:: shell
 
-   ./venv/bin/pip install -r requirements.txt -e .[dev,docs,testing]
+   source ./venv/bin/activate
+
+This step should prepend you prompt with ``(venv)`` and save you from
+typing ``./venv/bin/...``. It is also required to run some of the
+`testing`_ tools. Virtualenv can be disabled at any time by typing
+``deactivate``. More information can be found in `virtualenv
+documentation`_.
+
+Install the development packages:
+
+.. code-block:: shell
+
+   pip install -r requirements.txt -e .[dev,docs,testing]
 
 .. note:: `-e` (short for `--editable`) turns on *editable mode* in
           which any source code changes in the current working
@@ -25,23 +36,61 @@ Now you can install the development packages:
           This is roughly equivalent to `python setup.py develop`. For
           more info see `man pip`.
 
-The code base, including your pull requests, **must** have 100% test
-statement coverage **and** be compliant with the :ref:`coding style
-<coding-style>`.
+The code base, including your pull requests, **must** have 100% unit
+test coverage, pass our `integration`_ tests **and** be compliant with
+the :ref:`coding style <coding-style>`.
+
+.. _`virtualenv documentation`: https://virtualenv.pypa.io
+
+
+Testing
+-------
 
 The following tools are there to help you:
 
-- ``./venv/bin/tox`` starts a full set of tests. Please make sure you
-  run it before submitting a new pull request.
+- ``tox`` starts a full set of tests. Please make sure you run it
+  before submitting a new pull request.
 
-- ``./venv/bin/tox -e cover`` checks the test coverage only.
+- ``tox -e cover`` checks the test coverage only. Calling the
+  ``./tox-cover.sh`` script directly might be a bit quicker, though.
 
-- ``./venv/bin/tox -e lint`` checks the style of the whole project,
-  while ``./venv/bin/pylint --rcfile=.pylintrc file`` will check a
-  single ``file`` only.
+- ``tox -e lint`` checks the style of the whole project, while
+  ``pylint --rcfile=.pylintrc path`` will check a single file or
+  specific directory only.
 
-.. _installing dependencies and setting up Let's Encrypt:
-  https://letsencrypt.readthedocs.org/en/latest/using.html
+- For debugging, we recommend ``pip install ipdb`` and putting
+  ``import ipdb; ipdb.set_trace()`` statement inside the source
+  code. Alternatively, you can use Python'd standard library `pdb`,
+  but you won't get TAB completion...
+
+
+Integration
+~~~~~~~~~~~
+
+First, install `Go`_ 1.4 and start Boulder_, an ACME CA server::
+
+  ./tests/boulder-start.sh
+
+The script will download, compile and run the executable; please be
+patient - it will take some time... Once its ready, you will see
+``Server running, listening on 127.0.0.1:4000...``. You may now run
+(in a separate terminal)::
+
+  ./tests/boulder-integration.sh && echo OK || echo FAIL
+
+If you would like to test `lesencrypt_nginx` plugin (highly
+encouraged) make sure to install prerequisites as listed in
+``tests/integration/nginx.sh``:
+
+.. include:: ../tests/integration/nginx.sh
+   :start-line: 1
+   :end-line: 2
+   :code: shell
+
+and rerun the integration tests suite.
+
+.. _Boulder: https://github.com/letsencrypt/boulder
+.. _Go: https://golang.org
 
 
 Vagrant
@@ -185,7 +234,7 @@ Please:
             """
             return arg
 
-4. Remember to use ``./venv/bin/pylint``.
+4. Remember to use ``pylint``.
 
 .. _Google Python Style Guide:
   https://google-styleguide.googlecode.com/svn/trunk/pyguide.html
@@ -202,8 +251,7 @@ commands:
 
 .. code-block:: shell
 
-   cd docs
-   make clean html SPHINXBUILD=../venv/bin/sphinx-build
+   make -C docs clean html
 
 This should generate documentation in the ``docs/_build/html``
 directory.
