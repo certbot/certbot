@@ -35,7 +35,12 @@ class JWASignature(JWA):
         self.name = name
 
     def __eq__(self, other):
-        return isinstance(other, JWASignature) and self.name == other.name
+        if not isinstance(other, JWASignature):
+            return NotImplemented
+        return self.name == other.name
+
+    def __ne__(self, other):
+        return not self == other
 
     @classmethod
     def register(cls, signature_cls):

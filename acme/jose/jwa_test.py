@@ -44,7 +44,12 @@ class JWASignatureTest(unittest.TestCase):
 
     def test_eq(self):
         self.assertEqual(self.Sig1, self.Sig1)
+
+    def test_ne(self):
         self.assertNotEqual(self.Sig1, self.Sig2)
+
+    def test_ne_other_type(self):
+        self.assertNotEqual(self.Sig1, 5)
 
     def test_repr(self):
         self.assertEqual('Sig1', repr(self.Sig1))
