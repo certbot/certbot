@@ -14,32 +14,42 @@ class ComparableX509Test(unittest.TestCase):
 
     def setUp(self):
         from acme.jose.util import ComparableX509
-        def load_cert():  # pylint: disable=missing-docstring
-            return ComparableX509(OpenSSL.crypto.load_certificate_request(
-                OpenSSL.crypto.FILETYPE_ASN1, pkg_resources.resource_string(
-                    __name__, os.path.join('testdata', 'csr.der'))))
-        self.cert = load_cert()
-        self.cert_same = load_cert()
-        self.cert2 = ComparableX509(OpenSSL.crypto.load_certificate_request(
-            OpenSSL.crypto.FILETYPE_PEM, pkg_resources.resource_string(
-                'letsencrypt.tests', os.path.join('testdata', 'csr-san.pem'))))
+        def _load(method, filename):  # pylint: disable=missing-docstring
+            return ComparableX509(method(
+                OpenSSL.crypto.FILETYPE_PEM, pkg_resources.resource_string(
+                    'letsencrypt.tests', os.path.join('testdata', filename))))
+
+        self.req1 = _load(OpenSSL.crypto.load_certificate_request, 'csr.pem')
+        self.req2 = _load(OpenSSL.crypto.load_certificate_request, 'csr.pem')
+        self.req_other = _load(OpenSSL.crypto.load_certificate_request, 'csr-san.pem')
+
+        self.cert1 = _load(OpenSSL.crypto.load_certificate, 'cert.pem')
+        self.cert2 = _load(OpenSSL.crypto.load_certificate, 'cert.pem')
+        self.cert_other = _load(OpenSSL.crypto.load_certificate, 'cert-san.pem')
 
     def test_eq(self):
-        self.assertEqual(self.cert, self.cert_same)
-
-    def test_eq_wrong_types(self):
-        self.assertNotEqual(self.cert, 5)
+        self.assertEqual(self.req1, self.req2)
+        self.assertEqual(self.cert1, self.cert2)
 
     def test_ne(self):
-        self.assertNotEqual(self.cert, self.cert2)
+        self.assertNotEqual(self.req1, self.req_other)
+        self.assertNotEqual(self.cert1, self.cert_other)
+
+    def test_ne_wrong_types(self):
+        self.assertNotEqual(self.req1, 5)
+        self.assertNotEqual(self.cert1, 5)
 
     def test_hash(self):
-        self.assertEqual(hash(self.cert), hash(self.cert_same))
-        self.assertNotEqual(hash(self.cert), hash(self.cert2))
+        self.assertEqual(hash(self.req1), hash(self.req2))
+        self.assertNotEqual(hash(self.req1), hash(self.req_other))
+
+        self.assertEqual(hash(self.cert1), hash(self.cert2))
+        self.assertNotEqual(hash(self.cert1), hash(self.cert_other))
 
     def test_repr(self):
-        self.assertTrue(repr(self.cert).startswith(
-            '<ComparableX509(<OpenSSL.crypto.X509'))
+        for x509 in self.req1, self.cert1:
+            self.assertTrue(repr(x509).startswith(
+                '<ComparableX509(<OpenSSL.crypto.X509'))
 
 
 class ComparableRSAKeyTest(unittest.TestCase):
