@@ -14,12 +14,17 @@ logger = logging.getLogger(__name__)
 class ApacheParser(object):
     """Class handles the fine details of parsing the Apache Configuration.
 
-    :ivar str root: Normalized abosulte path to the server root
+    :ivar str root: Normalized absolute path to the server root
         directory. Without trailing slash.
+
+    .. todo:: Handle UnDefine Directive
+    .. todo:: Handle Define directive for parameters within find_dirs
 
     """
     def __init__(self, aug, root, ssl_options, ctl):
         # This uses the binary, so it can be done first.
+        # https://httpd.apache.org/docs/2.4/mod/core.html#ifdefine
+        # This only handles invocation parameters... not Define directive params
         self.parameters = self._init_parameters(ctl)
 
         # Find configuration root and make sure augeas can parse it.
@@ -36,8 +41,14 @@ class ApacheParser(object):
         self.standardize_excl()
 
         # Temporarily set modules to be empty, so that find_dirs can work
+        # https://httpd.apache.org/docs/2.4/mod/core.html#ifmodule
         self.modules = set()
         self._init_modules()
+
+        # Set Apache variables
+        # https://httpd.apache.org/docs/2.4/mod/core.html#define
+        self.variables = set()
+        self._init_variables()
 
     def _init_modules(self):
         """Iterates on the configuration until no new modules are loaded."""
@@ -80,6 +91,14 @@ class ApacheParser(object):
         matches = re.compile(r"Define: ([^ \n]*)").findall(stdout)
         matches.remove("DUMP_RUN_CFG")
         return set(matches)
+
+    def _init_variables(self):
+        #print "Define Directive:", self.find_dir(case_i("Define"))
+        # This works
+        #matches = self.aug.match("/files/etc/apache2/apache2.conf/*/* [count(arg) = 2]")
+        matches = self.aug.match("/files/etc/apache2/apache2.conf/*[self::directive=~regexp('Define')]/arg")
+        for match in matches:
+            print match, self.aug.get(match)
 
     def add_dir_to_ifmodssl(self, aug_conf_path, directive, val):
         """Adds directive and value to IfMod ssl block.
