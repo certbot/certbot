@@ -35,26 +35,31 @@ class ComparableX509(object):  # pylint: disable=too-few-public-methods
 
     """
     def __init__(self, wrapped):
+        assert isinstance(wrapped, OpenSSL.crypto.X509) or isinstance(
+            wrapped, OpenSSL.crypto.X509Req)
         self._wrapped = wrapped
 
     def __getattr__(self, name):
         return getattr(self._wrapped, name)
 
+    def _dump(self, filetype=OpenSSL.crypto.FILETYPE_ASN1):
+        # pylint: disable=missing-docstring,protected-access
+        if isinstance(self._wrapped, OpenSSL.crypto.X509):
+            func = OpenSSL.crypto.dump_certificate
+        else:  # assert in __init__ makes sure this is X509Req
+            func = OpenSSL.crypto.dump_certificate_request
+        return func(filetype, self._wrapped)
+
     def __eq__(self, other):
-        filetype = OpenSSL.crypto.FILETYPE_ASN1
-        def as_der(obj):
-            # pylint: disable=missing-docstring,protected-access
-            if isinstance(obj, type(self)):
-                obj = obj._wrapped
-            if isinstance(obj, OpenSSL.crypto.X509):
-                func = OpenSSL.crypto.dump_certificate
-            elif isinstance(obj, OpenSSL.crypto.X509Req):
-                func = OpenSSL.crypto.dump_certificate_request
-            else:
-                raise TypeError(
-                    "Equality for {0} not provided".format(obj.__class__))
-            return func(filetype, obj)
-        return as_der(self) == as_der(other)
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        return self._dump() == other._dump()  # pylint: disable=protected-access
+
+    def __hash__(self):
+        return hash((self.__class__, self._dump()))
+
+    def __ne__(self, other):
+        return not self == other
 
     def __repr__(self):
         return '<{0}({1!r})>'.format(self.__class__.__name__, self._wrapped)
@@ -78,7 +83,7 @@ class ComparableRSAKey(object):  # pylint: disable=too-few-public-methods
         # pylint: disable=protected-access
         if (not isinstance(other, self.__class__) or
                 self._wrapped.__class__ is not other._wrapped.__class__):
-            return False
+            return NotImplemented
         # RSA*KeyWithSerialization requires cryptography>=0.8
         if isinstance(self._wrapped, rsa.RSAPrivateKeyWithSerialization):
             return self.private_numbers() == other.private_numbers()
@@ -87,24 +92,26 @@ class ComparableRSAKey(object):  # pylint: disable=too-few-public-methods
         else:
             return False  # we shouldn't reach here...
 
+    def __ne__(self, other):
+        return not self == other
 
     def __hash__(self):
         # public_numbers() hasn't got stable hash!
         if isinstance(self._wrapped, rsa.RSAPrivateKeyWithSerialization):
             priv = self.private_numbers()
             pub = priv.public_numbers
-            return hash((type(self), priv.p, priv.q, priv.dmp1,
+            return hash((self.__class__, priv.p, priv.q, priv.dmp1,
                          priv.dmq1, priv.iqmp, pub.n, pub.e))
         elif isinstance(self._wrapped, rsa.RSAPublicKeyWithSerialization):
             pub = self.public_numbers()
-            return hash((type(self), pub.n, pub.e))
+            return hash((self.__class__, pub.n, pub.e))
 
     def __repr__(self):
         return '<{0}({1!r})>'.format(self.__class__.__name__, self._wrapped)
 
     def public_key(self):
         """Get wrapped public key."""
-        return type(self)(self._wrapped.public_key())
+        return self.__class__(self._wrapped.public_key())
 
 
 class ImmutableMap(collections.Mapping, collections.Hashable):

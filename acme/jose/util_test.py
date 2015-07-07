@@ -27,13 +27,15 @@ class ComparableX509Test(unittest.TestCase):
     def test_eq(self):
         self.assertEqual(self.cert, self.cert_same)
 
-    def test_not_eq(self):
+    def test_eq_wrong_types(self):
+        self.assertNotEqual(self.cert, 5)
+
+    def test_ne(self):
         self.assertNotEqual(self.cert, self.cert2)
 
-    def test_eq_wrong_types(self):
-        from acme.jose.util import ComparableX509
-        self.assertRaises(
-            TypeError, ComparableX509(5).__eq__, ComparableX509(5))
+    def test_hash(self):
+        self.assertEqual(hash(self.cert), hash(self.cert_same))
+        self.assertNotEqual(hash(self.cert), hash(self.cert2))
 
     def test_repr(self):
         self.assertTrue(repr(self.cert).startswith(
@@ -53,6 +55,10 @@ class ComparableRSAKeyTest(unittest.TestCase):
                 password=None, backend=backend))
         self.key = load_key()
         self.key_same = load_key()
+        self.key2 = ComparableRSAKey(serialization.load_pem_private_key(
+            pkg_resources.resource_string(
+                __name__, os.path.join('testdata', 'rsa512_key.pem')),
+            password=None, backend=backend))
 
     def test_getattr_proxy(self):
         self.assertEqual(256, self.key.key_size)
@@ -60,20 +66,24 @@ class ComparableRSAKeyTest(unittest.TestCase):
     def test_eq(self):
         self.assertEqual(self.key, self.key_same)
 
-    def test_not_eq_different_types(self):
-        self.assertFalse(self.key.__eq__(5))
+    def test_ne(self):
+        self.assertNotEqual(self.key, self.key2)
 
-    def test_not_eq_not_wrapped(self):
+    def test_ne_different_types(self):
+        self.assertNotEqual(self.key, 5)
+
+    def test_ne_not_wrapped(self):
         # pylint: disable=protected-access
-        self.assertFalse(self.key.__eq__(self.key_same._wrapped))
+        self.assertNotEqual(self.key, self.key_same._wrapped)
 
-    def test_not_eq_no_serialization(self):
+    def test_ne_no_serialization(self):
         from acme.jose.util import ComparableRSAKey
-        self.assertFalse(ComparableRSAKey(5).__eq__(ComparableRSAKey(5)))
+        self.assertNotEqual(ComparableRSAKey(5), ComparableRSAKey(5))
 
     def test_hash(self):
         self.assertTrue(isinstance(hash(self.key), int))
         self.assertEqual(hash(self.key), hash(self.key_same))
+        self.assertNotEqual(hash(self.key), hash(self.key2))
 
     def test_repr(self):
         self.assertTrue(repr(self.key).startswith(
