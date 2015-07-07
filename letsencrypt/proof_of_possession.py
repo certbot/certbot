@@ -66,7 +66,7 @@ class ProofOfPossession(object): # pylint: disable=too-few-public-methods
         # Is there are different prompt we should give the user?
         code, key = zope.component.getUtility(
             interfaces.IDisplay).input(
-                "QPath to private key for identifier: %s " % achall.domain)
+                "Path to private key for identifier: %s " % achall.domain)
         if code != display_util.CANCEL:
             return self._gen_response(achall, key)
 
