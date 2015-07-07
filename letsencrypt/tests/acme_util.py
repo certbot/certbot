@@ -21,8 +21,8 @@ KEY = jose.ComparableRSAKey(serialization.load_pem_private_key(
 SIMPLE_HTTP = challenges.SimpleHTTP(
     token="evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ+PCt92wr+oA")
 DVSNI = challenges.DVSNI(
-    r="O*\xb4-\xad\xec\x95>\xed\xa9\r0\x94\xe8\x97\x9c&6\xbf'\xb3"
-      "\xed\x9a9nX\x0f'\\m\xe7\x12", nonce="a82d5ff8ef740d12881f6d3c2277ab2e")
+    r=jose.b64decode("Tyq0La3slT7tqQ0wlOiXnCY2vyez7Zo5blgPJ1xt5xI"),
+    nonce=jose.b64decode("a82d5ff8ef740d12881f6d3c2277ab2e"))
 DNS = challenges.DNS(token="17817c66b60ce2e4012dfad92657527a")
 RECOVERY_CONTACT = challenges.RecoveryContact(
     activation_url="https://example.ca/sendrecovery/a5bd99383fb0",
@@ -30,7 +30,7 @@ RECOVERY_CONTACT = challenges.RecoveryContact(
     contact="c********n@example.com")
 RECOVERY_TOKEN = challenges.RecoveryToken()
 POP = challenges.ProofOfPossession(
-    alg="RS256", nonce="xD\xf9\xb9\xdbU\xed\xaa\x17\xf1y|\x81\x88\x99 ",
+    alg="RS256", nonce=jose.b64decode("eET5udtV7aoX8Xl8gYiZIA"),
     hints=challenges.ProofOfPossession.Hints(
         jwk=jose.JWKRSA(key=KEY.public_key()),
         cert_fingerprints=(

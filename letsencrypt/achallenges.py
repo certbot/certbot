@@ -58,9 +58,6 @@ class DVSNI(AnnotatedChallenge):
         """
         response = challenges.DVSNIResponse(s=s)
         cert_pem = crypto_util.make_ss_cert(self.key.pem, [
-            # TODO: setting nonce_domain first will cause "Error:
-            # [('asn1 encoding routines', 'ASN1_mbstring_ncopy',
-            # 'string too long')]" (get_subject().CN = domains[0])
             self.domain, self.nonce_domain, response.z_domain(self.challb)])
         return cert_pem, response
 
