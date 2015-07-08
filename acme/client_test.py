@@ -16,6 +16,8 @@ from acme import messages
 from acme import messages_test
 
 
+CERT_DER = pkg_resources.resource_string(
+    'acme.jose', os.path.join('testdata', 'cert.der'))
 KEY = jose.JWKRSA.load(pkg_resources.resource_string(
     'acme.jose', os.path.join('testdata', 'rsa512_key.pem')))
 KEY2 = jose.JWKRSA.load(pkg_resources.resource_string(
@@ -44,7 +46,7 @@ class ClientTest(unittest.TestCase):
         # Registration
         self.contact = ('mailto:cert-admin@example.com', 'tel:+12025551212')
         reg = messages.Registration(
-            contact=self.contact, key=KEY.public(), recovery_token='t')
+            contact=self.contact, key=KEY.public_key(), recovery_token='t')
         self.regr = messages.RegistrationResource(
             body=reg, uri='https://www.letsencrypt-demo.org/acme/reg/1',
             new_authzr_uri='https://www.letsencrypt-demo.org/acme/new-reg',
@@ -84,7 +86,7 @@ class ClientTest(unittest.TestCase):
         # TODO: test POST call arguments
 
         # TODO: split here and separate test
-        reg_wrong_key = self.regr.body.update(key=KEY2.public())
+        reg_wrong_key = self.regr.body.update(key=KEY2.public_key())
         self.response.json.return_value = reg_wrong_key.to_json()
         self.assertRaises(
             errors.UnexpectedUpdate, self.client.register, self.contact)
@@ -204,7 +206,7 @@ class ClientTest(unittest.TestCase):
             errors.UnexpectedUpdate, self.client.poll, self.authzr)
 
     def test_request_issuance(self):
-        self.response.content = messages_test.CERT.as_der()
+        self.response.content = CERT_DER
         self.response.headers['Location'] = self.certr.uri
         self.response.links['up'] = {'url': self.certr.cert_chain_uri}
         self.assertEqual(self.certr, self.client.request_issuance(
@@ -212,7 +214,7 @@ class ClientTest(unittest.TestCase):
         # TODO: check POST args
 
     def test_request_issuance_missing_up(self):
-        self.response.content = messages_test.CERT.as_der()
+        self.response.content = CERT_DER
         self.response.headers['Location'] = self.certr.uri
         self.assertEqual(
             self.certr.update(cert_chain_uri=None),
@@ -306,7 +308,7 @@ class ClientTest(unittest.TestCase):
 
     def test_check_cert(self):
         self.response.headers['Location'] = self.certr.uri
-        self.response.content = messages_test.CERT.as_der()
+        self.response.content = CERT_DER
         self.assertEqual(self.certr.update(body=messages_test.CERT),
                          self.client.check_cert(self.certr))
 
@@ -316,7 +318,7 @@ class ClientTest(unittest.TestCase):
             errors.UnexpectedUpdate, self.client.check_cert, self.certr)
 
     def test_check_cert_missing_location(self):
-        self.response.content = messages_test.CERT.as_der()
+        self.response.content = CERT_DER
         self.assertRaises(
             errors.ClientError, self.client.check_cert, self.certr)
 

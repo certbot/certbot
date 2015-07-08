@@ -1,9 +1,7 @@
 """Other ACME objects."""
 import functools
 import logging
-
-import Crypto.Random
-import Crypto.PublicKey.RSA
+import os
 
 from acme import jose
 
@@ -43,7 +41,8 @@ class Signature(jose.JSONObjectWithFields):
         :param str msg: Message to be signed.
 
         :param key: Key used for signing.
-        :type key: :class:`Crypto.PublicKey.RSA`
+        :type key: `cryptography.hazmat.primitives.assymetric.rsa.RSAPrivateKey`
+            (optionally wrapped in `.ComparableRSAKey`).
 
         :param str nonce: Nonce to be used. If None, nonce of
             ``nonce_size`` will be randomly generated.
@@ -52,15 +51,14 @@ class Signature(jose.JSONObjectWithFields):
 
         """
         nonce_size = cls.NONCE_SIZE if nonce_size is None else nonce_size
-        if nonce is None:
-            nonce = Crypto.Random.get_random_bytes(nonce_size)
+        nonce = os.urandom(nonce_size) if nonce is None else nonce
 
         msg_with_nonce = nonce + msg
         sig = alg.sign(key, nonce + msg)
         logger.debug('%s signed as %s', msg_with_nonce, sig)
 
         return cls(alg=alg, sig=sig, nonce=nonce,
-                   jwk=alg.kty(key=key.publickey()))
+                   jwk=alg.kty(key=key.public_key()))
 
     def verify(self, msg):
         """Verify the signature.

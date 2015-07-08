@@ -6,7 +6,6 @@ import shutil
 import tempfile
 import unittest
 
-import M2Crypto
 import OpenSSL
 import mock
 
@@ -146,7 +145,8 @@ class MakeKeyTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
     def test_it(self):  # pylint: disable=no-self-use
         from letsencrypt.crypto_util import make_key
         # Do not test larger keys as it takes too long.
-        M2Crypto.RSA.load_key_string(make_key(1024))
+        OpenSSL.crypto.load_privatekey(
+            OpenSSL.crypto.FILETYPE_PEM, make_key(1024))
 
 
 class ValidPrivkeyTest(unittest.TestCase):

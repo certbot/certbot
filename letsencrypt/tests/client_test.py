@@ -6,7 +6,7 @@ import shutil
 import tempfile
 
 import configobj
-import M2Crypto.X509
+import OpenSSL
 import mock
 
 from acme import jose
@@ -51,8 +51,8 @@ class ClientTest(unittest.TestCase):
         self.client.auth_handler.get_authorizations.assert_called_once_with(
             ["example.com", "www.example.com"])
         self.network.request_issuance.assert_callend_once_with(
-            jose.ComparableX509(
-                M2Crypto.X509.load_request_der_string(CSR_SAN)),
+            jose.ComparableX509(OpenSSL.crypto.load_certificate_request(
+                OpenSSL.crypto.FILETYPE_ASN1, CSR_SAN)),
             self.client.auth_handler.get_authorizations())
         self.network().fetch_chain.assert_called_once_with(mock.sentinel.certr)
 

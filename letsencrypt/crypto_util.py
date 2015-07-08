@@ -4,17 +4,13 @@
     is capable of handling the signatures.
 
 """
+import datetime
 import logging
 import os
-import time
 
-import Crypto.Hash.SHA256
-import Crypto.PublicKey.RSA
-import Crypto.Signature.PKCS1_v1_5
-
-import M2Crypto
 import OpenSSL
 
+from letsencrypt import errors
 from letsencrypt import le_util
 
 
@@ -90,7 +86,7 @@ def init_save_csr(privkey, names, path, csrname="csr-letsencrypt.pem"):
 def make_csr(key_str, domains):
     """Generate a CSR.
 
-    :param str key_str: RSA key.
+    :param str key_str: PEM-encoded RSA key.
     :param list domains: Domains included in the certificate.
 
     .. todo:: Detect duplicates in `domains`? Using a set doesn't
@@ -101,25 +97,23 @@ def make_csr(key_str, domains):
 
     """
     assert domains, "Must provide one or more hostnames for the CSR."
-    rsa_key = M2Crypto.RSA.load_key_string(key_str)
-    pubkey = M2Crypto.EVP.PKey()
-    pubkey.assign_rsa(rsa_key)
-
-    csr = M2Crypto.X509.Request()
-    csr.set_pubkey(pubkey)
-    # TODO: what to put into csr.get_subject()?
-
-    extstack = M2Crypto.X509.X509_Extension_Stack()
-    ext = M2Crypto.X509.new_extension(
-        "subjectAltName", ", ".join("DNS:%s" % d for d in domains))
-
-    extstack.push(ext)
-    csr.add_extensions(extstack)
-    csr.sign(pubkey, "sha256")
-    assert csr.verify(pubkey)
-    pubkey2 = csr.get_pubkey()
-    assert csr.verify(pubkey2)
-    return csr.as_pem(), csr.as_der()
+    pkey = OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, key_str)
+    req = OpenSSL.crypto.X509Req()
+    req.get_subject().CN = domains[0]
+    # TODO: what to put into req.get_subject()?
+    # TODO: put SAN if len(domains) > 1
+    req.add_extensions([
+        OpenSSL.crypto.X509Extension(
+            "subjectAltName",
+            critical=False,
+            value=", ".join("DNS:%s" % d for d in domains)
+        ),
+    ])
+    req.set_pubkey(pkey)
+    req.sign(pkey, "sha256")
+    return tuple(OpenSSL.crypto.dump_certificate_request(method, req)
+                 for method in (OpenSSL.crypto.FILETYPE_PEM,
+                                OpenSSL.crypto.FILETYPE_ASN1))
 
 
 # WARNING: the csr and private key file are possible attack vectors for TOCTOU
@@ -139,9 +133,11 @@ def valid_csr(csr):
 
     """
     try:
-        csr_obj = M2Crypto.X509.load_request_string(csr)
-        return bool(csr_obj.verify(csr_obj.get_pubkey()))
-    except M2Crypto.X509.X509Error:
+        req = OpenSSL.crypto.load_certificate_request(
+            OpenSSL.crypto.FILETYPE_PEM, csr)
+        return req.verify(req.get_pubkey())
+    except OpenSSL.crypto.Error as error:
+        logger.debug(error, exc_info=True)
         return False
 
 
@@ -149,15 +145,20 @@ def csr_matches_pubkey(csr, privkey):
     """Does private key correspond to the subject public key in the CSR?
 
     :param str csr: CSR in PEM.
-    :param str privkey: Private key file contents
+    :param str privkey: Private key file contents (PEM)
 
     :returns: Correspondence of private key to CSR subject public key.
     :rtype: bool
 
     """
-    csr_obj = M2Crypto.X509.load_request_string(csr)
-    privkey_obj = M2Crypto.RSA.load_key_string(privkey)
-    return csr_obj.get_pubkey().get_rsa().pub() == privkey_obj.pub()
+    req = OpenSSL.crypto.load_certificate_request(
+        OpenSSL.crypto.FILETYPE_PEM, csr)
+    pkey = OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, privkey)
+    try:
+        return req.verify(pkey)
+    except OpenSSL.crypto.Error as error:
+        logger.debug(error, exc_info=True)
+        return False
 
 
 def make_key(bits):
@@ -169,22 +170,46 @@ def make_key(bits):
     :rtype: str
 
     """
-    return Crypto.PublicKey.RSA.generate(bits).exportKey(format="PEM")
+    assert bits >= 1024  # XXX
+    key = OpenSSL.crypto.PKey()
+    key.generate_key(OpenSSL.crypto.TYPE_RSA, bits)
+    return OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM, key)
 
 
 def valid_privkey(privkey):
     """Is valid RSA private key?
 
-    :param str privkey: Private key file contents
+    :param str privkey: Private key file contents in PEM
 
     :returns: Validity of private key.
     :rtype: bool
 
     """
     try:
-        return bool(M2Crypto.RSA.load_key_string(privkey).check_key())
-    except M2Crypto.RSA.RSAError:
+        return OpenSSL.crypto.load_privatekey(
+            OpenSSL.crypto.FILETYPE_PEM, privkey).check()
+    except (TypeError, OpenSSL.crypto.Error):
         return False
+
+
+def _pyopenssl_load(data, method, types=(
+        OpenSSL.crypto.FILETYPE_PEM, OpenSSL.crypto.FILETYPE_ASN1)):
+    openssl_errors = []
+    for filetype in types:
+        try:
+            return method(filetype, data), filetype
+        except OpenSSL.crypto.Error as error:  # TODO: anything else?
+            openssl_errors.append(error)
+    raise errors.Error("Unable to load: {0}".format(",".join(
+        str(error) for error in openssl_errors)))
+
+def pyopenssl_load_certificate(data):
+    """Load PEM/DER certificate.
+
+    :raises errors.Error:
+
+    """
+    return _pyopenssl_load(data, OpenSSL.crypto.load_certificate)
 
 
 def make_ss_cert(key_str, domains, not_before=None,
@@ -194,44 +219,36 @@ def make_ss_cert(key_str, domains, not_before=None,
     Uses key_str and contains all domains.
 
     """
-    assert domains, "Must provide one or more hostnames for the CSR."
-
-    rsa_key = M2Crypto.RSA.load_key_string(key_str)
-    pubkey = M2Crypto.EVP.PKey()
-    pubkey.assign_rsa(rsa_key)
-
-    cert = M2Crypto.X509.X509()
-    cert.set_pubkey(pubkey)
+    assert domains, "Must provide one or more hostnames for the cert."
+    pkey = OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, key_str)
+    cert = OpenSSL.crypto.X509()
     cert.set_serial_number(1337)
     cert.set_version(2)
 
-    current_ts = long(time.time() if not_before is None else not_before)
-    current = M2Crypto.ASN1.ASN1_UTCTIME()
-    current.set_time(current_ts)
-    expire = M2Crypto.ASN1.ASN1_UTCTIME()
-    expire.set_time(current_ts + validity)
-    cert.set_not_before(current)
-    cert.set_not_after(expire)
+    extensions = [
+        OpenSSL.crypto.X509Extension(
+            "basicConstraints", True, 'CA:TRUE, pathlen:0'),
+    ]
 
-    subject = cert.get_subject()
-    subject.C = "US"
-    subject.ST = "Michigan"
-    subject.L = "Ann Arbor"
-    subject.O = "University of Michigan and the EFF"
-    subject.CN = domains[0]
+    cert.get_subject().CN = domains[0]
+    # TODO: what to put into cert.get_subject()?
     cert.set_issuer(cert.get_subject())
 
     if len(domains) > 1:
-        cert.add_ext(M2Crypto.X509.new_extension(
-            "basicConstraints", "CA:FALSE"))
-        cert.add_ext(M2Crypto.X509.new_extension(
-            "subjectAltName", ", ".join(["DNS:%s" % d for d in domains])))
+        extensions.append(OpenSSL.crypto.X509Extension(
+            "subjectAltName",
+            critical=False,
+            value=", ".join("DNS:%s" % d for d in domains)
+        ))
 
-    cert.sign(pubkey, "sha256")
-    assert cert.verify(pubkey)
-    assert cert.verify()
-    # print check_purpose(,0
-    return cert.as_pem()
+    cert.add_extensions(extensions)
+
+    cert.gmtime_adj_notBefore(0 if not_before is None else not_before)
+    cert.gmtime_adj_notAfter(validity)
+
+    cert.set_pubkey(pkey)
+    cert.sign(pkey, "sha256")
+    return OpenSSL.crypto.dump_certificate(OpenSSL.crypto.FILETYPE_PEM, cert)
 
 
 def _pyopenssl_cert_or_req_san(cert_or_req):
@@ -309,3 +326,21 @@ def get_sans_from_csr(csr, typ=OpenSSL.crypto.FILETYPE_PEM):
     """
     return _get_sans_from_cert_or_req(
         csr, OpenSSL.crypto.load_certificate_request, typ)
+
+
+def asn1_generalizedtime_to_dt(timestamp):
+    """Convert ASN.1 GENERALIZEDTIME to datetime.
+
+    Useful for deserialization of `OpenSSL.crypto.X509.get_notAfter` and
+    `OpenSSL.crypto.X509.get_notAfter` outputs.
+
+    .. todo:: This function support only one format: `%Y%m%d%H%M%SZ`.
+        Implement remaining two.
+
+    """
+    return datetime.datetime.strptime(timestamp, '%Y%m%d%H%M%SZ')
+
+
+def pyopenssl_x509_name_as_text(x509name):
+    """Convert `OpenSSL.crypto.X509Name to text."""
+    return "/".join("{0}={1}" for key, value in x509name.get_components())

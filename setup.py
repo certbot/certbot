@@ -35,27 +35,28 @@ changes = read_file(os.path.join(here, 'CHANGES.rst'))
 # maintainers. and will make the future migration a lot easier.
 acme_install_requires = [
     'argparse',
+    # load_pem_private/public_key (>=0.6)
+    # rsa_recover_prime_factors (>=0.8)
+    'cryptography>=0.8',
     #'letsencrypt'  # TODO: uses testdata vectors
     'mock',
-    'pycrypto',
     'pyrfc3339',
     'ndg-httpsclient',  # urllib3 InsecurePlatformWarning (#304)
     'pyasn1',  # urllib3 InsecurePlatformWarning (#304)
+    #'PyOpenSSL',  # version pin would cause mismatch
     'pytz',
     'requests',
     'werkzeug',
-    'M2Crypto',
 ]
 letsencrypt_install_requires = [
     #'acme',
     'argparse',
     'ConfigArgParse',
     'configobj',
-    'M2Crypto',
+    #'cryptography>=0.7',  # load_pem_x509_certificate, version pin mismatch
     'mock',
     'parsedatetime',
     'psutil>=2.1.0',  # net_connections introduced in 2.1.0
-    'pycrypto',
     # https://pyopenssl.readthedocs.org/en/latest/api/crypto.html#OpenSSL.crypto.X509Req.get_extensions
     'PyOpenSSL>=0.15',
     'pyrfc3339',
@@ -63,7 +64,6 @@ letsencrypt_install_requires = [
     'pytz',
     'zope.component',
     'zope.interface',
-    'M2Crypto',
 ]
 letsencrypt_apache_install_requires = [
     #'acme',
@@ -83,6 +83,7 @@ letsencrypt_nginx_install_requires = [
 
 install_requires = [
     'argparse',
+    'cryptography>=0.8',
     'ConfigArgParse',
     'configobj',
     'mock',
@@ -90,7 +91,6 @@ install_requires = [
     'parsedatetime',
     'psutil>=2.1.0',  # net_connections introduced in 2.1.0
     'pyasn1',  # urllib3 InsecurePlatformWarning (#304)
-    'pycrypto',
     # https://pyopenssl.readthedocs.org/en/latest/api/crypto.html#OpenSSL.crypto.X509Req.get_extensions
     'PyOpenSSL>=0.15',
     'pyparsing>=1.5.5',  # Python3 support; perhaps unnecessary?
@@ -102,9 +102,6 @@ install_requires = [
     'werkzeug',
     'zope.component',
     'zope.interface',
-    # order of items in install_requires DOES matter and M2Crypto has
-    # to go last, see #152
-    'M2Crypto',
 ]
 
 assert set(install_requires) == set.union(*(set(ireq) for ireq in (

@@ -4,18 +4,20 @@ import os
 import pkg_resources
 import unittest
 
-import M2Crypto
 import mock
+import OpenSSL
 
 from acme.jose import errors
 from acme.jose import interfaces
 from acme.jose import util
 
 
-CERT = M2Crypto.X509.load_cert(pkg_resources.resource_filename(
-    'letsencrypt.tests', os.path.join('testdata', 'cert.pem')))
-CSR = M2Crypto.X509.load_request(pkg_resources.resource_filename(
-    'letsencrypt.tests', os.path.join('testdata', 'csr.pem')))
+CERT = util.ComparableX509(OpenSSL.crypto.load_certificate(
+    OpenSSL.crypto.FILETYPE_PEM, pkg_resources.resource_string(
+        'letsencrypt.tests', os.path.join('testdata', 'cert.pem'))))
+CSR = util.ComparableX509(OpenSSL.crypto.load_certificate_request(
+    OpenSSL.crypto.FILETYPE_PEM, pkg_resources.resource_string(
+        'letsencrypt.tests', os.path.join('testdata', 'csr.pem'))))
 
 
 class FieldTest(unittest.TestCase):
@@ -280,7 +282,7 @@ class DeEncodersTest(unittest.TestCase):
 
     def test_encode_csr(self):
         from acme.jose.json_util import encode_csr
-        self.assertEqual(self.b64_cert, encode_csr(CERT))
+        self.assertEqual(self.b64_csr, encode_csr(CSR))
 
     def test_decode_csr(self):
         from acme.jose.json_util import decode_csr

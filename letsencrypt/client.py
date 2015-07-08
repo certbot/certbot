@@ -3,8 +3,7 @@ import logging
 import os
 import pkg_resources
 
-import M2Crypto
-import OpenSSL.crypto
+import OpenSSL
 import zope.component
 
 from acme import jose
@@ -157,8 +156,8 @@ class Client(object):
 
         authzr = self.auth_handler.get_authorizations(domains)
         certr = self.network.request_issuance(
-            jose.ComparableX509(
-                M2Crypto.X509.load_request_der_string(csr.data)),
+            jose.ComparableX509(OpenSSL.crypto.load_certificate_request(
+                OpenSSL.crypto.FILETYPE_ASN1, csr.data)),
             authzr)
         return certr, self.network.fetch_chain(certr)
 
@@ -247,10 +246,12 @@ class Client(object):
 
         # XXX: just to stop RenewableCert from complaining; this is
         # probably not a good solution
-        chain_pem = "" if chain is None else chain.as_pem()
+        chain_pem = "" if chain is None else OpenSSL.crypto.dump_certificate(
+            OpenSSL.crypto.FILETYPE_PEM, chain)
         lineage = storage.RenewableCert.new_lineage(
-            domains[0], certr.body.as_pem(), key.pem, chain_pem, params,
-            config, cli_config)
+            domains[0], OpenSSL.crypto.dump_certificate(
+                OpenSSL.crypto.FILETYPE_PEM, certr.body),
+            key.pem, chain_pem, params, config, cli_config)
         self._report_renewal_status(lineage)
         return lineage
 
@@ -306,7 +307,8 @@ class Client(object):
         cert_chain_abspath = None
         cert_file, act_cert_path = le_util.unique_file(cert_path, 0o644)
         # TODO: Except
-        cert_pem = certr.body.as_pem()
+        cert_pem = OpenSSL.crypto.dump_certificate(
+            OpenSSL.crypto.FILETYPE_PEM, certr.body)
         try:
             cert_file.write(cert_pem)
         finally:
@@ -318,7 +320,8 @@ class Client(object):
             chain_file, act_chain_path = le_util.unique_file(
                 chain_path, 0o644)
             # TODO: Except
-            chain_pem = chain_cert.as_pem()
+            chain_pem = OpenSSL.crypto.dump_certificate(
+                OpenSSL.crypto.FILETYPE_PEM, chain_cert)
             try:
                 chain_file.write(chain_pem)
             finally:
@@ -431,8 +434,10 @@ def validate_key_csr(privkey, csr=None):
 
     if csr:
         if csr.form == "der":
-            csr_obj = M2Crypto.X509.load_request_der_string(csr.data)
-            csr = le_util.CSR(csr.file, csr_obj.as_pem(), "der")
+            csr_obj = OpenSSL.crypto.load_certificate_request(
+                OpenSSL.crypto.FILETYPE_ASN1, csr.data)
+            csr = le_util.CSR(csr.file, OpenSSL.crypto.dump_certificate(
+                OpenSSL.crypto.FILETYPE_PEM, csr_obj), "pem")
 
         # If CSR is provided, it must be readable and valid.
         if csr.data and not crypto_util.valid_csr(csr.data):

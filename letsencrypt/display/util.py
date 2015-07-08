@@ -409,6 +409,7 @@ def separate_list_input(input_):
     """
     no_commas = input_.replace(",", " ")
     # Each string is naturally unicode, this causes problems with M2Crypto SANs
+    # TODO: check if above is still true when M2Crypto is gone ^
     return [str(string) for string in no_commas.split()]
 
 

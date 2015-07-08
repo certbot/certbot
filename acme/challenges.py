@@ -3,8 +3,8 @@ import binascii
 import functools
 import hashlib
 import logging
+import os
 
-import Crypto.Random
 import requests
 
 from acme import jose
@@ -204,7 +204,7 @@ class DVSNIResponse(ChallengeResponse):
                    decoder=functools.partial(jose.decode_b64jose, size=S_SIZE))
 
     def __init__(self, s=None, *args, **kwargs):
-        s = Crypto.Random.get_random_bytes(self.S_SIZE) if s is None else s
+        s = os.urandom(self.S_SIZE) if s is None else s
         super(DVSNIResponse, self).__init__(s=s, *args, **kwargs)
 
     def z(self, chall):  # pylint: disable=invalid-name
