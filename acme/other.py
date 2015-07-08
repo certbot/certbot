@@ -42,7 +42,7 @@ class Signature(jose.JSONObjectWithFields):
 
         :param key: Key used for signing.
         :type key: `cryptography.hazmat.primitives.assymetric.rsa.RSAPrivateKey`
-            wrapped in `.ComparableRSAKey`.
+            (optionally wrapped in `.ComparableRSAKey`).
 
         :param str nonce: Nonce to be used. If None, nonce of
             ``nonce_size`` will be randomly generated.

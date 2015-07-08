@@ -1,9 +1,12 @@
 """JSON Web Key."""
 import abc
 import binascii
+import logging
 
+import cryptography.exceptions
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric import rsa
 
 from acme.jose import b64
@@ -12,16 +15,16 @@ from acme.jose import json_util
 from acme.jose import util
 
 
+logger = logging.getLogger(__name__)
+
+
 class JWK(json_util.TypedJSONObjectWithFields):
     # pylint: disable=too-few-public-methods
     """JSON Web Key."""
     type_field_name = 'kty'
     TYPES = {}
-
-    @util.abstractclassmethod
-    def load(cls, string):  # pragma: no cover
-        """Load key from normalized string form."""
-        raise NotImplementedError()
+    cryptography_key_types = ()
+    """Subclasses should override."""
 
     @abc.abstractmethod
     def public_key(self):  # pragma: no cover
@@ -31,6 +34,63 @@ class JWK(json_util.TypedJSONObjectWithFields):
 
         """
         raise NotImplementedError()
+
+    @classmethod
+    def _load_cryptography_key(cls, data, password=None, backend=None):
+        backend = default_backend() if backend is None else backend
+        exceptions = {}
+
+        # private key?
+        for loader in (serialization.load_pem_private_key,
+                       serialization.load_der_private_key):
+            try:
+                return loader(data, password, backend)
+            except (ValueError, TypeError,
+                    cryptography.exceptions.UnsupportedAlgorithm) as error:
+                exceptions[loader] = error
+
+        # public key?
+        for loader in (serialization.load_pem_public_key,
+                       serialization.load_der_public_key):
+            try:
+                return loader(data, backend)
+            except (ValueError,
+                    cryptography.exceptions.UnsupportedAlgorithm) as error:
+                exceptions[loader] = error
+
+        # no luck
+        raise errors.Error("Unable to deserialize key: {0}".format(exceptions))
+
+    @classmethod
+    def load(cls, data, password=None, backend=None):
+        """Load serialized key as JWK.
+
+        :param str data: Public or private key serialized as PEM or DER.
+        :param str password: Optional password.
+        :param backend: A `.PEMSerializationBackend` and
+            `.DERSerializationBackend` provider.
+
+        :raises errors.Error: if unable to deserialize, or unsupported
+            JWK algorithm
+
+        :returns: JWK of an appropriate type.
+        :rtype: `JWK`
+
+        """
+        try:
+            key = cls._load_cryptography_key(data, password, backend)
+        except errors.Error as error:
+            logger.debug("Loading symmetric key, assymentric failed: %s", error)
+            return JWKOct(key=data)
+
+        if cls.typ is not NotImplemented and not isinstance(
+                key, cls.cryptography_key_types):
+            raise errors.Error("Unable to deserialize {0} into {1}".format(
+                key.__class__, cls.__class__))
+        for jwk_cls in cls.TYPES.itervalues():
+            if isinstance(key, jwk_cls.cryptography_key_types):
+                return jwk_cls(key=key)
+        raise errors.Error("Unsupported algorithm: {0}".format(key.__class__))
 
 
 @JWK.register
@@ -42,16 +102,14 @@ class JWKES(JWK):  # pragma: no cover
 
     """
     typ = 'ES'
+    cryptography_key_types = (
+        ec.EllipticCurvePublicKey, ec.EllipticCurvePrivateKey)
 
     def fields_to_partial_json(self):
         raise NotImplementedError()
 
     @classmethod
     def fields_from_json(cls, jobj):
-        raise NotImplementedError()
-
-    @classmethod
-    def load(cls, string):
         raise NotImplementedError()
 
     def public_key(self):
@@ -75,10 +133,6 @@ class JWKOct(JWK):
     def fields_from_json(cls, jobj):
         return cls(key=jobj['k'])
 
-    @classmethod
-    def load(cls, string):
-        return cls(key=string)
-
     def public_key(self):
         return self
 
@@ -93,7 +147,14 @@ class JWKRSA(JWK):
 
     """
     typ = 'RSA'
+    cryptography_key_types = (rsa.RSAPublicKey, rsa.RSAPrivateKey)
     __slots__ = ('key',)
+
+    def __init__(self, *args, **kwargs):
+        if 'key' in kwargs and not isinstance(
+                kwargs['key'], util.ComparableRSAKey):
+            kwargs['key'] = util.ComparableRSAKey(kwargs['key'])
+        super(JWKRSA, self).__init__(*args, **kwargs)
 
     @classmethod
     def _encode_param(cls, data):
@@ -111,24 +172,6 @@ class JWKRSA(JWK):
             return long(binascii.hexlify(json_util.decode_b64jose(data)), 16)
         except ValueError:  # invalid literal for long() with base 16
             raise errors.DeserializationError()
-
-    @classmethod
-    def load(cls, string):
-        """Load RSA key from string.
-
-        :param str string: RSA key in string form.
-
-        :returns:
-        :rtype: :class:`JWKRSA`
-
-        """
-        try:
-            key = serialization.load_pem_public_key(
-                string, backend=default_backend())
-        except ValueError:  # ValueError: Could not unserialize key data.
-            key = serialization.load_pem_private_key(
-                string, password=None, backend=default_backend())
-        return cls(key=util.ComparableRSAKey(key))
 
     def public_key(self):
         return type(self)(key=self.key.public_key())
