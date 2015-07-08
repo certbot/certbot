@@ -334,8 +334,10 @@ def asn1_generalizedtime_to_dt(timestamp):
     Useful for deserialization of `OpenSSL.crypto.X509.get_notAfter` and
     `OpenSSL.crypto.X509.get_notAfter` outputs.
 
+    .. todo:: This function support only one format: `%Y%m%d%H%M%SZ`.
+        Implement remaining two.
+
     """
-    # TODO: there are two other ts formats
     return datetime.datetime.strptime(timestamp, '%Y%m%d%H%M%SZ')
 
 
