@@ -29,9 +29,9 @@ CERT3_PATH = pkg_resources.resource_filename(
 CERT3_KEY_PATH = pkg_resources.resource_filename(
     BASE_PACKAGE, os.path.join("testdata", "rsa512_key.pem"))
 with open(CERT3_KEY_PATH) as cert3_file:
-    CERT3_KEY = jose.ComparableRSAKey(serialization.load_pem_private_key(
+    CERT3_KEY = serialization.load_pem_private_key(
         cert3_file.read(), password=None,
-        backend=default_backend())).public_key()
+        backend=default_backend()).public_key()
 
 
 class ProofOfPossessionTest(unittest.TestCase):

@@ -57,9 +57,7 @@ class ProofOfPossession(object): # pylint: disable=too-few-public-methods
                 except ValueError:
                     logger.warn("Certificate is neither PER nor DER: %s", cert)
 
-            # TODO: only RSA is supported
-            cert_key = achall.alg.kty(key=jose.ComparableRSAKey(
-                cert_obj.public_key()))
+            cert_key = achall.alg.kty(key=cert_obj.public_key())
             if cert_key == achall.hints.jwk:
                 return self._gen_response(achall, key)
 

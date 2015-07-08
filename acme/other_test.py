@@ -9,10 +9,10 @@ from cryptography.hazmat.primitives import serialization
 from acme import jose
 
 
-KEY = jose.ComparableRSAKey(serialization.load_pem_private_key(
+KEY = serialization.load_pem_private_key(
     pkg_resources.resource_string(
         'acme.jose', os.path.join('testdata', 'rsa512_key.pem')),
-    password=None, backend=default_backend()))
+    password=None, backend=default_backend())
 
 
 class SignatureTest(unittest.TestCase):

@@ -12,10 +12,10 @@ from acme import jose
 from acme import messages
 
 
-KEY = jose.ComparableRSAKey(serialization.load_pem_private_key(
+KEY = serialization.load_pem_private_key(
     pkg_resources.resource_string(
         __name__, os.path.join('testdata', 'rsa512_key.pem')),
-    password=None, backend=default_backend()))
+    password=None, backend=default_backend())
 
 # Challenges
 SIMPLE_HTTP = challenges.SimpleHTTP(

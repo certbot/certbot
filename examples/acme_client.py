@@ -20,10 +20,10 @@ BITS = 2048  # minimum for Boulder
 DOMAIN = 'example1.com'  # example.com is ignored by Boulder
 
 # generate_private_key requires cryptography>=0.5
-key = jose.JWKRSA(key=jose.ComparableRSAKey(rsa.generate_private_key(
+key = jose.JWKRSA(key=rsa.generate_private_key(
     public_exponent=65537,
     key_size=2048,
-    backend=default_backend())))
+    backend=default_backend()))
 acme = client.Client(NEW_REG_URL, key)
 
 regr = acme.register(contact=())

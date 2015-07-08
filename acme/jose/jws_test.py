@@ -19,10 +19,10 @@ from acme.jose import util
 CERT = util.ComparableX509(OpenSSL.crypto.load_certificate(
     OpenSSL.crypto.FILETYPE_PEM, pkg_resources.resource_string(
         'letsencrypt.tests', 'testdata/cert.pem')))
-RSA512_KEY = util.ComparableRSAKey(serialization.load_pem_private_key(
+RSA512_KEY = serialization.load_pem_private_key(
     pkg_resources.resource_string(
         __name__, os.path.join('testdata', 'rsa512_key.pem')),
-    password=None, backend=default_backend()))
+    password=None, backend=default_backend())
 
 
 class MediaTypeTest(unittest.TestCase):

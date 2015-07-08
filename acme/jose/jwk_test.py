@@ -111,9 +111,8 @@ class JWKRSATest(unittest.TestCase):
     def test_load(self):
         from acme.jose.jwk import JWKRSA
         self.assertEqual(
-            JWKRSA(key=RSA256_KEY), JWKRSA.load(
-                pkg_resources.resource_string(
-                    __name__, os.path.join('testdata', 'rsa256_key.pem'))))
+            self.private, JWKRSA.load(pkg_resources.resource_string(
+                __name__, os.path.join('testdata', 'rsa256_key.pem'))))
 
     def test_public_key(self):
         self.assertEqual(self.jwk256, self.private.public_key())

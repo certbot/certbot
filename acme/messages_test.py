@@ -18,10 +18,10 @@ CERT = jose.ComparableX509(OpenSSL.crypto.load_certificate(
 CSR = jose.ComparableX509(OpenSSL.crypto.load_certificate_request(
     OpenSSL.crypto.FILETYPE_ASN1, pkg_resources.resource_string(
         'acme.jose', os.path.join('testdata', 'csr.der'))))
-KEY = jose.util.ComparableRSAKey(serialization.load_pem_private_key(
+KEY = serialization.load_pem_private_key(
     pkg_resources.resource_string(
         'acme.jose', os.path.join('testdata', 'rsa512_key.pem')),
-    password=None, backend=default_backend()))
+    password=None, backend=default_backend())
 CERT = jose.ComparableX509(OpenSSL.crypto.load_certificate(
     OpenSSL.crypto.FILETYPE_ASN1, pkg_resources.resource_string(
         'acme.jose', os.path.join('testdata', 'cert.der'))))

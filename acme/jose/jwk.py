@@ -210,7 +210,7 @@ class JWKRSA(JWK):
             key = rsa.RSAPrivateNumbers(
                 p, q, d, dp, dq, qi, public_numbers).private_key(default_backend())
 
-        return cls(key=util.ComparableRSAKey(key))
+        return cls(key=key)
 
     def fields_to_partial_json(self):
         # pylint: disable=protected-access
