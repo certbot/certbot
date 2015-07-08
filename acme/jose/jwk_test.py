@@ -3,16 +3,35 @@ import os
 import pkg_resources
 import unittest
 
-from Crypto.PublicKey import RSA
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
 
 from acme.jose import errors
 from acme.jose import util
 
 
-RSA256_KEY = util.HashableRSAKey(RSA.importKey(pkg_resources.resource_string(
-    __name__, os.path.join('testdata', 'rsa256_key.pem'))))
-RSA512_KEY = util.HashableRSAKey(RSA.importKey(pkg_resources.resource_string(
-    __name__, os.path.join('testdata', 'rsa512_key.pem'))))
+DSA_PEM = pkg_resources.resource_string(
+    'letsencrypt.tests', os.path.join('testdata', 'dsa512_key.pem'))
+RSA256_KEY = serialization.load_pem_private_key(
+    pkg_resources.resource_string(
+        __name__, os.path.join('testdata', 'rsa256_key.pem')),
+    password=None, backend=default_backend())
+RSA512_KEY = serialization.load_pem_private_key(
+    pkg_resources.resource_string(
+        __name__, os.path.join('testdata', 'rsa512_key.pem')),
+    password=None, backend=default_backend())
+
+
+class JWKTest(unittest.TestCase):
+    """Tests for acme.jose.jwk.JWK."""
+
+    def test_load(self):
+        from acme.jose.jwk import JWK
+        self.assertRaises(errors.Error, JWK.load, DSA_PEM)
+
+    def test_load_subclass_wrong_type(self):
+        from acme.jose.jwk import JWKRSA
+        self.assertRaises(errors.Error, JWKRSA.load, DSA_PEM)
 
 
 class JWKOctTest(unittest.TestCase):
@@ -38,29 +57,48 @@ class JWKOctTest(unittest.TestCase):
         from acme.jose.jwk import JWKOct
         self.assertEqual(self.jwk, JWKOct.load('foo'))
 
-    def test_public(self):
-        self.assertTrue(self.jwk.public() is self.jwk)
+    def test_public_key(self):
+        self.assertTrue(self.jwk.public_key() is self.jwk)
 
 
 class JWKRSATest(unittest.TestCase):
     """Tests for acme.jose.jwk.JWKRSA."""
+    # pylint: disable=too-many-instance-attributes
 
     def setUp(self):
         from acme.jose.jwk import JWKRSA
-        self.jwk256 = JWKRSA(key=RSA256_KEY.publickey())
-        self.jwk256_private = JWKRSA(key=RSA256_KEY)
+        self.jwk256 = JWKRSA(key=RSA256_KEY.public_key())
         self.jwk256json = {
             'kty': 'RSA',
             'e': 'AQAB',
             'n': 'm2Fylv-Uz7trgTW8EBHP3FQSMeZs2GNQ6VRo1sIVJEk',
         }
-        self.jwk512 = JWKRSA(key=RSA512_KEY.publickey())
+        self.jwk256_comparable = JWKRSA(key=util.ComparableRSAKey(
+            RSA256_KEY.public_key()))
+        self.jwk512 = JWKRSA(key=RSA512_KEY.public_key())
         self.jwk512json = {
             'kty': 'RSA',
             'e': 'AQAB',
             'n': 'rHVztFHtH92ucFJD_N_HW9AsdRsUuHUBBBDlHwNlRd3fp5'
                  '80rv2-6QWE30cWgdmJS86ObRz6lUTor4R0T-3C5Q',
         }
+        self.private = JWKRSA(key=RSA256_KEY)
+        self.private_json_small = self.jwk256json.copy()
+        self.private_json_small['d'] = (
+            'lPQED_EPTV0UIBfNI3KP2d9Jlrc2mrMllmf946bu-CE')
+        self.private_json = self.jwk256json.copy()
+        self.private_json.update({
+            'd': 'lPQED_EPTV0UIBfNI3KP2d9Jlrc2mrMllmf946bu-CE',
+            'p': 'zUVNZn4lLLBD1R6NE8TKNQ',
+            'q': 'wcfKfc7kl5jfqXArCRSURQ',
+            'dp': 'CWJFq43QvT5Bm5iN8n1okQ',
+            'dq': 'bHh2u7etM8LKKCF2pY2UdQ',
+            'qi': 'oi45cEkbVoJjAbnQpFY87Q',
+        })
+
+    def test_init_comparable(self):
+        self.assertTrue(isinstance(self.jwk256.key, util.ComparableRSAKey))
+        self.assertEqual(self.jwk256, self.jwk256_comparable)
 
     def test_equals(self):
         self.assertEqual(self.jwk256, self.jwk256)
@@ -73,22 +111,33 @@ class JWKRSATest(unittest.TestCase):
     def test_load(self):
         from acme.jose.jwk import JWKRSA
         self.assertEqual(
-            JWKRSA(key=util.HashableRSAKey(RSA256_KEY)), JWKRSA.load(
-                pkg_resources.resource_string(
-                    __name__, os.path.join('testdata', 'rsa256_key.pem'))))
+            self.private, JWKRSA.load(pkg_resources.resource_string(
+                __name__, os.path.join('testdata', 'rsa256_key.pem'))))
 
-    def test_public(self):
-        self.assertEqual(self.jwk256, self.jwk256_private.public())
+    def test_public_key(self):
+        self.assertEqual(self.jwk256, self.private.public_key())
 
     def test_to_partial_json(self):
         self.assertEqual(self.jwk256.to_partial_json(), self.jwk256json)
         self.assertEqual(self.jwk512.to_partial_json(), self.jwk512json)
+        self.assertEqual(self.private.to_partial_json(), self.private_json)
 
     def test_from_json(self):
         from acme.jose.jwk import JWK
-        self.assertEqual(self.jwk256, JWK.from_json(self.jwk256json))
-        # TODO: fix schemata to allow RSA512
-        #self.assertEqual(self.jwk512, JWK.from_json(self.jwk512json))
+        self.assertEqual(
+            self.jwk256, JWK.from_json(self.jwk256json))
+        self.assertEqual(
+            self.jwk512, JWK.from_json(self.jwk512json))
+        self.assertEqual(self.private, JWK.from_json(self.private_json))
+
+    def test_from_json_private_small(self):
+        from acme.jose.jwk import JWK
+        self.assertEqual(self.private, JWK.from_json(self.private_json_small))
+
+    def test_from_json_missing_one_additional(self):
+        from acme.jose.jwk import JWK
+        del self.private_json['q']
+        self.assertRaises(errors.Error, JWK.from_json, self.private_json)
 
     def test_from_json_hashable(self):
         from acme.jose.jwk import JWK

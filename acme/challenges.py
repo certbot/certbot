@@ -2,11 +2,16 @@
 import binascii
 import functools
 import hashlib
+import logging
+import os
 
-import Crypto.Random
+import requests
 
 from acme import jose
 from acme import other
+
+
+logger = logging.getLogger(__name__)
 
 
 # pylint: disable=too-few-public-methods
@@ -63,6 +68,8 @@ class SimpleHTTPResponse(ChallengeResponse):
     MAX_PATH_LEN = 25
     """Maximum allowed `path` length."""
 
+    CONTENT_TYPE = "text/plain"
+
     @property
     def good_path(self):
         """Is `path` good?
@@ -72,12 +79,19 @@ class SimpleHTTPResponse(ChallengeResponse):
            [RFC4648]", base64.b64decode ignores those characters
 
         """
+        # TODO: check that path combined with uri does not go above
+        # URI_ROOT_PATH!
         return len(self.path) <= 25
 
     @property
     def scheme(self):
         """URL scheme for the provisioned resource."""
         return "https" if self.tls else "http"
+
+    @property
+    def port(self):
+        """Port that the ACME client should be listening for validation."""
+        return 443 if self.tls else 80
 
     def uri(self, domain):
         """Create an URI to the provisioned resource.
@@ -90,6 +104,51 @@ class SimpleHTTPResponse(ChallengeResponse):
         """
         return self._URI_TEMPLATE.format(
             scheme=self.scheme, domain=domain, path=self.path)
+
+    def simple_verify(self, chall, domain, port=None):
+        """Simple verify.
+
+        According to the ACME specification, "the ACME server MUST
+        ignore the certificate provided by the HTTPS server", so
+        ``requests.get`` is called with ``verify=False``.
+
+        :param .SimpleHTTP chall: Corresponding challenge.
+        :param str domain: Domain name being verified.
+        :param int port: Port used in the validation.
+
+        :returns: ``True`` iff validation is successful, ``False``
+            otherwise.
+        :rtype: bool
+
+        """
+        # TODO: ACME specification defines URI template that doesn't
+        # allow to use a custom port... Make sure port is not in the
+        # request URI, if it's standard.
+        if port is not None and port != self.port:
+            logger.warn(
+                "Using non-standard port for SimpleHTTP verification: %s", port)
+            domain += ":{0}".format(port)
+
+        uri = self.uri(domain)
+        logger.debug("Verifying %s at %s...", chall.typ, uri)
+        try:
+            http_response = requests.get(uri, verify=False)
+        except requests.exceptions.RequestException as error:
+            logger.error("Unable to reach %s: %s", uri, error)
+            return False
+        logger.debug(
+            "Received %s. Headers: %s", http_response, http_response.headers)
+
+        good_token = http_response.text == chall.token
+        if not good_token:
+            logger.error(
+                "Unable to verify %s! Expected: %r, returned: %r.",
+                uri, chall.token, http_response.text)
+        # TODO: spec contradicts itself, c.f.
+        # https://github.com/letsencrypt/acme-spec/pull/156/files#r33136438
+        good_ct = self.CONTENT_TYPE == http_response.headers.get(
+            "Content-Type", self.CONTENT_TYPE)
+        return self.good_path and good_ct and good_token
 
 
 @Challenge.register
@@ -145,7 +204,7 @@ class DVSNIResponse(ChallengeResponse):
                    decoder=functools.partial(jose.decode_b64jose, size=S_SIZE))
 
     def __init__(self, s=None, *args, **kwargs):
-        s = Crypto.Random.get_random_bytes(self.S_SIZE) if s is None else s
+        s = os.urandom(self.S_SIZE) if s is None else s
         super(DVSNIResponse, self).__init__(s=s, *args, **kwargs)
 
     def z(self, chall):  # pylint: disable=invalid-name

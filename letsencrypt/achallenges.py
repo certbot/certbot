@@ -58,7 +58,7 @@ class DVSNI(AnnotatedChallenge):
         """
         response = challenges.DVSNIResponse(s=s)
         cert_pem = crypto_util.make_ss_cert(self.key.pem, [
-            self.nonce_domain, self.domain, response.z_domain(self.challb)])
+            self.domain, self.nonce_domain, response.z_domain(self.challb)])
         return cert_pem, response
 
 

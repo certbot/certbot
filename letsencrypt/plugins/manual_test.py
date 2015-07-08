@@ -2,7 +2,6 @@
 import unittest
 
 import mock
-import requests
 
 from acme import challenges
 
@@ -15,7 +14,8 @@ class ManualAuthenticatorTest(unittest.TestCase):
 
     def setUp(self):
         from letsencrypt.plugins.manual import ManualAuthenticator
-        self.config = mock.MagicMock(no_simple_http_tls=True)
+        self.config = mock.MagicMock(
+            no_simple_http_tls=True, simple_http_port=4430)
         self.auth = ManualAuthenticator(config=self.config, name="manual")
         self.achalls = [achallenges.SimpleHTTP(
             challb=acme_util.SIMPLE_HTTP, domain="foo.com", key=None)]
@@ -32,28 +32,25 @@ class ManualAuthenticatorTest(unittest.TestCase):
 
     @mock.patch("letsencrypt.plugins.manual.sys.stdout")
     @mock.patch("letsencrypt.plugins.manual.os.urandom")
-    @mock.patch("letsencrypt.plugins.manual.requests.get")
+    @mock.patch("acme.challenges.SimpleHTTPResponse.simple_verify")
     @mock.patch("__builtin__.raw_input")
-    def test_perform(self, mock_raw_input, mock_get, mock_urandom, mock_stdout):
+    def test_perform(self, mock_raw_input, mock_verify, mock_urandom,
+                     mock_stdout):
         mock_urandom.return_value = "foo"
-        mock_get().text = self.achalls[0].token
+        mock_verify.return_value = True
 
-        self.assertEqual(
-            [challenges.SimpleHTTPResponse(tls=False, path='Zm9v')],
-            self.auth.perform(self.achalls))
+        resp = challenges.SimpleHTTPResponse(tls=False, path='Zm9v')
+        self.assertEqual([resp], self.auth.perform(self.achalls))
         mock_raw_input.assert_called_once()
-        mock_get.assert_called_with(
-            "http://foo.com/.well-known/acme-challenge/Zm9v", verify=False)
+        mock_verify.assert_called_with(self.achalls[0].challb, "foo.com", 4430)
 
         message = mock_stdout.write.mock_calls[0][1][0]
         self.assertTrue(self.achalls[0].token in message)
         self.assertTrue('Zm9v' in message)
 
-        mock_get().text = self.achalls[0].token + '!'
+        mock_verify.return_value = False
         self.assertEqual([None], self.auth.perform(self.achalls))
 
-        mock_get.side_effect = requests.exceptions.ConnectionError
-        self.assertEqual([None], self.auth.perform(self.achalls))
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

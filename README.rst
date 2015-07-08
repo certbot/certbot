@@ -27,9 +27,13 @@ It's all automated:
 * If domain control has been proven, a certificate will get issued and the tool
   will automatically install it.
 
-All you need to do is::
+All you need to do to sign a single domain is::
 
   user@www:~$ sudo letsencrypt -d www.example.org auth
+
+For multiple domains (SAN) use::
+  
+  user@www:~$ sudo letsencrypt -d www.example.org -d example.org auth
 
 and if you have a compatible web server (Apache or Nginx), Let's Encrypt can
 not only get a new certificate, but also deploy it and configure your

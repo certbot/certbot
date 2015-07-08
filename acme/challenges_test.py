@@ -3,19 +3,24 @@ import os
 import pkg_resources
 import unittest
 
-import Crypto.PublicKey.RSA
-import M2Crypto
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
+import mock
+import OpenSSL
+import requests
+import urlparse
 
 from acme import jose
 from acme import other
 
 
-CERT = jose.ComparableX509(M2Crypto.X509.load_cert(
-    pkg_resources.resource_filename(
+CERT = jose.ComparableX509(OpenSSL.crypto.load_certificate(
+    OpenSSL.crypto.FILETYPE_PEM, pkg_resources.resource_string(
         'letsencrypt.tests', os.path.join('testdata', 'cert.pem'))))
-KEY = jose.HashableRSAKey(Crypto.PublicKey.RSA.importKey(
+KEY = serialization.load_pem_private_key(
     pkg_resources.resource_string(
-        'acme.jose', os.path.join('testdata', 'rsa512_key.pem'))))
+        'acme.jose', os.path.join('testdata', 'rsa512_key.pem')),
+    password=None, backend=default_backend())
 
 
 class ChallengeResponseTest(unittest.TestCase):
@@ -49,6 +54,7 @@ class SimpleHTTPTest(unittest.TestCase):
 
 
 class SimpleHTTPResponseTest(unittest.TestCase):
+    # pylint: disable=too-many-instance-attributes
 
     def setUp(self):
         from acme.challenges import SimpleHTTPResponse
@@ -66,6 +72,12 @@ class SimpleHTTPResponseTest(unittest.TestCase):
             'tls': True,
         }
 
+        from acme.challenges import SimpleHTTP
+        self.chall = SimpleHTTP(token="foo")
+        self.resp_http = SimpleHTTPResponse(path="bar", tls=False)
+        self.resp_https = SimpleHTTPResponse(path="bar", tls=True)
+        self.good_headers = {'Content-Type': SimpleHTTPResponse.CONTENT_TYPE}
+
     def test_good_path(self):
         self.assertTrue(self.msg_http.good_path)
         self.assertTrue(self.msg_https.good_path)
@@ -76,11 +88,17 @@ class SimpleHTTPResponseTest(unittest.TestCase):
         self.assertEqual('http', self.msg_http.scheme)
         self.assertEqual('https', self.msg_https.scheme)
 
+    def test_port(self):
+        self.assertEqual(80, self.msg_http.port)
+        self.assertEqual(443, self.msg_https.port)
+
     def test_uri(self):
-        self.assertEqual('http://example.com/.well-known/acme-challenge/'
-                         '6tbIMBC5Anhl5bOlWT5ZFA', self.msg_http.uri('example.com'))
-        self.assertEqual('https://example.com/.well-known/acme-challenge/'
-                         '6tbIMBC5Anhl5bOlWT5ZFA', self.msg_https.uri('example.com'))
+        self.assertEqual(
+            'http://example.com/.well-known/acme-challenge/'
+            '6tbIMBC5Anhl5bOlWT5ZFA', self.msg_http.uri('example.com'))
+        self.assertEqual(
+            'https://example.com/.well-known/acme-challenge/'
+            '6tbIMBC5Anhl5bOlWT5ZFA', self.msg_https.uri('example.com'))
 
     def test_to_partial_json(self):
         self.assertEqual(self.jmsg_http, self.msg_http.to_partial_json())
@@ -97,6 +115,37 @@ class SimpleHTTPResponseTest(unittest.TestCase):
         from acme.challenges import SimpleHTTPResponse
         hash(SimpleHTTPResponse.from_json(self.jmsg_http))
         hash(SimpleHTTPResponse.from_json(self.jmsg_https))
+
+    @mock.patch("acme.challenges.requests.get")
+    def test_simple_verify_good_token(self, mock_get):
+        for resp in self.resp_http, self.resp_https:
+            mock_get.reset_mock()
+            mock_get.return_value = mock.MagicMock(
+                text=self.chall.token, headers=self.good_headers)
+            self.assertTrue(resp.simple_verify(self.chall, "local"))
+            mock_get.assert_called_once_with(resp.uri("local"), verify=False)
+
+    @mock.patch("acme.challenges.requests.get")
+    def test_simple_verify_bad_token(self, mock_get):
+        mock_get.return_value = mock.MagicMock(
+            text=self.chall.token + "!", headers=self.good_headers)
+        self.assertFalse(self.resp_http.simple_verify(self.chall, "local"))
+
+    @mock.patch("acme.challenges.requests.get")
+    def test_simple_verify_bad_content_type(self, mock_get):
+        mock_get().text = self.chall.token
+        self.assertFalse(self.resp_http.simple_verify(self.chall, "local"))
+
+    @mock.patch("acme.challenges.requests.get")
+    def test_simple_verify_connection_error(self, mock_get):
+        mock_get.side_effect = requests.exceptions.RequestException
+        self.assertFalse(self.resp_http.simple_verify(self.chall, "local"))
+
+    @mock.patch("acme.challenges.requests.get")
+    def test_simple_verify_port(self, mock_get):
+        self.resp_http.simple_verify(self.chall, "local", 4430)
+        self.assertEqual("local:4430", urlparse.urlparse(
+            mock_get.mock_calls[0][1][0]).netloc)
 
 
 class DVSNITest(unittest.TestCase):
@@ -298,7 +347,7 @@ class RecoveryTokenResponseTest(unittest.TestCase):
 class ProofOfPossessionHintsTest(unittest.TestCase):
 
     def setUp(self):
-        jwk = jose.JWKRSA(key=KEY.publickey())
+        jwk = jose.JWKRSA(key=KEY.public_key())
         issuers = (
             'C=US, O=SuperT LLC, CN=SuperTrustworthy Public CA',
             'O=LessTrustworthy CA Inc, CN=LessTrustworthy But StillSecure',
@@ -321,7 +370,8 @@ class ProofOfPossessionHintsTest(unittest.TestCase):
         self.jmsg_to = {
             'jwk': jwk,
             'certFingerprints': cert_fingerprints,
-            'certs': (jose.b64encode(CERT.as_der()),),
+            'certs': (jose.b64encode(OpenSSL.crypto.dump_certificate(
+                OpenSSL.crypto.FILETYPE_ASN1, CERT)),),
             'subjectKeyIdentifiers': subject_key_identifiers,
             'serialNumbers': serial_numbers,
             'issuers': issuers,
@@ -366,7 +416,7 @@ class ProofOfPossessionTest(unittest.TestCase):
     def setUp(self):
         from acme.challenges import ProofOfPossession
         hints = ProofOfPossession.Hints(
-            jwk=jose.JWKRSA(key=KEY.publickey()), cert_fingerprints=(),
+            jwk=jose.JWKRSA(key=KEY.public_key()), cert_fingerprints=(),
             certs=(), serial_numbers=(), subject_key_identifiers=(),
             issuers=(), authorized_for=())
         self.msg = ProofOfPossession(
@@ -406,7 +456,7 @@ class ProofOfPossessionResponseTest(unittest.TestCase):
         # nonce and challenge nonce are the same, don't make the same
         # mistake here...
         signature = other.Signature(
-            alg=jose.RS256, jwk=jose.JWKRSA(key=KEY.publickey()),
+            alg=jose.RS256, jwk=jose.JWKRSA(key=KEY.public_key()),
             sig='\xa7\xc1\xe7\xe82o\xbc\xcd\xd0\x1e\x010#Z|\xaf\x15\x83'
                 '\x94\x8f#\x9b\nQo(\x80\x15,\x08\xfcz\x1d\xfd\xfd.\xaap'
                 '\xfa\x06\xd1\xa2f\x8d8X2>%d\xbd%\xe1T\xdd\xaa0\x18\xde'

@@ -1,8 +1,13 @@
 """JSON Web Key."""
 import abc
 import binascii
+import logging
 
-import Crypto.PublicKey.RSA
+import cryptography.exceptions
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.asymmetric import rsa
 
 from acme.jose import b64
 from acme.jose import errors
@@ -10,27 +15,82 @@ from acme.jose import json_util
 from acme.jose import util
 
 
+logger = logging.getLogger(__name__)
+
+
 class JWK(json_util.TypedJSONObjectWithFields):
     # pylint: disable=too-few-public-methods
     """JSON Web Key."""
     type_field_name = 'kty'
     TYPES = {}
-
-    @util.abstractclassmethod
-    def load(cls, string):  # pragma: no cover
-        """Load key from normalized string form."""
-        raise NotImplementedError()
+    cryptography_key_types = ()
+    """Subclasses should override."""
 
     @abc.abstractmethod
-    def public(self):  # pragma: no cover
+    def public_key(self):  # pragma: no cover
         """Generate JWK with public key.
 
         For symmetric cryptosystems, this would return ``self``.
 
         """
-        # TODO: rename publickey to stay consistent with
-        # HashableRSAKey.publickey
         raise NotImplementedError()
+
+    @classmethod
+    def _load_cryptography_key(cls, data, password=None, backend=None):
+        backend = default_backend() if backend is None else backend
+        exceptions = {}
+
+        # private key?
+        for loader in (serialization.load_pem_private_key,
+                       serialization.load_der_private_key):
+            try:
+                return loader(data, password, backend)
+            except (ValueError, TypeError,
+                    cryptography.exceptions.UnsupportedAlgorithm) as error:
+                exceptions[loader] = error
+
+        # public key?
+        for loader in (serialization.load_pem_public_key,
+                       serialization.load_der_public_key):
+            try:
+                return loader(data, backend)
+            except (ValueError,
+                    cryptography.exceptions.UnsupportedAlgorithm) as error:
+                exceptions[loader] = error
+
+        # no luck
+        raise errors.Error("Unable to deserialize key: {0}".format(exceptions))
+
+    @classmethod
+    def load(cls, data, password=None, backend=None):
+        """Load serialized key as JWK.
+
+        :param str data: Public or private key serialized as PEM or DER.
+        :param str password: Optional password.
+        :param backend: A `.PEMSerializationBackend` and
+            `.DERSerializationBackend` provider.
+
+        :raises errors.Error: if unable to deserialize, or unsupported
+            JWK algorithm
+
+        :returns: JWK of an appropriate type.
+        :rtype: `JWK`
+
+        """
+        try:
+            key = cls._load_cryptography_key(data, password, backend)
+        except errors.Error as error:
+            logger.debug("Loading symmetric key, assymentric failed: %s", error)
+            return JWKOct(key=data)
+
+        if cls.typ is not NotImplemented and not isinstance(
+                key, cls.cryptography_key_types):
+            raise errors.Error("Unable to deserialize {0} into {1}".format(
+                key.__class__, cls.__class__))
+        for jwk_cls in cls.TYPES.itervalues():
+            if isinstance(key, jwk_cls.cryptography_key_types):
+                return jwk_cls(key=key)
+        raise errors.Error("Unsupported algorithm: {0}".format(key.__class__))
 
 
 @JWK.register
@@ -42,6 +102,8 @@ class JWKES(JWK):  # pragma: no cover
 
     """
     typ = 'ES'
+    cryptography_key_types = (
+        ec.EllipticCurvePublicKey, ec.EllipticCurvePrivateKey)
 
     def fields_to_partial_json(self):
         raise NotImplementedError()
@@ -50,11 +112,7 @@ class JWKES(JWK):  # pragma: no cover
     def fields_from_json(cls, jobj):
         raise NotImplementedError()
 
-    @classmethod
-    def load(cls, string):
-        raise NotImplementedError()
-
-    def public(self):
+    def public_key(self):
         raise NotImplementedError()
 
 
@@ -75,11 +133,7 @@ class JWKOct(JWK):
     def fields_from_json(cls, jobj):
         return cls(key=jobj['k'])
 
-    @classmethod
-    def load(cls, string):
-        return cls(key=string)
-
-    def public(self):
+    def public_key(self):
         return self
 
 
@@ -87,11 +141,20 @@ class JWKOct(JWK):
 class JWKRSA(JWK):
     """RSA JWK.
 
-    :ivar key: `Crypto.PublicKey.RSA` wrapped in `.HashableRSAKey`
+    :ivar key: `cryptography.hazmat.primitives.rsa.RSAPrivateKey`
+        or `cryptography.hazmat.primitives.rsa.RSAPublicKey` wrapped
+        in `.ComparableRSAKey`
 
     """
     typ = 'RSA'
+    cryptography_key_types = (rsa.RSAPublicKey, rsa.RSAPrivateKey)
     __slots__ = ('key',)
+
+    def __init__(self, *args, **kwargs):
+        if 'key' in kwargs and not isinstance(
+                kwargs['key'], util.ComparableRSAKey):
+            kwargs['key'] = util.ComparableRSAKey(kwargs['key'])
+        super(JWKRSA, self).__init__(*args, **kwargs)
 
     @classmethod
     def _encode_param(cls, data):
@@ -110,31 +173,65 @@ class JWKRSA(JWK):
         except ValueError:  # invalid literal for long() with base 16
             raise errors.DeserializationError()
 
-    @classmethod
-    def load(cls, string):
-        """Load RSA key from string.
-
-        :param str string: RSA key in string form.
-
-        :returns:
-        :rtype: :class:`JWKRSA`
-
-        """
-        return cls(key=util.HashableRSAKey(
-            Crypto.PublicKey.RSA.importKey(string)))
-
-    def public(self):
-        return type(self)(key=self.key.publickey())
+    def public_key(self):
+        return type(self)(key=self.key.public_key())
 
     @classmethod
     def fields_from_json(cls, jobj):
-        return cls(key=util.HashableRSAKey(
-            Crypto.PublicKey.RSA.construct(
-                (cls._decode_param(jobj['n']),
-                 cls._decode_param(jobj['e'])))))
+        # pylint: disable=invalid-name
+        n, e = (cls._decode_param(jobj[x]) for x in ('n', 'e'))
+        public_numbers = rsa.RSAPublicNumbers(e=e, n=n)
+        if 'd' not in jobj:  # public key
+            key = public_numbers.public_key(default_backend())
+        else:  # private key
+            d = cls._decode_param(jobj['d'])
+            if ('p' in jobj or 'q' in jobj or 'dp' in jobj or
+                    'dq' in jobj or 'qi' in jobj or 'oth' in jobj):
+                # "If the producer includes any of the other private
+                # key parameters, then all of the others MUST be
+                # present, with the exception of "oth", which MUST
+                # only be present when more than two prime factors
+                # were used."
+                p, q, dp, dq, qi, = all_params = tuple(
+                    jobj.get(x) for x in ('p', 'q', 'dp', 'dq', 'qi'))
+                if tuple(param for param in all_params if param is None):
+                    raise errors.Error(
+                        "Some private parameters are missing: {0}".format(
+                            all_params))
+                p, q, dp, dq, qi = tuple(cls._decode_param(x) for x in all_params)
+
+                # TODO: check for oth
+            else:
+                p, q = rsa.rsa_recover_prime_factors(n, e, d)  # cryptography>=0.8
+                dp = rsa.rsa_crt_dmp1(d, p)
+                dq = rsa.rsa_crt_dmq1(d, q)
+                qi = rsa.rsa_crt_iqmp(p, q)
+
+            key = rsa.RSAPrivateNumbers(
+                p, q, d, dp, dq, qi, public_numbers).private_key(default_backend())
+
+        return cls(key=key)
 
     def fields_to_partial_json(self):
-        return {
-            'n': self._encode_param(self.key.n),
-            'e': self._encode_param(self.key.e),
-        }
+        # pylint: disable=protected-access
+        if isinstance(self.key._wrapped, rsa.RSAPublicKey):
+            numbers = self.key.public_numbers()
+            params = {
+                'n': numbers.n,
+                'e': numbers.e,
+            }
+        else: # rsa.RSAPrivateKey
+            private = self.key.private_numbers()
+            public = self.key.public_key().public_numbers()
+            params = {
+                'n': public.n,
+                'e': public.e,
+                'd': private.d,
+                'p': private.p,
+                'q': private.q,
+                'dp': private.dmp1,
+                'dq': private.dmq1,
+                'qi': private.iqmp,
+            }
+        return dict((key, self._encode_param(value))
+                    for key, value in params.iteritems())

@@ -3,7 +3,7 @@ import argparse
 import base64
 import sys
 
-import M2Crypto
+import OpenSSL
 
 from acme.jose import b64
 from acme.jose import errors
@@ -122,14 +122,16 @@ class Header(json_util.JSONObjectWithFields):
 
     @x5c.encoder
     def x5c(value):  # pylint: disable=missing-docstring,no-self-argument
-        return [base64.b64encode(cert.as_der()) for cert in value]
+        return [base64.b64encode(OpenSSL.crypto.dump_certificate(
+            OpenSSL.crypto.FILETYPE_ASN1, cert)) for cert in value]
 
     @x5c.decoder
     def x5c(value):  # pylint: disable=missing-docstring,no-self-argument
         try:
-            return tuple(util.ComparableX509(M2Crypto.X509.load_cert_der_string(
+            return tuple(util.ComparableX509(OpenSSL.crypto.load_certificate(
+                OpenSSL.crypto.FILETYPE_ASN1,
                 base64.b64decode(cert))) for cert in value)
-        except M2Crypto.X509.X509Error as error:
+        except OpenSSL.crypto.Error as error:
             raise errors.DeserializationError(error)
 
 
@@ -203,7 +205,7 @@ class Signature(json_util.JSONObjectWithFields):
         header_params = kwargs
         header_params['alg'] = alg
         if include_jwk:
-            header_params['jwk'] = key.public()
+            header_params['jwk'] = key.public_key()
 
         assert set(header_params).issubset(cls.header_cls._fields)
         assert protect.issubset(cls.header_cls._fields)
@@ -354,12 +356,12 @@ class CLI(object):
 
         if args.key is not None:
             assert args.kty is not None
-            key = args.kty.load(args.key.read())
+            key = args.kty.load(args.key.read()).public_key()
         else:
             key = None
 
         sys.stdout.write(sig.payload)
-        return int(not sig.verify(key=key))
+        return not sig.verify(key=key)
 
     @classmethod
     def _alg_type(cls, arg):

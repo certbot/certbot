@@ -1,8 +1,10 @@
 """Test for letsencrypt_nginx.configurator."""
+import os
 import shutil
 import unittest
 
 import mock
+import OpenSSL
 
 from acme import challenges
 from acme import messages
@@ -55,7 +57,7 @@ class NginxConfiguratorTest(util.NginxTest):
         filep = self.config.parser.abs_path('sites-enabled/example.com')
         self.config.parser.add_server_directives(
             filep, set(['.example.com', 'example.*']),
-            [['listen', '443 ssl']])
+            [['listen', '5001 ssl']])
         self.config.save()
 
         # pylint: disable=protected-access
@@ -64,7 +66,7 @@ class NginxConfiguratorTest(util.NginxTest):
                                         ['listen', '127.0.0.1'],
                                         ['server_name', '.example.com'],
                                         ['server_name', 'example.*'],
-                                        ['listen', '443 ssl']]]],
+                                        ['listen', '5001 ssl']]]],
                          parsed[0])
 
     def test_choose_vhost(self):
@@ -98,7 +100,7 @@ class NginxConfiguratorTest(util.NginxTest):
         nginx_conf = self.config.parser.abs_path('nginx.conf')
         example_conf = self.config.parser.abs_path('sites-enabled/example.com')
 
-        # Get the default 443 vhost
+        # Get the default SSL vhost
         self.config.deploy_cert(
             "www.example.com",
             "example/cert.pem", "example/key.pem")
@@ -109,12 +111,16 @@ class NginxConfiguratorTest(util.NginxTest):
 
         self.config.parser.load()
 
+        access_log = os.path.join(self.work_dir, "access.log")
+        error_log = os.path.join(self.work_dir, "error.log")
         self.assertEqual([[['server'],
                            [['listen', '69.50.225.155:9000'],
                             ['listen', '127.0.0.1'],
                             ['server_name', '.example.com'],
                             ['server_name', 'example.*'],
-                            ['listen', '443 ssl'],
+                            ['listen', '5001 ssl'],
+                            ['access_log', access_log],
+                            ['error_log', error_log],
                             ['ssl_certificate', 'example/cert.pem'],
                             ['ssl_certificate_key', 'example/key.pem'],
                             ['include',
@@ -129,7 +135,9 @@ class NginxConfiguratorTest(util.NginxTest):
                            [['location', '/'],
                             [['root', 'html'],
                              ['index', 'index.html index.htm']]],
-                           ['listen', '443 ssl'],
+                           ['listen', '5001 ssl'],
+                           ['access_log', access_log],
+                           ['error_log', error_log],
                            ['ssl_certificate', '/etc/nginx/cert.pem'],
                            ['ssl_certificate_key', '/etc/nginx/key.pem'],
                            ['include',
@@ -140,7 +148,7 @@ class NginxConfiguratorTest(util.NginxTest):
         nginx_conf = self.config.parser.abs_path('nginx.conf')
         example_conf = self.config.parser.abs_path('sites-enabled/example.com')
 
-        # Get the default 443 vhost
+        # Get the default SSL vhost
         self.config.deploy_cert(
             "www.example.com",
             "example/cert.pem", "example/key.pem")
@@ -265,6 +273,18 @@ class NginxConfiguratorTest(util.NginxTest):
         mocked.communicate.return_value = ('', '')
         mocked.returncode = 0
         self.assertTrue(self.config.config_test())
+
+    def test_get_snakeoil_paths(self):
+        # pylint: disable=protected-access
+        cert, key = self.config._get_snakeoil_paths()
+        self.assertTrue(os.path.exists(cert))
+        self.assertTrue(os.path.exists(key))
+        with open(cert) as cert_file:
+            OpenSSL.crypto.load_certificate(
+                OpenSSL.crypto.FILETYPE_PEM, cert_file.read())
+        with open(key) as key_file:
+            OpenSSL.crypto.load_privatekey(
+                OpenSSL.crypto.FILETYPE_PEM, key_file.read())
 
 
 if __name__ == "__main__":

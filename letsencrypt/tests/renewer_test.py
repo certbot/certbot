@@ -8,10 +8,16 @@ import unittest
 
 import configobj
 import mock
+import OpenSSL
 import pytz
 
 from letsencrypt import configuration
 from letsencrypt.storage import ALL_FOUR
+
+
+CERT = OpenSSL.crypto.load_certificate(
+    OpenSSL.crypto.FILETYPE_PEM, pkg_resources.resource_string(
+        'letsencrypt.tests', os.path.join('testdata', 'cert.pem')))
 
 
 def unlink_all(rc_object):
@@ -553,7 +559,6 @@ class RenewableCertTests(unittest.TestCase):
     @mock.patch("letsencrypt.client.determine_account")
     @mock.patch("letsencrypt.client.Client")
     def test_renew(self, mock_c, mock_da, mock_pd):
-        """Tests for renew()."""
         from letsencrypt import renewer
 
         test_cert = pkg_resources.resource_string(
@@ -583,9 +588,8 @@ class RenewableCertTests(unittest.TestCase):
         mock_client = mock.MagicMock()
         # pylint: disable=star-args
         mock_client.obtain_certificate.return_value = (
-            mock.Mock(**{'body.as_pem.return_value': 'cert'}),
-            mock.Mock(**{'as_pem.return_value': 'chain'}),
-            mock.Mock(pem="key"), mock.sentinel.csr)
+            mock.MagicMock(body=CERT), CERT, mock.Mock(pem="key"),
+            mock.sentinel.csr)
         mock_c.return_value = mock_client
         self.assertEqual(2, renewer.renew(self.test_rc, 1))
         # TODO: We could also make several assertions about calls that should
