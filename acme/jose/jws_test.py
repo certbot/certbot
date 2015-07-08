@@ -4,9 +4,10 @@ import os
 import pkg_resources
 import unittest
 
-import Crypto.PublicKey.RSA
-import M2Crypto
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
 import mock
+import OpenSSL
 
 from acme.jose import b64
 from acme.jose import errors
@@ -15,11 +16,13 @@ from acme.jose import jwk
 from acme.jose import util
 
 
-CERT = util.ComparableX509(M2Crypto.X509.load_cert(
-    pkg_resources.resource_filename(
+CERT = util.ComparableX509(OpenSSL.crypto.load_certificate(
+    OpenSSL.crypto.FILETYPE_PEM, pkg_resources.resource_string(
         'letsencrypt.tests', 'testdata/cert.pem')))
-RSA512_KEY = Crypto.PublicKey.RSA.importKey(pkg_resources.resource_string(
-    __name__, os.path.join('testdata', 'rsa512_key.pem')))
+RSA512_KEY = serialization.load_pem_private_key(
+    pkg_resources.resource_string(
+        __name__, os.path.join('testdata', 'rsa512_key.pem')),
+    password=None, backend=default_backend())
 
 
 class MediaTypeTest(unittest.TestCase):
@@ -73,10 +76,13 @@ class HeaderTest(unittest.TestCase):
         from acme.jose.jws import Header
         header = Header(x5c=(CERT, CERT))
         jobj = header.to_partial_json()
-        cert_b64 = base64.b64encode(CERT.as_der())
+        cert_b64 = base64.b64encode(OpenSSL.crypto.dump_certificate(
+            OpenSSL.crypto.FILETYPE_ASN1, CERT))
         self.assertEqual(jobj, {'x5c': [cert_b64, cert_b64]})
         self.assertEqual(header, Header.from_json(jobj))
-        jobj['x5c'][0] = base64.b64encode('xxx' + CERT.as_der())
+        jobj['x5c'][0] = base64.b64encode(
+            'xxx' + OpenSSL.crypto.dump_certificate(
+                OpenSSL.crypto.FILETYPE_ASN1, CERT))
         self.assertRaises(errors.DeserializationError, Header.from_json, jobj)
 
     def test_find_key(self):
@@ -107,7 +113,7 @@ class JWSTest(unittest.TestCase):
 
     def setUp(self):
         self.privkey = jwk.JWKRSA(key=RSA512_KEY)
-        self.pubkey = self.privkey.public()
+        self.pubkey = self.privkey.public_key()
 
         from acme.jose.jws import JWS
         self.unprotected = JWS.sign(

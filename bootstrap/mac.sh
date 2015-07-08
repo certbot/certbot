@@ -1,2 +1,2 @@
 #!/bin/sh
-brew install augeas swig
+brew install augeas

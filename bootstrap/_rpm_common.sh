@@ -12,7 +12,6 @@ yum install -y \
   python-virtualenv \
   python-devel \
   gcc \
-  swig \
   dialog \
   augeas-libs \
   openssl-devel \

@@ -4,23 +4,25 @@ import itertools
 import os
 import pkg_resources
 
-import Crypto.PublicKey.RSA
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
 
 from acme import challenges
 from acme import jose
 from acme import messages
 
 
-KEY = jose.HashableRSAKey(Crypto.PublicKey.RSA.importKey(
+KEY = serialization.load_pem_private_key(
     pkg_resources.resource_string(
-        "acme.jose", os.path.join("testdata", "rsa512_key.pem"))))
+        __name__, os.path.join('testdata', 'rsa512_key.pem')),
+    password=None, backend=default_backend())
 
 # Challenges
 SIMPLE_HTTP = challenges.SimpleHTTP(
     token="evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ+PCt92wr+oA")
 DVSNI = challenges.DVSNI(
-    r="O*\xb4-\xad\xec\x95>\xed\xa9\r0\x94\xe8\x97\x9c&6\xbf'\xb3"
-      "\xed\x9a9nX\x0f'\\m\xe7\x12", nonce="a82d5ff8ef740d12881f6d3c2277ab2e")
+    r=jose.b64decode("Tyq0La3slT7tqQ0wlOiXnCY2vyez7Zo5blgPJ1xt5xI"),
+    nonce=jose.b64decode("a82d5ff8ef740d12881f6d3c2277ab2e"))
 DNS = challenges.DNS(token="17817c66b60ce2e4012dfad92657527a")
 RECOVERY_CONTACT = challenges.RecoveryContact(
     activation_url="https://example.ca/sendrecovery/a5bd99383fb0",
@@ -28,9 +30,9 @@ RECOVERY_CONTACT = challenges.RecoveryContact(
     contact="c********n@example.com")
 RECOVERY_TOKEN = challenges.RecoveryToken()
 POP = challenges.ProofOfPossession(
-    alg="RS256", nonce="xD\xf9\xb9\xdbU\xed\xaa\x17\xf1y|\x81\x88\x99 ",
+    alg="RS256", nonce=jose.b64decode("eET5udtV7aoX8Xl8gYiZIA"),
     hints=challenges.ProofOfPossession.Hints(
-        jwk=jose.JWKRSA(key=KEY.publickey()),
+        jwk=jose.JWKRSA(key=KEY.public_key()),
         cert_fingerprints=(
             "93416768eb85e33adc4277f4c9acd63e7418fcfe",
             "16d95b7b63f1972b980b14c20291f3c0d1855d95",
