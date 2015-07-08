@@ -5,6 +5,7 @@ import unittest
 
 import mock
 
+from acme import messages
 from letsencrypt import account
 
 
@@ -17,7 +18,6 @@ class NetworkTest(unittest.TestCase):
             new_reg_uri=None, key=None, alg=None, verify_ssl=None)
 
         self.config = mock.Mock(accounts_dir=tempfile.mkdtemp())
-        self.contact = ('mailto:cert-admin@example.com', 'tel:+12025551212')
 
     def tearDown(self):
         shutil.rmtree(self.config.accounts_dir)
@@ -30,7 +30,10 @@ class NetworkTest(unittest.TestCase):
 
         self.net.register_from_account(acc)
 
-        self.net.register.assert_called_with(contact=self.contact)
+        self.net.register.assert_called_once()
+        self.assertEqual(
+            set(self.net.register.mock_calls[0][1][0].contact),
+            set(('mailto:cert-admin@example.com', 'tel:+12025551212')))
 
     def test_register_from_account_partial_info(self):
         self.net.register = mock.Mock()
@@ -39,11 +42,11 @@ class NetworkTest(unittest.TestCase):
         acc2 = account.Account(self.config, 'key')
 
         self.net.register_from_account(acc)
-        self.net.register.assert_called_with(
-            contact=('mailto:cert-admin@example.com',))
+        self.net.register.assert_called_with(messages.Registration(
+            contact=('mailto:cert-admin@example.com',)))
 
         self.net.register_from_account(acc2)
-        self.net.register.assert_called_with(contact=())
+        self.net.register.assert_called_with(messages.Registration())
 
 
 if __name__ == '__main__':

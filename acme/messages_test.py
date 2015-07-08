@@ -122,6 +122,7 @@ class RegistrationTest(unittest.TestCase):
         self.reg = Registration(
             key=key, contact=contact, recovery_token=recovery_token,
             agreement=agreement)
+        self.reg_none = Registration()
 
         self.jobj_to = {
             'contact': contact,
@@ -149,8 +150,14 @@ class RegistrationTest(unittest.TestCase):
     def test_phone(self):
         self.assertEqual('1234', self.reg.phone)
 
+    def test_phone_none(self):
+        self.assertTrue(self.reg_none.phone is None)
+
     def test_email(self):
         self.assertEqual('admin@foo.com', self.reg.email)
+
+    def test_email_none(self):
+        self.assertTrue(self.reg_none.email is None)
 
     def test_to_partial_json(self):
         self.assertEqual(self.jobj_to, self.reg.to_partial_json())

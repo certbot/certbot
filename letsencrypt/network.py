@@ -1,5 +1,6 @@
 """Networking for ACME protocol."""
 from acme import client
+from acme import messages
 
 
 class Network(client.Client):
@@ -17,10 +18,6 @@ class Network(client.Client):
         :rtype: :class:`letsencrypt.account.Account`
 
         """
-        details = (
-            "mailto:" + account.email if account.email is not None else None,
-            "tel:" + account.phone if account.phone is not None else None,
-        )
-        account.regr = self.register(contact=tuple(
-            det for det in details if det is not None))
+        account.regr = self.register(messages.Registration.from_data(
+            email=account.email, phone=account.phone))
         return account
