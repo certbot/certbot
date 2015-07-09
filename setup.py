@@ -73,6 +73,14 @@ letsencrypt_apache_install_requires = [
     'zope.component',
     'zope.interface',
 ]
+letsencrypt_dns_install_requires = [
+    #'acme',
+    'argparse',
+    'dnspython',
+    'mock',
+    #'letsencrypt',
+    'zope.interface',
+]
 letsencrypt_nginx_install_requires = [
     #'acme',
     #'letsencrypt',
@@ -86,6 +94,7 @@ install_requires = [
     'cryptography>=0.8',
     'ConfigArgParse',
     'configobj',
+    'dnspython',
     'mock',
     'ndg-httpsclient',  # urllib3 InsecurePlatformWarning (#304)
     'parsedatetime',
@@ -108,6 +117,7 @@ assert set(install_requires) == set.union(*(set(ireq) for ireq in (
     acme_install_requires,
     letsencrypt_install_requires,
     letsencrypt_apache_install_requires,
+    letsencrypt_dns_install_requires,
     letsencrypt_nginx_install_requires
 ))), "*install_requires don't match up!"
 
@@ -166,7 +176,7 @@ setup(
 
     tests_require=install_requires,
     # to test all packages run "python setup.py test -s
-    # {acme,letsencrypt_apache,letsencrypt_nginx}"
+    # {acme,letsencrypt_apache,letsencrypt_dns,letsencrypt_nginx}"
     test_suite='letsencrypt',
 
     entry_points={
@@ -184,6 +194,7 @@ setup(
 
             # to be moved to separate pypi packages
             'apache = letsencrypt_apache.configurator:ApacheConfigurator',
+            'dns = letsencrypt_dns.authenticator:DNSAuthenticator',
             'nginx = letsencrypt_nginx.configurator:NginxConfigurator',
         ],
     },
