@@ -58,16 +58,30 @@ def check_permissions(filepath, mode, uid=0):
     return stat.S_IMODE(file_stat.st_mode) == mode and file_stat.st_uid == uid
 
 
-def _safely_attempt_open(fname, mode):
-    file_d = os.open(fname, os.O_CREAT | os.O_EXCL | os.O_RDWR, mode)
-    return os.fdopen(file_d, "w"), fname
+def safe_open(path, mode="w", chmod=None, buffering=None):
+    """Safely open a file.
+
+    :param str path: Path to a file.
+    :param str mode: Same os `mode` for `open`.
+    :param int chmod: Same as `mode` for `os.open`, uses Python defaults
+        if ``None``.
+    :param int buffering: Same as `bufsize` for `os.fdopen`, uses Python
+        defaults if ``None``.
+
+    """
+    # pylint: disable=star-args
+    open_args = () if chmod is None else (chmod,)
+    fdopen_args = () if buffering is None else (buffering,)
+    return os.fdopen(
+        os.open(path, os.O_CREAT | os.O_EXCL | os.O_RDWR, *open_args),
+        mode, *fdopen_args)
 
 
 def _unique_file(path, filename_pat, count, mode):
     while True:
+        current_path = os.path.join(path, filename_pat(count))
         try:
-            return _safely_attempt_open(
-                os.path.join(path, filename_pat(count)), mode)
+            return safe_open(current_path, chmod=mode), current_path
         except OSError as err:
             # "File exists," is okay, try a different name.
             if err.errno != errno.EEXIST:
@@ -105,9 +119,9 @@ def unique_lineage_name(path, filename, mode=0o777):
         specified location.
 
     """
+    preferred_path = os.path.join(path, "%s.conf" % (filename))
     try:
-        return _safely_attempt_open(
-            os.path.join(path, "%s.conf" % (filename)), mode=mode)
+        return safe_open(preferred_path, chmod=mode), preferred_path
     except OSError as err:
         if err.errno != errno.EEXIST:
             raise
