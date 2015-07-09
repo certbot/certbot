@@ -11,6 +11,7 @@ from acme.jose import util as jose_util
 
 from letsencrypt import constants
 from letsencrypt import interfaces
+from letsencrypt import le_util
 
 
 def option_namespace(name):
@@ -173,7 +174,7 @@ class Dvsni(object):
         cert_pem, response = achall.gen_cert_and_response(s)
 
         # Write out challenge cert
-        with open(cert_path, "w") as cert_chall_fd:
+        with open(cert_path, "wb") as cert_chall_fd:
             cert_chall_fd.write(cert_pem)
 
         key_path = self.get_key_path(achall)
@@ -181,8 +182,7 @@ class Dvsni(object):
             encoding=serialization.Encoding.PEM,
             format=serialization.PrivateFormat.TraditionalOpenSSL,
             encryption_algorithm=serialization.NoEncryption())
-        # XXX: key_file chmods!  (SEC)
-        with open(key_path, 'w') as key_file:
+        with le_util.safe_open(key_path, 'wb', chmod=0o400) as key_file:
             key_file.write(key_pem)
         self.configurator.reverter.register_file_creation(True, key_path)
 

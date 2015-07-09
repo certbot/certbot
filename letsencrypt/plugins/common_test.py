@@ -150,24 +150,28 @@ class DvsniTest(unittest.TestCase):
         # open context managers more elegantly. It avoids dealing with
         # __enter__ and __exit__ calls.
         # http://www.voidspace.org.uk/python/mock/helpers.html#mock.mock_open
-        m_open = mock.mock_open()
+        mock_open, mock_safe_open = mock.mock_open(), mock.mock_open()
 
         response = challenges.DVSNIResponse(s="randomS1")
         achall = mock.MagicMock(nonce=self.achalls[0].nonce,
                                 nonce_domain=self.achalls[0].nonce_domain)
         achall.gen_cert_and_response.return_value = ("pem", response)
 
-        with mock.patch("letsencrypt.plugins.common.open", m_open, create=True):
-            # pylint: disable=protected-access
-            self.assertEqual(response, self.sni._setup_challenge_cert(
-                achall, "randomS1"))
+        with mock.patch("letsencrypt.plugins.common.open",
+                        mock_open, create=True):
+            with mock.patch("letsencrypt.plugins.common.le_util.safe_open",
+                            mock_safe_open):
+                # pylint: disable=protected-access
+                self.assertEqual(response, self.sni._setup_challenge_cert(
+                    achall, "randomS1"))
 
-            self.assertTrue(m_open.called)
-            self.assertEqual(
-                m_open.call_args[0], (self.sni.get_cert_path(achall), "w"))
-            self.assertEqual(m_open().write.mock_calls[0][1][0], "pem")
-            self.assertEqual(m_open().write.mock_calls[1][1][0],
-                             achall.key.key.private_bytes())
+        # pylint: disable=no-member
+        mock_open.assert_called_once_with(self.sni.get_cert_path(achall), "wb")
+        mock_open.return_value.write.assert_called_once_with("pem")
+        mock_safe_open.assert_called_once_with(
+            self.sni.get_key_path(achall), "wb", chmod=0o400)
+        mock_safe_open.return_value.write.assert_called_once_with(
+            achall.key.key.private_bytes())
 
 
 if __name__ == "__main__":
