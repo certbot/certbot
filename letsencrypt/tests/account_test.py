@@ -3,6 +3,7 @@ import datetime
 import os
 import pkg_resources
 import shutil
+import stat
 import tempfile
 import unittest
 
@@ -130,6 +131,8 @@ class AccountFileStorageTest(unittest.TestCase):
         for file_name in "regr.json", "meta.json", "private_key.json":
             self.assertTrue(os.path.exists(
                 os.path.join(account_path, file_name)))
+        self.assertEqual("0400", oct(os.stat(os.path.join(
+            account_path, "private_key.json"))[stat.ST_MODE] & 0o777))
 
         # restore
         self.assertEqual(self.acc, self.storage.load(self.acc.id))

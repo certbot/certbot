@@ -192,7 +192,8 @@ class AccountFileStorage(interfaces.AccountStorage):
         try:
             with open(self._regr_path(account_dir_path), "w") as regr_file:
                 regr_file.write(account.regr.json_dumps())
-            with open(self._key_path(account_dir_path), "w") as key_file:
+            with le_util.safe_open(self._key_path(account_dir_path),
+                                   "w", chmod=0o400) as key_file:
                 key_file.write(account.key.json_dumps())
             with open(self._metadata_path(account_dir_path), "w") as metadata_file:
                 metadata_file.write(account.meta.json_dumps())
