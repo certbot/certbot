@@ -1,6 +1,7 @@
 """Tests for acme.client."""
 import datetime
 import httplib
+import json
 import os
 import pkg_resources
 import unittest
@@ -74,6 +75,8 @@ class ClientTest(unittest.TestCase):
             cert_chain_uri='https://www.letsencrypt-demo.org/ca')
 
     def test_register(self):
+        # "Instance of 'Field' has no to_json/update member" bug:
+        # pylint: disable=no-member
         self.response.status_code = httplib.CREATED
         self.response.json.return_value = self.regr.body.to_json()
         self.response.headers['Location'] = self.regr.uri
@@ -97,6 +100,8 @@ class ClientTest(unittest.TestCase):
             errors.ClientError, self.client.register, self.regr.body)
 
     def test_update_registration(self):
+        # "Instance of 'Field' has no to_json/update member" bug:
+        # pylint: disable=no-member
         self.response.headers['Location'] = self.regr.uri
         self.response.json.return_value = self.regr.body.to_json()
         self.assertEqual(self.regr, self.client.update_registration(self.regr))
@@ -367,20 +372,22 @@ class ClientNetworkTest(unittest.TestCase):
         self.assertTrue(self.net.verify_ssl is self.verify_ssl)
 
     def test_wrap_in_jws(self):
-        class MockJSONDeSerializable(jose.JSONDeSerializable):
+        class MockClientRequestableResource(jose.JSONDeSerializable):
             # pylint: disable=missing-docstring
+            resource_type = 'mock'
             def __init__(self, value):
                 self.value = value
             def to_partial_json(self):
-                return self.value
+                return {'foo': self.value}
             @classmethod
             def from_json(cls, value):
                 pass  # pragma: no cover
         # pylint: disable=protected-access
         jws_dump = self.net._wrap_in_jws(
-            MockJSONDeSerializable('foo'), nonce='Tg')
+            MockClientRequestableResource('foo'), nonce='Tg')
         jws = acme_jws.JWS.json_loads(jws_dump)
-        self.assertEqual(jws.payload, '"foo"')
+        self.assertEqual(json.loads(jws.payload),
+                         {'foo': 'foo', 'resource': 'mock'})
         self.assertEqual(jws.signature.combined.nonce, 'Tg')
         # TODO: check that nonce is in protected header
 

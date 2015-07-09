@@ -3,6 +3,7 @@ import urlparse
 
 from acme import challenges
 from acme import fields
+from acme import interfaces
 from acme import jose
 
 
@@ -117,7 +118,6 @@ class Identifier(jose.JSONObjectWithFields):
 class Resource(jose.JSONObjectWithFields):
     """ACME Resource.
 
-    :ivar str uri: Location of the resource.
     :ivar acme.messages.ResourceBody body: Resource body.
 
     """
@@ -137,13 +137,15 @@ class ResourceBody(jose.JSONObjectWithFields):
     """ACME Resource Body."""
 
 
-class Registration(ResourceBody):
+class Registration(interfaces.ClientRequestableResource, ResourceBody):
     """Registration Resource Body.
 
     :ivar acme.jose.jwk.JWK key: Public key.
     :ivar tuple contact: Contact information following ACME spec
 
     """
+    resource_type = 'new-regr'
+
     # on new-reg key server ignores 'key' and populates it based on
     # JWS.signature.combined.jwk
     key = jose.Field('key', omitempty=True, decoder=jose.JWK.from_json)
@@ -205,7 +207,8 @@ class Registration(ResourceBody):
             return None
 
 
-class RegistrationResource(ResourceWithURI):
+class RegistrationResource(interfaces.ClientRequestableResource,
+                           ResourceWithURI):
     """Registration Resource.
 
     :ivar acme.messages.Registration body:
@@ -213,6 +216,7 @@ class RegistrationResource(ResourceWithURI):
     :ivar str terms_of_service: URL for the CA TOS.
 
     """
+    resource_type = 'reg'
     body = jose.Field('body', decoder=Registration.from_json)
     new_authzr_uri = jose.Field('new_authzr_uri')
     terms_of_service = jose.Field('terms_of_service', omitempty=True)
@@ -274,7 +278,7 @@ class ChallengeResource(Resource):
         return self.body.uri  # pylint: disable=no-member
 
 
-class Authorization(ResourceBody):
+class Authorization(interfaces.ClientRequestableResource, ResourceBody):
     """Authorization Resource Body.
 
     :ivar acme.messages.Identifier identifier:
@@ -287,6 +291,7 @@ class Authorization(ResourceBody):
     :ivar datetime.datetime expires:
 
     """
+    resource_type = 'new-authz'
     identifier = jose.Field('identifier', decoder=Identifier.from_json)
     challenges = jose.Field('challenges', omitempty=True)
     combinations = jose.Field('combinations', omitempty=True)
@@ -320,7 +325,8 @@ class AuthorizationResource(ResourceWithURI):
     new_cert_uri = jose.Field('new_cert_uri')
 
 
-class CertificateRequest(jose.JSONObjectWithFields):
+class CertificateRequest(interfaces.ClientRequestableResource,
+                         jose.JSONObjectWithFields):
     """ACME new-cert request.
 
     :ivar acme.jose.util.ComparableX509 csr:
@@ -328,11 +334,13 @@ class CertificateRequest(jose.JSONObjectWithFields):
     :ivar tuple authorizations: `tuple` of URIs (`str`)
 
     """
+    resource_type = 'new-cert'
     csr = jose.Field('csr', decoder=jose.decode_csr, encoder=jose.encode_csr)
     authorizations = jose.Field('authorizations', decoder=tuple)
 
 
-class CertificateResource(ResourceWithURI):
+class CertificateResource(interfaces.ClientRequestableResource,
+                          ResourceWithURI):
     """Certificate Resource.
 
     :ivar acme.jose.util.ComparableX509 body:
@@ -341,17 +349,20 @@ class CertificateResource(ResourceWithURI):
     :ivar tuple authzrs: `tuple` of `AuthorizationResource`.
 
     """
+    resource_type = 'cert'
     cert_chain_uri = jose.Field('cert_chain_uri')
     authzrs = jose.Field('authzrs')
 
 
-class Revocation(jose.JSONObjectWithFields):
+class Revocation(interfaces.ClientRequestableResource,
+                 jose.JSONObjectWithFields):
     """Revocation message.
 
     :ivar .ComparableX509 certificate: `OpenSSL.crypto.X509` wrapped in
         `.ComparableX509`
 
     """
+    resource_type = 'revoke-cert'
     certificate = jose.Field(
         'certificate', decoder=jose.decode_cert, encoder=jose.encode_cert)
 

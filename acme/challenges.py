@@ -7,6 +7,7 @@ import os
 
 import requests
 
+from acme import interfaces
 from acme import jose
 from acme import other
 
@@ -31,10 +32,17 @@ class DVChallenge(Challenge):  # pylint: disable=abstract-method
     """Domain validation challenges."""
 
 
-class ChallengeResponse(jose.TypedJSONObjectWithFields):
+class ChallengeResponse(interfaces.ClientRequestableResource,
+                        jose.TypedJSONObjectWithFields):
     # _fields_to_partial_json | pylint: disable=abstract-method
-    """ACME challenge response."""
+    """ACME challenge response.
+
+    :ivar str mitm_resource: ACME resource identifier used in client
+        HTTPS requests in order to protect against MITM.
+
+    """
     TYPES = {}
+    resource_type = 'challenge'
 
     @classmethod
     def from_json(cls, jobj):

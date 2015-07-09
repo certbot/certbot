@@ -2,6 +2,7 @@
 import datetime
 import heapq
 import httplib
+import json
 import logging
 import time
 
@@ -81,6 +82,8 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         response = self.net.post(self.new_reg_uri, new_reg)
         assert response.status_code == httplib.CREATED  # TODO: handle errors
 
+        # "Instance of 'Field' has no key/contact member" bug:
+        # pylint: disable=no-member
         regr = self._regr_from_response(response)
         if (regr.body.key != self.key.public_key() or
                 regr.body.contact != new_reg.contact):
@@ -443,11 +446,13 @@ class ClientNetwork(object):
 
         .. todo:: Implement ``acmePath``.
 
-        :param JSONDeSerializable obj:
+        :param .ClientRequestableResource obj:
         :rtype: `.JWS`
 
         """
-        dumps = obj.json_dumps()
+        jobj = obj.to_json()
+        jobj['resource'] = obj.resource_type
+        dumps = json.dumps(jobj)
         logger.debug('Serialized JSON: %s', dumps)
         return jws.JWS.sign(
             payload=dumps, key=self.key, alg=self.alg, nonce=nonce).json_dumps()
