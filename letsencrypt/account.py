@@ -98,9 +98,9 @@ def report_new_account(acc, config):
                     "them using the token \"{0}\". You must write that down "
                     "and put it in a safe place.".format(
                         acc.regr.body.recovery_token))
-    if acc.regr.body.email is not None:
+    if acc.regr.body.emails:
         recovery_msg += (" Another recovery method will be e-mails sent to "
-                         "{0}.".format(acc.regr.body.email))
+                         "{0}.".format(", ".join(acc.regr.body.emails)))
     reporter.add_message(recovery_msg, reporter.HIGH_PRIORITY, True)
 
 

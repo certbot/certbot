@@ -180,30 +180,6 @@ class Registration(ResourceBody):
         """All emails found in the ``contact`` field."""
         return self._filter_contact(self.email_prefix)
 
-    @property
-    def phone(self):
-        """Phone.
-
-        Picks any phone from `phones` or ``None`` if not available.
-
-        """
-        try:
-            return self.phones[0]
-        except IndexError:
-            return None
-
-    @property
-    def email(self):
-        """Email.
-
-        Picks any email from `emails` or ``None`` if not available.
-
-        """
-        try:
-            return self.emails[0]
-        except IndexError:
-            return None
-
 
 class RegistrationResource(ResourceWithURI):
     """Registration Resource.
