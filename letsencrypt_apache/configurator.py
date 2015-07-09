@@ -65,7 +65,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     is not ready to handle very complex configurations.
 
     .. todo:: Add support for config file variables Define rootDir /var/www/
-    .. todo:: Add proper support for module configuration
 
     The API of this class will change in the coming weeks as the exact
     needs of clients are clarified with the new and developing protocol.
@@ -198,14 +197,15 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         logger.info("Deploying Certificate to VirtualHost %s", vhost.filep)
 
-        self.aug.set(path["cert_path"][0], cert_path)
-        self.aug.set(path["cert_key"][0], key_path)
+        # Assign the final directives; order is maintained in find_dir
+        self.aug.set(path["cert_path"][-1], cert_path)
+        self.aug.set(path["cert_key"][-1], key_path)
         if chain_path is not None:
             if not path["chain_path"]:
                 self.parser.add_dir(
                     vhost.path, "SSLCertificateChainFile", chain_path)
             else:
-                self.aug.set(path["chain_path"][0], chain_path)
+                self.aug.set(path["chain_path"][-1], chain_path)
 
         self.save_notes += ("Changed vhost at %s with addresses of %s\n" %
                             (vhost.filep,
@@ -430,8 +430,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         # Check for Listen 443
         # Note: This could be made to also look for ip:443 combo
-        # TODO: Need to search only open directives and IfMod mod_ssl.c
-        if len(self.parser.find_dir(parser.case_i("Listen"), "443")) == 0:
+        if not self.parser.find_dir(parser.case_i("Listen"), "443"):
             logger.debug("No Listen 443 directive found. Setting the "
                          "Apache Server to Listen on port 443")
             path = self.parser.add_dir_to_ifmodssl(

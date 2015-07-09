@@ -15,11 +15,10 @@ logger = logging.getLogger(__name__)
 class ApacheParser(object):
     """Class handles the fine details of parsing the Apache Configuration.
 
+    .. todo:: Make parsing general... remove sites-available etc...
+
     :ivar str root: Normalized absolute path to the server root
         directory. Without trailing slash.
-
-    .. todo:: Handle UnDefine Directive
-    .. todo:: Handle Define directive for parameters within find_dirs
 
     """
     def __init__(self, aug, root, ssl_options, ctl):
@@ -75,7 +74,7 @@ class ApacheParser(object):
         ..todo:: Also use apache2ctl -V for compiled parameters
 
         """
-        stdout = self._get_runtime_info(ctl)
+        stdout = self._get_runtime_cfg(ctl)
 
         variables = dict()
         matches = re.compile(r"Define: ([^ \n]*)").findall(stdout)
@@ -89,7 +88,8 @@ class ApacheParser(object):
                     "Error parsing Apache runtime variables")
             parts = match.partition("=")
             variables[parts[0]] = parts[2]
-        print variables
+
+        return variables
 
     def _get_runtime_cfg(self, ctl):
         """Get runtime configuration info.
@@ -212,7 +212,6 @@ class ApacheParser(object):
         Recursively searches through config files to find directives
         Directives should be in the form of a case insensitive regex currently
 
-        .. todo:: Add order to directives returned. Last directive comes last..
         .. todo:: arg should probably be a list
         .. todo:: Check //* notation for including directories not intended
             to be included.
@@ -237,8 +236,6 @@ class ApacheParser(object):
         if not start:
             start = get_aug_path(self.loc["root"])
 
-        # Debug code
-        # print "find_dir:", directive, "arg:", arg, " | Looking in:", start
         # No regexp code
         # if arg is None:
         #     matches = self.aug.match(start +
@@ -251,34 +248,33 @@ class ApacheParser(object):
         # includes = self.aug.match(start +
         # "//* [self::directive='Include']/* [label()='arg']")
 
-        if arg is None:
-            matches = self.aug.match(("%s//*[self::directive=~regexp('%s')]/arg"
-                                      % (start, directive)))
-        else:
-            matches = self.aug.match(("%s//*[self::directive=~regexp('%s')]/*"
-                                      "[self::arg=~regexp('%s')]" %
-                                      (start, directive, arg)))
+        regex = "(%s)|(%s)|(%s)" % (directive,
+                                    case_i("Include"),
+                                    case_i("IncludeOptional"))
+        matches = self.aug.match(
+            "%s//*[self::directive=~regexp('%s')]" % (start, regex))
 
         matches = self._exclude_dirs(matches)
 
-        incl_regex = "(%s)|(%s)" % (case_i("Include"),
-                                    case_i("IncludeOptional"))
 
-        includes = self.aug.match(("%s//* [self::directive=~regexp('%s')]/* "
-                                   "[label()='arg']" % (start, incl_regex)))
+        if arg is None:
+            arg_suffix = "/arg"
+        else:
+            arg_suffix = "/*[self::arg=~regexp('%s')]" % arg
 
-        includes = self._exclude_dirs(includes)
+        ordered_matches = []
 
-        # for inc in includes:
-        #    print inc, self.aug.get(inc)
+        for match in matches:
+            dir = self.aug.get(match).lower()
+            if dir == "include" or dir == "includeoptional":
+                # start[6:] to strip off /files
+                ordered_matches.extend(self.find_dir(
+                    directive, arg, self._get_include_path(
+                        strip_dir(start[6:]), self.aug.get(match + "/arg"))))
+            else:
+                ordered_matches.extend(self.aug.match(match + arg_suffix))
 
-        for include in includes:
-            # start[6:] to strip off /files
-            matches.extend(self.find_dir(
-                directive, arg, self._get_include_path(
-                    strip_dir(start[6:]), self.aug.get(include))))
-
-        return matches
+        return ordered_matches
 
     def _exclude_dirs(self, matches):
         """Exclude directives that are not loaded into the configuration."""
