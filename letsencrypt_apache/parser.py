@@ -1,4 +1,5 @@
 """ApacheParser is a member object of the ApacheConfigurator class."""
+import collections
 import itertools
 import logging
 import os
@@ -23,9 +24,10 @@ class ApacheParser(object):
     """
     def __init__(self, aug, root, ssl_options, ctl):
         # This uses the binary, so it can be done first.
+        # https://httpd.apache.org/docs/2.4/mod/core.html#define
         # https://httpd.apache.org/docs/2.4/mod/core.html#ifdefine
-        # This only handles invocation parameters... not Define directive params
-        self.parameters = self._init_parameters(ctl)
+        # This only handles invocation parameters and Define directives!
+        self.variables = self._init_runtime_variables(ctl)
 
         # Find configuration root and make sure augeas can parse it.
         self.aug = aug
@@ -45,13 +47,13 @@ class ApacheParser(object):
         self.modules = set()
         self._init_modules()
 
-        # Set Apache variables
-        # https://httpd.apache.org/docs/2.4/mod/core.html#define
-        self.variables = set()
-        self._init_variables()
-
     def _init_modules(self):
-        """Iterates on the configuration until no new modules are loaded."""
+        """Iterates on the configuration until no new modules are loaded.
+
+        ..todo:: This should be attempted to be done with a binary to avoid
+            the iteration issue.  Else... do a better job of parsing to avoid it
+
+        """
         matches = self.find_dir(case_i("LoadModule"))
 
         iterator = iter(matches)
@@ -67,7 +69,34 @@ class ApacheParser(object):
                 self.modules.add(
                     os.path.basename(self.aug.get(match_filename))[:-2] + "c")
 
-    def _init_parameters(self, ctl):
+    def _init_runtime_variables(self, ctl):
+        """"
+
+        ..todo:: Also use apache2ctl -V for compiled parameters
+
+        """
+        stdout = self._get_runtime_info(ctl)
+
+        variables = dict()
+        matches = re.compile(r"Define: ([^ \n]*)").findall(stdout)
+        matches.remove("DUMP_RUN_CFG")
+
+        for match in matches:
+            if match.count("=") > 1:
+                logger.error("Unexpected number of equal signs in "
+                             "apache2ctl -D DUMP_RUN_CFG")
+                raise errors.PluginError(
+                    "Error parsing Apache runtime variables")
+            parts = match.partition("=")
+            variables[parts[0]] = parts[2]
+        print variables
+
+    def _get_runtime_cfg(self, ctl):
+        """Get runtime configuration info.
+
+        :returns: stdout from DUMP_RUN_CFG
+
+        """
         try:
             proc = subprocess.Popen(
                 [ctl, "-D", "DUMP_RUN_CFG"],
@@ -88,17 +117,37 @@ class ApacheParser(object):
                 "Apache is unable to check whether or not the module is "
                 "loaded because Apache is misconfigured.")
 
-        matches = re.compile(r"Define: ([^ \n]*)").findall(stdout)
-        matches.remove("DUMP_RUN_CFG")
-        return set(matches)
+        return stdout
 
-    def _init_variables(self):
-        #print "Define Directive:", self.find_dir(case_i("Define"))
-        # This works
-        #matches = self.aug.match("/files/etc/apache2/apache2.conf/*/* [count(arg) = 2]")
-        matches = self.aug.match("/files/etc/apache2/apache2.conf/*[self::directive=~regexp('Define')]/arg")
-        for match in matches:
-            print match, self.aug.get(match)
+    def _filter_args_num(self, matches, args):
+        """Filter out directives with specific number of arguments.
+
+        This function makes the assumption that all related arguments are given
+        in order.  Thus /files/apache/directive[5]/arg[2] must come immediately
+        after /files/apache/directive[5]/arg[1]. Runs in 1 linear pass.
+
+        :param string matches: Matches of all directives with arg nodes
+        :param int args: Number of args you would like to filter
+
+        :returns: List of directives that contain # of arguments.
+            (arg is stripped off)
+
+        """
+        filtered = []
+        if args == 1:
+            for i in range(matches):
+                if matches[i].endswith("/arg"):
+                    filtered.append(matches[i][:-4])
+        else:
+            for i in range(matches):
+                if matches[i].endswith("/arg[%d]", args):
+                    # Make sure we don't cause an IndexError (end of list)
+                    # Check to make sure arg + 1 doesn't exist
+                    if (i == (len(matches) - 1) or
+                            not matches[i + 1].endswith("/arg[%d]" % args + 1)):
+                        filtered.append(matches[i][:-len("/arg[%d]" % args)])
+
+        return filtered
 
     def add_dir_to_ifmodssl(self, aug_conf_path, directive, val):
         """Adds directive and value to IfMod ssl block.
@@ -233,7 +282,7 @@ class ApacheParser(object):
 
     def _exclude_dirs(self, matches):
         """Exclude directives that are not loaded into the configuration."""
-        filters = [("ifmodule", self.modules), ("ifdefine", self.parameters)]
+        filters = [("ifmodule", self.modules), ("ifdefine", self.variables)]
 
         valid_matches = []
 
