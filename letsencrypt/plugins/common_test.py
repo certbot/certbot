@@ -164,7 +164,7 @@ class DvsniTest(unittest.TestCase):
 
             self.assertTrue(m_open.called)
             self.assertEqual(
-                m_open.call_args[0], (self.sni.get_cert_file(achall), "w"))
+                m_open.call_args[0], (self.sni.get_cert_path(achall), "w"))
             self.assertEqual(m_open().write.mock_calls[0][1][0], "pem")
             self.assertEqual(m_open().write.mock_calls[1][1][0],
                              achall.key.key.private_bytes())

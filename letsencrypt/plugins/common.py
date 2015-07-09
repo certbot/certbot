@@ -145,7 +145,7 @@ class Dvsni(object):
         if idx is not None:
             self.indices.append(idx)
 
-    def get_cert_file(self, achall):
+    def get_cert_path(self, achall):
         """Returns standardized name for challenge certificate.
 
         :param achall: Annotated DVSNI challenge.
@@ -166,7 +166,7 @@ class Dvsni(object):
     def _setup_challenge_cert(self, achall, s=None):
         # pylint: disable=invalid-name
         """Generate and write out challenge certificate."""
-        cert_path = self.get_cert_file(achall)
+        cert_path = self.get_cert_path(achall)
         # Register the path before you write out the file
         self.configurator.reverter.register_file_creation(True, cert_path)
 
