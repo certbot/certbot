@@ -144,7 +144,7 @@ class Registration(interfaces.ClientRequestableResource, ResourceBody):
     :ivar tuple contact: Contact information following ACME spec
 
     """
-    resource_type = 'new-regr'
+    resource_type = 'new-reg'
 
     # on new-reg key server ignores 'key' and populates it based on
     # JWS.signature.combined.jwk
