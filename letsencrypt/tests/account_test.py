@@ -100,6 +100,8 @@ class AccountMemoryStorageTest(unittest.TestCase):
         self.storage.save(account)
         self.assertEqual([account], self.storage.find_all())
         self.assertEqual(account, self.storage.load("x"))
+        self.storage.save(account)
+        self.assertEqual([account], self.storage.find_all())
 
 
 class AccountFileStorageTest(unittest.TestCase):
