@@ -49,7 +49,7 @@ class AccountTest(unittest.TestCase):
 
     def test_slug(self):
         self.assertEqual(
-            self.acc.slug, "test.letsencrypt.org@2015-07-04T14:04:10Z")
+            self.acc.slug, "test.letsencrypt.org@2015-07-04T14:04:10Z (2ba3)")
 
     def test_repr(self):
         self.assertEqual(

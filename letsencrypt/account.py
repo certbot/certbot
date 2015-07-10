@@ -68,8 +68,8 @@ class Account(object):  # pylint: disable=too-few-public-methods
     @property
     def slug(self):
         """Short account identification string, useful for UI."""
-        return "{1}@{0}".format(pyrfc3339.generate(
-            self.meta.creation_dt), self.meta.creation_host)
+        return "{1}@{0} ({2})".format(pyrfc3339.generate(
+            self.meta.creation_dt), self.meta.creation_host, self.id[:4])
 
     def __repr__(self):
         return "<{0}({1})>".format(self.__class__.__name__, self.id)
