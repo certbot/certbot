@@ -1,208 +1,186 @@
 """Tests for letsencrypt.account."""
-import logging
-import mock
+import datetime
 import os
-import pkg_resources
 import shutil
+import stat
 import tempfile
 import unittest
 
+import mock
+import pytz
+
+from acme import jose
 from acme import messages
 
-from letsencrypt import configuration
 from letsencrypt import errors
-from letsencrypt import le_util
 
-from letsencrypt.display import util as display_util
+from letsencrypt.tests import test_util
+
+
+KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key_2.pem"))
 
 
 class AccountTest(unittest.TestCase):
-    """Tests letsencrypt.account.Account."""
+    """Tests for letsencrypt.account.Account."""
 
     def setUp(self):
         from letsencrypt.account import Account
+        self.regr = mock.MagicMock()
+        self.meta = Account.Meta(
+            creation_host="test.letsencrypt.org",
+            creation_dt=datetime.datetime(
+                2015, 7, 4, 14, 4, 10, tzinfo=pytz.UTC))
+        self.acc = Account(self.regr, KEY, self.meta)
 
-        logging.disable(logging.CRITICAL)
+        with mock.patch("letsencrypt.account.socket") as mock_socket:
+            mock_socket.getfqdn.return_value = "test.letsencrypt.org"
+            with mock.patch("letsencrypt.account.datetime") as mock_dt:
+                mock_dt.datetime.now.return_value = self.meta.creation_dt
+                self.acc_no_meta = Account(self.regr, KEY)
 
-        self.accounts_dir = tempfile.mkdtemp("accounts")
-        self.account_keys_dir = os.path.join(self.accounts_dir, "keys")
-        os.makedirs(self.account_keys_dir, 0o700)
+    def test_init(self):
+        self.assertEqual(self.regr, self.acc.regr)
+        self.assertEqual(KEY, self.acc.key)
+        self.assertEqual(self.meta, self.acc_no_meta.meta)
 
+    def test_id(self):
+        self.assertEqual(
+            self.acc.id, "2ba35a3bdf380ed76a5ac9e740568395")
+
+    def test_slug(self):
+        self.assertEqual(
+            self.acc.slug, "test.letsencrypt.org@2015-07-04T14:04:10Z (2ba3)")
+
+    def test_repr(self):
+        self.assertEqual(
+            repr(self.acc),
+            "<Account(2ba35a3bdf380ed76a5ac9e740568395)>")
+
+
+class ReportNewAccountTest(unittest.TestCase):
+    """Tests for letsencrypt.account.report_new_account."""
+
+    def setUp(self):
+        self.config = mock.MagicMock(config_dir="/etc/letsencrypt")
+        reg = messages.Registration.from_data(email="rhino@jungle.io")
+        reg = reg.update(recovery_token="ECCENTRIC INVISIBILITY RHINOCEROS")
+        self.acc = mock.MagicMock(regr=messages.RegistrationResource(
+            uri=None, new_authzr_uri=None, body=reg))
+
+    def _call(self):
+        from letsencrypt.account import report_new_account
+        report_new_account(self.acc, self.config)
+
+    @mock.patch("letsencrypt.client.zope.component.queryUtility")
+    def test_no_reporter(self, mock_zope):
+        mock_zope.return_value = None
+        self._call()
+
+    @mock.patch("letsencrypt.client.zope.component.queryUtility")
+    def test_it(self, mock_zope):
+        self._call()
+        call_list = mock_zope().add_message.call_args_list
+        self.assertTrue(self.config.config_dir in call_list[0][0][0])
+        self.assertTrue(self.acc.regr.body.recovery_token in call_list[1][0][0])
+        self.assertTrue(
+            ", ".join(self.acc.regr.body.emails) in call_list[1][0][0])
+
+
+class AccountMemoryStorageTest(unittest.TestCase):
+    """Tests for letsencrypt.account.AccountMemoryStorage."""
+
+    def setUp(self):
+        from letsencrypt.account import AccountMemoryStorage
+        self.storage = AccountMemoryStorage()
+
+    def test_it(self):
+        account = mock.Mock(id="x")
+        self.assertEqual([], self.storage.find_all())
+        self.assertRaises(errors.AccountNotFound, self.storage.load, "x")
+        self.storage.save(account)
+        self.assertEqual([account], self.storage.find_all())
+        self.assertEqual(account, self.storage.load("x"))
+        self.storage.save(account)
+        self.assertEqual([account], self.storage.find_all())
+
+
+class AccountFileStorageTest(unittest.TestCase):
+    """Tests for letsencrypt.account.AccountFileStorage."""
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
         self.config = mock.MagicMock(
-            spec=configuration.NamespaceConfig, accounts_dir=self.accounts_dir,
-            account_keys_dir=self.account_keys_dir, rsa_key_size=2048,
-            server="letsencrypt-demo.org")
+            accounts_dir=os.path.join(self.tmp, "accounts"))
+        from letsencrypt.account import AccountFileStorage
+        self.storage = AccountFileStorage(self.config)
 
-        key_file = pkg_resources.resource_filename(
-            "acme.jose", os.path.join("testdata", "rsa512_key.pem"))
-        key_pem = pkg_resources.resource_string(
-            "acme.jose", os.path.join("testdata", "rsa512_key.pem"))
-
-        self.key = le_util.Key(key_file, key_pem)
-        self.email = "client@letsencrypt.org"
-        self.regr = messages.RegistrationResource(
-            uri="uri",
-            new_authzr_uri="new_authzr_uri",
-            terms_of_service="terms_of_service",
-            body=messages.Registration(
-                recovery_token="recovery_token", agreement="agreement")
-        )
-
-        self.test_account = Account(
-            self.config, self.key, self.email, None, self.regr)
+        from letsencrypt.account import Account
+        self.acc = Account(
+            regr=messages.RegistrationResource(
+                uri=None, new_authzr_uri=None, body=messages.Registration()),
+            key=KEY)
 
     def tearDown(self):
-        shutil.rmtree(self.accounts_dir)
-        logging.disable(logging.NOTSET)
+        shutil.rmtree(self.tmp)
 
-    @mock.patch("letsencrypt.account.zope.component.getUtility")
-    @mock.patch("letsencrypt.account.crypto_util.init_save_key")
-    def test_prompts(self, mock_key, mock_util):
-        from letsencrypt.account import Account
+    def test_init_creates_dir(self):
+        self.assertTrue(os.path.isdir(self.config.accounts_dir))
 
-        mock_util().input.return_value = (display_util.OK, self.email)
-        mock_key.return_value = self.key
+    def test_save_and_restore(self):
+        self.storage.save(self.acc)
+        account_path = os.path.join(self.config.accounts_dir, self.acc.id)
+        self.assertTrue(os.path.exists(account_path))
+        for file_name in "regr.json", "meta.json", "private_key.json":
+            self.assertTrue(os.path.exists(
+                os.path.join(account_path, file_name)))
+        self.assertEqual("0400", oct(os.stat(os.path.join(
+            account_path, "private_key.json"))[stat.ST_MODE] & 0o777))
 
-        acc = Account.from_prompts(self.config)
-        self.assertEqual(acc.email, self.email)
-        self.assertEqual(acc.key, self.key)
-        self.assertEqual(acc.config, self.config)
+        # restore
+        self.assertEqual(self.acc, self.storage.load(self.acc.id))
 
-    @mock.patch("letsencrypt.account.zope.component.getUtility")
-    @mock.patch("letsencrypt.account.Account.from_email")
-    def test_prompts_bad_email(self, mock_from_email, mock_util):
-        from letsencrypt.account import Account
+    def test_find_all(self):
+        self.storage.save(self.acc)
+        self.assertEqual([self.acc], self.storage.find_all())
 
-        mock_from_email.side_effect = (errors.Error, "acc")
-        mock_util().input.return_value = (display_util.OK, self.email)
+    def test_find_all_none_empty_list(self):
+        self.assertEqual([], self.storage.find_all())
 
-        self.assertEqual(Account.from_prompts(self.config), "acc")
+    def test_find_all_accounts_dir_absent(self):
+        os.rmdir(self.config.accounts_dir)
+        self.assertEqual([], self.storage.find_all())
 
+    def test_find_all_load_skips(self):
+        self.storage.load = mock.MagicMock(
+            side_effect=["x", errors.AccountStorageError, "z"])
+        with mock.patch("letsencrypt.account.os.listdir") as mock_listdir:
+            mock_listdir.return_value = ["x", "y", "z"]
+            self.assertEqual(["x", "z"], self.storage.find_all())
 
-    @mock.patch("letsencrypt.account.zope.component.getUtility")
-    @mock.patch("letsencrypt.account.crypto_util.init_save_key")
-    def test_prompts_empty_email(self, mock_key, mock_util):
-        from letsencrypt.account import Account
+    def test_load_non_existent_raises_error(self):
+        self.assertRaises(errors.AccountNotFound, self.storage.load, "missing")
 
-        mock_util().input.return_value = (display_util.OK, "")
-        acc = Account.from_prompts(self.config)
-        self.assertTrue(acc.email is None)
-        # _get_config_filename | pylint: disable=protected-access
-        mock_key.assert_called_once_with(
-            mock.ANY, mock.ANY, acc._get_config_filename(None))
+    def test_load_id_mismatch_raises_error(self):
+        self.storage.save(self.acc)
+        shutil.move(os.path.join(self.config.accounts_dir, self.acc.id),
+                    os.path.join(self.config.accounts_dir, "x" + self.acc.id))
+        self.assertRaises(errors.AccountStorageError, self.storage.load,
+                          "x" + self.acc.id)
 
-    @mock.patch("letsencrypt.account.zope.component.getUtility")
-    def test_prompts_cancel(self, mock_util):
-        from letsencrypt.account import Account
+    def test_load_ioerror(self):
+        self.storage.save(self.acc)
+        mock_open = mock.mock_open()
+        mock_open.side_effect = IOError
+        with mock.patch("__builtin__.open", mock_open):
+            self.assertRaises(
+                errors.AccountStorageError, self.storage.load, self.acc.id)
 
-        mock_util().input.return_value = (display_util.CANCEL, "")
-
-        self.assertTrue(Account.from_prompts(self.config) is None)
-
-    def test_from_email(self):
-        from letsencrypt.account import Account
-
-        self.assertRaises(
-            errors.Error, Account.from_email, self.config, "not_valid...email")
-
-    def test_save_from_existing_account(self):
-        from letsencrypt.account import Account
-
-        self.test_account.save()
-        acc = Account.from_existing_account(self.config, self.email)
-
-        self.assertEqual(acc.key, self.test_account.key)
-        self.assertEqual(acc.email, self.test_account.email)
-        self.assertEqual(acc.phone, self.test_account.phone)
-        self.assertEqual(acc.regr, self.test_account.regr)
-
-    def test_properties(self):
-        self.assertEqual(self.test_account.uri, "uri")
-        self.assertEqual(self.test_account.new_authzr_uri, "new_authzr_uri")
-        self.assertEqual(self.test_account.terms_of_service, "terms_of_service")
-        self.assertEqual(self.test_account.recovery_token, "recovery_token")
-
-    def test_partial_properties(self):
-        from letsencrypt.account import Account
-
-        partial = Account(self.config, self.key)
-
-        self.assertTrue(partial.uri is None)
-        self.assertTrue(partial.new_authzr_uri is None)
-        self.assertTrue(partial.terms_of_service is None)
-        self.assertTrue(partial.recovery_token is None)
-
-    def test_partial_account_default(self):
-        from letsencrypt.account import Account
-
-        partial = Account(self.config, self.key)
-        partial.save()
-
-        acc = Account.from_existing_account(self.config)
-
-        self.assertEqual(partial.key, acc.key)
-        self.assertEqual(partial.email, acc.email)
-        self.assertEqual(partial.phone, acc.phone)
-        self.assertEqual(partial.regr, acc.regr)
-
-    def test_get_accounts(self):
-        from letsencrypt.account import Account
-
-        accs = Account.get_accounts(self.config)
-        self.assertFalse(accs)
-
-        self.test_account.save()
-        accs = Account.get_accounts(self.config)
-        self.assertEqual(len(accs), 1)
-        self.assertEqual(accs[0].email, self.test_account.email)
-
-        acc2 = Account(self.config, self.key, "testing_email@gmail.com")
-        acc2.save()
-        accs = Account.get_accounts(self.config)
-        self.assertEqual(len(accs), 2)
-
-    def test_get_accounts_no_accounts(self):
-        from letsencrypt.account import Account
-
-        self.assertEqual(Account.get_accounts(
-            mock.Mock(accounts_dir="non-existant")), [])
-
-    def test_failed_existing_account(self):
-        from letsencrypt.account import Account
-
-        self.assertRaises(errors.Error, Account.from_existing_account,
-                          self.config, "non-existant@email.org")
-
-class SafeEmailTest(unittest.TestCase):
-    """Test safe_email."""
-    def setUp(self):
-        logging.disable(logging.CRITICAL)
-
-    def tearDown(self):
-        logging.disable(logging.NOTSET)
-
-    @classmethod
-    def _call(cls, addr):
-        from letsencrypt.account import Account
-        return Account.safe_email(addr)
-
-    def test_valid_emails(self):
-        addrs = [
-            "letsencrypt@letsencrypt.org",
-            "tbd.ade@gmail.com",
-            "abc_def.jdk@hotmail.museum",
-        ]
-        for addr in addrs:
-            self.assertTrue(self._call(addr), "%s failed." % addr)
-
-    def test_invalid_emails(self):
-        addrs = [
-            "letsencrypt@letsencrypt..org",
-            ".tbd.ade@gmail.com",
-            "~/abc_def.jdk@hotmail.museum",
-        ]
-        for addr in addrs:
-            self.assertFalse(self._call(addr), "%s failed." % addr)
+    def test_save_ioerrors(self):
+        mock_open = mock.mock_open()
+        mock_open.side_effect = IOError  # TODO: [None, None, IOError]
+        with mock.patch("__builtin__.open", mock_open):
+            self.assertRaises(
+                errors.AccountStorageError, self.storage.save, self.acc)
 
 
 if __name__ == "__main__":

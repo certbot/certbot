@@ -21,7 +21,7 @@ class MakeOrVerifyDirTest(unittest.TestCase):
 
     def setUp(self):
         self.root_path = tempfile.mkdtemp()
-        self.path = os.path.join(self.root_path, 'foo')
+        self.path = os.path.join(self.root_path, "foo")
         os.mkdir(self.path, 0o400)
 
         self.uid = os.getuid()
@@ -34,7 +34,7 @@ class MakeOrVerifyDirTest(unittest.TestCase):
         return make_or_verify_dir(directory, mode, self.uid)
 
     def test_creates_dir_when_missing(self):
-        path = os.path.join(self.root_path, 'bar')
+        path = os.path.join(self.root_path, "bar")
         self._call(path, 0o650)
         self.assertTrue(os.path.isdir(path))
         self.assertEqual(stat.S_IMODE(os.stat(path).st_mode), 0o650)
@@ -47,9 +47,9 @@ class MakeOrVerifyDirTest(unittest.TestCase):
         self.assertRaises(errors.Error, self._call, self.path, 0o600)
 
     def test_reraises_os_error(self):
-        with mock.patch.object(os, 'makedirs') as makedirs:
+        with mock.patch.object(os, "makedirs") as makedirs:
             makedirs.side_effect = OSError()
-            self.assertRaises(OSError, self._call, 'bar', 12312312)
+            self.assertRaises(OSError, self._call, "bar", 12312312)
 
 
 class CheckPermissionsTest(unittest.TestCase):
@@ -85,7 +85,7 @@ class UniqueFileTest(unittest.TestCase):
 
     def setUp(self):
         self.root_path = tempfile.mkdtemp()
-        self.default_name = os.path.join(self.root_path, 'foo.txt')
+        self.default_name = os.path.join(self.root_path, "foo.txt")
 
     def tearDown(self):
         shutil.rmtree(self.root_path, ignore_errors=True)
@@ -96,9 +96,9 @@ class UniqueFileTest(unittest.TestCase):
 
     def test_returns_fd_for_writing(self):
         fd, name = self._call()
-        fd.write('bar')
+        fd.write("bar")
         fd.close()
-        self.assertEqual(open(name).read(), 'bar')
+        self.assertEqual(open(name).read(), "bar")
 
     def test_right_mode(self):
         self.assertEqual(0o700, os.stat(self._call(0o700)[1]).st_mode & 0o777)
@@ -118,11 +118,11 @@ class UniqueFileTest(unittest.TestCase):
         self.assertEqual(os.path.dirname(name3), self.root_path)
 
         basename1 = os.path.basename(name2)
-        self.assertTrue(basename1.endswith('foo.txt'))
+        self.assertTrue(basename1.endswith("foo.txt"))
         basename2 = os.path.basename(name2)
-        self.assertTrue(basename2.endswith('foo.txt'))
+        self.assertTrue(basename2.endswith("foo.txt"))
         basename3 = os.path.basename(name3)
-        self.assertTrue(basename3.endswith('foo.txt'))
+        self.assertTrue(basename3.endswith("foo.txt"))
 
 
 class UniqueLineageNameTest(unittest.TestCase):
@@ -139,9 +139,9 @@ class UniqueLineageNameTest(unittest.TestCase):
         return unique_lineage_name(self.root_path, filename, mode)
 
     def test_basic(self):
-        f, name = self._call("wow")
+        f, path = self._call("wow")
         self.assertTrue(isinstance(f, file))
-        self.assertTrue(isinstance(name, str))
+        self.assertEqual(os.path.join(self.root_path, "wow.conf"), path)
 
     def test_multiple(self):
         for _ in xrange(10):
@@ -165,5 +165,32 @@ class UniqueLineageNameTest(unittest.TestCase):
         mock_fdopen.side_effect = err
         self.assertRaises(OSError, self._call, "wow")
 
-if __name__ == '__main__':
+
+class SafeEmailTest(unittest.TestCase):
+    """Test safe_email."""
+    @classmethod
+    def _call(cls, addr):
+        from letsencrypt.le_util import safe_email
+        return safe_email(addr)
+
+    def test_valid_emails(self):
+        addrs = [
+            "letsencrypt@letsencrypt.org",
+            "tbd.ade@gmail.com",
+            "abc_def.jdk@hotmail.museum",
+        ]
+        for addr in addrs:
+            self.assertTrue(self._call(addr), "%s failed." % addr)
+
+    def test_invalid_emails(self):
+        addrs = [
+            "letsencrypt@letsencrypt..org",
+            ".tbd.ade@gmail.com",
+            "~/abc_def.jdk@hotmail.museum",
+        ]
+        for addr in addrs:
+            self.assertFalse(self._call(addr), "%s failed." % addr)
+
+
+if __name__ == "__main__":
     unittest.main()  # pragma: no cover

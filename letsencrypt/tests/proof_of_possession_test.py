@@ -1,11 +1,8 @@
 """Tests for letsencrypt.proof_of_possession."""
 import os
-import pkg_resources
 import tempfile
 import unittest
 
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization
 import mock
 
 from acme import challenges
@@ -16,22 +13,15 @@ from letsencrypt import achallenges
 from letsencrypt import proof_of_possession
 from letsencrypt.display import util as display_util
 
+from letsencrypt.tests import test_util
 
-BASE_PACKAGE = "letsencrypt.tests"
-CERT0_PATH = pkg_resources.resource_filename(
-    "acme.jose", os.path.join("testdata", "cert.der"))
-CERT2_PATH = pkg_resources.resource_filename(
-    BASE_PACKAGE, os.path.join("testdata", "dsa_cert.pem"))
-CERT2_KEY_PATH = pkg_resources.resource_filename(
-    BASE_PACKAGE, os.path.join("testdata", "dsa512_key.pem"))
-CERT3_PATH = pkg_resources.resource_filename(
-    BASE_PACKAGE, os.path.join("testdata", "matching_cert.pem"))
-CERT3_KEY_PATH = pkg_resources.resource_filename(
-    BASE_PACKAGE, os.path.join("testdata", "rsa512_key.pem"))
-with open(CERT3_KEY_PATH) as cert3_file:
-    CERT3_KEY = serialization.load_pem_private_key(
-        cert3_file.read(), password=None,
-        backend=default_backend()).public_key()
+
+CERT0_PATH = test_util.vector_path("cert.der")
+CERT2_PATH = test_util.vector_path("dsa_cert.pem")
+CERT2_KEY_PATH = test_util.vector_path("dsa512_key.pem")
+CERT3_PATH = test_util.vector_path("matching_cert.pem")
+CERT3_KEY_PATH = test_util.vector_path("rsa512_key_2.pem")
+CERT3_KEY = test_util.load_rsa_private_key("rsa512_key_2.pem").public_key()
 
 
 class ProofOfPossessionTest(unittest.TestCase):

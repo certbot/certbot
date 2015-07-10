@@ -2,22 +2,20 @@
 import datetime
 import os
 import tempfile
-import pkg_resources
 import shutil
 import unittest
 
 import configobj
 import mock
-import OpenSSL
 import pytz
 
 from letsencrypt import configuration
 from letsencrypt.storage import ALL_FOUR
 
+from letsencrypt.tests import test_util
 
-CERT = OpenSSL.crypto.load_certificate(
-    OpenSSL.crypto.FILETYPE_PEM, pkg_resources.resource_string(
-        'letsencrypt.tests', os.path.join('testdata', 'cert.pem')))
+
+CERT = test_util.load_cert('cert.pem')
 
 
 def unlink_all(rc_object):
@@ -295,8 +293,7 @@ class RenewableCertTests(unittest.TestCase):
                 self.assertFalse(self.test_rc.has_pending_deployment())
 
     def _test_notafterbefore(self, function, timestamp):
-        test_cert = pkg_resources.resource_string(
-            "letsencrypt.tests", "testdata/cert.pem")
+        test_cert = test_util.load_vector("cert.pem")
         os.symlink(os.path.join("..", "..", "archive", "example.org",
                                 "cert12.pem"), self.test_rc.cert)
         with open(self.test_rc.cert, "w") as f:
@@ -319,8 +316,7 @@ class RenewableCertTests(unittest.TestCase):
     def test_time_interval_judgments(self, mock_datetime):
         """Test should_autodeploy() and should_autorenew() on the basis
         of expiry time windows."""
-        test_cert = pkg_resources.resource_string(
-            "letsencrypt.tests", "testdata/cert.pem")
+        test_cert = test_util.load_vector("cert.pem")
         for kind in ALL_FOUR:
             where = getattr(self.test_rc, kind)
             os.symlink(os.path.join("..", "..", "archive", "example.org",
@@ -556,13 +552,12 @@ class RenewableCertTests(unittest.TestCase):
                              datetime.timedelta(intended[time]))
 
     @mock.patch("letsencrypt.renewer.plugins_disco")
-    @mock.patch("letsencrypt.client.determine_account")
+    @mock.patch("letsencrypt.account.AccountFileStorage")
     @mock.patch("letsencrypt.client.Client")
-    def test_renew(self, mock_c, mock_da, mock_pd):
+    def test_renew(self, mock_c, mock_acc_storage, mock_pd):
         from letsencrypt import renewer
 
-        test_cert = pkg_resources.resource_string(
-            "letsencrypt.tests", "testdata/cert-san.pem")
+        test_cert = test_util.load_vector("cert-san.pem")
         for kind in ALL_FOUR:
             os.symlink(os.path.join("..", "..", "archive", "example.org",
                                     kind + "1.pem"),
@@ -580,6 +575,7 @@ class RenewableCertTests(unittest.TestCase):
         self.test_rc.configfile["renewalparams"]["server"] = "acme.example.com"
         self.test_rc.configfile["renewalparams"]["authenticator"] = "fake"
         self.test_rc.configfile["renewalparams"]["dvsni_port"] = "4430"
+        self.test_rc.configfile["renewalparams"]["account"] = "abcde"
         mock_auth = mock.MagicMock()
         mock_pd.PluginsRegistry.find_all.return_value = {"apache": mock_auth}
         # Fails because "fake" != "apache"
@@ -594,7 +590,7 @@ class RenewableCertTests(unittest.TestCase):
         self.assertEqual(2, renewer.renew(self.test_rc, 1))
         # TODO: We could also make several assertions about calls that should
         #       have been made to the mock functions here.
-        self.assertEqual(mock_da.call_count, 1)
+        mock_acc_storage().load.assert_called_once_with(account_id="abcde")
         mock_client.obtain_certificate.return_value = (
             mock.sentinel.certr, None, mock.sentinel.key, mock.sentinel.csr)
         # This should fail because the renewal itself appears to fail

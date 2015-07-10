@@ -4,12 +4,14 @@ import pkg_resources
 import shutil
 import tempfile
 
+from cryptography.hazmat.primitives import serialization
 import zope.interface
 
 from acme.jose import util as jose_util
 
 from letsencrypt import constants
 from letsencrypt import interfaces
+from letsencrypt import le_util
 
 
 def option_namespace(name):
@@ -144,7 +146,7 @@ class Dvsni(object):
         if idx is not None:
             self.indices.append(idx)
 
-    def get_cert_file(self, achall):
+    def get_cert_path(self, achall):
         """Returns standardized name for challenge certificate.
 
         :param achall: Annotated DVSNI challenge.
@@ -157,18 +159,33 @@ class Dvsni(object):
         return os.path.join(
             self.configurator.config.work_dir, achall.nonce_domain + ".crt")
 
+    def get_key_path(self, achall):
+        """Get standardized path to challenge key."""
+        return os.path.join(
+            self.configurator.config.work_dir, achall.nonce_domain + '.pem')
+
     def _setup_challenge_cert(self, achall, s=None):
         # pylint: disable=invalid-name
         """Generate and write out challenge certificate."""
-        cert_path = self.get_cert_file(achall)
+        cert_path = self.get_cert_path(achall)
+        key_path = self.get_key_path(achall)
         # Register the path before you write out the file
+        self.configurator.reverter.register_file_creation(True, key_path)
         self.configurator.reverter.register_file_creation(True, cert_path)
 
         cert_pem, response = achall.gen_cert_and_response(s)
 
         # Write out challenge cert
-        with open(cert_path, "w") as cert_chall_fd:
+        with open(cert_path, "wb") as cert_chall_fd:
             cert_chall_fd.write(cert_pem)
+
+        # Write out challenge key
+        key_pem = achall.key.key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.TraditionalOpenSSL,
+            encryption_algorithm=serialization.NoEncryption())
+        with le_util.safe_open(key_path, 'wb', chmod=0o400) as key_file:
+            key_file.write(key_pem)
 
         return response
 

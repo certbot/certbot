@@ -5,6 +5,7 @@ import os
 import zope.component
 
 from letsencrypt import interfaces
+from letsencrypt import le_util
 from letsencrypt.display import util as display_util
 
 
@@ -112,6 +113,24 @@ def pick_configurator(
         (interfaces.IAuthenticator, interfaces.IInstaller))
 
 
+def get_email():
+    """Prompt for valid email address.
+
+    :returns: Email or ``None`` if cancelled by user.
+    :rtype: str
+
+    """
+    while True:
+        code, email = zope.component.getUtility(interfaces.IDisplay).input(
+            "Enter email address")
+
+        if code == display_util.OK:
+            if le_util.safe_email(email):
+                return email
+        else:
+            return None
+
+
 def choose_account(accounts):
     """Choose an account.
 
@@ -120,11 +139,7 @@ def choose_account(accounts):
 
     """
     # Note this will get more complicated once we start recording authorizations
-    labels = [
-        "%s | %s" % (acc.email.ljust(display_util.WIDTH - 39),
-                     acc.phone if acc.phone is not None else "")
-        for acc in accounts
-    ]
+    labels = [acc.slug for acc in accounts]
 
     code, index = util(interfaces.IDisplay).menu(
         "Please choose an account", labels)

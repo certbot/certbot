@@ -1,21 +1,15 @@
 """ACME utilities for testing."""
 import datetime
 import itertools
-import os
-import pkg_resources
-
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization
 
 from acme import challenges
 from acme import jose
 from acme import messages
 
+from letsencrypt.tests import test_util
 
-KEY = serialization.load_pem_private_key(
-    pkg_resources.resource_string(
-        __name__, os.path.join('testdata', 'rsa512_key.pem')),
-    password=None, backend=default_backend())
+
+KEY = test_util.load_rsa_private_key('rsa512_key.pem')
 
 # Challenges
 SIMPLE_HTTP = challenges.SimpleHTTP(
