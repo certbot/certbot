@@ -64,19 +64,20 @@ class ClientTest(unittest.TestCase):
 
         from letsencrypt.client import Client
         with mock.patch("letsencrypt.client.acme_client.Client") as acme:
+            self.acme_client = acme
+            self.acme = acme.return_value = mock.MagicMock()
             self.client = Client(
                 config=self.config, account_=self.account,
                 dv_auth=None, installer=None)
-        self.acme = acme
 
     def test_init_acme_verify_ssl(self):
-        self.acme.assert_called_once_with(
+        self.acme_client.assert_called_once_with(
             new_reg_uri=mock.ANY, key=mock.ANY, verify_ssl=True)
 
     def _mock_obtain_certificate(self):
         self.client.auth_handler = mock.MagicMock()
-        self.acme().request_issuance.return_value = mock.sentinel.certr
-        self.acme().fetch_chain.return_value = mock.sentinel.chain
+        self.acme.request_issuance.return_value = mock.sentinel.certr
+        self.acme.fetch_chain.return_value = mock.sentinel.chain
 
     def _check_obtain_certificate(self):
         self.client.auth_handler.get_authorizations.assert_called_once_with(
@@ -85,7 +86,7 @@ class ClientTest(unittest.TestCase):
             jose.ComparableX509(OpenSSL.crypto.load_certificate_request(
                 OpenSSL.crypto.FILETYPE_ASN1, CSR_SAN)),
             self.client.auth_handler.get_authorizations())
-        self.acme().fetch_chain.assert_called_once_with(mock.sentinel.certr)
+        self.acme.fetch_chain.assert_called_once_with(mock.sentinel.certr)
 
     def test_obtain_certificate_from_csr(self):
         self._mock_obtain_certificate()
