@@ -84,7 +84,7 @@ class PickPluginTest(unittest.TestCase):
 
     def test_no_default(self):
         self._call()
-        self.assertEqual(1, self.reg.filter.call_count)
+        self.assertEqual(1, self.reg.ifaces.call_count)
 
     def test_no_candidate(self):
         self.assertTrue(self._call() is None)
