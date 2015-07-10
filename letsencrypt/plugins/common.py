@@ -168,7 +168,9 @@ class Dvsni(object):
         # pylint: disable=invalid-name
         """Generate and write out challenge certificate."""
         cert_path = self.get_cert_path(achall)
+        key_path = self.get_key_path(achall)
         # Register the path before you write out the file
+        self.configurator.reverter.register_file_creation(True, key_path)
         self.configurator.reverter.register_file_creation(True, cert_path)
 
         cert_pem, response = achall.gen_cert_and_response(s)
@@ -177,14 +179,13 @@ class Dvsni(object):
         with open(cert_path, "wb") as cert_chall_fd:
             cert_chall_fd.write(cert_pem)
 
-        key_path = self.get_key_path(achall)
+        # Write out challenge key
         key_pem = achall.key.key.private_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PrivateFormat.TraditionalOpenSSL,
             encryption_algorithm=serialization.NoEncryption())
         with le_util.safe_open(key_path, 'wb', chmod=0o400) as key_file:
             key_file.write(key_pem)
-        self.configurator.reverter.register_file_creation(True, key_path)
 
         return response
 
