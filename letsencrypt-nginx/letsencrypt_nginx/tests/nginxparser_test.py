@@ -2,6 +2,8 @@
 import operator
 import unittest
 
+from pyparsing import ParseException
+
 from letsencrypt_nginx.nginxparser import (
     RawNginxParser, load, dumps, dump)
 from letsencrypt_nginx.tests import util
@@ -103,6 +105,10 @@ class TestRawNginxParser(unittest.TestCase):
                   ' "test,;{}" foo'],
                  ['blah', '"hello;world"'],
                  ['try_files', '$uri @rewrites']]]]]])
+
+    def test_abort_on_parse_failure(self):
+        with open(util.get_data_filename('broken.conf')) as handle:
+            self.assertRaises(ParseException, load, handle)
 
     def test_dump_as_file(self):
         parsed = load(open(util.get_data_filename('nginx.conf')))

@@ -4,7 +4,7 @@ import string
 from pyparsing import (
     Literal, White, Word, alphanums, CharsNotIn, Forward, Group,
     Optional, OneOrMore, Regex, ZeroOrMore, pythonStyleComment)
-
+from pyparsing import stringEnd
 
 class RawNginxParser(object):
     # pylint: disable=expression-not-assigned
@@ -35,7 +35,7 @@ class RawNginxParser(object):
         + Group(ZeroOrMore(Group(assignment) | block))
         + right_bracket)
 
-    script = OneOrMore(Group(assignment) | block).ignore(pythonStyleComment)
+    script = (OneOrMore(Group(assignment) | block) + stringEnd).ignore(pythonStyleComment)
 
     def __init__(self, source):
         self.source = source
