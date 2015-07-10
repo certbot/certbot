@@ -44,6 +44,13 @@ class ApacheDvsni(common.Dvsni):
 
 """
 
+    def __init__(self):
+        super(ApacheDvsni, self).__init__(*args, **kwargs)
+
+        self.challenge_conf = os.path.join(
+            self.configurator.conf("server-root"),
+            "le_dvsni_cert_challenge.conf")
+
     def perform(self):
         """Peform a DVSNI challenge."""
         if not self.achalls:
