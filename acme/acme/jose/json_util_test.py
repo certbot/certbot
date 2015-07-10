@@ -159,6 +159,18 @@ class JSONObjectWithFieldsTest(unittest.TestCase):
     def test_init_defaults(self):
         self.assertEqual(self.mock, self.MockJSONObjectWithFields(y=2, z=3))
 
+    def test_encode(self):
+        self.assertEqual(10, self.MockJSONObjectWithFields(
+            x=5, y=0, z=0).encode("x"))
+
+    def test_encode_wrong_field(self):
+        self.assertRaises(errors.Error, self.mock.encode, 'foo')
+
+    def test_encode_serialization_error_passthrough(self):
+        self.assertRaises(
+            errors.SerializationError,
+            self.MockJSONObjectWithFields(y=500, z=None).encode, "y")
+
     def test_fields_to_partial_json_omits_empty(self):
         self.assertEqual(self.mock.fields_to_partial_json(), {'y': 2, 'Z': 3})
 

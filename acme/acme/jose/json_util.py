@@ -218,6 +218,22 @@ class JSONObjectWithFields(util.ImmutableMap, interfaces.JSONDeSerializable):
         super(JSONObjectWithFields, self).__init__(
             **(dict(self._defaults(), **kwargs)))
 
+    def encode(self, name):
+        """Encode a single field.
+
+        :param str name: Name of the field to be encoded.
+
+        :raises erors.SerializationError: if field cannot be serialized
+        :raises errors.Error: if field could not be found
+
+        """
+        try:
+            field = self._fields[name]
+        except KeyError:
+            raise errors.Error("Field not found: {0}".format(name))
+
+        return field.encode(getattr(self, name))
+
     def fields_to_partial_json(self):
         """Serialize fields to JSON."""
         jobj = {}

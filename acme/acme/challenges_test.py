@@ -145,18 +145,11 @@ class DVSNITest(unittest.TestCase):
     def setUp(self):
         from acme.challenges import DVSNI
         self.msg = DVSNI(
-            r="O*\xb4-\xad\xec\x95>\xed\xa9\r0\x94\xe8\x97\x9c&6"
-              "\xbf'\xb3\xed\x9a9nX\x0f'\\m\xe7\x12",
-            nonce='\xa8-_\xf8\xeft\r\x12\x88\x1fm<"w\xab.')
+            token=jose.b64decode('a82d5ff8ef740d12881f6d3c2277ab2e'))
         self.jmsg = {
             'type': 'dvsni',
-            'r': 'Tyq0La3slT7tqQ0wlOiXnCY2vyez7Zo5blgPJ1xt5xI',
-            'nonce': 'a82d5ff8ef740d12881f6d3c2277ab2e',
+            'token': 'a82d5ff8ef740d12881f6d3c2277ab2e',
         }
-
-    def test_nonce_domain(self):
-        self.assertEqual('a82d5ff8ef740d12881f6d3c2277ab2e.acme.invalid',
-                         self.msg.nonce_domain)
 
     def test_to_partial_json(self):
         self.assertEqual(self.jmsg, self.msg.to_partial_json())
@@ -169,15 +162,9 @@ class DVSNITest(unittest.TestCase):
         from acme.challenges import DVSNI
         hash(DVSNI.from_json(self.jmsg))
 
-    def test_from_json_invalid_r_length(self):
+    def test_from_json_invalid_token_length(self):
         from acme.challenges import DVSNI
-        self.jmsg['r'] = 'abcd'
-        self.assertRaises(
-            jose.DeserializationError, DVSNI.from_json, self.jmsg)
-
-    def test_from_json_invalid_nonce_length(self):
-        from acme.challenges import DVSNI
-        self.jmsg['nonce'] = 'abcd'
+        self.jmsg['token'] = jose.b64encode('abcd')
         self.assertRaises(
             jose.DeserializationError, DVSNI.from_json, self.jmsg)
 
@@ -186,37 +173,38 @@ class DVSNIResponseTest(unittest.TestCase):
 
     def setUp(self):
         from acme.challenges import DVSNIResponse
-        self.msg = DVSNIResponse(
-            s='\xf5\xd6\xe3\xb2]\xe0L\x0bN\x9cKJ\x14I\xa1K\xa3#\xf9\xa8'
-              '\xcd\x8c7\x0e\x99\x19)\xdc\xb7\xf3\x9bw')
-        self.jmsg = {
+        self.validation = jose.JWS.sign(
+            payload='foo', key=jose.JWKRSA(key=KEY), alg=jose.RS256)
+        self.msg = DVSNIResponse(validation=self.validation)
+        self.jmsg_to = {
             'type': 'dvsni',
-            's': '9dbjsl3gTAtOnEtKFEmhS6Mj-ajNjDcOmRkp3Lfzm3c',
+            'validation': self.validation,
+        }
+        self.jmsg_from = {
+            'type': 'dvsni',
+            'validation': self.validation.to_json(),
         }
 
     def test_z_and_domain(self):
-        from acme.challenges import DVSNI
-        challenge = DVSNI(
-            r="O*\xb4-\xad\xec\x95>\xed\xa9\r0\x94\xe8\x97\x9c&6"
-              "\xbf'\xb3\xed\x9a9nX\x0f'\\m\xe7\x12",
-            nonce=long('439736375371401115242521957580409149254868992063'
-                       '44333654741504362774620418661L'))
         # pylint: disable=invalid-name
-        z = '38e612b0397cc2624a07d351d7ef50e46134c0213d9ed52f7d7c611acaeed41b'
-        self.assertEqual(z, self.msg.z(challenge))
+        z = '94b209f1b27afe1cb40f27c9ce7c1b4d75786fe6e380524c0bb80009f0105e4b'
+        label1 = '94b209f1b27afe1cb40f27c9ce7c1b4d'
+        label2 = '75786fe6e380524c0bb80009f0105e4b'
+        assert z == label1 + label2
+        self.assertEqual(z, self.msg.z)
         self.assertEqual(
-            '{0}.acme.invalid'.format(z), self.msg.z_domain(challenge))
+            '{0}.{1}.acme.invalid'.format(label1, label2), self.msg.z_domain)
 
     def test_to_partial_json(self):
-        self.assertEqual(self.jmsg, self.msg.to_partial_json())
+        self.assertEqual(self.jmsg_to, self.msg.to_partial_json())
 
     def test_from_json(self):
         from acme.challenges import DVSNIResponse
-        self.assertEqual(self.msg, DVSNIResponse.from_json(self.jmsg))
+        self.assertEqual(self.msg, DVSNIResponse.from_json(self.jmsg_from))
 
     def test_from_json_hashable(self):
         from acme.challenges import DVSNIResponse
-        hash(DVSNIResponse.from_json(self.jmsg))
+        hash(DVSNIResponse.from_json(self.jmsg_from))
 
 
 class RecoveryContactTest(unittest.TestCase):

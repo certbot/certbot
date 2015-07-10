@@ -1,9 +1,7 @@
 """ACME Identifier Validation Challenges."""
-import binascii
 import functools
 import hashlib
 import logging
-import os
 
 import requests
 
@@ -163,8 +161,7 @@ class SimpleHTTPResponse(ChallengeResponse):
 class DVSNI(DVChallenge):
     """ACME "dvsni" challenge.
 
-    :ivar str r: Random data, **not** base64-encoded.
-    :ivar str nonce: Random data, **not** hex-encoded.
+    :ivar str token: Random data, **not** base64-encoded.
 
     """
     typ = "dvsni"
@@ -172,25 +169,15 @@ class DVSNI(DVChallenge):
     DOMAIN_SUFFIX = ".acme.invalid"
     """Domain name suffix."""
 
-    R_SIZE = 32
-    """Required size of the :attr:`r` in bytes."""
-
-    NONCE_SIZE = 16
-    """Required size of the :attr:`nonce` in bytes."""
+    TOKEN_SIZE = 128 / 8  # Based on the entropy value from the spec
+    """Minimum size of the :attr:`token` in bytes."""
 
     PORT = 443
     """Port to perform DVSNI challenge."""
 
-    r = jose.Field("r", encoder=jose.b64encode,  # pylint: disable=invalid-name
-                   decoder=functools.partial(jose.decode_b64jose, size=R_SIZE))
-    nonce = jose.Field("nonce", encoder=binascii.hexlify,
-                       decoder=functools.partial(functools.partial(
-                           jose.decode_hex16, size=NONCE_SIZE)))
-
-    @property
-    def nonce_domain(self):
-        """Domain name used in SNI."""
-        return binascii.hexlify(self.nonce) + self.DOMAIN_SUFFIX
+    token = jose.Field(
+        "token", encoder=jose.b64encode, decoder=functools.partial(
+            jose.decode_b64jose, size=TOKEN_SIZE, minimum=True))
 
 
 @ChallengeResponse.register
@@ -205,31 +192,22 @@ class DVSNIResponse(ChallengeResponse):
     DOMAIN_SUFFIX = DVSNI.DOMAIN_SUFFIX
     """Domain name suffix."""
 
-    S_SIZE = 32
-    """Required size of the :attr:`s` in bytes."""
+    validation = jose.Field("validation", decoder=jose.JWS.from_json)
 
-    s = jose.Field("s", encoder=jose.b64encode,  # pylint: disable=invalid-name
-                   decoder=functools.partial(jose.decode_b64jose, size=S_SIZE))
+    @property
+    def z(self):  # pylint: disable=invalid-name
+        """The ``z``  parameter."""
+        # Instance of 'Field' has no 'signature' member
+        # pylint: disable=no-member
+        return hashlib.sha256(self.validation.signature.encode(
+            "signature")).hexdigest()
 
-    def __init__(self, s=None, *args, **kwargs):
-        s = os.urandom(self.S_SIZE) if s is None else s
-        super(DVSNIResponse, self).__init__(s=s, *args, **kwargs)
-
-    def z(self, chall):  # pylint: disable=invalid-name
-        """Compute the parameter ``z``.
-
-        :param challenge: Corresponding challenge.
-        :type challenge: :class:`DVSNI`
-
-        """
-        z = hashlib.new("sha256")  # pylint: disable=invalid-name
-        z.update(chall.r)
-        z.update(self.s)
-        return z.hexdigest()
-
-    def z_domain(self, chall):
+    @property
+    def z_domain(self):
         """Domain name for certificate subjectAltName."""
-        return self.z(chall) + self.DOMAIN_SUFFIX
+        z = self.z  # pylint: disable=invalid-name
+        return "{0}.{1}{2}".format(z[:32], z[32:], self.DOMAIN_SUFFIX)
+
 
 @Challenge.register
 class RecoveryContact(ContinuityChallenge):
