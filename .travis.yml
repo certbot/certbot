@@ -20,7 +20,7 @@ env:
 install: "travis_retry pip install tox coveralls"
 before_script: '[ "${TOXENV:0:2}" != "py" ] || ./tests/boulder-start.sh'
 # TODO: eliminate substring slice bashism
-script: 'travis_retry tox && ([ "${TOXENV:0:2}" != "py" ] || (source .tox/$TOXENV/bin/activate && ./tests/boulder-integration.sh))'
+script: 'travis_retry tox && ([ "${TOXENV:0:2}" != "py" ] || (source tox.venv/$TOXENV/bin/activate && ./tests/boulder-integration.sh))'
 
 after_success: '[ "$TOXENV" == "cover" ] && coveralls'
 
