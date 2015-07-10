@@ -2,22 +2,20 @@
 import datetime
 import os
 import tempfile
-import pkg_resources
 import shutil
 import unittest
 
 import configobj
 import mock
-import OpenSSL
 import pytz
 
 from letsencrypt import configuration
 from letsencrypt.storage import ALL_FOUR
 
+from letsencrypt.tests import test_util
 
-CERT = OpenSSL.crypto.load_certificate(
-    OpenSSL.crypto.FILETYPE_PEM, pkg_resources.resource_string(
-        'letsencrypt.tests', os.path.join('testdata', 'cert.pem')))
+
+CERT = test_util.load_cert('cert.pem')
 
 
 def unlink_all(rc_object):
@@ -295,8 +293,7 @@ class RenewableCertTests(unittest.TestCase):
                 self.assertFalse(self.test_rc.has_pending_deployment())
 
     def _test_notafterbefore(self, function, timestamp):
-        test_cert = pkg_resources.resource_string(
-            "letsencrypt.tests", os.path.join("testdata", "cert.pem"))
+        test_cert = test_util.load_vector("cert.pem")
         os.symlink(os.path.join("..", "..", "archive", "example.org",
                                 "cert12.pem"), self.test_rc.cert)
         with open(self.test_rc.cert, "w") as f:
@@ -319,8 +316,7 @@ class RenewableCertTests(unittest.TestCase):
     def test_time_interval_judgments(self, mock_datetime):
         """Test should_autodeploy() and should_autorenew() on the basis
         of expiry time windows."""
-        test_cert = pkg_resources.resource_string(
-            "letsencrypt.tests", os.path.join("testdata", "cert.pem"))
+        test_cert = test_util.load_vector("cert.pem")
         for kind in ALL_FOUR:
             where = getattr(self.test_rc, kind)
             os.symlink(os.path.join("..", "..", "archive", "example.org",
@@ -561,8 +557,7 @@ class RenewableCertTests(unittest.TestCase):
     def test_renew(self, mock_c, mock_acc_storage, mock_pd):
         from letsencrypt import renewer
 
-        test_cert = pkg_resources.resource_string(
-            "letsencrypt.tests", os.path.join("testdata", "cert-san.pem"))
+        test_cert = test_util.load_vector("cert-san.pem")
         for kind in ALL_FOUR:
             os.symlink(os.path.join("..", "..", "archive", "example.org",
                                     kind + "1.pem"),

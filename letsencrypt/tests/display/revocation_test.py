@@ -1,6 +1,4 @@
 """Test :mod:`letsencrypt.display.revocation`."""
-import os
-import pkg_resources
 import sys
 import unittest
 
@@ -9,15 +7,14 @@ import zope.component
 
 from letsencrypt.display import util as display_util
 
+from letsencrypt.tests import test_util
+
 
 class DisplayCertsTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.revoker import Cert
-        base_package = "letsencrypt.tests"
-        self.cert0 = Cert(pkg_resources.resource_filename(
-            base_package, os.path.join("testdata", "cert.pem")))
-        self.cert1 = Cert(pkg_resources.resource_filename(
-            base_package, os.path.join("testdata", "cert-san.pem")))
+        self.cert0 = Cert(test_util.vector_path("cert.pem"))
+        self.cert1 = Cert(test_util.vector_path("cert-san.pem"))
 
         self.certs = [self.cert0, self.cert1]
 
@@ -62,9 +59,7 @@ class MoreInfoCertTest(unittest.TestCase):
 class SuccessRevocationTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.revoker import Cert
-        base_package = "letsencrypt.tests"
-        self.cert = Cert(pkg_resources.resource_filename(
-            base_package, os.path.join("testdata", "cert.pem")))
+        self.cert = Cert(test_util.vector_path("cert.pem"))
 
     @classmethod
     def _call(cls, cert):
@@ -82,8 +77,7 @@ class SuccessRevocationTest(unittest.TestCase):
 class ConfirmRevocationTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.revoker import Cert
-        self.cert = Cert(pkg_resources.resource_filename(
-            "letsencrypt.tests", os.path.join("testdata", "cert.pem")))
+        self.cert = Cert(test_util.vector_path("cert.pem"))
 
     @classmethod
     def _call(cls, cert):

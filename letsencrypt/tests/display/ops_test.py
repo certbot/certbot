@@ -1,6 +1,5 @@
 """Test letsencrypt.display.ops."""
 import os
-import pkg_resources
 import sys
 import tempfile
 import unittest
@@ -16,9 +15,10 @@ from letsencrypt import interfaces
 
 from letsencrypt.display import util as display_util
 
+from letsencrypt.tests import test_util
 
-KEY = jose.JWKRSA.load(pkg_resources.resource_string(
-    "letsencrypt.tests", os.path.join("testdata", "rsa512_key.pem")))
+
+KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
 
 class ChoosePluginTest(unittest.TestCase):

@@ -187,6 +187,6 @@ setup(
         ],
     },
 
-    zip_safe=False,
+    zip_safe=False,  # letsencrypt/tests/test_util.py is a symlink!
     include_package_data=True,
 )

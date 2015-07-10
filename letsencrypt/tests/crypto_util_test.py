@@ -1,7 +1,5 @@
 """Tests for letsencrypt.crypto_util."""
 import logging
-import os
-import pkg_resources
 import shutil
 import tempfile
 import unittest
@@ -9,15 +7,13 @@ import unittest
 import OpenSSL
 import mock
 
+from letsencrypt.tests import test_util
 
-RSA256_KEY = pkg_resources.resource_string(
-    'letsencrypt.tests', os.path.join('testdata', 'rsa256_key.pem'))
-RSA512_KEY = pkg_resources.resource_string(
-    'letsencrypt.tests', os.path.join('testdata', 'rsa512_key.pem'))
-CERT = pkg_resources.resource_string(
-    'letsencrypt.tests', os.path.join('testdata', 'cert.pem'))
-SAN_CERT = pkg_resources.resource_string(
-    'letsencrypt.tests', os.path.join('testdata', 'cert-san.pem'))
+
+RSA256_KEY = test_util.load_vector('rsa256_key.pem')
+RSA512_KEY = test_util.load_vector('rsa512_key.pem')
+CERT = test_util.load_vector('cert.pem')
+SAN_CERT = test_util.load_vector('cert-san.pem')
 
 
 class InitSaveKeyTest(unittest.TestCase):
@@ -100,21 +96,17 @@ class ValidCSRTest(unittest.TestCase):
         from letsencrypt.crypto_util import valid_csr
         return valid_csr(csr)
 
-    def _call_testdata(self, name):
-        return self._call(pkg_resources.resource_string(
-            __name__, os.path.join('testdata', name)))
-
     def test_valid_pem_true(self):
-        self.assertTrue(self._call_testdata('csr.pem'))
+        self.assertTrue(self._call(test_util.load_vector('csr.pem')))
 
     def test_valid_pem_san_true(self):
-        self.assertTrue(self._call_testdata('csr-san.pem'))
+        self.assertTrue(self._call(test_util.load_vector('csr-san.pem')))
 
     def test_valid_der_false(self):
-        self.assertFalse(self._call_testdata('csr.der'))
+        self.assertFalse(self._call(test_util.load_vector('csr.der')))
 
     def test_valid_der_san_false(self):
-        self.assertFalse(self._call_testdata('csr-san.der'))
+        self.assertFalse(self._call(test_util.load_vector('csr-san.der')))
 
     def test_empty_false(self):
         self.assertFalse(self._call(''))
@@ -127,16 +119,17 @@ class CSRMatchesPubkeyTest(unittest.TestCase):
     """Tests for letsencrypt.crypto_util.csr_matches_pubkey."""
 
     @classmethod
-    def _call_testdata(cls, name, privkey):
+    def _call(cls, *args, **kwargs):
         from letsencrypt.crypto_util import csr_matches_pubkey
-        return csr_matches_pubkey(pkg_resources.resource_string(
-            __name__, os.path.join('testdata', name)), privkey)
+        return csr_matches_pubkey(*args, **kwargs)
 
     def test_valid_true(self):
-        self.assertTrue(self._call_testdata('csr.pem', RSA512_KEY))
+        self.assertTrue(self._call(
+            test_util.load_vector('csr.pem'), RSA512_KEY))
 
     def test_invalid_false(self):
-        self.assertFalse(self._call_testdata('csr.pem', RSA256_KEY))
+        self.assertFalse(self._call(
+            test_util.load_vector('csr.pem'), RSA256_KEY))
 
 
 class MakeKeyTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
@@ -185,50 +178,42 @@ class GetSANsFromCertTest(unittest.TestCase):
         return get_sans_from_cert(*args, **kwargs)
 
     def test_single(self):
-        self.assertEqual([], self._call(pkg_resources.resource_string(
-            __name__, os.path.join('testdata', 'cert.pem'))))
+        self.assertEqual([], self._call(test_util.load_vector('cert.pem')))
 
     def test_san(self):
         self.assertEqual(
             ['example.com', 'www.example.com'],
-            self._call(pkg_resources.resource_string(
-                __name__, os.path.join('testdata', 'cert-san.pem'))))
+            self._call(test_util.load_vector('cert-san.pem')))
 
 
 class GetSANsFromCSRTest(unittest.TestCase):
     """Tests for letsencrypt.crypto_util.get_sans_from_csr."""
-    def test_extract_one_san(self):
+
+    @classmethod
+    def _call(cls, *args, **kwargs):
         from letsencrypt.crypto_util import get_sans_from_csr
-        csr = pkg_resources.resource_string(
-            __name__, os.path.join('testdata', 'csr.pem'))
-        self.assertEqual(get_sans_from_csr(csr), ['example.com'])
+        return get_sans_from_csr(*args, **kwargs)
+
+    def test_extract_one_san(self):
+        self.assertEqual(['example.com'], self._call(
+            test_util.load_vector('csr.pem')))
 
     def test_extract_two_sans(self):
-        from letsencrypt.crypto_util import get_sans_from_csr
-        csr = pkg_resources.resource_string(
-            __name__, os.path.join('testdata', 'csr-san.pem'))
-        self.assertEqual(get_sans_from_csr(csr), ['example.com',
-                                                  'www.example.com'])
+        self.assertEqual(['example.com', 'www.example.com'], self._call(
+            test_util.load_vector('csr-san.pem')))
 
     def test_extract_six_sans(self):
-        from letsencrypt.crypto_util import get_sans_from_csr
-        csr = pkg_resources.resource_string(
-            __name__, os.path.join('testdata', 'csr-6sans.pem'))
-        self.assertEqual(get_sans_from_csr(csr),
+        self.assertEqual(self._call(test_util.load_vector('csr-6sans.pem')),
                          ["example.com", "example.org", "example.net",
                           "example.info", "subdomain.example.com",
                           "other.subdomain.example.com"])
 
     def test_parse_non_csr(self):
-        from letsencrypt.crypto_util import get_sans_from_csr
-        self.assertRaises(OpenSSL.crypto.Error, get_sans_from_csr,
-                          "hello there")
+        self.assertRaises(OpenSSL.crypto.Error, self._call, "hello there")
 
     def test_parse_no_sans(self):
-        from letsencrypt.crypto_util import get_sans_from_csr
-        csr = pkg_resources.resource_string(
-            __name__, os.path.join('testdata', 'csr-nosans.pem'))
-        self.assertEqual([], get_sans_from_csr(csr))
+        self.assertEqual(
+            [], self._call(test_util.load_vector('csr-nosans.pem')))
 
 
 if __name__ == '__main__':
