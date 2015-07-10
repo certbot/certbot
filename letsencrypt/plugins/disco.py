@@ -16,7 +16,11 @@ logger = logging.getLogger(__name__)
 class PluginEntryPoint(object):
     """Plugin entry point."""
 
-    PREFIX_FREE_DISTRIBUTIONS = ["letsencrypt"]
+    PREFIX_FREE_DISTRIBUTIONS = [
+        "letsencrypt",
+        "letsencrypt-apache",
+        "letsencrypt-nginx",
+    ]
     """Distributions for which prefix will be omitted."""
 
     # this object is mutable, don't allow it to be hashed!
