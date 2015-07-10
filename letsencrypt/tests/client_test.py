@@ -81,7 +81,7 @@ class ClientTest(unittest.TestCase):
     def _check_obtain_certificate(self):
         self.client.auth_handler.get_authorizations.assert_called_once_with(
             ["example.com", "www.example.com"])
-        self.acme.request_issuance.assert_callend_once_with(
+        self.acme.request_issuance.assert_called_once_with(
             jose.ComparableX509(OpenSSL.crypto.load_certificate_request(
                 OpenSSL.crypto.FILETYPE_ASN1, CSR_SAN)),
             self.client.auth_handler.get_authorizations())
