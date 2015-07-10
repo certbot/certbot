@@ -160,6 +160,13 @@ class AccountFileStorageTest(unittest.TestCase):
     def test_load_non_existent_raises_error(self):
         self.assertRaises(errors.AccountNotFound, self.storage.load, "missing")
 
+    def test_load_id_mismatch_raises_error(self):
+        self.storage.save(self.acc)
+        shutil.move(os.path.join(self.config.accounts_dir, self.acc.id),
+                    os.path.join(self.config.accounts_dir, "x" + self.acc.id))
+        self.assertRaises(errors.AccountStorageError, self.storage.load,
+                          "x" + self.acc.id)
+
     def test_load_ioerror(self):
         self.storage.save(self.acc)
         mock_open = mock.mock_open()

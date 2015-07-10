@@ -182,9 +182,10 @@ class AccountFileStorage(interfaces.AccountStorage):
             raise errors.AccountStorageError(error)
 
         acc = Account(regr, key, meta)
-        assert acc.id == account_id, (
-            "Account ids mismatch (expected: {0}, found: {1}".format(
-                account_id, acc.id))
+        if acc.id != account_id:
+            raise errors.AccountStorageError(
+                "Account ids mismatch (expected: {0}, found: {1}".format(
+                    account_id, acc.id))
         return acc
 
     def save(self, account):
