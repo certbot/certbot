@@ -135,6 +135,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     def prepare(self):
         """Prepare the authenticator/installer."""
+        # Make sure configuration is valid
+        self.config_test()
+
         self.parser = parser.ApacheParser(
             self.aug, self.conf("server-root"), self.mod_ssl_conf,
             self.conf("ctl"))
@@ -983,8 +986,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     def config_test(self):  # pylint: disable=no-self-use
         """Check the configuration of Apache for errors.
 
-        :returns: Success
-        :rtype: bool
+        :raises .errors.PluginError: If Unable to run apache2ctl
+        :raises .errors.MisconfigurationError: If config_test fails
 
         """
         try:
@@ -999,10 +1002,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         if proc.returncode != 0:
             # Enter recovery routine...
-            logger.error("Configtest failed\n%s\n%s", stdout, stderr)
-            return False
-
-        return True
+            logger.error("Apache Configtest failed\n%s\n%s", stdout, stderr)
+            raise errors.MisconfigurationError(
+                "Apache Configtest failure:\n%s\n%s" % (stdout, stderr))
 
     def verify_setup(self):
         """Verify the setup to ensure safe operating environment.
@@ -1124,24 +1126,29 @@ def apache_restart(apache_init_script):
        need to be moved into the class again.  Perhaps
        this version can live on... for testing purposes.
 
+    :raises .errors.PluginError: If unable to restart with apache_init_script
+    :raises .errors.MisconfigurationError: If unable to restart due to a
+        configuration problem.
+
     """
     try:
         proc = subprocess.Popen([apache_init_script, "restart"],
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
-        stdout, stderr = proc.communicate()
-
-        if proc.returncode != 0:
-            # Enter recovery routine...
-            logger.error("Apache Restart Failed!\n%s\n%s", stdout, stderr)
-            return False
 
     except (OSError, ValueError):
         logger.fatal(
-            "Apache Restart Failed - Please Check the Configuration")
-        raise errors.MisconfigurationError("Unable to restart Apache process")
+            "Unable to restart the Apache process with %s", apache_init_script)
+        raise errors.PluginError(
+            "Unable to restart Apache process with %s" % apache_init_script)
 
-    return True
+    stdout, stderr = proc.communicate()
+
+    if proc.returncode != 0:
+        # Enter recovery routine...
+        logger.error("Apache Restart Failed!\n%s\n%s", stdout, stderr)
+        raise errors.MisconfigurationError(
+            "Error while restarting Apache:\n%s\n%s" % (stdout, stderr))
 
 
 def get_file_path(vhost_path):
