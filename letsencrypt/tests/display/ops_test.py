@@ -80,11 +80,11 @@ class PickPluginTest(unittest.TestCase):
     def test_default_provided(self):
         self.default = "foo"
         self._call()
-        self.reg.filter.assert_called_once()
+        self.assertEqual(1, self.reg.filter.call_count)
 
     def test_no_default(self):
         self._call()
-        self.reg.filter.assert_called_once()
+        self.assertEqual(1, self.reg.filter.call_count)
 
     def test_no_candidate(self):
         self.assertTrue(self._call() is None)

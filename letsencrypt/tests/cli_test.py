@@ -45,7 +45,7 @@ class CLITest(unittest.TestCase):
 
     def test_rollback(self):
         _, _, _, client = self._call(['rollback'])
-        client.rollback.assert_called_once()
+        self.assertEqual(1, client.rollback.call_count)
 
         _, _, _, client = self._call(['rollback', '--checkpoints', '123'])
         client.rollback.assert_called_once_with(
@@ -53,7 +53,7 @@ class CLITest(unittest.TestCase):
 
     def test_config_changes(self):
         _, _, _, client = self._call(['config_changes'])
-        client.view_config_changes.assert_called_once()
+        self.assertEqual(1, client.view_config_changes.call_count)
 
     def test_plugins(self):
         flags = ['--init', '--prepare', '--authenticators', '--installers']
