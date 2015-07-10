@@ -50,7 +50,7 @@ class ApacheParser(object):
         """Iterates on the configuration until no new modules are loaded.
 
         ..todo:: This should be attempted to be done with a binary to avoid
-            the iteration issue.  Else... do a better job of parsing to avoid it
+            the iteration issue.  Else... parse and enable mods at same time.
 
         """
         matches = self.find_dir(case_i("LoadModule"))

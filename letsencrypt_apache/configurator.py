@@ -148,13 +148,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Get all of the available vhosts
         self.vhosts = self.get_virtual_hosts()
 
-        # Enable mod_ssl if it isn't already enabled
-        # This is Let's Encrypt... we enable mod_ssl on initialization :)
-        # TODO: attempt to make the check faster... this enable should
-        #     be asynchronous as it shouldn't be that time sensitive
-        #     on initialization
-        self._prepare_server_https()
-
         temp_install(self.mod_ssl_conf)
 
     def deploy_cert(self, domain, cert_path, key_path, chain_path=None):
@@ -166,8 +159,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         it has located the three directives and finally modifies them to point
         to the correct destination. After the certificate is installed, the
         VirtualHost is enabled if it isn't already.
-
-        .. todo:: Make sure last directive is changed
 
         .. todo:: Might be nice to remove chain directive if none exists
                   This shouldn't happen within letsencrypt though
@@ -424,7 +415,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         is appropriately listening on port 443.
 
         """
-        if not self.mod_loaded("ssl_module"):
+        if "ssl_module" not in self.parser.modules:
             logger.info("Loading mod_ssl into Apache Server")
             self.enable_mod("ssl")
 
@@ -609,7 +600,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: (bool, :class:`~letsencrypt_apache.obj.VirtualHost`)
 
         """
-        if not self.mod_loaded("rewrite_module"):
+        if "rewrite_module" not in self.parser.modules:
             self.enable_mod("rewrite")
 
         general_v = self._general_vhost(ssl_vhost)
@@ -911,6 +902,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if self.is_site_enabled(vhost.filep):
             return True
 
+        if vhost.ssl:
+            self._prepare_server_https()
+            if self.save_notes:
+                self.save("Enabled TLS for Apache")
+
         if "/sites-available/" in vhost.filep:
             enabled_path = ("%s/sites-enabled/%s" %
                             (self.parser.root, os.path.basename(vhost.filep)))
@@ -927,7 +923,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         Both enables and restarts Apache so module is active.
 
-        :param str mod_name: Name of the module to enable.
+        :param str mod_name: Name of the module to enable. (e.g. 'ssl')
 
         """
         try:
@@ -936,11 +932,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             subprocess.check_call([self.conf("enmod"), mod_name],
                                   stdout=open("/dev/null", "w"),
                                   stderr=open("/dev/null", "w"))
-            apache_restart(self.conf("init_script"))
         except (OSError, subprocess.CalledProcessError):
             logger.exception("Error enabling mod_%s", mod_name)
             raise errors.MisconfigurationError(
                 "Missing enable_mod binary or lack privileges")
+        self.parser.modules.add(mod_name + "_module")
+        self.parser.modules.add("mod_" + mod_name)
 
     def mod_loaded(self, module):
         """Checks to see if mod_ssl is loaded
