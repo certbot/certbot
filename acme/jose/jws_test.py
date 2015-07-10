@@ -1,28 +1,20 @@
 """Tests for acme.jose.jws."""
 import base64
-import os
-import pkg_resources
 import unittest
 
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization
 import mock
 import OpenSSL
+
+from acme import test_util
 
 from acme.jose import b64
 from acme.jose import errors
 from acme.jose import jwa
 from acme.jose import jwk
-from acme.jose import util
 
 
-CERT = util.ComparableX509(OpenSSL.crypto.load_certificate(
-    OpenSSL.crypto.FILETYPE_PEM, pkg_resources.resource_string(
-        'acme', 'testdata/cert.pem')))
-RSA512_KEY = serialization.load_pem_private_key(
-    pkg_resources.resource_string(
-        'acme', os.path.join('testdata', 'rsa512_key.pem')),
-    password=None, backend=default_backend())
+CERT = test_util.load_cert('cert.pem')
+KEY = jwk.JWKRSA.load(test_util.load_vector('rsa512_key.pem'))
 
 
 class MediaTypeTest(unittest.TestCase):
@@ -112,7 +104,7 @@ class JWSTest(unittest.TestCase):
     """Tests for acme.jose.jws.JWS."""
 
     def setUp(self):
-        self.privkey = jwk.JWKRSA(key=RSA512_KEY)
+        self.privkey = KEY
         self.pubkey = self.privkey.public_key()
 
         from acme.jose.jws import JWS
@@ -209,8 +201,7 @@ class JWSTest(unittest.TestCase):
 class CLITest(unittest.TestCase):
 
     def setUp(self):
-        self.key_path = pkg_resources.resource_filename(
-            'acme', os.path.join('testdata', 'rsa512_key.pem'))
+        self.key_path = test_util.vector_path('rsa512_key.pem')
 
     def test_unverified(self):
         from acme.jose.jws import CLI

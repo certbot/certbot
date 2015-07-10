@@ -1,10 +1,6 @@
 """Tests for acme.challenges."""
-import os
-import pkg_resources
 import unittest
 
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization
 import mock
 import OpenSSL
 import requests
@@ -12,15 +8,11 @@ import urlparse
 
 from acme import jose
 from acme import other
+from acme import test_util
 
 
-CERT = jose.ComparableX509(OpenSSL.crypto.load_certificate(
-    OpenSSL.crypto.FILETYPE_PEM, pkg_resources.resource_string(
-        'acme', os.path.join('testdata', 'cert.pem'))))
-KEY = serialization.load_pem_private_key(
-    pkg_resources.resource_string(
-        'acme', os.path.join('testdata', 'rsa512_key.pem')),
-    password=None, backend=default_backend())
+CERT = test_util.load_cert('cert.pem')
+KEY = test_util.load_rsa_private_key('rsa512_key.pem')
 
 
 class ChallengeResponseTest(unittest.TestCase):

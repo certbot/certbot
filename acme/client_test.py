@@ -2,8 +2,6 @@
 import datetime
 import httplib
 import json
-import os
-import pkg_resources
 import unittest
 
 import mock
@@ -15,14 +13,12 @@ from acme import jose
 from acme import jws as acme_jws
 from acme import messages
 from acme import messages_test
+from acme import test_util
 
 
-CERT_DER = pkg_resources.resource_string(
-    'acme', os.path.join('testdata', 'cert.der'))
-KEY = jose.JWKRSA.load(pkg_resources.resource_string(
-    'acme', os.path.join('testdata', 'rsa512_key.pem')))
-KEY2 = jose.JWKRSA.load(pkg_resources.resource_string(
-    'acme', os.path.join('testdata', 'rsa256_key.pem')))
+CERT_DER = test_util.load_vector('cert.der')
+KEY = jose.JWKRSA.load(test_util.load_vector('rsa512_key.pem'))
+KEY2 = jose.JWKRSA.load(test_util.load_vector('rsa256_key.pem'))
 
 
 class ClientTest(unittest.TestCase):

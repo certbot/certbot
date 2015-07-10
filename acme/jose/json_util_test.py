@@ -1,23 +1,18 @@
 """Tests for acme.jose.json_util."""
 import itertools
-import os
-import pkg_resources
 import unittest
 
 import mock
-import OpenSSL
+
+from acme import test_util
 
 from acme.jose import errors
 from acme.jose import interfaces
 from acme.jose import util
 
 
-CERT = util.ComparableX509(OpenSSL.crypto.load_certificate(
-    OpenSSL.crypto.FILETYPE_PEM, pkg_resources.resource_string(
-        'acme', os.path.join('testdata', 'cert.pem'))))
-CSR = util.ComparableX509(OpenSSL.crypto.load_certificate_request(
-    OpenSSL.crypto.FILETYPE_PEM, pkg_resources.resource_string(
-        'acme', os.path.join('testdata', 'csr.pem'))))
+CERT = test_util.load_cert('cert.pem')
+CSR = test_util.load_csr('csr.pem')
 
 
 class FieldTest(unittest.TestCase):

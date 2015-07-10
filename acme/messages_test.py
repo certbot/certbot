@@ -1,30 +1,16 @@
 """Tests for acme.messages."""
-import os
-import pkg_resources
 import unittest
 
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization
 import mock
-import OpenSSL
 
 from acme import challenges
 from acme import jose
+from acme import test_util
 
 
-CERT = jose.ComparableX509(OpenSSL.crypto.load_certificate(
-    OpenSSL.crypto.FILETYPE_ASN1, pkg_resources.resource_string(
-        'acme', os.path.join('testdata', 'cert.der'))))
-CSR = jose.ComparableX509(OpenSSL.crypto.load_certificate_request(
-    OpenSSL.crypto.FILETYPE_ASN1, pkg_resources.resource_string(
-        'acme', os.path.join('testdata', 'csr.der'))))
-KEY = serialization.load_pem_private_key(
-    pkg_resources.resource_string(
-        'acme', os.path.join('testdata', 'rsa512_key.pem')),
-    password=None, backend=default_backend())
-CERT = jose.ComparableX509(OpenSSL.crypto.load_certificate(
-    OpenSSL.crypto.FILETYPE_ASN1, pkg_resources.resource_string(
-        'acme', os.path.join('testdata', 'cert.der'))))
+CERT = test_util.load_cert('cert.der')
+CSR = test_util.load_csr('csr.der')
+KEY = test_util.load_rsa_private_key('rsa512_key.pem')
 
 
 class ErrorTest(unittest.TestCase):

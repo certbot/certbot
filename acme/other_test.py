@@ -1,18 +1,11 @@
 """Tests for acme.sig."""
-import os
-import pkg_resources
 import unittest
 
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization
-
 from acme import jose
+from acme import test_util
 
 
-KEY = serialization.load_pem_private_key(
-    pkg_resources.resource_string(
-        'acme', os.path.join('testdata', 'rsa512_key.pem')),
-    password=None, backend=default_backend())
+KEY = test_util.load_rsa_private_key('rsa512_key.pem')
 
 
 class SignatureTest(unittest.TestCase):
