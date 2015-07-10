@@ -296,7 +296,7 @@ class RenewableCertTests(unittest.TestCase):
 
     def _test_notafterbefore(self, function, timestamp):
         test_cert = pkg_resources.resource_string(
-            "letsencrypt.tests", "testdata/cert.pem")
+            "letsencrypt.tests", os.path.join("testdata", "cert.pem"))
         os.symlink(os.path.join("..", "..", "archive", "example.org",
                                 "cert12.pem"), self.test_rc.cert)
         with open(self.test_rc.cert, "w") as f:
@@ -320,7 +320,7 @@ class RenewableCertTests(unittest.TestCase):
         """Test should_autodeploy() and should_autorenew() on the basis
         of expiry time windows."""
         test_cert = pkg_resources.resource_string(
-            "letsencrypt.tests", "testdata/cert.pem")
+            "letsencrypt.tests", os.path.join("testdata", "cert.pem"))
         for kind in ALL_FOUR:
             where = getattr(self.test_rc, kind)
             os.symlink(os.path.join("..", "..", "archive", "example.org",
@@ -562,7 +562,7 @@ class RenewableCertTests(unittest.TestCase):
         from letsencrypt import renewer
 
         test_cert = pkg_resources.resource_string(
-            "letsencrypt.tests", "testdata/cert-san.pem")
+            "letsencrypt.tests", os.path.join("testdata", "cert-san.pem"))
         for kind in ALL_FOUR:
             os.symlink(os.path.join("..", "..", "archive", "example.org",
                                     kind + "1.pem"),

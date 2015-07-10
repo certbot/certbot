@@ -17,7 +17,7 @@ from letsencrypt import errors
 
 
 KEY = jose.JWKRSA.load(pkg_resources.resource_string(
-    __name__, os.path.join("testdata", "rsa512_key.pem")))
+    "letsencrypt.tests", os.path.join("testdata", "rsa512_key_2.pem")))
 
 
 class AccountTest(unittest.TestCase):

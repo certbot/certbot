@@ -11,14 +11,14 @@ from acme.jose import util
 
 
 DSA_PEM = pkg_resources.resource_string(
-    'letsencrypt.tests', os.path.join('testdata', 'dsa512_key.pem'))
+    'acme', os.path.join('testdata', 'dsa512_key.pem'))
 RSA256_KEY = serialization.load_pem_private_key(
     pkg_resources.resource_string(
-        __name__, os.path.join('testdata', 'rsa256_key.pem')),
+        'acme', os.path.join('testdata', 'rsa256_key.pem')),
     password=None, backend=default_backend())
 RSA512_KEY = serialization.load_pem_private_key(
     pkg_resources.resource_string(
-        __name__, os.path.join('testdata', 'rsa512_key.pem')),
+        'acme', os.path.join('testdata', 'rsa512_key.pem')),
     password=None, backend=default_backend())
 
 
@@ -112,7 +112,7 @@ class JWKRSATest(unittest.TestCase):
         from acme.jose.jwk import JWKRSA
         self.assertEqual(
             self.private, JWKRSA.load(pkg_resources.resource_string(
-                __name__, os.path.join('testdata', 'rsa256_key.pem'))))
+                'acme', os.path.join('testdata', 'rsa256_key.pem'))))
 
     def test_public_key(self):
         self.assertEqual(self.jwk256, self.private.public_key())

@@ -6,7 +6,7 @@ include letsencrypt/EULA
 recursive-include letsencrypt/tests/testdata *
 
 recursive-include acme/schemata *.json
-recursive-include acme/jose/testdata *
+recursive-include acme/testdata *
 
 recursive-include letsencrypt_apache/tests/testdata *
 include letsencrypt_apache/options-ssl-apache.conf

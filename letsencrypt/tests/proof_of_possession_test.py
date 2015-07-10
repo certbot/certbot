@@ -19,7 +19,7 @@ from letsencrypt.display import util as display_util
 
 BASE_PACKAGE = "letsencrypt.tests"
 CERT0_PATH = pkg_resources.resource_filename(
-    "acme.jose", os.path.join("testdata", "cert.der"))
+    BASE_PACKAGE, os.path.join("testdata", "cert.der"))
 CERT2_PATH = pkg_resources.resource_filename(
     BASE_PACKAGE, os.path.join("testdata", "dsa_cert.pem"))
 CERT2_KEY_PATH = pkg_resources.resource_filename(
@@ -27,7 +27,7 @@ CERT2_KEY_PATH = pkg_resources.resource_filename(
 CERT3_PATH = pkg_resources.resource_filename(
     BASE_PACKAGE, os.path.join("testdata", "matching_cert.pem"))
 CERT3_KEY_PATH = pkg_resources.resource_filename(
-    BASE_PACKAGE, os.path.join("testdata", "rsa512_key.pem"))
+    BASE_PACKAGE, os.path.join("testdata", "rsa512_key_2.pem"))
 with open(CERT3_KEY_PATH) as cert3_file:
     CERT3_KEY = serialization.load_pem_private_key(
         cert3_file.read(), password=None,

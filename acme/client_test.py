@@ -18,11 +18,11 @@ from acme import messages_test
 
 
 CERT_DER = pkg_resources.resource_string(
-    'acme.jose', os.path.join('testdata', 'cert.der'))
+    'acme', os.path.join('testdata', 'cert.der'))
 KEY = jose.JWKRSA.load(pkg_resources.resource_string(
-    'acme.jose', os.path.join('testdata', 'rsa512_key.pem')))
+    'acme', os.path.join('testdata', 'rsa512_key.pem')))
 KEY2 = jose.JWKRSA.load(pkg_resources.resource_string(
-    'acme.jose', os.path.join('testdata', 'rsa256_key.pem')))
+    'acme', os.path.join('testdata', 'rsa256_key.pem')))
 
 
 class ClientTest(unittest.TestCase):

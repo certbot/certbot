@@ -12,7 +12,7 @@ from acme.jose import jwk_test
 
 RSA1024_KEY = serialization.load_pem_private_key(
     pkg_resources.resource_string(
-        __name__, os.path.join('testdata', 'rsa1024_key.pem')),
+        'acme', os.path.join('testdata', 'rsa1024_key.pem')),
     password=None, backend=default_backend())
 
 

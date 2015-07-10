@@ -11,7 +11,7 @@ from acme import jose
 
 KEY = serialization.load_pem_private_key(
     pkg_resources.resource_string(
-        'acme.jose', os.path.join('testdata', 'rsa512_key.pem')),
+        'acme', os.path.join('testdata', 'rsa512_key.pem')),
     password=None, backend=default_backend())
 
 

@@ -20,9 +20,9 @@ from letsencrypt.tests import acme_util
 
 
 KEY_PATH = pkg_resources.resource_filename(
-    "acme.jose", os.path.join("testdata", "rsa512_key.pem"))
+    "letsencrypt.tests", os.path.join("testdata", "rsa512_key.pem"))
 KEY_DATA = pkg_resources.resource_string(
-    "acme.jose", os.path.join("testdata", "rsa512_key.pem"))
+    "letsencrypt.tests", os.path.join("testdata", "rsa512_key.pem"))
 KEY = jose.JWKRSA(key=jose.ComparableRSAKey(serialization.load_pem_private_key(
     KEY_DATA, password=None, backend=default_backend())))
 PRIVATE_KEY = OpenSSL.crypto.load_privatekey(

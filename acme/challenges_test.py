@@ -16,10 +16,10 @@ from acme import other
 
 CERT = jose.ComparableX509(OpenSSL.crypto.load_certificate(
     OpenSSL.crypto.FILETYPE_PEM, pkg_resources.resource_string(
-        'letsencrypt.tests', os.path.join('testdata', 'cert.pem'))))
+        'acme', os.path.join('testdata', 'cert.pem'))))
 KEY = serialization.load_pem_private_key(
     pkg_resources.resource_string(
-        'acme.jose', os.path.join('testdata', 'rsa512_key.pem')),
+        'acme', os.path.join('testdata', 'rsa512_key.pem')),
     password=None, backend=default_backend())
 
 

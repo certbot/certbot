@@ -14,10 +14,10 @@ from acme.jose import util
 
 CERT = util.ComparableX509(OpenSSL.crypto.load_certificate(
     OpenSSL.crypto.FILETYPE_PEM, pkg_resources.resource_string(
-        'letsencrypt.tests', os.path.join('testdata', 'cert.pem'))))
+        'acme', os.path.join('testdata', 'cert.pem'))))
 CSR = util.ComparableX509(OpenSSL.crypto.load_certificate_request(
     OpenSSL.crypto.FILETYPE_PEM, pkg_resources.resource_string(
-        'letsencrypt.tests', os.path.join('testdata', 'csr.pem'))))
+        'acme', os.path.join('testdata', 'csr.pem'))))
 
 
 class FieldTest(unittest.TestCase):

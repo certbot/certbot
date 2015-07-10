@@ -17,7 +17,7 @@ class ComparableX509Test(unittest.TestCase):
         def _load(method, filename):  # pylint: disable=missing-docstring
             return ComparableX509(method(
                 OpenSSL.crypto.FILETYPE_PEM, pkg_resources.resource_string(
-                    'letsencrypt.tests', os.path.join('testdata', filename))))
+                    'acme', os.path.join('testdata', filename))))
 
         self.req1 = _load(OpenSSL.crypto.load_certificate_request, 'csr.pem')
         self.req2 = _load(OpenSSL.crypto.load_certificate_request, 'csr.pem')
@@ -61,13 +61,13 @@ class ComparableRSAKeyTest(unittest.TestCase):
         def load_key():  # pylint: disable=missing-docstring
             return ComparableRSAKey(serialization.load_pem_private_key(
                 pkg_resources.resource_string(
-                    __name__, os.path.join('testdata', 'rsa256_key.pem')),
+                    'acme', os.path.join('testdata', 'rsa256_key.pem')),
                 password=None, backend=backend))
         self.key = load_key()
         self.key_same = load_key()
         self.key2 = ComparableRSAKey(serialization.load_pem_private_key(
             pkg_resources.resource_string(
-                __name__, os.path.join('testdata', 'rsa512_key.pem')),
+                'acme', os.path.join('testdata', 'rsa512_key.pem')),
             password=None, backend=backend))
 
     def test_getattr_proxy(self):

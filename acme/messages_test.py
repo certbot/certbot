@@ -14,17 +14,17 @@ from acme import jose
 
 CERT = jose.ComparableX509(OpenSSL.crypto.load_certificate(
     OpenSSL.crypto.FILETYPE_ASN1, pkg_resources.resource_string(
-        'acme.jose', os.path.join('testdata', 'cert.der'))))
+        'acme', os.path.join('testdata', 'cert.der'))))
 CSR = jose.ComparableX509(OpenSSL.crypto.load_certificate_request(
     OpenSSL.crypto.FILETYPE_ASN1, pkg_resources.resource_string(
-        'acme.jose', os.path.join('testdata', 'csr.der'))))
+        'acme', os.path.join('testdata', 'csr.der'))))
 KEY = serialization.load_pem_private_key(
     pkg_resources.resource_string(
-        'acme.jose', os.path.join('testdata', 'rsa512_key.pem')),
+        'acme', os.path.join('testdata', 'rsa512_key.pem')),
     password=None, backend=default_backend())
 CERT = jose.ComparableX509(OpenSSL.crypto.load_certificate(
     OpenSSL.crypto.FILETYPE_ASN1, pkg_resources.resource_string(
-        'acme.jose', os.path.join('testdata', 'cert.der'))))
+        'acme', os.path.join('testdata', 'cert.der'))))
 
 
 class ErrorTest(unittest.TestCase):

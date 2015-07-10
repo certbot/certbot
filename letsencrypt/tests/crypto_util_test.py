@@ -11,9 +11,9 @@ import mock
 
 
 RSA256_KEY = pkg_resources.resource_string(
-    'acme.jose', os.path.join('testdata', 'rsa256_key.pem'))
+    'letsencrypt.tests', os.path.join('testdata', 'rsa256_key.pem'))
 RSA512_KEY = pkg_resources.resource_string(
-    'acme.jose', os.path.join('testdata', 'rsa512_key.pem'))
+    'letsencrypt.tests', os.path.join('testdata', 'rsa512_key.pem'))
 CERT = pkg_resources.resource_string(
     'letsencrypt.tests', os.path.join('testdata', 'cert.pem'))
 SAN_CERT = pkg_resources.resource_string(
