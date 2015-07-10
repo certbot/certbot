@@ -1,8 +1,44 @@
 """Let's Encrypt client interfaces."""
+import abc
 import zope.interface
 
 # pylint: disable=no-self-argument,no-method-argument,no-init,inherit-non-class
 # pylint: disable=too-few-public-methods
+
+
+class AccountStorage(object):
+    """Accounts storage interface."""
+
+    __metaclass__ = abc.ABCMeta
+
+    @abc.abstractmethod
+    def find_all(self):  # pragma: no cover
+        """Find all accounts.
+
+        :returns: All found accounts.
+        :rtype: list
+
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def load(self, account_id):  # pragma: no cover
+        """Load an account by its id.
+
+        :raises .AccountNotFound: if account could not be found
+        :raises .AccountStorageError: if account could not be loaded
+
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def save(self, account):  # pragma: no cover
+        """Save account.
+
+        :raises .AccountStorageError: if account could not be saved
+
+        """
+        raise NotImplementedError()
 
 
 class IPluginFactory(zope.interface.Interface):
@@ -160,8 +196,6 @@ class IConfig(zope.interface.Interface):
 
     accounts_dir = zope.interface.Attribute(
         "Directory where all account information is stored.")
-    account_keys_dir = zope.interface.Attribute(
-        "Directory where all account keys are stored.")
     backup_dir = zope.interface.Attribute("Configuration backups directory.")
     cert_dir = zope.interface.Attribute(
         "Directory where newly generated Certificate Signing Requests "

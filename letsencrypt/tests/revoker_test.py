@@ -69,9 +69,9 @@ class RevokerTest(RevokerBase):
     def tearDown(self):
         shutil.rmtree(self.backup_dir)
 
-    @mock.patch("letsencrypt.network.Network.revoke")
+    @mock.patch("acme.client.Client.revoke")
     @mock.patch("letsencrypt.revoker.revocation")
-    def test_revoke_by_key_all(self, mock_display, mock_net):
+    def test_revoke_by_key_all(self, mock_display, mock_acme):
         mock_display().confirm_revocation.return_value = True
 
         self.revoker.revoke_from_key(self.key)
@@ -81,7 +81,7 @@ class RevokerTest(RevokerBase):
         for i in xrange(2):
             self.assertFalse(self._backups_exist(self.certs[i].get_row()))
 
-        self.assertEqual(mock_net.call_count, 2)
+        self.assertEqual(mock_acme.call_count, 2)
 
     @mock.patch("letsencrypt.revoker.OpenSSL.crypto.load_privatekey")
     def test_revoke_by_invalid_keys(self, mock_load_privatekey):
@@ -93,9 +93,9 @@ class RevokerTest(RevokerBase):
         self.assertRaises(
             errors.RevokerError, self.revoker.revoke_from_key, self.key)
 
-    @mock.patch("letsencrypt.network.Network.revoke")
+    @mock.patch("acme.client.Client.revoke")
     @mock.patch("letsencrypt.revoker.revocation")
-    def test_revoke_by_wrong_key(self, mock_display, mock_net):
+    def test_revoke_by_wrong_key(self, mock_display, mock_acme):
         mock_display().confirm_revocation.return_value = True
 
         key_path = pkg_resources.resource_filename(
@@ -107,11 +107,11 @@ class RevokerTest(RevokerBase):
         # Nothing was removed
         self.assertEqual(len(self._get_rows()), 2)
         # No revocation went through
-        self.assertEqual(mock_net.call_count, 0)
+        self.assertEqual(mock_acme.call_count, 0)
 
-    @mock.patch("letsencrypt.network.Network.revoke")
+    @mock.patch("acme.client.Client.revoke")
     @mock.patch("letsencrypt.revoker.revocation")
-    def test_revoke_by_cert(self, mock_display, mock_net):
+    def test_revoke_by_cert(self, mock_display, mock_acme):
         mock_display().confirm_revocation.return_value = True
 
         self.revoker.revoke_from_cert(self.paths[1])
@@ -124,11 +124,11 @@ class RevokerTest(RevokerBase):
         self.assertTrue(self._backups_exist(row0))
         self.assertFalse(self._backups_exist(row1))
 
-        self.assertEqual(mock_net.call_count, 1)
+        self.assertEqual(mock_acme.call_count, 1)
 
-    @mock.patch("letsencrypt.network.Network.revoke")
+    @mock.patch("acme.client.Client.revoke")
     @mock.patch("letsencrypt.revoker.revocation")
-    def test_revoke_by_cert_not_found(self, mock_display, mock_net):
+    def test_revoke_by_cert_not_found(self, mock_display, mock_acme):
         mock_display().confirm_revocation.return_value = True
 
         self.revoker.revoke_from_cert(self.paths[0])
@@ -143,11 +143,11 @@ class RevokerTest(RevokerBase):
         self.assertTrue(self._backups_exist(row1))
         self.assertFalse(self._backups_exist(row0))
 
-        self.assertEqual(mock_net.call_count, 1)
+        self.assertEqual(mock_acme.call_count, 1)
 
-    @mock.patch("letsencrypt.network.Network.revoke")
+    @mock.patch("acme.client.Client.revoke")
     @mock.patch("letsencrypt.revoker.revocation")
-    def test_revoke_by_menu(self, mock_display, mock_net):
+    def test_revoke_by_menu(self, mock_display, mock_acme):
         mock_display().confirm_revocation.return_value = True
         mock_display.display_certs.side_effect = [
             (display_util.HELP, 0),
@@ -165,13 +165,13 @@ class RevokerTest(RevokerBase):
         self.assertFalse(self._backups_exist(row0))
         self.assertTrue(self._backups_exist(row1))
 
-        self.assertEqual(mock_net.call_count, 1)
+        self.assertEqual(mock_acme.call_count, 1)
         self.assertEqual(mock_display.more_info_cert.call_count, 1)
 
     @mock.patch("letsencrypt.revoker.logger")
-    @mock.patch("letsencrypt.network.Network.revoke")
+    @mock.patch("acme.client.Client.revoke")
     @mock.patch("letsencrypt.revoker.revocation")
-    def test_revoke_by_menu_delete_all(self, mock_display, mock_net, mock_log):
+    def test_revoke_by_menu_delete_all(self, mock_display, mock_acme, mock_log):
         mock_display().confirm_revocation.return_value = True
         mock_display.display_certs.return_value = (display_util.OK, 0)
 
@@ -183,7 +183,7 @@ class RevokerTest(RevokerBase):
         for i in xrange(2):
             self.assertFalse(self._backups_exist(self.certs[i].get_row()))
 
-        self.assertEqual(mock_net.call_count, 2)
+        self.assertEqual(mock_acme.call_count, 2)
         # Info is called when there aren't any certs left...
         self.assertTrue(mock_log.info.called)
 

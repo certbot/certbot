@@ -8,7 +8,10 @@ import datetime
 import logging
 import os
 
+from cryptography.hazmat.primitives import serialization
 import OpenSSL
+
+from acme import jose
 
 from letsencrypt import errors
 from letsencrypt import le_util
@@ -212,15 +215,21 @@ def pyopenssl_load_certificate(data):
     return _pyopenssl_load(data, OpenSSL.crypto.load_certificate)
 
 
-def make_ss_cert(key_str, domains, not_before=None,
+def make_ss_cert(key, domains, not_before=None,
                  validity=(7 * 24 * 60 * 60)):
     """Returns new self-signed cert in PEM form.
 
-    Uses key_str and contains all domains.
+    Uses key and contains all domains.
 
     """
+    if isinstance(key, jose.JWK):
+        key = key.key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.TraditionalOpenSSL,
+            encryption_algorithm=serialization.NoEncryption())
+
     assert domains, "Must provide one or more hostnames for the cert."
-    pkey = OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, key_str)
+    pkey = OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, key)
     cert = OpenSSL.crypto.X509()
     cert.set_serial_number(1337)
     cert.set_version(2)

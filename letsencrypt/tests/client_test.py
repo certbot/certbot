@@ -2,8 +2,6 @@
 import os
 import unittest
 import pkg_resources
-import shutil
-import tempfile
 
 import configobj
 import OpenSSL
@@ -13,6 +11,7 @@ from acme import jose
 
 from letsencrypt import account
 from letsencrypt import configuration
+from letsencrypt import errors
 from letsencrypt import le_util
 
 
@@ -20,6 +19,38 @@ KEY = pkg_resources.resource_string(
     __name__, os.path.join("testdata", "rsa512_key.pem"))
 CSR_SAN = pkg_resources.resource_string(
     __name__, os.path.join("testdata", "csr-san.der"))
+
+
+class RegisterTest(unittest.TestCase):
+    """Tests for letsencrypt.client.register."""
+
+    def setUp(self):
+        self.config = mock.MagicMock(rsa_key_size=1024)
+        self.account_storage = account.AccountMemoryStorage()
+        self.tos_cb = mock.MagicMock()
+
+    def _call(self):
+        from letsencrypt.client import register
+        return register(self.config, self.account_storage, self.tos_cb)
+
+    def test_no_tos(self):
+        with mock.patch("letsencrypt.client.acme_client.Client") as mock_client:
+            mock_client.register().terms_of_service = "http://tos"
+            with mock.patch("letsencrypt.account.report_new_account"):
+                self.tos_cb.return_value = False
+                self.assertRaises(errors.Error, self._call)
+
+                self.tos_cb.return_value = True
+                self._call()
+
+                self.tos_cb = None
+                self._call()
+
+    def test_it(self):
+        with mock.patch("letsencrypt.client.acme_client.Client"):
+            with mock.patch("letsencrypt.account."
+                            "report_new_account"):
+                self._call()
 
 
 class ClientTest(unittest.TestCase):
@@ -32,29 +63,30 @@ class ClientTest(unittest.TestCase):
         self.account = mock.MagicMock(**{"key.pem": KEY})
 
         from letsencrypt.client import Client
-        with mock.patch("letsencrypt.client.network.Network") as network:
+        with mock.patch("letsencrypt.client.acme_client.Client") as acme:
+            self.acme_client = acme
+            self.acme = acme.return_value = mock.MagicMock()
             self.client = Client(
                 config=self.config, account_=self.account,
                 dv_auth=None, installer=None)
-        self.network = network
 
-    def test_init_network_verify_ssl(self):
-        self.network.assert_called_once_with(
-            mock.ANY, mock.ANY, verify_ssl=True)
+    def test_init_acme_verify_ssl(self):
+        self.acme_client.assert_called_once_with(
+            new_reg_uri=mock.ANY, key=mock.ANY, verify_ssl=True)
 
     def _mock_obtain_certificate(self):
         self.client.auth_handler = mock.MagicMock()
-        self.network().request_issuance.return_value = mock.sentinel.certr
-        self.network().fetch_chain.return_value = mock.sentinel.chain
+        self.acme.request_issuance.return_value = mock.sentinel.certr
+        self.acme.fetch_chain.return_value = mock.sentinel.chain
 
     def _check_obtain_certificate(self):
         self.client.auth_handler.get_authorizations.assert_called_once_with(
             ["example.com", "www.example.com"])
-        self.network.request_issuance.assert_callend_once_with(
+        self.acme.request_issuance.assert_called_once_with(
             jose.ComparableX509(OpenSSL.crypto.load_certificate_request(
                 OpenSSL.crypto.FILETYPE_ASN1, CSR_SAN)),
             self.client.auth_handler.get_authorizations())
-        self.network().fetch_chain.assert_called_once_with(mock.sentinel.certr)
+        self.acme.fetch_chain.assert_called_once_with(mock.sentinel.certr)
 
     def test_obtain_certificate_from_csr(self):
         self._mock_obtain_certificate()
@@ -82,18 +114,6 @@ class ClientTest(unittest.TestCase):
         mock_crypto_util.init_save_csr.assert_called_once_with(
             mock.sentinel.key, domains, self.config.cert_dir)
         self._check_obtain_certificate()
-
-    @mock.patch("letsencrypt.client.zope.component.getUtility")
-    def test_report_new_account(self, mock_zope):
-        # pylint: disable=protected-access
-        self.account.recovery_token = "ECCENTRIC INVISIBILITY RHINOCEROS"
-        self.account.email = "rhino@jungle.io"
-
-        self.client._report_new_account()
-        call_list = mock_zope().add_message.call_args_list
-        self.assertTrue(self.config.config_dir in call_list[0][0][0])
-        self.assertTrue(self.account.recovery_token in call_list[1][0][0])
-        self.assertTrue(self.account.email in call_list[1][0][0])
 
     @mock.patch("letsencrypt.client.zope.component.getUtility")
     def test_report_renewal_status(self, mock_zope):
@@ -126,50 +146,6 @@ class ClientTest(unittest.TestCase):
         msg = mock_zope().add_message.call_args[0][0]
         self.assertTrue("renewal but not automatic deployment" in msg)
         self.assertTrue(cert.cli_config.renewal_configs_dir in msg)
-
-
-class DetermineAccountTest(unittest.TestCase):
-    """Tests for letsencrypt.client.determine_authenticator."""
-
-    def setUp(self):
-        self.accounts_dir = tempfile.mkdtemp("accounts")
-        account_keys_dir = os.path.join(self.accounts_dir, "keys")
-        os.makedirs(account_keys_dir, 0o700)
-
-        self.config = mock.MagicMock(
-            spec=configuration.NamespaceConfig, accounts_dir=self.accounts_dir,
-            account_keys_dir=account_keys_dir, rsa_key_size=2048,
-            server="letsencrypt-demo.org")
-
-    def tearDown(self):
-        shutil.rmtree(self.accounts_dir)
-
-    @mock.patch("letsencrypt.account.Account.from_prompts")
-    @mock.patch("letsencrypt.client.display_ops.choose_account")
-    def test_determine_account(self, mock_op, mock_prompt):
-        """Test determine account"""
-        from letsencrypt import client
-
-        key = le_util.Key(tempfile.mkstemp()[1], "pem")
-        test_acc = account.Account(self.config, key, "email1@gmail.com")
-        mock_op.return_value = test_acc
-
-        # Test 0
-        mock_prompt.return_value = None
-        self.assertTrue(client.determine_account(self.config) is None)
-
-        # Test 1
-        test_acc.save()
-        acc = client.determine_account(self.config)
-        self.assertEqual(acc.email, test_acc.email)
-
-        # Test multiple
-        self.assertFalse(mock_op.called)
-        acc2 = account.Account(self.config, key)
-        acc2.save()
-        chosen_acc = client.determine_account(self.config)
-        self.assertTrue(mock_op.called)
-        self.assertTrue(chosen_acc.email, test_acc.email)
 
 
 class RollbackTest(unittest.TestCase):

@@ -5,6 +5,14 @@ class Error(Exception):
     """Generic Let's Encrypt client error."""
 
 
+class AccountStorageError(Error):
+    """Generic `.AccountStorage` error."""
+
+
+class AccountNotFound(AccountStorageError):
+    """Account not found error."""
+
+
 class ReverterError(Error):
     """Let's Encrypt Reverter error."""
 

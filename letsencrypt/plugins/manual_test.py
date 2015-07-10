@@ -41,7 +41,7 @@ class ManualAuthenticatorTest(unittest.TestCase):
 
         resp = challenges.SimpleHTTPResponse(tls=False, path='Zm9v')
         self.assertEqual([resp], self.auth.perform(self.achalls))
-        mock_raw_input.assert_called_once()
+        self.assertEqual(1, mock_raw_input.call_count)
         mock_verify.assert_called_with(self.achalls[0].challb, "foo.com", 4430)
 
         message = mock_stdout.write.mock_calls[0][1][0]

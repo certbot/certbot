@@ -3,12 +3,14 @@ import os
 import pkg_resources
 import unittest
 
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
 import OpenSSL
 
 from acme import challenges
+from acme import jose
 
 from letsencrypt import crypto_util
-from letsencrypt import le_util
 from letsencrypt.tests import acme_util
 
 
@@ -19,8 +21,11 @@ class DVSNITest(unittest.TestCase):
         self.chall = acme_util.chall_to_challb(
             challenges.DVSNI(r="r_value", nonce="12345ABCDE"), "pending")
         self.response = challenges.DVSNIResponse()
-        key = le_util.Key("path", pkg_resources.resource_string(
-            "acme.jose", os.path.join("testdata", "rsa512_key.pem")))
+        key = jose.JWKRSA(key=jose.ComparableRSAKey(
+            serialization.load_pem_private_key(
+                pkg_resources.resource_string(
+                    "acme.jose", os.path.join("testdata", "rsa512_key.pem")),
+                password=None, backend=default_backend())))
 
         from letsencrypt.achallenges import DVSNI
         self.achall = DVSNI(challb=self.chall, domain="example.com", key=key)
