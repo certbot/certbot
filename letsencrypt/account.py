@@ -1,9 +1,11 @@
 """Creates ACME accounts for server."""
 import datetime
+import hashlib
 import logging
 import os
 import socket
 
+from cryptography.hazmat.primitives import serialization
 import pyrfc3339
 import pytz
 import zope.component
@@ -20,15 +22,13 @@ from letsencrypt import le_util
 logger = logging.getLogger(__name__)
 
 
-class Account(object):
+class Account(object):  # pylint: disable=too-few-public-methods
     """ACME protocol registration.
 
     :ivar .RegistrationResource regr: Registration Resource
     :ivar .JWK key: Authorized Account Key
     :ivar .Meta: Account metadata
-
-    .. note:: ``creation_dt`` and ``creation_host`` are useful in
-        cross-machine migration scenarios.
+    :ivar str id: Globally unique account identifier.
 
     """
 
@@ -37,6 +37,9 @@ class Account(object):
 
         :ivar datetime.datetime creation_dt: Creation date and time (UTC).
         :ivar str creation_host: FQDN of host, where account has been created.
+
+        .. note:: ``creation_dt`` and ``creation_host`` are useful in
+            cross-machine migration scenarios.
 
         """
         creation_dt = acme_fields.RFC3339Field("creation_dt")
@@ -51,18 +54,16 @@ class Account(object):
                 tz=pytz.UTC).replace(microsecond=0),
             creation_host=socket.getfqdn()) if meta is None else meta
 
-    @property
-    def id(self):  # pylint: disable=invalid-name
-        """Globally unique account identifier.
-
-        Implementation note: Email? Multiple accounts can have the same
-        email address. Registration URI? Assigned by the server, not
-        guaranteed to be stable over time, nor cannonical URI can be
-        generated. One could use the account key (fingerprint), as ACME
-        protocol doesn't allow it to be updated...
-
-        """
-        return self.slug
+        self.id = hashlib.md5(  # pylint: disable=invalid-name
+            self.key.key.public_key().public_bytes(
+                encoding=serialization.Encoding.DER,
+                format=serialization.PublicFormat.SubjectPublicKeyInfo)
+        ).hexdigest()
+        # Implementation note: Email? Multiple accounts can have the
+        # same email address. Registration URI? Assigned by the
+        # server, not guaranteed to be stable over time, nor
+        # cannonical URI can be generated. ACME protocol doesn't allow
+        # account key (and thus its fingerprint) to be updated...
 
     @property
     def slug(self):

@@ -1,5 +1,6 @@
 """Test letsencrypt.display.ops."""
 import os
+import pkg_resources
 import sys
 import tempfile
 import unittest
@@ -7,12 +8,17 @@ import unittest
 import mock
 import zope.component
 
+from acme import jose
 from acme import messages
 
 from letsencrypt import account
 from letsencrypt import interfaces
 
 from letsencrypt.display import util as display_util
+
+
+KEY = jose.JWKRSA.load(pkg_resources.resource_string(
+    "letsencrypt.tests", os.path.join("testdata", "rsa512_key.pem")))
 
 
 class ChoosePluginTest(unittest.TestCase):
@@ -186,7 +192,7 @@ class ChooseAccountTest(unittest.TestCase):
             accounts_dir=self.accounts_dir,
             account_keys_dir=self.account_keys_dir,
             server="letsencrypt-demo.org")
-        self.key = mock.MagicMock()
+        self.key = KEY
 
         self.acc1 = account.Account(messages.RegistrationResource(
             uri=None, new_authzr_uri=None, body=messages.Registration.from_data(

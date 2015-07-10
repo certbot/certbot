@@ -45,7 +45,7 @@ class AccountTest(unittest.TestCase):
 
     def test_id(self):
         self.assertEqual(
-            self.acc.id, "test.letsencrypt.org@2015-07-04T14:04:10Z")
+            self.acc.id, "2ba35a3bdf380ed76a5ac9e740568395")
 
     def test_slug(self):
         self.assertEqual(
@@ -54,7 +54,7 @@ class AccountTest(unittest.TestCase):
     def test_repr(self):
         self.assertEqual(
             repr(self.acc),
-            "<Account(test.letsencrypt.org@2015-07-04T14:04:10Z)>")
+            "<Account(2ba35a3bdf380ed76a5ac9e740568395)>")
 
 
 class ReportNewAccountTest(unittest.TestCase):
