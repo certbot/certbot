@@ -108,7 +108,7 @@ Installation
 .. code-block:: shell
 
    virtualenv --no-site-packages -p python2 venv
-   ./venv/bin/pip install -r requirements.txt .
+   ./venv/bin/pip install -r requirements.txt acme . letsencrypt_apache letsencrypt_nginx
 
 .. warning:: Please do **not** use ``python setup.py install``. Please
              do **not** attempt the installation commands as

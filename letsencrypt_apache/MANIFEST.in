@@ -1,0 +1,2 @@
+recursive-include letsencrypt_apache/tests/testdata *
+include letsencrypt_apache/options-ssl-apache.conf

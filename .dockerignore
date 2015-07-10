@@ -1,11 +1,11 @@
 # this file uses slightly different syntax than .gitignore,
-# e.g. ".tox/" will not ignore .tox directory
+# e.g. "tox.cover/" will not ignore tox.cover directory
 
 # well, official docker build should be done on clean git checkout
 # anyway, so .tox should be empty... But I'm sure people will try to
 # test docker on their git working directories.
 
 .git
-.tox
+tox.cover
 venv
 docs

@@ -29,9 +29,9 @@ class ApacheTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
             self.temp_dir, "debian_apache_2_4/two_vhost_80/apache2")
 
         self.rsa256_file = pkg_resources.resource_filename(
-            "acme.jose", "testdata/rsa256_key.pem")
+            "letsencrypt.tests", os.path.join("testdata", "rsa256_key.pem"))
         self.rsa256_pem = pkg_resources.resource_string(
-            "acme.jose", "testdata/rsa256_key.pem")
+            "letsencrypt.tests", os.path.join("testdata", "rsa256_key.pem"))
 
 
 def get_apache_configurator(

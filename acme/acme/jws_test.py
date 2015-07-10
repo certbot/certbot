@@ -1,19 +1,12 @@
 """Tests for acme.jws."""
-import os
-import pkg_resources
 import unittest
-
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization
 
 from acme import errors
 from acme import jose
+from acme import test_util
 
 
-RSA512_KEY = serialization.load_pem_private_key(
-    pkg_resources.resource_string(
-        'acme.jose', os.path.join('testdata', 'rsa512_key.pem')),
-    password=None, backend=default_backend())
+KEY = jose.JWKRSA.load(test_util.load_vector('rsa512_key.pem'))
 
 
 class HeaderTest(unittest.TestCase):
@@ -46,7 +39,7 @@ class JWSTest(unittest.TestCase):
     """Tests for acme.jws.JWS."""
 
     def setUp(self):
-        self.privkey = jose.JWKRSA(key=RSA512_KEY)
+        self.privkey = KEY
         self.pubkey = self.privkey.public_key()
         self.nonce = jose.b64encode('Nonce')
 

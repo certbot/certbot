@@ -1,31 +1,22 @@
 """Tests for acme.jose.util."""
 import functools
-import os
-import pkg_resources
 import unittest
 
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization
-import OpenSSL
+from acme import test_util
 
 
 class ComparableX509Test(unittest.TestCase):
     """Tests for acme.jose.util.ComparableX509."""
 
     def setUp(self):
-        from acme.jose.util import ComparableX509
-        def _load(method, filename):  # pylint: disable=missing-docstring
-            return ComparableX509(method(
-                OpenSSL.crypto.FILETYPE_PEM, pkg_resources.resource_string(
-                    'letsencrypt.tests', os.path.join('testdata', filename))))
+        # test_util.load_{csr,cert} return ComparableX509
+        self.req1 = test_util.load_csr('csr.pem')
+        self.req2 = test_util.load_csr('csr.pem')
+        self.req_other = test_util.load_csr('csr-san.pem')
 
-        self.req1 = _load(OpenSSL.crypto.load_certificate_request, 'csr.pem')
-        self.req2 = _load(OpenSSL.crypto.load_certificate_request, 'csr.pem')
-        self.req_other = _load(OpenSSL.crypto.load_certificate_request, 'csr-san.pem')
-
-        self.cert1 = _load(OpenSSL.crypto.load_certificate, 'cert.pem')
-        self.cert2 = _load(OpenSSL.crypto.load_certificate, 'cert.pem')
-        self.cert_other = _load(OpenSSL.crypto.load_certificate, 'cert-san.pem')
+        self.cert1 = test_util.load_cert('cert.pem')
+        self.cert2 = test_util.load_cert('cert.pem')
+        self.cert_other = test_util.load_cert('cert-san.pem')
 
     def test_eq(self):
         self.assertEqual(self.req1, self.req2)
@@ -56,19 +47,10 @@ class ComparableRSAKeyTest(unittest.TestCase):
     """Tests for acme.jose.util.ComparableRSAKey."""
 
     def setUp(self):
-        from acme.jose.util import ComparableRSAKey
-        backend = default_backend()
-        def load_key():  # pylint: disable=missing-docstring
-            return ComparableRSAKey(serialization.load_pem_private_key(
-                pkg_resources.resource_string(
-                    __name__, os.path.join('testdata', 'rsa256_key.pem')),
-                password=None, backend=backend))
-        self.key = load_key()
-        self.key_same = load_key()
-        self.key2 = ComparableRSAKey(serialization.load_pem_private_key(
-            pkg_resources.resource_string(
-                __name__, os.path.join('testdata', 'rsa512_key.pem')),
-            password=None, backend=backend))
+        # test_utl.load_rsa_private_key return ComparableRSAKey
+        self.key = test_util.load_rsa_private_key('rsa256_key.pem')
+        self.key_same = test_util.load_rsa_private_key('rsa256_key.pem')
+        self.key2 = test_util.load_rsa_private_key('rsa512_key.pem')
 
     def test_getattr_proxy(self):
         self.assertEqual(256, self.key.key_size)
