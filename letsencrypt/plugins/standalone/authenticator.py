@@ -6,6 +6,7 @@ import socket
 import sys
 import time
 
+from cryptography.hazmat.primitives import serialization
 import OpenSSL
 import zope.component
 import zope.interface
@@ -214,7 +215,10 @@ class StandaloneAuthenticator(common.Plugin):
         # Signal that we've successfully bound TCP port
         os.kill(self.parent_pid, signal.SIGIO)
         self.private_key = OpenSSL.crypto.load_privatekey(
-            OpenSSL.crypto.FILETYPE_PEM, key.pem)
+            OpenSSL.crypto.FILETYPE_PEM, key.key.private_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PrivateFormat.TraditionalOpenSSL,
+                encryption_algorithm=serialization.NoEncryption()))
 
         while True:
             self.connection, _ = self.sock.accept()

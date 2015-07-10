@@ -65,9 +65,6 @@ CONFIG_DIRS_MODE = 0o755
 ACCOUNTS_DIR = "accounts"
 """Directory where all accounts are saved."""
 
-ACCOUNT_KEYS_DIR = "keys"
-"""Directory where account keys are saved. Relative to `ACCOUNTS_DIR`."""
-
 BACKUP_DIR = "backups"
 """Directory (relative to `IConfig.work_dir`) where backups are kept."""
 

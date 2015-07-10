@@ -510,7 +510,8 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
 
     def test_head(self):
         self.assertEqual(self.response, self.net.head('url', 'foo', bar='baz'))
-        self.send_request.assert_called_once('HEAD', 'url', 'foo', bar='baz')
+        self.send_request.assert_called_once_with(
+            'HEAD', 'url', 'foo', bar='baz')
 
     def test_get(self):
         self.assertEqual(self.checked_response, self.net.get(

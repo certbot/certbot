@@ -1,5 +1,6 @@
 """Test letsencrypt.display.ops."""
 import os
+import pkg_resources
 import sys
 import tempfile
 import unittest
@@ -7,11 +8,17 @@ import unittest
 import mock
 import zope.component
 
+from acme import jose
+from acme import messages
+
 from letsencrypt import account
 from letsencrypt import interfaces
-from letsencrypt import le_util
 
 from letsencrypt.display import util as display_util
+
+
+KEY = jose.JWKRSA.load(pkg_resources.resource_string(
+    "letsencrypt.tests", os.path.join("testdata", "rsa512_key.pem")))
 
 
 class ChoosePluginTest(unittest.TestCase):
@@ -73,11 +80,11 @@ class PickPluginTest(unittest.TestCase):
     def test_default_provided(self):
         self.default = "foo"
         self._call()
-        self.reg.filter.assert_called_once()
+        self.assertEqual(1, self.reg.filter.call_count)
 
     def test_no_default(self):
         self._call()
-        self.reg.filter.assert_called_once()
+        self.assertEqual(1, self.reg.ifaces.call_count)
 
     def test_no_candidate(self):
         self.assertTrue(self._call() is None)
@@ -140,8 +147,40 @@ class ConveniencePickPluginTest(unittest.TestCase):
             interfaces.IAuthenticator, interfaces.IInstaller))
 
 
+class GetEmailTest(unittest.TestCase):
+    """Tests for letsencrypt.display.ops.get_email."""
+
+    def setUp(self):
+        mock_display = mock.MagicMock()
+        self.input = mock_display.input
+        zope.component.provideUtility(mock_display, interfaces.IDisplay)
+
+    @classmethod
+    def _call(cls):
+        from letsencrypt.display.ops import get_email
+        return get_email()
+
+    def test_cancel_none(self):
+        self.input.return_value = (display_util.CANCEL, "foo@bar.baz")
+        self.assertTrue(self._call() is None)
+
+    def test_ok_safe(self):
+        self.input.return_value = (display_util.OK, "foo@bar.baz")
+        with mock.patch("letsencrypt.display.ops.le_util"
+                        ".safe_email") as mock_safe_email:
+            mock_safe_email.return_value = True
+            self.assertTrue(self._call() is "foo@bar.baz")
+
+    def test_ok_not_safe(self):
+        self.input.return_value = (display_util.OK, "foo@bar.baz")
+        with mock.patch("letsencrypt.display.ops.le_util"
+                        ".safe_email") as mock_safe_email:
+            mock_safe_email.side_effect = [False, True]
+            self.assertTrue(self._call() is "foo@bar.baz")
+
+
 class ChooseAccountTest(unittest.TestCase):
-    """Test choose_account."""
+    """Tests for letsencrypt.display.ops.choose_account."""
     def setUp(self):
         zope.component.provideUtility(display_util.FileDisplay(sys.stdout))
 
@@ -153,13 +192,14 @@ class ChooseAccountTest(unittest.TestCase):
             accounts_dir=self.accounts_dir,
             account_keys_dir=self.account_keys_dir,
             server="letsencrypt-demo.org")
-        self.key = le_util.Key("keypath", "pem")
+        self.key = KEY
 
-        self.acc1 = account.Account(self.config, self.key, "email1@g.com")
-        self.acc2 = account.Account(
-            self.config, self.key, "email2@g.com", "phone")
-        self.acc1.save()
-        self.acc2.save()
+        self.acc1 = account.Account(messages.RegistrationResource(
+            uri=None, new_authzr_uri=None, body=messages.Registration.from_data(
+                email="email1@g.com")), self.key)
+        self.acc2 = account.Account(messages.RegistrationResource(
+            uri=None, new_authzr_uri=None, body=messages.Registration.from_data(
+                email="email2@g.com", phone="phone")), self.key)
 
     @classmethod
     def _call(cls, accounts):

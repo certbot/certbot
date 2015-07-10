@@ -39,7 +39,7 @@ acme_install_requires = [
     # rsa_recover_prime_factors (>=0.8)
     'cryptography>=0.8',
     #'letsencrypt'  # TODO: uses testdata vectors
-    'mock',
+    'mock<1.1.0',  # py26
     'pyrfc3339',
     'ndg-httpsclient',  # urllib3 InsecurePlatformWarning (#304)
     'pyasn1',  # urllib3 InsecurePlatformWarning (#304)
@@ -54,7 +54,7 @@ letsencrypt_install_requires = [
     'ConfigArgParse',
     'configobj',
     #'cryptography>=0.7',  # load_pem_x509_certificate, version pin mismatch
-    'mock',
+    'mock<1.1.0',  # py26
     'parsedatetime',
     'psutil>=2.1.0',  # net_connections introduced in 2.1.0
     # https://pyopenssl.readthedocs.org/en/latest/api/crypto.html#OpenSSL.crypto.X509Req.get_extensions
@@ -68,7 +68,7 @@ letsencrypt_install_requires = [
 letsencrypt_apache_install_requires = [
     #'acme',
     #'letsencrypt',
-    'mock',
+    'mock<1.1.0',  # py26
     'python-augeas',
     'zope.component',
     'zope.interface',
@@ -77,7 +77,7 @@ letsencrypt_nginx_install_requires = [
     #'acme',
     #'letsencrypt',
     'pyparsing>=1.5.5',  # Python3 support; perhaps unnecessary?
-    'mock',
+    'mock<1.1.0',  # py26
     'zope.interface',
 ]
 
@@ -86,7 +86,7 @@ install_requires = [
     'cryptography>=0.8',
     'ConfigArgParse',
     'configobj',
-    'mock',
+    'mock<1.1.0',  # py26
     'ndg-httpsclient',  # urllib3 InsecurePlatformWarning (#304)
     'parsedatetime',
     'psutil>=2.1.0',  # net_connections introduced in 2.1.0
