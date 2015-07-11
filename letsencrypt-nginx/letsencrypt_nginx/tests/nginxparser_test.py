@@ -63,7 +63,7 @@ class TestRawNginxParser(unittest.TestCase):
                          '            image/jpeg jpg;\n'
                          '        }\n'
                          '    }\n'
-                         '}')
+                         '}\n')
 
     def test_parse_from_file(self):
         with open(util.get_data_filename('foo.conf')) as handle:
