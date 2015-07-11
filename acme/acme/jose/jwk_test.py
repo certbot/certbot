@@ -4,6 +4,7 @@ import unittest
 from acme import test_util
 
 from acme.jose import errors
+from acme.jose import json_util
 from acme.jose import util
 
 
@@ -29,8 +30,8 @@ class JWKOctTest(unittest.TestCase):
 
     def setUp(self):
         from acme.jose.jwk import JWKOct
-        self.jwk = JWKOct(key='foo')
-        self.jobj = {'kty': 'oct', 'k': 'foo'}
+        self.jwk = JWKOct(key=b'foo')
+        self.jobj = {'kty': 'oct', 'k': json_util.encode_b64jose(b'foo')}
 
     def test_to_partial_json(self):
         self.assertEqual(self.jwk.to_partial_json(), self.jobj)
@@ -45,7 +46,7 @@ class JWKOctTest(unittest.TestCase):
 
     def test_load(self):
         from acme.jose.jwk import JWKOct
-        self.assertEqual(self.jwk, JWKOct.load('foo'))
+        self.assertEqual(self.jwk, JWKOct.load(b'foo'))
 
     def test_public_key(self):
         self.assertTrue(self.jwk.public_key() is self.jwk)
@@ -64,7 +65,8 @@ class JWKRSATest(unittest.TestCase):
             'n': 'm2Fylv-Uz7trgTW8EBHP3FQSMeZs2GNQ6VRo1sIVJEk',
         }
         # pylint: disable=protected-access
-        self.jwk256_not_comparable = JWKRSA(key=RSA256_KEY.public_key()._wrapped)
+        self.jwk256_not_comparable = JWKRSA(
+            key=RSA256_KEY.public_key()._wrapped)
         self.jwk512 = JWKRSA(key=RSA512_KEY.public_key())
         self.jwk512json = {
             'kty': 'RSA',
@@ -90,6 +92,12 @@ class JWKRSATest(unittest.TestCase):
         self.assertTrue(isinstance(
             self.jwk256_not_comparable.key, util.ComparableRSAKey))
         self.assertEqual(self.jwk256, self.jwk256_not_comparable)
+
+    def test_encode_param_zero(self):
+        from acme.jose.jwk import JWKRSA
+        # pylint: disable=protected-access
+        # TODO: move encode/decode _param to separate class
+        self.assertEqual('AA', JWKRSA._encode_param(0))
 
     def test_equals(self):
         self.assertEqual(self.jwk256, self.jwk256)

@@ -2,6 +2,8 @@
 import functools
 import unittest
 
+import six
+
 from acme import test_util
 
 
@@ -168,13 +170,13 @@ class frozendictTest(unittest.TestCase):  # pylint: disable=invalid-name
     def test_init_other_raises_type_error(self):
         from acme.jose.util import frozendict
         # specifically fail for generators...
-        self.assertRaises(TypeError, frozendict, {'a': 'b'}.iteritems())
+        self.assertRaises(TypeError, frozendict, six.iteritems({'a': 'b'}))
 
     def test_len(self):
         self.assertEqual(2, len(self.fdict))
 
     def test_hash(self):
-        self.assertEqual(1278944519403861804, hash(self.fdict))
+        self.assertTrue(isinstance(hash(self.fdict), int))
 
     def test_getattr_proxy(self):
         self.assertEqual(1, self.fdict.x)

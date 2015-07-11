@@ -44,8 +44,10 @@ from acme.jose.json_util import (
     decode_cert,
     decode_csr,
     decode_hex16,
+    encode_b64jose,
     encode_cert,
     encode_csr,
+    encode_hex16,
 )
 
 from acme.jose.jwa import (

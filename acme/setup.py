@@ -14,6 +14,7 @@ install_requires = [
     'PyOpenSSL',
     'pytz',
     'requests',
+    'six',
     'werkzeug',
 ]
 

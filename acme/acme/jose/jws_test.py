@@ -7,8 +7,8 @@ import OpenSSL
 
 from acme import test_util
 
-from acme.jose import b64
 from acme.jose import errors
+from acme.jose import json_util
 from acme.jose import jwa
 from acme.jose import jwk
 
@@ -73,7 +73,7 @@ class HeaderTest(unittest.TestCase):
         self.assertEqual(jobj, {'x5c': [cert_b64, cert_b64]})
         self.assertEqual(header, Header.from_json(jobj))
         jobj['x5c'][0] = base64.b64encode(
-            'xxx' + OpenSSL.crypto.dump_certificate(
+            b'xxx' + OpenSSL.crypto.dump_certificate(
                 OpenSSL.crypto.FILETYPE_ASN1, CERT))
         self.assertRaises(errors.DeserializationError, Header.from_json, jobj)
 
@@ -90,7 +90,7 @@ class SignatureTest(unittest.TestCase):
         from acme.jose.jws import Header
         from acme.jose.jws import Signature
         self.assertEqual(
-            Signature(signature='foo', header=Header(alg=jwa.RS256)),
+            Signature(signature=b'foo', header=Header(alg=jwa.RS256)),
             Signature.from_json(
                 {'signature': 'Zm9v', 'header': {'alg': 'RS256'}}))
 
@@ -109,12 +109,12 @@ class JWSTest(unittest.TestCase):
 
         from acme.jose.jws import JWS
         self.unprotected = JWS.sign(
-            payload='foo', key=self.privkey, alg=jwa.RS256)
+            payload=b'foo', key=self.privkey, alg=jwa.RS256)
         self.protected = JWS.sign(
-            payload='foo', key=self.privkey, alg=jwa.RS256,
+            payload=b'foo', key=self.privkey, alg=jwa.RS256,
             protect=frozenset(['jwk', 'alg']))
         self.mixed = JWS.sign(
-            payload='foo', key=self.privkey, alg=jwa.RS256,
+            payload=b'foo', key=self.privkey, alg=jwa.RS256,
             protect=frozenset(['alg']))
 
     def test_pubkey_jwk(self):
@@ -134,8 +134,8 @@ class JWSTest(unittest.TestCase):
     def test_compact_lost_unprotected(self):
         compact = self.mixed.to_compact()
         self.assertEqual(
-            'eyJhbGciOiAiUlMyNTYifQ.Zm9v.OHdxFVj73l5LpxbFp1AmYX4yJM0Pyb'
-            '_893n1zQjpim_eLS5J1F61lkvrCrCDErTEJnBGOGesJ72M7b6Ve1cAJA',
+            b'eyJhbGciOiAiUlMyNTYifQ.Zm9v.OHdxFVj73l5LpxbFp1AmYX4yJM0Pyb'
+            b'_893n1zQjpim_eLS5J1F61lkvrCrCDErTEJnBGOGesJ72M7b6Ve1cAJA',
             compact)
 
         from acme.jose.jws import JWS
@@ -147,7 +147,7 @@ class JWSTest(unittest.TestCase):
 
     def test_from_compact_missing_components(self):
         from acme.jose.jws import JWS
-        self.assertRaises(errors.DeserializationError, JWS.from_compact, '.')
+        self.assertRaises(errors.DeserializationError, JWS.from_compact, b'.')
 
     def test_json_omitempty(self):
         protected_jobj = self.protected.to_partial_json(flat=True)
@@ -164,10 +164,12 @@ class JWSTest(unittest.TestCase):
 
     def test_json_flat(self):
         jobj_to = {
-            'signature': b64.b64encode(self.mixed.signature.signature),
-            'payload': b64.b64encode('foo'),
+            'signature': json_util.encode_b64jose(
+                self.mixed.signature.signature),
+            'payload': json_util.encode_b64jose(b'foo'),
             'header': self.mixed.signature.header,
-            'protected': b64.b64encode(self.mixed.signature.protected),
+            'protected': json_util.encode_b64jose(
+                self.mixed.signature.protected.encode('utf-8')),
         }
         jobj_from = jobj_to.copy()
         jobj_from['header'] = jobj_from['header'].to_json()
@@ -179,7 +181,7 @@ class JWSTest(unittest.TestCase):
     def test_json_not_flat(self):
         jobj_to = {
             'signatures': (self.mixed.signature,),
-            'payload': b64.b64encode('foo'),
+            'payload': json_util.encode_b64jose(b'foo'),
         }
         jobj_from = jobj_to.copy()
         jobj_from['signatures'] = [jobj_to['signatures'][0].to_json()]
