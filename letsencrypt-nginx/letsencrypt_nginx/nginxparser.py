@@ -3,8 +3,9 @@ import string
 
 from pyparsing import (
     Literal, White, Word, alphanums, CharsNotIn, Forward, Group,
-    Optional, OneOrMore, Regex, ZeroOrMore, pythonStyleComment)
+    Optional, OneOrMore, Regex, ZeroOrMore)
 from pyparsing import stringEnd
+from pyparsing import restOfLine
 
 class RawNginxParser(object):
     # pylint: disable=expression-not-assigned
@@ -24,7 +25,8 @@ class RawNginxParser(object):
     modifier = Literal("=") | Literal("~*") | Literal("~") | Literal("^~")
 
     # rules
-    assignment = (key + Optional(space + value) + semicolon)
+    comment = Literal('#') + restOfLine()
+    assignment = (key + Optional(space + value, default=None) + semicolon)
     location_statement = Optional(space + modifier) + Optional(space + location)
     if_statement = Literal("if") + space + Regex(r"\(.+\)") + space
     block = Forward()
@@ -32,10 +34,10 @@ class RawNginxParser(object):
     block << Group(
         (Group(key + location_statement) ^ Group(if_statement))
         + left_bracket
-        + Group(ZeroOrMore(Group(assignment) | block))
+        + Group(ZeroOrMore(Group(comment | assignment) | block))
         + right_bracket)
 
-    script = (OneOrMore(Group(assignment) | block) + stringEnd).ignore(pythonStyleComment)
+    script = OneOrMore(Group(comment | assignment) | block) + stringEnd
 
     def __init__(self, source):
         self.source = source
@@ -60,26 +62,26 @@ class RawNginxDumper(object):
         """Iterates the dumped nginx content."""
         blocks = blocks or self.blocks
         for key, values in blocks:
-            if current_indent:
-                yield spacer
             indentation = spacer * current_indent
             if isinstance(key, list):
+                if current_indent:
+                    yield ''
                 yield indentation + spacer.join(key) + ' {'
+
                 for parameter in values:
-                    if isinstance(parameter[0], list):
-                        dumped = self.__iter__(
-                            [parameter],
-                            current_indent + self.indentation)
-                        for line in dumped:
-                            yield line
-                    else:
-                        dumped = spacer.join(parameter) + ';'
-                        yield spacer * (
-                            current_indent + self.indentation) + dumped
+                    dumped = self.__iter__([parameter], current_indent + self.indentation)
+                    for line in dumped:
+                        yield line
 
                 yield indentation + '}'
             else:
-                yield spacer * current_indent + key + spacer + values + ';'
+                if key == '#':
+                    yield spacer * current_indent + key + values
+                else:
+                    if values is None:
+                        yield spacer * current_indent + key + ';'
+                    else:
+                        yield spacer * current_indent + key + spacer + values + ';'
 
     def as_string(self):
         """Return the parsed block as a string."""

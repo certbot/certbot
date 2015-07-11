@@ -44,7 +44,7 @@ class TestRawNginxParser(unittest.TestCase):
                 ['server_name', 'foo.com'],
                 ['root', '/home/ubuntu/sites/foo/'],
                 [['location', '/status'], [
-                    ['check_status'],
+                    ['check_status', None],
                     [['types'], [['image/jpeg', 'jpg']]],
                 ]]
             ]]])
@@ -54,9 +54,11 @@ class TestRawNginxParser(unittest.TestCase):
                          'server {\n'
                          '    listen 80;\n'
                          '    server_name foo.com;\n'
-                         '    root /home/ubuntu/sites/foo/;\n \n'
+                         '    root /home/ubuntu/sites/foo/;\n'
+                         '\n'
                          '    location /status {\n'
-                         '        check_status;\n \n'
+                         '        check_status;\n'
+                         '\n'
                          '        types {\n'
                          '            image/jpeg jpg;\n'
                          '        }\n'
@@ -64,7 +66,8 @@ class TestRawNginxParser(unittest.TestCase):
                          '}')
 
     def test_parse_from_file(self):
-        parsed = load(open(util.get_data_filename('foo.conf')))
+        with open(util.get_data_filename('foo.conf')) as handle:
+            parsed = util.filter_comments(load(handle))
         self.assertEqual(
             parsed,
             [['user', 'www-data'],
@@ -87,7 +90,8 @@ class TestRawNginxParser(unittest.TestCase):
         )
 
     def test_parse_from_file2(self):
-        parsed = load(open(util.get_data_filename('edge_cases.conf')))
+        with open(util.get_data_filename('edge_cases.conf')) as handle:
+            parsed = util.filter_comments(load(handle))
         self.assertEqual(
             parsed,
             [[['server'], [['server_name', 'simple']]],
@@ -111,7 +115,8 @@ class TestRawNginxParser(unittest.TestCase):
             self.assertRaises(ParseException, load, handle)
 
     def test_dump_as_file(self):
-        parsed = load(open(util.get_data_filename('nginx.conf')))
+        with open(util.get_data_filename('nginx.conf')) as handle:
+            parsed = util.filter_comments(load(handle))
         parsed[-1][-1].append([['server'],
                                [['listen', '443 ssl'],
                                 ['server_name', 'localhost'],
@@ -123,11 +128,37 @@ class TestRawNginxParser(unittest.TestCase):
                                 [['location', '/'],
                                  [['root', 'html'],
                                   ['index', 'index.html index.htm']]]]])
-        _file = open(util.get_data_filename('nginx.new.conf'), 'w')
-        dump(parsed, _file)
-        _file.close()
-        parsed_new = load(open(util.get_data_filename('nginx.new.conf')))
+
+        with open(util.get_data_filename('nginx.new.conf'), 'w') as handle:
+            dump(parsed, handle)
+        with open(util.get_data_filename('nginx.new.conf')) as handle:
+            parsed_new = util.filter_comments(load(handle))
         self.assertEquals(parsed, parsed_new)
+
+    def test_comments(self):
+        with open(util.get_data_filename('minimalistic_comments.conf')) as handle:
+            parsed = load(handle)
+
+        with open(util.get_data_filename('minimalistic_comments.new.conf'), 'w') as handle:
+            dump(parsed, handle)
+
+        with open(util.get_data_filename('minimalistic_comments.new.conf')) as handle:
+            parsed_new = load(handle)
+
+        self.assertEquals(parsed, parsed_new)
+
+        self.assertEqual(parsed_new, [
+            ['#', " Use bar.conf when it's a full moon!"],
+            ['include', 'foo.conf'],
+            ['#', ' Kilroy was here'],
+            ['check_status', None],
+            [['server'],
+             [['#', ''],
+              ['#', " Don't forget to open up your firewall!"],
+              ['#', ''],
+              ['listen', '1234'],
+              ['#', ' listen 80;']]],
+        ])
 
 
 if __name__ == '__main__':
