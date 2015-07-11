@@ -4,6 +4,8 @@
 build/
 dist/
 /venv/
+/venv3/
+/tox.venv/
 /tox.venv/
 letsencrypt.log
 

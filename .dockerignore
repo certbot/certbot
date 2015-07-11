@@ -6,6 +6,8 @@
 # test docker on their git working directories.
 
 .git
-tox.cover
+tox.venv
+tox.venv3
 venv
+venv3
 docs
