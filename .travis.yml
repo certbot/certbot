@@ -20,7 +20,7 @@ env:
     - TOXENV=cover
 
 install: "travis_retry pip install tox coveralls"
-before_script: '[ "${TOXENV:0:2}" != "py" ] || ./tests/boulder-start.sh'
+before_script: '[ "xxx$BOULDER_INTEGRATION" = "xxx" ] || ./tests/boulder-start.sh'
 script: 'travis_retry tox && ([ "xxx$BOULDER_INTEGRATION" = "xxx" ] || (source .tox/$TOXENV/bin/activate && ./tests/boulder-integration.sh))'
 
 after_success: '[ "$TOXENV" == "cover" ] && coveralls'
