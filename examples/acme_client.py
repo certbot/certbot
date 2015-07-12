@@ -41,7 +41,7 @@ authzr, authzr_response = acme.poll(authzr)
 
 csr = OpenSSL.crypto.load_certificate_request(
     OpenSSL.crypto.FILETYPE_ASN1, pkg_resources.resource_string(
-        'acme.jose', os.path.join('testdata', 'csr.der')))
+        'acme', os.path.join('testdata', 'csr.der')))
 try:
     acme.request_issuance(csr, (authzr,))
 except messages.Error as error:
