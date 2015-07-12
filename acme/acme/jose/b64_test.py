@@ -39,9 +39,6 @@ class B64EncodeTest(unittest.TestCase):
         for text, (b64, _) in six.iteritems(B64_PADDING_EXAMPLES):
             self.assertEqual(self._call(text), b64)
 
-    def test_bytearray_ok(self):
-        self.assertEqual(self._call(bytearray(b'foo')), b'Zm9v')
-
     def test_unicode_fails_with_type_error(self):
         self.assertRaises(TypeError, self._call, u'some unicode')
 

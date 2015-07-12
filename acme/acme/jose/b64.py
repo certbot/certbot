@@ -22,7 +22,7 @@ def b64encode(data):
     """JOSE Base64 encode.
 
     :param data: Data to be encoded.
-    :type data: `bytes` or `bytearray`
+    :type data: `bytes`
 
     :returns: JOSE Base64 string.
     :rtype: bytes
@@ -30,9 +30,8 @@ def b64encode(data):
     :raises TypeError: if `data` is of incorrect type
 
     """
-    if not isinstance(data, (six.binary_type, bytearray)):
-        raise TypeError('argument should be {0} or bytearray'.format(
-            six.binary_type))
+    if not isinstance(data, six.binary_type):
+        raise TypeError('argument should be {0}'.format(six.binary_type))
     return base64.urlsafe_b64encode(data).rstrip(b'=')
 
 
