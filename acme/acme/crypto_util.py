@@ -1,22 +1,105 @@
 """Crypto utilities."""
+import contextlib
+import logging
 import socket
+import sys
 
 import OpenSSL
 
+from acme import errors
 
-def _probe_sni(server_hostname, host, port, timeout=10,
-               method=OpenSSL.SSL.SSLv23_METHOD):
-    sock = socket.create_connection((host, port), source_address=('0', 0))
+
+logger = logging.getLogger(__name__)
+
+
+_DEFAULT_SSL_METHOD = OpenSSL.SSL.SSLv23_METHOD
+
+
+def _serve_sni(certs, sock, reuseaddr=True, method=_DEFAULT_SSL_METHOD,
+               accept=None):
+    """Start SNI-enabled server, that drops connection after handshake.
+
+    :param certs: Mapping from SNI name to ``(key, cert)`` `tuple`.
+    :param sock: Already bound socket.
+    :param bool reuseaddr: Should `socket.SO_REUSEADDR` be set?
+    :param method: See `OpenSSL.SSL.Context` for allowed values.
+    :param accept: Callable that doesn't take any arguments and
+        returns ``True`` if more connections should be served.
+
+    """
+    def _pick_certificate(connection):
+        try:
+            key, cert = certs[connection.get_servername()]
+        except KeyError:
+            return
+        new_context = OpenSSL.SSL.Context(method)
+        new_context.use_privatekey(key)
+        new_context.use_certificate(cert)
+        connection.set_context(new_context)
+
+    if reuseaddr:
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    sock.listen(1)  # TODO: add func arg?
+
+    while accept is None or accept():
+        server, addr = sock.accept()
+        logger.debug('Received connection from %s', addr)
+
+        with contextlib.closing(server):
+            context = OpenSSL.SSL.Context(method)
+            context.set_tlsext_servername_callback(_pick_certificate)
+
+            server_ssl = OpenSSL.SSL.Connection(context, server)
+            server_ssl.set_accept_state()
+            try:
+                server_ssl.do_handshake()
+                server_ssl.shutdown()
+            except OpenSSL.SSL.Error as error:
+                raise errors.Error(error)
+
+
+def _probe_sni(name, host, port=443, timeout=300,
+               method=_DEFAULT_SSL_METHOD, source_address=('0', 0)):
+    """Probe SNI server for SSL certificate.
+
+    :param bytes name: Byte string to send as the server name in the
+        client hello message.
+    :param bytes host: Host to connect to.
+    :param int port: Port to connect to.
+    :param int timeout: Timeout in seconds.
+    :param method: See `OpenSSL.SSL.Context` for allowed values.
+    :param tuple source_address: Enables multi-path probing (selection
+        of source interface). See `socket.creation_connection` for more
+        info. Available only in Python 2.7+.
+
+    :raises acme.errors.Error: In case of any problems.
+
+    :returns: SSL certificate presented by the server.
+    :rtype: OpenSSL.crypto.X509
+
+    """
     context = OpenSSL.SSL.Context(method)
     context.set_timeout(timeout)
-    connection = OpenSSL.SSL.Connection(context, sock)
-    connection.set_tlsext_host_name(server_hostname)  # pyOpenSSL>=0.13
-    connection.set_connect_state()
-    connection.do_handshake()
-    cert = connection.get_peer_certificate()
-    sock.close()
-    # TODO: shutdown()
-    return cert
+
+    socket_kwargs = {} if sys.version < (2, 7) else {
+        'source_address': source_address}
+
+    try:
+        # pylint: disable=star-args
+        sock = socket.create_connection((host, port), **socket_kwargs)
+    except socket.error as error:
+        raise errors.Error(error)
+
+    with contextlib.closing(sock) as client:
+        client_ssl = OpenSSL.SSL.Connection(context, client)
+        client_ssl.set_connect_state()
+        client_ssl.set_tlsext_host_name(name)  # pyOpenSSL>=0.13
+        try:
+            client_ssl.do_handshake()
+            client_ssl.shutdown()
+        except OpenSSL.SSL.Error as error:
+            raise errors.Error(error)
+    return client_ssl.get_peer_certificate()
 
 
 def _pyopenssl_cert_or_req_san(cert_or_req):

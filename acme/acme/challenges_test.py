@@ -189,24 +189,24 @@ class DVSNITest(unittest.TestCase):
         mock_gethostbyname.assert_called_once_with('foo.com')
         mock_probe_sni.assert_called_once_with(
             host='127.0.0.1', port=self.msg.PORT,
-            server_hostname='a82d5ff8ef740d12881f6d3c2277ab2e.acme.invalid')
+            name='a82d5ff8ef740d12881f6d3c2277ab2e.acme.invalid')
 
         self.msg.probe_cert('foo.com', host='8.8.8.8')
         mock_probe_sni.assert_called_with(
-            host='8.8.8.8', port=mock.ANY, server_hostname=mock.ANY)
+            host='8.8.8.8', port=mock.ANY, name=mock.ANY)
 
         self.msg.probe_cert('foo.com', port=1234)
         mock_probe_sni.assert_called_with(
-            host=mock.ANY, port=1234, server_hostname=mock.ANY)
+            host=mock.ANY, port=1234, name=mock.ANY)
 
         self.msg.probe_cert('foo.com', bar='baz')
         mock_probe_sni.assert_called_with(
-            host=mock.ANY, port=mock.ANY, server_hostname=mock.ANY, bar='baz')
+            host=mock.ANY, port=mock.ANY, name=mock.ANY, bar='baz')
 
-        self.msg.probe_cert('foo.com', server_hostname='xxx')
+        self.msg.probe_cert('foo.com', name='xxx')
         mock_probe_sni.assert_called_with(
             host=mock.ANY, port=mock.ANY,
-            server_hostname='a82d5ff8ef740d12881f6d3c2277ab2e.acme.invalid')
+            name='a82d5ff8ef740d12881f6d3c2277ab2e.acme.invalid')
 
 
 class DVSNIResponseTest(unittest.TestCase):

@@ -200,9 +200,9 @@ class DVSNI(DVChallenge):
         host = socket.gethostbyname(domain)
         logging.debug('%s resolved to %s', domain, host)
 
-        kwargs.setdefault("port", self.PORT)
         kwargs.setdefault("host", host)
-        kwargs["server_hostname"] = self.nonce_domain
+        kwargs.setdefault("port", self.PORT)
+        kwargs["name"] = self.nonce_domain
         # TODO: try different methods?
         # pylint: disable=protected-access
         return crypto_util._probe_sni(**kwargs)
