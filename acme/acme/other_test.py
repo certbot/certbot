@@ -13,12 +13,12 @@ class SignatureTest(unittest.TestCase):
     """Tests for acme.sig.Signature."""
 
     def setUp(self):
-        self.msg = 'message'
-        self.sig = ('IC\xd8*\xe7\x14\x9e\x19S\xb7\xcf\xec3\x12\xe2\x8a\x03'
-                    '\x98u\xff\xf0\x94\xe2\xd7<\x8f\xa8\xed\xa4KN\xc3\xaa'
-                    '\xb9X\xc3w\xaa\xc0_\xd0\x05$y>l#\x10<\x96\xd2\xcdr\xa3'
-                    '\x1b\xa1\xf5!f\xef\xc64\xb6\x13')
-        self.nonce = '\xec\xd6\xf2oYH\xeb\x13\xd5#q\xe0\xdd\xa2\x92\xa9'
+        self.msg = b'message'
+        self.sig = (b'IC\xd8*\xe7\x14\x9e\x19S\xb7\xcf\xec3\x12\xe2\x8a\x03'
+                    b'\x98u\xff\xf0\x94\xe2\xd7<\x8f\xa8\xed\xa4KN\xc3\xaa'
+                    b'\xb9X\xc3w\xaa\xc0_\xd0\x05$y>l#\x10<\x96\xd2\xcdr\xa3'
+                    b'\x1b\xa1\xf5!f\xef\xc64\xb6\x13')
+        self.nonce = b'\xec\xd6\xf2oYH\xeb\x13\xd5#q\xe0\xdd\xa2\x92\xa9'
 
         self.alg = jose.RS256
         self.jwk = jose.JWKRSA(key=KEY.public_key())
@@ -54,7 +54,7 @@ class SignatureTest(unittest.TestCase):
         self.assertTrue(self.signature.verify(self.msg))
 
     def test_verify_bad_fails(self):
-        self.assertFalse(self.signature.verify(self.msg + 'x'))
+        self.assertFalse(self.signature.verify(self.msg + b'x'))
 
     @classmethod
     def _from_msg(cls, *args, **kwargs):

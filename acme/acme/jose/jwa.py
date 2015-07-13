@@ -4,6 +4,7 @@ https://tools.ietf.org/html/draft-ietf-jose-json-web-algorithms-40
 
 """
 import abc
+import collections
 import logging
 
 import cryptography.exceptions
@@ -27,7 +28,7 @@ class JWA(interfaces.JSONDeSerializable): # pylint: disable=abstract-method
     """JSON Web Algorithm."""
 
 
-class JWASignature(JWA):
+class JWASignature(JWA, collections.Hashable):
     """JSON Web Signature Algorithm."""
     SIGNATURES = {}
 
@@ -38,6 +39,9 @@ class JWASignature(JWA):
         if not isinstance(other, JWASignature):
             return NotImplemented
         return self.name == other.name
+
+    def __hash__(self):
+        return hash((self.__class__, self.name))
 
     def __ne__(self, other):
         return not self == other

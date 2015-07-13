@@ -240,7 +240,9 @@ ignore-mixin-members=yes
 # List of module names for which member attributes should not be checked
 # (useful for modules/projects where namespaces are manipulated during runtime
 # and thus existing member attributes cannot be deduced by static analysis
-ignored-modules=pkg_resources,confargparse,argparse
+ignored-modules=pkg_resources,confargparse,argparse,six.moves,six.moves.urllib
+# import errors ignored only in 1.4.4
+# https://bitbucket.org/logilab/pylint/commits/cd000904c9e2
 
 # List of classes names for which member attributes should not be checked
 # (useful for classes with attributes dynamically set).

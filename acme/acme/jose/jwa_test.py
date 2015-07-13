@@ -58,12 +58,12 @@ class JWAHSTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
     def test_it(self):
         from acme.jose.jwa import HS256
         sig = (
-            "\xceR\xea\xcd\x94\xab\xcf\xfb\xe0\xacA.:\x1a'\x08i\xe2\xc4"
-            "\r\x85+\x0e\x85\xaeUZ\xd4\xb3\x97zO"
+            b"\xceR\xea\xcd\x94\xab\xcf\xfb\xe0\xacA.:\x1a'\x08i\xe2\xc4"
+            b"\r\x85+\x0e\x85\xaeUZ\xd4\xb3\x97zO"
         )
-        self.assertEqual(HS256.sign('some key', 'foo'), sig)
-        self.assertTrue(HS256.verify('some key', 'foo', sig) is True)
-        self.assertTrue(HS256.verify('some key', 'foo', sig + '!') is False)
+        self.assertEqual(HS256.sign(b'some key', b'foo'), sig)
+        self.assertTrue(HS256.verify(b'some key', b'foo', sig) is True)
+        self.assertTrue(HS256.verify(b'some key', b'foo', sig + b'!') is False)
 
 
 class JWARSTest(unittest.TestCase):
@@ -71,32 +71,33 @@ class JWARSTest(unittest.TestCase):
     def test_sign_no_private_part(self):
         from acme.jose.jwa import RS256
         self.assertRaises(
-            errors.Error, RS256.sign, RSA512_KEY.public_key(), 'foo')
+            errors.Error, RS256.sign, RSA512_KEY.public_key(), b'foo')
 
     def test_sign_key_too_small(self):
         from acme.jose.jwa import RS256
         from acme.jose.jwa import PS256
-        self.assertRaises(errors.Error, RS256.sign, RSA256_KEY, 'foo')
-        self.assertRaises(errors.Error, PS256.sign, RSA256_KEY, 'foo')
+        self.assertRaises(errors.Error, RS256.sign, RSA256_KEY, b'foo')
+        self.assertRaises(errors.Error, PS256.sign, RSA256_KEY, b'foo')
 
     def test_rs(self):
         from acme.jose.jwa import RS256
         sig = (
-            '|\xc6\xb2\xa4\xab(\x87\x99\xfa*:\xea\xf8\xa0N&}\x9f\x0f\xc0O'
-            '\xc6t\xa3\xe6\xfa\xbb"\x15Y\x80Y\xe0\x81\xb8\x88)\xba\x0c\x9c'
-            '\xa4\x99\x1e\x19&\xd8\xc7\x99S\x97\xfc\x85\x0cOV\xe6\x07\x99'
-            '\xd2\xb9.>}\xfd'
+            b'|\xc6\xb2\xa4\xab(\x87\x99\xfa*:\xea\xf8\xa0N&}\x9f\x0f\xc0O'
+            b'\xc6t\xa3\xe6\xfa\xbb"\x15Y\x80Y\xe0\x81\xb8\x88)\xba\x0c\x9c'
+            b'\xa4\x99\x1e\x19&\xd8\xc7\x99S\x97\xfc\x85\x0cOV\xe6\x07\x99'
+            b'\xd2\xb9.>}\xfd'
         )
-        self.assertEqual(RS256.sign(RSA512_KEY, 'foo'), sig)
-        self.assertTrue(RS256.verify(RSA512_KEY.public_key(), 'foo', sig))
+        self.assertEqual(RS256.sign(RSA512_KEY, b'foo'), sig)
+        self.assertTrue(RS256.verify(RSA512_KEY.public_key(), b'foo', sig))
         self.assertFalse(RS256.verify(
-            RSA512_KEY.public_key(), 'foo', sig + '!'))
+            RSA512_KEY.public_key(), b'foo', sig + b'!'))
 
     def test_ps(self):
         from acme.jose.jwa import PS256
-        sig = PS256.sign(RSA1024_KEY, 'foo')
-        self.assertTrue(PS256.verify(RSA1024_KEY.public_key(), 'foo', sig))
-        self.assertFalse(PS256.verify(RSA1024_KEY.public_key(), 'foo', sig + '!'))
+        sig = PS256.sign(RSA1024_KEY, b'foo')
+        self.assertTrue(PS256.verify(RSA1024_KEY.public_key(), b'foo', sig))
+        self.assertFalse(PS256.verify(
+            RSA1024_KEY.public_key(), b'foo', sig + b'!'))
 
 
 if __name__ == '__main__':

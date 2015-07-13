@@ -3,12 +3,15 @@ import abc
 import collections
 import json
 
+import six
+
 from acme.jose import util
 
 # pylint: disable=no-self-argument,no-method-argument,no-init,inherit-non-class
 # pylint: disable=too-few-public-methods
 
 
+@six.add_metaclass(abc.ABCMeta)
 class JSONDeSerializable(object):
     # pylint: disable=too-few-public-methods
     """Interface for (de)serializable JSON objects.
@@ -96,7 +99,6 @@ class JSONDeSerializable(object):
               return Bar()
 
     """
-    __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def to_partial_json(self):  # pragma: no cover
@@ -133,7 +135,7 @@ class JSONDeSerializable(object):
         def _serialize(obj):
             if isinstance(obj, JSONDeSerializable):
                 return _serialize(obj.to_partial_json())
-            if isinstance(obj, basestring):  # strings are sequence
+            if isinstance(obj, six.string_types):  # strings are Sequence
                 return obj
             elif isinstance(obj, list):
                 return [_serialize(subobj) for subobj in obj]
@@ -143,14 +145,14 @@ class JSONDeSerializable(object):
                 return tuple(_serialize(subobj) for subobj in obj)
             elif isinstance(obj, collections.Mapping):
                 return dict((_serialize(key), _serialize(value))
-                            for key, value in obj.iteritems())
+                            for key, value in six.iteritems(obj))
             else:
                 return obj
 
         return _serialize(self)
 
     @util.abstractclassmethod
-    def from_json(cls, unused_jobj):
+    def from_json(cls, jobj):  # pylint: disable=unused-argument
         """Deserialize a decoded JSON document.
 
         :param jobj: Python object, composed of only other basic data
@@ -182,7 +184,11 @@ class JSONDeSerializable(object):
         return json.dumps(self, default=self.json_dump_default, **kwargs)
 
     def json_dumps_pretty(self):
-        """Dump the object to pretty JSON document string."""
+        """Dump the object to pretty JSON document string.
+
+        :rtype: str
+
+        """
         return self.json_dumps(sort_keys=True, indent=4, separators=(',', ': '))
 
     @classmethod
@@ -190,7 +196,7 @@ class JSONDeSerializable(object):
         """Serialize Python object.
 
         This function is meant to be passed as ``default`` to
-        :func:`json.load` or :func:`json.loads`. They call
+        :func:`json.dump` or :func:`json.dumps`. They call
         ``default(python_object)`` only for non-basic Python types, so
         this function necessarily raises :class:`TypeError` if
         ``python_object`` is not an instance of
