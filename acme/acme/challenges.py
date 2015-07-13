@@ -9,6 +9,7 @@ import socket
 import OpenSSL
 import requests
 
+from acme import errors
 from acme import crypto_util
 from acme import interfaces
 from acme import jose
@@ -247,7 +248,23 @@ class DVSNIResponse(ChallengeResponse):
         return self.z(chall) + self.DOMAIN_SUFFIX
 
     def simple_verify(self, chall, domain, key, **kwargs):
-        """Verify DVSNI.
+        """Simple verify.
+
+        Probes DVSNI certificate and checks it using `verify_cert`;
+        hence all arguments documented in `verify_cert`.
+
+        """
+        try:
+            cert = chall.probe_cert(domain=domain, **kwargs)
+        except errors.Error as error:
+            logger.debug(error, exc_info=True)
+            return False
+        # TODO: check "It is a valid self-signed certificate" and
+        # return False if not
+        return self.verify_cert(chall, domain, key, cert)
+
+    def verify_cert(self, chall, domain, key, cert):
+        """Verify DVSNI certificate.
 
         :param .challenges.DVSNI chall: Corresponding challenge.
         :param str domain: Domain name being validated.
@@ -260,10 +277,6 @@ class DVSNIResponse(ChallengeResponse):
         :rtype: bool
 
         """
-        cert = chall.probe_cert(domain=domain, **kwargs)
-        # TODO: check "It is a valid self-signed certificate" and
-        # return False if not
-
         # pylint: disable=protected-access
         sans = crypto_util._pyopenssl_cert_or_req_san(cert)
         logging.debug('Certificate %s. SANs: %s', cert.digest('sha1'), sans)

@@ -6,6 +6,7 @@ import OpenSSL
 import requests
 import urlparse
 
+from acme import errors
 from acme import jose
 from acme import other
 from acme import test_util
@@ -245,12 +246,34 @@ class DVSNIResponseTest(unittest.TestCase):
         from acme.challenges import DVSNIResponse
         hash(DVSNIResponse.from_json(self.jmsg))
 
-    def test_simple_verify(self):  # TODO
+    @mock.patch('acme.challenges.DVSNIResponse.verify_cert')
+    def test_simple_verify(self, mock_verify_cert):
+        chall = mock.Mock()
+        chall.probe_cert.return_value = mock.sentinel.cert
+        mock_verify_cert.return_value = 'x'
+        self.assertEqual('x', self.msg.simple_verify(
+            chall, mock.sentinel.domain, mock.sentinel.key))
+        chall.probe_cert.assert_called_once_with(domain=mock.sentinel.domain)
+        self.msg.verify_cert.assert_called_once_with(
+            chall, mock.sentinel.domain, mock.sentinel.key,
+            mock.sentinel.cert)
+
+    def test_simple_verify_false_on_probe_error(self):
+        chall = mock.Mock()
+        chall.probe_cert.side_effect = errors.Error
+        self.assertFalse(self.msg.simple_verify(
+            chall=chall, domain=None, key=None))
+
+    def test_verify_cert_postive(self):
+        pass  # XXX
+
+    def test_verify_cert_negative(self):
         chall = mock.MagicMock()
-        chall.probe_cert.return_value = OpenSSL.crypto.load_certificate(
-            OpenSSL.crypto.FILETYPE_PEM, test_util.load_vector('cert.pem'))
-        self.assertFalse(self.msg.simple_verify(chall, "example.com", key=None))
-        # TODO: key not None
+        self.assertFalse(self.msg.verify_cert(
+            chall, domain="example.com", key=None,
+            cert=OpenSSL.crypto.load_certificate(
+                OpenSSL.crypto.FILETYPE_PEM,
+                test_util.load_vector('cert.pem'))))
 
 
 class RecoveryContactTest(unittest.TestCase):
