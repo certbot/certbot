@@ -1,7 +1,6 @@
 """Test letsencrypt.revoker."""
 import csv
 import os
-import pkg_resources
 import shutil
 import tempfile
 import unittest
@@ -13,10 +12,11 @@ from letsencrypt import errors
 from letsencrypt import le_util
 from letsencrypt.display import util as display_util
 
+from letsencrypt.tests import test_util
+
 
 KEY = OpenSSL.crypto.load_privatekey(
-    OpenSSL.crypto.FILETYPE_PEM, pkg_resources.resource_string(
-        __name__, os.path.join("testdata", "rsa512_key.pem")))
+    OpenSSL.crypto.FILETYPE_PEM, test_util.load_vector("rsa512_key.pem"))
 
 
 class RevokerBase(unittest.TestCase):  # pylint: disable=too-few-public-methods
@@ -98,8 +98,7 @@ class RevokerTest(RevokerBase):
     def test_revoke_by_wrong_key(self, mock_display, mock_acme):
         mock_display().confirm_revocation.return_value = True
 
-        key_path = pkg_resources.resource_filename(
-            "acme.jose", os.path.join("testdata", "rsa256_key.pem"))
+        key_path = test_util.vector_path("rsa256_key.pem")
 
         wrong_key = le_util.Key(key_path, open(key_path).read())
         self.revoker.revoke_from_key(wrong_key)
@@ -395,21 +394,13 @@ class CertTest(unittest.TestCase):
 
 def create_revoker_certs():
     """Create a few revoker.Cert objects."""
+    cert0_path = test_util.vector_path("cert.pem")
+    cert1_path = test_util.vector_path("cert-san.pem")
+    key_path = test_util.vector_path("rsa512_key.pem")
+
     from letsencrypt.revoker import Cert
-
-    base_package = "letsencrypt.tests"
-
-    cert0_path = pkg_resources.resource_filename(
-        base_package, os.path.join("testdata", "cert.pem"))
-
-    cert1_path = pkg_resources.resource_filename(
-        base_package, os.path.join("testdata", "cert-san.pem"))
-
     cert0 = Cert(cert0_path)
     cert1 = Cert(cert1_path)
-
-    key_path = pkg_resources.resource_filename(
-        base_package, os.path.join("testdata", "rsa512_key.pem"))
 
     return [cert0_path, cert1_path], [cert0, cert1], key_path
 

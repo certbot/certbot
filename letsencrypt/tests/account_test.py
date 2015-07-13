@@ -1,7 +1,6 @@
 """Tests for letsencrypt.account."""
 import datetime
 import os
-import pkg_resources
 import shutil
 import stat
 import tempfile
@@ -15,9 +14,10 @@ from acme import messages
 
 from letsencrypt import errors
 
+from letsencrypt.tests import test_util
 
-KEY = jose.JWKRSA.load(pkg_resources.resource_string(
-    __name__, os.path.join("testdata", "rsa512_key.pem")))
+
+KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key_2.pem"))
 
 
 class AccountTest(unittest.TestCase):
@@ -61,7 +61,7 @@ class ReportNewAccountTest(unittest.TestCase):
     """Tests for letsencrypt.account.report_new_account."""
 
     def setUp(self):
-        self.config = mock.MagicMock(config_dir='/etc/letsencrypt')
+        self.config = mock.MagicMock(config_dir="/etc/letsencrypt")
         reg = messages.Registration.from_data(email="rhino@jungle.io")
         reg = reg.update(recovery_token="ECCENTRIC INVISIBILITY RHINOCEROS")
         self.acc = mock.MagicMock(regr=messages.RegistrationResource(

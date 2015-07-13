@@ -1,4 +1,5 @@
 """Tests for letsencrypt.plugins.common."""
+import os
 import pkg_resources
 import unittest
 
@@ -111,9 +112,9 @@ class DvsniTest(unittest.TestCase):
     """Tests for letsencrypt.plugins.common.DvsniTest."""
 
     rsa256_file = pkg_resources.resource_filename(
-        "acme.jose", "testdata/rsa256_key.pem")
+        "letsencrypt.tests", os.path.join("testdata", "rsa256_key.pem"))
     rsa256_pem = pkg_resources.resource_string(
-        "acme.jose", "testdata/rsa256_key.pem")
+        "letsencrypt.tests", os.path.join("testdata", "rsa256_key.pem"))
 
     auth_key = le_util.Key(rsa256_file, rsa256_pem)
     achalls = [

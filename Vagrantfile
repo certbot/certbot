@@ -10,7 +10,7 @@ cd /vagrant
 sudo ./bootstrap/ubuntu.sh
 if [ ! -d "venv" ]; then
   virtualenv --no-site-packages -p python2 venv
-  ./venv/bin/pip install -r requirements.txt -e .[dev,docs,testing]
+  ./venv/bin/pip install -r requirements.txt -e acme -e .[dev,docs,testing] -e letsencrypt-apache -e letsencrypt-nginx
 fi
 SETUP_SCRIPT
 

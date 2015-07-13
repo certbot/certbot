@@ -105,10 +105,13 @@ Centos 7
 Installation
 ============
 
+.. "pip install acme" doesn't search for "acme" in cwd, just like "pip
+   install -e acme" does
+
 .. code-block:: shell
 
    virtualenv --no-site-packages -p python2 venv
-   ./venv/bin/pip install -r requirements.txt .
+   ./venv/bin/pip install -r requirements.txt acme/ . letsencrypt-apache/ letsencrypt-nginx/
 
 .. warning:: Please do **not** use ``python setup.py install``. Please
              do **not** attempt the installation commands as

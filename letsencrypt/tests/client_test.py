@@ -1,7 +1,5 @@
 """Tests for letsencrypt.client."""
-import os
 import unittest
-import pkg_resources
 
 import configobj
 import OpenSSL
@@ -14,11 +12,11 @@ from letsencrypt import configuration
 from letsencrypt import errors
 from letsencrypt import le_util
 
+from letsencrypt.tests import test_util
 
-KEY = pkg_resources.resource_string(
-    __name__, os.path.join("testdata", "rsa512_key.pem"))
-CSR_SAN = pkg_resources.resource_string(
-    __name__, os.path.join("testdata", "csr-san.der"))
+
+KEY = test_util.load_vector("rsa512_key.pem")
+CSR_SAN = test_util.load_vector("csr-san.der")
 
 
 class RegisterTest(unittest.TestCase):

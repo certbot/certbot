@@ -12,15 +12,16 @@ env:
   global:
     - GOPATH=/tmp/go
   matrix:
-    - TOXENV=py26
-    - TOXENV=py27
+    - TOXENV=py26 BOULDER_INTEGRATION=1
+    - TOXENV=py27 BOULDER_INTEGRATION=1
+    - TOXENV=py33
+    - TOXENV=py34
     - TOXENV=lint
     - TOXENV=cover
 
 install: "travis_retry pip install tox coveralls"
-before_script: '[ "${TOXENV:0:2}" != "py" ] || ./tests/boulder-start.sh'
-# TODO: eliminate substring slice bashism
-script: 'travis_retry tox && ([ "${TOXENV:0:2}" != "py" ] || (source .tox/$TOXENV/bin/activate && ./tests/boulder-integration.sh))'
+before_script: '[ "xxx$BOULDER_INTEGRATION" = "xxx" ] || ./tests/boulder-start.sh'
+script: 'travis_retry tox && ([ "xxx$BOULDER_INTEGRATION" = "xxx" ] || (source .tox/$TOXENV/bin/activate && ./tests/boulder-integration.sh))'
 
 after_success: '[ "$TOXENV" == "cover" ] && coveralls'
 
