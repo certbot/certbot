@@ -7,8 +7,6 @@ from acme import challenges
 from acme import crypto_util as acme_crypto_util
 from acme import jose
 
-from letsencrypt import crypto_util
-
 from letsencrypt.tests import acme_util
 from letsencrypt.tests import test_util
 

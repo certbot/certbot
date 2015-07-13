@@ -4,7 +4,7 @@ import logging
 import socket
 import sys
 
-from six.moves import range  # pylint: disable=import-error
+from six.moves import range  # pylint: disable=import-error,redefined-builtin
 
 import OpenSSL
 
