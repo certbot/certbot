@@ -12,6 +12,9 @@ from letsencrypt import errors
 logger = logging.getLogger(__name__)
 
 
+arg_var_interpreter = re.compile(r"\$\{[^ \}]*}")
+
+
 class ApacheParser(object):
     """Class handles the fine details of parsing the Apache Configuration.
 
@@ -71,7 +74,9 @@ class ApacheParser(object):
     def _init_runtime_variables(self, ctl):
         """"
 
-        ..todo:: Also use apache2ctl -V for compiled parameters
+        .. note:: Compile time variables (apache2ctl -V) are not used within the
+            dynamic configuration files.  These should not be parsed or
+            interpreted.
 
         """
         stdout = self._get_runtime_cfg(ctl)
@@ -275,6 +280,21 @@ class ApacheParser(object):
                 ordered_matches.extend(self.aug.match(match + arg_suffix))
 
         return ordered_matches
+
+    def get_arg(self, match):
+        """Uses augeas.get to get argument value and interprets result.
+
+        This also converts all variables and parameters appropriately.
+
+        """
+        value = self.aug.get(match)
+        variables = arg_var_interpreter.findall(value)
+
+        for var in variables:
+            # Strip off ${ and }
+            value = value.replace(var, self.variables[var[2:-1]])
+
+        return value
 
     def _exclude_dirs(self, matches):
         """Exclude directives that are not loaded into the configuration."""

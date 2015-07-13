@@ -64,7 +64,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     This class can adequately configure most typical configurations but
     is not ready to handle very complex configurations.
 
-    .. todo:: Add support for config file variables Define rootDir /var/www/
+    .. todo:: Always use self.parser.aug_get rather than self.aug.get
+    .. todo:: Verify permissions on configuration root... it is easier than
+        checking permissions on each of the relative directories and less error
+        prone.
+
 
     The API of this class will change in the coming weeks as the exact
     needs of clients are clarified with the new and developing protocol.
@@ -929,18 +933,48 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :param str mod_name: Name of the module to enable. (e.g. 'ssl')
 
         """
-        try:
-            # Use check_output so the command will finish before reloading
-            # TODO: a2enmod is debian specific...
-            subprocess.check_call([self.conf("enmod"), mod_name],
-                                  stdout=open("/dev/null", "w"),
-                                  stderr=open("/dev/null", "w"))
-        except (OSError, subprocess.CalledProcessError):
-            logger.exception("Error enabling mod_%s", mod_name)
+        # Support Debian specific setup
+        if (not os.path.isdir(os.path.join(self.parser.root, "mods-available"))
+                or not os.path.isdir(
+                    os.path.join(self.parser.root, "mods-enabled"))):
             raise errors.MisconfigurationError(
-                "Missing enable_mod binary or lack privileges")
+                "Unsupported directory layout. You may try to enable mod %s "
+                "and try again." % mod_name)
+
+        self._enable_mod_debian(mod_name)
+
         self.parser.modules.add(mod_name + "_module")
         self.parser.modules.add("mod_" + mod_name)
+
+    def _enable_mod_debian(self, mod_name):
+        """Assumes mods-available, mods-enabled layout."""
+
+        # TODO: This can be further updated to not require all files.
+        if mod_name == "ssl":
+            self._enable_mod_debian_files(["ssl.conf", "ssl.load"])
+        elif mod_name == "rewrite":
+            self._enable_mod_debian_files(["rewrite.load"])
+        else:
+            raise NotImplemented
+
+    def _enable_mod_debian_files(self, filenames):
+        """Move over all required files into mods-enabled."""
+        mods_available = os.path.join(self.parser.root, "mods-available")
+        mods_enabled = os.path.join(self.parser.root, "mods-enabled")
+
+        # Check to see all files are available.
+        for filename in filenames:
+            if not os.path.isfile(os.path.join(mods_available, filename)):
+                raise errors.MisconfigurationError(
+            "Unable to enable module. Required files missing from "
+            "mods-available. %s" % str(filenames))
+
+        # Register and symlink files
+        for filename in files:
+            enabled_path = os.path.join(mods_enabled, filename)
+            self.reverter.register_file_creation(False, enabled_path)
+            os.symlink(os.path.join(mods_available, filename), enabled_path)
+
 
     def mod_loaded(self, module):
         """Checks to see if mod_ssl is loaded
@@ -948,7 +982,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         Uses ``apache_ctl`` to get loaded module list. This also effectively
         serves as a config_test.
 
-        :returns: If ssl_module is included and active in Apache
+        :returns: If module is loaded.
         :rtype: bool
 
         """
