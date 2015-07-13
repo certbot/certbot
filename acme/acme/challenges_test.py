@@ -4,7 +4,8 @@ import unittest
 import mock
 import OpenSSL
 import requests
-import urlparse
+
+from six.moves.urllib import parse as urllib_parse  # pylint: disable=import-error
 
 from acme import errors
 from acme import jose
@@ -137,7 +138,7 @@ class SimpleHTTPResponseTest(unittest.TestCase):
     @mock.patch("acme.challenges.requests.get")
     def test_simple_verify_port(self, mock_get):
         self.resp_http.simple_verify(self.chall, "local", 4430)
-        self.assertEqual("local:4430", urlparse.urlparse(
+        self.assertEqual("local:4430", urllib_parse.urlparse(
             mock_get.mock_calls[0][1][0]).netloc)
 
 
@@ -146,9 +147,9 @@ class DVSNITest(unittest.TestCase):
     def setUp(self):
         from acme.challenges import DVSNI
         self.msg = DVSNI(
-            r="O*\xb4-\xad\xec\x95>\xed\xa9\r0\x94\xe8\x97\x9c&6"
-              "\xbf'\xb3\xed\x9a9nX\x0f'\\m\xe7\x12",
-            nonce='\xa8-_\xf8\xeft\r\x12\x88\x1fm<"w\xab.')
+            r=b"O*\xb4-\xad\xec\x95>\xed\xa9\r0\x94\xe8\x97\x9c&6"
+              b"\xbf'\xb3\xed\x9a9nX\x0f'\\m\xe7\x12",
+            nonce=b'\xa8-_\xf8\xeft\r\x12\x88\x1fm<"w\xab.')
         self.jmsg = {
             'type': 'dvsni',
             'r': 'Tyq0La3slT7tqQ0wlOiXnCY2vyez7Zo5blgPJ1xt5xI',
@@ -156,7 +157,7 @@ class DVSNITest(unittest.TestCase):
         }
 
     def test_nonce_domain(self):
-        self.assertEqual('a82d5ff8ef740d12881f6d3c2277ab2e.acme.invalid',
+        self.assertEqual(b'a82d5ff8ef740d12881f6d3c2277ab2e.acme.invalid',
                          self.msg.nonce_domain)
 
     def test_to_partial_json(self):
@@ -215,8 +216,8 @@ class DVSNIResponseTest(unittest.TestCase):
     def setUp(self):
         from acme.challenges import DVSNIResponse
         self.msg = DVSNIResponse(
-            s='\xf5\xd6\xe3\xb2]\xe0L\x0bN\x9cKJ\x14I\xa1K\xa3#\xf9\xa8'
-              '\xcd\x8c7\x0e\x99\x19)\xdc\xb7\xf3\x9bw')
+            s=b'\xf5\xd6\xe3\xb2]\xe0L\x0bN\x9cKJ\x14I\xa1K\xa3#\xf9\xa8'
+              b'\xcd\x8c7\x0e\x99\x19)\xdc\xb7\xf3\x9bw')
         self.jmsg = {
             'type': 'dvsni',
             's': '9dbjsl3gTAtOnEtKFEmhS6Mj-ajNjDcOmRkp3Lfzm3c',
@@ -225,15 +226,14 @@ class DVSNIResponseTest(unittest.TestCase):
     def test_z_and_domain(self):
         from acme.challenges import DVSNI
         challenge = DVSNI(
-            r="O*\xb4-\xad\xec\x95>\xed\xa9\r0\x94\xe8\x97\x9c&6"
-              "\xbf'\xb3\xed\x9a9nX\x0f'\\m\xe7\x12",
-            nonce=long('439736375371401115242521957580409149254868992063'
-                       '44333654741504362774620418661L'))
+            r=b"O*\xb4-\xad\xec\x95>\xed\xa9\r0\x94\xe8\x97\x9c&6"
+              b"\xbf'\xb3\xed\x9a9nX\x0f'\\m\xe7\x12",
+            nonce=int('439736375371401115242521957580409149254868992063'
+                      '44333654741504362774620418661'))
         # pylint: disable=invalid-name
-        z = '38e612b0397cc2624a07d351d7ef50e46134c0213d9ed52f7d7c611acaeed41b'
+        z = b'38e612b0397cc2624a07d351d7ef50e46134c0213d9ed52f7d7c611acaeed41b'
         self.assertEqual(z, self.msg.z(challenge))
-        self.assertEqual(
-            '{0}.acme.invalid'.format(z), self.msg.z_domain(challenge))
+        self.assertEqual(z + b'.acme.invalid', self.msg.z_domain(challenge))
 
     def test_to_partial_json(self):
         self.assertEqual(self.jmsg, self.msg.to_partial_json())
@@ -419,7 +419,7 @@ class ProofOfPossessionHintsTest(unittest.TestCase):
         self.jmsg_to = {
             'jwk': jwk,
             'certFingerprints': cert_fingerprints,
-            'certs': (jose.b64encode(OpenSSL.crypto.dump_certificate(
+            'certs': (jose.encode_b64jose(OpenSSL.crypto.dump_certificate(
                 OpenSSL.crypto.FILETYPE_ASN1, CERT)),),
             'subjectKeyIdentifiers': subject_key_identifiers,
             'serialNumbers': serial_numbers,
@@ -470,7 +470,7 @@ class ProofOfPossessionTest(unittest.TestCase):
             issuers=(), authorized_for=())
         self.msg = ProofOfPossession(
             alg=jose.RS256, hints=hints,
-            nonce='xD\xf9\xb9\xdbU\xed\xaa\x17\xf1y|\x81\x88\x99 ')
+            nonce=b'xD\xf9\xb9\xdbU\xed\xaa\x17\xf1y|\x81\x88\x99 ')
 
         self.jmsg_to = {
             'type': 'proofOfPossession',
@@ -506,16 +506,16 @@ class ProofOfPossessionResponseTest(unittest.TestCase):
         # mistake here...
         signature = other.Signature(
             alg=jose.RS256, jwk=jose.JWKRSA(key=KEY.public_key()),
-            sig='\xa7\xc1\xe7\xe82o\xbc\xcd\xd0\x1e\x010#Z|\xaf\x15\x83'
-                '\x94\x8f#\x9b\nQo(\x80\x15,\x08\xfcz\x1d\xfd\xfd.\xaap'
-                '\xfa\x06\xd1\xa2f\x8d8X2>%d\xbd%\xe1T\xdd\xaa0\x18\xde'
-                '\x99\x08\xf0\x0e{',
-            nonce='\x99\xc7Q\xb3f2\xbc\xdci\xfe\xd6\x98k\xc67\xdf',
+            sig=b'\xa7\xc1\xe7\xe82o\xbc\xcd\xd0\x1e\x010#Z|\xaf\x15\x83'
+                b'\x94\x8f#\x9b\nQo(\x80\x15,\x08\xfcz\x1d\xfd\xfd.\xaap'
+                b'\xfa\x06\xd1\xa2f\x8d8X2>%d\xbd%\xe1T\xdd\xaa0\x18\xde'
+                b'\x99\x08\xf0\x0e{',
+            nonce=b'\x99\xc7Q\xb3f2\xbc\xdci\xfe\xd6\x98k\xc67\xdf',
         )
 
         from acme.challenges import ProofOfPossessionResponse
         self.msg = ProofOfPossessionResponse(
-            nonce='xD\xf9\xb9\xdbU\xed\xaa\x17\xf1y|\x81\x88\x99 ',
+            nonce=b'xD\xf9\xb9\xdbU\xed\xaa\x17\xf1y|\x81\x88\x99 ',
             signature=signature)
 
         self.jmsg_to = {

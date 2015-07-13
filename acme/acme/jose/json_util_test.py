@@ -3,6 +3,7 @@ import itertools
 import unittest
 
 import mock
+import six
 
 from acme import test_util
 
@@ -92,8 +93,8 @@ class JSONObjectWithFieldsMetaTest(unittest.TestCase):
         self.field2 = Field('Baz2')
         # pylint: disable=invalid-name,missing-docstring,too-few-public-methods
         # pylint: disable=blacklisted-name
+        @six.add_metaclass(JSONObjectWithFieldsMeta)
         class A(object):
-            __metaclass__ = JSONObjectWithFieldsMeta
             __slots__ = ('bar',)
             baz = self.field
         class B(A):
@@ -207,62 +208,82 @@ class JSONObjectWithFieldsTest(unittest.TestCase):
 class DeEncodersTest(unittest.TestCase):
     def setUp(self):
         self.b64_cert = (
-            'MIIB3jCCAYigAwIBAgICBTkwDQYJKoZIhvcNAQELBQAwdzELMAkGA1UEBhM'
-            'CVVMxETAPBgNVBAgMCE1pY2hpZ2FuMRIwEAYDVQQHDAlBbm4gQXJib3IxKz'
-            'ApBgNVBAoMIlVuaXZlcnNpdHkgb2YgTWljaGlnYW4gYW5kIHRoZSBFRkYxF'
-            'DASBgNVBAMMC2V4YW1wbGUuY29tMB4XDTE0MTIxMTIyMzQ0NVoXDTE0MTIx'
-            'ODIyMzQ0NVowdzELMAkGA1UEBhMCVVMxETAPBgNVBAgMCE1pY2hpZ2FuMRI'
-            'wEAYDVQQHDAlBbm4gQXJib3IxKzApBgNVBAoMIlVuaXZlcnNpdHkgb2YgTW'
-            'ljaGlnYW4gYW5kIHRoZSBFRkYxFDASBgNVBAMMC2V4YW1wbGUuY29tMFwwD'
-            'QYJKoZIhvcNAQEBBQADSwAwSAJBAKx1c7RR7R_drnBSQ_zfx1vQLHUbFLh1'
-            'AQQQ5R8DZUXd36efNK79vukFhN9HFoHZiUvOjm0c-pVE6K-EdE_twuUCAwE'
-            'AATANBgkqhkiG9w0BAQsFAANBAC24z0IdwIVKSlntksllvr6zJepBH5fMnd'
-            'fk3XJp10jT6VE-14KNtjh02a56GoraAvJAT5_H67E8GvJ_ocNnB_o'
+            u'MIIB3jCCAYigAwIBAgICBTkwDQYJKoZIhvcNAQELBQAwdzELMAkGA1UEBhM'
+            u'CVVMxETAPBgNVBAgMCE1pY2hpZ2FuMRIwEAYDVQQHDAlBbm4gQXJib3IxKz'
+            u'ApBgNVBAoMIlVuaXZlcnNpdHkgb2YgTWljaGlnYW4gYW5kIHRoZSBFRkYxF'
+            u'DASBgNVBAMMC2V4YW1wbGUuY29tMB4XDTE0MTIxMTIyMzQ0NVoXDTE0MTIx'
+            u'ODIyMzQ0NVowdzELMAkGA1UEBhMCVVMxETAPBgNVBAgMCE1pY2hpZ2FuMRI'
+            u'wEAYDVQQHDAlBbm4gQXJib3IxKzApBgNVBAoMIlVuaXZlcnNpdHkgb2YgTW'
+            u'ljaGlnYW4gYW5kIHRoZSBFRkYxFDASBgNVBAMMC2V4YW1wbGUuY29tMFwwD'
+            u'QYJKoZIhvcNAQEBBQADSwAwSAJBAKx1c7RR7R_drnBSQ_zfx1vQLHUbFLh1'
+            u'AQQQ5R8DZUXd36efNK79vukFhN9HFoHZiUvOjm0c-pVE6K-EdE_twuUCAwE'
+            u'AATANBgkqhkiG9w0BAQsFAANBAC24z0IdwIVKSlntksllvr6zJepBH5fMnd'
+            u'fk3XJp10jT6VE-14KNtjh02a56GoraAvJAT5_H67E8GvJ_ocNnB_o'
         )
         self.b64_csr = (
-            'MIIBXTCCAQcCAQAweTELMAkGA1UEBhMCVVMxETAPBgNVBAgMCE1pY2hpZ2F'
-            'uMRIwEAYDVQQHDAlBbm4gQXJib3IxDDAKBgNVBAoMA0VGRjEfMB0GA1UECw'
-            'wWVW5pdmVyc2l0eSBvZiBNaWNoaWdhbjEUMBIGA1UEAwwLZXhhbXBsZS5jb'
-            '20wXDANBgkqhkiG9w0BAQEFAANLADBIAkEArHVztFHtH92ucFJD_N_HW9As'
-            'dRsUuHUBBBDlHwNlRd3fp580rv2-6QWE30cWgdmJS86ObRz6lUTor4R0T-3'
-            'C5QIDAQABoCkwJwYJKoZIhvcNAQkOMRowGDAWBgNVHREEDzANggtleGFtcG'
-            'xlLmNvbTANBgkqhkiG9w0BAQsFAANBAHJH_O6BtC9aGzEVCMGOZ7z9iIRHW'
-            'Szr9x_bOzn7hLwsbXPAgO1QxEwL-X-4g20Gn9XBE1N9W6HCIEut2d8wACg'
+            u'MIIBXTCCAQcCAQAweTELMAkGA1UEBhMCVVMxETAPBgNVBAgMCE1pY2hpZ2F'
+            u'uMRIwEAYDVQQHDAlBbm4gQXJib3IxDDAKBgNVBAoMA0VGRjEfMB0GA1UECw'
+            u'wWVW5pdmVyc2l0eSBvZiBNaWNoaWdhbjEUMBIGA1UEAwwLZXhhbXBsZS5jb'
+            u'20wXDANBgkqhkiG9w0BAQEFAANLADBIAkEArHVztFHtH92ucFJD_N_HW9As'
+            u'dRsUuHUBBBDlHwNlRd3fp580rv2-6QWE30cWgdmJS86ObRz6lUTor4R0T-3'
+            u'C5QIDAQABoCkwJwYJKoZIhvcNAQkOMRowGDAWBgNVHREEDzANggtleGFtcG'
+            u'xlLmNvbTANBgkqhkiG9w0BAQsFAANBAHJH_O6BtC9aGzEVCMGOZ7z9iIRHW'
+            u'Szr9x_bOzn7hLwsbXPAgO1QxEwL-X-4g20Gn9XBE1N9W6HCIEut2d8wACg'
         )
 
-    def test_decode_b64_jose_padding_error(self):
-        from acme.jose.json_util import decode_b64jose
-        self.assertRaises(errors.DeserializationError, decode_b64jose, 'x')
+    def test_encode_b64jose(self):
+        from acme.jose.json_util import encode_b64jose
+        encoded = encode_b64jose(b'x')
+        self.assertTrue(isinstance(encoded, six.string_types))
+        self.assertEqual(u'eA', encoded)
 
-    def test_decode_b64_jose_size(self):
+    def test_decode_b64jose(self):
         from acme.jose.json_util import decode_b64jose
-        self.assertEqual('foo', decode_b64jose('Zm9v', size=3))
-        self.assertRaises(
-            errors.DeserializationError, decode_b64jose, 'Zm9v', size=2)
-        self.assertRaises(
-            errors.DeserializationError, decode_b64jose, 'Zm9v', size=4)
+        decoded = decode_b64jose(u'eA')
+        self.assertTrue(isinstance(decoded, six.binary_type))
+        self.assertEqual(b'x', decoded)
 
-    def test_decode_b64_jose_minimum_size(self):
+    def test_decode_b64jose_padding_error(self):
         from acme.jose.json_util import decode_b64jose
-        self.assertEqual('foo', decode_b64jose('Zm9v', size=3, minimum=True))
-        self.assertEqual('foo', decode_b64jose('Zm9v', size=2, minimum=True))
+        self.assertRaises(errors.DeserializationError, decode_b64jose, u'x')
+
+    def test_decode_b64jose_size(self):
+        from acme.jose.json_util import decode_b64jose
+        self.assertEqual(b'foo', decode_b64jose(u'Zm9v', size=3))
+        self.assertRaises(
+            errors.DeserializationError, decode_b64jose, u'Zm9v', size=2)
+        self.assertRaises(
+            errors.DeserializationError, decode_b64jose, u'Zm9v', size=4)
+
+    def test_decode_b64jose_minimum_size(self):
+        from acme.jose.json_util import decode_b64jose
+        self.assertEqual(b'foo', decode_b64jose(u'Zm9v', size=3, minimum=True))
+        self.assertEqual(b'foo', decode_b64jose(u'Zm9v', size=2, minimum=True))
         self.assertRaises(errors.DeserializationError, decode_b64jose,
-                          'Zm9v', size=4, minimum=True)
+                          u'Zm9v', size=4, minimum=True)
+
+    def test_encode_hex16(self):
+        from acme.jose.json_util import encode_hex16
+        encoded = encode_hex16(b'foo')
+        self.assertEqual(u'666f6f', encoded)
+        self.assertTrue(isinstance(encoded, six.string_types))
 
     def test_decode_hex16(self):
         from acme.jose.json_util import decode_hex16
-        self.assertEqual('foo', decode_hex16('666f6f'))
+        decoded = decode_hex16(u'666f6f')
+        self.assertEqual(b'foo', decoded)
+        self.assertTrue(isinstance(decoded, six.binary_type))
 
     def test_decode_hex16_minimum_size(self):
         from acme.jose.json_util import decode_hex16
-        self.assertEqual('foo', decode_hex16('666f6f', size=3, minimum=True))
-        self.assertEqual('foo', decode_hex16('666f6f', size=2, minimum=True))
+        self.assertEqual(b'foo', decode_hex16(u'666f6f', size=3, minimum=True))
+        self.assertEqual(b'foo', decode_hex16(u'666f6f', size=2, minimum=True))
         self.assertRaises(errors.DeserializationError, decode_hex16,
-                          '666f6f', size=4, minimum=True)
+                          u'666f6f', size=4, minimum=True)
 
     def test_decode_hex16_odd_length(self):
         from acme.jose.json_util import decode_hex16
-        self.assertRaises(errors.DeserializationError, decode_hex16, 'x')
+        self.assertRaises(errors.DeserializationError, decode_hex16, u'x')
 
     def test_encode_cert(self):
         from acme.jose.json_util import encode_cert
@@ -273,7 +294,7 @@ class DeEncodersTest(unittest.TestCase):
         cert = decode_cert(self.b64_cert)
         self.assertTrue(isinstance(cert, util.ComparableX509))
         self.assertEqual(cert, CERT)
-        self.assertRaises(errors.DeserializationError, decode_cert, '')
+        self.assertRaises(errors.DeserializationError, decode_cert, u'')
 
     def test_encode_csr(self):
         from acme.jose.json_util import encode_csr
@@ -284,7 +305,7 @@ class DeEncodersTest(unittest.TestCase):
         csr = decode_csr(self.b64_csr)
         self.assertTrue(isinstance(csr, util.ComparableX509))
         self.assertEqual(csr, CSR)
-        self.assertRaises(errors.DeserializationError, decode_csr, '')
+        self.assertRaises(errors.DeserializationError, decode_csr, u'')
 
 
 class TypedJSONObjectWithFieldsTest(unittest.TestCase):

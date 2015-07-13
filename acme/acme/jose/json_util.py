@@ -11,6 +11,7 @@ import binascii
 import logging
 
 import OpenSSL
+import six
 
 from acme.jose import b64
 from acme.jose import errors
@@ -109,7 +110,7 @@ class Field(object):
         elif isinstance(value, dict):
             return util.frozendict(
                 dict((cls.default_decoder(key), cls.default_decoder(value))
-                     for key, value in value.iteritems()))
+                     for key, value in six.iteritems(value)))
         else:  # integer or string
             return value
 
@@ -167,17 +168,20 @@ class JSONObjectWithFieldsMeta(abc.ABCMeta):
         for base in bases:
             fields.update(getattr(base, '_fields', {}))
         # Do not reorder, this class might override fields from base classes!
-        for key, value in dikt.items():  # not iterkeys() (in-place edit!)
+        for key, value in tuple(six.iteritems(dikt)):
+            # not six.iterkeys() (in-place edit!)
             if isinstance(value, Field):
                 fields[key] = dikt.pop(key)
 
         dikt['_orig_slots'] = dikt.get('__slots__', ())
-        dikt['__slots__'] = tuple(list(dikt['_orig_slots']) + fields.keys())
+        dikt['__slots__'] = tuple(
+            list(dikt['_orig_slots']) + list(six.iterkeys(fields)))
         dikt['_fields'] = fields
 
         return abc.ABCMeta.__new__(mcs, name, bases, dikt)
 
 
+@six.add_metaclass(JSONObjectWithFieldsMeta)
 class JSONObjectWithFields(util.ImmutableMap, interfaces.JSONDeSerializable):
     # pylint: disable=too-few-public-methods
     """JSON object with fields.
@@ -205,13 +209,12 @@ class JSONObjectWithFields(util.ImmutableMap, interfaces.JSONDeSerializable):
       assert Foo(bar='baz').bar == 'baz'
 
     """
-    __metaclass__ = JSONObjectWithFieldsMeta
 
     @classmethod
     def _defaults(cls):
         """Get default fields values."""
         return dict([(slot, field.default) for slot, field
-                     in cls._fields.iteritems() if field.omitempty])
+                     in six.iteritems(cls._fields) if field.omitempty])
 
     def __init__(self, **kwargs):
         # pylint: disable=star-args
@@ -222,7 +225,7 @@ class JSONObjectWithFields(util.ImmutableMap, interfaces.JSONDeSerializable):
         """Serialize fields to JSON."""
         jobj = {}
         omitted = set()
-        for slot, field in self._fields.iteritems():
+        for slot, field in six.iteritems(self._fields):
             value = getattr(self, slot)
 
             if field.omit(value):
@@ -246,7 +249,7 @@ class JSONObjectWithFields(util.ImmutableMap, interfaces.JSONDeSerializable):
     @classmethod
     def _check_required(cls, jobj):
         missing = set()
-        for _, field in cls._fields.iteritems():
+        for _, field in six.iteritems(cls._fields):
             if not field.omitempty and field.json_name not in jobj:
                 missing.add(field.json_name)
 
@@ -260,7 +263,7 @@ class JSONObjectWithFields(util.ImmutableMap, interfaces.JSONDeSerializable):
         """Deserialize fields from JSON."""
         cls._check_required(jobj)
         fields = {}
-        for slot, field in cls._fields.iteritems():
+        for slot, field in six.iteritems(cls._fields):
             if field.json_name not in jobj and field.omitempty:
                 fields[slot] = field.default
             else:
@@ -278,17 +281,31 @@ class JSONObjectWithFields(util.ImmutableMap, interfaces.JSONDeSerializable):
         return cls(**cls.fields_from_json(jobj))
 
 
+def encode_b64jose(data):
+    """Encode JOSE Base-64 field.
+
+    :param bytes data:
+    :rtype: `unicode`
+
+    """
+    # b64encode produces ASCII characters only
+    return b64.b64encode(data).decode('ascii')
+
 def decode_b64jose(data, size=None, minimum=False):
     """Decode JOSE Base-64 field.
 
+    :param unicode data:
     :param int size: Required length (after decoding).
     :param bool minimum: If ``True``, then `size` will be treated as
         minimum required length, as opposed to exact equality.
 
+    :rtype: bytes
+
     """
+    error_cls = TypeError if six.PY2 else binascii.Error
     try:
-        decoded = b64.b64decode(data)
-    except TypeError as error:
+        decoded = b64.b64decode(data.encode())
+    except error_cls as error:
         raise errors.DeserializationError(error)
 
     if size is not None and ((not minimum and len(decoded) != size)
@@ -297,35 +314,53 @@ def decode_b64jose(data, size=None, minimum=False):
 
     return decoded
 
+def encode_hex16(value):
+    """Hexlify.
+
+    :param bytes value:
+    :rtype: unicode
+
+    """
+    return binascii.hexlify(value).decode()
 
 def decode_hex16(value, size=None, minimum=False):
     """Decode hexlified field.
 
+    :param unicode value:
     :param int size: Required length (after decoding).
     :param bool minimum: If ``True``, then `size` will be treated as
         minimum required length, as opposed to exact equality.
 
+    :rtype: bytes
+
     """
+    value = value.encode()
     if size is not None and ((not minimum and len(value) != size * 2)
                              or (minimum and len(value) < size * 2)):
         raise errors.DeserializationError()
+    error_cls = TypeError if six.PY2 else binascii.Error
     try:
         return binascii.unhexlify(value)
-    except TypeError as error:
+    except error_cls as error:
         raise errors.DeserializationError(error)
 
 def encode_cert(cert):
     """Encode certificate as JOSE Base-64 DER.
 
-    :param cert: Certificate.
-    :type cert: :class:`acme.jose.util.ComparableX509`
+    :type cert: `OpenSSL.crypto.X509` wrapped in `.ComparableX509`
+    :rtype: unicode
 
     """
-    return b64.b64encode(OpenSSL.crypto.dump_certificate(
+    return encode_b64jose(OpenSSL.crypto.dump_certificate(
         OpenSSL.crypto.FILETYPE_ASN1, cert))
 
 def decode_cert(b64der):
-    """Decode JOSE Base-64 DER-encoded certificate."""
+    """Decode JOSE Base-64 DER-encoded certificate.
+
+    :param unicode b64der:
+    :rtype: `OpenSSL.crypto.X509` wrapped in `.ComparableX509`
+
+    """
     try:
         return util.ComparableX509(OpenSSL.crypto.load_certificate(
             OpenSSL.crypto.FILETYPE_ASN1, decode_b64jose(b64der)))
@@ -333,12 +368,22 @@ def decode_cert(b64der):
         raise errors.DeserializationError(error)
 
 def encode_csr(csr):
-    """Encode CSR as JOSE Base-64 DER."""
-    return b64.b64encode(OpenSSL.crypto.dump_certificate_request(
+    """Encode CSR as JOSE Base-64 DER.
+
+    :type csr: `OpenSSL.crypto.X509Req` wrapped in `.ComparableX509`
+    :rtype: unicode
+
+    """
+    return encode_b64jose(OpenSSL.crypto.dump_certificate_request(
         OpenSSL.crypto.FILETYPE_ASN1, csr))
 
 def decode_csr(b64der):
-    """Decode JOSE Base-64 DER-encoded CSR."""
+    """Decode JOSE Base-64 DER-encoded CSR.
+
+    :param unicode b64der:
+    :rtype: `OpenSSL.crypto.X509Req` wrapped in `.ComparableX509`
+
+    """
     try:
         return util.ComparableX509(OpenSSL.crypto.load_certificate_request(
             OpenSSL.crypto.FILETYPE_ASN1, decode_b64jose(b64der)))
@@ -372,7 +417,7 @@ class TypedJSONObjectWithFields(JSONObjectWithFields):
     @classmethod
     def get_type_cls(cls, jobj):
         """Get the registered class for ``jobj``."""
-        if cls in cls.TYPES.itervalues():
+        if cls in six.itervalues(cls.TYPES):
             assert jobj[cls.type_field_name]
             # cls is already registered type_cls, force to use it
             # so that, e.g Revocation.from_json(jobj) fails if

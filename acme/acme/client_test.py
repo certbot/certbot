@@ -1,8 +1,9 @@
 """Tests for acme.client."""
 import datetime
-import httplib
 import json
 import unittest
+
+from six.moves import http_client  # pylint: disable=import-error
 
 import mock
 import requests
@@ -27,7 +28,7 @@ class ClientTest(unittest.TestCase):
 
     def setUp(self):
         self.response = mock.MagicMock(
-            ok=True, status_code=httplib.OK, headers={}, links={})
+            ok=True, status_code=http_client.OK, headers={}, links={})
         self.net = mock.MagicMock()
         self.net.post.return_value = self.response
         self.net.get.return_value = self.response
@@ -73,7 +74,7 @@ class ClientTest(unittest.TestCase):
     def test_register(self):
         # "Instance of 'Field' has no to_json/update member" bug:
         # pylint: disable=no-member
-        self.response.status_code = httplib.CREATED
+        self.response.status_code = http_client.CREATED
         self.response.json.return_value = self.regr.body.to_json()
         self.response.headers['Location'] = self.regr.uri
         self.response.links.update({
@@ -91,7 +92,7 @@ class ClientTest(unittest.TestCase):
             errors.UnexpectedUpdate, self.client.register, self.regr.body)
 
     def test_register_missing_next(self):
-        self.response.status_code = httplib.CREATED
+        self.response.status_code = http_client.CREATED
         self.assertRaises(
             errors.ClientError, self.client.register, self.regr.body)
 
@@ -115,7 +116,7 @@ class ClientTest(unittest.TestCase):
         self.assertEqual(self.regr.terms_of_service, regr.body.agreement)
 
     def test_request_challenges(self):
-        self.response.status_code = httplib.CREATED
+        self.response.status_code = http_client.CREATED
         self.response.headers['Location'] = self.authzr.uri
         self.response.json.return_value = self.authz.to_json()
         self.response.links = {
@@ -133,7 +134,7 @@ class ClientTest(unittest.TestCase):
             self.identifier, self.authzr.uri)
 
     def test_request_challenges_missing_next(self):
-        self.response.status_code = httplib.CREATED
+        self.response.status_code = http_client.CREATED
         self.assertRaises(
             errors.ClientError, self.client.request_challenges,
             self.identifier, self.regr)
@@ -345,7 +346,7 @@ class ClientTest(unittest.TestCase):
             self.client.new_reg_uri), mock.ANY)
 
     def test_revoke_bad_status_raises_error(self):
-        self.response.status_code = httplib.METHOD_NOT_ALLOWED
+        self.response.status_code = http_client.METHOD_NOT_ALLOWED
         self.assertRaises(errors.ClientError, self.client.revoke, self.certr)
 
 
@@ -360,7 +361,7 @@ class ClientNetworkTest(unittest.TestCase):
         self.net = ClientNetwork(
             key=KEY, alg=jose.RS256, verify_ssl=self.verify_ssl)
 
-        self.response = mock.MagicMock(ok=True, status_code=httplib.OK)
+        self.response = mock.MagicMock(ok=True, status_code=http_client.OK)
         self.response.headers = {}
         self.response.links = {}
 
@@ -380,12 +381,11 @@ class ClientNetworkTest(unittest.TestCase):
                 pass  # pragma: no cover
         # pylint: disable=protected-access
         jws_dump = self.net._wrap_in_jws(
-            MockClientRequestableResource('foo'), nonce='Tg')
+            MockClientRequestableResource('foo'), nonce=b'Tg')
         jws = acme_jws.JWS.json_loads(jws_dump)
-        self.assertEqual(json.loads(jws.payload),
+        self.assertEqual(json.loads(jws.payload.decode()),
                          {'foo': 'foo', 'resource': 'mock'})
-        self.assertEqual(jws.signature.combined.nonce, 'Tg')
-        # TODO: check that nonce is in protected header
+        self.assertEqual(jws.signature.combined.nonce, b'Tg')
 
     def test_check_response_not_ok_jobj_no_error(self):
         self.response.ok = False
@@ -473,7 +473,7 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         from acme.client import ClientNetwork
         self.net = ClientNetwork(key=None, alg=None)
 
-        self.response = mock.MagicMock(ok=True, status_code=httplib.OK)
+        self.response = mock.MagicMock(ok=True, status_code=http_client.OK)
         self.response.headers = {}
         self.response.links = {}
         self.checked_response = mock.MagicMock()
@@ -481,13 +481,14 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         self.wrapped_obj = mock.MagicMock()
         self.content_type = mock.sentinel.content_type
 
-        self.all_nonces = [jose.b64encode('Nonce'), jose.b64encode('Nonce2')]
+        self.all_nonces = [jose.b64encode(b'Nonce'), jose.b64encode(b'Nonce2')]
         self.available_nonces = self.all_nonces[:]
         def send_request(*args, **kwargs):
             # pylint: disable=unused-argument,missing-docstring
             if self.available_nonces:
                 self.response.headers = {
-                    self.net.REPLAY_NONCE_HEADER: self.available_nonces.pop()}
+                    self.net.REPLAY_NONCE_HEADER:
+                    self.available_nonces.pop().decode()}
             else:
                 self.response.headers = {}
             return self.response
@@ -519,21 +520,21 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         self.assertEqual(self.checked_response, self.net.post(
             'uri', self.obj, content_type=self.content_type))
         self.net._wrap_in_jws.assert_called_once_with(
-            self.obj, self.all_nonces.pop())
+            self.obj, jose.b64decode(self.all_nonces.pop()))
 
         assert not self.available_nonces
         self.assertRaises(errors.MissingNonce, self.net.post,
                           'uri', self.obj, content_type=self.content_type)
         self.net._wrap_in_jws.assert_called_with(
-            self.obj, self.all_nonces.pop())
+            self.obj, jose.b64decode(self.all_nonces.pop()))
 
     def test_post_wrong_initial_nonce(self):  # HEAD
-        self.available_nonces = ['f', jose.b64encode('good')]
+        self.available_nonces = [b'f', jose.b64encode(b'good')]
         self.assertRaises(errors.BadNonce, self.net.post, 'uri',
                           self.obj, content_type=self.content_type)
 
     def test_post_wrong_post_response_nonce(self):
-        self.available_nonces = [jose.b64encode('good'), 'f']
+        self.available_nonces = [jose.b64encode(b'good'), b'f']
         self.assertRaises(errors.BadNonce, self.net.post, 'uri',
                           self.obj, content_type=self.content_type)
 
