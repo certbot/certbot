@@ -1,13 +1,15 @@
 """ACME client API."""
 import datetime
 import heapq
-import httplib
 import json
 import logging
 import time
 
+from six.moves import http_client  # pylint: disable=import-error
+
 import OpenSSL
 import requests
+import six
 import werkzeug
 
 from acme import errors
@@ -19,7 +21,8 @@ from acme import messages
 logger = logging.getLogger(__name__)
 
 # https://urllib3.readthedocs.org/en/latest/security.html#insecureplatformwarning
-requests.packages.urllib3.contrib.pyopenssl.inject_into_urllib3()
+if six.PY2:
+    requests.packages.urllib3.contrib.pyopenssl.inject_into_urllib3()
 
 
 class Client(object):  # pylint: disable=too-many-instance-attributes
@@ -80,7 +83,8 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         new_reg = messages.Registration() if new_reg is None else new_reg
 
         response = self.net.post(self.new_reg_uri, new_reg)
-        assert response.status_code == httplib.CREATED  # TODO: handle errors
+        # TODO: handle errors
+        assert response.status_code == http_client.CREATED
 
         # "Instance of 'Field' has no key/contact member" bug:
         # pylint: disable=no-member
@@ -162,7 +166,8 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         """
         new_authz = messages.Authorization(identifier=identifier)
         response = self.net.post(new_authzr_uri, new_authz)
-        assert response.status_code == httplib.CREATED  # TODO: handle errors
+        # TODO: handle errors
+        assert response.status_code == http_client.CREATED
         return self._authzr_from_response(response, identifier)
 
     def request_domain_challenges(self, domain, new_authz_uri):
@@ -424,7 +429,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         """
         response = self.net.post(messages.Revocation.url(self.new_reg_uri),
                                  messages.Revocation(certificate=cert))
-        if response.status_code != httplib.OK:
+        if response.status_code != http_client.OK:
             raise errors.ClientError(
                 'Successful revocation must return HTTP OK status')
 
@@ -447,12 +452,13 @@ class ClientNetwork(object):
         .. todo:: Implement ``acmePath``.
 
         :param .ClientRequestableResource obj:
+        :param bytes nonce:
         :rtype: `.JWS`
 
         """
         jobj = obj.to_json()
         jobj['resource'] = obj.resource_type
-        dumps = json.dumps(jobj)
+        dumps = json.dumps(jobj).encode()
         logger.debug('Serialized JSON: %s', dumps)
         return jws.JWS.sign(
             payload=dumps, key=self.key, alg=self.alg, nonce=nonce).json_dumps()
@@ -555,12 +561,12 @@ class ClientNetwork(object):
     def _add_nonce(self, response):
         if self.REPLAY_NONCE_HEADER in response.headers:
             nonce = response.headers[self.REPLAY_NONCE_HEADER]
-            error = jws.Header.validate_nonce(nonce)
-            if error is None:
-                logger.debug('Storing nonce: %r', nonce)
-                self._nonces.add(nonce)
-            else:
+            try:
+                decoded_nonce = jws.Header._fields['nonce'].decode(nonce)
+            except jose.DeserializationError as error:
                 raise errors.BadNonce(nonce, error)
+            logger.debug('Storing nonce: %r', decoded_nonce)
+            self._nonces.add(decoded_nonce)
         else:
             raise errors.MissingNonce(response)
 

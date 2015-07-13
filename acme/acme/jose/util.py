@@ -3,6 +3,7 @@ import collections
 
 from cryptography.hazmat.primitives.asymmetric import rsa
 import OpenSSL
+import six
 
 
 class abstractclassmethod(classmethod):
@@ -156,7 +157,8 @@ class ImmutableMap(collections.Mapping, collections.Hashable):
 
     def __repr__(self):
         return '{0}({1})'.format(self.__class__.__name__, ', '.join(
-            '{0}={1!r}'.format(key, value) for key, value in self.iteritems()))
+            '{0}={1!r}'.format(key, value)
+            for key, value in six.iteritems(self)))
 
 
 class frozendict(collections.Mapping, collections.Hashable):
@@ -174,7 +176,7 @@ class frozendict(collections.Mapping, collections.Hashable):
         # TODO: support generators/iterators
 
         object.__setattr__(self, '_items', items)
-        object.__setattr__(self, '_keys', tuple(sorted(items.iterkeys())))
+        object.__setattr__(self, '_keys', tuple(sorted(six.iterkeys(items))))
 
     def __getitem__(self, key):
         return self._items[key]
@@ -185,8 +187,11 @@ class frozendict(collections.Mapping, collections.Hashable):
     def __len__(self):
         return len(self._items)
 
+    def _sorted_items(self):
+        return tuple((key, self[key]) for key in self._keys)
+
     def __hash__(self):
-        return hash(tuple((key, value) for key, value in self.items()))
+        return hash(self._sorted_items())
 
     def __getattr__(self, name):
         try:
@@ -198,5 +203,5 @@ class frozendict(collections.Mapping, collections.Hashable):
         raise AttributeError("can't set attribute")
 
     def __repr__(self):
-        return 'frozendict({0})'.format(', '.join(
-            '{0}={1!r}'.format(key, value) for key, value in self.iteritems()))
+        return 'frozendict({0})'.format(', '.join('{0}={1!r}'.format(
+            key, value) for key, value in self._sorted_items()))

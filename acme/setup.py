@@ -14,16 +14,27 @@ install_requires = [
     'PyOpenSSL',
     'pytz',
     'requests',
+    'six',
     'werkzeug',
 ]
+
+testing_extras = [
+    'nose',
+    'tox',
+]
+
 
 setup(
     name='acme',
     packages=find_packages(),
     install_requires=install_requires,
+    extras_require={
+        'testing': testing_extras,
+    },
     entry_points={
         'console_scripts': [
             'jws = acme.jose.jws:CLI.run',
         ],
     },
+    test_suite='acme',
 )

@@ -9,7 +9,8 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric import rsa
 
-from acme.jose import b64
+import six
+
 from acme.jose import errors
 from acme.jose import json_util
 from acme.jose import util
@@ -87,7 +88,7 @@ class JWK(json_util.TypedJSONObjectWithFields):
                 key, cls.cryptography_key_types):
             raise errors.Error("Unable to deserialize {0} into {1}".format(
                 key.__class__, cls.__class__))
-        for jwk_cls in cls.TYPES.itervalues():
+        for jwk_cls in six.itervalues(cls.TYPES):
             if isinstance(key, jwk_cls.cryptography_key_types):
                 return jwk_cls(key=key)
         raise errors.Error("Unsupported algorithm: {0}".format(key.__class__))
@@ -127,11 +128,11 @@ class JWKOct(JWK):
         # algorithm intended to be used with the key, unless the
         # application uses another means or convention to determine
         # the algorithm used.
-        return {'k': self.key}
+        return {'k': json_util.encode_b64jose(self.key)}
 
     @classmethod
     def fields_from_json(cls, jobj):
-        return cls(key=jobj['k'])
+        return cls(key=json_util.decode_b64jose(jobj['k']))
 
     def public_key(self):
         return self
@@ -158,18 +159,25 @@ class JWKRSA(JWK):
 
     @classmethod
     def _encode_param(cls, data):
+        """Encode Base64urlUInt.
+
+        :type data: long
+        :rtype: unicode
+
+        """
         def _leading_zeros(arg):
             if len(arg) % 2:
                 return '0' + arg
             return arg
 
-        return b64.b64encode(binascii.unhexlify(
+        return json_util.encode_b64jose(binascii.unhexlify(
             _leading_zeros(hex(data)[2:].rstrip('L'))))
 
     @classmethod
     def _decode_param(cls, data):
+        """Decode Base64urlUInt."""
         try:
-            return long(binascii.hexlify(json_util.decode_b64jose(data)), 16)
+            return int(binascii.hexlify(json_util.decode_b64jose(data)), 16)
         except ValueError:  # invalid literal for long() with base 16
             raise errors.DeserializationError()
 
@@ -198,17 +206,20 @@ class JWKRSA(JWK):
                     raise errors.Error(
                         "Some private parameters are missing: {0}".format(
                             all_params))
-                p, q, dp, dq, qi = tuple(cls._decode_param(x) for x in all_params)
+                p, q, dp, dq, qi = tuple(
+                    cls._decode_param(x) for x in all_params)
 
                 # TODO: check for oth
             else:
-                p, q = rsa.rsa_recover_prime_factors(n, e, d)  # cryptography>=0.8
+                # cryptography>=0.8
+                p, q = rsa.rsa_recover_prime_factors(n, e, d)
                 dp = rsa.rsa_crt_dmp1(d, p)
                 dq = rsa.rsa_crt_dmq1(d, q)
                 qi = rsa.rsa_crt_iqmp(p, q)
 
             key = rsa.RSAPrivateNumbers(
-                p, q, d, dp, dq, qi, public_numbers).private_key(default_backend())
+                p, q, d, dp, dq, qi, public_numbers).private_key(
+                    default_backend())
 
         return cls(key=key)
 
@@ -234,4 +245,4 @@ class JWKRSA(JWK):
                 'qi': private.iqmp,
             }
         return dict((key, self._encode_param(value))
-                    for key, value in params.iteritems())
+                    for key, value in six.iteritems(params))

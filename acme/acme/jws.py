@@ -1,5 +1,4 @@
 """ACME JOSE JWS."""
-from acme import errors
 from acme import jose
 
 
@@ -9,29 +8,15 @@ class Header(jose.Header):
     .. todo:: Implement ``acmePath``.
 
     """
-    nonce = jose.Field('nonce', omitempty=True)
-
-    @classmethod
-    def validate_nonce(cls, nonce):
-        """Validate nonce.
-
-        :returns: ``None`` if ``nonce`` is valid, decoding errors otherwise.
-
-        """
-        try:
-            jose.b64decode(nonce)
-        except (ValueError, TypeError) as error:
-            return error
-        else:
-            return None
+    nonce = jose.Field('nonce', omitempty=True, encoder=jose.encode_b64jose)
 
     @nonce.decoder
     def nonce(value):  # pylint: disable=missing-docstring,no-self-argument
-        error = Header.validate_nonce(value)
-        if error is not None:
+        try:
+            return jose.decode_b64jose(value)
+        except jose.DeserializationError as error:
             # TODO: custom error
-            raise errors.Error("Invalid nonce: {0}".format(error))
-        return value
+            raise jose.DeserializationError("Invalid nonce: {0}".format(error))
 
 
 class Signature(jose.Signature):
