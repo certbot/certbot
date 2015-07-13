@@ -191,7 +191,7 @@ class DVSNITest(unittest.TestCase):
         mock_gethostbyname.assert_called_once_with('foo.com')
         mock_probe_sni.assert_called_once_with(
             host='127.0.0.1', port=self.msg.PORT,
-            name='a82d5ff8ef740d12881f6d3c2277ab2e.acme.invalid')
+            name=b'a82d5ff8ef740d12881f6d3c2277ab2e.acme.invalid')
 
         self.msg.probe_cert('foo.com', host='8.8.8.8')
         mock_probe_sni.assert_called_with(
@@ -205,10 +205,10 @@ class DVSNITest(unittest.TestCase):
         mock_probe_sni.assert_called_with(
             host=mock.ANY, port=mock.ANY, name=mock.ANY, bar='baz')
 
-        self.msg.probe_cert('foo.com', name='xxx')
+        self.msg.probe_cert('foo.com', name=b'xxx')
         mock_probe_sni.assert_called_with(
             host=mock.ANY, port=mock.ANY,
-            name='a82d5ff8ef740d12881f6d3c2277ab2e.acme.invalid')
+            name=b'a82d5ff8ef740d12881f6d3c2277ab2e.acme.invalid')
 
 
 class DVSNIResponseTest(unittest.TestCase):

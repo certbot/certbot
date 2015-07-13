@@ -21,7 +21,7 @@ class ServeProbeSNITest(unittest.TestCase):
             OpenSSL.crypto.FILETYPE_PEM,
             test_util.load_vector('rsa512_key.pem'))
         # pylint: disable=protected-access
-        certs = {'foo': (key, self.cert._wrapped)}
+        certs = {b'foo': (key, self.cert._wrapped)}
 
         sock = socket.socket()
         sock.bind(('', 0))  # pick random port
@@ -50,15 +50,15 @@ class ServeProbeSNITest(unittest.TestCase):
             name, host='127.0.0.1', port=self.port))
 
     def test_probe_ok(self):
-        self.assertEqual(self.cert, self._probe('foo'))
+        self.assertEqual(self.cert, self._probe(b'foo'))
 
     def test_probe_not_recognized_name(self):
-        self.assertRaises(errors.Error, self._probe, 'bar')
+        self.assertRaises(errors.Error, self._probe, b'bar')
 
     def test_probe_connection_error(self):
-        self._probe('foo')
+        self._probe(b'foo')
         time.sleep(1)  # TODO: avoid race conditions in other way
-        self.assertRaises(errors.Error, self._probe, 'bar')
+        self.assertRaises(errors.Error, self._probe, b'bar')
 
 
 class PyOpenSSLCertOrReqSANTest(unittest.TestCase):

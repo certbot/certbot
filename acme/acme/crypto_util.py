@@ -4,6 +4,8 @@ import logging
 import socket
 import sys
 
+from six.moves import range  # pylint: disable=import-error
+
 import OpenSSL
 
 from acme import errors
@@ -81,7 +83,7 @@ def _probe_sni(name, host, port=443, timeout=300,
     context = OpenSSL.SSL.Context(method)
     context.set_timeout(timeout)
 
-    socket_kwargs = {} if sys.version < (2, 7) else {
+    socket_kwargs = {} if sys.version_info < (2, 7) else {
         'source_address': source_address}
 
     try:
@@ -121,13 +123,13 @@ def _pyopenssl_cert_or_req_san(cert_or_req):
     # OpenSSL.crypto.X509Error._subjectAltNameString
     parts_separator = ", "
     part_separator = ":"
-    extension_short_name = "subjectAltName"
+    extension_short_name = b"subjectAltName"
 
     if hasattr(cert_or_req, 'get_extensions'):  # X509Req
         extensions = cert_or_req.get_extensions()
     else:  # X509
         extensions = [cert_or_req.get_extension(i)
-                      for i in xrange(cert_or_req.get_extension_count())]
+                      for i in range(cert_or_req.get_extension_count())]
 
     # pylint: disable=protected-access,no-member
     label = OpenSSL.crypto.X509Extension._prefixes[OpenSSL.crypto._lib.GEN_DNS]

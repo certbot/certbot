@@ -299,7 +299,7 @@ class DVSNIResponse(ChallengeResponse):
                 key_filetype, cert.get_pubkey())
 
         return (keys_match and domain in sans and
-                self.z_domain(chall) in sans)
+                self.z_domain(chall).decode() in sans)
 
 
 @Challenge.register
