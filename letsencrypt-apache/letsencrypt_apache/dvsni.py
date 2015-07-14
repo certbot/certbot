@@ -84,7 +84,8 @@ class ApacheDvsni(common.Dvsni):
         self._mod_config(addresses)
 
         # Prepare the server for HTTPS
-        self.configurator._prepare_https_server()
+        # TODO: Base on addresses
+        self.configurator._prepare_https_server(443)
 
         # Save reversible changes
         self.configurator.save("SNI Challenge", True)

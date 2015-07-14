@@ -231,29 +231,19 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         # Allows for domain names to be associated with a virtual host
-        # Client isn't using create_dn_server_assoc(self, dn, vh) yet
         if target_name in self.assoc:
             return self.assoc[target_name]
-        # Check for servernames/aliases for ssl hosts
-        for vhost in self.vhosts:
-            if vhost.ssl and target_name in vhost.names:
-                self.assoc[target_name] = vhost
-                return vhost
-        # Checking for domain name in vhost address
-        # This technique is not recommended by Apache but is technically valid
-        target_addr = common.Addr((target_name, "443"))
-        for vhost in self.vhosts:
-            if target_addr in vhost.addrs:
-                self.assoc[target_name] = vhost
-                return vhost
 
-        # Check for non ssl vhosts with servernames/aliases == "name"
-        for vhost in self.vhosts:
-            if not vhost.ssl and target_name in vhost.names:
-                vhost = self.make_vhost_ssl(vhost)
-                self.assoc[target_name] = vhost
-                return vhost
+        # Make a new association
+        vhost = self._find_best_vhost(target_name)
+        if vhost is not None:
+            if not vhost.ssl:
+                vhost = self.make_vhost_ssl(non_ssl_vhost)
 
+            self.assoc[target_name] = vhost
+            return vhost
+
+        # Select a vhost from a list
         vhost = display_ops.select_vhost(target_name, self.vhosts)
         if vhost is not None:
             self.assoc[target_name] = vhost
@@ -268,10 +258,35 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         return vhost
 
-        # # No matches, search for the default
-        # for vhost in self.vhosts:
-        #     if "_default_:443" in vhost.addrs:
-        #         return vhost
+    def _find_best_vhost(self, target_name):
+        """Finds the best vhost for a target_name.
+
+        :returns: VHost or None
+
+        """
+        # Points 4 - Servername SSL
+        # Points 3 - Address name with SSL
+        # Points 2 - Servername no SSL
+        # Points 1 - Address name with no SSL
+        best_candidate = None
+        best_points = 0
+
+        for vhost in self.vhosts:
+            if target_name in vhost.names:
+                points = 2
+            elif any(addr.get_addr() == target_name for addr in vhost.addrs):
+                points = 1
+            else:
+                continue
+
+            if vhost.ssl:
+                points += 2
+
+            if points > best_points:
+                best_points = points
+                best_candidate = vhost
+
+        return best_candidate
 
     def create_dn_server_assoc(self, domain, vhost):
         """Create an association between a domain name and virtual host.
@@ -414,25 +429,29 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.save_notes += "Setting %s to be NameBasedVirtualHost\n" % addr
         self.save_notes += "\tDirective added to %s\n" % path
 
-    def _prepare_server_https(self):
+    def _prepare_server_https(self, port):
         """Prepare the server for HTTPS.
 
         Make sure that the ssl_module is loaded and that the server
-        is appropriately listening on port 443.
+        is appropriately listening on port.
+
+        :param int port: Port to listen on
 
         """
         if "ssl_module" not in self.parser.modules:
             logger.info("Loading mod_ssl into Apache Server")
             self.enable_mod("ssl")
 
-        # Check for Listen 443
+        # Check for Listen <port>
         # Note: This could be made to also look for ip:443 combo
-        if not self.parser.find_dir(parser.case_i("Listen"), "443"):
-            logger.debug("No Listen 443 directive found. Setting the "
-                         "Apache Server to Listen on port 443")
+        if not self.parser.find_dir(parser.case_i("Listen"), str(port)):
+            logger.debug("No Listen {0} directive found. Setting the "
+                         "Apache Server to Listen on port {0}".format(port))
             path = self.parser.add_dir_to_ifmodssl(
-                parser.get_aug_path(self.parser.loc["listen"]), "Listen", "443")
-            self.save_notes += "Added Listen 443 directive to %s\n" % path
+                parser.get_aug_path(
+                    self.parser.loc["listen"]), "Listen", str(port))
+            self.save_notes += "Added Listen %d directive to %s\n" % (
+                port, path)
 
     def make_server_sni_ready(self, vhost, default_addr="*:443"):
         """Checks to see if the server is ready for SNI challenges.
@@ -443,6 +462,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :param str default_addr: TODO - investigate function further
 
         """
+        # Version 2.4 and later are automatically SNI ready.
         if self.version >= (2, 4):
             return
         # Check for NameVirtualHost
@@ -481,12 +501,67 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         avail_fp = nonssl_vhost.filep
-        # Get filepath of new ssl_vhost
-        if avail_fp.endswith(".conf"):
-            ssl_fp = avail_fp[:-(len(".conf"))] + self.conf("le_vhost_ext")
-        else:
-            ssl_fp = avail_fp + self.conf("le_vhost_ext")
+        ssl_fp = self._get_ssl_vhost_path(avail_fp)
 
+        self._copy_create_ssl_vhost_skeleton(avail_fp, ssl_fp)
+
+        # Reload augeas to take into account the new vhost
+        self.aug.load()
+
+        # Get Vhost augeas path for new vhost
+        vh_p = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
+                              (ssl_fp, parser.case_i("VirtualHost")))
+        if len(vh_p) != 1:
+            logger.error("Error: should only be one vhost in %s", avail_fp)
+            raise errors.PluginError("Only one vhost per file is allowed")
+        else:
+            # This simplifies the process
+            vh_p = vh_p[0]
+
+        # Update Addresses
+        ssl_addrs = self._update_ssl_vhosts_addrs(vh_p)
+
+        # Add directives
+        self._add_dummy_ssl_directives(vh_p)
+
+        # Log actions and create save notes
+        logger.info("Created an SSL vhost at %s", ssl_fp)
+        self.save_notes += "Created ssl vhost at %s\n" % ssl_fp
+        self.save()
+
+        # We know the length is one because of the assertion above
+        # Create the Vhost object
+        ssl_vhost = self._create_vhost(vh_p[0])
+        self.vhosts.append(ssl_vhost)
+
+
+        # NOTE: Searches through Augeas seem to ruin changes to directives
+        #       The configuration must also be saved before being searched
+        #       for the new directives; For these reasons... this is tacked
+        #       on after fully creating the new vhost
+
+        # Now check if addresses need to be added as NameBasedVhost addrs
+        # This is for compliance with versions of Apache < 2.4
+        self._add_name_vhost_if_necessary(ssl_vhost)
+
+        return ssl_vhost
+
+    def _get_ssl_vhost_path(self, non_ssl_vh_fp):
+        # Get filepath of new ssl_vhost
+        if non_ssl_vh_fp.endswith(".conf"):
+            return non_ssl_vh_fp[:-(len(".conf"))] + self.conf("le_vhost_ext")
+        else:
+            return non_ssl_vh_fp + self.conf("le_vhost_ext")
+
+    def _copy_create_ssl_vhost_skeleton(self, avail_fp, ssl_fp):
+        """Copies over existing Vhost with IfModule mod_ssl.c> skeleton.
+
+        :param str avail_fp: Pointer to the original available non-ssl vhost
+        :param str ssl_fp: Full path where the new ssl_vhost will reside.
+
+        A new file is created on the filesystem.
+
+        """
         # First register the creation so that it is properly removed if
         # configuration is rolled back
         self.reverter.register_file_creation(False, ssl_fp)
@@ -502,14 +577,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             logger.fatal("Error writing/reading to file in make_vhost_ssl")
             raise errors.PluginError("Unable to write/read in make_vhost_ssl")
 
-        self.aug.load()
-
+    def _update_ssl_vhosts_addrs(self, vh_path):
         ssl_addrs = set()
-
-        # change address to address:443
-        addr_match = "/files%s//* [label()=~regexp('%s')]/arg"
-        ssl_addr_p = self.aug.match(
-            addr_match % (ssl_fp, parser.case_i("VirtualHost")))
+        ssl_addr_p = self.aug.match(vh_path + "/arg")
 
         for addr in ssl_addr_p:
             old_addr = common.Addr.fromstring(
@@ -518,37 +588,31 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.aug.set(addr, str(ssl_addr))
             ssl_addrs.add(ssl_addr)
 
-        # Add directives
-        vh_p = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
-                              (ssl_fp, parser.case_i("VirtualHost")))
-        if len(vh_p) != 1:
-            logger.error("Error: should only be one vhost in %s", avail_fp)
-            raise errors.PluginError("Only one vhost per file is allowed")
+        return ssl_addrs
 
-        self.parser.add_dir(vh_p[0], "SSLCertificateFile",
+    def _add_dummy_ssl_directives(self, vh_path):
+        self.parser.add_dir(vh_path, "SSLCertificateFile",
                             "insert_cert_file_path")
-        self.parser.add_dir(vh_p[0], "SSLCertificateKeyFile",
+        self.parser.add_dir(vh_path, "SSLCertificateKeyFile",
                             "insert_key_file_path")
-        self.parser.add_dir(vh_p[0], "Include", self.parser.loc["ssl_options"])
+        self.parser.add_dir(vh_path, "Include", self.parser.loc["ssl_options"])
 
-        # Log actions and create save notes
-        logger.info("Created an SSL vhost at %s", ssl_fp)
-        self.save_notes += "Created ssl vhost at %s\n" % ssl_fp
-        self.save()
+    def _add_name_vhost_if_necessary(self, vhost):
+        """Add NameVirtualHost Directives if necessary for new vhost.
 
-        # We know the length is one because of the assertion above
-        ssl_vhost = self._create_vhost(vh_p[0])
-        self.vhosts.append(ssl_vhost)
+        NameVirtualHosts was a directive in Apache < 2.4
+        https://httpd.apache.org/docs/2.2/mod/core.html#namevirtualhost
 
-        # NOTE: Searches through Augeas seem to ruin changes to directives
-        #       The configuration must also be saved before being searched
-        #       for the new directives; For these reasons... this is tacked
-        #       on after fully creating the new vhost
+        :param vhost: New virtual host that was recently created.
+        :type vhost: :class:`~letsencrypt_apache.obj.VirtualHost`
+
+        """
         need_to_save = False
+
         # See if the exact address appears in any other vhost
-        for addr in ssl_addrs:
-            for vhost in self.vhosts:
-                if (ssl_vhost.filep != vhost.filep and addr in vhost.addrs and
+        for addr in vhost.addrs:
+            for test_vhost in self.vhosts:
+                if (vhost.filep != test_vh.filep and addr in test_vh.addrs and
                         not self.is_name_vhost(addr)):
                     self.add_name_vhost(addr)
                     logger.info("Enabling NameVirtualHosts on %s", addr)
@@ -557,8 +621,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if need_to_save:
             self.save()
 
-        return ssl_vhost
-
+    ############################################################################
+    # Enhancements
+    ############################################################################
     def supported_enhancements(self):  # pylint: disable=no-self-use
         """Returns currently supported enhancements."""
         return ["redirect"]
@@ -909,7 +974,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             return True
 
         if vhost.ssl:
-            self._prepare_server_https()
+            # TODO: Make this based on addresses
+            self._prepare_server_https(443)
             if self.save_notes:
                 self.save("Enabled TLS for Apache")
 
