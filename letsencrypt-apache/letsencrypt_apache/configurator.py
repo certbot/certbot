@@ -64,7 +64,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     This class can adequately configure most typical configurations but
     is not ready to handle very complex configurations.
 
-    .. todo:: Always use self.parser.aug_get rather than self.aug.get
     .. todo:: Verify permissions on configuration root... it is easier than
         checking permissions on each of the relative directories and less error
         prone.
@@ -332,7 +331,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         for name in name_match:
             args = self.aug.match(name + "/*")
             for arg in args:
-                host.add_name(self.aug.get(arg))
+                host.add_name(self.parser.get_arg(arg))
 
     def _create_vhost(self, path):
         """Used by get_virtual_hosts to create vhost objects
@@ -346,7 +345,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         addrs = set()
         args = self.aug.match(path + "/arg")
         for arg in args:
-            addrs.add(common.Addr.fromstring(self.aug.get(arg)))
+            addrs.add(common.Addr.fromstring(self.parser.get_arg(arg)))
         is_ssl = False
 
         if self.parser.find_dir(
@@ -514,7 +513,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         for addr in ssl_addr_p:
             old_addr = common.Addr.fromstring(
-                str(self.aug.get(addr)))
+                str(self.parser.get_arg(addr)))
             ssl_addr = old_addr.get_addr_obj("443")
             self.aug.set(addr, str(ssl_addr))
             ssl_addrs.add(ssl_addr)
@@ -868,8 +867,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     errors.MisconfigurationError(
                         "Too many cert/key directives in vhost")
 
-                cert = os.path.abspath(self.aug.get(cert_path[0]))
-                key = os.path.abspath(self.aug.get(key_path[0]))
+                cert = os.path.abspath(self.parser.get_arg(cert_path[0]))
+                key = os.path.abspath(self.parser.get_arg(key_path[0]))
                 c_k.add((cert, key, get_file_path(cert_path[0])))
 
         return c_k
@@ -942,13 +941,19 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 "and try again." % mod_name)
 
         self._enable_mod_debian(mod_name)
+        self.save_notes += "Enabled %s module in Apache" % mod_name
+        logger.debug("Enabled Apache %s module", mod_name)
+
+        # Modules can enable additional config files. Variables may be defined
+        # within these new configuration sections.
+        # Restart is not necessary as DUMP_RUN_CFG uses latest config.
+        self.parser.update_runtime_variables()
 
         self.parser.modules.add(mod_name + "_module")
         self.parser.modules.add("mod_" + mod_name)
 
     def _enable_mod_debian(self, mod_name):
         """Assumes mods-available, mods-enabled layout."""
-
         # TODO: This can be further updated to not require all files.
         if mod_name == "ssl":
             self._enable_mod_debian_files(["ssl.conf", "ssl.load"])
@@ -957,7 +962,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         else:
             raise NotImplemented
 
-    def _enable_mod_debian_files(self, filenames):
+    def _enable_mod_debian_files(self, filenames, mod_name):
         """Move over all required files into mods-enabled."""
         mods_available = os.path.join(self.parser.root, "mods-available")
         mods_enabled = os.path.join(self.parser.root, "mods-enabled")
@@ -972,9 +977,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Register and symlink files
         for filename in files:
             enabled_path = os.path.join(mods_enabled, filename)
+            if os.path.isfile(enabled_path):
+                logger.debug(
+                    "Error - enabling module %s, filepath already exists "
+                    "%s", mod_name, enabled_path)
+                raise errors.PluginError("Error enabling module %s" % mod_name)
             self.reverter.register_file_creation(False, enabled_path)
             os.symlink(os.path.join(mods_available, filename), enabled_path)
-
 
     def mod_loaded(self, module):
         """Checks to see if mod_ssl is loaded

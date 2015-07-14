@@ -1,5 +1,6 @@
 """ApacheParser is a member object of the ApacheConfigurator class."""
 import collections
+import fnmatch
 import itertools
 import logging
 import os
@@ -13,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 arg_var_interpreter = re.compile(r"\$\{[^ \}]*}")
+fnmatch_chars = set(["*", "?", "\\", "[", "]"])
 
 
 class ApacheParser(object):
@@ -29,7 +31,8 @@ class ApacheParser(object):
         # https://httpd.apache.org/docs/2.4/mod/core.html#define
         # https://httpd.apache.org/docs/2.4/mod/core.html#ifdefine
         # This only handles invocation parameters and Define directives!
-        self.variables = self._init_runtime_variables(ctl)
+        self.variables = {}
+        self.update_runtime_variables(ctl)
 
         # Find configuration root and make sure augeas can parse it.
         self.aug = aug
@@ -67,11 +70,11 @@ class ApacheParser(object):
 
             for match_name, match_filename in itertools.izip(
                     iterator, iterator):
-                self.modules.add(self.aug.get(match_name))
+                self.modules.add(self.get_arg(match_name))
                 self.modules.add(
-                    os.path.basename(self.aug.get(match_filename))[:-2] + "c")
+                    os.path.basename(self.get_arg(match_filename))[:-2] + "c")
 
-    def _init_runtime_variables(self, ctl):
+    def update_runtime_variables(self, ctl):
         """"
 
         .. note:: Compile time variables (apache2ctl -V) are not used within the
@@ -94,7 +97,7 @@ class ApacheParser(object):
             parts = match.partition("=")
             variables[parts[0]] = parts[2]
 
-        return variables
+        self.variables = variables
 
     def _get_runtime_cfg(self, ctl):
         """Get runtime configuration info.
@@ -269,13 +272,15 @@ class ApacheParser(object):
 
         ordered_matches = []
 
+        # TODO: Wildcards should be included in alphabetical order
+        # https://httpd.apache.org/docs/2.4/mod/core.html#include
         for match in matches:
             dir = self.aug.get(match).lower()
             if dir == "include" or dir == "includeoptional":
                 # start[6:] to strip off /files
                 ordered_matches.extend(self.find_dir(
                     directive, arg, self._get_include_path(
-                        strip_dir(start[6:]), self.aug.get(match + "/arg"))))
+                        self.get_arg(match + "/arg"))))
             else:
                 ordered_matches.extend(self.aug.match(match + arg_suffix))
 
@@ -334,7 +339,7 @@ class ApacheParser(object):
 
         return True
 
-    def _get_include_path(self, cur_dir, arg):
+    def _get_include_path(self, arg):
         """Converts an Apache Include directive into Augeas path.
 
         Converts an Apache Include directive argument into an Augeas
@@ -342,29 +347,12 @@ class ApacheParser(object):
 
         .. todo:: convert to use os.path.join()
 
-        :param str cur_dir: current working directory
-
         :param str arg: Argument of Include directive
 
         :returns: Augeas path string
         :rtype: str
 
         """
-        # Sanity check argument - maybe
-        # Question: what can the attacker do with control over this string
-        # Effect parse file... maybe exploit unknown errors in Augeas
-        # If the attacker can Include anything though... and this function
-        # only operates on Apache real config data... then the attacker has
-        # already won.
-        # Perhaps it is better to simply check the permissions on all
-        # included files?
-        # check_config to validate apache config doesn't work because it
-        # would create a race condition between the check and this input
-
-        # TODO: Maybe... although I am convinced we have lost if
-        # Apache files can't be trusted.  The augeas include path
-        # should be made to be exact.
-
         # Check to make sure only expected characters are used <- maybe remove
         # validChars = re.compile("[a-zA-Z0-9.*?_-/]*")
         # matchObj = validChars.match(arg)
@@ -374,11 +362,8 @@ class ApacheParser(object):
 
         # Standardize the include argument based on server root
         if not arg.startswith("/"):
-            arg = cur_dir + arg
-        # conf/ is a special variable for ServerRoot in Apache
-        elif arg.startswith("conf/"):
-            arg = self.root + arg[4:]
-        # TODO: Test if Apache allows ../ or ~/ for Includes
+            # Normpath will condense ../
+            arg = os.path.normpath(os.path.join(self.root, arg))
 
         # Attempts to add a transform to the file if one does not already exist
         self._parse_file(arg)
@@ -386,25 +371,29 @@ class ApacheParser(object):
         # Argument represents an fnmatch regular expression, convert it
         # Split up the path and convert each into an Augeas accepted regex
         # then reassemble
-        if "*" in arg or "?" in arg:
-            split_arg = arg.split("/")
-            for idx, split in enumerate(split_arg):
-                # * and ? are the two special fnmatch characters
-                if "*" in split or "?" in split:
-                    # Turn it into a augeas regex
-                    # TODO: Can this instead be an augeas glob instead of regex
-                    split_arg[idx] = ("* [label()=~regexp('%s')]" %
-                                      self.fnmatch_to_re(split))
-            # Reassemble the argument
-            arg = "/".join(split_arg)
+        split_arg = arg.split("/")
+        for idx, split in enumerate(split_arg):
+            if any(char in fnmatch_chars for char in split):
+                # Turn it into a augeas regex
+                # TODO: Can this instead be an augeas glob instead of regex
+                split_arg[idx] = ("* [label()=~regexp('%s')]" %
+                                  self.fnmatch_to_re(split))
+        # Reassemble the argument
+        arg = "/".join(split_arg)
 
         # If the include is a directory, just return the directory as a file
         if arg.endswith("/"):
-            return get_aug_path(arg[:len(arg)-1])
+            return get_aug_path(arg[:-1])
         return get_aug_path(arg)
 
     def fnmatch_to_re(self, clean_fn_match):  # pylint: disable=no-self-use
         """Method converts Apache's basic fnmatch to regular expression.
+
+        Assumption - Configs are assumed to be well-formed and only writable by
+        privileged users.
+
+        https://apr.apache.org/docs/apr/2.0/apr__fnmatch_8h_source.html
+        http://apache2.sourcearchive.com/documentation/2.2.16-6/apr__fnmatch_8h_source.html
 
         :param str clean_fn_match: Apache style filename match, similar to globs
 
@@ -412,20 +401,8 @@ class ApacheParser(object):
         :rtype: str
 
         """
-        # Checkout fnmatch.py in venv/local/lib/python2.7/fnmatch.py
-        regex = ""
-        for letter in clean_fn_match:
-            if letter == ".":
-                regex = regex + r"\."
-            elif letter == "*":
-                regex = regex + ".*"
-            # According to apache.org ? shouldn't appear
-            # but in case it is valid...
-            elif letter == "?":
-                regex = regex + "."
-            else:
-                regex = regex + letter
-        return regex
+        # This strips off final /Z(?ms)
+        return fnmatch.translate(clean_fn_match)[:-7]
 
     def _parse_file(self, filepath):
         """Parse file with Augeas
