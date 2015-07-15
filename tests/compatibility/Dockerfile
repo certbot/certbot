@@ -15,6 +15,6 @@ ENV APACHE_CONFDIR=/tmp/apache2 \
     APACHE_LOCK_DIR=/var/lock \
     APACHE_LOG_DIR=/usr/local/apache2/logs 
 
-COPY a2enmod.sh /usr/local/bin/
+COPY tests/compatibility/a2enmod.sh /usr/local/bin/
 
 CMD [ "httpd-foreground" ]

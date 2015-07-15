@@ -60,7 +60,6 @@ docs_extras = [
 
 testing_extras = [
     'coverage',
-    'docker-py',
     'nose',
     'nosexcover',
     'tox',
@@ -107,7 +106,6 @@ setup(
 
     entry_points={
         'console_scripts': [
-            'compatibility = tests.compatibility.plugin_test:main [testing]',
             'letsencrypt = letsencrypt.cli:main',
             'letsencrypt-renewer = letsencrypt.renewer:main',
         ],

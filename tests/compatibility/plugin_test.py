@@ -1,13 +1,78 @@
 """Tests Let's Encrypt plugins against different server configurations."""
-import parser
-import util
+import argparse
+import logging
+import os
+
+from tests.compatibility.configurators import common
+
+DESCRIPTION = """
+Tests Let's Encrypt plugins against different server configuratons. It is
+assumed that Docker is already installed.
+
+"""
+
+
+PLUGINS = {'common' : common.ConfiguratorTester}
+
+
+logger = logging.getLogger(__name__)
+
+
+def get_args():
+    """Returns parsed command line arguments."""
+    parser = argparse.ArgumentParser(description=DESCRIPTION)
+
+    group = parser.add_argument_group('general')
+    group.add_argument(
+        '-c', '--configs', default='configs.tar.gz',
+        help='a directory or tarball containing server configurations')
+    group.add_argument(
+        '-p', '--plugin', default='apache', help='the plugin to be tested')
+    group.add_argument(
+        '-a', '--auth', action='store_true',
+        help='tests the plugin as an authenticator')
+    group.add_argument(
+        '-i', '--install', action='store_true',
+        help='tests the plugin as an installer')
+    group.add_argument(
+        '-r', '--redirect', action='store_true', help='tests the plugin\'s '
+        'ability to redirect HTTP to HTTPS (implicitly includes installer '
+        'tests)')
+
+    for plugin in PLUGINS.itervalues():
+        plugin.add_parser_arguments(parser)
+
+    args = parser.parse_args()
+    if args.redirect:
+        args.install = True
+    elif not (args.auth or args.install):
+        args.auth = args.install = args.redirect = True
+
+    return args
+
+
+def setup_logging():
+    """Prepares logging for the program"""
+    fmt = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter(fmt))
+
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.DEBUG)
+    root_logger.addHandler(handler)
 
 
 def main():
     """Main test script execution."""
-    args = parser.parse_args()
+    setup_logging()
+    args = get_args()
+    plugin = PLUGINS[args.plugin](args)
+    plugin.start_docker('bradmw/apache2.4')
+    config = os.path.join(plugin.config_dir, 'apache2')
+    config_file = os.path.join(config, 'apache2.conf')
+    plugin.execute_in_docker('apachectl -d {0} -f {1} -k restart'.format(config, config_file))
+    #plugin.cleanup_from_tests()
 
-    print util.setup_tmp_dir(args.tar)
 
-if __name__ == "__main__":
-    main() 
+if __name__ == '__main__':
+    main()
