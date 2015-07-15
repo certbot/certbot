@@ -16,13 +16,6 @@ CERT = test_util.load_cert('cert.pem')
 KEY = test_util.load_rsa_private_key('rsa512_key.pem')
 
 
-class ChallengeResponseTest(unittest.TestCase):
-
-    def test_from_json_none(self):
-        from acme.challenges import ChallengeResponse
-        self.assertTrue(ChallengeResponse.from_json(None) is None)
-
-
 class SimpleHTTPTest(unittest.TestCase):
 
     def setUp(self):

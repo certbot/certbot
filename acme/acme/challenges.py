@@ -39,15 +39,6 @@ class ChallengeResponse(interfaces.ClientRequestableResource,
     TYPES = {}
     resource_type = 'challenge'
 
-    @classmethod
-    def from_json(cls, jobj):
-        if jobj is None:
-            # if the client chooses not to respond to a given
-            # challenge, then the corresponding entry in the response
-            # array is set to None (null)
-            return None
-        return super(ChallengeResponse, cls).from_json(jobj)
-
 
 @Challenge.register
 class SimpleHTTP(DVChallenge):
