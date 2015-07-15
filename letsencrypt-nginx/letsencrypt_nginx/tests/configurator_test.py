@@ -34,7 +34,9 @@ class NginxConfiguratorTest(util.NginxTest):
         self.assertEquals((1, 6, 2), self.config.version)
         self.assertEquals(5, len(self.config.parser.parsed))
 
-    def test_get_all_names(self):
+    @mock.patch("letsencrypt_nginx.configurator.socket.gethostbyaddr")
+    def test_get_all_names(self, mock_gethostbyaddr):
+        mock_gethostbyaddr.return_value = ('155.225.50.69.nephoscale.net', [], [])
         names = self.config.get_all_names()
         self.assertEqual(names, set(
             ["*.www.foo.com", "somename", "another.alias",
