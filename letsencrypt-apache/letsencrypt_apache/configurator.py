@@ -53,24 +53,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
     """Apache configurator.
 
-    State of Configurator: This code has been tested under Ubuntu 12.04
-    Apache 2.2 and this code works for Ubuntu 14.04 Apache 2.4. Further
-    notes below.
-
-    This class was originally developed for Apache 2.2 and I have been slowly
-    transitioning the codebase to work with all of the 2.4 features.
-    I have implemented most of the changes... the missing ones are
-    mod_ssl.c vs ssl_mod, and I need to account for configuration variables.
-    This class can adequately configure most typical configurations but
-    is not ready to handle very complex configurations.
+    State of Configurator: This code has been been tested and built for Ubuntu
+    14.04 Apache 2.4 and it works for Ubuntu 12.04 Apache 2.2
 
     .. todo:: Verify permissions on configuration root... it is easier than
         checking permissions on each of the relative directories and less error
         prone.
-
-
-    The API of this class will change in the coming weeks as the exact
-    needs of clients are clarified with the new and developing protocol.
 
     :ivar config: Configuration.
     :type config: :class:`~letsencrypt.interfaces.IConfig`
@@ -204,6 +192,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             else:
                 self.aug.set(path["chain_path"][-1], chain_path)
 
+        # Save notes about the transaction that took place
         self.save_notes += ("Changed vhost at %s with addresses of %s\n" %
                             (vhost.filep,
                              ", ".join(str(addr) for addr in vhost.addrs)))
@@ -360,7 +349,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         addrs = set()
         args = self.aug.match(path + "/arg")
         for arg in args:
-            addrs.add(common.Addr.fromstring(self.parser.get_arg(arg)))
+            addrs.add(obj.Addr.fromstring(self.parser.get_arg(arg)))
         is_ssl = False
 
         if self.parser.find_dir(
@@ -400,7 +389,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         now NameVirtualHosts. If version is earlier than 2.4, check if addr
         has a NameVirtualHost directive in the Apache config
 
-        :param str target_addr: vhost address ie. \*:443
+        :param target_addr: vhost address
+        :type target_addr: :class:~letsencrypt_apache.obj.Addr
 
         :returns: Success
         :rtype: bool
@@ -419,7 +409,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     def add_name_vhost(self, addr):
         """Adds NameVirtualHost directive for given address.
 
-        :param str addr: Address that will be added as NameVirtualHost directive
+        :param addr: Address that will be added as NameVirtualHost directive
+        :type addr: :class:~letsencrypt_apache.obj.Addr
 
         """
         path = self.parser.add_dir_to_ifmodssl(
@@ -435,7 +426,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         Make sure that the ssl_module is loaded and that the server
         is appropriately listening on port.
 
-        :param int port: Port to listen on
+        :param str port: Port to listen on
 
         """
         if "ssl_module" not in self.parser.modules:
@@ -444,30 +435,34 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         # Check for Listen <port>
         # Note: This could be made to also look for ip:443 combo
-        if not self.parser.find_dir(parser.case_i("Listen"), str(port)):
+        if not self.parser.find_dir(parser.case_i("Listen"), port):
             logger.debug("No Listen {0} directive found. Setting the "
                          "Apache Server to Listen on port {0}".format(port))
             path = self.parser.add_dir_to_ifmodssl(
                 parser.get_aug_path(
-                    self.parser.loc["listen"]), "Listen", str(port))
-            self.save_notes += "Added Listen %d directive to %s\n" % (
+                    self.parser.loc["listen"]), "Listen", port)
+            self.save_notes += "Added Listen %s directive to %s\n" % (
                 port, path)
 
-    def make_server_sni_ready(self, vhost, default_addr="*:443"):
+    def make_addrs_sni_ready(
+            self, addrs, default_addr=obj.Addr(("*", "443"))):
         """Checks to see if the server is ready for SNI challenges.
 
-        :param vhost: VirtualHost to check SNI compatibility
-        :type vhost: :class:`~letsencrypt_apache.obj.VirtualHost`
+        :param addrs: Addresses to check SNI compatibility
+        :type addrs: :class:`~letsencrypt_apache.obj.Addr`
 
-        :param str default_addr: TODO - investigate function further
+        :param default_addr: TODO - investigate function further
+        :type default_addr: :class:~letsencrypt_apache.obj.Addr
 
         """
         # Version 2.4 and later are automatically SNI ready.
         if self.version >= (2, 4):
             return
+
+        # TODO: Review this 3-year old demo code
         # Check for NameVirtualHost
         # First see if any of the vhost addresses is a _default_ addr
-        for addr in vhost.addrs:
+        for addr in addrs:
             if addr.get_addr() == "_default_":
                 if not self.is_name_vhost(default_addr):
                     logger.debug("Setting all VirtualHosts on %s to be "
@@ -475,7 +470,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     self.add_name_vhost(default_addr)
 
         # No default addresses... so set each one individually
-        for addr in vhost.addrs:
+        for addr in addrs:
             if not self.is_name_vhost(addr):
                 logger.debug("Setting VirtualHost at %s to be a name "
                              "based virtual host", addr)
@@ -582,7 +577,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         ssl_addr_p = self.aug.match(vh_path + "/arg")
 
         for addr in ssl_addr_p:
-            old_addr = common.Addr.fromstring(
+            old_addr = obj.Addr.fromstring(
                 str(self.parser.get_arg(addr)))
             ssl_addr = old_addr.get_addr_obj("443")
             self.aug.set(addr, str(ssl_addr))
@@ -880,8 +875,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Instead... should look for vhost of the form *:80
         # Should we prompt the user?
         ssl_addrs = ssl_vhost.addrs
-        if ssl_addrs == common.Addr.fromstring("_default_:443"):
-            ssl_addrs = [common.Addr.fromstring("*:443")]
+        if ssl_addrs == obj.Addr.fromstring("_default_:443"):
+            ssl_addrs = [obj.Addr.fromstring("*:443")]
 
         for vhost in self.vhosts:
             found = 0
@@ -975,7 +970,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         if vhost.ssl:
             # TODO: Make this based on addresses
-            self._prepare_server_https(443)
+            self._prepare_server_https("443")
             if self.save_notes:
                 self.save("Enabled TLS for Apache")
 

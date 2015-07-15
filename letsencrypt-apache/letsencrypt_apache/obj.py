@@ -1,4 +1,38 @@
 """Module contains classes used by the Apache Configurator."""
+from letsencrypt.plugins import common
+
+class Addr(common.Addr):
+
+    def __eq__(self, other):
+        """This is defined as equalivalent within Apache.
+
+        ip_addr:* == ip_addr
+
+        """
+        if isinstance(other, self.__class__):
+            return ((self.tup == other.tup) or
+                    (self.tup[0] == other.tup[0]
+                     and self.is_wildcard() and other.is_wildcard()))
+        return False
+
+    def is_wildcard(self):
+        return tup[1] == "*" or not tup[1]
+
+    def get_sni_addr(self, port):
+        """Returns the least specific address that resolves on the port.
+
+        Example:
+        1.2.3.4:443 -> 1.2.3.4:<port>
+        1.2.3.4:* -> 1.2.3.4:*
+
+        :param str port: Desired port
+
+        """
+        if self.is_wildcard():
+            return self
+
+        return self.get_addr_obj(port)
+
 
 
 class VirtualHost(object):  # pylint: disable=too-few-public-methods

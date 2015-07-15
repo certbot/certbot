@@ -3,6 +3,7 @@ import os
 
 from letsencrypt.plugins import common
 
+from letsencrypt_apache import obj
 from letsencrypt_apache import parser
 
 
@@ -59,21 +60,6 @@ class ApacheDvsni(common.Dvsni):
         # About to make temporary changes to the config
         self.configurator.save()
 
-        addresses = []
-        default_addr = "*:443"
-        for achall in self.achalls:
-            vhost = self.configurator.choose_vhost(achall.domain)
-
-            # TODO - @jdkasten review this code to make sure it makes sense
-            self.configurator.make_server_sni_ready(vhost, default_addr)
-
-            for addr in vhost.addrs:
-                if "_default_" == addr.get_addr():
-                    addresses.append([default_addr])
-                    break
-            else:
-                addresses.append(list(vhost.addrs))
-
         responses = []
 
         # Create all of the challenge certs
@@ -81,29 +67,37 @@ class ApacheDvsni(common.Dvsni):
             responses.append(self._setup_challenge_cert(achall))
 
         # Setup the configuration
-        self._mod_config(addresses)
+        dvsni_addrs = self._mod_config()
+
+        self.configurator.make_addrs_sni_ready(dvsni_addrs)
 
         # Prepare the server for HTTPS
-        # TODO: Base on addresses
-        self.configurator._prepare_https_server(443)
+        self.configurator._prepare_https_server(
+            str(self.configurator.config.dvsni_port))
 
         # Save reversible changes
         self.configurator.save("SNI Challenge", True)
 
         return responses
 
-    def _mod_config(self, ll_addrs):
+    def _mod_config(self):
         """Modifies Apache config files to include challenge vhosts.
 
         Result: Apache config includes virtual servers for issued challs
 
-        :param list ll_addrs: list of list of `~.common.Addr` to apply
+        :returns: All DVSNI addresses used
+        :rtype: set
 
         """
-        # TODO: Use ip address of existing vhost instead of relying on FQDN
+        dvsni_addrs = set()
         config_text = "<IfModule mod_ssl.c>\n"
-        for idx, lis in enumerate(ll_addrs):
-            config_text += self._get_config_text(self.achalls[idx], lis)
+
+        for achall in self.achalls:
+            achall_addrs = self.get_dvsni_addrs(achall)
+            dvsni_addrs.update(achall_addrs)
+
+            config_text += self._get_config_text(self.achalls, achall_addrs)
+
         config_text += "</IfModule>\n"
 
         self._conf_include_check(self.configurator.parser.loc["default"])
@@ -112,6 +106,27 @@ class ApacheDvsni(common.Dvsni):
 
         with open(self.challenge_conf, "w") as new_conf:
             new_conf.write(config_text)
+
+        return dvsni_addrs
+
+    def get_dvsni_addrs(self, achall):
+        """Return the Apache addresses needed for DVSNI."""
+        vhost = self.configurator.choose_vhost(achall.domain)
+
+        # TODO: Checkout _default_ rules.
+        # TODO: Need to separate out test mode and normal mode for DVSNI addrs
+        dvsni_addrs = set()
+        default_addr = obj.Addr(("*", self.configurator.config.dvsni_port))
+
+        for addr in vhost.addrs:
+            # I don't think there can be two _default_ namebasedvhosts
+            if "_default_" == addr.get_addr():
+                dvsni_addrs.add(default_addr)
+            else:
+                dvsni_addrs.add(
+                    addr.get_sni_addr(self.configurator.config.dvsni_port))
+
+        return dvsni_addrs
 
     def _conf_include_check(self, main_config):
         """Adds DVSNI challenge conf file into configuration.
@@ -136,7 +151,7 @@ class ApacheDvsni(common.Dvsni):
         :type achall: :class:`letsencrypt.achallenges.DVSNI`
 
         :param list ip_addrs: addresses of challenged domain
-            :class:`list` of type `~.common.Addr`
+            :class:`list` of type `~.obj.Addr`
 
         :returns: virtual host configuration text
         :rtype: str
