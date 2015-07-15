@@ -23,30 +23,17 @@ class ApacheParserTest(util.ApacheTest):
         zope.component.provideUtility(display_util.FileDisplay(sys.stdout))
 
         from letsencrypt_apache.parser import ApacheParser
-        self.aug = augeas.Augeas(flags=augeas.Augeas.NONE)
-        self.parser = ApacheParser(self.aug, self.config_path, self.ssl_options)
+        self.aug = augeas.Augeas(
+            flags=augeas.Augeas.NONE | augeas.Augeas.NO_MODL_AUTOLOAD)
+        with mock.patch("letsencrypt_apache.parser.ApacheParser."
+                        "update_runtime_variables"):
+            self.parser = ApacheParser(
+                self.aug, self.config_path, self.ssl_options, "dummy_ctl_path")
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
         shutil.rmtree(self.config_dir)
         shutil.rmtree(self.work_dir)
-
-    def test_root_normalized(self):
-        from letsencrypt_apache.parser import ApacheParser
-        path = os.path.join(self.temp_dir, "debian_apache_2_4/////"
-                            "two_vhost_80/../two_vhost_80/apache2")
-        parser = ApacheParser(self.aug, path, None)
-        self.assertEqual(parser.root, self.config_path)
-
-    def test_root_absolute(self):
-        from letsencrypt_apache.parser import ApacheParser
-        parser = ApacheParser(self.aug, os.path.relpath(self.config_path), None)
-        self.assertEqual(parser.root, self.config_path)
-
-    def test_root_no_trailing_slash(self):
-        from letsencrypt_apache.parser import ApacheParser
-        parser = ApacheParser(self.aug, self.config_path + os.path.sep, None)
-        self.assertEqual(parser.root, self.config_path)
 
     def test_parse_file(self):
         """Test parse_file.
@@ -123,6 +110,46 @@ class ApacheParserTest(util.ApacheTest):
             self.assertEqual(results["default"], results["listen"])
             self.assertEqual(results["default"], results["name"])
 
+
+class ParserInitTest(util.ApacheTest):
+    def setUp(self):
+        super(ParserInitTest, self).setUp()
+        self.aug = augeas.Augeas(
+            flags=augeas.Augeas.NONE | augeas.Augeas.NO_MODL_AUTOLOAD)
+
+    def tearDown(self):
+        shutil.rmtree(self.temp_dir)
+        shutil.rmtree(self.config_dir)
+        shutil.rmtree(self.work_dir)
+
+    def test_root_normalized(self):
+        from letsencrypt_apache.parser import ApacheParser
+
+        with mock.patch("letsencrypt_apache.parser.ApacheParser."
+                        "update_runtime_variables"):
+            path = os.path.join(
+                self.temp_dir,
+                "debian_apache_2_4/////two_vhost_80/../two_vhost_80/apache2")
+            parser = ApacheParser(self.aug, path, None, "dummy_ctl")
+
+        self.assertEqual(parser.root, self.config_path)
+
+    def test_root_absolute(self):
+        from letsencrypt_apache.parser import ApacheParser
+        with mock.patch("letsencrypt_apache.parser.ApacheParser."
+                        "update_runtime_variables"):
+            parser = ApacheParser(
+                self.aug, os.path.relpath(self.config_path), None, "dummy_ctl")
+
+        self.assertEqual(parser.root, self.config_path)
+
+    def test_root_no_trailing_slash(self):
+        from letsencrypt_apache.parser import ApacheParser
+        with mock.patch("letsencrypt_apache.parser.ApacheParser."
+                        "update_runtime_variables"):
+            parser = ApacheParser(
+                self.aug, self.config_path + os.path.sep, None, "dummy_ctl")
+        self.assertEqual(parser.root, self.config_path)
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
