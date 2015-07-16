@@ -26,8 +26,7 @@ class Proxy(configurators_common.Proxy):
     def __init__(self, args):
         """Initializes the plugin with the given command line args"""
         super(Proxy, self).__init__(args)
-        self.le_config = util.create_le_config(self.temp_dir)
-        self.le_config["apache_le_vhost_ext"] = "-le-ssl.conf"
+        self.le_config.apache_le_vhost_ext = "-le-ssl.conf"
 
         self._patch = mock.patch('letsencrypt_apache.configurator.subprocess')
         self._mock = self._patch.start()
@@ -35,7 +34,7 @@ class Proxy(configurators_common.Proxy):
         self._mock.Popen = self.popen_in_docker
 
         self.server_root = self.modules = self.version = self.test_conf = None
-        self._config_file = self._apache_configurator = self._names = None
+        self.config_file = self._apache_configurator = self._names = None
 
     def __getattr__(self, name):
         """Wraps the Apache Configurator methods"""
@@ -48,16 +47,15 @@ class Proxy(configurators_common.Proxy):
     def load_config(self):
         """Loads the next configuration for the plugin to test"""
         config = self.get_next_config()
-        logger.debug("Loading configuration: %s", config)
+        logger.info("Loading configuration: %s", config)
         self._parse_config(config)
-
-        self._prepare_configurator()
         self.preprocess_config()
+        self._prepare_configurator()
 
         try:
             self.check_call_in_docker(
                 "apachectl -d {0} -f {1} -k restart".format(
-                    self.server_root, self._config_file))
+                    self.server_root, self.config_file))
         except errors.Error:
             raise errors.Error(
                 "Apache failed to load {0} before tests started".format(
@@ -69,7 +67,7 @@ class Proxy(configurators_common.Proxy):
         self.test_conf = os.path.join(self.server_root, "test.conf")
         open(self.test_conf, "w").close()
         subprocess.check_call(
-            ["sed", "-i", "1iInclude test.conf", self._config_file])
+            ["sed", "-i", "1iInclude test.conf", self.config_file])
         find = subprocess.Popen(
             ["find", self.server_root, "-type", "f"],
             stdout=subprocess.PIPE)
@@ -88,15 +86,17 @@ class Proxy(configurators_common.Proxy):
         self._names = _get_names(config)
 
         with open(os.path.join(config, "config_file")) as f:
-            self._config_file = os.path.join(self.server_root, f.readline())
+            config_file_base = f.readline().rstrip()
+
+        self.config_file = os.path.join(self.server_root, config_file_base)
 
     def _prepare_configurator(self):
         """Prepares the Apache plugin for testing"""
-        self.le_config["apache_ctl"] = "apachectl -d {0} -f {1}".format(
-            self.server_root, self._config_file)
-        self.le_config["a2enmod.sh"] = "a2enmod.sh"
-        self.le_config["apache_init_script"] = self.le_config["apache_ctl"]
-        self.le_config["apache_init_script"] += " -k"
+        self.le_config.apache_server_root = self.server_root
+        self.le_config.apache_ctl = "apachectl -d {0} -f {1}".format(
+            self.server_root, self.config_file)
+        self.le_config.apache_enmod = "a2enmod.sh"
+        self.le_config.apache_init = self.le_config.apache_ctl + " -k"
 
         self._apache_configurator = configurator.ApacheConfigurator(
             config=configuration.NamespaceConfig(self.le_config),
@@ -120,7 +120,7 @@ def _get_server_root(config):
     if len(subdirs) != 1:
         errors.Error("Malformed configuration directiory {0}".format(config))
 
-    return subdirs[0]
+    return os.path.join(config, subdirs[0].rstrip())
 
 
 def _get_names(config):
@@ -154,7 +154,7 @@ def _get_modules(config):
             if line[0].isspace():
                 words = line.split()
                 # Modules redundantly end in "_module" which we can discard
-                modules.append(words[-7])
+                modules.append(words[0][:-7])
 
     return modules
 

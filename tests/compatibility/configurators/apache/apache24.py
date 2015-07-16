@@ -44,13 +44,16 @@ class Proxy(apache_common.Proxy):
         if self.version[1] != 4:
             raise errors.Error("Apache version not 2.4")
 
+        self.execute_in_docker(
+            "bash -c 'export APACHE_CONFDIR={0}'".format(self.config_file))
+
         with open(self.test_conf, "a") as f:
             for module in self.modules:
                 if module not in STATIC_MODULES:
                     if module in INSTALLED_MODULES:
                         f.write(
                             "LoadModule {0}_module /usr/local/apache2/modules/"
-                            "mod_{0}\n".format(module))
+                            "mod_{0}.so\n".format(module))
                     else:
                         raise errors.Error(
                             "Unsupported module {0}".format(module))

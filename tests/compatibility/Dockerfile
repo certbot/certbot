@@ -10,7 +10,7 @@ RUN mkdir /var/run/apache2 && \
 ENV APACHE_CONFDIR=/tmp/apache2 \
     APACHE_RUN_USER=daemon \
     APACHE_RUN_GROUP=daemon \
-    APACHE_PID_FILE=/var/run/apache2/apache2.pid \
+    APACHE_PID_FILE=/usr/local/apache2/logs/httpd.pid \
     APACHE_RUN_DIR=/var/run/apache2 \
     APACHE_LOCK_DIR=/var/lock \
     APACHE_LOG_DIR=/usr/local/apache2/logs 

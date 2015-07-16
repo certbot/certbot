@@ -1,8 +1,8 @@
 """Provides a common base for configurator proxies"""
 import logging
-import multiprocessing
 import os
 import tempfile
+import threading
 
 import docker
 
@@ -34,15 +34,16 @@ class Proxy(object):
 
     def __init__(self, args):
         """Initializes the plugin with the given command line args"""
-        self.temp_dir = tempfile.mkdtemp()
-        self.config_dir = util.extract_configs(args.configs, self.temp_dir)
+        temp_dir = tempfile.mkdtemp()
+        self.le_config = util.create_le_config(temp_dir)
+        self.config_dir = util.extract_configs(args.configs, temp_dir)
         self._configs = os.listdir(self.config_dir)
 
         self.args = args
         self._docker_client = docker.Client(
             base_url=self.args.docker_url, version="auto")
         self.http_port, self.https_port = util.get_two_free_ports()
-        self._container_id = self._log_process = None
+        self._container_id = self._log_thread = None
 
     def has_more_configs(self):
         """Returns true if there are more configs to test"""
@@ -51,13 +52,13 @@ class Proxy(object):
     def cleanup_from_tests(self):
         """Performs any necessary cleanup from running plugin tests"""
         self._docker_client.stop(self._container_id)
-        self._log_process.join()
+        self._log_thread.join()
         if not self.args.no_remove:
             self._docker_client.remove_container(self._container_id)
 
     def get_next_config(self):
         """Returns the next config directory to be tested"""
-        return self._configs.pop()
+        return os.path.join(self.config_dir, self._configs.pop())
 
     def start_docker(self, image_name):
         """Creates and runs a Docker container with the specified image"""
@@ -78,14 +79,13 @@ class Proxy(object):
         self._container_id = container["Id"]
         self._docker_client.start(self._container_id)
 
-        self._log_process = multiprocessing.Process(
-            target=self._start_log_thread)
-        self._log_process.start()
+        self._log_thread = threading.Thread(target=self._start_log_thread)
+        self._log_thread.start()
 
     def _start_log_thread(self):
         client = docker.Client(base_url=self.args.docker_url, version="auto")
         for line in client.logs(self._container_id, stream=True):
-            logger.debug(line)
+            logger.info(line.rstrip())
 
     def check_call_in_docker(
             self, command, *args, **kwargs): # pylint: disable=unused-argument
@@ -118,12 +118,12 @@ class Proxy(object):
         if isinstance(command, list):
             command = " ".join(command)
 
-        returncode, output = self._execute_in_docker(command)
+        returncode, output = self.execute_in_docker(command)
         return SimplePopen(returncode, output)
 
-    def _execute_in_docker(self, command):
+    def execute_in_docker(self, command):
         """Executes command inside the running docker image"""
-        logger.debug("Executing '%s'", command)
+        logger.info("Executing '%s'", command)
         exec_id = self._docker_client.exec_create(self._container_id, command)
         output = self._docker_client.exec_start(exec_id)
         returncode = self._docker_client.exec_inspect(exec_id)["ExitCode"]
