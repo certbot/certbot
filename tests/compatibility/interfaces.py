@@ -4,7 +4,7 @@ import zope.interface
 import letsencrypt.interfaces
 
 
-class IPluginTester(zope.interface.Interface):
+class IPluginProxy(zope.interface.Interface):
     """Wraps a Let's Encrypt plugin"""
     @classmethod
     def add_parser_arguments(cls, parser):
@@ -27,27 +27,27 @@ class IPluginTester(zope.interface.Interface):
         """Loads the next configuration for the plugin to test"""
 
 
-class IConfiguratorBaseTester(IPluginTester):
+class IConfiguratorBaseProxy(IPluginProxy):
     """Common functionality for authenticator/installer tests"""
     http_port = zope.interface.Attribute(
-        'The port to connect to on localhost for HTTP traffic')
+        "The port to connect to on localhost for HTTP traffic")
 
     https_port = zope.interface.Attribute(
-        'The port to connect to on localhost for HTTPS traffic')
+        "The port to connect to on localhost for HTTPS traffic")
 
     def get_test_domain_names(self):
         """Returns a list of domain names to test against the plugin"""
 
 
-class IAuthenticatorTester(
-        IConfiguratorBaseTester, letsencrypt.interfaces.IAuthenticator):
+class IAuthenticatorProxy(
+        IConfiguratorBaseProxy, letsencrypt.interfaces.IAuthenticator):
     """Wraps a Let's Encrypt authenticator"""
 
 
-class IInstallerTester(
-        IConfiguratorBaseTester, letsencrypt.interfaces.IInstaller):
+class IInstallerProxy(
+        IConfiguratorBaseProxy, letsencrypt.interfaces.IInstaller):
     """Wraps a Let's Encrypt installer"""
 
 
-class IConfiguratorTester(IAuthenticatorTester, IInstallerTester):
+class IConfiguratorProxy(IAuthenticatorProxy, IInstallerProxy):
     """Wraps a Let's Encrypt configurator"""

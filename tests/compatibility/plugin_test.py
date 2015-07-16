@@ -3,7 +3,7 @@ import argparse
 import logging
 import os
 
-from tests.compatibility.configurators import common
+from tests.compatibility.configurators.apache import apache24
 
 DESCRIPTION = """
 Tests Let's Encrypt plugins against different server configuratons. It is
@@ -12,7 +12,7 @@ assumed that Docker is already installed.
 """
 
 
-PLUGINS = {'common' : common.ConfiguratorTester}
+PLUGINS = {"apache" : apache24.Proxy}
 
 
 logger = logging.getLogger(__name__)
@@ -22,22 +22,22 @@ def get_args():
     """Returns parsed command line arguments."""
     parser = argparse.ArgumentParser(description=DESCRIPTION)
 
-    group = parser.add_argument_group('general')
+    group = parser.add_argument_group("general")
     group.add_argument(
-        '-c', '--configs', default='configs.tar.gz',
-        help='a directory or tarball containing server configurations')
+        "-c", "--configs", default="configs.tar.gz",
+        help="a directory or tarball containing server configurations")
     group.add_argument(
-        '-p', '--plugin', default='apache', help='the plugin to be tested')
+        "-p", "--plugin", default="apache", help="the plugin to be tested")
     group.add_argument(
-        '-a', '--auth', action='store_true',
-        help='tests the plugin as an authenticator')
+        "-a", "--auth", action="store_true",
+        help="tests the plugin as an authenticator")
     group.add_argument(
-        '-i', '--install', action='store_true',
-        help='tests the plugin as an installer')
+        "-i", "--install", action="store_true",
+        help="tests the plugin as an installer")
     group.add_argument(
-        '-r', '--redirect', action='store_true', help='tests the plugin\'s '
-        'ability to redirect HTTP to HTTPS (implicitly includes installer '
-        'tests)')
+        "-r", "--redirect", action="store_true", help="tests the plugin's "
+        "ability to redirect HTTP to HTTPS (implicitly includes installer "
+        "tests)")
 
     for plugin in PLUGINS.itervalues():
         plugin.add_parser_arguments(parser)
@@ -66,13 +66,12 @@ def main():
     """Main test script execution."""
     setup_logging()
     args = get_args()
+
+    if args.plugin not in PLUGINS:
+        raise errors.Error("Unknown plugin {0}".format(args.plugin))
     plugin = PLUGINS[args.plugin](args)
-    plugin.start_docker('bradmw/apache2.4')
-    config = os.path.join(plugin.config_dir, 'apache2')
-    config_file = os.path.join(config, 'apache2.conf')
-    plugin.execute_in_docker('apachectl -d {0} -f {1} -k restart'.format(config, config_file))
-    #plugin.cleanup_from_tests()
+    plugin.cleanup_from_tests()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

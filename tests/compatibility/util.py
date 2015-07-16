@@ -1,41 +1,53 @@
-"""Utility functions for Let's Encrypt plugin tests."""
+"""Utility functions for Let"s Encrypt plugin tests."""
+import copy
 import contextlib
 import os
+import re
 import shutil
 import socket
 import tarfile
-import tempfile
 
+from letsencrypt import constants
 from tests.compatibility import errors
 
 
-# Paths used in the program relative to the temp directory
-CONFIG_DIR = "configs"
-LE_CONFIG = os.path.join("letsencrypt", "config")
-LE_LOGS = os.path.join("letsencrypt", "logs")
+IP_REGEX = re.compile(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$")
 
 
-def setup_temp_dir(configs):
-    """Sets up a temporary directory and extracts server configs"""
-    temp_dir = tempfile.mkdtemp()
-    config_dir = os.path.join(temp_dir, CONFIG_DIR)
+def create_le_config(parent_dir):
+    """Sets up LE dirs in parent_dir and returns the config dict"""
+    config = copy.deepcopy(constants.CLI_DEFAULTS)
+
+    le_dir = os.path.join(parent_dir, "letsencrypt")
+    config["config_dir"] = os.path.join(le_dir, "config")
+    config["work_dir"] = os.path.join(le_dir, "work")
+    config["logs_dir"] = os.path.join(le_dir, "logs_dir")
+    os.makedirs(config["config_dir"])
+    os.mkdir(config["work_dir"])
+    os.mkdir(config["logs_dir"])
+
+    return config
+
+def extract_configs(configs, parent_dir):
+    """Extracts configs to a new dir under parent_dir and returns it"""
+    config_dir = os.path.join(parent_dir, "configs")
 
     if os.path.isdir(configs):
         shutil.copytree(configs, config_dir, symlinks=True)
     elif tarfile.is_tarfile(configs):
-        with tarfile.open(configs, 'r') as tar:
+        with tarfile.open(configs, "r") as tar:
             tar.extractall(config_dir)
     else:
-        raise errors.Error('Unknown configurations file type')
+        raise errors.Error("Unknown configurations file type")
 
-    return temp_dir
+    return config_dir
 
 
 def get_two_free_ports():
     """Returns two free ports to use for the tests"""
     with contextlib.closing(socket.socket()) as sock1:
         with contextlib.closing(socket.socket()) as sock2:
-            sock1.bind(('', 0))
-            sock2.bind(('', 0))
+            sock1.bind(("", 0))
+            sock2.bind(("", 0))
 
             return sock1.getsockname()[1], sock2.getsockname()[1]
