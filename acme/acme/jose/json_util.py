@@ -214,7 +214,7 @@ class JSONObjectWithFields(util.ImmutableMap, interfaces.JSONDeSerializable):
     def _defaults(cls):
         """Get default fields values."""
         return dict([(slot, field.default) for slot, field
-                     in six.iteritems(cls._fields) if field.omitempty])
+                     in six.iteritems(cls._fields)])
 
     def __init__(self, **kwargs):
         # pylint: disable=star-args

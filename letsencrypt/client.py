@@ -88,7 +88,7 @@ def register(config, account_storage, tos_cb=None):
             backend=default_backend())))
     acme = _acme_from_config_key(config, key)
     # TODO: add phone?
-    regr = acme.register(messages.Registration.from_data(email=config.email))
+    regr = acme.register(messages.NewRegistration.from_data(email=config.email))
 
     if regr.terms_of_service is not None:
         if tos_cb is not None and not tos_cb(regr):
