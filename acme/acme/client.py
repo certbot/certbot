@@ -1,7 +1,6 @@
 """ACME client API."""
 import datetime
 import heapq
-import json
 import logging
 import time
 
@@ -71,8 +70,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
     def register(self, new_reg=None):
         """Register.
 
-        :param contact: Contact list, as accepted by `.Registration`
-        :type contact: `tuple`
+        :param .NewRegistration new_reg:
 
         :returns: Registration Resource.
         :rtype: `.RegistrationResource`
@@ -80,7 +78,8 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         :raises .UnexpectedUpdate:
 
         """
-        new_reg = messages.Registration() if new_reg is None else new_reg
+        new_reg = messages.NewRegistration() if new_reg is None else new_reg
+        assert isinstance(new_reg, messages.NewRegistration)
 
         response = self.net.post(self.new_reg_uri, new_reg)
         # TODO: handle errors
@@ -105,7 +104,8 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         :rtype: `.RegistrationResource`
 
         """
-        response = self.net.post(regr.uri, regr.body)
+        response = self.net.post(
+            regr.uri, messages.UpdateRegistration(**dict(regr.body)))
 
         # TODO: Boulder returns httplib.ACCEPTED
         #assert response.status_code == httplib.OK
@@ -164,7 +164,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         :rtype: `.AuthorizationResource`
 
         """
-        new_authz = messages.Authorization(identifier=identifier)
+        new_authz = messages.NewAuthorization(identifier=identifier)
         response = self.net.post(new_authzr_uri, new_authz)
         # TODO: handle errors
         assert response.status_code == http_client.CREATED
@@ -451,17 +451,15 @@ class ClientNetwork(object):
 
         .. todo:: Implement ``acmePath``.
 
-        :param .ClientRequestableResource obj:
+        :param .JSONDeSerializable obj:
         :param bytes nonce:
         :rtype: `.JWS`
 
         """
-        jobj = obj.to_json()
-        jobj['resource'] = obj.resource_type
-        dumps = json.dumps(jobj).encode()
-        logger.debug('Serialized JSON: %s', dumps)
+        jobj = obj.json_dumps().encode()
+        logger.debug('Serialized JSON: %s', jobj)
         return jws.JWS.sign(
-            payload=dumps, key=self.key, alg=self.alg, nonce=nonce).json_dumps()
+            payload=jobj, key=self.key, alg=self.alg, nonce=nonce).json_dumps()
 
     @classmethod
     def _check_response(cls, response, content_type=None):

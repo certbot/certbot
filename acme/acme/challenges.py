@@ -7,7 +7,7 @@ import os
 
 import requests
 
-from acme import interfaces
+from acme import fields
 from acme import jose
 from acme import other
 
@@ -32,12 +32,12 @@ class DVChallenge(Challenge):  # pylint: disable=abstract-method
     """Domain validation challenges."""
 
 
-class ChallengeResponse(interfaces.ClientRequestableResource,
-                        jose.TypedJSONObjectWithFields):
+class ChallengeResponse(jose.TypedJSONObjectWithFields):
     # _fields_to_partial_json | pylint: disable=abstract-method
     """ACME challenge response."""
     TYPES = {}
     resource_type = 'challenge'
+    resource = fields.Resource(resource_type)
 
 
 @Challenge.register

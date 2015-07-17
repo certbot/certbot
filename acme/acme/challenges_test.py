@@ -48,11 +48,13 @@ class SimpleHTTPResponseTest(unittest.TestCase):
             path='6tbIMBC5Anhl5bOlWT5ZFA', tls=False)
         self.msg_https = SimpleHTTPResponse(path='6tbIMBC5Anhl5bOlWT5ZFA')
         self.jmsg_http = {
+            'resource': 'challenge',
             'type': 'simpleHttp',
             'path': '6tbIMBC5Anhl5bOlWT5ZFA',
             'tls': False,
         }
         self.jmsg_https = {
+            'resource': 'challenge',
             'type': 'simpleHttp',
             'path': '6tbIMBC5Anhl5bOlWT5ZFA',
             'tls': True,
@@ -184,6 +186,7 @@ class DVSNIResponseTest(unittest.TestCase):
             s=b'\xf5\xd6\xe3\xb2]\xe0L\x0bN\x9cKJ\x14I\xa1K\xa3#\xf9\xa8'
               b'\xcd\x8c7\x0e\x99\x19)\xdc\xb7\xf3\x9bw')
         self.jmsg = {
+            'resource': 'challenge',
             'type': 'dvsni',
             's': '9dbjsl3gTAtOnEtKFEmhS6Mj-ajNjDcOmRkp3Lfzm3c',
         }
@@ -257,7 +260,11 @@ class RecoveryContactResponseTest(unittest.TestCase):
     def setUp(self):
         from acme.challenges import RecoveryContactResponse
         self.msg = RecoveryContactResponse(token='23029d88d9e123e')
-        self.jmsg = {'type': 'recoveryContact', 'token': '23029d88d9e123e'}
+        self.jmsg = {
+            'resource': 'challenge',
+            'type': 'recoveryContact',
+            'token': '23029d88d9e123e',
+        }
 
     def test_to_partial_json(self):
         self.assertEqual(self.jmsg, self.msg.to_partial_json())
@@ -305,7 +312,11 @@ class RecoveryTokenResponseTest(unittest.TestCase):
     def setUp(self):
         from acme.challenges import RecoveryTokenResponse
         self.msg = RecoveryTokenResponse(token='23029d88d9e123e')
-        self.jmsg = {'type': 'recoveryToken', 'token': '23029d88d9e123e'}
+        self.jmsg = {
+            'resource': 'challenge',
+            'type': 'recoveryToken',
+            'token': '23029d88d9e123e'
+        }
 
     def test_to_partial_json(self):
         self.assertEqual(self.jmsg, self.msg.to_partial_json())
@@ -455,11 +466,13 @@ class ProofOfPossessionResponseTest(unittest.TestCase):
             signature=signature)
 
         self.jmsg_to = {
+            'resource': 'challenge',
             'type': 'proofOfPossession',
             'nonce': 'eET5udtV7aoX8Xl8gYiZIA',
             'signature': signature,
         }
         self.jmsg_from = {
+            'resource': 'challenge',
             'type': 'proofOfPossession',
             'nonce': 'eET5udtV7aoX8Xl8gYiZIA',
             'signature': signature.to_json(),
@@ -505,7 +518,10 @@ class DNSResponseTest(unittest.TestCase):
     def setUp(self):
         from acme.challenges import DNSResponse
         self.msg = DNSResponse()
-        self.jmsg = {'type': 'dns'}
+        self.jmsg = {
+            'resource': 'challenge',
+            'type': 'dns',
+        }
 
     def test_to_partial_json(self):
         self.assertEqual(self.jmsg, self.msg.to_partial_json())

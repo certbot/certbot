@@ -45,6 +45,7 @@ class ClientTest(unittest.TestCase):
         self.contact = ('mailto:cert-admin@example.com', 'tel:+12025551212')
         reg = messages.Registration(
             contact=self.contact, key=KEY.public_key(), recovery_token='t')
+        self.new_reg = messages.NewRegistration(**dict(reg))
         self.regr = messages.RegistrationResource(
             body=reg, uri='https://www.letsencrypt-demo.org/acme/reg/1',
             new_authzr_uri='https://www.letsencrypt-demo.org/acme/new-reg',
@@ -82,19 +83,19 @@ class ClientTest(unittest.TestCase):
             'terms-of-service': {'url': self.regr.terms_of_service},
         })
 
-        self.assertEqual(self.regr, self.client.register(self.regr.body))
+        self.assertEqual(self.regr, self.client.register(self.new_reg))
         # TODO: test POST call arguments
 
         # TODO: split here and separate test
         reg_wrong_key = self.regr.body.update(key=KEY2.public_key())
         self.response.json.return_value = reg_wrong_key.to_json()
         self.assertRaises(
-            errors.UnexpectedUpdate, self.client.register, self.regr.body)
+            errors.UnexpectedUpdate, self.client.register, self.new_reg)
 
     def test_register_missing_next(self):
         self.response.status_code = http_client.CREATED
         self.assertRaises(
-            errors.ClientError, self.client.register, self.regr.body)
+            errors.ClientError, self.client.register, self.new_reg)
 
     def test_update_registration(self):
         # "Instance of 'Field' has no to_json/update member" bug:
@@ -102,6 +103,7 @@ class ClientTest(unittest.TestCase):
         self.response.headers['Location'] = self.regr.uri
         self.response.json.return_value = self.regr.body.to_json()
         self.assertEqual(self.regr, self.client.update_registration(self.regr))
+        # TODO: test POST call arguments
 
         # TODO: split here and separate test
         self.response.json.return_value = self.regr.body.update(
@@ -369,9 +371,8 @@ class ClientNetworkTest(unittest.TestCase):
         self.assertTrue(self.net.verify_ssl is self.verify_ssl)
 
     def test_wrap_in_jws(self):
-        class MockClientRequestableResource(jose.JSONDeSerializable):
+        class MockJSONDeSerializable(jose.JSONDeSerializable):
             # pylint: disable=missing-docstring
-            resource_type = 'mock'
             def __init__(self, value):
                 self.value = value
             def to_partial_json(self):
@@ -381,10 +382,9 @@ class ClientNetworkTest(unittest.TestCase):
                 pass  # pragma: no cover
         # pylint: disable=protected-access
         jws_dump = self.net._wrap_in_jws(
-            MockClientRequestableResource('foo'), nonce=b'Tg')
+            MockJSONDeSerializable('foo'), nonce=b'Tg')
         jws = acme_jws.JWS.json_loads(jws_dump)
-        self.assertEqual(json.loads(jws.payload.decode()),
-                         {'foo': 'foo', 'resource': 'mock'})
+        self.assertEqual(json.loads(jws.payload.decode()), {'foo': 'foo'})
         self.assertEqual(jws.signature.combined.nonce, b'Tg')
 
     def test_check_response_not_ok_jobj_no_error(self):

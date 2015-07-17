@@ -23,3 +23,21 @@ class RFC3339Field(jose.Field):
             return pyrfc3339.parse(value)
         except ValueError as error:
             raise jose.DeserializationError(error)
+
+
+class Resource(jose.Field):
+    """Resource MITM field."""
+
+    def __init__(self, resource_type, *args, **kwargs):
+        self.resource_type = resource_type
+        super(Resource, self).__init__(
+            # TODO: omitempty used only to trick
+            # JSONObjectWithFieldsMeta._defaults..., server implementation
+            'resource', default=resource_type, *args, **kwargs)
+
+    def decode(self, value):
+        if value != self.resource_type:
+            raise jose.DeserializationError(
+                'Wrong resource type: {0} instead of {1}'.format(
+                    value, self.resource_type))
+        return value
