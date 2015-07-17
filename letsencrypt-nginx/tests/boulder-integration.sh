@@ -6,7 +6,7 @@
 export PATH="/usr/sbin:$PATH"  # /usr/sbin/nginx
 nginx_root="$root/nginx"
 mkdir $nginx_root
-root="$nginx_root" ./tests/integration/nginx.conf.sh > $nginx_root/nginx.conf
+root="$nginx_root" ./letsencrypt-nginx/tests/boulder-integration.conf.sh > $nginx_root/nginx.conf
 
 killall nginx || true
 nginx -c $nginx_root/nginx.conf
