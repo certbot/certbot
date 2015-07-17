@@ -1,9 +1,13 @@
 #!/bin/bash
-# An extremely simplified version of 'a2enmod' for the httpd docker image
+# An extremely simplified (and hacky) version of 'a2enmod' for the httpd
+# docker image. First argument is server_root and second argument is the module
+# to be enabled.
+
+APACHE_CONFDIR=$1
 
 enable () {
     echo "LoadModule "$1"_module /usr/local/apache2/modules/mod_"$1".so" >> \
-        $APACHE_CONFDIR"/tests.conf"
+        $APACHE_CONFDIR"/test.conf"
     available_base="/mods-available/"$1".conf"
     available_conf=$APACHE_CONFDIR$available_base
     enabled_dir=$APACHE_CONFDIR"/mods-enabled"
@@ -14,14 +18,14 @@ enable () {
     fi
 }
 
-if [ $1 == "ssl" ]
+if [ $2 == "ssl" ]
 then
     # Enables ssl and all its dependencies
     enable "setenvif"
     enable "mime"
     enable "socache_shmcb"
     enable "ssl"
-elif [ $1 == "rewrite" ]
+elif [ $2 == "rewrite" ]
 then
     enable "rewrite";
 else

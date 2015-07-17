@@ -7,10 +7,10 @@ from tests.compatibility.configurators.apache import common as apache_common
 # config uses mod_heartbeat or mod_heartmonitor (which aren't installed and
 # therefore the config won't be loaded), I believe this isn't a problem
 # http://httpd.apache.org/docs/2.4/mod/mod_watchdog.html
-STATIC_MODULES = set(["core", "so", "http", "mpm_event", "watchdog",])
+STATIC_MODULES = {"core", "so", "http", "mpm_event", "watchdog",}
 
 
-INSTALLED_MODULES = set([
+INSTALLED_MODULES = {
     "log_config", "logio", "version", "unixd", "access_compat", "actions",
     "alias", "allowmethods", "auth_basic", "auth_digest", "auth_form",
     "authn_anon", "authn_core", "authn_dbd", "authn_dbm", "authn_file",
@@ -27,7 +27,7 @@ INSTALLED_MODULES = set([
     "session_cookie", "session_crypto", "session_dbd", "setenvif",
     "slotmem_shm", "socache_dbm", "socache_memcache", "socache_shmcb",
     "speling", "ssl", "status", "substitute", "unique_id", "userdir",
-    "vhost_alias",])
+    "vhost_alias",}
 
 
 class Proxy(apache_common.Proxy):
@@ -38,14 +38,11 @@ class Proxy(apache_common.Proxy):
         super(Proxy, self).__init__(args)
         self.start_docker("bradmw/apache2.4")
 
-    def preprocess_config(self):
+    def preprocess_config(self, server_root):
         """Prepares the configuration for use in the Docker"""
-        super(Proxy, self).preprocess_config()
+        super(Proxy, self).preprocess_config(server_root)
         if self.version[1] != 4:
             raise errors.Error("Apache version not 2.4")
-
-        self.execute_in_docker(
-            "bash -c 'export APACHE_CONFDIR={0}'".format(self.config_file))
 
         with open(self.test_conf, "a") as f:
             for module in self.modules:

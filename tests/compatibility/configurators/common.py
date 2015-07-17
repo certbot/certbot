@@ -36,8 +36,8 @@ class Proxy(object):
         """Initializes the plugin with the given command line args"""
         temp_dir = tempfile.mkdtemp()
         self.le_config = util.create_le_config(temp_dir)
-        self.config_dir = util.extract_configs(args.configs, temp_dir)
-        self._configs = os.listdir(self.config_dir)
+        self._config_dir = util.extract_configs(args.configs, temp_dir)
+        self._configs = os.listdir(self._config_dir)
 
         self.args = args
         self._docker_client = docker.Client(
@@ -56,9 +56,9 @@ class Proxy(object):
         if not self.args.no_remove:
             self._docker_client.remove_container(self._container_id)
 
-    def get_next_config(self):
+    def load_config(self):
         """Returns the next config directory to be tested"""
-        return os.path.join(self.config_dir, self._configs.pop())
+        return os.path.join(self._config_dir, self._configs.pop())
 
     def start_docker(self, image_name):
         """Creates and runs a Docker container with the specified image"""
@@ -67,12 +67,12 @@ class Proxy(object):
 
         host_config = docker.utils.create_host_config(
             binds={
-                self.config_dir : {"bind" : self.config_dir, "mode" : "rw"}},
+                self._config_dir : {"bind" : self._config_dir, "mode" : "rw"}},
             port_bindings={
                 80 : ("127.0.0.1", self.http_port),
                 443 : ("127.0.0.1", self.https_port)},)
         container = self._docker_client.create_container(
-            image_name, ports=[80, 443], volumes=self.config_dir,
+            image_name, ports=[80, 443], volumes=self._config_dir,
             host_config=host_config)
         if container["Warnings"]:
             logger.warning(container["Warnings"])
@@ -85,7 +85,7 @@ class Proxy(object):
     def _start_log_thread(self):
         client = docker.Client(base_url=self.args.docker_url, version="auto")
         for line in client.logs(self._container_id, stream=True):
-            logger.info(line.rstrip())
+            logger.debug(line.rstrip())
 
     def check_call_in_docker(
             self, command, *args, **kwargs): # pylint: disable=unused-argument

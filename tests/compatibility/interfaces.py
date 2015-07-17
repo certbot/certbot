@@ -6,8 +6,7 @@ import letsencrypt.interfaces
 
 class IPluginProxy(zope.interface.Interface):
     """Wraps a Let's Encrypt plugin"""
-    @classmethod
-    def add_parser_arguments(cls, parser):
+    def add_parser_arguments(cls, parser): # pylint: disable=no-self-argument
         """Adds command line arguments needed by the parser"""
 
     def __init__(self, args):
@@ -24,7 +23,7 @@ class IPluginProxy(zope.interface.Interface):
         """Returns True if there are more configs to test"""
 
     def load_config(self):
-        """Loads the next configuration for the plugin to test"""
+        """Loads the next config and returns its name"""
 
 
 class IConfiguratorBaseProxy(IPluginProxy):
@@ -35,8 +34,8 @@ class IConfiguratorBaseProxy(IPluginProxy):
     https_port = zope.interface.Attribute(
         "The port to connect to on localhost for HTTPS traffic")
 
-    def get_test_domain_names(self):
-        """Returns a list of domain names to test against the plugin"""
+    def get_testable_domain_names(self):
+        """Returns the domain names that can be used in testing"""
 
 
 class IAuthenticatorProxy(
@@ -47,6 +46,9 @@ class IAuthenticatorProxy(
 class IInstallerProxy(
         IConfiguratorBaseProxy, letsencrypt.interfaces.IInstaller):
     """Wraps a Let's Encrypt installer"""
+
+    def get_all_names_answer(self):
+        """Returns all names that should be found by the installer"""
 
 
 class IConfiguratorProxy(IAuthenticatorProxy, IInstallerProxy):

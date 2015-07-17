@@ -17,7 +17,7 @@ setup(
     install_requires=install_requires,
     entry_points={
         'console_scripts': [
-            'compatibility-test = compatibility.plugin_test:main',
+            'compatibility-test = compatibility.test_driver:main',
         ],
     },
 )
