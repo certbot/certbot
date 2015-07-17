@@ -82,7 +82,7 @@ class ApacheParserTest(util.ApacheTest):
         from letsencrypt_apache.parser import get_aug_path
         self.parser.add_dir_to_ifmodssl(
             get_aug_path(self.parser.loc["default"]),
-            "FakeDirective", "123")
+            "FakeDirective", ["123"])
 
         matches = self.parser.find_dir("FakeDirective", "123")
 

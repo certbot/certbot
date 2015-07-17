@@ -44,10 +44,11 @@ def get_apache_configurator(
     """
     backups = os.path.join(work_dir, "backups")
 
-    with mock.patch("letsencrypt_apache.configurator."
-                    "subprocess.Popen") as mock_popen:
-        # This just states that the ssl module is already loaded
-        mock_popen().communicate.return_value = ("ssl_module", "")
+    with mock.patch("letsencrypt_apache.configurator.subprocess.Popen") as mock_popen:
+        # This indicates config_test passes
+        mock_popen().communicate.return_value = ("Fine output", "No problems")
+        mock_popen.returncode.return_value = 0
+        # mock_popen().communicate.return_value = ("ssl_module", "")
         config = configurator.ApacheConfigurator(
             config=mock.MagicMock(
                 apache_server_root=config_path,

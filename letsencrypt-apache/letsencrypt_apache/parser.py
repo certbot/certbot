@@ -81,6 +81,8 @@ class ApacheParser(object):
             dynamic configuration files.  These should not be parsed or
             interpreted.
 
+        .. todo:: Create separate compile time variables... simply for arg_get()
+
         """
         stdout = self._get_runtime_cfg(ctl)
 
@@ -157,7 +159,7 @@ class ApacheParser(object):
 
         return filtered
 
-    def add_dir_to_ifmodssl(self, aug_conf_path, directive, val):
+    def add_dir_to_ifmodssl(self, aug_conf_path, directive, args):
         """Adds directive and value to IfMod ssl block.
 
         Adds given directive and value along configuration path within
@@ -165,8 +167,9 @@ class ApacheParser(object):
         the file, it is created.
 
         :param str aug_conf_path: Desired Augeas config path to add directive
-        :param str directive: Directive you would like to add
-        :param str val: Value of directive ie. Listen 443, 443 is the value
+        :param str directive: Directive you would like to add, e.g. Listen
+        :param args: Values of the directive; str "443" or list of str
+        :type args: list
 
         """
         # TODO: Add error checking code... does the path given even exist?
@@ -176,7 +179,12 @@ class ApacheParser(object):
         self.aug.insert(if_mod_path + "arg", "directive", False)
         nvh_path = if_mod_path + "directive[1]"
         self.aug.set(nvh_path, directive)
-        self.aug.set(nvh_path + "/arg", val)
+        if len(args) == 1:
+            self.aug.set(nvh_path + "/arg", args[0])
+        else:
+            for i, arg in enumerate(args):
+                self.aug.set("%s/arg[%d]" % (nvh_path, i), arg)
+
 
     def _get_ifmod(self, aug_conf_path, mod):
         """Returns the path to <IfMod mod> and creates one if it doesn't exist.
@@ -195,7 +203,7 @@ class ApacheParser(object):
         # Strip off "arg" at end of first ifmod path
         return if_mods[0][:len(if_mods[0]) - 3]
 
-    def add_dir(self, aug_conf_path, directive, arg):
+    def add_dir(self, aug_conf_path, directive, args):
         """Appends directive to the end fo the file given by aug_conf_path.
 
         .. note:: Not added to AugeasConfigurator because it may depend
@@ -203,16 +211,17 @@ class ApacheParser(object):
 
         :param str aug_conf_path: Augeas configuration path to add directive
         :param str directive: Directive to add
-        :param str arg: Value of the directive. ie. Listen 443, 443 is arg
+        :param args: Value of the directive. ie. Listen 443, 443 is arg
+        :type args: list or str
 
         """
         self.aug.set(aug_conf_path + "/directive[last() + 1]", directive)
-        if isinstance(arg, list):
-            for i, value in enumerate(arg, 1):
+        if isinstance(args, list):
+            for i, value in enumerate(args, 1):
                 self.aug.set(
                     "%s/directive[last()]/arg[%d]" % (aug_conf_path, i), value)
         else:
-            self.aug.set(aug_conf_path + "/directive[last()]/arg", arg)
+            self.aug.set(aug_conf_path + "/directive[last()]/arg", args)
 
     def find_dir(self, directive, arg=None, start=None):
         """Finds directive in the configuration.

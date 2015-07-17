@@ -59,6 +59,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     .. todo:: Verify permissions on configuration root... it is easier than
         checking permissions on each of the relative directories and less error
         prone.
+    .. todo:: Write a server protocol finder. Listen <port> <protocol> or
+        Protocol <protocol>.  This can verify partial setups are correct
 
     :ivar config: Configuration.
     :type config: :class:`~letsencrypt.interfaces.IConfig`
@@ -77,6 +79,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     zope.interface.classProvides(interfaces.IPluginFactory)
 
     description = "Apache Web Server - Alpha"
+
+    # Kept in same function to avoid multiple compilations of the regex
+
+    private_ips_regex = re.compile(
+        r"(^127\.0\.0\.1)|(^10\.)|(^172\.1[6-9]\.)|"
+        r"(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)")
 
     @classmethod
     def add_parser_arguments(cls, add):
@@ -223,7 +231,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if target_name in self.assoc:
             return self.assoc[target_name]
 
-        # Make a new association
+        # Try to find a reasonable vhost
         vhost = self._find_best_vhost(target_name)
         if vhost is not None:
             if not vhost.ssl:
@@ -300,23 +308,34 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         all_names = set()
 
-        # Kept in same function to avoid multiple compilations of the regex
-        priv_ip_regex = (r"(^127\.0\.0\.1)|(^10\.)|(^172\.1[6-9]\.)|"
-                         r"(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)")
-        private_ips = re.compile(priv_ip_regex)
-
         for vhost in self.vhosts:
             all_names.update(vhost.names)
             for addr in vhost.addrs:
-                # If it isn't a private IP, do a reverse DNS lookup
-                if not private_ips.match(addr.get_addr()):
-                    try:
-                        socket.inet_aton(addr.get_addr())
-                        all_names.add(socket.gethostbyaddr(addr.get_addr())[0])
-                    except (socket.error, socket.herror, socket.timeout):
-                        continue
+                name = get_name_from_ip(addr)
+                if name:
+                    all_names.add(name)
 
         return all_names
+
+    def get_name_from_ip(self, addr):
+        """Returns a reverse dns name if available.
+
+        :param addr: IP Address
+        :type addr: ~.common.Addr
+
+        :returns: name
+        :rtype: str
+
+        """
+        # If it isn't a private IP, do a reverse DNS lookup
+        if not private_ips_regex.match(addr.get_addr()):
+            try:
+                socket.inet_aton(addr.get_addr())
+                return socket.gethostbyaddr(addr.get_addr())[0]
+            except (socket.error, socket.herror, socket.timeout):
+                pass
+
+        return ""
 
     def _add_servernames(self, host):
         """Helper function for get_virtual_hosts().
@@ -415,7 +434,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         path = self.parser.add_dir_to_ifmodssl(
             parser.get_aug_path(
-                self.parser.loc["name"]), "NameVirtualHost", str(addr))
+                self.parser.loc["name"]), "NameVirtualHost", [str(addr)])
 
         self.save_notes += "Setting %s to be NameBasedVirtualHost\n" % addr
         self.save_notes += "\tDirective added to %s\n" % path
@@ -438,11 +457,18 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if not self.parser.find_dir(parser.case_i("Listen"), port):
             logger.debug("No Listen {0} directive found. Setting the "
                          "Apache Server to Listen on port {0}".format(port))
-            path = self.parser.add_dir_to_ifmodssl(
+
+            if port == "443":
+                args = [port]
+            else:
+                # Non-standard ports should specify https protocol
+                args = [port, "https"]
+
+            self.parser.add_dir_to_ifmodssl(
                 parser.get_aug_path(
-                    self.parser.loc["listen"]), "Listen", port)
+                    self.parser.loc["listen"]), "Listen", args)
             self.save_notes += "Added Listen %s directive to %s\n" % (
-                port, path)
+                port, self.parser.loc["listen"])
 
     def make_addrs_sni_ready(
             self, addrs, default_addr=obj.Addr(("*", "443"))):
