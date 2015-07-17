@@ -4,7 +4,6 @@ import pkg_resources
 import shutil
 import tempfile
 
-from cryptography.hazmat.primitives import serialization
 import zope.interface
 
 from acme.jose import util as jose_util
@@ -173,17 +172,11 @@ class Dvsni(object):
         self.configurator.reverter.register_file_creation(True, key_path)
         self.configurator.reverter.register_file_creation(True, cert_path)
 
-        cert_pem, response = achall.gen_cert_and_response(s)
+        response, cert_pem, key_pem = achall.gen_cert_and_response(s)
 
-        # Write out challenge cert
+        # Write out challenge cert and key
         with open(cert_path, "wb") as cert_chall_fd:
             cert_chall_fd.write(cert_pem)
-
-        # Write out challenge key
-        key_pem = achall.key.key.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.TraditionalOpenSSL,
-            encryption_algorithm=serialization.NoEncryption())
         with le_util.safe_open(key_path, 'wb', chmod=0o400) as key_file:
             key_file.write(key_pem)
 

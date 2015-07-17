@@ -6,7 +6,6 @@ import socket
 import sys
 import time
 
-from cryptography.hazmat.primitives import serialization
 import OpenSSL
 import zope.component
 import zope.interface
@@ -14,6 +13,7 @@ import zope.interface
 from acme import challenges
 
 from letsencrypt import achallenges
+from letsencrypt import crypto_util
 from letsencrypt import interfaces
 
 from letsencrypt.plugins import common
@@ -28,6 +28,11 @@ class StandaloneAuthenticator(common.Plugin):
     the certificate authority. Therefore, it does not rely on any
     existing server program.
 
+    :param OpenSSL.crypto.PKey private_key: DVSNI challenge certificate
+        key.
+    :param sni_names: Mapping from z_domain (`bytes`) to PEM-encoded
+        certificate (`bytes`).
+
     """
     zope.interface.implements(interfaces.IAuthenticator)
     zope.interface.classProvides(interfaces.IPluginFactory)
@@ -40,9 +45,12 @@ class StandaloneAuthenticator(common.Plugin):
         self.parent_pid = os.getpid()
         self.subproc_state = None
         self.tasks = {}
+        self.sni_names = {}
         self.sock = None
         self.connection = None
-        self.private_key = None
+        self.key_pem = crypto_util.make_key(bits=2048)
+        self.private_key = OpenSSL.crypto.load_privatekey(
+            OpenSSL.crypto.FILETYPE_PEM, self.key_pem)
         self.ssl_conn = None
 
     def prepare(self):
@@ -121,8 +129,8 @@ class StandaloneAuthenticator(common.Plugin):
 
         """
         sni_name = connection.get_servername()
-        if sni_name in self.tasks:
-            pem_cert = self.tasks[sni_name]
+        if sni_name in self.sni_names:
+            pem_cert = self.sni_names[sni_name]
         else:
             # TODO: Should we really present a certificate if we get an
             #       unexpected SNI name? Or should we just disconnect?
@@ -179,7 +187,7 @@ class StandaloneAuthenticator(common.Plugin):
 
         return False
 
-    def do_child_process(self, port, key):
+    def do_child_process(self, port):
         """Perform the child process side of the TCP listener task.
 
         This should only be called by :meth:`start_listener`.
@@ -189,9 +197,6 @@ class StandaloneAuthenticator(common.Plugin):
         handler.
 
         :param int port: Which TCP port to bind.
-        :param key: The private key to use to respond to DVSNI challenge
-            requests.
-        :type key: `letsencrypt.le_util.Key`
 
         """
         signal.signal(signal.SIGINT, self.subproc_signal_handler)
@@ -214,11 +219,6 @@ class StandaloneAuthenticator(common.Plugin):
         self.sock.listen(1)
         # Signal that we've successfully bound TCP port
         os.kill(self.parent_pid, signal.SIGIO)
-        self.private_key = OpenSSL.crypto.load_privatekey(
-            OpenSSL.crypto.FILETYPE_PEM, key.key.private_bytes(
-                encoding=serialization.Encoding.PEM,
-                format=serialization.PrivateFormat.TraditionalOpenSSL,
-                encryption_algorithm=serialization.NoEncryption()))
 
         while True:
             self.connection, _ = self.sock.accept()
@@ -241,16 +241,13 @@ class StandaloneAuthenticator(common.Plugin):
             self.ssl_conn.shutdown()
             self.ssl_conn.close()
 
-    def start_listener(self, port, key):
+    def start_listener(self, port):
         """Start listener.
 
         Create a child process which will start a TCP listener on the
         specified port to perform the specified DVSNI challenges.
 
         :param int port: The TCP port to bind.
-        :param key: The private key to use to respond to DVSNI challenge
-            requests.
-        :type key: :class:`letsencrypt.le_util.Key`
 
         :returns: ``True`` or ``False`` to indicate success or failure creating
             the subprocess.
@@ -286,7 +283,7 @@ class StandaloneAuthenticator(common.Plugin):
             self.child_pid = os.getpid()
             # do_child_process() is normally not expected to return but
             # should terminate via sys.exit().
-            return self.do_child_process(port, key)
+            return self.do_child_process(port)
 
     def already_listening(self, port):  # pylint: disable=no-self-use
         """Check if a process is already listening on the port.
@@ -364,12 +361,14 @@ class StandaloneAuthenticator(common.Plugin):
         results_if_failure = []
         if not achalls or not isinstance(achalls, list):
             raise ValueError(".perform() was called without challenge list")
+        # TODO: "bits" should be user-configurable
         for achall in achalls:
             if isinstance(achall, achallenges.DVSNI):
                 # We will attempt to do it
-                key = achall.key  # TODO: bug; one key per start_listener
-                cert_pem, response = achall.gen_cert_and_response()
-                self.tasks[achall.nonce_domain] = cert_pem
+                response, cert_pem, _ = achall.gen_cert_and_response(
+                    key_pem=self.key_pem)
+                self.sni_names[response.z_domain] = cert_pem
+                self.tasks[achall.token] = cert_pem
                 results_if_success.append(response)
                 results_if_failure.append(None)
             else:
@@ -388,7 +387,7 @@ class StandaloneAuthenticator(common.Plugin):
             return results_if_failure
         # Try to do the authentication; note that this creates
         # the listener subprocess via os.fork()
-        if self.start_listener(self.config.dvsni_port, key):
+        if self.start_listener(self.config.dvsni_port):
             return results_if_success
         else:
             # TODO: This should probably raise a DVAuthError exception
@@ -407,8 +406,8 @@ class StandaloneAuthenticator(common.Plugin):
         # Remove this from pending tasks list
         for achall in achalls:
             assert isinstance(achall, achallenges.DVSNI)
-            if achall.nonce_domain in self.tasks:
-                del self.tasks[achall.nonce_domain]
+            if achall.token in self.tasks:
+                del self.tasks[achall.token]
             else:
                 # Could not find the challenge to remove!
                 raise ValueError("could not find the challenge to remove")

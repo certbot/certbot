@@ -196,7 +196,7 @@ class PollChallengesTest(unittest.TestCase):
         self.chall_update = {}
         for dom in self.doms:
             self.chall_update[dom] = [
-                challb_to_achall(challb, "dummy_key", dom)
+                challb_to_achall(challb, mock.Mock(key="dummy_key"), dom)
                 for challb in self.handler.authzr[dom].body.challenges]
 
     @mock.patch("letsencrypt.auth_handler.time")
@@ -444,13 +444,13 @@ class ReportFailedChallsTest(unittest.TestCase):
         self.dvsni_same = achallenges.DVSNI(
             challb=messages.ChallengeBody(**kwargs),# pylint: disable=star-args
             domain="example.com",
-            key=acme_util.KEY)
+            account=mock.Mock(key=acme_util.KEY))
 
         kwargs["error"] = messages.Error(typ="dnssec", detail="detail")
         self.dvsni_diff = achallenges.DVSNI(
             challb=messages.ChallengeBody(**kwargs),# pylint: disable=star-args
             domain="foo.bar",
-            key=acme_util.KEY)
+            account=mock.Mock(key=acme_util.KEY))
 
     @mock.patch("letsencrypt.auth_handler.zope.component.getUtility")
     def test_same_error_and_domain(self, mock_zope):

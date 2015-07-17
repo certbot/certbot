@@ -15,8 +15,7 @@ KEY = test_util.load_rsa_private_key('rsa512_key.pem')
 SIMPLE_HTTP = challenges.SimpleHTTP(
     token="evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ+PCt92wr+oA")
 DVSNI = challenges.DVSNI(
-    r=jose.b64decode("Tyq0La3slT7tqQ0wlOiXnCY2vyez7Zo5blgPJ1xt5xI"),
-    nonce=jose.b64decode("a82d5ff8ef740d12881f6d3c2277ab2e"))
+    token=jose.b64decode(b"evaGxfADs6pSRb2LAv9IZf17Dt3juxGJyPCt92wrDoA"))
 DNS = challenges.DNS(token="17817c66b60ce2e4012dfad92657527a")
 RECOVERY_CONTACT = challenges.RecoveryContact(
     activation_url="https://example.ca/sendrecovery/a5bd99383fb0",

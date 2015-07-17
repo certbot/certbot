@@ -317,7 +317,7 @@ class AuthHandler(object):
             challb = self.authzr[domain].body.challenges[index]
             chall = challb.chall
 
-            achall = challb_to_achall(challb, self.account.key, domain)
+            achall = challb_to_achall(challb, self.account, domain)
 
             if isinstance(chall, challenges.ContinuityChallenge):
                 cont_chall.append(achall)
@@ -327,15 +327,11 @@ class AuthHandler(object):
         return cont_chall, dv_chall
 
 
-def challb_to_achall(challb, key, domain):
+def challb_to_achall(challb, account, domain):
     """Converts a ChallengeBody object to an AnnotatedChallenge.
 
-    :param challb: ChallengeBody
-    :type challb: :class:`acme.messages.ChallengeBody`
-
-    :param key: Key
-    :type key: :class:`letsencrypt.le_util.Key`
-
+    :param .ChallengeBody challb: ChallengeBody
+    :param .Account account:
     :param str domain: Domain of the challb
 
     :returns: Appropriate AnnotatedChallenge
@@ -347,10 +343,10 @@ def challb_to_achall(challb, key, domain):
 
     if isinstance(chall, challenges.DVSNI):
         return achallenges.DVSNI(
-            challb=challb, domain=domain, key=key)
+            challb=challb, domain=domain, account=account)
     elif isinstance(chall, challenges.SimpleHTTP):
         return achallenges.SimpleHTTP(
-            challb=challb, domain=domain, key=key)
+            challb=challb, domain=domain, key=account.key)
     elif isinstance(chall, challenges.DNS):
         return achallenges.DNS(challb=challb, domain=domain)
     elif isinstance(chall, challenges.RecoveryToken):

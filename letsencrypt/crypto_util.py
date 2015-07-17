@@ -216,10 +216,13 @@ def pyopenssl_load_certificate(data):
 
 
 def make_ss_cert(key, domains, not_before=None,
-                 validity=(7 * 24 * 60 * 60)):
+                 validity=(7 * 24 * 60 * 60), force_san=False):
     """Returns new self-signed cert in PEM form.
 
-    Uses key and contains all domains.
+    If more than one domain is provided, all of the domains are put into
+    ``subjectAltName`` X.509 extension and first domain is set as the
+    subject CN. If only one domain is provided no ``subjectAltName``
+    extension is used, unless `force_san` is ``True``.
 
     """
     if isinstance(key, jose.JWK):
@@ -243,7 +246,7 @@ def make_ss_cert(key, domains, not_before=None,
     # TODO: what to put into cert.get_subject()?
     cert.set_issuer(cert.get_subject())
 
-    if len(domains) > 1:
+    if force_san or len(domains) > 1:
         extensions.append(OpenSSL.crypto.X509Extension(
             "subjectAltName",
             critical=False,
@@ -312,7 +315,7 @@ def _get_sans_from_cert_or_req(
 def get_sans_from_cert(cert, typ=OpenSSL.crypto.FILETYPE_PEM):
     """Get a list of Subject Alternative Names from a certificate.
 
-    :param str csr: Certificate (encoded).
+    :param str cert: Certificate (encoded).
     :param typ: `OpenSSL.crypto.FILETYPE_PEM` or `OpenSSL.crypto.FILETYPE_ASN1`
 
     :returns: A list of Subject Alternative Names.

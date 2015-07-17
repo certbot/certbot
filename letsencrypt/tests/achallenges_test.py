@@ -1,9 +1,9 @@
 """Tests for letsencrypt.achallenges."""
 import unittest
 
+import mock
 import OpenSSL
 
-from acme import challenges
 from acme import jose
 
 from letsencrypt import crypto_util
@@ -16,28 +16,20 @@ class DVSNITest(unittest.TestCase):
     """Tests for letsencrypt.achallenges.DVSNI."""
 
     def setUp(self):
-        self.chall = acme_util.chall_to_challb(
-            challenges.DVSNI(r="r_value", nonce="12345ABCDE"), "pending")
-        self.response = challenges.DVSNIResponse()
-        key = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
-
+        self.challb = acme_util.chall_to_challb(acme_util.DVSNI, "pending")
+        account = mock.Mock(key=jose.JWKRSA.load(
+            test_util.load_vector("rsa512_key.pem")))
         from letsencrypt.achallenges import DVSNI
-        self.achall = DVSNI(challb=self.chall, domain="example.com", key=key)
+        self.achall = DVSNI(
+            challb=self.challb, domain="example.com", account=account)
 
     def test_proxy(self):
-        self.assertEqual(self.chall.r, self.achall.r)
-        self.assertEqual(self.chall.nonce, self.achall.nonce)
+        self.assertEqual(self.challb.token, self.achall.token)
 
     def test_gen_cert_and_response(self):
-        cert_pem, _ = self.achall.gen_cert_and_response(s=self.response.s)
-
-        cert = OpenSSL.crypto.load_certificate(
-            OpenSSL.crypto.FILETYPE_PEM, cert_pem)
-        self.assertEqual(cert.get_subject().CN, "example.com")
-        # pylint: disable=protected-access
-        self.assertEqual(crypto_util._pyopenssl_cert_or_req_san(cert), [
-            "example.com", self.chall.nonce_domain,
-            self.response.z_domain(self.chall)])
+        response, cert_pem, _ = self.achall.gen_cert_and_response()
+        self.assertTrue(response.z_domain in crypto_util.get_sans_from_cert(
+            cert_pem, typ=OpenSSL.crypto.FILETYPE_PEM))
 
 
 if __name__ == "__main__":

@@ -18,7 +18,7 @@ Note, that all annotated challenges act as a proxy objects::
 
 """
 from acme import challenges
-from acme.jose import util as jose_util
+from acme import jose
 
 from letsencrypt import crypto_util
 
@@ -26,7 +26,7 @@ from letsencrypt import crypto_util
 # pylint: disable=too-few-public-methods
 
 
-class AnnotatedChallenge(jose_util.ImmutableMap):
+class AnnotatedChallenge(jose.ImmutableMap):
     """Client annotated challenge.
 
     Wraps around server provided challenge and annotates with data
@@ -43,23 +43,41 @@ class AnnotatedChallenge(jose_util.ImmutableMap):
 
 
 class DVSNI(AnnotatedChallenge):
-    """Client annotated "dvsni" ACME challenge."""
-    __slots__ = ('challb', 'domain', 'key')
+    """Client annotated "dvsni" ACME challenge.
+
+    :ivar .Account account:
+
+    """
+    __slots__ = ('challb', 'domain', 'account')
     acme_type = challenges.DVSNI
 
-    def gen_cert_and_response(self, s=None):  # pylint: disable=invalid-name
+    def gen_cert_and_response(self, key_pem=None, bits=2048, alg=jose.RS256):
         """Generate a DVSNI cert and save it to filepath.
 
-        :returns: ``(cert_pem, response)`` tuple,  where ``cert_pem`` is the PEM
-            encoded  certificate and ``response`` is an instance
-            :class:`acme.challenges.DVSNIResponse`.
+        :param bytes key_pem: Private PEM-encoded key used for
+            certificate generation. If none provided, a fresh key will
+            be generated.
+        :param int bits: Number of bits for fresh key generation.
+        :param .JWAAlgorithm alg:
+
+        :returns: ``(response, cert_pem, key_pem)`` tuple,  where
+            ``response`` is an instance of
+            `acme.challenges.DVSNIResponse`, ``cert_pem`` is the
+            PEM-encoded certificate and ``key_pem`` is PEM-encoded
+            private key.
         :rtype: tuple
 
         """
-        response = challenges.DVSNIResponse(s=s)
-        cert_pem = crypto_util.make_ss_cert(self.key, [
-            self.domain, self.nonce_domain, response.z_domain(self.challb)])
-        return cert_pem, response
+        key_pem = crypto_util.make_key(bits) if key_pem is None else key_pem
+        response = challenges.DVSNIResponse(validation=jose.JWS.sign(
+            payload=self.challb.chall.json_dumps().encode('utf-8'),
+            alg=alg,
+            key=self.account.key,
+            include_jwk=False,
+        ))
+        cert_pem = crypto_util.make_ss_cert(
+            key_pem, ["some CN", response.z_domain], force_san=True)
+        return response, cert_pem, key_pem
 
 
 class SimpleHTTP(AnnotatedChallenge):
