@@ -55,5 +55,5 @@ done
 
 if type nginx;
 then
-    . ./tests/integration/nginx.sh
+    . ./letsencrypt-nginx/tests/boulder-integration.sh
 fi
