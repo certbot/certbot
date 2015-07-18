@@ -13,11 +13,20 @@ from acme import errors
 
 logger = logging.getLogger(__name__)
 
+# DVSNI certificate serving and probing is not affected by SSL
+# vulnerabilities: prober needs to check certificate for expected
+# contents anyway. Working SNI is the only thing that's necessary for
+# the challenge and thus scoping down SSL/TLS method (version) would
+# cause interoperability issues: TLSv1_METHOD is only compatible with
+# TLSv1_METHOD, while SSLv23_METHOD is compatible with all other
+# methods, including TLSv2_METHOD (read more at
+# https://www.openssl.org/docs/ssl/SSLv23_method.html). _serve_sni
+# should be changed to use "set_options" to disable SSLv2 and SSLv3,
+# in case it's used for things other than probing/serving!
+_DEFAULT_DVSNI_SSL_METHOD = OpenSSL.SSL.SSLv23_METHOD
 
-_DEFAULT_SSL_METHOD = OpenSSL.SSL.SSLv23_METHOD
 
-
-def _serve_sni(certs, sock, reuseaddr=True, method=_DEFAULT_SSL_METHOD,
+def _serve_sni(certs, sock, reuseaddr=True, method=_DEFAULT_DVSNI_SSL_METHOD,
                accept=None):
     """Start SNI-enabled server, that drops connection after handshake.
 
@@ -61,7 +70,7 @@ def _serve_sni(certs, sock, reuseaddr=True, method=_DEFAULT_SSL_METHOD,
 
 
 def _probe_sni(name, host, port=443, timeout=300,
-               method=_DEFAULT_SSL_METHOD, source_address=('0', 0)):
+               method=_DEFAULT_DVSNI_SSL_METHOD, source_address=('0', 0)):
     """Probe SNI server for SSL certificate.
 
     :param bytes name: Byte string to send as the server name in the
