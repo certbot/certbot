@@ -11,5 +11,10 @@ export GOPATH="${GOPATH:-/tmp/go}"
 go get -d github.com/letsencrypt/boulder/cmd/boulder
 cd $GOPATH/src/github.com/letsencrypt/boulder
 make -j4  # Travis has 2 cores per build instance.
-./start.sh &
-# Hopefully start.sh bootstraps before integration test is started...
+if [ "$1" = "amqp" ];
+then
+    ./start.py &
+else
+    ./start.sh &
+fi
+# Hopefully start.py/start.sh bootstraps before integration test is started...
