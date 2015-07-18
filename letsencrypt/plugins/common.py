@@ -182,7 +182,7 @@ class Dvsni(object):
         # Write out challenge key
         key_pem = achall.key.key.private_bytes(
             encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.TraditionalOpenSSL,
+            format=serialization.PrivateFormat.PKCS8,
             encryption_algorithm=serialization.NoEncryption())
         with le_util.safe_open(key_path, 'wb', chmod=0o400) as key_file:
             key_file.write(key_pem)
