@@ -44,8 +44,10 @@ from acme.jose.json_util import (
     decode_cert,
     decode_csr,
     decode_hex16,
+    encode_b64jose,
     encode_cert,
     encode_csr,
+    encode_hex16,
 )
 
 from acme.jose.jwa import (
@@ -74,6 +76,7 @@ from acme.jose.jws import (
 
 from acme.jose.util import (
     ComparableX509,
+    ComparableKey,
     ComparableRSAKey,
     ImmutableMap,
 )

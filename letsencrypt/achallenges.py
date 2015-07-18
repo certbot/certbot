@@ -17,10 +17,10 @@ Note, that all annotated challenges act as a proxy objects::
   achall.token == challb.token
 
 """
+import OpenSSL
+
 from acme import challenges
 from acme import jose
-
-from letsencrypt import crypto_util
 
 
 # pylint: disable=too-few-public-methods
@@ -52,7 +52,7 @@ class DVSNI(AnnotatedChallenge):
     acme_type = challenges.DVSNI
 
     def gen_cert_and_response(self, key_pem=None, bits=2048, alg=jose.RS256):
-        """Generate a DVSNI cert and save it to filepath.
+        """Generate a DVSNI cert and response.
 
         :param bytes key_pem: Private PEM-encoded key used for
             certificate generation. If none provided, a fresh key will
@@ -68,15 +68,16 @@ class DVSNI(AnnotatedChallenge):
         :rtype: tuple
 
         """
-        key_pem = crypto_util.make_key(bits) if key_pem is None else key_pem
-        response = challenges.DVSNIResponse(validation=jose.JWS.sign(
-            payload=self.challb.chall.json_dumps().encode('utf-8'),
-            alg=alg,
-            key=self.account.key,
-            include_jwk=False,
-        ))
-        cert_pem = crypto_util.make_ss_cert(
-            key_pem, ["some CN", response.z_domain], force_san=True)
+        key = None if key_pem is None else OpenSSL.crypto.load_privatekey(
+            OpenSSL.crypto.FILETYPE_PEM, key_pem)
+        response = self.challb.chall.gen_response(self.account.key, alg=alg)
+        cert, key = response.gen_cert(key=key, bits=bits)
+
+        cert_pem = OpenSSL.crypto.dump_certificate(
+            OpenSSL.crypto.FILETYPE_PEM, cert)
+        key_pem = OpenSSL.crypto.dump_privatekey(
+            OpenSSL.crypto.FILETYPE_PEM, key)
+
         return response, cert_pem, key_pem
 
 

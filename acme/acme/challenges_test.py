@@ -4,8 +4,10 @@ import unittest
 import mock
 import OpenSSL
 import requests
-import urlparse
 
+from six.moves.urllib import parse as urllib_parse  # pylint: disable=import-error
+
+from acme import errors
 from acme import jose
 from acme import other
 from acme import test_util
@@ -13,13 +15,6 @@ from acme import test_util
 
 CERT = test_util.load_cert('cert.pem')
 KEY = test_util.load_rsa_private_key('rsa512_key.pem')
-
-
-class ChallengeResponseTest(unittest.TestCase):
-
-    def test_from_json_none(self):
-        from acme.challenges import ChallengeResponse
-        self.assertTrue(ChallengeResponse.from_json(None) is None)
 
 
 class SimpleHTTPTest(unittest.TestCase):
@@ -54,11 +49,13 @@ class SimpleHTTPResponseTest(unittest.TestCase):
             path='6tbIMBC5Anhl5bOlWT5ZFA', tls=False)
         self.msg_https = SimpleHTTPResponse(path='6tbIMBC5Anhl5bOlWT5ZFA')
         self.jmsg_http = {
+            'resource': 'challenge',
             'type': 'simpleHttp',
             'path': '6tbIMBC5Anhl5bOlWT5ZFA',
             'tls': False,
         }
         self.jmsg_https = {
+            'resource': 'challenge',
             'type': 'simpleHttp',
             'path': '6tbIMBC5Anhl5bOlWT5ZFA',
             'tls': True,
@@ -136,7 +133,7 @@ class SimpleHTTPResponseTest(unittest.TestCase):
     @mock.patch("acme.challenges.requests.get")
     def test_simple_verify_port(self, mock_get):
         self.resp_http.simple_verify(self.chall, "local", 4430)
-        self.assertEqual("local:4430", urlparse.urlparse(
+        self.assertEqual("local:4430", urllib_parse.urlparse(
             mock_get.mock_calls[0][1][0]).netloc)
 
 
@@ -164,36 +161,53 @@ class DVSNITest(unittest.TestCase):
 
     def test_from_json_invalid_token_length(self):
         from acme.challenges import DVSNI
-        self.jmsg['token'] = jose.b64encode('abcd')
+        self.jmsg['token'] = jose.encode_b64jose(b'abcd')
         self.assertRaises(
             jose.DeserializationError, DVSNI.from_json, self.jmsg)
 
+    def test_gen_response(self):
+        key = jose.JWKRSA(key=KEY)
+        from acme.challenges import DVSNI
+        self.assertEqual(self.msg, DVSNI.json_loads(
+            self.msg.gen_response(key).validation.payload.decode()))
+
 
 class DVSNIResponseTest(unittest.TestCase):
+    # pylint: disable=too-many-instance-attributes
 
     def setUp(self):
+        self.key = jose.JWKRSA(key=KEY)
+
+        from acme.challenges import DVSNI
+        self.chall = DVSNI(
+            token=jose.b64decode('a82d5ff8ef740d12881f6d3c2277ab2e'))
+
         from acme.challenges import DVSNIResponse
         self.validation = jose.JWS.sign(
-            payload='foo', key=jose.JWKRSA(key=KEY), alg=jose.RS256)
+            payload=self.chall.json_dumps().encode(),
+            key=self.key, alg=jose.RS256)
         self.msg = DVSNIResponse(validation=self.validation)
         self.jmsg_to = {
+            'resource': 'challenge',
             'type': 'dvsni',
             'validation': self.validation,
         }
         self.jmsg_from = {
+            'resource': 'challenge',
             'type': 'dvsni',
             'validation': self.validation.to_json(),
         }
 
-    def test_z_and_domain(self):
         # pylint: disable=invalid-name
-        z = '94b209f1b27afe1cb40f27c9ce7c1b4d75786fe6e380524c0bb80009f0105e4b'
-        label1 = '94b209f1b27afe1cb40f27c9ce7c1b4d'
-        label2 = '75786fe6e380524c0bb80009f0105e4b'
-        assert z == label1 + label2
-        self.assertEqual(z, self.msg.z)
-        self.assertEqual(
-            '{0}.{1}.acme.invalid'.format(label1, label2), self.msg.z_domain)
+        label1 = b'e2df3498860637c667fedadc5a8494ec'
+        label2 = b'09dcc75553c9b3bd73662b50e71b1e42'
+        self.z = label1 + label2
+        self.z_domain = label1 + b'.' + label2 + b'.acme.invalid'
+        self.domain = 'foo.com'
+
+    def test_z_and_domain(self):
+        self.assertEqual(self.z, self.msg.z)
+        self.assertEqual(self.z_domain, self.msg.z_domain)
 
     def test_to_partial_json(self):
         self.assertEqual(self.jmsg_to, self.msg.to_partial_json())
@@ -205,6 +219,80 @@ class DVSNIResponseTest(unittest.TestCase):
     def test_from_json_hashable(self):
         from acme.challenges import DVSNIResponse
         hash(DVSNIResponse.from_json(self.jmsg_from))
+
+    @mock.patch('acme.challenges.socket.gethostbyname')
+    @mock.patch('acme.challenges.crypto_util._probe_sni')
+    def test_probe_cert(self, mock_probe_sni, mock_gethostbyname):
+        mock_gethostbyname.return_value = '127.0.0.1'
+        self.msg.probe_cert('foo.com')
+        mock_gethostbyname.assert_called_once_with('foo.com')
+        mock_probe_sni.assert_called_once_with(
+            host='127.0.0.1', port=self.msg.PORT,
+            name=self.z_domain)
+
+        self.msg.probe_cert('foo.com', host='8.8.8.8')
+        mock_probe_sni.assert_called_with(
+            host='8.8.8.8', port=mock.ANY, name=mock.ANY)
+
+        self.msg.probe_cert('foo.com', port=1234)
+        mock_probe_sni.assert_called_with(
+            host=mock.ANY, port=1234, name=mock.ANY)
+
+        self.msg.probe_cert('foo.com', bar='baz')
+        mock_probe_sni.assert_called_with(
+            host=mock.ANY, port=mock.ANY, name=mock.ANY, bar='baz')
+
+        self.msg.probe_cert('foo.com', name=b'xxx')
+        mock_probe_sni.assert_called_with(
+            host=mock.ANY, port=mock.ANY,
+            name=self.z_domain)
+
+    def test_gen_verify_cert(self):
+        key1 = test_util.load_pyopenssl_private_key('rsa512_key.pem')
+        cert, key2 = self.msg.gen_cert(key1)
+        self.assertEqual(key1, key2)
+        self.assertTrue(self.msg.verify_cert(cert))
+
+    def test_gen_verify_cert_gen_key(self):
+        cert, key = self.msg.gen_cert()
+        self.assertTrue(isinstance(key, OpenSSL.crypto.PKey))
+        self.assertTrue(self.msg.verify_cert(cert))
+
+    def test_verify_bad_cert(self):
+        self.assertFalse(self.msg.verify_cert(test_util.load_cert('cert.pem')))
+
+    def test_simple_verify_wrong_account_key(self):
+        self.assertFalse(self.msg.simple_verify(
+            self.chall, self.domain, jose.JWKRSA.load(
+                test_util.load_vector('rsa256_key.pem')).public_key()))
+
+    def test_simple_verify_wrong_payload(self):
+        for payload in b'', b'{}':
+            msg = self.msg.update(validation=jose.JWS.sign(
+                payload=payload, key=self.key, alg=jose.RS256))
+            self.assertFalse(msg.simple_verify(
+                self.chall, self.domain, self.key.public_key()))
+
+    def test_simple_verify_wrong_token(self):
+        msg = self.msg.update(validation=jose.JWS.sign(
+            payload=self.chall.update(token=b'b'*20).json_dumps().encode(),
+            key=self.key, alg=jose.RS256))
+        self.assertFalse(msg.simple_verify(
+            self.chall, self.domain, self.key.public_key()))
+
+    @mock.patch('acme.challenges.DVSNIResponse.verify_cert', autospec=True)
+    def test_simple_verify(self, mock_verify_cert):
+        mock_verify_cert.return_value = mock.sentinel.verification
+        self.assertEqual(mock.sentinel.verification, self.msg.simple_verify(
+            self.chall, self.domain, self.key.public_key(),
+            cert=mock.sentinel.cert))
+        mock_verify_cert.assert_called_once_with(self.msg, mock.sentinel.cert)
+
+    def test_simple_verify_false_on_probe_error(self):
+        chall = mock.Mock()
+        chall.probe_cert.side_effect = errors.Error
+        self.assertFalse(self.msg.simple_verify(
+            self.chall, self.domain, self.key.public_key()))
 
 
 class RecoveryContactTest(unittest.TestCase):
@@ -252,7 +340,11 @@ class RecoveryContactResponseTest(unittest.TestCase):
     def setUp(self):
         from acme.challenges import RecoveryContactResponse
         self.msg = RecoveryContactResponse(token='23029d88d9e123e')
-        self.jmsg = {'type': 'recoveryContact', 'token': '23029d88d9e123e'}
+        self.jmsg = {
+            'resource': 'challenge',
+            'type': 'recoveryContact',
+            'token': '23029d88d9e123e',
+        }
 
     def test_to_partial_json(self):
         self.assertEqual(self.jmsg, self.msg.to_partial_json())
@@ -300,7 +392,11 @@ class RecoveryTokenResponseTest(unittest.TestCase):
     def setUp(self):
         from acme.challenges import RecoveryTokenResponse
         self.msg = RecoveryTokenResponse(token='23029d88d9e123e')
-        self.jmsg = {'type': 'recoveryToken', 'token': '23029d88d9e123e'}
+        self.jmsg = {
+            'resource': 'challenge',
+            'type': 'recoveryToken',
+            'token': '23029d88d9e123e'
+        }
 
     def test_to_partial_json(self):
         self.assertEqual(self.jmsg, self.msg.to_partial_json())
@@ -350,7 +446,7 @@ class ProofOfPossessionHintsTest(unittest.TestCase):
         self.jmsg_to = {
             'jwk': jwk,
             'certFingerprints': cert_fingerprints,
-            'certs': (jose.b64encode(OpenSSL.crypto.dump_certificate(
+            'certs': (jose.encode_b64jose(OpenSSL.crypto.dump_certificate(
                 OpenSSL.crypto.FILETYPE_ASN1, CERT)),),
             'subjectKeyIdentifiers': subject_key_identifiers,
             'serialNumbers': serial_numbers,
@@ -401,7 +497,7 @@ class ProofOfPossessionTest(unittest.TestCase):
             issuers=(), authorized_for=())
         self.msg = ProofOfPossession(
             alg=jose.RS256, hints=hints,
-            nonce='xD\xf9\xb9\xdbU\xed\xaa\x17\xf1y|\x81\x88\x99 ')
+            nonce=b'xD\xf9\xb9\xdbU\xed\xaa\x17\xf1y|\x81\x88\x99 ')
 
         self.jmsg_to = {
             'type': 'proofOfPossession',
@@ -437,24 +533,26 @@ class ProofOfPossessionResponseTest(unittest.TestCase):
         # mistake here...
         signature = other.Signature(
             alg=jose.RS256, jwk=jose.JWKRSA(key=KEY.public_key()),
-            sig='\xa7\xc1\xe7\xe82o\xbc\xcd\xd0\x1e\x010#Z|\xaf\x15\x83'
-                '\x94\x8f#\x9b\nQo(\x80\x15,\x08\xfcz\x1d\xfd\xfd.\xaap'
-                '\xfa\x06\xd1\xa2f\x8d8X2>%d\xbd%\xe1T\xdd\xaa0\x18\xde'
-                '\x99\x08\xf0\x0e{',
-            nonce='\x99\xc7Q\xb3f2\xbc\xdci\xfe\xd6\x98k\xc67\xdf',
+            sig=b'\xa7\xc1\xe7\xe82o\xbc\xcd\xd0\x1e\x010#Z|\xaf\x15\x83'
+                b'\x94\x8f#\x9b\nQo(\x80\x15,\x08\xfcz\x1d\xfd\xfd.\xaap'
+                b'\xfa\x06\xd1\xa2f\x8d8X2>%d\xbd%\xe1T\xdd\xaa0\x18\xde'
+                b'\x99\x08\xf0\x0e{',
+            nonce=b'\x99\xc7Q\xb3f2\xbc\xdci\xfe\xd6\x98k\xc67\xdf',
         )
 
         from acme.challenges import ProofOfPossessionResponse
         self.msg = ProofOfPossessionResponse(
-            nonce='xD\xf9\xb9\xdbU\xed\xaa\x17\xf1y|\x81\x88\x99 ',
+            nonce=b'xD\xf9\xb9\xdbU\xed\xaa\x17\xf1y|\x81\x88\x99 ',
             signature=signature)
 
         self.jmsg_to = {
+            'resource': 'challenge',
             'type': 'proofOfPossession',
             'nonce': 'eET5udtV7aoX8Xl8gYiZIA',
             'signature': signature,
         }
         self.jmsg_from = {
+            'resource': 'challenge',
             'type': 'proofOfPossession',
             'nonce': 'eET5udtV7aoX8Xl8gYiZIA',
             'signature': signature.to_json(),
@@ -500,7 +598,10 @@ class DNSResponseTest(unittest.TestCase):
     def setUp(self):
         from acme.challenges import DNSResponse
         self.msg = DNSResponse()
-        self.jmsg = {'type': 'dns'}
+        self.jmsg = {
+            'resource': 'challenge',
+            'type': 'dns',
+        }
 
     def test_to_partial_json(self):
         self.assertEqual(self.jmsg, self.msg.to_partial_json())

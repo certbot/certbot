@@ -4,7 +4,8 @@
 build/
 dist/
 /venv/
-/tox.venv/
+/venv3/
+/.tox/
 letsencrypt.log
 
 # coverage

@@ -8,10 +8,9 @@ import datetime
 import logging
 import os
 
-from cryptography.hazmat.primitives import serialization
 import OpenSSL
 
-from acme import jose
+from acme import crypto_util as acme_crypto_util
 
 from letsencrypt import errors
 from letsencrypt import le_util
@@ -215,93 +214,6 @@ def pyopenssl_load_certificate(data):
     return _pyopenssl_load(data, OpenSSL.crypto.load_certificate)
 
 
-def make_ss_cert(key, domains, not_before=None,
-                 validity=(7 * 24 * 60 * 60), force_san=False):
-    """Returns new self-signed cert in PEM form.
-
-    If more than one domain is provided, all of the domains are put into
-    ``subjectAltName`` X.509 extension and first domain is set as the
-    subject CN. If only one domain is provided no ``subjectAltName``
-    extension is used, unless `force_san` is ``True``.
-
-    """
-    if isinstance(key, jose.JWK):
-        key = key.key.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.TraditionalOpenSSL,
-            encryption_algorithm=serialization.NoEncryption())
-
-    assert domains, "Must provide one or more hostnames for the cert."
-    pkey = OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, key)
-    cert = OpenSSL.crypto.X509()
-    cert.set_serial_number(1337)
-    cert.set_version(2)
-
-    extensions = [
-        OpenSSL.crypto.X509Extension(
-            "basicConstraints", True, 'CA:TRUE, pathlen:0'),
-    ]
-
-    cert.get_subject().CN = domains[0]
-    # TODO: what to put into cert.get_subject()?
-    cert.set_issuer(cert.get_subject())
-
-    if force_san or len(domains) > 1:
-        extensions.append(OpenSSL.crypto.X509Extension(
-            "subjectAltName",
-            critical=False,
-            value=", ".join("DNS:%s" % d for d in domains)
-        ))
-
-    cert.add_extensions(extensions)
-
-    cert.gmtime_adj_notBefore(0 if not_before is None else not_before)
-    cert.gmtime_adj_notAfter(validity)
-
-    cert.set_pubkey(pkey)
-    cert.sign(pkey, "sha256")
-    return OpenSSL.crypto.dump_certificate(OpenSSL.crypto.FILETYPE_PEM, cert)
-
-
-def _pyopenssl_cert_or_req_san(cert_or_req):
-    """Get Subject Alternative Names from certificate or CSR using pyOpenSSL.
-
-    .. todo:: Implement directly in PyOpenSSL!
-
-    :param cert_or_req: Certificate or CSR.
-    :type cert_or_req: `OpenSSL.crypto.X509` or `OpenSSL.crypto.X509Req`.
-
-    :returns: A list of Subject Alternative Names.
-    :rtype: list
-
-    """
-    # constants based on implementation of
-    # OpenSSL.crypto.X509Error._subjectAltNameString
-    parts_separator = ", "
-    part_separator = ":"
-    extension_short_name = "subjectAltName"
-
-    if hasattr(cert_or_req, 'get_extensions'):  # X509Req
-        extensions = cert_or_req.get_extensions()
-    else:  # X509
-        extensions = [cert_or_req.get_extension(i)
-                      for i in xrange(cert_or_req.get_extension_count())]
-
-    # pylint: disable=protected-access,no-member
-    label = OpenSSL.crypto.X509Extension._prefixes[OpenSSL.crypto._lib.GEN_DNS]
-    assert parts_separator not in label
-    prefix = label + part_separator
-
-    san_extensions = [
-        ext._subjectAltNameString().split(parts_separator)
-        for ext in extensions if ext.get_short_name() == extension_short_name]
-    # WARNING: this function assumes that no SAN can include
-    # parts_separator, hence the split!
-
-    return [part.split(part_separator)[1] for parts in san_extensions
-            for part in parts if part.startswith(prefix)]
-
-
 def _get_sans_from_cert_or_req(
         cert_or_req_str, load_func, typ=OpenSSL.crypto.FILETYPE_PEM):
     try:
@@ -309,7 +221,8 @@ def _get_sans_from_cert_or_req(
     except OpenSSL.crypto.Error as error:
         logger.exception(error)
         raise
-    return _pyopenssl_cert_or_req_san(cert_or_req)
+    # pylint: disable=protected-access
+    return acme_crypto_util._pyopenssl_cert_or_req_san(cert_or_req)
 
 
 def get_sans_from_cert(cert, typ=OpenSSL.crypto.FILETYPE_PEM):

@@ -4,6 +4,7 @@ import base64
 import sys
 
 import OpenSSL
+import six
 
 from acme.jose import b64
 from acme.jose import errors
@@ -80,7 +81,7 @@ class Header(json_util.JSONObjectWithFields):
     def not_omitted(self):
         """Fields that would not be omitted in the JSON object."""
         return dict((name, getattr(self, name))
-                    for name, field in self._fields.iteritems()
+                    for name, field in six.iteritems(self._fields)
                     if not field.omit(getattr(self, name)))
 
     def __add__(self, other):
@@ -148,15 +149,22 @@ class Signature(json_util.JSONObjectWithFields):
     header_cls = Header
 
     __slots__ = ('combined',)
-    protected = json_util.Field(
-        'protected', omitempty=True, default='',
-        decoder=json_util.decode_b64jose, encoder=b64.b64encode)  # TODO: utf-8?
+    protected = json_util.Field('protected', omitempty=True, default='')
     header = json_util.Field(
         'header', omitempty=True, default=header_cls(),
         decoder=header_cls.from_json)
     signature = json_util.Field(
         'signature', decoder=json_util.decode_b64jose,
-        encoder=b64.b64encode)
+        encoder=json_util.encode_b64jose)
+
+    @protected.encoder
+    def protected(value):  # pylint: disable=missing-docstring,no-self-argument
+        # wrong type guess (Signature, not bytes) | pylint: disable=no-member
+        return json_util.encode_b64jose(value.encode('utf-8'))
+
+    @protected.decoder
+    def protected(value):  # pylint: disable=missing-docstring,no-self-argument
+        return json_util.decode_b64jose(value).decode('utf-8')
 
     def __init__(self, **kwargs):
         if 'combined' not in kwargs:
@@ -178,6 +186,11 @@ class Signature(json_util.JSONObjectWithFields):
         kwargs['combined'] = combined
         return kwargs
 
+    @classmethod
+    def _msg(cls, protected, payload):
+        return (b64.b64encode(protected.encode('utf-8')) + b'.' +
+                b64.b64encode(payload))
+
     def verify(self, payload, key=None):
         """Verify.
 
@@ -188,8 +201,7 @@ class Signature(json_util.JSONObjectWithFields):
         key = self.combined.find_key() if key is None else key
         return self.combined.alg.verify(
             key=key.key, sig=self.signature,
-            msg=(b64.b64encode(self.protected) + '.' +
-                 b64.b64encode(payload)))
+            msg=self._msg(self.protected, payload))
 
     @classmethod
     def sign(cls, payload, key, alg, include_jwk=True,
@@ -220,8 +232,7 @@ class Signature(json_util.JSONObjectWithFields):
             protected = ''
 
         header = cls.header_cls(**header_params)  # pylint: disable=star-args
-        signature = alg.sign(key.key, b64.b64encode(protected)
-                             + '.' + b64.b64encode(payload))
+        signature = alg.sign(key.key, cls._msg(protected, payload))
 
         return cls(protected=protected, header=header, signature=signature)
 
@@ -244,7 +255,7 @@ class JWS(json_util.JSONObjectWithFields):
     """JSON Web Signature.
 
     :ivar str payload: JWS Payload.
-    :ivar str signaturea: JWS Signatures.
+    :ivar str signature: JWS Signatures.
 
     """
     __slots__ = ('payload', 'signatures')
@@ -272,33 +283,45 @@ class JWS(json_util.JSONObjectWithFields):
         return self.signatures[0]
 
     def to_compact(self):
-        """Compact serialization."""
+        """Compact serialization.
+
+        :rtype: bytes
+
+        """
         assert len(self.signatures) == 1
 
         assert 'alg' not in self.signature.header.not_omitted()
         # ... it must be in protected
 
-        return '{0}.{1}.{2}'.format(
-            b64.b64encode(self.signature.protected),
-            b64.b64encode(self.payload),
+        return (
+            b64.b64encode(self.signature.protected.encode('utf-8'))
+            + b'.' +
+            b64.b64encode(self.payload)
+            + b'.' +
             b64.b64encode(self.signature.signature))
 
     @classmethod
     def from_compact(cls, compact):
-        """Compact deserialization."""
+        """Compact deserialization.
+
+        :param bytes compact:
+
+        """
         try:
-            protected, payload, signature = compact.split('.')
+            protected, payload, signature = compact.split(b'.')
         except ValueError:
             raise errors.DeserializationError(
                 'Compact JWS serialization should comprise of exactly'
                 ' 3 dot-separated components')
-        sig = cls.signature_cls(protected=json_util.decode_b64jose(protected),
-                                signature=json_util.decode_b64jose(signature))
-        return cls(payload=json_util.decode_b64jose(payload), signatures=(sig,))
+
+        sig = cls.signature_cls(
+            protected=b64.b64decode(protected).decode('utf-8'),
+            signature=b64.b64decode(signature))
+        return cls(payload=b64.b64decode(payload), signatures=(sig,))
 
     def to_partial_json(self, flat=True):  # pylint: disable=arguments-differ
         assert self.signatures
-        payload = b64.b64encode(self.payload)
+        payload = json_util.encode_b64jose(self.payload)
 
         if flat and len(self.signatures) == 1:
             ret = self.signatures[0].to_partial_json()
@@ -329,34 +352,36 @@ class CLI(object):
     def sign(cls, args):
         """Sign."""
         key = args.alg.kty.load(args.key.read())
+        args.key.close()
         if args.protect is None:
             args.protect = []
         if args.compact:
             args.protect.append('alg')
 
-        sig = JWS.sign(payload=sys.stdin.read(), key=key, alg=args.alg,
+        sig = JWS.sign(payload=sys.stdin.read().encode(), key=key, alg=args.alg,
                        protect=set(args.protect))
 
         if args.compact:
-            print sig.to_compact()
+            six.print_(sig.to_compact().decode('utf-8'))
         else:  # JSON
-            print sig.json_dumps_pretty()
+            six.print_(sig.json_dumps_pretty())
 
     @classmethod
     def verify(cls, args):
         """Verify."""
         if args.compact:
-            sig = JWS.from_compact(sys.stdin.read())
+            sig = JWS.from_compact(sys.stdin.read().encode())
         else:  # JSON
             try:
                 sig = JWS.json_loads(sys.stdin.read())
             except errors.Error as error:
-                print error
+                six.print_(error)
                 return -1
 
         if args.key is not None:
             assert args.kty is not None
             key = args.kty.load(args.key.read()).public_key()
+            args.key.close()
         else:
             key = None
 
@@ -387,7 +412,7 @@ class CLI(object):
         parser_sign = subparsers.add_parser('sign')
         parser_sign.set_defaults(func=cls.sign)
         parser_sign.add_argument(
-            '-k', '--key', type=argparse.FileType(), required=True)
+            '-k', '--key', type=argparse.FileType('rb'), required=True)
         parser_sign.add_argument(
             '-a', '--alg', type=cls._alg_type, default=jwa.RS256)
         parser_sign.add_argument(
@@ -396,7 +421,7 @@ class CLI(object):
         parser_verify = subparsers.add_parser('verify')
         parser_verify.set_defaults(func=cls.verify)
         parser_verify.add_argument(
-            '-k', '--key', type=argparse.FileType(), required=False)
+            '-k', '--key', type=argparse.FileType('rb'), required=False)
         parser_verify.add_argument(
             '--kty', type=cls._kty_type, required=False)
 

@@ -1,9 +1,10 @@
 """ACME protocol messages."""
-import urlparse
+import collections
+
+from six.moves.urllib import parse as urllib_parse  # pylint: disable=import-error
 
 from acme import challenges
 from acme import fields
-from acme import interfaces
 from acme import jose
 
 
@@ -11,6 +12,10 @@ class Error(jose.JSONObjectWithFields, Exception):
     """ACME error.
 
     https://tools.ietf.org/html/draft-ietf-appsawg-http-problem-00
+
+    :ivar unicode typ:
+    :ivar unicode title:
+    :ivar unicode detail:
 
     """
     ERROR_TYPE_NAMESPACE = 'urn:acme:error:'
@@ -49,7 +54,11 @@ class Error(jose.JSONObjectWithFields, Exception):
 
     @property
     def description(self):
-        """Hardcoded error description based on its type."""
+        """Hardcoded error description based on its type.
+
+        :rtype: unicode
+
+        """
         return self.ERROR_TYPE_DESCRIPTIONS[self.typ]
 
     def __str__(self):
@@ -59,7 +68,7 @@ class Error(jose.JSONObjectWithFields, Exception):
             return str(self.detail)
 
 
-class _Constant(jose.JSONDeSerializable):
+class _Constant(jose.JSONDeSerializable, collections.Hashable):
     """ACME constant."""
     __slots__ = ('name',)
     POSSIBLE_NAMES = NotImplemented
@@ -83,6 +92,9 @@ class _Constant(jose.JSONDeSerializable):
 
     def __eq__(self, other):
         return isinstance(other, type(self)) and other.name == self.name
+
+    def __hash__(self):
+        return hash((self.__class__, self.name))
 
     def __ne__(self, other):
         return not self == other
@@ -108,7 +120,8 @@ IDENTIFIER_FQDN = IdentifierType('dns')  # IdentifierDNS in Boulder
 class Identifier(jose.JSONObjectWithFields):
     """ACME identifier.
 
-    :ivar acme.messages.IdentifierType typ:
+    :ivar IdentifierType typ:
+    :ivar unicode value:
 
     """
     typ = jose.Field('type', decoder=IdentifierType.from_json)
@@ -127,7 +140,7 @@ class Resource(jose.JSONObjectWithFields):
 class ResourceWithURI(Resource):
     """ACME Resource with URI.
 
-    :ivar str uri: Location of the resource.
+    :ivar unicode uri: Location of the resource.
 
     """
     uri = jose.Field('uri')  # no ChallengeResource.uri
@@ -137,15 +150,16 @@ class ResourceBody(jose.JSONObjectWithFields):
     """ACME Resource Body."""
 
 
-class Registration(interfaces.ClientRequestableResource, ResourceBody):
+class Registration(ResourceBody):
     """Registration Resource Body.
 
     :ivar acme.jose.jwk.JWK key: Public key.
-    :ivar tuple contact: Contact information following ACME spec
+    :ivar tuple contact: Contact information following ACME spec,
+        `tuple` of `unicode`.
+    :ivar unicode recovery_token:
+    :ivar unicode agreement:
 
     """
-    resource_type = 'new-reg'
-
     # on new-reg key server ignores 'key' and populates it based on
     # JWS.signature.combined.jwk
     key = jose.Field('key', omitempty=True, decoder=jose.JWK.from_json)
@@ -182,17 +196,24 @@ class Registration(interfaces.ClientRequestableResource, ResourceBody):
         """All emails found in the ``contact`` field."""
         return self._filter_contact(self.email_prefix)
 
+class NewRegistration(Registration):
+    """New registration."""
+    resource_type = 'new-reg'
+    resource = fields.Resource(resource_type)
 
-class RegistrationResource(interfaces.ClientRequestableResource,
-                           ResourceWithURI):
+class UpdateRegistration(Registration):
+    """Update registration."""
+    resource_type = 'reg'
+    resource = fields.Resource(resource_type)
+
+class RegistrationResource(ResourceWithURI):
     """Registration Resource.
 
     :ivar acme.messages.Registration body:
-    :ivar str new_authzr_uri: URI found in the 'next' ``Link`` header
-    :ivar str terms_of_service: URL for the CA TOS.
+    :ivar unicode new_authzr_uri: URI found in the 'next' ``Link`` header
+    :ivar unicode terms_of_service: URL for the CA TOS.
 
     """
-    resource_type = 'reg'
     body = jose.Field('body', decoder=Registration.from_json)
     new_authzr_uri = jose.Field('new_authzr_uri')
     terms_of_service = jose.Field('terms_of_service', omitempty=True)
@@ -212,6 +233,7 @@ class ChallengeBody(ResourceBody):
         call ``challb.x`` to get ``challb.chall.x`` contents.
     :ivar acme.messages.Status status:
     :ivar datetime.datetime validated:
+    :ivar Error error:
 
     """
     __slots__ = ('chall',)
@@ -241,7 +263,7 @@ class ChallengeResource(Resource):
     """Challenge Resource.
 
     :ivar acme.messages.ChallengeBody body:
-    :ivar str authzr_uri: URI found in the 'up' ``Link`` header.
+    :ivar unicode authzr_uri: URI found in the 'up' ``Link`` header.
 
     """
     body = jose.Field('body', decoder=ChallengeBody.from_json)
@@ -254,20 +276,17 @@ class ChallengeResource(Resource):
         return self.body.uri  # pylint: disable=no-member
 
 
-class Authorization(interfaces.ClientRequestableResource, ResourceBody):
+class Authorization(ResourceBody):
     """Authorization Resource Body.
 
     :ivar acme.messages.Identifier identifier:
     :ivar list challenges: `list` of `.ChallengeBody`
     :ivar tuple combinations: Challenge combinations (`tuple` of `tuple`
         of `int`, as opposed to `list` of `list` from the spec).
-    :ivar acme.jose.jwk.JWK key: Public key.
-    :ivar tuple contact:
     :ivar acme.messages.Status status:
     :ivar datetime.datetime expires:
 
     """
-    resource_type = 'new-authz'
     identifier = jose.Field('identifier', decoder=Identifier.from_json)
     challenges = jose.Field('challenges', omitempty=True)
     combinations = jose.Field('combinations', omitempty=True)
@@ -289,20 +308,23 @@ class Authorization(interfaces.ClientRequestableResource, ResourceBody):
         return tuple(tuple(self.challenges[idx] for idx in combo)
                      for combo in self.combinations)
 
+class NewAuthorization(Authorization):
+    """New authorization."""
+    resource_type = 'new-authz'
+    resource = fields.Resource(resource_type)
 
 class AuthorizationResource(ResourceWithURI):
     """Authorization Resource.
 
     :ivar acme.messages.Authorization body:
-    :ivar str new_cert_uri: URI found in the 'next' ``Link`` header
+    :ivar unicode new_cert_uri: URI found in the 'next' ``Link`` header
 
     """
     body = jose.Field('body', decoder=Authorization.from_json)
     new_cert_uri = jose.Field('new_cert_uri')
 
 
-class CertificateRequest(interfaces.ClientRequestableResource,
-                         jose.JSONObjectWithFields):
+class CertificateRequest(jose.JSONObjectWithFields):
     """ACME new-cert request.
 
     :ivar acme.jose.util.ComparableX509 csr:
@@ -311,27 +333,25 @@ class CertificateRequest(interfaces.ClientRequestableResource,
 
     """
     resource_type = 'new-cert'
+    resource = fields.Resource(resource_type)
     csr = jose.Field('csr', decoder=jose.decode_csr, encoder=jose.encode_csr)
     authorizations = jose.Field('authorizations', decoder=tuple)
 
 
-class CertificateResource(interfaces.ClientRequestableResource,
-                          ResourceWithURI):
+class CertificateResource(ResourceWithURI):
     """Certificate Resource.
 
     :ivar acme.jose.util.ComparableX509 body:
         `OpenSSL.crypto.X509` wrapped in `.ComparableX509`
-    :ivar str cert_chain_uri: URI found in the 'up' ``Link`` header
+    :ivar unicode cert_chain_uri: URI found in the 'up' ``Link`` header
     :ivar tuple authzrs: `tuple` of `AuthorizationResource`.
 
     """
-    resource_type = 'cert'
     cert_chain_uri = jose.Field('cert_chain_uri')
     authzrs = jose.Field('authzrs')
 
 
-class Revocation(interfaces.ClientRequestableResource,
-                 jose.JSONObjectWithFields):
+class Revocation(jose.JSONObjectWithFields):
     """Revocation message.
 
     :ivar .ComparableX509 certificate: `OpenSSL.crypto.X509` wrapped in
@@ -339,6 +359,7 @@ class Revocation(interfaces.ClientRequestableResource,
 
     """
     resource_type = 'revoke-cert'
+    resource = fields.Resource(resource_type)
     certificate = jose.Field(
         'certificate', decoder=jose.decode_cert, encoder=jose.encode_cert)
 
@@ -353,4 +374,4 @@ class Revocation(interfaces.ClientRequestableResource,
         :param str base: New Registration Resource or server (root) URL.
 
         """
-        return urlparse.urljoin(base, cls.PATH)
+        return urllib_parse.urljoin(base, cls.PATH)

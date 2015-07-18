@@ -78,7 +78,7 @@ class SNICallbackTest(unittest.TestCase):
             domain="example.com",
             account=ACCOUNT).gen_cert_and_response(key_pem=CHALL_KEY_PEM)[1]
         self.authenticator.private_key = CHALL_KEY
-        self.authenticator.tasks = {"abcdef.acme.invalid": self.cert}
+        self.authenticator.sni_names = {"abcdef.acme.invalid": self.cert}
         self.authenticator.child_pid = 12345
 
     def test_real_servername(self):

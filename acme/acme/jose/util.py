@@ -3,6 +3,7 @@ import collections
 
 from cryptography.hazmat.primitives.asymmetric import rsa
 import OpenSSL
+import six
 
 
 class abstractclassmethod(classmethod):
@@ -65,14 +66,14 @@ class ComparableX509(object):  # pylint: disable=too-few-public-methods
         return '<{0}({1!r})>'.format(self.__class__.__name__, self._wrapped)
 
 
-class ComparableRSAKey(object):  # pylint: disable=too-few-public-methods
-    """Wrapper for `cryptography` RSA keys.
+class ComparableKey(object):  # pylint: disable=too-few-public-methods
+    """Comparable wrapper for `cryptography` keys.
 
-    Wraps around:
-    - `cryptography.hazmat.primitives.assymetric.RSAPrivateKey`
-    - `cryptography.hazmat.primitives.assymetric.RSAPublicKey`
+    See https://github.com/pyca/cryptography/issues/2122.
 
     """
+    __hash__ = NotImplemented
+
     def __init__(self, wrapped):
         self._wrapped = wrapped
 
@@ -84,19 +85,36 @@ class ComparableRSAKey(object):  # pylint: disable=too-few-public-methods
         if (not isinstance(other, self.__class__) or
                 self._wrapped.__class__ is not other._wrapped.__class__):
             return NotImplemented
-        # RSA*KeyWithSerialization requires cryptography>=0.8
-        if isinstance(self._wrapped, rsa.RSAPrivateKeyWithSerialization):
+        elif hasattr(self._wrapped, 'private_numbers'):
             return self.private_numbers() == other.private_numbers()
-        elif isinstance(self._wrapped, rsa.RSAPublicKeyWithSerialization):
+        elif hasattr(self._wrapped, 'public_numbers'):
             return self.public_numbers() == other.public_numbers()
         else:
-            return False  # we shouldn't reach here...
+            return NotImplemented
 
     def __ne__(self, other):
         return not self == other
 
+    def __repr__(self):
+        return '<{0}({1!r})>'.format(self.__class__.__name__, self._wrapped)
+
+    def public_key(self):
+        """Get wrapped public key."""
+        return self.__class__(self._wrapped.public_key())
+
+
+class ComparableRSAKey(ComparableKey):  # pylint: disable=too-few-public-methods
+    """Wrapper for `cryptography` RSA keys.
+
+    Wraps around:
+    - `cryptography.hazmat.primitives.assymetric.RSAPrivateKey`
+    - `cryptography.hazmat.primitives.assymetric.RSAPublicKey`
+
+    """
+
     def __hash__(self):
         # public_numbers() hasn't got stable hash!
+        # https://github.com/pyca/cryptography/issues/2143
         if isinstance(self._wrapped, rsa.RSAPrivateKeyWithSerialization):
             priv = self.private_numbers()
             pub = priv.public_numbers
@@ -105,13 +123,6 @@ class ComparableRSAKey(object):  # pylint: disable=too-few-public-methods
         elif isinstance(self._wrapped, rsa.RSAPublicKeyWithSerialization):
             pub = self.public_numbers()
             return hash((self.__class__, pub.n, pub.e))
-
-    def __repr__(self):
-        return '<{0}({1!r})>'.format(self.__class__.__name__, self._wrapped)
-
-    def public_key(self):
-        """Get wrapped public key."""
-        return self.__class__(self._wrapped.public_key())
 
 
 class ImmutableMap(collections.Mapping, collections.Hashable):
@@ -156,7 +167,8 @@ class ImmutableMap(collections.Mapping, collections.Hashable):
 
     def __repr__(self):
         return '{0}({1})'.format(self.__class__.__name__, ', '.join(
-            '{0}={1!r}'.format(key, value) for key, value in self.iteritems()))
+            '{0}={1!r}'.format(key, value)
+            for key, value in six.iteritems(self)))
 
 
 class frozendict(collections.Mapping, collections.Hashable):
@@ -174,7 +186,7 @@ class frozendict(collections.Mapping, collections.Hashable):
         # TODO: support generators/iterators
 
         object.__setattr__(self, '_items', items)
-        object.__setattr__(self, '_keys', tuple(sorted(items.iterkeys())))
+        object.__setattr__(self, '_keys', tuple(sorted(six.iterkeys(items))))
 
     def __getitem__(self, key):
         return self._items[key]
@@ -185,8 +197,11 @@ class frozendict(collections.Mapping, collections.Hashable):
     def __len__(self):
         return len(self._items)
 
+    def _sorted_items(self):
+        return tuple((key, self[key]) for key in self._keys)
+
     def __hash__(self):
-        return hash(tuple((key, value) for key, value in self.items()))
+        return hash(self._sorted_items())
 
     def __getattr__(self, name):
         try:
@@ -198,5 +213,5 @@ class frozendict(collections.Mapping, collections.Hashable):
         raise AttributeError("can't set attribute")
 
     def __repr__(self):
-        return 'frozendict({0})'.format(', '.join(
-            '{0}={1!r}'.format(key, value) for key, value in self.iteritems()))
+        return 'frozendict({0})'.format(', '.join('{0}={1!r}'.format(
+            key, value) for key, value in self._sorted_items()))

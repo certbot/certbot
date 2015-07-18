@@ -134,7 +134,7 @@ class StandaloneAuthenticator(common.Plugin):
         else:
             # TODO: Should we really present a certificate if we get an
             #       unexpected SNI name? Or should we just disconnect?
-            pem_cert = self.tasks.values()[0]
+            pem_cert = next(self.sni_names.itervalues())
         cert = OpenSSL.crypto.load_certificate(
             OpenSSL.crypto.FILETYPE_PEM, pem_cert)
         new_ctx = OpenSSL.SSL.Context(OpenSSL.SSL.TLSv1_METHOD)

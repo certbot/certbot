@@ -2,11 +2,9 @@
 import unittest
 
 import mock
-import OpenSSL
 
+from acme import challenges
 from acme import jose
-
-from letsencrypt import crypto_util
 
 from letsencrypt.tests import acme_util
 from letsencrypt.tests import test_util
@@ -27,9 +25,10 @@ class DVSNITest(unittest.TestCase):
         self.assertEqual(self.challb.token, self.achall.token)
 
     def test_gen_cert_and_response(self):
-        response, cert_pem, _ = self.achall.gen_cert_and_response()
-        self.assertTrue(response.z_domain in crypto_util.get_sans_from_cert(
-            cert_pem, typ=OpenSSL.crypto.FILETYPE_PEM))
+        response, cert_pem, key_pem = self.achall.gen_cert_and_response()
+        self.assertTrue(isinstance(response, challenges.DVSNIResponse))
+        self.assertTrue(isinstance(cert_pem, bytes))
+        self.assertTrue(isinstance(key_pem, bytes))
 
 
 if __name__ == "__main__":
