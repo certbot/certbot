@@ -34,7 +34,7 @@ def get_args():
         "-p", "--plugin", default="apache", help="the plugin to be tested")
     group.add_argument(
         "-v", "--verbose", dest="verbose_count", action="count",
-        default=0, help="You know how to use this")
+        default=0, help="you know how to use this")
     group.add_argument(
         "-a", "--auth", action="store_true",
         help="tests the challenges the plugin supports")

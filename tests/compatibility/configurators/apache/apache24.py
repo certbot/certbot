@@ -10,7 +10,7 @@ from tests.compatibility.configurators.apache import common as apache_common
 STATIC_MODULES = {"core", "so", "http", "mpm_event", "watchdog",}
 
 
-INSTALLED_MODULES = {
+SHARED_MODULES = {
     "log_config", "logio", "version", "unixd", "access_compat", "actions",
     "alias", "allowmethods", "auth_basic", "auth_digest", "auth_form",
     "authn_anon", "authn_core", "authn_dbd", "authn_dbm", "authn_file",
@@ -47,7 +47,7 @@ class Proxy(apache_common.Proxy):
         with open(self.test_conf, "a") as f:
             for module in self.modules:
                 if module not in STATIC_MODULES:
-                    if module in INSTALLED_MODULES:
+                    if module in SHARED_MODULES:
                         f.write(
                             "LoadModule {0}_module /usr/local/apache2/modules/"
                             "mod_{0}.so\n".format(module))

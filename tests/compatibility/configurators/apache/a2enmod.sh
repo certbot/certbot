@@ -27,7 +27,7 @@ then
     enable "ssl"
 elif [ $2 == "rewrite" ]
 then
-    enable "rewrite";
+    enable "rewrite"
 else
-    exit 1;
+    exit 1
 fi
