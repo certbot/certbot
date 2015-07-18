@@ -11,7 +11,7 @@ import requests
 
 from acme import errors
 from acme import crypto_util
-from acme import interfaces
+from acme import fields
 from acme import jose
 from acme import other
 
@@ -36,21 +36,12 @@ class DVChallenge(Challenge):  # pylint: disable=abstract-method
     """Domain validation challenges."""
 
 
-class ChallengeResponse(interfaces.ClientRequestableResource,
-                        jose.TypedJSONObjectWithFields):
+class ChallengeResponse(jose.TypedJSONObjectWithFields):
     # _fields_to_partial_json | pylint: disable=abstract-method
     """ACME challenge response."""
     TYPES = {}
     resource_type = 'challenge'
-
-    @classmethod
-    def from_json(cls, jobj):
-        if jobj is None:
-            # if the client chooses not to respond to a given
-            # challenge, then the corresponding entry in the response
-            # array is set to None (null)
-            return None
-        return super(ChallengeResponse, cls).from_json(jobj)
+    resource = fields.Resource(resource_type)
 
 
 @Challenge.register

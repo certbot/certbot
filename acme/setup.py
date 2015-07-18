@@ -1,3 +1,5 @@
+import sys
+
 from setuptools import setup
 from setuptools import find_packages
 
@@ -18,6 +20,11 @@ install_requires = [
     'six',
     'werkzeug',
 ]
+
+# env markers in extras_require cause problems with older pip: #517
+if sys.version_info < (2, 7):
+    # only some distros recognize stdlib argparse as already satisfying
+    install_requires.append('argparse')
 
 testing_extras = [
     'nose',
