@@ -160,15 +160,6 @@ class ValidPrivkeyTest(unittest.TestCase):
         self.assertFalse(self._call('foo bar'))
 
 
-class MakeSSCertTest(unittest.TestCase):
-    # pylint: disable=too-few-public-methods
-    """Tests for letsencrypt.crypto_util.make_ss_cert."""
-
-    def test_it(self):  # pylint: disable=no-self-use
-        from letsencrypt.crypto_util import make_ss_cert
-        make_ss_cert(RSA512_KEY, ['example.com', 'www.example.com'])
-
-
 class GetSANsFromCertTest(unittest.TestCase):
     """Tests for letsencrypt.crypto_util.get_sans_from_cert."""
 

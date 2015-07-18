@@ -210,26 +210,31 @@ class DVSNIResponseTest(unittest.TestCase):
 
     def setUp(self):
         from acme.challenges import DVSNIResponse
-        self.msg = DVSNIResponse(
-            s=b'\xf5\xd6\xe3\xb2]\xe0L\x0bN\x9cKJ\x14I\xa1K\xa3#\xf9\xa8'
-              b'\xcd\x8c7\x0e\x99\x19)\xdc\xb7\xf3\x9bw')
+        # pylint: disable=invalid-name
+        s = '9dbjsl3gTAtOnEtKFEmhS6Mj-ajNjDcOmRkp3Lfzm3c'
+        self.msg = DVSNIResponse(s=jose.decode_b64jose(s))
         self.jmsg = {
             'resource': 'challenge',
             'type': 'dvsni',
-            's': '9dbjsl3gTAtOnEtKFEmhS6Mj-ajNjDcOmRkp3Lfzm3c',
+            's': s,
         }
 
-    def test_z_and_domain(self):
         from acme.challenges import DVSNI
-        challenge = DVSNI(
-            r=b"O*\xb4-\xad\xec\x95>\xed\xa9\r0\x94\xe8\x97\x9c&6"
-              b"\xbf'\xb3\xed\x9a9nX\x0f'\\m\xe7\x12",
-            nonce=int('439736375371401115242521957580409149254868992063'
-                      '44333654741504362774620418661'))
+        self.chall = DVSNI(
+            r=jose.decode_b64jose('Tyq0La3slT7tqQ0wlOiXnCY2vyez7Zo5blgPJ1xt5xI'),
+            nonce=jose.decode_b64jose('a82d5ff8ef740d12881f6d3c2277ab2e'))
+        self.z = (b'38e612b0397cc2624a07d351d7ef50e4'
+                  b'6134c0213d9ed52f7d7c611acaeed41b')
+        self.domain = 'foo.com'
+        self.key = test_util.load_pyopenssl_private_key('rsa512_key.pem')
+        self.public_key = test_util.load_rsa_private_key(
+            'rsa512_key.pem').public_key()
+
+    def test_z_and_domain(self):
         # pylint: disable=invalid-name
-        z = b'38e612b0397cc2624a07d351d7ef50e46134c0213d9ed52f7d7c611acaeed41b'
-        self.assertEqual(z, self.msg.z(challenge))
-        self.assertEqual(z + b'.acme.invalid', self.msg.z_domain(challenge))
+        self.assertEqual(self.z, self.msg.z(self.chall))
+        self.assertEqual(
+            self.z + b'.acme.invalid', self.msg.z_domain(self.chall))
 
     def test_to_partial_json(self):
         self.assertEqual(self.jmsg, self.msg.to_partial_json())
@@ -258,18 +263,28 @@ class DVSNIResponseTest(unittest.TestCase):
         chall = mock.Mock()
         chall.probe_cert.side_effect = errors.Error
         self.assertFalse(self.msg.simple_verify(
-            chall=chall, domain=None, key=None))
+            chall=chall, domain=None, public_key=None))
 
-    def test_verify_cert_postive(self):
-        pass  # XXX
+    def test_gen_verify_cert_postive_no_key(self):
+        cert = self.msg.gen_cert(self.chall, self.domain, self.key)
+        self.assertTrue(self.msg.verify_cert(
+            self.chall, self.domain, public_key=None, cert=cert))
 
-    def test_verify_cert_negative(self):
-        chall = mock.MagicMock()
+    def test_gen_verify_cert_postive_with_key(self):
+        cert = self.msg.gen_cert(self.chall, self.domain, self.key)
+        self.assertTrue(self.msg.verify_cert(
+            self.chall, self.domain, public_key=self.public_key, cert=cert))
+
+    def test_gen_verify_cert_negative_with_wrong_key(self):
+        cert = self.msg.gen_cert(self.chall, self.domain, self.key)
+        key = test_util.load_rsa_private_key('rsa256_key.pem').public_key()
         self.assertFalse(self.msg.verify_cert(
-            chall, domain="example.com", key=None,
-            cert=OpenSSL.crypto.load_certificate(
-                OpenSSL.crypto.FILETYPE_PEM,
-                test_util.load_vector('cert.pem'))))
+            self.chall, self.domain, public_key=key, cert=cert))
+
+    def test_gen_verify_cert_negative(self):
+        cert = self.msg.gen_cert(self.chall, self.domain + 'x', self.key)
+        self.assertFalse(self.msg.verify_cert(
+            self.chall, self.domain, public_key=None, cert=cert))
 
 
 class RecoveryContactTest(unittest.TestCase):

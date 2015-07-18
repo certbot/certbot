@@ -6,6 +6,8 @@ import logging
 import os
 import socket
 
+from cryptography.hazmat.backends import default_backend
+from cryptography import x509
 import OpenSSL
 import requests
 
@@ -245,10 +247,25 @@ class DVSNIResponse(ChallengeResponse):
         return z.hexdigest().encode()
 
     def z_domain(self, chall):
-        """Domain name for certificate subjectAltName."""
+        """Domain name for certificate subjectAltName.
+
+        :rtype bytes:
+
+        """
         return self.z(chall) + self.DOMAIN_SUFFIX
 
-    def simple_verify(self, chall, domain, key, **kwargs):
+    def gen_cert(self, chall, domain, key):
+        """Generate DVSNI certificate.
+
+        :param .DVSNI chall: Corresponding challenge.
+        :param unicode domain:
+        :param OpenSSL.crypto.PKey
+
+        """
+        return crypto_util.gen_ss_cert(key, [
+            domain, chall.nonce_domain.decode(), self.z_domain(chall).decode()])
+
+    def simple_verify(self, chall, domain, public_key, **kwargs):
         """Simple verify.
 
         Probes DVSNI certificate and checks it using `verify_cert`;
@@ -260,37 +277,47 @@ class DVSNIResponse(ChallengeResponse):
         except errors.Error as error:
             logger.debug(error, exc_info=True)
             return False
-        # TODO: check "It is a valid self-signed certificate" and
-        # return False if not
-        return self.verify_cert(chall, domain, key, cert)
+        return self.verify_cert(chall, domain, public_key, cert)
 
-    def verify_cert(self, chall, domain, key, cert):
+    def verify_cert(self, chall, domain, public_key, cert):
         """Verify DVSNI certificate.
 
         :param .challenges.DVSNI chall: Corresponding challenge.
         :param str domain: Domain name being validated.
-        :param OpenSSL.crypto.PKey key: Public key for the key pair
+        :param public_key: Public key for the key pair
             being authorized. If ``None`` key verification is not
             performed!
+        :type public_key:
+            `~cryptography.hazmat.primitives.asymmetric.rsa.RSAPublicKey`
+            or
+            `~cryptography.hazmat.primitives.asymmetric.dsa.DSAPublicKey`
+            or
+            `~cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePublicKey`
+            wrapped in `.ComparableKey
+        :param OpenSSL.crypto.X509 cert:
 
         :returns: ``True`` iff client's control of the domain has been
             verified, ``False`` otherwise.
         :rtype: bool
 
         """
+        # TODO: check "It is a valid self-signed certificate" and
+        # return False if not
+
         # pylint: disable=protected-access
         sans = crypto_util._pyopenssl_cert_or_req_san(cert)
         logging.debug('Certificate %s. SANs: %s', cert.digest('sha1'), sans)
 
-        key_filetype = OpenSSL.crypto.FILETYPE_ASN1
-        if key is None:
-            logging.warn('No key verification is performed')
-        keys_match = key is None or OpenSSL.crypto.dump_privatekey(
-            key_filetype, key) == OpenSSL.crypto.dump_privatekey(
-                key_filetype, cert.get_pubkey())
+        cert = x509.load_der_x509_certificate(
+            OpenSSL.crypto.dump_certificate(OpenSSL.crypto.FILETYPE_ASN1, cert),
+            default_backend())
 
-        return (keys_match and domain in sans and
-                self.z_domain(chall).decode() in sans)
+        if public_key is None:
+            logging.warn('No key verification is performed')
+        elif public_key != jose.ComparableKey(cert.public_key()):
+            return False
+
+        return domain in sans and self.z_domain(chall).decode() in sans
 
 
 @Challenge.register

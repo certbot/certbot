@@ -125,7 +125,7 @@ def _pyopenssl_cert_or_req_san(cert_or_req):
     :type cert_or_req: `OpenSSL.crypto.X509` or `OpenSSL.crypto.X509Req`.
 
     :returns: A list of Subject Alternative Names.
-    :rtype: list
+    :rtype: `list` of `unicode`
 
     """
     # constants based on implementation of
@@ -153,3 +153,43 @@ def _pyopenssl_cert_or_req_san(cert_or_req):
 
     return [part.split(part_separator)[1] for parts in san_extensions
             for part in parts if part.startswith(prefix)]
+
+
+def gen_ss_cert(key, domains, not_before=None, validity=(7 * 24 * 60 * 60)):
+    """Generate new self-signed certificate.
+
+    :type domains: `list` of `unicode`
+    :param OpenSSL.crypto.PKey key:
+
+    Uses key and contains all domains.
+
+    """
+    assert domains, "Must provide one or more hostnames for the cert."
+    cert = OpenSSL.crypto.X509()
+    cert.set_serial_number(1337)
+    cert.set_version(2)
+
+    extensions = [
+        OpenSSL.crypto.X509Extension(
+            b"basicConstraints", True, b"CA:TRUE, pathlen:0"),
+    ]
+
+    cert.get_subject().CN = domains[0]
+    # TODO: what to put into cert.get_subject()?
+    cert.set_issuer(cert.get_subject())
+
+    if len(domains) > 1:
+        extensions.append(OpenSSL.crypto.X509Extension(
+            b"subjectAltName",
+            critical=False,
+            value=b", ".join(b"DNS:" + d.encode() for d in domains)
+        ))
+
+    cert.add_extensions(extensions)
+
+    cert.gmtime_adj_notBefore(0 if not_before is None else not_before)
+    cert.gmtime_adj_notAfter(validity)
+
+    cert.set_pubkey(key)
+    cert.sign(key, "sha256")
+    return cert

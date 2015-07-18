@@ -12,7 +12,6 @@ from cryptography.hazmat.primitives import serialization
 import OpenSSL
 
 from acme import crypto_util as acme_crypto_util
-from acme import jose
 
 from letsencrypt import errors
 from letsencrypt import le_util
@@ -216,49 +215,13 @@ def pyopenssl_load_certificate(data):
     return _pyopenssl_load(data, OpenSSL.crypto.load_certificate)
 
 
-def make_ss_cert(key, domains, not_before=None,
-                 validity=(7 * 24 * 60 * 60)):
-    """Returns new self-signed cert in PEM form.
-
-    Uses key and contains all domains.
-
-    """
-    if isinstance(key, jose.JWK):
-        key = key.key.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.TraditionalOpenSSL,
-            encryption_algorithm=serialization.NoEncryption())
-
-    assert domains, "Must provide one or more hostnames for the cert."
-    pkey = OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, key)
-    cert = OpenSSL.crypto.X509()
-    cert.set_serial_number(1337)
-    cert.set_version(2)
-
-    extensions = [
-        OpenSSL.crypto.X509Extension(
-            "basicConstraints", True, 'CA:TRUE, pathlen:0'),
-    ]
-
-    cert.get_subject().CN = domains[0]
-    # TODO: what to put into cert.get_subject()?
-    cert.set_issuer(cert.get_subject())
-
-    if len(domains) > 1:
-        extensions.append(OpenSSL.crypto.X509Extension(
-            "subjectAltName",
-            critical=False,
-            value=", ".join("DNS:%s" % d for d in domains)
-        ))
-
-    cert.add_extensions(extensions)
-
-    cert.gmtime_adj_notBefore(0 if not_before is None else not_before)
-    cert.gmtime_adj_notAfter(validity)
-
-    cert.set_pubkey(pkey)
-    cert.sign(pkey, "sha256")
-    return OpenSSL.crypto.dump_certificate(OpenSSL.crypto.FILETYPE_PEM, cert)
+def private_jwk_to_pyopenssl(jwk):
+    """Convert private JWK to pyOpenSSL key."""
+    key_pem = jwk.key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.TraditionalOpenSSL,
+        encryption_algorithm=serialization.NoEncryption())
+    return OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, key_pem)
 
 
 def _get_sans_from_cert_or_req(
