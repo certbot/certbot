@@ -153,22 +153,22 @@ class AuthHandler(object):
         """
         active_achalls = []
         for achall, resp in itertools.izip(achalls, resps):
+            # XXX: make sure that all achalls, including those
+            # corresponding to None or False returned from
+            # Authenticator are removed from the queue and thus avoid
+            # infinite loop
+            active_achalls.append(achall)
+
             # Don't send challenges for None and False authenticator responses
             if resp is not None and resp:
                 self.acme.answer_challenge(achall.challb, resp)
                 # TODO: answer_challenge returns challr, with URI,
                 # that can be used in _find_updated_challr
                 # comparisons...
-                active_achalls.append(achall)
                 if achall.domain in chall_update:
                     chall_update[achall.domain].append(achall)
                 else:
                     chall_update[achall.domain] = [achall]
-            else:  # resp is None or not resp
-                # XXX: make sure that achalls corresponding to None or
-                # False returned from Authenticator are removed from
-                # the queue and thus avoid infinite loop
-                active_achalls.append(achall)
 
         return active_achalls
 

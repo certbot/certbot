@@ -89,6 +89,7 @@ s.serve_forever()" """
                          else self.HTTPS_TEMPLATE)
         self._root = (tempfile.mkdtemp() if self.conf("test-mode")
                       else "/tmp/letsencrypt")
+        self._httpd = None
 
     @classmethod
     def add_parser_arguments(cls, add):
@@ -136,7 +137,6 @@ binary for temporary key/certificate generation.""".replace("\n", "")
         if self.conf("test-mode"):
             logger.debug("Test mode. Executing the manual command: %s", command)
             try:
-                # pylint: disable=attribute-defined-outside-init
                 self._httpd = subprocess.Popen(
                     command,
                     # don't care about setting stdout and stderr,
@@ -146,13 +146,13 @@ binary for temporary key/certificate generation.""".replace("\n", "")
                     preexec_fn=os.setsid)
             except OSError as error:  # ValueError should not happen!
                 logging.debug(
-                    "Couldn't execute manual command", error, exc_info=True)
+                    "Couldn't execute manual command: %s", error, exc_info=True)
                 return False
             logger.debug("Manual command running as PID %s.", self._httpd.pid)
             # give it some time to bootstrap, before we try to verify
             # (cert generation in case of simpleHttpS might take time)
             time.sleep(4)  # XXX
-            if self._httpd.poll():
+            if self._httpd.poll() is not None:
                 raise errors.Error("Couldn't execute manual command")
         else:
             self._notify_and_wait(self.MESSAGE_TEMPLATE.format(
@@ -164,7 +164,8 @@ binary for temporary key/certificate generation.""".replace("\n", "")
                 achall.challb, achall.domain, self.config.simple_http_port):
             return response
         else:
-            if self.conf("test-mode") and self._httpd.poll():
+            if self.conf("test-mode") and self._httpd.poll() is not None:
+                # simply verify cause command failure...
                 return False
             return None
 
@@ -178,6 +179,8 @@ binary for temporary key/certificate generation.""".replace("\n", "")
     def cleanup(self, achalls):
         # pylint: disable=missing-docstring,no-self-use,unused-argument
         if self.conf("test-mode"):
+            assert self._httpd is not None, (
+                "cleanup() must be called after perform()")
             if self._httpd.poll() is None:
                 logger.debug("Terminating manual command process")
                 os.killpg(self._httpd.pid, signal.SIGTERM)

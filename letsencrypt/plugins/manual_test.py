@@ -1,4 +1,5 @@
 """Tests for letsencrypt.plugins.manual."""
+import signal
 import unittest
 
 import mock
@@ -6,6 +7,8 @@ import mock
 from acme import challenges
 
 from letsencrypt import achallenges
+from letsencrypt import errors
+
 from letsencrypt.tests import acme_util
 
 
@@ -20,6 +23,12 @@ class ManualAuthenticatorTest(unittest.TestCase):
         self.auth = ManualAuthenticator(config=self.config, name="manual")
         self.achalls = [achallenges.SimpleHTTP(
             challb=acme_util.SIMPLE_HTTP, domain="foo.com", key=None)]
+
+        config_test_mode = mock.MagicMock(
+            no_simple_http_tls=True, simple_http_port=4430,
+            manual_test_mode=True)
+        self.auth_test_mode = ManualAuthenticator(
+            config=config_test_mode, name="manual")
 
     def test_more_info(self):
         self.assertTrue(isinstance(self.auth.more_info(), str))
@@ -51,6 +60,45 @@ class ManualAuthenticatorTest(unittest.TestCase):
 
         mock_verify.return_value = False
         self.assertEqual([None], self.auth.perform(self.achalls))
+
+    @mock.patch("letsencrypt.plugins.manual.subprocess.Popen", autospec=True)
+    def test_perform_test_command_oserror(self, mock_popen):
+        mock_popen.side_effect = OSError
+        self.assertEqual([False], self.auth_test_mode.perform(self.achalls))
+
+    @mock.patch("letsencrypt.plugins.manual.time.sleep", autospec=True)
+    @mock.patch("letsencrypt.plugins.manual.subprocess.Popen", autospec=True)
+    def test_perform_test_command_run_failure(
+            self, mock_popen, unused_mock_sleep):
+        mock_popen.poll.return_value = 10
+        mock_popen.return_value.pid = 1234
+        self.assertRaises(
+            errors.Error, self.auth_test_mode.perform, self.achalls)
+
+    @mock.patch("letsencrypt.plugins.manual.time.sleep", autospec=True)
+    @mock.patch("acme.challenges.SimpleHTTPResponse.simple_verify",
+                autospec=True)
+    @mock.patch("letsencrypt.plugins.manual.subprocess.Popen", autospec=True)
+    def test_perform_test_mode(self, mock_popen, mock_verify, mock_sleep):
+        mock_popen.return_value.poll.side_effect = [None, 10]
+        mock_popen.return_value.pid = 1234
+        mock_verify.return_value = False
+        self.assertEqual([False], self.auth_test_mode.perform(self.achalls))
+        self.assertEqual(1, mock_sleep.call_count)
+
+    def test_cleanup_test_mode_already_terminated(self):
+        # pylint: disable=protected-access
+        self.auth_test_mode._httpd = httpd = mock.Mock()
+        httpd.poll.return_value = 0
+        self.auth_test_mode.cleanup(self.achalls)
+
+    @mock.patch("letsencrypt.plugins.manual.os.killpg", autospec=True)
+    def test_cleanup_test_mode_kills_still_running(self, mock_killpg):
+        # pylint: disable=protected-access
+        self.auth_test_mode._httpd = httpd = mock.Mock(pid=1234)
+        httpd.poll.return_value = None
+        self.auth_test_mode.cleanup(self.achalls)
+        mock_killpg.assert_called_once_with(1234, signal.SIGTERM)
 
 
 if __name__ == "__main__":
