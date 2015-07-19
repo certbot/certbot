@@ -76,6 +76,7 @@ from acme.jose.jws import (
 
 from acme.jose.util import (
     ComparableX509,
+    ComparableKey,
     ComparableRSAKey,
     ImmutableMap,
 )
