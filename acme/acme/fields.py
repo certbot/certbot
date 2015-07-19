@@ -31,8 +31,6 @@ class Resource(jose.Field):
     def __init__(self, resource_type, *args, **kwargs):
         self.resource_type = resource_type
         super(Resource, self).__init__(
-            # TODO: omitempty used only to trick
-            # JSONObjectWithFieldsMeta._defaults..., server implementation
             'resource', default=resource_type, *args, **kwargs)
 
     def decode(self, value):
