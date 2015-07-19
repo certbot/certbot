@@ -2,7 +2,7 @@
 from letsencrypt.plugins import common
 
 class Addr(common.Addr):
-
+    """Represents an Apache address."""
     def __eq__(self, other):
         """This is defined as equalivalent within Apache.
 
@@ -16,7 +16,8 @@ class Addr(common.Addr):
         return False
 
     def is_wildcard(self):
-        return tup[1] == "*" or not tup[1]
+        """Returns if address has a wildcard port."""
+        return self.tup[1] == "*" or not self.tup[1]
 
     def get_sni_addr(self, port):
         """Returns the least specific address that resolves on the port.

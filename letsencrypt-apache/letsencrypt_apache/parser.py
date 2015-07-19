@@ -1,5 +1,4 @@
 """ApacheParser is a member object of the ApacheConfigurator class."""
-import collections
 import fnmatch
 import itertools
 import logging
@@ -13,10 +12,6 @@ from letsencrypt import errors
 logger = logging.getLogger(__name__)
 
 
-arg_var_interpreter = re.compile(r"\$\{[^ \}]*}")
-fnmatch_chars = set(["*", "?", "\\", "[", "]"])
-
-
 class ApacheParser(object):
     """Class handles the fine details of parsing the Apache Configuration.
 
@@ -26,6 +21,9 @@ class ApacheParser(object):
         directory. Without trailing slash.
 
     """
+    arg_var_interpreter = re.compile(r"\$\{[^ \}]*}")
+    fnmatch_chars = set(["*", "?", "\\", "[", "]"])
+
     def __init__(self, aug, root, ssl_options, ctl):
         # This uses the binary, so it can be done first.
         # https://httpd.apache.org/docs/2.4/mod/core.html#define
@@ -59,7 +57,7 @@ class ApacheParser(object):
             the iteration issue.  Else... parse and enable mods at same time.
 
         """
-        matches = self.find_dir(case_i("LoadModule"))
+        matches = self.find_dir("LoadModule")
 
         iterator = iter(matches)
         # Make sure prev_size != cur_size for do: while: iteration
@@ -101,7 +99,7 @@ class ApacheParser(object):
 
         self.variables = variables
 
-    def _get_runtime_cfg(self, ctl):
+    def _get_runtime_cfg(self, ctl):  # pylint: disable=no-self-use
         """Get runtime configuration info.
 
         :returns: stdout from DUMP_RUN_CFG
@@ -116,8 +114,7 @@ class ApacheParser(object):
 
         except (OSError, ValueError):
             logger.error(
-                "Error accessing {0} for runtime parameters!{1}".format(
-                    ctl, os.linesep))
+                "Error accessing %s for runtime parameters!%s", ctl, os.linesep)
             raise errors.MisconfigurationError(
                 "Error accessing loaded Apache parameters: %s", ctl)
         # Small errors that do not impede
@@ -129,7 +126,7 @@ class ApacheParser(object):
 
         return stdout
 
-    def _filter_args_num(self, matches, args):
+    def _filter_args_num(self, matches, args):  # pylint: disable=no-self-use
         """Filter out directives with specific number of arguments.
 
         This function makes the assumption that all related arguments are given
@@ -223,7 +220,7 @@ class ApacheParser(object):
         else:
             self.aug.set(aug_conf_path + "/directive[last()]/arg", args)
 
-    def find_dir(self, directive, arg=None, start=None):
+    def find_dir(self, directive, arg=None, start=None, exclude=True):
         """Finds directive in the configuration.
 
         Recursively searches through config files to find directives
@@ -241,12 +238,13 @@ class ApacheParser(object):
         compatibility.
 
         :param str directive: Directive to look for
-
         :param arg: Specific value directive must have, None if all should
                     be considered
         :type arg: str or None
 
         :param str start: Beginning Augeas path to begin looking
+        :param bool exclude: Whether or not to exclude directives based on
+            variables and enabled modules
 
         """
         # Cannot place member variable in the definition of the function so...
@@ -265,32 +263,33 @@ class ApacheParser(object):
         # includes = self.aug.match(start +
         # "//* [self::directive='Include']/* [label()='arg']")
 
-        regex = "(%s)|(%s)|(%s)" % (directive,
+        regex = "(%s)|(%s)|(%s)" % (case_i(directive),
                                     case_i("Include"),
                                     case_i("IncludeOptional"))
         matches = self.aug.match(
             "%s//*[self::directive=~regexp('%s')]" % (start, regex))
 
-        matches = self._exclude_dirs(matches)
-
+        if exclude:
+            matches = self._exclude_dirs(matches)
 
         if arg is None:
             arg_suffix = "/arg"
         else:
-            arg_suffix = "/*[self::arg=~regexp('%s')]" % arg
+            arg_suffix = "/*[self::arg=~regexp('%s')]" % case_i(arg)
 
         ordered_matches = []
 
         # TODO: Wildcards should be included in alphabetical order
         # https://httpd.apache.org/docs/2.4/mod/core.html#include
         for match in matches:
-            dir = self.aug.get(match).lower()
-            if dir == "include" or dir == "includeoptional":
+            dir_ = self.aug.get(match).lower()
+            if dir_ == "include" or dir_ == "includeoptional":
                 # start[6:] to strip off /files
                 ordered_matches.extend(self.find_dir(
                     directive, arg, self._get_include_path(
                         self.get_arg(match + "/arg"))))
-            else:
+            # This additionally allows Include
+            if dir_ == directive.lower():
                 ordered_matches.extend(self.aug.match(match + arg_suffix))
 
         return ordered_matches
@@ -302,11 +301,14 @@ class ApacheParser(object):
 
         """
         value = self.aug.get(match)
-        variables = arg_var_interpreter.findall(value)
+        variables = ApacheParser.arg_var_interpreter.findall(value)
 
         for var in variables:
             # Strip off ${ and }
-            value = value.replace(var, self.variables[var[2:-1]])
+            try:
+                value = value.replace(var, self.variables[var[2:-1]])
+            except KeyError:
+                raise errors.PluginError("Error Parsing variable: %s" % var)
 
         return value
 
@@ -317,14 +319,14 @@ class ApacheParser(object):
         valid_matches = []
 
         for match in matches:
-            for filter in filters:
-                if not self._pass_filter(match, filter):
+            for filter_ in filters:
+                if not self._pass_filter(match, filter_):
                     break
             else:
                 valid_matches.append(match)
         return valid_matches
 
-    def _pass_filter(self, match, filter):
+    def _pass_filter(self, match, filter_):
         """Determine if directive passes a filter.
 
         :param str match: Augeas path
@@ -333,7 +335,7 @@ class ApacheParser(object):
 
         """
         match_l = match.lower()
-        last_match_idx = match_l.find(filter[0])
+        last_match_idx = match_l.find(filter_[0])
 
         while last_match_idx != -1:
             # Check args
@@ -341,10 +343,10 @@ class ApacheParser(object):
             expression = self.aug.get(match[:end_of_if] + "/arg")
 
             expected = not expression.startswith("!")
-            if expected != expression in filter[1]:
+            if expected != (expression in filter_[1]):
                 return False
 
-            last_match_idx = match_l.find(filter[0], end_of_if)
+            last_match_idx = match_l.find(filter_[0], end_of_if)
 
         return True
 
@@ -382,7 +384,7 @@ class ApacheParser(object):
         # then reassemble
         split_arg = arg.split("/")
         for idx, split in enumerate(split_arg):
-            if any(char in fnmatch_chars for char in split):
+            if any(char in ApacheParser.fnmatch_chars for char in split):
                 # Turn it into a augeas regex
                 # TODO: Can this instead be an augeas glob instead of regex
                 split_arg[idx] = ("* [label()=~regexp('%s')]" %
@@ -529,8 +531,7 @@ class ApacheParser(object):
         # in hierarchy via direct include
         # httpd.conf was very common as a user file in Apache 2.2
         if (os.path.isfile(os.path.join(self.root, "httpd.conf")) and
-                self.find_dir(
-                    case_i("Include"), case_i("httpd.conf"), root)):
+                self.find_dir("Include", "httpd.conf", root)):
             return os.path.join(self.root, "httpd.conf")
         else:
             return os.path.join(self.root, "apache2.conf")

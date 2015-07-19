@@ -45,7 +45,7 @@ class ApacheDvsni(common.Dvsni):
 
 """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         super(ApacheDvsni, self).__init__(*args, **kwargs)
 
         self.challenge_conf = os.path.join(
@@ -60,6 +60,10 @@ class ApacheDvsni(common.Dvsni):
         # About to make temporary changes to the config
         self.configurator.save()
 
+        # Prepare the server for HTTPS
+        self.configurator.prepare_server_https(
+            str(self.configurator.config.dvsni_port))
+
         responses = []
 
         # Create all of the challenge certs
@@ -68,12 +72,7 @@ class ApacheDvsni(common.Dvsni):
 
         # Setup the configuration
         dvsni_addrs = self._mod_config()
-
         self.configurator.make_addrs_sni_ready(dvsni_addrs)
-
-        # Prepare the server for HTTPS
-        self.configurator._prepare_https_server(
-            str(self.configurator.config.dvsni_port))
 
         # Save reversible changes
         self.configurator.save("SNI Challenge", True)
@@ -96,7 +95,7 @@ class ApacheDvsni(common.Dvsni):
             achall_addrs = self.get_dvsni_addrs(achall)
             dvsni_addrs.update(achall_addrs)
 
-            config_text += self._get_config_text(self.achalls, achall_addrs)
+            config_text += self._get_config_text(achall, achall_addrs)
 
         config_text += "</IfModule>\n"
 
@@ -114,7 +113,6 @@ class ApacheDvsni(common.Dvsni):
         vhost = self.configurator.choose_vhost(achall.domain)
 
         # TODO: Checkout _default_ rules.
-        # TODO: Need to separate out test mode and normal mode for DVSNI addrs
         dvsni_addrs = set()
         default_addr = obj.Addr(("*", self.configurator.config.dvsni_port))
 

@@ -54,11 +54,11 @@ class ApacheParserTest(util.ApacheTest):
         self.assertTrue(matches)
 
     def test_find_dir(self):
-        from letsencrypt_apache.parser import case_i
-        test = self.parser.find_dir(case_i("Listen"), "443")
+        test = self.parser.find_dir("Listen", "80")
         # This will only look in enabled hosts
-        test2 = self.parser.find_dir(case_i("documentroot"))
-        self.assertEqual(len(test), 2)
+        test2 = self.parser.find_dir("documentroot")
+
+        self.assertEqual(len(test), 1)
         self.assertEqual(len(test2), 3)
 
     def test_add_dir(self):
@@ -80,6 +80,9 @@ class ApacheParserTest(util.ApacheTest):
 
         """
         from letsencrypt_apache.parser import get_aug_path
+        # This makes sure that find_dir will work
+        self.parser.modules.add("mod_ssl.c")
+
         self.parser.add_dir_to_ifmodssl(
             get_aug_path(self.parser.loc["default"]),
             "FakeDirective", ["123"])

@@ -1,6 +1,5 @@
 """Test for letsencrypt_apache.configurator."""
 import os
-import re
 import shutil
 import unittest
 
@@ -12,18 +11,16 @@ from letsencrypt import achallenges
 from letsencrypt import errors
 from letsencrypt import le_util
 
-from letsencrypt.plugins import common
-
 from letsencrypt.tests import acme_util
 
 from letsencrypt_apache import configurator
-from letsencrypt_apache import parser
+from letsencrypt_apache import obj
 
 from letsencrypt_apache.tests import util
 
 
 class TwoVhost80Test(util.ApacheTest):
-    """Test two standard well configured HTTP vhosts."""
+    """Test two standard well-configured HTTP vhosts."""
 
     def setUp(self):
         super(TwoVhost80Test, self).setUp()
@@ -48,7 +45,7 @@ class TwoVhost80Test(util.ApacheTest):
         """Make sure all vhosts are being properly found.
 
         .. note:: If test fails, only finding 1 Vhost... it is likely that
-            it is a problem with is_enabled.
+            it is a problem with is_enabled.  If finding only 3, likely is_ssl
 
         """
         vhs = self.config.get_virtual_hosts()
@@ -60,6 +57,8 @@ class TwoVhost80Test(util.ApacheTest):
                 if vhost == truth:
                     found += 1
                     break
+            else:
+                raise Exception("Missed: %s" % vhost)
 
         self.assertEqual(found, 4)
 
@@ -77,7 +76,35 @@ class TwoVhost80Test(util.ApacheTest):
         self.assertTrue(self.config.is_site_enabled(self.vh_truth[2].filep))
         self.assertTrue(self.config.is_site_enabled(self.vh_truth[3].filep))
 
-    def test_deploy_cert(self):
+    @mock.patch("letsencrypt_apache.parser.subprocess.Popen")
+    def test_enable_mod(self, mock_popen):
+        mock_popen().communicate.return_value = ("Define: DUMP_RUN_CFG", "")
+        mock_popen().returncode = 0
+
+        self.config.enable_mod("ssl")
+        for filename in ["ssl.conf", "ssl.load"]:
+            self.assertTrue(
+                os.path.isfile(os.path.join(
+                    self.config.conf("server-root"), "mods-enabled", filename)))
+
+        self.assertTrue("ssl_module" in self.config.parser.modules)
+        self.assertTrue("mod_ssl.c" in self.config.parser.modules)
+
+    @mock.patch("letsencrypt_apache.parser.subprocess.Popen")
+    def test_enable_site(self, mock_popen):
+        mock_popen().returncode = 0
+        mock_popen().communicate.return_value = ("Define: DUMP_RUN_CFG", "")
+
+        # Default 443 vhost
+        self.assertFalse(self.vh_truth[1].enabled)
+        self.config.enable_site(self.vh_truth[1])
+        self.assertTrue(self.vh_truth[1].enabled)
+
+    @mock.patch("letsencrypt_apache.parser.subprocess.Popen")
+    def test_deploy_cert(self, mock_popen):
+        mock_popen().returncode = 0
+        mock_popen().communicate.return_value = ("Define: DUMP_RUN_CFG", "")
+
         # Get the default 443 vhost
         self.config.assoc["random.demo"] = self.vh_truth[1]
         self.config.deploy_cert(
@@ -85,15 +112,17 @@ class TwoVhost80Test(util.ApacheTest):
             "example/cert.pem", "example/key.pem", "example/cert_chain.pem")
         self.config.save()
 
+        # Verify ssl_module was enabled.
+        self.assertTrue(self.vh_truth[1].enabled)
+        self.assertTrue("ssl_module" in self.config.parser.modules)
+
         loc_cert = self.config.parser.find_dir(
-            parser.case_i("sslcertificatefile"),
-            re.escape("example/cert.pem"), self.vh_truth[1].path)
+            "sslcertificatefile", "example/cert.pem", self.vh_truth[1].path)
         loc_key = self.config.parser.find_dir(
-            parser.case_i("sslcertificateKeyfile"),
-            re.escape("example/key.pem"), self.vh_truth[1].path)
+            "sslcertificateKeyfile", "example/key.pem", self.vh_truth[1].path)
         loc_chain = self.config.parser.find_dir(
-            parser.case_i("SSLCertificateChainFile"),
-            re.escape("example/cert_chain.pem"), self.vh_truth[1].path)
+            "SSLCertificateChainFile", "example/cert_chain.pem",
+            self.vh_truth[1].path)
 
         # Verify one directive was found in the correct file
         self.assertEqual(len(loc_cert), 1)
@@ -109,15 +138,15 @@ class TwoVhost80Test(util.ApacheTest):
                          self.vh_truth[1].filep)
 
     def test_is_name_vhost(self):
-        addr = common.Addr.fromstring("*:80")
+        addr = obj.Addr.fromstring("*:80")
         self.assertTrue(self.config.is_name_vhost(addr))
         self.config.version = (2, 2)
         self.assertFalse(self.config.is_name_vhost(addr))
 
     def test_add_name_vhost(self):
-        self.config.add_name_vhost("*:443")
+        self.config.add_name_vhost(obj.Addr.fromstring("*:443"))
         self.assertTrue(self.config.parser.find_dir(
-            "NameVirtualHost", re.escape("*:443")))
+            "NameVirtualHost", "*:443"))
 
     def test_make_vhost_ssl(self):
         ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[0])
@@ -130,17 +159,15 @@ class TwoVhost80Test(util.ApacheTest):
         self.assertEqual(ssl_vhost.path,
                          "/files" + ssl_vhost.filep + "/IfModule/VirtualHost")
         self.assertEqual(len(ssl_vhost.addrs), 1)
-        self.assertEqual(set([common.Addr.fromstring("*:443")]), ssl_vhost.addrs)
+        self.assertEqual(set([obj.Addr.fromstring("*:443")]), ssl_vhost.addrs)
         self.assertEqual(ssl_vhost.names, set(["encryption-example.demo"]))
         self.assertTrue(ssl_vhost.ssl)
         self.assertFalse(ssl_vhost.enabled)
 
         self.assertTrue(self.config.parser.find_dir(
-            "SSLCertificateFile", None, ssl_vhost.path))
+            "SSLCertificateFile", None, ssl_vhost.path, False))
         self.assertTrue(self.config.parser.find_dir(
-            "SSLCertificateKeyFile", None, ssl_vhost.path))
-        self.assertTrue(self.config.parser.find_dir(
-            "Include", self.ssl_options, ssl_vhost.path))
+            "SSLCertificateKeyFile", None, ssl_vhost.path, False))
 
         self.assertEqual(self.config.is_name_vhost(self.vh_truth[0]),
                          self.config.is_name_vhost(ssl_vhost))
