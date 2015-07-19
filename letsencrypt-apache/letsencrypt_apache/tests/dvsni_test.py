@@ -17,7 +17,7 @@ class DvsniPerformTest(util.ApacheTest):
 
     achalls = common_test.DvsniTest.achalls
 
-    def setUp(self):
+    def setUp(self):  # pylint: disable=arguments-differ
         super(DvsniPerformTest, self).setUp()
 
         config = util.get_apache_configurator(

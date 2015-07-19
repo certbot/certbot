@@ -1,9 +1,14 @@
 """Common utilities for letsencrypt_apache."""
 import os
 import pkg_resources
+import sys
 import unittest
 
+import augeas
 import mock
+import zope.component
+
+from letsencrypt.display import util as display_util
 
 from letsencrypt.plugins import common
 
@@ -14,24 +19,42 @@ from letsencrypt_apache import obj
 
 class ApacheTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
 
-    def setUp(self):
+    def setUp(self, test_dir="debian_apache_2_4/two_vhost_80",
+              config_root="debian_apache_2_4/two_vhost_80/apache2"):
+        # pylint: disable=arguments-differ
         super(ApacheTest, self).setUp()
 
         self.temp_dir, self.config_dir, self.work_dir = common.dir_setup(
-            test_dir="debian_apache_2_4/two_vhost_80",
+            test_dir=test_dir,
             pkg="letsencrypt_apache.tests")
 
         self.ssl_options = common.setup_ssl_options(
             self.config_dir, constants.MOD_SSL_CONF_SRC,
             constants.MOD_SSL_CONF_DEST)
 
-        self.config_path = os.path.join(
-            self.temp_dir, "debian_apache_2_4/two_vhost_80/apache2")
+        self.config_path = os.path.join(self.temp_dir, config_root)
 
         self.rsa256_file = pkg_resources.resource_filename(
             "letsencrypt.tests", os.path.join("testdata", "rsa256_key.pem"))
         self.rsa256_pem = pkg_resources.resource_string(
             "letsencrypt.tests", os.path.join("testdata", "rsa256_key.pem"))
+
+
+class ParserTest(ApacheTest):  # pytlint: disable=too-few-public-methods
+
+    def setUp(self, test_dir="debian_apache_2_4/two_vhost_80",
+              config_root="debian_apache_2_4/two_vhost_80/apache2"):
+        super(ParserTest, self).setUp(test_dir, config_root)
+
+        zope.component.provideUtility(display_util.FileDisplay(sys.stdout))
+
+        from letsencrypt_apache.parser import ApacheParser
+        self.aug = augeas.Augeas(
+            flags=augeas.Augeas.NONE | augeas.Augeas.NO_MODL_AUTOLOAD)
+        with mock.patch("letsencrypt_apache.parser.ApacheParser."
+                        "update_runtime_variables"):
+            self.parser = ApacheParser(
+                self.aug, self.config_path, self.ssl_options, "dummy_ctl_path")
 
 
 def get_apache_configurator(

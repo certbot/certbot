@@ -22,7 +22,7 @@ from letsencrypt_apache.tests import util
 class TwoVhost80Test(util.ApacheTest):
     """Test two standard well-configured HTTP vhosts."""
 
-    def setUp(self):
+    def setUp(self):  # pylint: disable=arguments-differ
         super(TwoVhost80Test, self).setUp()
 
         self.config = util.get_apache_configurator(
@@ -137,6 +137,18 @@ class TwoVhost80Test(util.ApacheTest):
         self.assertEqual(configurator.get_file_path(loc_chain[0]),
                          self.vh_truth[1].filep)
 
+    def test_deploy_cert_invalid_vhost(self):
+        self.config.parser.modules.add("ssl_module")
+        mock_find = mock.MagicMock()
+        mock_find.return_value = []
+        self.config.parser.find_dir = mock_find
+
+        # Get the default 443 vhost
+        self.config.assoc["random.demo"] = self.vh_truth[1]
+        self.assertRaises(
+            errors.PluginError, self.config.deploy_cert, "random.demo",
+            "example/cert.pem", "example/key.pem", "example/cert_chain.pem")
+
     def test_is_name_vhost(self):
         addr = obj.Addr.fromstring("*:80")
         self.assertTrue(self.config.is_name_vhost(addr))
@@ -147,6 +159,19 @@ class TwoVhost80Test(util.ApacheTest):
         self.config.add_name_vhost(obj.Addr.fromstring("*:443"))
         self.assertTrue(self.config.parser.find_dir(
             "NameVirtualHost", "*:443"))
+
+    def test_prepare_server_https(self):
+        self.config.parser.modules.add("ssl_module")
+        mock_find = mock.Mock()
+        mock_add_dir = mock.Mock()
+        mock_find.return_value = []
+
+        # This will test the Add listen
+        self.config.parser.find_dir = mock_find
+        self.config.parser.add_dir_to_ifmodssl = mock_add_dir
+
+        self.config.prepare_server_https("443")
+        self.assertTrue(mock_add_dir.called)
 
     def test_make_vhost_ssl(self):
         ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[0])

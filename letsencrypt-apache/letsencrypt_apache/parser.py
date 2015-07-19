@@ -126,7 +126,7 @@ class ApacheParser(object):
 
         return stdout
 
-    def _filter_args_num(self, matches, args):  # pylint: disable=no-self-use
+    def filter_args_num(self, matches, args):  # pylint: disable=no-self-use
         """Filter out directives with specific number of arguments.
 
         This function makes the assumption that all related arguments are given
@@ -142,16 +142,16 @@ class ApacheParser(object):
         """
         filtered = []
         if args == 1:
-            for i in range(matches):
+            for i in range(len(matches)):
                 if matches[i].endswith("/arg"):
                     filtered.append(matches[i][:-4])
         else:
-            for i in range(matches):
-                if matches[i].endswith("/arg[%d]", args):
+            for i in range(len(matches)):
+                if matches[i].endswith("/arg[%d]" % args):
                     # Make sure we don't cause an IndexError (end of list)
                     # Check to make sure arg + 1 doesn't exist
                     if (i == (len(matches) - 1) or
-                            not matches[i + 1].endswith("/arg[%d]" % args + 1)):
+                            not matches[i + 1].endswith("/arg[%d]" % (args + 1))):
                         filtered.append(matches[i][:-len("/arg[%d]" % args)])
 
         return filtered
@@ -340,11 +340,16 @@ class ApacheParser(object):
         while last_match_idx != -1:
             # Check args
             end_of_if = match_l.find("/", last_match_idx)
+            # This should be aug.get (vars are not used e.g. parser.aug_get)
             expression = self.aug.get(match[:end_of_if] + "/arg")
 
-            expected = not expression.startswith("!")
-            if expected != (expression in filter_[1]):
-                return False
+            if expression.startswith("!"):
+                # Strip off "!"
+                if expression[1:] in filter_[1]:
+                    return False
+            else:
+                if expression not in filter_[1]:
+                    return False
 
             last_match_idx = match_l.find(filter_[0], end_of_if)
 

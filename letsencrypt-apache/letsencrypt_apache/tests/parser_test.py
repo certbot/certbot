@@ -1,34 +1,21 @@
 """Tests for letsencrypt_apache.parser."""
 import os
 import shutil
-import sys
 import unittest
 
 import augeas
 import mock
-import zope.component
 
 from letsencrypt import errors
-from letsencrypt.display import util as display_util
 
 from letsencrypt_apache.tests import util
 
 
-class ApacheParserTest(util.ApacheTest):
+class BasicParserTest(util.ParserTest):
     """Apache Parser Test."""
 
-    def setUp(self):
-        super(ApacheParserTest, self).setUp()
-
-        zope.component.provideUtility(display_util.FileDisplay(sys.stdout))
-
-        from letsencrypt_apache.parser import ApacheParser
-        self.aug = augeas.Augeas(
-            flags=augeas.Augeas.NONE | augeas.Augeas.NO_MODL_AUTOLOAD)
-        with mock.patch("letsencrypt_apache.parser.ApacheParser."
-                        "update_runtime_variables"):
-            self.parser = ApacheParser(
-                self.aug, self.config_path, self.ssl_options, "dummy_ctl_path")
+    def setUp(self):  # pylint: disable=arguments-differ
+        super(BasicParserTest, self).setUp()
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
@@ -60,6 +47,10 @@ class ApacheParserTest(util.ApacheTest):
 
         self.assertEqual(len(test), 1)
         self.assertEqual(len(test2), 3)
+
+    def test_filter_args_num(self):
+        # TODO: TEST 2, TEST 1
+        pass
 
     def test_add_dir(self):
         aug_default = "/files" + self.parser.loc["default"]
@@ -115,7 +106,7 @@ class ApacheParserTest(util.ApacheTest):
 
 
 class ParserInitTest(util.ApacheTest):
-    def setUp(self):
+    def setUp(self):  # pylint: disable=arguments-differ
         super(ParserInitTest, self).setUp()
         self.aug = augeas.Augeas(
             flags=augeas.Augeas.NONE | augeas.Augeas.NO_MODL_AUTOLOAD)
