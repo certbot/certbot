@@ -34,7 +34,9 @@ class NginxConfiguratorTest(util.NginxTest):
         self.assertEquals((1, 6, 2), self.config.version)
         self.assertEquals(5, len(self.config.parser.parsed))
 
-    def test_get_all_names(self):
+    @mock.patch("letsencrypt_nginx.configurator.socket.gethostbyaddr")
+    def test_get_all_names(self, mock_gethostbyaddr):
+        mock_gethostbyaddr.return_value = ('155.225.50.69.nephoscale.net', [], [])
         names = self.config.get_all_names()
         self.assertEqual(names, set(
             ["*.www.foo.com", "somename", "another.alias",
@@ -111,6 +113,10 @@ class NginxConfiguratorTest(util.NginxTest):
 
         self.config.parser.load()
 
+        parsed_example_conf = util.filter_comments(self.config.parser.parsed[example_conf])
+        parsed_server_conf = util.filter_comments(self.config.parser.parsed[server_conf])
+        parsed_nginx_conf = util.filter_comments(self.config.parser.parsed[nginx_conf])
+
         access_log = os.path.join(self.work_dir, "access.log")
         error_log = os.path.join(self.work_dir, "error.log")
         self.assertEqual([[['server'],
@@ -125,9 +131,9 @@ class NginxConfiguratorTest(util.NginxTest):
                             ['ssl_certificate_key', 'example/key.pem'],
                             ['include',
                              self.config.parser.loc["ssl_options"]]]]],
-                         self.config.parser.parsed[example_conf])
+                         parsed_example_conf)
         self.assertEqual([['server_name', 'somename  alias  another.alias']],
-                         self.config.parser.parsed[server_conf])
+                         parsed_server_conf)
         self.assertEqual([['server'],
                           [['listen', '8000'],
                            ['listen', 'somename:8080'],
@@ -142,7 +148,7 @@ class NginxConfiguratorTest(util.NginxTest):
                            ['ssl_certificate_key', '/etc/nginx/key.pem'],
                            ['include',
                             self.config.parser.loc["ssl_options"]]]],
-                         self.config.parser.parsed[nginx_conf][-1][-1][-1])
+                         parsed_nginx_conf[-1][-1][-1])
 
     def test_get_all_certs_keys(self):
         nginx_conf = self.config.parser.abs_path('nginx.conf')
