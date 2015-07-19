@@ -19,6 +19,7 @@ letsencrypt_test () {
         $store_flags \
         --text \
         --agree-eula \
+        --agree-tos \
         --email "" \
         --debug \
         -vvvvvvv \

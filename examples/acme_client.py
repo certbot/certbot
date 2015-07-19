@@ -3,8 +3,9 @@ import logging
 import os
 import pkg_resources
 
-import Crypto.PublicKey.RSA
-import M2Crypto
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric import rsa
+import OpenSSL
 
 from acme import client
 from acme import messages
@@ -18,11 +19,14 @@ NEW_REG_URL = 'https://www.letsencrypt-demo.org/acme/new-reg'
 BITS = 2048  # minimum for Boulder
 DOMAIN = 'example1.com'  # example.com is ignored by Boulder
 
-key = jose.JWKRSA.load(
-    Crypto.PublicKey.RSA.generate(BITS).exportKey(format="PEM"))
+# generate_private_key requires cryptography>=0.5
+key = jose.JWKRSA(key=rsa.generate_private_key(
+    public_exponent=65537,
+    key_size=2048,
+    backend=default_backend()))
 acme = client.Client(NEW_REG_URL, key)
 
-regr = acme.register(contact=())
+regr = acme.register()
 logging.info('Auto-accepting TOS: %s', regr.terms_of_service)
 acme.update_registration(regr.update(
     body=regr.body.update(agreement=regr.terms_of_service)))
@@ -35,9 +39,9 @@ logging.debug(authzr)
 
 authzr, authzr_response = acme.poll(authzr)
 
-csr = M2Crypto.X509.load_request_string(pkg_resources.resource_string(
-    'acme.jose', os.path.join('testdata', 'csr.der')),
-    M2Crypto.X509.FORMAT_DER)
+csr = OpenSSL.crypto.load_certificate_request(
+    OpenSSL.crypto.FILETYPE_ASN1, pkg_resources.resource_string(
+        'acme', os.path.join('testdata', 'csr.der')))
 try:
     acme.request_issuance(csr, (authzr,))
 except messages.Error as error:

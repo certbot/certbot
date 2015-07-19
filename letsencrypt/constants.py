@@ -1,4 +1,5 @@
 """Let's Encrypt constants."""
+import os
 import logging
 
 from acme import challenges
@@ -8,7 +9,12 @@ SETUPTOOLS_PLUGINS_ENTRY_POINT = "letsencrypt.plugins"
 """Setuptools entry point group name for plugins."""
 
 CLI_DEFAULTS = dict(
-    config_files=["/etc/letsencrypt/cli.ini"],
+    config_files=[
+        "/etc/letsencrypt/cli.ini",
+        # http://freedesktop.org/wiki/Software/xdg-user-dirs/
+        os.path.join(os.environ.get("XDG_CONFIG_HOME", "~/.config"),
+                     "letsencrypt", "cli.ini"),
+    ],
     verbose_count=-(logging.WARNING / 10),
     server="https://www.letsencrypt-demo.org/acme/new-reg",
     rsa_key_size=2048,
@@ -58,9 +64,6 @@ CONFIG_DIRS_MODE = 0o755
 
 ACCOUNTS_DIR = "accounts"
 """Directory where all accounts are saved."""
-
-ACCOUNT_KEYS_DIR = "keys"
-"""Directory where account keys are saved. Relative to `ACCOUNTS_DIR`."""
 
 BACKUP_DIR = "backups"
 """Directory (relative to `IConfig.work_dir`) where backups are kept."""

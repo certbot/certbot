@@ -1,16 +1,22 @@
 """Test letsencrypt.revoker."""
 import csv
 import os
-import pkg_resources
 import shutil
 import tempfile
 import unittest
 
 import mock
+import OpenSSL
 
 from letsencrypt import errors
 from letsencrypt import le_util
 from letsencrypt.display import util as display_util
+
+from letsencrypt.tests import test_util
+
+
+KEY = OpenSSL.crypto.load_privatekey(
+    OpenSSL.crypto.FILETYPE_PEM, test_util.load_vector("rsa512_key.pem"))
 
 
 class RevokerBase(unittest.TestCase):  # pylint: disable=too-few-public-methods
@@ -63,9 +69,9 @@ class RevokerTest(RevokerBase):
     def tearDown(self):
         shutil.rmtree(self.backup_dir)
 
-    @mock.patch("letsencrypt.network.Network.revoke")
+    @mock.patch("acme.client.Client.revoke")
     @mock.patch("letsencrypt.revoker.revocation")
-    def test_revoke_by_key_all(self, mock_display, mock_net):
+    def test_revoke_by_key_all(self, mock_display, mock_acme):
         mock_display().confirm_revocation.return_value = True
 
         self.revoker.revoke_from_key(self.key)
@@ -75,25 +81,24 @@ class RevokerTest(RevokerBase):
         for i in xrange(2):
             self.assertFalse(self._backups_exist(self.certs[i].get_row()))
 
-        self.assertEqual(mock_net.call_count, 2)
+        self.assertEqual(mock_acme.call_count, 2)
 
-    @mock.patch("letsencrypt.revoker.Crypto.PublicKey.RSA.importKey")
-    def test_revoke_by_invalid_keys(self, mock_import):
-        mock_import.side_effect = ValueError
+    @mock.patch("letsencrypt.revoker.OpenSSL.crypto.load_privatekey")
+    def test_revoke_by_invalid_keys(self, mock_load_privatekey):
+        mock_load_privatekey.side_effect = OpenSSL.crypto.Error
         self.assertRaises(
             errors.RevokerError, self.revoker.revoke_from_key, self.key)
 
-        mock_import.side_effect = [mock.Mock(), IndexError]
+        mock_load_privatekey.side_effect = [KEY, OpenSSL.crypto.Error]
         self.assertRaises(
             errors.RevokerError, self.revoker.revoke_from_key, self.key)
 
-    @mock.patch("letsencrypt.network.Network.revoke")
+    @mock.patch("acme.client.Client.revoke")
     @mock.patch("letsencrypt.revoker.revocation")
-    def test_revoke_by_wrong_key(self, mock_display, mock_net):
+    def test_revoke_by_wrong_key(self, mock_display, mock_acme):
         mock_display().confirm_revocation.return_value = True
 
-        key_path = pkg_resources.resource_filename(
-            "acme.jose", os.path.join("testdata", "rsa256_key.pem"))
+        key_path = test_util.vector_path("rsa256_key.pem")
 
         wrong_key = le_util.Key(key_path, open(key_path).read())
         self.revoker.revoke_from_key(wrong_key)
@@ -101,11 +106,11 @@ class RevokerTest(RevokerBase):
         # Nothing was removed
         self.assertEqual(len(self._get_rows()), 2)
         # No revocation went through
-        self.assertEqual(mock_net.call_count, 0)
+        self.assertEqual(mock_acme.call_count, 0)
 
-    @mock.patch("letsencrypt.network.Network.revoke")
+    @mock.patch("acme.client.Client.revoke")
     @mock.patch("letsencrypt.revoker.revocation")
-    def test_revoke_by_cert(self, mock_display, mock_net):
+    def test_revoke_by_cert(self, mock_display, mock_acme):
         mock_display().confirm_revocation.return_value = True
 
         self.revoker.revoke_from_cert(self.paths[1])
@@ -118,11 +123,11 @@ class RevokerTest(RevokerBase):
         self.assertTrue(self._backups_exist(row0))
         self.assertFalse(self._backups_exist(row1))
 
-        self.assertEqual(mock_net.call_count, 1)
+        self.assertEqual(mock_acme.call_count, 1)
 
-    @mock.patch("letsencrypt.network.Network.revoke")
+    @mock.patch("acme.client.Client.revoke")
     @mock.patch("letsencrypt.revoker.revocation")
-    def test_revoke_by_cert_not_found(self, mock_display, mock_net):
+    def test_revoke_by_cert_not_found(self, mock_display, mock_acme):
         mock_display().confirm_revocation.return_value = True
 
         self.revoker.revoke_from_cert(self.paths[0])
@@ -137,11 +142,11 @@ class RevokerTest(RevokerBase):
         self.assertTrue(self._backups_exist(row1))
         self.assertFalse(self._backups_exist(row0))
 
-        self.assertEqual(mock_net.call_count, 1)
+        self.assertEqual(mock_acme.call_count, 1)
 
-    @mock.patch("letsencrypt.network.Network.revoke")
+    @mock.patch("acme.client.Client.revoke")
     @mock.patch("letsencrypt.revoker.revocation")
-    def test_revoke_by_menu(self, mock_display, mock_net):
+    def test_revoke_by_menu(self, mock_display, mock_acme):
         mock_display().confirm_revocation.return_value = True
         mock_display.display_certs.side_effect = [
             (display_util.HELP, 0),
@@ -159,13 +164,13 @@ class RevokerTest(RevokerBase):
         self.assertFalse(self._backups_exist(row0))
         self.assertTrue(self._backups_exist(row1))
 
-        self.assertEqual(mock_net.call_count, 1)
+        self.assertEqual(mock_acme.call_count, 1)
         self.assertEqual(mock_display.more_info_cert.call_count, 1)
 
     @mock.patch("letsencrypt.revoker.logger")
-    @mock.patch("letsencrypt.network.Network.revoke")
+    @mock.patch("acme.client.Client.revoke")
     @mock.patch("letsencrypt.revoker.revocation")
-    def test_revoke_by_menu_delete_all(self, mock_display, mock_net, mock_log):
+    def test_revoke_by_menu_delete_all(self, mock_display, mock_acme, mock_log):
         mock_display().confirm_revocation.return_value = True
         mock_display.display_certs.return_value = (display_util.OK, 0)
 
@@ -177,7 +182,7 @@ class RevokerTest(RevokerBase):
         for i in xrange(2):
             self.assertFalse(self._backups_exist(self.certs[i].get_row()))
 
-        self.assertEqual(mock_net.call_count, 2)
+        self.assertEqual(mock_acme.call_count, 2)
         # Info is called when there aren't any certs left...
         self.assertTrue(mock_log.info.called)
 
@@ -192,10 +197,10 @@ class RevokerTest(RevokerBase):
         self.revoker._safe_revoke(self.certs)
         self.assertTrue(mock_log.error.called)
 
-    @mock.patch("letsencrypt.revoker.Crypto.PublicKey.RSA.importKey")
-    def test_acme_revoke_failure(self, mock_crypto):
+    @mock.patch("letsencrypt.revoker.OpenSSL.crypto.load_privatekey")
+    def test_acme_revoke_failure(self, mock_load_privatekey):
         # pylint: disable=protected-access
-        mock_crypto.side_effect = ValueError
+        mock_load_privatekey.side_effect = OpenSSL.crypto.Error
         self.assertRaises(
             errors.Error, self.revoker._acme_revoke, self.certs[0])
 
@@ -261,17 +266,27 @@ class RevokerInstallerTest(RevokerBase):
             self.assertEqual(
                 sha_vh[cert.get_fingerprint()], self.installs[i])
 
-    @mock.patch("letsencrypt.revoker.M2Crypto.X509.load_cert")
-    def test_get_installed_load_failure(self, mock_m2):
+    @mock.patch("letsencrypt.revoker.OpenSSL.crypto.load_certificate")
+    def test_get_installed_load_failure(self, mock_load_certificate):
         mock_installer = mock.MagicMock()
         mock_installer.get_all_certs_keys.return_value = self.certs_keys
 
-        mock_m2.side_effect = IOError
+        mock_load_certificate.side_effect = OpenSSL.crypto.Error
 
         revoker = self._get_revoker(mock_installer)
 
         # pylint: disable=protected-access
         self.assertEqual(revoker._get_installed_locations(), {})
+
+    def test_get_installed_load_failure_open(self):
+        tmp = tempfile.mkdtemp()
+        mock_installer = mock.MagicMock()
+        mock_installer.get_all_certs_keys.return_value = [(
+            os.path.join(tmp, 'missing'), None, None)]
+        revoker = self._get_revoker(mock_installer)
+        # pylint: disable=protected-access
+        self.assertEqual(revoker._get_installed_locations(), {})
+        os.rmdir(tmp)
 
 
 class RevokerClassMethodsTest(RevokerBase):
@@ -328,6 +343,13 @@ class CertTest(unittest.TestCase):
         from letsencrypt.revoker import Cert
         self.assertRaises(errors.RevokerError, Cert, self.key_path)
 
+    def test_failed_load_open(self):
+        tmp = tempfile.mkdtemp()
+        from letsencrypt.revoker import Cert
+        self.assertRaises(
+            errors.RevokerError, Cert, os.path.join(tmp, 'missing'))
+        os.rmdir(tmp)
+
     def test_no_row(self):
         self.assertEqual(self.certs[0].get_row(), None)
 
@@ -372,21 +394,13 @@ class CertTest(unittest.TestCase):
 
 def create_revoker_certs():
     """Create a few revoker.Cert objects."""
+    cert0_path = test_util.vector_path("cert.pem")
+    cert1_path = test_util.vector_path("cert-san.pem")
+    key_path = test_util.vector_path("rsa512_key.pem")
+
     from letsencrypt.revoker import Cert
-
-    base_package = "letsencrypt.tests"
-
-    cert0_path = pkg_resources.resource_filename(
-        base_package, os.path.join("testdata", "cert.pem"))
-
-    cert1_path = pkg_resources.resource_filename(
-        base_package, os.path.join("testdata", "cert-san.pem"))
-
     cert0 = Cert(cert0_path)
     cert1 = Cert(cert1_path)
-
-    key_path = pkg_resources.resource_filename(
-        base_package, os.path.join("testdata", "rsa512_key.pem"))
 
     return [cert0_path, cert1_path], [cert0, cert1], key_path
 

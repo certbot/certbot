@@ -1,14 +1,15 @@
-"""ACME protocol client class and helper functions."""
+"""Let's Encrypt client API."""
 import logging
 import os
-import pkg_resources
 
-import M2Crypto
-import OpenSSL.crypto
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric import rsa
+import OpenSSL
 import zope.component
 
+from acme import client as acme_client
 from acme import jose
-from acme.jose import jwk
+from acme import messages
 
 from letsencrypt import account
 from letsencrypt import auth_handler
@@ -19,7 +20,6 @@ from letsencrypt import crypto_util
 from letsencrypt import errors
 from letsencrypt import interfaces
 from letsencrypt import le_util
-from letsencrypt import network
 from letsencrypt import reverter
 from letsencrypt import revoker
 from letsencrypt import storage
@@ -31,48 +31,107 @@ from letsencrypt.display import enhancements
 logger = logging.getLogger(__name__)
 
 
+def _acme_from_config_key(config, key):
+    # TODO: Allow for other alg types besides RS256
+    return acme_client.Client(new_reg_uri=config.server, key=key,
+                              verify_ssl=(not config.no_verify_ssl))
+
+
+def register(config, account_storage, tos_cb=None):
+    """Register new account with an ACME CA.
+
+    This function takes care of generating fresh private key,
+    registering the account, optionally accepting CA Terms of Service
+    and finally saving the account. It should be called prior to
+    initialization of `Client`, unless account has already been created.
+
+    :param .IConfig config: Client configuration.
+
+    :param .AccountStorage account_storage: Account storage where newly
+        registered account will be saved to. Save happens only after TOS
+        acceptance step, so any account private keys or
+        `.RegistrationResource` will not be persisted if `tos_cb`
+        returns ``False``.
+
+    :param tos_cb: If ACME CA requires the user to accept a Terms of
+        Service before registering account, client action is
+        necessary. For example, a CLI tool would prompt the user
+        acceptance. `tos_cb` must be a callable that should accept
+        `.RegistrationResource` and return a `bool`: ``True`` iff the
+        Terms of Service present in the contained
+        `.Registration.terms_of_service` is accepted by the client, and
+        ``False`` otherwise. ``tos_cb`` will be called only if the
+        client acction is necessary, i.e. when ``terms_of_service is not
+        None``. This argument is optional, if not supplied it will
+        default to automatic acceptance!
+
+    :raises letsencrypt.errors.Error: In case of any client problems, in
+        particular registration failure, or unaccepted Terms of Service.
+    :raises acme.errors.Error: In case of any protocol problems.
+
+    :returns: Newly registered and saved account, as well as protocol
+        API handle (should be used in `Client` initialization).
+    :rtype: `tuple` of `.Account` and `acme.client.Client`
+
+    """
+    # Log non-standard actions, potentially wrong API calls
+    if account_storage.find_all():
+        logger.info("There are already existing accounts for %s", config.server)
+    if config.email is None:
+        logger.warn("Registering without email!")
+
+    # Each new registration shall use a fresh new key
+    key = jose.JWKRSA(key=jose.ComparableRSAKey(
+        rsa.generate_private_key(
+            public_exponent=65537,
+            key_size=config.rsa_key_size,
+            backend=default_backend())))
+    acme = _acme_from_config_key(config, key)
+    # TODO: add phone?
+    regr = acme.register(messages.NewRegistration.from_data(email=config.email))
+
+    if regr.terms_of_service is not None:
+        if tos_cb is not None and not tos_cb(regr):
+            raise errors.Error(
+                "Registration cannot proceed without accepting "
+                "Terms of Service.")
+        regr = acme.agree_to_tos(regr)
+
+    acc = account.Account(regr, key)
+    account.report_new_account(acc, config)
+    account_storage.save(acc)
+    return acc, acme
+
+
 class Client(object):
     """ACME protocol client.
 
-    :ivar network: Network object for sending and receiving messages
-    :type network: :class:`letsencrypt.network.Network`
-
-    :ivar account: Account object used for registration
-    :type account: :class:`letsencrypt.account.Account`
-
-    :ivar auth_handler: Object that supports the IAuthenticator interface.
-        auth_handler contains both a dv_authenticator and a
-        continuity_authenticator
-    :type auth_handler: :class:`letsencrypt.auth_handler.AuthHandler`
-
-    :ivar installer: Object supporting the IInstaller interface.
-    :type installer: :class:`letsencrypt.interfaces.IInstaller`
-
-    :ivar config: Configuration.
-    :type config: :class:`~letsencrypt.interfaces.IConfig`
+    :ivar .IConfig config: Client configuration.
+    :ivar .Account account: Account registered with `register`.
+    :ivar .AuthHandler auth_handler: Authorizations handler that will
+        dispatch DV and Continuity challenges to appropriate
+        authenticators (providing `.IAuthenticator` interface).
+    :ivar .IInstaller installer: Installer.
+    :ivar acme.client.Client acme: Optional ACME client API handle.
+       You might already have one from `register`.
 
     """
 
-    def __init__(self, config, account_, dv_auth, installer):
+    def __init__(self, config, account_, dv_auth, installer, acme=None):
         """Initialize a client.
 
-        :param dv_auth: IAuthenticator that can solve the
-            :const:`letsencrypt.constants.DV_CHALLENGES`.
-            The :meth:`~letsencrypt.interfaces.IAuthenticator.prepare`
-            must have already been run.
-        :type dv_auth: :class:`letsencrypt.interfaces.IAuthenticator`
+        :param .IAuthenticator dv_auth: Prepared (`.IAuthenticator.prepare`)
+            authenticator that can solve the `.constants.DV_CHALLENGES`.
 
         """
+        self.config = config
         self.account = account_
-
         self.installer = installer
 
-        # TODO: Allow for other alg types besides RS256
-        self.network = network.Network(
-            config.server, jwk.JWKRSA.load(self.account.key.pem),
-            verify_ssl=(not config.no_verify_ssl))
-
-        self.config = config
+        # Initialize ACME if account is provided
+        if acme is None and self.account is not None:
+            acme = _acme_from_config_key(config, self.account.key)
+        self.acme = acme
 
         # TODO: Check if self.config.enroll_autorenew is None. If
         # so, set it based to the default: figure out if dv_auth is
@@ -82,52 +141,9 @@ class Client(object):
             cont_auth = continuity_auth.ContinuityAuthenticator(config,
                                                                 installer)
             self.auth_handler = auth_handler.AuthHandler(
-                dv_auth, cont_auth, self.network, self.account)
+                dv_auth, cont_auth, self.acme, self.account)
         else:
             self.auth_handler = None
-
-    def register(self):
-        """New Registration with the ACME server."""
-        self.account = self.network.register_from_account(self.account)
-        if self.account.terms_of_service is not None:
-            if not self.config.tos:
-                # TODO: Replace with self.account.terms_of_service
-                eula = pkg_resources.resource_string("letsencrypt", "EULA")
-                agree = zope.component.getUtility(interfaces.IDisplay).yesno(
-                    eula, "Agree", "Cancel")
-            else:
-                agree = True
-
-            if agree:
-                self.account.regr = self.network.agree_to_tos(self.account.regr)
-            else:
-                # What is the proper response here...
-                raise errors.Error("Must agree to TOS")
-
-        self.account.save()
-        self._report_new_account()
-
-    def _report_new_account(self):
-        """Informs the user about their new Let's Encrypt account."""
-        reporter = zope.component.getUtility(interfaces.IReporter)
-        reporter.add_message(
-            "Your account credentials have been saved in your Let's Encrypt "
-            "configuration directory at {0}. You should make a secure backup "
-            "of this folder now. This configuration directory will also "
-            "contain certificates and private keys obtained by Let's Encrypt "
-            "so making regular backups of this folder is ideal.".format(
-                self.config.config_dir),
-            reporter.MEDIUM_PRIORITY, True)
-
-        assert self.account.recovery_token is not None
-        recovery_msg = ("If you lose your account credentials, you can recover "
-                        "them using the token \"{0}\". You must write that down "
-                        "and put it in a safe place.".format(
-                            self.account.recovery_token))
-        if self.account.email is not None:
-            recovery_msg += (" Another recovery method will be e-mails sent to "
-                             "{0}.".format(self.account.email))
-        reporter.add_message(recovery_msg, reporter.HIGH_PRIORITY, True)
 
     def _obtain_certificate(self, domains, csr):
         """Obtain certificate.
@@ -156,11 +172,11 @@ class Client(object):
         logger.debug("CSR: %s, domains: %s", csr, domains)
 
         authzr = self.auth_handler.get_authorizations(domains)
-        certr = self.network.request_issuance(
-            jose.ComparableX509(
-                M2Crypto.X509.load_request_der_string(csr.data)),
+        certr = self.acme.request_issuance(
+            jose.ComparableX509(OpenSSL.crypto.load_certificate_request(
+                OpenSSL.crypto.FILETYPE_ASN1, csr.data)),
             authzr)
-        return certr, self.network.fetch_chain(certr)
+        return certr, self.acme.fetch_chain(certr)
 
     def obtain_certificate_from_csr(self, csr):
         """Obtain certficiate from CSR.
@@ -247,10 +263,12 @@ class Client(object):
 
         # XXX: just to stop RenewableCert from complaining; this is
         # probably not a good solution
-        chain_pem = "" if chain is None else chain.as_pem()
+        chain_pem = "" if chain is None else OpenSSL.crypto.dump_certificate(
+            OpenSSL.crypto.FILETYPE_PEM, chain)
         lineage = storage.RenewableCert.new_lineage(
-            domains[0], certr.body.as_pem(), key.pem, chain_pem, params,
-            config, cli_config)
+            domains[0], OpenSSL.crypto.dump_certificate(
+                OpenSSL.crypto.FILETYPE_PEM, certr.body),
+            key.pem, chain_pem, params, config, cli_config)
         self._report_renewal_status(lineage)
         return lineage
 
@@ -306,7 +324,8 @@ class Client(object):
         cert_chain_abspath = None
         cert_file, act_cert_path = le_util.unique_file(cert_path, 0o644)
         # TODO: Except
-        cert_pem = certr.body.as_pem()
+        cert_pem = OpenSSL.crypto.dump_certificate(
+            OpenSSL.crypto.FILETYPE_PEM, certr.body)
         try:
             cert_file.write(cert_pem)
         finally:
@@ -318,7 +337,8 @@ class Client(object):
             chain_file, act_chain_path = le_util.unique_file(
                 chain_path, 0o644)
             # TODO: Except
-            chain_pem = chain_cert.as_pem()
+            chain_pem = OpenSSL.crypto.dump_certificate(
+                OpenSSL.crypto.FILETYPE_PEM, chain_cert)
             try:
                 chain_file.write(chain_pem)
             finally:
@@ -431,8 +451,10 @@ def validate_key_csr(privkey, csr=None):
 
     if csr:
         if csr.form == "der":
-            csr_obj = M2Crypto.X509.load_request_der_string(csr.data)
-            csr = le_util.CSR(csr.file, csr_obj.as_pem(), "der")
+            csr_obj = OpenSSL.crypto.load_certificate_request(
+                OpenSSL.crypto.FILETYPE_ASN1, csr.data)
+            csr = le_util.CSR(csr.file, OpenSSL.crypto.dump_certificate(
+                OpenSSL.crypto.FILETYPE_PEM, csr_obj), "pem")
 
         # If CSR is provided, it must be readable and valid.
         if csr.data and not crypto_util.valid_csr(csr.data):
@@ -444,28 +466,6 @@ def validate_key_csr(privkey, csr=None):
             if not crypto_util.csr_matches_pubkey(
                     csr.data, privkey.pem):
                 raise errors.Error("The key and CSR do not match")
-
-
-def determine_account(config):
-    """Determine which account to use.
-
-    Will create an account if necessary.
-
-    :param config: Configuration object
-    :type config: :class:`letsencrypt.interfaces.IConfig`
-
-    :returns: Account
-    :rtype: :class:`letsencrypt.account.Account`
-
-    """
-    accounts = account.Account.get_accounts(config)
-
-    if len(accounts) == 1:
-        return accounts[0]
-    elif len(accounts) > 1:
-        return display_ops.choose_account(accounts)
-
-    return account.Account.from_prompts(config)
 
 
 def rollback(default_installer, checkpoints, config, plugins):

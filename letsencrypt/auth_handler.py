@@ -28,9 +28,7 @@ class AuthHandler(object):
         :class:`~acme.challenges.ContinuityChallenge` types
     :type cont_auth: :class:`letsencrypt.interfaces.IAuthenticator`
 
-    :ivar network: Network object for sending and receiving authorization
-        messages
-    :type network: :class:`letsencrypt.network.Network`
+    :ivar acme.client.Client acme: ACME client API.
 
     :ivar account: Client's Account
     :type account: :class:`letsencrypt.account.Account`
@@ -43,10 +41,10 @@ class AuthHandler(object):
         form of :class:`letsencrypt.achallenges.AnnotatedChallenge`
 
     """
-    def __init__(self, dv_auth, cont_auth, network, account):
+    def __init__(self, dv_auth, cont_auth, acme, account):
         self.dv_auth = dv_auth
         self.cont_auth = cont_auth
-        self.network = network
+        self.acme = acme
 
         self.account = account
         self.authzr = dict()
@@ -71,8 +69,8 @@ class AuthHandler(object):
 
         """
         for domain in domains:
-            self.authzr[domain] = self.network.request_domain_challenges(
-                domain, self.account.new_authzr_uri)
+            self.authzr[domain] = self.acme.request_domain_challenges(
+                domain, self.account.regr.new_authzr_uri)
 
         self._choose_challenges(domains)
 
@@ -157,7 +155,7 @@ class AuthHandler(object):
         for achall, resp in itertools.izip(achalls, resps):
             # Don't send challenges for None and False authenticator responses
             if resp is not None and resp:
-                self.network.answer_challenge(achall.challb, resp)
+                self.acme.answer_challenge(achall.challb, resp)
                 # TODO: answer_challenge returns challr, with URI,
                 # that can be used in _find_updated_challr
                 # comparisons...
@@ -216,7 +214,7 @@ class AuthHandler(object):
         completed = []
         failed = []
 
-        self.authzr[domain], _ = self.network.poll(self.authzr[domain])
+        self.authzr[domain], _ = self.acme.poll(self.authzr[domain])
         if self.authzr[domain].body.status == messages.STATUS_VALID:
             return achalls, []
 

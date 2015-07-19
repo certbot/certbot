@@ -6,22 +6,27 @@ import signal
 import socket
 import unittest
 
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
 import mock
-import OpenSSL.crypto
-import OpenSSL.SSL
+import OpenSSL
 
 from acme import challenges
+from acme import jose
 
 from letsencrypt import achallenges
-from letsencrypt import le_util
 
 from letsencrypt.tests import acme_util
 
 
-KEY = le_util.Key("foo", pkg_resources.resource_string(
-    "acme.jose", os.path.join("testdata", "rsa512_key.pem")))
+KEY_PATH = pkg_resources.resource_filename(
+    "letsencrypt.tests", os.path.join("testdata", "rsa512_key.pem"))
+KEY_DATA = pkg_resources.resource_string(
+    "letsencrypt.tests", os.path.join("testdata", "rsa512_key.pem"))
+KEY = jose.JWKRSA(key=jose.ComparableRSAKey(serialization.load_pem_private_key(
+    KEY_DATA, password=None, backend=default_backend())))
 PRIVATE_KEY = OpenSSL.crypto.load_privatekey(
-    OpenSSL.crypto.FILETYPE_PEM, KEY.pem)
+    OpenSSL.crypto.FILETYPE_PEM, KEY_DATA)
 CONFIG = mock.Mock(dvsni_port=5001)
 
 
@@ -374,10 +379,8 @@ class StartListenerTest(unittest.TestCase):
             StandaloneAuthenticator
         self.authenticator = StandaloneAuthenticator(config=CONFIG, name=None)
 
-    @mock.patch("letsencrypt.plugins.standalone.authenticator."
-                "Crypto.Random.atfork")
     @mock.patch("letsencrypt.plugins.standalone.authenticator.os.fork")
-    def test_start_listener_fork_parent(self, mock_fork, mock_atfork):
+    def test_start_listener_fork_parent(self, mock_fork):
         self.authenticator.do_parent_process = mock.Mock()
         self.authenticator.do_parent_process.return_value = True
         mock_fork.return_value = 22222
@@ -387,12 +390,9 @@ class StartListenerTest(unittest.TestCase):
         self.assertTrue(result)
         self.assertEqual(self.authenticator.child_pid, 22222)
         self.authenticator.do_parent_process.assert_called_once_with(1717)
-        mock_atfork.assert_called_once_with()
 
-    @mock.patch("letsencrypt.plugins.standalone.authenticator."
-                "Crypto.Random.atfork")
     @mock.patch("letsencrypt.plugins.standalone.authenticator.os.fork")
-    def test_start_listener_fork_child(self, mock_fork, mock_atfork):
+    def test_start_listener_fork_child(self, mock_fork):
         self.authenticator.do_parent_process = mock.Mock()
         self.authenticator.do_child_process = mock.Mock()
         mock_fork.return_value = 0
@@ -400,7 +400,7 @@ class StartListenerTest(unittest.TestCase):
         self.assertEqual(self.authenticator.child_pid, os.getpid())
         self.authenticator.do_child_process.assert_called_once_with(
             1717, "key")
-        mock_atfork.assert_called_once_with()
+
 
 class DoParentProcessTest(unittest.TestCase):
     """Tests for do_parent_process() method."""

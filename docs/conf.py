@@ -23,7 +23,7 @@ import mock
 # http://docs.readthedocs.org/en/latest/faq.html#i-get-import-errors-on-libraries-that-depend-on-c-modules
 # c.f. #262
 sys.modules.update(
-    (mod_name, mock.MagicMock()) for mod_name in ['augeas', 'M2Crypto'])
+    (mod_name, mock.MagicMock()) for mod_name in ['augeas'])
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -36,6 +36,8 @@ with codecs.open(init_fn, encoding='utf8') as fd:
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath(os.path.join(here, '..')))
+for pkg in 'acme', 'letsencrypt-apache', 'letsencrypt-nginx':
+    sys.path.insert(0, os.path.abspath(os.path.join(here, '..', pkg)))
 
 # -- General configuration ------------------------------------------------
 

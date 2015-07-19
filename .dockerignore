@@ -8,4 +8,5 @@
 .git
 .tox
 venv
+venv3
 docs

@@ -6,6 +6,7 @@ import functools
 import logging
 import logging.handlers
 import os
+import pkg_resources
 import sys
 import time
 import traceback
@@ -76,23 +77,6 @@ More detailed help:
 """
 
 
-def _account_init(args, config):
-    # Prepare for init of Client
-    if args.email is None:
-        return client.determine_account(config)
-    else:
-        try:
-            # The way to get the default would be args.email = ""
-            # First try existing account
-            return account.Account.from_existing_account(config, args.email)
-        except errors.Error:
-            try:
-                # Try to make an account based on the email address
-                return account.Account.from_email(config, args.email)
-            except errors.Error:
-                return None
-
-
 def _find_domains(args, installer):
     if args.domains is None:
         domains = display_ops.choose_names(installer)
@@ -106,30 +90,77 @@ def _find_domains(args, installer):
     return domains
 
 
-def _init_acme(config, acc, authenticator, installer):
-    acme = client.Client(config, acc, authenticator, installer)
+def _determine_account(args, config):
+    """Determine which account to use.
 
-    # Validate the key and csr
-    client.validate_key_csr(acc.key)
+    In order to make the renewer (configuration de/serialization) happy,
+    if ``args.account`` is ``None``, it will be updated based on the
+    user input. Same for ``args.email``.
 
-    if authenticator is not None:
-        if acc.regr is None:
+    :param argparse.Namespace args: CLI arguments
+    :param letsencrypt.interface.IConfig config: Configuration object
+    :param .AccountStorage account_storage: Account storage.
+
+    :returns: Account and optionally ACME client API (biproduct of new
+        registration).
+    :rtype: `tuple` of `letsencrypt.account.Account` and
+        `acme.client.Client`
+
+    """
+    account_storage = account.AccountFileStorage(config)
+    acme = None
+
+    if args.account is not None:
+        acc = account_storage.load(args.account)
+    else:
+        accounts = account_storage.find_all()
+        if len(accounts) > 1:
+            acc = display_ops.choose_account(accounts)
+        elif len(accounts) == 1:
+            acc = accounts[0]
+        else:  # no account registered yet
+            if args.email is None:
+                args.email = display_ops.get_email()
+            if not args.email:  # get_email might return ""
+                args.email = None
+
+            def _tos_cb(regr):
+                if args.tos:
+                    return True
+                msg = ("Please read the Terms of Service at {0}. You "
+                       "must agree in order to register with the ACME "
+                       "server at {1}".format(
+                           regr.terms_of_service, config.server))
+                return zope.component.getUtility(interfaces.IDisplay).yesno(
+                    msg, "Agree", "Cancel")
+
             try:
-                acme.register()
+                acc, acme = client.register(
+                    config, account_storage, tos_cb=_tos_cb)
             except errors.Error as error:
-                logger.debug(error)
-                raise errors.Error("Unable to register an account with ACME "
-                                   "server")
+                logger.debug(error, exc_info=True)
+                raise errors.Error(
+                    "Unable to register an account with ACME server")
 
-    return acme
+    args.account = acc.id
+    return acc, acme
+
+
+def _init_le_client(args, config, authenticator, installer):
+    if authenticator is not None:
+        # if authenticator was given, then we will need account...
+        acc, acme = _determine_account(args, config)
+        logger.debug("Picked account: %r", acc)
+        # XXX
+        #crypto_util.validate_key_csr(acc.key)
+    else:
+        acc, acme = None, None
+
+    return client.Client(config, acc, authenticator, installer, acme=acme)
 
 
 def run(args, config, plugins):
     """Obtain a certificate and install."""
-    acc = _account_init(args, config)
-    if acc is None:
-        return None
-
     if args.configurator is not None and (args.installer is not None or
                                           args.authenticator is not None):
         return ("Either --configurator or --authenticator/--installer"
@@ -150,14 +181,15 @@ def run(args, config, plugins):
         return "Configurator could not be determined"
 
     domains = _find_domains(args, installer)
-    # TODO: Handle errors from _init_acme?
-    acme = _init_acme(config, acc, authenticator, installer)
-    lineage = acme.obtain_and_enroll_certificate(
+    # TODO: Handle errors from _init_le_client?
+    le_client = _init_le_client(args, config, authenticator, installer)
+    lineage = le_client.obtain_and_enroll_certificate(
         domains, authenticator, installer, plugins)
     if not lineage:
         return "Certificate could not be obtained"
-    acme.deploy_certificate(domains, lineage.privkey, lineage.cert, lineage.chain)
-    acme.enhance_config(domains, args.redirect)
+    le_client.deploy_certificate(
+        domains, lineage.privkey, lineage.cert, lineage.chain)
+    le_client.enhance_config(domains, args.redirect)
 
 
 def auth(args, config, plugins):
@@ -169,10 +201,6 @@ def auth(args, config, plugins):
         # supplied, check if CSR matches given domains?
         return "--domains and --csr are mutually exclusive"
 
-    acc = _account_init(args, config)
-    if acc is None:
-        return None
-
     authenticator = display_ops.pick_authenticator(
         config, args.authenticator, plugins)
     if authenticator is None:
@@ -183,16 +211,17 @@ def auth(args, config, plugins):
     else:
         installer = None
 
-    # TODO: Handle errors from _init_acme?
-    acme = _init_acme(config, acc, authenticator, installer)
+    # TODO: Handle errors from _init_le_client?
+    le_client = _init_le_client(args, config, authenticator, installer)
 
     if args.csr is not None:
-        certr, chain = acme.obtain_certificate_from_csr(le_util.CSR(
+        certr, chain = le_client.obtain_certificate_from_csr(le_util.CSR(
             file=args.csr[0], data=args.csr[1], form="der"))
-        acme.save_certificate(certr, chain, args.cert_path, args.chain_path)
+        le_client.save_certificate(
+            certr, chain, args.cert_path, args.chain_path)
     else:
         domains = _find_domains(args, installer)
-        if not acme.obtain_and_enroll_certificate(
+        if not le_client.obtain_and_enroll_certificate(
                 domains, authenticator, installer, plugins):
             return "Certificate could not be obtained"
 
@@ -200,18 +229,16 @@ def auth(args, config, plugins):
 def install(args, config, plugins):
     """Install a previously obtained cert in a server."""
     # XXX: Update for renewer/RenewableCert
-    acc = _account_init(args, config)
-    if acc is None:
-        return None
-
     installer = display_ops.pick_installer(config, args.installer, plugins)
     if installer is None:
         return "Installer could not be determined"
     domains = _find_domains(args, installer)
-    acme = _init_acme(config, acc, authenticator=None, installer=installer)
+    le_client = _init_le_client(
+        args, config, authenticator=None, installer=installer)
     assert args.cert_path is not None  # required=True in the subparser
-    acme.deploy_certificate(domains, args.key_path, args.cert_path, args.chain_path)
-    acme.enhance_config(domains, args.redirect)
+    le_client.deploy_certificate(
+        domains, args.key_path, args.cert_path, args.chain_path)
+    le_client.enhance_config(domains, args.redirect)
 
 
 def revoke(args, unused_config, unused_plugins):
@@ -468,8 +495,14 @@ def create_parser(plugins, args):
         "automation", "--no-confirm", dest="no_confirm", action="store_true",
         help="Turn off confirmation screens, currently used for --revoke")
     helpful.add(
-        "automation", "--agree-eula", "-e", dest="tos", action="store_true",
+        "automation", "--agree-eula", dest="eula", action="store_true",
+        help="Agree to the Let's Encrypt Developer Preview EULA")
+    helpful.add(
+        "automation", "--agree-tos", dest="tos", action="store_true",
         help="Agree to the Let's Encrypt Subscriber Agreement")
+    helpful.add(
+        "automation", "--account", metavar="ACCOUNT_ID",
+        help="Account ID to use")
 
     helpful.add_group(
         "testing", description="The following flags are meant for "
@@ -723,6 +756,13 @@ def main(cli_args=sys.argv[1:]):
     report = reporter.Reporter()
     zope.component.provideUtility(report)
     atexit.register(report.atexit_print_messages)
+
+    # TODO: remove developer EULA prompt for the launch
+    if not config.eula:
+        eula = pkg_resources.resource_string("letsencrypt", "EULA")
+        if not zope.component.getUtility(interfaces.IDisplay).yesno(
+                eula, "Agree", "Cancel"):
+            raise errors.Error("Must agree to TOS")
 
     if not os.geteuid() == 0:
         logger.warning(

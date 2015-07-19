@@ -1,6 +1,9 @@
 """Proof of Possession Identifier Validation Challenge."""
-import M2Crypto
+import logging
 import os
+
+from cryptography import x509
+from cryptography.hazmat.backends import default_backend
 import zope.component
 
 from acme import challenges
@@ -9,6 +12,9 @@ from acme import other
 
 from letsencrypt import interfaces
 from letsencrypt.display import util as display_util
+
+
+logger = logging.getLogger(__name__)
 
 
 class ProofOfPossession(object): # pylint: disable=too-few-public-methods
@@ -39,12 +45,19 @@ class ProofOfPossession(object): # pylint: disable=too-few-public-methods
             return None
 
         for cert, key, _ in self.installer.get_all_certs_keys():
-            der_cert_key = M2Crypto.X509.load_cert(cert).get_pubkey().as_der()
+            with open(cert) as cert_file:
+                cert_data = cert_file.read()
             try:
-                cert_key = achall.alg.kty.load(der_cert_key)
-            # If JWKES.load raises other exceptions, they should be caught here
-            except (IndexError, ValueError, TypeError):
-                continue
+                cert_obj = x509.load_pem_x509_certificate(
+                    cert_data, default_backend())
+            except ValueError:
+                try:
+                    cert_obj = x509.load_der_x509_certificate(
+                        cert_data, default_backend())
+                except ValueError:
+                    logger.warn("Certificate is neither PER nor DER: %s", cert)
+
+            cert_key = achall.alg.kty(key=cert_obj.public_key())
             if cert_key == achall.hints.jwk:
                 return self._gen_response(achall, key)
 
