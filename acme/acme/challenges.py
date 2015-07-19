@@ -4,9 +4,15 @@ import functools
 import hashlib
 import logging
 import os
+import socket
 
+from cryptography.hazmat.backends import default_backend
+from cryptography import x509
+import OpenSSL
 import requests
 
+from acme import errors
+from acme import crypto_util
 from acme import fields
 from acme import jose
 from acme import other
@@ -191,6 +197,18 @@ class DVSNI(DVChallenge):
         """
         return binascii.hexlify(self.nonce) + self.DOMAIN_SUFFIX
 
+    def probe_cert(self, domain, **kwargs):
+        """Probe DVSNI challenge certificate."""
+        host = socket.gethostbyname(domain)
+        logging.debug('%s resolved to %s', domain, host)
+
+        kwargs.setdefault("host", host)
+        kwargs.setdefault("port", self.PORT)
+        kwargs["name"] = self.nonce_domain
+        # TODO: try different methods?
+        # pylint: disable=protected-access
+        return crypto_util._probe_sni(**kwargs)
+
 
 @ChallengeResponse.register
 class DVSNIResponse(ChallengeResponse):
@@ -229,8 +247,78 @@ class DVSNIResponse(ChallengeResponse):
         return z.hexdigest().encode()
 
     def z_domain(self, chall):
-        """Domain name for certificate subjectAltName."""
+        """Domain name for certificate subjectAltName.
+
+        :rtype bytes:
+
+        """
         return self.z(chall) + self.DOMAIN_SUFFIX
+
+    def gen_cert(self, chall, domain, key):
+        """Generate DVSNI certificate.
+
+        :param .DVSNI chall: Corresponding challenge.
+        :param unicode domain:
+        :param OpenSSL.crypto.PKey
+
+        """
+        return crypto_util.gen_ss_cert(key, [
+            domain, chall.nonce_domain.decode(), self.z_domain(chall).decode()])
+
+    def simple_verify(self, chall, domain, public_key, **kwargs):
+        """Simple verify.
+
+        Probes DVSNI certificate and checks it using `verify_cert`;
+        hence all arguments documented in `verify_cert`.
+
+        """
+        try:
+            cert = chall.probe_cert(domain=domain, **kwargs)
+        except errors.Error as error:
+            logger.debug(error, exc_info=True)
+            return False
+        return self.verify_cert(chall, domain, public_key, cert)
+
+    def verify_cert(self, chall, domain, public_key, cert):
+        """Verify DVSNI certificate.
+
+        :param .challenges.DVSNI chall: Corresponding challenge.
+        :param str domain: Domain name being validated.
+        :param public_key: Public key for the key pair
+            being authorized. If ``None`` key verification is not
+            performed!
+        :type public_key:
+            `~cryptography.hazmat.primitives.asymmetric.rsa.RSAPublicKey`
+            or
+            `~cryptography.hazmat.primitives.asymmetric.dsa.DSAPublicKey`
+            or
+            `~cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePublicKey`
+            wrapped in `.ComparableKey
+        :param OpenSSL.crypto.X509 cert:
+
+        :returns: ``True`` iff client's control of the domain has been
+            verified, ``False`` otherwise.
+        :rtype: bool
+
+        """
+        # TODO: check "It is a valid self-signed certificate" and
+        # return False if not
+
+        # pylint: disable=protected-access
+        sans = crypto_util._pyopenssl_cert_or_req_san(cert)
+        logging.debug('Certificate %s. SANs: %s', cert.digest('sha1'), sans)
+
+        cert = x509.load_der_x509_certificate(
+            OpenSSL.crypto.dump_certificate(OpenSSL.crypto.FILETYPE_ASN1, cert),
+            default_backend())
+
+        if public_key is None:
+            logging.warn('No key verification is performed')
+        elif public_key != jose.ComparableKey(cert.public_key()):
+            return False
+
+        return domain in sans and self.z_domain(chall).decode() in sans
+
 
 @Challenge.register
 class RecoveryContact(ContinuityChallenge):
