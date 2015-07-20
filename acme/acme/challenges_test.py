@@ -7,6 +7,7 @@ import requests
 
 from six.moves.urllib import parse as urllib_parse  # pylint: disable=import-error
 
+from acme import errors
 from acme import jose
 from acme import other
 from acme import test_util
@@ -177,31 +178,63 @@ class DVSNITest(unittest.TestCase):
         self.assertRaises(
             jose.DeserializationError, DVSNI.from_json, self.jmsg)
 
+    @mock.patch('acme.challenges.socket.gethostbyname')
+    @mock.patch('acme.challenges.crypto_util._probe_sni')
+    def test_probe_cert(self, mock_probe_sni, mock_gethostbyname):
+        mock_gethostbyname.return_value = '127.0.0.1'
+        self.msg.probe_cert('foo.com')
+        mock_gethostbyname.assert_called_once_with('foo.com')
+        mock_probe_sni.assert_called_once_with(
+            host='127.0.0.1', port=self.msg.PORT,
+            name=b'a82d5ff8ef740d12881f6d3c2277ab2e.acme.invalid')
+
+        self.msg.probe_cert('foo.com', host='8.8.8.8')
+        mock_probe_sni.assert_called_with(
+            host='8.8.8.8', port=mock.ANY, name=mock.ANY)
+
+        self.msg.probe_cert('foo.com', port=1234)
+        mock_probe_sni.assert_called_with(
+            host=mock.ANY, port=1234, name=mock.ANY)
+
+        self.msg.probe_cert('foo.com', bar='baz')
+        mock_probe_sni.assert_called_with(
+            host=mock.ANY, port=mock.ANY, name=mock.ANY, bar='baz')
+
+        self.msg.probe_cert('foo.com', name=b'xxx')
+        mock_probe_sni.assert_called_with(
+            host=mock.ANY, port=mock.ANY,
+            name=b'a82d5ff8ef740d12881f6d3c2277ab2e.acme.invalid')
+
 
 class DVSNIResponseTest(unittest.TestCase):
 
     def setUp(self):
         from acme.challenges import DVSNIResponse
-        self.msg = DVSNIResponse(
-            s=b'\xf5\xd6\xe3\xb2]\xe0L\x0bN\x9cKJ\x14I\xa1K\xa3#\xf9\xa8'
-              b'\xcd\x8c7\x0e\x99\x19)\xdc\xb7\xf3\x9bw')
+        # pylint: disable=invalid-name
+        s = '9dbjsl3gTAtOnEtKFEmhS6Mj-ajNjDcOmRkp3Lfzm3c'
+        self.msg = DVSNIResponse(s=jose.decode_b64jose(s))
         self.jmsg = {
             'resource': 'challenge',
             'type': 'dvsni',
-            's': '9dbjsl3gTAtOnEtKFEmhS6Mj-ajNjDcOmRkp3Lfzm3c',
+            's': s,
         }
 
-    def test_z_and_domain(self):
         from acme.challenges import DVSNI
-        challenge = DVSNI(
-            r=b"O*\xb4-\xad\xec\x95>\xed\xa9\r0\x94\xe8\x97\x9c&6"
-              b"\xbf'\xb3\xed\x9a9nX\x0f'\\m\xe7\x12",
-            nonce=int('439736375371401115242521957580409149254868992063'
-                      '44333654741504362774620418661'))
+        self.chall = DVSNI(
+            r=jose.decode_b64jose('Tyq0La3slT7tqQ0wlOiXnCY2vyez7Zo5blgPJ1xt5xI'),
+            nonce=jose.decode_b64jose('a82d5ff8ef740d12881f6d3c2277ab2e'))
+        self.z = (b'38e612b0397cc2624a07d351d7ef50e4'
+                  b'6134c0213d9ed52f7d7c611acaeed41b')
+        self.domain = 'foo.com'
+        self.key = test_util.load_pyopenssl_private_key('rsa512_key.pem')
+        self.public_key = test_util.load_rsa_private_key(
+            'rsa512_key.pem').public_key()
+
+    def test_z_and_domain(self):
         # pylint: disable=invalid-name
-        z = b'38e612b0397cc2624a07d351d7ef50e46134c0213d9ed52f7d7c611acaeed41b'
-        self.assertEqual(z, self.msg.z(challenge))
-        self.assertEqual(z + b'.acme.invalid', self.msg.z_domain(challenge))
+        self.assertEqual(self.z, self.msg.z(self.chall))
+        self.assertEqual(
+            self.z + b'.acme.invalid', self.msg.z_domain(self.chall))
 
     def test_to_partial_json(self):
         self.assertEqual(self.jmsg, self.msg.to_partial_json())
@@ -213,6 +246,45 @@ class DVSNIResponseTest(unittest.TestCase):
     def test_from_json_hashable(self):
         from acme.challenges import DVSNIResponse
         hash(DVSNIResponse.from_json(self.jmsg))
+
+    @mock.patch('acme.challenges.DVSNIResponse.verify_cert')
+    def test_simple_verify(self, mock_verify_cert):
+        chall = mock.Mock()
+        chall.probe_cert.return_value = mock.sentinel.cert
+        mock_verify_cert.return_value = 'x'
+        self.assertEqual('x', self.msg.simple_verify(
+            chall, mock.sentinel.domain, mock.sentinel.key))
+        chall.probe_cert.assert_called_once_with(domain=mock.sentinel.domain)
+        self.msg.verify_cert.assert_called_once_with(
+            chall, mock.sentinel.domain, mock.sentinel.key,
+            mock.sentinel.cert)
+
+    def test_simple_verify_false_on_probe_error(self):
+        chall = mock.Mock()
+        chall.probe_cert.side_effect = errors.Error
+        self.assertFalse(self.msg.simple_verify(
+            chall=chall, domain=None, public_key=None))
+
+    def test_gen_verify_cert_postive_no_key(self):
+        cert = self.msg.gen_cert(self.chall, self.domain, self.key)
+        self.assertTrue(self.msg.verify_cert(
+            self.chall, self.domain, public_key=None, cert=cert))
+
+    def test_gen_verify_cert_postive_with_key(self):
+        cert = self.msg.gen_cert(self.chall, self.domain, self.key)
+        self.assertTrue(self.msg.verify_cert(
+            self.chall, self.domain, public_key=self.public_key, cert=cert))
+
+    def test_gen_verify_cert_negative_with_wrong_key(self):
+        cert = self.msg.gen_cert(self.chall, self.domain, self.key)
+        key = test_util.load_rsa_private_key('rsa256_key.pem').public_key()
+        self.assertFalse(self.msg.verify_cert(
+            self.chall, self.domain, public_key=key, cert=cert))
+
+    def test_gen_verify_cert_negative(self):
+        cert = self.msg.gen_cert(self.chall, self.domain + 'x', self.key)
+        self.assertFalse(self.msg.verify_cert(
+            self.chall, self.domain, public_key=None, cert=cert))
 
 
 class RecoveryContactTest(unittest.TestCase):

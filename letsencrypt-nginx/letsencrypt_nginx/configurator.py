@@ -7,9 +7,11 @@ import socket
 import subprocess
 import sys
 
+import OpenSSL
 import zope.interface
 
 from acme import challenges
+from acme import crypto_util as acme_crypto_util
 
 from letsencrypt import achallenges
 from letsencrypt import constants as core_constants
@@ -271,14 +273,17 @@ class NginxConfigurator(common.Plugin):
     def _get_snakeoil_paths(self):
         # TODO: generate only once
         tmp_dir = os.path.join(self.config.work_dir, "snakeoil")
-        key = crypto_util.init_save_key(
+        le_key = crypto_util.init_save_key(
             key_size=1024, key_dir=tmp_dir, keyname="key.pem")
-        cert_pem = crypto_util.make_ss_cert(
-            key.pem, domains=[socket.gethostname()])
-        cert = os.path.join(tmp_dir, "cert.pem")
-        with open(cert, 'w') as cert_file:
+        key = OpenSSL.crypto.load_privatekey(
+            OpenSSL.crypto.FILETYPE_PEM, le_key.pem)
+        cert = acme_crypto_util.gen_ss_cert(key, domains=[socket.gethostname()])
+        cert_path = os.path.join(tmp_dir, "cert.pem")
+        cert_pem = OpenSSL.crypto.dump_certificate(
+            OpenSSL.crypto.FILETYPE_PEM, cert)
+        with open(cert_path, 'w') as cert_file:
             cert_file.write(cert_pem)
-        return cert, key.file
+        return cert_path, le_key.file
 
     def _make_server_ssl(self, vhost):
         """Make a server SSL.

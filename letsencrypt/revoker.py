@@ -16,6 +16,7 @@ import tempfile
 import OpenSSL
 
 from acme import client as acme_client
+from acme import crypto_util as acme_crypto_util
 from acme.jose import util as jose_util
 
 from letsencrypt import crypto_util
@@ -520,7 +521,7 @@ class Cert(object):
     def get_san(self):
         """Get subject alternative name if available."""
         # pylint: disable=protected-access
-        return ", ".join(crypto_util._pyopenssl_cert_or_req_san(self._cert))
+        return ", ".join(acme_crypto_util._pyopenssl_cert_or_req_san(self._cert))
 
     def __str__(self):
         text = [

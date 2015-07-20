@@ -66,14 +66,14 @@ class ComparableX509(object):  # pylint: disable=too-few-public-methods
         return '<{0}({1!r})>'.format(self.__class__.__name__, self._wrapped)
 
 
-class ComparableRSAKey(object):  # pylint: disable=too-few-public-methods
-    """Wrapper for `cryptography` RSA keys.
+class ComparableKey(object):  # pylint: disable=too-few-public-methods
+    """Comparable wrapper for `cryptography` keys.
 
-    Wraps around:
-    - `cryptography.hazmat.primitives.assymetric.RSAPrivateKey`
-    - `cryptography.hazmat.primitives.assymetric.RSAPublicKey`
+    See https://github.com/pyca/cryptography/issues/2122.
 
     """
+    __hash__ = NotImplemented
+
     def __init__(self, wrapped):
         self._wrapped = wrapped
 
@@ -85,19 +85,36 @@ class ComparableRSAKey(object):  # pylint: disable=too-few-public-methods
         if (not isinstance(other, self.__class__) or
                 self._wrapped.__class__ is not other._wrapped.__class__):
             return NotImplemented
-        # RSA*KeyWithSerialization requires cryptography>=0.8
-        if isinstance(self._wrapped, rsa.RSAPrivateKeyWithSerialization):
+        elif hasattr(self._wrapped, 'private_numbers'):
             return self.private_numbers() == other.private_numbers()
-        elif isinstance(self._wrapped, rsa.RSAPublicKeyWithSerialization):
+        elif hasattr(self._wrapped, 'public_numbers'):
             return self.public_numbers() == other.public_numbers()
         else:
-            return False  # we shouldn't reach here...
+            return NotImplemented
 
     def __ne__(self, other):
         return not self == other
 
+    def __repr__(self):
+        return '<{0}({1!r})>'.format(self.__class__.__name__, self._wrapped)
+
+    def public_key(self):
+        """Get wrapped public key."""
+        return self.__class__(self._wrapped.public_key())
+
+
+class ComparableRSAKey(ComparableKey):  # pylint: disable=too-few-public-methods
+    """Wrapper for `cryptography` RSA keys.
+
+    Wraps around:
+    - `cryptography.hazmat.primitives.assymetric.RSAPrivateKey`
+    - `cryptography.hazmat.primitives.assymetric.RSAPublicKey`
+
+    """
+
     def __hash__(self):
         # public_numbers() hasn't got stable hash!
+        # https://github.com/pyca/cryptography/issues/2143
         if isinstance(self._wrapped, rsa.RSAPrivateKeyWithSerialization):
             priv = self.private_numbers()
             pub = priv.public_numbers
@@ -106,13 +123,6 @@ class ComparableRSAKey(object):  # pylint: disable=too-few-public-methods
         elif isinstance(self._wrapped, rsa.RSAPublicKeyWithSerialization):
             pub = self.public_numbers()
             return hash((self.__class__, pub.n, pub.e))
-
-    def __repr__(self):
-        return '<{0}({1!r})>'.format(self.__class__.__name__, self._wrapped)
-
-    def public_key(self):
-        """Get wrapped public key."""
-        return self.__class__(self._wrapped.public_key())
 
 
 class ImmutableMap(collections.Mapping, collections.Hashable):

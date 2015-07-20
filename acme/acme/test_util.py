@@ -55,3 +55,9 @@ def load_rsa_private_key(*names):
                            serialization.load_der_private_key)
     return jose.ComparableRSAKey(loader(
         load_vector(*names), password=None, backend=default_backend()))
+
+def load_pyopenssl_private_key(*names):
+    """Load pyOpenSSL private key."""
+    loader = _guess_loader(
+        names[-1], OpenSSL.crypto.FILETYPE_PEM, OpenSSL.crypto.FILETYPE_ASN1)
+    return OpenSSL.crypto.load_privatekey(loader, load_vector(*names))
