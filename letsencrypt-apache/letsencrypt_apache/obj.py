@@ -15,6 +15,9 @@ class Addr(common.Addr):
                      and self.is_wildcard() and other.is_wildcard()))
         return False
 
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     def is_wildcard(self):
         """Returns if address has a wildcard port."""
         return self.tup[1] == "*" or not self.tup[1]
@@ -33,7 +36,6 @@ class Addr(common.Addr):
             return self
 
         return self.get_addr_obj(port)
-
 
 
 class VirtualHost(object):  # pylint: disable=too-few-public-methods

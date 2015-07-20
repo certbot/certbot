@@ -24,7 +24,7 @@ class ApacheParser(object):
     arg_var_interpreter = re.compile(r"\$\{[^ \}]*}")
     fnmatch_chars = set(["*", "?", "\\", "[", "]"])
 
-    def __init__(self, aug, root, ssl_options, ctl):
+    def __init__(self, aug, root, ctl):
         # This uses the binary, so it can be done first.
         # https://httpd.apache.org/docs/2.4/mod/core.html#define
         # https://httpd.apache.org/docs/2.4/mod/core.html#ifdefine
@@ -32,23 +32,26 @@ class ApacheParser(object):
         self.variables = {}
         self.update_runtime_variables(ctl)
 
-        # Find configuration root and make sure augeas can parse it.
         self.aug = aug
+        # Find configuration root and make sure augeas can parse it.
         self.root = os.path.abspath(root)
-        self.loc = self._set_locations(ssl_options)
+        self.loc = {"root": self._find_config_root()}
         self._parse_file(self.loc["root"])
-
-        # Must also attempt to parse sites-available or equivalent
-        # Sites-available is not included naturally in configuration
-        self._parse_file(os.path.join(self.root, "sites-available") + "/*")
 
         # This problem has been fixed in Augeas 1.0
         self.standardize_excl()
 
         # Temporarily set modules to be empty, so that find_dirs can work
         # https://httpd.apache.org/docs/2.4/mod/core.html#ifmodule
+        # This needs to come before locations are set.
         self.modules = set()
         self._init_modules()
+
+        self.loc.update(self._set_locations(self.loc["root"]))
+
+        # Must also attempt to parse sites-available or equivalent
+        # Sites-available is not included naturally in configuration
+        self._parse_file(os.path.join(self.root, "sites-available") + "/*")
 
     def _init_modules(self):
         """Iterates on the configuration until no new modules are loaded.
@@ -493,14 +496,13 @@ class ApacheParser(object):
 
         self.aug.load()
 
-    def _set_locations(self, ssl_options):
+    def _set_locations(self, root):
         """Set default location for directives.
 
         Locations are given as file_paths
         .. todo:: Make sure that files are included
 
         """
-        root = self._find_config_root()
         default = self._set_user_config_file(root)
 
         temp = os.path.join(self.root, "ports.conf")
@@ -511,8 +513,7 @@ class ApacheParser(object):
             listen = default
             name = default
 
-        return {"root": root, "default": default, "listen": listen,
-                "name": name, "ssl_options": ssl_options}
+        return {"default": default, "listen": listen, "name": name}
 
     def _find_config_root(self):
         """Find the Apache Configuration Root file."""
@@ -565,22 +566,3 @@ def get_aug_path(file_path):
 
     """
     return "/files%s" % file_path
-
-
-def strip_dir(path):
-    """Returns directory of file path.
-
-    .. todo:: Replace this with Python standard function
-
-    :param str path: path is a file path. not an augeas section or
-        directive path
-
-    :returns: directory
-    :rtype: str
-
-    """
-    index = path.rfind("/")
-    if index > 0:
-        return path[:index+1]
-    # No directory
-    return ""

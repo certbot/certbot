@@ -137,8 +137,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.config_test()
 
         self.parser = parser.ApacheParser(
-            self.aug, self.conf("server-root"), self.mod_ssl_conf,
-            self.conf("ctl"))
+            self.aug, self.conf("server-root"), self.conf("ctl"))
         # Check for errors in parsing files with Augeas
         self.check_parsing_errors("httpd.aug")
 
@@ -622,7 +621,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                             "insert_cert_file_path")
         self.parser.add_dir(vh_path, "SSLCertificateKeyFile",
                             "insert_key_file_path")
-        self.parser.add_dir(vh_path, "Include", self.parser.loc["ssl_options"])
+        self.parser.add_dir(vh_path, "Include", self.mod_ssl_conf)
 
     def _add_name_vhost_if_necessary(self, vhost):
         """Add NameVirtualHost Directives if necessary for new vhost.

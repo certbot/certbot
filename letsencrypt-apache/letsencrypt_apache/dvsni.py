@@ -165,7 +165,7 @@ class ApacheDvsni(common.Dvsni):
         # https://docs.python.org/2.7/reference/lexical_analysis.html
         return self.VHOST_TEMPLATE.format(
             vhost=ips, server_name=achall.nonce_domain,
-            ssl_options_conf_path=self.configurator.parser.loc["ssl_options"],
+            ssl_options_conf_path=self.configurator.mod_ssl_conf,
             cert_path=self.get_cert_path(achall),
             key_path=self.get_key_path(achall),
             document_root=document_root).replace("\n", os.linesep)
