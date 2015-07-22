@@ -935,7 +935,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             subprocess.check_call([self.conf("enmod"), mod_name],
                                   stdout=open("/dev/null", "w"),
                                   stderr=open("/dev/null", "w"))
-            apache_restart(self.conf("init"))
+            apache_restart(self.conf("init-script"))
         except (OSError, subprocess.CalledProcessError):
             logger.exception("Error enabling mod_%s", mod_name)
             raise errors.MisconfigurationError(

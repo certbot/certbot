@@ -48,6 +48,14 @@ class Proxy(configurators_common.Proxy):
 
     def load_config(self):
         """Loads the next configuration for the plugin to test"""
+        if hasattr(self.le_config, "apache_init_script"):
+            try:
+                self.check_call_in_docker(
+                    [self.le_config.apache_init_script, "stop"])
+            except errors.Error:
+                raise errors.Error(
+                    "Failed to stop previous apache config from running")
+
         config = super(Proxy, self).load_config()
         self.modules = _get_modules(config)
         self.version = _get_version(config)
@@ -63,7 +71,7 @@ class Proxy(configurators_common.Proxy):
 
         try:
             self.check_call_in_docker(
-                "apachectl -d {0} -f {1} -k restart".format(
+                "apachectl -d {0} -f {1} -k start".format(
                     server_root, config_file))
         except errors.Error:
             raise errors.Error(
@@ -93,7 +101,7 @@ class Proxy(configurators_common.Proxy):
         self.le_config.apache_ctl = "apachectl -d {0} -f {1}".format(
             server_root, config_file)
         self.le_config.apache_enmod = "a2enmod.sh {0}".format(server_root)
-        self.le_config.apache_init = self.le_config.apache_ctl + " -k"
+        self.le_config.apache_init_script = self.le_config.apache_ctl + " -k"
 
         self._apache_configurator = configurator.ApacheConfigurator(
             config=configuration.NamespaceConfig(self.le_config),
@@ -118,6 +126,13 @@ class Proxy(configurators_common.Proxy):
             return self._all_names
         else:
             raise errors.Error("No configuration file loaded")
+
+    def deploy_cert(self, domain, cert_path, key_path, chain_path=None):
+        """Installs cert"""
+        cert_path, key_path, chain_path = self.copy_certs_and_keys(
+            cert_path, key_path, chain_path)
+        self._apache_configurator.deploy_cert(
+            domain, cert_path, key_path, chain_path)
 
 
 def _create_test_conf(server_root, apache_config):

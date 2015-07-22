@@ -12,4 +12,6 @@ ENV APACHE_RUN_USER=daemon \
 
 COPY tests/compatibility/configurators/apache/a2enmod.sh /usr/local/bin/
 
-CMD [ "httpd-foreground" ]
+# Note: this only exposes the port to other docker containers. You
+# still have to bind to 443@host at runtime.
+EXPOSE 443

@@ -1,6 +1,7 @@
 """Provides a common base for configurator proxies"""
 import logging
 import os
+import shutil
 import tempfile
 import threading
 
@@ -34,10 +35,12 @@ class Proxy(object):
 
     def __init__(self, args):
         """Initializes the plugin with the given command line args"""
-        temp_dir = tempfile.mkdtemp()
-        self.le_config = util.create_le_config(temp_dir)
-        self._config_dir = util.extract_configs(args.configs, temp_dir)
-        self._configs = os.listdir(self._config_dir)
+        self._temp_dir = tempfile.mkdtemp()
+        self.le_config = util.create_le_config(self._temp_dir)
+        config_dir = util.extract_configs(args.configs, self._temp_dir)
+        self._configs = [
+            os.path.join(config_dir, config)
+            for config in os.listdir(config_dir)]
 
         self.args = args
         self._docker_client = docker.Client(
@@ -58,21 +61,22 @@ class Proxy(object):
 
     def load_config(self):
         """Returns the next config directory to be tested"""
-        return os.path.join(self._config_dir, self._configs.pop())
+        return self._configs.pop()
 
-    def start_docker(self, image_name):
+    def start_docker(self, image_name, command):
         """Creates and runs a Docker container with the specified image"""
+        logger.info("Pulling Docker image. This may take a minute.")
         for line in self._docker_client.pull(image_name, stream=True):
             logger.debug(line)
 
         host_config = docker.utils.create_host_config(
             binds={
-                self._config_dir : {"bind" : self._config_dir, "mode" : "rw"}},
+                self._temp_dir : {"bind" : self._temp_dir, "mode" : "rw"}},
             port_bindings={
                 80 : ("127.0.0.1", self.http_port),
                 443 : ("127.0.0.1", self.https_port)},)
         container = self._docker_client.create_container(
-            image_name, ports=[80, 443], volumes=self._config_dir,
+            image_name, command, ports=[80, 443], volumes=self._temp_dir,
             host_config=host_config)
         if container["Warnings"]:
             logger.warning(container["Warnings"])
@@ -123,8 +127,25 @@ class Proxy(object):
 
     def execute_in_docker(self, command):
         """Executes command inside the running docker image"""
-        logger.info("Executing '%s'", command)
+        logger.debug("Executing '%s'", command)
         exec_id = self._docker_client.exec_create(self._container_id, command)
         output = self._docker_client.exec_start(exec_id)
         returncode = self._docker_client.exec_inspect(exec_id)["ExitCode"]
         return returncode, output
+
+    def copy_certs_and_keys(self, cert_path, key_path, chain_path=None):
+        """Copies certs and keys into the temporary directory"""
+        cert_and_key_dir = os.path.join(self._temp_dir, "certs_and_keys")
+        os.mkdir(cert_and_key_dir)
+
+        cert = os.path.join(cert_and_key_dir, "cert")
+        shutil.copy(cert_path, cert)
+        key = os.path.join(cert_and_key_dir, "key")
+        shutil.copy(key_path, key)
+        if chain_path:
+            chain = os.path.join(cert_and_key_dir, "chain")
+            shutil.copy(chain_path, chain)
+        else:
+            chain = None
+
+        return cert, key, chain

@@ -8,10 +8,16 @@ import shutil
 import socket
 import tarfile
 
+from acme import jose
+from acme import test_util
 from letsencrypt import constants
 from tests.compatibility import errors
 
 
+_KEY_BASE = "rsa1024_key.pem"
+KEY_PATH = test_util.vector_path(_KEY_BASE)
+KEY = test_util.load_pyopenssl_private_key(_KEY_BASE)
+JWK = jose.JWKRSA(key=test_util.load_rsa_private_key(_KEY_BASE))
 IP_REGEX = re.compile(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$")
 
 

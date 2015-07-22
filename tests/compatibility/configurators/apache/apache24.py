@@ -1,5 +1,9 @@
 """Proxies ApacheConfigurator for Apache 2.4 tests"""
+
+import zope.interface
+
 from tests.compatibility import errors
+from tests.compatibility import interfaces
 from tests.compatibility.configurators.apache import common as apache_common
 
 
@@ -33,10 +37,14 @@ SHARED_MODULES = {
 class Proxy(apache_common.Proxy):
     """Wraps the ApacheConfigurator for Apache 2.4 tests"""
 
+    zope.interface.implements(interfaces.IConfiguratorProxy)
+
     def __init__(self, args):
         """Initializes the plugin with the given command line args"""
         super(Proxy, self).__init__(args)
-        self.start_docker("bradmw/apache2.4")
+        # Running init isn't ideal, but the Docker container needs to survive
+        # Apache restarts
+        self.start_docker("bradmw/apache2.4", "init")
 
     def preprocess_config(self, server_root):
         """Prepares the configuration for use in the Docker"""
