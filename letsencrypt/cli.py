@@ -57,7 +57,7 @@ USAGE = SHORT_USAGE + """Major SUBCOMMANDS are:
   install              Install a previously obtained cert in a server
   revoke               Revoke a previously obtained certificate
   rollback             Rollback server configuration changes made during install
-  config-changes       Show changes made to server config during installation
+  config_changes       Show changes made to server config during installation
 
 Choice of server for authentication/installation:
 

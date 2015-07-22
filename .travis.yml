@@ -1,5 +1,8 @@
 language: python
 
+services:
+  - rabbitmq
+
 # http://docs.travis-ci.com/user/ci-environment/#CI-environment-OS
 before_install:
   - travis_retry sudo ./bootstrap/ubuntu.sh
@@ -20,7 +23,7 @@ env:
     - TOXENV=cover
 
 install: "travis_retry pip install tox coveralls"
-before_script: '[ "xxx$BOULDER_INTEGRATION" = "xxx" ] || ./tests/boulder-start.sh'
+before_script: '[ "xxx$BOULDER_INTEGRATION" = "xxx" ] || ./tests/boulder-start.sh amqp'
 script: 'travis_retry tox && ([ "xxx$BOULDER_INTEGRATION" = "xxx" ] || (source .tox/$TOXENV/bin/activate && ./tests/boulder-integration.sh))'
 
 after_success: '[ "$TOXENV" == "cover" ] && coveralls'
