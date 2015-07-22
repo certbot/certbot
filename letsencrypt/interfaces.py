@@ -384,17 +384,17 @@ class IDisplay(zope.interface.Interface):
 class IValidator(zope.interface.Interface):
     """Configuration validator."""
 
-    def redirect(name):
+    def redirect(hostname, port=80, headers=None):
         """Verify redirect to HTTPS."""
 
-    def ocsp_stapling(name):
-        """Verify ocsp stapling for domain."""
-
-    def https(names):
+    def https(hostname, port=443, headers=None):
         """Verify HTTPS is enabled for domain."""
 
-    def hsts(name):
+    def hsts(hostname):
         """Verify HSTS header is enabled."""
+
+    def ocsp_stapling(hostname):
+        """Verify ocsp stapling for domain."""
 
 
 class IReporter(zope.interface.Interface):

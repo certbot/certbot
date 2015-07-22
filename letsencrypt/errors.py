@@ -68,3 +68,6 @@ class MisconfigurationError(PluginError):
 
 class RevokerError(Error):
     """Let's Encrypt Revoker error."""
+
+class ValidationError(Error):
+    """Let's Encrypt Validation error."""
