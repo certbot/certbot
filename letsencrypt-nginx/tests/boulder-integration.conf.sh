@@ -48,9 +48,9 @@ http {
 
   server {
     # IPv4.
-    listen 8081;
+    listen 8080;
     # IPv6.
-    listen [::]:8081 default ipv6only=on;
+    listen [::]:8080 default ipv6only=on;
 
     root $root/webroot;
 
