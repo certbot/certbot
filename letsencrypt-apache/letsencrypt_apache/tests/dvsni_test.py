@@ -109,9 +109,10 @@ class DvsniPerformTest(util.ApacheTest):
         self.assertEqual(len(vhs), 2)
         for vhost in vhs:
             self.assertEqual(vhost.addrs, set([obj.Addr.fromstring("*:443")]))
+            names = vhost.get_names()
             self.assertTrue(
-                vhost.names == set([self.achalls[0].nonce_domain]) or
-                vhost.names == set([self.achalls[1].nonce_domain]))
+                names == set([self.achalls[0].nonce_domain]) or
+                names == set([self.achalls[1].nonce_domain]))
 
 
 if __name__ == "__main__":

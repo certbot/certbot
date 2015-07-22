@@ -254,6 +254,62 @@ class TwoVhost80Test(util.ApacheTest):
         mock_popen.side_effect = OSError("Can't find program")
         self.assertRaises(errors.PluginError, self.config.get_version)
 
+    # TEST ENHANCEMENTS
+    def test_enhance_unknown_enhancement(self):
+        self.assertRaises(
+            errors.PluginError,
+            self.config.enhance, "letsencrypt.demo", "unknown_enhancement")
+
+    @mock.patch("letsencrypt_apache.parser."
+                "ApacheParser.update_runtime_variables")
+    def test_redirect_well_formed_http(self, unused):
+        # This will create an ssl vhost for letsencrypt.demo
+        self.config.enhance("letsencrypt.demo", "redirect")
+
+        # These are not immediately available in find_dir even with save() and
+        # load(). They must be found in sites-available
+        rw_engine = self.config.parser.find_dir(
+            "RewriteEngine", "on", self.vh_truth[3].path)
+        rw_rule = self.config.parser.find_dir(
+            "RewriteRule", None, self.vh_truth[3].path)
+
+        self.assertEqual(len(rw_engine), 1)
+        # three args to rw_rule
+        self.assertEqual(len(rw_rule), 3)
+
+        self.assertTrue(rw_engine[0].startswith(self.vh_truth[3].path))
+        self.assertTrue(rw_rule[0].startswith(self.vh_truth[3].path))
+
+        self.assertTrue("rewrite_module" in self.config.parser.modules)
+
+    def test_redirect_twice(self):
+        # Skip the enable mod
+        self.config.parser.modules.add("rewrite_module")
+        self.config.enhance("encryption-example.demo", "redirect")
+        self.assertRaises(
+            errors.PluginError,
+            self.config.enhance, "encryption-example.demo", "redirect")
+
+    def test_unknown_rewrite(self):
+        # Skip the enable mod
+        self.config.parser.modules.add("rewrite_module")
+        self.config.parser.add_dir(
+            self.vh_truth[3].path, "RewriteRule", ["Unknown"])
+        self.config.save()
+        self.assertRaises(
+            errors.PluginError,
+            self.config.enhance, "letsencrypt.demo", "redirect")
+
+    def test_unknown_redirect(self):
+        # Skip the enable mod
+        self.config.parser.modules.add("rewrite_module")
+        self.config.parser.add_dir(
+            self.vh_truth[3].path, "Redirect", ["Unknown"])
+        self.config.save()
+        self.assertRaises(
+            errors.PluginError,
+            self.config.enhance, "letsencrypt.demo", "redirect")
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

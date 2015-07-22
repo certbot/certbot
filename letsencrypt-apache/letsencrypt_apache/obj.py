@@ -78,6 +78,7 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
         self.aliases = serveralias
 
     def get_names(self):
+        """Return a set of all names."""
         all_names = set(self.aliases)
         # Strip out any scheme:// and <port> field from servername
         if self.name is not None:

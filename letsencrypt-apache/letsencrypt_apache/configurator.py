@@ -1,5 +1,6 @@
 """Apache Configuration based off of Augeas Configurator."""
 # pylint: disable=too-many-lines
+import itertools
 import logging
 import os
 import re
@@ -60,6 +61,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         prone.
     .. todo:: Write a server protocol finder. Listen <port> <protocol> or
         Protocol <protocol>.  This can verify partial setups are correct
+    .. todo:: Add directives to sites-enabled... not sites-available.
+        sites-available doesn't allow immediate find_dir search even with save()
+        and load()
 
     :ivar config: Configuration.
     :type config: :class:`~letsencrypt.interfaces.IConfig`
@@ -672,11 +676,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         try:
             return self._enhance_func[enhancement](
                 self.choose_vhost(domain), options)
-        except ValueError:
+        except KeyError:
             raise errors.PluginError(
                 "Unsupported enhancement: {}".format(enhancement))
         except errors.PluginError:
             logger.warn("Failed %s for %s", enhancement, domain)
+            raise
 
     def _enable_redirect(self, ssl_vhost, unused_options):
         """Redirect all equivalent HTTP traffic to ssl_vhost.
@@ -703,9 +708,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         if "rewrite_module" not in self.parser.modules:
             self.enable_mod("rewrite")
+        general_vh = self._get_http_vhost(ssl_vhost)
 
-        general_v = self._get_http_vhost(ssl_vhost)
-        if general_v is None:
+        if general_vh is None:
             # Add virtual_server with redirect
             logger.debug("Did not find http version of ssl virtual host "
                          "attempting to create")
@@ -717,20 +722,23 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                         "Unable to create one as intended addresses conflict; "
                         "Current configuration does not support automated "
                         "redirection")
-            self.create_redirect_vhost(redirect_addrs)
+            self._create_redirect_vhost(redirect_addrs)
         else:
             # Check if redirection already exists
-            self._verify_no_redirects(vhost)
+            self._verify_no_redirects(general_vh)
+
             # Add directives to server
-            self.parser.add_dir(general_v.path, "RewriteEngine", "on")
-            self.parser.add_dir(general_v.path, "RewriteRule",
+            # Note: These are not immediately searchable in sites-enabled
+            #     even with save() and load()
+            self.parser.add_dir(general_vh.path, "RewriteEngine", "on")
+            self.parser.add_dir(general_vh.path, "RewriteRule",
                                 constants.REWRITE_HTTPS_ARGS)
             self.save_notes += ("Redirecting host in %s to ssl vhost in %s\n" %
-                                (general_v.filep, ssl_vhost.filep))
+                                (general_vh.filep, ssl_vhost.filep))
             self.save()
 
             logger.info("Redirecting vhost in %s to ssl vhost in %s",
-                        general_v.filep, ssl_vhost.filep)
+                        general_vh.filep, ssl_vhost.filep)
 
     def _verify_no_redirects(self, vhost):
         """Checks to see if existing redirect is in place.
@@ -775,7 +783,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         text = self._get_redirect_config_str(ssl_vhost)
 
-        self._write_out_redirect(ssl_vhost, text)
+        redirect_filepath = self._write_out_redirect(ssl_vhost, text)
 
         self.aug.load()
         # Make a new vhost data structure and add it to the lists
@@ -853,7 +861,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     def _get_redirect_addrs(self, ssl_vhost):
         redirects = set()
-        for addr in vhost.addrs:
+        for addr in ssl_vhost.addrs:
             redirects.add(addr.get_addr_obj("80"))
 
         return redirects

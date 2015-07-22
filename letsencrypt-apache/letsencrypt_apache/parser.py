@@ -287,9 +287,11 @@ class ApacheParser(object):
             dir_ = self.aug.get(match).lower()
             if dir_ == "include" or dir_ == "includeoptional":
                 # start[6:] to strip off /files
+                #print self._get_include_path(self.get_arg(match +"/arg")), directive, arg
                 ordered_matches.extend(self.find_dir(
-                    directive, arg, self._get_include_path(
-                        self.get_arg(match + "/arg"))))
+                    directive, arg,
+                    self._get_include_path(self.get_arg(match + "/arg")),
+                    exclude))
             # This additionally allows Include
             if dir_ == directive.lower():
                 ordered_matches.extend(self.aug.match(match + arg_suffix))

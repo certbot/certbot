@@ -60,9 +60,9 @@ def _vhost_menu(domain, vhosts):
 
     choices = []
     for vhost in vhosts:
-        if len(vhost.names) == 1:
-            disp_name = next(iter(vhost.names))
-        elif len(vhost.names) == 0:
+        if len(vhost.get_names()) == 1:
+            disp_name = next(iter(vhost.get_names()))
+        elif len(vhost.get_names()) == 0:
             disp_name = ""
         else:
             disp_name = "Multiple Names"
