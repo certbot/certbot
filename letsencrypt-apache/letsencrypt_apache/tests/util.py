@@ -105,7 +105,7 @@ def get_vh_truth(temp_dir, config_name):
                 os.path.join(prefix, "encryption-example.conf"),
                 os.path.join(aug_pre, "encryption-example.conf/VirtualHost"),
                 set([obj.Addr.fromstring("*:80")]),
-                False, True, set(["encryption-example.demo"])),
+                False, True, "encryption-example.demo"),
             obj.VirtualHost(
                 os.path.join(prefix, "default-ssl.conf"),
                 os.path.join(aug_pre, "default-ssl.conf/IfModule/VirtualHost"),
@@ -114,12 +114,12 @@ def get_vh_truth(temp_dir, config_name):
                 os.path.join(prefix, "000-default.conf"),
                 os.path.join(aug_pre, "000-default.conf/VirtualHost"),
                 set([obj.Addr.fromstring("*:80")]), False, True,
-                set(["ip-172-30-0-17"])),
+                "ip-172-30-0-17"),
             obj.VirtualHost(
                 os.path.join(prefix, "letsencrypt.conf"),
                 os.path.join(aug_pre, "letsencrypt.conf/VirtualHost"),
                 set([obj.Addr.fromstring("*:80")]), False, True,
-                set(["letsencrypt.demo"])),
+                "letsencrypt.demo"),
         ]
         return vh_truth
 

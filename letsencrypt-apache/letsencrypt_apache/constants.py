@@ -20,5 +20,5 @@ MOD_SSL_CONF_SRC = pkg_resources.resource_filename(
 distribution."""
 
 REWRITE_HTTPS_ARGS = [
-    "^.*$", "https://%{SERVER_NAME}%{REQUEST_URI}", "[L,R=permanent]"]
+    "^", "https://%{SERVER_NAME}%{REQUEST_URI}", "[L,QSA,R=permanent]"]
 """Apache rewrite rule arguments used for redirections to https vhost"""

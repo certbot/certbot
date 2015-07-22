@@ -272,7 +272,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         best_points = 0
 
         for vhost in self.vhosts:
-            if target_name in vhost.names:
+            if target_name in vhost.get_names():
                 points = 2
             elif any(addr.get_addr() == target_name for addr in vhost.addrs):
                 points = 1
@@ -312,7 +312,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         all_names = set()
 
         for vhost in self.vhosts:
-            all_names.update(vhost.names)
+            all_names.update(vhost.get_names())
             for addr in vhost.addrs:
                 name = self.get_name_from_ip(addr)
                 if name:
@@ -326,7 +326,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :param addr: IP Address
         :type addr: ~.common.Addr
 
-        :returns: name
+        :returns: name or empty string if name cannot be determined
         :rtype: str
 
         """
@@ -347,17 +347,21 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :type host: :class:`~letsencrypt_apache.obj.VirtualHost`
 
         """
-        name_match = self.aug.match(("%s//*[self::directive=~regexp('%s')] | "
-                                     "%s//*[self::directive=~regexp('%s')]" %
-                                     (host.path,
-                                      parser.case_i("ServerName"),
-                                      host.path,
-                                      parser.case_i("ServerAlias"))))
+        # Take the final ServerName as each overrides the previous
+        servername_match = self.parser.find_dir(
+            "ServerName", None, host.path, exclude=False)
+        serveralias_match = self.parser.find_dir(
+            "ServerAlias", None, host.path, exclude=False)
 
-        for name in name_match:
-            args = self.aug.match(name + "/*")
-            for arg in args:
-                host.add_name(self.parser.get_arg(arg))
+        aliases = []
+        for alias in serveralias_match:
+            aliases.append(self.parser.get_arg(alias))
+
+        if servername_match:
+            # Get last ServerName as each overwrites the previous
+            host.add_names(self.parser.get_arg(servername_match[-1]), aliases)
+        else:
+            host.add_names(None, aliases)
 
     def _create_vhost(self, path):
         """Used by get_virtual_hosts to create vhost objects
@@ -700,28 +704,25 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if "rewrite_module" not in self.parser.modules:
             self.enable_mod("rewrite")
 
-        general_v = self._general_vhost(ssl_vhost)
+        general_v = self._get_http_vhost(ssl_vhost)
         if general_v is None:
             # Add virtual_server with redirect
-            logger.debug(
-                "Did not find http version of ssl virtual host... creating")
-            return self._create_redirect_vhost(ssl_vhost)
+            logger.debug("Did not find http version of ssl virtual host "
+                         "attempting to create")
+            redirect_addrs = self._get_redirect_addrs(ssl_vhost)
+            for vhost in self.vhosts:
+                if vhost.enabled and vhost.conflicts(redirect_addrs):
+                    raise errors.PluginError(
+                        "Unable to find corresponding HTTP vhost; "
+                        "Unable to create one as intended addresses conflict; "
+                        "Current configuration does not support automated "
+                        "redirection")
+            self.create_redirect_vhost(redirect_addrs)
         else:
             # Check if redirection already exists
-            exists, code = self._existing_redirect(general_v)
-            if exists:
-                if code == 0:
-                    logger.debug("Redirect already added")
-                    logger.info(
-                        "Configuration is already redirecting traffic to HTTPS")
-                    return
-                else:
-                    logger.info("Unknown redirect exists for this vhost")
-                    raise errors.PluginError(
-                        "Unknown redirect already exists "
-                        "in {}".format(general_v.filep))
+            self._verify_no_redirects(vhost)
             # Add directives to server
-            self.parser.add_dir(general_v.path, "RewriteEngine", "On")
+            self.parser.add_dir(general_v.path, "RewriteEngine", "on")
             self.parser.add_dir(general_v.path, "RewriteRule",
                                 constants.REWRITE_HTTPS_ARGS)
             self.save_notes += ("Redirecting host in %s to ssl vhost in %s\n" %
@@ -731,24 +732,16 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             logger.info("Redirecting vhost in %s to ssl vhost in %s",
                         general_v.filep, ssl_vhost.filep)
 
-    def _existing_redirect(self, vhost):
+    def _verify_no_redirects(self, vhost):
         """Checks to see if existing redirect is in place.
 
         Checks to see if virtualhost already contains a rewrite or redirect
         returns boolean, integer
-        The boolean indicates whether the redirection exists...
-        The integer has the following code:
-        0 - Existing letsencrypt https rewrite rule is appropriate and in place
-        1 - Virtual host contains a Redirect directive
-        2 - Virtual host contains an unknown RewriteRule
-
-        -1 is also returned in case of no redirection/rewrite directives
 
         :param vhost: vhost to check
         :type vhost: :class:`~letsencrypt_apache.obj.VirtualHost`
 
-        :returns: Success, code value... see documentation
-        :rtype: bool, int
+        :raises errors.PluginError: When another redirection exists
 
         """
         rewrite_path = self.parser.find_dir("RewriteRule", None, vhost.path)
@@ -756,20 +749,18 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         if redirect_path:
             # "Existing Redirect directive for virtualhost"
-            return True, 1
-        if not rewrite_path:
+            raise errors.PluginError("Existing Redirect present on HTTP vhost.")
+        if rewrite_path:
             # "No existing redirection for virtualhost"
-            return False, -1
-        if len(rewrite_path) == len(constants.REWRITE_HTTPS_ARGS):
-            for idx, match in enumerate(rewrite_path):
-                if (self.aug.get(match) !=
-                        constants.REWRITE_HTTPS_ARGS[idx]):
-                    # Not a letsencrypt https rewrite
-                    return True, 2
-            # Existing letsencrypt https rewrite rule is in place
-            return True, 0
-        # Rewrite path exists but is not a letsencrypt https rule
-        return True, 2
+            if len(rewrite_path) != len(constants.REWRITE_HTTPS_ARGS):
+                raise errors.PluginError("Unknown Existing RewriteRule")
+            for match, arg in itertools.izip(
+                    rewrite_path, constants.REWRITE_HTTPS_ARGS):
+                if self.aug.get(match) != arg:
+                    raise errors.PluginError("Unknown Existing RewriteRule")
+            raise errors.PluginError(
+                "Let's Encrypt has already enabled redirection")
+
 
     def _create_redirect_vhost(self, ssl_vhost):
         """Creates an http_vhost specifically to redirect for the ssl_vhost.
@@ -782,62 +773,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: tuple
 
         """
-        # Consider changing this to a dictionary check
-        # Make sure adding the vhost will be safe
-        conflict, host_or_addrs = self._conflicting_host(ssl_vhost)
-        if conflict:
-            raise errors.PluginError(
-                "Unable to create a redirection vhost - {}".format(
-                    host_or_addrs))
+        text = self._get_redirect_config_str(ssl_vhost)
 
-        redirect_addrs = host_or_addrs
-
-        # get servernames and serveraliases
-        serveralias = ""
-        servername = ""
-        size_n = len(ssl_vhost.names)
-        if size_n > 0:
-            servername = "ServerName " + ssl_vhost.names[0]
-            if size_n > 1:
-                serveralias = " ".join(ssl_vhost.names[1:size_n])
-                serveralias = "ServerAlias " + serveralias
-        redirect_file = ("<VirtualHost" + redirect_addrs + ">\n"
-                         "%s \n"
-                         "%s \n"
-                         "ServerSignature Off\n"
-                         "\n"
-                         "RewriteEngine On\n"
-                         "RewriteRule %s\n"
-                         "\n"
-                         "ErrorLog /var/log/apache2/redirect.error.log\n"
-                         "LogLevel warn\n"
-                         "</VirtualHost>\n"
-                         % (servername, serveralias,
-                            " ".join(constants.REWRITE_HTTPS_ARGS)))
-
-        # Write out the file
-        # This is the default name
-        redirect_filename = "le-redirect.conf"
-
-        # See if a more appropriate name can be applied
-        if len(ssl_vhost.names) > 0:
-            # Sanity check...
-            # make sure servername doesn't exceed filename length restriction
-            if ssl_vhost.names[0] < (255-23):
-                redirect_filename = "le-redirect-%s.conf" % ssl_vhost.names[0]
-
-        redirect_filepath = os.path.join(
-            self.parser.root, "sites-available", redirect_filename)
-
-        # Register the new file that will be created
-        # Note: always register the creation before writing to ensure file will
-        # be removed in case of unexpected program exit
-        self.reverter.register_file_creation(False, redirect_filepath)
-
-        # Write out file
-        with open(redirect_filepath, "w") as redirect_fd:
-            redirect_fd.write(redirect_file)
-        logger.info("Created redirect file: %s", redirect_filename)
+        self._write_out_redirect(ssl_vhost, text)
 
         self.aug.load()
         # Make a new vhost data structure and add it to the lists
@@ -849,84 +787,76 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                             "ssl vhost %s\n" %
                             (new_vhost.filep, ssl_vhost.filep))
 
-    def _conflicting_host(self, ssl_vhost):
-        """Checks for conflicting HTTP vhost for ssl_vhost.
+    def _get_redirect_config_str(self, ssl_vhost):
+        # get servernames and serveraliases
+        serveralias = ""
+        servername = ""
 
-        Checks for a conflicting host, such that a new port 80 host could not
-        be created without ruining the apache config
-        Used with redirection
+        if ssl_vhost.name is not None:
+            servername = "ServerName " + ssl_vhost.name
+        if ssl_vhost.aliases:
+            serveralias = "ServerAlias " + " ".join(ssl_vhost.aliases)
 
-        returns: conflict, host_or_addrs - boolean
-        if conflict: returns conflicting vhost
-        if not conflict: returns space separated list of new host addrs
+        return ("<VirtualHost %s>\n"
+                "%s \n"
+                "%s \n"
+                "ServerSignature Off\n"
+                "\n"
+                "RewriteEngine On\n"
+                "RewriteRule %s\n"
+                "\n"
+                "ErrorLog /var/log/apache2/redirect.error.log\n"
+                "LogLevel warn\n"
+                "</VirtualHost>\n"
+                % (" ".join(self._get_redirect_addrs(ssl_vhost)),
+                   servername, serveralias,
+                   " ".join(constants.REWRITE_HTTPS_ARGS)))
 
-        :param ssl_vhost: SSL Vhost to check for possible port 80 redirection
-        :type ssl_vhost: :class:`~letsencrypt_apache.obj.VirtualHost`
+    def _write_out_redirect(self, ssl_vhost, text):
+        # This is the default name
+        redirect_filename = "le-redirect.conf"
 
-        :returns: TODO
-        :rtype: TODO
+        # See if a more appropriate name can be applied
+        if ssl_vhost.name is not None:
+            # make sure servername doesn't exceed filename length restriction
+            if len(ssl_vhost.name) < (255 - (len(redirect_filename) + 1)):
+                redirect_filename = "le-redirect-%s.conf" % ssl_vhost.servername
 
-        """
-        # Consider changing this to a dictionary check
-        redirect_addrs = ""
-        for ssl_a in ssl_vhost.addrs:
-            # Add space on each new addr, combine "VirtualHost"+redirect_addrs
-            redirect_addrs = redirect_addrs + " "
-            ssl_a_vhttp = ssl_a.get_addr_obj("80")
-            # Search for a conflicting host...
-            for vhost in self.vhosts:
-                if vhost.enabled:
-                    if (ssl_a_vhttp in vhost.addrs or
-                            ssl_a.get_addr_obj("") in vhost.addrs or
-                            ssl_a.get_addr_obj("*") in vhost.addrs):
-                        # We have found a conflicting host... just return
-                        return True, vhost
+        redirect_filepath = os.path.join(
+            self.parser.root, "sites-available", redirect_filename)
 
-            redirect_addrs = redirect_addrs + ssl_a_vhttp
+        # Register the new file that will be created
+        # Note: always register the creation before writing to ensure file will
+        # be removed in case of unexpected program exit
+        self.reverter.register_file_creation(False, redirect_filepath)
 
-        return False, redirect_addrs
+        # Write out file
+        with open(redirect_filepath, "w") as redirect_file:
+            redirect_file.write(text)
+        logger.info("Created redirect file: %s", redirect_filename)
 
-    def _general_vhost(self, ssl_vhost):
-        """Find appropriate HTTP vhost for ssl_vhost.
+        return redirect_filepath
 
-        Function needs to be thoroughly tested and perhaps improved
-        Will not do well with malformed configurations
-        Consider changing this into a dict check
+    def _get_http_vhost(self, ssl_vhost):
+        """Find appropriate HTTP vhost for ssl_vhost."""
+        # First candidate vhosts filter
+        candidate_http_vhs = [
+            vhost for vhost in self.vhosts if not vhost.ssl
+        ]
 
-        :param ssl_vhost: ssl vhost to check
-        :type ssl_vhost: :class:`~letsencrypt_apache.obj.VirtualHost`
+        # Second filter - check addresses
+        for http_vh in candidate_http_vhs:
+            if http_vh.same_server(ssl_vhost):
+                return http_vh
 
-        :returns: HTTP vhost or None if unsuccessful
-        :rtype: :class:`~letsencrypt_apache.obj.VirtualHost` or ``None``
-
-        """
-        # _default_:443 check
-        # Instead... should look for vhost of the form *:80
-        # Should we prompt the user?
-        ssl_addrs = ssl_vhost.addrs
-        if ssl_addrs == obj.Addr.fromstring("_default_:443"):
-            ssl_addrs = [obj.Addr.fromstring("*:443")]
-
-        for vhost in self.vhosts:
-            found = 0
-            # Not the same vhost, and same number of addresses
-            if vhost != ssl_vhost and len(vhost.addrs) == len(ssl_vhost.addrs):
-                # Find each address in ssl_host in test_host
-                for ssl_a in ssl_addrs:
-                    for test_a in vhost.addrs:
-                        if test_a.get_addr() == ssl_a.get_addr():
-                            # Check if found...
-                            if (test_a.get_port() == "80" or
-                                    test_a.get_port() == "" or
-                                    test_a.get_port() == "*"):
-                                found += 1
-                                break
-                # Check to make sure all addresses were found
-                # and names are equal
-                if (found == len(ssl_vhost.addrs) and
-                        vhost.names == ssl_vhost.names):
-                    return vhost
         return None
+
+    def _get_redirect_addrs(self, ssl_vhost):
+        redirects = set()
+        for addr in vhost.addrs:
+            redirects.add(addr.get_addr_obj("80"))
+
+        return redirects
 
     def get_all_certs_keys(self):
         """Find all existing keys, certs from configuration.
@@ -1074,38 +1004,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 raise errors.PluginError("Error enabling module %s" % mod_name)
             self.reverter.register_file_creation(False, enabled_path)
             os.symlink(os.path.join(mods_available, filename), enabled_path)
-
-    def mod_loaded(self, module):
-        """Checks to see if mod_ssl is loaded
-
-        Uses ``apache_ctl`` to get loaded module list. This also effectively
-        serves as a config_test.
-
-        :returns: If module is loaded.
-        :rtype: bool
-
-        """
-        try:
-            proc = subprocess.Popen(
-                [self.conf("ctl"), "-M"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE)
-            stdout, stderr = proc.communicate()
-
-        except (OSError, ValueError):
-            logger.error(
-                "Error accessing %s for loaded modules!", self.conf("ctl"))
-            raise errors.MisconfigurationError("Error accessing loaded modules")
-        # Small errors that do not impede
-        if proc.returncode != 0:
-            logger.warn("Error in checking loaded module list: %s", stderr)
-            raise errors.MisconfigurationError(
-                "Apache is unable to check whether or not the module is "
-                "loaded because Apache is misconfigured.")
-
-        if module in stdout:
-            return True
-        return False
 
     def restart(self):
         """Restarts apache server.
