@@ -83,7 +83,7 @@ Mac OSX
 
 .. code-block:: shell
 
-   sudo ./bootstrap/mac.sh
+   ./bootstrap/mac.sh
 
 
 Fedora
