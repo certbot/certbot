@@ -117,7 +117,6 @@ class ApacheDvsni(common.Dvsni):
         default_addr = obj.Addr(("*", self.configurator.config.dvsni_port))
 
         for addr in vhost.addrs:
-            # I don't think there can be two _default_ namebasedvhosts
             if "_default_" == addr.get_addr():
                 dvsni_addrs.add(default_addr)
             else:

@@ -87,7 +87,7 @@ def get_apache_configurator(
                 version=version)
             # This allows testing scripts to set it a bit more quickly
             if conf is not None:
-                config.conf = conf
+                config.conf = conf  # pragma: no cover
 
             config.prepare()
 
@@ -123,4 +123,4 @@ def get_vh_truth(temp_dir, config_name):
         ]
         return vh_truth
 
-    return None
+    return None  # pragma: no cover

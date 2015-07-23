@@ -117,7 +117,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         # Verify that all directories and files exist with proper permissions
         if os.geteuid() == 0:
-            self.verify_setup()
+            self.verify_setup()  # pragma: no cover
 
         # Add name_server association dict
         self.assoc = dict()
@@ -147,7 +147,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         # Set Version
         if self.version is None:
-            self.version = self.get_version()
+            self.version = self.get_version()  # pragma: no cover
 
         # Get all of the available vhosts
         self.vhosts = self.get_virtual_hosts()
@@ -265,6 +265,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     def _find_best_vhost(self, target_name):
         """Finds the best vhost for a target_name.
 
+        This does not upgrade a vhost to HTTPS... it only finds the most
+        appropriate vhost for the given target_name.
+
         :returns: VHost or None
 
         """
@@ -281,6 +284,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             elif any(addr.get_addr() == target_name for addr in vhost.addrs):
                 points = 1
             else:
+                # No points given if names can't be found.
                 continue
 
             if vhost.ssl:
@@ -290,7 +294,20 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 best_points = points
                 best_candidate = vhost
 
+        # No winners here... is there only one reasonable vhost?
+        if best_candidate is None:
+            # reasonable == Not all _default_ addrs
+            reasonable_vhosts = self._non_default_vhosts()
+            if len(reasonable_vhosts) == 1:
+                best_candidate = reasonable_vhosts[0]
+
         return best_candidate
+
+    def _non_default_vhosts(self):
+        """Return all non _default_ only vhosts."""
+        return [vh for vh in self.vhosts if not all(
+            addr.get_addr() == "_default_" for addr in vh.addrs
+        )]
 
     def create_dn_server_assoc(self, domain, vhost):
         """Create an association between a domain name and virtual host.
@@ -887,17 +904,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 key_path = self.parser.find_dir(
                     "SSLCertificateKeyFile", None, vhost.path)
 
-                # Can be removed once find directive can return ordered results
-                if len(cert_path) != 1 or len(key_path) != 1:
-                    logger.error("Too many cert or key directives in vhost %s",
-                                 vhost.filep)
-                    errors.MisconfigurationError(
-                        "Too many cert/key directives in vhost")
-
-                cert = os.path.abspath(self.parser.get_arg(cert_path[0]))
-                key = os.path.abspath(self.parser.get_arg(key_path[0]))
-                c_k.add((cert, key, get_file_path(cert_path[0])))
-
+                if cert_path and key_path:
+                    cert = os.path.abspath(self.parser.get_arg(cert_path[-1]))
+                    key = os.path.abspath(self.parser.get_arg(key_path[-1]))
+                    c_k.add((cert, key, get_file_path(cert_path[-1])))
+                else:
+                    logger.warning(
+                        "Invalid VirtualHost configuration - %s", vhost.filep)
         return c_k
 
     def is_site_enabled(self, avail_fp):

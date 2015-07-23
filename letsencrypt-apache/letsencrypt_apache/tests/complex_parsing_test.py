@@ -3,6 +3,8 @@ import os
 import shutil
 import unittest
 
+from letsencrypt import errors
+
 from letsencrypt_apache.tests import util
 
 
@@ -45,6 +47,14 @@ class ComplexParserTest(util.ParserTest):
 
         self.assertEqual(len(matches), 1)
         self.assertEqual(self.parser.get_arg(matches[0]), "1234")
+
+    def test_invalid_variable_parsing(self):
+        del self.parser.variables["tls_port"]
+
+        matches = self.parser.find_dir("TestVariablePort")
+        self.assertRaises(
+            errors.PluginError, self.parser.get_arg, matches[0])
+
 
     def test_basic_ifdefine(self):
         self.assertEqual(len(self.parser.find_dir("VAR_DIRECTIVE")), 2)

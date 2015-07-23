@@ -6,6 +6,8 @@ import unittest
 import augeas
 import mock
 
+from letsencrypt import errors
+
 from letsencrypt_apache.tests import util
 
 
@@ -77,6 +79,20 @@ class BasicParserTest(util.ParserTest):
         self.assertEqual(len(matches), 1)
         self.assertTrue("IfModule" in matches[0])
 
+    def test_add_dir_to_ifmodssl_multiple(self):
+        from letsencrypt_apache.parser import get_aug_path
+        # This makes sure that find_dir will work
+        self.parser.modules.add("mod_ssl.c")
+
+        self.parser.add_dir_to_ifmodssl(
+            get_aug_path(self.parser.loc["default"]),
+            "FakeDirective", ["123", "456", "789"])
+
+        matches = self.parser.find_dir("FakeDirective")
+
+        self.assertEqual(len(matches), 3)
+        self.assertTrue("IfModule" in matches[0])
+
     def test_get_aug_path(self):
         from letsencrypt_apache.parser import get_aug_path
         self.assertEqual("/files/etc/apache", get_aug_path("/etc/apache"))
@@ -87,10 +103,68 @@ class BasicParserTest(util.ParserTest):
             mock_path.isfile.side_effect = [True, False, False]
 
             # pylint: disable=protected-access
-            results = self.parser._set_locations("root")
+            results = self.parser._set_locations()
 
             self.assertEqual(results["default"], results["listen"])
             self.assertEqual(results["default"], results["name"])
+
+    def test_set_user_config_file(self):
+        path = os.path.join(self.parser.root, "httpd.conf")
+        open(path, 'w').close()
+        self.parser.add_dir(self.parser.loc["default"], "Include", "httpd.conf")
+
+        self.assertEqual(
+            path, self.parser._set_user_config_file())
+
+    @mock.patch("letsencrypt_apache.parser.ApacheParser._get_runtime_cfg")
+    def test_update_runtime_variables(self, mock_cfg):
+        mock_cfg.return_value = (
+            'ServerRoot: "/etc/apache2"\n'
+            'Main DocumentRoot: "/var/www"\n'
+            'Main ErrorLog: "/var/log/apache2/error.log"\n'
+            'Mutex ssl-stapling: using_defaults\n'
+            'Mutex ssl-cache: using_defaults\n'
+            'Mutex default: dir="/var/lock/apache2" mechanism=fcntl\n'
+            'Mutex watchdog-callback: using_defaults\n'
+            'PidFile: "/var/run/apache2/apache2.pid"\n'
+            'Define: TEST\n'
+            'Define: DUMP_RUN_CFG\n'
+            'Define: U_MICH\n'
+            'Define: TLS=443\n'
+            'Define: example_path=Documents/path\n'
+            'User: name="www-data" id=33 not_used\n'
+            'Group: name="www-data" id=33 not_used\n'
+        )
+        expected_vars = {"TEST": "", "U_MICH": "", "TLS": "443",
+                         "example_path":"Documents/path"}
+
+        self.parser.update_runtime_variables("ctl")
+        self.assertEqual(self.parser.variables, expected_vars)
+
+    @mock.patch("letsencrypt_apache.parser.ApacheParser._get_runtime_cfg")
+    def test_update_runtime_vars_bad_output(self, mock_cfg):
+        mock_cfg.return_value = "Define: TLS=443=24"
+        self.assertRaises(
+            errors.PluginError, self.parser.update_runtime_variables, "ctl")
+
+        mock_cfg.return_value = "Define: DUMP_RUN_CFG\nDefine: TLS=443=24"
+        self.assertRaises(
+            errors.PluginError, self.parser.update_runtime_variables, "ctl")
+
+    @mock.patch("letsencrypt_apache.parser.subprocess.Popen")
+    def test_update_runtime_vars_bad_ctl(self, mock_popen):
+        mock_popen.side_effect = OSError
+        self.assertRaises(
+            errors.MisconfigurationError,
+            self.parser.update_runtime_variables, "ctl")
+
+    @mock.patch("letsencrypt_apache.parser.subprocess.Popen")
+    def test_update_runtime_vars_bad_exit(self, mock_popen):
+        mock_popen().communicate.return_value = ("", "")
+        mock_popen.returncode = -1
+        self.assertRaises(
+            errors.MisconfigurationError,
+            self.parser.update_runtime_variables, "ctl")
 
 
 class ParserInitTest(util.ApacheTest):

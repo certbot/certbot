@@ -21,6 +21,44 @@ class Addr(common.Addr):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+    def _addr_less_specific(self, addr):
+        """Returns if addr.get_addr() is more specific than self.get_addr()."""
+        return addr._rank_specific_addr() > self._rank_specific_addr()
+
+    def _rank_specific_addr(self):
+        """Returns numerical rank for get_addr()"""
+        if self.get_addr() == "_default_":
+            return 0
+        elif self.get_addr() == "*":
+            return 1
+        else:
+            return 2
+
+    def conflicts(self, addr):
+        """Returns if address could conflict with correct function of self.
+
+        Could addr take away service provided by self within Apache?
+
+        .. note::IP Address is more important than wildcard.
+            Connection from 127.0.0.1:80 with choices of *:80 and 127.0.0.1:*
+            chooses 127.0.0.1:*
+
+        .. todo:: Handle domain name addrs...
+
+        Examples:
+        127.0.0.1:*.conflicts(127.0.0.1:443) - True
+        127.0.0.1:443.conflicts(127.0.0.1:*) - False
+        *:443.conflicts(*:80) - False
+        _default_:443.conflicts(*:443) - True
+
+        """
+        if self._addr_less_specific(addr):
+            return True
+        elif self.get_addr() == addr.get_addr():
+            if self.is_wildcard() or self.get_port() == addr.get_port():
+                return True
+        return False
+
     def is_wildcard(self):
         """Returns if address has a wildcard port."""
         return self.tup[1] == "*" or not self.tup[1]
@@ -55,7 +93,9 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
     :ivar bool ssl: SSLEngine on in vhost
     :ivar bool enabled: Virtual host is enabled
 
-    .. todo:: Handle ServerNames appropriately...
+    https://httpd.apache.org/docs/2.4/vhosts/details.html
+    .. todo:: Any vhost that includes the magic _default_ wildcard is given the
+        same ServerName as the main server.
 
     """
     # ?: is used for not returning enclosed characters
@@ -124,16 +164,14 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
         :param addrs: Iterable Addresses
         :type addrs: Iterable :class:~obj.Addr
 
-        :returns: If addresses conflict with vhost
+        :returns: If addresses conflicts with vhost
         :rtype: bool
 
         """
-        # TODO: Handle domain name addrs...
-        for addr in addrs:
-            if (addr in self.addrs or addr.get_addr_obj("") in self.addrs or
-                    addr.get_addr_obj("*") in self.addrs):
-                return True
-
+        for pot_addr in addrs:
+            for addr in self.addrs:
+                if addr.conflicts(pot_addr):
+                    return True
         return False
 
     def same_server(self, vhost):
@@ -150,7 +188,7 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
             return False
 
         # If equal and set is not empty... assume same server
-        if self.name is not None:
+        if self.name is not None or self.aliases:
             return True
 
         # Both sets of names are empty.
@@ -167,11 +205,12 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
         for addr in vhost.addrs:
             for local_addr in self.addrs:
                 if (local_addr.get_addr() == addr.get_addr() and
-                            local_addr != addr and
-                            local_addr.get_addr() not in already_found):
+                        local_addr != addr and
+                        local_addr.get_addr() not in already_found):
 
                     # This intends to make sure we aren't double counting...
-                    # e.g. 127.0.0.1:*
+                    # e.g. 127.0.0.1:* - We require same number of addrs
+                    #  currently
                     already_found.add(local_addr.get_addr())
                     break
             else:

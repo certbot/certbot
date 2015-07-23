@@ -19,12 +19,18 @@ class ApacheParser(object):
 
     :ivar str root: Normalized absolute path to the server root
         directory. Without trailing slash.
+    :ivar str root: Server root
+    :ivar set modules: All module names that are currently enabled.
+    :ivar dict loc: Location to place directives, root - configuration origin,
+        default - user config file, name - NameVirtualHost,
 
     """
     arg_var_interpreter = re.compile(r"\$\{[^ \}]*}")
     fnmatch_chars = set(["*", "?", "\\", "[", "]"])
 
     def __init__(self, aug, root, ctl):
+        # Note: Order is important here.
+
         # This uses the binary, so it can be done first.
         # https://httpd.apache.org/docs/2.4/mod/core.html#define
         # https://httpd.apache.org/docs/2.4/mod/core.html#ifdefine
@@ -47,7 +53,8 @@ class ApacheParser(object):
         self.modules = set()
         self._init_modules()
 
-        self.loc.update(self._set_locations(self.loc["root"]))
+        # Set up rest of locations
+        self.loc.update(self._set_locations())
 
         # Must also attempt to parse sites-available or equivalent
         # Sites-available is not included naturally in configuration
@@ -89,7 +96,10 @@ class ApacheParser(object):
 
         variables = dict()
         matches = re.compile(r"Define: ([^ \n]*)").findall(stdout)
-        matches.remove("DUMP_RUN_CFG")
+        try:
+            matches.remove("DUMP_RUN_CFG")
+        except ValueError:
+            raise errors.PluginError("Unable to parse runtime variables")
 
         for match in matches:
             if match.count("=") > 1:
@@ -183,7 +193,7 @@ class ApacheParser(object):
             self.aug.set(nvh_path + "/arg", args[0])
         else:
             for i, arg in enumerate(args):
-                self.aug.set("%s/arg[%d]" % (nvh_path, i), arg)
+                self.aug.set("%s/arg[%d]" % (nvh_path, i+1), arg)
 
 
     def _get_ifmod(self, aug_conf_path, mod):
@@ -497,14 +507,14 @@ class ApacheParser(object):
 
         self.aug.load()
 
-    def _set_locations(self, root):
+    def _set_locations(self):
         """Set default location for directives.
 
         Locations are given as file_paths
         .. todo:: Make sure that files are included
 
         """
-        default = self._set_user_config_file(root)
+        default = self._set_user_config_file()
 
         temp = os.path.join(self.root, "ports.conf")
         if os.path.isfile(temp):
@@ -526,7 +536,7 @@ class ApacheParser(object):
 
         raise errors.NoInstallationError("Could not find configuration root")
 
-    def _set_user_config_file(self, root):
+    def _set_user_config_file(self):
         """Set the appropriate user configuration file
 
         .. todo:: This will have to be updated for other distros versions
@@ -538,7 +548,7 @@ class ApacheParser(object):
         # in hierarchy via direct include
         # httpd.conf was very common as a user file in Apache 2.2
         if (os.path.isfile(os.path.join(self.root, "httpd.conf")) and
-                self.find_dir("Include", "httpd.conf", root)):
+                self.find_dir("Include", "httpd.conf", self.loc["root"])):
             return os.path.join(self.root, "httpd.conf")
         else:
             return os.path.join(self.root, "apache2.conf")

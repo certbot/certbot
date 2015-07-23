@@ -36,6 +36,11 @@ class TwoVhost80Test(util.ApacheTest):
         shutil.rmtree(self.config_dir)
         shutil.rmtree(self.work_dir)
 
+    def test_add_parser_arguments(self):
+        from letsencrypt_apache.configurator import ApacheConfigurator
+        # Weak test..
+        ApacheConfigurator.add_parser_arguments(mock.MagicMock())
+
     def test_get_all_names(self):
         names = self.config.get_all_names()
         self.assertEqual(names, set(
@@ -58,9 +63,43 @@ class TwoVhost80Test(util.ApacheTest):
                     found += 1
                     break
             else:
-                raise Exception("Missed: %s" % vhost)
+                raise Exception("Missed: %s" % vhost)  # pragma: no cover
 
         self.assertEqual(found, 4)
+
+    @mock.patch("letsencrypt_apache.display_ops.select_vhost")
+    def test_choose_vhost_none_avail(self, mock_select):
+        mock_select.return_value = None
+        self.assertRaises(
+            errors.PluginError, self.config.choose_vhost, "none.com")
+
+    @mock.patch("letsencrypt_apache.display_ops.select_vhost")
+    def test_choose_vhost_select_vhost(self, mock_select):
+        mock_select.return_value = self.vh_truth[3]
+        self.assertEqual(
+            self.vh_truth[3], self.config.choose_vhost("none.com"))
+
+    def test_find_best_vhost(self):
+        self.assertEqual(
+            self.vh_truth[3], self.config._find_best_vhost("letsencrypt.demo"))
+        self.assertEqual(
+            self.vh_truth[0],
+            self.config._find_best_vhost("encryption-example.demo"))
+        self.assertTrue(
+            self.config._find_best_vhost("does-not-exist.com") is None)
+
+    def test_find_best_vhost_default(self):
+        # Assume only the two default vhosts.
+        self.config.vhosts = [vh for vh in self.config.vhosts
+                      if vh.name not in
+                      ["letsencrypt.demo", "encryption-example.demo"]]
+
+        self.assertEqual(
+            self.config._find_best_vhost("example.demo"), self.vh_truth[2])
+
+    def test_non_default_vhosts(self):
+        # pylint: disable=protected-access
+        self.assertEqual(len(self.config._non_default_vhosts()), 3)
 
     def test_is_site_enabled(self):
         """Test if site is enabled.
@@ -136,6 +175,14 @@ class TwoVhost80Test(util.ApacheTest):
         self.assertEqual(len(loc_chain), 1)
         self.assertEqual(configurator.get_file_path(loc_chain[0]),
                          self.vh_truth[1].filep)
+
+        # One more time for chain directive setting
+        self.config.deploy_cert(
+            "random.demo",
+            "two/cert.pem", "two/key.pem", "two/cert_chain.pem")
+        self.assertTrue(self.config.parser.find_dir(
+            "SSLCertificateChainFile", "two/cert_chain.pem",
+            self.vh_truth[1].path))
 
     def test_deploy_cert_invalid_vhost(self):
         self.config.parser.modules.add("ssl_module")
