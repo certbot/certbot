@@ -8,8 +8,8 @@ import threading
 import docker
 
 from letsencrypt import constants
-from tests.compatibility import errors
-from tests.compatibility import util
+from letsencrypt_compatibility_test import errors
+from letsencrypt_compatibility_test import util
 
 
 logger = logging.getLogger(__name__)

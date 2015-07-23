@@ -11,7 +11,8 @@ import tarfile
 from acme import jose
 from acme import test_util
 from letsencrypt import constants
-from tests.compatibility import errors
+
+from letsencrypt_compatibility_test import errors
 
 
 _KEY_BASE = "rsa1024_key.pem"

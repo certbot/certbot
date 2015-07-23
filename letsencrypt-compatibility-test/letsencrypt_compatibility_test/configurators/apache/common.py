@@ -8,10 +8,10 @@ import zope.interface
 
 from letsencrypt import configuration
 from letsencrypt_apache import configurator
-from tests.compatibility import errors
-from tests.compatibility import interfaces
-from tests.compatibility import util
-from tests.compatibility.configurators import common as configurators_common
+from letsencrypt_compatibility_test import errors
+from letsencrypt_compatibility_test import interfaces
+from letsencrypt_compatibility_test import util
+from letsencrypt_compatibility_test.configurators import common as configurators_common
 
 
 APACHE_VERSION_REGEX = re.compile(r"Apache/([0-9\.]*)", re.IGNORECASE)
