@@ -69,7 +69,7 @@ class Proxy(object):
 
     def start_docker(self, image_name, command):
         """Creates and runs a Docker container with the specified image"""
-        logger.info("Pulling Docker image. This may take a minute.")
+        logger.warning("Pulling Docker image. This may take a minute.")
         for line in self._docker_client.pull(image_name, stream=True):
             logger.debug(line)
 
