@@ -69,8 +69,8 @@ def _serve_sni(certs, sock, reuseaddr=True, method=_DEFAULT_DVSNI_SSL_METHOD,
                 raise errors.Error(error)
 
 
-def _probe_sni(name, host, port=443, timeout=300,
-               method=_DEFAULT_DVSNI_SSL_METHOD, source_address=('0', 0)):
+def probe_sni(name, host, port=443, timeout=300,
+              method=_DEFAULT_DVSNI_SSL_METHOD, source_address=('0', 0)):
     """Probe SNI server for SSL certificate.
 
     :param bytes name: Byte string to send as the server name in the

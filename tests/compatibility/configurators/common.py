@@ -7,6 +7,7 @@ import threading
 
 import docker
 
+from letsencrypt import constants
 from tests.compatibility import errors
 from tests.compatibility import util
 
@@ -61,6 +62,9 @@ class Proxy(object):
 
     def load_config(self):
         """Returns the next config directory to be tested"""
+        shutil.rmtree(self.le_config.work_dir, ignore_errors=True)
+        backup = os.path.join(self.le_config.work_dir, constants.BACKUP_DIR)
+        os.makedirs(backup)
         return self._configs.pop()
 
     def start_docker(self, image_name, command):
@@ -136,7 +140,8 @@ class Proxy(object):
     def copy_certs_and_keys(self, cert_path, key_path, chain_path=None):
         """Copies certs and keys into the temporary directory"""
         cert_and_key_dir = os.path.join(self._temp_dir, "certs_and_keys")
-        os.mkdir(cert_and_key_dir)
+        if not os.path.isdir(cert_and_key_dir):
+            os.mkdir(cert_and_key_dir)
 
         cert = os.path.join(cert_and_key_dir, "cert")
         shutil.copy(cert_path, cert)

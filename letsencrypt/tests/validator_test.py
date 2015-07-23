@@ -3,8 +3,9 @@ import requests
 import unittest
 
 import mock
+import OpenSSL
 
-from letsencrypt import errors
+from acme import errors as acme_errors
 from letsencrypt import validator
 
 
@@ -12,11 +13,40 @@ class ValidatorTest(unittest.TestCase):
     def setUp(self):
         self.validator = validator.Validator()
 
+    @mock.patch("letsencrypt.validator.crypto_util.probe_sni")
+    def test_certificate_success(self, mock_probe_sni):
+        cert = OpenSSL.crypto.X509()
+        mock_probe_sni.return_value = cert
+        self.assertTrue(self.validator.certificate(
+            cert, "test.com", "127.0.0.1"))
+
+    @mock.patch("letsencrypt.validator.crypto_util.probe_sni")
+    def test_certificate_error(self, mock_probe_sni):
+        cert = OpenSSL.crypto.X509()
+        mock_probe_sni.side_effect = [acme_errors.Error]
+        self.assertFalse(self.validator.certificate(
+            cert, "test.com", "127.0.0.1"))
+
+    @mock.patch("letsencrypt.validator.crypto_util.probe_sni")
+    def test_certificate_failure(self, mock_probe_sni):
+        cert = OpenSSL.crypto.X509()
+        cert.set_serial_number(1337)
+        mock_probe_sni.return_value = OpenSSL.crypto.X509()
+        self.assertFalse(self.validator.certificate(
+            cert, "test.com", "127.0.0.1"))
+
     @mock.patch("letsencrypt.validator.requests.get")
     def test_succesful_redirect(self, mock_get_request):
         mock_get_request.return_value = create_response(
             301, {"location" : "https://test.com"})
         self.assertTrue(self.validator.redirect("test.com"))
+
+    @mock.patch("letsencrypt.validator.requests.get")
+    def test_redirect_with_headers(self, mock_get_request):
+        mock_get_request.return_value = create_response(
+            301, {"location" : "https://test.com"})
+        self.assertTrue(self.validator.redirect(
+            "test.com", headers={"Host" : "test.com"}))
 
     @mock.patch("letsencrypt.validator.requests.get")
     def test_redirect_missing_location(self, mock_get_request):
@@ -33,19 +63,7 @@ class ValidatorTest(unittest.TestCase):
     def test_redirect_wrong_redirect_code(self, mock_get_request):
         mock_get_request.return_value = create_response(
             303, {"location" : "https://test.com"})
-        self.assertRaises(
-            errors.ValidationError, self.validator.redirect, "test.com")
-
-    @mock.patch("letsencrypt.validator.requests.get")
-    def test_https_fail(self, mock_get_request):
-        mock_get_request.side_effect = [requests.exceptions.ConnectionError]
-        self.assertRaises(
-            requests.exceptions.ConnectionError, self.validator.https, "test.com")
-
-    def test_https_success(self):
-        with mock.patch("letsencrypt.validator.requests.get"):
-            self.assertTrue(self.validator.https(
-                "test.com", headers={"Host" : "test.com"}))
+        self.assertFalse(self.validator.redirect("test.com"))
 
     @mock.patch("letsencrypt.validator.requests.get")
     def test_hsts_empty(self, mock_get_request):
@@ -57,22 +75,19 @@ class ValidatorTest(unittest.TestCase):
     def test_hsts_malformed(self, mock_get_request):
         mock_get_request.return_value = create_response(
             headers={"strict-transport-security": "sdfal"})
-        self.assertRaises(
-            errors.ValidationError, self.validator.hsts, "test.com")
+        self.assertFalse(self.validator.hsts("test.com"))
 
     @mock.patch("letsencrypt.validator.requests.get")
     def test_hsts_bad_max_age(self, mock_get_request):
         mock_get_request.return_value = create_response(
             headers={"strict-transport-security": "max-age=not-an-int"})
-        self.assertRaises(
-            errors.ValidationError, self.validator.hsts, "test.com")
+        self.assertFalse(self.validator.hsts("test.com"))
 
     @mock.patch("letsencrypt.validator.requests.get")
     def test_hsts_expire(self, mock_get_request):
         mock_get_request.return_value = create_response(
             headers={"strict-transport-security": "max-age=3600"})
-        self.assertRaises(
-            errors.ValidationError, self.validator.hsts, "test.com")
+        self.assertFalse(self.validator.hsts("test.com"))
 
     @mock.patch("letsencrypt.validator.requests.get")
     def test_hsts(self, mock_get_request):
@@ -103,4 +118,4 @@ def create_response(status_code=200, headers=None):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest.main() # pragma: no cover

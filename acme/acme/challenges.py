@@ -207,7 +207,7 @@ class DVSNI(DVChallenge):
         kwargs["name"] = self.nonce_domain
         # TODO: try different methods?
         # pylint: disable=protected-access
-        return crypto_util._probe_sni(**kwargs)
+        return crypto_util.probe_sni(**kwargs)
 
 
 @ChallengeResponse.register

@@ -179,7 +179,7 @@ class DVSNITest(unittest.TestCase):
             jose.DeserializationError, DVSNI.from_json, self.jmsg)
 
     @mock.patch('acme.challenges.socket.gethostbyname')
-    @mock.patch('acme.challenges.crypto_util._probe_sni')
+    @mock.patch('acme.challenges.crypto_util.probe_sni')
     def test_probe_cert(self, mock_probe_sni, mock_gethostbyname):
         mock_gethostbyname.return_value = '127.0.0.1'
         self.msg.probe_cert('foo.com')

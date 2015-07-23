@@ -1,6 +1,7 @@
 """Tests Let's Encrypt plugins against different server configurations."""
 import argparse
 import filecmp
+import functools
 import logging
 import os
 import shutil
@@ -12,6 +13,8 @@ from acme import challenges
 from acme import crypto_util
 from acme import messages
 from letsencrypt import achallenges
+from letsencrypt import errors as le_errors
+from letsencrypt import validator
 from letsencrypt.tests import acme_util
 from tests.compatibility import errors
 from tests.compatibility import util
@@ -34,36 +37,41 @@ logger = logging.getLogger(__name__)
 
 def test_authenticator(plugin, config, temp_dir):
     """Tests plugin as an authenticator"""
-    backup = os.path.join(temp_dir, "backup")
-    shutil.copytree(config, backup, symlinks=True)
+    backup = _create_backup(config, temp_dir)
 
     achalls = _create_achalls(plugin)
-    if achalls:
-        try:
-            responses = plugin.perform(achalls)
-            for i in xrange(len(responses)):
-                if not responses[i]:
-                    raise errors.Error(
-                        "Plugin returned 'None' or 'False' response to "
-                        "challenge")
-                elif isinstance(responses[i], challenges.DVSNIResponse):
-                    if responses[i].simple_verify(achalls[i],
-                                                  achalls[i].domain,
-                                                  util.JWK.key.public_key(),
-                                                  host="127.0.0.1",
-                                                  port=plugin.https_port):
-                        logger.info(
-                            "Verification of DVSNI response for %s succeeded",
-                            achalls[i].domain)
-                    else:
-                        raise errors.Error(
-                            "Verification of DVSNI response for {0} "
-                            "failed".format(achalls[i].domain))
-        finally:
-            plugin.cleanup(achalls)
+    if not achalls:
+        return
+
+    try:
+        responses = plugin.perform(achalls)
+        for i in xrange(len(responses)):
+            if not responses[i]:
+                logger.error(
+                    "Plugin returned `None` or `False` response to challenge "
+                    "for config `%s`", config)
+            elif isinstance(responses[i], challenges.DVSNIResponse):
+                if responses[i].simple_verify(achalls[i],
+                                              achalls[i].domain,
+                                              util.JWK.key.public_key(),
+                                              host="127.0.0.1",
+                                              port=plugin.https_port):
+                    logger.info(
+                        "Verification of DVSNI response for %s succeeded",
+                        achalls[i].domain)
+                else:
+                    logger.error(
+                        "Verification of DVSNI response for %s in config '%s' "
+                        "failed ", achalls[i].domain, config)
+    except le_errors.Error as error:
+        logger.info(
+            "Plugin raised %s during authentication with config '%s'",
+            error, config)
+    finally:
+        plugin.cleanup(achalls)
 
     if _dirs_are_unequal(config, backup):
-        raise errors.Error("Challenge cleanup failed")
+        logger.error("Challenge cleanup failed for config %s", config)
     else:
         logger.info("Challenge cleanup succeeded")
 
@@ -88,17 +96,24 @@ def _create_achalls(plugin):
     return achalls
 
 
-def test_installer(plugin, config, temp_dir):
+def test_installer(args, plugin, config, temp_dir):
     """Tests plugin as an installer"""
-    backup = os.path.join(temp_dir, "backup")
-    shutil.copytree(config, backup, symlinks=True)
+    backup = _create_backup(config, temp_dir)
 
-    if plugin.get_all_names() != plugin.get_all_names_answer():
-        raise errors.Error("get_all_names test failed")
+    if plugin.get_all_names().issubset(plugin.get_all_names_answer()):
+        logger.info("get_all_names test succeeded")
     else:
-        logging.info("get_all_names test succeeded")
+        logger.error("get_all_names test failed for config `%s`", config)
 
     domains = list(plugin.get_testable_domain_names())
+    if test_deploy_cert(plugin, temp_dir, domains) and args.enhance:
+        test_enhancements(plugin, domains)
+
+    test_rollback(plugin, config, backup)
+
+
+def test_deploy_cert(plugin, temp_dir, domains):
+    """Tests deploy_cert returning True if the tests are successful"""
     cert = crypto_util.gen_ss_cert(util.KEY, domains)
     cert_path = os.path.join(temp_dir, "cert.pem")
     with open(cert_path, "w") as f:
@@ -107,8 +122,64 @@ def test_installer(plugin, config, temp_dir):
 
     for domain in domains:
         plugin.deploy_cert(domain, cert_path, util.KEY_PATH)
-    plugin.save()
+    plugin.save("deployed")
     plugin.restart()
+
+    verify_cert = validator.Validator().certificate
+    success = True
+    for domain in domains:
+        if not verify_cert(cert, domain, "127.0.0.1", plugin.https_port):
+            logger.error("Could not verify certificate for domain %s", domain)
+            success = False
+
+    if success:
+        logger.info("HTTPS validation succeeded")
+
+    return success
+
+
+def test_enhancements(plugin, domains):
+    """Tests enhancements supported by the plugin"""
+    supported = plugin.supported_enhancements()
+
+    if "redirect" not in supported:
+        return
+
+    for domain in domains:
+        plugin.enhance(domain, "redirect")
+
+    plugin.save("enhanced")
+    plugin.restart()
+
+    verify_redirect = functools.partial(
+        validator.Validator().redirect, "localhost", plugin.http_port)
+    success = True
+    for domain in domains:
+        if not verify_redirect(headers={"Host" : domain}):
+            logger.error("Improper redirect for domain %s", domain)
+            success = False
+
+    if success:
+        logger.info("Enhancments test succeeded")
+
+
+def test_rollback(plugin, config, backup):
+    """Tests the rollback checkpoints function"""
+    plugin.rollback_checkpoints(2)
+
+    if _dirs_are_unequal(config, backup):
+        logger.error("Rollback failed for config `%s`", config)
+    else:
+        logger.info("Rollback succeeded")
+
+
+def _create_backup(config, temp_dir):
+    """Creates a backup of config in temp_dir"""
+    backup = os.path.join(temp_dir, "backup")
+    shutil.rmtree(backup, ignore_errors=True)
+    shutil.copytree(config, backup, symlinks=True)
+
+    return backup
 
 
 def _dirs_are_unequal(dir1, dir2):
@@ -151,7 +222,7 @@ def get_args():
     if args.enhance:
         args.install = True
     elif not (args.auth or args.install):
-        args.auth = args.install = args.redirect = True
+        args.auth = args.install = args.enhance = True
 
     return args
 
@@ -161,7 +232,7 @@ def setup_logging(args):
     handler = logging.StreamHandler()
 
     root_logger = logging.getLogger()
-    root_logger.setLevel(logging.INFO - args.verbose_count * 10)
+    root_logger.setLevel(logging.WARNING - args.verbose_count * 10)
     root_logger.addHandler(handler)
 
 
@@ -183,10 +254,10 @@ def main():
                 logger.info("Loaded configuration: %s", config)
                 if args.auth:
                     test_authenticator(plugin, config, temp_dir)
-                #if args.install:
-                    #test_installer(plugin, temp_dir)
+                if args.install:
+                    test_installer(args, plugin, config, temp_dir)
             except errors.Error as error:
-                logger.warning("Test failed: %s", error)
+                logger.error("Tests on config `%s` raised: %s", config, error)
     finally:
         plugin.cleanup_from_tests()
 

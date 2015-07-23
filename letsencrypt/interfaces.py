@@ -384,17 +384,52 @@ class IDisplay(zope.interface.Interface):
 class IValidator(zope.interface.Interface):
     """Configuration validator."""
 
-    def redirect(hostname, port=80, headers=None):
-        """Verify redirect to HTTPS."""
+    def certificate(cert, name, alt_host=None, port=443):
+        """Verifies the certificate presented at name is cert
 
-    def https(hostname, port=443, headers=None):
-        """Verify HTTPS is enabled for domain."""
+        :param OpenSSL.crypto.X509 cert: Expected certificate
+        :param str name: Server's domain name
+        :param bytes alt_host: Host to connect to instead of the IP
+            address of host
+        :param int port: Port to connect to
 
-    def hsts(hostname):
-        """Verify HSTS header is enabled."""
+        :returns: True if the certificate was verified successfully
+        :rtype: bool
 
-    def ocsp_stapling(hostname):
-        """Verify ocsp stapling for domain."""
+        """
+
+    def redirect(name, port=80, headers=None):
+        """Verify redirect to HTTPS
+
+        :param str name: Server's domain name
+        :param int port: Port to connect to
+        :param dict headers: HTTP headers to include in request
+
+        :returns: True if redirect is successfully enabled
+        :rtype: bool
+
+        """
+
+
+    def hsts(name):
+        """Verify HSTS header is enabled
+
+        :param str name: Server's domain name
+
+        :returns: True if HSTS header is successfully enabled
+        :rtype: bool
+
+        """
+
+    def ocsp_stapling(name):
+        """Verify ocsp stapling for domain
+
+        :param str name: Server's domain name
+
+        :returns: True if ocsp stapling is successfully enabled
+        :rtype: bool
+
+        """
 
 
 class IReporter(zope.interface.Interface):

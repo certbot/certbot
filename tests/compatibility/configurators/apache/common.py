@@ -113,13 +113,6 @@ class Proxy(configurators_common.Proxy):
         super(Proxy, self).cleanup_from_tests()
         self._patch.stop()
 
-    def get_testable_domain_names(self):
-        """Returns the set of domain names that can be tested against"""
-        if self._test_names:
-            return self._test_names
-        else:
-            raise errors.Error("No configuration file loaded")
-
     def get_all_names_answer(self):
         """Returns the set of domain names that the plugin should find"""
         if self._all_names:
@@ -127,6 +120,12 @@ class Proxy(configurators_common.Proxy):
         else:
             raise errors.Error("No configuration file loaded")
 
+    def get_testable_domain_names(self):
+        """Returns the set of domain names that can be tested against"""
+        if self._test_names:
+            return self._test_names
+        else:
+            return {"example.com"}
     def deploy_cert(self, domain, cert_path, key_path, chain_path=None):
         """Installs cert"""
         cert_path, key_path, chain_path = self.copy_certs_and_keys(
