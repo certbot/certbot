@@ -15,7 +15,6 @@ env:
   global:
     - GOPATH=/tmp/go
   matrix:
-    - TOXENV=py26 BOULDER_INTEGRATION=1
     - TOXENV=py27 BOULDER_INTEGRATION=1
     - TOXENV=py33
     - TOXENV=py34
