@@ -87,7 +87,8 @@ class AugeasConfigurator(common.Plugin):
             self._log_save_errors(ex_errs)
             # Erase Save Notes
             self.save_notes = ""
-            return False
+            raise errors.PluginError(
+                "Error saving files, check logs for more info.")
 
         # Retrieve list of modified files
         # Note: Noop saves can cause the file to be listed twice, I used a

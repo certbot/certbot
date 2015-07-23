@@ -377,7 +377,6 @@ def setup_work_direc():
     """
     work_dir = tempfile.mkdtemp("work")
     backup_dir = os.path.join(work_dir, "backup")
-    os.makedirs(backup_dir)
 
     return mock.MagicMock(
         work_dir=work_dir, backup_dir=backup_dir,

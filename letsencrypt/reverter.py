@@ -27,6 +27,9 @@ class Reverter(object):
     def __init__(self, config):
         self.config = config
 
+        le_util.make_or_verify_dir(
+            config.backup_dir, constants.CONFIG_DIRS_MODE, os.geteuid())
+
     def revert_temporary_config(self):
         """Reload users original configuration files after a temporary save.
 
