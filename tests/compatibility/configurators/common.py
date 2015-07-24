@@ -55,7 +55,7 @@ class Proxy(object):
 
     def cleanup_from_tests(self):
         """Performs any necessary cleanup from running plugin tests"""
-        self._docker_client.stop(self._container_id)
+        self._docker_client.stop(self._container_id, 0)
         self._log_thread.join()
         if not self.args.no_remove:
             self._docker_client.remove_container(self._container_id)
