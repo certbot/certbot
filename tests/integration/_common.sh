@@ -10,11 +10,12 @@ store_flags="$store_flags --logs-dir $root/logs"
 export root store_flags
 
 letsencrypt_test () {
-    # first three flags required, rest is handy defaults
     letsencrypt \
         --server "${SERVER:-http://localhost:4000/acme/new-reg}" \
         --no-verify-ssl \
         --dvsni-port 5001 \
+        --simple-http-port 5001 \
+        --manual-test-mode \
         $store_flags \
         --text \
         --agree-eula \
