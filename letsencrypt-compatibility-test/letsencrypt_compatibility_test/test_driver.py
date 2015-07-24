@@ -16,9 +16,10 @@ from letsencrypt import achallenges
 from letsencrypt import errors as le_errors
 from letsencrypt import validator
 from letsencrypt.tests import acme_util
-from tests.compatibility import errors
-from tests.compatibility import util
-from tests.compatibility.configurators.apache import apache24
+
+from letsencrypt_compatibility_test import errors
+from letsencrypt_compatibility_test import util
+from letsencrypt_compatibility_test.configurators.apache import apache24
 
 
 DESCRIPTION = """

@@ -2,9 +2,9 @@
 
 import zope.interface
 
-from tests.compatibility import errors
-from tests.compatibility import interfaces
-from tests.compatibility.configurators.apache import common as apache_common
+from letsencrypt_compatibility_test import errors
+from letsencrypt_compatibility_test import interfaces
+from letsencrypt_compatibility_test.configurators.apache import common as apache_common
 
 
 # The docker image doesn't actually have the watchdog module, but unless the
