@@ -109,6 +109,7 @@ class BasicParserTest(util.ParserTest):
             self.assertEqual(results["default"], results["name"])
 
     def test_set_user_config_file(self):
+        # pylint: disable=protected-access
         path = os.path.join(self.parser.root, "httpd.conf")
         open(path, 'w').close()
         self.parser.add_dir(self.parser.loc["default"], "Include", "httpd.conf")

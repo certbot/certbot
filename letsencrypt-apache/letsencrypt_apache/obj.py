@@ -23,10 +23,16 @@ class Addr(common.Addr):
 
     def _addr_less_specific(self, addr):
         """Returns if addr.get_addr() is more specific than self.get_addr()."""
+        # pylint: disable=protected-access
         return addr._rank_specific_addr() > self._rank_specific_addr()
 
     def _rank_specific_addr(self):
-        """Returns numerical rank for get_addr()"""
+        """Returns numerical rank for get_addr()
+
+        :returns: 2 - FQ, 1 - wildcard, 0 - _default_
+        :rtype: int
+
+        """
         if self.get_addr() == "_default_":
             return 0
         elif self.get_addr() == "*":
@@ -101,14 +107,14 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
     # ?: is used for not returning enclosed characters
     strip_name = re.compile(r"^(?:.+://)?([^ :$]*)")
 
-    def __init__(self, filep, path, addrs, ssl, enabled, name=None, aliases=[]):
+    def __init__(self, filep, path, addrs, ssl, enabled, name=None, aliases=None):
         # pylint: disable=too-many-arguments
         """Initialize a VH."""
         self.filep = filep
         self.path = path
         self.addrs = addrs
         self.name = name
-        self.aliases = aliases
+        self.aliases = aliases if aliases is not None else set()
         self.ssl = ssl
         self.enabled = enabled
 
@@ -119,7 +125,8 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
 
     def get_names(self):
         """Return a set of all names."""
-        all_names = set(self.aliases)
+        all_names = set()
+        all_names.update(self.aliases)
         # Strip out any scheme:// and <port> field from servername
         if self.name is not None:
             all_names.add(VirtualHost.strip_name.findall(self.name)[0])

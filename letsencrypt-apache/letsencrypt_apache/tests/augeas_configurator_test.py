@@ -7,11 +7,6 @@ import mock
 
 from letsencrypt import errors
 
-from letsencrypt.tests import acme_util
-
-from letsencrypt_apache import configurator
-from letsencrypt_apache import obj
-
 from letsencrypt_apache.tests import util
 
 
@@ -28,11 +23,12 @@ class AugeasConfiguratorTest(util.ApacheTest):
             self.temp_dir, "debian_apache_2_4/two_vhost_80")
 
     def tearDown(self):
-        shutil.rmtree(self.temp_dir)
         shutil.rmtree(self.config_dir)
         shutil.rmtree(self.work_dir)
+        shutil.rmtree(self.temp_dir)
 
     def test_bad_parse(self):
+        # pylint: disable=protected-access
         self.config.parser._parse_file(os.path.join(
             self.config.parser.root, "conf-available", "bad_conf_file.conf"))
         self.assertRaises(

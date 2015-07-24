@@ -13,10 +13,8 @@ import zope.interface
 from acme import challenges
 
 from letsencrypt import achallenges
-from letsencrypt import constants as core_constants
 from letsencrypt import errors
 from letsencrypt import interfaces
-from letsencrypt import le_util
 
 from letsencrypt_apache import augeas_configurator
 from letsencrypt_apache import constants
@@ -369,15 +367,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         serveralias_match = self.parser.find_dir(
             "ServerAlias", None, host.path, exclude=False)
 
-        aliases = []
         for alias in serveralias_match:
-            aliases.append(self.parser.get_arg(alias))
+            host.aliases.add(self.parser.get_arg(alias))
 
         if servername_match:
             # Get last ServerName as each overwrites the previous
-            host.add_names(self.parser.get_arg(servername_match[-1]), aliases)
-        else:
-            host.add_names(None, aliases)
+            host.name = self.parser.get_arg(servername_match[-1])
 
     def _create_vhost(self, path):
         """Used by get_virtual_hosts to create vhost objects
@@ -498,15 +493,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.save_notes += "Added Listen %s directive to %s\n" % (
                 port, self.parser.loc["listen"])
 
-    def make_addrs_sni_ready(
-            self, addrs, default_addr=obj.Addr(("*", "443"))):
+    def make_addrs_sni_ready(self, addrs):
         """Checks to see if the server is ready for SNI challenges.
 
         :param addrs: Addresses to check SNI compatibility
         :type addrs: :class:`~letsencrypt_apache.obj.Addr`
-
-        :param default_addr: TODO - investigate function further
-        :type default_addr: :class:~letsencrypt_apache.obj.Addr
 
         """
         # Version 2.4 and later are automatically SNI ready.
@@ -823,10 +814,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 "ErrorLog /var/log/apache2/redirect.error.log\n"
                 "LogLevel warn\n"
                 "</VirtualHost>\n"
-                % (
-            " ".join(str(addr) for addr in self._get_redirect_addrs(ssl_vhost)),
-            servername, serveralias,
-            " ".join(constants.REWRITE_HTTPS_ARGS)))
+                % (" ".join(str(addr) for addr in self._get_redirect_addrs(ssl_vhost)),
+                   servername, serveralias,
+                   " ".join(constants.REWRITE_HTTPS_ARGS)))
 
     def _write_out_redirect(self, ssl_vhost, text):
         # This is the default name
@@ -867,7 +857,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         return None
 
-    def _get_redirect_addrs(self, ssl_vhost):
+    def _get_redirect_addrs(self, ssl_vhost):  # pylint: disable=no-self-use
         redirects = set()
         for addr in ssl_vhost.addrs:
             redirects.add(addr.get_addr_obj("80"))

@@ -1,3 +1,4 @@
+# pylint: disable=too-many-public-methods
 """Test for letsencrypt_apache.configurator."""
 import os
 import shutil
@@ -38,7 +39,7 @@ class TwoVhost80Test(util.ApacheTest):
         shutil.rmtree(self.work_dir)
 
     @mock.patch("letsencrypt_apache.parser.ApacheParser")
-    def test_prepare_version(self, mock_parser):
+    def test_prepare_version(self, _):
         self.config.version = None
         self.config.config_test = mock.Mock()
         self.config.get_version = mock.Mock(return_value=(1, 1))
@@ -46,7 +47,7 @@ class TwoVhost80Test(util.ApacheTest):
         self.assertRaises(
             errors.NotSupportedError, self.config.prepare)
 
-    def test_add_parser_arguments(self):
+    def test_add_parser_arguments(self):  # pylint: disable=no-self-use
         from letsencrypt_apache.configurator import ApacheConfigurator
         # Weak test..
         ApacheConfigurator.add_parser_arguments(mock.MagicMock())
@@ -58,14 +59,14 @@ class TwoVhost80Test(util.ApacheTest):
 
     @mock.patch("letsencrypt_apache.configurator.socket.gethostbyaddr")
     def test_get_all_names_addrs(self, mock_gethost):
-        mock_gethost.side_effect = [("google.com","",""), socket.error]
-        vh = obj.VirtualHost(
+        mock_gethost.side_effect = [("google.com", "", ""), socket.error]
+        vhost = obj.VirtualHost(
             "fp", "ap",
             set([obj.Addr(("8.8.8.8", "443")),
                  obj.Addr(("zombo.com",)),
                  obj.Addr(("192.168.1.2"))]),
             True, False)
-        self.config.vhosts.append(vh)
+        self.config.vhosts.append(vhost)
 
         names = self.config.get_all_names()
         self.assertEqual(len(names), 5)
@@ -115,6 +116,7 @@ class TwoVhost80Test(util.ApacheTest):
             self.vh_truth[3], self.config.choose_vhost("none.com"))
 
     def test_find_best_vhost(self):
+        # pylint: disable=protected-access
         self.assertEqual(
             self.vh_truth[3], self.config._find_best_vhost("letsencrypt.demo"))
         self.assertEqual(
@@ -124,6 +126,7 @@ class TwoVhost80Test(util.ApacheTest):
             self.config._find_best_vhost("does-not-exist.com") is None)
 
     def test_find_best_vhost_variety(self):
+        # pylint: disable=protected-access
         ssl_vh = obj.VirtualHost(
             "fp", "ap", set([obj.Addr(("*", "443")), obj.Addr(("zombo.com",))]),
             True, False)
@@ -131,10 +134,12 @@ class TwoVhost80Test(util.ApacheTest):
         self.assertEqual(self.config._find_best_vhost("zombo.com"), ssl_vh)
 
     def test_find_best_vhost_default(self):
+        # pylint: disable=protected-access
         # Assume only the two default vhosts.
-        self.config.vhosts = [vh for vh in self.config.vhosts
-                      if vh.name not in
-                      ["letsencrypt.demo", "encryption-example.demo"]]
+        self.config.vhosts = [
+            vh for vh in self.config.vhosts
+            if vh.name not in ["letsencrypt.demo", "encryption-example.demo"]
+        ]
 
         self.assertEqual(
             self.config._find_best_vhost("example.demo"), self.vh_truth[2])
@@ -338,10 +343,12 @@ class TwoVhost80Test(util.ApacheTest):
                 self.config.make_vhost_ssl, self.vh_truth[0])
 
     def test_get_ssl_vhost_path(self):
+        # pylint: disable=protected-access
         self.assertTrue(
             self.config._get_ssl_vhost_path("example_path").endswith(".conf"))
 
     def test_add_name_vhost_if_necessary(self):
+        # pylint: disable=protected-access
         self.config.save = mock.Mock()
         self.config.version = (2, 2)
         self.config._add_name_vhost_if_necessary(self.vh_truth[0])
@@ -352,7 +359,7 @@ class TwoVhost80Test(util.ApacheTest):
     def test_perform(self, mock_restart, mock_dvsni_perform):
         # Only tests functionality specific to configurator.perform
         # Note: As more challenges are offered this will have to be expanded
-        auth_key, achall1, achall2 = self.get_achalls()
+        _, achall1, achall2 = self.get_achalls()
 
         dvsni_ret_val = [
             challenges.DVSNIResponse(s="randomS1"),
@@ -369,10 +376,10 @@ class TwoVhost80Test(util.ApacheTest):
 
     @mock.patch("letsencrypt_apache.configurator.ApacheConfigurator.restart")
     def test_cleanup(self, mock_restart):
-        auth_key, achall1, achall2 = self.get_achalls()
+        _, achall1, achall2 = self.get_achalls()
 
-        self.config._chall_out.add(achall1)
-        self.config._chall_out.add(achall2)
+        self.config._chall_out.add(achall1)  # pylint: disable=protected-access
+        self.config._chall_out.add(achall2)  # pylint: disable=protected-access
 
         self.config.cleanup([achall1])
         self.assertFalse(mock_restart.called)
@@ -382,9 +389,9 @@ class TwoVhost80Test(util.ApacheTest):
 
     @mock.patch("letsencrypt_apache.configurator.ApacheConfigurator.restart")
     def test_cleanup_no_errors(self, mock_restart):
-        auth_key, achall1, achall2 = self.get_achalls()
+        _, achall1, achall2 = self.get_achalls()
 
-        self.config._chall_out.add(achall1)
+        self.config._chall_out.add(achall1)  # pylint: disable=protected-access
 
         self.config.cleanup([achall2])
         self.assertFalse(mock_restart.called)
@@ -430,7 +437,7 @@ class TwoVhost80Test(util.ApacheTest):
     @mock.patch("letsencrypt_apache.configurator.subprocess.Popen")
     def test_restart_failure(self, mock_popen):
         mock_popen().communicate.return_value = ("", "")
-        mock_popen.returncode=1
+        mock_popen().returncode = 1
 
         self.assertRaises(errors.MisconfigurationError, self.config.restart)
 
@@ -453,7 +460,6 @@ class TwoVhost80Test(util.ApacheTest):
         mock_popen().returncode = -1
 
         self.assertRaises(errors.MisconfigurationError, self.config.config_test)
-
 
     def test_get_all_certs_keys(self):
         c_k = self.config.get_all_certs_keys()
@@ -493,7 +499,7 @@ class TwoVhost80Test(util.ApacheTest):
 
     @mock.patch("letsencrypt_apache.parser."
                 "ApacheParser.update_runtime_variables")
-    def test_redirect_well_formed_http(self, unused):
+    def test_redirect_well_formed_http(self, _):
         # This will create an ssl vhost for letsencrypt.demo
         self.config.enhance("letsencrypt.demo", "redirect")
 
@@ -571,6 +577,7 @@ class TwoVhost80Test(util.ApacheTest):
         self.assertEqual(len(self.config.vhosts), 5)
 
     def get_achalls(self):
+        """Return testing achallenges."""
         auth_key = le_util.Key(self.rsa256_file, self.rsa256_pem)
         achall1 = achallenges.DVSNI(
             challb=acme_util.chall_to_challb(
