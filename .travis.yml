@@ -22,6 +22,11 @@ env:
     - TOXENV=lint
     - TOXENV=cover
 
+# make sure simplehttp simple verification works (custom /etc/hosts)
+addons:
+  hosts:
+    - le.wtf
+
 install: "travis_retry pip install tox coveralls"
 before_script: '[ "xxx$BOULDER_INTEGRATION" = "xxx" ] || ./tests/boulder-start.sh amqp'
 script: 'travis_retry tox && ([ "xxx$BOULDER_INTEGRATION" = "xxx" ] || (source .tox/$TOXENV/bin/activate && ./tests/boulder-integration.sh))'
