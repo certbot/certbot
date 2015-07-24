@@ -118,10 +118,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         version = kwargs.pop("version", None)
         super(ApacheConfigurator, self).__init__(*args, **kwargs)
 
-        # Verify that all directories and files exist with proper permissions
-        if os.geteuid() == 0:
-            self.verify_setup()  # pragma: no cover
-
         # Add name_server association dict
         self.assoc = dict()
         # Outstanding challenges
