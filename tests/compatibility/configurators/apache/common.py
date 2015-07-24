@@ -7,6 +7,7 @@ import mock
 import zope.interface
 
 from letsencrypt import configuration
+from letsencrypt import errors as le_errors
 from letsencrypt_apache import configurator
 from tests.compatibility import errors
 from tests.compatibility import interfaces
@@ -28,14 +29,22 @@ class Proxy(configurators_common.Proxy):
         super(Proxy, self).__init__(args)
         self.le_config.apache_le_vhost_ext = "-le-ssl.conf"
 
-        self._patch = mock.patch('letsencrypt_apache.configurator.subprocess')
-        subprocess_mock = self._patch.start()
+        self._patches = list()
+        subprocess_patch = mock.patch(
+            "letsencrypt_apache.configurator.subprocess")
+        subprocess_mock = subprocess_patch.start()
         subprocess_mock.check_call = self.check_call_in_docker
         subprocess_mock.Popen = self.popen_in_docker
+        self._patches.append(subprocess_patch)
 
-        self.modules = self.version = self.test_conf = None
-        self._apache_configurator = None
-        self.server_root = self.modules = self.version = self.test_conf = None
+        display_patch = mock.patch(
+            "letsencrypt_apache.configurator.display_ops.select_vhost")
+        display_mock = display_patch.start()
+        display_mock.side_effect = le_errors.PluginError(
+            "Unable to determine vhost")
+        self._patches.append(display_mock)
+
+        self.modules = self.server_root = self.test_conf = self.version = None
         self._apache_configurator = self._all_names = self._test_names = None
 
     def __getattr__(self, name):
@@ -83,16 +92,21 @@ class Proxy(configurators_common.Proxy):
     def preprocess_config(self, server_root):
         # pylint: disable=anomalous-backslash-in-string, no-self-use
         """Prepares the configuration for use in the Docker"""
+
         find = subprocess.Popen(
             ["find", server_root, "-type", "f"],
             stdout=subprocess.PIPE)
         subprocess.check_call([
-            "xargs", "sed", "-e", "s/DocumentRoot.*/"
-            "DocumentRoot \/usr\/local\/apache2\/htdocs/I",
-            "-e", "s/SSLPassPhraseDialog.*/"
-            "SSLPassPhraseDialog builtin/I",
-            "-e", "s/TypesConfig.*/"
-            "TypesConfig \/usr\/local\/apache2\/conf\/mime.types/I",
+            "xargs", "sed", "-e", "s/DocumentRoot.*/DocumentRoot "
+            "\/usr\/local\/apache2\/htdocs/I",
+            "-e", "s/SSLPassPhraseDialog.*/SSLPassPhraseDialog builtin/I",
+            "-e", "s/TypesConfig.*/TypesConfig "
+            "\/usr\/local\/apache2\/conf\/mime.types/I",
+            "-e", "s/LoadModule/#LoadModule/I",
+            "-e", "s/SSLCertificateFile.*/SSLCertificateFile "
+            "\/usr\/local\/apache2\/conf\/empty_cert.pem/I",
+            "-e", "s/SSLCertificateKeyFile.*/SSLCertificateKeyFile "
+            "\/usr\/local\/apache2\/conf\/rsa1024_key2.pem/I",
             "-i"], stdin=find.stdout)
 
     def _prepare_configurator(self, server_root, config_file):
@@ -111,7 +125,8 @@ class Proxy(configurators_common.Proxy):
     def cleanup_from_tests(self):
         """Performs any necessary cleanup from running plugin tests"""
         super(Proxy, self).cleanup_from_tests()
-        self._patch.stop()
+        for patch in self._patches:
+            patch.stop()
 
     def get_all_names_answer(self):
         """Returns the set of domain names that the plugin should find"""

@@ -199,10 +199,11 @@ class DVSNI(DVChallenge):
 
     def probe_cert(self, domain, **kwargs):
         """Probe DVSNI challenge certificate."""
-        host = socket.gethostbyname(domain)
-        logging.debug('%s resolved to %s', domain, host)
+        if "host" not in kwargs:
+            host = socket.gethostbyname(domain)
+            logging.debug('%s resolved to %s', domain, host)
+            kwargs["host"] = host
 
-        kwargs.setdefault("host", host)
         kwargs.setdefault("port", self.PORT)
         kwargs["name"] = self.nonce_domain
         # TODO: try different methods?

@@ -11,6 +11,8 @@ ENV APACHE_RUN_USER=daemon \
     APACHE_LOG_DIR=/usr/local/apache2/logs 
 
 COPY tests/compatibility/configurators/apache/a2enmod.sh /usr/local/bin/
+COPY tests/compatibility/testdata/rsa1024_key2.pem /usr/local/apache2/conf/
+COPY tests/compatibility/testdata/empty_cert.pem /usr/local/apache2/conf/
 
 # Note: this only exposes the port to other docker containers. You
 # still have to bind to 443@host at runtime.

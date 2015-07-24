@@ -1,1 +1,1 @@
-include compatibility/testdata/rsa1024_key.pem
+recursive-include tests/compatibility/testdata/ *

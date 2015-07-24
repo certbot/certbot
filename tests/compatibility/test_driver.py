@@ -28,7 +28,6 @@ tests that the plugin supports are performed.
 
 """
 
-
 PLUGINS = {"apache" : apache24.Proxy}
 
 
@@ -36,44 +35,57 @@ logger = logging.getLogger(__name__)
 
 
 def test_authenticator(plugin, config, temp_dir):
-    """Tests plugin as an authenticator"""
+    """Tests authenticator, returning True if the tests are successful"""
     backup = _create_backup(config, temp_dir)
 
     achalls = _create_achalls(plugin)
     if not achalls:
-        return
+        # Plugin/tests support no common challenge types
+        return True
 
     try:
         responses = plugin.perform(achalls)
-        for i in xrange(len(responses)):
-            if not responses[i]:
-                logger.error(
-                    "Plugin returned `None` or `False` response to challenge "
-                    "for config `%s`", config)
-            elif isinstance(responses[i], challenges.DVSNIResponse):
-                if responses[i].simple_verify(achalls[i],
-                                              achalls[i].domain,
-                                              util.JWK.key.public_key(),
-                                              host="127.0.0.1",
-                                              port=plugin.https_port):
-                    logger.info(
-                        "Verification of DVSNI response for %s succeeded",
-                        achalls[i].domain)
-                else:
-                    logger.error(
-                        "Verification of DVSNI response for %s in config '%s' "
-                        "failed ", achalls[i].domain, config)
     except le_errors.Error as error:
-        logger.info(
-            "Plugin raised %s during authentication with config '%s'",
-            error, config)
-    finally:
-        plugin.cleanup(achalls)
+        logger.error("Performing challenges on %s caused an error:", config)
+        logger.exception(error)
+        return False
 
-    if _dirs_are_unequal(config, backup):
-        logger.error("Challenge cleanup failed for config %s", config)
-    else:
-        logger.info("Challenge cleanup succeeded")
+    success = True
+    for i in xrange(len(responses)):
+        if not responses[i]:
+            logger.error(
+                "Plugin failed to complete %s for %s in %s",
+                type(achalls[i]), achalls[i].domain, config)
+            success = False
+        elif isinstance(responses[i], challenges.DVSNIResponse):
+            if responses[i].simple_verify(achalls[i],
+                                          achalls[i].domain,
+                                          util.JWK.key.public_key(),
+                                          host="127.0.0.1",
+                                          port=plugin.https_port):
+                logger.info(
+                    "DVSNI verification for %s succeeded", achalls[i].domain)
+            else:
+                logger.error(
+                    "DVSNI verification for %s in %s failed",
+                    achalls[i].domain, config)
+                success = False
+
+    if success:
+        try:
+            plugin.cleanup(achalls)
+        except le_errors.Error as error:
+            logger.error("Challenge cleanup for %s caused an error:", config)
+            logger.exception(error)
+            success = False
+
+        if _dirs_are_unequal(config, backup):
+            logger.error("Challenge cleanup failed for %s", config)
+            return False
+        else:
+            logger.info("Challenge cleanup succeeded")
+
+    return success
 
 
 def _create_achalls(plugin):
@@ -100,16 +112,20 @@ def test_installer(args, plugin, config, temp_dir):
     """Tests plugin as an installer"""
     backup = _create_backup(config, temp_dir)
 
-    if plugin.get_all_names().issubset(plugin.get_all_names_answer()):
+    names_match = plugin.get_all_names() == plugin.get_all_names_answer()
+    if names_match:
         logger.info("get_all_names test succeeded")
     else:
-        logger.error("get_all_names test failed for config `%s`", config)
+        logger.error("get_all_names test failed for config %s", config)
 
     domains = list(plugin.get_testable_domain_names())
-    if test_deploy_cert(plugin, temp_dir, domains) and args.enhance:
-        test_enhancements(plugin, domains)
+    success = test_deploy_cert(plugin, temp_dir, domains)
 
-    test_rollback(plugin, config, backup)
+    if success and args.enhance:
+        success = test_enhancements(plugin, domains)
+
+    good_rollback = test_rollback(plugin, config, backup)
+    return names_match and success and good_rollback
 
 
 def test_deploy_cert(plugin, temp_dir, domains):
@@ -121,9 +137,15 @@ def test_deploy_cert(plugin, temp_dir, domains):
             OpenSSL.crypto.FILETYPE_PEM, cert))
 
     for domain in domains:
-        plugin.deploy_cert(domain, cert_path, util.KEY_PATH)
-    plugin.save("deployed")
-    plugin.restart()
+        try:
+            plugin.deploy_cert(domain, cert_path, util.KEY_PATH)
+        except le_errors.Error as error:
+            logger.error("Plugin failed to deploy ceritificate for %s:", domain)
+            logger.exception(error)
+            return False
+
+    if not _save_and_restart(plugin, "deployed"):
+        return False
 
     verify_cert = validator.Validator().certificate
     success = True
@@ -139,17 +161,22 @@ def test_deploy_cert(plugin, temp_dir, domains):
 
 
 def test_enhancements(plugin, domains):
-    """Tests enhancements supported by the plugin"""
+    """Tests supported enhancements returning True if successful"""
     supported = plugin.supported_enhancements()
 
     if "redirect" not in supported:
-        return
+        return True
 
     for domain in domains:
-        plugin.enhance(domain, "redirect")
+        try:
+            plugin.enhance(domain, "redirect")
+        except le_errors.Error as error:
+            logger.error("Plugin failed to enable redirect for %s:", domain)
+            logger.exception(error)
+            return False
 
-    plugin.save("enhanced")
-    plugin.restart()
+    if not _save_and_restart(plugin, "enhanced"):
+        return False
 
     verify_redirect = functools.partial(
         validator.Validator().redirect, "localhost", plugin.http_port)
@@ -162,15 +189,36 @@ def test_enhancements(plugin, domains):
     if success:
         logger.info("Enhancments test succeeded")
 
+    return success
+
+
+def _save_and_restart(plugin, title=None):
+    """Saves and restart the plugin, returning True if no errors occurred"""
+    try:
+        plugin.save(title)
+        plugin.restart()
+        return True
+    except le_errors.Error as error:
+        logger.error("Plugin failed to save and restart server:")
+        logger.exception(error)
+        return False
+
 
 def test_rollback(plugin, config, backup):
     """Tests the rollback checkpoints function"""
-    plugin.rollback_checkpoints(2)
+    try:
+        plugin.rollback_checkpoints(2)
+    except le_errors.Error as error:
+        logger.error("Plugin raised an exception during rollback:")
+        logger.exception(error)
+        return False
 
     if _dirs_are_unequal(config, backup):
         logger.error("Rollback failed for config `%s`", config)
+        return False
     else:
         logger.info("Rollback succeeded")
+        return True
 
 
 def _create_backup(config, temp_dir):
@@ -249,15 +297,24 @@ def main():
     try:
         plugin.execute_in_docker("mkdir -p /var/log/apache2")
         while plugin.has_more_configs():
+            success = True
+
             try:
                 config = plugin.load_config()
                 logger.info("Loaded configuration: %s", config)
                 if args.auth:
-                    test_authenticator(plugin, config, temp_dir)
-                if args.install:
-                    test_installer(args, plugin, config, temp_dir)
+                    success = test_authenticator(plugin, config, temp_dir)
+                if success and args.install:
+                    success = test_installer(args, plugin, config, temp_dir)
             except errors.Error as error:
-                logger.error("Tests on config `%s` raised: %s", config, error)
+                logger.error("Tests on %s raised:", config)
+                logger.exception(error)
+                success = False
+
+            if success:
+                logger.info("All tests on %s succeeded", config)
+            else:
+                logger.error("Tests on %s failed", config)
     finally:
         plugin.cleanup_from_tests()
 
