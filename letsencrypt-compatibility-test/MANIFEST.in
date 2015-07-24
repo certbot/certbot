@@ -1,1 +1,1 @@
-include letsencrypt_compatibility_test/testdata/rsa1024_key.pem
+recursive-include letsencrypt_compatibility_test/testdata *
