@@ -145,7 +145,7 @@ binary for temporary key/certificate generation.""".replace("\n", "")
                     # "preexec_fn" is UNIX specific, but so is "command"
                     preexec_fn=os.setsid)
             except OSError as error:  # ValueError should not happen!
-                logging.debug(
+                logger.debug(
                     "Couldn't execute manual command: %s", error, exc_info=True)
                 return False
             logger.debug("Manual command running as PID %s.", self._httpd.pid)
