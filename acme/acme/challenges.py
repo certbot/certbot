@@ -179,7 +179,7 @@ class DVSNI(DVChallenge):
         """Generate response.
 
         :param .JWK account_key: Private account key.
-        :rtype: .JWS
+        :rtype: .DVSNIResponse
 
         """
         return DVSNIResponse(validation=jose.JWS.sign(
@@ -287,9 +287,6 @@ class DVSNIResponse(ChallengeResponse):
 
         :param .challenges.DVSNI chall: Corresponding challenge.
         :param str domain: Domain name being validated.
-        :param public_key: Public key for the key pair
-            being authorized. If ``None`` key verification is not
-            performed!
         :type account_public_key:
             `~cryptography.hazmat.primitives.asymmetric.rsa.RSAPublicKey`
             or
