@@ -201,6 +201,10 @@ class StandaloneAuthenticator(common.Plugin):
         """
         signal.signal(signal.SIGINT, self.subproc_signal_handler)
         self.sock = socket.socket()
+        # SO_REUSEADDR flag tells the kernel to reuse a local socket
+        # in TIME_WAIT state, without waiting for its natural timeout
+        # to expire.
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
             self.sock.bind(("0.0.0.0", port))
         except socket.error, error:

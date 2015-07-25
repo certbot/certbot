@@ -23,6 +23,8 @@ common() {
 
 common --domains le1.wtf auth
 common --domains le2.wtf run
+common -a manual -d le.wtf auth
+common -a manual -d le.wtf --no-simple-http-tls auth
 
 export CSR_PATH="${root}/csr.der" KEY_PATH="${root}/key.pem" \
        OPENSSL_CNF=examples/openssl.cnf
