@@ -326,7 +326,8 @@ def decode_b64jose(data, size=None, minimum=False):
 
     if size is not None and ((not minimum and len(decoded) != size)
                              or (minimum and len(decoded) < size)):
-        raise errors.DeserializationError()
+        raise errors.DeserializationError(
+            "Expected at least or exactly {0} bytes".format(size))
 
     return decoded
 
