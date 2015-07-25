@@ -114,6 +114,17 @@ class DvsniPerformTest(util.ApacheTest):
                 names == set([self.achalls[0].nonce_domain]) or
                 names == set([self.achalls[1].nonce_domain]))
 
+    def test_get_dvsni_addrs_default(self):
+        self.sni.configurator.choose_vhost = mock.Mock(
+            return_value=obj.VirtualHost(
+                "path", "aug_path", set([obj.Addr.fromstring("_default_:443")]),
+                False, False)
+        )
+
+        self.assertEqual(
+            set([obj.Addr.fromstring("*:443")]),
+            self.sni.get_dvsni_addrs(self.achalls[0]))
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

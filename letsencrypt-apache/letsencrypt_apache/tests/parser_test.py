@@ -22,6 +22,12 @@ class BasicParserTest(util.ParserTest):
         shutil.rmtree(self.config_dir)
         shutil.rmtree(self.work_dir)
 
+    def test_find_config_root_no_root(self):
+        # pylint: disable=protected-access
+        os.remove(self.parser.loc["root"])
+        self.assertRaises(
+            errors.NoInstallationError, self.parser._find_config_root)
+
     def test_parse_file(self):
         """Test parse_file.
 

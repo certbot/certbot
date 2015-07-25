@@ -118,11 +118,6 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
         self.ssl = ssl
         self.enabled = enabled
 
-    def add_names(self, servername, serveralias):
-        """Add name to vhost."""
-        self.name = servername
-        self.aliases = serveralias
-
     def get_names(self):
         """Return a set of all names."""
         all_names = set()

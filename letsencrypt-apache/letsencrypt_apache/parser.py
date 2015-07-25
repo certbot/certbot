@@ -396,7 +396,10 @@ class ApacheParser(object):
             arg = os.path.normpath(os.path.join(self.root, arg))
 
         # Attempts to add a transform to the file if one does not already exist
-        self._parse_file(arg)
+        if os.path.isdir(arg):
+            self._parse_file(os.path.join(arg, "*"))
+        else:
+            self._parse_file(arg)
 
         # Argument represents an fnmatch regular expression, convert it
         # Split up the path and convert each into an Augeas accepted regex
@@ -409,11 +412,9 @@ class ApacheParser(object):
                 split_arg[idx] = ("* [label()=~regexp('%s')]" %
                                   self.fnmatch_to_re(split))
         # Reassemble the argument
+        # Note: This also normalizes the argument /serverroot/ -> /serverroot
         arg = "/".join(split_arg)
 
-        # If the include is a directory, just return the directory as a file
-        if arg.endswith("/"):
-            return get_aug_path(arg[:-1])
         return get_aug_path(arg)
 
     def fnmatch_to_re(self, clean_fn_match):  # pylint: disable=no-self-use

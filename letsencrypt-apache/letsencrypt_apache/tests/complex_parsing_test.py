@@ -36,6 +36,7 @@ class ComplexParserTest(util.ParserTest):
         )
 
     def test_filter_args_num(self):
+        """Note: This may also fail do to Include conf-enabled/ syntax."""
         matches = self.parser.find_dir("TestArgsDirective")
 
         self.assertEqual(len(self.parser.filter_args_num(matches, 1)), 3)

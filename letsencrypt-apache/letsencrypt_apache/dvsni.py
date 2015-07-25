@@ -114,7 +114,7 @@ class ApacheDvsni(common.Dvsni):
 
         # TODO: Checkout _default_ rules.
         dvsni_addrs = set()
-        default_addr = obj.Addr(("*", self.configurator.config.dvsni_port))
+        default_addr = obj.Addr(("*", str(self.configurator.config.dvsni_port)))
 
         for addr in vhost.addrs:
             if "_default_" == addr.get_addr():
