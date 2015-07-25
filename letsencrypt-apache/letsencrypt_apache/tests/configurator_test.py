@@ -177,7 +177,7 @@ class TwoVhost80Test(util.ApacheTest):
         self.assertTrue("mod_ssl.c" in self.config.parser.modules)
 
     def test_enable_mod_unsupported_dirs(self):
-        os.removedirs(os.path.join(self.config.parser.root, "mods-enabled"))
+        shutil.rmtree(os.path.join(self.config.parser.root, "mods-enabled"))
         self.assertRaises(
             errors.NotSupportedError, self.config.enable_mod, "ssl")
 
