@@ -98,8 +98,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             help="Path to the 'apache2ctl' binary, used for 'configtest', "
                  "retrieving the Apache2 version number, and initialization "
                  "parameters.")
-        add("enmod", default=constants.CLI_DEFAULTS["enmod"],
-            help="Path to the Apache 'a2enmod' binary.")
         add("init-script", default=constants.CLI_DEFAULTS["init_script"],
             help="Path to the Apache init script (used for server "
             "reload/restart).")
