@@ -368,58 +368,6 @@ class RecoveryContactResponseTest(unittest.TestCase):
         self.assertEqual(self.jmsg, msg.to_partial_json())
 
 
-class RecoveryTokenTest(unittest.TestCase):
-
-    def setUp(self):
-        from acme.challenges import RecoveryToken
-        self.msg = RecoveryToken()
-        self.jmsg = {'type': 'recoveryToken'}
-
-    def test_to_partial_json(self):
-        self.assertEqual(self.jmsg, self.msg.to_partial_json())
-
-    def test_from_json(self):
-        from acme.challenges import RecoveryToken
-        self.assertEqual(self.msg, RecoveryToken.from_json(self.jmsg))
-
-    def test_from_json_hashable(self):
-        from acme.challenges import RecoveryToken
-        hash(RecoveryToken.from_json(self.jmsg))
-
-
-class RecoveryTokenResponseTest(unittest.TestCase):
-
-    def setUp(self):
-        from acme.challenges import RecoveryTokenResponse
-        self.msg = RecoveryTokenResponse(token='23029d88d9e123e')
-        self.jmsg = {
-            'resource': 'challenge',
-            'type': 'recoveryToken',
-            'token': '23029d88d9e123e'
-        }
-
-    def test_to_partial_json(self):
-        self.assertEqual(self.jmsg, self.msg.to_partial_json())
-
-    def test_from_json(self):
-        from acme.challenges import RecoveryTokenResponse
-        self.assertEqual(
-            self.msg, RecoveryTokenResponse.from_json(self.jmsg))
-
-    def test_from_json_hashable(self):
-        from acme.challenges import RecoveryTokenResponse
-        hash(RecoveryTokenResponse.from_json(self.jmsg))
-
-    def test_json_without_optionals(self):
-        del self.jmsg['token']
-
-        from acme.challenges import RecoveryTokenResponse
-        msg = RecoveryTokenResponse.from_json(self.jmsg)
-
-        self.assertTrue(msg.token is None)
-        self.assertEqual(self.jmsg, msg.to_partial_json())
-
-
 class ProofOfPossessionHintsTest(unittest.TestCase):
 
     def setUp(self):

@@ -99,12 +99,6 @@ class RecoveryContact(AnnotatedChallenge):
     acme_type = challenges.RecoveryContact
 
 
-class RecoveryToken(AnnotatedChallenge):
-    """Client annotated "recoveryToken" ACME challenge."""
-    __slots__ = ('challb', 'domain')
-    acme_type = challenges.RecoveryToken
-
-
 class ProofOfPossession(AnnotatedChallenge):
     """Client annotated "proofOfPossession" ACME challenge."""
     __slots__ = ('challb', 'domain')

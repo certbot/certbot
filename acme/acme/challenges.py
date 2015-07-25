@@ -360,23 +360,6 @@ class RecoveryContactResponse(ChallengeResponse):
 
 
 @Challenge.register
-class RecoveryToken(ContinuityChallenge):
-    """ACME "recoveryToken" challenge."""
-    typ = "recoveryToken"
-
-
-@ChallengeResponse.register
-class RecoveryTokenResponse(ChallengeResponse):
-    """ACME "recoveryToken" challenge response.
-
-    :ivar unicode token:
-
-    """
-    typ = "recoveryToken"
-    token = jose.Field("token", omitempty=True)
-
-
-@Challenge.register
 class ProofOfPossession(ContinuityChallenge):
     """ACME "proofOfPossession" challenge.
 

@@ -349,8 +349,6 @@ def challb_to_achall(challb, account, domain):
             challb=challb, domain=domain, key=account.key)
     elif isinstance(chall, challenges.DNS):
         return achallenges.DNS(challb=challb, domain=domain)
-    elif isinstance(chall, challenges.RecoveryToken):
-        return achallenges.RecoveryToken(challb=challb, domain=domain)
     elif isinstance(chall, challenges.RecoveryContact):
         return achallenges.RecoveryContact(
             challb=challb, domain=domain)

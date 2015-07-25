@@ -21,7 +21,6 @@ RECOVERY_CONTACT = challenges.RecoveryContact(
     activation_url="https://example.ca/sendrecovery/a5bd99383fb0",
     success_url="https://example.ca/confirmrecovery/bb1b9928932",
     contact="c********n@example.com")
-RECOVERY_TOKEN = challenges.RecoveryToken()
 POP = challenges.ProofOfPossession(
     alg="RS256", nonce=jose.b64decode("eET5udtV7aoX8Xl8gYiZIA"),
     hints=challenges.ProofOfPossession.Hints(
@@ -42,7 +41,7 @@ POP = challenges.ProofOfPossession(
     )
 )
 
-CHALLENGES = [SIMPLE_HTTP, DVSNI, DNS, RECOVERY_CONTACT, RECOVERY_TOKEN, POP]
+CHALLENGES = [SIMPLE_HTTP, DVSNI, DNS, RECOVERY_CONTACT, POP]
 DV_CHALLENGES = [chall for chall in CHALLENGES
                  if isinstance(chall, challenges.DVChallenge)]
 CONT_CHALLENGES = [chall for chall in CHALLENGES
@@ -84,11 +83,9 @@ DVSNI_P = chall_to_challb(DVSNI, messages.STATUS_PENDING)
 SIMPLE_HTTP_P = chall_to_challb(SIMPLE_HTTP, messages.STATUS_PENDING)
 DNS_P = chall_to_challb(DNS, messages.STATUS_PENDING)
 RECOVERY_CONTACT_P = chall_to_challb(RECOVERY_CONTACT, messages.STATUS_PENDING)
-RECOVERY_TOKEN_P = chall_to_challb(RECOVERY_TOKEN, messages.STATUS_PENDING)
 POP_P = chall_to_challb(POP, messages.STATUS_PENDING)
 
-CHALLENGES_P = [SIMPLE_HTTP_P, DVSNI_P, DNS_P,
-                RECOVERY_CONTACT_P, RECOVERY_TOKEN_P, POP_P]
+CHALLENGES_P = [SIMPLE_HTTP_P, DVSNI_P, DNS_P, RECOVERY_CONTACT_P, POP_P]
 DV_CHALLENGES_P = [challb for challb in CHALLENGES_P
                    if isinstance(challb.chall, challenges.DVChallenge)]
 CONT_CHALLENGES_P = [
