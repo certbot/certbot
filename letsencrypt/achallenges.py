@@ -17,6 +17,8 @@ Note, that all annotated challenges act as a proxy objects::
   achall.token == challb.token
 
 """
+import OpenSSL
+
 from acme import challenges
 from acme.jose import util as jose_util
 
@@ -48,7 +50,7 @@ class DVSNI(AnnotatedChallenge):
     acme_type = challenges.DVSNI
 
     def gen_cert_and_response(self, s=None):  # pylint: disable=invalid-name
-        """Generate a DVSNI cert and save it to filepath.
+        """Generate a DVSNI cert and response.
 
         :returns: ``(cert_pem, response)`` tuple,  where ``cert_pem`` is the PEM
             encoded  certificate and ``response`` is an instance
@@ -56,9 +58,12 @@ class DVSNI(AnnotatedChallenge):
         :rtype: tuple
 
         """
+        key = crypto_util.private_jwk_to_pyopenssl(self.key)
         response = challenges.DVSNIResponse(s=s)
-        cert_pem = crypto_util.make_ss_cert(self.key, [
-            self.domain, self.nonce_domain, response.z_domain(self.challb)])
+        cert = response.gen_cert(self.challb.chall, self.domain, key)
+        cert_pem = OpenSSL.crypto.dump_certificate(
+            OpenSSL.crypto.FILETYPE_PEM, cert)
+
         return cert_pem, response
 
 

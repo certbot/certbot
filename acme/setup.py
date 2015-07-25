@@ -13,7 +13,8 @@ install_requires = [
     'pyrfc3339',
     'ndg-httpsclient',  # urllib3 InsecurePlatformWarning (#304)
     'pyasn1',  # urllib3 InsecurePlatformWarning (#304)
-    'PyOpenSSL',
+    # Connection.set_tlsext_host_name (>=0.13), X509Req.get_extensions (>=0.15)
+    'PyOpenSSL>=0.15',
     'pytz',
     'requests',
     'six',
