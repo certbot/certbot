@@ -3,6 +3,8 @@ import argparse
 import functools
 import os
 import pkg_resources
+import subprocess
+import tarfile
 import tempfile
 import unittest
 
@@ -11,10 +13,14 @@ import mock
 import letshelp_letsencrypt.letshelp_letsencrypt_apache as letshelp_le_apache
 
 
-_PASSWD_FILE = pkg_resources.resource_filename(__name__, "testdata/passwd")
-_CONF_FILE = pkg_resources.resource_filename(
-    __name__, "testdata/conf-available/charset.conf")
-
+_PARTIAL_CONF_PATH = os.path.join("mods-available", "ssl.load")
+_PARTIAL_LINK_PATH = os.path.join("mods-enabled", "ssl.load")
+_CONFIG_FILE = pkg_resources.resource_filename(
+    __name__, os.path.join("testdata", _PARTIAL_CONF_PATH))
+_PASSWD_FILE = pkg_resources.resource_filename(
+    __name__, os.path.join("testdata", "passwd"))
+_KEY_FILE = pkg_resources.resource_filename(
+    __name__, os.path.join("testdata", "key"))
 
 _MODULE_NAME = "letshelp_letsencrypt.letshelp_letsencrypt_apache"
 
@@ -52,7 +58,7 @@ Server compiled with....
 class LetsHelpApacheTest(unittest.TestCase):
     @mock.patch(_MODULE_NAME + ".copy_config")
     def test_make_and_verify_selection(self, mock_copy_config):
-        mock_copy_config.return_value = ["apache2.conf"], ["apache2"]
+        mock_copy_config.return_value = (["apache2.conf"], ["apache2"])
 
         with mock.patch("__builtin__.raw_input") as mock_input:
             with mock.patch(_MODULE_NAME + ".sys.stdout"):
@@ -68,11 +74,14 @@ class LetsHelpApacheTest(unittest.TestCase):
         letshelp_le_apache.copy_config(server_root, tempdir)
 
         temp_testdata = os.path.join(tempdir, "testdata")
-        self.assertFalse(os.path.exists(os.path.join(temp_testdata, "passwd")))
+        self.assertFalse(os.path.exists(os.path.join(
+            temp_testdata, os.path.basename(_PASSWD_FILE))))
+        self.assertFalse(os.path.exists(os.path.join(
+            temp_testdata, os.path.basename(_KEY_FILE))))
         self.assertTrue(os.path.exists(os.path.join(
-            temp_testdata, "conf-available", "charset.conf")))
+            temp_testdata, _PARTIAL_CONF_PATH)))
         self.assertTrue(os.path.exists(os.path.join(
-            temp_testdata, "conf-enabled", "charset.conf")))
+            temp_testdata, _PARTIAL_LINK_PATH)))
 
     def test_copy_file_without_comments(self):
         dest = tempfile.mkstemp()[1]
@@ -90,15 +99,13 @@ class LetsHelpApacheTest(unittest.TestCase):
 
         mock_check_output.return_value = "ASCII text"
         self.assertFalse(letshelp_le_apache.safe_config_file(_PASSWD_FILE))
-        self.assertTrue(letshelp_le_apache.safe_config_file(_CONF_FILE))
+        self.assertFalse(letshelp_le_apache.safe_config_file(_KEY_FILE))
+        self.assertTrue(letshelp_le_apache.safe_config_file(_CONFIG_FILE))
 
     @mock.patch(_MODULE_NAME + ".subprocess.check_output")
     def test_tempdir(self, mock_check_output):
         mock_check_output.side_effect = ["version", "modules", "vhosts"]
-        args = argparse.Namespace()
-        args.apache_ctl = "apache_ctl"
-        args.config_file = "config_file"
-        args.server_root = "server_root"
+        args = _get_args()
 
         tempdir = letshelp_le_apache.setup_tempdir(args)
 
@@ -113,6 +120,16 @@ class LetsHelpApacheTest(unittest.TestCase):
 
         with open(os.path.join(tempdir, "vhosts")) as vhosts_fd:
             self.assertEqual(vhosts_fd.read(), "vhosts")
+
+    @mock.patch(_MODULE_NAME + ".subprocess.check_call")
+    def test_verify_config(self, mock_check_call):
+        args = _get_args()
+        mock_check_call.side_effect = [
+            None, OSError, subprocess.CalledProcessError(1, "apachectl")]
+
+        letshelp_le_apache.verify_config(args)
+        self.assertRaises(SystemExit, letshelp_le_apache.verify_config, args)
+        self.assertRaises(SystemExit, letshelp_le_apache.verify_config, args)
 
     @mock.patch(_MODULE_NAME + ".subprocess.check_output")
     def test_locate_config(self, mock_check_output):
@@ -148,6 +165,45 @@ class LetsHelpApacheTest(unittest.TestCase):
         mock_argparse.ArgumentParser.return_value = _create_mock_parser(argv)
         self.assertRaises(SystemExit, letshelp_le_apache.get_args)
 
+    def test_main_with_args(self):
+        with mock.patch(_MODULE_NAME + ".get_args"):
+            self._test_main_common()
+
+    def test_main_without_args(self):
+        with mock.patch(_MODULE_NAME + ".get_args") as get_args:
+            args = _get_args()
+            server_root, config_file = args.server_root, args.config_file
+            args.server_root = args.config_file = None
+            get_args.return_value = args
+            with mock.patch(_MODULE_NAME + ".locate_config") as locate:
+                locate.return_value = (server_root, config_file)
+                self._test_main_common()
+
+    def _test_main_common(self):
+        with mock.patch(_MODULE_NAME + ".verify_config"):
+            with mock.patch(_MODULE_NAME + ".setup_tempdir") as mock_setup:
+                tempdir_path = tempfile.mkdtemp()
+                mock_setup.return_value = tempdir_path
+                with mock.patch(_MODULE_NAME + ".make_and_verify_selection"):
+                    testdir_basename = "test"
+                    os.mkdir(os.path.join(tempdir_path, testdir_basename))
+
+                    letshelp_le_apache.main()
+
+                    tar = tarfile.open(os.path.join(
+                        tempdir_path, "config.tar.gz"))
+
+                    tempdir = tar.next()
+                    self.assertTrue(tempdir.isdir())
+                    self.assertEqual(tempdir.name, ".")
+
+                    testdir = tar.next()
+                    self.assertTrue(testdir.isdir())
+                    testdir_path = os.path.join(".", testdir_basename)
+                    self.assertEqual(testdir.name, testdir_path)
+
+                    self.assertEqual(tar.next(), None)
+
 
 def _create_mock_parser(argv):
     parser = argparse.ArgumentParser()
@@ -156,6 +212,15 @@ def _create_mock_parser(argv):
     mock_parser.parse_args = functools.partial(parser.parse_args, argv)
 
     return mock_parser
+
+
+def _get_args():
+    args = argparse.Namespace()
+    args.apache_ctl = "apache_ctl"
+    args.config_file = "config_file"
+    args.server_root = "server_root"
+
+    return args
 
 
 if __name__ == "__main__":
