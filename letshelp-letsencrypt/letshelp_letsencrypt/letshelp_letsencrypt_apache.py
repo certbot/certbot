@@ -29,6 +29,11 @@ argument and the path to the binary.
 """
 
 
+# Keywords likely to be found in filenames of sensitive files
+_SENSITIVE_KEYWORDS = ["private", "secret", "cert", "crt", "key", "pem", "der",
+                       "rsa", "dsa", "pass", "pw"]
+
+
 def make_and_verify_selection(server_root, temp_dir):
     """Copies server_root to temp_dir and verifies selection with the user
 
@@ -55,10 +60,10 @@ def make_and_verify_selection(server_root, temp_dir):
 
     sys.stdout.write("\nIs it safe to submit these files? ")
     while True:
-        ans = raw_input("(Y)es/(N)o: ")
-        if ans.startswith("Y") or ans.startswith("y"):
+        ans = raw_input("(Y)es/(N)o: ").lower()
+        if ans.startswith("y"):
             return
-        elif ans.startswith("N") or ans.startswith("n"):
+        elif ans.startswith("n"):
             sys.exit("Your files were not submitted")
 
 
@@ -125,9 +130,13 @@ def safe_config_file(config_file):
     :rtype: bool
 
     """
-    file_output = subprocess.check_output(
-        ["file", config_file], close_fds=True, stderr=open(os.devnull, "w")
-    )
+    for keyword in _SENSITIVE_KEYWORDS:
+        if keyword in config_file:
+            return False
+
+    proc = subprocess.Popen(["file", config_file],
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    file_output, _ = proc.communicate()
 
     if "ASCII" in file_output:
         possible_password_file = empty_or_all_comments = True
@@ -162,25 +171,22 @@ def setup_tempdir(args):
     with open(os.path.join(tempdir, "config_file"), "w") as config_fd:
         config_fd.write(args.config_file + "\n")
 
+    proc = subprocess.Popen([args.apache_ctl, "-v"],
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     with open(os.path.join(tempdir, "version"), "w") as version_fd:
-        version_fd.write(subprocess.check_output(
-            [args.apache_ctl, "-v"], close_fds=True,
-            stderr=open(os.devnull, "w")
-        ))
+        version_fd.write(proc.communicate()[0])
 
+    proc = subprocess.Popen([args.apache_ctl, "-d", args.server_root, "-f",
+                             args.config_file, "-M"],
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     with open(os.path.join(tempdir, "modules"), "w") as modules_fd:
-        modules_fd.write(subprocess.check_output(
-            [args.apache_ctl, "-d", args.server_root,
-             "-f", args.config_file, "-M"], close_fds=True,
-            stderr=open(os.devnull, "w")
-        ))
+        modules_fd.write(proc.communicate()[0])
 
+    proc = subprocess.Popen([args.apache_ctl, "-d", args.server_root, "-f",
+                             args.config_file, "-t", "-D", "DUMP_VHOSTS"],
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     with open(os.path.join(tempdir, "vhosts"), "w") as vhosts_fd:
-        vhosts_fd.write(subprocess.check_output(
-            [args.apache_ctl, "-d", args.server_root, "-f",
-             args.config_file, "-t", "-D", "DUMP_VHOSTS"], close_fds=True,
-            stderr=open(os.devnull, "w")
-        ))
+        vhosts_fd.write(proc.communicate()[0])
 
     return tempdir
 
@@ -192,11 +198,10 @@ def verify_config(args):
 
     """
     try:
-        subprocess.check_call(
-            [args.apache_ctl, "-d", args.server_root,
-             "-f", args.config_file, "-t"], close_fds=True,
-            stdout=open(os.devnull, "w"), stderr=open(os.devnull, "w")
-        )
+        with open(os.devnull, "w") as devnull:
+            subprocess.check_call([args.apache_ctl, "-d", args.server_root,
+                                   "-f", args.config_file, "-t"],
+                                  stdout=devnull, stderr=subprocess.STDOUT)
     except OSError:
         sys.exit(_NO_APACHECTL)
     except subprocess.CalledProcessError:
@@ -214,9 +219,9 @@ def locate_config(apache_ctl):
 
     """
     try:
-        output = subprocess.check_output(
-            [apache_ctl, "-V"], close_fds=True, stderr=open(os.devnull, "w")
-        )
+        proc = subprocess.Popen([apache_ctl, "-V"],
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output, _ = proc.communicate()
     except OSError:
         sys.exit(_NO_APACHECTL)
 
@@ -229,10 +234,8 @@ def locate_config(apache_ctl):
             config_file = line[line.find("\"")+1:-1]
 
     if not (server_root and config_file):
-        sys.exit(
-            "Unable to locate Apache configuration. Please run this script "
-            "again and specify --server-root and --config-file"
-        )
+        sys.exit("Unable to locate Apache configuration. Please run this "
+                 "script again and specify --server-root and --config-file")
 
     return server_root, config_file
 
@@ -245,27 +248,20 @@ def get_args():
 
     """
     parser = argparse.ArgumentParser(description=_DESCRIPTION)
-    parser.add_argument(
-        "-c", "--apache-ctl", default="apachectl",
-        help="path to the `apachectl` binary"
-    )
-    parser.add_argument(
-        "-d", "--server-root",
-        help="location of the root directory of your Apache configuration"
-    )
-    parser.add_argument(
-        "-f", "--config-file",
-        help="location of your main Apache configuration file relative to the "
-             "server root"
-    )
+    parser.add_argument("-c", "--apache-ctl", default="apachectl",
+                        help="path to the `apachectl` binary")
+    parser.add_argument("-d", "--server-root",
+                        help=("location of the root directory of your Apache "
+                              "configuration"))
+    parser.add_argument("-f", "--config-file",
+                        help=("location of your main Apache configuration "
+                              "file relative to the server root"))
     args = parser.parse_args()
 
     # args.server_root XOR args.config_file
     if bool(args.server_root) != bool(args.config_file):
-        sys.exit(
-            "If either --server-root and --config-file are specified, they "
-            "both must be included"
-        )
+        sys.exit("If either --server-root and --config-file are specified, "
+                 "they both must be included")
     elif args.server_root and args.config_file:
         args.server_root = os.path.abspath(args.server_root)
         args.config_file = os.path.abspath(args.config_file)
@@ -273,10 +269,8 @@ def get_args():
         if args.config_file.startswith(args.server_root):
             args.config_file = args.config_file[len(args.server_root)+1:]
         else:
-            sys.exit(
-                "This script expects the Apache configuration file to be "
-                "inside the server root"
-            )
+            sys.exit("This script expects the Apache configuration file to be "
+                     "inside the server root")
 
     return args
 

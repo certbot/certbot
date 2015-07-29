@@ -18,9 +18,12 @@ _PARTIAL_LINK_PATH = os.path.join("mods-enabled", "ssl.load")
 _CONFIG_FILE = pkg_resources.resource_filename(
     __name__, os.path.join("testdata", _PARTIAL_CONF_PATH))
 _PASSWD_FILE = pkg_resources.resource_filename(
-    __name__, os.path.join("testdata", "passwd"))
+    __name__, os.path.join("testdata", "uncommonly_named_p4sswd"))
 _KEY_FILE = pkg_resources.resource_filename(
-    __name__, os.path.join("testdata", "key"))
+    __name__, os.path.join("testdata", "uncommonly_named_k3y"))
+_SECRET_FILE = pkg_resources.resource_filename(
+    __name__, os.path.join("testdata", "super_secret_file.txt"))
+
 
 _MODULE_NAME = "letshelp_letsencrypt.letshelp_letsencrypt_apache"
 
@@ -78,6 +81,8 @@ class LetsHelpApacheTest(unittest.TestCase):
             temp_testdata, os.path.basename(_PASSWD_FILE))))
         self.assertFalse(os.path.exists(os.path.join(
             temp_testdata, os.path.basename(_KEY_FILE))))
+        self.assertFalse(os.path.exists(os.path.join(
+            temp_testdata, os.path.basename(_SECRET_FILE))))
         self.assertTrue(os.path.exists(os.path.join(
             temp_testdata, _PARTIAL_CONF_PATH)))
         self.assertTrue(os.path.exists(os.path.join(
@@ -92,19 +97,21 @@ class LetsHelpApacheTest(unittest.TestCase):
                 for original_line, copied_line in zip(original, copy):
                     self.assertEqual(original_line, copied_line)
 
-    @mock.patch(_MODULE_NAME + ".subprocess.check_output")
-    def test_safe_config_file(self, mock_check_output):
-        mock_check_output.return_value = "PEM RSA private key"
+    @mock.patch(_MODULE_NAME + ".subprocess.Popen")
+    def test_safe_config_file(self, mock_popen):
+        mock_popen().communicate.return_value = ("PEM RSA private key", None)
         self.assertFalse(letshelp_le_apache.safe_config_file("filename"))
 
-        mock_check_output.return_value = "ASCII text"
+        mock_popen().communicate.return_value = ("ASCII text", None)
         self.assertFalse(letshelp_le_apache.safe_config_file(_PASSWD_FILE))
         self.assertFalse(letshelp_le_apache.safe_config_file(_KEY_FILE))
+        self.assertFalse(letshelp_le_apache.safe_config_file(_SECRET_FILE))
         self.assertTrue(letshelp_le_apache.safe_config_file(_CONFIG_FILE))
 
-    @mock.patch(_MODULE_NAME + ".subprocess.check_output")
-    def test_tempdir(self, mock_check_output):
-        mock_check_output.side_effect = ["version", "modules", "vhosts"]
+    @mock.patch(_MODULE_NAME + ".subprocess.Popen")
+    def test_tempdir(self, mock_popen):
+        mock_popen().communicate.side_effect = [
+            ("version", None), ("modules", None), ("vhosts", None)]
         args = _get_args()
 
         tempdir = letshelp_le_apache.setup_tempdir(args)
@@ -131,10 +138,10 @@ class LetsHelpApacheTest(unittest.TestCase):
         self.assertRaises(SystemExit, letshelp_le_apache.verify_config, args)
         self.assertRaises(SystemExit, letshelp_le_apache.verify_config, args)
 
-    @mock.patch(_MODULE_NAME + ".subprocess.check_output")
-    def test_locate_config(self, mock_check_output):
-        mock_check_output.side_effect = [OSError, "bad_output",
-                                         _COMPILE_SETTINGS,]
+    @mock.patch(_MODULE_NAME + ".subprocess.Popen")
+    def test_locate_config(self, mock_popen):
+        mock_popen().communicate.side_effect = [
+            OSError, ("bad_output", None), (_COMPILE_SETTINGS, None),]
 
         self.assertRaises(
             SystemExit, letshelp_le_apache.locate_config, "ctl")
