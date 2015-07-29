@@ -83,7 +83,7 @@ def copy_config(server_root, temp_dir):
     :rtype: `tuple` of `list` of `str`
 
     """
-    copied_files, copied_dirs = list(), list()
+    copied_files, copied_dirs = [], []
     dir_len = len(os.path.dirname(server_root))
 
     for config_path, config_dirs, config_files in os.walk(server_root):
@@ -91,7 +91,7 @@ def copy_config(server_root, temp_dir):
         os.mkdir(temp_path)
 
         copied_all = True
-        copied_files_in_current_dir = list()
+        copied_files_in_current_dir = []
         for config_file in config_files:
             config_file_path = os.path.join(config_path, config_file)
             temp_file_path = os.path.join(temp_path, config_file)
@@ -202,15 +202,15 @@ def verify_config(args):
     :param argparse.Namespace args: Parsed command line arguments
 
     """
-    try:
-        with open(os.devnull, "w") as devnull:
+    with open(os.devnull, "w") as devnull:
+        try:
             subprocess.check_call([args.apache_ctl, "-d", args.server_root,
                                    "-f", args.config_file, "-t"],
                                   stdout=devnull, stderr=subprocess.STDOUT)
-    except OSError:
-        sys.exit(_NO_APACHECTL)
-    except subprocess.CalledProcessError:
-        sys.exit("Syntax check from apachectl failed")
+        except OSError:
+            sys.exit(_NO_APACHECTL)
+        except subprocess.CalledProcessError:
+            sys.exit("Syntax check from apachectl failed")
 
 
 def locate_config(apache_ctl):
@@ -234,9 +234,9 @@ def locate_config(apache_ctl):
     for line in output.splitlines():
         # Relevant output lines are of the form: -D DIRECTIVE="VALUE"
         if "HTTPD_ROOT" in line:
-            server_root = line[line.find("\"")+1:-1]
+            server_root = line[line.find('"')+1:-1]
         elif "SERVER_CONFIG_FILE" in line:
-            config_file = line[line.find("\"")+1:-1]
+            config_file = line[line.find('"')+1:-1]
 
     if not (server_root and config_file):
         sys.exit("Unable to locate Apache configuration. Please run this "
@@ -283,7 +283,7 @@ def get_args():
 def main():
     """Main script execution"""
     args = get_args()
-    if not args.server_root:
+    if args.server_root is None:
         args.server_root, args.config_file = locate_config(args.apache_ctl)
 
     verify_config(args)
@@ -296,7 +296,7 @@ def main():
     with contextlib.closing(tarfile.open(tarpath, mode="w:gz")) as tar:
         tar.add(tempdir, arcname=".")
 
-    # Submit tarpath
+    # TODO: Submit tarpath
 
 
 if __name__ == "__main__":
