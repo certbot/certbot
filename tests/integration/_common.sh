@@ -2,7 +2,7 @@
 
 if [ "xxx$root" = "xxx" ];
 then
-    root="$(mktemp -d)"
+    root="$(mktemp -d -t leitXXXX)"
     echo "Root integration tests directory: $root"
 fi
 store_flags="--config-dir $root/conf --work-dir $root/work"
