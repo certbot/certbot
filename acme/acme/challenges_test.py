@@ -22,10 +22,11 @@ class SimpleHTTPTest(unittest.TestCase):
     def setUp(self):
         from acme.challenges import SimpleHTTP
         self.msg = SimpleHTTP(
-            token='evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ+PCt92wr+oA')
+            token=jose.decode_b64jose(
+                'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ+PCt92wr+oA'))
         self.jmsg = {
             'type': 'simpleHttp',
-            'token': 'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ+PCt92wr+oA',
+            'token': 'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA',
         }
 
     def test_to_partial_json(self):
@@ -62,10 +63,26 @@ class SimpleHTTPResponseTest(unittest.TestCase):
         }
 
         from acme.challenges import SimpleHTTP
-        self.chall = SimpleHTTP(token="foo")
+        self.chall = SimpleHTTP(token=(r"x" * 16))
         self.resp_http = SimpleHTTPResponse(path="bar", tls=False)
         self.resp_https = SimpleHTTPResponse(path="bar", tls=True)
         self.good_headers = {'Content-Type': SimpleHTTPResponse.CONTENT_TYPE}
+
+    def test_to_partial_json(self):
+        self.assertEqual(self.jmsg_http, self.msg_http.to_partial_json())
+        self.assertEqual(self.jmsg_https, self.msg_https.to_partial_json())
+
+    def test_from_json(self):
+        from acme.challenges import SimpleHTTPResponse
+        self.assertEqual(
+            self.msg_http, SimpleHTTPResponse.from_json(self.jmsg_http))
+        self.assertEqual(
+            self.msg_https, SimpleHTTPResponse.from_json(self.jmsg_https))
+
+    def test_from_json_hashable(self):
+        from acme.challenges import SimpleHTTPResponse
+        hash(SimpleHTTPResponse.from_json(self.jmsg_http))
+        hash(SimpleHTTPResponse.from_json(self.jmsg_https))
 
     def test_good_path(self):
         self.assertTrue(self.msg_http.good_path)
@@ -89,21 +106,45 @@ class SimpleHTTPResponseTest(unittest.TestCase):
             'https://example.com/.well-known/acme-challenge/'
             '6tbIMBC5Anhl5bOlWT5ZFA', self.msg_https.uri('example.com'))
 
-    def test_to_partial_json(self):
-        self.assertEqual(self.jmsg_http, self.msg_http.to_partial_json())
-        self.assertEqual(self.jmsg_https, self.msg_https.to_partial_json())
+    def test_gen_check_validation(self):
+        account_key = jose.JWKRSA.load(test_util.load_vector('rsa512_key.pem'))
+        self.assertTrue(self.resp_http.check_validation(
+            validation=self.resp_http.gen_validation(self.chall, account_key),
+            chall=self.chall, account_public_key=account_key.public_key()))
 
-    def test_from_json(self):
-        from acme.challenges import SimpleHTTPResponse
-        self.assertEqual(
-            self.msg_http, SimpleHTTPResponse.from_json(self.jmsg_http))
-        self.assertEqual(
-            self.msg_https, SimpleHTTPResponse.from_json(self.jmsg_https))
+    def test_gen_check_validation_wrong_key(self):
+        key1 = jose.JWKRSA.load(test_util.load_vector('rsa512_key.pem'))
+        key2 = jose.JWKRSA.load(test_util.load_vector('rsa1024_key.pem'))
+        self.assertFalse(self.resp_http.check_validation(
+            validation=self.resp_http.gen_validation(self.chall, key1),
+            chall=self.chall, account_public_key=key2.public_key()))
 
-    def test_from_json_hashable(self):
-        from acme.challenges import SimpleHTTPResponse
-        hash(SimpleHTTPResponse.from_json(self.jmsg_http))
-        hash(SimpleHTTPResponse.from_json(self.jmsg_https))
+    def test_check_validation_wrong_payload(self):
+        account_key = jose.JWKRSA.load(test_util.load_vector('rsa512_key.pem'))
+        validations = tuple(
+            jose.JWS.sign(payload=payload, alg=jose.RS256, key=account_key)
+            for payload in (b'', b'{}', self.chall.json_dumps().encode('utf-8'),
+                            self.resp_http.json_dumps().encode('utf-8'))
+        )
+        for validation in validations:
+            self.assertFalse(self.resp_http.check_validation(
+                validation=validation, chall=self.chall,
+                account_public_key=account_key.public_key()))
+
+    def test_check_validation_wrong_fields(self):
+        resource = self.resp_http.gen_resource(self.chall)
+        account_key = jose.JWKRSA.load(test_util.load_vector('rsa512_key.pem'))
+        validations = tuple(
+            jose.JWS.sign(payload=bad_resource.json_dumps().encode('utf-8'),
+                          alg=jose.RS256, key=account_key)
+            for bad_resource in (resource.update(tls=True),
+                                 resource.update(path='xxx'),
+                                 resource.update(token=r'x'*20))
+        )
+        for validation in validations:
+            self.assertFalse(self.resp_http.check_validation(
+                validation=validation, chall=self.chall,
+                account_public_key=account_key.public_key()))
 
     @mock.patch("acme.challenges.requests.get")
     def test_simple_verify_good_token(self, mock_get):
@@ -132,7 +173,8 @@ class SimpleHTTPResponseTest(unittest.TestCase):
 
     @mock.patch("acme.challenges.requests.get")
     def test_simple_verify_port(self, mock_get):
-        self.resp_http.simple_verify(self.chall, "local", 4430)
+        self.resp_http.simple_verify(
+            self.chall, domain="local", account_public_key=None, port=4430)
         self.assertEqual("local:4430", urllib_parse.urlparse(
             mock_get.mock_calls[0][1][0]).netloc)
 

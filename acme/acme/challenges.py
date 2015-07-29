@@ -50,7 +50,13 @@ class SimpleHTTP(DVChallenge):
 
     """
     typ = "simpleHttp"
-    token = jose.Field("token")
+
+    TOKEN_SIZE = 128 / 8  # Based on the entropy value from the spec
+    """Minimum size of the :attr:`token` in bytes."""
+
+    token = jose.Field(
+        "token", encoder=jose.encode_b64jose, decoder=functools.partial(
+            jose.decode_b64jose, size=TOKEN_SIZE, minimum=True))
 
 
 @ChallengeResponse.register
@@ -73,7 +79,7 @@ class SimpleHTTPResponse(ChallengeResponse):
     MAX_PATH_LEN = 25
     """Maximum allowed `path` length."""
 
-    CONTENT_TYPE = "text/plain"
+    CONTENT_TYPE = "application/jose+json"
 
     @property
     def good_path(self):
@@ -110,7 +116,62 @@ class SimpleHTTPResponse(ChallengeResponse):
         return self._URI_TEMPLATE.format(
             scheme=self.scheme, domain=domain, path=self.path)
 
-    def simple_verify(self, chall, domain, port=None):
+    def gen_resource(self, chall):
+        """Generate provisioned resource.
+
+        :param .SimpleHTTP chall:
+        :rtype: SimpleHTTPProvisionedResource
+
+        """
+        return SimpleHTTPProvisionedResource(
+            token=chall.token, path=self.path, tls=self.tls)
+
+    def gen_validation(self, chall, account_key, alg=jose.RS256, **kwargs):
+        """Generate validation.
+
+        :param .SimpleHTTP chall:
+        :param .JWK account_key: Private account key.
+        :param .JWA alg:
+
+        :returns: `.SimpleHTTPProvisionedResource` signed in `.JWS`
+        :rtype: .JWS
+
+        """
+        return jose.JWS.sign(
+            payload=self.gen_resource(chall).json_dumps().encode('utf-8'),
+            key=account_key, alg=alg, **kwargs)
+
+    def check_validation(self, validation, chall, account_public_key):
+        """Check validation.
+
+        :param .JWS validation:
+        :param .SimpleHTTP chall:
+        :type account_public_key:
+            `~cryptography.hazmat.primitives.asymmetric.rsa.RSAPublicKey`
+            or
+            `~cryptography.hazmat.primitives.asymmetric.dsa.DSAPublicKey`
+            or
+            `~cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePublicKey`
+            wrapped in `.ComparableKey
+
+        :rtype: bool
+
+        """
+        if not validation.verify(key=account_public_key):
+            return False
+
+        try:
+            resource = SimpleHTTPProvisionedResource.json_loads(
+                validation.payload.decode('utf-8'))
+        except jose.DeserializationError as error:
+            logger.debug(error)
+            return False
+
+        return (resource.token == chall.token and
+                resource.path == self.path and
+                resource.tls == self.tls)
+
+    def simple_verify(self, chall, domain, account_public_key, port=None):
         """Simple verify.
 
         According to the ACME specification, "the ACME server MUST
@@ -119,6 +180,16 @@ class SimpleHTTPResponse(ChallengeResponse):
 
         :param .SimpleHTTP chall: Corresponding challenge.
         :param unicode domain: Domain name being verified.
+        :param account_public_key: Public key for the key pair
+            being authorized. If ``None`` key verification is not
+            performed!
+        :type account_public_key:
+            `~cryptography.hazmat.primitives.asymmetric.rsa.RSAPublicKey`
+            or
+            `~cryptography.hazmat.primitives.asymmetric.dsa.DSAPublicKey`
+            or
+            `~cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePublicKey`
+            wrapped in `.ComparableKey
         :param int port: Port used in the validation.
 
         :returns: ``True`` iff validation is successful, ``False``
@@ -144,16 +215,25 @@ class SimpleHTTPResponse(ChallengeResponse):
         logger.debug(
             "Received %s. Headers: %s", http_response, http_response.headers)
 
-        good_token = http_response.text == chall.token
-        if not good_token:
-            logger.error(
-                "Unable to verify %s! Expected: %r, returned: %r.",
-                uri, chall.token, http_response.text)
-        # TODO: spec contradicts itself, c.f.
-        # https://github.com/letsencrypt/acme-spec/pull/156/files#r33136438
-        good_ct = self.CONTENT_TYPE == http_response.headers.get(
-            "Content-Type", self.CONTENT_TYPE)
-        return self.good_path and good_ct and good_token
+        if self.CONTENT_TYPE != http_response.headers.get(
+            "Content-Type", self.CONTENT_TYPE):
+            return False
+
+        try:
+            validation = jose.JWS.json_loads(http_response.text)
+        except jose.DeserializationError as error:
+            logger.debug(error)
+            return False
+
+        return self.check_validation(validation, chall, account_public_key)
+
+
+class SimpleHTTPProvisionedResource(jose.JSONObjectWithFields):
+    """SimpleHTTP provisioned resource."""
+    typ = fields.Fixed("type", SimpleHTTP.typ)
+    token = SimpleHTTP._fields["token"]
+    path = SimpleHTTPResponse._fields["path"]
+    tls = SimpleHTTPResponse._fields["tls"]
 
 
 @Challenge.register
