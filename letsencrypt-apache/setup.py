@@ -20,4 +20,5 @@ setup(
             'apache = letsencrypt_apache.configurator:ApacheConfigurator',
          ],
     },
+    include_package_data=True,
 )
