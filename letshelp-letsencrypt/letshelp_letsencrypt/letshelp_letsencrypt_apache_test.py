@@ -206,8 +206,8 @@ class LetsHelpApacheTest(unittest.TestCase):
 
                     testdir = tar.next()
                     self.assertTrue(testdir.isdir())
-                    testdir_path = os.path.join(".", testdir_basename)
-                    self.assertEqual(testdir.name, testdir_path)
+                    self.assertEqual(os.path.basename(testdir.name),
+                                     testdir_basename)
 
                     self.assertEqual(tar.next(), None)
 

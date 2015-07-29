@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 """Let's Encrypt Apache configuration submission script"""
 import argparse
+import atexit
 import contextlib
 import os
+import re
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -31,8 +34,9 @@ argument and the path to the binary.
 
 
 # Keywords likely to be found in filenames of sensitive files
-_SENSITIVE_KEYWORDS = ["private", "secret", "cert", "crt", "key", "pem", "der",
-                       "rsa", "dsa", "pass", "pw"]
+_SENSITIVE_FILENAME_REGEX = re.compile(r"^(?!.*proxy_fdpass).*pass.*$|private|"
+                                       r"secret|cert|crt|key|\.pem|\.der|rsa|"
+                                       r"dsa|pw")
 
 
 def make_and_verify_selection(server_root, temp_dir):
@@ -131,9 +135,9 @@ def safe_config_file(config_file):
     :rtype: bool
 
     """
-    for keyword in _SENSITIVE_KEYWORDS:
-        if keyword in config_file:
-            return False
+    config_file_lower = config_file.lower()
+    if _SENSITIVE_FILENAME_REGEX.search(config_file_lower):
+        return False
 
     proc = subprocess.Popen(["file", config_file],
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -284,6 +288,7 @@ def main():
 
     verify_config(args)
     tempdir = setup_tempdir(args)
+    atexit.register(lambda: shutil.rmtree(tempdir))
     make_and_verify_selection(args.server_root, tempdir)
 
     tarpath = os.path.join(tempdir, "config.tar.gz")
