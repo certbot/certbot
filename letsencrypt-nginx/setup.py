@@ -19,4 +19,5 @@ setup(
             'nginx = letsencrypt_nginx.configurator:NginxConfigurator',
          ],
     },
+    include_package_data=True,
 )
