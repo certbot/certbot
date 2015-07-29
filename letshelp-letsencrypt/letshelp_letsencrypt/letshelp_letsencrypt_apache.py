@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """Let's Encrypt Apache configuration submission script"""
 import argparse
+import contextlib
 import os
 import subprocess
 import sys
@@ -286,7 +287,8 @@ def main():
     make_and_verify_selection(args.server_root, tempdir)
 
     tarpath = os.path.join(tempdir, "config.tar.gz")
-    with tarfile.open(tarpath, mode="w:gz") as tar:
+    # contextlib.closing used for py26 support
+    with contextlib.closing(tarfile.open(tarpath, mode="w:gz")) as tar:
         tar.add(tempdir, arcname=".")
 
     # Submit tarpath
