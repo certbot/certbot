@@ -114,12 +114,6 @@ For Development and Testing
 .. code-block:: shell
 
    virtualenv --no-site-packages -p python2 venv
-
-
-When you're done activate the virtualenv:
-
-.. code-block:: shell
-
    source ./venv/bin/activate
 
 This step should prepend you prompt with ``(venv)`` and save you from
@@ -141,6 +135,7 @@ Install the development packages:
 
           This is roughly equivalent to `python setup.py develop`. For
           more info see `man pip`.
+
 
 For Running Code Only
 ---------------------
