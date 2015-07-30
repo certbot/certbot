@@ -7,34 +7,9 @@ Contributing
 Hacking
 =======
 
-Start by :doc:`installing dependencies and setting up Let's Encrypt
+Start by :doc:`installing dependencies and setting up Let's Encrypt for Development
 <using>`.
 
-When you're done activate the virtualenv:
-
-.. code-block:: shell
-
-   source ./venv/bin/activate
-
-This step should prepend you prompt with ``(venv)`` and save you from
-typing ``./venv/bin/...``. It is also required to run some of the
-`testing`_ tools. Virtualenv can be disabled at any time by typing
-``deactivate``. More information can be found in `virtualenv
-documentation`_.
-
-Install the development packages:
-
-.. code-block:: shell
-
-   pip install -r requirements.txt -e acme -e .[dev,docs,testing] -e letsencrypt-apache -e letsencrypt-nginx
-
-.. note:: `-e` (short for `--editable`) turns on *editable mode* in
-          which any source code changes in the current working
-          directory are "live" and no further `pip install ...`
-          invocations are necessary while developing.
-
-          This is roughly equivalent to `python setup.py develop`. For
-          more info see `man pip`.
 
 The code base, including your pull requests, **must** have 100% unit
 test coverage, pass our `integration`_ tests **and** be compliant with

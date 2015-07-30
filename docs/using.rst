@@ -105,13 +105,51 @@ Centos 7
 Installation
 ============
 
+For Development and Testing
+---------------------------
+
 .. "pip install acme" doesn't search for "acme" in cwd, just like "pip
    install -e acme" does
 
 .. code-block:: shell
 
    virtualenv --no-site-packages -p python2 venv
+
+
+When you're done activate the virtualenv:
+
+.. code-block:: shell
+
+   source ./venv/bin/activate
+
+This step should prepend you prompt with ``(venv)`` and save you from
+typing ``./venv/bin/...``. It is also required to run some of the
+`testing`_ tools. Virtualenv can be disabled at any time by typing
+``deactivate``. More information can be found in `virtualenv
+documentation`_.
+
+Install the development packages:
+
+.. code-block:: shell
+
+   pip install -r requirements.txt -e acme -e .[dev,docs,testing] -e letsencrypt-apache -e letsencrypt-nginx
+
+.. note:: `-e` (short for `--editable`) turns on *editable mode* in
+          which any source code changes in the current working
+          directory are "live" and no further `pip install ...`
+          invocations are necessary while developing.
+
+          This is roughly equivalent to `python setup.py develop`. For
+          more info see `man pip`.
+
+For Running Code Only
+---------------------
+
+.. code-block:: shell
+
+   virtualenv --no-site-packages -p python2 venv
    ./venv/bin/pip install -r requirements.txt acme/ . letsencrypt-apache/ letsencrypt-nginx/
+
 
 .. warning:: Please do **not** use ``python setup.py install``. Please
              do **not** attempt the installation commands as
