@@ -678,7 +678,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 self.choose_vhost(domain), options)
         except KeyError:
             raise errors.PluginError(
-                "Unsupported enhancement: {}".format(enhancement))
+                "Unsupported enhancement: {0}".format(enhancement))
         except errors.PluginError:
             logger.warn("Failed %s for %s", enhancement, domain)
             raise
