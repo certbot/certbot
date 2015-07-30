@@ -162,50 +162,45 @@ class TwoVhost80Test(util.ApacheTest):
         self.assertTrue(self.config.is_site_enabled(self.vh_truth[2].filep))
         self.assertTrue(self.config.is_site_enabled(self.vh_truth[3].filep))
 
+    @mock.patch("letsencrypt.le_util.run_script")
+    @mock.patch("letsencrypt.le_util.exe_exists")
     @mock.patch("letsencrypt_apache.parser.subprocess.Popen")
-    def test_enable_mod(self, mock_popen):
+    def test_enable_mod(self, mock_popen, mock_exe_exists, mock_run_script):
         mock_popen().communicate.return_value = ("Define: DUMP_RUN_CFG", "")
         mock_popen().returncode = 0
+        mock_exe_exists.return_value = True
 
         self.config.enable_mod("ssl")
-        for filename in ["ssl.conf", "ssl.load"]:
-            self.assertTrue(
-                os.path.isfile(os.path.join(
-                    self.config.conf("server-root"), "mods-enabled", filename)))
-
         self.assertTrue("ssl_module" in self.config.parser.modules)
         self.assertTrue("mod_ssl.c" in self.config.parser.modules)
+
+        self.assertTrue(mock_run_script.called)
 
     def test_enable_mod_unsupported_dirs(self):
         shutil.rmtree(os.path.join(self.config.parser.root, "mods-enabled"))
         self.assertRaises(
             errors.NotSupportedError, self.config.enable_mod, "ssl")
 
-    def test_enable_mod_unsupported_mod(self):
+    @mock.patch("letsencrypt.le_util.exe_exists")
+    def test_enable_mod_no_disable(self, mock_exe_exists):
+        mock_exe_exists.return_value = False
         self.assertRaises(
-            errors.NotSupportedError, self.config.enable_mod, "unknown")
+            errors.MisconfigurationError, self.config.enable_mod, "ssl")
 
-    def test_enable_mod_not_installed(self):
-        os.remove(os.path.join(
-            self.config.parser.root, "mods-available", "ssl.load"))
-        self.assertRaises(
-            errors.NoInstallationError, self.config.enable_mod, "ssl")
-
-    def test_enable_mod_files_already_exist(self):
-        path = os.path.join(self.config.parser.root, "mods-enabled", "ssl.load")
-        open(path, "w").close()
-        self.assertRaises(
-            errors.PluginError, self.config.enable_mod, "ssl")
-
+    @mock.patch("letsencrypt.le_util.run_script")
+    @mock.patch("letsencrypt.le_util.exe_exists")
     @mock.patch("letsencrypt_apache.parser.subprocess.Popen")
-    def test_enable_site(self, mock_popen):
+    def test_enable_site(self, mock_popen, mock_exe_exists, mock_run_script):
         mock_popen().returncode = 0
         mock_popen().communicate.return_value = ("Define: DUMP_RUN_CFG", "")
+        mock_exe_exists.return_value = True
 
         # Default 443 vhost
         self.assertFalse(self.vh_truth[1].enabled)
         self.config.enable_site(self.vh_truth[1])
         self.assertTrue(self.vh_truth[1].enabled)
+        # Mod enabled
+        self.assertTrue(mock_run_script.called)
 
         # Go again to make sure nothing fails
         self.config.enable_site(self.vh_truth[1])
@@ -216,10 +211,9 @@ class TwoVhost80Test(util.ApacheTest):
             self.config.enable_site,
             obj.VirtualHost("asdf", "afsaf", set(), False, False))
 
-    @mock.patch("letsencrypt_apache.parser.subprocess.Popen")
-    def test_deploy_cert(self, mock_popen):
-        mock_popen().returncode = 0
-        mock_popen().communicate.return_value = ("Define: DUMP_RUN_CFG", "")
+    def test_deploy_cert(self):
+        self.config.parser.modules.add("ssl_module")
+        self.config.parser.modules.add("mod_ssl.c")
 
         # Get the default 443 vhost
         self.config.assoc["random.demo"] = self.vh_truth[1]
@@ -399,25 +393,25 @@ class TwoVhost80Test(util.ApacheTest):
         self.config.cleanup([achall1, achall2])
         self.assertTrue(mock_restart.called)
 
-    @mock.patch("letsencrypt_apache.configurator.subprocess.Popen")
-    def test_get_version(self, mock_popen):
-        mock_popen().communicate.return_value = (
+    @mock.patch("letsencrypt.le_util.run_script")
+    def test_get_version(self, mock_script):
+        mock_script.return_value = (
             "Server Version: Apache/2.4.2 (Debian)", "")
         self.assertEqual(self.config.get_version(), (2, 4, 2))
 
-        mock_popen().communicate.return_value = (
+        mock_script.return_value = (
             "Server Version: Apache/2 (Linux)", "")
         self.assertEqual(self.config.get_version(), (2,))
 
-        mock_popen().communicate.return_value = (
+        mock_script.return_value = (
             "Server Version: Apache (Debian)", "")
         self.assertRaises(errors.PluginError, self.config.get_version)
 
-        mock_popen().communicate.return_value = (
+        mock_script.return_value = (
             "Server Version: Apache/2.3{0} Apache/2.4.7".format(os.linesep), "")
         self.assertRaises(errors.PluginError, self.config.get_version)
 
-        mock_popen.side_effect = OSError("Can't find program")
+        mock_script.side_effect = errors.SubprocessError("Can't find program")
         self.assertRaises(errors.PluginError, self.config.get_version)
 
     @mock.patch("letsencrypt_apache.configurator.subprocess.Popen")
@@ -441,23 +435,13 @@ class TwoVhost80Test(util.ApacheTest):
 
         self.assertRaises(errors.MisconfigurationError, self.config.restart)
 
-    @mock.patch("letsencrypt_apache.configurator.subprocess.Popen")
-    def test_config_test(self, mock_popen):
-        mock_popen().communicate.return_value = ("a", "b")
-        mock_popen().returncode = 0
-
+    @mock.patch("letsencrypt.le_util.run_script")
+    def test_config_test(self, _):
         self.config.config_test()
 
-    @mock.patch("letsencrypt_apache.configurator.subprocess.Popen")
-    def test_config_test_bad_process(self, mock_popen):
-        mock_popen.side_effect = ValueError
-
-        self.assertRaises(errors.PluginError, self.config.config_test)
-
-    @mock.patch("letsencrypt_apache.configurator.subprocess.Popen")
-    def test_config_test_failure(self, mock_popen):
-        mock_popen().communicate.return_value = ("", "")
-        mock_popen().returncode = -1
+    @mock.patch("letsencrypt.le_util.run_script")
+    def test_config_test_bad_process(self, mock_run_script):
+        mock_run_script.side_effect = errors.SubprocessError
 
         self.assertRaises(errors.MisconfigurationError, self.config.config_test)
 
@@ -497,9 +481,11 @@ class TwoVhost80Test(util.ApacheTest):
             errors.PluginError,
             self.config.enhance, "letsencrypt.demo", "unknown_enhancement")
 
-    @mock.patch("letsencrypt_apache.parser."
-                "ApacheParser.update_runtime_variables")
-    def test_redirect_well_formed_http(self, _):
+    @mock.patch("letsencrypt.le_util.run_script")
+    @mock.patch("letsencrypt.le_util.exe_exists")
+    def test_redirect_well_formed_http(self, mock_exe, _):
+        self.config.parser.update_runtime_variables = mock.Mock()
+        mock_exe.return_value = True
         # This will create an ssl vhost for letsencrypt.demo
         self.config.enhance("letsencrypt.demo", "redirect")
 

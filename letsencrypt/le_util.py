@@ -4,6 +4,7 @@ import errno
 import logging
 import os
 import re
+import subprocess
 import stat
 
 from letsencrypt import errors
@@ -16,6 +17,57 @@ Key = collections.namedtuple("Key", "file pem")
 # Note: form is the type of data, "pem" or "der"
 CSR = collections.namedtuple("CSR", "file data form")
 
+
+def run_script(params):
+    """Run the script with the given params.
+
+    :param list params: List of parameters to pass to Popen
+
+    """
+    try:
+        proc = subprocess.Popen(params,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE)
+
+    except (OSError, ValueError):
+        msg = "Unable to run the command: %s" % " ".join(params)
+        logger.error(msg)
+        raise errors.SubprocessError(msg)
+
+    stdout, stderr = proc.communicate()
+
+    if proc.returncode != 0:
+        msg = "Error while running %s.\n%s\n%s" % (
+            " ".join(params), stdout, stderr)
+        # Enter recovery routine...
+        logger.error(msg)
+        raise errors.SubprocessError(msg)
+
+    return stdout, stderr
+
+
+def exe_exists(exe):
+    """Determine whether path/name refers to an executable.
+
+    :param str exe: Executable path or name
+
+    :returns: If exe is a valid executable
+    :rtype: bool
+
+    """
+    def is_exe(path):
+        """Determine if path is an exe."""
+        return os.path.isfile(path) and os.access(path, os.X_OK)
+
+    path, _ = os.path.split(exe)
+    if path:
+        return is_exe(exe)
+    else:
+        for path in os.environ["PATH"].split(os.pathsep):
+            if is_exe(os.path.join(path, exe)):
+                return True
+
+    return False
 
 def make_or_verify_dir(directory, mode=0o755, uid=0):
     """Make sure directory exists with proper permissions.

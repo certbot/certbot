@@ -1,4 +1,6 @@
 """Test letsencrypt.reverter."""
+import csv
+import itertools
 import logging
 import os
 import shutil
@@ -11,7 +13,7 @@ from letsencrypt import errors
 
 
 class ReverterCheckpointLocalTest(unittest.TestCase):
-    # pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-instance-attributes, too-many-public-methods
     """Test the Reverter Class."""
     def setUp(self):
         from letsencrypt.reverter import Reverter
@@ -125,6 +127,42 @@ class ReverterCheckpointLocalTest(unittest.TestCase):
         self.assertRaises(
             errors.ReverterError, self.reverter.register_file_creation,
             "filepath")
+
+    def test_register_undo_command(self):
+        coms = [
+            ["a2dismod", "ssl"],
+            ["a2dismod", "rewrite"],
+            ["cleanslate"]
+        ]
+        for com in coms:
+            self.reverter.register_undo_command(True, com)
+
+        act_coms = get_undo_commands(self.config.temp_checkpoint_dir)
+
+        for a_com, com in itertools.izip(act_coms, coms):
+            self.assertEqual(a_com, com)
+
+    def test_bad_register_undo_command(self):
+        m_open = mock.mock_open()
+        with mock.patch("letsencrypt.reverter.open", m_open, create=True):
+            m_open.side_effect = OSError("bad open")
+            self.assertRaises(
+                errors.ReverterError, self.reverter.register_undo_command,
+                True, ["command"])
+
+    @mock.patch("letsencrypt.le_util.run_script")
+    def test_run_undo_commands(self, mock_run):
+        mock_run.side_effect = ["", errors.SubprocessError]
+        coms = [
+            ["invalid_command"],
+            ["a2dismod", "ssl"],
+        ]
+        for com in coms:
+            self.reverter.register_undo_command(True, com)
+
+        self.reverter.revert_temporary_config()
+
+        self.assertEqual(mock_run.call_count, 2)
 
     def test_recovery_routine_in_progress_failure(self):
         self.reverter.add_to_checkpoint(self.sets[0], "perm save")
@@ -390,9 +428,9 @@ def setup_test_files():
     dir2 = tempfile.mkdtemp("dir2")
     config1 = os.path.join(dir1, "config.txt")
     config2 = os.path.join(dir2, "config.txt")
-    with open(config1, 'w') as file_fd:
+    with open(config1, "w") as file_fd:
         file_fd.write("directive-dir1")
-    with open(config2, 'w') as file_fd:
+    with open(config2, "w") as file_fd:
         file_fd.write("directive-dir2")
 
     sets = [set([config1]),
@@ -404,30 +442,35 @@ def setup_test_files():
 
 def get_save_notes(dire):
     """Read save notes"""
-    return read_in(os.path.join(dire, 'CHANGES_SINCE'))
+    return read_in(os.path.join(dire, "CHANGES_SINCE"))
 
 
 def get_filepaths(dire):
     """Get Filepaths"""
-    return read_in(os.path.join(dire, 'FILEPATHS'))
+    return read_in(os.path.join(dire, "FILEPATHS"))
 
 
 def get_new_files(dire):
     """Get new files."""
-    return read_in(os.path.join(dire, 'NEW_FILES')).splitlines()
+    return read_in(os.path.join(dire, "NEW_FILES")).splitlines()
+
+
+def get_undo_commands(dire):
+    """Get new files."""
+    return csv.reader(open(os.path.join(dire, "COMMANDS")))
 
 
 def read_in(path):
     """Read in a file, return the str"""
-    with open(path, 'r') as file_fd:
+    with open(path, "r") as file_fd:
         return file_fd.read()
 
 
 def update_file(filename, string):
     """Update a file with a new value."""
-    with open(filename, 'w') as file_fd:
+    with open(filename, "w") as file_fd:
         file_fd.write(string)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()  # pragma: no cover

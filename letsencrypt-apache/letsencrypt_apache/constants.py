@@ -6,6 +6,7 @@ CLI_DEFAULTS = dict(
     server_root="/etc/apache2",
     ctl="apache2ctl",
     enmod="a2enmod",
+    dismod="a2dismod",
     init_script="/etc/init.d/apache2",
     le_vhost_ext="-le-ssl.conf",
 )

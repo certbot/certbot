@@ -15,6 +15,7 @@ from acme import challenges
 from letsencrypt import achallenges
 from letsencrypt import errors
 from letsencrypt import interfaces
+from letsencrypt import le_util
 
 from letsencrypt_apache import augeas_configurator
 from letsencrypt_apache import constants
@@ -92,17 +93,21 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     @classmethod
     def add_parser_arguments(cls, add):
-        add("server-root", default=constants.CLI_DEFAULTS["server_root"],
-            help="Apache server root directory.")
         add("ctl", default=constants.CLI_DEFAULTS["ctl"],
             help="Path to the 'apache2ctl' binary, used for 'configtest', "
                  "retrieving the Apache2 version number, and initialization "
                  "parameters.")
+        add("enmod", default=constants.CLI_DEFAULTS["enmod"],
+            help="Path to the Apache 'a2enmod' binary.")
+        add("dismod", default=constants.CLI_DEFAULTS["dismod"],
+            help="Path to the Apache 'a2enmod' binary.")
         add("init-script", default=constants.CLI_DEFAULTS["init_script"],
             help="Path to the Apache init script (used for server "
             "reload/restart).")
         add("le-vhost-ext", default=constants.CLI_DEFAULTS["le_vhost_ext"],
             help="SSL vhost configuration extension.")
+        add("server-root", default=constants.CLI_DEFAULTS["server_root"],
+            help="Apache server root directory.")
 
     def __init__(self, *args, **kwargs):
         """Initialize an Apache Configurator.
@@ -942,12 +947,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 "Unsupported filesystem layout. "
                 "sites-available/enabled expected.")
 
-    def enable_mod(self, mod_name):
+    def enable_mod(self, mod_name, temp=False):
         """Enables module in Apache.
 
         Both enables and restarts Apache so module is active.
 
         :param str mod_name: Name of the module to enable. (e.g. 'ssl')
+        :param bool temp: Whether or not this is a temporary action.
 
         """
         # Support Debian specific setup
@@ -958,7 +964,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 "Unsupported directory layout. You may try to enable mod %s "
                 "and try again." % mod_name)
 
-        self._enable_mod_debian(mod_name)
+        self._enable_mod_debian(mod_name, temp)
         self.save_notes += "Enabled %s module in Apache" % mod_name
         logger.debug("Enabled Apache %s module", mod_name)
 
@@ -970,39 +976,19 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.parser.modules.add(mod_name + "_module")
         self.parser.modules.add("mod_" + mod_name + ".c")
 
-    def _enable_mod_debian(self, mod_name):
+    def _enable_mod_debian(self, mod_name, temp):
         """Assumes mods-available, mods-enabled layout."""
-        # TODO: This can be further updated to not require all files.
-        if mod_name == "ssl":
-            self._enable_mod_debian_files(
-                ["ssl.conf", "ssl.load"], "ssl_module")
-        elif mod_name == "rewrite":
-            self._enable_mod_debian_files(["rewrite.load"], "rewrite_module")
-        else:
-            raise errors.NotSupportedError
+        # Generate reversal command.
+        # Try to be safe here... check that we can probably reverse before
+        # applying enmod command
+        if not le_util.exe_exists(self.conf("dismod")):
+            raise errors.MisconfigurationError(
+                "Unable to find a2dismod, please make sure a2enmod and "
+                "a2dismod are configured correctly for letsencrypt.")
 
-    def _enable_mod_debian_files(self, filenames, mod_name):
-        """Move over all required files into mods-enabled."""
-        mods_available = os.path.join(self.parser.root, "mods-available")
-        mods_enabled = os.path.join(self.parser.root, "mods-enabled")
-
-        # Check to see all files are available.
-        for filename in filenames:
-            if not os.path.isfile(os.path.join(mods_available, filename)):
-                raise errors.NoInstallationError(
-                    "Unable to enable module. Required files missing from "
-                    "mods-available. %s" % str(filenames))
-
-        # Register and symlink files
-        for filename in filenames:
-            enabled_path = os.path.join(mods_enabled, filename)
-            if os.path.isfile(enabled_path):
-                logger.debug(
-                    "Error - enabling module %s, filepath already exists "
-                    "%s", mod_name, enabled_path)
-                raise errors.PluginError("Error enabling module %s" % mod_name)
-            self.reverter.register_file_creation(False, enabled_path)
-            os.symlink(os.path.join(mods_available, filename), enabled_path)
+        self.reverter.register_undo_command(
+            temp, [self.conf("dismod"), mod_name])
+        le_util.run_script([self.conf("enmod"), mod_name])
 
     def restart(self):
         """Restarts apache server.
@@ -1018,25 +1004,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     def config_test(self):  # pylint: disable=no-self-use
         """Check the configuration of Apache for errors.
 
-        :raises .errors.PluginError: If Unable to run apache2ctl
         :raises .errors.MisconfigurationError: If config_test fails
 
         """
         try:
-            proc = subprocess.Popen(
-                [self.conf("ctl"), "configtest"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE)
-            stdout, stderr = proc.communicate()
-        except (OSError, ValueError):
-            logger.fatal("Unable to run /usr/sbin/apache2ctl configtest")
-            raise errors.PluginError("Unable to run apache2ctl")
-
-        if proc.returncode != 0:
-            # Enter recovery routine...
-            logger.error("Apache Configtest failed\n%s\n%s", stdout, stderr)
-            raise errors.MisconfigurationError(
-                "Apache Configtest failure:\n%s\n%s" % (stdout, stderr))
+            le_util.run_script([self.conf("ctl"), "configtest"])
+        except errors.SubprocessError:
+            raise errors.MisconfigurationError("Config Test failed!")
 
     def get_version(self):
         """Return version of Apache Server.
@@ -1050,17 +1024,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         try:
-            proc = subprocess.Popen(
-                [self.conf("ctl"), "-v"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE)
-            text = proc.communicate()[0]
-        except (OSError, ValueError):
+            stdout, _ = le_util.run_script([self.conf("ctl"), "-v"])
+        except errors.SubprocessError:
             raise errors.PluginError(
                 "Unable to run %s -v" % self.conf("ctl"))
 
         regex = re.compile(r"Apache/([0-9\.]*)", re.IGNORECASE)
-        matches = regex.findall(text)
+        matches = regex.findall(stdout)
 
         if len(matches) != 1:
             raise errors.PluginError("Unable to find Apache version")

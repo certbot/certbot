@@ -5,6 +5,10 @@ class Error(Exception):
     """Generic Let's Encrypt client error."""
 
 
+class SubprocessError(Error):
+    """Subprocess handling error."""
+
+
 class AccountStorageError(Error):
     """Generic `.AccountStorage` error."""
 

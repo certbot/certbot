@@ -36,10 +36,11 @@ class DvsniPerformTest(util.ApacheTest):
         resp = self.sni.perform()
         self.assertEqual(len(resp), 0)
 
-    @mock.patch("letsencrypt_apache.parser.subprocess.Popen")
-    def test_perform1(self, mock_popen):
-        mock_popen().communicate.return_value = ("Define: DUMP_RUN_CFG", "")
-        mock_popen().returncode = 0
+    @mock.patch("letsencrypt.le_util.exe_exists")
+    @mock.patch("letsencrypt.le_util.run_script")
+    def test_perform1(self, _, mock_exists):
+        mock_exists.return_value = True
+        self.sni.configurator.parser.update_runtime_variables = mock.Mock()
 
         achall = self.achalls[0]
         self.sni.add_chall(achall)
