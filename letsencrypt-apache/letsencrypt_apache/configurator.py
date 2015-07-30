@@ -1009,8 +1009,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         try:
             le_util.run_script([self.conf("ctl"), "configtest"])
-        except errors.SubprocessError:
-            raise errors.MisconfigurationError("Config Test failed!")
+        except errors.SubprocessError as err:
+            raise errors.MisconfigurationError(str(err))
 
     def get_version(self):
         """Return version of Apache Server.

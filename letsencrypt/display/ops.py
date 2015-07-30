@@ -84,8 +84,9 @@ def pick_plugin(config, default, plugins, question, ifaces):
         logger.debug("Single candidate plugin: %s", plugin_ep)
         if plugin_ep.misconfigured:
             logger.warning(
-                "Only candidate plugin, %s, is misconfigured."
-                "Please fix the configuration before proceeding.", plugin_ep)
+                "Only candidate plugin, %s, is misconfigured.  "
+                "Please fix the configuration before proceeding.",
+                plugin_ep.name)
             return None
         return plugin_ep.init()
     else:
