@@ -69,6 +69,7 @@ def exe_exists(exe):
 
     return False
 
+
 def make_or_verify_dir(directory, mode=0o755, uid=0):
     """Make sure directory exists with proper permissions.
 
