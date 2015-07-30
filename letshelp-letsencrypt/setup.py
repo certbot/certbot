@@ -19,4 +19,5 @@ setup(
             "letshelp-letsencrypt-apache = letshelp_letsencrypt.apache:main",
         ],
     },
+    include_package_data=True,
 )
