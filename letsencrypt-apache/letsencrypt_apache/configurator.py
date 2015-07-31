@@ -279,7 +279,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     "vhost or add ServerNames to your configuration.")
                 raise errors.PluginError(
                     "VirtualHost not able to be selected.")
-            
+
         self.assoc[target_name] = vhost
         return vhost
 

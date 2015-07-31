@@ -447,7 +447,7 @@ class Reverter(object):
                         os.remove(path)
                     else:
                         logger.warning(
-                            "File: %s - Could not be found to be deleted%s"
+                            "File: %s - Could not be found to be deleted %s - "
                             "LE probably shut down unexpectedly",
                             os.linesep, path)
         except (IOError, OSError):
