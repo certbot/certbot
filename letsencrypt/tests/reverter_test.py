@@ -457,7 +457,8 @@ def get_new_files(dire):
 
 def get_undo_commands(dire):
     """Get new files."""
-    return csv.reader(open(os.path.join(dire, "COMMANDS")))
+    with open(os.path.join(dire, "COMMANDS")) as csvfile:
+        return list(csv.reader(csvfile))
 
 
 def read_in(path):

@@ -110,10 +110,31 @@ class TwoVhost80Test(util.ApacheTest):
             errors.PluginError, self.config.choose_vhost, "none.com")
 
     @mock.patch("letsencrypt_apache.display_ops.select_vhost")
-    def test_choose_vhost_select_vhost(self, mock_select):
-        mock_select.return_value = self.vh_truth[3]
+    def test_choose_vhost_select_vhost_ssl(self, mock_select):
+        mock_select.return_value = self.vh_truth[1]
         self.assertEqual(
-            self.vh_truth[3], self.config.choose_vhost("none.com"))
+            self.vh_truth[1], self.config.choose_vhost("none.com"))
+
+    @mock.patch("letsencrypt_apache.display_ops.select_vhost")
+    def test_choose_vhost_select_vhost_non_ssl(self, mock_select):
+        mock_select.return_value = self.vh_truth[0]
+        chosen_vhost = self.config.choose_vhost("none.com")
+        self.assertEqual(
+            self.vh_truth[0].get_names(), chosen_vhost.get_names())
+
+        # Make sure we go from HTTP -> HTTPS
+        self.assertFalse(self.vh_truth[0].ssl)
+        self.assertTrue(chosen_vhost.ssl)
+
+    @mock.patch("letsencrypt_apache.display_ops.select_vhost")
+    def test_choose_vhost_select_vhost_conflicting_non_ssl(self, mock_select):
+        mock_select.return_value = self.vh_truth[3]
+        conflicting_vhost = obj.VirtualHost(
+            "path", "aug_path", set([obj.Addr.fromstring("*:443")]), True, True)
+        self.config.vhosts.append(conflicting_vhost)
+
+        self.assertRaises(
+            errors.PluginError, self.config.choose_vhost, "none.com")
 
     def test_find_best_vhost(self):
         # pylint: disable=protected-access
@@ -207,7 +228,7 @@ class TwoVhost80Test(util.ApacheTest):
 
     def test_enable_site_failure(self):
         self.assertRaises(
-            errors.MisconfigurationError,
+            errors.NotSupportedError,
             self.config.enable_site,
             obj.VirtualHost("asdf", "afsaf", set(), False, False))
 

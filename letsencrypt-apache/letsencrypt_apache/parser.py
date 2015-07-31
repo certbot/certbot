@@ -240,7 +240,6 @@ class ApacheParser(object):
         Directives should be in the form of a case insensitive regex currently
 
         .. todo:: arg should probably be a list
-        .. todo:: Check //* notation for including directories
 
         Note: Augeas is inherently case sensitive while Apache is case
         insensitive.  Augeas 1.0 allows case insensitive regexes like
