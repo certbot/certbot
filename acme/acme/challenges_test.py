@@ -46,26 +46,23 @@ class SimpleHTTPResponseTest(unittest.TestCase):
 
     def setUp(self):
         from acme.challenges import SimpleHTTPResponse
-        self.msg_http = SimpleHTTPResponse(
-            path='6tbIMBC5Anhl5bOlWT5ZFA', tls=False)
-        self.msg_https = SimpleHTTPResponse(path='6tbIMBC5Anhl5bOlWT5ZFA')
+        self.msg_http = SimpleHTTPResponse(tls=False)
+        self.msg_https = SimpleHTTPResponse(tls=True)
         self.jmsg_http = {
             'resource': 'challenge',
             'type': 'simpleHttp',
-            'path': '6tbIMBC5Anhl5bOlWT5ZFA',
             'tls': False,
         }
         self.jmsg_https = {
             'resource': 'challenge',
             'type': 'simpleHttp',
-            'path': '6tbIMBC5Anhl5bOlWT5ZFA',
             'tls': True,
         }
 
         from acme.challenges import SimpleHTTP
-        self.chall = SimpleHTTP(token=(r"x" * 16))
-        self.resp_http = SimpleHTTPResponse(path="bar", tls=False)
-        self.resp_https = SimpleHTTPResponse(path="bar", tls=True)
+        self.chall = SimpleHTTP(token=(b"x" * 16))
+        self.resp_http = SimpleHTTPResponse(tls=False)
+        self.resp_https = SimpleHTTPResponse(tls=True)
         self.good_headers = {'Content-Type': SimpleHTTPResponse.CONTENT_TYPE}
 
     def test_to_partial_json(self):
@@ -101,10 +98,12 @@ class SimpleHTTPResponseTest(unittest.TestCase):
     def test_uri(self):
         self.assertEqual(
             'http://example.com/.well-known/acme-challenge/'
-            '6tbIMBC5Anhl5bOlWT5ZFA', self.msg_http.uri('example.com'))
+            'eHh4eHh4eHh4eHh4eHh4eA', self.msg_http.uri(
+                'example.com', self.chall))
         self.assertEqual(
             'https://example.com/.well-known/acme-challenge/'
-            '6tbIMBC5Anhl5bOlWT5ZFA', self.msg_https.uri('example.com'))
+            'eHh4eHh4eHh4eHh4eHh4eA', self.msg_https.uri(
+                'example.com', self.chall))
 
     def test_gen_check_validation(self):
         account_key = jose.JWKRSA.load(test_util.load_vector('rsa512_key.pem'))
@@ -138,7 +137,6 @@ class SimpleHTTPResponseTest(unittest.TestCase):
             jose.JWS.sign(payload=bad_resource.json_dumps().encode('utf-8'),
                           alg=jose.RS256, key=account_key)
             for bad_resource in (resource.update(tls=True),
-                                 resource.update(path='xxx'),
                                  resource.update(token=r'x'*20))
         )
         for validation in validations:

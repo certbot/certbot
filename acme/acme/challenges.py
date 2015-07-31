@@ -54,45 +54,41 @@ class SimpleHTTP(DVChallenge):
     TOKEN_SIZE = 128 / 8  # Based on the entropy value from the spec
     """Minimum size of the :attr:`token` in bytes."""
 
+    # TODO: acme-spec doesn't specify token as base64-encoded value
     token = jose.Field(
         "token", encoder=jose.encode_b64jose, decoder=functools.partial(
             jose.decode_b64jose, size=TOKEN_SIZE, minimum=True))
+
+    @property
+    def good_token(self):  # XXX: @token.decoder
+        """Is `token` good?
+
+        .. todo:: acme-spec wants "It MUST NOT contain any non-ASCII
+           characters", but it should also warrant that it doesn't
+           contain ".." or "/"...
+
+        """
+        # TODO: check that path combined with uri does not go above
+        # URI_ROOT_PATH!
+        return '..' not in self.token and '/' not in self.token
 
 
 @ChallengeResponse.register
 class SimpleHTTPResponse(ChallengeResponse):
     """ACME "simpleHttp" challenge response.
 
-    :ivar unicode path:
-    :ivar unicode tls:
+    :ivar bool tls:
 
     """
     typ = "simpleHttp"
-    path = jose.Field("path")
     tls = jose.Field("tls", default=True, omitempty=True)
 
     URI_ROOT_PATH = ".well-known/acme-challenge"
     """URI root path for the server provisioned resource."""
 
-    _URI_TEMPLATE = "{scheme}://{domain}/" + URI_ROOT_PATH + "/{path}"
-
-    MAX_PATH_LEN = 25
-    """Maximum allowed `path` length."""
+    _URI_TEMPLATE = "{scheme}://{domain}/" + URI_ROOT_PATH + "/{token}"
 
     CONTENT_TYPE = "application/jose+json"
-
-    @property
-    def good_path(self):
-        """Is `path` good?
-
-        .. todo:: acme-spec: "The value MUST be comprised entirely of
-           characters from the URL-safe alphabet for Base64 encoding
-           [RFC4648]", base64.b64decode ignores those characters
-
-        """
-        # TODO: check that path combined with uri does not go above
-        # URI_ROOT_PATH!
-        return len(self.path) <= 25
 
     @property
     def scheme(self):
@@ -104,17 +100,18 @@ class SimpleHTTPResponse(ChallengeResponse):
         """Port that the ACME client should be listening for validation."""
         return 443 if self.tls else 80
 
-    def uri(self, domain):
+    def uri(self, domain, chall):
         """Create an URI to the provisioned resource.
 
         Forms an URI to the HTTPS server provisioned resource
         (containing :attr:`~SimpleHTTP.token`).
 
         :param unicode domain: Domain name being verified.
+        :param challenges.SimpleHTTP chall:
 
         """
         return self._URI_TEMPLATE.format(
-            scheme=self.scheme, domain=domain, path=self.path)
+            scheme=self.scheme, domain=domain, token=chall.encode("token"))
 
     def gen_resource(self, chall):
         """Generate provisioned resource.
@@ -123,8 +120,7 @@ class SimpleHTTPResponse(ChallengeResponse):
         :rtype: SimpleHTTPProvisionedResource
 
         """
-        return SimpleHTTPProvisionedResource(
-            token=chall.token, path=self.path, tls=self.tls)
+        return SimpleHTTPProvisionedResource(token=chall.token, tls=self.tls)
 
     def gen_validation(self, chall, account_key, alg=jose.RS256, **kwargs):
         """Generate validation.
@@ -167,9 +163,7 @@ class SimpleHTTPResponse(ChallengeResponse):
             logger.debug(error)
             return False
 
-        return (resource.token == chall.token and
-                resource.path == self.path and
-                resource.tls == self.tls)
+        return resource.token == chall.token and resource.tls == self.tls
 
     def simple_verify(self, chall, domain, account_public_key, port=None):
         """Simple verify.
@@ -205,15 +199,15 @@ class SimpleHTTPResponse(ChallengeResponse):
                 "Using non-standard port for SimpleHTTP verification: %s", port)
             domain += ":{0}".format(port)
 
-        uri = self.uri(domain)
+        uri = self.uri(domain, chall)
         logger.debug("Verifying %s at %s...", chall.typ, uri)
         try:
             http_response = requests.get(uri, verify=False)
         except requests.exceptions.RequestException as error:
             logger.error("Unable to reach %s: %s", uri, error)
             return False
-        logger.debug(
-            "Received %s. Headers: %s", http_response, http_response.headers)
+        logger.debug("Received %s: %s. Headers: %s", http_response,
+                     http_response.text, http_response.headers)
 
         if self.CONTENT_TYPE != http_response.headers.get(
             "Content-Type", self.CONTENT_TYPE):
@@ -232,8 +226,9 @@ class SimpleHTTPProvisionedResource(jose.JSONObjectWithFields):
     """SimpleHTTP provisioned resource."""
     typ = fields.Fixed("type", SimpleHTTP.typ)
     token = SimpleHTTP._fields["token"]
-    path = SimpleHTTPResponse._fields["path"]
-    tls = SimpleHTTPResponse._fields["tls"]
+    # If the "tls" field is not included in the response, then
+    # validation object MUST have its "tls" field set to "true".
+    tls = jose.Field("tls", omitempty=False)
 
 
 @Challenge.register
