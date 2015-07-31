@@ -97,6 +97,8 @@ class Reverter(object):
 
         .. todo:: Decide on a policy for error handling, OSError IOError...
 
+        :raises .errors.ReverterError: If invalid directory structure.
+
         """
         backups = os.listdir(self.config.backup_dir)
         backups.sort(reverse=True)

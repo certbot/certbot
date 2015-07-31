@@ -41,6 +41,20 @@ class AugeasConfiguratorTest(util.ApacheTest):
 
         self.assertRaises(errors.PluginError, self.config.save)
 
+    def test_bad_save_checkpoint(self):
+        self.config.reverter.add_to_checkpoint = mock.Mock(
+            side_effect=errors.ReverterError)
+        self.config.parser.add_dir(
+            self.vh_truth[0].path, "Test", "bad_save_ckpt")
+        self.assertRaises(errors.PluginError, self.config.save)
+
+    def test_bad_save_finalize_checkpoint(self):
+        self.config.reverter.finalize_checkpoint = mock.Mock(
+            side_effect=errors.ReverterError)
+        self.config.parser.add_dir(
+            self.vh_truth[0].path, "Test", "bad_save_ckpt")
+        self.assertRaises(errors.PluginError, self.config.save, "Title")
+
     def test_finalize_save(self):
         mock_finalize = mock.Mock()
         self.config.reverter = mock_finalize
@@ -55,12 +69,26 @@ class AugeasConfiguratorTest(util.ApacheTest):
         self.config.recovery_routine()
         self.assertEqual(mock_load.call_count, 1)
 
+    def test_recovery_routine_error(self):
+        self.config.reverter.recovery_routine = mock.Mock(
+            side_effect=errors.ReverterError)
+
+        self.assertRaises(
+            errors.PluginError, self.config.recovery_routine)
+
     def test_revert_challenge_config(self):
         mock_load = mock.Mock()
         self.config.aug.load = mock_load
 
         self.config.revert_challenge_config()
         self.assertEqual(mock_load.call_count, 1)
+
+    def test_revert_challenge_config_error(self):
+        self.config.reverter.revert_temporary_config = mock.Mock(
+            side_effect=errors.ReverterError)
+
+        self.assertRaises(
+            errors.PluginError, self.config.revert_challenge_config)
 
     def test_rollback_checkpoints(self):
         mock_load = mock.Mock()
@@ -69,8 +97,18 @@ class AugeasConfiguratorTest(util.ApacheTest):
         self.config.rollback_checkpoints()
         self.assertEqual(mock_load.call_count, 1)
 
+    def test_rollback_error(self):
+        self.config.reverter.rollback_checkpoints = mock.Mock(
+            side_effect=errors.ReverterError)
+        self.assertRaises(errors.PluginError, self.config.rollback_checkpoints)
+
     def test_view_config_changes(self):
         self.config.view_config_changes()
+
+    def test_view_config_changes_error(self):
+        self.config.reverter.view_config_changes = mock.Mock(
+            side_effect=errors.ReverterError)
+        self.assertRaises(errors.PluginError, self.config.view_config_changes)
 
 
 if __name__ == "__main__":

@@ -171,6 +171,8 @@ class IAuthenticator(IPlugin):
         :rtype: :class:`list` of
             :class:`acme.challenges.ChallengeResponse`
 
+        :raises .PluginError: If challenges cannot be performed
+
         """
 
     def cleanup(achalls):
@@ -179,6 +181,8 @@ class IAuthenticator(IPlugin):
         :param list achalls: Non-empty (guaranteed) list of
             :class:`~letsencrypt.achallenges.AnnotatedChallenge`
             instances, a subset of those previously passed to :func:`perform`.
+
+        :raises PluginError: if original configuration cannot be restored
 
         """
 
@@ -253,6 +257,8 @@ class IInstaller(IPlugin):
         :param str key_path: absolute path to the private key file
         :param str chain_path: absolute path to the certificate chain file
 
+        :raises .PluginError: when cert cannot be deployed
+
         """
 
     def enhance(domain, enhancement, options=None):
@@ -265,6 +271,9 @@ class IInstaller(IPlugin):
             Check documentation of
             :const:`~letsencrypt.constants.ENHANCEMENTS`
             for expected options for each enhancement.
+
+        :raises .PluginError: If Enhancement is not supported, or if
+            an error occurs during the enhancement.
 
         """
 
@@ -304,19 +313,37 @@ class IInstaller(IPlugin):
         :param bool temporary: Indicates whether the changes made will
             be quickly reversed in the future (challenges)
 
+        :raises .PluginError: when save is unsuccessful
+
         """
 
     def rollback_checkpoints(rollback=1):
-        """Revert `rollback` number of configuration checkpoints."""
+        """Revert `rollback` number of configuration checkpoints.
+
+        :raises .PluginError: when configuration cannot be fully reverted
+
+        """
 
     def view_config_changes():
-        """Display all of the LE config changes."""
+        """Display all of the LE config changes.
+
+        :raises .PluginError: when config changes cannot be parsed
+
+        """
 
     def config_test():
-        """Make sure the configuration is valid."""
+        """Make sure the configuration is valid.
+
+        :raises .MisconfigurationError: when the config is not in a usable state
+
+        """
 
     def restart():
-        """Restart or refresh the server content."""
+        """Restart or refresh the server content.
+
+        :raises .PluginError: when server cannot be restarted
+
+        """
 
 
 class IDisplay(zope.interface.Interface):
