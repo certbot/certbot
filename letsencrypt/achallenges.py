@@ -17,10 +17,16 @@ Note, that all annotated challenges act as a proxy objects::
   achall.token == challb.token
 
 """
+import logging
+import os
+
 import OpenSSL
 
 from acme import challenges
 from acme import jose
+
+
+logger = logging.getLogger(__name__)
 
 
 # pylint: disable=too-few-public-methods
@@ -83,8 +89,15 @@ class DVSNI(AnnotatedChallenge):
 
 class SimpleHTTP(AnnotatedChallenge):
     """Client annotated "simpleHttp" ACME challenge."""
-    __slots__ = ('challb', 'domain', 'key')
+    __slots__ = ('challb', 'domain', 'account')
     acme_type = challenges.SimpleHTTP
+
+    def gen_response_and_validation(self, tls):
+        response = challenges.SimpleHTTPResponse(tls=tls)
+
+        validation = response.gen_validation(self.chall, self.account.key)
+        logger.debug("Simple HTTP validation payload: %s", validation.payload)
+        return response, validation
 
 
 class DNS(AnnotatedChallenge):

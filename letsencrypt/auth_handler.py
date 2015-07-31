@@ -351,7 +351,7 @@ def challb_to_achall(challb, account, domain):
             challb=challb, domain=domain, account=account)
     elif isinstance(chall, challenges.SimpleHTTP):
         return achallenges.SimpleHTTP(
-            challb=challb, domain=domain, key=account.key)
+            challb=challb, domain=domain, account=account)
     elif isinstance(chall, challenges.DNS):
         return achallenges.DNS(challb=challb, domain=domain)
     elif isinstance(chall, challenges.RecoveryContact):

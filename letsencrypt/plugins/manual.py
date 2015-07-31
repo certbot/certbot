@@ -1,6 +1,7 @@
 """Manual plugin."""
 import os
 import logging
+import pipes
 import shutil
 import signal
 import subprocess
@@ -55,7 +56,7 @@ command on the target server (as root):
     HTTP_TEMPLATE = """\
 mkdir -p {root}/public_html/{response.URI_ROOT_PATH}
 cd {root}/public_html
-echo -n {achall.token} > {response.URI_ROOT_PATH}/{response.path}
+echo -n {validation} > {response.URI_ROOT_PATH}/{encoded_token}
 # run only once per server:
 python -c "import BaseHTTPServer, SimpleHTTPServer; \\
 SimpleHTTPServer.SimpleHTTPRequestHandler.extensions_map = {{'': '{ct}'}}; \\
@@ -67,7 +68,7 @@ s.serve_forever()" """
     HTTPS_TEMPLATE = """\
 mkdir -p {root}/public_html/{response.URI_ROOT_PATH}
 cd {root}/public_html
-echo -n {achall.token} > {response.URI_ROOT_PATH}/{response.path}
+echo -n {validation} > {response.URI_ROOT_PATH}/{encoded_token}
 # run only once per server:
 openssl req -new -newkey rsa:4096 -subj "/" -days 1 -nodes -x509 -keyout ../key.pem -out ../cert.pem
 python -c "import BaseHTTPServer, SimpleHTTPServer, ssl; \\
@@ -124,13 +125,13 @@ binary for temporary key/certificate generation.""".replace("\n", "")
         # same path for each challenge response would be easier for
         # users, but will not work if multiple domains point at the
         # same server: default command doesn't support virtual hosts
-        response = challenges.SimpleHTTPResponse(
-            path=jose.b64encode(os.urandom(18)),
+        response, validation = achall.gen_response_and_validation(
             tls=(not self.config.no_simple_http_tls))
-        assert response.good_path  # is encoded os.urandom(18) good?
 
         command = self.template.format(
             root=self._root, achall=achall, response=response,
+            validation=pipes.quote(validation.json_dumps()),
+            encoded_token=achall.chall.encode("token"),
             ct=response.CONTENT_TYPE, port=(
                 response.port if self.config.simple_http_port is None
                 else self.config.simple_http_port))
@@ -161,7 +162,8 @@ binary for temporary key/certificate generation.""".replace("\n", "")
                 command=command))
 
         if response.simple_verify(
-                achall.challb, achall.domain, self.config.simple_http_port):
+                achall.chall, achall.domain,
+                achall.account.key.public_key(), self.config.simple_http_port):
             return response
         else:
             if self.conf("test-mode") and self._httpd.poll() is not None:
