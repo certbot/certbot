@@ -37,7 +37,7 @@ class RawNginxParser(object):
         + Group(ZeroOrMore(Group(comment | assignment) | block))
         + right_bracket)
 
-    script = OneOrMore(Group(comment | assignment) | block) + stringEnd
+    script = OneOrMore(Group(comment | assignment) ^ block) + stringEnd
 
     def __init__(self, source):
         self.source = source
