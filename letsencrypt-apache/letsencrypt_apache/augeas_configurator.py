@@ -45,6 +45,9 @@ class AugeasConfigurator(common.Plugin):
 
         :param str lens: lens to check for errors
 
+        :raises .errors.PluginError: If there has been an error in parsing with
+            the specified lens.
+
         """
         error_files = self.aug.match("/augeas//error")
 
@@ -58,7 +61,6 @@ class AugeasConfigurator(common.Plugin):
                     "There has been an error in parsing the file (%s): %s",
                     # Strip off /augeas/files and /error
                     path[13:len(path) - 6], self.aug.get(path + "/message"))
-                logger.error(msg)
                 raise errors.PluginError(msg)
 
     def save(self, title=None, temporary=False):
@@ -74,6 +76,10 @@ class AugeasConfigurator(common.Plugin):
 
         :param bool temporary: Indicates whether the changes made will
             be quickly reversed in the future (ie. challenges)
+
+        :raises .errors.PluginError: If there was an error in Augeas, in an
+            attempt to save the configuration.
+        :raises .errors.ReverterError: If unable to create the checkpoint
 
         """
         save_state = self.aug.get("/augeas/save")
@@ -138,13 +144,19 @@ class AugeasConfigurator(common.Plugin):
 
         Reverts all modified files that have not been saved as a checkpoint
 
+        :raises .errors.ReverterError: If unable to recover the configuration
+
         """
         self.reverter.recovery_routine()
         # Need to reload configuration after these changes take effect
         self.aug.load()
 
     def revert_challenge_config(self):
-        """Used to cleanup challenge configurations."""
+        """Used to cleanup challenge configurations.
+
+        :raises .errors.ReverterError: If unable to revert the challenge config.
+
+        """
         self.reverter.revert_temporary_config()
         self.aug.load()
 
@@ -153,10 +165,18 @@ class AugeasConfigurator(common.Plugin):
 
         :param int rollback: Number of checkpoints to revert
 
+        :raises .errors.ReverterError: If there is a problem with the input or
+            the function is unable to correctly revert the configuration
+
         """
         self.reverter.rollback_checkpoints(rollback)
         self.aug.load()
 
     def view_config_changes(self):
-        """Show all of the configuration changes that have taken place."""
+        """Show all of the configuration changes that have taken place.
+
+        :raises .errors.ReverterError: If there is a problem while processing
+            the checkpoints directories.
+
+        """
         self.reverter.view_config_changes()

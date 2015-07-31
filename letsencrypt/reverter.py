@@ -398,6 +398,8 @@ class Reverter(object):
         finalized. This is useful to protect against crashes and other
         execution interruptions.
 
+        :raises .errors.ReverterError: If unable to recover the configuration
+
         """
         # First, any changes found in IConfig.temp_checkpoint_dir are removed,
         # then IN_PROGRESS changes are removed The order is important.
