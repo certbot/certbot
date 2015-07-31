@@ -136,7 +136,7 @@ class SimpleHTTPResponseTest(unittest.TestCase):
             jose.JWS.sign(payload=bad_resource.json_dumps().encode('utf-8'),
                           alg=jose.RS256, key=account_key)
             for bad_resource in (resource.update(tls=True),
-                                 resource.update(token=r'x'*20))
+                                 resource.update(token=b'x'*20))
         )
         for validation in validations:
             self.assertFalse(self.resp_http.check_validation(
@@ -219,11 +219,11 @@ class DVSNIResponseTest(unittest.TestCase):
 
         from acme.challenges import DVSNI
         self.chall = DVSNI(
-            token=jose.b64decode('a82d5ff8ef740d12881f6d3c2277ab2e'))
+            token=jose.b64decode(b'a82d5ff8ef740d12881f6d3c2277ab2e'))
 
         from acme.challenges import DVSNIResponse
         self.validation = jose.JWS.sign(
-            payload=self.chall.json_dumps().encode(),
+            payload=self.chall.json_dumps(sort_keys=True).encode(),
             key=self.key, alg=jose.RS256)
         self.msg = DVSNIResponse(validation=self.validation)
         self.jmsg_to = {

@@ -70,7 +70,7 @@ class SimpleHTTP(DVChallenge):
         """
         # TODO: check that path combined with uri does not go above
         # URI_ROOT_PATH!
-        return '..' not in self.token and '/' not in self.token
+        return b'..' not in self.token and b'/' not in self.token
 
 
 @ChallengeResponse.register
@@ -134,7 +134,8 @@ class SimpleHTTPResponse(ChallengeResponse):
 
         """
         return jose.JWS.sign(
-            payload=self.gen_resource(chall).json_dumps().encode('utf-8'),
+            payload=self.gen_resource(chall).json_dumps(
+                sort_keys=True).encode('utf-8'),
             key=account_key, alg=alg, **kwargs)
 
     def check_validation(self, validation, chall, account_public_key):
@@ -258,7 +259,7 @@ class DVSNI(DVChallenge):
 
         """
         return DVSNIResponse(validation=jose.JWS.sign(
-            payload=self.json_dumps().encode('utf-8'),
+            payload=self.json_dumps(sort_keys=True).encode('utf-8'),
             key=account_key, alg=alg, **kwargs))
 
 
