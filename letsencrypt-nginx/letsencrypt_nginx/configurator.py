@@ -444,7 +444,7 @@ class NginxConfigurator(common.Plugin):
         # nginx < 0.8.48 uses machine hostname as default server_name instead of
         # the empty string
         if nginx_version < (0, 8, 48):
-            raise errors.PluginError("Nginx version must be 0.8.48+")
+            raise errors.NotSupportedError("Nginx version must be 0.8.48+")
 
         return nginx_version
 

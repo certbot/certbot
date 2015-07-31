@@ -102,14 +102,19 @@ class IPlugin(zope.interface.Interface):
     def prepare():
         """Prepare the plugin.
 
-         Finish up any additional initialization.
+        Finish up any additional initialization.
 
-         :raises .MisconfigurationError:
-             when full initialization cannot be completed. Plugin will
-             be displayed on a list of available plugins.
-         :raises .NoInstallationError:
-             when the necessary programs/files cannot be located. Plugin
-             will NOT be displayed on a list of available plugins.
+        :raises .PluginError:
+            when full initialization cannot be completed.
+        :raises .MisconfigurationError:
+            when full initialization cannot be completed. Plugin will
+            be displayed on a list of available plugins.
+        :raises .NoInstallationError:
+            when the necessary programs/files cannot be located. Plugin
+            will NOT be displayed on a list of available plugins.
+        :raises .NotSupportedError:
+            when the installation is recognized, but the version is not
+            currently supported.
 
         """
 
