@@ -40,6 +40,11 @@ class SimpleHTTPTest(unittest.TestCase):
         from acme.challenges import SimpleHTTP
         hash(SimpleHTTP.from_json(self.jmsg))
 
+    def test_good_token(self):
+        self.assertTrue(self.msg.good_token)
+        self.assertFalse(
+            self.msg.update(token=b'..').good_token)
+
 
 class SimpleHTTPResponseTest(unittest.TestCase):
     # pylint: disable=too-many-instance-attributes
@@ -80,12 +85,6 @@ class SimpleHTTPResponseTest(unittest.TestCase):
         from acme.challenges import SimpleHTTPResponse
         hash(SimpleHTTPResponse.from_json(self.jmsg_http))
         hash(SimpleHTTPResponse.from_json(self.jmsg_https))
-
-    def test_good_path(self):
-        self.assertTrue(self.msg_http.good_path)
-        self.assertTrue(self.msg_https.good_path)
-        self.assertFalse(
-            self.msg_http.update(path=(self.msg_http.path * 10)).good_path)
 
     def test_scheme(self):
         self.assertEqual('http', self.msg_http.scheme)
