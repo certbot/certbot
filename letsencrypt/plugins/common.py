@@ -155,13 +155,13 @@ class Dvsni(object):
         :rtype: str
 
         """
-        return os.path.join(
-            self.configurator.config.work_dir, achall.nonce_domain + ".crt")
+        return os.path.join(self.configurator.config.work_dir,
+                            achall.chall.encode("token") + ".crt")
 
     def get_key_path(self, achall):
         """Get standardized path to challenge key."""
-        return os.path.join(
-            self.configurator.config.work_dir, achall.nonce_domain + '.pem')
+        return os.path.join(self.configurator.config.work_dir,
+                            achall.chall.encode("token") + '.pem')
 
     def _setup_challenge_cert(self, achall, s=None):
         # pylint: disable=invalid-name
