@@ -267,12 +267,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 "in the Apache config", target_name)
             raise errors.PluginError("No vhost selected")
 
-        if not vhost.ssl:
+        elif not vhost.ssl:
             addrs = self._get_proposed_addrs(vhost, "443")
             # TODO: Conflicts is too conservative
             if not any(vhost.enabled and vhost.conflicts(addrs) for vhost in self.vhosts):
                 vhost = self.make_vhost_ssl(vhost)
-                self.assoc[target_name] = vhost
             else:
                 logger.error(
                     "The selected vhost would conflict with other HTTPS "
@@ -280,6 +279,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     "vhost or add ServerNames to your configuration.")
                 raise errors.PluginError(
                     "VirtualHost not able to be selected.")
+            
+        self.assoc[target_name] = vhost
         return vhost
 
 
