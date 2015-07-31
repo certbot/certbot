@@ -1,4 +1,5 @@
 """Reverter class saves configuration checkpoints and allows for recovery."""
+import csv
 import logging
 import os
 import shutil
@@ -20,12 +21,17 @@ logger = logging.getLogger(__name__)
 class Reverter(object):
     """Reverter Class - save and revert configuration checkpoints.
 
+    .. note:: Consider moving everything over to CSV format.
+
     :param config: Configuration.
     :type config: :class:`letsencrypt.interfaces.IConfig`
 
     """
     def __init__(self, config):
         self.config = config
+
+        le_util.make_or_verify_dir(
+            config.backup_dir, constants.CONFIG_DIRS_MODE, os.geteuid())
 
     def revert_temporary_config(self):
         """Reload users original configuration files after a temporary save.
@@ -91,6 +97,8 @@ class Reverter(object):
 
         .. todo:: Decide on a policy for error handling, OSError IOError...
 
+        :raises .errors.ReverterError: If invalid directory structure.
+
         """
         backups = os.listdir(self.config.backup_dir)
         backups.sort(reverse=True)
@@ -98,6 +106,7 @@ class Reverter(object):
         if not backups:
             logger.info("The Let's Encrypt client has not saved any backups "
                         "of your configuration")
+
             return
         # Make sure there isn't anything unexpected in the backup folder
         # There should only be timestamped (float) directories
@@ -201,7 +210,7 @@ class Reverter(object):
             notes_fd.write(save_notes)
 
     def _read_and_append(self, filepath):  # pylint: disable=no-self-use
-        """Reads the file lines and returns a fd.
+        """Reads the file lines and returns a file obj.
 
         Read the file returning the lines, and a pointer to the end of the file.
 
@@ -227,6 +236,10 @@ class Reverter(object):
         :raises errors.ReverterError: If unable to recover checkpoint
 
         """
+        # Undo all commands
+        if os.path.isfile(os.path.join(cp_dir, "COMMANDS")):
+            self._run_undo_commands(os.path.join(cp_dir, "COMMANDS"))
+        # Revert all changed files
         if os.path.isfile(os.path.join(cp_dir, "FILEPATHS")):
             try:
                 with open(os.path.join(cp_dir, "FILEPATHS")) as paths_fd:
@@ -250,6 +263,17 @@ class Reverter(object):
             logger.error("Unable to remove directory: %s", cp_dir)
             raise errors.ReverterError(
                 "Unable to remove directory: %s" % cp_dir)
+
+    def _run_undo_commands(self, filepath):  # pylint: disable=no-self-use
+        """Run all commands in a file."""
+        with open(filepath, 'rb') as csvfile:
+            csvreader = csv.reader(csvfile)
+            for command in reversed(list(csvreader)):
+                try:
+                    le_util.run_script(command)
+                except errors.SubprocessError:
+                    logger.error(
+                        "Unable to run undo command: %s", " ".join(command))
 
     def _check_tempfile_saves(self, save_files):
         """Verify save isn't overwriting any temporary files.
@@ -303,13 +327,7 @@ class Reverter(object):
             raise errors.ReverterError(
                 "Forgot to provide files to registration call")
 
-        if temporary:
-            cp_dir = self.config.temp_checkpoint_dir
-        else:
-            cp_dir = self.config.in_progress_dir
-
-        le_util.make_or_verify_dir(
-            cp_dir, constants.CONFIG_DIRS_MODE, os.geteuid())
+        cp_dir = self._get_cp_dir(temporary)
 
         # Append all new files (that aren't already registered)
         new_fd = None
@@ -328,12 +346,61 @@ class Reverter(object):
             if new_fd is not None:
                 new_fd.close()
 
+    def register_undo_command(self, temporary, command):
+        """Register a command to be run to undo actions taken.
+
+        .. warning:: This function does not enforce order of operations in terms
+            of file modification vs. command registration.  All undo commands
+            are run first before all normal files are reverted to their previous
+            state.  If you need to maintain strict order, you may create
+            checkpoints before and after the the command registration. This
+            function may be improved in the future based on demand.
+
+        :param bool temporary: Whether the command should be saved in the
+            IN_PROGRESS or TEMPORARY checkpoints.
+        :param command: Command to be run.
+        :type command: list of str
+
+        """
+        commands_fp = os.path.join(self._get_cp_dir(temporary), "COMMANDS")
+        command_file = None
+        try:
+            if os.path.isfile(commands_fp):
+                command_file = open(commands_fp, "ab")
+            else:
+                command_file = open(commands_fp, "wb")
+
+            csvwriter = csv.writer(command_file)
+            csvwriter.writerow(command)
+
+        except (IOError, OSError):
+            logger.error("Unable to register undo command")
+            raise errors.ReverterError(
+                "Unable to register undo command.")
+        finally:
+            if command_file is not None:
+                command_file.close()
+
+    def _get_cp_dir(self, temporary):
+        """Return the proper reverter directory."""
+        if temporary:
+            cp_dir = self.config.temp_checkpoint_dir
+        else:
+            cp_dir = self.config.in_progress_dir
+
+        le_util.make_or_verify_dir(
+            cp_dir, constants.CONFIG_DIRS_MODE, os.geteuid())
+
+        return cp_dir
+
     def recovery_routine(self):
         """Revert configuration to most recent finalized checkpoint.
 
         Remove all changes (temporary and permanent) that have not been
         finalized. This is useful to protect against crashes and other
         execution interruptions.
+
+        :raises .errors.ReverterError: If unable to recover the configuration
 
         """
         # First, any changes found in IConfig.temp_checkpoint_dir are removed,
@@ -380,7 +447,7 @@ class Reverter(object):
                         os.remove(path)
                     else:
                         logger.warning(
-                            "File: %s - Could not be found to be deleted%s"
+                            "File: %s - Could not be found to be deleted %s - "
                             "LE probably shut down unexpectedly",
                             os.linesep, path)
         except (IOError, OSError):
