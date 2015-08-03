@@ -167,7 +167,9 @@ def test_enhancements(plugin, domains):
     supported = plugin.supported_enhancements()
 
     if "redirect" not in supported:
-        return True
+        logger.error("The plugin and this program support no common "
+                     "enhancements")
+        return False
 
     for domain in domains:
         try:
