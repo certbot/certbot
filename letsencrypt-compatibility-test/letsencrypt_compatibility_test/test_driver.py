@@ -41,8 +41,9 @@ def test_authenticator(plugin, config, temp_dir):
 
     achalls = _create_achalls(plugin)
     if not achalls:
-        # Plugin/tests support no common challenge types
-        return True
+        logger.error("The plugin and this program support no common "
+                     "challenge types")
+        return False
 
     try:
         responses = plugin.perform(achalls)
@@ -208,7 +209,7 @@ def _save_and_restart(plugin, title=None):
 def test_rollback(plugin, config, backup):
     """Tests the rollback checkpoints function"""
     try:
-        plugin.rollback_checkpoints(2)
+        plugin.rollback_checkpoints(1337)
     except le_errors.Error as error:
         logger.error("Plugin raised an exception during rollback:")
         logger.exception(error)
@@ -281,7 +282,7 @@ def setup_logging(args):
     handler = logging.StreamHandler()
 
     root_logger = logging.getLogger()
-    root_logger.setLevel(logging.WARNING - args.verbose_count * 10)
+    root_logger.setLevel(logging.ERROR - args.verbose_count * 10)
     root_logger.addHandler(handler)
 
 
