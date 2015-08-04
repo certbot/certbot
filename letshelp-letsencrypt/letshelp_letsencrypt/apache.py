@@ -35,8 +35,8 @@ argument and the path to the binary.
 
 # Keywords likely to be found in filenames of sensitive files
 _SENSITIVE_FILENAME_REGEX = re.compile(r"^(?!.*proxy_fdpass).*pass.*$|private|"
-                                       r"secret|cert|crt|key|\.pem|\.der|rsa|"
-                                       r"dsa|pw")
+                                       r"secret|cert|crt|key|rsa|dsa|pw|\.pem|"
+                                       r"\.der|\.p12|\.pfx|\.p7b")
 
 
 def make_and_verify_selection(server_root, temp_dir):
