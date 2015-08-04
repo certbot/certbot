@@ -5,7 +5,7 @@ import unittest
 from pyparsing import ParseException
 
 from letsencrypt_nginx.nginxparser import (
-    RawNginxParser, load, dumps, dump)
+    RawNginxParser, loads, load, dumps, dump)
 from letsencrypt_nginx.tests import util
 
 
@@ -160,6 +160,13 @@ class TestRawNginxParser(unittest.TestCase):
               ['#', ' listen 80;']]],
         ])
 
+    def test_issue_518(self):
+        parsed = loads('if ($http_accept ~* "webp") { set $webp "true"; }')
+
+        self.assertEqual(parsed, [
+            [['if', '($http_accept ~* "webp")'],
+             [['set', '$webp "true"']]]
+        ])
 
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover

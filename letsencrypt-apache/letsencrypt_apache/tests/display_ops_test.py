@@ -5,9 +5,11 @@ import unittest
 import mock
 import zope.component
 
-from letsencrypt_apache.tests import util
-
 from letsencrypt.display import util as display_util
+
+from letsencrypt_apache import obj
+
+from letsencrypt_apache.tests import util
 
 
 class SelectVhostTest(unittest.TestCase):
@@ -52,6 +54,18 @@ class SelectVhostTest(unittest.TestCase):
         self._call(self.vhosts)
 
         self.assertEqual(mock_logger.debug.call_count, 1)
+
+    @mock.patch("letsencrypt_apache.display_ops.zope.component.getUtility")
+    def test_multiple_names(self, mock_util):
+        mock_util().menu.return_value = (display_util.OK, 4)
+
+        self.vhosts.append(
+            obj.VirtualHost(
+                "path", "aug_path", set([obj.Addr.fromstring("*:80")]),
+                False, False,
+                "wildcard.com", set(["*.wildcard.com"])))
+
+        self.assertEqual(self.vhosts[4], self._call(self.vhosts))
 
 
 if __name__ == "__main__":

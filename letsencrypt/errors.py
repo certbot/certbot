@@ -5,6 +5,10 @@ class Error(Exception):
     """Generic Let's Encrypt client error."""
 
 
+class SubprocessError(Error):
+    """Subprocess handling error."""
+
+
 class AccountStorageError(Error):
     """Generic `.AccountStorage` error."""
 
@@ -64,6 +68,9 @@ class NoInstallationError(PluginError):
 
 class MisconfigurationError(PluginError):
     """Let's Encrypt Misconfiguration error."""
+
+class NotSupportedError(PluginError):
+    """Let's Encrypt Plugin function not supported error."""
 
 
 class RevokerError(Error):
