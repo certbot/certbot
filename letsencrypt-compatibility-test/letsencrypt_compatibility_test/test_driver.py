@@ -249,11 +249,35 @@ def _create_backup(config, temp_dir):
 
 
 def _dirs_are_unequal(dir1, dir2):
-    """Returns True if dir1 and dir2 are equal"""
-    dircmp = filecmp.dircmp(dir1, dir2)
+    """Returns True if dir1 and dir2 are unequal"""
+    dircmps = [filecmp.dircmp(dir1, dir2)]
+    while len(dircmps):
+        dircmp = dircmps.pop()
+        if dircmp.left_only or dircmp.right_only:
+            logger.error("The following files and directories are only "
+                         "present in one directory")
+            if dircmp.left_only:
+                logger.error(dircmp.left_only)
+            else:
+                logger.error(dircmp.right_only)
+            return True
+        elif dircmp.common_funny or dircmp.funny_files:
+            logger.error("The following files and directories could not be "
+                         "compared:")
+            if dircmp.common_funny:
+                logger.error(dircmp.common_funny)
+            else:
+                logger.error(dircmp.funny_files)
+            return True
+        elif dircmp.diff_files:
+            logger.error("The following files differ:")
+            logger.error(dircmp.diff_files)
+            return True
 
-    return (dircmp.left_only or dircmp.right_only or
-            dircmp.diff_files or dircmp.funny_files)
+        for subdir in dircmp.subdirs.itervalues():
+            dircmps.append(subdir)
+
+    return False
 
 
 def get_args():
