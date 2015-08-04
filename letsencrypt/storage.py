@@ -91,7 +91,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             renewal config file.
         :param .RenewerConfiguration cli_config:
 
-        :raises ValueError: if the configuration file's name didn't end
+        :raises .CertStorageError: if the configuration file's name didn't end
             in ".conf", or the file is missing or broken.
         :raises TypeError: if the provided renewal configuration isn't a
             ConfigObj object.
@@ -119,7 +119,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         self.configuration.merge(self.configfile)
 
         if not all(x in self.configuration for x in ALL_FOUR):
-            raise errors.StorageError(
+            raise errors.CertStorageError(
                 "renewal config file {0} is missing a required "
                 "file reference".format(configfile))
 
@@ -266,7 +266,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
         """
         if kind not in ALL_FOUR:
-            raise ValueError("unknown kind of item")
+            raise errors.CertStorageError("unknown kind of item")
         where = os.path.dirname(self.current_target(kind))
         return os.path.join(where, "{0}{1}.pem".format(kind, version))
 
@@ -284,7 +284,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
         """
         if kind not in ALL_FOUR:
-            raise ValueError("unknown kind of item")
+            raise errors.CertStorageError("unknown kind of item")
         where = os.path.dirname(self.current_target(kind))
         files = os.listdir(where)
         pattern = re.compile(r"^{0}([0-9]+)\.pem$".format(kind))
@@ -311,7 +311,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         :rtype: int
 
         """
-        # TODO: this can raise ValueError if there is no version overlap
+        # TODO: this can raise CertStorageError if there is no version overlap
         #       (it should probably return None instead)
         # TODO: this can raise a spurious AttributeError if the current
         #       link for any kind is missing (it should probably return None)
@@ -553,7 +553,8 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         config_file, config_filename = le_util.unique_lineage_name(
             cli_config.renewal_configs_dir, lineagename)
         if not config_filename.endswith(".conf"):
-            raise ValueError("renewal config file name must end in .conf")
+            raise errors.CertStorageError(
+                "renewal config file name must end in .conf")
 
         # Determine where on disk everything will go
         # lineagename will now potentially be modified based on which
@@ -562,9 +563,11 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         archive = os.path.join(cli_config.archive_dir, lineagename)
         live_dir = os.path.join(cli_config.live_dir, lineagename)
         if os.path.exists(archive):
-            raise ValueError("archive directory exists for " + lineagename)
+            raise errors.CertStorageError(
+                "archive directory exists for " + lineagename)
         if os.path.exists(live_dir):
-            raise ValueError("live directory exists for " + lineagename)
+            raise errors.CertStorageError(
+                "live directory exists for " + lineagename)
         os.mkdir(archive)
         os.mkdir(live_dir)
         relative_archive = os.path.join("..", "..", "archive", lineagename)
