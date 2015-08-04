@@ -20,6 +20,7 @@ from letsencrypt import configuration
 from letsencrypt import cli
 from letsencrypt import client
 from letsencrypt import crypto_util
+from letsencrypt import errors
 from letsencrypt import notify
 from letsencrypt import storage
 
@@ -164,7 +165,7 @@ def main(config=None, args=sys.argv[1:]):
             #       dramatically improve performance for large deployments
             #       where autorenewal is widely turned off.
             cert = storage.RenewableCert(rc_config, cli_config=cli_config)
-        except ValueError:
+        except errors.CertStorageError:
             # This indicates an invalid renewal configuration file, such
             # as one missing a required parameter (in the future, perhaps
             # also one that is internally inconsistent or is missing a
