@@ -11,6 +11,7 @@ ENV APACHE_RUN_USER=daemon \
     APACHE_LOG_DIR=/usr/local/apache2/logs 
 
 COPY letsencrypt-compatibility-test/letsencrypt_compatibility_test/configurators/apache/a2enmod.sh /usr/local/bin/
+COPY letsencrypt-compatibility-test/letsencrypt_compatibility_test/configurators/apache/a2dismod.sh /usr/local/bin/
 COPY letsencrypt-compatibility-test/letsencrypt_compatibility_test/testdata/rsa1024_key2.pem /usr/local/apache2/conf/
 COPY letsencrypt-compatibility-test/letsencrypt_compatibility_test/testdata/empty_cert.pem /usr/local/apache2/conf/
 

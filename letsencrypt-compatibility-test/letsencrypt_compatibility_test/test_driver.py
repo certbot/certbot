@@ -177,10 +177,14 @@ def test_enhancements(plugin, domains):
     for domain in domains:
         try:
             plugin.enhance(domain, "redirect")
-        except le_errors.Error as error:
+        except le_errors.PluginError as error:
             # Don't immediately fail because a redirect may already be enabled
             logger.warning("Plugin failed to enable redirect for %s:", domain)
             logger.warning("%s", error)
+        except le_errors.Error as error:
+            logger.error("An error occurred while enabling redirect for %s:",
+                         domain)
+            logger.exception(error)
 
     if not _save_and_restart(plugin, "enhanced"):
         return False
@@ -199,13 +203,13 @@ def test_enhancements(plugin, domains):
     return success
 
 
-def _try_until_true(func, max_tries=3):
+def _try_until_true(func, max_tries=5, sleep_time=0.5):
     """Calls func up to max_tries times until it returns True"""
     for _ in xrange(0, max_tries):
         if func():
             return True
         else:
-            time.sleep(1)
+            time.sleep(sleep_time)
 
     return False
 

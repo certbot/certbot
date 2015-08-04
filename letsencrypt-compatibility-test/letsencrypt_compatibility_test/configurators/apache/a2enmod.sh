@@ -1,7 +1,7 @@
 #!/bin/bash
-# An extremely simplified (and hacky) version of 'a2enmod' for the httpd
-# docker image. First argument is server_root and second argument is the module
-# to be enabled.
+# An extremely simplified version of `a2enmod` for enabling modules in the
+# httpd docker image. First argument is the server_root and the second is the
+# module to be enabled.
 
 APACHE_CONFDIR=$1
 

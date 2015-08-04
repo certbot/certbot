@@ -16,7 +16,7 @@ from letsencrypt_compatibility_test.configurators import common as configurators
 
 
 APACHE_VERSION_REGEX = re.compile(r"Apache/([0-9\.]*)", re.IGNORECASE)
-APACHE_COMMANDS = ["apachectl", "a2enmod"]
+APACHE_COMMANDS = ["apachectl", "a2enmod", "a2dismod"]
 
 
 class Proxy(configurators_common.Proxy):
@@ -148,7 +148,7 @@ class Proxy(configurators_common.Proxy):
         self.le_config.apache_ctl = "apachectl -d {0} -f {1}".format(
             server_root, config_file)
         self.le_config.apache_enmod = "a2enmod.sh {0}".format(server_root)
-        self.le_config.apache_dismod = self.le_config.apache_enmod
+        self.le_config.apache_dismod = "a2dismod.sh {0}".format(server_root)
         self.le_config.apache_init_script = self.le_config.apache_ctl + " -k"
 
         self._apache_configurator = configurator.ApacheConfigurator(
