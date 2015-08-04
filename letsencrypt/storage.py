@@ -11,6 +11,7 @@ import pytz
 import pyrfc3339
 
 from letsencrypt import constants
+from letsencrypt import errors
 from letsencrypt import le_util
 
 ALL_FOUR = ("cert", "privkey", "chain", "fullchain")
@@ -99,7 +100,8 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         self.cli_config = cli_config
         if isinstance(configfile, configobj.ConfigObj):
             if not os.path.basename(configfile.filename).endswith(".conf"):
-                raise ValueError("renewal config file name must end in .conf")
+                raise errors.CertStorageError(
+                    "renewal config file name must end in .conf")
             self.lineagename = os.path.basename(
                 configfile.filename)[:-len(".conf")]
         else:
@@ -117,8 +119,9 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         self.configuration.merge(self.configfile)
 
         if not all(x in self.configuration for x in ALL_FOUR):
-            raise ValueError("renewal config file {0} is missing a required "
-                             "file reference".format(configfile))
+            raise errors.StorageError(
+                "renewal config file {0} is missing a required "
+                "file reference".format(configfile))
 
         self.cert = self.configuration["cert"]
         self.privkey = self.configuration["privkey"]
@@ -213,7 +216,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
         """
         if kind not in ALL_FOUR:
-            raise ValueError("unknown kind of item")
+            raise errors.CertStorageError("unknown kind of item")
         link = getattr(self, kind)
         if not os.path.exists(link):
             return None
@@ -236,7 +239,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
         """
         if kind not in ALL_FOUR:
-            raise ValueError("unknown kind of item")
+            raise errors.CertStorageError("unknown kind of item")
         pattern = re.compile(r"^{0}([0-9]+)\.pem$".format(kind))
         target = self.current_target(kind)
         if target is None or not os.path.exists(target):
@@ -268,7 +271,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         return os.path.join(where, "{0}{1}.pem".format(kind, version))
 
     def available_versions(self, kind):
-        """Which lternative versions of the specified kind of item exist?
+        """Which alternative versions of the specified kind of item exist?
 
         The archive directory where the current version is stored is
         consulted to obtain the list of alternatives.
@@ -355,7 +358,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
         """
         if kind not in ALL_FOUR:
-            raise ValueError("unknown kind of item")
+            raise errors.CertStorageError("unknown kind of item")
         link = getattr(self, kind)
         filename = "{0}{1}.pem".format(kind, version)
         # Relative rather than absolute target directory
