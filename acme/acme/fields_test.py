@@ -7,6 +7,26 @@ import pytz
 from acme import jose
 
 
+class FixedTest(unittest.TestCase):
+    """Tests for acme.fields.Fixed."""
+
+    def setUp(self):
+        from acme.fields import Fixed
+        self.field = Fixed('name', 'x')
+
+    def test_decode(self):
+        self.assertEqual('x', self.field.decode('x'))
+
+    def test_decode_bad(self):
+        self.assertRaises(jose.DeserializationError, self.field.decode, 'y')
+
+    def test_encode(self):
+        self.assertEqual('x', self.field.encode('x'))
+
+    def test_encode_override(self):
+        self.assertEqual('y', self.field.encode('y'))
+
+
 class RFC3339FieldTest(unittest.TestCase):
     """Tests for acme.fields.RFC3339Field."""
 

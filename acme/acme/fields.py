@@ -1,7 +1,32 @@
 """ACME JSON fields."""
+import logging
+
 import pyrfc3339
 
 from acme import jose
+
+
+logger = logging.getLogger(__name__)
+
+
+class Fixed(jose.Field):
+    """Fixed field."""
+
+    def __init__(self, json_name, value):
+        self.value = value
+        super(Fixed, self).__init__(
+            json_name=json_name, default=value, omitempty=False)
+
+    def decode(self, value):
+        if value != self.value:
+            raise jose.DeserializationError('Expected {0!r}'.format(self.value))
+        return self.value
+
+    def encode(self, value):
+        if value != self.value:
+            logger.warn('Overriding fixed field ({0}) with {1}'.format(
+                self.json_name, value))
+        return value
 
 
 class RFC3339Field(jose.Field):
@@ -31,8 +56,6 @@ class Resource(jose.Field):
     def __init__(self, resource_type, *args, **kwargs):
         self.resource_type = resource_type
         super(Resource, self).__init__(
-            # TODO: omitempty used only to trick
-            # JSONObjectWithFieldsMeta._defaults..., server implementation
             'resource', default=resource_type, *args, **kwargs)
 
     def decode(self, value):

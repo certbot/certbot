@@ -156,7 +156,6 @@ class Registration(ResourceBody):
     :ivar acme.jose.jwk.JWK key: Public key.
     :ivar tuple contact: Contact information following ACME spec,
         `tuple` of `unicode`.
-    :ivar unicode recovery_token:
     :ivar unicode agreement:
 
     """
@@ -164,7 +163,6 @@ class Registration(ResourceBody):
     # JWS.signature.combined.jwk
     key = jose.Field('key', omitempty=True, decoder=jose.JWK.from_json)
     contact = jose.Field('contact', omitempty=True, default=())
-    recovery_token = jose.Field('recoveryToken', omitempty=True)
     agreement = jose.Field('agreement', omitempty=True)
 
     phone_prefix = 'tel:'

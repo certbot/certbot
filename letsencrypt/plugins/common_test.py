@@ -120,21 +120,12 @@ class DvsniTest(unittest.TestCase):
     achalls = [
         achallenges.DVSNI(
             challb=acme_util.chall_to_challb(
-                challenges.DVSNI(
-                    r="\x8c\x8a\xbf_-f\\cw\xee\xd6\xf8/\xa5\xe3\xfd\xeb9"
-                      "\xf1\xf5\xb9\xefVM\xc9w\xa4u\x9c\xe1\x87\xb4",
-                    nonce="7\xbc^\xb7]>\x00\xa1\x9bOcU\x84^Z\x18",
-                ), "pending"),
-            domain="encryption-example.demo", key=auth_key),
+                challenges.DVSNI(token=b'dvsni1'), "pending"),
+            domain="encryption-example.demo", account=mock.Mock(key=auth_key)),
         achallenges.DVSNI(
             challb=acme_util.chall_to_challb(
-                challenges.DVSNI(
-                    r="\xba\xa9\xda?<m\xaewmx\xea\xad\xadv\xf4\x02\xc9y\x80"
-                    "\xe2_X\t\xe7\xc7\xa4\t\xca\xf7&\x945",
-                    nonce="Y\xed\x01L\xac\x95\xf7pW\xb1\xd7\xa1\xb2\xc5"
-                          "\x96\xba",
-                ), "pending"),
-            domain="letsencrypt.demo", key=auth_key),
+                challenges.DVSNI(token=b'dvsni2'), "pending"),
+            domain="letsencrypt.demo", account=mock.Mock(key=auth_key)),
     ]
 
     def setUp(self):
@@ -153,10 +144,9 @@ class DvsniTest(unittest.TestCase):
         # http://www.voidspace.org.uk/python/mock/helpers.html#mock.mock_open
         mock_open, mock_safe_open = mock.mock_open(), mock.mock_open()
 
-        response = challenges.DVSNIResponse(s="randomS1")
-        achall = mock.MagicMock(nonce=self.achalls[0].nonce,
-                                nonce_domain=self.achalls[0].nonce_domain)
-        achall.gen_cert_and_response.return_value = ("pem", response)
+        response = challenges.DVSNIResponse(validation=mock.Mock())
+        achall = mock.MagicMock()
+        achall.gen_cert_and_response.return_value = (response, "cert", "key")
 
         with mock.patch("letsencrypt.plugins.common.open",
                         mock_open, create=True):
@@ -168,11 +158,10 @@ class DvsniTest(unittest.TestCase):
 
         # pylint: disable=no-member
         mock_open.assert_called_once_with(self.sni.get_cert_path(achall), "wb")
-        mock_open.return_value.write.assert_called_once_with("pem")
+        mock_open.return_value.write.assert_called_once_with("cert")
         mock_safe_open.assert_called_once_with(
             self.sni.get_key_path(achall), "wb", chmod=0o400)
-        mock_safe_open.return_value.write.assert_called_once_with(
-            achall.key.key.private_bytes())
+        mock_safe_open.return_value.write.assert_called_once_with("key")
 
 
 if __name__ == "__main__":
