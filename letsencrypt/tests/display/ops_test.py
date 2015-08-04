@@ -92,8 +92,18 @@ class PickPluginTest(unittest.TestCase):
     def test_single(self):
         plugin_ep = mock.MagicMock()
         plugin_ep.init.return_value = "foo"
+        plugin_ep.misconfigured = False
+
         self.reg.ifaces().verify().available.return_value = {"bar": plugin_ep}
         self.assertEqual("foo", self._call())
+
+    def test_single_misconfigured(self):
+        plugin_ep = mock.MagicMock()
+        plugin_ep.init.return_value = "foo"
+        plugin_ep.misconfigured = True
+
+        self.reg.ifaces().verify().available.return_value = {"bar": plugin_ep}
+        self.assertTrue(self._call() is None)
 
     def test_multiple(self):
         plugin_ep = mock.MagicMock()

@@ -172,7 +172,7 @@ def run(args, config, plugins):
         authenticator = display_ops.pick_authenticator(
             config, args.authenticator, plugins)
     else:
-        # TODO: this assume that user doesn't want to pick authenticator
+        # TODO: this assumes that user doesn't want to pick authenticator
         #       and installer separately...
         authenticator = installer = display_ops.pick_configurator(
             config, args.configurator, plugins)

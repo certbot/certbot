@@ -1,9 +1,14 @@
 """Common utilities for letsencrypt_apache."""
 import os
 import pkg_resources
+import sys
 import unittest
 
+import augeas
 import mock
+import zope.component
+
+from letsencrypt.display import util as display_util
 
 from letsencrypt.plugins import common
 
@@ -14,19 +19,20 @@ from letsencrypt_apache import obj
 
 class ApacheTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
 
-    def setUp(self):
+    def setUp(self, test_dir="debian_apache_2_4/two_vhost_80",
+              config_root="debian_apache_2_4/two_vhost_80/apache2"):
+        # pylint: disable=arguments-differ
         super(ApacheTest, self).setUp()
 
         self.temp_dir, self.config_dir, self.work_dir = common.dir_setup(
-            test_dir="debian_apache_2_4/two_vhost_80",
+            test_dir=test_dir,
             pkg="letsencrypt_apache.tests")
 
         self.ssl_options = common.setup_ssl_options(
             self.config_dir, constants.MOD_SSL_CONF_SRC,
             constants.MOD_SSL_CONF_DEST)
 
-        self.config_path = os.path.join(
-            self.temp_dir, "debian_apache_2_4/two_vhost_80/apache2")
+        self.config_path = os.path.join(self.temp_dir, config_root)
 
         self.rsa256_file = pkg_resources.resource_filename(
             "letsencrypt.tests", os.path.join("testdata", "rsa256_key.pem"))
@@ -34,29 +40,56 @@ class ApacheTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
             "letsencrypt.tests", os.path.join("testdata", "rsa256_key.pem"))
 
 
-def get_apache_configurator(
-        config_path, config_dir, work_dir, version=(2, 4, 7)):
-    """Create an Apache Configurator with the specified options."""
+class ParserTest(ApacheTest):  # pytlint: disable=too-few-public-methods
 
+    def setUp(self, test_dir="debian_apache_2_4/two_vhost_80",
+              config_root="debian_apache_2_4/two_vhost_80/apache2"):
+        super(ParserTest, self).setUp(test_dir, config_root)
+
+        zope.component.provideUtility(display_util.FileDisplay(sys.stdout))
+
+        from letsencrypt_apache.parser import ApacheParser
+        self.aug = augeas.Augeas(
+            flags=augeas.Augeas.NONE | augeas.Augeas.NO_MODL_AUTOLOAD)
+        with mock.patch("letsencrypt_apache.parser.ApacheParser."
+                        "update_runtime_variables"):
+            self.parser = ApacheParser(
+                self.aug, self.config_path, "dummy_ctl_path")
+
+
+def get_apache_configurator(
+        config_path, config_dir, work_dir, version=(2, 4, 7), conf=None):
+    """Create an Apache Configurator with the specified options.
+
+    :param conf: Function that returns binary paths. self.conf in Configurator
+
+    """
     backups = os.path.join(work_dir, "backups")
 
     with mock.patch("letsencrypt_apache.configurator."
                     "subprocess.Popen") as mock_popen:
-        # This just states that the ssl module is already loaded
-        mock_popen().communicate.return_value = ("ssl_module", "")
-        config = configurator.ApacheConfigurator(
-            config=mock.MagicMock(
-                apache_server_root=config_path,
-                apache_le_vhost_ext=constants.CLI_DEFAULTS["le_vhost_ext"],
-                backup_dir=backups,
-                config_dir=config_dir,
-                temp_checkpoint_dir=os.path.join(work_dir, "temp_checkpoints"),
-                in_progress_dir=os.path.join(backups, "IN_PROGRESS"),
-                work_dir=work_dir),
-            name="apache",
-            version=version)
+        with mock.patch("letsencrypt_apache.parser.ApacheParser."
+                        "update_runtime_variables"):
+            # This indicates config_test passes
+            mock_popen().communicate.return_value = ("Fine output", "No problems")
+            mock_popen().returncode = 0
 
-    config.prepare()
+            config = configurator.ApacheConfigurator(
+                config=mock.MagicMock(
+                    apache_server_root=config_path,
+                    apache_le_vhost_ext=constants.CLI_DEFAULTS["le_vhost_ext"],
+                    backup_dir=backups,
+                    config_dir=config_dir,
+                    temp_checkpoint_dir=os.path.join(work_dir, "temp_checkpoints"),
+                    in_progress_dir=os.path.join(backups, "IN_PROGRESS"),
+                    work_dir=work_dir),
+                name="apache",
+                version=version)
+            # This allows testing scripts to set it a bit more quickly
+            if conf is not None:
+                config.conf = conf  # pragma: no cover
+
+            config.prepare()
 
     return config
 
@@ -71,23 +104,23 @@ def get_vh_truth(temp_dir, config_name):
             obj.VirtualHost(
                 os.path.join(prefix, "encryption-example.conf"),
                 os.path.join(aug_pre, "encryption-example.conf/VirtualHost"),
-                set([common.Addr.fromstring("*:80")]),
-                False, True, set(["encryption-example.demo"])),
+                set([obj.Addr.fromstring("*:80")]),
+                False, True, "encryption-example.demo"),
             obj.VirtualHost(
                 os.path.join(prefix, "default-ssl.conf"),
                 os.path.join(aug_pre, "default-ssl.conf/IfModule/VirtualHost"),
-                set([common.Addr.fromstring("_default_:443")]), True, False),
+                set([obj.Addr.fromstring("_default_:443")]), True, False),
             obj.VirtualHost(
                 os.path.join(prefix, "000-default.conf"),
                 os.path.join(aug_pre, "000-default.conf/VirtualHost"),
-                set([common.Addr.fromstring("*:80")]), False, True,
-                set(["ip-172-30-0-17"])),
+                set([obj.Addr.fromstring("*:80")]), False, True,
+                "ip-172-30-0-17"),
             obj.VirtualHost(
                 os.path.join(prefix, "letsencrypt.conf"),
                 os.path.join(aug_pre, "letsencrypt.conf/VirtualHost"),
-                set([common.Addr.fromstring("*:80")]), False, True,
-                set(["letsencrypt.demo"])),
+                set([obj.Addr.fromstring("*:80")]), False, True,
+                "letsencrypt.demo"),
         ]
         return vh_truth
 
-    return None
+    return None  # pragma: no cover

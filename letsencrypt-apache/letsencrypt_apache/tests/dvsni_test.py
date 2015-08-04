@@ -6,9 +6,9 @@ import mock
 
 from acme import challenges
 
-from letsencrypt.plugins import common
 from letsencrypt.plugins import common_test
 
+from letsencrypt_apache import obj
 from letsencrypt_apache.tests import util
 
 
@@ -17,14 +17,12 @@ class DvsniPerformTest(util.ApacheTest):
 
     achalls = common_test.DvsniTest.achalls
 
-    def setUp(self):
+    def setUp(self):  # pylint: disable=arguments-differ
         super(DvsniPerformTest, self).setUp()
 
-        with mock.patch("letsencrypt_apache.configurator.ApacheConfigurator."
-                        "mod_loaded") as mock_load:
-            mock_load.return_value = True
-            config = util.get_apache_configurator(
-                self.config_path, self.config_dir, self.work_dir)
+        config = util.get_apache_configurator(
+            self.config_path, self.config_dir, self.work_dir)
+        config.config.dvsni_port = 443
 
         from letsencrypt_apache import dvsni
         self.sni = dvsni.ApacheDvsni(config)
@@ -38,7 +36,12 @@ class DvsniPerformTest(util.ApacheTest):
         resp = self.sni.perform()
         self.assertEqual(len(resp), 0)
 
-    def test_perform1(self):
+    @mock.patch("letsencrypt.le_util.exe_exists")
+    @mock.patch("letsencrypt.le_util.run_script")
+    def test_perform1(self, _, mock_exists):
+        mock_exists.return_value = True
+        self.sni.configurator.parser.update_runtime_variables = mock.Mock()
+
         achall = self.achalls[0]
         self.sni.add_chall(achall)
         mock_setup_cert = mock.MagicMock(
@@ -53,12 +56,14 @@ class DvsniPerformTest(util.ApacheTest):
         # Check to make sure challenge config path is included in apache config.
         self.assertEqual(
             len(self.sni.configurator.parser.find_dir(
-                "Include", self.sni.challenge_conf)),
-            1)
+                "Include", self.sni.challenge_conf)), 1)
         self.assertEqual(len(responses), 1)
         self.assertEqual(responses[0].s, "randomS1")
 
     def test_perform2(self):
+        # Avoid load module
+        self.sni.configurator.parser.modules.add("ssl_module")
+
         for achall in self.achalls:
             self.sni.add_chall(achall)
 
@@ -89,13 +94,8 @@ class DvsniPerformTest(util.ApacheTest):
     def test_mod_config(self):
         for achall in self.achalls:
             self.sni.add_chall(achall)
-        v_addr1 = [common.Addr(("1.2.3.4", "443")),
-                   common.Addr(("5.6.7.8", "443"))]
-        v_addr2 = [common.Addr(("127.0.0.1", "443"))]
-        ll_addr = []
-        ll_addr.append(v_addr1)
-        ll_addr.append(v_addr2)
-        self.sni._mod_config(ll_addr)  # pylint: disable=protected-access
+
+        self.sni._mod_config()  # pylint: disable=protected-access
         self.sni.configurator.save()
 
         self.sni.configurator.parser.find_dir(
@@ -109,15 +109,22 @@ class DvsniPerformTest(util.ApacheTest):
             vhs.append(self.sni.configurator._create_vhost(match))
         self.assertEqual(len(vhs), 2)
         for vhost in vhs:
-            if vhost.addrs == set(v_addr1):
-                self.assertEqual(
-                    vhost.names,
-                    set([self.achalls[0].nonce_domain]))
-            else:
-                self.assertEqual(vhost.addrs, set(v_addr2))
-                self.assertEqual(
-                    vhost.names,
-                    set([self.achalls[1].nonce_domain]))
+            self.assertEqual(vhost.addrs, set([obj.Addr.fromstring("*:443")]))
+            names = vhost.get_names()
+            self.assertTrue(
+                names == set([self.achalls[0].nonce_domain]) or
+                names == set([self.achalls[1].nonce_domain]))
+
+    def test_get_dvsni_addrs_default(self):
+        self.sni.configurator.choose_vhost = mock.Mock(
+            return_value=obj.VirtualHost(
+                "path", "aug_path", set([obj.Addr.fromstring("_default_:443")]),
+                False, False)
+        )
+
+        self.assertEqual(
+            set([obj.Addr.fromstring("*:443")]),
+            self.sni.get_dvsni_addrs(self.achalls[0]))
 
 
 if __name__ == "__main__":

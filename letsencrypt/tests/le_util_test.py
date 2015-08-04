@@ -11,6 +11,67 @@ import mock
 from letsencrypt import errors
 
 
+class RunScriptTest(unittest.TestCase):
+    """Tests for letsencrypt.le_util.run_script."""
+    @classmethod
+    def _call(cls, params):
+        from letsencrypt.le_util import run_script
+        return run_script(params)
+
+    @mock.patch("letsencrypt.le_util.subprocess.Popen")
+    def test_default(self, mock_popen):
+        """These will be changed soon enough with reload."""
+        mock_popen().returncode = 0
+        mock_popen().communicate.return_value = ("stdout", "stderr")
+
+        out, err = self._call(["test"])
+        self.assertEqual(out, "stdout")
+        self.assertEqual(err, "stderr")
+
+    @mock.patch("letsencrypt.le_util.subprocess.Popen")
+    def test_bad_process(self, mock_popen):
+        mock_popen.side_effect = OSError
+
+        self.assertRaises(errors.SubprocessError, self._call, ["test"])
+
+    @mock.patch("letsencrypt.le_util.subprocess.Popen")
+    def test_failure(self, mock_popen):
+        mock_popen().communicate.return_value = ("", "")
+        mock_popen().returncode = 1
+
+        self.assertRaises(errors.SubprocessError, self._call, ["test"])
+
+
+class ExeExistsTest(unittest.TestCase):
+    """Tests for letsencrypt.le_util.exe_exists."""
+
+    @classmethod
+    def _call(cls, exe):
+        from letsencrypt.le_util import exe_exists
+        return exe_exists(exe)
+
+    @mock.patch("letsencrypt.le_util.os.path.isfile")
+    @mock.patch("letsencrypt.le_util.os.access")
+    def test_full_path(self, mock_access, mock_isfile):
+        mock_access.return_value = True
+        mock_isfile.return_value = True
+        self.assertTrue(self._call("/path/to/exe"))
+
+    @mock.patch("letsencrypt.le_util.os.path.isfile")
+    @mock.patch("letsencrypt.le_util.os.access")
+    def test_on_path(self, mock_access, mock_isfile):
+        mock_access.return_value = True
+        mock_isfile.return_value = True
+        self.assertTrue(self._call("exe"))
+
+    @mock.patch("letsencrypt.le_util.os.path.isfile")
+    @mock.patch("letsencrypt.le_util.os.access")
+    def test_not_found(self, mock_access, mock_isfile):
+        mock_access.return_value = False
+        mock_isfile.return_value = True
+        self.assertFalse(self._call("exe"))
+
+
 class MakeOrVerifyDirTest(unittest.TestCase):
     """Tests for letsencrypt.le_util.make_or_verify_dir.
 

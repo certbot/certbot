@@ -3,7 +3,6 @@ import logging
 import os
 import shutil
 import tempfile
-import threading
 
 import docker
 
@@ -47,7 +46,7 @@ class Proxy(object):
         self._docker_client = docker.Client(
             base_url=self.args.docker_url, version="auto")
         self.http_port, self.https_port = util.get_two_free_ports()
-        self._container_id = self._log_thread = None
+        self._container_id = None
 
     def has_more_configs(self):
         """Returns true if there are more configs to test"""
@@ -56,7 +55,6 @@ class Proxy(object):
     def cleanup_from_tests(self):
         """Performs any necessary cleanup from running plugin tests"""
         self._docker_client.stop(self._container_id, 0)
-        self._log_thread.join()
         if not self.args.no_remove:
             self._docker_client.remove_container(self._container_id)
 
@@ -87,26 +85,18 @@ class Proxy(object):
         self._container_id = container["Id"]
         self._docker_client.start(self._container_id)
 
-        self._log_thread = threading.Thread(target=self._start_log_thread)
-        self._log_thread.start()
-
-    def _start_log_thread(self):
-        client = docker.Client(base_url=self.args.docker_url, version="auto")
-        for line in client.logs(self._container_id, stream=True):
-            logger.debug(line.rstrip())
-
-    def check_call_in_docker(
-            self, command, *args, **kwargs): # pylint: disable=unused-argument
+    def check_call(self, command, *args, **kwargs):
+        # pylint: disable=unused-argument
         """Simulates a call to check_call but executes the command in the
         running docker image
 
         """
-        if self.popen_in_docker(command).returncode:
+        if self.popen(command).returncode:
             raise errors.Error(
                 "{0} exited with a nonzero value".format(command))
 
-    def popen_in_docker(
-            self, command, *args, **kwargs): # pylint: disable=unused-argument
+    def popen(self, command, *args, **kwargs):
+        # pylint: disable=unused-argument
         """Simulates a call to Popen but executes the command in the
         running docker image
 

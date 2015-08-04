@@ -249,7 +249,7 @@ class NginxConfiguratorTest(util.NginxTest):
                            " (based on LLVM 3.5svn)",
                            "TLS SNI support enabled",
                            "configure arguments: --with-http_ssl_module"]))
-        self.assertRaises(errors.PluginError, self.config.get_version)
+        self.assertRaises(errors.NotSupportedError, self.config.get_version)
 
         mock_popen.side_effect = OSError("Can't find program")
         self.assertRaises(errors.PluginError, self.config.get_version)

@@ -6,6 +6,7 @@ import logging
 import os
 import shutil
 import tempfile
+import time
 
 import OpenSSL
 
@@ -60,11 +61,12 @@ def test_authenticator(plugin, config, temp_dir):
                 type(achalls[i]), achalls[i].domain, config)
             success = False
         elif isinstance(responses[i], challenges.DVSNIResponse):
-            if responses[i].simple_verify(achalls[i],
-                                          achalls[i].domain,
-                                          util.JWK.key.public_key(),
-                                          host="127.0.0.1",
-                                          port=plugin.https_port):
+            verify = functools.partial(responses[i].simple_verify, achalls[i],
+                                       achalls[i].domain,
+                                       util.JWK.key.public_key(),
+                                       host="127.0.0.1",
+                                       port=plugin.https_port)
+            if _try_until_true(verify):
                 logger.info(
                     "DVSNI verification for %s succeeded", achalls[i].domain)
             else:
@@ -149,10 +151,11 @@ def test_deploy_cert(plugin, temp_dir, domains):
     if not _save_and_restart(plugin, "deployed"):
         return False
 
-    verify_cert = validator.Validator().certificate
     success = True
     for domain in domains:
-        if not verify_cert(cert, domain, "127.0.0.1", plugin.https_port):
+        verify = functools.partial(validator.Validator().certificate, cert,
+                                   domain, "127.0.0.1", plugin.https_port)
+        if not _try_until_true(verify):
             logger.error("Could not verify certificate for domain %s", domain)
             success = False
 
@@ -175,18 +178,18 @@ def test_enhancements(plugin, domains):
         try:
             plugin.enhance(domain, "redirect")
         except le_errors.Error as error:
-            logger.error("Plugin failed to enable redirect for %s:", domain)
-            logger.exception(error)
-            return False
+            # Don't immediately fail because a redirect may already be enabled
+            logger.warning("Plugin failed to enable redirect for %s:", domain)
+            logger.warning("%s", error)
 
     if not _save_and_restart(plugin, "enhanced"):
         return False
 
-    verify_redirect = functools.partial(
-        validator.Validator().redirect, "localhost", plugin.http_port)
     success = True
     for domain in domains:
-        if not verify_redirect(headers={"Host" : domain}):
+        verify = functools.partial(validator.Validator().redirect, "localhost",
+                                   plugin.http_port, headers={"Host" : domain})
+        if not _try_until_true(verify):
             logger.error("Improper redirect for domain %s", domain)
             success = False
 
@@ -194,6 +197,17 @@ def test_enhancements(plugin, domains):
         logger.info("Enhancments test succeeded")
 
     return success
+
+
+def _try_until_true(func, max_tries=3):
+    """Calls func up to max_tries times until it returns True"""
+    for _ in xrange(0, max_tries):
+        if func():
+            return True
+        else:
+            time.sleep(1)
+
+    return False
 
 
 def _save_and_restart(plugin, title=None):

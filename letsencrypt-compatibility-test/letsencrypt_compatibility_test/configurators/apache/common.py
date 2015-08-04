@@ -16,6 +16,7 @@ from letsencrypt_compatibility_test.configurators import common as configurators
 
 
 APACHE_VERSION_REGEX = re.compile(r"Apache/([0-9\.]*)", re.IGNORECASE)
+APACHE_COMMANDS = ["apachectl", "a2enmod"]
 
 
 class Proxy(configurators_common.Proxy):
@@ -29,23 +30,57 @@ class Proxy(configurators_common.Proxy):
         super(Proxy, self).__init__(args)
         self.le_config.apache_le_vhost_ext = "-le-ssl.conf"
 
-        self._patches = list()
-        subprocess_patch = mock.patch(
-            "letsencrypt_apache.configurator.subprocess")
-        subprocess_mock = subprocess_patch.start()
-        subprocess_mock.check_call = self.check_call_in_docker
-        subprocess_mock.Popen = self.popen_in_docker
-        self._patches.append(subprocess_patch)
-
-        display_patch = mock.patch(
-            "letsencrypt_apache.configurator.display_ops.select_vhost")
-        display_mock = display_patch.start()
-        display_mock.side_effect = le_errors.PluginError(
-            "Unable to determine vhost")
-        self._patches.append(display_mock)
+        self._setup_mock()
 
         self.modules = self.server_root = self.test_conf = self.version = None
         self._apache_configurator = self._all_names = self._test_names = None
+
+    def _setup_mock(self):
+        """Replaces specific modules with mock.MagicMock"""
+        mock_subprocess = mock.MagicMock()
+        mock_subprocess.check_call = self.check_call
+        mock_subprocess.Popen = self.popen
+
+        mock.patch(
+            "letsencrypt_apache.configurator.subprocess",
+            mock_subprocess).start()
+        mock.patch(
+            "letsencrypt_apache.parser.subprocess",
+            mock_subprocess).start()
+        mock.patch(
+            "letsencrypt.le_util.subprocess",
+            mock_subprocess).start()
+        mock.patch(
+            "letsencrypt_apache.configurator.le_util.exe_exists",
+            _is_apache_command).start()
+
+        patch = mock.patch(
+            "letsencrypt_apache.configurator.display_ops.select_vhost")
+        mock_display = patch.start()
+        mock_display.side_effect = le_errors.PluginError(
+            "Unable to determine vhost")
+
+    def check_call(self, command, *args, **kwargs):
+        """If command is an Apache command, command is executed in the
+        running docker image. Otherwise, subprocess.check_call is used.
+
+        """
+        if _is_apache_command(command):
+            command = _modify_command(command)
+            return super(Proxy, self).check_call(command, *args, **kwargs)
+        else:
+            return subprocess.check_call(command, *args, **kwargs)
+
+    def popen(self, command, *args, **kwargs):
+        """If command is an Apache command, command is executed in the
+        running docker image. Otherwise, subprocess.Popen is used.
+
+        """
+        if _is_apache_command(command):
+            command = _modify_command(command)
+            return super(Proxy, self).popen(command, *args, **kwargs)
+        else:
+            return subprocess.Popen(command, *args, **kwargs)
 
     def __getattr__(self, name):
         """Wraps the Apache Configurator methods"""
@@ -59,8 +94,7 @@ class Proxy(configurators_common.Proxy):
         """Loads the next configuration for the plugin to test"""
         if hasattr(self.le_config, "apache_init_script"):
             try:
-                self.check_call_in_docker(
-                    [self.le_config.apache_init_script, "stop"])
+                self.check_call([self.le_config.apache_init_script, "stop"])
             except errors.Error:
                 raise errors.Error(
                     "Failed to stop previous apache config from running")
@@ -79,9 +113,8 @@ class Proxy(configurators_common.Proxy):
         self._prepare_configurator(server_root, config_file)
 
         try:
-            self.check_call_in_docker(
-                "apachectl -d {0} -f {1} -k start".format(
-                    server_root, config_file))
+            self.check_call("apachectl -d {0} -f {1} -k start".format(
+                server_root, config_file))
         except errors.Error:
             raise errors.Error(
                 "Apache failed to load {0} before tests started".format(
@@ -115,6 +148,7 @@ class Proxy(configurators_common.Proxy):
         self.le_config.apache_ctl = "apachectl -d {0} -f {1}".format(
             server_root, config_file)
         self.le_config.apache_enmod = "a2enmod.sh {0}".format(server_root)
+        self.le_config.apache_dismod = self.le_config.apache_enmod
         self.le_config.apache_init_script = self.le_config.apache_ctl + " -k"
 
         self._apache_configurator = configurator.ApacheConfigurator(
@@ -125,8 +159,7 @@ class Proxy(configurators_common.Proxy):
     def cleanup_from_tests(self):
         """Performs any necessary cleanup from running plugin tests"""
         super(Proxy, self).cleanup_from_tests()
-        for patch in self._patches:
-            patch.stop()
+        mock.patch.stopall()
 
     def get_all_names_answer(self):
         """Returns the set of domain names that the plugin should find"""
@@ -148,6 +181,30 @@ class Proxy(configurators_common.Proxy):
             cert_path, key_path, chain_path)
         self._apache_configurator.deploy_cert(
             domain, cert_path, key_path, chain_path)
+
+
+def _is_apache_command(command):
+    """Returns true if command is an Apache command"""
+    if isinstance(command, list):
+        command = command[0]
+
+    for apache_command in APACHE_COMMANDS:
+        if command.startswith(apache_command):
+            return True
+
+    return False
+
+
+def _modify_command(command):
+    """Modifies command so configtest works inside the docker image"""
+    if isinstance(command, list):
+        for i in xrange(len(command)):
+            if command[i] == "configtest":
+                command[i] = "-t"
+    else:
+        command = command.replace("configtest", "-t")
+
+    return command
 
 
 def _create_test_conf(server_root, apache_config):

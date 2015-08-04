@@ -82,6 +82,8 @@ def pick_plugin(config, default, plugins, question, ifaces):
     elif len(prepared) == 1:
         plugin_ep = prepared.values()[0]
         logger.debug("Single candidate plugin: %s", plugin_ep)
+        if plugin_ep.misconfigured:
+            return None
         return plugin_ep.init()
     else:
         logger.debug("No candidate plugin")
@@ -90,7 +92,7 @@ def pick_plugin(config, default, plugins, question, ifaces):
 
 def pick_authenticator(
         config, default, plugins, question="How would you "
-        "like to authenticate with Let's Encrypt CA?"):
+        "like to authenticate with the Let's Encrypt CA?"):
     """Pick authentication plugin."""
     return pick_plugin(
         config, default, plugins, question, (interfaces.IAuthenticator,))
