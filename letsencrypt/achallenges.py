@@ -18,7 +18,6 @@ Note, that all annotated challenges act as a proxy objects::
 
 """
 import logging
-import os
 
 import OpenSSL
 
@@ -93,9 +92,21 @@ class SimpleHTTP(AnnotatedChallenge):
     acme_type = challenges.SimpleHTTP
 
     def gen_response_and_validation(self, tls):
+        """Generates a SimpleHTTP response and validation.
+
+        :param bool tls: True if TLS should be used
+
+        :returns: ``(response, validation)`` tuple, where ``response`` is
+            an instance of `acme.challenges.SimpleHTTPResponse` and
+            ``validation`` is an instance of
+            `acme.challenges.SimpleHTTPProvisionedResource`.
+        :rtype: tuple
+
+        """
         response = challenges.SimpleHTTPResponse(tls=tls)
 
-        validation = response.gen_validation(self.chall, self.account.key)
+        validation = response.gen_validation(
+            self.challb.chall, self.account.key)
         logger.debug("Simple HTTP validation payload: %s", validation.payload)
         return response, validation
 

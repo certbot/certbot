@@ -13,7 +13,6 @@ import zope.component
 import zope.interface
 
 from acme import challenges
-from acme import jose
 
 from letsencrypt import errors
 from letsencrypt import interfaces
@@ -158,8 +157,8 @@ binary for temporary key/certificate generation.""".replace("\n", "")
         else:
             self._notify_and_wait(self.MESSAGE_TEMPLATE.format(
                 achall=achall, response=response,
-                uri=response.uri(achall.domain), ct=response.CONTENT_TYPE,
-                command=command))
+                uri=response.uri(achall.domain, achall.challb.chall),
+                ct=response.CONTENT_TYPE, command=command))
 
         if response.simple_verify(
                 achall.chall, achall.domain,

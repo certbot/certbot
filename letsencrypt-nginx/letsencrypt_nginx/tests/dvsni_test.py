@@ -19,31 +19,26 @@ from letsencrypt_nginx.tests import util
 class DvsniPerformTest(util.NginxTest):
     """Test the NginxDVSNI challenge."""
 
+    account = mock.MagicMock(key=common_test.DvsniTest.auth_key)
     achalls = [
         achallenges.DVSNI(
             challb=acme_util.chall_to_challb(
-                challenges.DVSNI(
-                    r="foo",
-                    nonce="bar"
-                ), "pending"),
-            domain="www.example.com", key=common_test.DvsniTest.auth_key),
+                challenges.DVSNI(token="kNdwjwOeX0I_A8DXt9Msmg"), "pending"),
+            domain="www.example.com", account=account),
         achallenges.DVSNI(
             challb=acme_util.chall_to_challb(
                 challenges.DVSNI(
-                    r="\xba\xa9\xda?<m\xaewmx\xea\xad\xadv\xf4\x02\xc9y\x80"
-                      "\xe2_X\t\xe7\xc7\xa4\t\xca\xf7&\x945",
-                    nonce="Y\xed\x01L\xac\x95\xf7pW\xb1\xd7"
-                          "\xa1\xb2\xc5\x96\xba"
+                    token="\xba\xa9\xda?<m\xaewmx\xea\xad\xadv\xf4\x02\xc9y"
+                          "\x80\xe2_X\t\xe7\xc7\xa4\t\xca\xf7&\x945"
                 ), "pending"),
-            domain="blah", key=common_test.DvsniTest.auth_key),
+            domain="blah", account=account),
         achallenges.DVSNI(
             challb=acme_util.chall_to_challb(
                 challenges.DVSNI(
-                    r="\x8c\x8a\xbf_-f\\cw\xee\xd6\xf8/\xa5\xe3\xfd\xeb9"
-                      "\xf1\xf5\xb9\xefVM\xc9w\xa4u\x9c\xe1\x87\xb4",
-                    nonce="7\xbc^\xb7]>\x00\xa1\x9bOcU\x84^Z\x18"
+                    token="\x8c\x8a\xbf_-f\\cw\xee\xd6\xf8/\xa5\xe3\xfd"
+                          "\xeb9\xf1\xf5\xb9\xefVM\xc9w\xa4u\x9c\xe1\x87\xb4"
                 ), "pending"),
-            domain="www.example.org", key=common_test.DvsniTest.auth_key)
+            domain="www.example.org", account=account),
     ]
 
 
@@ -76,8 +71,8 @@ class DvsniPerformTest(util.NginxTest):
     @mock.patch("letsencrypt_nginx.configurator.NginxConfigurator.save")
     def test_perform1(self, mock_save):
         self.sni.add_chall(self.achalls[0])
-        mock_setup_cert = mock.MagicMock(
-            return_value=challenges.DVSNIResponse(s="nginxS1"))
+        response = self.achalls[0].gen_response(self.account.key)
+        mock_setup_cert = mock.MagicMock(return_value=response)
 
         # pylint: disable=protected-access
         self.sni._setup_challenge_cert = mock_setup_cert
@@ -85,7 +80,7 @@ class DvsniPerformTest(util.NginxTest):
         responses = self.sni.perform()
 
         mock_setup_cert.assert_called_once_with(self.achalls[0])
-        self.assertEqual([challenges.DVSNIResponse(s="nginxS1")], responses)
+        self.assertEqual([response], responses)
         self.assertEqual(mock_save.call_count, 2)
 
         # Make sure challenge config is included in main config
@@ -94,17 +89,16 @@ class DvsniPerformTest(util.NginxTest):
         self.assertTrue(['include', self.sni.challenge_conf] in http[1])
 
     def test_perform2(self):
+        acme_responses = []
         for achall in self.achalls:
             self.sni.add_chall(achall)
+            acme_responses.append(achall.gen_response(self.account.key))
 
-        mock_setup_cert = mock.MagicMock(side_effect=[
-            challenges.DVSNIResponse(s="nginxS0"),
-            challenges.DVSNIResponse(s="nginxS1"),
-            challenges.DVSNIResponse(s="nginxS2")])
+        mock_setup_cert = mock.MagicMock(side_effect=acme_responses)
         # pylint: disable=protected-access
         self.sni._setup_challenge_cert = mock_setup_cert
 
-        responses = self.sni.perform()
+        sni_responses = self.sni.perform()
 
         self.assertEqual(mock_setup_cert.call_count, 3)
 
@@ -117,9 +111,9 @@ class DvsniPerformTest(util.NginxTest):
         self.assertTrue(['include', self.sni.challenge_conf] in http[1])
         self.assertTrue(['server_name', 'blah'] in http[1][-2][1])
 
-        self.assertEqual(len(responses), 3)
+        self.assertEqual(len(sni_responses), 3)
         for i in xrange(3):
-            self.assertEqual(responses[i].s, "nginxS%d" % i)
+            self.assertEqual(sni_responses[i], acme_responses[i])
 
     def test_mod_config(self):
         self.sni.add_chall(self.achalls[0])
@@ -144,12 +138,11 @@ class DvsniPerformTest(util.NginxTest):
 
         for vhost in vhs:
             if vhost.addrs == set(v_addr1):
-                self.assertEqual(
-                    vhost.names, set([self.achalls[0].nonce_domain]))
+                response = self.achalls[0].gen_response(self.account.key)
             else:
+                response = self.achalls[2].gen_response(self.account.key)
                 self.assertEqual(vhost.addrs, set(v_addr2))
-                self.assertEqual(
-                    vhost.names, set([self.achalls[2].nonce_domain]))
+            self.assertEqual(vhost.names, set([response.z_domain]))
 
         self.assertEqual(len(vhs), 2)
 

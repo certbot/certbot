@@ -1,16 +1,15 @@
 """Tests for letsencrypt.plugins.common."""
-import os
-import pkg_resources
 import unittest
 
 import mock
 
 from acme import challenges
+from acme import jose
 
 from letsencrypt import achallenges
-from letsencrypt import le_util
 
 from letsencrypt.tests import acme_util
+from letsencrypt.tests import test_util
 
 
 class NamespaceFunctionsTest(unittest.TestCase):
@@ -111,12 +110,7 @@ class AddrTest(unittest.TestCase):
 class DvsniTest(unittest.TestCase):
     """Tests for letsencrypt.plugins.common.DvsniTest."""
 
-    rsa256_file = pkg_resources.resource_filename(
-        "letsencrypt.tests", os.path.join("testdata", "rsa256_key.pem"))
-    rsa256_pem = pkg_resources.resource_string(
-        "letsencrypt.tests", os.path.join("testdata", "rsa256_key.pem"))
-
-    auth_key = le_util.Key(rsa256_file, rsa256_pem)
+    auth_key = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
     achalls = [
         achallenges.DVSNI(
             challb=acme_util.chall_to_challb(

@@ -211,7 +211,7 @@ class SimpleHTTPResponse(ChallengeResponse):
                      http_response.text, http_response.headers)
 
         if self.CONTENT_TYPE != http_response.headers.get(
-            "Content-Type", self.CONTENT_TYPE):
+                "Content-Type", self.CONTENT_TYPE):
             return False
 
         try:

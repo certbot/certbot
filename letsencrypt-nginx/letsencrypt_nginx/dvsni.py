@@ -132,7 +132,8 @@ class NginxDvsni(common.Dvsni):
 
         block = [['listen', str(addr)] for addr in addrs]
 
-        block.extend([['server_name', achall.nonce_domain],
+        block.extend([['server_name',
+                       achall.gen_response(achall.account.key).z_domain],
                       ['include', self.configurator.parser.loc["ssl_options"]],
                       # access and error logs necessary for
                       # integration testing (non-root)

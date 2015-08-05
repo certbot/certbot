@@ -145,28 +145,34 @@ class SimpleHTTPResponseTest(unittest.TestCase):
 
     @mock.patch("acme.challenges.requests.get")
     def test_simple_verify_good_token(self, mock_get):
+        account_key = jose.JWKRSA.load(test_util.load_vector('rsa512_key.pem'))
         for resp in self.resp_http, self.resp_https:
             mock_get.reset_mock()
+            validation = resp.gen_validation(self.chall, account_key)
             mock_get.return_value = mock.MagicMock(
-                text=self.chall.token, headers=self.good_headers)
-            self.assertTrue(resp.simple_verify(self.chall, "local"))
-            mock_get.assert_called_once_with(resp.uri("local"), verify=False)
+                text=validation.json_dumps(), headers=self.good_headers)
+            self.assertTrue(resp.simple_verify(self.chall, "local", None))
+            mock_get.assert_called_once_with(resp.uri(
+                "local", self.chall), verify=False)
 
     @mock.patch("acme.challenges.requests.get")
     def test_simple_verify_bad_token(self, mock_get):
         mock_get.return_value = mock.MagicMock(
             text=self.chall.token + "!", headers=self.good_headers)
-        self.assertFalse(self.resp_http.simple_verify(self.chall, "local"))
+        self.assertFalse(self.resp_http.simple_verify(
+            self.chall, "local", None))
 
     @mock.patch("acme.challenges.requests.get")
     def test_simple_verify_bad_content_type(self, mock_get):
         mock_get().text = self.chall.token
-        self.assertFalse(self.resp_http.simple_verify(self.chall, "local"))
+        self.assertFalse(self.resp_http.simple_verify(
+            self.chall, "local", None))
 
     @mock.patch("acme.challenges.requests.get")
     def test_simple_verify_connection_error(self, mock_get):
         mock_get.side_effect = requests.exceptions.RequestException
-        self.assertFalse(self.resp_http.simple_verify(self.chall, "local"))
+        self.assertFalse(self.resp_http.simple_verify(
+            self.chall, "local", None))
 
     @mock.patch("acme.challenges.requests.get")
     def test_simple_verify_port(self, mock_get):

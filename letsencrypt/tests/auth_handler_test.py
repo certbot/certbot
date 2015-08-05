@@ -436,7 +436,7 @@ class ReportFailedChallsTest(unittest.TestCase):
         self.simple_http = achallenges.SimpleHTTP(
             challb=messages.ChallengeBody(**kwargs),# pylint: disable=star-args
             domain="example.com",
-            key=acme_util.KEY)
+            account=mock.Mock(key=acme_util.KEY))
 
         kwargs["chall"] = acme_util.DVSNI
         self.dvsni_same = achallenges.DVSNI(
