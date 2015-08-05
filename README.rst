@@ -1,12 +1,18 @@
 .. notice for github users
 
-Official **documentation**, including `installation instructions`_, is
-available at https://letsencrypt.readthedocs.org.
+Disclaimer
+==========
 
-Generic information about Let's Encrypt project can be found at
-https://letsencrypt.org. Please read `Frequently Asked Questions (FAQ)
-<https://letsencrypt.org/faq/>`_.
+This is a **DEVELOPER PREVIEW** intended for developers and testers only.
 
+**DO NOT RUN THIS CODE ON A PRODUCTION SERVER. IT WILL INSTALL CERTIFICATES
+SIGNED BY A TEST CA, AND WILL CAUSE CERT WARNINGS FOR USERS.**
+
+Browser-trusted certificates will be available in the coming months.
+
+For more information regarding the status of the project, please see
+https://letsencrypt.org. Be sure to checkout the
+`Frequently Asked Questions (FAQ) <https://letsencrypt.org/faq/>`_.
 
 About the Let's Encrypt Client
 ==============================
@@ -18,7 +24,7 @@ In short: getting and installing SSL/TLS certificates made easy (`watch demo vid
 The Let's Encrypt Client is a tool to automatically receive and install
 X.509 certificates to enable TLS on servers. The client will
 interoperate with the Let's Encrypt CA which will be issuing browser-trusted
-certificates for free beginning the summer of 2015.
+certificates for free.
 
 It's all automated:
 
@@ -32,7 +38,7 @@ All you need to do to sign a single domain is::
   user@www:~$ sudo letsencrypt -d www.example.org auth
 
 For multiple domains (SAN) use::
-  
+
   user@www:~$ sudo letsencrypt -d www.example.org -d example.org auth
 
 and if you have a compatible web server (Apache or Nginx), Let's Encrypt can
@@ -67,15 +73,6 @@ server automatically!::
 .. _watch demo video: https://www.youtube.com/watch?v=Gas_sSB-5SU
 
 
-Disclaimer
-----------
-
-This is a **DEVELOPER PREVIEW** intended for developers and testers only.
-
-**DO NOT RUN THIS CODE ON A PRODUCTION SERVER. IT WILL INSTALL CERTIFICATES
-SIGNED BY A TEST CA, AND WILL CAUSE CERT WARNINGS FOR USERS.**
-
-
 Current Features
 ----------------
 
@@ -97,6 +94,13 @@ Current Features
 * configuration changes are logged and can be reverted using the CLI
 * text and ncurses UI
 * Free and Open Source Software, made with Python.
+
+
+Installation Instructions
+-------------------------
+
+Official **documentation**, including `installation instructions`_, is
+available at https://letsencrypt.readthedocs.org.
 
 
 Links
