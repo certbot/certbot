@@ -1,15 +1,18 @@
 .. notice for github users
 
-Notice
-======
+Disclaimer
+----------
 
-The Let's Encrypt Project is not LIVE yet.  All certificates are currently
-issued by a test CA.  Browser-trusted certificates will be available in the
-coming months.
+This is a **DEVELOPER PREVIEW** intended for developers and testers only.
+
+**DO NOT RUN THIS CODE ON A PRODUCTION SERVER. IT WILL INSTALL CERTIFICATES
+SIGNED BY A TEST CA, AND WILL CAUSE CERT WARNINGS FOR USERS.**
+
+Browser-trusted certificates will be available in the coming months.
 
 For more information regarding the status of the project, please see
-https://letsencrypt.org. Checkout the `Frequently Asked Questions (FAQ)
-<https://letsencrypt.org/faq/>`_.
+https://letsencrypt.org. Be sure to checkout the
+`Frequently Asked Questions (FAQ)<https://letsencrypt.org/faq/>`_.
 
 About the Let's Encrypt Client
 ==============================
@@ -68,15 +71,6 @@ server automatically!::
    https://letsencrypt.readthedocs.org/en/latest/using.html
 
 .. _watch demo video: https://www.youtube.com/watch?v=Gas_sSB-5SU
-
-
-Disclaimer
-----------
-
-This is a **DEVELOPER PREVIEW** intended for developers and testers only.
-
-**DO NOT RUN THIS CODE ON A PRODUCTION SERVER. IT WILL INSTALL CERTIFICATES
-SIGNED BY A TEST CA, AND WILL CAUSE CERT WARNINGS FOR USERS.**
 
 
 Current Features
