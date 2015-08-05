@@ -12,7 +12,7 @@ Browser-trusted certificates will be available in the coming months.
 
 For more information regarding the status of the project, please see
 https://letsencrypt.org. Be sure to checkout the
-`Frequently Asked Questions (FAQ)<https://letsencrypt.org/faq/>`_.
+`Frequently Asked Questions (FAQ) <https://letsencrypt.org/faq/>`_.
 
 About the Let's Encrypt Client
 ==============================
