@@ -1,7 +1,7 @@
 .. notice for github users
 
 Disclaimer
-----------
+==========
 
 This is a **DEVELOPER PREVIEW** intended for developers and testers only.
 
@@ -97,7 +97,7 @@ Current Features
 
 
 Installation Instructions
-=========================
+-------------------------
 
 Official **documentation**, including `installation instructions`_, is
 available at https://letsencrypt.readthedocs.org.
