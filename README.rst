@@ -1,14 +1,15 @@
 .. notice for github users
 
-Generic information about Let's Encrypt project can be found at
-https://letsencrypt.org. Please read `Frequently Asked Questions (FAQ)
+Notice
+======
+
+The Let's Encrypt Project is not LIVE yet.  All certificates are currently
+issued by a test CA.  Browser-trusted certificates will be available in the
+coming months.
+
+For more information regarding the status of the project, please see
+https://letsencrypt.org. Checkout the `Frequently Asked Questions (FAQ)
 <https://letsencrypt.org/faq/>`_.
-
-Installation Instructions
-=========================
-
-Official **documentation**, including `installation instructions`_, is
-available at https://letsencrypt.readthedocs.org.
 
 About the Let's Encrypt Client
 ==============================
@@ -20,7 +21,7 @@ In short: getting and installing SSL/TLS certificates made easy (`watch demo vid
 The Let's Encrypt Client is a tool to automatically receive and install
 X.509 certificates to enable TLS on servers. The client will
 interoperate with the Let's Encrypt CA which will be issuing browser-trusted
-certificates for free beginning the summer of 2015.
+certificates for free.
 
 It's all automated:
 
@@ -34,7 +35,7 @@ All you need to do to sign a single domain is::
   user@www:~$ sudo letsencrypt -d www.example.org auth
 
 For multiple domains (SAN) use::
-  
+
   user@www:~$ sudo letsencrypt -d www.example.org -d example.org auth
 
 and if you have a compatible web server (Apache or Nginx), Let's Encrypt can
@@ -99,6 +100,13 @@ Current Features
 * configuration changes are logged and can be reverted using the CLI
 * text and ncurses UI
 * Free and Open Source Software, made with Python.
+
+
+Installation Instructions
+=========================
+
+Official **documentation**, including `installation instructions`_, is
+available at https://letsencrypt.readthedocs.org.
 
 
 Links
