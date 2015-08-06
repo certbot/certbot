@@ -17,8 +17,6 @@ env:
     - PATH=$GOPATH/bin:$PATH
   matrix:
     - TOXENV=py27 BOULDER_INTEGRATION=1
-    - TOXENV=py33
-    - TOXENV=py34
     - TOXENV=lint
     - TOXENV=cover
 
