@@ -5,6 +5,10 @@ import unittest
 
 import mock
 
+from acme import jose
+
+from letsencrypt.tests import test_util
+
 from letsencrypt.plugins import common
 
 from letsencrypt_nginx import constants
@@ -25,10 +29,8 @@ class NginxTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
 
         self.config_path = os.path.join(self.temp_dir, "etc_nginx")
 
-        self.rsa256_file = pkg_resources.resource_filename(
-            "letsencrypt.tests", os.path.join("testdata", "rsa256_key.pem"))
-        self.rsa256_pem = pkg_resources.resource_string(
-            "letsencrypt.tests", os.path.join("testdata", "rsa256_key.pem"))
+        self.rsa512jwk = jose.JWKRSA.load(test_util.load_vector(
+            "rsa512_key.pem"))
 
 
 def get_data_filename(filename):

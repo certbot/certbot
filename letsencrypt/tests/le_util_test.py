@@ -227,6 +227,37 @@ class UniqueLineageNameTest(unittest.TestCase):
         self.assertRaises(OSError, self._call, "wow")
 
 
+class SafelyRemoveTest(unittest.TestCase):
+    """Tests for letsencrypt.le_util.safely_remove."""
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.path = os.path.join(self.tmp, "foo")
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp)
+
+    def _call(self):
+        from letsencrypt.le_util import safely_remove
+        return safely_remove(self.path)
+
+    def test_exists(self):
+        with open(self.path, "w"):
+            pass  # just create the file
+        self._call()
+        self.assertFalse(os.path.exists(self.path))
+
+    def test_missing(self):
+        self._call()
+        # no error, yay!
+        self.assertFalse(os.path.exists(self.path))
+
+    @mock.patch("letsencrypt.le_util.os.remove")
+    def test_other_error_passthrough(self, mock_remove):
+        mock_remove.side_effect = OSError
+        self.assertRaises(OSError, self._call)
+
+
 class SafeEmailTest(unittest.TestCase):
     """Test safe_email."""
     @classmethod
