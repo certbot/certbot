@@ -1,6 +1,7 @@
 """Plugin common functions."""
 import os
 import pkg_resources
+import re
 import shutil
 import tempfile
 
@@ -21,6 +22,12 @@ def option_namespace(name):
 def dest_namespace(name):
     """ArgumentParser dest namespace (prefix of all destinations)."""
     return name + "_"
+
+private_ips_regex = re.compile(  # pylint: disable=invalid-name
+    r"(^127\.0\.0\.1)|(^10\.)|(^172\.1[6-9]\.)|"
+    r"(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)")
+hostname_regex = re.compile(  # pylint: disable=invalid-name
+    r"^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*[a-z]+$", re.IGNORECASE)
 
 
 class Plugin(object):

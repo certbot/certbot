@@ -1,52 +1,32 @@
 """Tests for letsencrypt_apache.parser."""
 import os
 import shutil
-import sys
 import unittest
 
 import augeas
 import mock
-import zope.component
 
 from letsencrypt import errors
-from letsencrypt.display import util as display_util
 
 from letsencrypt_apache.tests import util
 
 
-class ApacheParserTest(util.ApacheTest):
+class BasicParserTest(util.ParserTest):
     """Apache Parser Test."""
 
-    def setUp(self):
-        super(ApacheParserTest, self).setUp()
-
-        zope.component.provideUtility(display_util.FileDisplay(sys.stdout))
-
-        from letsencrypt_apache.parser import ApacheParser
-        self.aug = augeas.Augeas(flags=augeas.Augeas.NONE)
-        self.parser = ApacheParser(self.aug, self.config_path, self.ssl_options)
+    def setUp(self):  # pylint: disable=arguments-differ
+        super(BasicParserTest, self).setUp()
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
         shutil.rmtree(self.config_dir)
         shutil.rmtree(self.work_dir)
 
-    def test_root_normalized(self):
-        from letsencrypt_apache.parser import ApacheParser
-        path = os.path.join(self.temp_dir, "debian_apache_2_4/////"
-                            "two_vhost_80/../two_vhost_80/apache2")
-        parser = ApacheParser(self.aug, path, None)
-        self.assertEqual(parser.root, self.config_path)
-
-    def test_root_absolute(self):
-        from letsencrypt_apache.parser import ApacheParser
-        parser = ApacheParser(self.aug, os.path.relpath(self.config_path), None)
-        self.assertEqual(parser.root, self.config_path)
-
-    def test_root_no_trailing_slash(self):
-        from letsencrypt_apache.parser import ApacheParser
-        parser = ApacheParser(self.aug, self.config_path + os.path.sep, None)
-        self.assertEqual(parser.root, self.config_path)
+    def test_find_config_root_no_root(self):
+        # pylint: disable=protected-access
+        os.remove(self.parser.loc["root"])
+        self.assertRaises(
+            errors.NoInstallationError, self.parser._find_config_root)
 
     def test_parse_file(self):
         """Test parse_file.
@@ -67,11 +47,11 @@ class ApacheParserTest(util.ApacheTest):
         self.assertTrue(matches)
 
     def test_find_dir(self):
-        from letsencrypt_apache.parser import case_i
-        test = self.parser.find_dir(case_i("Listen"), "443")
+        test = self.parser.find_dir("Listen", "80")
         # This will only look in enabled hosts
-        test2 = self.parser.find_dir(case_i("documentroot"))
-        self.assertEqual(len(test), 2)
+        test2 = self.parser.find_dir("documentroot")
+
+        self.assertEqual(len(test), 1)
         self.assertEqual(len(test2), 3)
 
     def test_add_dir(self):
@@ -93,13 +73,30 @@ class ApacheParserTest(util.ApacheTest):
 
         """
         from letsencrypt_apache.parser import get_aug_path
+        # This makes sure that find_dir will work
+        self.parser.modules.add("mod_ssl.c")
+
         self.parser.add_dir_to_ifmodssl(
             get_aug_path(self.parser.loc["default"]),
-            "FakeDirective", "123")
+            "FakeDirective", ["123"])
 
         matches = self.parser.find_dir("FakeDirective", "123")
 
         self.assertEqual(len(matches), 1)
+        self.assertTrue("IfModule" in matches[0])
+
+    def test_add_dir_to_ifmodssl_multiple(self):
+        from letsencrypt_apache.parser import get_aug_path
+        # This makes sure that find_dir will work
+        self.parser.modules.add("mod_ssl.c")
+
+        self.parser.add_dir_to_ifmodssl(
+            get_aug_path(self.parser.loc["default"]),
+            "FakeDirective", ["123", "456", "789"])
+
+        matches = self.parser.find_dir("FakeDirective")
+
+        self.assertEqual(len(matches), 3)
         self.assertTrue("IfModule" in matches[0])
 
     def test_get_aug_path(self):
@@ -109,19 +106,113 @@ class ApacheParserTest(util.ApacheTest):
     def test_set_locations(self):
         with mock.patch("letsencrypt_apache.parser.os.path") as mock_path:
 
-            mock_path.isfile.return_value = False
-
-            # pylint: disable=protected-access
-            self.assertRaises(errors.PluginError,
-                              self.parser._set_locations, self.ssl_options)
-
             mock_path.isfile.side_effect = [True, False, False]
 
             # pylint: disable=protected-access
-            results = self.parser._set_locations(self.ssl_options)
+            results = self.parser._set_locations()
 
             self.assertEqual(results["default"], results["listen"])
             self.assertEqual(results["default"], results["name"])
+
+    def test_set_user_config_file(self):
+        # pylint: disable=protected-access
+        path = os.path.join(self.parser.root, "httpd.conf")
+        open(path, 'w').close()
+        self.parser.add_dir(self.parser.loc["default"], "Include", "httpd.conf")
+
+        self.assertEqual(
+            path, self.parser._set_user_config_file())
+
+    @mock.patch("letsencrypt_apache.parser.ApacheParser._get_runtime_cfg")
+    def test_update_runtime_variables(self, mock_cfg):
+        mock_cfg.return_value = (
+            'ServerRoot: "/etc/apache2"\n'
+            'Main DocumentRoot: "/var/www"\n'
+            'Main ErrorLog: "/var/log/apache2/error.log"\n'
+            'Mutex ssl-stapling: using_defaults\n'
+            'Mutex ssl-cache: using_defaults\n'
+            'Mutex default: dir="/var/lock/apache2" mechanism=fcntl\n'
+            'Mutex watchdog-callback: using_defaults\n'
+            'PidFile: "/var/run/apache2/apache2.pid"\n'
+            'Define: TEST\n'
+            'Define: DUMP_RUN_CFG\n'
+            'Define: U_MICH\n'
+            'Define: TLS=443\n'
+            'Define: example_path=Documents/path\n'
+            'User: name="www-data" id=33 not_used\n'
+            'Group: name="www-data" id=33 not_used\n'
+        )
+        expected_vars = {"TEST": "", "U_MICH": "", "TLS": "443",
+                         "example_path":"Documents/path"}
+
+        self.parser.update_runtime_variables("ctl")
+        self.assertEqual(self.parser.variables, expected_vars)
+
+    @mock.patch("letsencrypt_apache.parser.ApacheParser._get_runtime_cfg")
+    def test_update_runtime_vars_bad_output(self, mock_cfg):
+        mock_cfg.return_value = "Define: TLS=443=24"
+        self.assertRaises(
+            errors.PluginError, self.parser.update_runtime_variables, "ctl")
+
+        mock_cfg.return_value = "Define: DUMP_RUN_CFG\nDefine: TLS=443=24"
+        self.assertRaises(
+            errors.PluginError, self.parser.update_runtime_variables, "ctl")
+
+    @mock.patch("letsencrypt_apache.parser.subprocess.Popen")
+    def test_update_runtime_vars_bad_ctl(self, mock_popen):
+        mock_popen.side_effect = OSError
+        self.assertRaises(
+            errors.MisconfigurationError,
+            self.parser.update_runtime_variables, "ctl")
+
+    @mock.patch("letsencrypt_apache.parser.subprocess.Popen")
+    def test_update_runtime_vars_bad_exit(self, mock_popen):
+        mock_popen().communicate.return_value = ("", "")
+        mock_popen.returncode = -1
+        self.assertRaises(
+            errors.MisconfigurationError,
+            self.parser.update_runtime_variables, "ctl")
+
+
+class ParserInitTest(util.ApacheTest):
+    def setUp(self):  # pylint: disable=arguments-differ
+        super(ParserInitTest, self).setUp()
+        self.aug = augeas.Augeas(
+            flags=augeas.Augeas.NONE | augeas.Augeas.NO_MODL_AUTOLOAD)
+
+    def tearDown(self):
+        shutil.rmtree(self.temp_dir)
+        shutil.rmtree(self.config_dir)
+        shutil.rmtree(self.work_dir)
+
+    def test_root_normalized(self):
+        from letsencrypt_apache.parser import ApacheParser
+
+        with mock.patch("letsencrypt_apache.parser.ApacheParser."
+                        "update_runtime_variables"):
+            path = os.path.join(
+                self.temp_dir,
+                "debian_apache_2_4/////two_vhost_80/../two_vhost_80/apache2")
+            parser = ApacheParser(self.aug, path, "dummy_ctl")
+
+        self.assertEqual(parser.root, self.config_path)
+
+    def test_root_absolute(self):
+        from letsencrypt_apache.parser import ApacheParser
+        with mock.patch("letsencrypt_apache.parser.ApacheParser."
+                        "update_runtime_variables"):
+            parser = ApacheParser(
+                self.aug, os.path.relpath(self.config_path), "dummy_ctl")
+
+        self.assertEqual(parser.root, self.config_path)
+
+    def test_root_no_trailing_slash(self):
+        from letsencrypt_apache.parser import ApacheParser
+        with mock.patch("letsencrypt_apache.parser.ApacheParser."
+                        "update_runtime_variables"):
+            parser = ApacheParser(
+                self.aug, self.config_path + os.path.sep, "dummy_ctl")
+        self.assertEqual(parser.root, self.config_path)
 
 
 if __name__ == "__main__":

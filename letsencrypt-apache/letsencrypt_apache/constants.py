@@ -6,6 +6,7 @@ CLI_DEFAULTS = dict(
     server_root="/etc/apache2",
     ctl="apache2ctl",
     enmod="a2enmod",
+    dismod="a2dismod",
     init_script="/etc/init.d/apache2",
     le_vhost_ext="-le-ssl.conf",
 )
@@ -20,5 +21,5 @@ MOD_SSL_CONF_SRC = pkg_resources.resource_filename(
 distribution."""
 
 REWRITE_HTTPS_ARGS = [
-    "^.*$", "https://%{SERVER_NAME}%{REQUEST_URI}", "[L,R=permanent]"]
+    "^", "https://%{SERVER_NAME}%{REQUEST_URI}", "[L,QSA,R=permanent]"]
 """Apache rewrite rule arguments used for redirections to https vhost"""

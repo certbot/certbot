@@ -1,33 +1,175 @@
 """ApacheParser is a member object of the ApacheConfigurator class."""
+import fnmatch
+import itertools
+import logging
 import os
 import re
+import subprocess
 
 from letsencrypt import errors
+
+
+logger = logging.getLogger(__name__)
 
 
 class ApacheParser(object):
     """Class handles the fine details of parsing the Apache Configuration.
 
-    :ivar str root: Normalized abosulte path to the server root
+    .. todo:: Make parsing general... remove sites-available etc...
+
+    :ivar str root: Normalized absolute path to the server root
         directory. Without trailing slash.
+    :ivar str root: Server root
+    :ivar set modules: All module names that are currently enabled.
+    :ivar dict loc: Location to place directives, root - configuration origin,
+        default - user config file, name - NameVirtualHost,
 
     """
+    arg_var_interpreter = re.compile(r"\$\{[^ \}]*}")
+    fnmatch_chars = set(["*", "?", "\\", "[", "]"])
 
-    def __init__(self, aug, root, ssl_options):
-        # Find configuration root and make sure augeas can parse it.
+    def __init__(self, aug, root, ctl):
+        # Note: Order is important here.
+
+        # This uses the binary, so it can be done first.
+        # https://httpd.apache.org/docs/2.4/mod/core.html#define
+        # https://httpd.apache.org/docs/2.4/mod/core.html#ifdefine
+        # This only handles invocation parameters and Define directives!
+        self.variables = {}
+        self.update_runtime_variables(ctl)
+
         self.aug = aug
+        # Find configuration root and make sure augeas can parse it.
         self.root = os.path.abspath(root)
-        self.loc = self._set_locations(ssl_options)
+        self.loc = {"root": self._find_config_root()}
         self._parse_file(self.loc["root"])
+
+        # This problem has been fixed in Augeas 1.0
+        self.standardize_excl()
+
+        # Temporarily set modules to be empty, so that find_dirs can work
+        # https://httpd.apache.org/docs/2.4/mod/core.html#ifmodule
+        # This needs to come before locations are set.
+        self.modules = set()
+        self._init_modules()
+
+        # Set up rest of locations
+        self.loc.update(self._set_locations())
 
         # Must also attempt to parse sites-available or equivalent
         # Sites-available is not included naturally in configuration
         self._parse_file(os.path.join(self.root, "sites-available") + "/*")
 
-        # This problem has been fixed in Augeas 1.0
-        self.standardize_excl()
+    def _init_modules(self):
+        """Iterates on the configuration until no new modules are loaded.
 
-    def add_dir_to_ifmodssl(self, aug_conf_path, directive, val):
+        ..todo:: This should be attempted to be done with a binary to avoid
+            the iteration issue.  Else... parse and enable mods at same time.
+
+        """
+        matches = self.find_dir("LoadModule")
+
+        iterator = iter(matches)
+        # Make sure prev_size != cur_size for do: while: iteration
+        prev_size = -1
+
+        while len(self.modules) != prev_size:
+            prev_size = len(self.modules)
+
+            for match_name, match_filename in itertools.izip(
+                    iterator, iterator):
+                self.modules.add(self.get_arg(match_name))
+                self.modules.add(
+                    os.path.basename(self.get_arg(match_filename))[:-2] + "c")
+
+    def update_runtime_variables(self, ctl):
+        """"
+
+        .. note:: Compile time variables (apache2ctl -V) are not used within the
+            dynamic configuration files.  These should not be parsed or
+            interpreted.
+
+        .. todo:: Create separate compile time variables... simply for arg_get()
+
+        """
+        stdout = self._get_runtime_cfg(ctl)
+
+        variables = dict()
+        matches = re.compile(r"Define: ([^ \n]*)").findall(stdout)
+        try:
+            matches.remove("DUMP_RUN_CFG")
+        except ValueError:
+            raise errors.PluginError("Unable to parse runtime variables")
+
+        for match in matches:
+            if match.count("=") > 1:
+                logger.error("Unexpected number of equal signs in "
+                             "apache2ctl -D DUMP_RUN_CFG")
+                raise errors.PluginError(
+                    "Error parsing Apache runtime variables")
+            parts = match.partition("=")
+            variables[parts[0]] = parts[2]
+
+        self.variables = variables
+
+    def _get_runtime_cfg(self, ctl):  # pylint: disable=no-self-use
+        """Get runtime configuration info.
+
+        :returns: stdout from DUMP_RUN_CFG
+
+        """
+        try:
+            proc = subprocess.Popen(
+                [ctl, "-D", "DUMP_RUN_CFG"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE)
+            stdout, stderr = proc.communicate()
+
+        except (OSError, ValueError):
+            logger.error(
+                "Error accessing %s for runtime parameters!%s", ctl, os.linesep)
+            raise errors.MisconfigurationError(
+                "Error accessing loaded Apache parameters: %s", ctl)
+        # Small errors that do not impede
+        if proc.returncode != 0:
+            logger.warn("Error in checking parameter list: %s", stderr)
+            raise errors.MisconfigurationError(
+                "Apache is unable to check whether or not the module is "
+                "loaded because Apache is misconfigured.")
+
+        return stdout
+
+    def filter_args_num(self, matches, args):  # pylint: disable=no-self-use
+        """Filter out directives with specific number of arguments.
+
+        This function makes the assumption that all related arguments are given
+        in order.  Thus /files/apache/directive[5]/arg[2] must come immediately
+        after /files/apache/directive[5]/arg[1]. Runs in 1 linear pass.
+
+        :param string matches: Matches of all directives with arg nodes
+        :param int args: Number of args you would like to filter
+
+        :returns: List of directives that contain # of arguments.
+            (arg is stripped off)
+
+        """
+        filtered = []
+        if args == 1:
+            for i in range(len(matches)):
+                if matches[i].endswith("/arg"):
+                    filtered.append(matches[i][:-4])
+        else:
+            for i in range(len(matches)):
+                if matches[i].endswith("/arg[%d]" % args):
+                    # Make sure we don't cause an IndexError (end of list)
+                    # Check to make sure arg + 1 doesn't exist
+                    if (i == (len(matches) - 1) or
+                            not matches[i + 1].endswith("/arg[%d]" % (args + 1))):
+                        filtered.append(matches[i][:-len("/arg[%d]" % args)])
+
+        return filtered
+
+    def add_dir_to_ifmodssl(self, aug_conf_path, directive, args):
         """Adds directive and value to IfMod ssl block.
 
         Adds given directive and value along configuration path within
@@ -35,8 +177,9 @@ class ApacheParser(object):
         the file, it is created.
 
         :param str aug_conf_path: Desired Augeas config path to add directive
-        :param str directive: Directive you would like to add
-        :param str val: Value of directive ie. Listen 443, 443 is the value
+        :param str directive: Directive you would like to add, e.g. Listen
+        :param args: Values of the directive; str "443" or list of str
+        :type args: list
 
         """
         # TODO: Add error checking code... does the path given even exist?
@@ -46,7 +189,12 @@ class ApacheParser(object):
         self.aug.insert(if_mod_path + "arg", "directive", False)
         nvh_path = if_mod_path + "directive[1]"
         self.aug.set(nvh_path, directive)
-        self.aug.set(nvh_path + "/arg", val)
+        if len(args) == 1:
+            self.aug.set(nvh_path + "/arg", args[0])
+        else:
+            for i, arg in enumerate(args):
+                self.aug.set("%s/arg[%d]" % (nvh_path, i+1), arg)
+
 
     def _get_ifmod(self, aug_conf_path, mod):
         """Returns the path to <IfMod mod> and creates one if it doesn't exist.
@@ -65,7 +213,7 @@ class ApacheParser(object):
         # Strip off "arg" at end of first ifmod path
         return if_mods[0][:len(if_mods[0]) - 3]
 
-    def add_dir(self, aug_conf_path, directive, arg):
+    def add_dir(self, aug_conf_path, directive, args):
         """Appends directive to the end fo the file given by aug_conf_path.
 
         .. note:: Not added to AugeasConfigurator because it may depend
@@ -73,24 +221,24 @@ class ApacheParser(object):
 
         :param str aug_conf_path: Augeas configuration path to add directive
         :param str directive: Directive to add
-        :param str arg: Value of the directive. ie. Listen 443, 443 is arg
+        :param args: Value of the directive. ie. Listen 443, 443 is arg
+        :type args: list or str
 
         """
         self.aug.set(aug_conf_path + "/directive[last() + 1]", directive)
-        if isinstance(arg, list):
-            for i, value in enumerate(arg, 1):
+        if isinstance(args, list):
+            for i, value in enumerate(args, 1):
                 self.aug.set(
                     "%s/directive[last()]/arg[%d]" % (aug_conf_path, i), value)
         else:
-            self.aug.set(aug_conf_path + "/directive[last()]/arg", arg)
+            self.aug.set(aug_conf_path + "/directive[last()]/arg", args)
 
-    def find_dir(self, directive, arg=None, start=None):
+    def find_dir(self, directive, arg=None, start=None, exclude=True):
         """Finds directive in the configuration.
 
         Recursively searches through config files to find directives
         Directives should be in the form of a case insensitive regex currently
 
-        .. todo:: Add order to directives returned. Last directive comes last..
         .. todo:: arg should probably be a list
 
         Note: Augeas is inherently case sensitive while Apache is case
@@ -101,20 +249,19 @@ class ApacheParser(object):
         compatibility.
 
         :param str directive: Directive to look for
-
         :param arg: Specific value directive must have, None if all should
                     be considered
         :type arg: str or None
 
         :param str start: Beginning Augeas path to begin looking
+        :param bool exclude: Whether or not to exclude directives based on
+            variables and enabled modules
 
         """
         # Cannot place member variable in the definition of the function so...
         if not start:
             start = get_aug_path(self.loc["root"])
 
-        # Debug code
-        # print "find_dir:", directive, "arg:", arg, " | Looking in:", start
         # No regexp code
         # if arg is None:
         #     matches = self.aug.match(start +
@@ -127,32 +274,101 @@ class ApacheParser(object):
         # includes = self.aug.match(start +
         # "//* [self::directive='Include']/* [label()='arg']")
 
+        regex = "(%s)|(%s)|(%s)" % (case_i(directive),
+                                    case_i("Include"),
+                                    case_i("IncludeOptional"))
+        matches = self.aug.match(
+            "%s//*[self::directive=~regexp('%s')]" % (start, regex))
+
+        if exclude:
+            matches = self._exclude_dirs(matches)
+
         if arg is None:
-            matches = self.aug.match(("%s//*[self::directive=~regexp('%s')]/arg"
-                                      % (start, directive)))
+            arg_suffix = "/arg"
         else:
-            matches = self.aug.match(("%s//*[self::directive=~regexp('%s')]/*"
-                                      "[self::arg=~regexp('%s')]" %
-                                      (start, directive, arg)))
+            arg_suffix = "/*[self::arg=~regexp('%s')]" % case_i(arg)
 
-        incl_regex = "(%s)|(%s)" % (case_i('Include'),
-                                    case_i('IncludeOptional'))
+        ordered_matches = []
 
-        includes = self.aug.match(("%s//* [self::directive=~regexp('%s')]/* "
-                                   "[label()='arg']" % (start, incl_regex)))
+        # TODO: Wildcards should be included in alphabetical order
+        # https://httpd.apache.org/docs/2.4/mod/core.html#include
+        for match in matches:
+            dir_ = self.aug.get(match).lower()
+            if dir_ == "include" or dir_ == "includeoptional":
+                # start[6:] to strip off /files
+                #print self._get_include_path(self.get_arg(match +"/arg")), directive, arg
+                ordered_matches.extend(self.find_dir(
+                    directive, arg,
+                    self._get_include_path(self.get_arg(match + "/arg")),
+                    exclude))
+            # This additionally allows Include
+            if dir_ == directive.lower():
+                ordered_matches.extend(self.aug.match(match + arg_suffix))
 
-        # for inc in includes:
-        #    print inc, self.aug.get(inc)
+        return ordered_matches
 
-        for include in includes:
-            # start[6:] to strip off /files
-            matches.extend(self.find_dir(
-                directive, arg, self._get_include_path(
-                    strip_dir(start[6:]), self.aug.get(include))))
+    def get_arg(self, match):
+        """Uses augeas.get to get argument value and interprets result.
 
-        return matches
+        This also converts all variables and parameters appropriately.
 
-    def _get_include_path(self, cur_dir, arg):
+        """
+        value = self.aug.get(match)
+        variables = ApacheParser.arg_var_interpreter.findall(value)
+
+        for var in variables:
+            # Strip off ${ and }
+            try:
+                value = value.replace(var, self.variables[var[2:-1]])
+            except KeyError:
+                raise errors.PluginError("Error Parsing variable: %s" % var)
+
+        return value
+
+    def _exclude_dirs(self, matches):
+        """Exclude directives that are not loaded into the configuration."""
+        filters = [("ifmodule", self.modules), ("ifdefine", self.variables)]
+
+        valid_matches = []
+
+        for match in matches:
+            for filter_ in filters:
+                if not self._pass_filter(match, filter_):
+                    break
+            else:
+                valid_matches.append(match)
+        return valid_matches
+
+    def _pass_filter(self, match, filter_):
+        """Determine if directive passes a filter.
+
+        :param str match: Augeas path
+        :param list filter: list of tuples of form
+            [("lowercase if directive", set of relevant parameters)]
+
+        """
+        match_l = match.lower()
+        last_match_idx = match_l.find(filter_[0])
+
+        while last_match_idx != -1:
+            # Check args
+            end_of_if = match_l.find("/", last_match_idx)
+            # This should be aug.get (vars are not used e.g. parser.aug_get)
+            expression = self.aug.get(match[:end_of_if] + "/arg")
+
+            if expression.startswith("!"):
+                # Strip off "!"
+                if expression[1:] in filter_[1]:
+                    return False
+            else:
+                if expression not in filter_[1]:
+                    return False
+
+            last_match_idx = match_l.find(filter_[0], end_of_if)
+
+        return True
+
+    def _get_include_path(self, arg):
         """Converts an Apache Include directive into Augeas path.
 
         Converts an Apache Include directive argument into an Augeas
@@ -160,29 +376,12 @@ class ApacheParser(object):
 
         .. todo:: convert to use os.path.join()
 
-        :param str cur_dir: current working directory
-
         :param str arg: Argument of Include directive
 
         :returns: Augeas path string
         :rtype: str
 
         """
-        # Sanity check argument - maybe
-        # Question: what can the attacker do with control over this string
-        # Effect parse file... maybe exploit unknown errors in Augeas
-        # If the attacker can Include anything though... and this function
-        # only operates on Apache real config data... then the attacker has
-        # already won.
-        # Perhaps it is better to simply check the permissions on all
-        # included files?
-        # check_config to validate apache config doesn't work because it
-        # would create a race condition between the check and this input
-
-        # TODO: Maybe... although I am convinced we have lost if
-        # Apache files can't be trusted.  The augeas include path
-        # should be made to be exact.
-
         # Check to make sure only expected characters are used <- maybe remove
         # validChars = re.compile("[a-zA-Z0-9.*?_-/]*")
         # matchObj = validChars.match(arg)
@@ -192,37 +391,39 @@ class ApacheParser(object):
 
         # Standardize the include argument based on server root
         if not arg.startswith("/"):
-            arg = cur_dir + arg
-        # conf/ is a special variable for ServerRoot in Apache
-        elif arg.startswith("conf/"):
-            arg = self.root + arg[4:]
-        # TODO: Test if Apache allows ../ or ~/ for Includes
+            # Normpath will condense ../
+            arg = os.path.normpath(os.path.join(self.root, arg))
 
         # Attempts to add a transform to the file if one does not already exist
-        self._parse_file(arg)
+        if os.path.isdir(arg):
+            self._parse_file(os.path.join(arg, "*"))
+        else:
+            self._parse_file(arg)
 
         # Argument represents an fnmatch regular expression, convert it
         # Split up the path and convert each into an Augeas accepted regex
         # then reassemble
-        if "*" in arg or "?" in arg:
-            split_arg = arg.split("/")
-            for idx, split in enumerate(split_arg):
-                # * and ? are the two special fnmatch characters
-                if "*" in split or "?" in split:
-                    # Turn it into a augeas regex
-                    # TODO: Can this instead be an augeas glob instead of regex
-                    split_arg[idx] = ("* [label()=~regexp('%s')]" %
-                                      self.fnmatch_to_re(split))
-            # Reassemble the argument
-            arg = "/".join(split_arg)
+        split_arg = arg.split("/")
+        for idx, split in enumerate(split_arg):
+            if any(char in ApacheParser.fnmatch_chars for char in split):
+                # Turn it into a augeas regex
+                # TODO: Can this instead be an augeas glob instead of regex
+                split_arg[idx] = ("* [label()=~regexp('%s')]" %
+                                  self.fnmatch_to_re(split))
+        # Reassemble the argument
+        # Note: This also normalizes the argument /serverroot/ -> /serverroot
+        arg = "/".join(split_arg)
 
-        # If the include is a directory, just return the directory as a file
-        if arg.endswith("/"):
-            return get_aug_path(arg[:len(arg)-1])
         return get_aug_path(arg)
 
     def fnmatch_to_re(self, clean_fn_match):  # pylint: disable=no-self-use
         """Method converts Apache's basic fnmatch to regular expression.
+
+        Assumption - Configs are assumed to be well-formed and only writable by
+        privileged users.
+
+        https://apr.apache.org/docs/apr/2.0/apr__fnmatch_8h_source.html
+        http://apache2.sourcearchive.com/documentation/2.2.16-6/apr__fnmatch_8h_source.html
 
         :param str clean_fn_match: Apache style filename match, similar to globs
 
@@ -230,20 +431,8 @@ class ApacheParser(object):
         :rtype: str
 
         """
-        # Checkout fnmatch.py in venv/local/lib/python2.7/fnmatch.py
-        regex = ""
-        for letter in clean_fn_match:
-            if letter == '.':
-                regex = regex + r"\."
-            elif letter == '*':
-                regex = regex + ".*"
-            # According to apache.org ? shouldn't appear
-            # but in case it is valid...
-            elif letter == '?':
-                regex = regex + "."
-            else:
-                regex = regex + letter
-        return regex
+        # This strips off final /Z(?ms)
+        return fnmatch.translate(clean_fn_match)[:-7]
 
     def _parse_file(self, filepath):
         """Parse file with Augeas
@@ -318,15 +507,14 @@ class ApacheParser(object):
 
         self.aug.load()
 
-    def _set_locations(self, ssl_options):
+    def _set_locations(self):
         """Set default location for directives.
 
         Locations are given as file_paths
         .. todo:: Make sure that files are included
 
         """
-        root = self._find_config_root()
-        default = self._set_user_config_file(root)
+        default = self._set_user_config_file()
 
         temp = os.path.join(self.root, "ports.conf")
         if os.path.isfile(temp):
@@ -336,8 +524,7 @@ class ApacheParser(object):
             listen = default
             name = default
 
-        return {"root": root, "default": default, "listen": listen,
-                "name": name, "ssl_options": ssl_options}
+        return {"default": default, "listen": listen, "name": name}
 
     def _find_config_root(self):
         """Find the Apache Configuration Root file."""
@@ -349,7 +536,7 @@ class ApacheParser(object):
 
         raise errors.NoInstallationError("Could not find configuration root")
 
-    def _set_user_config_file(self, root):
+    def _set_user_config_file(self):
         """Set the appropriate user configuration file
 
         .. todo:: This will have to be updated for other distros versions
@@ -360,12 +547,11 @@ class ApacheParser(object):
         # Basic check to see if httpd.conf exists and
         # in hierarchy via direct include
         # httpd.conf was very common as a user file in Apache 2.2
-        if (os.path.isfile(os.path.join(self.root, 'httpd.conf')) and
-                self.find_dir(
-                    case_i("Include"), case_i("httpd.conf"), root)):
-            return os.path.join(self.root, 'httpd.conf')
+        if (os.path.isfile(os.path.join(self.root, "httpd.conf")) and
+                self.find_dir("Include", "httpd.conf", self.loc["root"])):
+            return os.path.join(self.root, "httpd.conf")
         else:
-            return os.path.join(self.root, 'apache2.conf')
+            return os.path.join(self.root, "apache2.conf")
 
 
 def case_i(string):
@@ -391,22 +577,3 @@ def get_aug_path(file_path):
 
     """
     return "/files%s" % file_path
-
-
-def strip_dir(path):
-    """Returns directory of file path.
-
-    .. todo:: Replace this with Python standard function
-
-    :param str path: path is a file path. not an augeas section or
-        directive path
-
-    :returns: directory
-    :rtype: str
-
-    """
-    index = path.rfind("/")
-    if index > 0:
-        return path[:index+1]
-    # No directory
-    return ""

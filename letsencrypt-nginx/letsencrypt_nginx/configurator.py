@@ -244,22 +244,15 @@ class NginxConfigurator(common.Plugin):
         """
         all_names = set()
 
-        # Kept in same function to avoid multiple compilations of the regex
-        priv_ip_regex = (r"(^127\.0\.0\.1)|(^10\.)|(^172\.1[6-9]\.)|"
-                         r"(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)")
-        private_ips = re.compile(priv_ip_regex)
-        hostname_regex = r"^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*[a-z]+$"
-        hostnames = re.compile(hostname_regex, re.IGNORECASE)
-
         for vhost in self.parser.get_vhosts():
             all_names.update(vhost.names)
 
             for addr in vhost.addrs:
                 host = addr.get_addr()
-                if hostnames.match(host):
+                if common.hostname_regex.match(host):
                     # If it's a hostname, add it to the names.
                     all_names.add(host)
-                elif not private_ips.match(host):
+                elif not common.private_ips_regex.match(host):
                     # If it isn't a private IP, do a reverse DNS lookup
                     # TODO: IPv6 support
                     try:
@@ -451,7 +444,7 @@ class NginxConfigurator(common.Plugin):
         # nginx < 0.8.48 uses machine hostname as default server_name instead of
         # the empty string
         if nginx_version < (0, 8, 48):
-            raise errors.PluginError("Nginx version must be 0.8.48+")
+            raise errors.NotSupportedError("Nginx version must be 0.8.48+")
 
         return nginx_version
 

@@ -17,6 +17,14 @@ class ReverterError(Error):
     """Let's Encrypt Reverter error."""
 
 
+class SubprocessError(Error):
+    """Subprocess handling error."""
+
+
+class CertStorageError(Error):
+    """Generic `.CertStorage` error."""
+
+
 # Auth Handler Errors
 class AuthorizationError(Error):
     """Authorization error."""
@@ -64,6 +72,9 @@ class NoInstallationError(PluginError):
 
 class MisconfigurationError(PluginError):
     """Let's Encrypt Misconfiguration error."""
+
+class NotSupportedError(PluginError):
+    """Let's Encrypt Plugin function not supported error."""
 
 
 class RevokerError(Error):

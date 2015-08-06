@@ -14,6 +14,7 @@ before_install:
 env:
   global:
     - GOPATH=/tmp/go
+    - PATH=$GOPATH/bin:$PATH
   matrix:
     - TOXENV=py27 BOULDER_INTEGRATION=1
     - TOXENV=py33
@@ -21,8 +22,13 @@ env:
     - TOXENV=lint
     - TOXENV=cover
 
+# make sure simplehttp simple verification works (custom /etc/hosts)
+addons:
+  hosts:
+    - le.wtf
+
 install: "travis_retry pip install tox coveralls"
-before_script: '[ "xxx$BOULDER_INTEGRATION" = "xxx" ] || ./tests/boulder-start.sh amqp'
+before_script: '[ "xxx$BOULDER_INTEGRATION" = "xxx" ] || ./tests/boulder-start.sh'
 script: 'travis_retry tox && ([ "xxx$BOULDER_INTEGRATION" = "xxx" ] || (source .tox/$TOXENV/bin/activate && ./tests/boulder-integration.sh))'
 
 after_success: '[ "$TOXENV" == "cover" ] && coveralls'
