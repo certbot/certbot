@@ -101,18 +101,14 @@ class RegistrationTest(unittest.TestCase):
             'mailto:admin@foo.com',
             'tel:1234',
         )
-        recovery_token = 'XYZ'
         agreement = 'https://letsencrypt.org/terms'
 
         from acme.messages import Registration
-        self.reg = Registration(
-            key=key, contact=contact, recovery_token=recovery_token,
-            agreement=agreement)
+        self.reg = Registration(key=key, contact=contact, agreement=agreement)
         self.reg_none = Registration()
 
         self.jobj_to = {
             'contact': contact,
-            'recoveryToken': recovery_token,
             'agreement': agreement,
             'key': key,
         }
@@ -228,11 +224,12 @@ class AuthorizationTest(unittest.TestCase):
         self.challbs = (
             ChallengeBody(
                 uri='http://challb1', status=STATUS_VALID,
-                chall=challenges.SimpleHTTP(token='IlirfxKKXAsHtmzK29Pj8A')),
+                chall=challenges.SimpleHTTP(token=b'IlirfxKKXAsHtmzK29Pj8A')),
             ChallengeBody(uri='http://challb2', status=STATUS_VALID,
-                          chall=challenges.DNS(token='DGyRejmCefe7v4NfDGDKfA')),
+                          chall=challenges.DNS(
+                              token=b'DGyRejmCefe7v4NfDGDKfA')),
             ChallengeBody(uri='http://challb3', status=STATUS_VALID,
-                          chall=challenges.RecoveryToken()),
+                          chall=challenges.RecoveryContact()),
         )
         combinations = ((0, 2), (1, 2))
 

@@ -221,6 +221,22 @@ class JSONObjectWithFields(util.ImmutableMap, interfaces.JSONDeSerializable):
         super(JSONObjectWithFields, self).__init__(
             **(dict(self._defaults(), **kwargs)))
 
+    def encode(self, name):
+        """Encode a single field.
+
+        :param str name: Name of the field to be encoded.
+
+        :raises erors.SerializationError: if field cannot be serialized
+        :raises errors.Error: if field could not be found
+
+        """
+        try:
+            field = self._fields[name]
+        except KeyError:
+            raise errors.Error("Field not found: {0}".format(name))
+
+        return field.encode(getattr(self, name))
+
     def fields_to_partial_json(self):
         """Serialize fields to JSON."""
         jobj = {}
@@ -310,7 +326,8 @@ def decode_b64jose(data, size=None, minimum=False):
 
     if size is not None and ((not minimum and len(decoded) != size)
                              or (minimum and len(decoded) < size)):
-        raise errors.DeserializationError()
+        raise errors.DeserializationError(
+            "Expected at least or exactly {0} bytes".format(size))
 
     return decoded
 
@@ -418,7 +435,9 @@ class TypedJSONObjectWithFields(JSONObjectWithFields):
     def get_type_cls(cls, jobj):
         """Get the registered class for ``jobj``."""
         if cls in six.itervalues(cls.TYPES):
-            assert jobj[cls.type_field_name]
+            if cls.type_field_name not in jobj:
+                raise errors.DeserializationError(
+                    "Missing type field ({0})".format(cls.type_field_name))
             # cls is already registered type_cls, force to use it
             # so that, e.g Revocation.from_json(jobj) fails if
             # jobj["type"] != "revocation".

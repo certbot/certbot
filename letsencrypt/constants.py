@@ -88,10 +88,6 @@ LIVE_DIR = "live"
 TEMP_CHECKPOINT_DIR = "temp_checkpoint"
 """Temporary checkpoint directory (relative to `IConfig.work_dir`)."""
 
-REC_TOKEN_DIR = "recovery_tokens"
-"""Directory where all recovery tokens are saved (relative to
-`IConfig.work_dir`)."""
-
 RENEWAL_CONFIGS_DIR = "configs"
 """Renewal configs directory, relative to `IConfig.config_dir`."""
 

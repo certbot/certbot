@@ -5,11 +5,16 @@ import unittest
 import mock
 
 from acme import challenges
+from acme import jose
 
 from letsencrypt import achallenges
 from letsencrypt import errors
 
 from letsencrypt.tests import acme_util
+from letsencrypt.tests import test_util
+
+
+KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
 
 class ManualAuthenticatorTest(unittest.TestCase):
@@ -21,8 +26,9 @@ class ManualAuthenticatorTest(unittest.TestCase):
             no_simple_http_tls=True, simple_http_port=4430,
             manual_test_mode=False)
         self.auth = ManualAuthenticator(config=self.config, name="manual")
+        account = mock.MagicMock(key=KEY)
         self.achalls = [achallenges.SimpleHTTP(
-            challb=acme_util.SIMPLE_HTTP, domain="foo.com", key=None)]
+            challb=acme_util.SIMPLE_HTTP_P, domain="foo.com", account=account)]
 
         config_test_mode = mock.MagicMock(
             no_simple_http_tls=True, simple_http_port=4430,
@@ -49,14 +55,14 @@ class ManualAuthenticatorTest(unittest.TestCase):
         mock_urandom.return_value = "foo"
         mock_verify.return_value = True
 
-        resp = challenges.SimpleHTTPResponse(tls=False, path='Zm9v')
+        resp = challenges.SimpleHTTPResponse(tls=False)
         self.assertEqual([resp], self.auth.perform(self.achalls))
         self.assertEqual(1, mock_raw_input.call_count)
-        mock_verify.assert_called_with(self.achalls[0].challb, "foo.com", 4430)
+        mock_verify.assert_called_with(
+            self.achalls[0].challb.chall, "foo.com", KEY.public_key(), 4430)
 
         message = mock_stdout.write.mock_calls[0][1][0]
         self.assertTrue(self.achalls[0].token in message)
-        self.assertTrue('Zm9v' in message)
 
         mock_verify.return_value = False
         self.assertEqual([None], self.auth.perform(self.achalls))

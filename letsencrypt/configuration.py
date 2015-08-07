@@ -22,7 +22,6 @@ class NamespaceConfig(object):
       - `cert_key_backup`
       - `in_progress_dir`
       - `key_dir`
-      - `rec_token_dir`
       - `renewer_config_file`
       - `temp_checkpoint_dir`
 
@@ -70,11 +69,6 @@ class NamespaceConfig(object):
     @property
     def key_dir(self):  # pylint: disable=missing-docstring
         return os.path.join(self.namespace.config_dir, constants.KEY_DIR)
-
-    # TODO: This should probably include the server name
-    @property
-    def rec_token_dir(self):  # pylint: disable=missing-docstring
-        return os.path.join(self.namespace.work_dir, constants.REC_TOKEN_DIR)
 
     @property
     def temp_checkpoint_dir(self):  # pylint: disable=missing-docstring

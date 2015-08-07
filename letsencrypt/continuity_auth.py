@@ -7,15 +7,11 @@ from letsencrypt import achallenges
 from letsencrypt import errors
 from letsencrypt import interfaces
 from letsencrypt import proof_of_possession
-from letsencrypt import recovery_token
 
 
 class ContinuityAuthenticator(object):
     """IAuthenticator for
     :const:`~acme.challenges.ContinuityChallenge` class challenges.
-
-    :ivar rec_token: Performs "recoveryToken" challenges.
-    :type rec_token: :class:`letsencrypt.recovery_token.RecoveryToken`
 
     :ivar proof_of_pos: Performs "proofOfPossession" challenges.
     :type proof_of_pos:
@@ -25,7 +21,7 @@ class ContinuityAuthenticator(object):
     zope.interface.implements(interfaces.IAuthenticator)
 
     # This will have an installer soon for get_key/cert purposes
-    def __init__(self, config, installer):
+    def __init__(self, config, installer):  # pylint: disable=unused-argument
         """Initialize Client Authenticator.
 
         :param config: Configuration.
@@ -35,13 +31,11 @@ class ContinuityAuthenticator(object):
         :type installer: :class:`letsencrypt.interfaces.IInstaller`
 
         """
-        self.rec_token = recovery_token.RecoveryToken(
-            config.server, config.rec_token_dir)
         self.proof_of_pos = proof_of_possession.ProofOfPossession(installer)
 
     def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use
         """Return list of challenge preferences."""
-        return [challenges.ProofOfPossession, challenges.RecoveryToken]
+        return [challenges.ProofOfPossession]
 
     def perform(self, achalls):
         """Perform client specific challenges for IAuthenticator"""
@@ -49,16 +43,12 @@ class ContinuityAuthenticator(object):
         for achall in achalls:
             if isinstance(achall, achallenges.ProofOfPossession):
                 responses.append(self.proof_of_pos.perform(achall))
-            elif isinstance(achall, achallenges.RecoveryToken):
-                responses.append(self.rec_token.perform(achall))
             else:
                 raise errors.ContAuthError("Unexpected Challenge")
         return responses
 
-    def cleanup(self, achalls):
+    def cleanup(self, achalls):  # pylint: disable=no-self-use
         """Cleanup call for IAuthenticator."""
         for achall in achalls:
-            if isinstance(achall, achallenges.RecoveryToken):
-                self.rec_token.cleanup(achall)
-            elif not isinstance(achall, achallenges.ProofOfPossession):
+            if not isinstance(achall, achallenges.ProofOfPossession):
                 raise errors.ContAuthError("Unexpected Challenge")

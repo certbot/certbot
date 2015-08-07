@@ -11,7 +11,6 @@ from acme import challenges
 
 from letsencrypt import achallenges
 from letsencrypt import errors
-from letsencrypt import le_util
 
 from letsencrypt.tests import acme_util
 
@@ -374,11 +373,11 @@ class TwoVhost80Test(util.ApacheTest):
     def test_perform(self, mock_restart, mock_dvsni_perform):
         # Only tests functionality specific to configurator.perform
         # Note: As more challenges are offered this will have to be expanded
-        _, achall1, achall2 = self.get_achalls()
+        account_key, achall1, achall2 = self.get_achalls()
 
         dvsni_ret_val = [
-            challenges.DVSNIResponse(s="randomS1"),
-            challenges.DVSNIResponse(s="randomS2"),
+            achall1.gen_response(account_key.key),
+            achall2.gen_response(account_key.key),
         ]
 
         mock_dvsni_perform.return_value = dvsni_ret_val
@@ -585,23 +584,21 @@ class TwoVhost80Test(util.ApacheTest):
 
     def get_achalls(self):
         """Return testing achallenges."""
-        auth_key = le_util.Key(self.rsa256_file, self.rsa256_pem)
+        account = mock.MagicMock(key=self.rsa512jwk)
         achall1 = achallenges.DVSNI(
             challb=acme_util.chall_to_challb(
                 challenges.DVSNI(
-                    r="jIq_Xy1mXGN37tb4L6Xj_es58fW571ZNyXekdZzhh7Q",
-                    nonce="37bc5eb75d3e00a19b4f6355845e5a18"),
+                    token="jIq_Xy1mXGN37tb4L6Xj_es58fW571ZNyXekdZzhh7Q"),
                 "pending"),
-            domain="encryption-example.demo", key=auth_key)
+            domain="encryption-example.demo", account=account)
         achall2 = achallenges.DVSNI(
             challb=acme_util.chall_to_challb(
                 challenges.DVSNI(
-                    r="uqnaPzxtrndteOqtrXb0Asl5gOJfWAnnx6QJyvcmlDU",
-                    nonce="59ed014cac95f77057b1d7a1b2c596ba"),
+                    token="uqnaPzxtrndteOqtrXb0Asl5gOJfWAnnx6QJyvcmlDU"),
                 "pending"),
-            domain="letsencrypt.demo", key=auth_key)
+            domain="letsencrypt.demo", account=account)
 
-        return auth_key, achall1, achall2
+        return account, achall1, achall2
 
     def test_make_addrs_sni_ready(self):
         self.config.version = (2, 2)
