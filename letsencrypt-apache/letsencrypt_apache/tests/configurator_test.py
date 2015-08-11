@@ -376,8 +376,8 @@ class TwoVhost80Test(util.ApacheTest):
         account_key, achall1, achall2 = self.get_achalls()
 
         dvsni_ret_val = [
-            achall1.gen_response(account_key.key),
-            achall2.gen_response(account_key.key),
+            achall1.gen_response(account_key),
+            achall2.gen_response(account_key),
         ]
 
         mock_dvsni_perform.return_value = dvsni_ret_val
@@ -584,21 +584,21 @@ class TwoVhost80Test(util.ApacheTest):
 
     def get_achalls(self):
         """Return testing achallenges."""
-        account = mock.MagicMock(key=self.rsa512jwk)
+        account_key = self.rsa512jwk
         achall1 = achallenges.DVSNI(
             challb=acme_util.chall_to_challb(
                 challenges.DVSNI(
                     token="jIq_Xy1mXGN37tb4L6Xj_es58fW571ZNyXekdZzhh7Q"),
                 "pending"),
-            domain="encryption-example.demo", account=account)
+            domain="encryption-example.demo", account_key=account_key)
         achall2 = achallenges.DVSNI(
             challb=acme_util.chall_to_challb(
                 challenges.DVSNI(
                     token="uqnaPzxtrndteOqtrXb0Asl5gOJfWAnnx6QJyvcmlDU"),
                 "pending"),
-            domain="letsencrypt.demo", account=account)
+            domain="letsencrypt.demo", account_key=account_key)
 
-        return account, achall1, achall2
+        return account_key, achall1, achall2
 
     def test_make_addrs_sni_ready(self):
         self.config.version = (2, 2)

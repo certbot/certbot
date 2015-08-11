@@ -34,8 +34,8 @@ class PerformTest(unittest.TestCase):
     def test_unexpected(self):
         self.assertRaises(
             errors.ContAuthError, self.auth.perform, [
-                achallenges.DVSNI(challb=None, domain="0",
-                                  account=mock.Mock(key="invalid_key"))])
+                achallenges.DVSNI(
+                    challb=None, domain="0", account_key="invalid_key"),])
 
     def test_chall_pref(self):
         self.assertEqual(
@@ -54,7 +54,7 @@ class CleanupTest(unittest.TestCase):
 
     def test_unexpected(self):
         unexpected = achallenges.DVSNI(
-            challb=None, domain="0", account=mock.Mock("dummy_key"))
+            challb=None, domain="0", account_key="dummy_key")
         self.assertRaises(errors.ContAuthError, self.auth.cleanup, [unexpected])
 
 

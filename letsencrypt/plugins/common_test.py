@@ -115,11 +115,11 @@ class DvsniTest(unittest.TestCase):
         achallenges.DVSNI(
             challb=acme_util.chall_to_challb(
                 challenges.DVSNI(token=b'dvsni1'), "pending"),
-            domain="encryption-example.demo", account=mock.Mock(key=auth_key)),
+            domain="encryption-example.demo", account_key=auth_key),
         achallenges.DVSNI(
             challb=acme_util.chall_to_challb(
                 challenges.DVSNI(token=b'dvsni2'), "pending"),
-            domain="letsencrypt.demo", account=mock.Mock(key=auth_key)),
+            domain="letsencrypt.demo", account_key=auth_key),
     ]
 
     def setUp(self):

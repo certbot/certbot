@@ -173,23 +173,22 @@ class NginxConfiguratorTest(util.NginxTest):
     def test_perform(self, mock_restart, mock_dvsni_perform):
         # Only tests functionality specific to configurator.perform
         # Note: As more challenges are offered this will have to be expanded
-        account = mock.MagicMock(key=self.rsa512jwk)
         achall1 = achallenges.DVSNI(
             challb=messages.ChallengeBody(
                 chall=challenges.DVSNI(token="kNdwjwOeX0I_A8DXt9Msmg"),
                 uri="https://ca.org/chall0_uri",
                 status=messages.Status("pending"),
-            ), domain="localhost", account=account)
+            ), domain="localhost", account_key=self.rsa512jwk)
         achall2 = achallenges.DVSNI(
             challb=messages.ChallengeBody(
                 chall=challenges.DVSNI(token="m8TdO1qik4JVFtgPPurJmg"),
                 uri="https://ca.org/chall1_uri",
                 status=messages.Status("pending"),
-            ), domain="example.com", account=account)
+            ), domain="example.com", account_key=self.rsa512jwk)
 
         dvsni_ret_val = [
-            achall1.gen_response(account.key),
-            achall2.gen_response(account.key),
+            achall1.gen_response(self.rsa512jwk),
+            achall2.gen_response(self.rsa512jwk),
         ]
 
         mock_dvsni_perform.return_value = dvsni_ret_val

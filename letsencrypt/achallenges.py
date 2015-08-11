@@ -50,10 +50,10 @@ class AnnotatedChallenge(jose.ImmutableMap):
 class DVSNI(AnnotatedChallenge):
     """Client annotated "dvsni" ACME challenge.
 
-    :ivar .Account account:
+    :ivar .JWK account_key: Authorized Account Key
 
     """
-    __slots__ = ('challb', 'domain', 'account')
+    __slots__ = ('challb', 'domain', 'account_key')
     acme_type = challenges.DVSNI
 
     def gen_cert_and_response(self, key_pem=None, bits=2048, alg=jose.RS256):
@@ -75,7 +75,7 @@ class DVSNI(AnnotatedChallenge):
         """
         key = None if key_pem is None else OpenSSL.crypto.load_privatekey(
             OpenSSL.crypto.FILETYPE_PEM, key_pem)
-        response = self.challb.chall.gen_response(self.account.key, alg=alg)
+        response = self.challb.chall.gen_response(self.account_key, alg=alg)
         cert, key = response.gen_cert(key=key, bits=bits)
 
         cert_pem = OpenSSL.crypto.dump_certificate(
@@ -88,7 +88,7 @@ class DVSNI(AnnotatedChallenge):
 
 class SimpleHTTP(AnnotatedChallenge):
     """Client annotated "simpleHttp" ACME challenge."""
-    __slots__ = ('challb', 'domain', 'account')
+    __slots__ = ('challb', 'domain', 'account_key')
     acme_type = challenges.SimpleHTTP
 
     def gen_response_and_validation(self, tls):
@@ -106,7 +106,7 @@ class SimpleHTTP(AnnotatedChallenge):
         response = challenges.SimpleHTTPResponse(tls=tls)
 
         validation = response.gen_validation(
-            self.challb.chall, self.account.key)
+            self.challb.chall, self.account_key)
         logger.debug("Simple HTTP validation payload: %s", validation.payload)
         return response, validation
 

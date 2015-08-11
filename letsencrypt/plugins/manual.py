@@ -162,7 +162,7 @@ binary for temporary key/certificate generation.""".replace("\n", "")
 
         if response.simple_verify(
                 achall.chall, achall.domain,
-                achall.account.key.public_key(), self.config.simple_http_port):
+                achall.account_key.public_key(), self.config.simple_http_port):
             return response
         else:
             if self.conf("test-mode") and self._httpd.poll() is not None:

@@ -436,19 +436,19 @@ class ReportFailedChallsTest(unittest.TestCase):
         self.simple_http = achallenges.SimpleHTTP(
             challb=messages.ChallengeBody(**kwargs),# pylint: disable=star-args
             domain="example.com",
-            account=mock.Mock(key=acme_util.KEY))
+            account_key="key")
 
         kwargs["chall"] = acme_util.DVSNI
         self.dvsni_same = achallenges.DVSNI(
             challb=messages.ChallengeBody(**kwargs),# pylint: disable=star-args
             domain="example.com",
-            account=mock.Mock(key=acme_util.KEY))
+            account_key="key")
 
         kwargs["error"] = messages.Error(typ="dnssec", detail="detail")
         self.dvsni_diff = achallenges.DVSNI(
             challb=messages.ChallengeBody(**kwargs),# pylint: disable=star-args
             domain="foo.bar",
-            account=mock.Mock(key=acme_util.KEY))
+            account_key="key")
 
     @mock.patch("letsencrypt.auth_handler.zope.component.getUtility")
     def test_same_error_and_domain(self, mock_zope):
