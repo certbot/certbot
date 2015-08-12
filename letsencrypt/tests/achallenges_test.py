@@ -1,8 +1,6 @@
 """Tests for letsencrypt.achallenges."""
 import unittest
 
-import mock
-
 from acme import challenges
 from acme import jose
 
@@ -15,11 +13,10 @@ class DVSNITest(unittest.TestCase):
 
     def setUp(self):
         self.challb = acme_util.chall_to_challb(acme_util.DVSNI, "pending")
-        account = mock.Mock(key=jose.JWKRSA.load(
-            test_util.load_vector("rsa512_key.pem")))
+        key = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
         from letsencrypt.achallenges import DVSNI
         self.achall = DVSNI(
-            challb=self.challb, domain="example.com", account=account)
+            challb=self.challb, domain="example.com", account_key=key)
 
     def test_proxy(self):
         self.assertEqual(self.challb.token, self.achall.token)

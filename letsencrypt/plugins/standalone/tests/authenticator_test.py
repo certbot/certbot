@@ -17,8 +17,7 @@ from letsencrypt.tests import acme_util
 from letsencrypt.tests import test_util
 
 
-ACCOUNT = mock.Mock(key=jose.JWKRSA.load(
-    test_util.load_vector("rsa512_key.pem")))
+ACCOUNT_KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 CHALL_KEY_PEM = test_util.load_vector("rsa512_key_2.pem")
 CHALL_KEY = OpenSSL.crypto.load_privatekey(
     OpenSSL.crypto.FILETYPE_PEM, CHALL_KEY_PEM)
@@ -76,7 +75,8 @@ class SNICallbackTest(unittest.TestCase):
         self.cert = achallenges.DVSNI(
             challb=acme_util.DVSNI_P,
             domain="example.com",
-            account=ACCOUNT).gen_cert_and_response(key_pem=CHALL_KEY_PEM)[1]
+            account_key=ACCOUNT_KEY
+        ).gen_cert_and_response(key_pem=CHALL_KEY_PEM)[1]
         self.authenticator.private_key = CHALL_KEY
         self.authenticator.sni_names = {"abcdef.acme.invalid": self.cert}
         self.authenticator.child_pid = 12345
@@ -300,11 +300,11 @@ class PerformTest(unittest.TestCase):
         self.achall1 = achallenges.DVSNI(
             challb=acme_util.chall_to_challb(
                 challenges.DVSNI(token=b"foo"), "pending"),
-            domain="foo.example.com", account=ACCOUNT)
+            domain="foo.example.com", account_key=ACCOUNT_KEY)
         self.achall2 = achallenges.DVSNI(
             challb=acme_util.chall_to_challb(
                 challenges.DVSNI(token=b"bar"), "pending"),
-            domain="bar.example.com", account=ACCOUNT)
+            domain="bar.example.com", account_key=ACCOUNT_KEY)
         bad_achall = ("This", "Represents", "A Non-DVSNI", "Challenge")
         self.achalls = [self.achall1, self.achall2, bad_achall]
 
@@ -448,7 +448,7 @@ class DoChildProcessTest(unittest.TestCase):
         self.cert = achallenges.DVSNI(
             challb=acme_util.chall_to_challb(
                 challenges.DVSNI(token=b"abcdef"), "pending"),
-            domain="example.com", account=ACCOUNT).gen_cert_and_response(
+            domain="example.com", account_key=ACCOUNT_KEY).gen_cert_and_response(
                 key_pem=CHALL_KEY_PEM)[1]
         self.authenticator.private_key = CHALL_KEY
         self.authenticator.tasks = {"abcdef.acme.invalid": self.cert}
@@ -535,7 +535,7 @@ class CleanupTest(unittest.TestCase):
         self.achall = achallenges.DVSNI(
             challb=acme_util.chall_to_challb(
                 challenges.DVSNI(token=b"footoken"), "pending"),
-            domain="foo.example.com", account=mock.Mock(key="key"))
+            domain="foo.example.com", account_key="key")
         self.authenticator.tasks = {self.achall.token: "stuff"}
         self.authenticator.child_pid = 12345
 
@@ -555,7 +555,7 @@ class CleanupTest(unittest.TestCase):
             ValueError, self.authenticator.cleanup, [achallenges.DVSNI(
                 challb=acme_util.chall_to_challb(
                     challenges.DVSNI(token=b"badtoken"), "pending"),
-                domain="bad.example.com", account=mock.Mock(key="key"))])
+                domain="bad.example.com", account_key="key")])
 
 
 class MoreInfoTest(unittest.TestCase):

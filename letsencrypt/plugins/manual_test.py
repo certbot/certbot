@@ -26,9 +26,8 @@ class ManualAuthenticatorTest(unittest.TestCase):
             no_simple_http_tls=True, simple_http_port=4430,
             manual_test_mode=False)
         self.auth = ManualAuthenticator(config=self.config, name="manual")
-        account = mock.MagicMock(key=KEY)
         self.achalls = [achallenges.SimpleHTTP(
-            challb=acme_util.SIMPLE_HTTP_P, domain="foo.com", account=account)]
+            challb=acme_util.SIMPLE_HTTP_P, domain="foo.com", account_key=KEY)]
 
         config_test_mode = mock.MagicMock(
             no_simple_http_tls=True, simple_http_port=4430,

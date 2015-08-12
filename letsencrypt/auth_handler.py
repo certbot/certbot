@@ -322,7 +322,7 @@ class AuthHandler(object):
             challb = self.authzr[domain].body.challenges[index]
             chall = challb.chall
 
-            achall = challb_to_achall(challb, self.account, domain)
+            achall = challb_to_achall(challb, self.account.key, domain)
 
             if isinstance(chall, challenges.ContinuityChallenge):
                 cont_chall.append(achall)
@@ -332,11 +332,11 @@ class AuthHandler(object):
         return cont_chall, dv_chall
 
 
-def challb_to_achall(challb, account, domain):
+def challb_to_achall(challb, account_key, domain):
     """Converts a ChallengeBody object to an AnnotatedChallenge.
 
     :param .ChallengeBody challb: ChallengeBody
-    :param .Account account:
+    :param .JWK account_key: Authorized Account Key
     :param str domain: Domain of the challb
 
     :returns: Appropriate AnnotatedChallenge
@@ -348,10 +348,10 @@ def challb_to_achall(challb, account, domain):
 
     if isinstance(chall, challenges.DVSNI):
         return achallenges.DVSNI(
-            challb=challb, domain=domain, account=account)
+            challb=challb, domain=domain, account_key=account_key)
     elif isinstance(chall, challenges.SimpleHTTP):
         return achallenges.SimpleHTTP(
-            challb=challb, domain=domain, account=account)
+            challb=challb, domain=domain, account_key=account_key)
     elif isinstance(chall, challenges.DNS):
         return achallenges.DNS(challb=challb, domain=domain)
     elif isinstance(chall, challenges.RecoveryContact):
