@@ -78,7 +78,7 @@ patient - it will take some time... Once its ready, you will see
 
   ./tests/boulder-integration.sh && echo OK || echo FAIL
 
-If you would like to test `lesencrypt_nginx` plugin (highly
+If you would like to test `letsencrypt_nginx` plugin (highly
 encouraged) make sure to install prerequisites as listed in
 ``tests/integration/nginx.sh``:
 
