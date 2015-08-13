@@ -51,7 +51,7 @@ class ManualAuthenticatorTest(unittest.TestCase):
     @mock.patch("__builtin__.raw_input")
     def test_perform(self, mock_raw_input, mock_verify, mock_urandom,
                      mock_stdout):
-        mock_urandom.return_value = "foo"
+        mock_urandom.side_effect = nonrandom_urandom
         mock_verify.return_value = True
 
         resp = challenges.SimpleHTTPResponse(tls=False)
@@ -104,6 +104,11 @@ class ManualAuthenticatorTest(unittest.TestCase):
         httpd.poll.return_value = None
         self.auth_test_mode.cleanup(self.achalls)
         mock_killpg.assert_called_once_with(1234, signal.SIGTERM)
+
+
+def nonrandom_urandom(num_bytes):
+    """Returns a string of length num_bytes"""
+    return "x" * num_bytes
 
 
 if __name__ == "__main__":
