@@ -1,5 +1,11 @@
 language: python
 
+# make sure simplehttp simple verification works (custom /etc/hosts)
+addons:
+  hosts:
+    - le.wtf
+  mariadb: "10.0"
+
 services:
   - rabbitmq
   - mysql
@@ -21,12 +27,6 @@ env:
     - TOXENV=py27 BOULDER_INTEGRATION=1
     - TOXENV=lint
     - TOXENV=cover
-
-# make sure simplehttp simple verification works (custom /etc/hosts)
-addons:
-  hosts:
-    - le.wtf
-  mariadb: "10.0"
 
 install: "travis_retry pip install tox coveralls"
 before_script: '[ "xxx$BOULDER_INTEGRATION" = "xxx" ] || ./tests/boulder-start.sh'
