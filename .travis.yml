@@ -2,6 +2,7 @@ language: python
 
 services:
   - rabbitmq
+  - mysql
 
 # http://docs.travis-ci.com/user/ci-environment/#CI-environment-OS
 before_install:
@@ -25,6 +26,7 @@ env:
 addons:
   hosts:
     - le.wtf
+  mariadb: "10.0"
 
 install: "travis_retry pip install tox coveralls"
 before_script: '[ "xxx$BOULDER_INTEGRATION" = "xxx" ] || ./tests/boulder-start.sh'
