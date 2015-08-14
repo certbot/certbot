@@ -63,7 +63,6 @@ class ReportNewAccountTest(unittest.TestCase):
     def setUp(self):
         self.config = mock.MagicMock(config_dir="/etc/letsencrypt")
         reg = messages.Registration.from_data(email="rhino@jungle.io")
-        reg = reg.update(recovery_token="ECCENTRIC INVISIBILITY RHINOCEROS")
         self.acc = mock.MagicMock(regr=messages.RegistrationResource(
             uri=None, new_authzr_uri=None, body=reg))
 
@@ -81,7 +80,6 @@ class ReportNewAccountTest(unittest.TestCase):
         self._call()
         call_list = mock_zope().add_message.call_args_list
         self.assertTrue(self.config.config_dir in call_list[0][0][0])
-        self.assertTrue(self.acc.regr.body.recovery_token in call_list[1][0][0])
         self.assertTrue(
             ", ".join(self.acc.regr.body.emails) in call_list[1][0][0])
 
