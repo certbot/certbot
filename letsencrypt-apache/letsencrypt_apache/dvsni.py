@@ -62,7 +62,7 @@ class ApacheDvsni(common.Dvsni):
 
         # Prepare the server for HTTPS
         self.configurator.prepare_server_https(
-            str(self.configurator.config.dvsni_port))
+            str(self.configurator.config.dvsni_port), True)
 
         responses = []
 

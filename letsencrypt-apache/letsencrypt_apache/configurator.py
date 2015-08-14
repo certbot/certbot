@@ -482,7 +482,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         logger.debug(msg)
         self.save_notes += msg
 
-    def prepare_server_https(self, port):
+    def prepare_server_https(self, port, temp=False):
         """Prepare the server for HTTPS.
 
         Make sure that the ssl_module is loaded and that the server
@@ -493,7 +493,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         if "ssl_module" not in self.parser.modules:
             logger.info("Loading mod_ssl into Apache Server")
-            self.enable_mod("ssl")
+            self.enable_mod("ssl", temp)
 
         # Check for Listen <port>
         # Note: This could be made to also look for ip:443 combo

@@ -38,6 +38,9 @@ class DvsniPerformTest(util.ApacheTest):
     @mock.patch("letsencrypt.le_util.exe_exists")
     @mock.patch("letsencrypt.le_util.run_script")
     def test_perform1(self, _, mock_exists):
+        mock_register = mock.Mock()
+        self.sni.configurator.reverter.register_undo_command = mock_register
+
         mock_exists.return_value = True
         self.sni.configurator.parser.update_runtime_variables = mock.Mock()
 
@@ -49,6 +52,9 @@ class DvsniPerformTest(util.ApacheTest):
         self.sni._setup_challenge_cert = mock_setup_cert
 
         responses = self.sni.perform()
+
+        # Make sure that register_undo_command was called into temp directory.
+        self.assertEqual(True, mock_register.call_args[0][0])
 
         mock_setup_cert.assert_called_once_with(achall)
 
