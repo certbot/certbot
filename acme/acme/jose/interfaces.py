@@ -5,6 +5,7 @@ import json
 
 import six
 
+from acme.jose import errors
 from acme.jose import util
 
 # pylint: disable=no-self-argument,no-method-argument,no-init,inherit-non-class
@@ -172,7 +173,11 @@ class JSONDeSerializable(object):
     @classmethod
     def json_loads(cls, json_string):
         """Deserialize from JSON document string."""
-        return cls.from_json(json.loads(json_string))
+        try:
+            loads = json.loads(json_string)
+        except ValueError as error:
+            raise errors.DeserializationError(error)
+        return cls.from_json(loads)
 
     def json_dumps(self, **kwargs):
         """Dump to JSON string using proper serializer.

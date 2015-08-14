@@ -63,7 +63,7 @@ def test_authenticator(plugin, config, temp_dir):
         elif isinstance(responses[i], challenges.DVSNIResponse):
             verify = functools.partial(responses[i].simple_verify, achalls[i],
                                        achalls[i].domain,
-                                       util.JWK.key.public_key(),
+                                       util.JWK.public_key(),
                                        host="127.0.0.1",
                                        port=plugin.https_port)
             if _try_until_true(verify):
@@ -101,12 +101,11 @@ def _create_achalls(plugin):
         for chall_type in prefs:
             if chall_type == challenges.DVSNI:
                 chall = challenges.DVSNI(
-                    r=os.urandom(challenges.DVSNI.R_SIZE),
-                    nonce=os.urandom(challenges.DVSNI.NONCE_SIZE))
+                    token=os.urandom(challenges.DVSNI.TOKEN_SIZE))
                 challb = acme_util.chall_to_challb(
                     chall, messages.STATUS_PENDING)
                 achall = achallenges.DVSNI(
-                    challb=challb, domain=domain, key=util.JWK)
+                    challb=challb, domain=domain, account_key=util.JWK)
                 achalls.append(achall)
 
     return achalls
@@ -249,6 +248,7 @@ def _create_backup(config, temp_dir):
     shutil.rmtree(backup, ignore_errors=True)
     shutil.copytree(config, backup, symlinks=True)
 
+    print backup
     return backup
 
 

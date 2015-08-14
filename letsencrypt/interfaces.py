@@ -215,8 +215,6 @@ class IConfig(zope.interface.Interface):
     in_progress_dir = zope.interface.Attribute(
         "Directory used before a permanent checkpoint is finalized.")
     key_dir = zope.interface.Attribute("Keys storage.")
-    rec_token_dir = zope.interface.Attribute(
-        "Directory where all recovery tokens are saved.")
     temp_checkpoint_dir = zope.interface.Attribute(
         "Temporary checkpoint directory.")
 

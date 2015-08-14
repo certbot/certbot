@@ -5,10 +5,6 @@ class Error(Exception):
     """Generic Let's Encrypt client error."""
 
 
-class SubprocessError(Error):
-    """Subprocess handling error."""
-
-
 class AccountStorageError(Error):
     """Generic `.AccountStorage` error."""
 
@@ -19,6 +15,14 @@ class AccountNotFound(AccountStorageError):
 
 class ReverterError(Error):
     """Let's Encrypt Reverter error."""
+
+
+class SubprocessError(Error):
+    """Subprocess handling error."""
+
+
+class CertStorageError(Error):
+    """Generic `.CertStorage` error."""
 
 
 # Auth Handler Errors

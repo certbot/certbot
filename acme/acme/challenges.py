@@ -1,13 +1,9 @@
 """ACME Identifier Validation Challenges."""
-import binascii
 import functools
 import hashlib
 import logging
-import os
 import socket
 
-from cryptography.hazmat.backends import default_backend
-from cryptography import x509
 import OpenSSL
 import requests
 
@@ -54,43 +50,45 @@ class SimpleHTTP(DVChallenge):
 
     """
     typ = "simpleHttp"
-    token = jose.Field("token")
+
+    TOKEN_SIZE = 128 / 8  # Based on the entropy value from the spec
+    """Minimum size of the :attr:`token` in bytes."""
+
+    # TODO: acme-spec doesn't specify token as base64-encoded value
+    token = jose.Field(
+        "token", encoder=jose.encode_b64jose, decoder=functools.partial(
+            jose.decode_b64jose, size=TOKEN_SIZE, minimum=True))
+
+    @property
+    def good_token(self):  # XXX: @token.decoder
+        """Is `token` good?
+
+        .. todo:: acme-spec wants "It MUST NOT contain any non-ASCII
+           characters", but it should also warrant that it doesn't
+           contain ".." or "/"...
+
+        """
+        # TODO: check that path combined with uri does not go above
+        # URI_ROOT_PATH!
+        return b'..' not in self.token and b'/' not in self.token
 
 
 @ChallengeResponse.register
 class SimpleHTTPResponse(ChallengeResponse):
     """ACME "simpleHttp" challenge response.
 
-    :ivar unicode path:
-    :ivar unicode tls:
+    :ivar bool tls:
 
     """
     typ = "simpleHttp"
-    path = jose.Field("path")
     tls = jose.Field("tls", default=True, omitempty=True)
 
     URI_ROOT_PATH = ".well-known/acme-challenge"
     """URI root path for the server provisioned resource."""
 
-    _URI_TEMPLATE = "{scheme}://{domain}/" + URI_ROOT_PATH + "/{path}"
+    _URI_TEMPLATE = "{scheme}://{domain}/" + URI_ROOT_PATH + "/{token}"
 
-    MAX_PATH_LEN = 25
-    """Maximum allowed `path` length."""
-
-    CONTENT_TYPE = "text/plain"
-
-    @property
-    def good_path(self):
-        """Is `path` good?
-
-        .. todo:: acme-spec: "The value MUST be comprised entirely of
-           characters from the URL-safe alphabet for Base64 encoding
-           [RFC4648]", base64.b64decode ignores those characters
-
-        """
-        # TODO: check that path combined with uri does not go above
-        # URI_ROOT_PATH!
-        return len(self.path) <= 25
+    CONTENT_TYPE = "application/jose+json"
 
     @property
     def scheme(self):
@@ -102,19 +100,73 @@ class SimpleHTTPResponse(ChallengeResponse):
         """Port that the ACME client should be listening for validation."""
         return 443 if self.tls else 80
 
-    def uri(self, domain):
+    def uri(self, domain, chall):
         """Create an URI to the provisioned resource.
 
         Forms an URI to the HTTPS server provisioned resource
         (containing :attr:`~SimpleHTTP.token`).
 
         :param unicode domain: Domain name being verified.
+        :param challenges.SimpleHTTP chall:
 
         """
         return self._URI_TEMPLATE.format(
-            scheme=self.scheme, domain=domain, path=self.path)
+            scheme=self.scheme, domain=domain, token=chall.encode("token"))
 
-    def simple_verify(self, chall, domain, port=None):
+    def gen_resource(self, chall):
+        """Generate provisioned resource.
+
+        :param .SimpleHTTP chall:
+        :rtype: SimpleHTTPProvisionedResource
+
+        """
+        return SimpleHTTPProvisionedResource(token=chall.token, tls=self.tls)
+
+    def gen_validation(self, chall, account_key, alg=jose.RS256, **kwargs):
+        """Generate validation.
+
+        :param .SimpleHTTP chall:
+        :param .JWK account_key: Private account key.
+        :param .JWA alg:
+
+        :returns: `.SimpleHTTPProvisionedResource` signed in `.JWS`
+        :rtype: .JWS
+
+        """
+        return jose.JWS.sign(
+            payload=self.gen_resource(chall).json_dumps(
+                sort_keys=True).encode('utf-8'),
+            key=account_key, alg=alg, **kwargs)
+
+    def check_validation(self, validation, chall, account_public_key):
+        """Check validation.
+
+        :param .JWS validation:
+        :param .SimpleHTTP chall:
+        :type account_public_key:
+            `~cryptography.hazmat.primitives.asymmetric.rsa.RSAPublicKey`
+            or
+            `~cryptography.hazmat.primitives.asymmetric.dsa.DSAPublicKey`
+            or
+            `~cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePublicKey`
+            wrapped in `.ComparableKey
+
+        :rtype: bool
+
+        """
+        if not validation.verify(key=account_public_key):
+            return False
+
+        try:
+            resource = SimpleHTTPProvisionedResource.json_loads(
+                validation.payload.decode('utf-8'))
+        except jose.DeserializationError as error:
+            logger.debug(error)
+            return False
+
+        return resource.token == chall.token and resource.tls == self.tls
+
+    def simple_verify(self, chall, domain, account_public_key, port=None):
         """Simple verify.
 
         According to the ACME specification, "the ACME server MUST
@@ -123,6 +175,16 @@ class SimpleHTTPResponse(ChallengeResponse):
 
         :param .SimpleHTTP chall: Corresponding challenge.
         :param unicode domain: Domain name being verified.
+        :param account_public_key: Public key for the key pair
+            being authorized. If ``None`` key verification is not
+            performed!
+        :type account_public_key:
+            `~cryptography.hazmat.primitives.asymmetric.rsa.RSAPublicKey`
+            or
+            `~cryptography.hazmat.primitives.asymmetric.dsa.DSAPublicKey`
+            or
+            `~cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePublicKey`
+            wrapped in `.ComparableKey
         :param int port: Port used in the validation.
 
         :returns: ``True`` iff validation is successful, ``False``
@@ -138,77 +200,67 @@ class SimpleHTTPResponse(ChallengeResponse):
                 "Using non-standard port for SimpleHTTP verification: %s", port)
             domain += ":{0}".format(port)
 
-        uri = self.uri(domain)
+        uri = self.uri(domain, chall)
         logger.debug("Verifying %s at %s...", chall.typ, uri)
         try:
             http_response = requests.get(uri, verify=False)
         except requests.exceptions.RequestException as error:
             logger.error("Unable to reach %s: %s", uri, error)
             return False
-        logger.debug(
-            "Received %s. Headers: %s", http_response, http_response.headers)
+        logger.debug("Received %s: %s. Headers: %s", http_response,
+                     http_response.text, http_response.headers)
 
-        good_token = http_response.text == chall.token
-        if not good_token:
-            logger.error(
-                "Unable to verify %s! Expected: %r, returned: %r.",
-                uri, chall.token, http_response.text)
-        # TODO: spec contradicts itself, c.f.
-        # https://github.com/letsencrypt/acme-spec/pull/156/files#r33136438
-        good_ct = self.CONTENT_TYPE == http_response.headers.get(
-            "Content-Type", self.CONTENT_TYPE)
-        return self.good_path and good_ct and good_token
+        if self.CONTENT_TYPE != http_response.headers.get(
+                "Content-Type", self.CONTENT_TYPE):
+            return False
+
+        try:
+            validation = jose.JWS.json_loads(http_response.text)
+        except jose.DeserializationError as error:
+            logger.debug(error)
+            return False
+
+        return self.check_validation(validation, chall, account_public_key)
+
+
+class SimpleHTTPProvisionedResource(jose.JSONObjectWithFields):
+    """SimpleHTTP provisioned resource."""
+    typ = fields.Fixed("type", SimpleHTTP.typ)
+    token = SimpleHTTP._fields["token"]
+    # If the "tls" field is not included in the response, then
+    # validation object MUST have its "tls" field set to "true".
+    tls = jose.Field("tls", omitempty=False)
 
 
 @Challenge.register
 class DVSNI(DVChallenge):
     """ACME "dvsni" challenge.
 
-    :ivar bytes r: Random data, **not** base64-encoded.
-    :ivar bytes nonce: Random data, **not** hex-encoded.
+    :ivar bytes token: Random data, **not** base64-encoded.
 
     """
     typ = "dvsni"
 
-    DOMAIN_SUFFIX = b".acme.invalid"
-    """Domain name suffix."""
-
-    R_SIZE = 32
-    """Required size of the :attr:`r` in bytes."""
-
-    NONCE_SIZE = 16
-    """Required size of the :attr:`nonce` in bytes."""
-
     PORT = 443
     """Port to perform DVSNI challenge."""
 
-    r = jose.Field("r", encoder=jose.encode_b64jose,  # pylint: disable=invalid-name
-                   decoder=functools.partial(jose.decode_b64jose, size=R_SIZE))
-    nonce = jose.Field("nonce", encoder=jose.encode_hex16,
-                       decoder=functools.partial(functools.partial(
-                           jose.decode_hex16, size=NONCE_SIZE)))
+    TOKEN_SIZE = 128 / 8  # Based on the entropy value from the spec
+    """Minimum size of the :attr:`token` in bytes."""
 
-    @property
-    def nonce_domain(self):
-        """Domain name used in SNI.
+    token = jose.Field(
+        "token", encoder=jose.encode_b64jose, decoder=functools.partial(
+            jose.decode_b64jose, size=TOKEN_SIZE, minimum=True))
 
-        :rtype: bytes
+    def gen_response(self, account_key, alg=jose.RS256, **kwargs):
+        """Generate response.
+
+        :param .JWK account_key: Private account key.
+        :rtype: .DVSNIResponse
 
         """
-        return binascii.hexlify(self.nonce) + self.DOMAIN_SUFFIX
-
-    def probe_cert(self, domain, **kwargs):
-        """Probe DVSNI challenge certificate."""
-        if "host" not in kwargs:
-            host = socket.gethostbyname(domain)
-            logging.debug('%s resolved to %s', domain, host)
-            kwargs["host"] = host
-
-        kwargs.setdefault("port", self.PORT)
-        kwargs["name"] = self.nonce_domain
-        # TODO: try different methods?
-        # pylint: disable=protected-access
-        return crypto_util.probe_sni(**kwargs)
+        return DVSNIResponse(validation=jose.JWS.sign(
+            payload=self.json_dumps(sort_keys=True).encode('utf-8'),
+            key=account_key, alg=alg, **kwargs))
 
 
 @ChallengeResponse.register
@@ -220,105 +272,138 @@ class DVSNIResponse(ChallengeResponse):
     """
     typ = "dvsni"
 
-    DOMAIN_SUFFIX = DVSNI.DOMAIN_SUFFIX
+    DOMAIN_SUFFIX = b".acme.invalid"
     """Domain name suffix."""
 
-    S_SIZE = 32
-    """Required size of the :attr:`s` in bytes."""
+    PORT = DVSNI.PORT
+    """Port to perform DVSNI challenge."""
 
-    s = jose.Field("s", encoder=jose.encode_b64jose,  # pylint: disable=invalid-name
-                   decoder=functools.partial(jose.decode_b64jose, size=S_SIZE))
+    validation = jose.Field("validation", decoder=jose.JWS.from_json)
 
-    def __init__(self, s=None, *args, **kwargs):
-        s = os.urandom(self.S_SIZE) if s is None else s
-        super(DVSNIResponse, self).__init__(s=s, *args, **kwargs)
-
-    def z(self, chall):  # pylint: disable=invalid-name
-        """Compute the parameter ``z``.
-
-        :param challenge: Corresponding challenge.
-        :type challenge: :class:`DVSNI`
+    @property
+    def z(self):  # pylint: disable=invalid-name
+        """The ``z``  parameter.
 
         :rtype: bytes
 
         """
-        z = hashlib.new("sha256")  # pylint: disable=invalid-name
-        z.update(chall.r)
-        z.update(self.s)
-        return z.hexdigest().encode()
+        # Instance of 'Field' has no 'signature' member
+        # pylint: disable=no-member
+        return hashlib.sha256(self.validation.signature.encode(
+            "signature").encode("utf-8")).hexdigest().encode()
 
-    def z_domain(self, chall):
+    @property
+    def z_domain(self):
         """Domain name for certificate subjectAltName.
 
-        :rtype bytes:
+        :rtype: bytes
 
         """
-        return self.z(chall) + self.DOMAIN_SUFFIX
+        z = self.z  # pylint: disable=invalid-name
+        return z[:32] + b'.' + z[32:] + self.DOMAIN_SUFFIX
 
-    def gen_cert(self, chall, domain, key):
+    @property
+    def chall(self):
+        """Get challenge encoded in the `validation` payload.
+
+        :rtype: DVSNI
+
+        """
+        # pylint: disable=no-member
+        return DVSNI.json_loads(self.validation.payload.decode('utf-8'))
+
+    def gen_cert(self, key=None, bits=2048):
         """Generate DVSNI certificate.
 
-        :param .DVSNI chall: Corresponding challenge.
-        :param unicode domain:
-        :param OpenSSL.crypto.PKey
+        :param OpenSSL.crypto.PKey key: Optional private key used in
+            certificate generation. If not provided (``None``), then
+            fresh key will be generated.
+        :param int bits: Number of bits for newly generated key.
+
+        :rtype: `tuple` of `OpenSSL.crypto.X509` and
+            `OpenSSL.crypto.PKey`
 
         """
+        if key is None:
+            key = OpenSSL.crypto.PKey()
+            key.generate_key(OpenSSL.crypto.TYPE_RSA, bits)
         return crypto_util.gen_ss_cert(key, [
-            domain, chall.nonce_domain.decode(), self.z_domain(chall).decode()])
+            # z_domain is too big to fit into CN, hence first dummy domain
+            'dummy', self.z_domain.decode()], force_san=True), key
 
-    def simple_verify(self, chall, domain, public_key, **kwargs):
+    def probe_cert(self, domain, **kwargs):
+        """Probe DVSNI challenge certificate.
+
+        :param unicode domain:
+
+        """
+        if "host" not in kwargs:
+            host = socket.gethostbyname(domain)
+            logging.debug('%s resolved to %s', domain, host)
+            kwargs["host"] = host
+
+        kwargs.setdefault("port", self.PORT)
+        kwargs["name"] = self.z_domain
+        # TODO: try different methods?
+        # pylint: disable=protected-access
+        return crypto_util.probe_sni(**kwargs)
+
+    def verify_cert(self, cert):
+        """Verify DVSNI challenge certificate."""
+        # pylint: disable=protected-access
+        sans = crypto_util._pyopenssl_cert_or_req_san(cert)
+        logging.debug('Certificate %s. SANs: %s', cert.digest('sha1'), sans)
+        return self.z_domain.decode() in sans
+
+    def simple_verify(self, chall, domain, account_public_key,
+                      cert=None, **kwargs):
         """Simple verify.
 
-        Probes DVSNI certificate and checks it using `verify_cert`;
-        hence all arguments documented in `verify_cert`.
-
-        """
-        try:
-            cert = chall.probe_cert(domain=domain, **kwargs)
-        except errors.Error as error:
-            logger.debug(error, exc_info=True)
-            return False
-        return self.verify_cert(chall, domain, public_key, cert)
-
-    def verify_cert(self, chall, domain, public_key, cert):
-        """Verify DVSNI certificate.
+        Verify ``validation`` using ``account_public_key``, optionally
+        probe DVSNI certificate and check using `verify_cert`.
 
         :param .challenges.DVSNI chall: Corresponding challenge.
         :param str domain: Domain name being validated.
-        :param public_key: Public key for the key pair
-            being authorized. If ``None`` key verification is not
-            performed!
-        :type public_key:
+        :type account_public_key:
             `~cryptography.hazmat.primitives.asymmetric.rsa.RSAPublicKey`
             or
             `~cryptography.hazmat.primitives.asymmetric.dsa.DSAPublicKey`
             or
             `~cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePublicKey`
             wrapped in `.ComparableKey
-        :param OpenSSL.crypto.X509 cert:
+        :param OpenSSL.crypto.X509 cert: Optional certificate. If not
+            provided (``None``) certificate will be retrieved using
+            `probe_cert`.
 
         :returns: ``True`` iff client's control of the domain has been
             verified, ``False`` otherwise.
         :rtype: bool
 
         """
-        # TODO: check "It is a valid self-signed certificate" and
-        # return False if not
-
-        # pylint: disable=protected-access
-        sans = crypto_util._pyopenssl_cert_or_req_san(cert)
-        logging.debug('Certificate %s. SANs: %s', cert.digest('sha1'), sans)
-
-        cert = x509.load_der_x509_certificate(
-            OpenSSL.crypto.dump_certificate(OpenSSL.crypto.FILETYPE_ASN1, cert),
-            default_backend())
-
-        if public_key is None:
-            logging.warn('No key verification is performed')
-        elif public_key != jose.ComparableKey(cert.public_key()):
+        # pylint: disable=no-member
+        if not self.validation.verify(key=account_public_key):
             return False
 
-        return domain in sans and self.z_domain(chall).decode() in sans
+        # TODO: it's not checked that payload has exectly 2 fields!
+        try:
+            decoded_chall = self.chall
+        except jose.DeserializationError as error:
+            logger.debug(error, exc_info=True)
+            return False
+
+        if decoded_chall.token != chall.token:
+            logger.debug("Wrong token: expected %r, found %r",
+                         chall.token, decoded_chall.token)
+            return False
+
+        if cert is None:
+            try:
+                cert = self.probe_cert(domain=domain, **kwargs)
+            except errors.Error as error:
+                logger.debug(error, exc_info=True)
+                return False
+
+        return self.verify_cert(cert)
 
 
 @Challenge.register
@@ -345,23 +430,6 @@ class RecoveryContactResponse(ChallengeResponse):
 
     """
     typ = "recoveryContact"
-    token = jose.Field("token", omitempty=True)
-
-
-@Challenge.register
-class RecoveryToken(ContinuityChallenge):
-    """ACME "recoveryToken" challenge."""
-    typ = "recoveryToken"
-
-
-@ChallengeResponse.register
-class RecoveryTokenResponse(ChallengeResponse):
-    """ACME "recoveryToken" challenge response.
-
-    :ivar unicode token:
-
-    """
-    typ = "recoveryToken"
     token = jose.Field("token", omitempty=True)
 
 

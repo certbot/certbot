@@ -10,6 +10,7 @@ import mock
 import pytz
 
 from letsencrypt import configuration
+from letsencrypt import errors
 from letsencrypt.storage import ALL_FOUR
 
 from letsencrypt.tests import test_util
@@ -78,7 +79,8 @@ class RenewableCertTests(unittest.TestCase):
         for kind in ALL_FOUR:
             config["cert"] = "nonexistent_" + kind + ".pem"
         config.filename = "nonexistent_sillyfile"
-        self.assertRaises(ValueError, storage.RenewableCert, config, defaults)
+        self.assertRaises(
+            errors.CertStorageError, storage.RenewableCert, config, defaults)
         self.assertRaises(TypeError, storage.RenewableCert, "fun", defaults)
 
     def test_renewal_incomplete_config(self):
@@ -92,7 +94,8 @@ class RenewableCertTests(unittest.TestCase):
         config["chain"] = "imaginary_chain.pem"
         config["fullchain"] = "imaginary_fullchain.pem"
         config.filename = "imaginary_config.conf"
-        self.assertRaises(ValueError, storage.RenewableCert, config, defaults)
+        self.assertRaises(
+            errors.CertStorageError, storage.RenewableCert, config, defaults)
 
     def test_consistent(self): # pylint: disable=too-many-statements
         oldcert = self.test_rc.cert
@@ -481,11 +484,13 @@ class RenewableCertTests(unittest.TestCase):
         # Now trigger the detection of already existing files
         os.mkdir(os.path.join(
             self.cli_config.live_dir, "the-lineage.com-0002"))
-        self.assertRaises(ValueError, storage.RenewableCert.new_lineage,
+        self.assertRaises(errors.CertStorageError,
+                          storage.RenewableCert.new_lineage,
                           "the-lineage.com", "cert3", "privkey3", "chain3",
                           None, self.defaults, self.cli_config)
         os.mkdir(os.path.join(self.cli_config.archive_dir, "other-example.com"))
-        self.assertRaises(ValueError, storage.RenewableCert.new_lineage,
+        self.assertRaises(errors.CertStorageError,
+                          storage.RenewableCert.new_lineage,
                           "other-example.com", "cert4", "privkey4", "chain4",
                           None, self.defaults, self.cli_config)
         # Make sure it can accept renewal parameters
@@ -518,20 +523,27 @@ class RenewableCertTests(unittest.TestCase):
     def test_invalid_config_filename(self, mock_uln):
         from letsencrypt import storage
         mock_uln.return_value = "this_does_not_end_with_dot_conf", "yikes"
-        self.assertRaises(ValueError, storage.RenewableCert.new_lineage,
+        self.assertRaises(errors.CertStorageError,
+                          storage.RenewableCert.new_lineage,
                           "example.com", "cert", "privkey", "chain",
                           None, self.defaults, self.cli_config)
 
     def test_bad_kind(self):
-        self.assertRaises(ValueError, self.test_rc.current_target, "elephant")
-        self.assertRaises(ValueError, self.test_rc.current_version, "elephant")
-        self.assertRaises(ValueError, self.test_rc.version, "elephant", 17)
-        self.assertRaises(ValueError, self.test_rc.available_versions,
-                          "elephant")
-        self.assertRaises(ValueError, self.test_rc.newest_available_version,
-                          "elephant")
-        self.assertRaises(ValueError, self.test_rc.update_link_to,
-                          "elephant", 17)
+        self.assertRaises(
+            errors.CertStorageError, self.test_rc.current_target, "elephant")
+        self.assertRaises(
+            errors.CertStorageError, self.test_rc.current_version, "elephant")
+        self.assertRaises(
+            errors.CertStorageError, self.test_rc.version, "elephant", 17)
+        self.assertRaises(
+            errors.CertStorageError,
+            self.test_rc.available_versions, "elephant")
+        self.assertRaises(
+            errors.CertStorageError,
+            self.test_rc.newest_available_version, "elephant")
+        self.assertRaises(
+            errors.CertStorageError,
+            self.test_rc.update_link_to, "elephant", 17)
 
     def test_ocsp_revoked(self):
         # XXX: This is currently hardcoded to False due to a lack of an
@@ -651,7 +663,7 @@ class RenewableCertTests(unittest.TestCase):
             f.write("incomplete = configfile\n")
         renewer.main(self.defaults, args=[
             '--config-dir', self.cli_config.config_dir])
-        # The ValueError is caught inside and nothing happens.
+        # The errors.CertStorageError is caught inside and nothing happens.
 
 
 if __name__ == "__main__":

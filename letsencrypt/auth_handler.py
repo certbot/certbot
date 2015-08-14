@@ -332,15 +332,11 @@ class AuthHandler(object):
         return cont_chall, dv_chall
 
 
-def challb_to_achall(challb, key, domain):
+def challb_to_achall(challb, account_key, domain):
     """Converts a ChallengeBody object to an AnnotatedChallenge.
 
-    :param challb: ChallengeBody
-    :type challb: :class:`acme.messages.ChallengeBody`
-
-    :param key: Key
-    :type key: :class:`letsencrypt.le_util.Key`
-
+    :param .ChallengeBody challb: ChallengeBody
+    :param .JWK account_key: Authorized Account Key
     :param str domain: Domain of the challb
 
     :returns: Appropriate AnnotatedChallenge
@@ -352,14 +348,12 @@ def challb_to_achall(challb, key, domain):
 
     if isinstance(chall, challenges.DVSNI):
         return achallenges.DVSNI(
-            challb=challb, domain=domain, key=key)
+            challb=challb, domain=domain, account_key=account_key)
     elif isinstance(chall, challenges.SimpleHTTP):
         return achallenges.SimpleHTTP(
-            challb=challb, domain=domain, key=key)
+            challb=challb, domain=domain, account_key=account_key)
     elif isinstance(chall, challenges.DNS):
         return achallenges.DNS(challb=challb, domain=domain)
-    elif isinstance(chall, challenges.RecoveryToken):
-        return achallenges.RecoveryToken(challb=challb, domain=domain)
     elif isinstance(chall, challenges.RecoveryContact):
         return achallenges.RecoveryContact(
             challb=challb, domain=domain)
