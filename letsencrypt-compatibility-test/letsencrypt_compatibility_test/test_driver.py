@@ -248,7 +248,6 @@ def _create_backup(config, temp_dir):
     shutil.rmtree(backup, ignore_errors=True)
     shutil.copytree(config, backup, symlinks=True)
 
-    print backup
     return backup
 
 
