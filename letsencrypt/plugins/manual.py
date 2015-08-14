@@ -1,6 +1,7 @@
 """Manual plugin."""
-import os
+import distutils.spawn # pylint: disable=import-error,no-name-in-module
 import logging
+import os
 import pipes
 import shutil
 import signal
@@ -57,7 +58,7 @@ mkdir -p {root}/public_html/{response.URI_ROOT_PATH}
 cd {root}/public_html
 echo -n {validation} > {response.URI_ROOT_PATH}/{encoded_token}
 # run only once per server:
-python -c "import BaseHTTPServer, SimpleHTTPServer; \\
+{python} -c "import BaseHTTPServer, SimpleHTTPServer; \\
 SimpleHTTPServer.SimpleHTTPRequestHandler.extensions_map = {{'': '{ct}'}}; \\
 s = BaseHTTPServer.HTTPServer(('', {port}), SimpleHTTPServer.SimpleHTTPRequestHandler); \\
 s.serve_forever()" """
@@ -70,7 +71,7 @@ cd {root}/public_html
 echo -n {validation} > {response.URI_ROOT_PATH}/{encoded_token}
 # run only once per server:
 openssl req -new -newkey rsa:4096 -subj "/" -days 1 -nodes -x509 -keyout ../key.pem -out ../cert.pem
-python -c "import BaseHTTPServer, SimpleHTTPServer, ssl; \\
+{python} -c "import BaseHTTPServer, SimpleHTTPServer, ssl; \\
 SimpleHTTPServer.SimpleHTTPRequestHandler.extensions_map = {{'': '{ct}'}}; \\
 s = BaseHTTPServer.HTTPServer(('', {port}), SimpleHTTPServer.SimpleHTTPRequestHandler); \\
 s.socket = ssl.wrap_socket(s.socket, keyfile='../key.pem', certfile='../cert.pem'); \\
@@ -127,10 +128,15 @@ binary for temporary key/certificate generation.""".replace("\n", "")
         response, validation = achall.gen_response_and_validation(
             tls=(not self.config.no_simple_http_tls))
 
+        python_path = os.path.basename(sys.executable)
+        # pylint: disable=no-member
+        if distutils.spawn.find_executable(python_path) is None:
+            python_path = sys.executable
+
         command = self.template.format(
             root=self._root, achall=achall, response=response,
             validation=pipes.quote(validation.json_dumps()),
-            encoded_token=achall.chall.encode("token"),
+            encoded_token=achall.chall.encode("token"), python=python_path,
             ct=response.CONTENT_TYPE, port=(
                 response.port if self.config.simple_http_port is None
                 else self.config.simple_http_port))
