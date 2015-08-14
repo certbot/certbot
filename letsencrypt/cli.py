@@ -73,7 +73,7 @@ More detailed help:
                         the available topics are:
 
    all, apache, automation, nginx, paths, security, testing, or any of the
-   sucommands
+   subcommands
 """
 
 
