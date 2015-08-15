@@ -57,7 +57,8 @@ mkdir -p {root}/public_html/{response.URI_ROOT_PATH}
 cd {root}/public_html
 echo -n {validation} > {response.URI_ROOT_PATH}/{encoded_token}
 # run only once per server:
-python -c "import BaseHTTPServer, SimpleHTTPServer; \\
+$(command -v python2 || command -v python2.7 || command -v python2.6) -c \\
+"import BaseHTTPServer, SimpleHTTPServer; \\
 SimpleHTTPServer.SimpleHTTPRequestHandler.extensions_map = {{'': '{ct}'}}; \\
 s = BaseHTTPServer.HTTPServer(('', {port}), SimpleHTTPServer.SimpleHTTPRequestHandler); \\
 s.serve_forever()" """
@@ -70,7 +71,8 @@ cd {root}/public_html
 echo -n {validation} > {response.URI_ROOT_PATH}/{encoded_token}
 # run only once per server:
 openssl req -new -newkey rsa:4096 -subj "/" -days 1 -nodes -x509 -keyout ../key.pem -out ../cert.pem
-python -c "import BaseHTTPServer, SimpleHTTPServer, ssl; \\
+$(command -v python2 || command -v python2.7 || command -v python2.6) -c \\
+"import BaseHTTPServer, SimpleHTTPServer, ssl; \\
 SimpleHTTPServer.SimpleHTTPRequestHandler.extensions_map = {{'': '{ct}'}}; \\
 s = BaseHTTPServer.HTTPServer(('', {port}), SimpleHTTPServer.SimpleHTTPRequestHandler); \\
 s.socket = ssl.wrap_socket(s.socket, keyfile='../key.pem', certfile='../cert.pem'); \\
