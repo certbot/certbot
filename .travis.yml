@@ -22,10 +22,7 @@ env:
     - TOXENV=lint
     - TOXENV=cover
 
-# make sure simplehttp simple verification works (custom /etc/hosts)
 addons:
-  hosts:
-    - le.wtf
   mariadb: "10.0"
 
 install: "travis_retry pip install tox coveralls"
