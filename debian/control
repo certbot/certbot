@@ -1,0 +1,125 @@
+Source: letsencrypt
+Section: web
+Priority: optional
+Maintainer: Debian letsencrypt <letsencrypt-devel@lists.alioth.debian.org>
+Uploaders: Francois Marier <francois@debian.org>
+Build-Depends: debhelper (>= 9),
+               dh-python,
+               python-all,
+               python-configargparse,
+               python-dialog (>=3.2.2rc1),
+               python-docutils,
+	       python-mock,
+               python-nose,
+               python-nosexcover,
+               python-openssl (>= 0.15),
+               python-parsedatetime,
+               python-repoze.sphinx.autointerface,
+               python-rfc3339,
+	       python-setuptools,
+               python-sphinx,
+               python-sphinx-rtd-theme,
+               python-werkzeug,
+               python-zope.component
+Standards-Version: 3.9.6
+Homepage: https://www.letsencrypt.org/
+
+Package: letsencrypt
+Architecture: all
+Depends: openssl,
+         python-augeas,
+         python-configargparse,
+         python-configobj,
+         python-crypto,
+         python-dialog,
+         python-jsonschema,
+         python-m2crypto,
+         python-mock,
+         python-ndg-httpsclient,
+         python-openssl (>= 0.15),
+         python-parsedatetime,
+         python-psutil,
+         python-pyasn1,
+         python-pyparsing,
+         python-requests,
+         python-rfc3339,
+         python-tz,
+         python-werkzeug,
+         python-zope.component,
+         python-zope.interface,
+         ${misc:Depends},
+         ${python:Depends}
+Suggests: letsencrypt-doc
+Description: Let's Encrypt standalone client
+ The objective of Let's Encrypt and the ACME (Automated Certificate Management
+ Environment) protocol is to make it possible to set up an HTTPS server and have
+ it automatically obtain a browser-trusted certificate, without any human
+ intervention. This is accomplished by running a certificate management agent on
+ the web server.
+ .
+ This agent is used to:
+ .
+  - Automatically prove to the Let's Encrypt CA that you control the website
+  - Obtain a browser-trusted certificate and set it up on your web server
+  - Keep track of when your certificate is going to expire, and renew it
+  - Help you revoke the certificate if that ever becomes necessary.
+ .
+ This package contains the standalone client.
+
+Package: letsencrypt-apache
+Architecture: all
+Depends: apache2, letsencrypt, ${misc:Depends}, ${python:Depends}
+Description: Let's Encrypt client that can update Apache configurations
+ The objective of Let's Encrypt and the ACME (Automated Certificate Management
+ Environment) protocol is to make it possible to set up an HTTPS server and have
+ it automatically obtain a browser-trusted certificate, without any human
+ intervention. This is accomplished by running a certificate management agent on
+ the web server.
+ .
+ This agent is used to:
+ .
+  - Automatically prove to the Let's Encrypt CA that you control the website
+  - Obtain a browser-trusted certificate and set it up on your web server
+  - Keep track of when your certificate is going to expire, and renew it
+  - Help you revoke the certificate if that ever becomes necessary.
+ .
+ This package contains the Apache client.
+
+Package: letsencrypt-doc
+Section: doc
+Architecture: all
+Depends: libjs-modernizr, ${misc:Depends}
+Description: Let's Encrypt client that can update Apache configurations (docs)
+ The objective of Let's Encrypt and the ACME (Automated Certificate Management
+ Environment) protocol is to make it possible to set up an HTTPS server and have
+ it automatically obtain a browser-trusted certificate, without any human
+ intervention. This is accomplished by running a certificate management agent on
+ the web server.
+ .
+ This agent is used to:
+ .
+  - Automatically prove to the Let's Encrypt CA that you control the website
+  - Obtain a browser-trusted certificate and set it up on your web server
+  - Keep track of when your certificate is going to expire, and renew it
+  - Help you revoke the certificate if that ever becomes necessary.
+ .
+ This package contains the documentation.
+
+Package: letsencrypt-nginx
+Architecture: all
+Depends: letsencrypt, nginx, ${misc:Depends}, ${python:Depends}
+Description: Let's Encrypt client that can update Nginx configurations
+ The objective of Let's Encrypt and the ACME (Automated Certificate Management
+ Environment) protocol is to make it possible to set up an HTTPS server and have
+ it automatically obtain a browser-trusted certificate, without any human
+ intervention. This is accomplished by running a certificate management agent on
+ the web server.
+ .
+ This agent is used to:
+ .
+  - Automatically prove to the Let's Encrypt CA that you control the website
+  - Obtain a browser-trusted certificate and set it up on your web server
+  - Keep track of when your certificate is going to expire, and renew it
+  - Help you revoke the certificate if that ever becomes necessary.
+ .
+ This package contains the Nginx client.

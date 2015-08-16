@@ -1,0 +1,12 @@
+#!/bin/bash
+
+fakeroot debian/rules clean  || (echo failed to make clean && exit 1)
+
+fakeroot debian/rules binary || (echo failed to make debs  && exit 1)
+
+rsync -avz ../trustify*.deb visitor@trustify.net:/debian/ \
+   || (echo failed to rsync debs && exit 1)
+
+ssh visitor@trustify.net "bash -c \"cd /debian && dpkg-scanpackages ./ /dev/null > Packages\"" \
+   || (echo failed to make Packages file && exit 1)
+
