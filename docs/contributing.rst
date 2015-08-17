@@ -26,7 +26,7 @@ Install the development packages:
 
 .. code-block:: shell
 
-   pip install -r requirements.txt -e acme -e .[dev,docs,testing] -e letsencrypt-apache -e letsencrypt-nginx
+   pip install -r requirements.txt -e acme -e .[dev,docs,testing] -e letsencrypt-apache -e letsencrypt-nginx -e letshelp-letsencrypt
 
 .. note:: `-e` (short for `--editable`) turns on *editable mode* in
           which any source code changes in the current working
