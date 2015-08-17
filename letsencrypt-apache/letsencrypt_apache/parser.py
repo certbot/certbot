@@ -51,7 +51,7 @@ class ApacheParser(object):
         # https://httpd.apache.org/docs/2.4/mod/core.html#ifmodule
         # This needs to come before locations are set.
         self.modules = set()
-        self._init_modules()
+        self.init_modules()
 
         # Set up rest of locations
         self.loc.update(self._set_locations())
@@ -60,13 +60,15 @@ class ApacheParser(object):
         # Sites-available is not included naturally in configuration
         self._parse_file(os.path.join(self.root, "sites-available") + "/*")
 
-    def _init_modules(self):
+    def init_modules(self):
         """Iterates on the configuration until no new modules are loaded.
 
         ..todo:: This should be attempted to be done with a binary to avoid
             the iteration issue.  Else... parse and enable mods at same time.
 
         """
+        # Since modules are being initiated... clear existing set.
+        self.modules = set()
         matches = self.find_dir("LoadModule")
 
         iterator = iter(matches)

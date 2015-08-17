@@ -92,6 +92,9 @@ def get_apache_configurator(
 
             config.prepare()
 
+    # Simulate a 'run' by default
+    config.config.func.__name__ = "run"
+
     return config
 
 

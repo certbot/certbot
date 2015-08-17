@@ -53,7 +53,7 @@ class ApacheDvsni(common.Dvsni):
             "le_dvsni_cert_challenge.conf")
 
     def perform(self):
-        """Peform a DVSNI challenge."""
+        """Perform a DVSNI challenge."""
         if not self.achalls:
             return []
         # Save any changes to the configuration as a precaution
@@ -62,7 +62,7 @@ class ApacheDvsni(common.Dvsni):
 
         # Prepare the server for HTTPS
         self.configurator.prepare_server_https(
-            str(self.configurator.config.dvsni_port), True)
+            str(self.configurator.config.dvsni_port))
 
         responses = []
 
