@@ -20,7 +20,7 @@ def option_namespace(name):
 
 def dest_namespace(name):
     """ArgumentParser dest namespace (prefix of all destinations)."""
-    return name + "_"
+    return name.replace("-", "_") + "_"
 
 private_ips_regex = re.compile(  # pylint: disable=invalid-name
     r"(^127\.0\.0\.1)|(^10\.)|(^172\.1[6-9]\.)|"

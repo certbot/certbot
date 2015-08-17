@@ -23,6 +23,10 @@ class NamespaceFunctionsTest(unittest.TestCase):
         from letsencrypt.plugins.common import dest_namespace
         self.assertEqual("foo_", dest_namespace("foo"))
 
+    def test_dest_namespace_with_dashes(self):
+        from letsencrypt.plugins.common import dest_namespace
+        self.assertEqual("foo_bar_", dest_namespace("foo-bar"))
+
 
 class PluginTest(unittest.TestCase):
     """Test for letsencrypt.plugins.common.Plugin."""
