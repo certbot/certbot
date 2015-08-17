@@ -215,7 +215,7 @@ class PluginsRegistry(collections.Mapping):
         Returns ``None`` if ``plugin`` is not found in the registry.
 
         """
-        # use list instead of set beacse PluginEntryPoint is not hashable
+        # use list instead of set because PluginEntryPoint is not hashable
         candidates = [plugin_ep for plugin_ep in self._plugins.itervalues()
                       if plugin_ep.initialized and plugin_ep.init() is plugin]
         assert len(candidates) <= 1
