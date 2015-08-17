@@ -302,7 +302,9 @@ class TwoVhost80Test(util.ApacheTest):
             "NameVirtualHost", "*:80"))
 
     def test_prepare_server_https(self):
-        self.config.parser.modules.add("ssl_module")
+        mock_enable = mock.Mock()
+        self.config.enable_mod = mock_enable
+
         mock_find = mock.Mock()
         mock_add_dir = mock.Mock()
         mock_find.return_value = []
@@ -312,7 +314,14 @@ class TwoVhost80Test(util.ApacheTest):
         self.config.parser.add_dir_to_ifmodssl = mock_add_dir
 
         self.config.prepare_server_https("443")
+        self.assertEqual(mock_enable.call_args[1], {"temp": False})
+
+        # Modifying base func call... to auth
+        self.config.config.func.__name__ = "auth"
         self.config.prepare_server_https("8080")
+        # Enable mod is temporary
+        self.assertEqual(mock_enable.call_args[1], {"temp": True})
+
         self.assertEqual(mock_add_dir.call_count, 2)
 
     def test_make_vhost_ssl(self):
