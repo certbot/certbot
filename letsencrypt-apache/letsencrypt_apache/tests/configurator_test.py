@@ -207,20 +207,11 @@ class TwoVhost80Test(util.ApacheTest):
         self.assertRaises(
             errors.MisconfigurationError, self.config.enable_mod, "ssl")
 
-    @mock.patch("letsencrypt.le_util.run_script")
-    @mock.patch("letsencrypt.le_util.exe_exists")
-    @mock.patch("letsencrypt_apache.parser.subprocess.Popen")
-    def test_enable_site(self, mock_popen, mock_exe_exists, mock_run_script):
-        mock_popen().returncode = 0
-        mock_popen().communicate.return_value = ("Define: DUMP_RUN_CFG", "")
-        mock_exe_exists.return_value = True
-
+    def test_enable_site(self):
         # Default 443 vhost
         self.assertFalse(self.vh_truth[1].enabled)
         self.config.enable_site(self.vh_truth[1])
         self.assertTrue(self.vh_truth[1].enabled)
-        # Mod enabled
-        self.assertTrue(mock_run_script.called)
 
         # Go again to make sure nothing fails
         self.config.enable_site(self.vh_truth[1])
@@ -302,7 +293,9 @@ class TwoVhost80Test(util.ApacheTest):
             "NameVirtualHost", "*:80"))
 
     def test_prepare_server_https(self):
-        self.config.parser.modules.add("ssl_module")
+        mock_enable = mock.Mock()
+        self.config.enable_mod = mock_enable
+
         mock_find = mock.Mock()
         mock_add_dir = mock.Mock()
         mock_find.return_value = []
@@ -312,7 +305,12 @@ class TwoVhost80Test(util.ApacheTest):
         self.config.parser.add_dir_to_ifmodssl = mock_add_dir
 
         self.config.prepare_server_https("443")
-        self.config.prepare_server_https("8080")
+        self.assertEqual(mock_enable.call_args[1], {"temp": False})
+
+        self.config.prepare_server_https("8080", temp=True)
+        # Enable mod is temporary
+        self.assertEqual(mock_enable.call_args[1], {"temp": True})
+
         self.assertEqual(mock_add_dir.call_count, 2)
 
     def test_make_vhost_ssl(self):

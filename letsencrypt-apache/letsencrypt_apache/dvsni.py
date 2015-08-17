@@ -53,7 +53,7 @@ class ApacheDvsni(common.Dvsni):
             "le_dvsni_cert_challenge.conf")
 
     def perform(self):
-        """Peform a DVSNI challenge."""
+        """Perform a DVSNI challenge."""
         if not self.achalls:
             return []
         # Save any changes to the configuration as a precaution

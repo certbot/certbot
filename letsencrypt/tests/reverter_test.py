@@ -343,7 +343,14 @@ class TestFullCheckpointsReverter(unittest.TestCase):
 
     @mock.patch("letsencrypt.reverter.logger")
     def test_rollback_too_many(self, mock_logger):
+        # Test no exist warning...
         self.reverter.rollback_checkpoints(1)
+        self.assertEqual(mock_logger.warning.call_count, 1)
+
+        # Test Generic warning
+        mock_logger.warning.call_count = 0
+        self._setup_three_checkpoints()
+        self.reverter.rollback_checkpoints(4)
         self.assertEqual(mock_logger.warning.call_count, 1)
 
     def test_multi_rollback(self):
