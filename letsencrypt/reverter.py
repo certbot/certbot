@@ -75,7 +75,7 @@ class Reverter(object):
         backups = os.listdir(self.config.backup_dir)
         backups.sort()
 
-        if len(backups) == 0:
+        if not backups:
             logger.warning(
                 "Let's Encrypt hasn't modified your configuration, so rollback "
                 "isn't available.")

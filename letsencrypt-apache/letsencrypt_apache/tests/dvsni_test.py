@@ -22,7 +22,6 @@ class DvsniPerformTest(util.ApacheTest):
         config = util.get_apache_configurator(
             self.config_path, self.config_dir, self.work_dir)
         config.config.dvsni_port = 443
-        config.config.func.__name__ = "auth"
 
         from letsencrypt_apache import dvsni
         self.sni = dvsni.ApacheDvsni(config)
