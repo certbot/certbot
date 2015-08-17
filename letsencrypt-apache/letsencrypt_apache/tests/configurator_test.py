@@ -207,20 +207,11 @@ class TwoVhost80Test(util.ApacheTest):
         self.assertRaises(
             errors.MisconfigurationError, self.config.enable_mod, "ssl")
 
-    @mock.patch("letsencrypt.le_util.run_script")
-    @mock.patch("letsencrypt.le_util.exe_exists")
-    @mock.patch("letsencrypt_apache.parser.subprocess.Popen")
-    def test_enable_site(self, mock_popen, mock_exe_exists, mock_run_script):
-        mock_popen().returncode = 0
-        mock_popen().communicate.return_value = ("Define: DUMP_RUN_CFG", "")
-        mock_exe_exists.return_value = True
-
+    def test_enable_site(self):
         # Default 443 vhost
         self.assertFalse(self.vh_truth[1].enabled)
         self.config.enable_site(self.vh_truth[1])
         self.assertTrue(self.vh_truth[1].enabled)
-        # Mod enabled
-        self.assertTrue(mock_run_script.called)
 
         # Go again to make sure nothing fails
         self.config.enable_site(self.vh_truth[1])
@@ -316,9 +307,7 @@ class TwoVhost80Test(util.ApacheTest):
         self.config.prepare_server_https("443")
         self.assertEqual(mock_enable.call_args[1], {"temp": False})
 
-        # Modifying base func call... to auth
-        self.config.config.func.__name__ = "auth"
-        self.config.prepare_server_https("8080")
+        self.config.prepare_server_https("8080", temp=True)
         # Enable mod is temporary
         self.assertEqual(mock_enable.call_args[1], {"temp": True})
 

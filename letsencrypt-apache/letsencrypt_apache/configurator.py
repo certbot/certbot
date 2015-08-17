@@ -482,7 +482,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         logger.debug(msg)
         self.save_notes += msg
 
-    def prepare_server_https(self, port):
+    def prepare_server_https(self, port, temp=False):
         """Prepare the server for HTTPS.
 
         Make sure that the ssl_module is loaded and that the server
@@ -493,10 +493,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         if "ssl_module" not in self.parser.modules:
             logger.info("Loading mod_ssl into Apache Server")
-            if self.config.func.__name__ == "auth":
-                self.enable_mod("ssl", temp=True)
-            else:
-                self.enable_mod("ssl", temp=False)
+            self.enable_mod("ssl", temp=temp)
 
         # Check for Listen <port>
         # Note: This could be made to also look for ip:443 combo
@@ -955,6 +952,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     def enable_site(self, vhost):
         """Enables an available site, Apache restart required.
 
+        .. note:: Does not make sure that the site correctly works or that all
+        modules are enabled appropriately.
+
         .. todo:: This function should number subdomains before the domain vhost
         .. todo:: Make sure link is not broken...
 
@@ -967,12 +967,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         if self.is_site_enabled(vhost.filep):
             return
-
-        if vhost.ssl:
-            # TODO: Make this based on addresses
-            self.prepare_server_https("443")
-            if self.save_notes:
-                self.save()
 
         if "/sites-available/" in vhost.filep:
             enabled_path = ("%s/sites-enabled/%s" %
