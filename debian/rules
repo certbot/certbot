@@ -19,7 +19,7 @@ override_dh_auto_build:
 
 override_dh_auto_test:
 	set -ex; for dir in acme . letsencrypt-apache letsencrypt-nginx; do \
-		python2.7 $$dir/setup.py test; \
+		python2.7 $$dir/setup.py test -v; \
 	done
 
 override_dh_install:
