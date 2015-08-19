@@ -15,12 +15,14 @@ override_dh_auto_build:
 	set -ex; for dir in acme . letsencrypt-apache letsencrypt-nginx; do \
 		cd $(CURDIR)/$$dir; \
 		python2.7 setup.py build; \
+		python2.7 setup.py install --single-version-externally-managed --root=$(CURDIR)/debian/$$dir; \
 	done
 
 override_dh_auto_test:
+	ln -s $(CURDIR)/acme/acme/testdata $(CURDIR)/debian/acme/usr/local/lib/python2.7/dist-packages/acme/
 	set -ex; for dir in acme . letsencrypt-apache letsencrypt-nginx; do \
 		cd $(CURDIR)/$$dir; \
-		PYTHONPATH=$(shell find `pwd` -maxdepth 3 -wholename '*/build/lib*' | tr "\n" ":") python /usr/bin/nosetests; \
+		PYTHONPATH=$(shell find $(CURDIR) -type d -name dist-packages | tr "\n" ":") python /usr/bin/nosetests; \
 	done
 
 override_dh_install:
