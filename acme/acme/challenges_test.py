@@ -158,7 +158,7 @@ class SimpleHTTPResponseTest(unittest.TestCase):
     @mock.patch("acme.challenges.requests.get")
     def test_simple_verify_bad_token(self, mock_get):
         mock_get.return_value = mock.MagicMock(
-            text=self.chall.token + "!", headers=self.good_headers)
+            text="!", headers=self.good_headers)
         self.assertFalse(self.resp_http.simple_verify(
             self.chall, "local", None))
 
