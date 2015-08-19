@@ -20,9 +20,9 @@ override_dh_auto_build:
 
 override_dh_auto_test:
 	ln -s $(CURDIR)/acme/acme/testdata $(CURDIR)/debian/acme/usr/local/lib/python2.7/dist-packages/acme/
-	set -ex; for dir in acme . letsencrypt-apache letsencrypt-nginx; do \
-		cd $(CURDIR)/$$dir; \
-		PYTHONPATH=$(shell find $(CURDIR) -type d -name dist-packages | tr "\n" ":") python /usr/bin/nosetests; \
+	set -ex; for suite in acme letsencrypt letsencrypt-apache letsencrypt-nginx; do \
+		cd $(CURDIR); \
+		PYTHONPATH=$(shell find $(CURDIR) -type d -name dist-packages | tr "\n" ":") python /usr/bin/nosetests $$suite; \
 	done
 
 override_dh_install:
