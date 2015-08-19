@@ -6,14 +6,11 @@ Uploaders: Francois Marier <francois@debian.org>
 Build-Depends: debhelper (>= 9),
 	       dialog,
                dh-python,
-	       docker,
                python-all,
 	       python-augeas,
                python-configargparse,
 	       python-configobj,
-	       python-crypto,
                python-dialog,
-	       python-docker,
                python-docutils,
 	       python-mock,
 	       python-ndg-httpsclient,
@@ -41,11 +38,8 @@ Package: letsencrypt
 Architecture: all
 Depends: dialog,
 	 openssl,
-         python-augeas,
          python-configargparse,
          python-configobj,
-         python-crypto,
-         python-dialog,
          python-jsonschema,
          python-mock,
          python-ndg-httpsclient,
@@ -79,9 +73,17 @@ Description: Let's Encrypt standalone client
  .
  This package contains the standalone client.
 
+Package: python-acme
+Architecture: all
+Depends:
+
 Package: letsencrypt-apache
 Architecture: all
-Depends: apache2, letsencrypt, ${misc:Depends}, ${python:Depends}
+Depends:
+	apache2,
+	letsencrypt,
+	python-augeas,
+	${misc:Depends}, ${python:Depends}
 Description: Let's Encrypt client that can update Apache configurations
  The objective of Let's Encrypt and the ACME (Automated Certificate Management
  Environment) protocol is to make it possible to set up an HTTPS server and have
