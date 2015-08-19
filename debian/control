@@ -4,6 +4,7 @@ Priority: optional
 Maintainer: Debian letsencrypt <letsencrypt-devel@lists.alioth.debian.org>
 Uploaders: Francois Marier <francois@debian.org>
 Build-Depends: debhelper (>= 9),
+	       dialog,
                dh-python,
                python-all,
 	       python-augeas,
@@ -36,7 +37,8 @@ Homepage: https://www.letsencrypt.org/
 
 Package: letsencrypt
 Architecture: all
-Depends: openssl,
+Depends: dialog,
+	 openssl,
          python-augeas,
          python-configargparse,
          python-configobj,
