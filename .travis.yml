@@ -19,6 +19,8 @@ env:
   matrix:
     - TOXENV=py26 BOULDER_INTEGRATION=1
     - TOXENV=py27 BOULDER_INTEGRATION=1
+    - TOXENV=py33
+    - TOXENV=py34
     - TOXENV=lint
     - TOXENV=cover
 
