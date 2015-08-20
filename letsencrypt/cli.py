@@ -529,15 +529,14 @@ def create_parser(plugins, args):
     automation.add_argument(
         "--no-confirm", dest="no_confirm", action="store_true",
         help="Turn off confirmation screens, currently used for --revoke")
-    automation.add(
+    automation.add_argument(
         "--agree-eula", dest="eula", action="store_true",
         help="Agree to the Let's Encrypt Developer Preview EULA")
     automation.add_argument(
         "--agree-tos", dest="tos", action="store_true",
         help="Agree to the Let's Encrypt Subscriber Agreement")
-    helpful.add(
-        "automation", "--account", metavar="ACCOUNT_ID",
-        help="Account ID to use")
+    automation.add_argument(
+        "--account", metavar="ACCOUNT_ID", help="Account ID to use")
 
     testing = parser.add_argument_group(
         "testing", description="The following flags are meant for "
@@ -580,7 +579,7 @@ def create_parser(plugins, args):
 
 
 def _create_subparsers(parser):
-    subparsers = parser.parser.add_subparsers(metavar="SUBCOMMAND")
+    subparsers = parser.add_subparsers(metavar="SUBCOMMAND")
     def add_subparser(name, func):  # pylint: disable=missing-docstring
         subparser = subparsers.add_parser(
             name, help=func.__doc__.splitlines()[0], description=func.__doc__)
