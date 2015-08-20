@@ -1,2 +1,0 @@
-debian/build/letsencrypt-apache/usr/lib/python2.7/dist-packages/* usr/lib/python2.7/dist-packages/
-letsencrypt-apache/letsencrypt_apache/options-ssl.conf		etc/letsencrypt
