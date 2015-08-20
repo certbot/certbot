@@ -27,6 +27,11 @@ override_dh_auto_test:
 		PYTHONPATH=$(shell find $(CURDIR)/debian/tmp -type d -name dist-packages | tr "\n" ":") python /usr/bin/nosetests $$suite; \
 	done
 
+override_dh_prep:
+	# Unfortunately, dh_prep will delete things that we don't want it to.
+	# Since we're doing steps in the wrong order, we can't safely delete debian/tmp
+	echo "Not cleaning."
+
 override_dh_auto_install:
 	find $(CURDIR)/debian/tmp -type d -name tests -print0 | xargs -0 rm -rf
 	rm $(CURDIR)/debian/tmp/acme/usr/lib/python2.7/dist-packages/acme/testdata
