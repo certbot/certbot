@@ -1,4 +1,3 @@
-usr/bin usr/
-usr/lib/python2.7/dist-packages/acme usr/lib/python2.7/dist-packages/
-usr/lib/python2.7/dist-packages/letsencrypt usr/lib/python2.7/dist-packages/
-usr/lib/python2.7/dist-packages/letsencrypt-*egg* usr/lib/python2.7/dist-packages/
+debian/build/letsencrypt/usr/bin usr/
+debian/build/letsencrypt/usr/lib/python2.7/dist-packages/letsencrypt usr/lib/python2.7/dist-packages/
+debian/build/letsencrypt/usr/lib/python2.7/dist-packages/letsencrypt-*egg* usr/lib/python2.7/dist-packages/

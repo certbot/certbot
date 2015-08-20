@@ -75,7 +75,10 @@ Description: Let's Encrypt standalone client
 
 Package: python-acme
 Architecture: all
-Depends:
+Depends: ${misc:Depends}, ${python:Depends}
+Description: ACME protocol library for Python 2
+ This is a library used by the Let's Encrypt client for the ACME (Automated
+ Certificate Management Environment).  It currently supports only Python 2.
 
 Package: letsencrypt-apache
 Architecture: all
