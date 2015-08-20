@@ -1,3 +1,2 @@
-debian/build/usr/lib/python2.7/dist-packages/letsencrypt_nginx usr/lib/python2.7/dist-packages/
-debian/build/usr/lib/python2.7/dist-packages/letsencrypt_nginx*egg* usr/lib/python2.7/dist-packages/
-letsencrypt_nginx/options-ssl.conf		etc/letsencrypt/
+debian/tmp/letsencrypt-nginx/usr/lib/python2.7/dist-packages/* usr/lib/python2.7/dist-packages/
+letsencrypt-nginx/letsencrypt_nginx/options-ssl.conf		etc/letsencrypt/
