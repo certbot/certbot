@@ -17,6 +17,8 @@ override_dh_auto_build:
 		python2.7 setup.py build; \
 		python2.7 setup.py install --single-version-externally-managed --root=$(CURDIR)/debian/build/$$dir; \
 	done
+	sphinx-build -N -b html docs $(CURDIR)/debian/doc-build/html
+	sphinx-build -N -b man docs $(CURDIR)/debian/doc-build/man
 
 override_dh_auto_test:
 	ln -s $(CURDIR)/acme/acme/testdata $(CURDIR)/debian/build/acme/usr/local/lib/python2.7/dist-packages/acme/
