@@ -492,11 +492,11 @@ def add_plugin_args(parser, plugins):
 
 def create_parser(plugins, args):
     """Create parser."""
-    if "OLD_CLI" in os.environ:
-        ArgParser = configargparse.ArgParser
-    else:
+    if "NEW_CLI" in os.environ:
         ArgParser = functools.partial(
             HelpfulArgumentParser, args=args, plugins=plugins)
+    else:
+        ArgParser = configargparse.ArgParser
 
     parser = ArgParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
