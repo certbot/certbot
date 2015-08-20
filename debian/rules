@@ -35,4 +35,5 @@ override_dh_prep:
 override_dh_auto_install:
 	find $(CURDIR)/debian/tmp -type d -name tests -print0 | xargs -0 rm -rf
 	rm $(CURDIR)/debian/tmp/acme/usr/lib/python2.7/dist-packages/acme/testdata
-	dh_auto_install
+	cd $(CURDIR)
+	dh_install
