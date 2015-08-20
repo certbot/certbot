@@ -460,18 +460,6 @@ class HelpfulArgumentParser(object):
 
         return HelpfulGroupWrapper(topic=topic, helpful=self)
 
-    def add_plugin_args(self, plugins):
-        """
-
-        Let each of the plugins add its own command line arguments, which
-        may or may not be displayed as help topics.
-
-        """
-        for name, plugin_ep in plugins.iteritems():
-            parser_or_group = self.add_group(name, description=plugin_ep.description)
-            #print parser_or_group
-            plugin_ep.plugin_cls.inject_parser_options(parser_or_group, name)
-
     def determine_help_topics(self, chosen_topic):
         """
 
@@ -489,6 +477,17 @@ class HelpfulArgumentParser(object):
             return dict([(t, False) for t in self.help_topics])
         else:
             return dict([(t, t == chosen_topic) for t in self.help_topics])
+
+def add_plugin_args(parser, plugins):
+    """Add plugin args.
+
+    Let each of the plugins add its own command line arguments, which
+    may or may not be displayed as help topics.
+
+    """
+    for name, plugin_ep in plugins.iteritems():
+        group = parser.add_argument_group(name, description=plugin_ep.description)
+        plugin_ep.plugin_cls.inject_parser_options(group, name)
 
 
 def create_parser(plugins, args):
@@ -674,7 +673,7 @@ def _plugins_parsing(parser, plugins):
     # plugins_group should be displayed in --help before plugin
     # specific groups (so that plugins_group.description makes sense)
 
-    parser.add_plugin_args(plugins)
+    add_plugin_args(parser, plugins)
 
 
 def _setup_logging(args):
