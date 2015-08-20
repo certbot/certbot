@@ -15,16 +15,19 @@ override_dh_auto_build:
 	set -ex; for dir in acme . letsencrypt-apache letsencrypt-nginx; do \
 		cd $(CURDIR)/$$dir; \
 		python2.7 setup.py build; \
-		python2.7 setup.py install --single-version-externally-managed --root=$(CURDIR)/debian/build/$$dir --install-layout=deb; \
+		python2.7 setup.py install --single-version-externally-managed --root=$(CURDIR)/debian/tmp/$$dir --install-layout=deb; \
 	done
 	sphinx-build -N -b html docs $(CURDIR)/debian/doc-build/html
 	sphinx-build -N -b man docs $(CURDIR)/debian/doc-build/man
 
 override_dh_auto_test:
-	ln -s $(CURDIR)/acme/acme/testdata $(CURDIR)/debian/build/acme/usr/lib/python2.7/dist-packages/acme/
+	ln -s $(CURDIR)/acme/acme/testdata $(CURDIR)/debian/tmp/acme/usr/lib/python2.7/dist-packages/acme/
 	set -ex; for suite in acme letsencrypt letsencrypt-apache letsencrypt-nginx; do \
 		cd $(CURDIR); \
-		PYTHONPATH=$(shell find $(CURDIR)/debian/build -type d -name dist-packages | tr "\n" ":") python /usr/bin/nosetests $$suite; \
+		PYTHONPATH=$(shell find $(CURDIR)/debian/tmp -type d -name dist-packages | tr "\n" ":") python /usr/bin/nosetests $$suite; \
 	done
 
-override_dh_install:
+override_dh_auto_install:
+	find $(CURDIR)/debian/tmp -type d -name tests -print0 | xargs -0 rm -rf
+	rm $(CURDIR)/debian/tmp/acme/usr/lib/python2.7/dist-packages/acme/testdata
+	dh_auto_install
