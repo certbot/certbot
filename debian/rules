@@ -38,6 +38,10 @@ override_dh_auto_test:
 		PYTHONPATH=$(shell find $(CURDIR)/debian -type d -name dist-packages | tr "\n" ":") python /usr/bin/nosetests $$suite; \
 	done
 
+override_dh_prep:
+	# dh_prep will destroy the stuff we've already installed.
+	# As such, we need to clean it ourselves in dh_clean, and disable it.
+
 override_dh_auto_install:
 	# Cleanup only.  We already did the install during the build, so the
 	# tests would work.
