@@ -1,0 +1,12 @@
+This repository is managed using the gitpkg (aka git-debcherry)
+methodology.  Patches normally kept in debian/patches are instead
+broken out as branches based off of the upstream (master) branch, and
+are automatically regenerated at the time of the .dsc build by running
+`gitpkg debian` (or `gitpkg debian upstream` to regenerate the .orig
+tarball).
+
+As upstream is not yet giving us releases, we are using the version
+0.<date of retrieval from git>-<debian revision>.  We will coordinate
+with upstream before upload to sid or experimental to ensure that
+their first version will be > 0.2, or change our version format to
+0.0.<date, etc>.
