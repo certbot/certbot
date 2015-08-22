@@ -39,7 +39,8 @@ X-Python-Version: >= 2.7
 Package: python-acme
 Section: python
 Architecture: all
-Depends: openssl,
+Depends: ca-certificates,
+	 openssl,
 	 python-configargparse,
 	 python-cryptography (>= 0.8),
 	 python-mock,
