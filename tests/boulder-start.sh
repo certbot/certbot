@@ -1,4 +1,4 @@
-#!/bin/sh -x
+#!/bin/sh -xe
 # Download and run Boulder instance for integration testing
 
 export GOPATH="${GOPATH:-/tmp/go}"
