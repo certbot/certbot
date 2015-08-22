@@ -20,7 +20,7 @@ rm -f .coverage  # --cover-erase is off, make sure stats are correct
 # don't use sequential composition (;), if letsencrypt_nginx returns
 # 0, coveralls submit will be triggered (c.f. .travis.yml,
 # after_success)
-cover letsencrypt 97 && \
+cover letsencrypt 96 && \
     cover acme 100 && \
     cover letsencrypt_apache 100 && \
     cover letsencrypt_nginx 96 && \
