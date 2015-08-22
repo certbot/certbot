@@ -96,8 +96,9 @@ s.serve_forever()" """
     @classmethod
     def add_parser_arguments(cls, add):
         add("test-mode", action="store_true",
-            help="Test mode. Executes the manual command in subprocess. "
-            "Requires openssl to be installed unless --no-simple-http-tls.")
+            help="Test mode. Executes the manual command in subprocess and "
+            "connects to `localhost` when verifying the challenge. Requires "
+            "openssl to be installed unless --no-simple-http-tls.")
 
     def prepare(self):  # pylint: disable=missing-docstring,no-self-use
         pass  # pragma: no cover
@@ -162,13 +163,14 @@ binary for temporary key/certificate generation.""".replace("\n", "")
                 uri=response.uri(achall.domain, achall.challb.chall),
                 ct=response.CONTENT_TYPE, command=command))
 
+        domain = "localhost" if self.conf("test-mode") else achall.domain
         if response.simple_verify(
-                achall.chall, achall.domain,
+                achall.chall, domain,
                 achall.account_key.public_key(), self.config.simple_http_port):
             return response
         else:
             if self.conf("test-mode") and self._httpd.poll() is not None:
-                # simply verify cause command failure...
+                # simple verify cause command failure...
                 return False
             return None
 
