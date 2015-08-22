@@ -2,7 +2,8 @@ Source: letsencrypt
 Section: web
 Priority: optional
 Maintainer: Debian letsencrypt <letsencrypt-devel@lists.alioth.debian.org>
-Uploaders: Francois Marier <francois@debian.org>
+Uploaders: Harlan Lieberman-Berg <hlieberman@setec.io>,
+	   Francois Marier <francois@debian.org>
 Build-Depends: debhelper (>= 9),
 	       dialog,
                dh-python,
