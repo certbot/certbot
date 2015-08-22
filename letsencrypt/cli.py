@@ -450,12 +450,14 @@ class HelpfulArgumentParser(object):
                 self.helpful = helpful
 
             def add_argument(self, *args, **kwargs):
+                # pylint: disable=missing-docstring
                 kwargs["topic"] = self.topic
                 return self.helpful.add(*args, **kwargs)
 
             add = add_argument
 
             def add_argument_group(self):
+                # pylint: disable=no-self-use,missing-docstring
                 raise TypeError("Helpful parser cannot recurse")
 
         return HelpfulGroupWrapper(topic=topic, helpful=self)
@@ -493,12 +495,12 @@ def add_plugin_args(parser, plugins):
 def create_parser(plugins, args):
     """Create parser."""
     if "NEW_CLI" in os.environ:
-        ArgParser = functools.partial(
+        arg_parser_cls = functools.partial(
             HelpfulArgumentParser, args=args, plugins=plugins)
     else:
-        ArgParser = configargparse.ArgParser
+        arg_parser_cls = configargparse.ArgParser
 
-    parser = ArgParser(
+    parser = arg_parser_cls(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         args_for_setting_config_path=["-c", "--config"],
         default_config_files=flag_default("config_files"))
@@ -642,13 +644,13 @@ def _paths_parser(parser):
     paths = parser.add_argument_group(
         "paths", description="Arguments changing execution paths & servers")
     paths.add_argument("--config-dir", default=flag_default("config_dir"),
-        help=config_help("config_dir"))
+                       help=config_help("config_dir"))
     paths.add_argument("--work-dir", default=flag_default("work_dir"),
-        help=config_help("work_dir"))
+                       help=config_help("work_dir"))
     paths.add_argument("--logs-dir", default=flag_default("logs_dir"),
-        help="Logs directory.")
+                       help="Logs directory.")
     paths.add_argument("--server", default=flag_default("server"),
-        help=config_help("server"))
+                       help=config_help("server"))
 
 
 def _plugins_parsing(parser, plugins):
