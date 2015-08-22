@@ -82,7 +82,7 @@ If you would like to test `letsencrypt_nginx` plugin (highly
 encouraged) make sure to install prerequisites as listed in
 ``tests/integration/nginx.sh``:
 
-.. include:: ../tests/integration/nginx.sh
+.. include:: ../letsencrypt-nginx/tests/boulder-integration.sh
    :start-line: 1
    :end-line: 2
    :code: shell
