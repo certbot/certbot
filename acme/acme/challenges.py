@@ -149,7 +149,7 @@ class SimpleHTTPResponse(ChallengeResponse):
             `~cryptography.hazmat.primitives.asymmetric.dsa.DSAPublicKey`
             or
             `~cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePublicKey`
-            wrapped in `.ComparableKey
+            wrapped in `.ComparableKey`
 
         :rtype: bool
 
@@ -184,7 +184,7 @@ class SimpleHTTPResponse(ChallengeResponse):
             `~cryptography.hazmat.primitives.asymmetric.dsa.DSAPublicKey`
             or
             `~cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePublicKey`
-            wrapped in `.ComparableKey
+            wrapped in `.ComparableKey`
         :param int port: Port used in the validation.
 
         :returns: ``True`` iff validation is successful, ``False``
@@ -370,7 +370,7 @@ class DVSNIResponse(ChallengeResponse):
             `~cryptography.hazmat.primitives.asymmetric.dsa.DSAPublicKey`
             or
             `~cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePublicKey`
-            wrapped in `.ComparableKey
+            wrapped in `.ComparableKey`
         :param OpenSSL.crypto.X509 cert: Optional certificate. If not
             provided (``None``) certificate will be retrieved using
             `probe_cert`.
