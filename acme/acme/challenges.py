@@ -116,7 +116,7 @@ class SimpleHTTPResponse(ChallengeResponse):
     def gen_resource(self, chall):
         """Generate provisioned resource.
 
-        :param .SimpleHTTP chall:
+        :param challenges.SimpleHTTP chall:
         :rtype: SimpleHTTPProvisionedResource
 
         """
@@ -125,7 +125,7 @@ class SimpleHTTPResponse(ChallengeResponse):
     def gen_validation(self, chall, account_key, alg=jose.RS256, **kwargs):
         """Generate validation.
 
-        :param .SimpleHTTP chall:
+        :param challenges.SimpleHTTP chall:
         :param .JWK account_key: Private account key.
         :param .JWA alg:
 
@@ -142,7 +142,7 @@ class SimpleHTTPResponse(ChallengeResponse):
         """Check validation.
 
         :param .JWS validation:
-        :param .SimpleHTTP chall:
+        :param challenges.SimpleHTTP chall:
         :type account_public_key:
             `~cryptography.hazmat.primitives.asymmetric.rsa.RSAPublicKey`
             or
@@ -173,7 +173,7 @@ class SimpleHTTPResponse(ChallengeResponse):
         ignore the certificate provided by the HTTPS server", so
         ``requests.get`` is called with ``verify=False``.
 
-        :param .SimpleHTTP chall: Corresponding challenge.
+        :param challenges.SimpleHTTP chall: Corresponding challenge.
         :param unicode domain: Domain name being verified.
         :param account_public_key: Public key for the key pair
             being authorized. If ``None`` key verification is not
@@ -306,7 +306,7 @@ class DVSNIResponse(ChallengeResponse):
     def chall(self):
         """Get challenge encoded in the `validation` payload.
 
-        :rtype: DVSNI
+        :rtype: challenges.DVSNI
 
         """
         # pylint: disable=no-member
