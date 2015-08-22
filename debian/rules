@@ -10,12 +10,14 @@ override_dh_clean:
 	dh_auto_clean
 	cd $(CURDIR)
 	rm -rf build/ acme/build/ letsencrypt-apache/build/ letsencrypt-nginx/build
+	rm -rf debian/python-acme/ debian/letsencrypt/ debian/letsencrypt-apache/ debian/letsencrypt-nginx/
 
 override_dh_auto_build:
-	# letsencrypt
+	# acme
 	cd $(CURDIR)/acme; \
 	python2.7 setup.py build; \
-	python2.7 setup.py install --single-version-externally-managed --root=$(CURDIR)/debian/letsencrypt --install-layout=deb
+	python2.7 setup.py install --single-version-externally-managed --root=$(CURDIR)/debian/python-acme --install-layout=deb
+	# letsencrypt
 	cd $(CURDIR); \
 	python2.7 setup.py build; \
 	python2.7 setup.py install --single-version-externally-managed --root=$(CURDIR)/debian/letsencrypt --install-layout=deb
@@ -32,7 +34,7 @@ override_dh_auto_build:
 	sphinx-build -N -b man docs $(CURDIR)/debian/doc-build/man
 
 override_dh_auto_test:
-	ln -s $(CURDIR)/acme/acme/testdata $(CURDIR)/debian/letsencrypt/usr/lib/python2.7/dist-packages/acme/
+	ln -s $(CURDIR)/acme/acme/testdata $(CURDIR)/debian/python-acme/usr/lib/python2.7/dist-packages/acme/
 	set -ex; for suite in acme letsencrypt letsencrypt-apache letsencrypt-nginx; do \
 		cd $(CURDIR); \
 		PYTHONPATH=$(shell find $(CURDIR)/debian -type d -name dist-packages | tr "\n" ":") python /usr/bin/nosetests $$suite; \
@@ -46,4 +48,4 @@ override_dh_auto_install:
 	# Cleanup only.  We already did the install during the build, so the
 	# tests would work.
 	find $(CURDIR)/debian -type d -name tests -print0 | xargs -0 rm -rf
-	rm $(CURDIR)/debian/letsencrypt/usr/lib/python2.7/dist-packages/acme/testdata
+	rm $(CURDIR)/debian/python-acme/usr/lib/python2.7/dist-packages/acme/testdata
