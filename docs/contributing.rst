@@ -67,7 +67,7 @@ The following tools are there to help you:
 Integration
 ~~~~~~~~~~~
 
-First, install `Go`_ 1.4 and start Boulder_, an ACME CA server::
+First, install `Go`_ 1.5 and start Boulder_, an ACME CA server::
 
   ./tests/boulder-start.sh
 
