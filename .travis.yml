@@ -12,7 +12,7 @@ services:
 before_install:
   - travis_retry sudo ./bootstrap/ubuntu.sh
   - travis_retry sudo apt-get install --no-install-recommends nginx-light openssl
-  - 'eval "$(gimme 1.5)"'
+  - '[ "xxx$BOULDER_INTEGRATION" = "xxx" ] || eval "$(gimme 1.5)"'
 
 # using separate envs with different TOXENVs creates 4x1 Travis build
 # matrix, which allows us to clearly distinguish which component under
