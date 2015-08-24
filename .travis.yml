@@ -1,7 +1,8 @@
 language: python
 
 # This have to be kept in sync with .travis.yml from Boulder
-go: 1.5
+go:
+  - 1.5
 
 services:
   - rabbitmq
