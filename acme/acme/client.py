@@ -547,7 +547,8 @@ class ClientNetwork(object):
 
 
         """
-        logging.debug('Sending %s request to %s', method, url)
+        logging.debug('Sending %s request to %s. args: %r, kwargs: %r',
+                      method, url, args, kwargs)
         kwargs['verify'] = self.verify_ssl
         response = requests.request(method, url, *args, **kwargs)
         logging.debug('Received %s. Headers: %s. Content: %r',

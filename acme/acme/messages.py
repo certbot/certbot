@@ -253,7 +253,7 @@ class ChallengeBody(ResourceBody):
         call ``challb.x`` to get ``challb.chall.x`` contents.
     :ivar acme.messages.Status status:
     :ivar datetime.datetime validated:
-    :ivar Error error:
+    :ivar messages.Error error:
 
     """
     __slots__ = ('chall',)
