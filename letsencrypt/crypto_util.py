@@ -267,5 +267,5 @@ def asn1_generalizedtime_to_dt(timestamp):
 
 
 def pyopenssl_x509_name_as_text(x509name):
-    """Convert `OpenSSL.crypto.X509Name to text."""
+    """Convert `OpenSSL.crypto.X509Name` to text."""
     return "/".join("{0}={1}" for key, value in x509name.get_components())
