@@ -54,7 +54,7 @@ class Header(json_util.JSONObjectWithFields):
         the "crit" (Critical) Header Parameter (4.1.11) and as a
         conforming implementation, :meth:`from_json` treats its
         occurence as an error. Please subclass if you seek for
-        a diferent behaviour.
+        a different behaviour.
 
     :ivar x5tS256: "x5t#S256"
     :ivar str typ: MIME Media Type, inc. :const:`MediaType.PREFIX`.

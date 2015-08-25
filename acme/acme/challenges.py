@@ -116,7 +116,7 @@ class SimpleHTTPResponse(ChallengeResponse):
     def gen_resource(self, chall):
         """Generate provisioned resource.
 
-        :param .SimpleHTTP chall:
+        :param challenges.SimpleHTTP chall:
         :rtype: SimpleHTTPProvisionedResource
 
         """
@@ -125,7 +125,7 @@ class SimpleHTTPResponse(ChallengeResponse):
     def gen_validation(self, chall, account_key, alg=jose.RS256, **kwargs):
         """Generate validation.
 
-        :param .SimpleHTTP chall:
+        :param challenges.SimpleHTTP chall:
         :param .JWK account_key: Private account key.
         :param .JWA alg:
 
@@ -142,14 +142,14 @@ class SimpleHTTPResponse(ChallengeResponse):
         """Check validation.
 
         :param .JWS validation:
-        :param .SimpleHTTP chall:
+        :param challenges.SimpleHTTP chall:
         :type account_public_key:
             `~cryptography.hazmat.primitives.asymmetric.rsa.RSAPublicKey`
             or
             `~cryptography.hazmat.primitives.asymmetric.dsa.DSAPublicKey`
             or
             `~cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePublicKey`
-            wrapped in `.ComparableKey
+            wrapped in `.ComparableKey`
 
         :rtype: bool
 
@@ -173,7 +173,7 @@ class SimpleHTTPResponse(ChallengeResponse):
         ignore the certificate provided by the HTTPS server", so
         ``requests.get`` is called with ``verify=False``.
 
-        :param .SimpleHTTP chall: Corresponding challenge.
+        :param challenges.SimpleHTTP chall: Corresponding challenge.
         :param unicode domain: Domain name being verified.
         :param account_public_key: Public key for the key pair
             being authorized. If ``None`` key verification is not
@@ -184,7 +184,7 @@ class SimpleHTTPResponse(ChallengeResponse):
             `~cryptography.hazmat.primitives.asymmetric.dsa.DSAPublicKey`
             or
             `~cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePublicKey`
-            wrapped in `.ComparableKey
+            wrapped in `.ComparableKey`
         :param int port: Port used in the validation.
 
         :returns: ``True`` iff validation is successful, ``False``
@@ -306,7 +306,7 @@ class DVSNIResponse(ChallengeResponse):
     def chall(self):
         """Get challenge encoded in the `validation` payload.
 
-        :rtype: DVSNI
+        :rtype: challenges.DVSNI
 
         """
         # pylint: disable=no-member
@@ -370,7 +370,7 @@ class DVSNIResponse(ChallengeResponse):
             `~cryptography.hazmat.primitives.asymmetric.dsa.DSAPublicKey`
             or
             `~cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePublicKey`
-            wrapped in `.ComparableKey
+            wrapped in `.ComparableKey`
         :param OpenSSL.crypto.X509 cert: Optional certificate. If not
             provided (``None``) certificate will be retrieved using
             `probe_cert`.
