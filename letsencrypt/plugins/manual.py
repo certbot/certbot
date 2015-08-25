@@ -37,7 +37,7 @@ class ManualAuthenticator(common.Plugin):
 Make sure your web server displays the following content at
 {uri} before continuing:
 
-{achall.token}
+{validation}
 
 Content-Type header MUST be set to {ct}.
 
@@ -158,7 +158,7 @@ binary for temporary key/certificate generation.""".replace("\n", "")
                 raise errors.Error("Couldn't execute manual command")
         else:
             self._notify_and_wait(self.MESSAGE_TEMPLATE.format(
-                achall=achall, response=response,
+                validation=validation.json_dumps(), response=response,
                 uri=response.uri(achall.domain, achall.challb.chall),
                 ct=response.CONTENT_TYPE, command=command))
 
