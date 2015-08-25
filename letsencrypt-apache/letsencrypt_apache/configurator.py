@@ -953,9 +953,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """Enables an available site, Apache restart required.
 
         .. note:: Does not make sure that the site correctly works or that all
-        modules are enabled appropriately.
+                  modules are enabled appropriately.
 
         .. todo:: This function should number subdomains before the domain vhost
+
         .. todo:: Make sure link is not broken...
 
         :param vhost: vhost to enable
@@ -1034,8 +1035,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         .. todo:: This function will be converted to using reload
 
-        :raises .errors.MisconfigurationError: If unable to restart due to a
-        configuration problem, or if the restart subprocess cannot be run.
+        :raises .errors.MisconfigurationError: If unable to restart due
+            to a configuration problem, or if the restart subprocess
+            cannot be run.
 
         """
         return apache_restart(self.conf("init-script"))
