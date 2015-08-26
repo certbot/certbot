@@ -185,7 +185,7 @@ class Registration(ResourceBody):
         :ivar tuple certificates: URIs to Certificate Resources.
 
         """
-        certificates = jose.Field('certificaets')
+        certificates = jose.Field('certificates')
 
     phone_prefix = 'tel:'
     email_prefix = 'mailto:'
