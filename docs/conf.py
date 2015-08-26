@@ -54,6 +54,7 @@ extensions = [
     'sphinx.ext.coverage',
     'sphinx.ext.viewcode',
     'repoze.sphinx.autointerface',
+    'sphinxcontrib.programoutput',
 ]
 
 autodoc_member_order = 'bysource'
@@ -283,7 +284,12 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'letsencrypt', u'Let\'s Encrypt Documentation',
-     [u'Let\'s Encrypt Project'], 1)
+     [project], 7),
+    ('man/letsencrypt', 'letsencrypt', u'letsencrypt script documentation',
+     [project], 1),
+    ('man/letsencrypt-renewer', 'letsencrypt-renewer',
+     u'letsencrypt-renewer script documentation', [project], 1),
+    ('man/jws', 'jws', u'jws script documentation', [project], 1),
 ]
 
 # If true, show URL addresses after external links.
