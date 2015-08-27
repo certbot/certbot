@@ -1,16 +1,18 @@
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: letsencrypt
-Source: https://github.com/letsencrypt/lets-encrypt-preview
+Source: https://github.com/letsencrypt/letsencrypt
 
 Files: *
-Copyright: 2014-2015 Let's Encrypt (https://letsencrypt.org/)
-License: Apache-2
+Copyright: 2014-2015, Let's Encrypt (https://letsencrypt.org/)
+License: Apache-2.0
 
 Files: debian/*
-Copyright: 2014-2015 Francois Marier <francois@debian.org>
-License: Apache-2
+Copyright:
+ 2014-2015, Francois Marier <francois@debian.org>,
+ 2015, Harlan Lieberman-Berg <hlieberman@setec.io>
+License: Apache-2.0
 
-License: Apache-2
+License: Apache-2.0
  Licensed to the Apache Software Foundation (ASF) under one or more
  contributor license agreements.  See the NOTICE file distributed with
  this work for additional information regarding copyright ownership.
