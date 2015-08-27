@@ -111,6 +111,10 @@ class ClientTest(unittest.TestCase):
         self.assertRaises(
             errors.UnexpectedUpdate, self.client.update_registration, self.regr)
 
+    def test_query_registration(self):
+        self.response.json.return_value = self.regr.body.to_json()
+        self.assertEqual(self.regr, self.client.query_registration(self.regr))
+
     def test_agree_to_tos(self):
         self.client.update_registration = mock.Mock()
         self.client.agree_to_tos(self.regr)
