@@ -553,7 +553,7 @@ def create_parser(plugins, args):
 
     _create_subparsers(helpful)
 
-    return helpful.parser
+    return helpful.parser, helpful.args
 
 # For now unfortunately this constant just needs to match the code below;
 # there isn't an elegant way to autogenerate it in time.
@@ -743,7 +743,8 @@ def main(cli_args=sys.argv[1:]):
 
     # note: arg parser internally handles --help (and exits afterwards)
     plugins = plugins_disco.PluginsRegistry.find_all()
-    args = create_parser(plugins, cli_args).parse_args(cli_args)
+    parser,tweaked_cli_args = create_parser(plugins, cli_args)
+    args = parser.parse_args(tweaked_cli_args)
     config = configuration.NamespaceConfig(args)
 
     # Setup logging ASAP, otherwise "No handlers could be found for
