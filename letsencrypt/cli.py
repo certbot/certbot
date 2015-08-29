@@ -743,7 +743,7 @@ def main(cli_args=sys.argv[1:]):
 
     # note: arg parser internally handles --help (and exits afterwards)
     plugins = plugins_disco.PluginsRegistry.find_all()
-    parser,tweaked_cli_args = create_parser(plugins, cli_args)
+    parser, tweaked_cli_args = create_parser(plugins, cli_args)
     args = parser.parse_args(tweaked_cli_args)
     config = configuration.NamespaceConfig(args)
 
