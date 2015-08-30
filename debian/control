@@ -4,35 +4,37 @@ Priority: optional
 Maintainer: Debian letsencrypt <letsencrypt-devel@lists.alioth.debian.org>
 Uploaders: Harlan Lieberman-Berg <hlieberman@setec.io>,
 	   Francois Marier <francois@debian.org>
-Build-Depends: debhelper (>= 9),
-	       dialog,
-               dh-python,
-               python-all,
-	       python-augeas,
-               python-configargparse,
-	       python-configobj,
-               python-dialog,
-               python-docutils,
-	       python-mock,
-	       python-ndg-httpsclient,
-               python-nose,
-               python-nosexcover,
-               python-openssl (>= 0.15),
-               python-parsedatetime,
-	       python-psutil,
-	       python-pyasn1,
-	       python-pyparsing,
-               python-repoze.sphinx.autointerface,
-	       python-requests,
-               python-rfc3339,
-	       python-setuptools,
-               python-sphinx,
-               python-sphinx-rtd-theme,
-	       python-sphinxcontrib.programoutput,
-       	       python-tz,
-               python-werkzeug,
-               python-zope.component,
-	       python-zope.interface
+Build-Depends:
+	debhelper (>= 9),
+	dialog,
+        dh-python,
+        python-all,
+	python-augeas,
+        python-configargparse,
+	python-configobj,
+	python-cryptography (>= 0.8),
+        python-dialog,
+        python-docutils,
+	python-mock,
+	python-ndg-httpsclient,
+        python-nose,
+        python-nosexcover,
+        python-openssl (>= 0.15),
+        python-parsedatetime,
+	python-psutil,
+	python-pyasn1,
+	python-pyparsing,
+        python-repoze.sphinx.autointerface,
+	python-requests,
+        python-rfc3339,
+	python-setuptools,
+        python-sphinx,
+        python-sphinx-rtd-theme,
+	python-sphinxcontrib.programoutput,
+       	python-tz,
+        python-werkzeug,
+        python-zope.component,
+	python-zope.interface
 Standards-Version: 3.9.6
 Homepage: https://www.letsencrypt.org/
 X-Python-Version: >= 2.7
@@ -41,17 +43,15 @@ Package: python-acme
 Section: python
 Architecture: all
 Depends: ca-certificates,
-	 openssl,
-	 python-configargparse,
 	 python-cryptography (>= 0.8),
 	 python-mock,
-	 python-rfc3339,
-	 python-pyasn1,
 	 python-ndg-httpsclient,
 	 python-openssl (>= 0.15),
-	 python-tz,
+	 python-pyasn1,
 	 python-requests,
+	 python-rfc3339,
 	 python-six,
+	 python-tz,
 	 python-werkzeug,
 	 ${misc:Depends},
 	 ${python:Depends}
@@ -71,24 +71,21 @@ Depends: dialog,
 	 python-acme,
          python-configargparse,
          python-configobj,
-         python-jsonschema,
-         python-mock,
-         python-ndg-httpsclient,
+	 python-cryptography (>= 0.8)
+	 python-dialog,
+	 python-mock,
          python-openssl (>= 0.15),
          python-parsedatetime,
          python-psutil,
-         python-pyasn1,
-         python-pyparsing,
          python-requests,
          python-rfc3339,
          python-tz,
-         python-werkzeug,
          python-zope.component,
          python-zope.interface,
          ${misc:Depends},
          ${python:Depends}
-Suggests: letsencrypt-doc
-Description: Let's Encrypt standalone client
+Suggests: letsencrypt-doc, openssl
+Description: Let's Encrypt main client
  The objective of Let's Encrypt and the ACME (Automated Certificate Management
  Environment) protocol is to make it possible to set up an HTTPS server and have
  it automatically obtain a browser-trusted certificate, without any human
@@ -102,14 +99,18 @@ Description: Let's Encrypt standalone client
   - Keep track of when your certificate is going to expire, and renew it
   - Help you revoke the certificate if that ever becomes necessary.
  .
- This package contains the standalone client.
+ This package contains the main client, which includes the manual and standalone authenticator mechanisms.
 
 Package: letsencrypt-apache
 Architecture: all
 Depends:
 	apache2,
 	letsencrypt,
+	python-acme,
 	python-augeas,
+	python-mock,
+	python-zope.component,
+	python-zope.interface,
 	${misc:Depends}, ${python:Depends}
 Description: Let's Encrypt client that can update Apache configurations
  The objective of Let's Encrypt and the ACME (Automated Certificate Management
@@ -149,7 +150,16 @@ Description: Let's Encrypt client that can update Apache configurations (docs)
 
 Package: letsencrypt-nginx
 Architecture: all
-Depends: letsencrypt, nginx, ${misc:Depends}, ${python:Depends}
+Depends:
+	letsencrypt,
+	nginx,
+	python-acme,
+	python-mock,
+	python-openssl,
+	python-pyparsing,
+	python-zope.interface,
+	${misc:Depends},
+	${python:Depends}
 Description: Let's Encrypt client that can update Nginx configurations
  The objective of Let's Encrypt and the ACME (Automated Certificate Management
  Environment) protocol is to make it possible to set up an HTTPS server and have
