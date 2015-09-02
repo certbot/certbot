@@ -49,6 +49,10 @@ class Plugin(object):
         """ArgumentParser dest namespace (prefix of all destinations)."""
         return dest_namespace(self.name)
 
+    def option_name(self, name):
+        """Option name (include plugin namespace)."""
+        return self.option_namespace + name
+
     def dest(self, var):
         """Find a destination for given variable ``var``."""
         # this should do exactly the same what ArgumentParser(arg),

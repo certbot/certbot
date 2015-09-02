@@ -118,6 +118,7 @@ setup(
             'manual = letsencrypt.plugins.manual:ManualAuthenticator',
             # TODO: null should probably not be presented to the user
             'null = letsencrypt.plugins.null:Installer',
+            'simplefs = letsencrypt.plugins.simplefs:Authenticator',
             'standalone = letsencrypt.plugins.standalone.authenticator'
             ':StandaloneAuthenticator',
         ],
