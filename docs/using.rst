@@ -129,7 +129,7 @@ To get a new certificate run:
 
 .. code-block:: shell
 
-   ./venv/bin/letsencrypt auth
+   sudo ./venv/bin/letsencrypt auth
 
 The ``letsencrypt`` commandline tool has a builtin help:
 
