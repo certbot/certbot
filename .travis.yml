@@ -31,7 +31,8 @@ addons:
   hosts:
     - le.wtf
   mariadb: "10.0"
-  packages:  # keep in sync with bootstrap/ubuntu.sh and Boulder
+  apt:
+    packages:  # keep in sync with bootstrap/ubuntu.sh and Boulder
     - lsb-release
     - python
     - python-dev
