@@ -43,8 +43,11 @@ addons:
     - libssl-dev
     - libffi-dev
     - ca-certificates
+    # For letsencrypt-nginx integration testing
     - nginx-light
     - openssl
+    # For Boulder integration testing
+    - rsyslog
 
 install: "travis_retry pip install tox coveralls"
 before_script: '[ "xxx$BOULDER_INTEGRATION" = "xxx" ] || ./tests/boulder-start.sh'
