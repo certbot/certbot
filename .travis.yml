@@ -27,11 +27,23 @@ env:
     - TOXENV=lint
     - TOXENV=cover
 
-# make sure simplehttp simple verification works (custom /etc/hosts)
+sudo: false  # containers
 addons:
+  # make sure simplehttp simple verification works (custom /etc/hosts)
   hosts:
     - le.wtf
   mariadb: "10.0"
+  packages:  # keep in sync with bootstrap/ubuntu.sh and Boulder
+    - lsb-release
+    - python
+    - python-dev
+    - python-virtualenv
+    - gcc
+    - dialog
+    - libaugeas0
+    - libssl-dev
+    - libffi-dev
+    - ca-certificates
 
 install: "travis_retry pip install tox coveralls"
 before_script: '[ "xxx$BOULDER_INTEGRATION" = "xxx" ] || ./tests/boulder-start.sh'
