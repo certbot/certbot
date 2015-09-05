@@ -10,8 +10,6 @@ services:
 # http://docs.travis-ci.com/user/ci-environment/#CI-environment-OS
 # gimme has to be kept in sync with Boulder's Go version setting in .travis.yml
 before_install:
-  - travis_retry sudo ./bootstrap/ubuntu.sh
-  - travis_retry sudo apt-get install --no-install-recommends nginx-light openssl
   - '[ "xxx$BOULDER_INTEGRATION" = "xxx" ] || eval "$(gimme 1.5)"'
 
 # using separate envs with different TOXENVs creates 4x1 Travis build
@@ -44,6 +42,8 @@ addons:
     - libssl-dev
     - libffi-dev
     - ca-certificates
+    - nginx-light
+    - openssl
 
 install: "travis_retry pip install tox coveralls"
 before_script: '[ "xxx$BOULDER_INTEGRATION" = "xxx" ] || ./tests/boulder-start.sh'
