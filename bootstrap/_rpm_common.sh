@@ -5,7 +5,7 @@
 #   - Centos 7 (x64: on AWS EC2 t2.micro, DigitalOcean droplet)
 
 # "git-core" seems to be an alias for "git" in CentOS 7 (yum search fails)
-yum install -y \
+dnf install -y \
   git-core \
   python \
   python-devel \
