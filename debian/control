@@ -12,16 +12,16 @@ Build-Depends:
 	python-augeas,
         python-configargparse,
 	python-configobj,
-	python-cryptography (>= 0.8),
+	python-cryptography (>= 0.7),
         python-dialog,
         python-docutils,
 	python-mock,
 	python-ndg-httpsclient,
         python-nose,
         python-nosexcover,
-        python-openssl (>= 0.15),
+        python-openssl,
         python-parsedatetime,
-	python-psutil,
+	python-psutil (>= 2.1.0),
 	python-pyasn1,
 	python-pyparsing,
         python-repoze.sphinx.autointerface,
@@ -43,7 +43,7 @@ Package: python-acme
 Section: python
 Architecture: all
 Depends: ca-certificates,
-	 python-cryptography (>= 0.8),
+	 python-cryptography (>= 0.7),
 	 python-mock,
 	 python-ndg-httpsclient,
 	 python-openssl (>= 0.15),
@@ -67,16 +67,15 @@ Description: ACME protocol library for Python 2
 Package: letsencrypt
 Architecture: all
 Depends: dialog,
-	 openssl,
 	 python-acme,
          python-configargparse,
          python-configobj,
-	 python-cryptography (>= 0.8)
+	 python-cryptography (>= 0.7)
 	 python-dialog,
 	 python-mock,
-         python-openssl (>= 0.15),
+         python-openssl,
          python-parsedatetime,
-         python-psutil,
+         python-psutil (>= 2.1.0),
          python-requests,
          python-rfc3339,
          python-tz,
