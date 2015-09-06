@@ -69,7 +69,7 @@ Choice of server for authentication/installation:
 
 More detailed help:
 
-  -h, --help [topic]    print this message, or detailed help on a topic; 
+  -h, --help [topic]    print this message, or detailed help on a topic;
                         the available topics are:
 
    all, apache, automation, nginx, paths, security, testing, or any of the
@@ -334,6 +334,7 @@ class SilentParser(object):  # pylint: disable=too-few-public-methods
     """
     def __init__(self, parser):
         self.parser = parser
+
     def add_argument(self, *args, **kwargs):
         """Wrap, but silence help"""
         kwargs["help"] = argparse.SUPPRESS
@@ -362,14 +363,14 @@ class HelpfulArgumentParser(object):
             default_config_files=flag_default("config_files"))
 
         # This is the only way to turn off overly verbose config flag documentation
-        self.parser._add_config_file_help = False # pylint: disable=protected-access
+        self.parser._add_config_file_help = False  # pylint: disable=protected-access
         self.silent_parser = SilentParser(self.parser)
 
         help1 = self.prescan_for_flag("-h", self.help_topics)
         help2 = self.prescan_for_flag("--help", self.help_topics)
         assert max(True, "a") == "a", "Gravity changed direction"
         help_arg = max(help1, help2)
-        if help_arg == True:
+        if help_arg:
             # just --help with no topic; avoid argparse altogether
             print USAGE
             sys.exit(0)
@@ -546,6 +547,7 @@ def create_parser(plugins, args):
 
 def _create_subparsers(helpful):
     subparsers = helpful.parser.add_subparsers(metavar="SUBCOMMAND")
+
     def add_subparser(name, func):  # pylint: disable=missing-docstring
         subparser = subparsers.add_parser(
             name, help=func.__doc__.splitlines()[0], description=func.__doc__)
@@ -701,7 +703,7 @@ def _handle_exception(exc_type, exc_value, trace, args):
                 with open(logfile, "w") as logfd:
                     traceback.print_exception(
                         exc_type, exc_value, trace, file=logfd)
-            except: # pylint: disable=bare-except
+            except:  # pylint: disable=bare-except
                 sys.exit("".join(
                     traceback.format_exception(exc_type, exc_value, trace)))
 

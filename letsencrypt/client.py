@@ -279,8 +279,8 @@ class Client(object):
         :param .RenewableCert cert: Newly issued certificate
 
         """
-        if ("autorenew" not in cert.configuration
-                or cert.configuration.as_bool("autorenew")):
+        if ("autorenew" not in cert.configuration or
+                cert.configuration.as_bool("autorenew")):
             if ("autodeploy" not in cert.configuration or
                     cert.configuration.as_bool("autodeploy")):
                 msg = "Automatic renewal and deployment has "

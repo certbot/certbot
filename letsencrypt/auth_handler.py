@@ -244,7 +244,7 @@ class AuthHandler(object):
 
         """
         for authzr_challb in authzr.body.challenges:
-            if type(authzr_challb.chall) is type(achall.challb.chall):
+            if type(authzr_challb.chall) is type(achall.challb.chall):  # noqa
                 return authzr_challb
         raise errors.AuthorizationError(
             "Target challenge not found in authorization resource")
@@ -512,7 +512,8 @@ _ERROR_HELP = {
         "to date TLS configuration that allows the server to communicate with "
         "the Let's Encrypt client.",
     "unauthorized": _ERROR_HELP_COMMON,
-    "unknownHost": _ERROR_HELP_COMMON,}
+    "unknownHost": _ERROR_HELP_COMMON,
+}
 
 
 def _report_failed_challs(failed_achalls):

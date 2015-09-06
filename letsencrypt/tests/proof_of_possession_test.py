@@ -80,4 +80,4 @@ class ProofOfPossessionTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main() # pragma: no cover
+    unittest.main()  # pragma: no cover

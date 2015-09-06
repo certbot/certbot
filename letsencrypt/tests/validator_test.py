@@ -106,6 +106,7 @@ class ValidatorTest(unittest.TestCase):
         self.assertRaises(
             NotImplementedError, self.validator.ocsp_stapling, "test.com")
 
+
 def create_response(status_code=200, headers=None):
     """Creates a requests.Response object for testing"""
     response = requests.Response()
@@ -118,4 +119,4 @@ def create_response(status_code=200, headers=None):
 
 
 if __name__ == '__main__':
-    unittest.main() # pragma: no cover
+    unittest.main()  # pragma: no cover
