@@ -1,4 +1,4 @@
-letsencrypt (0.0.20150815-1) UNRELEASED; urgency=low
+letsencrypt (0.0.20150826-1) UNRELEASED; urgency=low
 
   This code is a DEVELOPER PREVIEW, running from an arbitrary
   git revision.  DO NOT RUN THIS CODE ON A PRODUCTION SERVER.
@@ -7,6 +7,4 @@ letsencrypt (0.0.20150815-1) UNRELEASED; urgency=low
   to making your website utterly inaccessible for your HSTS or
   HPKP covered URL.
 
-
-
- -- Harlan Lieberman-Berg <hlieberman@setec.io>  Sat, 22 Aug 2015 18:11:16 +0200
+ -- Harlan Lieberman-Berg <hlieberman@setec.io>  Sat, 05 Sep 2015 22:57:33 -0400
