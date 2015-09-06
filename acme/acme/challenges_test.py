@@ -136,7 +136,7 @@ class SimpleHTTPResponseTest(unittest.TestCase):
             jose.JWS.sign(payload=bad_resource.json_dumps().encode('utf-8'),
                           alg=jose.RS256, key=account_key)
             for bad_resource in (resource.update(tls=True),
-                                 resource.update(token=b'x'*20))
+                                 resource.update(token=(b'x' * 20)))
         )
         for validation in validations:
             self.assertFalse(self.resp_http.check_validation(
@@ -320,7 +320,7 @@ class DVSNIResponseTest(unittest.TestCase):
 
     def test_simple_verify_wrong_token(self):
         msg = self.msg.update(validation=jose.JWS.sign(
-            payload=self.chall.update(token=b'b'*20).json_dumps().encode(),
+            payload=self.chall.update(token=(b'b' * 20)).json_dumps().encode(),
             key=self.key, alg=jose.RS256))
         self.assertFalse(msg.simple_verify(
             self.chall, self.domain, self.key.public_key()))

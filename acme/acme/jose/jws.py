@@ -294,10 +294,10 @@ class JWS(json_util.JSONObjectWithFields):
         # ... it must be in protected
 
         return (
-            b64.b64encode(self.signature.protected.encode('utf-8'))
-            + b'.' +
-            b64.b64encode(self.payload)
-            + b'.' +
+            b64.b64encode(self.signature.protected.encode('utf-8')) +
+            b'.' +
+            b64.b64encode(self.payload) +
+            b'.' +
             b64.b64encode(self.signature.signature))
 
     @classmethod
@@ -344,6 +344,7 @@ class JWS(json_util.JSONObjectWithFields):
             return cls(payload=json_util.decode_b64jose(jobj['payload']),
                        signatures=tuple(cls.signature_cls.from_json(sig)
                                         for sig in jobj['signatures']))
+
 
 class CLI(object):
     """JWS CLI."""
