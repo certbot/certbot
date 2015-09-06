@@ -123,7 +123,8 @@ binary for temporary key/certificate generation.""".replace("\n", "")
             responses.append(self._perform_single(achall))
         return responses
 
-    def _test_mode_busy_wait(self, port):
+    @classmethod
+    def _test_mode_busy_wait(cls, port):
         while True:
             time.sleep(1)
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
