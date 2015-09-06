@@ -84,7 +84,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     description = "Apache Web Server - Alpha"
 
-
     @classmethod
     def add_parser_arguments(cls, add):
         add("ctl", default=constants.CLI_DEFAULTS["ctl"],
@@ -282,7 +281,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         self.assoc[target_name] = vhost
         return vhost
-
 
     def _find_best_vhost(self, target_name):
         """Finds the best vhost for a target_name.
@@ -583,7 +581,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         ssl_vhost = self._create_vhost(vh_p)
         self.vhosts.append(ssl_vhost)
 
-
         # NOTE: Searches through Augeas seem to ruin changes to directives
         #       The configuration must also be saved before being searched
         #       for the new directives; For these reasons... this is tacked
@@ -794,7 +791,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             raise errors.PluginError(
                 "Let's Encrypt has already enabled redirection")
 
-
     def _create_redirect_vhost(self, ssl_vhost):
         """Creates an http_vhost specifically to redirect for the ssl_vhost.
 
@@ -997,9 +993,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         # Support Debian specific setup
-        if (not os.path.isdir(os.path.join(self.parser.root, "mods-available"))
-                or not os.path.isdir(
-                    os.path.join(self.parser.root, "mods-enabled"))):
+        avail_path = os.path.join(self.parser.root, "mods-available")
+        enabled_path = os.path.join(self.parser.root, "mods-enabled")
+        if not os.path.isdir(avail_path) or not os.path.isdir(enabled_path):
             raise errors.NotSupportedError(
                 "Unsupported directory layout. You may try to enable mod %s "
                 "and try again." % mod_name)
