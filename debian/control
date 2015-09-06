@@ -63,6 +63,26 @@ Description: ACME protocol library for Python 2
  library implements the protocol used for proving the control of a
  domain.  It currently supports only Python 2.
 
+Package: letsencrypt-doc
+Section: doc
+Architecture: all
+Depends: libjs-sphinxdoc, python-sphinx-rtd-theme, ${misc:Depends}
+Description: Let's Encrypt client that can update Apache configurations (docs)
+ The objective of Let's Encrypt and the ACME (Automated Certificate Management
+ Environment) protocol is to make it possible to set up an HTTPS server and have
+ it automatically obtain a browser-trusted certificate, without any human
+ intervention. This is accomplished by running a certificate management agent on
+ the web server.
+ .
+ This agent is used to:
+ .
+  - Automatically prove to the Let's Encrypt CA that you control the website
+  - Obtain a browser-trusted certificate and set it up on your web server
+  - Keep track of when your certificate is going to expire, and renew it
+  - Help you revoke the certificate if that ever becomes necessary.
+ .
+ This package contains the documentation.
+
 Package: letsencrypt
 Architecture: all
 Depends: dialog,
@@ -126,26 +146,6 @@ Description: Let's Encrypt client that can update Apache configurations
   - Help you revoke the certificate if that ever becomes necessary.
  .
  This package contains the Apache client.
-
-Package: letsencrypt-doc
-Section: doc
-Architecture: all
-Depends: libjs-sphinxdoc, python-sphinx-rtd-theme, ${misc:Depends}
-Description: Let's Encrypt client that can update Apache configurations (docs)
- The objective of Let's Encrypt and the ACME (Automated Certificate Management
- Environment) protocol is to make it possible to set up an HTTPS server and have
- it automatically obtain a browser-trusted certificate, without any human
- intervention. This is accomplished by running a certificate management agent on
- the web server.
- .
- This agent is used to:
- .
-  - Automatically prove to the Let's Encrypt CA that you control the website
-  - Obtain a browser-trusted certificate and set it up on your web server
-  - Keep track of when your certificate is going to expire, and renew it
-  - Help you revoke the certificate if that ever becomes necessary.
- .
- This package contains the documentation.
 
 Package: letsencrypt-nginx
 Architecture: all
