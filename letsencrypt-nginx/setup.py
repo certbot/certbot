@@ -17,7 +17,7 @@ setup(
     entry_points={
         'letsencrypt.plugins': [
             'nginx = letsencrypt_nginx.configurator:NginxConfigurator',
-         ],
+        ],
     },
     include_package_data=True,
 )
