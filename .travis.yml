@@ -1,8 +1,5 @@
 language: python
 
-go:
-  - 1.5
-
 services:
   - rabbitmq
   - mysql
