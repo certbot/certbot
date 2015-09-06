@@ -144,7 +144,7 @@ binary for temporary key/certificate generation.""".replace("\n", "")
             tls=(not self.config.no_simple_http_tls))
 
         port = (response.port if self.config.simple_http_port is None
-                else self.config.simple_http_port)
+                else int(self.config.simple_http_port))
         command = self.template.format(
             root=self._root, achall=achall, response=response,
             validation=pipes.quote(validation.json_dumps()),
