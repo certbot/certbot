@@ -23,7 +23,7 @@ class IPluginProxy(zope.interface.Interface):
     def cleanup_from_tests():
         """Performs any necessary cleanup from running plugin tests.
 
-        This is guarenteed to be called before the program exits.
+        This is guaranteed to be called before the program exits.
 
         """
 
