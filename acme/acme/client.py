@@ -8,7 +8,7 @@ from six.moves import http_client  # pylint: disable=import-error
 
 import OpenSSL
 import requests
-import six
+import sys
 import werkzeug
 
 from acme import errors
@@ -19,8 +19,8 @@ from acme import messages
 
 logger = logging.getLogger(__name__)
 
-# https://urllib3.readthedocs.org/en/latest/security.html#insecureplatformwarning
-if six.PY2:
+# Python does not validate certificates by default before version 2.7.9
+if sys.version_info < (2, 7, 9):
     requests.packages.urllib3.contrib.pyopenssl.inject_into_urllib3()
 
 
