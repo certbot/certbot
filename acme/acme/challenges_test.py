@@ -350,9 +350,9 @@ class RecoveryContactTest(unittest.TestCase):
             contact='c********n@example.com')
         self.jmsg = {
             'type': 'recoveryContact',
-            'activationURL' : 'https://example.ca/sendrecovery/a5bd99383fb0',
-            'successURL' : 'https://example.ca/confirmrecovery/bb1b9928932',
-            'contact' : 'c********n@example.com',
+            'activationURL': 'https://example.ca/sendrecovery/a5bd99383fb0',
+            'successURL': 'https://example.ca/confirmrecovery/bb1b9928932',
+            'contact': 'c********n@example.com',
         }
 
     def test_to_partial_json(self):

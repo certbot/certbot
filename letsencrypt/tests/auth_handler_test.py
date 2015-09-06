@@ -427,7 +427,7 @@ class ReportFailedChallsTest(unittest.TestCase):
         from letsencrypt import achallenges
 
         kwargs = {
-            "chall" : acme_util.SIMPLE_HTTP,
+            "chall": acme_util.SIMPLE_HTTP,
             "uri": "uri",
             "status": messages.STATUS_INVALID,
             "error": messages.Error(typ="tls", detail="detail"),
