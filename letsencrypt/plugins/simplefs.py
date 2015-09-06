@@ -35,32 +35,37 @@ to serve all files under specified web root ({0})."""
     def add_parser_arguments(cls, add):
         add("root", help="public_html / webroot path")
 
-    def get_chall_pref(self, domain):
+    def get_chall_pref(self, domain):  # pragma: no cover
         # pylint: disable=missing-docstring,no-self-use,unused-argument
         return [challenges.SimpleHTTP]
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
+        self.full_root = None
 
+    def prepare(self):  # pylint: disable=missing-docstring
         root = self.conf("root")
         if root is None:
-            raise errors.Error("--{0} must be set".format(
+            raise errors.PluginError("--{0} must be set".format(
                 self.option_name("root")))
         if not os.path.isdir(root):
-            raise errors.Error(root + " does not exist or is not a directory")
+            raise errors.PluginError(
+                root + " does not exist or is not a directory")
         self.full_root = os.path.join(
             root, challenges.SimpleHTTPResponse.URI_ROOT_PATH)
 
-    def prepare(self):  # pylint: disable=missing-docstring
         logger.debug("Creating root challenges validation dir at %s",
                      self.full_root)
         try:
             os.makedirs(self.full_root)
         except OSError as exception:
             if exception.errno != errno.EEXIST:
-                raise
+                raise errors.PluginError(
+                    "Couldn't create root for SimpleHTTP "
+                    "challenge responses: {0}", exception)
 
     def perform(self, achalls):  # pylint: disable=missing-docstring
+        assert self.full_root is not None
         return [self._perform_single(achall) for achall in achalls]
 
     def _path_for_achall(self, achall):
