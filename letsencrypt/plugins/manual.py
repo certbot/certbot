@@ -4,6 +4,7 @@ import logging
 import pipes
 import shutil
 import signal
+import socket
 import subprocess
 import sys
 import tempfile
@@ -122,6 +123,19 @@ binary for temporary key/certificate generation.""".replace("\n", "")
             responses.append(self._perform_single(achall))
         return responses
 
+    def _test_mode_busy_wait(self, port):
+        while True:
+            time.sleep(1)
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            try:
+                sock.connect(("localhost", port))
+            except socket.error:  # pragma: no cover
+                pass
+            else:
+                break
+            finally:
+                sock.close()
+
     def _perform_single(self, achall):
         # same path for each challenge response would be easier for
         # users, but will not work if multiple domains point at the
@@ -129,13 +143,13 @@ binary for temporary key/certificate generation.""".replace("\n", "")
         response, validation = achall.gen_response_and_validation(
             tls=(not self.config.no_simple_http_tls))
 
+        port = (response.port if self.config.simple_http_port is None
+                else self.config.simple_http_port)
         command = self.template.format(
             root=self._root, achall=achall, response=response,
             validation=pipes.quote(validation.json_dumps()),
             encoded_token=achall.chall.encode("token"),
-            ct=response.CONTENT_TYPE, port=(
-                response.port if self.config.simple_http_port is None
-                else self.config.simple_http_port))
+            ct=response.CONTENT_TYPE, port=port)
         if self.conf("test-mode"):
             logger.debug("Test mode. Executing the manual command: %s", command)
             try:
@@ -153,7 +167,7 @@ binary for temporary key/certificate generation.""".replace("\n", "")
             logger.debug("Manual command running as PID %s.", self._httpd.pid)
             # give it some time to bootstrap, before we try to verify
             # (cert generation in case of simpleHttpS might take time)
-            time.sleep(4)  # XXX
+            self._test_mode_busy_wait(port)
             if self._httpd.poll() is not None:
                 raise errors.Error("Couldn't execute manual command")
         else:
