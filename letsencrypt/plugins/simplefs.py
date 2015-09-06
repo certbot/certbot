@@ -22,20 +22,21 @@ class Authenticator(common.Plugin):
 
     description = "SimpleFS Authenticator"
 
-    def more_info(self):  # pylint: disable=missing-docstring,no-self-use
-        return """\
+    MORE_INFO = """\
 Authenticator plugin that performs SimpleHTTP challenge by saving
 necessary validation resources to appropriate paths on the file
 system. It expects that there is some other HTTP server configured
-to serve all files under specified web root ({0}).""".format(
-    self.option_name("root"))
+to serve all files under specified web root ({0})."""
+
+    def more_info(self):  # pylint: disable=missing-docstring,no-self-use
+        return self.MORE_INFO.format(self.conf("root"))
 
     @classmethod
     def add_parser_arguments(cls, add):
         add("root", help="public_html / webroot path")
 
     def get_chall_pref(self, domain):
-        # pylint: disable=missing-docstring,no-self-use
+        # pylint: disable=missing-docstring,no-self-use,unused-argument
         return [challenges.SimpleHTTP]
 
     def __init__(self, *args, **kwargs):
@@ -74,7 +75,7 @@ to serve all files under specified web root ({0}).""".format(
             validation_file.write(validation.json_dumps())
         return response
 
-    def cleanup(self, achalls):
+    def cleanup(self, achalls):  # pylint: disable=missing-docstring
         for achall in achalls:
             path = self._path_for_achall(achall)
             logger.debug("Removing %s", path)
