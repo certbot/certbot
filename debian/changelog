@@ -1,4 +1,4 @@
-letsencrypt (0.0.20150826-1) UNRELEASED; urgency=low
+letsencrypt (0.0.20150907-1) UNRELEASED; urgency=low
 
   * Initial version (closes: #774387)
 
