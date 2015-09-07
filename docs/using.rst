@@ -107,7 +107,7 @@ FreeBSD
 
 .. code-block:: shell
 
-   sudo ./bootstrap/centos.sh
+   sudo ./bootstrap/freebsd.sh
 
 Bootstrap script for FreeBSD uses ``pkg`` for package installation,
 i.e. it does not use ports.
