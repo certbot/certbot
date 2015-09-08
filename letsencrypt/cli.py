@@ -237,8 +237,9 @@ def run(args, config, plugins):  # pylint: disable=too-many-locals,too-many-bran
             treat_as_renewal = True
         else:
             msg = "To obtain a new certificate that {0} an existing "
-            msg += "certificate in its domain-name coverage, consult the "
-            msg += "documentation about the --duplicate option."
+            msg += "certificate in its domain-name coverage, you must use "
+            msg += "the --duplicate option.\n\nFor example:\n\n"
+            msg += sys.argv[0] + " --duplicate " + " ".join(sys.argv[1:])
             what = "duplicates" if identical_names_cert else "overlaps with"
             msg = msg.format(what)
             reporter_util = zope.component.getUtility(interfaces.IReporter)
