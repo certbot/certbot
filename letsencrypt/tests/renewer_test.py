@@ -295,6 +295,26 @@ class RenewableCertTests(unittest.TestCase):
             else:
                 self.assertFalse(self.test_rc.has_pending_deployment())
 
+    def test_names(self):
+        # Trying the current version
+        test_cert = test_util.load_vector("cert-san.pem")
+        os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                "cert12.pem"), self.test_rc.cert)
+        with open(self.test_rc.cert, "w") as f:
+            f.write(test_cert)
+        self.assertEqual(self.test_rc.names(),
+                         ["example.com", "www.example.com"])
+
+        # Trying a non-current version
+        test_cert = test_util.load_vector("cert.pem")
+        os.unlink(self.test_rc.cert)
+        os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                "cert15.pem"), self.test_rc.cert)
+        with open(self.test_rc.cert, "w") as f:
+            f.write(test_cert)
+        self.assertEqual(self.test_rc.names(12),
+                         ["example.com", "www.example.com"])
+
     def _test_notafterbefore(self, function, timestamp):
         test_cert = test_util.load_vector("cert.pem")
         os.symlink(os.path.join("..", "..", "archive", "example.org",
