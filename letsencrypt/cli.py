@@ -230,21 +230,15 @@ def run(args, config, plugins):  # pylint: disable=too-many-locals,too-many-bran
         question = subset_cert_question.format(subset_names_cert[0],
                                                ", ".join(subset_names_cert[2]),
                                                ", ".join(domains))
-    if question:
+    if question and not config.duplicate:
         if zope.component.getUtility(interfaces.IDisplay).yesno(question,
                                                                 "Replace",
                                                                 "Cancel"):
             treat_as_renewal = True
         else:
-            # TODO: Once the --duplicate (?) option is implemented, this
-            #       exit will be suppressed and we will not treat this
-            #       as a renewal.  This should ideally be done by leaving
-            #       question as None above so that we don't even prompt
-            #       the user with the question.  (We might say "if question
-            #       and not duplicate_option:" instead of "if question".)
             msg = "To obtain a new certificate that {0} an existing "
             msg += "certificate in its domain-name coverage, consult the "
-            msg += "documentation about the --XXX-TODO option."
+            msg += "documentation about the --duplicate option."
             what = "duplicates" if identical_names_cert else "overlaps with"
             msg = msg.format(what)
             reporter_util = zope.component.getUtility(interfaces.IReporter)
@@ -582,6 +576,9 @@ def create_parser(plugins, args):
     #for subparser in parser_run, parser_auth, parser_install:
     #    subparser.add_argument("domains", nargs="*", metavar="domain")
     helpful.add(None, "-d", "--domains", metavar="DOMAIN", action="append")
+    helpful.add(None, "-D", "--duplicate", dest="duplicate",
+        action="store_true",
+        help="Allow getting a certificate that duplicates an existing one")
 
     helpful.add_group(
         "automation",
