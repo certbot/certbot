@@ -454,7 +454,8 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
 
         """
         response = self.net.post(self.directory[messages.Revocation],
-                                 messages.Revocation(certificate=cert))
+                                 messages.Revocation(certificate=cert),
+                                 content_type=None)
         if response.status_code != http_client.OK:
             raise errors.ClientError(
                 'Successful revocation must return HTTP OK status')

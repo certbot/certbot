@@ -54,6 +54,13 @@ do
     [ "${dir}/${latest}" = "$live" ]  # renewer fails this test
 done
 
+# revoke by account key
+common revoke --cert-path /etc/conf/live/le.wtf/cert.pem
+# revoke renewed
+common revoke --cert-path /etc/conf/live/le1.wtf/cert.pem
+# revoke by cert key
+common revoke --cert-path /etc/conf/live/le2.wtf/cert.pem \
+       --key-path /etc/conf/live/le2.wtf/privkey.pem
 
 if type nginx;
 then
