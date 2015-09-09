@@ -157,6 +157,10 @@ class Registration(ResourceBody):
     :ivar tuple contact: Contact information following ACME spec,
         `tuple` of `unicode`.
     :ivar unicode agreement:
+    :ivar unicode authorizations: URI where
+        `messages.Registration.Authorizations` can be found.
+    :ivar unicode certificates: URI where
+        `messages.Registration.Certificates` can be found.
 
     """
     # on new-reg key server ignores 'key' and populates it based on
@@ -164,6 +168,24 @@ class Registration(ResourceBody):
     key = jose.Field('key', omitempty=True, decoder=jose.JWK.from_json)
     contact = jose.Field('contact', omitempty=True, default=())
     agreement = jose.Field('agreement', omitempty=True)
+    authorizations = jose.Field('authorizations', omitempty=True)
+    certificates = jose.Field('certificates', omitempty=True)
+
+    class Authorizations(jose.JSONObjectWithFields):
+        """Authorizations granted to Account in the process of registration.
+
+        :ivar tuple authorizations: URIs to Authorization Resources.
+
+        """
+        authorizations = jose.Field('authorizations')
+
+    class Certificates(jose.JSONObjectWithFields):
+        """Certificates granted to Account in the process of registration.
+
+        :ivar tuple certificates: URIs to Certificate Resources.
+
+        """
+        certificates = jose.Field('certificates')
 
     phone_prefix = 'tel:'
     email_prefix = 'mailto:'
@@ -327,13 +349,11 @@ class CertificateRequest(jose.JSONObjectWithFields):
 
     :ivar acme.jose.util.ComparableX509 csr:
         `OpenSSL.crypto.X509Req` wrapped in `.ComparableX509`
-    :ivar tuple authorizations: `tuple` of URIs (`str`)
 
     """
     resource_type = 'new-cert'
     resource = fields.Resource(resource_type)
     csr = jose.Field('csr', decoder=jose.decode_csr, encoder=jose.encode_csr)
-    authorizations = jose.Field('authorizations', decoder=tuple)
 
 
 class CertificateResource(ResourceWithURI):

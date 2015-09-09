@@ -8,7 +8,7 @@ from six.moves import http_client  # pylint: disable=import-error
 
 import OpenSSL
 import requests
-import six
+import sys
 import werkzeug
 
 from acme import errors
@@ -19,8 +19,9 @@ from acme import messages
 
 logger = logging.getLogger(__name__)
 
+# Python does not validate certificates by default before version 2.7.9
 # https://urllib3.readthedocs.org/en/latest/security.html#insecureplatformwarning
-if six.PY2:
+if sys.version_info < (2, 7, 9):  # pragma: no cover
     requests.packages.urllib3.contrib.pyopenssl.inject_into_urllib3()
 
 
@@ -94,18 +95,8 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
 
         return regr
 
-    def update_registration(self, regr):
-        """Update registration.
-
-        :pram regr: Registration Resource.
-        :type regr: `.RegistrationResource`
-
-        :returns: Updated Registration Resource.
-        :rtype: `.RegistrationResource`
-
-        """
-        response = self.net.post(
-            regr.uri, messages.UpdateRegistration(**dict(regr.body)))
+    def _send_recv_regr(self, regr, body):
+        response = self.net.post(regr.uri, body)
 
         # TODO: Boulder returns httplib.ACCEPTED
         #assert response.status_code == httplib.OK
@@ -113,12 +104,36 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         # TODO: Boulder does not set Location or Link on update
         # (c.f. acme-spec #94)
 
-        updated_regr = self._regr_from_response(
+        return self._regr_from_response(
             response, uri=regr.uri, new_authzr_uri=regr.new_authzr_uri,
             terms_of_service=regr.terms_of_service)
+
+    def update_registration(self, regr, update=None):
+        """Update registration.
+
+        :param messages.RegistrationResource regr: Registration Resource.
+        :param messages.Registration update: Updated body of the
+            resource. If not provided, body will be taken from `regr`.
+
+        :returns: Updated Registration Resource.
+        :rtype: `.RegistrationResource`
+
+        """
+        update = regr.body if update is None else update
+        updated_regr = self._send_recv_regr(
+            regr, body=messages.UpdateRegistration(**dict(update)))
         if updated_regr != regr:
             raise errors.UnexpectedUpdate(regr)
         return updated_regr
+
+    def query_registration(self, regr):
+        """Query server about registration.
+
+        :param messages.RegistrationResource: Existing Registration
+            Resource.
+
+        """
+        return self._send_recv_regr(regr, messages.UpdateRegistration())
 
     def agree_to_tos(self, regr):
         """Agree to the terms-of-service.
@@ -275,8 +290,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         logger.debug("Requesting issuance...")
 
         # TODO: assert len(authzrs) == number of SANs
-        req = messages.CertificateRequest(
-            csr=csr, authorizations=tuple(authzr.uri for authzr in authzrs))
+        req = messages.CertificateRequest(csr=csr)
 
         content_type = self.DER_CONTENT_TYPE  # TODO: add 'cert_type 'argument
         response = self.net.post(
@@ -546,7 +560,7 @@ class ClientNetwork(object):
         """Send HEAD request without checking the response.
 
         Note, that `_check_response` is not called, as it is expected
-        that status code other than successfuly 2xx will be returned, or
+        that status code other than successfully 2xx will be returned, or
         messages2.Error will be raised by the server.
 
         """

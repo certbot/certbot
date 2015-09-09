@@ -41,6 +41,7 @@ install_requires = [
     'pyrfc3339',
     'python2-pythondialog>=3.2.2rc1',  # Debian squeeze support, cf. #280
     'pytz',
+    'requests',
     'zope.component',
     'zope.interface',
 ]
@@ -60,6 +61,7 @@ docs_extras = [
     'repoze.sphinx.autointerface',
     'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
     'sphinx_rtd_theme',
+    'sphinxcontrib-programoutput',
 ]
 
 testing_extras = [

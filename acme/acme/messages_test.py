@@ -105,7 +105,8 @@ class RegistrationTest(unittest.TestCase):
 
         from acme.messages import Registration
         self.reg = Registration(key=key, contact=contact, agreement=agreement)
-        self.reg_none = Registration()
+        self.reg_none = Registration(authorizations='uri/authorizations',
+                                     certificates='uri/certificates')
 
         self.jobj_to = {
             'contact': contact,
@@ -139,6 +140,17 @@ class RegistrationTest(unittest.TestCase):
     def test_from_json_hashable(self):
         from acme.messages import Registration
         hash(Registration.from_json(self.jobj_from))
+
+
+class UpdateRegistrationTest(unittest.TestCase):
+    """Tests for acme.messages.UpdateRegistration."""
+
+    def test_empty(self):
+        from acme.messages import UpdateRegistration
+        jstring = '{"resource": "reg"}'
+        self.assertEqual(jstring, UpdateRegistration().json_dumps())
+        self.assertEqual(
+            UpdateRegistration(), UpdateRegistration.json_loads(jstring))
 
 
 class RegistrationResourceTest(unittest.TestCase):
@@ -280,7 +292,7 @@ class CertificateRequestTest(unittest.TestCase):
 
     def setUp(self):
         from acme.messages import CertificateRequest
-        self.req = CertificateRequest(csr=CSR, authorizations=('foo',))
+        self.req = CertificateRequest(csr=CSR)
 
     def test_json_de_serializable(self):
         self.assertTrue(isinstance(self.req, jose.JSONDeSerializable))
