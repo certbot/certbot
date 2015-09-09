@@ -53,12 +53,12 @@ do
 done
 
 # revoke by account key
-common revoke --cert-path /etc/conf/live/le.wtf/cert.pem
+common revoke --cert-path "$root/conf/live/le.wtf/cert.pem"
 # revoke renewed
-common revoke --cert-path /etc/conf/live/le1.wtf/cert.pem
+common revoke --cert-path "$root/conf/live/le1.wtf/cert.pem"
 # revoke by cert key
-common revoke --cert-path /etc/conf/live/le2.wtf/cert.pem \
-       --key-path /etc/conf/live/le2.wtf/privkey.pem
+common revoke --cert-path "$root/conf/live/le2.wtf/cert.pem" \
+       --key-path "$root/conf/live/le2.wtf/privkey.pem"
 
 if type nginx;
 then
