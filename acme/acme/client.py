@@ -8,7 +8,7 @@ from six.moves import http_client  # pylint: disable=import-error
 
 import OpenSSL
 import requests
-import six
+import sys
 import werkzeug
 
 from acme import errors
@@ -19,8 +19,9 @@ from acme import messages
 
 logger = logging.getLogger(__name__)
 
+# Python does not validate certificates by default before version 2.7.9
 # https://urllib3.readthedocs.org/en/latest/security.html#insecureplatformwarning
-if six.PY2:
+if sys.version_info < (2, 7, 9):  # pragma: no cover
     requests.packages.urllib3.contrib.pyopenssl.inject_into_urllib3()
 
 
@@ -559,7 +560,7 @@ class ClientNetwork(object):
         """Send HEAD request without checking the response.
 
         Note, that `_check_response` is not called, as it is expected
-        that status code other than successfuly 2xx will be returned, or
+        that status code other than successfully 2xx will be returned, or
         messages2.Error will be raised by the server.
 
         """

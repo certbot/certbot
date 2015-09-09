@@ -1,4 +1,4 @@
-# Symlinked in letsencrypt/tests/test_util.py, casues duplicate-code
+# Symlinked in letsencrypt/tests/test_util.py, causes duplicate-code
 # warning that cannot be disabled locally.
 """Test utilities.
 

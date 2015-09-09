@@ -723,7 +723,7 @@ def _plugins_parsing(helpful, plugins):
         "plugins", description="Let's Encrypt client supports an "
         "extensible plugins architecture. See '%(prog)s plugins' for a "
         "list of all available plugins and their names. You can force "
-        "a particular plugin by setting options provided below. Futher "
+        "a particular plugin by setting options provided below. Further "
         "down this help message you will find plugin-specific options "
         "(prefixed by --{plugin_name}).")
     helpful.add(
