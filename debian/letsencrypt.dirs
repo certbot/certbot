@@ -1,1 +1,3 @@
+etc/letsencrypt
 var/lib/letsencrypt
+var/log/letsencrypt

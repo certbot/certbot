@@ -1,0 +1,24 @@
+From 4edcbe94cb62092bbfadf51222760750d4832b70 Mon Sep 17 00:00:00 2001
+From: Harlan Lieberman-Berg <hlieberman@setec.io>
+Date: Tue, 18 Aug 2015 12:53:22 +0200
+Subject: [PATCH 2/4] Python 2.6 is not shipped in any version of Debian newer
+ than oldstable.
+
+It seems safe to push forward with modern versions of mock.
+---
+ acme/setup.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/acme/setup.py b/acme/setup.py
+index 6d82084..09628e4 100644
+--- a/acme/setup.py
++++ b/acme/setup.py
+@@ -9,7 +9,7 @@ install_requires = [
+     # load_pem_private/public_key (>=0.6)
+     # rsa_recover_prime_factors (>=0.8)
+     'cryptography>=0.8',
+-    'mock<1.1.0',  # py26
++    'mock',
+     'pyrfc3339',
+     'ndg-httpsclient',  # urllib3 InsecurePlatformWarning (#304)
+     'pyasn1',  # urllib3 InsecurePlatformWarning (#304)

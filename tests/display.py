@@ -1,0 +1,22 @@
+"""Manual test of display functions."""
+import sys
+
+from letsencrypt.display import util
+from letsencrypt.tests.display import util_test
+
+
+def test_visual(displayer, choices):
+    """Visually test all of the display functions."""
+    displayer.notification("Random notification!")
+    displayer.menu("Question?", choices,
+                   ok_label="O", cancel_label="Can", help_label="??")
+    displayer.menu("Question?", [choice[1] for choice in choices],
+                   ok_label="O", cancel_label="Can", help_label="??")
+    displayer.input("Input Message")
+    displayer.yesno("YesNo Message", yes_label="Yessir", no_label="Nosir")
+    displayer.checklist("Checklist Message", [choice[0] for choice in choices])
+
+
+if __name__ == "__main__":
+    for displayer in util.NcursesDisplay(), util.FileDisplay(sys.stdout):
+        test_visual(displayer, util_test.CHOICES)

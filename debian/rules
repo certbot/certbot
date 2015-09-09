@@ -3,40 +3,49 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
-export PYBUILD_DESTDIR=$(CURDIR)/debian/letsencrypt-build
-
 %:
-	dh $@ --with python2,sphinxdoc --buildsystem=pybuild
+	dh $@ --with python2,sphinxdoc
 
 override_dh_clean:
-	dh_clean
-	rm -rf $(CURDIR)/debian/doc-build
+	dh_auto_clean
+	cd $(CURDIR)
+	rm -rf build/ acme/build/ letsencrypt-apache/build/ letsencrypt-nginx/build
+	rm -rf debian/python-acme/ debian/letsencrypt/ debian/letsencrypt-apache/ debian/letsencrypt-nginx/
 
 override_dh_auto_build:
-	dh_auto_build
-
-	# Build the Sphinx docs
+	# acme
+	cd $(CURDIR)/acme; \
+	python2.7 setup.py build; \
+	python2.7 setup.py install --single-version-externally-managed --root=$(CURDIR)/debian/python-acme --install-layout=deb
+	# letsencrypt
+	cd $(CURDIR); \
+	python2.7 setup.py build; \
+	python2.7 setup.py install --single-version-externally-managed --root=$(CURDIR)/debian/letsencrypt --install-layout=deb
+	# letsencrypt-apache
+	cd $(CURDIR)/letsencrypt-apache; \
+	python2.7 setup.py build; \
+	python2.7 setup.py install --single-version-externally-managed --root=$(CURDIR)/debian/letsencrypt-apache --install-layout=deb
+	# letsencrypt-nginx
+	cd $(CURDIR)/letsencrypt-nginx; \
+	python2.7 setup.py build; \
+	python2.7 setup.py install --single-version-externally-managed --root=$(CURDIR)/debian/letsencrypt-nginx --install-layout=deb
+	# Documentation
 	sphinx-build -N -b html docs $(CURDIR)/debian/doc-build/html
-	find $(CURDIR)/debian/doc-build/html/ -type f -name '*.html' \
-	  -exec sed -i -e 's|https://cdnjs.cloudflare.com/ajax/libs/modernizr/.*/modernizr.min.js|../../../javascript/modernizr/modernizr.min.js|' '{}' +
-	sed -i -e 's|<img alt="Travis CI status" src="https://travis-ci.org/letsencrypt/lets-encrypt-preview.svg?branch=master" />|Travis CI status|' $(CURDIR)/debian/doc-build/html/intro.html
-	sed -i -e 's|<img alt="Coverage status" src="https://coveralls.io/repos/letsencrypt/lets-encrypt-preview/badge.svg?branch=master" />|Coverage status|' $(CURDIR)/debian/doc-build/html/intro.html
-	sed -i -e 's|<img alt="Documentation status" src="https://readthedocs.org/projects/letsencrypt/badge/" />|Documentation status|' $(CURDIR)/debian/doc-build/html/intro.html
-	sed -i -e 's|<img alt="Docker Repository on Quay.io" src="https://quay.io/repository/letsencrypt/lets-encrypt-preview/status" />|Docker Repository status|' $(CURDIR)/debian/doc-build/html/intro.html
-
-override_dh_auto_install:
-	dh_auto_install
-	 
-	# Don't install the tests 
-	rm -rf $(CURDIR)/debian/letsencrypt-build/usr/lib/python2.7/dist-packages/letsencrypt/tests/
-	rm -rf $(CURDIR)/debian/letsencrypt-build/usr/lib/python2.7/dist-packages/letsencrypt_apache/tests/
-	rm -rf $(CURDIR)/debian/letsencrypt-build/usr/lib/python2.7/dist-packages/letsencrypt_nginx/tests/
-	 
-	# Remove duplicate copy of the config files
-	rm -rf $(CURDIR)/debian/letsencrypt-build/usr/lib/python2.7/dist-packages/letsencrypt_apache/options-ssl.conf
-	rm -rf $(CURDIR)/debian/letsencrypt-build/usr/lib/python2.7/dist-packages/letsencrypt_nginx/options-ssl.conf
-
-override_dh_installchangelogs:
-	dh_installchangelogs CHANGES.rst
+	sphinx-build -N -b man docs $(CURDIR)/debian/doc-build/man
 
 override_dh_auto_test:
+	ln -s $(CURDIR)/acme/acme/testdata $(CURDIR)/debian/python-acme/usr/lib/python2.7/dist-packages/acme/
+	set -ex; for suite in acme letsencrypt letsencrypt-apache letsencrypt-nginx; do \
+		cd $(CURDIR); \
+		PYTHONPATH=$(shell find $(CURDIR)/debian -type d -name dist-packages | tr "\n" ":") python /usr/bin/nosetests $$suite; \
+	done
+
+override_dh_prep:
+	# dh_prep will destroy the stuff we've already installed.
+	# As such, we need to clean it ourselves in dh_clean, and disable it.
+
+override_dh_auto_install:
+	# Cleanup only.  We already did the install during the build, so the
+	# tests would work.
+	find $(CURDIR)/debian -type d -name tests -print0 | xargs -0 rm -rf
+	rm $(CURDIR)/debian/python-acme/usr/lib/python2.7/dist-packages/acme/testdata

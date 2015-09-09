@@ -1,26 +1,47 @@
-# To mimic README.md installation and hacking instructions as much as
-# possible, this config file instructs Travis CI to create a build
-# environment for each supported Python version, and then for each of
-# those it runs tox with two environments: lint and pyXX corresponding
-# to the currently used Travis CI build Python version.
-
 language: python
 
-python:
-  - "2.6"
-  - "2.7"
+services:
+  - rabbitmq
+  - mysql
 
-before_install: >
-  travis_retry sudo apt-get install python python-setuptools
-  python-virtualenv python-dev gcc swig dialog libaugeas0 libssl-dev
+# http://docs.travis-ci.com/user/ci-environment/#CI-environment-OS
+# gimme has to be kept in sync with Boulder's Go version setting in .travis.yml
+before_install:
+  - travis_retry sudo ./bootstrap/ubuntu.sh
+  - travis_retry sudo apt-get install --no-install-recommends nginx-light openssl
+  - '[ "xxx$BOULDER_INTEGRATION" = "xxx" ] || eval "$(gimme 1.5)"'
 
-install: travis_retry python setup.py dev  # installs tox
-script: travis_retry tox
-
+# using separate envs with different TOXENVs creates 4x1 Travis build
+# matrix, which allows us to clearly distinguish which component under
+# test has failed
 env:
-  - TOXENV=py${TRAVIS_PYTHON_VERSION//[.]/}
-  - TOXENV=lint
-  - TOXENV=cover
+  global:
+    - GOPATH=/tmp/go
+    - PATH=$GOPATH/bin:$PATH
+  matrix:
+    - TOXENV=py26 BOULDER_INTEGRATION=1
+    - TOXENV=py27 BOULDER_INTEGRATION=1
+    - TOXENV=lint
+    - TOXENV=cover
+
+# make sure simplehttp simple verification works (custom /etc/hosts)
+addons:
+  hosts:
+    - le.wtf
+  mariadb: "10.0"
+
+install: "travis_retry pip install tox coveralls"
+before_script: '[ "xxx$BOULDER_INTEGRATION" = "xxx" ] || ./tests/boulder-start.sh'
+script: 'travis_retry tox && ([ "xxx$BOULDER_INTEGRATION" = "xxx" ] || (source .tox/$TOXENV/bin/activate && ./tests/boulder-integration.sh))'
+
+after_success: '[ "$TOXENV" == "cover" ] && coveralls'
 
 notifications:
   email: false
+  irc:
+    channels:
+      - "chat.freenode.net#letsencrypt"
+    on_success: never
+    on_failure: always
+    use_notice: true
+    skip_join: true
