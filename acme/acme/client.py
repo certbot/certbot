@@ -560,7 +560,7 @@ class ClientNetwork(object):
         """Send HEAD request without checking the response.
 
         Note, that `_check_response` is not called, as it is expected
-        that status code other than successfuly 2xx will be returned, or
+        that status code other than successfully 2xx will be returned, or
         messages2.Error will be raised by the server.
 
         """

@@ -142,7 +142,7 @@ class IAuthenticator(IPlugin):
 
         :param str domain: Domain for which challenge preferences are sought.
 
-        :returns: List of challege types (subclasses of
+        :returns: List of challenge types (subclasses of
             :class:`acme.challenges.Challenge`) with the most
             preferred challenges first. If a type is not specified, it means the
             Authenticator cannot perform the challenge.

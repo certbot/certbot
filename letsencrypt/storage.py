@@ -626,7 +626,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
         """
         # XXX: assumes official archive location rather than examining links
-        # XXX: consider using os.open for availablity of os.O_EXCL
+        # XXX: consider using os.open for availability of os.O_EXCL
         # XXX: ensure file permissions are correct; also create directories
         #      if needed (ensuring their permissions are correct)
         # Figure out what the new version is and hence where to save things
