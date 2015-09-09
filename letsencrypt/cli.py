@@ -189,7 +189,7 @@ def _find_duplicative_certs(domains, config, renew_config):
     return identical_names_cert, subset_names_cert
 
 
-def run(args, config, plugins):  # pylint: disable=too-many-branches
+def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-locals
 
     """Obtain a certificate and install."""
     if args.configurator is not None and (args.installer is not None or
@@ -212,15 +212,16 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches
         return "Configurator could not be determined"
 
     domains = _find_domains(args, installer)
-    renew_config = configuration.RenewerConfiguration(config)
-    # I am not sure whether that correctly reads the systemwide
-    # configuration file.
 
     treat_as_renewal = False
 
+    # Considering the possibility that the requested certificate is
+    # related to an existing certificate.
     if not config.duplicate:
         identical_names_cert, subset_names_cert = _find_duplicative_certs(
-            domains, config, renew_config)
+            domains, config, configuration.RenewerConfiguration(config))
+        # I am not sure whether that correctly reads the systemwide
+        # configuration file.
         if identical_names_cert:
             question = (
                 "You have an existing certificate that contains exactly the "
@@ -240,20 +241,20 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches
                 question, "Replace", "Cancel"):
             treat_as_renewal = True
         else:
-            msg = "To obtain a new certificate that {0} an existing "
-            msg += "certificate in its domain-name coverage, you must use "
-            msg += "the --duplicate option.\n\nFor example:\n\n"
-            msg += sys.argv[0] + " --duplicate " + " ".join(sys.argv[1:])
-            msg = msg.format(
-                "duplicates" if identical_names_cert else "overlaps with")
             reporter_util = zope.component.getUtility(interfaces.IReporter)
-            reporter_util.add_message(msg, reporter_util.HIGH_PRIORITY, True)
+            reporter_util.add_message((
+                "To obtain a new certificate that {0} an existing certificate "
+                "in its domain-name coverage, you must use the --duplicate "
+                "option.\n\nFor example:\n\n{1} --duplicate {2}").format(
+                    "duplicates" if identical_names_cert else "overlaps with",
+                    sys.argv[0], " ".join(sys.argv[1:])),
+                                      reporter_util.HIGH_PRIORITY, True)
             sys.exit(1)
 
+    # Attempting to obtain the certificate
     # TODO: Handle errors from _init_le_client?
     le_client = _init_le_client(args, config, authenticator, installer)
     if treat_as_renewal:
-        # TREAT AS RENEWAL
         if identical_names_cert:
             lineage = identical_names_cert[1]
         else:
@@ -261,9 +262,8 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches
         # TODO: Use existing privkey instead of generating a new one
         new_certr, new_chain, new_key, _ = le_client.obtain_certificate(domains)
         # TODO: Check whether it worked!
-        old_version = lineage.latest_common_version()
         lineage.save_successor(
-            old_version, OpenSSL.crypto.dump_certificate(
+            lineage.latest_common_version(), OpenSSL.crypto.dump_certificate(
                 OpenSSL.crypto.FILETYPE_PEM, new_certr.body),
             new_key.pem, OpenSSL.crypto.dump_certificate(
                 OpenSSL.crypto.FILETYPE_PEM, new_chain))
