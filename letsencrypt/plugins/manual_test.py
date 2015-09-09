@@ -71,25 +71,29 @@ class ManualAuthenticatorTest(unittest.TestCase):
         mock_popen.side_effect = OSError
         self.assertEqual([False], self.auth_test_mode.perform(self.achalls))
 
+    @mock.patch("letsencrypt.plugins.manual.socket.socket", autospec=True)
     @mock.patch("letsencrypt.plugins.manual.time.sleep", autospec=True)
     @mock.patch("letsencrypt.plugins.manual.subprocess.Popen", autospec=True)
     def test_perform_test_command_run_failure(
-            self, mock_popen, unused_mock_sleep):
+            self, mock_popen, unused_mock_sleep, unused_mock_socket):
         mock_popen.poll.return_value = 10
         mock_popen.return_value.pid = 1234
         self.assertRaises(
             errors.Error, self.auth_test_mode.perform, self.achalls)
 
+    @mock.patch("letsencrypt.plugins.manual.socket.socket", autospec=True)
     @mock.patch("letsencrypt.plugins.manual.time.sleep", autospec=True)
     @mock.patch("acme.challenges.SimpleHTTPResponse.simple_verify",
                 autospec=True)
     @mock.patch("letsencrypt.plugins.manual.subprocess.Popen", autospec=True)
-    def test_perform_test_mode(self, mock_popen, mock_verify, mock_sleep):
+    def test_perform_test_mode(self, mock_popen, mock_verify, mock_sleep,
+                               mock_socket):
         mock_popen.return_value.poll.side_effect = [None, 10]
         mock_popen.return_value.pid = 1234
         mock_verify.return_value = False
         self.assertEqual([False], self.auth_test_mode.perform(self.achalls))
         self.assertEqual(1, mock_sleep.call_count)
+        self.assertEqual(1, mock_socket.call_count)
 
     def test_cleanup_test_mode_already_terminated(self):
         # pylint: disable=protected-access
