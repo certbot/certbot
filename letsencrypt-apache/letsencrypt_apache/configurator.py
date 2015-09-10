@@ -492,7 +492,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         if "ssl_module" not in self.parser.modules:
-            logger.info("Loading mod_ssl into Apache Server")
             self.enable_mod("ssl", temp=temp)
 
         # Check for Listen <port>
@@ -1012,7 +1011,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 self._enable_mod_debian(dep, temp)
                 self._add_parser_mod(dep)
 
-                note = "Enabled dependency of module %s - %s" % (mod_name, dep)
+                note = "Enabled dependency of %s module - %s" % (mod_name, dep)
                 self.save_notes += note + os.linesep
                 logger.debug(note)
 
