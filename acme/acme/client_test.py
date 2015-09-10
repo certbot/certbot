@@ -360,7 +360,7 @@ class ClientTest(unittest.TestCase):
     def test_revoke(self):
         self.client.revoke(self.certr.body)
         self.net.post.assert_called_once_with(
-            self.directory[messages.Revocation], mock.ANY, content_type=None)
+            self.directory[messages.Revocation], mock.ANY)
 
     def test_revoke_bad_status_raises_error(self):
         self.response.status_code = http_client.METHOD_NOT_ALLOWED
