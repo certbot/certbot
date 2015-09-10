@@ -417,20 +417,34 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         # respond with status code 403 (Forbidden)
         return self.check_cert(certr)
 
-    def fetch_chain(self, certr):
+    def fetch_chain(self, certr, max_length=10):
         """Fetch chain for certificate.
 
-        :param certr: Certificate Resource
-        :type certr: `.CertificateResource`
+        :param .CertificateResource certr: Certificate Resource
+        :param int max_length: Maximum allowed length of the chain.
+            Note that each element in the certificate requires new
+            ``HTTP GET`` request, and the length of the chain is
+            controlled by the ACME CA.
 
-        :returns: Certificate chain, or `None` if no "up" Link was provided.
-        :rtype: `OpenSSL.crypto.X509` wrapped in `.ComparableX509`
+        :raises errors.Error: if recursion exceeds `max_length`
+
+        :returns: Certificate chain for the Certificate Resource. It is
+            a list ordered so that the first element is a signer of the
+            certificate from Certificate Resource. Will be empty if
+            ``cert_chain_uri`` is ``None``.
+        :rtype: `list` of `OpenSSL.crypto.X509` wrapped in `.ComparableX509`
 
         """
-        if certr.cert_chain_uri is not None:
-            return self._get_cert(certr.cert_chain_uri)[1]
-        else:
-            return None
+        chain = []
+        uri = certr.cert_chain_uri
+        while uri is not None and len(chain) < max_length:
+            response, cert = self._get_cert(uri)
+            uri = response.links.get('up', {}).get('url')
+            chain.append(cert)
+        if uri is not None:
+            raise errors.Error(
+                "Recursion limit reached. Didn't get {0}".format(uri))
+        return chain
 
     def revoke(self, cert):
         """Revoke certificate.
