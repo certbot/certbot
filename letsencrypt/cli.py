@@ -174,7 +174,7 @@ def _find_duplicative_certs(domains, config, renew_config):
         rc_config = configobj.ConfigObj(renew_config.renewer_config_file)
         rc_config.merge(configobj.ConfigObj(full_path))
         rc_config.filename = full_path
-        cli_config = configuration.RenewerConfiguration(config.namespace)
+        cli_config = configuration.RenewerConfiguration(config)
 
         candidate_lineage = storage.RenewableCert(rc_config, None, cli_config)
         # TODO: Handle these differently depending on whether they are
