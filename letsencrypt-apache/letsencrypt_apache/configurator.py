@@ -1004,17 +1004,52 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 "Unsupported directory layout. You may try to enable mod %s "
                 "and try again." % mod_name)
 
+        deps = self._get_mod_deps(mod_name)
+
+        # Enable all dependencies
+        for dep in deps:
+            if dep not in self.parser.modules:
+                self._enable_mod_debian(dep, temp)
+                self._add_parser_mod(dep)
+
+                note = "Enabled dependency of module %s - %s" % (mod_name, dep)
+                self.save_notes += note + os.linesep
+                logger.debug(note)
+
+        # Enable actual module
         self._enable_mod_debian(mod_name, temp)
-        self.save_notes += "Enabled %s module in Apache" % mod_name
-        logger.debug("Enabled Apache %s module", mod_name)
+        self._add_parser_mod(mod_name)
+
+        self.save_notes += "Enabled %s module in Apache\n" % mod_name
+        logger.info("Enabled Apache %s module", mod_name)
 
         # Modules can enable additional config files. Variables may be defined
         # within these new configuration sections.
         # Restart is not necessary as DUMP_RUN_CFG uses latest config.
         self.parser.update_runtime_variables(self.conf("ctl"))
 
+    def _add_parser_mod(self, mod_name):
+        """Shortcut for updating parser modules."""
         self.parser.modules.add(mod_name + "_module")
         self.parser.modules.add("mod_" + mod_name + ".c")
+
+    def _get_mod_deps(self, mod_name):
+        """Get known module dependencies.
+
+        .. note:: This does not need to be accurate in order for the client to
+            run.  This simply keeps things clean if the user decides to revert
+            changes.
+        .. warning:: If all deps are not included, it may cause incorrect parsing
+            behavior, due to enable_mod's shortcut for updating the parser's
+            currently defined modules (:method:`._add_parser_mod`)
+            This would only present a major problem in extremely atypical
+            configs that use ifmod for the missing deps.
+
+        """
+        deps = {
+            "ssl": ["setenvif", "mime", "socache_shmcb"]
+        }
+        return deps.get(mod_name, [])
 
     def _enable_mod_debian(self, mod_name, temp):
         """Assumes mods-available, mods-enabled layout."""
