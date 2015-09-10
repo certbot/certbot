@@ -1,4 +1,5 @@
 """Tests for letsencrypt.cli."""
+import configobj
 import itertools
 import os
 import shutil
@@ -11,6 +12,10 @@ import mock
 from letsencrypt import account
 from letsencrypt import configuration
 from letsencrypt import errors
+from letsencrypt import storage
+
+from letsencrypt.storage import ALL_FOUR
+from letsencrypt.tests import test_util
 
 
 class CLITest(unittest.TestCase):
@@ -160,6 +165,74 @@ class DetermineAccountTest(unittest.TestCase):
             self._call()
         self.assertEqual(self.accs[1].id, self.args.account)
         self.assertEqual("other email", self.args.email)
+
+
+class DuplicativeCertsTest(unittest.TestCase):
+
+    def setUp(self):
+        # The stuff below is taken from renewer_test.py
+        self.tempdir = tempfile.mkdtemp()
+        self.cli_config = configuration.RenewerConfiguration(
+            namespace=mock.MagicMock(config_dir=self.tempdir))
+        os.makedirs(os.path.join(self.tempdir, "live", "example.org"))
+        os.makedirs(os.path.join(self.tempdir, "archive", "example.org"))
+        os.makedirs(os.path.join(self.tempdir, "configs"))
+        config = configobj.ConfigObj()
+        for kind in ALL_FOUR:
+            config[kind] = os.path.join(self.tempdir, "live", "example.org",
+                                        kind + ".pem")
+        config.filename = os.path.join(self.tempdir, "configs",
+                                       "example.org.conf")
+        config.write()
+        self.config = config
+        self.defaults = configobj.ConfigObj()
+        self.test_rc = storage.RenewableCert(
+            self.config, self.defaults, self.cli_config)
+        for kind in ALL_FOUR:
+            where = getattr(self.test_rc, kind)
+            os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                    "{0}12.pem".format(kind)), where)
+            with open(where, "w") as f:
+                f.write(kind)
+            os.unlink(where)
+            os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                    "{0}11.pem".format(kind)), where)
+            with open(where, "w") as f:
+                f.write(kind)
+
+        # Here we will use test_rc to create duplicative stuff
+
+    def tearDown(self):
+        shutil.rmtree(self.tempdir)
+
+    def test_find_duplicative_names(self):
+        from letsencrypt.cli import _find_duplicative_certs
+        test_cert = test_util.load_vector("cert-san.pem")
+        with open(self.test_rc.cert, "w") as f:
+            f.write(test_cert)
+
+        # No overlap at all
+        result = _find_duplicative_certs(["wow.net", "hooray.org"],
+                                         self.config, self.cli_config)
+        self.assertEqual(result, (None, None))
+
+        # Totally identical
+        result = _find_duplicative_certs(["example.com", "www.example.com"],
+                                         self.config, self.cli_config)
+        self.assertEqual(result[0][0], "example.org.conf")
+        self.assertEqual(result[1], None)
+
+        # Superset
+        result = _find_duplicative_certs(["example.com", "www.example.com",
+                                          "something.new"], self.config,
+                                         self.cli_config)
+        self.assertEqual(result[1][0], "example.org.conf")
+        self.assertEqual(result[0], None)
+
+        # Partial overlap doesn't count
+        result = _find_duplicative_certs(["example.com", "something.new"],
+                                         self.config, self.cli_config)
+        self.assertEqual(result, (None, None))
 
 
 if __name__ == '__main__':
