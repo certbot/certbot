@@ -13,7 +13,7 @@ setup(
     entry_points={
         'letsencrypt.plugins': [
             'plesk = letsencrypt_plesk.configurator:PleskConfigurator',
-         ],
+        ],
     },
     include_package_data=True,
 )

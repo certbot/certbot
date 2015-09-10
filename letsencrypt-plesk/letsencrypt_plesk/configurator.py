@@ -9,7 +9,6 @@ from letsencrypt import achallenges
 from letsencrypt import errors
 from letsencrypt import interfaces
 from letsencrypt import le_util
-from letsencrypt import reverter
 
 from letsencrypt.plugins import common
 
@@ -30,17 +29,20 @@ class PleskConfigurator(common.Plugin):
         add("key", default=None,
             help="Plesk API-RPC authentication secret key.")
 
+    def __init__(self, *args, **kwargs):
+        """Initialize Plesk Configurator."""
+        super(PleskConfigurator, self).__init__(*args, **kwargs)
+
+        # These will be set in the prepare function
+        self.plesk_api_client = None
+        self.plesk_challenge = None
+
     def prepare(self):
         """Prepare the authenticator/installer."""
-
-        #TODO Set up reverter
-        #self.reverter = reverter.Reverter(self.config)
-        #self.reverter.recovery_routine()
-
         self.plesk_api_client = api_client.PleskApiClient(key=self.conf('key'))
         self.plesk_challenge = challenge.PleskChallenge(self)
 
-    def more_info(self):
+    def more_info(self):  # pylint: disable=no-self-use
         """Human-readable string to help understand the module"""
         return "Configures Plesk to authenticate and install SSL certificate."
 
@@ -54,5 +56,6 @@ class PleskConfigurator(common.Plugin):
 
     def cleanup(self, achalls):
         """Revert all challenges."""
-        [self.plesk_challenge.cleanup(x) for x in achalls]
+        for x in achalls:
+            self.plesk_challenge.cleanup(x)
         self.plesk_api_client.cleanup()
