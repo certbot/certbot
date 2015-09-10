@@ -216,12 +216,15 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
     treat_as_renewal = False
 
     # Considering the possibility that the requested certificate is
-    # related to an existing certificate.
+    # related to an existing certificate.  (config.duplicate, which
+    # is set with --duplicate, skips all of this logic and forces any
+    # kind of certificate to be obtained with treat_as_renewal = False.)
     if not config.duplicate:
         identical_names_cert, subset_names_cert = _find_duplicative_certs(
             domains, config, configuration.RenewerConfiguration(config))
         # I am not sure whether that correctly reads the systemwide
         # configuration file.
+        question = None
         if identical_names_cert:
             question = (
                 "You have an existing certificate that contains exactly the "
@@ -237,7 +240,11 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
                 "certificate with the new certificate?"
                 ).format(subset_names_cert[0], ", ".join(subset_names_cert[2]),
                          ", ".join(domains))
-        if zope.component.getUtility(interfaces.IDisplay).yesno(
+        if question is None:
+            # We aren't in a duplicative-names situation at all, so we don't
+            # have to tell or ask the user anything about this.
+            pass
+        elif zope.component.getUtility(interfaces.IDisplay).yesno(
                 question, "Replace", "Cancel"):
             treat_as_renewal = True
         else:
