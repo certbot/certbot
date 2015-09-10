@@ -264,18 +264,10 @@ class Client(object):
         lineage = storage.RenewableCert.new_lineage(
             domains[0], OpenSSL.crypto.dump_certificate(
                 OpenSSL.crypto.FILETYPE_PEM, certr.body),
-            key.pem, self._dump_chain(chain), params, config, cli_config)
+            key.pem, crypto_util.dump_pyopenssl_chain(chain),
+            params, config, cli_config)
         self._report_renewal_status(lineage)
         return lineage
-
-    @staticmethod
-    def _dump_chain(chain, filetype=OpenSSL.crypto.FILETYPE_PEM):
-        # assumes that OpenSSL.crypto.dump_certificate includes ending
-        # newline character; XXX: returns empty string when no chain
-        # is available, which shuts up RenewableCert, but might not be
-        # the best solution...
-        return "".join(OpenSSL.crypto.dump_certificate(
-            filetype, cert) for cert in chain)
 
     def _report_renewal_status(self, cert):
         # pylint: disable=no-self-use
@@ -342,7 +334,7 @@ class Client(object):
             chain_file, act_chain_path = le_util.unique_file(
                 chain_path, 0o644)
             # TODO: Except
-            chain_pem = self._dump_chain(chain_cert)
+            chain_pem = crypto_util.dump_pyopenssl_chain(chain_cert)
             try:
                 chain_file.write(chain_pem)
             finally:

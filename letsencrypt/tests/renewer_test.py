@@ -596,7 +596,7 @@ class RenewableCertTests(unittest.TestCase):
         mock_client = mock.MagicMock()
         # pylint: disable=star-args
         mock_client.obtain_certificate.return_value = (
-            mock.MagicMock(body=CERT), CERT, mock.Mock(pem="key"),
+            mock.MagicMock(body=CERT), [CERT], mock.Mock(pem="key"),
             mock.sentinel.csr)
         mock_c.return_value = mock_client
         self.assertEqual(2, renewer.renew(self.test_rc, 1))
@@ -604,7 +604,7 @@ class RenewableCertTests(unittest.TestCase):
         #       have been made to the mock functions here.
         mock_acc_storage().load.assert_called_once_with(account_id="abcde")
         mock_client.obtain_certificate.return_value = (
-            mock.sentinel.certr, None, mock.sentinel.key, mock.sentinel.csr)
+            mock.sentinel.certr, [], mock.sentinel.key, mock.sentinel.csr)
         # This should fail because the renewal itself appears to fail
         self.assertFalse(renewer.renew(self.test_rc, 1))
 

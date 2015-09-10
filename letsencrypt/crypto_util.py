@@ -11,6 +11,7 @@ import os
 import OpenSSL
 
 from acme import crypto_util as acme_crypto_util
+from acme import jose
 
 from letsencrypt import errors
 from letsencrypt import le_util
@@ -269,3 +270,24 @@ def asn1_generalizedtime_to_dt(timestamp):
 def pyopenssl_x509_name_as_text(x509name):
     """Convert `OpenSSL.crypto.X509Name` to text."""
     return "/".join("{0}={1}" for key, value in x509name.get_components())
+
+
+def dump_pyopenssl_chain(chain, filetype=OpenSSL.crypto.FILETYPE_PEM):
+    """Dump certificate chain into a bundle.
+
+    :param list chain: List of `OpenSSL.crypto.X509` (or wrapped in
+        `acme.jose.ComparableX509`).
+
+    """
+    # XXX: returns empty string when no chain is available, which
+    # shuts up RenewableCert, but might not be the best solution...
+
+    def _dump_cert(cert):
+        if isinstance(cert, jose.ComparableX509):
+            # pylint: disable=protected-access
+            cert = cert._wrapped
+        return OpenSSL.crypto.dump_certificate(filetype, cert)
+
+    # assumes that OpenSSL.crypto.dump_certificate includes ending
+    # newline character
+    return "".join(_dump_cert(cert) for cert in chain)
