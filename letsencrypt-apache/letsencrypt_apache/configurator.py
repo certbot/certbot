@@ -1007,7 +1007,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         # Enable all dependencies
         for dep in deps:
-            if dep not in self.parser.modules:
+            if (dep + "_module") not in self.parser.modules:
                 self._enable_mod_debian(dep, temp)
                 self._add_parser_mod(dep)
 
