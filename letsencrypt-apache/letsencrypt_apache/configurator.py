@@ -1012,14 +1012,16 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 self._add_parser_mod(dep)
 
                 note = "Enabled dependency of %s module - %s" % (mod_name, dep)
-                self.save_notes += note + os.linesep
+                if not temp:
+                    self.save_notes += note + os.linesep
                 logger.debug(note)
 
         # Enable actual module
         self._enable_mod_debian(mod_name, temp)
         self._add_parser_mod(mod_name)
 
-        self.save_notes += "Enabled %s module in Apache\n" % mod_name
+        if not temp:
+            self.save_notes += "Enabled %s module in Apache\n" % mod_name
         logger.info("Enabled Apache %s module", mod_name)
 
         # Modules can enable additional config files. Variables may be defined
