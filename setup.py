@@ -67,6 +67,7 @@ testing_extras = [
     'coverage',
     'nose',
     'nosexcover',
+    'pep8',
     'tox',
 ]
 
