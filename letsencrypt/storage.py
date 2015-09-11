@@ -223,7 +223,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         target = os.readlink(link)
         if not os.path.isabs(target):
             target = os.path.join(os.path.dirname(link), target)
-        return target
+        return os.path.abspath(target)
 
     def current_version(self, kind):
         """Returns numerical version of the specified item.
