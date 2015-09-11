@@ -492,7 +492,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         if "ssl_module" not in self.parser.modules:
-            logger.info("Loading mod_ssl into Apache Server")
             self.enable_mod("ssl", temp=temp)
 
         # Check for Listen <port>
@@ -1004,15 +1003,34 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 "Unsupported directory layout. You may try to enable mod %s "
                 "and try again." % mod_name)
 
+        deps = _get_mod_deps(mod_name)
+
+        # Enable all dependencies
+        for dep in deps:
+            if (dep + "_module") not in self.parser.modules:
+                self._enable_mod_debian(dep, temp)
+                self._add_parser_mod(dep)
+
+                note = "Enabled dependency of %s module - %s" % (mod_name, dep)
+                if not temp:
+                    self.save_notes += note + os.linesep
+                logger.debug(note)
+
+        # Enable actual module
         self._enable_mod_debian(mod_name, temp)
-        self.save_notes += "Enabled %s module in Apache" % mod_name
-        logger.debug("Enabled Apache %s module", mod_name)
+        self._add_parser_mod(mod_name)
+
+        if not temp:
+            self.save_notes += "Enabled %s module in Apache\n" % mod_name
+        logger.info("Enabled Apache %s module", mod_name)
 
         # Modules can enable additional config files. Variables may be defined
         # within these new configuration sections.
         # Restart is not necessary as DUMP_RUN_CFG uses latest config.
         self.parser.update_runtime_variables(self.conf("ctl"))
 
+    def _add_parser_mod(self, mod_name):
+        """Shortcut for updating parser modules."""
         self.parser.modules.add(mod_name + "_module")
         self.parser.modules.add("mod_" + mod_name + ".c")
 
@@ -1138,6 +1156,25 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.revert_challenge_config()
             self.restart()
             self.parser.init_modules()
+
+
+def _get_mod_deps(mod_name):
+    """Get known module dependencies.
+
+    .. note:: This does not need to be accurate in order for the client to
+        run.  This simply keeps things clean if the user decides to revert
+        changes.
+    .. warning:: If all deps are not included, it may cause incorrect parsing
+        behavior, due to enable_mod's shortcut for updating the parser's
+        currently defined modules (:method:`.ApacheConfigurator._add_parser_mod`)
+        This would only present a major problem in extremely atypical
+        configs that use ifmod for the missing deps.
+
+    """
+    deps = {
+        "ssl": ["setenvif", "mime", "socache_shmcb"]
+    }
+    return deps.get(mod_name, [])
 
 
 def apache_restart(apache_init_script):
