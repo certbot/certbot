@@ -93,6 +93,45 @@ class ConstantTest(unittest.TestCase):
         self.assertFalse(self.const_a != const_a_prime)
 
 
+class DirectoryTest(unittest.TestCase):
+    """Tests for acme.messages.Directory."""
+
+    def setUp(self):
+        from acme.messages import Directory
+        self.dir = Directory({
+            'new-reg': 'reg',
+            mock.MagicMock(resource_type='new-cert'): 'cert',
+        })
+
+    def test_init_wrong_key_value_error(self):
+        from acme.messages import Directory
+        self.assertRaises(ValueError, Directory, {'foo': 'bar'})
+
+    def test_getitem(self):
+        self.assertEqual('reg', self.dir['new-reg'])
+        from acme.messages import NewRegistration
+        self.assertEqual('reg', self.dir[NewRegistration])
+        self.assertEqual('reg', self.dir[NewRegistration()])
+
+    def test_getitem_fails_with_key_error(self):
+        self.assertRaises(KeyError, self.dir.__getitem__, 'foo')
+
+    def test_getattr(self):
+        self.assertEqual('reg', self.dir.new_reg)
+
+    def test_getattr_fails_with_attribute_error(self):
+        self.assertRaises(AttributeError, self.dir.__getattr__, 'foo')
+
+    def test_to_partial_json(self):
+        self.assertEqual(
+            self.dir.to_partial_json(), {'new-reg': 'reg', 'new-cert': 'cert'})
+
+    def test_from_json_deserialization_error_on_wrong_key(self):
+        from acme.messages import Directory
+        self.assertRaises(
+            jose.DeserializationError, Directory.from_json, {'foo': 'bar'})
+
+
 class RegistrationTest(unittest.TestCase):
     """Tests for acme.messages.Registration."""
 
@@ -319,13 +358,6 @@ class CertificateResourceTest(unittest.TestCase):
 
 class RevocationTest(unittest.TestCase):
     """Tests for acme.messages.RevocationTest."""
-
-    def test_url(self):
-        from acme.messages import Revocation
-        url = 'https://letsencrypt-demo.org/acme/revoke-cert'
-        self.assertEqual(url, Revocation.url('https://letsencrypt-demo.org'))
-        self.assertEqual(
-            url, Revocation.url('https://letsencrypt-demo.org/acme/new-reg'))
 
     def setUp(self):
         from acme.messages import Revocation

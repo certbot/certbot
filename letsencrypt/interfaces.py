@@ -142,7 +142,7 @@ class IAuthenticator(IPlugin):
 
         :param str domain: Domain for which challenge preferences are sought.
 
-        :returns: List of challege types (subclasses of
+        :returns: List of challenge types (subclasses of
             :class:`acme.challenges.Challenge`) with the most
             preferred challenges first. If a type is not specified, it means the
             Authenticator cannot perform the challenge.
@@ -194,8 +194,7 @@ class IConfig(zope.interface.Interface):
         filtered, stripped or sanitized.
 
     """
-    server = zope.interface.Attribute(
-        "ACME new registration URI (including /acme/new-reg).")
+    server = zope.interface.Attribute("ACME Directory Resource URI.")
     email = zope.interface.Attribute(
         "Email used for registration and recovery contact.")
     rsa_key_size = zope.interface.Attribute("Size of the RSA key.")

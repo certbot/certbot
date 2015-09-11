@@ -36,7 +36,7 @@ class Signature(jose.JSONObjectWithFields):
         :param bytes msg: Message to be signed.
 
         :param key: Key used for signing.
-        :type key: `cryptography.hazmat.primitives.assymetric.rsa.RSAPrivateKey`
+        :type key: `cryptography.hazmat.primitives.asymmetric.rsa.RSAPrivateKey`
             (optionally wrapped in `.ComparableRSAKey`).
 
         :param bytes nonce: Nonce to be used. If None, nonce of

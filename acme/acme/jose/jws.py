@@ -53,7 +53,7 @@ class Header(json_util.JSONObjectWithFields):
     .. warning:: This class does not support any extensions through
         the "crit" (Critical) Header Parameter (4.1.11) and as a
         conforming implementation, :meth:`from_json` treats its
-        occurence as an error. Please subclass if you seek for
+        occurrence as an error. Please subclass if you seek for
         a different behaviour.
 
     :ivar x5tS256: "x5t#S256"

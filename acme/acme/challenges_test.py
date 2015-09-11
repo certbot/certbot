@@ -144,7 +144,7 @@ class SimpleHTTPResponseTest(unittest.TestCase):
                 account_public_key=account_key.public_key()))
 
     @mock.patch("acme.challenges.requests.get")
-    def test_simple_verify_good_token(self, mock_get):
+    def test_simple_verify_good_validation(self, mock_get):
         account_key = jose.JWKRSA.load(test_util.load_vector('rsa512_key.pem'))
         for resp in self.resp_http, self.resp_https:
             mock_get.reset_mock()
@@ -156,9 +156,9 @@ class SimpleHTTPResponseTest(unittest.TestCase):
                 "local", self.chall), verify=False)
 
     @mock.patch("acme.challenges.requests.get")
-    def test_simple_verify_bad_token(self, mock_get):
+    def test_simple_verify_bad_validation(self, mock_get):
         mock_get.return_value = mock.MagicMock(
-            text=self.chall.token + "!", headers=self.good_headers)
+            text="!", headers=self.good_headers)
         self.assertFalse(self.resp_http.simple_verify(
             self.chall, "local", None))
 
