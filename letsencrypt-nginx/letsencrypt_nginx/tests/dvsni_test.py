@@ -41,7 +41,6 @@ class DvsniPerformTest(util.NginxTest):
             domain="www.example.org", account_key=account_key),
     ]
 
-
     def setUp(self):
         super(DvsniPerformTest, self).setUp()
 

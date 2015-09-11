@@ -265,16 +265,19 @@ class Registration(ResourceBody):
         """All emails found in the ``contact`` field."""
         return self._filter_contact(self.email_prefix)
 
+
 @Directory.register
 class NewRegistration(Registration):
     """New registration."""
     resource_type = 'new-reg'
     resource = fields.Resource(resource_type)
 
+
 class UpdateRegistration(Registration):
     """Update registration."""
     resource_type = 'reg'
     resource = fields.Resource(resource_type)
+
 
 class RegistrationResource(ResourceWithURI):
     """Registration Resource.
@@ -378,11 +381,13 @@ class Authorization(ResourceBody):
         return tuple(tuple(self.challenges[idx] for idx in combo)
                      for combo in self.combinations)
 
+
 @Directory.register
 class NewAuthorization(Authorization):
     """New authorization."""
     resource_type = 'new-authz'
     resource = fields.Resource(resource_type)
+
 
 class AuthorizationResource(ResourceWithURI):
     """Authorization Resource.

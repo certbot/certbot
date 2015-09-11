@@ -390,11 +390,14 @@ class ClientNetworkTest(unittest.TestCase):
             # pylint: disable=missing-docstring
             def __init__(self, value):
                 self.value = value
+
             def to_partial_json(self):
                 return {'foo': self.value}
+
             @classmethod
             def from_json(cls, value):
                 pass  # pragma: no cover
+
         # pylint: disable=protected-access
         jws_dump = self.net._wrap_in_jws(
             MockJSONDeSerializable('foo'), nonce=b'Tg')
@@ -498,6 +501,7 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
 
         self.all_nonces = [jose.b64encode(b'Nonce'), jose.b64encode(b'Nonce2')]
         self.available_nonces = self.all_nonces[:]
+
         def send_request(*args, **kwargs):
             # pylint: disable=unused-argument,missing-docstring
             if self.available_nonces:

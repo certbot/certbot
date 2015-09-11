@@ -195,8 +195,7 @@ class ApacheParser(object):
             self.aug.set(nvh_path + "/arg", args[0])
         else:
             for i, arg in enumerate(args):
-                self.aug.set("%s/arg[%d]" % (nvh_path, i+1), arg)
-
+                self.aug.set("%s/arg[%d]" % (nvh_path, i + 1), arg)
 
     def _get_ifmod(self, aug_conf_path, mod):
         """Returns the path to <IfMod mod> and creates one if it doesn't exist.
@@ -568,7 +567,7 @@ def case_i(string):
     :param str string: string to make case i regex
 
     """
-    return "".join(["["+c.upper()+c.lower()+"]"
+    return "".join(["[" + c.upper() + c.lower() + "]"
                     if c.isalpha() else c for c in re.escape(string)])
 
 

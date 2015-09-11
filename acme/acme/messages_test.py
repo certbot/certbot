@@ -60,6 +60,7 @@ class ConstantTest(unittest.TestCase):
 
     def setUp(self):
         from acme.messages import _Constant
+
         class MockConstant(_Constant):  # pylint: disable=missing-docstring
             POSSIBLE_NAMES = {}
 
@@ -249,7 +250,6 @@ class ChallengeBodyTest(unittest.TestCase):
             'type': 'urn:acme:error:serverInternal',
             'detail': 'Unable to communicate with DNS server',
         }
-
 
     def test_to_partial_json(self):
         self.assertEqual(self.jobj_to, self.challb.to_partial_json())

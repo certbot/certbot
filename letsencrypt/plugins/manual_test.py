@@ -80,8 +80,7 @@ $(command -v python2 || command -v python2.7 || command -v python2.6) -c \\
 "import BaseHTTPServer, SimpleHTTPServer; \\
 SimpleHTTPServer.SimpleHTTPRequestHandler.extensions_map = {\'\': \'application/jose+json\'}; \\
 s = BaseHTTPServer.HTTPServer((\'\', 4430), SimpleHTTPServer.SimpleHTTPRequestHandler); \\
-s.serve_forever()" 
-""")
+s.serve_forever()" \n""")
         #self.assertTrue(validation in message)
 
         mock_verify.return_value = False

@@ -1,8 +1,9 @@
 """Tests for letsencrypt.notify."""
-
-import mock
 import socket
 import unittest
+
+import mock
+
 
 class NotifyTests(unittest.TestCase):
     """Tests for the notifier."""

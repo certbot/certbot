@@ -166,7 +166,7 @@ class RollbackTest(unittest.TestCase):
         self.assertEqual(self.m_install().restart.call_count, 1)
 
     def test_no_installer(self):
-        self._call(1, None) # Just make sure no exceptions are raised
+        self._call(1, None)  # Just make sure no exceptions are raised
 
 
 if __name__ == "__main__":

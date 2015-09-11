@@ -60,7 +60,7 @@ class CLITest(unittest.TestCase):
         for args in itertools.chain(
                 *(itertools.combinations(flags, r)
                   for r in xrange(len(flags)))):
-            self._call(['plugins',] + list(args))
+            self._call(['plugins'] + list(args))
 
     @mock.patch("letsencrypt.cli.sys")
     def test_handle_exception(self, mock_sys):

@@ -20,11 +20,13 @@ def vector_path(*names):
     return pkg_resources.resource_filename(
         __name__, os.path.join('testdata', *names))
 
+
 def load_vector(*names):
     """Load contents of a test vector."""
     # luckily, resource_string opens file in binary mode
     return pkg_resources.resource_string(
         __name__, os.path.join('testdata', *names))
+
 
 def _guess_loader(filename, loader_pem, loader_der):
     _, ext = os.path.splitext(filename)
@@ -35,12 +37,14 @@ def _guess_loader(filename, loader_pem, loader_der):
     else:  # pragma: no cover
         raise ValueError("Loader could not be recognized based on extension")
 
+
 def load_cert(*names):
     """Load certificate."""
     loader = _guess_loader(
         names[-1], OpenSSL.crypto.FILETYPE_PEM, OpenSSL.crypto.FILETYPE_ASN1)
     return jose.ComparableX509(OpenSSL.crypto.load_certificate(
         loader, load_vector(*names)))
+
 
 def load_csr(*names):
     """Load certificate request."""
@@ -49,12 +53,14 @@ def load_csr(*names):
     return jose.ComparableX509(OpenSSL.crypto.load_certificate_request(
         loader, load_vector(*names)))
 
+
 def load_rsa_private_key(*names):
     """Load RSA private key."""
     loader = _guess_loader(names[-1], serialization.load_pem_private_key,
                            serialization.load_der_private_key)
     return jose.ComparableRSAKey(loader(
         load_vector(*names), password=None, backend=default_backend()))
+
 
 def load_pyopenssl_private_key(*names):
     """Load pyOpenSSL private key."""
