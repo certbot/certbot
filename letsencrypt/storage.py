@@ -268,7 +268,8 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         if kind not in ALL_FOUR:
             raise errors.CertStorageError("unknown kind of item")
         where = os.path.dirname(self.current_target(kind))
-        return os.path.join(where, "{0}{1}.pem".format(kind, version))
+        return os.path.abspath(
+            os.path.join(where, "{0}{1}.pem".format(kind, version)))
 
     def available_versions(self, kind):
         """Which alternative versions of the specified kind of item exist?
