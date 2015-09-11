@@ -48,7 +48,7 @@ class Revoker(object):
     """
     def __init__(self, installer, config, no_confirm=False):
         # XXX
-        self.acme = acme_client.Client(new_reg_uri=None, key=None, alg=None)
+        self.acme = acme_client.Client(directory=None, key=None, alg=None)
 
         self.installer = installer
         self.config = config

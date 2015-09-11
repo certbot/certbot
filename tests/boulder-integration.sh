@@ -4,9 +4,7 @@
 # instance (see ./boulder-start.sh).
 #
 # Environment variables:
-#   SERVER: Passed as "letsencrypt --server" argument. Boulder
-#           monolithic defaults to :4000, AMQP defaults to :4300. This
-#           script defaults to monolithic.
+#   SERVER: Passed as "letsencrypt --server" argument.
 #
 # Note: this script is called by Boulder integration test suite!
 
