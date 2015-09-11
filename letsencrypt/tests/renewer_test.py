@@ -24,6 +24,7 @@ def unlink_all(rc_object):
     for kind in ALL_FOUR:
         os.unlink(getattr(rc_object, kind))
 
+
 def fill_with_sample_data(rc_object):
     """Put dummy data into all four files of this RenewableCert."""
     for kind in ALL_FOUR:
@@ -97,7 +98,7 @@ class RenewableCertTests(unittest.TestCase):
         self.assertRaises(
             errors.CertStorageError, storage.RenewableCert, config, defaults)
 
-    def test_consistent(self): # pylint: disable=too-many-statements
+    def test_consistent(self):  # pylint: disable=too-many-statements
         oldcert = self.test_rc.cert
         self.test_rc.cert = "relative/path"
         # Absolute path for item requirement
@@ -627,7 +628,6 @@ class RenewableCertTests(unittest.TestCase):
             mock.sentinel.certr, None, mock.sentinel.key, mock.sentinel.csr)
         # This should fail because the renewal itself appears to fail
         self.assertFalse(renewer.renew(self.test_rc, 1))
-
 
     @mock.patch("letsencrypt.renewer.notify")
     @mock.patch("letsencrypt.storage.RenewableCert")

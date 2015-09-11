@@ -194,8 +194,7 @@ class IConfig(zope.interface.Interface):
         filtered, stripped or sanitized.
 
     """
-    server = zope.interface.Attribute(
-        "ACME new registration URI (including /acme/new-reg).")
+    server = zope.interface.Attribute("ACME Directory Resource URI.")
     email = zope.interface.Attribute(
         "Email used for registration and recovery contact.")
     rsa_key_size = zope.interface.Attribute("Size of the RSA key.")
@@ -439,7 +438,6 @@ class IValidator(zope.interface.Interface):
         :rtype: bool
 
         """
-
 
     def hsts(name):
         """Verify HSTS header is enabled

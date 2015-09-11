@@ -250,6 +250,7 @@ class GenSSLLabURLs(unittest.TestCase):
         self.assertTrue("eff.org" in urls[0])
         self.assertTrue("umich.edu" in urls[1])
 
+
 class GenHttpsNamesTest(unittest.TestCase):
     """Test _gen_https_names."""
     def setUp(self):

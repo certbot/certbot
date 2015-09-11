@@ -224,7 +224,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         target = os.readlink(link)
         if not os.path.isabs(target):
             target = os.path.join(os.path.dirname(link), target)
-        return target
+        return os.path.abspath(target)
 
     def current_version(self, kind):
         """Returns numerical version of the specified item.
@@ -505,8 +505,8 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         :rtype: bool
 
         """
-        if ("autorenew" not in self.configuration
-                or self.configuration.as_bool("autorenew")):
+        if ("autorenew" not in self.configuration or
+                self.configuration.as_bool("autorenew")):
             # Consider whether to attempt to autorenew this cert now
 
             # Renewals on the basis of revocation
@@ -621,7 +621,6 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         #       parameters
         new_config.write()
         return cls(new_config, config, cli_config)
-
 
     def save_successor(self, prior_version, new_cert, new_privkey, new_chain):
         """Save new cert and chain as a successor of a prior version.

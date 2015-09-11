@@ -143,7 +143,7 @@ class BasicParserTest(util.ParserTest):
             'Group: name="www-data" id=33 not_used\n'
         )
         expected_vars = {"TEST": "", "U_MICH": "", "TLS": "443",
-                         "example_path":"Documents/path"}
+                         "example_path": "Documents/path"}
 
         self.parser.update_runtime_variables("ctl")
         self.assertEqual(self.parser.variables, expected_vars)

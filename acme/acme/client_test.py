@@ -33,10 +33,14 @@ class ClientTest(unittest.TestCase):
         self.net.post.return_value = self.response
         self.net.get.return_value = self.response
 
+        self.directory = messages.Directory({
+            messages.NewRegistration: 'https://www.letsencrypt-demo.org/acme/new-reg',
+            messages.Revocation: 'https://www.letsencrypt-demo.org/acme/revoke-cert',
+        })
+
         from acme.client import Client
         self.client = Client(
-            new_reg_uri='https://www.letsencrypt-demo.org/acme/new-reg',
-            key=KEY, alg=jose.RS256, net=self.net)
+            directory=self.directory, key=KEY, alg=jose.RS256, net=self.net)
 
         self.identifier = messages.Identifier(
             typ=messages.IDENTIFIER_FQDN, value='example.com')
@@ -71,6 +75,13 @@ class ClientTest(unittest.TestCase):
             body=messages_test.CERT, authzrs=(self.authzr,),
             uri='https://www.letsencrypt-demo.org/acme/cert/1',
             cert_chain_uri='https://www.letsencrypt-demo.org/ca')
+
+    def test_init_downloads_directory(self):
+        uri = 'http://www.letsencrypt-demo.org/directory'
+        from acme.client import Client
+        self.client = Client(
+            directory=uri, key=KEY, alg=jose.RS256, net=self.net)
+        self.net.get.assert_called_once_with(uri)
 
     def test_register(self):
         # "Instance of 'Field' has no to_json/update member" bug:
@@ -348,8 +359,8 @@ class ClientTest(unittest.TestCase):
 
     def test_revoke(self):
         self.client.revoke(self.certr.body)
-        self.net.post.assert_called_once_with(messages.Revocation.url(
-            self.client.new_reg_uri), mock.ANY)
+        self.net.post.assert_called_once_with(
+            self.directory[messages.Revocation], mock.ANY, content_type=None)
 
     def test_revoke_bad_status_raises_error(self):
         self.response.status_code = http_client.METHOD_NOT_ALLOWED
@@ -379,11 +390,14 @@ class ClientNetworkTest(unittest.TestCase):
             # pylint: disable=missing-docstring
             def __init__(self, value):
                 self.value = value
+
             def to_partial_json(self):
                 return {'foo': self.value}
+
             @classmethod
             def from_json(cls, value):
                 pass  # pragma: no cover
+
         # pylint: disable=protected-access
         jws_dump = self.net._wrap_in_jws(
             MockJSONDeSerializable('foo'), nonce=b'Tg')
@@ -487,6 +501,7 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
 
         self.all_nonces = [jose.b64encode(b'Nonce'), jose.b64encode(b'Nonce2')]
         self.available_nonces = self.all_nonces[:]
+
         def send_request(*args, **kwargs):
             # pylint: disable=unused-argument,missing-docstring
             if self.available_nonces:

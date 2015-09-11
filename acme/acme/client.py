@@ -4,6 +4,7 @@ import heapq
 import logging
 import time
 
+import six
 from six.moves import http_client  # pylint: disable=import-error
 
 import OpenSSL
@@ -32,7 +33,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
        Clean up raised error types hierarchy, document, and handle (wrap)
        instances of `.DeserializationError` raised in `from_json()`.
 
-    :ivar str new_reg_uri: Location of new-reg
+    :ivar messages.Directory directory:
     :ivar key: `.JWK` (private)
     :ivar alg: `.JWASignature`
     :ivar bool verify_ssl: Verify SSL certificates?
@@ -43,11 +44,22 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
     """
     DER_CONTENT_TYPE = 'application/pkix-cert'
 
-    def __init__(self, new_reg_uri, key, alg=jose.RS256,
-                 verify_ssl=True, net=None):
-        self.new_reg_uri = new_reg_uri
+    def __init__(self, directory, key, alg=jose.RS256, verify_ssl=True,
+                 net=None):
+        """Initialize.
+
+        :param directory: Directory Resource (`.messages.Directory`) or
+            URI from which the resource will be downloaded.
+
+        """
         self.key = key
         self.net = ClientNetwork(key, alg, verify_ssl) if net is None else net
+
+        if isinstance(directory, six.string_types):
+            self.directory = messages.Directory.from_json(
+                self.net.get(directory).json())
+        else:
+            self.directory = directory
 
     @classmethod
     def _regr_from_response(cls, response, uri=None, new_authzr_uri=None,
@@ -82,7 +94,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         new_reg = messages.NewRegistration() if new_reg is None else new_reg
         assert isinstance(new_reg, messages.NewRegistration)
 
-        response = self.net.post(self.new_reg_uri, new_reg)
+        response = self.net.post(self.directory[new_reg], new_reg)
         # TODO: handle errors
         assert response.status_code == http_client.CREATED
 
@@ -441,8 +453,9 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         :raises .ClientError: If revocation is unsuccessful.
 
         """
-        response = self.net.post(messages.Revocation.url(self.new_reg_uri),
-                                 messages.Revocation(certificate=cert))
+        response = self.net.post(self.directory[messages.Revocation],
+                                 messages.Revocation(certificate=cert),
+                                 content_type=None)
         if response.status_code != http_client.OK:
             raise errors.ClientError(
                 'Successful revocation must return HTTP OK status')
