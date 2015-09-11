@@ -1,9 +1,7 @@
 """Let's Encrypt CLI."""
 # TODO: Sanity check all input.  Be sure to avoid shell code etc...
-
 import argparse
 import atexit
-import configobj
 import functools
 import logging
 import logging.handlers
@@ -14,6 +12,7 @@ import time
 import traceback
 
 import configargparse
+import configobj
 import OpenSSL
 import zope.component
 import zope.interface.exceptions
@@ -173,22 +172,22 @@ def _find_duplicative_certs(domains, config, renew_config):
     identical_names_cert, subset_names_cert = None, None
 
     configs_dir = renew_config.renewal_configs_dir
+    cli_config = configuration.RenewerConfiguration(config)
     for renewal_file in os.listdir(configs_dir):
         full_path = os.path.join(configs_dir, renewal_file)
         rc_config = configobj.ConfigObj(renew_config.renewer_config_file)
         rc_config.merge(configobj.ConfigObj(full_path))
         rc_config.filename = full_path
-        cli_config = configuration.RenewerConfiguration(config)
 
-        candidate_lineage = storage.RenewableCert(rc_config, None, cli_config)
+        candidate_lineage = storage.RenewableCert(rc_config, config_opts=None,
+                                                  cli_config=cli_config)
         # TODO: Handle these differently depending on whether they are
         #       expired or still valid?
         candidate_names = set(candidate_lineage.names())
         if candidate_names == set(domains):
-            identical_names_cert = (renewal_file, candidate_lineage)
+            identical_names_cert = candidate_lineage
         elif candidate_names.issubset(set(domains)):
-            subset_names_cert = (renewal_file, candidate_lineage,
-                                 candidate_lineage.names())
+            subset_names_cert = candidate_lineage
 
     return identical_names_cert, subset_names_cert
 
@@ -229,20 +228,21 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
         # I am not sure whether that correctly reads the systemwide
         # configuration file.
         question = None
-        if identical_names_cert:
+        if identical_names_cert is not None:
             question = (
                 "You have an existing certificate that contains exactly the "
                 "same domains you requested (ref: {0})\n\nDo you want to "
                 "renew and replace this certificate with a newly-issued one?"
-                ).format(identical_names_cert[0])
-        elif subset_names_cert:
+                ).format(identical_names_cert.configfile.filename)
+        elif subset_names_cert is not None:
             question = (
                 "You have an existing certificate that contains a portion of "
                 "the domains you requested (ref: {0})\n\nIt contains these "
                 "names: {1}\n\nYou requested these names for the new "
                 "certificate: {2}.\n\nDo you want to replace this existing "
                 "certificate with the new certificate?"
-                ).format(subset_names_cert[0], ", ".join(subset_names_cert[2]),
+                ).format(subset_names_cert.configfile.filename,
+                         ", ".join(subset_names_cert.names()),
                          ", ".join(domains))
         if question is None:
             # We aren't in a duplicative-names situation at all, so we don't
@@ -257,19 +257,16 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
                 "To obtain a new certificate that {0} an existing certificate "
                 "in its domain-name coverage, you must use the --duplicate "
                 "option.\n\nFor example:\n\n{1} --duplicate {2}").format(
-                    "duplicates" if identical_names_cert else "overlaps with",
-                    sys.argv[0], " ".join(sys.argv[1:])),
-                                      reporter_util.HIGH_PRIORITY, True)
-            sys.exit(1)
+                    "duplicates" if identical_names_cert is not None else
+                    "overlaps with", sys.argv[0], " ".join(sys.argv[1:])),
+                                      reporter_util.HIGH_PRIORITY)
+            return 1
 
     # Attempting to obtain the certificate
     # TODO: Handle errors from _init_le_client?
     le_client = _init_le_client(args, config, authenticator, installer)
     if treat_as_renewal:
-        if identical_names_cert:
-            lineage = identical_names_cert[1]
-        else:
-            lineage = subset_names_cert[1]
+        lineage = identical_names_cert if identical_names_cert is not None else subset_names_cert
         # TODO: Use existing privkey instead of generating a new one
         new_certr, new_chain, new_key, _ = le_client.obtain_certificate(domains)
         # TODO: Check whether it worked!

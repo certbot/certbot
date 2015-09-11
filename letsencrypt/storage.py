@@ -437,8 +437,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         else:
             target = self.version("cert", version)
         with open(target) as f:
-            sans = crypto_util.get_sans_from_cert(f.read())
-        return sans
+            return crypto_util.get_sans_from_cert(f.read())
 
     def should_autodeploy(self):
         """Should this lineage now automatically deploy a newer version?

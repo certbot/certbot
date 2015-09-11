@@ -1,5 +1,4 @@
 """Tests for letsencrypt.cli."""
-import configobj
 import itertools
 import os
 import shutil
@@ -7,6 +6,7 @@ import traceback
 import tempfile
 import unittest
 
+import configobj
 import mock
 
 from letsencrypt import account
@@ -14,7 +14,6 @@ from letsencrypt import configuration
 from letsencrypt import errors
 from letsencrypt import storage
 
-from letsencrypt.storage import ALL_FOUR
 from letsencrypt.tests import test_util
 
 
@@ -178,7 +177,7 @@ class DuplicativeCertsTest(unittest.TestCase):
         os.makedirs(os.path.join(self.tempdir, "archive", "example.org"))
         os.makedirs(os.path.join(self.tempdir, "configs"))
         config = configobj.ConfigObj()
-        for kind in ALL_FOUR:
+        for kind in storage.ALL_FOUR:
             config[kind] = os.path.join(self.tempdir, "live", "example.org",
                                         kind + ".pem")
         config.filename = os.path.join(self.tempdir, "configs",
@@ -188,7 +187,7 @@ class DuplicativeCertsTest(unittest.TestCase):
         self.defaults = configobj.ConfigObj()
         self.test_rc = storage.RenewableCert(
             self.config, self.defaults, self.cli_config)
-        for kind in ALL_FOUR:
+        for kind in storage.ALL_FOUR:
             where = getattr(self.test_rc, kind)
             os.symlink(os.path.join("..", "..", "archive", "example.org",
                                     "{0}12.pem".format(kind)), where)
@@ -219,15 +218,15 @@ class DuplicativeCertsTest(unittest.TestCase):
         # Totally identical
         result = _find_duplicative_certs(["example.com", "www.example.com"],
                                          self.config, self.cli_config)
-        self.assertEqual(result[0][0], "example.org.conf")
+        self.assertTrue(result[0].configfile.filename.endswith("example.org.conf"))
         self.assertEqual(result[1], None)
 
         # Superset
         result = _find_duplicative_certs(["example.com", "www.example.com",
                                           "something.new"], self.config,
                                          self.cli_config)
-        self.assertEqual(result[1][0], "example.org.conf")
         self.assertEqual(result[0], None)
+        self.assertTrue(result[1].configfile.filename.endswith("example.org.conf"))
 
         # Partial overlap doesn't count
         result = _find_duplicative_certs(["example.com", "something.new"],
