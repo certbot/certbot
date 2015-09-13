@@ -81,7 +81,7 @@ patient - it will take some time... Once its ready, you will see
 
 If you would like to test `letsencrypt_nginx` plugin (highly
 encouraged) make sure to install prerequisites as listed in
-``tests/integration/nginx.sh``:
+``letsencrypt-nginx/tests/boulder-integration.sh``:
 
 .. include:: ../letsencrypt-nginx/tests/boulder-integration.sh
    :start-line: 1
