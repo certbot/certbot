@@ -61,7 +61,7 @@ The following tools are there to help you:
 
 - For debugging, we recommend ``pip install ipdb`` and putting
   ``import ipdb; ipdb.set_trace()`` statement inside the source
-  code. Alternatively, you can use Python'd standard library `pdb`,
+  code. Alternatively, you can use Python's standard library `pdb`,
   but you won't get TAB completion...
 
 
