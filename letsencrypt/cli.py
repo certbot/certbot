@@ -193,7 +193,6 @@ def _find_duplicative_certs(domains, config, renew_config):
 
 
 def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-locals
-
     """Obtain a certificate and install."""
     if args.configurator is not None and (args.installer is not None or
                                           args.authenticator is not None):
@@ -594,7 +593,7 @@ def create_parser(plugins, args):
     #    subparser.add_argument("domains", nargs="*", metavar="domain")
     helpful.add(None, "-d", "--domains", metavar="DOMAIN", action="append")
     helpful.add(
-        None, "-D", "--duplicate", dest="duplicate", action="store_true",
+        None, "--duplicate", dest="duplicate", action="store_true",
         help="Allow getting a certificate that duplicates an existing one")
 
     helpful.add_group(
