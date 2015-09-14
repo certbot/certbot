@@ -225,7 +225,8 @@ class ChallengeBodyTest(unittest.TestCase):
     """Tests for acme.messages.ChallengeBody."""
 
     def setUp(self):
-        self.chall = challenges.DNS(token='foo')
+        self.chall = challenges.DNS(token=jose.b64decode(
+            'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA'))
 
         from acme.messages import ChallengeBody
         from acme.messages import Error
@@ -241,7 +242,7 @@ class ChallengeBodyTest(unittest.TestCase):
             'uri': 'http://challb',
             'status': self.status,
             'type': 'dns',
-            'token': 'foo',
+            'token': 'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA',
             'error': error,
         }
         self.jobj_from = self.jobj_to.copy()
@@ -263,7 +264,8 @@ class ChallengeBodyTest(unittest.TestCase):
         hash(ChallengeBody.from_json(self.jobj_from))
 
     def test_proxy(self):
-        self.assertEqual('foo', self.challb.token)
+        self.assertEqual(jose.b64decode(
+            'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA'), self.challb.token)
 
 
 class AuthorizationTest(unittest.TestCase):
