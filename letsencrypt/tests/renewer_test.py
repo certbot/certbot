@@ -43,7 +43,7 @@ class BaseRenewableCertTest(unittest.TestCase):
         # TODO: maybe provide RenewerConfiguration.make_dirs?
         os.makedirs(os.path.join(self.tempdir, "live", "example.org"))
         os.makedirs(os.path.join(self.tempdir, "archive", "example.org"))
-        os.makedirs(os.path.join(self.tempdir, "configs"))
+        os.makedirs(os.path.join(self.tempdir, "renewal"))
 
         config = configobj.ConfigObj()
         for kind in ALL_FOUR:
