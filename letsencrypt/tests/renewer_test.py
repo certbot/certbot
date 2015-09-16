@@ -70,6 +70,7 @@ class BaseRenewableCertTest(unittest.TestCase):
             with open(where, "w") as f:
                 f.write(kind)
 
+
 class RenewableCertTests(BaseRenewableCertTest):
     # pylint: disable=too-many-public-methods
     """Tests for letsencrypt.renewer.*."""

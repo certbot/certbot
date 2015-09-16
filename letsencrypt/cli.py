@@ -236,7 +236,7 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
                 "You have an existing certificate that contains exactly the "
                 "same domains you requested (ref: {0})\n\nDo you want to "
                 "renew and replace this certificate with a newly-issued one?"
-                ).format(identical_names_cert.configfile.filename)
+            ).format(identical_names_cert.configfile.filename)
         elif subset_names_cert is not None:
             question = (
                 "You have an existing certificate that contains a portion of "
@@ -244,9 +244,9 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
                 "names: {1}\n\nYou requested these names for the new "
                 "certificate: {2}.\n\nDo you want to replace this existing "
                 "certificate with the new certificate?"
-                ).format(subset_names_cert.configfile.filename,
-                         ", ".join(subset_names_cert.names()),
-                         ", ".join(domains))
+            ).format(subset_names_cert.configfile.filename,
+                     ", ".join(subset_names_cert.names()),
+                     ", ".join(domains))
         if question is None:
             # We aren't in a duplicative-names situation at all, so we don't
             # have to tell or ask the user anything about this.
@@ -256,13 +256,13 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
             treat_as_renewal = True
         else:
             reporter_util = zope.component.getUtility(interfaces.IReporter)
-            reporter_util.add_message((
+            reporter_util.add_message(
                 "To obtain a new certificate that {0} an existing certificate "
                 "in its domain-name coverage, you must use the --duplicate "
-                "option.\n\nFor example:\n\n{1} --duplicate {2}").format(
+                "option.\n\nFor example:\n\n{1} --duplicate {2}".format(
                     "duplicates" if identical_names_cert is not None else
                     "overlaps with", sys.argv[0], " ".join(sys.argv[1:])),
-                                      reporter_util.HIGH_PRIORITY)
+                reporter_util.HIGH_PRIORITY)
             return 1
 
     # Attempting to obtain the certificate
@@ -779,7 +779,7 @@ def _setup_logging(args):
     # TODO: change before release?
     log_file_name = os.path.join(args.logs_dir, 'letsencrypt.log')
     file_handler = logging.handlers.RotatingFileHandler(
-        log_file_name, maxBytes=2**20, backupCount=10)
+        log_file_name, maxBytes=2 ** 20, backupCount=10)
     # rotate on each invocation, rollover only possible when maxBytes
     # is nonzero and backupCount is nonzero, so we set maxBytes as big
     # as possible not to overrun in single CLI invocation (1MB).
