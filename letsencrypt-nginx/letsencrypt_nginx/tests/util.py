@@ -61,7 +61,13 @@ def get_nginx_configurator(
         name="nginx",
         version=version)
     config.prepare()
-    zope.component.provideUtility(config)
+    # also make a general client config for good measure...
+    namespace = mock.MagicMock(
+        config_dir='/tmp/config', work_dir='/tmp/foo', foo='bar',
+        server='https://acme-server.org:443/new')
+    from letsencrypt.configuration import NamespaceConfig
+    nsconfig = NamespaceConfig(namespace)
+    zope.component.provideUtility(nsconfig)
     return config
 
 
