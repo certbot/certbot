@@ -206,5 +206,5 @@ class DuplicativeCertsTest(renewer_test.BaseRenewableCertTest):
         self.assertEqual(result, (None, None))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()  # pragma: no cover

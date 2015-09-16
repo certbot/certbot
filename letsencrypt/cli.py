@@ -250,7 +250,7 @@ def _treat_as_renewal(config, domains):
                     "overlaps with", sys.argv[0], " ".join(sys.argv[1:])),
                 reporter_util.HIGH_PRIORITY)
             raise errors.Error(
-                "BUser did not use proper CLI and would like "
+                "User did not use proper CLI and would like "
                 "to reinvoke the client.")
 
         if renewal:
@@ -259,7 +259,7 @@ def _treat_as_renewal(config, domains):
     return None
 
 
-def auth_from_domains(le_client, config, domains, plugins):
+def _auth_from_domains(le_client, config, domains, plugins):
     """Authenticate and enroll certificate."""
     # Note: This can raise errors... caught above us though.
     lineage = _treat_as_renewal(config, domains)
@@ -312,12 +312,11 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
 
     domains = _find_domains(args, installer)
 
-    # Attempting to obtain the certificate
     # TODO: Handle errors from _init_le_client?
     le_client = _init_le_client(args, config, authenticator, installer)
 
     try:
-        lineage = auth_from_domains(le_client, config, domains, plugins)
+        lineage = _auth_from_domains(le_client, config, domains, plugins)
     except errors.Error as err:
         return str(err)
 
@@ -363,7 +362,7 @@ def auth(args, config, plugins):
     else:
         domains = _find_domains(args, installer)
         try:
-            auth_from_domains(le_client, config, domains, plugins)
+            _auth_from_domains(le_client, config, domains, plugins)
         except errors.Error as err:
             return str(err)
 
