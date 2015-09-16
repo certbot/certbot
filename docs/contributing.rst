@@ -68,14 +68,17 @@ The following tools are there to help you:
 Integration
 ~~~~~~~~~~~
 
-First, install `Go`_ 1.5 and start Boulder_, an ACME CA server::
+First, install `Go`_ 1.5 (pick a value for GOPATH and put $GOPATH/bin in your
+PATH), libtool-ltdl, mariadb-server and rabbitmq-server and then start
+Boulder_, an ACME CA server::
 
   ./tests/boulder-start.sh
 
-The script will download, compile and run the executable; please be
-patient - it will take some time... Once its ready, you will see
-``Server running, listening on 127.0.0.1:4000...``. You may now run
-(in a separate terminal)::
+The script will download, compile and run the executable; please be patient -
+it will take some time... Once its ready, you will see ``Server running,
+listening on 127.0.0.1:4000...``. Add the ``venv/bin/`` subdirectory of your
+letsencrypt repo to your path, and add an ``/etc/hosts`` entry pointing
+``le.wtf`` to 127.0.0.1.  You may now run (in a separate terminal)::
 
   ./tests/boulder-integration.sh && echo OK || echo FAIL
 
