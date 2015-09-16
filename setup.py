@@ -41,6 +41,7 @@ install_requires = [
     'pyrfc3339',
     'python2-pythondialog>=3.2.2rc1',  # Debian squeeze support, cf. #280
     'pytz',
+    'requests',
     'zope.component',
     'zope.interface',
 ]
@@ -67,6 +68,7 @@ testing_extras = [
     'coverage',
     'nose',
     'nosexcover',
+    'pep8',
     'tox',
 ]
 

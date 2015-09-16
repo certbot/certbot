@@ -35,7 +35,7 @@ class PerformTest(unittest.TestCase):
         self.assertRaises(
             errors.ContAuthError, self.auth.perform, [
                 achallenges.DVSNI(
-                    challb=None, domain="0", account_key="invalid_key"),])
+                    challb=None, domain="0", account_key="invalid_key")])
 
     def test_chall_pref(self):
         self.assertEqual(

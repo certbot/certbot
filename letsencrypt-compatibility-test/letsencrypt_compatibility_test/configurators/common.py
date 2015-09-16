@@ -72,11 +72,10 @@ class Proxy(object):
             logger.debug(line)
 
         host_config = docker.utils.create_host_config(
-            binds={
-                self._temp_dir : {"bind" : self._temp_dir, "mode" : "rw"}},
+            binds={self._temp_dir: {"bind": self._temp_dir, "mode": "rw"}},
             port_bindings={
-                80 : ("127.0.0.1", self.http_port),
-                443 : ("127.0.0.1", self.https_port)},)
+                80: ("127.0.0.1", self.http_port),
+                443: ("127.0.0.1", self.https_port)},)
         container = self._docker_client.create_container(
             image_name, command, ports=[80, 443], volumes=self._temp_dir,
             host_config=host_config)

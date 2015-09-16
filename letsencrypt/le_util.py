@@ -196,6 +196,8 @@ def safely_remove(path):
 # start with a period or have two consecutive periods <- this needs to
 # be done in addition to the regex
 EMAIL_REGEX = re.compile("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+$")
+
+
 def safe_email(email):
     """Scrub email address before using it."""
     if EMAIL_REGEX.match(email) is not None:

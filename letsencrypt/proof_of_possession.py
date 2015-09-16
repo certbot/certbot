@@ -17,7 +17,7 @@ from letsencrypt.display import util as display_util
 logger = logging.getLogger(__name__)
 
 
-class ProofOfPossession(object): # pylint: disable=too-few-public-methods
+class ProofOfPossession(object):  # pylint: disable=too-few-public-methods
     """Proof of Possession Identifier Validation Challenge.
 
     Based on draft-barnes-acme, section 6.5.
@@ -71,7 +71,7 @@ class ProofOfPossession(object): # pylint: disable=too-few-public-methods
         # If we get here, the key wasn't found
         return False
 
-    def _gen_response(self, achall, key_path): # pylint: disable=no-self-use
+    def _gen_response(self, achall, key_path):  # pylint: disable=no-self-use
         """Create the response to the Proof of Possession Challenge.
 
         :param achall: Proof of Possession Challenge

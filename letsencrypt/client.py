@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 def _acme_from_config_key(config, key):
     # TODO: Allow for other alg types besides RS256
-    return acme_client.Client(new_reg_uri=config.server, key=key,
+    return acme_client.Client(directory=config.server, key=key,
                               verify_ssl=(not config.no_verify_ssl))
 
 
@@ -279,8 +279,8 @@ class Client(object):
         :param .RenewableCert cert: Newly issued certificate
 
         """
-        if ("autorenew" not in cert.configuration
-                or cert.configuration.as_bool("autorenew")):
+        if ("autorenew" not in cert.configuration or
+                cert.configuration.as_bool("autorenew")):
             if ("autodeploy" not in cert.configuration or
                     cert.configuration.as_bool("autodeploy")):
                 msg = "Automatic renewal and deployment has "

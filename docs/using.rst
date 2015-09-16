@@ -102,6 +102,21 @@ Centos 7
    sudo ./bootstrap/centos.sh
 
 
+FreeBSD
+-------
+
+.. code-block:: shell
+
+   sudo ./bootstrap/freebsd.sh
+
+Bootstrap script for FreeBSD uses ``pkg`` for package installation,
+i.e. it does not use ports.
+
+FreeBSD by default uses ``tcsh``. In order to activate virtulenv (see
+below), you will need a compatbile shell, e.g. ``pkg install bash &&
+bash``.
+
+
 Installation
 ============
 
@@ -129,7 +144,7 @@ To get a new certificate run:
 
 .. code-block:: shell
 
-   ./venv/bin/letsencrypt auth
+   sudo ./venv/bin/letsencrypt auth
 
 The ``letsencrypt`` commandline tool has a builtin help:
 

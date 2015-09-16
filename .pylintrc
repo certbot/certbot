@@ -218,7 +218,7 @@ ignore-long-lines=^\s*(# )?<?https?://\S+>?$
 single-line-if-stmt=no
 
 # List of optional constructs for which whitespace checking is disabled
-no-space-check=trailing-comma,dict-separator
+no-space-check=trailing-comma
 
 # Maximum number of lines in a module
 max-module-lines=1250

@@ -60,6 +60,7 @@ class ConstantTest(unittest.TestCase):
 
     def setUp(self):
         from acme.messages import _Constant
+
         class MockConstant(_Constant):  # pylint: disable=missing-docstring
             POSSIBLE_NAMES = {}
 
@@ -90,6 +91,45 @@ class ConstantTest(unittest.TestCase):
 
         self.assertTrue(self.const_a != self.const_b)
         self.assertFalse(self.const_a != const_a_prime)
+
+
+class DirectoryTest(unittest.TestCase):
+    """Tests for acme.messages.Directory."""
+
+    def setUp(self):
+        from acme.messages import Directory
+        self.dir = Directory({
+            'new-reg': 'reg',
+            mock.MagicMock(resource_type='new-cert'): 'cert',
+        })
+
+    def test_init_wrong_key_value_error(self):
+        from acme.messages import Directory
+        self.assertRaises(ValueError, Directory, {'foo': 'bar'})
+
+    def test_getitem(self):
+        self.assertEqual('reg', self.dir['new-reg'])
+        from acme.messages import NewRegistration
+        self.assertEqual('reg', self.dir[NewRegistration])
+        self.assertEqual('reg', self.dir[NewRegistration()])
+
+    def test_getitem_fails_with_key_error(self):
+        self.assertRaises(KeyError, self.dir.__getitem__, 'foo')
+
+    def test_getattr(self):
+        self.assertEqual('reg', self.dir.new_reg)
+
+    def test_getattr_fails_with_attribute_error(self):
+        self.assertRaises(AttributeError, self.dir.__getattr__, 'foo')
+
+    def test_to_partial_json(self):
+        self.assertEqual(
+            self.dir.to_partial_json(), {'new-reg': 'reg', 'new-cert': 'cert'})
+
+    def test_from_json_deserialization_error_on_wrong_key(self):
+        from acme.messages import Directory
+        self.assertRaises(
+            jose.DeserializationError, Directory.from_json, {'foo': 'bar'})
 
 
 class RegistrationTest(unittest.TestCase):
@@ -185,7 +225,8 @@ class ChallengeBodyTest(unittest.TestCase):
     """Tests for acme.messages.ChallengeBody."""
 
     def setUp(self):
-        self.chall = challenges.DNS(token='foo')
+        self.chall = challenges.DNS(token=jose.b64decode(
+            'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA'))
 
         from acme.messages import ChallengeBody
         from acme.messages import Error
@@ -201,7 +242,7 @@ class ChallengeBodyTest(unittest.TestCase):
             'uri': 'http://challb',
             'status': self.status,
             'type': 'dns',
-            'token': 'foo',
+            'token': 'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA',
             'error': error,
         }
         self.jobj_from = self.jobj_to.copy()
@@ -210,7 +251,6 @@ class ChallengeBodyTest(unittest.TestCase):
             'type': 'urn:acme:error:serverInternal',
             'detail': 'Unable to communicate with DNS server',
         }
-
 
     def test_to_partial_json(self):
         self.assertEqual(self.jobj_to, self.challb.to_partial_json())
@@ -224,7 +264,8 @@ class ChallengeBodyTest(unittest.TestCase):
         hash(ChallengeBody.from_json(self.jobj_from))
 
     def test_proxy(self):
-        self.assertEqual('foo', self.challb.token)
+        self.assertEqual(jose.b64decode(
+            'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA'), self.challb.token)
 
 
 class AuthorizationTest(unittest.TestCase):
@@ -319,13 +360,6 @@ class CertificateResourceTest(unittest.TestCase):
 
 class RevocationTest(unittest.TestCase):
     """Tests for acme.messages.RevocationTest."""
-
-    def test_url(self):
-        from acme.messages import Revocation
-        url = 'https://letsencrypt-demo.org/acme/revoke-cert'
-        self.assertEqual(url, Revocation.url('https://letsencrypt-demo.org'))
-        self.assertEqual(
-            url, Revocation.url('https://letsencrypt-demo.org/acme/new-reg'))
 
     def setUp(self):
         from acme.messages import Revocation

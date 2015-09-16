@@ -321,10 +321,8 @@ class PerformTest(unittest.TestCase):
         self.authenticator.already_listening = mock.Mock(return_value=False)
         result = self.authenticator.perform(self.achalls)
         self.assertEqual(len(self.authenticator.tasks), 2)
-        self.assertTrue(
-            self.authenticator.tasks.has_key(self.achall1.token))
-        self.assertTrue(
-            self.authenticator.tasks.has_key(self.achall2.token))
+        self.assertTrue(self.achall1.token in self.authenticator.tasks)
+        self.assertTrue(self.achall2.token in self.authenticator.tasks)
         self.assertTrue(isinstance(result, list))
         self.assertEqual(len(result), 3)
         self.assertTrue(isinstance(result[0], challenges.ChallengeResponse))
@@ -340,10 +338,8 @@ class PerformTest(unittest.TestCase):
         self.authenticator.already_listening = mock.Mock(return_value=False)
         result = self.authenticator.perform(self.achalls)
         self.assertEqual(len(self.authenticator.tasks), 2)
-        self.assertTrue(
-            self.authenticator.tasks.has_key(self.achall1.token))
-        self.assertTrue(
-            self.authenticator.tasks.has_key(self.achall2.token))
+        self.assertTrue(self.achall1.token in self.authenticator.tasks)
+        self.assertTrue(self.achall2.token in self.authenticator.tasks)
         self.assertTrue(isinstance(result, list))
         self.assertEqual(len(result), 3)
         self.assertEqual(result, [None, None, False])

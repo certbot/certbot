@@ -62,7 +62,7 @@ class Account(object):  # pylint: disable=too-few-public-methods
         # Implementation note: Email? Multiple accounts can have the
         # same email address. Registration URI? Assigned by the
         # server, not guaranteed to be stable over time, nor
-        # cannonical URI can be generated. ACME protocol doesn't allow
+        # canonical URI can be generated. ACME protocol doesn't allow
         # account key (and thus its fingerprint) to be updated...
 
     @property

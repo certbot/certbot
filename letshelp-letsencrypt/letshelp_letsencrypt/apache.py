@@ -87,7 +87,7 @@ def copy_config(server_root, temp_dir):
     dir_len = len(os.path.dirname(server_root))
 
     for config_path, config_dirs, config_files in os.walk(server_root):
-        temp_path = os.path.join(temp_dir, config_path[dir_len+1:])
+        temp_path = os.path.join(temp_dir, config_path[dir_len + 1:])
         os.mkdir(temp_path)
 
         copied_all = True
@@ -151,7 +151,7 @@ def safe_config_file(config_file):
                     empty_or_all_comments = False
                     if line.startswith("-----BEGIN"):
                         return False
-                    elif not ":" in line:
+                    elif ":" not in line:
                         possible_password_file = False
         # If file isn't empty or commented out and could be a password file,
         # don't include it in selection. It is safe to include the file if
@@ -234,9 +234,9 @@ def locate_config(apache_ctl):
     for line in output.splitlines():
         # Relevant output lines are of the form: -D DIRECTIVE="VALUE"
         if "HTTPD_ROOT" in line:
-            server_root = line[line.find('"')+1:-1]
+            server_root = line[line.find('"') + 1:-1]
         elif "SERVER_CONFIG_FILE" in line:
-            config_file = line[line.find('"')+1:-1]
+            config_file = line[line.find('"') + 1:-1]
 
     if not (server_root and config_file):
         sys.exit("Unable to locate Apache configuration. Please run this "
@@ -272,7 +272,7 @@ def get_args():
         args.config_file = os.path.abspath(args.config_file)
 
         if args.config_file.startswith(args.server_root):
-            args.config_file = args.config_file[len(args.server_root)+1:]
+            args.config_file = args.config_file[len(args.server_root) + 1:]
         else:
             sys.exit("This script expects the Apache configuration file to be "
                      "inside the server root")
@@ -300,4 +300,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main() # pragma: no cover
+    main()  # pragma: no cover

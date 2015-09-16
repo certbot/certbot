@@ -101,6 +101,7 @@ class PluginEntryPointTest(unittest.TestCase):
         with mock.patch("letsencrypt.plugins."
                         "disco.zope.interface") as mock_zope:
             mock_zope.exceptions = exceptions
+
             def verify_object(iface, obj):  # pylint: disable=missing-docstring
                 assert obj is plugin
                 assert iface is iface1 or iface is iface2 or iface is iface3
