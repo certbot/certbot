@@ -551,6 +551,7 @@ class TwoVhost80Test(util.ApacheTest):
         self.assertRaises(
             errors.PluginError,
             self.config.enhance, "letsencrypt.demo", "redirect")
+
     def test_unknown_rewrite2(self):
         # Skip the enable mod
         self.config.parser.modules.add("rewrite_module")

@@ -244,7 +244,7 @@ class AuthHandler(object):
 
         """
         for authzr_challb in authzr.body.challenges:
-            if type(authzr_challb.chall) is type(achall.challb.chall):
+            if type(authzr_challb.chall) is type(achall.challb.chall):  # noqa
                 return authzr_challb
         raise errors.AuthorizationError(
             "Target challenge not found in authorization resource")
@@ -493,26 +493,27 @@ _ERROR_HELP_COMMON = (
 
 
 _ERROR_HELP = {
-    "connection" :
+    "connection":
         _ERROR_HELP_COMMON + " Additionally, please check that your computer "
         "has publicly routable IP address and no firewalls are preventing the "
         "server from communicating with the client.",
-    "dnssec" :
+    "dnssec":
         _ERROR_HELP_COMMON + " Additionally, if you have DNSSEC enabled for "
         "your domain, please ensure the signature is valid.",
-    "malformed" :
+    "malformed":
         "To fix these errors, please make sure that you did not provide any "
         "invalid information to the client and try running Let's Encrypt "
         "again.",
-    "serverInternal" :
+    "serverInternal":
         "Unfortunately, an error on the ACME server prevented you from completing "
         "authorization. Please try again later.",
-    "tls" :
+    "tls":
         _ERROR_HELP_COMMON + " Additionally, please check that you have an up "
         "to date TLS configuration that allows the server to communicate with "
         "the Let's Encrypt client.",
-    "unauthorized" : _ERROR_HELP_COMMON,
-    "unknownHost" : _ERROR_HELP_COMMON,}
+    "unauthorized": _ERROR_HELP_COMMON,
+    "unknownHost": _ERROR_HELP_COMMON,
+}
 
 
 def _report_failed_challs(failed_achalls):

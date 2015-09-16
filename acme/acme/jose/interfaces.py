@@ -41,7 +41,7 @@ class JSONDeSerializable(object):
         be encoded into a JSON document. **Full serialization** produces
         a Python object composed of only basic types as required by the
         :ref:`conversion table <conversion-table>`. **Partial
-        serialization** (acomplished by :meth:`to_partial_json`)
+        serialization** (accomplished by :meth:`to_partial_json`)
         produces a Python object that might also be built from other
         :class:`JSONDeSerializable` objects.
 

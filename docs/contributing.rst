@@ -52,7 +52,8 @@ The following tools are there to help you:
   before submitting a new pull request.
 
 - ``tox -e cover`` checks the test coverage only. Calling the
-  ``./tox.cover.sh`` script directly might be a bit quicker, though.
+  ``./tox.cover.sh`` script directly (or even ``./tox.cover.sh $pkg1
+  $pkg2 ...`` for any subpackages) might be a bit quicker, though.
 
 - ``tox -e lint`` checks the style of the whole project, while
   ``pylint --rcfile=.pylintrc path`` will check a single file or
@@ -60,27 +61,30 @@ The following tools are there to help you:
 
 - For debugging, we recommend ``pip install ipdb`` and putting
   ``import ipdb; ipdb.set_trace()`` statement inside the source
-  code. Alternatively, you can use Python'd standard library `pdb`,
+  code. Alternatively, you can use Python's standard library `pdb`,
   but you won't get TAB completion...
 
 
 Integration
 ~~~~~~~~~~~
 
-First, install `Go`_ 1.5 and start Boulder_, an ACME CA server::
+First, install `Go`_ 1.5 (pick a value for GOPATH and put $GOPATH/bin in your
+PATH), libtool-ltdl, mariadb-server and rabbitmq-server and then start
+Boulder_, an ACME CA server::
 
   ./tests/boulder-start.sh
 
-The script will download, compile and run the executable; please be
-patient - it will take some time... Once its ready, you will see
-``Server running, listening on 127.0.0.1:4000...``. You may now run
-(in a separate terminal)::
+The script will download, compile and run the executable; please be patient -
+it will take some time... Once its ready, you will see ``Server running,
+listening on 127.0.0.1:4000...``. Add the ``venv/bin/`` subdirectory of your
+letsencrypt repo to your path, and add an ``/etc/hosts`` entry pointing
+``le.wtf`` to 127.0.0.1.  You may now run (in a separate terminal)::
 
   ./tests/boulder-integration.sh && echo OK || echo FAIL
 
 If you would like to test `letsencrypt_nginx` plugin (highly
 encouraged) make sure to install prerequisites as listed in
-``tests/integration/nginx.sh``:
+``letsencrypt-nginx/tests/boulder-integration.sh``:
 
 .. include:: ../letsencrypt-nginx/tests/boulder-integration.sh
    :start-line: 1

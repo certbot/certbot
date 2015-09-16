@@ -11,6 +11,7 @@ import pytz
 import pyrfc3339
 
 from letsencrypt import constants
+from letsencrypt import crypto_util
 from letsencrypt import errors
 from letsencrypt import le_util
 
@@ -223,7 +224,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         target = os.readlink(link)
         if not os.path.isabs(target):
             target = os.path.join(os.path.dirname(link), target)
-        return target
+        return os.path.abspath(target)
 
     def current_version(self, kind):
         """Returns numerical version of the specified item.
@@ -421,6 +422,23 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         """
         return self._notafterbefore(lambda x509: x509.get_notAfter(), version)
 
+    def names(self, version=None):
+        """What are the subject names of this certificate?
+
+        (If no version is specified, use the current version.)
+
+        :param int version: the desired version number
+        :returns: the subject names
+        :rtype: `list` of `str`
+
+        """
+        if version is None:
+            target = self.current_target("cert")
+        else:
+            target = self.version("cert", version)
+        with open(target) as f:
+            return crypto_util.get_sans_from_cert(f.read())
+
     def should_autodeploy(self):
         """Should this lineage now automatically deploy a newer version?
 
@@ -486,8 +504,8 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         :rtype: bool
 
         """
-        if ("autorenew" not in self.configuration
-                or self.configuration.as_bool("autorenew")):
+        if ("autorenew" not in self.configuration or
+                self.configuration.as_bool("autorenew")):
             # Consider whether to attempt to autorenew this cert now
 
             # Renewals on the basis of revocation
@@ -586,6 +604,8 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         with open(target["chain"], "w") as f:
             f.write(chain)
         with open(target["fullchain"], "w") as f:
+            # assumes that OpenSSL.crypto.dump_certificate includes
+            # ending newline character
             f.write(cert + chain)
 
         # Document what we've done in a new renewal config file
@@ -602,7 +622,6 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         #       parameters
         new_config.write()
         return cls(new_config, config, cli_config)
-
 
     def save_successor(self, prior_version, new_cert, new_privkey, new_chain):
         """Save new cert and chain as a successor of a prior version.
@@ -626,7 +645,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
         """
         # XXX: assumes official archive location rather than examining links
-        # XXX: consider using os.open for availablity of os.O_EXCL
+        # XXX: consider using os.open for availability of os.O_EXCL
         # XXX: ensure file permissions are correct; also create directories
         #      if needed (ensuring their permissions are correct)
         # Figure out what the new version is and hence where to save things

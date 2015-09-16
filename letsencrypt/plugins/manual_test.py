@@ -61,7 +61,27 @@ class ManualAuthenticatorTest(unittest.TestCase):
             self.achalls[0].challb.chall, "foo.com", KEY.public_key(), 4430)
 
         message = mock_stdout.write.mock_calls[0][1][0]
-        self.assertTrue(self.achalls[0].token in message)
+        self.assertEqual(message, """\
+Make sure your web server displays the following content at
+http://foo.com/.well-known/acme-challenge/ZXZhR3hmQURzNnBTUmIyTEF2OUlaZjE3RHQzanV4R0orUEN0OTJ3citvQQ before continuing:
+
+{"header": {"alg": "RS256", "jwk": {"e": "AQAB", "kty": "RSA", "n": "rHVztFHtH92ucFJD_N_HW9AsdRsUuHUBBBDlHwNlRd3fp580rv2-6QWE30cWgdmJS86ObRz6lUTor4R0T-3C5Q"}}, "payload": "eyJ0bHMiOiBmYWxzZSwgInRva2VuIjogIlpYWmhSM2htUVVSek5uQlRVbUl5VEVGMk9VbGFaakUzUkhRemFuVjRSMG9yVUVOME9USjNjaXR2UVEiLCAidHlwZSI6ICJzaW1wbGVIdHRwIn0", "signature": "jFPJFC-2eRyBw7Sl0wyEBhsdvRZtKk8hc6HykEPAiofZlIwdIu76u2xHqMVZWSZdpxwMNUnnawTEAqgMWFydMA"}
+
+Content-Type header MUST be set to application/jose+json.
+
+If you don\'t have HTTP server configured, you can run the following
+command on the target server (as root):
+
+mkdir -p /tmp/letsencrypt/public_html/.well-known/acme-challenge
+cd /tmp/letsencrypt/public_html
+echo -n \'{"header": {"alg": "RS256", "jwk": {"e": "AQAB", "kty": "RSA", "n": "rHVztFHtH92ucFJD_N_HW9AsdRsUuHUBBBDlHwNlRd3fp580rv2-6QWE30cWgdmJS86ObRz6lUTor4R0T-3C5Q"}}, "payload": "eyJ0bHMiOiBmYWxzZSwgInRva2VuIjogIlpYWmhSM2htUVVSek5uQlRVbUl5VEVGMk9VbGFaakUzUkhRemFuVjRSMG9yVUVOME9USjNjaXR2UVEiLCAidHlwZSI6ICJzaW1wbGVIdHRwIn0", "signature": "jFPJFC-2eRyBw7Sl0wyEBhsdvRZtKk8hc6HykEPAiofZlIwdIu76u2xHqMVZWSZdpxwMNUnnawTEAqgMWFydMA"}\' > .well-known/acme-challenge/ZXZhR3hmQURzNnBTUmIyTEF2OUlaZjE3RHQzanV4R0orUEN0OTJ3citvQQ
+# run only once per server:
+$(command -v python2 || command -v python2.7 || command -v python2.6) -c \\
+"import BaseHTTPServer, SimpleHTTPServer; \\
+SimpleHTTPServer.SimpleHTTPRequestHandler.extensions_map = {\'\': \'application/jose+json\'}; \\
+s = BaseHTTPServer.HTTPServer((\'\', 4430), SimpleHTTPServer.SimpleHTTPRequestHandler); \\
+s.serve_forever()" \n""")
+        #self.assertTrue(validation in message)
 
         mock_verify.return_value = False
         self.assertEqual([None], self.auth.perform(self.achalls))
@@ -71,25 +91,29 @@ class ManualAuthenticatorTest(unittest.TestCase):
         mock_popen.side_effect = OSError
         self.assertEqual([False], self.auth_test_mode.perform(self.achalls))
 
+    @mock.patch("letsencrypt.plugins.manual.socket.socket", autospec=True)
     @mock.patch("letsencrypt.plugins.manual.time.sleep", autospec=True)
     @mock.patch("letsencrypt.plugins.manual.subprocess.Popen", autospec=True)
     def test_perform_test_command_run_failure(
-            self, mock_popen, unused_mock_sleep):
+            self, mock_popen, unused_mock_sleep, unused_mock_socket):
         mock_popen.poll.return_value = 10
         mock_popen.return_value.pid = 1234
         self.assertRaises(
             errors.Error, self.auth_test_mode.perform, self.achalls)
 
+    @mock.patch("letsencrypt.plugins.manual.socket.socket", autospec=True)
     @mock.patch("letsencrypt.plugins.manual.time.sleep", autospec=True)
     @mock.patch("acme.challenges.SimpleHTTPResponse.simple_verify",
                 autospec=True)
     @mock.patch("letsencrypt.plugins.manual.subprocess.Popen", autospec=True)
-    def test_perform_test_mode(self, mock_popen, mock_verify, mock_sleep):
+    def test_perform_test_mode(self, mock_popen, mock_verify, mock_sleep,
+                               mock_socket):
         mock_popen.return_value.poll.side_effect = [None, 10]
         mock_popen.return_value.pid = 1234
         mock_verify.return_value = False
         self.assertEqual([False], self.auth_test_mode.perform(self.achalls))
         self.assertEqual(1, mock_sleep.call_count)
+        self.assertEqual(1, mock_socket.call_count)
 
     def test_cleanup_test_mode_already_terminated(self):
         # pylint: disable=protected-access

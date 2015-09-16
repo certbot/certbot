@@ -1,4 +1,7 @@
 """Tests for letsencrypt.client."""
+import os
+import shutil
+import tempfile
 import unittest
 
 import configobj
@@ -70,7 +73,7 @@ class ClientTest(unittest.TestCase):
 
     def test_init_acme_verify_ssl(self):
         self.acme_client.assert_called_once_with(
-            new_reg_uri=mock.ANY, key=mock.ANY, verify_ssl=True)
+            directory=mock.ANY, key=mock.ANY, verify_ssl=True)
 
     def _mock_obtain_certificate(self):
         self.client.auth_handler = mock.MagicMock()
@@ -145,6 +148,36 @@ class ClientTest(unittest.TestCase):
         self.assertTrue("renewal but not automatic deployment" in msg)
         self.assertTrue(cert.cli_config.renewal_configs_dir in msg)
 
+    def test_save_certificate(self):
+        certs = ["matching_cert.pem", "cert.pem", "cert-san.pem"]
+        tmp_path = tempfile.mkdtemp()
+        os.chmod(tmp_path, 0o755)  # TODO: really??
+
+        certr = mock.MagicMock(body=test_util.load_cert(certs[0]))
+        cert1 = test_util.load_cert(certs[1])
+        cert2 = test_util.load_cert(certs[2])
+        candidate_cert_path = os.path.join(tmp_path, "certs", "cert.pem")
+        candidate_chain_path = os.path.join(tmp_path, "chains", "chain.pem")
+
+        cert_path, chain_path = self.client.save_certificate(
+            certr, [cert1, cert2], candidate_cert_path, candidate_chain_path)
+
+        self.assertEqual(os.path.dirname(cert_path),
+                         os.path.dirname(candidate_cert_path))
+        self.assertEqual(os.path.dirname(chain_path),
+                         os.path.dirname(candidate_chain_path))
+
+        with open(cert_path, "r") as cert_file:
+            cert_contents = cert_file.read()
+        self.assertEqual(cert_contents, test_util.load_vector(certs[0]))
+
+        with open(chain_path, "r") as chain_file:
+            chain_contents = chain_file.read()
+        self.assertEqual(chain_contents, test_util.load_vector(certs[1]) +
+                         test_util.load_vector(certs[2]))
+
+        shutil.rmtree(tmp_path)
+
 
 class RollbackTest(unittest.TestCase):
     """Tests for letsencrypt.client.rollback."""
@@ -166,7 +199,7 @@ class RollbackTest(unittest.TestCase):
         self.assertEqual(self.m_install().restart.call_count, 1)
 
     def test_no_installer(self):
-        self._call(1, None) # Just make sure no exceptions are raised
+        self._call(1, None)  # Just make sure no exceptions are raised
 
 
 if __name__ == "__main__":

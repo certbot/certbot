@@ -13,7 +13,7 @@ export root store_flags
 
 letsencrypt_test () {
     letsencrypt \
-        --server "${SERVER:-http://localhost:4000/acme/new-reg}" \
+        --server "${SERVER:-http://localhost:4000/directory}" \
         --no-verify-ssl \
         --dvsni-port 5001 \
         --simple-http-port 5001 \
