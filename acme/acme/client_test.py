@@ -348,16 +348,34 @@ class ClientTest(unittest.TestCase):
         self.assertEqual(
             self.client.check_cert(self.certr), self.client.refresh(self.certr))
 
-    def test_fetch_chain(self):
+    def test_fetch_chain_no_up_link(self):
+        self.assertEqual([], self.client.fetch_chain(self.certr.update(
+            cert_chain_uri=None)))
+
+    def test_fetch_chain_single(self):
         # pylint: disable=protected-access
         self.client._get_cert = mock.MagicMock()
-        self.client._get_cert.return_value = ("response", "certificate")
-        self.assertEqual(self.client._get_cert(self.certr.cert_chain_uri)[1],
+        self.client._get_cert.return_value = (
+            mock.MagicMock(links={}), "certificate")
+        self.assertEqual([self.client._get_cert(self.certr.cert_chain_uri)[1]],
                          self.client.fetch_chain(self.certr))
 
-    def test_fetch_chain_no_up_link(self):
-        self.assertTrue(self.client.fetch_chain(self.certr.update(
-            cert_chain_uri=None)) is None)
+    def test_fetch_chain_max(self):
+        # pylint: disable=protected-access
+        up_response = mock.MagicMock(links={'up': {'url': 'http://cert'}})
+        noup_response = mock.MagicMock(links={})
+        self.client._get_cert = mock.MagicMock()
+        self.client._get_cert.side_effect = [
+            (up_response, "cert")] * 9 + [(noup_response, "last_cert")]
+        chain = self.client.fetch_chain(self.certr, max_length=10)
+        self.assertEqual(chain, ["cert"] * 9 + ["last_cert"])
+
+    def test_fetch_chain_too_many(self):  # recursive
+        # pylint: disable=protected-access
+        response = mock.MagicMock(links={'up': {'url': 'http://cert'}})
+        self.client._get_cert = mock.MagicMock()
+        self.client._get_cert.return_value = (response, "certificate")
+        self.assertRaises(errors.Error, self.client.fetch_chain, self.certr)
 
     def test_revoke(self):
         self.client.revoke(self.certr.body)

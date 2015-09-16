@@ -259,14 +259,11 @@ class Client(object):
                 "Non-standard path(s), might not work with crontab installed "
                 "by your operating system package manager")
 
-        # XXX: just to stop RenewableCert from complaining; this is
-        # probably not a good solution
-        chain_pem = "" if chain is None else OpenSSL.crypto.dump_certificate(
-            OpenSSL.crypto.FILETYPE_PEM, chain)
         lineage = storage.RenewableCert.new_lineage(
             domains[0], OpenSSL.crypto.dump_certificate(
                 OpenSSL.crypto.FILETYPE_PEM, certr.body),
-            key.pem, chain_pem, params, config, cli_config)
+            key.pem, crypto_util.dump_pyopenssl_chain(chain),
+            params, config, cli_config)
         self._report_renewal_status(lineage)
         return lineage
 
@@ -304,7 +301,7 @@ class Client(object):
         :param certr: ACME "certificate" resource.
         :type certr: :class:`acme.messages.Certificate`
 
-        :param chain_cert:
+        :param list chain_cert:
         :param str cert_path: Candidate path to a certificate.
         :param str chain_path: Candidate path to a certificate chain.
 
@@ -331,12 +328,11 @@ class Client(object):
         logger.info("Server issued certificate; certificate written to %s",
                     act_cert_path)
 
-        if chain_cert is not None:
+        if chain_cert:
             chain_file, act_chain_path = le_util.unique_file(
                 chain_path, 0o644)
             # TODO: Except
-            chain_pem = OpenSSL.crypto.dump_certificate(
-                OpenSSL.crypto.FILETYPE_PEM, chain_cert)
+            chain_pem = crypto_util.dump_pyopenssl_chain(chain_cert)
             try:
                 chain_file.write(chain_pem)
             finally:
