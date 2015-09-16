@@ -172,6 +172,9 @@ def _find_duplicative_certs(domains, config, renew_config):
     identical_names_cert, subset_names_cert = None, None
 
     configs_dir = renew_config.renewal_configs_dir
+    # Verify the directory is there
+    le_util.make_or_verify_dir(configs_dir, mode=0o755, uid=os.geteuid())
+
     cli_config = configuration.RenewerConfiguration(config)
     for renewal_file in os.listdir(configs_dir):
         try:
@@ -220,15 +223,15 @@ def _treat_as_renewal(config, domains):
         if ident_names_cert is not None:
             question = (
                 "You have an existing certificate that contains exactly the "
-                "same domains you requested (ref: {0})\n\nDo you want to "
+                "same domains you requested (ref: {0}){br}{br}Do you want to "
                 "renew and replace this certificate with a newly-issued one?"
             ).format(ident_names_cert.configfile.filename)
         elif subset_names_cert is not None:
             question = (
                 "You have an existing certificate that contains a portion of "
-                "the domains you requested (ref: {0})\n\nIt contains these "
-                "names: {1}\n\nYou requested these names for the new "
-                "certificate: {2}.\n\nDo you want to replace this existing "
+                "the domains you requested (ref: {0}){br}{br}It contains these "
+                "names: {1}{br}{br}You requested these names for the new "
+                "certificate: {2}.{br}{br}Do you want to replace this existing "
                 "certificate with the new certificate?"
             ).format(subset_names_cert.configfile.filename,
                      ", ".join(subset_names_cert.names()),
@@ -245,7 +248,7 @@ def _treat_as_renewal(config, domains):
             reporter_util.add_message(
                 "To obtain a new certificate that {0} an existing certificate "
                 "in its domain-name coverage, you must use the --duplicate "
-                "option.\n\nFor example:\n\n{1} --duplicate {2}".format(
+                "option.{br}{br}For example:{br}{br}{1} --duplicate {2}".format(
                     "duplicates" if ident_names_cert is not None else
                     "overlaps with", sys.argv[0], " ".join(sys.argv[1:])),
                 reporter_util.HIGH_PRIORITY)
@@ -285,7 +288,7 @@ def _auth_from_domains(le_client, config, domains, plugins):
 
     return lineage
 
-#  TODO: Make run as close to auth + install as possible
+# TODO: Make run as close to auth + install as possible
 # Possible difficulties: args.csr was hacked into auth
 def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-locals
     """Obtain a certificate and install."""
