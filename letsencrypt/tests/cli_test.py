@@ -177,7 +177,7 @@ class DuplicativeCertsTest(renewer_test.BaseRenewableCertTest):
         shutil.rmtree(self.tempdir)
 
     @mock.patch("letsencrypt.le_util.make_or_verify_dir")
-    def test_find_duplicative_names(self, unused):
+    def test_find_duplicative_names(self, unused):  # pylint: disable=unused-argument
         from letsencrypt.cli import _find_duplicative_certs
         test_cert = test_util.load_vector("cert-san.pem")
         with open(self.test_rc.cert, "w") as f:
