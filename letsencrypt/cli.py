@@ -662,7 +662,7 @@ def create_parser(plugins, args):
     helpful.add(
         "security", "--strict-permissions", action="store_true",
         help="Require that all configuration files are owned by the current "
-             "user; use this if your config is in /tmp/")
+             "user; only needed if your config is somewhere unsafe like /tmp/")
 
     _paths_parser(helpful)
     # _plugins_parsing should be the last thing to act upon the main
