@@ -325,7 +325,7 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
         domains, lineage.privkey, lineage.cert, lineage.chain)
     le_client.enhance_config(domains, args.redirect)
 
-    if lineage.available_versions("cert") == 1:
+    if len(lineage.available_versions("cert")) == 1:
         display_ops.success_installation(domains)
     else:
         display_ops.success_renewal(domains)
