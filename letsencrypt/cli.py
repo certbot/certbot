@@ -361,7 +361,6 @@ class HelpfulArgumentParser(object):
 
     """
     def __init__(self, args, plugins):
-        self.args = args
         plugin_names = [name for name, _p in plugins.iteritems()]
         self.help_topics = HELP_TOPICS + plugin_names + [None]
         self.parser = configargparse.ArgParser(
@@ -374,6 +373,7 @@ class HelpfulArgumentParser(object):
         self.parser._add_config_file_help = False  # pylint: disable=protected-access
         self.silent_parser = SilentParser(self.parser)
 
+        self.args = self.preprocess_args(args)
         help1 = self.prescan_for_flag("-h", self.help_topics)
         help2 = self.prescan_for_flag("--help", self.help_topics)
         assert max(True, "a") == "a", "Gravity changed direction"
@@ -385,6 +385,17 @@ class HelpfulArgumentParser(object):
         self.visible_topics = self.determine_help_topics(help_arg)
         #print self.visible_topics
         self.groups = {}  # elements are added by .add_group()
+
+    def preprocess_args(self, args):
+        """Work around some limitations in argparse.
+
+        Currently, add the default verb "run" as a default.
+        """
+
+        for token in args:
+            if token in VERBS:
+                return args
+        return ["run"] + args
 
     def prescan_for_flag(self, flag, possible_arguments):
         """Checks cli input for flags.
@@ -550,7 +561,12 @@ def create_parser(plugins, args):
 
     _create_subparsers(helpful)
 
-    return helpful.parser
+    return helpful.parser, helpful.args
+
+# For now unfortunately this constant just needs to match the code below;
+# there isn't an elegant way to autogenerate it in time.
+VERBS = ["run", "auth", "install", "revoke", "rollback", "config_changes",\
+         "plugins"]
 
 
 def _create_subparsers(helpful):
@@ -738,7 +754,8 @@ def main(cli_args=sys.argv[1:]):
 
     # note: arg parser internally handles --help (and exits afterwards)
     plugins = plugins_disco.PluginsRegistry.find_all()
-    args = create_parser(plugins, cli_args).parse_args(cli_args)
+    parser, tweaked_cli_args = create_parser(plugins, cli_args)
+    args = parser.parse_args(tweaked_cli_args)
     config = configuration.NamespaceConfig(args)
 
     # Setup logging ASAP, otherwise "No handlers could be found for
