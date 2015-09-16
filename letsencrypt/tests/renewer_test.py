@@ -24,6 +24,7 @@ def unlink_all(rc_object):
     for kind in ALL_FOUR:
         os.unlink(getattr(rc_object, kind))
 
+
 def fill_with_sample_data(rc_object):
     """Put dummy data into all four files of this RenewableCert."""
     for kind in ALL_FOUR:
@@ -97,7 +98,7 @@ class RenewableCertTests(unittest.TestCase):
         self.assertRaises(
             errors.CertStorageError, storage.RenewableCert, config, defaults)
 
-    def test_consistent(self): # pylint: disable=too-many-statements
+    def test_consistent(self):  # pylint: disable=too-many-statements
         oldcert = self.test_rc.cert
         self.test_rc.cert = "relative/path"
         # Absolute path for item requirement
@@ -294,6 +295,26 @@ class RenewableCertTests(unittest.TestCase):
                 self.assertTrue(self.test_rc.has_pending_deployment())
             else:
                 self.assertFalse(self.test_rc.has_pending_deployment())
+
+    def test_names(self):
+        # Trying the current version
+        test_cert = test_util.load_vector("cert-san.pem")
+        os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                "cert12.pem"), self.test_rc.cert)
+        with open(self.test_rc.cert, "w") as f:
+            f.write(test_cert)
+        self.assertEqual(self.test_rc.names(),
+                         ["example.com", "www.example.com"])
+
+        # Trying a non-current version
+        test_cert = test_util.load_vector("cert.pem")
+        os.unlink(self.test_rc.cert)
+        os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                "cert15.pem"), self.test_rc.cert)
+        with open(self.test_rc.cert, "w") as f:
+            f.write(test_cert)
+        self.assertEqual(self.test_rc.names(12),
+                         ["example.com", "www.example.com"])
 
     def _test_notafterbefore(self, function, timestamp):
         test_cert = test_util.load_vector("cert.pem")
@@ -607,7 +628,6 @@ class RenewableCertTests(unittest.TestCase):
             mock.sentinel.certr, [], mock.sentinel.key, mock.sentinel.csr)
         # This should fail because the renewal itself appears to fail
         self.assertFalse(renewer.renew(self.test_rc, 1))
-
 
     @mock.patch("letsencrypt.renewer.notify")
     @mock.patch("letsencrypt.storage.RenewableCert")

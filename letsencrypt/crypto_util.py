@@ -206,6 +206,7 @@ def _pyopenssl_load(data, method, types=(
     raise errors.Error("Unable to load: {0}".format(",".join(
         str(error) for error in openssl_errors)))
 
+
 def pyopenssl_load_certificate(data):
     """Load PEM/DER certificate.
 
