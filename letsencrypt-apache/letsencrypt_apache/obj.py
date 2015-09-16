@@ -14,8 +14,8 @@ class Addr(common.Addr):
         """
         if isinstance(other, self.__class__):
             return ((self.tup == other.tup) or
-                    (self.tup[0] == other.tup[0]
-                     and self.is_wildcard() and other.is_wildcard()))
+                    (self.tup[0] == other.tup[0] and
+                     self.is_wildcard() and other.is_wildcard()))
         return False
 
     def __ne__(self, other):
@@ -41,21 +41,24 @@ class Addr(common.Addr):
             return 2
 
     def conflicts(self, addr):
-        """Returns if address could conflict with correct function of self.
+        r"""Returns if address could conflict with correct function of self.
 
         Could addr take away service provided by self within Apache?
 
         .. note::IP Address is more important than wildcard.
             Connection from 127.0.0.1:80 with choices of *:80 and 127.0.0.1:*
-            chooses 127.0.0.1:*
+            chooses 127.0.0.1:\*
 
         .. todo:: Handle domain name addrs...
 
         Examples:
-        127.0.0.1:*.conflicts(127.0.0.1:443) - True
-        127.0.0.1:443.conflicts(127.0.0.1:*) - False
-        *:443.conflicts(*:80) - False
-        _default_:443.conflicts(*:443) - True
+
+        =========================================  =====
+        ``127.0.0.1:\*.conflicts(127.0.0.1:443)``  True
+        ``127.0.0.1:443.conflicts(127.0.0.1:\*)``  False
+        ``\*:443.conflicts(\*:80)``                False
+        ``_default_:443.conflicts(\*:443)``        True
+        =========================================  =====
 
         """
         if self._addr_less_specific(addr):
@@ -72,9 +75,10 @@ class Addr(common.Addr):
     def get_sni_addr(self, port):
         """Returns the least specific address that resolves on the port.
 
-        Example:
-        1.2.3.4:443 -> 1.2.3.4:<port>
-        1.2.3.4:* -> 1.2.3.4:*
+        Examples:
+
+        - ``1.2.3.4:443`` -> ``1.2.3.4:<port>``
+        - ``1.2.3.4:*`` -> ``1.2.3.4:*``
 
         :param str port: Desired port
 
@@ -100,8 +104,9 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
     :ivar bool enabled: Virtual host is enabled
 
     https://httpd.apache.org/docs/2.4/vhosts/details.html
+
     .. todo:: Any vhost that includes the magic _default_ wildcard is given the
-        same ServerName as the main server.
+              same ServerName as the main server.
 
     """
     # ?: is used for not returning enclosed characters

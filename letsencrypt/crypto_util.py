@@ -8,7 +8,6 @@ import datetime
 import logging
 import os
 
-from cryptography.hazmat.primitives import serialization
 import OpenSSL
 
 from acme import crypto_util as acme_crypto_util
@@ -206,6 +205,7 @@ def _pyopenssl_load(data, method, types=(
     raise errors.Error("Unable to load: {0}".format(",".join(
         str(error) for error in openssl_errors)))
 
+
 def pyopenssl_load_certificate(data):
     """Load PEM/DER certificate.
 
@@ -213,15 +213,6 @@ def pyopenssl_load_certificate(data):
 
     """
     return _pyopenssl_load(data, OpenSSL.crypto.load_certificate)
-
-
-def private_jwk_to_pyopenssl(jwk):
-    """Convert private JWK to pyOpenSSL key."""
-    key_pem = jwk.key.private_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PrivateFormat.TraditionalOpenSSL,
-        encryption_algorithm=serialization.NoEncryption())
-    return OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, key_pem)
 
 
 def _get_sans_from_cert_or_req(
@@ -238,7 +229,7 @@ def _get_sans_from_cert_or_req(
 def get_sans_from_cert(cert, typ=OpenSSL.crypto.FILETYPE_PEM):
     """Get a list of Subject Alternative Names from a certificate.
 
-    :param str csr: Certificate (encoded).
+    :param str cert: Certificate (encoded).
     :param typ: `OpenSSL.crypto.FILETYPE_PEM` or `OpenSSL.crypto.FILETYPE_ASN1`
 
     :returns: A list of Subject Alternative Names.
@@ -277,5 +268,5 @@ def asn1_generalizedtime_to_dt(timestamp):
 
 
 def pyopenssl_x509_name_as_text(x509name):
-    """Convert `OpenSSL.crypto.X509Name to text."""
+    """Convert `OpenSSL.crypto.X509Name` to text."""
     return "/".join("{0}={1}" for key, value in x509name.get_components())

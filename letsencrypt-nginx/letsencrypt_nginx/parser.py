@@ -387,9 +387,6 @@ def _wildcard_match(target_name, name, start):
         parts.reverse()
         match_parts.reverse()
 
-    if len(match_parts) == 0:
-        return False
-
     # The first part must be a wildcard or blank, e.g. '.eff.org'
     first = match_parts.pop(0)
     if first != '*' and first != '':

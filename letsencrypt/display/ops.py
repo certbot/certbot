@@ -16,7 +16,7 @@ util = zope.component.getUtility  # pylint: disable=invalid-name
 
 
 def choose_plugin(prepared, question):
-    """Allow the user to choose ther plugin.
+    """Allow the user to choose their plugin.
 
     :param list prepared: List of `~.PluginEntryPoint`.
     :param str question: Question to be presented to the user.
@@ -25,8 +25,8 @@ def choose_plugin(prepared, question):
     :rtype: `~.PluginEntryPoint`
 
     """
-    opts = [plugin_ep.description_with_name
-            + (" [Misconfigured]" if plugin_ep.misconfigured else "")
+    opts = [plugin_ep.description_with_name +
+            (" [Misconfigured]" if plugin_ep.misconfigured else "")
             for plugin_ep in prepared]
 
     while True:

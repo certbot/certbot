@@ -73,6 +73,7 @@ class NoInstallationError(PluginError):
 class MisconfigurationError(PluginError):
     """Let's Encrypt Misconfiguration error."""
 
+
 class NotSupportedError(PluginError):
     """Let's Encrypt Plugin function not supported error."""
 

@@ -33,10 +33,14 @@ class ClientTest(unittest.TestCase):
         self.net.post.return_value = self.response
         self.net.get.return_value = self.response
 
+        self.directory = messages.Directory({
+            messages.NewRegistration: 'https://www.letsencrypt-demo.org/acme/new-reg',
+            messages.Revocation: 'https://www.letsencrypt-demo.org/acme/revoke-cert',
+        })
+
         from acme.client import Client
         self.client = Client(
-            new_reg_uri='https://www.letsencrypt-demo.org/acme/new-reg',
-            key=KEY, alg=jose.RS256, net=self.net)
+            directory=self.directory, key=KEY, alg=jose.RS256, net=self.net)
 
         self.identifier = messages.Identifier(
             typ=messages.IDENTIFIER_FQDN, value='example.com')
@@ -44,7 +48,7 @@ class ClientTest(unittest.TestCase):
         # Registration
         self.contact = ('mailto:cert-admin@example.com', 'tel:+12025551212')
         reg = messages.Registration(
-            contact=self.contact, key=KEY.public_key(), recovery_token='t')
+            contact=self.contact, key=KEY.public_key())
         self.new_reg = messages.NewRegistration(**dict(reg))
         self.regr = messages.RegistrationResource(
             body=reg, uri='https://www.letsencrypt-demo.org/acme/reg/1',
@@ -55,7 +59,8 @@ class ClientTest(unittest.TestCase):
         authzr_uri = 'https://www.letsencrypt-demo.org/acme/authz/1'
         challb = messages.ChallengeBody(
             uri=(authzr_uri + '/1'), status=messages.STATUS_VALID,
-            chall=challenges.DNS(token='foo'))
+            chall=challenges.DNS(token=jose.b64decode(
+                'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA')))
         self.challr = messages.ChallengeResource(
             body=challb, authzr_uri=authzr_uri)
         self.authz = messages.Authorization(
@@ -71,6 +76,13 @@ class ClientTest(unittest.TestCase):
             body=messages_test.CERT, authzrs=(self.authzr,),
             uri='https://www.letsencrypt-demo.org/acme/cert/1',
             cert_chain_uri='https://www.letsencrypt-demo.org/ca')
+
+    def test_init_downloads_directory(self):
+        uri = 'http://www.letsencrypt-demo.org/directory'
+        from acme.client import Client
+        self.client = Client(
+            directory=uri, key=KEY, alg=jose.RS256, net=self.net)
+        self.net.get.assert_called_once_with(uri)
 
     def test_register(self):
         # "Instance of 'Field' has no to_json/update member" bug:
@@ -110,6 +122,10 @@ class ClientTest(unittest.TestCase):
             contact=()).to_json()
         self.assertRaises(
             errors.UnexpectedUpdate, self.client.update_registration, self.regr)
+
+    def test_query_registration(self):
+        self.response.json.return_value = self.regr.body.to_json()
+        self.assertEqual(self.regr, self.client.query_registration(self.regr))
 
     def test_agree_to_tos(self):
         self.client.update_registration = mock.Mock()
@@ -151,7 +167,7 @@ class ClientTest(unittest.TestCase):
         self.response.links['up'] = {'url': self.challr.authzr_uri}
         self.response.json.return_value = self.challr.body.to_json()
 
-        chall_response = challenges.DNSResponse()
+        chall_response = challenges.DNSResponse(validation=None)
 
         self.client.answer_challenge(self.challr.body, chall_response)
 
@@ -160,8 +176,9 @@ class ClientTest(unittest.TestCase):
                           self.challr.body.update(uri='foo'), chall_response)
 
     def test_answer_challenge_missing_next(self):
-        self.assertRaises(errors.ClientError, self.client.answer_challenge,
-                          self.challr.body, challenges.DNSResponse())
+        self.assertRaises(
+            errors.ClientError, self.client.answer_challenge,
+            self.challr.body, challenges.DNSResponse(validation=None))
 
     def test_retry_after_date(self):
         self.response.headers['Retry-After'] = 'Fri, 31 Dec 1999 23:59:59 GMT'
@@ -344,8 +361,8 @@ class ClientTest(unittest.TestCase):
 
     def test_revoke(self):
         self.client.revoke(self.certr.body)
-        self.net.post.assert_called_once_with(messages.Revocation.url(
-            self.client.new_reg_uri), mock.ANY)
+        self.net.post.assert_called_once_with(
+            self.directory[messages.Revocation], mock.ANY, content_type=None)
 
     def test_revoke_bad_status_raises_error(self):
         self.response.status_code = http_client.METHOD_NOT_ALLOWED
@@ -375,11 +392,14 @@ class ClientNetworkTest(unittest.TestCase):
             # pylint: disable=missing-docstring
             def __init__(self, value):
                 self.value = value
+
             def to_partial_json(self):
                 return {'foo': self.value}
+
             @classmethod
             def from_json(cls, value):
                 pass  # pragma: no cover
+
         # pylint: disable=protected-access
         jws_dump = self.net._wrap_in_jws(
             MockJSONDeSerializable('foo'), nonce=b'Tg')
@@ -483,6 +503,7 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
 
         self.all_nonces = [jose.b64encode(b'Nonce'), jose.b64encode(b'Nonce2')]
         self.available_nonces = self.all_nonces[:]
+
         def send_request(*args, **kwargs):
             # pylint: disable=unused-argument,missing-docstring
             if self.available_nonces:

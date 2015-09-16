@@ -19,7 +19,6 @@ TRANSLATE = {
     "dvsni": "DVSNI",
     "simpleHttp": "SimpleHTTP",
     "dns": "DNS",
-    "recoveryToken": "RecoveryToken",
     "recoveryContact": "RecoveryContact",
     "proofOfPossession": "ProofOfPossession",
 }
@@ -38,10 +37,11 @@ class ChallengeFactoryTest(unittest.TestCase):
         self.dom = "test"
         self.handler.authzr[self.dom] = acme_util.gen_authzr(
             messages.STATUS_PENDING, self.dom, acme_util.CHALLENGES,
-            [messages.STATUS_PENDING]*6, False)
+            [messages.STATUS_PENDING] * 6, False)
 
     def test_all(self):
-        cont_c, dv_c = self.handler._challenge_factory(self.dom, range(0, 6))
+        cont_c, dv_c = self.handler._challenge_factory(
+            self.dom, range(0, len(acme_util.CHALLENGES)))
 
         self.assertEqual(
             [achall.chall for achall in cont_c], acme_util.CONT_CHALLENGES)
@@ -49,10 +49,10 @@ class ChallengeFactoryTest(unittest.TestCase):
             [achall.chall for achall in dv_c], acme_util.DV_CHALLENGES)
 
     def test_one_dv_one_cont(self):
-        cont_c, dv_c = self.handler._challenge_factory(self.dom, [1, 4])
+        cont_c, dv_c = self.handler._challenge_factory(self.dom, [1, 3])
 
         self.assertEqual(
-            [achall.chall for achall in cont_c], [acme_util.RECOVERY_TOKEN])
+            [achall.chall for achall in cont_c], [acme_util.RECOVERY_CONTACT])
         self.assertEqual([achall.chall for achall in dv_c], [acme_util.DVSNI])
 
     def test_unrecognized(self):
@@ -80,7 +80,7 @@ class GetAuthorizationsTest(unittest.TestCase):
 
         self.mock_dv_auth.get_chall_pref.return_value = [challenges.DVSNI]
         self.mock_cont_auth.get_chall_pref.return_value = [
-            challenges.RecoveryToken]
+            challenges.RecoveryContact]
 
         self.mock_cont_auth.perform.side_effect = gen_auth_resp
         self.mock_dv_auth.perform.side_effect = gen_auth_resp
@@ -163,7 +163,7 @@ class GetAuthorizationsTest(unittest.TestCase):
                 messages.STATUS_VALID,
                 dom,
                 [challb.chall for challb in azr.body.challenges],
-                [messages.STATUS_VALID]*len(azr.body.challenges),
+                [messages.STATUS_VALID] * len(azr.body.challenges),
                 azr.body.combinations)
 
 
@@ -183,20 +183,20 @@ class PollChallengesTest(unittest.TestCase):
         self.doms = ["0", "1", "2"]
         self.handler.authzr[self.doms[0]] = acme_util.gen_authzr(
             messages.STATUS_PENDING, self.doms[0],
-            acme_util.DV_CHALLENGES, [messages.STATUS_PENDING]*3, False)
+            acme_util.DV_CHALLENGES, [messages.STATUS_PENDING] * 3, False)
 
         self.handler.authzr[self.doms[1]] = acme_util.gen_authzr(
             messages.STATUS_PENDING, self.doms[1],
-            acme_util.DV_CHALLENGES, [messages.STATUS_PENDING]*3, False)
+            acme_util.DV_CHALLENGES, [messages.STATUS_PENDING] * 3, False)
 
         self.handler.authzr[self.doms[2]] = acme_util.gen_authzr(
             messages.STATUS_PENDING, self.doms[2],
-            acme_util.DV_CHALLENGES, [messages.STATUS_PENDING]*3, False)
+            acme_util.DV_CHALLENGES, [messages.STATUS_PENDING] * 3, False)
 
         self.chall_update = {}
         for dom in self.doms:
             self.chall_update[dom] = [
-                challb_to_achall(challb, "dummy_key", dom)
+                challb_to_achall(challb, mock.Mock(key="dummy_key"), dom)
                 for challb in self.handler.authzr[dom].body.challenges]
 
     @mock.patch("letsencrypt.auth_handler.time")
@@ -282,6 +282,7 @@ class PollChallengesTest(unittest.TestCase):
         )
         return (new_authzr, "response")
 
+
 class GenChallengePathTest(unittest.TestCase):
     """Tests for letsencrypt.auth_handler.gen_challenge_path.
 
@@ -313,33 +314,31 @@ class GenChallengePathTest(unittest.TestCase):
         self.assertTrue(self._call(challbs[::-1], prefs, None))
 
     def test_common_case_with_continuity(self):
-        challbs = (acme_util.RECOVERY_TOKEN_P,
+        challbs = (acme_util.POP_P,
                    acme_util.RECOVERY_CONTACT_P,
                    acme_util.DVSNI_P,
                    acme_util.SIMPLE_HTTP_P)
-        prefs = [challenges.RecoveryToken, challenges.DVSNI]
+        prefs = [challenges.ProofOfPossession, challenges.DVSNI]
         combos = acme_util.gen_combos(challbs)
         self.assertEqual(self._call(challbs, prefs, combos), (0, 2))
 
-         # dumb_path() trivial test
+        # dumb_path() trivial test
         self.assertTrue(self._call(challbs, prefs, None))
 
     def test_full_cont_server(self):
-        challbs = (acme_util.RECOVERY_TOKEN_P,
-                   acme_util.RECOVERY_CONTACT_P,
+        challbs = (acme_util.RECOVERY_CONTACT_P,
                    acme_util.POP_P,
                    acme_util.DVSNI_P,
                    acme_util.SIMPLE_HTTP_P,
                    acme_util.DNS_P)
         # Typical webserver client that can do everything except DNS
         # Attempted to make the order realistic
-        prefs = [challenges.RecoveryToken,
-                 challenges.ProofOfPossession,
+        prefs = [challenges.ProofOfPossession,
                  challenges.SimpleHTTP,
                  challenges.DVSNI,
                  challenges.RecoveryContact]
         combos = acme_util.gen_combos(challbs)
-        self.assertEqual(self._call(challbs, prefs, combos), (0, 4))
+        self.assertEqual(self._call(challbs, prefs, combos), (1, 3))
 
         # Dumb path trivial test
         self.assertTrue(self._call(challbs, prefs, None))
@@ -429,28 +428,31 @@ class ReportFailedChallsTest(unittest.TestCase):
         from letsencrypt import achallenges
 
         kwargs = {
-            "chall" : acme_util.SIMPLE_HTTP,
+            "chall": acme_util.SIMPLE_HTTP,
             "uri": "uri",
             "status": messages.STATUS_INVALID,
             "error": messages.Error(typ="tls", detail="detail"),
         }
 
         self.simple_http = achallenges.SimpleHTTP(
-            challb=messages.ChallengeBody(**kwargs),# pylint: disable=star-args
+            # pylint: disable=star-args
+            challb=messages.ChallengeBody(**kwargs),
             domain="example.com",
-            key=acme_util.KEY)
+            account_key="key")
 
         kwargs["chall"] = acme_util.DVSNI
         self.dvsni_same = achallenges.DVSNI(
-            challb=messages.ChallengeBody(**kwargs),# pylint: disable=star-args
+            # pylint: disable=star-args
+            challb=messages.ChallengeBody(**kwargs),
             domain="example.com",
-            key=acme_util.KEY)
+            account_key="key")
 
         kwargs["error"] = messages.Error(typ="dnssec", detail="detail")
         self.dvsni_diff = achallenges.DVSNI(
-            challb=messages.ChallengeBody(**kwargs),# pylint: disable=star-args
+            # pylint: disable=star-args
+            challb=messages.ChallengeBody(**kwargs),
             domain="foo.bar",
-            key=acme_util.KEY)
+            account_key="key")
 
     @mock.patch("letsencrypt.auth_handler.zope.component.getUtility")
     def test_same_error_and_domain(self, mock_zope):
@@ -479,7 +481,7 @@ def gen_dom_authzr(domain, unused_new_authzr_uri, challs):
     """Generates new authzr for domains."""
     return acme_util.gen_authzr(
         messages.STATUS_PENDING, domain, challs,
-        [messages.STATUS_PENDING]*len(challs))
+        [messages.STATUS_PENDING] * len(challs))
 
 
 if __name__ == "__main__":

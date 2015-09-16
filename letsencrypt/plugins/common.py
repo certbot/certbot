@@ -5,7 +5,6 @@ import re
 import shutil
 import tempfile
 
-from cryptography.hazmat.primitives import serialization
 import zope.interface
 
 from acme.jose import util as jose_util
@@ -19,9 +18,10 @@ def option_namespace(name):
     """ArgumentParser options namespace (prefix of all options)."""
     return name + "-"
 
+
 def dest_namespace(name):
     """ArgumentParser dest namespace (prefix of all destinations)."""
-    return name + "_"
+    return name.replace("-", "_") + "_"
 
 private_ips_regex = re.compile(  # pylint: disable=invalid-name
     r"(^127\.0\.0\.1)|(^10\.)|(^172\.1[6-9]\.)|"
@@ -86,6 +86,7 @@ class Plugin(object):
         """
 
 # other
+
 
 class Addr(object):
     r"""Represents an virtual host address.
@@ -163,13 +164,13 @@ class Dvsni(object):
         :rtype: str
 
         """
-        return os.path.join(
-            self.configurator.config.work_dir, achall.nonce_domain + ".crt")
+        return os.path.join(self.configurator.config.work_dir,
+                            achall.chall.encode("token") + ".crt")
 
     def get_key_path(self, achall):
         """Get standardized path to challenge key."""
-        return os.path.join(
-            self.configurator.config.work_dir, achall.nonce_domain + '.pem')
+        return os.path.join(self.configurator.config.work_dir,
+                            achall.chall.encode("token") + '.pem')
 
     def _setup_challenge_cert(self, achall, s=None):
         # pylint: disable=invalid-name
@@ -180,17 +181,11 @@ class Dvsni(object):
         self.configurator.reverter.register_file_creation(True, key_path)
         self.configurator.reverter.register_file_creation(True, cert_path)
 
-        cert_pem, response = achall.gen_cert_and_response(s)
+        response, cert_pem, key_pem = achall.gen_cert_and_response(s)
 
-        # Write out challenge cert
+        # Write out challenge cert and key
         with open(cert_path, "wb") as cert_chall_fd:
             cert_chall_fd.write(cert_pem)
-
-        # Write out challenge key
-        key_pem = achall.key.key.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=serialization.NoEncryption())
         with le_util.safe_open(key_path, 'wb', chmod=0o400) as key_file:
             key_file.write(key_pem)
 

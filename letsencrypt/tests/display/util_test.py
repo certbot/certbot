@@ -35,7 +35,7 @@ class NcursesDisplayTest(unittest.TestCase):
             "help_label": "",
             "width": display_util.WIDTH,
             "height": display_util.HEIGHT,
-            "menu_height": display_util.HEIGHT-6,
+            "menu_height": display_util.HEIGHT - 6,
         }
 
     @mock.patch("letsencrypt.display.util.dialog.Dialog.msgbox")

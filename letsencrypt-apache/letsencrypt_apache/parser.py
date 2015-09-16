@@ -51,7 +51,7 @@ class ApacheParser(object):
         # https://httpd.apache.org/docs/2.4/mod/core.html#ifmodule
         # This needs to come before locations are set.
         self.modules = set()
-        self._init_modules()
+        self.init_modules()
 
         # Set up rest of locations
         self.loc.update(self._set_locations())
@@ -60,13 +60,15 @@ class ApacheParser(object):
         # Sites-available is not included naturally in configuration
         self._parse_file(os.path.join(self.root, "sites-available") + "/*")
 
-    def _init_modules(self):
+    def init_modules(self):
         """Iterates on the configuration until no new modules are loaded.
 
         ..todo:: This should be attempted to be done with a binary to avoid
             the iteration issue.  Else... parse and enable mods at same time.
 
         """
+        # Since modules are being initiated... clear existing set.
+        self.modules = set()
         matches = self.find_dir("LoadModule")
 
         iterator = iter(matches)
@@ -193,8 +195,7 @@ class ApacheParser(object):
             self.aug.set(nvh_path + "/arg", args[0])
         else:
             for i, arg in enumerate(args):
-                self.aug.set("%s/arg[%d]" % (nvh_path, i+1), arg)
-
+                self.aug.set("%s/arg[%d]" % (nvh_path, i + 1), arg)
 
     def _get_ifmod(self, aug_conf_path, mod):
         """Returns the path to <IfMod mod> and creates one if it doesn't exist.
@@ -566,7 +567,7 @@ def case_i(string):
     :param str string: string to make case i regex
 
     """
-    return "".join(["["+c.upper()+c.lower()+"]"
+    return "".join(["[" + c.upper() + c.lower() + "]"
                     if c.isalpha() else c for c in re.escape(string)])
 
 

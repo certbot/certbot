@@ -62,7 +62,7 @@ class Account(object):  # pylint: disable=too-few-public-methods
         # Implementation note: Email? Multiple accounts can have the
         # same email address. Registration URI? Assigned by the
         # server, not guaranteed to be stable over time, nor
-        # cannonical URI can be generated. ACME protocol doesn't allow
+        # canonical URI can be generated. ACME protocol doesn't allow
         # account key (and thus its fingerprint) to be updated...
 
     @property
@@ -94,15 +94,11 @@ def report_new_account(acc, config):
             config.config_dir),
         reporter.MEDIUM_PRIORITY, True)
 
-    assert acc.regr.body.recovery_token is not None
-    recovery_msg = ("If you lose your account credentials, you can recover "
-                    "them using the token \"{0}\". You must write that down "
-                    "and put it in a safe place.".format(
-                        acc.regr.body.recovery_token))
     if acc.regr.body.emails:
-        recovery_msg += (" Another recovery method will be e-mails sent to "
-                         "{0}.".format(", ".join(acc.regr.body.emails)))
-    reporter.add_message(recovery_msg, reporter.HIGH_PRIORITY, True)
+        recovery_msg = ("If you lose your account credentials, you can "
+                        "recover through e-mails sent to {0}.".format(
+                            ", ".join(acc.regr.body.emails)))
+        reporter.add_message(recovery_msg, reporter.HIGH_PRIORITY, True)
 
 
 class AccountMemoryStorage(interfaces.AccountStorage):

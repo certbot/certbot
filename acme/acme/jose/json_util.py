@@ -221,6 +221,22 @@ class JSONObjectWithFields(util.ImmutableMap, interfaces.JSONDeSerializable):
         super(JSONObjectWithFields, self).__init__(
             **(dict(self._defaults(), **kwargs)))
 
+    def encode(self, name):
+        """Encode a single field.
+
+        :param str name: Name of the field to be encoded.
+
+        :raises erors.SerializationError: if field cannot be serialized
+        :raises errors.Error: if field could not be found
+
+        """
+        try:
+            field = self._fields[name]
+        except KeyError:
+            raise errors.Error("Field not found: {0}".format(name))
+
+        return field.encode(getattr(self, name))
+
     def fields_to_partial_json(self):
         """Serialize fields to JSON."""
         jobj = {}
@@ -291,6 +307,7 @@ def encode_b64jose(data):
     # b64encode produces ASCII characters only
     return b64.b64encode(data).decode('ascii')
 
+
 def decode_b64jose(data, size=None, minimum=False):
     """Decode JOSE Base-64 field.
 
@@ -308,11 +325,13 @@ def decode_b64jose(data, size=None, minimum=False):
     except error_cls as error:
         raise errors.DeserializationError(error)
 
-    if size is not None and ((not minimum and len(decoded) != size)
-                             or (minimum and len(decoded) < size)):
-        raise errors.DeserializationError()
+    if size is not None and ((not minimum and len(decoded) != size) or
+                             (minimum and len(decoded) < size)):
+        raise errors.DeserializationError(
+            "Expected at least or exactly {0} bytes".format(size))
 
     return decoded
+
 
 def encode_hex16(value):
     """Hexlify.
@@ -322,6 +341,7 @@ def encode_hex16(value):
 
     """
     return binascii.hexlify(value).decode()
+
 
 def decode_hex16(value, size=None, minimum=False):
     """Decode hexlified field.
@@ -335,14 +355,15 @@ def decode_hex16(value, size=None, minimum=False):
 
     """
     value = value.encode()
-    if size is not None and ((not minimum and len(value) != size * 2)
-                             or (minimum and len(value) < size * 2)):
+    if size is not None and ((not minimum and len(value) != size * 2) or
+                             (minimum and len(value) < size * 2)):
         raise errors.DeserializationError()
     error_cls = TypeError if six.PY2 else binascii.Error
     try:
         return binascii.unhexlify(value)
     except error_cls as error:
         raise errors.DeserializationError(error)
+
 
 def encode_cert(cert):
     """Encode certificate as JOSE Base-64 DER.
@@ -353,6 +374,7 @@ def encode_cert(cert):
     """
     return encode_b64jose(OpenSSL.crypto.dump_certificate(
         OpenSSL.crypto.FILETYPE_ASN1, cert))
+
 
 def decode_cert(b64der):
     """Decode JOSE Base-64 DER-encoded certificate.
@@ -367,6 +389,7 @@ def decode_cert(b64der):
     except OpenSSL.crypto.Error as error:
         raise errors.DeserializationError(error)
 
+
 def encode_csr(csr):
     """Encode CSR as JOSE Base-64 DER.
 
@@ -376,6 +399,7 @@ def encode_csr(csr):
     """
     return encode_b64jose(OpenSSL.crypto.dump_certificate_request(
         OpenSSL.crypto.FILETYPE_ASN1, csr))
+
 
 def decode_csr(b64der):
     """Decode JOSE Base-64 DER-encoded CSR.
@@ -418,7 +442,9 @@ class TypedJSONObjectWithFields(JSONObjectWithFields):
     def get_type_cls(cls, jobj):
         """Get the registered class for ``jobj``."""
         if cls in six.itervalues(cls.TYPES):
-            assert jobj[cls.type_field_name]
+            if cls.type_field_name not in jobj:
+                raise errors.DeserializationError(
+                    "Missing type field ({0})".format(cls.type_field_name))
             # cls is already registered type_cls, force to use it
             # so that, e.g Revocation.from_json(jobj) fails if
             # jobj["type"] != "revocation".

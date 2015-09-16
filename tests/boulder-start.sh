@@ -3,12 +3,12 @@
 
 export GOPATH="${GOPATH:-/tmp/go}"
 
-# $ go get github.com/letsencrypt/boulder
-# package github.com/letsencrypt/boulder
-#         imports github.com/letsencrypt/boulder
-#         imports github.com/letsencrypt/boulder: no buildable Go source files in /tmp/go/src/github.com/letsencrypt/boulder
-
-go get -d github.com/letsencrypt/boulder/cmd/boulder
+# `/...` avoids `no buildable Go source files` errors, for more info
+# see `go help packages`
+go get -d github.com/letsencrypt/boulder/...
 cd $GOPATH/src/github.com/letsencrypt/boulder
+# goose is needed for ./test/create_db.sh
+go get bitbucket.org/liamstask/goose/cmd/goose
+./test/create_db.sh
 ./start.py &
 # Hopefully start.py bootstraps before integration test is started...

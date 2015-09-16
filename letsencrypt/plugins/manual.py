@@ -1,8 +1,10 @@
 """Manual plugin."""
 import os
 import logging
+import pipes
 import shutil
 import signal
+import socket
 import subprocess
 import sys
 import tempfile
@@ -12,7 +14,6 @@ import zope.component
 import zope.interface
 
 from acme import challenges
-from acme import jose
 
 from letsencrypt import errors
 from letsencrypt import interfaces
@@ -37,7 +38,7 @@ class ManualAuthenticator(common.Plugin):
 Make sure your web server displays the following content at
 {uri} before continuing:
 
-{achall.token}
+{validation}
 
 Content-Type header MUST be set to {ct}.
 
@@ -55,9 +56,10 @@ command on the target server (as root):
     HTTP_TEMPLATE = """\
 mkdir -p {root}/public_html/{response.URI_ROOT_PATH}
 cd {root}/public_html
-echo -n {achall.token} > {response.URI_ROOT_PATH}/{response.path}
+echo -n {validation} > {response.URI_ROOT_PATH}/{encoded_token}
 # run only once per server:
-python -c "import BaseHTTPServer, SimpleHTTPServer; \\
+$(command -v python2 || command -v python2.7 || command -v python2.6) -c \\
+"import BaseHTTPServer, SimpleHTTPServer; \\
 SimpleHTTPServer.SimpleHTTPRequestHandler.extensions_map = {{'': '{ct}'}}; \\
 s = BaseHTTPServer.HTTPServer(('', {port}), SimpleHTTPServer.SimpleHTTPRequestHandler); \\
 s.serve_forever()" """
@@ -67,10 +69,11 @@ s.serve_forever()" """
     HTTPS_TEMPLATE = """\
 mkdir -p {root}/public_html/{response.URI_ROOT_PATH}
 cd {root}/public_html
-echo -n {achall.token} > {response.URI_ROOT_PATH}/{response.path}
+echo -n {validation} > {response.URI_ROOT_PATH}/{encoded_token}
 # run only once per server:
 openssl req -new -newkey rsa:4096 -subj "/" -days 1 -nodes -x509 -keyout ../key.pem -out ../cert.pem
-python -c "import BaseHTTPServer, SimpleHTTPServer, ssl; \\
+$(command -v python2 || command -v python2.7 || command -v python2.6) -c \\
+"import BaseHTTPServer, SimpleHTTPServer, ssl; \\
 SimpleHTTPServer.SimpleHTTPRequestHandler.extensions_map = {{'': '{ct}'}}; \\
 s = BaseHTTPServer.HTTPServer(('', {port}), SimpleHTTPServer.SimpleHTTPRequestHandler); \\
 s.socket = ssl.wrap_socket(s.socket, keyfile='../key.pem', certfile='../cert.pem'); \\
@@ -120,20 +123,34 @@ binary for temporary key/certificate generation.""".replace("\n", "")
             responses.append(self._perform_single(achall))
         return responses
 
+    @classmethod
+    def _test_mode_busy_wait(cls, port):
+        while True:
+            time.sleep(1)
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            try:
+                sock.connect(("localhost", port))
+            except socket.error:  # pragma: no cover
+                pass
+            else:
+                break
+            finally:
+                sock.close()
+
     def _perform_single(self, achall):
         # same path for each challenge response would be easier for
         # users, but will not work if multiple domains point at the
         # same server: default command doesn't support virtual hosts
-        response = challenges.SimpleHTTPResponse(
-            path=jose.b64encode(os.urandom(18)),
+        response, validation = achall.gen_response_and_validation(
             tls=(not self.config.no_simple_http_tls))
-        assert response.good_path  # is encoded os.urandom(18) good?
 
+        port = (response.port if self.config.simple_http_port is None
+                else int(self.config.simple_http_port))
         command = self.template.format(
             root=self._root, achall=achall, response=response,
-            ct=response.CONTENT_TYPE, port=(
-                response.port if self.config.simple_http_port is None
-                else self.config.simple_http_port))
+            validation=pipes.quote(validation.json_dumps()),
+            encoded_token=achall.chall.encode("token"),
+            ct=response.CONTENT_TYPE, port=port)
         if self.conf("test-mode"):
             logger.debug("Test mode. Executing the manual command: %s", command)
             try:
@@ -151,17 +168,18 @@ binary for temporary key/certificate generation.""".replace("\n", "")
             logger.debug("Manual command running as PID %s.", self._httpd.pid)
             # give it some time to bootstrap, before we try to verify
             # (cert generation in case of simpleHttpS might take time)
-            time.sleep(4)  # XXX
+            self._test_mode_busy_wait(port)
             if self._httpd.poll() is not None:
                 raise errors.Error("Couldn't execute manual command")
         else:
             self._notify_and_wait(self.MESSAGE_TEMPLATE.format(
-                achall=achall, response=response,
-                uri=response.uri(achall.domain), ct=response.CONTENT_TYPE,
-                command=command))
+                validation=validation.json_dumps(), response=response,
+                uri=response.uri(achall.domain, achall.challb.chall),
+                ct=response.CONTENT_TYPE, command=command))
 
         if response.simple_verify(
-                achall.challb, achall.domain, self.config.simple_http_port):
+                achall.chall, achall.domain,
+                achall.account_key.public_key(), self.config.simple_http_port):
             return response
         else:
             if self.conf("test-mode") and self._httpd.poll() is not None:

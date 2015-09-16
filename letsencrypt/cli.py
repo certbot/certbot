@@ -16,12 +16,16 @@ import zope.component
 import zope.interface.exceptions
 import zope.interface.verify
 
+from acme import client as acme_client
+from acme import jose
+
 import letsencrypt
 
 from letsencrypt import account
 from letsencrypt import configuration
 from letsencrypt import constants
 from letsencrypt import client
+from letsencrypt import crypto_util
 from letsencrypt import errors
 from letsencrypt import interfaces
 from letsencrypt import le_util
@@ -69,11 +73,11 @@ Choice of server for authentication/installation:
 
 More detailed help:
 
-  -h, --help [topic]    print this message, or detailed help on a topic; 
+  -h, --help [topic]    print this message, or detailed help on a topic;
                         the available topics are:
 
    all, apache, automation, nginx, paths, security, testing, or any of the
-   sucommands
+   subcommands
 """
 
 
@@ -241,16 +245,20 @@ def install(args, config, plugins):
     le_client.enhance_config(domains, args.redirect)
 
 
-def revoke(args, unused_config, unused_plugins):
+def revoke(args, config, unused_plugins):  # TODO: coop with renewal config
     """Revoke a previously obtained certificate."""
-    if args.cert_path is None and args.key_path is None:
-        return "At least one of --cert-path or --key-path is required"
-
-    # This depends on the renewal config and cannot be completed yet.
-    zope.component.getUtility(interfaces.IDisplay).notification(
-        "Revocation is not available with the new Boulder server yet.")
-    #client.revoke(args.installer, config, plugins, args.no_confirm,
-    #              args.cert_path, args.key_path)
+    if args.key_path is not None:  # revocation by cert key
+        logger.debug("Revoking %s using cert key %s",
+                     args.cert_path[0], args.key_path[0])
+        acme = acme_client.Client(
+            config.server, key=jose.JWK.load(args.key_path[1]))
+    else:  # revocation by account key
+        logger.debug("Revoking %s using Account Key", args.cert_path[0])
+        acc, _ = _determine_account(args, config)
+        # pylint: disable=protected-access
+        acme = client._acme_from_config_key(config, acc.key)
+    acme.revoke(jose.ComparableX509(crypto_util.pyopenssl_load_certificate(
+        args.cert_path[1])[0]))
 
 
 def rollback(args, config, plugins):
@@ -334,6 +342,7 @@ class SilentParser(object):  # pylint: disable=too-few-public-methods
     """
     def __init__(self, parser):
         self.parser = parser
+
     def add_argument(self, *args, **kwargs):
         """Wrap, but silence help"""
         kwargs["help"] = argparse.SUPPRESS
@@ -352,7 +361,6 @@ class HelpfulArgumentParser(object):
 
     """
     def __init__(self, args, plugins):
-        self.args = args
         plugin_names = [name for name, _p in plugins.iteritems()]
         self.help_topics = HELP_TOPICS + plugin_names + [None]
         self.parser = configargparse.ArgParser(
@@ -362,20 +370,32 @@ class HelpfulArgumentParser(object):
             default_config_files=flag_default("config_files"))
 
         # This is the only way to turn off overly verbose config flag documentation
-        self.parser._add_config_file_help = False # pylint: disable=protected-access
+        self.parser._add_config_file_help = False  # pylint: disable=protected-access
         self.silent_parser = SilentParser(self.parser)
 
+        self.args = self.preprocess_args(args)
         help1 = self.prescan_for_flag("-h", self.help_topics)
         help2 = self.prescan_for_flag("--help", self.help_topics)
         assert max(True, "a") == "a", "Gravity changed direction"
         help_arg = max(help1, help2)
-        if help_arg == True:
+        if help_arg:
             # just --help with no topic; avoid argparse altogether
             print USAGE
             sys.exit(0)
         self.visible_topics = self.determine_help_topics(help_arg)
         #print self.visible_topics
         self.groups = {}  # elements are added by .add_group()
+
+    def preprocess_args(self, args):
+        """Work around some limitations in argparse.
+
+        Currently, add the default verb "run" as a default.
+        """
+
+        for token in args:
+            if token in VERBS:
+                return args
+        return ["run"] + args
 
     def prescan_for_flag(self, flag, possible_arguments):
         """Checks cli input for flags.
@@ -541,11 +561,17 @@ def create_parser(plugins, args):
 
     _create_subparsers(helpful)
 
-    return helpful.parser
+    return helpful.parser, helpful.args
+
+# For now unfortunately this constant just needs to match the code below;
+# there isn't an elegant way to autogenerate it in time.
+VERBS = ["run", "auth", "install", "revoke", "rollback", "config_changes",\
+         "plugins"]
 
 
 def _create_subparsers(helpful):
     subparsers = helpful.parser.add_subparsers(metavar="SUBCOMMAND")
+
     def add_subparser(name, func):  # pylint: disable=missing-docstring
         subparser = subparsers.add_parser(
             name, help=func.__doc__.splitlines()[0], description=func.__doc__)
@@ -576,14 +602,16 @@ def _create_subparsers(helpful):
         "--cert-path", required=True, help="Path to a certificate that "
         "is going to be installed.")
     parser_install.add_argument(
-        "--key-path", required=True, help="Accompynying private key")
+        "--key-path", required=True, help="Accompanying private key")
     parser_install.add_argument(
         "--chain-path", help="Accompanying path to a certificate chain.")
     parser_revoke.add_argument(
-        "--cert-path", type=read_file, help="Revoke a specific certificate.")
+        "--cert-path", type=read_file, help="Revoke a specific certificate.",
+        required=True)
     parser_revoke.add_argument(
         "--key-path", type=read_file,
-        help="Revoke all certs generated by the provided authorized key.")
+        help="Revoke certificate using its accompanying key. Useful if "
+        "Account Key is lost.")
 
     parser_rollback.add_argument(
         "--checkpoints", type=int, metavar="N",
@@ -623,7 +651,7 @@ def _plugins_parsing(helpful, plugins):
         "plugins", description="Let's Encrypt client supports an "
         "extensible plugins architecture. See '%(prog)s plugins' for a "
         "list of all available plugins and their names. You can force "
-        "a particular plugin by setting options provided below. Futher "
+        "a particular plugin by setting options provided below. Further "
         "down this help message you will find plugin-specific options "
         "(prefixed by --{plugin_name}).")
     helpful.add(
@@ -701,7 +729,7 @@ def _handle_exception(exc_type, exc_value, trace, args):
                 with open(logfile, "w") as logfd:
                     traceback.print_exception(
                         exc_type, exc_value, trace, file=logfd)
-            except: # pylint: disable=bare-except
+            except:  # pylint: disable=bare-except
                 sys.exit("".join(
                     traceback.format_exception(exc_type, exc_value, trace)))
 
@@ -726,7 +754,8 @@ def main(cli_args=sys.argv[1:]):
 
     # note: arg parser internally handles --help (and exits afterwards)
     plugins = plugins_disco.PluginsRegistry.find_all()
-    args = create_parser(plugins, cli_args).parse_args(cli_args)
+    parser, tweaked_cli_args = create_parser(plugins, cli_args)
+    args = parser.parse_args(tweaked_cli_args)
     config = configuration.NamespaceConfig(args)
 
     # Setup logging ASAP, otherwise "No handlers could be found for

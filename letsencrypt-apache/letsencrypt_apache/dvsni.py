@@ -53,7 +53,7 @@ class ApacheDvsni(common.Dvsni):
             "le_dvsni_cert_challenge.conf")
 
     def perform(self):
-        """Peform a DVSNI challenge."""
+        """Perform a DVSNI challenge."""
         if not self.achalls:
             return []
         # Save any changes to the configuration as a precaution
@@ -62,7 +62,7 @@ class ApacheDvsni(common.Dvsni):
 
         # Prepare the server for HTTPS
         self.configurator.prepare_server_https(
-            str(self.configurator.config.dvsni_port))
+            str(self.configurator.config.dvsni_port), True)
 
         responses = []
 
@@ -163,7 +163,8 @@ class ApacheDvsni(common.Dvsni):
         # parses it as "\n"... c.f.:
         # https://docs.python.org/2.7/reference/lexical_analysis.html
         return self.VHOST_TEMPLATE.format(
-            vhost=ips, server_name=achall.nonce_domain,
+            vhost=ips,
+            server_name=achall.gen_response(achall.account_key).z_domain,
             ssl_options_conf_path=self.configurator.mod_ssl_conf,
             cert_path=self.get_cert_path(achall),
             key_path=self.get_key_path(achall),

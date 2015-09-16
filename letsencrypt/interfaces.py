@@ -142,7 +142,7 @@ class IAuthenticator(IPlugin):
 
         :param str domain: Domain for which challenge preferences are sought.
 
-        :returns: List of challege types (subclasses of
+        :returns: List of challenge types (subclasses of
             :class:`acme.challenges.Challenge`) with the most
             preferred challenges first. If a type is not specified, it means the
             Authenticator cannot perform the challenge.
@@ -194,8 +194,7 @@ class IConfig(zope.interface.Interface):
         filtered, stripped or sanitized.
 
     """
-    server = zope.interface.Attribute(
-        "ACME new registration URI (including /acme/new-reg).")
+    server = zope.interface.Attribute("ACME Directory Resource URI.")
     email = zope.interface.Attribute(
         "Email used for registration and recovery contact.")
     rsa_key_size = zope.interface.Attribute("Size of the RSA key.")
@@ -215,8 +214,6 @@ class IConfig(zope.interface.Interface):
     in_progress_dir = zope.interface.Attribute(
         "Directory used before a permanent checkpoint is finalized.")
     key_dir = zope.interface.Attribute("Keys storage.")
-    rec_token_dir = zope.interface.Attribute(
-        "Directory where all recovery tokens are saved.")
     temp_checkpoint_dir = zope.interface.Attribute(
         "Temporary checkpoint directory.")
 
@@ -416,17 +413,51 @@ class IDisplay(zope.interface.Interface):
 class IValidator(zope.interface.Interface):
     """Configuration validator."""
 
-    def redirect(name):
-        """Verify redirect to HTTPS."""
+    def certificate(cert, name, alt_host=None, port=443):
+        """Verifies the certificate presented at name is cert
 
-    def ocsp_stapling(name):
-        """Verify ocsp stapling for domain."""
+        :param OpenSSL.crypto.X509 cert: Expected certificate
+        :param str name: Server's domain name
+        :param bytes alt_host: Host to connect to instead of the IP
+            address of host
+        :param int port: Port to connect to
 
-    def https(names):
-        """Verify HTTPS is enabled for domain."""
+        :returns: True if the certificate was verified successfully
+        :rtype: bool
+
+        """
+
+    def redirect(name, port=80, headers=None):
+        """Verify redirect to HTTPS
+
+        :param str name: Server's domain name
+        :param int port: Port to connect to
+        :param dict headers: HTTP headers to include in request
+
+        :returns: True if redirect is successfully enabled
+        :rtype: bool
+
+        """
 
     def hsts(name):
-        """Verify HSTS header is enabled."""
+        """Verify HSTS header is enabled
+
+        :param str name: Server's domain name
+
+        :returns: True if HSTS header is successfully enabled
+        :rtype: bool
+
+        """
+
+    def ocsp_stapling(name):
+        """Verify ocsp stapling for domain
+
+        :param str name: Server's domain name
+
+        :returns: True if ocsp stapling is successfully enabled
+        :rtype: bool
+
+        """
 
 
 class IReporter(zope.interface.Interface):

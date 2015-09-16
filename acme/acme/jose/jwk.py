@@ -231,7 +231,7 @@ class JWKRSA(JWK):
                 'n': numbers.n,
                 'e': numbers.e,
             }
-        else: # rsa.RSAPrivateKey
+        else:  # rsa.RSAPrivateKey
             private = self.key.private_numbers()
             public = self.key.public_key().public_numbers()
             params = {

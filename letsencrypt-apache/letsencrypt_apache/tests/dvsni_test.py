@@ -4,8 +4,6 @@ import shutil
 
 import mock
 
-from acme import challenges
-
 from letsencrypt.plugins import common_test
 
 from letsencrypt_apache import obj
@@ -15,6 +13,7 @@ from letsencrypt_apache.tests import util
 class DvsniPerformTest(util.ApacheTest):
     """Test the ApacheDVSNI challenge."""
 
+    auth_key = common_test.DvsniTest.auth_key
     achalls = common_test.DvsniTest.achalls
 
     def setUp(self):  # pylint: disable=arguments-differ
@@ -39,17 +38,23 @@ class DvsniPerformTest(util.ApacheTest):
     @mock.patch("letsencrypt.le_util.exe_exists")
     @mock.patch("letsencrypt.le_util.run_script")
     def test_perform1(self, _, mock_exists):
+        mock_register = mock.Mock()
+        self.sni.configurator.reverter.register_undo_command = mock_register
+
         mock_exists.return_value = True
         self.sni.configurator.parser.update_runtime_variables = mock.Mock()
 
         achall = self.achalls[0]
         self.sni.add_chall(achall)
-        mock_setup_cert = mock.MagicMock(
-            return_value=challenges.DVSNIResponse(s="randomS1"))
+        response = self.achalls[0].gen_response(self.auth_key)
+        mock_setup_cert = mock.MagicMock(return_value=response)
         # pylint: disable=protected-access
         self.sni._setup_challenge_cert = mock_setup_cert
 
         responses = self.sni.perform()
+
+        # Make sure that register_undo_command was called into temp directory.
+        self.assertEqual(True, mock_register.call_args[0][0])
 
         mock_setup_cert.assert_called_once_with(achall)
 
@@ -58,22 +63,22 @@ class DvsniPerformTest(util.ApacheTest):
             len(self.sni.configurator.parser.find_dir(
                 "Include", self.sni.challenge_conf)), 1)
         self.assertEqual(len(responses), 1)
-        self.assertEqual(responses[0].s, "randomS1")
+        self.assertEqual(responses[0], response)
 
     def test_perform2(self):
         # Avoid load module
         self.sni.configurator.parser.modules.add("ssl_module")
 
+        acme_responses = []
         for achall in self.achalls:
             self.sni.add_chall(achall)
+            acme_responses.append(achall.gen_response(self.auth_key))
 
-        mock_setup_cert = mock.MagicMock(side_effect=[
-            challenges.DVSNIResponse(s="randomS0"),
-            challenges.DVSNIResponse(s="randomS1")])
+        mock_setup_cert = mock.MagicMock(side_effect=acme_responses)
         # pylint: disable=protected-access
         self.sni._setup_challenge_cert = mock_setup_cert
 
-        responses = self.sni.perform()
+        sni_responses = self.sni.perform()
 
         self.assertEqual(mock_setup_cert.call_count, 2)
 
@@ -87,13 +92,16 @@ class DvsniPerformTest(util.ApacheTest):
             len(self.sni.configurator.parser.find_dir(
                 "Include", self.sni.challenge_conf)),
             1)
-        self.assertEqual(len(responses), 2)
+        self.assertEqual(len(sni_responses), 2)
         for i in xrange(2):
-            self.assertEqual(responses[i].s, "randomS%d" % i)
+            self.assertEqual(sni_responses[i], acme_responses[i])
 
     def test_mod_config(self):
+        z_domains = []
         for achall in self.achalls:
             self.sni.add_chall(achall)
+            z_domain = achall.gen_response(self.auth_key).z_domain
+            z_domains.append(set([z_domain]))
 
         self.sni._mod_config()  # pylint: disable=protected-access
         self.sni.configurator.save()
@@ -111,9 +119,7 @@ class DvsniPerformTest(util.ApacheTest):
         for vhost in vhs:
             self.assertEqual(vhost.addrs, set([obj.Addr.fromstring("*:443")]))
             names = vhost.get_names()
-            self.assertTrue(
-                names == set([self.achalls[0].nonce_domain]) or
-                names == set([self.achalls[1].nonce_domain]))
+            self.assertTrue(names in z_domains)
 
     def test_get_dvsni_addrs_default(self):
         self.sni.configurator.choose_vhost = mock.Mock(

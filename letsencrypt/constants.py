@@ -16,7 +16,7 @@ CLI_DEFAULTS = dict(
                      "letsencrypt", "cli.ini"),
     ],
     verbose_count=-(logging.WARNING / 10),
-    server="https://acme-staging.api.letsencrypt.org/acme/new-reg",
+    server="https://acme-staging.api.letsencrypt.org/directory",
     rsa_key_size=2048,
     rollback_checkpoints=1,
     config_dir="/etc/letsencrypt",
@@ -87,10 +87,6 @@ LIVE_DIR = "live"
 
 TEMP_CHECKPOINT_DIR = "temp_checkpoint"
 """Temporary checkpoint directory (relative to `IConfig.work_dir`)."""
-
-REC_TOKEN_DIR = "recovery_tokens"
-"""Directory where all recovery tokens are saved (relative to
-`IConfig.work_dir`)."""
 
 RENEWAL_CONFIGS_DIR = "configs"
 """Renewal configs directory, relative to `IConfig.config_dir`."""

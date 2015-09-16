@@ -11,7 +11,6 @@ from acme import challenges
 
 from letsencrypt import achallenges
 from letsencrypt import errors
-from letsencrypt import le_util
 
 from letsencrypt.tests import acme_util
 
@@ -208,20 +207,11 @@ class TwoVhost80Test(util.ApacheTest):
         self.assertRaises(
             errors.MisconfigurationError, self.config.enable_mod, "ssl")
 
-    @mock.patch("letsencrypt.le_util.run_script")
-    @mock.patch("letsencrypt.le_util.exe_exists")
-    @mock.patch("letsencrypt_apache.parser.subprocess.Popen")
-    def test_enable_site(self, mock_popen, mock_exe_exists, mock_run_script):
-        mock_popen().returncode = 0
-        mock_popen().communicate.return_value = ("Define: DUMP_RUN_CFG", "")
-        mock_exe_exists.return_value = True
-
+    def test_enable_site(self):
         # Default 443 vhost
         self.assertFalse(self.vh_truth[1].enabled)
         self.config.enable_site(self.vh_truth[1])
         self.assertTrue(self.vh_truth[1].enabled)
-        # Mod enabled
-        self.assertTrue(mock_run_script.called)
 
         # Go again to make sure nothing fails
         self.config.enable_site(self.vh_truth[1])
@@ -303,7 +293,9 @@ class TwoVhost80Test(util.ApacheTest):
             "NameVirtualHost", "*:80"))
 
     def test_prepare_server_https(self):
-        self.config.parser.modules.add("ssl_module")
+        mock_enable = mock.Mock()
+        self.config.enable_mod = mock_enable
+
         mock_find = mock.Mock()
         mock_add_dir = mock.Mock()
         mock_find.return_value = []
@@ -313,7 +305,12 @@ class TwoVhost80Test(util.ApacheTest):
         self.config.parser.add_dir_to_ifmodssl = mock_add_dir
 
         self.config.prepare_server_https("443")
-        self.config.prepare_server_https("8080")
+        self.assertEqual(mock_enable.call_args[1], {"temp": False})
+
+        self.config.prepare_server_https("8080", temp=True)
+        # Enable mod is temporary
+        self.assertEqual(mock_enable.call_args[1], {"temp": True})
+
         self.assertEqual(mock_add_dir.call_count, 2)
 
     def test_make_vhost_ssl(self):
@@ -374,11 +371,11 @@ class TwoVhost80Test(util.ApacheTest):
     def test_perform(self, mock_restart, mock_dvsni_perform):
         # Only tests functionality specific to configurator.perform
         # Note: As more challenges are offered this will have to be expanded
-        _, achall1, achall2 = self.get_achalls()
+        account_key, achall1, achall2 = self.get_achalls()
 
         dvsni_ret_val = [
-            challenges.DVSNIResponse(s="randomS1"),
-            challenges.DVSNIResponse(s="randomS2"),
+            achall1.gen_response(account_key),
+            achall2.gen_response(account_key),
         ]
 
         mock_dvsni_perform.return_value = dvsni_ret_val
@@ -554,6 +551,7 @@ class TwoVhost80Test(util.ApacheTest):
         self.assertRaises(
             errors.PluginError,
             self.config.enhance, "letsencrypt.demo", "redirect")
+
     def test_unknown_rewrite2(self):
         # Skip the enable mod
         self.config.parser.modules.add("rewrite_module")
@@ -585,23 +583,21 @@ class TwoVhost80Test(util.ApacheTest):
 
     def get_achalls(self):
         """Return testing achallenges."""
-        auth_key = le_util.Key(self.rsa256_file, self.rsa256_pem)
+        account_key = self.rsa512jwk
         achall1 = achallenges.DVSNI(
             challb=acme_util.chall_to_challb(
                 challenges.DVSNI(
-                    r="jIq_Xy1mXGN37tb4L6Xj_es58fW571ZNyXekdZzhh7Q",
-                    nonce="37bc5eb75d3e00a19b4f6355845e5a18"),
+                    token="jIq_Xy1mXGN37tb4L6Xj_es58fW571ZNyXekdZzhh7Q"),
                 "pending"),
-            domain="encryption-example.demo", key=auth_key)
+            domain="encryption-example.demo", account_key=account_key)
         achall2 = achallenges.DVSNI(
             challb=acme_util.chall_to_challb(
                 challenges.DVSNI(
-                    r="uqnaPzxtrndteOqtrXb0Asl5gOJfWAnnx6QJyvcmlDU",
-                    nonce="59ed014cac95f77057b1d7a1b2c596ba"),
+                    token="uqnaPzxtrndteOqtrXb0Asl5gOJfWAnnx6QJyvcmlDU"),
                 "pending"),
-            domain="letsencrypt.demo", key=auth_key)
+            domain="letsencrypt.demo", account_key=account_key)
 
-        return auth_key, achall1, achall2
+        return account_key, achall1, achall2
 
     def test_make_addrs_sni_ready(self):
         self.config.version = (2, 2)

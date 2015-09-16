@@ -69,8 +69,8 @@ def _serve_sni(certs, sock, reuseaddr=True, method=_DEFAULT_DVSNI_SSL_METHOD,
                 raise errors.Error(error)
 
 
-def _probe_sni(name, host, port=443, timeout=300,
-               method=_DEFAULT_DVSNI_SSL_METHOD, source_address=('0', 0)):
+def probe_sni(name, host, port=443, timeout=300,
+              method=_DEFAULT_DVSNI_SSL_METHOD, source_address=('0', 0)):
     """Probe SNI server for SSL certificate.
 
     :param bytes name: Byte string to send as the server name in the
@@ -155,13 +155,18 @@ def _pyopenssl_cert_or_req_san(cert_or_req):
             for part in parts if part.startswith(prefix)]
 
 
-def gen_ss_cert(key, domains, not_before=None, validity=(7 * 24 * 60 * 60)):
+def gen_ss_cert(key, domains, not_before=None,
+                validity=(7 * 24 * 60 * 60), force_san=True):
     """Generate new self-signed certificate.
 
     :type domains: `list` of `unicode`
     :param OpenSSL.crypto.PKey key:
+    :param bool force_san:
 
-    Uses key and contains all domains.
+    If more than one domain is provided, all of the domains are put into
+    ``subjectAltName`` X.509 extension and first domain is set as the
+    subject CN. If only one domain is provided no ``subjectAltName``
+    extension is used, unless `force_san` is ``True``.
 
     """
     assert domains, "Must provide one or more hostnames for the cert."
@@ -178,7 +183,7 @@ def gen_ss_cert(key, domains, not_before=None, validity=(7 * 24 * 60 * 60)):
     # TODO: what to put into cert.get_subject()?
     cert.set_issuer(cert.get_subject())
 
-    if len(domains) > 1:
+    if force_san or len(domains) > 1:
         extensions.append(OpenSSL.crypto.X509Extension(
             b"subjectAltName",
             critical=False,
