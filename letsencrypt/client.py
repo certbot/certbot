@@ -315,7 +315,8 @@ class Client(object):
         """
         for path in cert_path, chain_path:
             le_util.make_or_verify_dir(
-                os.path.dirname(path), 0o755, os.geteuid())
+                os.path.dirname(path), 0o755, os.geteuid(),
+                self.config.strict_permissions)
 
         # try finally close
         cert_chain_abspath = None
