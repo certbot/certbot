@@ -9,14 +9,12 @@ import logging
 import os
 
 import OpenSSL
-import zope.component
 
 from acme import crypto_util as acme_crypto_util
 from acme import jose
 
 from letsencrypt import errors
 from letsencrypt import le_util
-from letsencrypt import interfaces
 
 
 
@@ -48,6 +46,8 @@ def init_save_key(key_size, key_dir, keyname="key-letsencrypt.pem"):
         logger.exception(err)
         raise err
 
+    import zope.component
+    from letsencrypt import interfaces
     config = zope.component.getUtility(interfaces.IConfig)
     # Save file
     le_util.make_or_verify_dir(key_dir, 0o700, os.geteuid(),
@@ -78,7 +78,8 @@ def init_save_csr(privkey, names, path, csrname="csr-letsencrypt.pem"):
     """
     csr_pem, csr_der = make_csr(privkey.pem, names)
 
-
+    import zope.component
+    from letsencrypt import interfaces
     config = zope.component.getUtility(interfaces.IConfig)
     # Save CSR
     le_util.make_or_verify_dir(path, 0o755, os.geteuid(),
