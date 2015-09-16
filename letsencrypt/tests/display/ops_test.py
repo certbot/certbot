@@ -384,5 +384,27 @@ class SuccessInstallationTest(unittest.TestCase):
             self.assertTrue(name in arg)
 
 
+class SuccessRenewalTest(unittest.TestCase):
+    # pylint: disable=too-few-public-methods
+    """Test the success renewal message."""
+    @classmethod
+    def _call(cls, names):
+        from letsencrypt.display.ops import success_renewal
+        success_renewal(names)
+
+    @mock.patch("letsencrypt.display.ops.util")
+    def test_success_renewal(self, mock_util):
+        mock_util().notification.return_value = None
+        names = ["example.com", "abc.com"]
+
+        self._call(names)
+
+        self.assertEqual(mock_util().notification.call_count, 1)
+        arg = mock_util().notification.call_args_list[0][0][0]
+
+        for name in names:
+            self.assertTrue(name in arg)
+
+
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

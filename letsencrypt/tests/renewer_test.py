@@ -32,9 +32,8 @@ def fill_with_sample_data(rc_object):
             f.write(kind)
 
 
-class RenewableCertTests(unittest.TestCase):
-    # pylint: disable=too-many-public-methods
-    """Tests for letsencrypt.renewer.*."""
+class BaseRenewableCertTest(unittest.TestCase):
+
     def setUp(self):
         from letsencrypt import storage
         self.tempdir = tempfile.mkdtemp()
@@ -52,10 +51,31 @@ class RenewableCertTests(unittest.TestCase):
                                         kind + ".pem")
         config.filename = os.path.join(self.tempdir, "configs",
                                        "example.org.conf")
+        self.config = config
 
         self.defaults = configobj.ConfigObj()
         self.test_rc = storage.RenewableCert(
-            config, self.defaults, self.cli_config)
+            self.config, self.defaults, self.cli_config)
+
+    def _write_out_ex_kinds(self):
+        for kind in ALL_FOUR:
+            where = getattr(self.test_rc, kind)
+            os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                    "{0}12.pem".format(kind)), where)
+            with open(where, "w") as f:
+                f.write(kind)
+            os.unlink(where)
+            os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                    "{0}11.pem".format(kind)), where)
+            with open(where, "w") as f:
+                f.write(kind)
+
+
+class RenewableCertTests(BaseRenewableCertTest):
+    # pylint: disable=too-many-public-methods
+    """Tests for letsencrypt.renewer.*."""
+    def setUp(self):
+        super(RenewableCertTests, self).setUp()
 
     def tearDown(self):
         shutil.rmtree(self.tempdir)
@@ -296,6 +316,26 @@ class RenewableCertTests(unittest.TestCase):
             else:
                 self.assertFalse(self.test_rc.has_pending_deployment())
 
+    def test_names(self):
+        # Trying the current version
+        test_cert = test_util.load_vector("cert-san.pem")
+        os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                "cert12.pem"), self.test_rc.cert)
+        with open(self.test_rc.cert, "w") as f:
+            f.write(test_cert)
+        self.assertEqual(self.test_rc.names(),
+                         ["example.com", "www.example.com"])
+
+        # Trying a non-current version
+        test_cert = test_util.load_vector("cert.pem")
+        os.unlink(self.test_rc.cert)
+        os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                "cert15.pem"), self.test_rc.cert)
+        with open(self.test_rc.cert, "w") as f:
+            f.write(test_cert)
+        self.assertEqual(self.test_rc.names(12),
+                         ["example.com", "www.example.com"])
+
     def _test_notafterbefore(self, function, timestamp):
         test_cert = test_util.load_vector("cert.pem")
         os.symlink(os.path.join("..", "..", "archive", "example.org",
@@ -321,17 +361,8 @@ class RenewableCertTests(unittest.TestCase):
         """Test should_autodeploy() and should_autorenew() on the basis
         of expiry time windows."""
         test_cert = test_util.load_vector("cert.pem")
-        for kind in ALL_FOUR:
-            where = getattr(self.test_rc, kind)
-            os.symlink(os.path.join("..", "..", "archive", "example.org",
-                                    "{0}12.pem".format(kind)), where)
-            with open(where, "w") as f:
-                f.write(kind)
-            os.unlink(where)
-            os.symlink(os.path.join("..", "..", "archive", "example.org",
-                                    "{0}11.pem".format(kind)), where)
-            with open(where, "w") as f:
-                f.write(kind)
+        self._write_out_ex_kinds()
+
         self.test_rc.update_all_links_to(12)
         with open(self.test_rc.cert, "w") as f:
             f.write(test_cert)

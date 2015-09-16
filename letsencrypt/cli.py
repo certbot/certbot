@@ -12,6 +12,8 @@ import time
 import traceback
 
 import configargparse
+import configobj
+import OpenSSL
 import zope.component
 import zope.interface.exceptions
 import zope.interface.verify
@@ -31,6 +33,7 @@ from letsencrypt import interfaces
 from letsencrypt import le_util
 from letsencrypt import log
 from letsencrypt import reporter
+from letsencrypt import storage
 
 from letsencrypt.display import util as display_util
 from letsencrypt.display import ops as display_ops
@@ -163,7 +166,37 @@ def _init_le_client(args, config, authenticator, installer):
     return client.Client(config, acc, authenticator, installer, acme=acme)
 
 
-def run(args, config, plugins):
+def _find_duplicative_certs(domains, config, renew_config):
+    """Find existing certs that duplicate the request."""
+
+    identical_names_cert, subset_names_cert = None, None
+
+    configs_dir = renew_config.renewal_configs_dir
+    cli_config = configuration.RenewerConfiguration(config)
+    for renewal_file in os.listdir(configs_dir):
+        try:
+            full_path = os.path.join(configs_dir, renewal_file)
+            rc_config = configobj.ConfigObj(renew_config.renewer_config_file)
+            rc_config.merge(configobj.ConfigObj(full_path))
+            rc_config.filename = full_path
+            candidate_lineage = storage.RenewableCert(
+                rc_config, config_opts=None, cli_config=cli_config)
+        except (configobj.ConfigObjError, errors.CertStorageError, IOError):
+            logger.warning("Renewal configuration file %s is broken. "
+                           "Skipping.", full_path)
+            continue
+        # TODO: Handle these differently depending on whether they are
+        #       expired or still valid?
+        candidate_names = set(candidate_lineage.names())
+        if candidate_names == set(domains):
+            identical_names_cert = candidate_lineage
+        elif candidate_names.issubset(set(domains)):
+            subset_names_cert = candidate_lineage
+
+    return identical_names_cert, subset_names_cert
+
+
+def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-locals
     """Obtain a certificate and install."""
     if args.configurator is not None and (args.installer is not None or
                                           args.authenticator is not None):
@@ -185,15 +218,86 @@ def run(args, config, plugins):
         return "Configurator could not be determined"
 
     domains = _find_domains(args, installer)
+
+    treat_as_renewal = False
+
+    # Considering the possibility that the requested certificate is
+    # related to an existing certificate.  (config.duplicate, which
+    # is set with --duplicate, skips all of this logic and forces any
+    # kind of certificate to be obtained with treat_as_renewal = False.)
+    if not config.duplicate:
+        identical_names_cert, subset_names_cert = _find_duplicative_certs(
+            domains, config, configuration.RenewerConfiguration(config))
+        # I am not sure whether that correctly reads the systemwide
+        # configuration file.
+        question = None
+        if identical_names_cert is not None:
+            question = (
+                "You have an existing certificate that contains exactly the "
+                "same domains you requested (ref: {0})\n\nDo you want to "
+                "renew and replace this certificate with a newly-issued one?"
+            ).format(identical_names_cert.configfile.filename)
+        elif subset_names_cert is not None:
+            question = (
+                "You have an existing certificate that contains a portion of "
+                "the domains you requested (ref: {0})\n\nIt contains these "
+                "names: {1}\n\nYou requested these names for the new "
+                "certificate: {2}.\n\nDo you want to replace this existing "
+                "certificate with the new certificate?"
+            ).format(subset_names_cert.configfile.filename,
+                     ", ".join(subset_names_cert.names()),
+                     ", ".join(domains))
+        if question is None:
+            # We aren't in a duplicative-names situation at all, so we don't
+            # have to tell or ask the user anything about this.
+            pass
+        elif zope.component.getUtility(interfaces.IDisplay).yesno(
+                question, "Replace", "Cancel"):
+            treat_as_renewal = True
+        else:
+            reporter_util = zope.component.getUtility(interfaces.IReporter)
+            reporter_util.add_message(
+                "To obtain a new certificate that {0} an existing certificate "
+                "in its domain-name coverage, you must use the --duplicate "
+                "option.\n\nFor example:\n\n{1} --duplicate {2}".format(
+                    "duplicates" if identical_names_cert is not None else
+                    "overlaps with", sys.argv[0], " ".join(sys.argv[1:])),
+                reporter_util.HIGH_PRIORITY)
+            return 1
+
+    # Attempting to obtain the certificate
     # TODO: Handle errors from _init_le_client?
     le_client = _init_le_client(args, config, authenticator, installer)
-    lineage = le_client.obtain_and_enroll_certificate(
-        domains, authenticator, installer, plugins)
-    if not lineage:
-        return "Certificate could not be obtained"
-    le_client.deploy_certificate(
-        domains, lineage.privkey, lineage.cert, lineage.chain)
-    le_client.enhance_config(domains, args.redirect)
+    if treat_as_renewal:
+        lineage = identical_names_cert if identical_names_cert is not None else subset_names_cert
+        # TODO: Use existing privkey instead of generating a new one
+        new_certr, new_chain, new_key, _ = le_client.obtain_certificate(domains)
+        # TODO: Check whether it worked!
+        lineage.save_successor(
+            lineage.latest_common_version(), OpenSSL.crypto.dump_certificate(
+                OpenSSL.crypto.FILETYPE_PEM, new_certr.body),
+            new_key.pem, OpenSSL.crypto.dump_certificate(
+                OpenSSL.crypto.FILETYPE_PEM, new_chain))
+
+        lineage.update_all_links_to(lineage.latest_common_version())
+        # TODO: Check return value of save_successor
+        # TODO: Also update lineage renewal config with any relevant
+        #       configuration values from this attempt?
+        le_client.deploy_certificate(
+            domains, lineage.privkey, lineage.cert, lineage.chain)
+        display_ops.success_renewal(domains)
+    else:
+        # TREAT AS NEW REQUEST
+        lineage = le_client.obtain_and_enroll_certificate(
+            domains, authenticator, installer, plugins)
+        if not lineage:
+            return "Certificate could not be obtained"
+        # TODO: This treats the key as changed even when it wasn't
+        # TODO: We also need to pass the fullchain (for Nginx)
+        le_client.deploy_certificate(
+            domains, lineage.privkey, lineage.cert, lineage.chain)
+        le_client.enhance_config(domains, args.redirect)
+        display_ops.success_installation(domains)
 
 
 def auth(args, config, plugins):
@@ -503,6 +607,9 @@ def create_parser(plugins, args):
     #for subparser in parser_run, parser_auth, parser_install:
     #    subparser.add_argument("domains", nargs="*", metavar="domain")
     helpful.add(None, "-d", "--domains", metavar="DOMAIN", action="append")
+    helpful.add(
+        None, "--duplicate", dest="duplicate", action="store_true",
+        help="Allow getting a certificate that duplicates an existing one")
 
     helpful.add_group(
         "automation",
@@ -688,7 +795,7 @@ def _setup_logging(args):
     # TODO: change before release?
     log_file_name = os.path.join(args.logs_dir, 'letsencrypt.log')
     file_handler = logging.handlers.RotatingFileHandler(
-        log_file_name, maxBytes=2**20, backupCount=10)
+        log_file_name, maxBytes=2 ** 20, backupCount=10)
     # rotate on each invocation, rollover only possible when maxBytes
     # is nonzero and backupCount is nonzero, so we set maxBytes as big
     # as possible not to overrun in single CLI invocation (1MB).

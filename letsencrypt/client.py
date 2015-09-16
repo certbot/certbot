@@ -378,8 +378,6 @@ class Client(object):
         # sites may have been enabled / final cleanup
         self.installer.restart()
 
-        display_ops.success_installation(domains)
-
     def enhance_config(self, domains, redirect=None):
         """Enhance the configuration.
 
