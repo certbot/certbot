@@ -92,7 +92,7 @@ def make_or_verify_dir(directory, mode=0o755, uid=0, strict=False):
             if strict and not check_permissions(directory, mode, uid):
                 raise errors.Error(
                     "%s exists, but it should be owned by user %d with"
-                    "permissions %d" % (directory, uid, oct(mode)))
+                    "permissions %s" % (directory, uid, oct(mode)))
         else:
             raise
 
