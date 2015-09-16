@@ -4,6 +4,7 @@ import pkg_resources
 import unittest
 
 import mock
+import zope.component
 
 from acme import jose
 
@@ -60,6 +61,7 @@ def get_nginx_configurator(
         name="nginx",
         version=version)
     config.prepare()
+    zope.component.provideUtility(config)
     return config
 
 
