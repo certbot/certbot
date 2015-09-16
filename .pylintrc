@@ -38,7 +38,7 @@ load-plugins=linter_plugin
 # --enable=similarities". If you want to run only the classes checker, but have
 # no Warning level messages displayed, use"--disable=all --enable=classes
 # --disable=W"
-disable=fixme,locally-disabled,abstract-class-not-used,duplicate-code
+disable=fixme,locally-disabled,abstract-class-not-used,bad-continuation,too-few-public-methods,no-self-use,duplicate-code
 # abstract-class-not-used cannot be disabled locally (at least in pylint 1.4.1)
 
 
@@ -101,7 +101,7 @@ function-rgx=[a-z_][a-z0-9_]{2,40}$
 function-name-hint=[a-z_][a-z0-9_]{2,40}$
 
 # Regular expression matching correct variable names
-variable-rgx=[a-z_][a-z0-9_]{2,30}$
+variable-rgx=[a-z_][a-z0-9_]{1,30}$
 
 # Naming hint for variable names
 variable-name-hint=[a-z_][a-z0-9_]{2,30}$
@@ -228,7 +228,8 @@ max-module-lines=1250
 indent-string='    '
 
 # Number of spaces of indent required inside a hanging or continued line.
-indent-after-paren=4
+# This does something silly/broken...
+#indent-after-paren=4
 
 
 [TYPECHECK]
