@@ -6,14 +6,13 @@ import traceback
 import tempfile
 import unittest
 
-import configobj
 import mock
 
 from letsencrypt import account
 from letsencrypt import configuration
 from letsencrypt import errors
-from letsencrypt import storage
 
+from letsencrypt.tests import renewer_test
 from letsencrypt.tests import test_util
 
 
@@ -166,40 +165,13 @@ class DetermineAccountTest(unittest.TestCase):
         self.assertEqual("other email", self.args.email)
 
 
-class DuplicativeCertsTest(unittest.TestCase):
+class DuplicativeCertsTest(renewer_test.BaseRenewableCertTest):
+    """Test to avoid duplicate lineages."""
 
     def setUp(self):
-        # The stuff below is taken from renewer_test.py
-        self.tempdir = tempfile.mkdtemp()
-        self.cli_config = configuration.RenewerConfiguration(
-            namespace=mock.MagicMock(config_dir=self.tempdir))
-        os.makedirs(os.path.join(self.tempdir, "live", "example.org"))
-        os.makedirs(os.path.join(self.tempdir, "archive", "example.org"))
-        os.makedirs(os.path.join(self.tempdir, "configs"))
-        config = configobj.ConfigObj()
-        for kind in storage.ALL_FOUR:
-            config[kind] = os.path.join(self.tempdir, "live", "example.org",
-                                        kind + ".pem")
-        config.filename = os.path.join(self.tempdir, "configs",
-                                       "example.org.conf")
-        config.write()
-        self.config = config
-        self.defaults = configobj.ConfigObj()
-        self.test_rc = storage.RenewableCert(
-            self.config, self.defaults, self.cli_config)
-        for kind in storage.ALL_FOUR:
-            where = getattr(self.test_rc, kind)
-            os.symlink(os.path.join("..", "..", "archive", "example.org",
-                                    "{0}12.pem".format(kind)), where)
-            with open(where, "w") as f:
-                f.write(kind)
-            os.unlink(where)
-            os.symlink(os.path.join("..", "..", "archive", "example.org",
-                                    "{0}11.pem".format(kind)), where)
-            with open(where, "w") as f:
-                f.write(kind)
-
-        # Here we will use test_rc to create duplicative stuff
+        super(DuplicativeCertsTest, self).setUp()
+        self.config.write()
+        self._write_out_ex_kinds()
 
     def tearDown(self):
         shutil.rmtree(self.tempdir)
