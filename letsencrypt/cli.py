@@ -174,13 +174,17 @@ def _find_duplicative_certs(domains, config, renew_config):
     configs_dir = renew_config.renewal_configs_dir
     cli_config = configuration.RenewerConfiguration(config)
     for renewal_file in os.listdir(configs_dir):
-        full_path = os.path.join(configs_dir, renewal_file)
-        rc_config = configobj.ConfigObj(renew_config.renewer_config_file)
-        rc_config.merge(configobj.ConfigObj(full_path))
-        rc_config.filename = full_path
-
-        candidate_lineage = storage.RenewableCert(rc_config, config_opts=None,
-                                                  cli_config=cli_config)
+        try:
+            full_path = os.path.join(configs_dir, renewal_file)
+            rc_config = configobj.ConfigObj(renew_config.renewer_config_file)
+            rc_config.merge(configobj.ConfigObj(full_path))
+            rc_config.filename = full_path
+            candidate_lineage = storage.RenewableCert(
+                rc_config, config_opts=None, cli_config=cli_config)
+        except (configobj.ConfigObjError, errors.CertStorageError, IOError):
+            logger.warning("Renewal configuration file %s is broken. "
+                           "Skipping.", full_path)
+            continue
         # TODO: Handle these differently depending on whether they are
         #       expired or still valid?
         candidate_names = set(candidate_lineage.names())
