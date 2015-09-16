@@ -352,7 +352,6 @@ class HelpfulArgumentParser(object):
 
     """
     def __init__(self, args, plugins):
-        print args
         plugin_names = [name for name, _p in plugins.iteritems()]
         self.help_topics = HELP_TOPICS + plugin_names + [None]
         self.parser = configargparse.ArgParser(
