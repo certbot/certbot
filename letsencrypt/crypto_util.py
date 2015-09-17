@@ -16,8 +16,6 @@ from acme import jose
 from letsencrypt import errors
 from letsencrypt import le_util
 
-
-
 logger = logging.getLogger(__name__)
 
 

@@ -675,7 +675,7 @@ def create_parser(plugins, args):
 
 # For now unfortunately this constant just needs to match the code below;
 # there isn't an elegant way to autogenerate it in time.
-VERBS = ["run", "auth", "install", "revoke", "rollback", "config_changes",\
+VERBS = ["run", "auth", "install", "revoke", "rollback", "config_changes",
          "plugins"]
 
 
