@@ -848,13 +848,13 @@ def _handle_exception(exc_type, exc_value, trace, args):
         else:
             # Tell the user a bit about what happened, without overwhelming
             # them with a full traceback
-            msg  = "An unexpected error occurred.\n"
-            msg += traceback.format_exception_only(exc_type,exc_value)[0]
-            msg += "Please see the "
+            msg = ("An unexpected error occurred.\n" +
+                   traceback.format_exception_only(exc_type, exc_value)[0] +
+                   "Please see the ")
             if args is None:
-                msg  += "logfile '{0}' for more details.".format(logfile)
+                msg += "logfile '{0}' for more details.".format(logfile)
             else:
-                msg  += "logfiles in {0} for more details.".format(args.logs_dir)
+                msg += "logfiles in {0} for more details.".format(args.logs_dir)
             sys.exit(msg)
     else:
         sys.exit("".join(
