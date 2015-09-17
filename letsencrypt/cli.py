@@ -850,7 +850,7 @@ def _handle_exception(exc_type, exc_value, trace, args):
             # them with a full traceback
             msg  = "An unexpected error occurred.\n"
             msg += traceback.format_exception_only(exc_type,exc_value)[0]
-            msg += "\nPlease see the "
+            msg += "Please see the "
             if args is None:
                 msg  += "logfile '{0}' for more details.".format(logfile)
             else:
