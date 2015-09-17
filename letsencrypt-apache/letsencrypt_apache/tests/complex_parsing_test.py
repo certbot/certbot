@@ -98,6 +98,9 @@ class ComplexParserTest(util.ParserTest):
     def test_include_fullpath(self):
         self.verify_fnmatch(os.path.join(self.config_path, "test_fnmatch.conf"))
 
+    def test_include_fullpath_trailing_slash(self):
+        self.verify_fnmatch(self.config_path + "//")
+
     def test_include_variable(self):
         self.verify_fnmatch("../complex_parsing/${fnmatch_filename}")
 
