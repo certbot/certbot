@@ -49,7 +49,7 @@ class BaseRenewableCertTest(unittest.TestCase):
         for kind in ALL_FOUR:
             config[kind] = os.path.join(self.tempdir, "live", "example.org",
                                         kind + ".pem")
-        config.filename = os.path.join(self.tempdir, "configs",
+        config.filename = os.path.join(self.tempdir, "renewal",
                                        "example.org.conf")
         self.config = config
 
