@@ -109,6 +109,5 @@ class ComplexParserTest(util.ParserTest):
         self.verify_fnmatch("test_*.onf", False)
 
 
-
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
