@@ -13,7 +13,6 @@ from letsencrypt import achallenges
 from letsencrypt import errors
 
 from letsencrypt_nginx.tests import util
-import zope.component
 
 class NginxConfiguratorTest(util.NginxTest):
     """Test a semi complex vhost configuration."""

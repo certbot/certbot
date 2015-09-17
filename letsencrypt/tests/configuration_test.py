@@ -1,9 +1,7 @@
 """Tests for letsencrypt.configuration."""
 import os
 import unittest
-
 import mock
-
 
 class NamespaceConfigTest(unittest.TestCase):
     """Tests for letsencrypt.configuration.NamespaceConfig."""
