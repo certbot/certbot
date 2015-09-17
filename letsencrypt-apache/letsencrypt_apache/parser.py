@@ -394,6 +394,8 @@ class ApacheParser(object):
         if not arg.startswith("/"):
             # Normpath will condense ../
             arg = os.path.normpath(os.path.join(self.root, arg))
+        else:
+            arg = os.path.normpath(arg)
 
         # Attempts to add a transform to the file if one does not already exist
         if os.path.isdir(arg):
