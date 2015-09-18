@@ -46,7 +46,7 @@ COPY letsencrypt /opt/letsencrypt/src/letsencrypt/
 COPY acme /opt/letsencrypt/src/acme/
 COPY letsencrypt-apache /opt/letsencrypt/src/letsencrypt-apache/
 COPY letsencrypt-nginx /opt/letsencrypt/src/letsencrypt-nginx/
-
+COPY letsencrypt-plesk /opt/letsencrypt/src/letsencrypt-plesk/
 
 # requirements.txt not installed!
 RUN virtualenv --no-site-packages -p python2 /opt/letsencrypt/venv && \
@@ -54,7 +54,8 @@ RUN virtualenv --no-site-packages -p python2 /opt/letsencrypt/venv && \
     -e /opt/letsencrypt/src/acme \
     -e /opt/letsencrypt/src \
     -e /opt/letsencrypt/src/letsencrypt-apache \
-    -e /opt/letsencrypt/src/letsencrypt-nginx
+    -e /opt/letsencrypt/src/letsencrypt-nginx \
+    -e /opt/letsencrypt/src/letsencrypt-plesk
 
 # install in editable mode (-e) to save space: it's not possible to
 # "rm -rf /opt/letsencrypt/src" (it's stays in the underlaying image);

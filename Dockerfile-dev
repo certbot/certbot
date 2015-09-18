@@ -46,6 +46,7 @@ COPY letsencrypt /opt/letsencrypt/src/letsencrypt/
 COPY acme /opt/letsencrypt/src/acme/
 COPY letsencrypt-apache /opt/letsencrypt/src/letsencrypt-apache/
 COPY letsencrypt-nginx /opt/letsencrypt/src/letsencrypt-nginx/
+COPY letsencrypt-plesk /opt/letsencrypt/src/letsencrypt-plesk/
 COPY tests /opt/letsencrypt/src/tests/
 
 RUN virtualenv --no-site-packages -p python2 /opt/letsencrypt/venv && \
@@ -55,6 +56,7 @@ RUN virtualenv --no-site-packages -p python2 /opt/letsencrypt/venv && \
     -e /opt/letsencrypt/src \
     -e /opt/letsencrypt/src/letsencrypt-apache \
     -e /opt/letsencrypt/src/letsencrypt-nginx \
+    -e /opt/letsencrypt/src/letsencrypt-plesk \
     -e /opt/letsencrypt/src[dev,docs,testing]
 
 # install in editable mode (-e) to save space: it's not possible to
