@@ -24,7 +24,7 @@ class PleskChallenge(object):
             domain=achall.domain,
             file_path=response.URI_ROOT_PATH,
             file_name=achall.chall.encode("token"),
-            content=validation.to_json())
+            content=validation.json_dumps())
         return response
 
     def _put_validation_file(self, domain, file_path, file_name, content):
@@ -74,7 +74,8 @@ class PleskChallenge(object):
         except Exception as e:
             logger.debug(str(e))
 
-    def _is_sub_path(self, child, parent):  # pylint: disable=no-self-use
+    @staticmethod
+    def _is_sub_path(child, parent):
         child = os.path.realpath(child)
         parent = os.path.join(os.path.realpath(parent), '')
         common = os.path.commonprefix([child, parent])
