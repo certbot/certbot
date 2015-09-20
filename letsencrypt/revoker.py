@@ -288,7 +288,7 @@ class Revoker(object):
             :class:`letsencrypt.revoker.Cert`
 
         """
-        list_path2 = tempfile.mktemp(".tmp", "LIST")
+        _, list_path2 = tempfile.mkstemp(".tmp", "LIST")
         idx = 0
 
         with open(self.list_path, "rb") as orgfile:
