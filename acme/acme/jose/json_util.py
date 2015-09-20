@@ -307,6 +307,7 @@ def encode_b64jose(data):
     # b64encode produces ASCII characters only
     return b64.b64encode(data).decode('ascii')
 
+
 def decode_b64jose(data, size=None, minimum=False):
     """Decode JOSE Base-64 field.
 
@@ -324,12 +325,13 @@ def decode_b64jose(data, size=None, minimum=False):
     except error_cls as error:
         raise errors.DeserializationError(error)
 
-    if size is not None and ((not minimum and len(decoded) != size)
-                             or (minimum and len(decoded) < size)):
+    if size is not None and ((not minimum and len(decoded) != size) or
+                             (minimum and len(decoded) < size)):
         raise errors.DeserializationError(
             "Expected at least or exactly {0} bytes".format(size))
 
     return decoded
+
 
 def encode_hex16(value):
     """Hexlify.
@@ -339,6 +341,7 @@ def encode_hex16(value):
 
     """
     return binascii.hexlify(value).decode()
+
 
 def decode_hex16(value, size=None, minimum=False):
     """Decode hexlified field.
@@ -352,14 +355,15 @@ def decode_hex16(value, size=None, minimum=False):
 
     """
     value = value.encode()
-    if size is not None and ((not minimum and len(value) != size * 2)
-                             or (minimum and len(value) < size * 2)):
+    if size is not None and ((not minimum and len(value) != size * 2) or
+                             (minimum and len(value) < size * 2)):
         raise errors.DeserializationError()
     error_cls = TypeError if six.PY2 else binascii.Error
     try:
         return binascii.unhexlify(value)
     except error_cls as error:
         raise errors.DeserializationError(error)
+
 
 def encode_cert(cert):
     """Encode certificate as JOSE Base-64 DER.
@@ -370,6 +374,7 @@ def encode_cert(cert):
     """
     return encode_b64jose(OpenSSL.crypto.dump_certificate(
         OpenSSL.crypto.FILETYPE_ASN1, cert))
+
 
 def decode_cert(b64der):
     """Decode JOSE Base-64 DER-encoded certificate.
@@ -384,6 +389,7 @@ def decode_cert(b64der):
     except OpenSSL.crypto.Error as error:
         raise errors.DeserializationError(error)
 
+
 def encode_csr(csr):
     """Encode CSR as JOSE Base-64 DER.
 
@@ -393,6 +399,7 @@ def encode_csr(csr):
     """
     return encode_b64jose(OpenSSL.crypto.dump_certificate_request(
         OpenSSL.crypto.FILETYPE_ASN1, csr))
+
 
 def decode_csr(b64der):
     """Decode JOSE Base-64 DER-encoded CSR.

@@ -45,7 +45,7 @@ class NamespaceConfig(object):
         return (parsed.netloc + parsed.path).replace('/', os.path.sep)
 
     @property
-    def accounts_dir(self):  #pylint: disable=missing-docstring
+    def accounts_dir(self):  # pylint: disable=missing-docstring
         return os.path.join(
             self.namespace.config_dir, constants.ACCOUNTS_DIR, self.server_path)
 

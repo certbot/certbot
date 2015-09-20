@@ -48,13 +48,14 @@ class Revoker(object):
     """
     def __init__(self, installer, config, no_confirm=False):
         # XXX
-        self.acme = acme_client.Client(new_reg_uri=None, key=None, alg=None)
+        self.acme = acme_client.Client(directory=None, key=None, alg=None)
 
         self.installer = installer
         self.config = config
         self.no_confirm = no_confirm
 
-        le_util.make_or_verify_dir(config.cert_key_backup, 0o700, os.geteuid())
+        le_util.make_or_verify_dir(config.cert_key_backup, 0o700, os.geteuid(),
+                                   self.config.strict_permissions)
 
         # TODO: Find a better solution for this...
         self.list_path = os.path.join(config.cert_key_backup, "LIST")
@@ -333,7 +334,8 @@ class Revoker(object):
 
         """
         list_path = os.path.join(config.cert_key_backup, "LIST")
-        le_util.make_or_verify_dir(config.cert_key_backup, 0o700, os.geteuid())
+        le_util.make_or_verify_dir(config.cert_key_backup, 0o700, os.geteuid(),
+                                   config.strict_permissions)
 
         cls._catalog_files(
             config.cert_key_backup, cert_path, key_path, list_path)

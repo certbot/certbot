@@ -107,8 +107,8 @@ class ComparableRSAKey(ComparableKey):  # pylint: disable=too-few-public-methods
     """Wrapper for `cryptography` RSA keys.
 
     Wraps around:
-    - `cryptography.hazmat.primitives.assymetric.RSAPrivateKey`
-    - `cryptography.hazmat.primitives.assymetric.RSAPublicKey`
+    - `cryptography.hazmat.primitives.asymmetric.RSAPrivateKey`
+    - `cryptography.hazmat.primitives.asymmetric.RSAPublicKey`
 
     """
 

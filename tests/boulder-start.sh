@@ -2,6 +2,7 @@
 # Download and run Boulder instance for integration testing
 
 export GOPATH="${GOPATH:-/tmp/go}"
+export PATH="$GOPATH/bin:$PATH"
 
 # `/...` avoids `no buildable Go source files` errors, for more info
 # see `go help packages`

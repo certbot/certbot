@@ -52,6 +52,7 @@ class FieldTest(unittest.TestCase):
             # pylint: disable=missing-docstring
             def to_partial_json(self):
                 return 'foo'  # pragma: no cover
+
             @classmethod
             def from_json(cls, jobj):
                 pass  # pragma: no cover
@@ -93,14 +94,18 @@ class JSONObjectWithFieldsMetaTest(unittest.TestCase):
         self.field2 = Field('Baz2')
         # pylint: disable=invalid-name,missing-docstring,too-few-public-methods
         # pylint: disable=blacklisted-name
+
         @six.add_metaclass(JSONObjectWithFieldsMeta)
         class A(object):
             __slots__ = ('bar',)
             baz = self.field
+
         class B(A):
             pass
+
         class C(A):
             baz = self.field2
+
         self.a_cls = A
         self.b_cls = B
         self.c_cls = C

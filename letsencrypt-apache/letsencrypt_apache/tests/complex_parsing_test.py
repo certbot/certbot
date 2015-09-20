@@ -56,7 +56,6 @@ class ComplexParserTest(util.ParserTest):
         self.assertRaises(
             errors.PluginError, self.parser.get_arg, matches[0])
 
-
     def test_basic_ifdefine(self):
         self.assertEqual(len(self.parser.find_dir("VAR_DIRECTIVE")), 2)
         self.assertEqual(len(self.parser.find_dir("INVALID_VAR_DIRECTIVE")), 0)
@@ -70,7 +69,6 @@ class ComplexParserTest(util.ParserTest):
         self.assertEqual(len(self.parser.find_dir("NESTED_DIRECTIVE")), 3)
         self.assertEqual(
             len(self.parser.find_dir("INVALID_NESTED_DIRECTIVE")), 0)
-
 
     def test_load_modules(self):
         """If only first is found, there is bad variable parsing."""
@@ -99,6 +97,9 @@ class ComplexParserTest(util.ParserTest):
 
     def test_include_fullpath(self):
         self.verify_fnmatch(os.path.join(self.config_path, "test_fnmatch.conf"))
+
+    def test_include_fullpath_trailing_slash(self):
+        self.verify_fnmatch(self.config_path + "//")
 
     def test_include_variable(self):
         self.verify_fnmatch("../complex_parsing/${fnmatch_filename}")

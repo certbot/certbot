@@ -21,7 +21,7 @@ from acme.jose import jwk
 logger = logging.getLogger(__name__)
 
 
-class JWA(interfaces.JSONDeSerializable): # pylint: disable=abstract-method
+class JWA(interfaces.JSONDeSerializable):  # pylint: disable=abstract-method
     # pylint: disable=too-few-public-methods
     # for some reason disable=abstract-method has to be on the line
     # above...
@@ -159,7 +159,7 @@ class _JWAES(JWASignature):  # pylint: disable=abstract-class-not-used
     def sign(self, key, msg):  # pragma: no cover
         raise NotImplementedError()
 
-    def verify(self, key, msg, sig): # pragma: no cover
+    def verify(self, key, msg, sig):  # pragma: no cover
         raise NotImplementedError()
 
 
