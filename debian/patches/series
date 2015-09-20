@@ -1,4 +1,2 @@
-# exported from git by git-debcherry
-0002-Python-2.6-is-not-shipped-in-any-version-of-Debian-n.patch
-0003-Python-2.6-is-not-shipped-in-any-version-of-Debian-n.patch
+use_latest_mock.patch
 0004-Remove-externally-hosted-images.patch
