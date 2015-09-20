@@ -33,9 +33,10 @@ override_dh_auto_build:
 	sphinx-build -N -b html docs $(CURDIR)/debian/doc-build/html
 	sphinx-build -N -b man docs $(CURDIR)/debian/doc-build/man
 
+TESTS=acme letsencrypt letsencrypt-apache letsencrypt-nginx
 override_dh_auto_test:
 	ln -s $(CURDIR)/acme/acme/testdata $(CURDIR)/debian/python-acme/usr/lib/python2.7/dist-packages/acme/
-	set -ex; for suite in acme letsencrypt letsencrypt-apache letsencrypt-nginx; do \
+	set -ex; for suite in $(TESTS) ; do \
 		cd $(CURDIR); \
 		PYTHONPATH=$(shell find $(CURDIR)/debian -type d -name dist-packages | tr "\n" ":") python /usr/bin/nosetests $$suite; \
 	done
