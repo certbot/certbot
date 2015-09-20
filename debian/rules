@@ -50,3 +50,5 @@ override_dh_auto_install:
 	# tests would work.
 	find $(CURDIR)/debian -type d -name tests -print0 | xargs -0 rm -rf
 	rm $(CURDIR)/debian/python-acme/usr/lib/python2.7/dist-packages/acme/testdata
+	rm -f $(CURDIR)/debian/python-acme/usr/bin/jws
+	rm -f $(CURDIR)/debian/python-acme/usr/share/man/man1/jws.1
