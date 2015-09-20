@@ -46,8 +46,11 @@ override_dh_prep:
 	# As such, we need to clean it ourselves in dh_clean, and disable it.
 
 override_dh_auto_install:
-	# Cleanup only.  We already did the install during the build, so the
+	# We already did the install during the build, so the
 	# tests would work.
+	dh_installdirs
+	touch $(CURDIR)/debian/letsencrypt/etc/letsencrypt/renewal/.keepdir
+	# Remove files we don't want to ship in Debian
 	find $(CURDIR)/debian -type d -name tests -print0 | xargs -0 rm -rf
 	rm $(CURDIR)/debian/python-acme/usr/lib/python2.7/dist-packages/acme/testdata
 	rm -f $(CURDIR)/debian/python-acme/usr/bin/jws

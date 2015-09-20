@@ -1,3 +1,4 @@
 etc/letsencrypt
+etc/letsencrypt/renewal
 var/lib/letsencrypt
 var/log/letsencrypt
