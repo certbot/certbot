@@ -288,12 +288,12 @@ class Revoker(object):
             :class:`letsencrypt.revoker.Cert`
 
         """
-        _, list_path2 = tempfile.mkstemp(".tmp", "LIST")
+        newfile_handle, list_path2 = tempfile.mkstemp(".tmp", "LIST")
         idx = 0
 
         with open(self.list_path, "rb") as orgfile:
             csvreader = csv.reader(orgfile)
-            with open(list_path2, "wb") as newfile:
+            with os.fdopen(newfile_handle, "wb") as newfile:
                 csvwriter = csv.writer(newfile)
 
                 for row in csvreader:
@@ -308,7 +308,7 @@ class Revoker(object):
                 "Did not find all cert_list items to remove from LIST")
 
         shutil.copy2(list_path2, self.list_path)
-        os.remove(list_path2)
+        newfile.close()
 
     def _row_to_backup(self, row):
         """Convenience function
