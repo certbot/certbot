@@ -46,12 +46,9 @@ class ManualAuthenticatorTest(unittest.TestCase):
         self.assertEqual([], self.auth.perform([]))
 
     @mock.patch("letsencrypt.plugins.manual.sys.stdout")
-    @mock.patch("letsencrypt.plugins.manual.os.urandom")
     @mock.patch("acme.challenges.SimpleHTTPResponse.simple_verify")
     @mock.patch("__builtin__.raw_input")
-    def test_perform(self, mock_raw_input, mock_verify, mock_urandom,
-                     mock_stdout):
-        mock_urandom.side_effect = nonrandom_urandom
+    def test_perform(self, mock_raw_input, mock_verify, mock_stdout):
         mock_verify.return_value = True
 
         resp = challenges.SimpleHTTPResponse(tls=False)
@@ -61,27 +58,8 @@ class ManualAuthenticatorTest(unittest.TestCase):
             self.achalls[0].challb.chall, "foo.com", KEY.public_key(), 4430)
 
         message = mock_stdout.write.mock_calls[0][1][0]
-        self.assertEqual(message, """\
-Make sure your web server displays the following content at
-http://foo.com/.well-known/acme-challenge/ZXZhR3hmQURzNnBTUmIyTEF2OUlaZjE3RHQzanV4R0orUEN0OTJ3citvQQ before continuing:
-
-{"header": {"alg": "RS256", "jwk": {"e": "AQAB", "kty": "RSA", "n": "rHVztFHtH92ucFJD_N_HW9AsdRsUuHUBBBDlHwNlRd3fp580rv2-6QWE30cWgdmJS86ObRz6lUTor4R0T-3C5Q"}}, "payload": "eyJ0bHMiOiBmYWxzZSwgInRva2VuIjogIlpYWmhSM2htUVVSek5uQlRVbUl5VEVGMk9VbGFaakUzUkhRemFuVjRSMG9yVUVOME9USjNjaXR2UVEiLCAidHlwZSI6ICJzaW1wbGVIdHRwIn0", "signature": "jFPJFC-2eRyBw7Sl0wyEBhsdvRZtKk8hc6HykEPAiofZlIwdIu76u2xHqMVZWSZdpxwMNUnnawTEAqgMWFydMA"}
-
-Content-Type header MUST be set to application/jose+json.
-
-If you don\'t have HTTP server configured, you can run the following
-command on the target server (as root):
-
-mkdir -p /tmp/letsencrypt/public_html/.well-known/acme-challenge
-cd /tmp/letsencrypt/public_html
-echo -n \'{"header": {"alg": "RS256", "jwk": {"e": "AQAB", "kty": "RSA", "n": "rHVztFHtH92ucFJD_N_HW9AsdRsUuHUBBBDlHwNlRd3fp580rv2-6QWE30cWgdmJS86ObRz6lUTor4R0T-3C5Q"}}, "payload": "eyJ0bHMiOiBmYWxzZSwgInRva2VuIjogIlpYWmhSM2htUVVSek5uQlRVbUl5VEVGMk9VbGFaakUzUkhRemFuVjRSMG9yVUVOME9USjNjaXR2UVEiLCAidHlwZSI6ICJzaW1wbGVIdHRwIn0", "signature": "jFPJFC-2eRyBw7Sl0wyEBhsdvRZtKk8hc6HykEPAiofZlIwdIu76u2xHqMVZWSZdpxwMNUnnawTEAqgMWFydMA"}\' > .well-known/acme-challenge/ZXZhR3hmQURzNnBTUmIyTEF2OUlaZjE3RHQzanV4R0orUEN0OTJ3citvQQ
-# run only once per server:
-$(command -v python2 || command -v python2.7 || command -v python2.6) -c \\
-"import BaseHTTPServer, SimpleHTTPServer; \\
-SimpleHTTPServer.SimpleHTTPRequestHandler.extensions_map = {\'\': \'application/jose+json\'}; \\
-s = BaseHTTPServer.HTTPServer((\'\', 4430), SimpleHTTPServer.SimpleHTTPRequestHandler); \\
-s.serve_forever()" \n""")
-        #self.assertTrue(validation in message)
+        token = self.achalls[0].challb.chall.encode("token")
+        self.assertTrue(token in message)
 
         mock_verify.return_value = False
         self.assertEqual([None], self.auth.perform(self.achalls))
@@ -128,11 +106,6 @@ s.serve_forever()" \n""")
         httpd.poll.return_value = None
         self.auth_test_mode.cleanup(self.achalls)
         mock_killpg.assert_called_once_with(1234, signal.SIGTERM)
-
-
-def nonrandom_urandom(num_bytes):
-    """Returns a string of length num_bytes"""
-    return "x" * num_bytes
 
 
 if __name__ == "__main__":
