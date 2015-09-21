@@ -308,7 +308,7 @@ class Revoker(object):
                 "Did not find all cert_list items to remove from LIST")
 
         shutil.copy2(list_path2, self.list_path)
-        newfile.close()
+        os.remove(list_path2)
 
     def _row_to_backup(self, row):
         """Convenience function
