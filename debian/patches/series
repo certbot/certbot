@@ -1,2 +1,3 @@
 use_latest_mock.patch
 0004-Remove-externally-hosted-images.patch
+0001-revert-pr-622.patch
