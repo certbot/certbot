@@ -18,6 +18,7 @@ def option_namespace(name):
     """ArgumentParser options namespace (prefix of all options)."""
     return name + "-"
 
+
 def dest_namespace(name):
     """ArgumentParser dest namespace (prefix of all destinations)."""
     return name.replace("-", "_") + "_"
@@ -85,6 +86,7 @@ class Plugin(object):
         """
 
 # other
+
 
 class Addr(object):
     r"""Represents an virtual host address.

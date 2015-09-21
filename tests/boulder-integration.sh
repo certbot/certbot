@@ -4,15 +4,15 @@
 # instance (see ./boulder-start.sh).
 #
 # Environment variables:
-#   SERVER: Passed as "letsencrypt --server" argument. Boulder
-#           monolithic defaults to :4000, AMQP defaults to :4300. This
-#           script defaults to monolithic.
+#   SERVER: Passed as "letsencrypt --server" argument.
 #
 # Note: this script is called by Boulder integration test suite!
 
 . ./tests/integration/_common.sh
 export PATH="/usr/sbin:$PATH"  # /usr/sbin/nginx
 
+export GOPATH="${GOPATH:-/tmp/go}"
+export PATH="$GOPATH/bin:$PATH"
 
 common() {
     letsencrypt_test \
@@ -54,6 +54,13 @@ do
     [ "${dir}/${latest}" = "$live" ]  # renewer fails this test
 done
 
+# revoke by account key
+common revoke --cert-path "$root/conf/live/le.wtf/cert.pem"
+# revoke renewed
+common revoke --cert-path "$root/conf/live/le1.wtf/cert.pem"
+# revoke by cert key
+common revoke --cert-path "$root/conf/live/le2.wtf/cert.pem" \
+       --key-path "$root/conf/live/le2.wtf/privkey.pem"
 
 if type nginx;
 then

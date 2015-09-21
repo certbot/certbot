@@ -70,7 +70,7 @@ def exe_exists(exe):
     return False
 
 
-def make_or_verify_dir(directory, mode=0o755, uid=0):
+def make_or_verify_dir(directory, mode=0o755, uid=0, strict=False):
     """Make sure directory exists with proper permissions.
 
     :param str directory: Path to a directory.
@@ -89,9 +89,10 @@ def make_or_verify_dir(directory, mode=0o755, uid=0):
         os.makedirs(directory, mode)
     except OSError as exception:
         if exception.errno == errno.EEXIST:
-            if not check_permissions(directory, mode, uid):
+            if strict and not check_permissions(directory, mode, uid):
                 raise errors.Error(
-                    "%s exists, this client can't access it" % directory)
+                    "%s exists, but it should be owned by user %d with"
+                    "permissions %s" % (directory, uid, oct(mode)))
         else:
             raise
 
@@ -196,6 +197,8 @@ def safely_remove(path):
 # start with a period or have two consecutive periods <- this needs to
 # be done in addition to the regex
 EMAIL_REGEX = re.compile("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+$")
+
+
 def safe_email(email):
     """Scrub email address before using it."""
     if EMAIL_REGEX.match(email) is not None:
