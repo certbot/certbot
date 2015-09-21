@@ -1,3 +1,7 @@
+Author: Harlan Lieberman-Berg <hlieberman@setec.io>
+Forwarded: https://github.com/letsencrypt/letsencrypt/pull/793
+Last-Update: 2015-09-20
+
 --- a/letsencrypt/plugins/manual_test.py
 +++ b/letsencrypt/plugins/manual_test.py
 @@ -1,5 +1,4 @@
