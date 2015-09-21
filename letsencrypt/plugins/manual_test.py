@@ -58,8 +58,7 @@ class ManualAuthenticatorTest(unittest.TestCase):
             self.achalls[0].challb.chall, "foo.com", KEY.public_key(), 4430)
 
         message = mock_stdout.write.mock_calls[0][1][0]
-        token = self.achalls[0].challb.chall.encode("token")
-        self.assertTrue(token in message)
+        self.assertTrue(self.achalls[0].chall.encode("token") in message)
 
         mock_verify.return_value = False
         self.assertEqual([None], self.auth.perform(self.achalls))
