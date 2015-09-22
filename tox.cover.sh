@@ -16,13 +16,13 @@ fi
 
 cover () {
   if [ "$1" = "letsencrypt" ]; then
-    min=96
+    min=97
   elif [ "$1" = "acme" ]; then
     min=100
   elif [ "$1" = "letsencrypt_apache" ]; then
     min=100
   elif [ "$1" = "letsencrypt_nginx" ]; then
-    min=96
+    min=97
   elif [ "$1" = "letshelp_letsencrypt" ]; then
     min=100
   elif [ "$1" = "letsencrypt_plesk" ]; then

@@ -659,6 +659,10 @@ def create_parser(plugins, args):
         "security", "-r", "--redirect", action="store_true",
         help="Automatically redirect all HTTP traffic to HTTPS for the newly "
              "authenticated vhost.")
+    helpful.add(
+        "security", "--strict-permissions", action="store_true",
+        help="Require that all configuration files are owned by the current "
+             "user; only needed if your config is somewhere unsafe like /tmp/")
 
     _paths_parser(helpful)
     # _plugins_parsing should be the last thing to act upon the main
@@ -671,7 +675,7 @@ def create_parser(plugins, args):
 
 # For now unfortunately this constant just needs to match the code below;
 # there isn't an elegant way to autogenerate it in time.
-VERBS = ["run", "auth", "install", "revoke", "rollback", "config_changes",\
+VERBS = ["run", "auth", "install", "revoke", "rollback", "config_changes",
          "plugins"]
 
 
@@ -841,14 +845,17 @@ def _handle_exception(exc_type, exc_value, trace, args):
 
         if issubclass(exc_type, errors.Error):
             sys.exit(exc_value)
-        elif args is None:
-            sys.exit(
-                "An unexpected error occurred. Please see the logfile '{0}' "
-                "for more details.".format(logfile))
         else:
-            sys.exit(
-                "An unexpected error occurred. Please see the logfiles in {0} "
-                "for more details.".format(args.logs_dir))
+            # Tell the user a bit about what happened, without overwhelming
+            # them with a full traceback
+            msg = ("An unexpected error occurred.\n" +
+                   traceback.format_exception_only(exc_type, exc_value)[0] +
+                   "Please see the ")
+            if args is None:
+                msg += "logfile '{0}' for more details.".format(logfile)
+            else:
+                msg += "logfiles in {0} for more details.".format(args.logs_dir)
+            sys.exit(msg)
     else:
         sys.exit("".join(
             traceback.format_exception(exc_type, exc_value, trace)))
@@ -863,15 +870,18 @@ def main(cli_args=sys.argv[1:]):
     parser, tweaked_cli_args = create_parser(plugins, cli_args)
     args = parser.parse_args(tweaked_cli_args)
     config = configuration.NamespaceConfig(args)
+    zope.component.provideUtility(config)
 
     # Setup logging ASAP, otherwise "No handlers could be found for
     # logger ..." TODO: this should be done before plugins discovery
     for directory in config.config_dir, config.work_dir:
         le_util.make_or_verify_dir(
-            directory, constants.CONFIG_DIRS_MODE, os.geteuid())
+            directory, constants.CONFIG_DIRS_MODE, os.geteuid(),
+            "--strict-permissions" in cli_args)
     # TODO: logs might contain sensitive data such as contents of the
     # private key! #525
-    le_util.make_or_verify_dir(args.logs_dir, 0o700, os.geteuid())
+    le_util.make_or_verify_dir(
+        args.logs_dir, 0o700, os.geteuid(), "--strict-permissions" in cli_args)
     _setup_logging(args)
 
     # do not log `args`, as it contains sensitive data (e.g. revoke --key)!

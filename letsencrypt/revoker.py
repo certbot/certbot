@@ -54,7 +54,8 @@ class Revoker(object):
         self.config = config
         self.no_confirm = no_confirm
 
-        le_util.make_or_verify_dir(config.cert_key_backup, 0o700, os.geteuid())
+        le_util.make_or_verify_dir(config.cert_key_backup, 0o700, os.geteuid(),
+                                   self.config.strict_permissions)
 
         # TODO: Find a better solution for this...
         self.list_path = os.path.join(config.cert_key_backup, "LIST")
@@ -287,12 +288,12 @@ class Revoker(object):
             :class:`letsencrypt.revoker.Cert`
 
         """
-        list_path2 = tempfile.mktemp(".tmp", "LIST")
+        newfile_handle, list_path2 = tempfile.mkstemp(".tmp", "LIST")
         idx = 0
 
         with open(self.list_path, "rb") as orgfile:
             csvreader = csv.reader(orgfile)
-            with open(list_path2, "wb") as newfile:
+            with os.fdopen(newfile_handle, "wb") as newfile:
                 csvwriter = csv.writer(newfile)
 
                 for row in csvreader:
@@ -333,7 +334,8 @@ class Revoker(object):
 
         """
         list_path = os.path.join(config.cert_key_backup, "LIST")
-        le_util.make_or_verify_dir(config.cert_key_backup, 0o700, os.geteuid())
+        le_util.make_or_verify_dir(config.cert_key_backup, 0o700, os.geteuid(),
+                                   config.strict_permissions)
 
         cls._catalog_files(
             config.cert_key_backup, cert_path, key_path, list_path)

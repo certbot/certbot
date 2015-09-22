@@ -11,6 +11,8 @@
 . ./tests/integration/_common.sh
 export PATH="/usr/sbin:$PATH"  # /usr/sbin/nginx
 
+export GOPATH="${GOPATH:-/tmp/go}"
+export PATH="$GOPATH/bin:$PATH"
 
 common() {
     letsencrypt_test \

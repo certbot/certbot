@@ -129,8 +129,9 @@ class AccountFileStorage(interfaces.AccountStorage):
 
     """
     def __init__(self, config):
-        le_util.make_or_verify_dir(config.accounts_dir, 0o700, os.geteuid())
         self.config = config
+        le_util.make_or_verify_dir(config.accounts_dir, 0o700, os.geteuid(),
+                                   self.config.strict_permissions)
 
     def _account_dir_path(self, account_id):
         return os.path.join(self.config.accounts_dir, account_id)
@@ -186,7 +187,8 @@ class AccountFileStorage(interfaces.AccountStorage):
 
     def save(self, account):
         account_dir_path = self._account_dir_path(account.id)
-        le_util.make_or_verify_dir(account_dir_path, 0o700, os.geteuid())
+        le_util.make_or_verify_dir(account_dir_path, 0o700, os.geteuid(),
+                                   self.config.strict_permissions)
         try:
             with open(self._regr_path(account_dir_path), "w") as regr_file:
                 regr_file.write(account.regr.json_dumps())

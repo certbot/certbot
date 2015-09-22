@@ -32,7 +32,7 @@ RUN /opt/letsencrypt/src/ubuntu.sh && \
 # the above is not likely to change, so by putting it further up the
 # Dockerfile we make sure we cache as much as possible
 
-COPY setup.py README.rst CHANGES.rst MANIFEST.in requirements.txt EULA linter_plugin.py tox.cover.sh tox.ini /opt/letsencrypt/src/
+COPY setup.py README.rst CHANGES.rst MANIFEST.in requirements.txt EULA linter_plugin.py tox.cover.sh tox.ini pep8.travis.sh .pep8 .pylintrc /opt/letsencrypt/src/
 
 # all above files are necessary for setup.py, however, package source
 # code directory has to be copied separately to a subdirectory...
@@ -47,6 +47,8 @@ COPY acme /opt/letsencrypt/src/acme/
 COPY letsencrypt-apache /opt/letsencrypt/src/letsencrypt-apache/
 COPY letsencrypt-nginx /opt/letsencrypt/src/letsencrypt-nginx/
 COPY letsencrypt-plesk /opt/letsencrypt/src/letsencrypt-plesk/
+COPY letshelp-letsencrypt /opt/letsencrypt/src/letshelp-letsencrypt/
+COPY letsencrypt-compatibility-test /opt/letsencrypt/src/letsencrypt-compatibility-test/
 COPY tests /opt/letsencrypt/src/tests/
 
 RUN virtualenv --no-site-packages -p python2 /opt/letsencrypt/venv && \
@@ -57,6 +59,8 @@ RUN virtualenv --no-site-packages -p python2 /opt/letsencrypt/venv && \
     -e /opt/letsencrypt/src/letsencrypt-apache \
     -e /opt/letsencrypt/src/letsencrypt-nginx \
     -e /opt/letsencrypt/src/letsencrypt-plesk \
+    -e /opt/letsencrypt/src/letshelp-letsencrypt \
+    -e /opt/letsencrypt/src/letsencrypt-compatibility-test \
     -e /opt/letsencrypt/src[dev,docs,testing]
 
 # install in editable mode (-e) to save space: it's not possible to

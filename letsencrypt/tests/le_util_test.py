@@ -92,7 +92,7 @@ class MakeOrVerifyDirTest(unittest.TestCase):
 
     def _call(self, directory, mode):
         from letsencrypt.le_util import make_or_verify_dir
-        return make_or_verify_dir(directory, mode, self.uid)
+        return make_or_verify_dir(directory, mode, self.uid, strict=True)
 
     def test_creates_dir_when_missing(self):
         path = os.path.join(self.root_path, "bar")
