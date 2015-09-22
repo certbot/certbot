@@ -129,9 +129,8 @@ Docker
 
 OSX users will probably find it easiest to set up a Docker container for
 development. Let's Encrypt comes with a Dockerfile (``Dockerfile-dev``)
-for doing so. To use Docker on OSX, install boot2docker using the
-instructions at https://docs.docker.com/installation/mac/ and start it
-from the command line (``boot2docker init``).
+for doing so. To use Docker on OSX, install and setup docker-machine using the
+instructions at https://docs.docker.com/installation/mac/.
 
 To build the development Docker image::
 
