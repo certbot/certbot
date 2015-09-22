@@ -172,6 +172,8 @@ def _find_duplicative_certs(domains, config, renew_config):
     identical_names_cert, subset_names_cert = None, None
 
     configs_dir = renew_config.renewal_configs_dir
+    le_util.make_or_verify_dir(configs_dir, mode=0o755, uid=os.geteuid())
+
     cli_config = configuration.RenewerConfiguration(config)
     for renewal_file in os.listdir(configs_dir):
         try:
