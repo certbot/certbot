@@ -85,7 +85,7 @@ class ComplexParserTest(util.ParserTest):
         # This is in an IfDefine
         self.assertTrue("ssl_module" in self.parser.modules)
         self.assertTrue("mod_ssl.c" in self.parser.modules)
-    
+
     def verify_fnmatch(self, arg, hit=True):
         """Test if Include was correctly parsed."""
         from letsencrypt_apache import parser
