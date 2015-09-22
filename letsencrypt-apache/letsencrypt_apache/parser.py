@@ -241,6 +241,10 @@ class ApacheParser(object):
         Directives should be in the form of a case insensitive regex currently
 
         .. todo:: arg should probably be a list
+        .. todo:: arg search currently only supports direct matching. It does
+            not handle the case of variables or quoted arguments. This should
+            be adapted to use a generic search for the directive and then do a
+            case-insensitive self.get_arg filter
 
         Note: Augeas is inherently case sensitive while Apache is case
         insensitive.  Augeas 1.0 allows case insensitive regexes like
