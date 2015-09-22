@@ -845,14 +845,17 @@ def _handle_exception(exc_type, exc_value, trace, args):
 
         if issubclass(exc_type, errors.Error):
             sys.exit(exc_value)
-        elif args is None:
-            sys.exit(
-                "An unexpected error occurred. Please see the logfile '{0}' "
-                "for more details.".format(logfile))
         else:
-            sys.exit(
-                "An unexpected error occurred. Please see the logfiles in {0} "
-                "for more details.".format(args.logs_dir))
+            # Tell the user a bit about what happened, without overwhelming
+            # them with a full traceback
+            msg = ("An unexpected error occurred.\n" +
+                   traceback.format_exception_only(exc_type, exc_value)[0] +
+                   "Please see the ")
+            if args is None:
+                msg += "logfile '{0}' for more details.".format(logfile)
+            else:
+                msg += "logfiles in {0} for more details.".format(args.logs_dir)
+            sys.exit(msg)
     else:
         sys.exit("".join(
             traceback.format_exception(exc_type, exc_value, trace)))
