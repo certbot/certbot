@@ -390,6 +390,9 @@ class ApacheParser(object):
         #     logger.error("Error: Invalid regexp characters in %s", arg)
         #     return []
 
+        # Remove beginning and ending quotes
+        arg = arg.strip("'\"")
+
         # Standardize the include argument based on server root
         if not arg.startswith("/"):
             # Normpath will condense ../

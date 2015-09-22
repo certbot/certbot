@@ -78,7 +78,7 @@ class ComplexParserTest(util.ParserTest):
         # This is in an IfDefine
         self.assertTrue("ssl_module" in self.parser.modules)
         self.assertTrue("mod_ssl.c" in self.parser.modules)
-
+    #
     def verify_fnmatch(self, arg, hit=True):
         """Test if Include was correctly parsed."""
         from letsencrypt_apache import parser
@@ -89,6 +89,7 @@ class ComplexParserTest(util.ParserTest):
         else:
             self.assertFalse(self.parser.find_dir("FNMATCH_DIRECTIVE"))
 
+    # NOTE: Only run one test per function otherwise you will have inf recursion
     def test_include(self):
         self.verify_fnmatch("test_fnmatch.?onf")
 
@@ -100,6 +101,12 @@ class ComplexParserTest(util.ParserTest):
 
     def test_include_fullpath_trailing_slash(self):
         self.verify_fnmatch(self.config_path + "//")
+
+    def test_include_single_quotes(self):
+        self.verify_fnmatch("'" + self.config_path + "'")
+
+    def test_include_double_quotes(self):
+        self.verify_fnmatch('"' + self.config_path + '"')
 
     def test_include_variable(self):
         self.verify_fnmatch("../complex_parsing/${fnmatch_filename}")
