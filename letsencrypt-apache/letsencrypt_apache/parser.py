@@ -315,6 +315,14 @@ class ApacheParser(object):
 
         """
         value = self.aug.get(match)
+
+        # No need to strip quotes for variables, as apache2ctl already does this
+        # but we do need to strip quotes for all normal arguments.
+
+        # Note: normal argument may be a quoted variable
+        # e.g. strip now, not later
+        value = value.strip("'\"")
+
         variables = ApacheParser.arg_var_interpreter.findall(value)
 
         for var in variables:
