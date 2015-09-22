@@ -88,5 +88,8 @@ class PleskConfiguratorTest(unittest.TestCase):
             names,
             ['first.example.com', 'second.example.com', 'third.example.com'])
 
+    def test_supported_enhancements(self):
+        self.assertEqual([], self.configurator.supported_enhancements())
+
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

@@ -19,7 +19,7 @@ class PleskConfigurator(common.Plugin):
     zope.interface.implements(interfaces.IAuthenticator, interfaces.IInstaller)
     zope.interface.classProvides(interfaces.IPluginFactory)
 
-    description = "Plesk - Web Server Management Tools"
+    description = "Plesk"
 
     @classmethod
     def add_parser_arguments(cls, add):
@@ -87,7 +87,7 @@ class PleskConfigurator(common.Plugin):
     def _get_names(self, api_result):
         if isinstance(api_result, list):
             return [self._get_names(x) for x in api_result]
-        if not (api_result and 'ok' == api_result['status']):
+        if 'ok' != api_result['status'] or 'data' not in api_result:
             return None
         return api_result['data']['gen_info']['name'].encode('utf8')
 
@@ -96,6 +96,8 @@ class PleskConfigurator(common.Plugin):
         for name in names:
             if isinstance(name, list):
                 compact += self._compact_names(name)
+            elif name is None:
+                continue
             else:
                 compact.append(name)
         return compact
