@@ -7,6 +7,7 @@ from pyparsing import (
 from pyparsing import stringEnd
 from pyparsing import restOfLine
 
+
 class RawNginxParser(object):
     # pylint: disable=expression-not-assigned
     """A class that parses nginx configuration with pyparsing."""
@@ -32,10 +33,10 @@ class RawNginxParser(object):
     block = Forward()
 
     block << Group(
-        (Group(key + location_statement) ^ Group(if_statement))
-        + left_bracket
-        + Group(ZeroOrMore(Group(comment | assignment) | block))
-        + right_bracket)
+        (Group(key + location_statement) ^ Group(if_statement)) +
+        left_bracket +
+        Group(ZeroOrMore(Group(comment | assignment) | block)) +
+        right_bracket)
 
     script = OneOrMore(Group(comment | assignment) ^ block) + stringEnd
 

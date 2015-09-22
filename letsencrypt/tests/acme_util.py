@@ -30,7 +30,7 @@ POP = challenges.ProofOfPossession(
             "16d95b7b63f1972b980b14c20291f3c0d1855d95",
             "48b46570d9fc6358108af43ad1649484def0debf"
         ),
-        certs=(), # TODO
+        certs=(),  # TODO
         subject_key_identifiers=("d0083162dcc4c8a23ecb8aecbd86120e56fd24e5"),
         serial_numbers=(34234239832, 23993939911, 17),
         issuers=(

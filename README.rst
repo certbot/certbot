@@ -116,6 +116,8 @@ Main Website: https://letsencrypt.org/
 
 IRC Channel: #letsencrypt on `Freenode`_
 
+Community: https://community.letsencrypt.org
+
 Mailing list: `client-dev`_ (to subscribe without a Google account, send an
 email to client-dev+subscribe@letsencrypt.org)
 

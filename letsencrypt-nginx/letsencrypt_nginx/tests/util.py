@@ -4,8 +4,11 @@ import pkg_resources
 import unittest
 
 import mock
+import zope.component
 
 from acme import jose
+
+from letsencrypt import configuration
 
 from letsencrypt.tests import test_util
 
@@ -55,11 +58,17 @@ def get_nginx_configurator(
             backup_dir=backups,
             temp_checkpoint_dir=os.path.join(work_dir, "temp_checkpoints"),
             in_progress_dir=os.path.join(backups, "IN_PROGRESS"),
+            server="https://acme-server.org:443/new",
             dvsni_port=5001,
         ),
         name="nginx",
         version=version)
     config.prepare()
+
+    # Provide general config utility.
+    nsconfig = configuration.NamespaceConfig(config.config)
+    zope.component.provideUtility(nsconfig)
+
     return config
 
 
