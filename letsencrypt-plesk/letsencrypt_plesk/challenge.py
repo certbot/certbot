@@ -31,7 +31,7 @@ class PleskChallenge(object):
         """Put file to the domain with validation content"""
         request = {'packet': {'site': {'get': {
             'filter': {'name': domain},
-            'dataset': {'hosting': ''},
+            'dataset': {'hosting': {}},
         }}}}
         response = self.configurator.plesk_api_client.request(request)
 

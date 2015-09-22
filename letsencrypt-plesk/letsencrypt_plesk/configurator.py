@@ -5,10 +5,7 @@ import zope.interface
 
 from acme import challenges
 
-from letsencrypt import achallenges
-from letsencrypt import errors
 from letsencrypt import interfaces
-from letsencrypt import le_util
 
 from letsencrypt.plugins import common
 
@@ -39,7 +36,10 @@ class PleskConfigurator(common.Plugin):
 
     def prepare(self):
         """Prepare the authenticator/installer."""
-        self.plesk_api_client = api_client.PleskApiClient(key=self.conf('key'))
+        if self.plesk_api_client is None:
+            self.plesk_api_client = api_client.PleskApiClient(
+                key=self.conf('key'))
+        # TODO challenge could be performed with multiple domains - use dict
         self.plesk_challenge = challenge.PleskChallenge(self)
 
     @staticmethod
@@ -70,27 +70,35 @@ class PleskConfigurator(common.Plugin):
         """Returns all names that may be authenticated."""
         request = {'packet': {
             'webspace': {'get': {
-                'filter': '',
-                'dataset': {'gen_info': ''},
+                'filter': {},
+                'dataset': {'gen_info': {}},
             }},
             'site': {'get': {
-                'filter': '',
-                'dataset': {'gen_info': ''},
+                'filter': {},
+                'dataset': {'gen_info': {}},
             }},
         }}
         response = self.plesk_api_client.request(request)
-        print response
-        return [
-            self._get_names(response['webspace']['get']['result']),
-            self._get_names(response['site']['get']['result']),
-        ]
+        return self._compact_names([
+            self._get_names(response['packet']['webspace']['get']['result']),
+            self._get_names(response['packet']['site']['get']['result']),
+        ])
 
     def _get_names(self, api_result):
         if isinstance(api_result, list):
             return [self._get_names(x) for x in api_result]
         if not (api_result and 'ok' == api_result['status']):
             return None
-        return api_result['data']['name']
+        return api_result['data']['gen_info']['name'].encode('utf8')
+
+    def _compact_names(self, names):
+        compact = []
+        for name in names:
+            if isinstance(name, list):
+                compact += self._compact_names(name)
+            else:
+                compact.append(name)
+        return compact
 
     def deploy_cert(self, domain, cert_path, key_path, chain_path=None):
         """Deploy certificate.

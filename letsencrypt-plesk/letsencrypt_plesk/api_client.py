@@ -69,6 +69,7 @@ class PleskApiClient(object):
         return subprocess.check_output(process_args, stdin=stdin)
 
     def filemng(self, args):
+        # TODO replace with ftp client
         return self.execute(self.BIN_PATH + "filemng", args)
 
 
@@ -143,3 +144,17 @@ class XmlToDict(dict):  # pylint: disable=too-few-public-methods
             else:
                 children[child.tagName] = self._get_children(child)
         return children
+
+    def native(self):
+        """Encode all utf8 strings."""
+        return {x.encode('utf8'):
+                self._native_children(self[x]) for x in self}
+
+    def _native_children(self, node):
+        if isinstance(node, str):
+            return node.encode('utf8')
+        elif isinstance(node, list):
+            return [self._native_children(x) for x in node]
+        elif isinstance(node, dict):
+            return {x.encode('utf8'):
+                    self._native_children(node[x]) for x in node}
