@@ -321,7 +321,7 @@ class IInstaller(IPlugin):
 
         """
 
-    def recovery_routine(self):
+    def recovery_routine():
         """Revert configuration to most recent finalized checkpoint.
 
         Remove all changes (temporary and permanent) that have not been

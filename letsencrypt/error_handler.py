@@ -11,8 +11,10 @@ _SIGNALS = ([signal.SIGTERM] if os.name == "nt" else
 class ErrorHandler(object):
     """Registers and calls cleanup functions in case of an error."""
     def __init__(self, func=None):
-        self.funcs = [func] if func else []
+        self.funcs = []
         self.prev_handlers = {}
+        if func:
+            self.register(func)
 
     def __enter__(self):
         self.set_signal_handlers()
