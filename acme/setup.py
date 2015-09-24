@@ -16,6 +16,7 @@ install_requires = [
     'pyrfc3339',
     'pytz',
     'requests',
+    'setuptools',  # pkg_resources
     'six',
     'werkzeug',
 ]
