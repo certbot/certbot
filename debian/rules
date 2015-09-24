@@ -33,9 +33,10 @@ override_dh_auto_build:
 	sphinx-build -N -b html docs $(CURDIR)/debian/doc-build/html
 	sphinx-build -N -b man docs $(CURDIR)/debian/doc-build/man
 
+TESTS=acme letsencrypt letsencrypt-apache letsencrypt-nginx
 override_dh_auto_test:
 	ln -s $(CURDIR)/acme/acme/testdata $(CURDIR)/debian/python-acme/usr/lib/python2.7/dist-packages/acme/
-	set -ex; for suite in acme letsencrypt letsencrypt-apache letsencrypt-nginx; do \
+	set -ex; for suite in $(TESTS) ; do \
 		cd $(CURDIR); \
 		PYTHONPATH=$(shell find $(CURDIR)/debian -type d -name dist-packages | tr "\n" ":") python /usr/bin/nosetests $$suite; \
 	done
@@ -45,7 +46,12 @@ override_dh_prep:
 	# As such, we need to clean it ourselves in dh_clean, and disable it.
 
 override_dh_auto_install:
-	# Cleanup only.  We already did the install during the build, so the
+	# We already did the install during the build, so the
 	# tests would work.
+	dh_installdirs
+	touch $(CURDIR)/debian/letsencrypt/etc/letsencrypt/renewal/.keepdir
+	# Remove files we don't want to ship in Debian
 	find $(CURDIR)/debian -type d -name tests -print0 | xargs -0 rm -rf
 	rm $(CURDIR)/debian/python-acme/usr/lib/python2.7/dist-packages/acme/testdata
+	rm -f $(CURDIR)/debian/python-acme/usr/bin/jws
+	rm -f $(CURDIR)/debian/python-acme/usr/share/man/man1/jws.1

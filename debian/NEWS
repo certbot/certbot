@@ -1,4 +1,4 @@
-letsencrypt (0.0.20150907-1) UNRELEASED; urgency=low
+letsencrypt (0.20150920-1) unstable; urgency=low
 
   This code is a DEVELOPER PREVIEW, running from an arbitrary
   git revision.  DO NOT RUN THIS CODE ON A PRODUCTION SERVER.

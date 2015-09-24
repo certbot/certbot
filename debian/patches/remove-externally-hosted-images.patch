@@ -1,33 +1,27 @@
-From 87179f39ef35911a3cf72958baf6fd7e97178ed2 Mon Sep 17 00:00:00 2001
-From: Harlan Lieberman-Berg <hlieberman@setec.io>
-Date: Thu, 20 Aug 2015 14:18:20 +0200
-Subject: [PATCH 4/4] Remove externally hosted images.
+Author: Harlan Lieberman-Berg <hlieberman@setec.io>
+Forwarded: not-needed
+Last-Update: 2015-08-20
+Description: Remove externally hosted images
+ For Debian, it is important that users can read the documentation
+ without fear that they are going to be monitored by a third-party.
+ As such, it is Debian policy to ensure all images, scripts, etc.,
+ are hosted in the package or removed.
 
-For Debian, it is important that users can read the documentation
-without fear that they are going to be monitored by a third-party.  As
-such, it is Debian policy to ensure all images, scripts, etc., are
-hosted in the package or removed.
----
- README.rst | 18 ------------------
- 1 file changed, 18 deletions(-)
-
-diff --git a/README.rst b/README.rst
-index 69404ec..3232bfb 100644
 --- a/README.rst
 +++ b/README.rst
 @@ -17,8 +17,6 @@ https://letsencrypt.org. Be sure to checkout the
  About the Let's Encrypt Client
  ==============================
- 
+
 -|build-status| |coverage| |docs| |container|
 -
  In short: getting and installing SSL/TLS certificates made easy (`watch demo video`_).
- 
+
  The Let's Encrypt Client is a tool to automatically receive and install
 @@ -51,22 +49,6 @@ server automatically!::
  **Encrypt ALL the things!**
- 
- 
+
+
 -.. |build-status| image:: https://travis-ci.org/letsencrypt/letsencrypt.svg?branch=master
 -   :target: https://travis-ci.org/letsencrypt/letsencrypt
 -   :alt: Travis CI status
@@ -46,4 +40,3 @@ index 69404ec..3232bfb 100644
 -
  .. _`installation instructions`:
     https://letsencrypt.readthedocs.org/en/latest/using.html
- 
