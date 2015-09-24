@@ -107,12 +107,16 @@ class AuthHandler(object):
         """Get Responses for challenges from authenticators."""
         cont_resp = []
         dv_resp = []
-        logger.info("Attempting to set up challenges.")
         with error_handler.ErrorHandler(self._cleanup_challenges):
-            if self.cont_c:
-                cont_resp = self.cont_auth.perform(self.cont_c)
-            if self.dv_c:
-                dv_resp = self.dv_auth.perform(self.dv_c)
+            try:
+                if self.cont_c:
+                    cont_resp = self.cont_auth.perform(self.cont_c)
+                if self.dv_c:
+                    dv_resp = self.dv_auth.perform(self.dv_c)
+            except errors.AuthorizationError:
+                logger.critical("Failure in setting up challenges.")
+                logger.info("Attempting to clean up outstanding challenges...")
+                raise
 
         assert len(cont_resp) == len(self.cont_c)
         assert len(dv_resp) == len(self.dv_c)

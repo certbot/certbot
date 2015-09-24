@@ -415,8 +415,11 @@ class Client(object):
         """
         with error_handler.ErrorHandler(self.installer.recovery_routine):
             for dom in domains:
-                logger.info("Attempting to perform redirect for %s", dom)
-                self.installer.enhance(dom, "redirect")
+                try:
+                    self.installer.enhance(dom, "redirect")
+                except errors.PluginError:
+                    logger.warn("Unable to perform redirect for %s", dom)
+                    raise
 
             self.installer.save("Add Redirects")
             self.installer.restart()

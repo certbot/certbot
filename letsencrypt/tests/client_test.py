@@ -189,7 +189,7 @@ class ClientTest(unittest.TestCase):
         installer.deploy_cert.assert_called_once_with(
             "foo.bar", os.path.abspath("cert"),
             os.path.abspath("key"), os.path.abspath("chain"))
-        self.assertTrue(installer.save.call_count == 1)
+        self.assertEqual(installer.save.call_count, 1)
         installer.restart.assert_called_once_with()
 
     @mock.patch("letsencrypt.client.enhancements")
@@ -203,7 +203,7 @@ class ClientTest(unittest.TestCase):
 
         self.client.enhance_config(["foo.bar"])
         installer.enhance.assert_called_once_with("foo.bar", "redirect")
-        self.assertTrue(installer.save.call_count == 1)
+        self.assertEqual(installer.save.call_count, 1)
         installer.restart.assert_called_once_with()
 
         installer.enhance.side_effect = errors.PluginError
