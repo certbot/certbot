@@ -18,6 +18,10 @@ Key = collections.namedtuple("Key", "file pem")
 CSR = collections.namedtuple("CSR", "file data form")
 
 
+# ANSI escape code for resetting output format
+ANSI_SGR_RESET = "\033[0m"
+
+
 def run_script(params):
     """Run the script with the given params.
 

@@ -24,6 +24,7 @@ from acme import jose
 import letsencrypt
 
 from letsencrypt import account
+from letsencrypt import colored_logging
 from letsencrypt import configuration
 from letsencrypt import constants
 from letsencrypt import client
@@ -786,7 +787,7 @@ def _setup_logging(args):
     level = -args.verbose_count * 10
     fmt = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
     if args.text_mode:
-        handler = logging.StreamHandler()
+        handler = colored_logging.StreamHandler()
         handler.setFormatter(logging.Formatter(fmt))
     else:
         handler = log.DialogHandler()
