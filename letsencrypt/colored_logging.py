@@ -26,7 +26,7 @@ class StreamHandler(logging.StreamHandler):
     def format(self, record):
         """Formats the string representation of record.
 
-       :param logging.LogRecord record: Record to be formatted
+        :param logging.LogRecord record: Record to be formatted
 
         :returns: Formatted, string representation of record
         :rtype: str
