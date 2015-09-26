@@ -71,10 +71,6 @@ BACKUP_DIR = "backups"
 CERT_DIR = "certs"
 """See `.IConfig.cert_dir`."""
 
-CERT_KEY_BACKUP_DIR = "keys-certs"
-"""Directory where all certificates and keys are stored (relative to
-`IConfig.work_dir`). Used for easy revocation."""
-
 IN_PROGRESS_DIR = "IN_PROGRESS"
 """Directory used before a permanent checkpoint is finalized (relative to
 `IConfig.work_dir`)."""

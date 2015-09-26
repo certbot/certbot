@@ -19,7 +19,6 @@ class NamespaceConfig(object):
 
       - `accounts_dir`
       - `cert_dir`
-      - `cert_key_backup`
       - `in_progress_dir`
       - `key_dir`
       - `renewer_config_file`
@@ -56,11 +55,6 @@ class NamespaceConfig(object):
     @property
     def cert_dir(self):  # pylint: disable=missing-docstring
         return os.path.join(self.namespace.config_dir, constants.CERT_DIR)
-
-    @property
-    def cert_key_backup(self):  # pylint: disable=missing-docstring
-        return os.path.join(self.namespace.work_dir,
-                            constants.CERT_KEY_BACKUP_DIR, self.server_path)
 
     @property
     def in_progress_dir(self):  # pylint: disable=missing-docstring
