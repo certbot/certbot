@@ -7,6 +7,7 @@ from letsencrypt import le_util
 
 
 class StreamHandlerTest(unittest.TestCase):
+    """Tests for letsencrypt.colored_logging."""
 
     def setUp(self):
         from letsencrypt import colored_logging
@@ -26,13 +27,13 @@ class StreamHandlerTest(unittest.TestCase):
 
     def test_format_and_red_level(self):
         msg = 'I did another thing'
-        self.handler.set_red_level(logging.DEBUG)
+        self.handler.red_level = logging.DEBUG
         self.logger.debug(msg)
 
-        #  pylint: disable=protected-access
-        expected = '{0}{1}{2}\n'.format(self.handler._RED, msg,
-                                        le_util.ANSI_SGR_RESET)
-        self.assertEqual(self.stream.getvalue(), expected)
+        self.assertEqual(self.stream.getvalue(),
+                         '{0}{1}{2}\n'.format(le_util.ANSI_SGR_RED,
+                                              msg,
+                                              le_util.ANSI_SGR_RESET))
 
 
 if __name__ == "__main__":

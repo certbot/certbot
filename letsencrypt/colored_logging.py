@@ -15,13 +15,12 @@ class StreamHandler(logging.StreamHandler):
     :ivar bool red_level: The level at which to output
 
     """
-    _RED = '\033[31m'
 
     def __init__(self, stream=None):
         super(StreamHandler, self).__init__(stream)
         self.colored = (sys.stderr.isatty() if stream is None else
                         stream.isatty())
-        self.set_red_level(logging.WARNING)
+        self.red_level = logging.WARNING
 
     def format(self, record):
         """Formats the string representation of record.
@@ -34,14 +33,8 @@ class StreamHandler(logging.StreamHandler):
         """
         output = super(StreamHandler, self).format(record)
         if self.colored and record.levelno >= self.red_level:
-            return ''.join((self._RED, output, le_util.ANSI_SGR_RESET))
+            return ''.join((le_util.ANSI_SGR_RED,
+                            output,
+                            le_util.ANSI_SGR_RESET))
         else:
             return output
-
-    def set_red_level(self, red_level):
-        """Sets the level necessary to display output in red.
-
-        :param int red_level: Minimum log level for displaying red text
-
-        """
-        self.red_level = red_level

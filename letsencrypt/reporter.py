@@ -31,7 +31,6 @@ class Reporter(object):
     LOW_PRIORITY = 2
     """Low priority constant. See `add_message`."""
 
-    _BOLD = '\033[1m'
     _msg_type = collections.namedtuple('ReporterMsg', 'priority text on_crash')
 
     def __init__(self):
@@ -76,7 +75,7 @@ class Reporter(object):
             no_exception = sys.exc_info()[0] is None
             bold_on = sys.stdout.isatty()
             if bold_on:
-                print self._BOLD
+                print le_util.ANSI_SGR_BOLD
             print 'IMPORTANT NOTES:'
             first_wrapper = textwrap.TextWrapper(
                 initial_indent=' - ', subsequent_indent=(' ' * 3))

@@ -18,7 +18,12 @@ Key = collections.namedtuple("Key", "file pem")
 CSR = collections.namedtuple("CSR", "file data form")
 
 
-# ANSI escape code for resetting output format
+# ANSI SGR escape codes
+# Formats text as bold or with increased intensity
+ANSI_SGR_BOLD = '\033[1m'
+# Colors text red
+ANSI_SGR_RED = "\033[31m"
+# Resets output format
 ANSI_SGR_RESET = "\033[0m"
 
 
