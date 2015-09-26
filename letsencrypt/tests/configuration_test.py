@@ -32,8 +32,8 @@ class NamespaceConfigTest(unittest.TestCase):
     def test_dynamic_dirs(self, constants):
         constants.ACCOUNTS_DIR = 'acc'
         constants.BACKUP_DIR = 'backups'
-        constants.CERT_KEY_BACKUP_DIR = 'c/'
         constants.CSR_DIR = 'csr'
+
         constants.IN_PROGRESS_DIR = '../p'
         constants.KEY_DIR = 'keys'
         constants.TEMP_CHECKPOINT_DIR = 't'
@@ -42,8 +42,6 @@ class NamespaceConfigTest(unittest.TestCase):
             self.config.accounts_dir, '/tmp/config/acc/acme-server.org:443/new')
         self.assertEqual(self.config.backup_dir, '/tmp/foo/backups')
         self.assertEqual(self.config.csr_dir, '/tmp/config/csr')
-        self.assertEqual(
-            self.config.cert_key_backup, '/tmp/foo/c/acme-server.org:443/new')
         self.assertEqual(self.config.in_progress_dir, '/tmp/foo/../p')
         self.assertEqual(self.config.key_dir, '/tmp/config/keys')
         self.assertEqual(self.config.temp_checkpoint_dir, '/tmp/foo/t')
