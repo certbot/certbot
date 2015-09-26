@@ -88,7 +88,7 @@ LIVE_DIR = "live"
 TEMP_CHECKPOINT_DIR = "temp_checkpoint"
 """Temporary checkpoint directory (relative to `IConfig.work_dir`)."""
 
-RENEWAL_CONFIGS_DIR = "configs"
+RENEWAL_CONFIGS_DIR = "renewal"
 """Renewal configs directory, relative to `IConfig.config_dir`."""
 
 RENEWER_CONFIG_FILENAME = "renewer.conf"

@@ -39,7 +39,7 @@ def create_le_config(parent_dir):
 
 def extract_configs(configs, parent_dir):
     """Extracts configs to a new dir under parent_dir and returns it"""
-    config_dir = os.path.join(parent_dir, "configs")
+    config_dir = os.path.join(parent_dir, "renewal")
 
     if os.path.isdir(configs):
         shutil.copytree(configs, config_dir, symlinks=True)
