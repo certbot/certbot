@@ -4,6 +4,8 @@ from setuptools import setup
 from setuptools import find_packages
 
 
+version = '0.1.0.dev0'
+
 install_requires = [
     # load_pem_private/public_key (>=0.6)
     # rsa_recover_prime_factors (>=0.8)
@@ -34,6 +36,7 @@ testing_extras = [
 
 setup(
     name='acme',
+    version=version,
     packages=find_packages(),
     install_requires=install_requires,
     extras_require={

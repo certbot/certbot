@@ -28,9 +28,10 @@ meta = dict(re.findall(r"""__([a-z]+)__ = "([^"]+)""", read_file(init_fn)))
 
 readme = read_file(os.path.join(here, 'README.rst'))
 changes = read_file(os.path.join(here, 'CHANGES.rst'))
+version = meta['version']
 
 install_requires = [
-    'acme',
+    'acme=={0}'.format(version),
     'ConfigArgParse',
     'configobj',
     'cryptography>=0.7',  # load_pem_x509_certificate
@@ -75,7 +76,7 @@ testing_extras = [
 
 setup(
     name='letsencrypt',
-    version=meta['version'],
+    version=version,
     description="Let's Encrypt",
     long_description=readme,  # later: + '\n\n' + changes
     author="Let's Encrypt Project",
