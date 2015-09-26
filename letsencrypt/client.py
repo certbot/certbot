@@ -21,7 +21,6 @@ from letsencrypt import errors
 from letsencrypt import interfaces
 from letsencrypt import le_util
 from letsencrypt import reverter
-from letsencrypt import revoker
 from letsencrypt import storage
 
 from letsencrypt.display import ops as display_ops
@@ -483,27 +482,6 @@ def rollback(default_installer, checkpoints, config, plugins):
     if installer is not None:
         installer.rollback_checkpoints(checkpoints)
         installer.restart()
-
-
-def revoke(default_installer, config, plugins, no_confirm, cert, authkey):
-    """Revoke certificates.
-
-    :param config: Configuration.
-    :type config: :class:`letsencrypt.interfaces.IConfig`
-
-    """
-    installer = display_ops.pick_installer(
-        config, default_installer, plugins, question="Which installer "
-        "should be used for certificate revocation?")
-
-    revoc = revoker.Revoker(installer, config, no_confirm)
-    # Cert is most selective, so it is chosen first.
-    if cert is not None:
-        revoc.revoke_from_cert(cert[0])
-    elif authkey is not None:
-        revoc.revoke_from_key(le_util.Key(authkey[0], authkey[1]))
-    else:
-        revoc.revoke_from_menu()
 
 
 def view_config_changes(config):
