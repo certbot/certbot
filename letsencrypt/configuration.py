@@ -18,8 +18,7 @@ class NamespaceConfig(object):
     paths defined in :py:mod:`letsencrypt.constants`:
 
       - `accounts_dir`
-      - `cert_dir`
-      - `cert_key_backup`
+      - `csr_dir`
       - `in_progress_dir`
       - `key_dir`
       - `renewer_config_file`
@@ -54,8 +53,8 @@ class NamespaceConfig(object):
         return os.path.join(self.namespace.work_dir, constants.BACKUP_DIR)
 
     @property
-    def cert_dir(self):  # pylint: disable=missing-docstring
-        return os.path.join(self.namespace.config_dir, constants.CERT_DIR)
+    def csr_dir(self):  # pylint: disable=missing-docstring
+        return os.path.join(self.namespace.config_dir, constants.CSR_DIR)
 
     @property
     def cert_key_backup(self):  # pylint: disable=missing-docstring
