@@ -213,8 +213,7 @@ class Client(object):
 
         return self._obtain_certificate(domains, csr) + (key, csr)
 
-    def obtain_and_enroll_certificate(
-            self, domains, authenticator, installer, plugins):
+    def obtain_and_enroll_certificate(self, domains, plugins):
         """Obtain and enroll certificate.
 
         Get a new certificate for the specified domains using the specified
@@ -222,12 +221,6 @@ class Client(object):
         containing it.
 
         :param list domains: Domains to request.
-        :param authenticator: The authenticator to use.
-        :type authenticator: :class:`letsencrypt.interfaces.IAuthenticator`
-
-        :param installer: The installer to use.
-        :type installer: :class:`letsencrypt.interfaces.IInstaller`
-
         :param plugins: A PluginsFactory object.
 
         :returns: A new :class:`letsencrypt.storage.RenewableCert` instance
@@ -239,9 +232,10 @@ class Client(object):
 
         # TODO: remove this dirty hack
         self.config.namespace.authenticator = plugins.find_init(
-            authenticator).name
-        if installer is not None:
-            self.config.namespace.installer = plugins.find_init(installer).name
+            self.dv_auth).name
+        if self.installer is not None:
+            self.config.namespace.installer = plugins.find_init(
+                self.installer).name
 
         # XXX: We clearly need a more general and correct way of getting
         # options into the configobj for the RenewableCert instance.

@@ -272,8 +272,10 @@ def _auth_from_domains(le_client, config, domains, plugins):
     lineage = _treat_as_renewal(config, domains)
 
     if lineage is not None:
+        # TODO: schoen wishes to reuse key - discussion
+        # https://github.com/letsencrypt/letsencrypt/pull/777/files#r40498574
         new_certr, new_chain, new_key, _ = le_client.obtain_certificate(domains)
-        # TODO: Check whether it worked!
+        # TODO: Check whether it worked! <- or make sure errors are thrown (jdk)
         lineage.save_successor(
             lineage.latest_common_version(), OpenSSL.crypto.dump_certificate(
                 OpenSSL.crypto.FILETYPE_PEM, new_certr.body),
@@ -282,11 +284,10 @@ def _auth_from_domains(le_client, config, domains, plugins):
         lineage.update_all_links_to(lineage.latest_common_version())
         # TODO: Check return value of save_successor
         # TODO: Also update lineage renewal config with any relevant
-        #       configuration values from this attempt? - YES
+        #       configuration values from this attempt? <- Absolutely (jdkasten)
     else:
         # TREAT AS NEW REQUEST
-        lineage = le_client.obtain_and_enroll_certificate(
-            domains, le_client.dv_auth, le_client.installer, plugins)
+        lineage = le_client.obtain_and_enroll_certificate(domains, plugins)
         if not lineage:
             raise errors.Error("Certificate could not be obtained")
 
@@ -338,7 +339,6 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
 
 def auth(args, config, plugins):
     """Authenticate & obtain cert, but do not install it."""
-    # XXX: Update for renewer / RenewableCert
 
     if args.domains is not None and args.csr is not None:
         # TODO: --csr could have a priority, when --domains is
