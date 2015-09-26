@@ -113,7 +113,7 @@ class ClientTest(unittest.TestCase):
         mock_crypto_util.init_save_key.assert_called_once_with(
             self.config.rsa_key_size, self.config.key_dir)
         mock_crypto_util.init_save_csr.assert_called_once_with(
-            mock.sentinel.key, domains, self.config.cert_dir)
+            mock.sentinel.key, domains, self.config.csr_dir)
         self._check_obtain_certificate()
 
     @mock.patch("letsencrypt.client.zope.component.getUtility")

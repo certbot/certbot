@@ -205,9 +205,9 @@ class IConfig(zope.interface.Interface):
     accounts_dir = zope.interface.Attribute(
         "Directory where all account information is stored.")
     backup_dir = zope.interface.Attribute("Configuration backups directory.")
-    cert_dir = zope.interface.Attribute(
+    csr_dir = zope.interface.Attribute(
         "Directory where newly generated Certificate Signing Requests "
-        "(CSRs) and certificates not enrolled in the renewer are saved.")
+        "(CSRs) are saved.")
     in_progress_dir = zope.interface.Attribute(
         "Directory used before a permanent checkpoint is finalized.")
     key_dir = zope.interface.Attribute("Keys storage.")
