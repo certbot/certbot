@@ -21,6 +21,15 @@ setup(
     author="Let's Encrypt Project",
     author_email='client-dev@letsencrypt.org',
     license='Apache License 2.0',
+    classifiers=[
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: Apache Software License',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 2.7',
+        'Topic :: Internet :: WWW/HTTP',
+        'Topic :: Security',
+    ],
 
     packages=find_packages(),
     install_requires=install_requires,
