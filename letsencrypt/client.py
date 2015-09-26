@@ -18,10 +18,10 @@ from letsencrypt import constants
 from letsencrypt import continuity_auth
 from letsencrypt import crypto_util
 from letsencrypt import errors
+from letsencrypt import error_handler
 from letsencrypt import interfaces
 from letsencrypt import le_util
 from letsencrypt import reverter
-from letsencrypt import revoker
 from letsencrypt import storage
 
 from letsencrypt.display import ops as display_ops
@@ -211,7 +211,7 @@ class Client(object):
         # Create CSR from names
         key = crypto_util.init_save_key(
             self.config.rsa_key_size, self.config.key_dir)
-        csr = crypto_util.init_save_csr(key, domains, self.config.cert_dir)
+        csr = crypto_util.init_save_csr(key, domains, self.config.csr_dir)
 
         return self._obtain_certificate(domains, csr) + (key, csr)
 
@@ -364,16 +364,17 @@ class Client(object):
 
         chain_path = None if chain_path is None else os.path.abspath(chain_path)
 
-        for dom in domains:
-            # TODO: Provide a fullchain reference for installers like
-            #       nginx that want it
-            self.installer.deploy_cert(
-                dom, os.path.abspath(cert_path),
-                os.path.abspath(privkey_path), chain_path)
+        with error_handler.ErrorHandler(self.installer.recovery_routine):
+            for dom in domains:
+                # TODO: Provide a fullchain reference for installers like
+                #       nginx that want it
+                self.installer.deploy_cert(
+                    dom, os.path.abspath(cert_path),
+                    os.path.abspath(privkey_path), chain_path)
 
-        self.installer.save("Deployed Let's Encrypt Certificate")
-        # sites may have been enabled / final cleanup
-        self.installer.restart()
+            self.installer.save("Deployed Let's Encrypt Certificate")
+            # sites may have been enabled / final cleanup
+            self.installer.restart()
 
     def enhance_config(self, domains, redirect=None):
         """Enhance the configuration.
@@ -399,6 +400,8 @@ class Client(object):
         if redirect is None:
             redirect = enhancements.ask("redirect")
 
+        # When support for more enhancements are added, the call to the
+        # plugin's `enhance` function should be wrapped by an ErrorHandler
         if redirect:
             self.redirect_to_ssl(domains)
 
@@ -409,14 +412,16 @@ class Client(object):
         :type vhost: :class:`letsencrypt.interfaces.IInstaller`
 
         """
-        for dom in domains:
-            try:
-                self.installer.enhance(dom, "redirect")
-            except errors.PluginError:
-                logger.warn("Unable to perform redirect for %s", dom)
+        with error_handler.ErrorHandler(self.installer.recovery_routine):
+            for dom in domains:
+                try:
+                    self.installer.enhance(dom, "redirect")
+                except errors.PluginError:
+                    logger.warn("Unable to perform redirect for %s", dom)
+                    raise
 
-        self.installer.save("Add Redirects")
-        self.installer.restart()
+            self.installer.save("Add Redirects")
+            self.installer.restart()
 
 
 def validate_key_csr(privkey, csr=None):
@@ -483,27 +488,6 @@ def rollback(default_installer, checkpoints, config, plugins):
     if installer is not None:
         installer.rollback_checkpoints(checkpoints)
         installer.restart()
-
-
-def revoke(default_installer, config, plugins, no_confirm, cert, authkey):
-    """Revoke certificates.
-
-    :param config: Configuration.
-    :type config: :class:`letsencrypt.interfaces.IConfig`
-
-    """
-    installer = display_ops.pick_installer(
-        config, default_installer, plugins, question="Which installer "
-        "should be used for certificate revocation?")
-
-    revoc = revoker.Revoker(installer, config, no_confirm)
-    # Cert is most selective, so it is chosen first.
-    if cert is not None:
-        revoc.revoke_from_cert(cert[0])
-    elif authkey is not None:
-        revoc.revoke_from_key(le_util.Key(authkey[0], authkey[1]))
-    else:
-        revoc.revoke_from_menu()
 
 
 def view_config_changes(config):
