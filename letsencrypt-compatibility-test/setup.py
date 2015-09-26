@@ -22,6 +22,7 @@ setup(
     author_email='client-dev@letsencrypt.org',
     license='Apache License 2.0',
     classifiers=[
+        'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: Apache Software License',
         'Programming Language :: Python',

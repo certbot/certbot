@@ -84,6 +84,7 @@ setup(
     author_email='client-dev@letsencrypt.org',
     license='Apache License 2.0',
     classifiers=[
+        'Development Status :: 3 - Alpha',
         'Environment :: Console',
         'Environment :: Console :: Curses',
         'Intended Audience :: System Administrators',
