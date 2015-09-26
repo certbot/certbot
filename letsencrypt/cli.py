@@ -241,8 +241,8 @@ def _treat_as_renewal(config, domains):
             # We aren't in a duplicative-names situation at all, so we don't
             # have to tell or ask the user anything about this.
             pass
-        elif zope.component.getUtility(interfaces.IDisplay).yesno(
-                question, "Replace", "Cancel"):
+        elif config.no_confirm or zope.component.getUtility(
+                interfaces.IDisplay).yesno(question, "Replace", "Cancel"):
             renewal = True
         else:
             reporter_util = zope.component.getUtility(interfaces.IReporter)
@@ -661,7 +661,7 @@ def create_parser(plugins, args):
         help="show program's version number and exit")
     helpful.add(
         "automation", "--no-confirm", dest="no_confirm", action="store_true",
-        help="Turn off confirmation screens, currently used for --revoke")
+        help="Turn off confirmation screens, used for renewal screens")
     helpful.add(
         "automation", "--agree-eula", dest="eula", action="store_true",
         help="Agree to the Let's Encrypt Developer Preview EULA")
