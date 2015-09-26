@@ -42,6 +42,7 @@ install_requires = [
     'python2-pythondialog>=3.2.2rc1',  # Debian squeeze support, cf. #280
     'pytz',
     'requests',
+    'six',
     'zope.component',
     'zope.interface',
 ]
@@ -119,8 +120,7 @@ setup(
             'manual = letsencrypt.plugins.manual:ManualAuthenticator',
             # TODO: null should probably not be presented to the user
             'null = letsencrypt.plugins.null:Installer',
-            'standalone = letsencrypt.plugins.standalone.authenticator'
-            ':StandaloneAuthenticator',
+            'standalone = letsencrypt.plugins.standalone:Authenticator',
         ],
     },
 
