@@ -59,9 +59,9 @@ class RenewerConfigurationTest(unittest.TestCase):
 
     @mock.patch('letsencrypt.configuration.constants')
     def test_dynamic_dirs(self, constants):
-        constants.ARCHIVE_DIR = "a"
+        constants.ARCHIVE_DIR = 'a'
         constants.LIVE_DIR = 'l'
-        constants.RENEWAL_CONFIGS_DIR = "renewal_configs"
+        constants.RENEWAL_CONFIGS_DIR = 'renewal_configs'
         constants.RENEWER_CONFIG_FILENAME = 'r.conf'
 
         self.assertEqual(self.config.archive_dir, '/tmp/config/a')
