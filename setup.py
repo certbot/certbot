@@ -77,11 +77,12 @@ testing_extras = [
 setup(
     name='letsencrypt',
     version=version,
-    description="Let's Encrypt",
+    description="Let's Encrypt client",
     long_description=readme,  # later: + '\n\n' + changes
+    url='https://github.com/letsencrypt/letsencrypt',
     author="Let's Encrypt Project",
+    author_email='client-dev@letsencrypt.org',
     license='Apache License 2.0',
-    url='https://letsencrypt.org',
     classifiers=[
         'Environment :: Console',
         'Environment :: Console :: Curses',

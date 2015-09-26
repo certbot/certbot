@@ -37,7 +37,12 @@ testing_extras = [
 setup(
     name='acme',
     version=version,
+    description='ACME protocol implementation',
+    url='https://github.com/letsencrypt/letsencrypt',
+    author="Let's Encrypt Project",
+    author_email='client-dev@letsencrypt.org',
     license='Apache License 2.0',
+
     packages=find_packages(),
     install_requires=install_requires,
     extras_require={

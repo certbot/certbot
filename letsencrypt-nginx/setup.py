@@ -17,7 +17,12 @@ install_requires = [
 setup(
     name='letsencrypt-nginx',
     version=version,
+    description="Nginx plugin for Let's Encrypt client",
+    url='https://github.com/letsencrypt/letsencrypt',
+    author="Let's Encrypt Project",
+    author_email='client-dev@letsencrypt.org',
     license='Apache License 2.0',
+
     packages=find_packages(),
     install_requires=install_requires,
     entry_points={
