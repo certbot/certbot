@@ -323,10 +323,7 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
     # TODO: Handle errors from _init_le_client?
     le_client = _init_le_client(args, config, authenticator, installer)
 
-    try:
-        lineage = _auth_from_domains(le_client, config, domains, plugins)
-    except errors.Error as err:
-        return str(err)
+    lineage = _auth_from_domains(le_client, config, domains, plugins)
 
     # TODO: We also need to pass the fullchain (for Nginx)
     le_client.deploy_certificate(
@@ -369,10 +366,7 @@ def auth(args, config, plugins):
             certr, chain, args.cert_path, args.chain_path)
     else:
         domains = _find_domains(args, installer)
-        try:
-            _auth_from_domains(le_client, config, domains, plugins)
-        except errors.Error as err:
-            return str(err)
+        _auth_from_domains(le_client, config, domains, plugins)
 
 
 def install(args, config, plugins):
