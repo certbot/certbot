@@ -39,7 +39,8 @@ class BaseRenewableCertTest(unittest.TestCase):
         self.tempdir = tempfile.mkdtemp()
 
         self.cli_config = configuration.RenewerConfiguration(
-            namespace=mock.MagicMock(config_dir=self.tempdir))
+            namespace=mock.MagicMock(
+                config_dir=self.tempdir, no_simple_http_tls=False))
         # TODO: maybe provide RenewerConfiguration.make_dirs?
         os.makedirs(os.path.join(self.tempdir, "live", "example.org"))
         os.makedirs(os.path.join(self.tempdir, "archive", "example.org"))

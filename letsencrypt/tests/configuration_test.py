@@ -11,7 +11,8 @@ class NamespaceConfigTest(unittest.TestCase):
     def setUp(self):
         self.namespace = mock.MagicMock(
             config_dir='/tmp/config', work_dir='/tmp/foo', foo='bar',
-            server='https://acme-server.org:443/new')
+            server='https://acme-server.org:443/new',
+            dvsni_port='1234', simple_http_port='4321')
         from letsencrypt.configuration import NamespaceConfig
         self.config = NamespaceConfig(self.namespace)
 
