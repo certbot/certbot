@@ -23,7 +23,7 @@ letsencrypt_test () {
         --agree-eula \
         --agree-tos \
         --email "" \
-        --no-confirm \
+        --renew-by-default \
         --debug \
         -vvvvvvv \
         "$@"
