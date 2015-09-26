@@ -18,6 +18,7 @@ from letsencrypt import constants
 from letsencrypt import continuity_auth
 from letsencrypt import crypto_util
 from letsencrypt import errors
+from letsencrypt import error_handler
 from letsencrypt import interfaces
 from letsencrypt import le_util
 from letsencrypt import reverter
@@ -364,16 +365,17 @@ class Client(object):
 
         chain_path = None if chain_path is None else os.path.abspath(chain_path)
 
-        for dom in domains:
-            # TODO: Provide a fullchain reference for installers like
-            #       nginx that want it
-            self.installer.deploy_cert(
-                dom, os.path.abspath(cert_path),
-                os.path.abspath(privkey_path), chain_path)
+        with error_handler.ErrorHandler(self.installer.recovery_routine):
+            for dom in domains:
+                # TODO: Provide a fullchain reference for installers like
+                #       nginx that want it
+                self.installer.deploy_cert(
+                    dom, os.path.abspath(cert_path),
+                    os.path.abspath(privkey_path), chain_path)
 
-        self.installer.save("Deployed Let's Encrypt Certificate")
-        # sites may have been enabled / final cleanup
-        self.installer.restart()
+            self.installer.save("Deployed Let's Encrypt Certificate")
+            # sites may have been enabled / final cleanup
+            self.installer.restart()
 
     def enhance_config(self, domains, redirect=None):
         """Enhance the configuration.
@@ -399,6 +401,8 @@ class Client(object):
         if redirect is None:
             redirect = enhancements.ask("redirect")
 
+        # When support for more enhancements are added, the call to the
+        # plugin's `enhance` function should be wrapped by an ErrorHandler
         if redirect:
             self.redirect_to_ssl(domains)
 
@@ -409,14 +413,16 @@ class Client(object):
         :type vhost: :class:`letsencrypt.interfaces.IInstaller`
 
         """
-        for dom in domains:
-            try:
-                self.installer.enhance(dom, "redirect")
-            except errors.PluginError:
-                logger.warn("Unable to perform redirect for %s", dom)
+        with error_handler.ErrorHandler(self.installer.recovery_routine):
+            for dom in domains:
+                try:
+                    self.installer.enhance(dom, "redirect")
+                except errors.PluginError:
+                    logger.warn("Unable to perform redirect for %s", dom)
+                    raise
 
-        self.installer.save("Add Redirects")
-        self.installer.restart()
+            self.installer.save("Add Redirects")
+            self.installer.restart()
 
 
 def validate_key_csr(privkey, csr=None):

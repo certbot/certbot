@@ -318,6 +318,17 @@ class IInstaller(IPlugin):
 
         """
 
+    def recovery_routine():
+        """Revert configuration to most recent finalized checkpoint.
+
+        Remove all changes (temporary and permanent) that have not been
+        finalized. This is useful to protect against crashes and other
+        execution interruptions.
+
+        :raises .errors.PluginError: If unable to recover the configuration
+
+        """
+
     def view_config_changes():
         """Display all of the LE config changes.
 

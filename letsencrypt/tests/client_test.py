@@ -178,6 +178,39 @@ class ClientTest(unittest.TestCase):
 
         shutil.rmtree(tmp_path)
 
+    def test_deploy_certificate(self):
+        self.assertRaises(errors.Error, self.client.deploy_certificate,
+                          ["foo.bar"], "key", "cert", "chain")
+
+        installer = mock.MagicMock()
+        self.client.installer = installer
+
+        self.client.deploy_certificate(["foo.bar"], "key", "cert", "chain")
+        installer.deploy_cert.assert_called_once_with(
+            "foo.bar", os.path.abspath("cert"),
+            os.path.abspath("key"), os.path.abspath("chain"))
+        self.assertEqual(installer.save.call_count, 1)
+        installer.restart.assert_called_once_with()
+
+    @mock.patch("letsencrypt.client.enhancements")
+    def test_enhance_config(self, mock_enhancements):
+        self.assertRaises(errors.Error,
+                          self.client.enhance_config, ["foo.bar"])
+
+        mock_enhancements.ask.return_value = True
+        installer = mock.MagicMock()
+        self.client.installer = installer
+
+        self.client.enhance_config(["foo.bar"])
+        installer.enhance.assert_called_once_with("foo.bar", "redirect")
+        self.assertEqual(installer.save.call_count, 1)
+        installer.restart.assert_called_once_with()
+
+        installer.enhance.side_effect = errors.PluginError
+        self.assertRaises(errors.PluginError,
+                          self.client.enhance_config, ["foo.bar"], True)
+        installer.recovery_routine.assert_called_once_with()
+
 
 class RollbackTest(unittest.TestCase):
     """Tests for letsencrypt.client.rollback."""
