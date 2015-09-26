@@ -1,1 +1,2 @@
+include LICENSE.txt
 recursive-include letsencrypt_compatibility_test/testdata *

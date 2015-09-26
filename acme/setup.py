@@ -37,6 +37,7 @@ testing_extras = [
 setup(
     name='acme',
     version=version,
+    license='Apache License 2.0',
     packages=find_packages(),
     install_requires=install_requires,
     extras_require={

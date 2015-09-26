@@ -16,6 +16,7 @@ install_requires = [
 setup(
     name='letsencrypt-compatibility-test',
     version=version,
+    license='Apache License 2.0',
     packages=find_packages(),
     install_requires=install_requires,
     entry_points={

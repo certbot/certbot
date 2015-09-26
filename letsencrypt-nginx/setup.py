@@ -17,6 +17,7 @@ install_requires = [
 setup(
     name='letsencrypt-nginx',
     version=version,
+    license='Apache License 2.0',
     packages=find_packages(),
     install_requires=install_requires,
     entry_points={

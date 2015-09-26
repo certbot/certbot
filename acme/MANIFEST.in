@@ -1,1 +1,2 @@
+include LICENSE.txt
 recursive-include acme/testdata *
