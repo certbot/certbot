@@ -542,7 +542,7 @@ class DNS(DVChallenge):
     def check_validation(self, validation, account_public_key):
         """Check validation.
 
-        :param validation
+        :param JWS validation:
         :type account_public_key:
             `~cryptography.hazmat.primitives.asymmetric.rsa.RSAPublicKey`
             or
