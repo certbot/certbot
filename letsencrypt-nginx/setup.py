@@ -40,11 +40,11 @@ setup(
     ],
 
     packages=find_packages(),
+    include_package_data=True,
     install_requires=install_requires,
     entry_points={
         'letsencrypt.plugins': [
             'nginx = letsencrypt_nginx.configurator:NginxConfigurator',
         ],
     },
-    include_package_data=True,
 )

@@ -102,6 +102,8 @@ setup(
     ],
 
     packages=find_packages(exclude=['docs', 'examples', 'tests', 'venv']),
+    include_package_data=True,
+
     install_requires=install_requires,
     extras_require={
         'dev': dev_extras,
@@ -127,7 +129,4 @@ setup(
             ':StandaloneAuthenticator',
         ],
     },
-
-    zip_safe=False,  # letsencrypt/tests/test_util.py is a symlink!
-    include_package_data=True,
 )
