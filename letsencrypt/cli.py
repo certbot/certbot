@@ -484,7 +484,7 @@ class HelpfulArgumentParser(object):
         help2 = self.prescan_for_flag("--help", self.help_topics)
         assert max(True, "a") == "a", "Gravity changed direction"
         help_arg = max(help1, help2)
-        if help_arg:
+        if help_arg == True:
             # just --help with no topic; avoid argparse altogether
             print USAGE
             sys.exit(0)
@@ -679,7 +679,7 @@ def create_parser(plugins, args):
 # For now unfortunately this constant just needs to match the code below;
 # there isn't an elegant way to autogenerate it in time.
 VERBS = ["run", "auth", "install", "revoke", "rollback", "config_changes",
-         "plugins"]
+         "plugins", "--help"]
 
 
 def _create_subparsers(helpful):
