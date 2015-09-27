@@ -8,20 +8,24 @@ from acme import challenges
 SETUPTOOLS_PLUGINS_ENTRY_POINT = "letsencrypt.plugins"
 """Setuptools entry point group name for plugins."""
 
+# http://standards.freedesktop.org/basedir-spec/latest/ar01s03.html
+XDG_CONFIG_HOME = os.path.expanduser(
+    os.environ.get("XDG_CONFIG_HOME", "~/.config"))
+XDG_DATA_HOME = os.path.expanduser(
+    os.environ.get("XDG_DATA_HOME", "~/.local/share"))
+
 CLI_DEFAULTS = dict(
     config_files=[
         "/etc/letsencrypt/cli.ini",
-        # http://freedesktop.org/wiki/Software/xdg-user-dirs/
-        os.path.join(os.environ.get("XDG_CONFIG_HOME", "~/.config"),
-                     "letsencrypt", "cli.ini"),
+        os.path.join(XDG_CONFIG_HOME, "letsencrypt", "cli.ini"),
     ],
     verbose_count=-(logging.WARNING / 10),
     server="https://acme-staging.api.letsencrypt.org/directory",
     rsa_key_size=2048,
     rollback_checkpoints=1,
-    config_dir="/etc/letsencrypt",
-    work_dir="/var/lib/letsencrypt",
-    logs_dir="/var/log/letsencrypt",
+    config_dir=os.path.join(XDG_CONFIG_HOME, "letsencrypt"),
+    work_dir=os.path.join(XDG_DATA_HOME, "letsencrypt", "work"),
+    logs_dir=os.path.join(XDG_DATA_HOME, "letsencrypt", "logs"),
     no_verify_ssl=False,
     dvsni_port=challenges.DVSNI.PORT,
 

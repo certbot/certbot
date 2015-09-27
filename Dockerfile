@@ -21,6 +21,7 @@ WORKDIR /opt/letsencrypt
 # If <dest> doesn't exist, it is created along with all missing
 # directories in its path.
 
+COPY examples/debian-cli.ini /root/.config/letsencrypt/cli.ini
 COPY bootstrap/ubuntu.sh /opt/letsencrypt/src/
 RUN /opt/letsencrypt/src/ubuntu.sh && \
     apt-get clean && \

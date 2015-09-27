@@ -22,6 +22,7 @@ WORKDIR /opt/letsencrypt
 
 # TODO: Install non-default Python versions for tox.
 # TODO: Install Apache/Nginx for plugin development.
+COPY examples/debian-cli.ini /root/.config/letsencrypt/cli.ini
 COPY bootstrap/ubuntu.sh /opt/letsencrypt/src/
 RUN /opt/letsencrypt/src/ubuntu.sh && \
     apt-get clean && \
