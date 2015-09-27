@@ -1,5 +1,3 @@
-# Symlinked in letsencrypt/tests/test_util.py, causes duplicate-code
-# warning that cannot be disabled locally.
 """Test utilities.
 
 .. warning:: This module is not part of the public API.
