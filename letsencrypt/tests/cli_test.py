@@ -176,7 +176,8 @@ class DuplicativeCertsTest(renewer_test.BaseRenewableCertTest):
     def tearDown(self):
         shutil.rmtree(self.tempdir)
 
-    def test_find_duplicative_names(self):
+    @mock.patch("letsencrypt.le_util.make_or_verify_dir")
+    def test_find_duplicative_names(self, unused_makedir):
         from letsencrypt.cli import _find_duplicative_certs
         test_cert = test_util.load_vector("cert-san.pem")
         with open(self.test_rc.cert, "w") as f:
@@ -206,5 +207,5 @@ class DuplicativeCertsTest(renewer_test.BaseRenewableCertTest):
         self.assertEqual(result, (None, None))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()  # pragma: no cover
