@@ -1,2 +1,3 @@
 include LICENSE.txt
+include README.rst
 recursive-include letshelp-letsencrypt/testdata *
