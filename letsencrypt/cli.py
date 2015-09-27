@@ -495,13 +495,14 @@ class HelpfulArgumentParser(object):
     def preprocess_args(self, args):
         """Work around some limitations in argparse.
 
-        Currently, add the default verb "run" as a default.
+	Currently: add the default verb "run" as a default, and ensure that the
+        subcommand / verb comes last.
         """
-
-        for token in args:
+        for i,token in enumerate(args):
             if token in VERBS:
-                return args
-        return ["run"] + args
+		reordered = args[:i] + args[i+1:] + [args[i]]
+                return reordered
+        return args + ["run"]
 
     def prescan_for_flag(self, flag, possible_arguments):
         """Checks cli input for flags.
