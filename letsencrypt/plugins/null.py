@@ -47,6 +47,9 @@ class Installer(common.Plugin):
     def rollback_checkpoints(self, rollback=1):
         pass  # pragma: no cover
 
+    def recovery_routine(self):
+        pass  # pragma: no cover
+
     def view_config_changes(self):
         pass  # pragma: no cover
 

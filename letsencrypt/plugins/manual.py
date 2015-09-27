@@ -23,7 +23,7 @@ from letsencrypt.plugins import common
 logger = logging.getLogger(__name__)
 
 
-class ManualAuthenticator(common.Plugin):
+class Authenticator(common.Plugin):
     """Manual Authenticator.
 
     .. todo:: Support for `~.challenges.DVSNI`.
@@ -87,7 +87,7 @@ s.serve_forever()" """
     """
 
     def __init__(self, *args, **kwargs):
-        super(ManualAuthenticator, self).__init__(*args, **kwargs)
+        super(Authenticator, self).__init__(*args, **kwargs)
         self.template = (self.HTTP_TEMPLATE if self.config.no_simple_http_tls
                          else self.HTTPS_TEMPLATE)
         self._root = (tempfile.mkdtemp() if self.conf("test-mode")
