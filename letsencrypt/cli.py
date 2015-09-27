@@ -730,53 +730,55 @@ def _create_subparsers(helpful):
     # the order of add_subparser() calls is important: it defines the
     # order in which subparser names will be displayed in --help
     add_subparser("run", run)
+
     parser_auth = add_subparser("auth", auth)
+    helpful.add_group("auth", "Options for modifying how a cert is obtained")
     parser_install = add_subparser("install", install)
+    helpful.add_group("install", "Options for modifying how a cert is deployed")
     parser_revoke = add_subparser("revoke", revoke)
+    helpful.add_group("revoke", "Options for revocation of certs")
     parser_rollback = add_subparser("rollback", rollback)
+    helpful.add_group("rollback", "Options for reverting config changes")
     add_subparser("config_changes", config_changes)
     parser_plugins = add_subparser("plugins", plugins_cmd)
+    helpful.add_group("plugins", "Plugin options")
 
-    parser_auth.add_argument(
-        "--csr", type=read_file, help="Path to a Certificate Signing "
-        "Request (CSR) in DER format.")
-    parser_auth.add_argument(
+    helpful.add("auth", 
+        "--csr", type=read_file, help="Path to a Certificate Signing Request (CSR) in DER format.")
+    helpful.add("auth", 
         "--cert-path", default=flag_default("auth_cert_path"),
         help="When using --csr this is where certificate is saved.")
-    parser_auth.add_argument(
+    helpful.add("auth",
         "--chain-path", default=flag_default("auth_chain_path"),
         help="When using --csr this is where certificate chain is saved.")
 
-    parser_install.add_argument(
-        "--cert-path", required=True, help="Path to a certificate that "
-        "is going to be installed.")
-    parser_install.add_argument(
+    helpful.add("install", 
+        "--cert-path", required=True, help="Path to a certificate that is going to be installed.")
+    helpful.add("install", 
         "--key-path", required=True, help="Accompanying private key")
-    parser_install.add_argument(
+    helpful.add("install", 
         "--chain-path", help="Accompanying path to a certificate chain.")
-    parser_revoke.add_argument(
-        "--cert-path", type=read_file, help="Revoke a specific certificate.",
-        required=True)
-    parser_revoke.add_argument(
+    helpful.add("revoke", 
+        "--cert-path", type=read_file, help="Revoke a specific certificate.", required=True)
+    helpful.add("revoke", 
         "--key-path", type=read_file,
-        help="Revoke certificate using its accompanying key. Useful if "
-        "Account Key is lost.")
+        help="Revoke certificate using its accompanying key. Useful if Account Key is lost.")
 
-    parser_rollback.add_argument(
+    helpful.add("rollback", 
         "--checkpoints", type=int, metavar="N",
         default=flag_default("rollback_checkpoints"),
         help="Revert configuration N number of checkpoints.")
 
-    parser_plugins.add_argument(
+    helpful.add("plugins", 
         "--init", action="store_true", help="Initialize plugins.")
-    parser_plugins.add_argument(
+    helpful.add("plugins", 
         "--prepare", action="store_true",
         help="Initialize and prepare plugins.")
-    parser_plugins.add_argument(
+    helpful.add("plugins", 
         "--authenticators", action="append_const", dest="ifaces",
         const=interfaces.IAuthenticator,
         help="Limit to authenticator plugins only.")
-    parser_plugins.add_argument(
+    helpful.add("plugins", 
         "--installers", action="append_const", dest="ifaces",
         const=interfaces.IInstaller, help="Limit to installer plugins only.")
 
