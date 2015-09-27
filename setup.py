@@ -117,7 +117,7 @@ setup(
             'letsencrypt-renewer = letsencrypt.renewer:main',
         ],
         'letsencrypt.plugins': [
-            'manual = letsencrypt.plugins.manual:ManualAuthenticator',
+            'manual = letsencrypt.plugins.manual:Authenticator',
             # TODO: null should probably not be presented to the user
             'null = letsencrypt.plugins.null:Installer',
             'standalone = letsencrypt.plugins.standalone.authenticator'

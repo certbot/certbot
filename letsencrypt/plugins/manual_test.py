@@ -17,22 +17,22 @@ from letsencrypt.tests import test_util
 KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
 
-class ManualAuthenticatorTest(unittest.TestCase):
-    """Tests for letsencrypt.plugins.manual.ManualAuthenticator."""
+class AuthenticatorTest(unittest.TestCase):
+    """Tests for letsencrypt.plugins.manual.Authenticator."""
 
     def setUp(self):
-        from letsencrypt.plugins.manual import ManualAuthenticator
+        from letsencrypt.plugins.manual import Authenticator
         self.config = mock.MagicMock(
             no_simple_http_tls=True, simple_http_port=4430,
             manual_test_mode=False)
-        self.auth = ManualAuthenticator(config=self.config, name="manual")
+        self.auth = Authenticator(config=self.config, name="manual")
         self.achalls = [achallenges.SimpleHTTP(
             challb=acme_util.SIMPLE_HTTP_P, domain="foo.com", account_key=KEY)]
 
         config_test_mode = mock.MagicMock(
             no_simple_http_tls=True, simple_http_port=4430,
             manual_test_mode=True)
-        self.auth_test_mode = ManualAuthenticator(
+        self.auth_test_mode = Authenticator(
             config=config_test_mode, name="manual")
 
     def test_more_info(self):
