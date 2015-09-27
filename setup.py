@@ -24,7 +24,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 
 # read version number (and other metadata) from package init
 init_fn = os.path.join(here, 'letsencrypt', '__init__.py')
-meta = dict(re.findall(r"""__([a-z]+)__ = "([^"]+)""", read_file(init_fn)))
+meta = dict(re.findall(r"""__([a-z]+)__ = '([^']+)""", read_file(init_fn)))
 
 readme = read_file(os.path.join(here, 'README.rst'))
 changes = read_file(os.path.join(here, 'CHANGES.rst'))
