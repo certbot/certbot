@@ -7,38 +7,39 @@ Contributing
 Hacking
 =======
 
-Start by :doc:`installing dependencies and setting up Let's Encrypt
-<using>`.
-
-When you're done activate the virtualenv:
-
-.. code-block:: shell
-
-   source ./venv/bin/activate
-
-This step should prepend you prompt with ``(venv)`` and save you from
-typing ``./venv/bin/...``. It is also required to run some of the
-`testing`_ tools. Virtualenv can be disabled at any time by typing
-``deactivate``. More information can be found in `virtualenv
-documentation`_.
-
-Install the development packages:
-
-.. code-block:: shell
-
-   pip install -r requirements.txt -e acme -e .[dev,docs,testing] -e letsencrypt-apache -e letsencrypt-nginx -e letshelp-letsencrypt
-
-.. note:: `-e` (short for `--editable`) turns on *editable mode* in
-          which any source code changes in the current working
-          directory are "live" and no further `pip install ...`
-          invocations are necessary while developing.
-
-          This is roughly equivalent to `python setup.py develop`. For
-          more info see `man pip`.
-
 The code base, including your pull requests, **must** have 100% unit
 test coverage, pass our `integration`_ tests **and** be compliant with
 the :ref:`coding style <coding-style>`.
+
+
+Bootstrap
+---------
+
+Start by :ref:`installing Let's Encrypt prerequisites
+<prerequisites>`. Then run:
+
+.. code-block:: shell
+
+   ./bootstrap/dev/venv.sh
+   ./bootstrap/dev/venv3.sh
+
+Both of the commands suggest to activate the virtualenv (you can
+activate one at a time only):
+
+.. code-block:: shell
+
+   source ./$VENV_NAME/bin/activate
+
+This step should prepend you prompt with ``($VENV_NAME)`` and save you
+from typing ``./$VENV_NAME/bin/...``. It is also required to run some
+of the `testing`_ tools. Virtualenv can be disabled at any time by
+typing ``deactivate``. More information can be found in `virtualenv
+documentation`_.
+
+Note that packages are installed in so called *editable mode*, in
+which any source code changes in the current working directory are
+"live" and no further ``./bootstrap/dev/venv.sh`` or ``pip install
+...`` invocations are necessary while developing.
 
 .. _`virtualenv documentation`: https://virtualenv.pypa.io
 

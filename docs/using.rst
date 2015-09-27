@@ -42,6 +42,8 @@ above method instead.
    https://github.com/letsencrypt/letsencrypt/archive/master.zip
 
 
+.. _prerequisites:
+
 Prerequisites
 =============
 
