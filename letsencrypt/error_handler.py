@@ -2,6 +2,7 @@
 import logging
 import os
 import signal
+import sys
 import traceback
 
 
@@ -13,9 +14,14 @@ logger = logging.getLogger(__name__)
 # potentially occur from inside Python. Signals such as SIGILL were not
 # included as they could be a sign of something devious and we should terminate
 # immediately.
-_SIGNALS = ([signal.SIGTERM] if os.name == "nt" else
-            [signal.SIGTERM, signal.SIGHUP, signal.SIGQUIT,
-             signal.SIGXCPU, signal.SIGXFSZ, signal.SIGPWR])
+if os.name == "nt":
+    _SIGNALS = [signal.SIGTERM]
+elif sys.platform == "darwin":
+    _SIGNALS = [signal.SIGTERM, signal.SIGHUP, signal.SIGQUIT, signal.SIGXCPU,
+                signal.SIGXFSZ]
+else:
+    _SIGNALS = [signal.SIGTERM, signal.SIGHUP, signal.SIGQUIT, signal.SIGXCPU,
+                signal.SIGXFSZ, signal.SIGPWR]
 
 
 class ErrorHandler(object):
