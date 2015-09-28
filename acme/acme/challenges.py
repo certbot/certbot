@@ -34,7 +34,7 @@ class DVChallenge(Challenge):  # pylint: disable=abstract-method
     """Domain validation challenges."""
 
 
-class UnrecognizedChallenge(DVChallenge):
+class UnrecognizedChallenge(Challenge):
     """Unrecognized challenge."""
     typ = "unknown"
 
