@@ -272,7 +272,7 @@ def _report_new_cert(cert_path):
     reporter_util = zope.component.getUtility(interfaces.IReporter)
     reporter_util.add_message("Congratulations! Your certificate has been "
                               "saved at {0}.".format(cert_path),
-                               reporter.MEDIUM_PRIORITY)
+                              reporter_util.MEDIUM_PRIORITY)
 
 
 def _auth_from_domains(le_client, config, domains, plugins):
