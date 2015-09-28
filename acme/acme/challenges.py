@@ -34,6 +34,11 @@ class DVChallenge(Challenge):  # pylint: disable=abstract-method
     """Domain validation challenges."""
 
 
+class UnrecognizedChallenge(Challenge):
+    """Unrecognized challenge."""
+    typ = "unknown"
+
+
 class ChallengeResponse(jose.TypedJSONObjectWithFields):
     # _fields_to_partial_json | pylint: disable=abstract-method
     """ACME challenge response."""
