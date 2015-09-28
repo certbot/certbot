@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 # immediately.
 _SIGNALS = ([signal.SIGTERM] if os.name == "nt" else
             [signal.SIGTERM, signal.SIGHUP, signal.SIGQUIT,
-             signal.SIGXCPU, signal.SIGXFSZ, signal.SIGPWR])
+             signal.SIGXCPU, signal.SIGXFSZ])
 
 
 class ErrorHandler(object):

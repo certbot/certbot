@@ -50,6 +50,11 @@ class PluginEntryPoint(object):
         """Description with name. Handy for UI."""
         return "{0} ({1})".format(self.description, self.name)
 
+    @property
+    def hidden(self):
+        """Should this plugin be hidden from UI?"""
+        return getattr(self.plugin_cls, "hidden", False)
+
     def ifaces(self, *ifaces_groups):
         """Does plugin implements specified interface groups?"""
         return not ifaces_groups or any(
@@ -182,6 +187,10 @@ class PluginsRegistry(collections.Mapping):
         """Filter plugins based on predicate."""
         return type(self)(dict((name, plugin_ep) for name, plugin_ep
                                in self._plugins.iteritems() if pred(plugin_ep)))
+
+    def visible(self):
+        """Filter plugins based on visibility."""
+        return self.filter(lambda plugin_ep: not plugin_ep.hidden)
 
     def ifaces(self, *ifaces_groups):
         """Filter plugins based on interfaces."""

@@ -17,6 +17,7 @@ class Installer(common.Plugin):
     zope.interface.classProvides(interfaces.IPluginFactory)
 
     description = "Null Installer"
+    hidden = True
 
     # pylint: disable=missing-docstring,no-self-use
 
