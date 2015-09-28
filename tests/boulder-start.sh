@@ -8,6 +8,7 @@ GOVER=`go version | cut -d" " -f3 | cut -do -f2`
 
 # version comparison
 function verlte {
+  #OS X doesn't support version sorting; emulate with sed
   if [ `uname` == 'Darwin' ]; then
     [ "$1" = "`echo -e \"$1\n$2\" |  sed 's/\b\([0-9]\)\b/0\1/g' \
       | sort | sed 's/\b0\([0-9]\)/\1/g' | head -n1`" ]
