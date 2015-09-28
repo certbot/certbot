@@ -183,7 +183,7 @@ binary for temporary key/certificate generation.""".replace("\n", "")
             return response
         else:
             logger.error(
-                "Self-verify of challenge failed, authorization abandoned.\n")
+                "Self-verify of challenge failed, authorization abandoned.")
             if self.conf("test-mode") and self._httpd.poll() is not None:
                 # simply verify cause command failure...
                 return False
