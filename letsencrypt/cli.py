@@ -267,6 +267,14 @@ def _treat_as_renewal(config, domains):
     return None
 
 
+def _report_new_cert(cert_path):
+    """Reports the creation of a new certificate to the user."""
+    reporter_util = zope.component.getUtility(interfaces.IReporter)
+    reporter_util.add_message("Congratulations! Your certificate has been "
+                              "saved at {0}.".format(cert_path),
+                               reporter.MEDIUM_PRIORITY)
+
+
 def _auth_from_domains(le_client, config, domains, plugins):
     """Authenticate and enroll certificate."""
     # Note: This can raise errors... caught above us though.
@@ -291,6 +299,8 @@ def _auth_from_domains(le_client, config, domains, plugins):
         lineage = le_client.obtain_and_enroll_certificate(domains, plugins)
         if not lineage:
             raise errors.Error("Certificate could not be obtained")
+
+    _report_new_cert(lineage.cert)
 
     return lineage
 
@@ -365,6 +375,7 @@ def auth(args, config, plugins):
             file=args.csr[0], data=args.csr[1], form="der"))
         le_client.save_certificate(
             certr, chain, args.cert_path, args.chain_path)
+        _report_new_cert(args.cert_path)
     else:
         domains = _find_domains(args, installer)
         _auth_from_domains(le_client, config, domains, plugins)

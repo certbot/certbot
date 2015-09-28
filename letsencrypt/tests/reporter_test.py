@@ -78,13 +78,13 @@ class ReporterTest(unittest.TestCase):
         output = sys.stdout.getvalue()
         self.assertTrue("IMPORTANT NOTES:" in output)
         self.assertTrue("High" in output)
-        self.assertTrue("Med" not in output)
+        self.assertTrue("Med" in output)
         self.assertTrue("Low" not in output)
 
     def _add_messages(self):
-        self.reporter.add_message("High", self.reporter.HIGH_PRIORITY, True)
+        self.reporter.add_message("High", self.reporter.HIGH_PRIORITY)
         self.reporter.add_message("Med", self.reporter.MEDIUM_PRIORITY)
-        self.reporter.add_message("Low", self.reporter.LOW_PRIORITY)
+        self.reporter.add_message("Low", self.reporter.LOW_PRIORITY, False)
 
 
 if __name__ == "__main__":

@@ -478,7 +478,7 @@ class IReporter(zope.interface.Interface):
     LOW_PRIORITY = zope.interface.Attribute(
         "Used to denote low priority messages")
 
-    def add_message(self, msg, priority, on_crash=False):
+    def add_message(self, msg, priority, on_crash=True):
         """Adds msg to the list of messages to be printed.
 
         :param str msg: Message to be displayed to the user.
