@@ -374,9 +374,8 @@ class Authorization(ResourceBody):
     @challenges.decoder
     def challenges(value):  # pylint: disable=missing-docstring,no-self-argument
         # The from_json method raises errors.UnrecognizedTypeError when a
-        # challenge of unknown type is encountered.  We want to ignore this
-        # case.  This forces us to do an explicit iteration, since list
-        # comprehensions can't handle exceptions.
+        # challenge of unknown type is encountered.  We want to put a
+        # an UnrecognizedChallenge object in its place.
         challs = []
         for chall in value:
             try:
