@@ -518,7 +518,7 @@ class HelpfulArgumentParser(object):
         help2 = self.prescan_for_flag("--help", self.help_topics)
         assert max(True, "a") == "a", "Gravity changed direction"
         help_arg = max(help1, help2)
-        if help_arg == True:
+        if help_arg is True:
             # just --help with no topic; avoid argparse altogether
             print USAGE
             sys.exit(0)
