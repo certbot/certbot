@@ -274,6 +274,9 @@ class AuthorizationTest(unittest.TestCase):
     def setUp(self):
         from acme.messages import ChallengeBody
         from acme.messages import STATUS_VALID
+
+        unknown_chall = mock.MagicMock()
+        unknown_chall.to_json.side_effect = side_effect=jose.UnrecognizedTypeError
         self.challbs = (
             ChallengeBody(
                 uri='http://challb1', status=STATUS_VALID,
@@ -300,6 +303,19 @@ class AuthorizationTest(unittest.TestCase):
             'combinations': combinations,
         }
 
+        # For unknown challenge types
+        self.jmsg_unknown_chall = {
+            'resource': 'challenge',
+            'uri': 'random_uri',
+            'type': 'unknown',
+            'tls': True,
+        }
+
+        self.jobj_from_unknown = {
+            'identifier': identifier.to_json(),
+            'challenges': [self.jmsg_unknown_chall],
+        }
+
     def test_from_json(self):
         from acme.messages import Authorization
         Authorization.from_json(self.jobj_from)
@@ -313,6 +329,11 @@ class AuthorizationTest(unittest.TestCase):
             (self.challbs[0], self.challbs[2]),
             (self.challbs[1], self.challbs[2]),
         ))
+
+    def test_unknown_chall_type(self):
+        """Just make sure an error isn't thrown."""
+        from acme.messages import Authorization
+        Authorization.from_json(self.jobj_from_unknown)
 
 
 class AuthorizationResourceTest(unittest.TestCase):

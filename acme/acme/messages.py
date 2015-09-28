@@ -2,6 +2,7 @@
 import collections
 
 from acme import challenges
+from acme import errors
 from acme import fields
 from acme import jose
 from acme import util
@@ -373,17 +374,17 @@ class Authorization(ResourceBody):
 
     @challenges.decoder
     def challenges(value):  # pylint: disable=missing-docstring,no-self-argument
-        # The from_json method raises errors.UnrecognizedTypeError when a 
+        # The from_json method raises errors.UnrecognizedTypeError when a
         # challenge of unknown type is encountered.  We want to ignore this
         # case.  This forces us to do an explicit iteration, since list
         # comprehensions can't handle exceptions.
-        challenges = []
+        challs = []
         for chall in value:
             try:
-                challenges.append(ChallengeBody.from_json(chall))
-            except errors.UnknownTypeError:
+                challs.append(ChallengeBody.from_json(chall))
+            except jose.UnrecognizedTypeError:
                 continue
-        return tuple(challenges)
+        return tuple(challs)
 
     @property
     def resolved_combinations(self):
