@@ -420,7 +420,7 @@ def plugins_cmd(args, config, plugins):  # TODO: Use IDisplay rather than print
     logger.debug("Expected interfaces: %s", args.ifaces)
 
     ifaces = [] if args.ifaces is None else args.ifaces
-    filtered = plugins.ifaces(ifaces)
+    filtered = plugins.visible().ifaces(ifaces)
     logger.debug("Filtered plugins: %r", filtered)
 
     if not args.init and not args.prepare:
