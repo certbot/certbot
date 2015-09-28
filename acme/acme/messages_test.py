@@ -275,8 +275,6 @@ class AuthorizationTest(unittest.TestCase):
         from acme.messages import ChallengeBody
         from acme.messages import STATUS_VALID
 
-        unknown_chall = mock.MagicMock()
-        unknown_chall.to_json.side_effect = side_effect=jose.UnrecognizedTypeError
         self.challbs = (
             ChallengeBody(
                 uri='http://challb1', status=STATUS_VALID,

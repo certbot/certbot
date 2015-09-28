@@ -2,7 +2,6 @@
 import collections
 
 from acme import challenges
-from acme import errors
 from acme import fields
 from acme import jose
 from acme import util
@@ -383,7 +382,9 @@ class Authorization(ResourceBody):
             try:
                 challs.append(ChallengeBody.from_json(chall))
             except jose.UnrecognizedTypeError:
-                continue
+                challs.append(ChallengeBody(
+                    uri="UNKNOWN", chall=challenges.UnrecognizedChallenge,
+                    status=STATUS_UNKNOWN))
         return tuple(challs)
 
     @property
