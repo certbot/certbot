@@ -373,19 +373,7 @@ class Authorization(ResourceBody):
 
     @challenges.decoder
     def challenges(value):  # pylint: disable=missing-docstring,no-self-argument
-        # The from_json method raises errors.UnrecognizedTypeError when a
-        # challenge of unknown type is encountered.  We want to ignore this
-        # case.  This forces us to do an explicit iteration, since list
-        # comprehensions can't handle exceptions.
-        challs = []
-        for chall in value:
-            try:
-                challs.append(ChallengeBody.from_json(chall))
-            except jose.UnrecognizedTypeError:
-                challs.append(ChallengeBody(
-                    uri="UNKNOWN", chall=challenges.UnrecognizedChallenge,
-                    status=STATUS_UNKNOWN))
-        return tuple(challs)
+        return tuple(ChallengeBody.from_json(chall) for chall in value)
 
     @property
     def resolved_combinations(self):

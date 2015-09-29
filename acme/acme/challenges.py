@@ -25,6 +25,14 @@ class Challenge(jose.TypedJSONObjectWithFields):
     """ACME challenge."""
     TYPES = {}
 
+    @classmethod
+    def from_json(cls, jobj):
+        try:
+            return super(Challenge, cls).from_json(jobj)
+        except jose.UnrecognizedTypeError as error:
+            logger.debug(error)
+            return UnrecognizedChallenge.from_json(jobj)
+
 
 class ContinuityChallenge(Challenge):  # pylint: disable=abstract-method
     """Client validation challenges."""
@@ -34,17 +42,38 @@ class DVChallenge(Challenge):  # pylint: disable=abstract-method
     """Domain validation challenges."""
 
 
-class UnrecognizedChallenge(Challenge):
-    """Unrecognized challenge."""
-    typ = "unknown"
-
-
 class ChallengeResponse(jose.TypedJSONObjectWithFields):
     # _fields_to_partial_json | pylint: disable=abstract-method
     """ACME challenge response."""
     TYPES = {}
     resource_type = 'challenge'
     resource = fields.Resource(resource_type)
+
+
+class UnrecognizedChallenge(Challenge):
+    """Unrecognized challenge.
+
+    ACME specification defines a generic framework for challenges and
+    defines some standard challenges that are implemented in this
+    module. However, other implementations (including peers) might
+    define additional challenge types, which should be ignored if
+    unrecognized.
+
+    :ivar jobj: Original JSON decoded object.
+
+    """
+
+    def __init__(self, jobj):
+        super(UnrecognizedChallenge, self).__init__()
+        object.__setattr__(self, "jobj", jobj)
+
+    def to_partial_json(self):
+        # pylint: disable=no-member
+        return self.jobj
+
+    @classmethod
+    def from_json(cls, jobj):
+        return cls(jobj)
 
 
 @Challenge.register
