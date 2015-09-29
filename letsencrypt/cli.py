@@ -267,6 +267,14 @@ def _treat_as_renewal(config, domains):
     return None
 
 
+def _report_new_cert(cert_path):
+    """Reports the creation of a new certificate to the user."""
+    reporter_util = zope.component.getUtility(interfaces.IReporter)
+    reporter_util.add_message("Congratulations! Your certificate has been "
+                              "saved at {0}.".format(cert_path),
+                              reporter_util.MEDIUM_PRIORITY)
+
+
 def _auth_from_domains(le_client, config, domains, plugins):
     """Authenticate and enroll certificate."""
     # Note: This can raise errors... caught above us though.
@@ -291,6 +299,8 @@ def _auth_from_domains(le_client, config, domains, plugins):
         lineage = le_client.obtain_and_enroll_certificate(domains, plugins)
         if not lineage:
             raise errors.Error("Certificate could not be obtained")
+
+    _report_new_cert(lineage.cert)
 
     return lineage
 
@@ -365,6 +375,7 @@ def auth(args, config, plugins):
             file=args.csr[0], data=args.csr[1], form="der"))
         le_client.save_certificate(
             certr, chain, args.cert_path, args.chain_path)
+        _report_new_cert(args.cert_path)
     else:
         domains = _find_domains(args, installer)
         _auth_from_domains(le_client, config, domains, plugins)
@@ -420,7 +431,7 @@ def plugins_cmd(args, config, plugins):  # TODO: Use IDisplay rather than print
     logger.debug("Expected interfaces: %s", args.ifaces)
 
     ifaces = [] if args.ifaces is None else args.ifaces
-    filtered = plugins.ifaces(ifaces)
+    filtered = plugins.visible().ifaces(ifaces)
     logger.debug("Filtered plugins: %r", filtered)
 
     if not args.init and not args.prepare:
@@ -516,7 +527,7 @@ class HelpfulArgumentParser(object):
         help2 = self.prescan_for_flag("--help", self.help_topics)
         assert max(True, "a") == "a", "Gravity changed direction"
         help_arg = max(help1, help2)
-        if help_arg == True:
+        if help_arg is True:
             # just --help with no topic; avoid argparse altogether
             print USAGE
             sys.exit(0)
