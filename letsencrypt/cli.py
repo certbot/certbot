@@ -489,8 +489,6 @@ class SilentParser(object):  # pylint: disable=too-few-public-methods
         self.parser.add_argument(*args, **kwargs)
 
 
-HELP_TOPICS = ["all", "security", "paths", "automation", "testing", "plugins"]
-
 
 class HelpfulArgumentParser(object):
     """Argparse Wrapper.
@@ -529,12 +527,17 @@ class HelpfulArgumentParser(object):
     def preprocess_args(self, args):
         """Work around some limitations in argparse.
 
-	Currently: add the default verb "run" as a default, and ensure that the
+        Currently: add the default verb "run" as a default, and ensure that the
         subcommand / verb comes last.
         """
+
+        if "-h" in args or "--help" in args:
+            # all verbs double as help arguments; don't get them confused
+            return args
+
         for i,token in enumerate(args):
             if token in VERBS:
-		reordered = args[:i] + args[i+1:] + [args[i]]
+                reordered = args[:i] + args[i+1:] + [args[i]]
                 return reordered
         return args + ["run"]
 
@@ -717,6 +720,9 @@ def create_parser(plugins, args):
 VERBS = ["run", "auth", "install", "revoke", "rollback", "config_changes",
          "plugins", "--help", "-h"]
 
+HELP_TOPICS = (["all", "security", "paths", "automation", "testing", "apache", "nginx"] +
+               [v for v in VERBS if "-" not in v])
+
 
 def _create_subparsers(helpful):
     subparsers = helpful.parser.add_subparsers(metavar="SUBCOMMAND")
@@ -732,53 +738,34 @@ def _create_subparsers(helpful):
     add_subparser("run", run)
 
     parser_auth = add_subparser("auth", auth)
-    helpful.add_group("auth", "Options for modifying how a cert is obtained")
+    helpful.add_group("auth", description="Options for modifying how a cert is obtained")
     parser_install = add_subparser("install", install)
-    helpful.add_group("install", "Options for modifying how a cert is deployed")
+    helpful.add_group("install", description="Options for modifying how a cert is deployed")
     parser_revoke = add_subparser("revoke", revoke)
-    helpful.add_group("revoke", "Options for revocation of certs")
+    helpful.add_group("revoke", description="Options for revocation of certs")
     parser_rollback = add_subparser("rollback", rollback)
-    helpful.add_group("rollback", "Options for reverting config changes")
+    helpful.add_group("rollback", description="Options for reverting config changes")
     add_subparser("config_changes", config_changes)
     parser_plugins = add_subparser("plugins", plugins_cmd)
-    helpful.add_group("plugins", "Plugin options")
+    helpful.add_group("plugins", description="Plugin options")
 
-    helpful.add("auth", 
-        "--csr", type=read_file, help="Path to a Certificate Signing Request (CSR) in DER format.")
-    helpful.add("auth", 
-        "--cert-path", default=flag_default("auth_cert_path"),
-        help="When using --csr this is where certificate is saved.")
     helpful.add("auth",
-        "--chain-path", default=flag_default("auth_chain_path"),
-        help="When using --csr this is where certificate chain is saved.")
-
-    helpful.add("install", 
-        "--cert-path", required=True, help="Path to a certificate that is going to be installed.")
-    helpful.add("install", 
-        "--key-path", required=True, help="Accompanying private key")
-    helpful.add("install", 
-        "--chain-path", help="Accompanying path to a certificate chain.")
-    helpful.add("revoke", 
-        "--cert-path", type=read_file, help="Revoke a specific certificate.", required=True)
-    helpful.add("revoke", 
-        "--key-path", type=read_file,
-        help="Revoke certificate using its accompanying key. Useful if Account Key is lost.")
-
-    helpful.add("rollback", 
+        "--csr", type=read_file, help="Path to a Certificate Signing Request (CSR) in DER format.")
+    helpful.add("rollback",
         "--checkpoints", type=int, metavar="N",
         default=flag_default("rollback_checkpoints"),
         help="Revert configuration N number of checkpoints.")
 
-    helpful.add("plugins", 
+    helpful.add("plugins",
         "--init", action="store_true", help="Initialize plugins.")
-    helpful.add("plugins", 
+    helpful.add("plugins",
         "--prepare", action="store_true",
         help="Initialize and prepare plugins.")
-    helpful.add("plugins", 
+    helpful.add("plugins",
         "--authenticators", action="append_const", dest="ifaces",
         const=interfaces.IAuthenticator,
         help="Limit to authenticator plugins only.")
-    helpful.add("plugins", 
+    helpful.add("plugins",
         "--installers", action="append_const", dest="ifaces",
         const=interfaces.IInstaller, help="Limit to installer plugins only.")
 
@@ -787,6 +774,15 @@ def _paths_parser(helpful):
     add = helpful.add
     helpful.add_group(
         "paths", description="Arguments changing execution paths & servers")
+    helpful.add("paths",
+        "--cert-path", default=flag_default("auth_cert_path"),
+        help="Path to where certificate is saved (with auth), "
+             "installed (with install --csr) or revoked.")
+    helpful.add("paths",
+        "--key-path", required=True,
+        help="Path to private key for cert creation or revocation (if account key is missing)")
+    helpful.add("paths",
+        "--chain-path", help="Accompanying path to a certificate chain.")
     add("paths", "--config-dir", default=flag_default("config_dir"),
         help=config_help("config_dir"))
     add("paths", "--work-dir", default=flag_default("work_dir"),
