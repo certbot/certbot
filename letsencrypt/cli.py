@@ -530,7 +530,6 @@ class HelpfulArgumentParser(object):
         Currently: add the default verb "run" as a default, and ensure that the
         subcommand / verb comes last.
         """
-
         if "-h" in args or "--help" in args:
             # all verbs double as help arguments; don't get them confused
             return args
@@ -779,7 +778,7 @@ def _paths_parser(helpful):
         help="Path to where certificate is saved (with auth), "
              "installed (with install --csr) or revoked.")
     helpful.add("paths",
-        "--key-path", required=True,
+        "--key-path", required=("install" in helpful.args),
         help="Path to private key for cert creation or revocation (if account key is missing)")
     helpful.add("paths",
         "--chain-path", help="Accompanying path to a certificate chain.")
