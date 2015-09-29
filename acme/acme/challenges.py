@@ -64,9 +64,11 @@ class UnrecognizedChallenge(Challenge):
     """
 
     def __init__(self, jobj):
+        super(UnrecognizedChallenge, self).__init__()
         object.__setattr__(self, "jobj", jobj)
 
     def to_partial_json(self):
+        # pylint: disable=no-member
         return self.jobj
 
     @classmethod
