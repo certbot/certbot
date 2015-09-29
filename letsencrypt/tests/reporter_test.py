@@ -83,8 +83,10 @@ class ReporterTest(unittest.TestCase):
 
     def _add_messages(self):
         self.reporter.add_message("High", self.reporter.HIGH_PRIORITY)
-        self.reporter.add_message("Med", self.reporter.MEDIUM_PRIORITY, False)
-        self.reporter.add_message("Low", self.reporter.LOW_PRIORITY, False)
+        self.reporter.add_message(
+            "Med", self.reporter.MEDIUM_PRIORITY, on_crash=False)
+        self.reporter.add_message(
+            "Low", self.reporter.LOW_PRIORITY, on_crash=False)
 
 
 if __name__ == "__main__":

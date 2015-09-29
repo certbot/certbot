@@ -98,8 +98,7 @@ class CLITest(unittest.TestCase):
             mock_renewal.return_value = None
             with mock.patch('letsencrypt.cli._init_le_client') as mock_init:
                 mock_init.return_value = mock_client
-                self._call(['-d', 'foo.bar', '-a',
-                            'standalone', '-i', 'bad', 'auth'])
+                self._call(['-d', 'foo.bar', '-a', 'standalone', 'auth'])
 
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
     @mock.patch('letsencrypt.cli._treat_as_renewal')
@@ -124,16 +123,20 @@ class CLITest(unittest.TestCase):
         self.assertTrue(
             cert_path in mock_get_utility().add_message.call_args[0][0])
 
+    @mock.patch('letsencrypt.cli.display_ops.pick_installer')
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
     @mock.patch('letsencrypt.cli._init_le_client')
-    def test_auth_csr(self, mock_init, mock_get_utility):
+    def test_auth_csr(self, mock_init, mock_get_utility, mock_pick_installer):
         cert_path = '/etc/letsencrypt/live/foo.bar'
         mock_client = mock.MagicMock()
         mock_client.obtain_certificate_from_csr.return_value = ('certr',
                                                                 'chain')
         mock_init.return_value = mock_client
-        self._call(['-a', 'standalone', 'auth', '--csr', CSR,
-                    '--cert-path', cert_path, '--chain-path', '/'])
+        installer = 'installer'
+        self._call(
+            ['-a', 'standalone', '-i', installer, 'auth', '--csr', CSR,
+             '--cert-path', cert_path, '--chain-path', '/'])
+        self.assertEqual(mock_pick_installer.call_args[0][1], installer)
         mock_client.save_certificate.assert_called_once_with(
             'certr', 'chain', cert_path, '/')
         self.assertTrue(
