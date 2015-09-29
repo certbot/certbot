@@ -44,8 +44,8 @@ class CLITest(unittest.TestCase):
 
     def test_no_flags(self):
         with mock.patch('letsencrypt.cli.run') as mock_run:
-          self._call([])
-          self.assertEqual(1, mock_run.call_count)
+            self._call([])
+            self.assertEqual(1, mock_run.call_count)
 
     def test_help(self):
         self.assertRaises(SystemExit, self._call, ['--help'])

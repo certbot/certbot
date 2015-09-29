@@ -500,7 +500,6 @@ class SilentParser(object):  # pylint: disable=too-few-public-methods
         self.parser.add_argument(*args, **kwargs)
 
 
-
 class HelpfulArgumentParser(object):
     """Argparse Wrapper.
 
@@ -545,7 +544,7 @@ class HelpfulArgumentParser(object):
             # all verbs double as help arguments; don't get them confused
             return args
 
-        for i,token in enumerate(args):
+        for i, token in enumerate(args):
             if token in VERBS:
                 reordered = args[:i] + args[i+1:] + [args[i]]
                 return reordered
@@ -745,18 +744,21 @@ def _create_subparsers(helpful):
 
     # the order of add_subparser() calls is important: it defines the
     # order in which subparser names will be displayed in --help
-    add_subparser("run", run)
+    # these add_subparser objects return objects to which arguments could be
+    # attached, but they have annoying arg ordering constrains so we use
+    # groups instead: https://github.com/letsencrypt/letsencrypt/issues/820
 
-    parser_auth = add_subparser("auth", auth)
+    add_subparser("run", run)
+    add_subparser("auth", auth)
     helpful.add_group("auth", description="Options for modifying how a cert is obtained")
-    parser_install = add_subparser("install", install)
+    add_subparser("install", install)
     helpful.add_group("install", description="Options for modifying how a cert is deployed")
-    parser_revoke = add_subparser("revoke", revoke)
+    add_subparser("revoke", revoke)
     helpful.add_group("revoke", description="Options for revocation of certs")
-    parser_rollback = add_subparser("rollback", rollback)
+    add_subparser("rollback", rollback)
     helpful.add_group("rollback", description="Options for reverting config changes")
     add_subparser("config_changes", config_changes)
-    parser_plugins = add_subparser("plugins", plugins_cmd)
+    add_subparser("plugins", plugins_cmd)
     helpful.add_group("plugins", description="Plugin options")
 
     helpful.add("auth",
@@ -769,12 +771,10 @@ def _create_subparsers(helpful):
     helpful.add("plugins",
         "--init", action="store_true", help="Initialize plugins.")
     helpful.add("plugins",
-        "--prepare", action="store_true",
-        help="Initialize and prepare plugins.")
+        "--prepare", action="store_true", help="Initialize and prepare plugins.")
     helpful.add("plugins",
         "--authenticators", action="append_const", dest="ifaces",
-        const=interfaces.IAuthenticator,
-        help="Limit to authenticator plugins only.")
+        const=interfaces.IAuthenticator, help="Limit to authenticator plugins only.")
     helpful.add("plugins",
         "--installers", action="append_const", dest="ifaces",
         const=interfaces.IInstaller, help="Limit to installer plugins only.")
