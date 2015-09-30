@@ -9,7 +9,6 @@ import os
 import pkg_resources
 import sys
 import time
-import types
 import traceback
 
 import configargparse
@@ -731,17 +730,23 @@ def create_parser(plugins, args):
     return helpful.parser, helpful.args
 
 # For now unfortunately this constant just needs to match the code below;
-# there isn't an elegant way to autogenerate it in time.
-VERBS = ["run", "auth", "install", "revoke", "rollback", "config_changes", "plugins"]
-HELP_TOPICS = (["all", "security", "paths", "automation", "testing", "apache", "nginx"] + VERBS)
+# there isn't an elegant way to autogenerate it in time. pylint: disable=bad-whitespace
+VERBS = {
+    "run"            : run,
+    "auth"           : auth,
+    "install"        : install,
+    "revoke"         : revoke,
+    "rollback"       : rollback,
+    "config_changes" : config_changes,
+    "plugins"        : plugins_cmd
+}
+HELP_TOPICS = (["all", "security", "paths", "automation", "testing", "apache", "nginx"]
+               + VERBS.keys())
 
 def _create_subparsers(helpful):
     subparsers = helpful.parser.add_subparsers(metavar="SUBCOMMAND")
 
-    def add_subparser(name):  # pylint: disable=missing-docstring
-        # Each subcommand is implemented by a function of the same name
-        func = eval(name) # pylint: disable=eval-used
-        assert isinstance(func, types.FunctionType), "squirrels in namespace"
+    def add_subparser(name, func):  # pylint: disable=missing-docstring
         subparser = subparsers.add_parser(
             name, help=func.__doc__.splitlines()[0], description=func.__doc__)
         subparser.set_defaults(func=func)
@@ -752,8 +757,8 @@ def _create_subparsers(helpful):
     # these add_subparser objects return objects to which arguments could be
     # attached, but they have annoying arg ordering constrains so we use
     # groups instead: https://github.com/letsencrypt/letsencrypt/issues/820
-    for v in VERBS:
-        add_subparser(v)
+    for v, func in VERBS.items():
+        add_subparser(v, func)
 
     helpful.add_group("auth", description="Options for modifying how a cert is obtained")
     helpful.add_group("install", description="Options for modifying how a cert is deployed")

@@ -44,6 +44,8 @@ class CLITest(unittest.TestCase):
 
     def test_no_flags(self):
         with mock.patch('letsencrypt.cli.run') as mock_run:
+            from letsencrypt import cli
+            cli.VERBS["run"] = mock_run
             self._call([])
             self.assertEqual(1, mock_run.call_count)
 
