@@ -7,7 +7,7 @@ import six
 
 
 class abstractclassmethod(classmethod):
-    # pylint: disable=too-few-public-methods
+    # pylint: disable=invalid-name,too-few-public-methods
     """Descriptor for an abstract classmethod.
 
     It augments the :mod:`abc` framework with an abstract
@@ -172,7 +172,7 @@ class ImmutableMap(collections.Mapping, collections.Hashable):
 
 
 class frozendict(collections.Mapping, collections.Hashable):
-    # pylint: disable=too-few-public-methods
+    # pylint: disable=invalid-name,too-few-public-methods
     """Frozen dictionary."""
     __slots__ = ('_items', '_keys')
 

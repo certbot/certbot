@@ -92,7 +92,7 @@ class ImmutableMapTest(unittest.TestCase):
     """Tests for acme.jose.util.ImmutableMap."""
 
     def setUp(self):
-        # pylint: disable=too-few-public-methods
+        # pylint: disable=invalid-name,too-few-public-methods
         # pylint: disable=missing-docstring
         from acme.jose.util import ImmutableMap
 
@@ -156,7 +156,7 @@ class ImmutableMapTest(unittest.TestCase):
         self.assertEqual("B(x='foo', y='bar')", repr(self.B(x='foo', y='bar')))
 
 
-class frozendictTest(unittest.TestCase):
+class frozendictTest(unittest.TestCase):  # pylint: disable=invalid-name
     """Tests for acme.jose.util.frozendict."""
 
     def setUp(self):

@@ -26,7 +26,7 @@ class JWASignatureTest(unittest.TestCase):
             def verify(self, key, msg, sig):
                 raise NotImplementedError()  # pragma: no cover
 
-
+        # pylint: disable=invalid-name
         self.Sig1 = MockSig('Sig1')
         self.Sig2 = MockSig('Sig2')
 

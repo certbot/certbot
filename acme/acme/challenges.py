@@ -315,7 +315,7 @@ class DVSNIResponse(ChallengeResponse):
     validation = jose.Field("validation", decoder=jose.JWS.from_json)
 
     @property
-    def z(self):
+    def z(self):  # pylint: disable=invalid-name
         """The ``z``  parameter.
 
         :rtype: bytes
@@ -333,7 +333,7 @@ class DVSNIResponse(ChallengeResponse):
         :rtype: bytes
 
         """
-        z = self.z
+        z = self.z  # pylint: disable=invalid-name
         return z[:32] + b'.' + z[32:] + self.DOMAIN_SUFFIX
 
     @property

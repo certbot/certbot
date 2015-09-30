@@ -8,7 +8,7 @@ class JSONDeSerializableTest(unittest.TestCase):
     def setUp(self):
         from acme.jose.interfaces import JSONDeSerializable
 
-        # pylint: disable=missing-docstring
+        # pylint: disable=missing-docstring,invalid-name
 
         class Basic(JSONDeSerializable):
             def __init__(self, v):
@@ -53,7 +53,7 @@ class JSONDeSerializableTest(unittest.TestCase):
         self.nested = Basic([[self.basic1]])
         self.tuple = Basic(('foo',))
 
-
+        # pylint: disable=invalid-name
         self.Basic = Basic
         self.Sequence = Sequence
         self.Mapping = Mapping

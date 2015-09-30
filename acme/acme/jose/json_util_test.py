@@ -92,7 +92,7 @@ class JSONObjectWithFieldsMetaTest(unittest.TestCase):
         from acme.jose.json_util import JSONObjectWithFieldsMeta
         self.field = Field('Baz')
         self.field2 = Field('Baz2')
-        # pylint: disable=missing-docstring,too-few-public-methods
+        # pylint: disable=invalid-name,missing-docstring,too-few-public-methods
         # pylint: disable=blacklisted-name
 
         @six.add_metaclass(JSONObjectWithFieldsMeta)
@@ -138,7 +138,7 @@ class JSONObjectWithFieldsTest(unittest.TestCase):
         from acme.jose.json_util import Field
 
         class MockJSONObjectWithFields(JSONObjectWithFields):
-            # pylint: disable=missing-docstring,no-self-argument
+            # pylint: disable=invalid-name,missing-docstring,no-self-argument
             # pylint: disable=too-few-public-methods
             x = Field('x', omitempty=True,
                       encoder=(lambda x: x * 2),
@@ -158,7 +158,7 @@ class JSONObjectWithFieldsTest(unittest.TestCase):
                     raise errors.DeserializationError()
                 return value
 
-
+        # pylint: disable=invalid-name
         self.MockJSONObjectWithFields = MockJSONObjectWithFields
         self.mock = MockJSONObjectWithFields(x=None, y=2, z=3)
 

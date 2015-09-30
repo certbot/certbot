@@ -269,7 +269,7 @@ class DVSNIResponseTest(unittest.TestCase):
             'validation': self.validation.to_json(),
         }
 
-
+        # pylint: disable=invalid-name
         label1 = b'e2df3498860637c667fedadc5a8494ec'
         label2 = b'09dcc75553c9b3bd73662b50e71b1e42'
         self.z = label1 + label2
