@@ -2,6 +2,7 @@
 import itertools
 import os
 import shutil
+import StringIO
 import traceback
 import tempfile
 import unittest
@@ -42,6 +43,21 @@ class CLITest(unittest.TestCase):
                     ret = cli.main(args)
         return ret, stdout, stderr, client
 
+    def _call_stdout(self, args):
+        """
+        Variant of _call that preserves stdout so that it can be mocked by the
+        caller.
+        """
+        from letsencrypt import cli
+        args = ['--text', '--config-dir', self.config_dir,
+                '--work-dir', self.work_dir, '--logs-dir', self.logs_dir,
+                '--agree-eula'] + args
+        with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
+            with mock.patch('letsencrypt.cli.client') as client:
+                ret = cli.main(args)
+        return ret, None, stderr, client
+
+
     def test_no_flags(self):
         with mock.patch('letsencrypt.cli.run') as mock_run:
             self._call([])
@@ -49,7 +65,26 @@ class CLITest(unittest.TestCase):
 
     def test_help(self):
         self.assertRaises(SystemExit, self._call, ['--help'])
-        self.assertRaises(SystemExit, self._call, ['--help all'])
+        self.assertRaises(SystemExit, self._call, ['--help', 'all'])
+        output = StringIO.StringIO()
+        with mock.patch('letsencrypt.cli.sys.stdout', new=output):
+            self.assertRaises(SystemExit, self._call_stdout, ['--help', 'all'])
+            out = output.getvalue()
+            self.assertTrue("--configurator" in out)
+            self.assertTrue("how a cert is deployed" in out)
+            self.assertTrue("--manual-test-mode" in out)
+            output.truncate(0)
+            self.assertRaises(SystemExit, self._call_stdout, ['-h', 'nginx'])
+            out = output.getvalue()
+            self.assertTrue("--nginx-ctl" in out)
+            self.assertTrue("--manual-test-mode" not in out)
+            self.assertTrue("--checkpoints" not in out)
+            output.truncate(0)
+            self.assertRaises(SystemExit, self._call_stdout, ['--help', 'plugins'])
+            out = output.getvalue()
+            self.assertTrue("--manual-test-mode" not in out)
+            self.assertTrue("--prepare" in out)
+            self.assertTrue("Plugin options" in out)
 
     def test_rollback(self):
         _, _, _, client = self._call(['rollback'])
