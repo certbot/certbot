@@ -50,7 +50,7 @@ class ErrorHandler(object):
         self.set_signal_handlers()
 
     def __exit__(self, exec_type, exec_value, trace):
-        if exec_value is not None:
+        if exec_type not in (None, SystemExit):
             logger.debug("Encountered exception:\n%s", "".join(
                 traceback.format_exception(exec_type, exec_value, trace)))
             self.call_registered()
