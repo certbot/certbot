@@ -731,14 +731,16 @@ def create_parser(plugins, args):
 
 # For now unfortunately this constant just needs to match the code below;
 # there isn't an elegant way to autogenerate it in time.
-VERBS = ["run", "auth", "install", "revoke", "rollback", "config_changes", "plugins"]
+VERBS = ["run", "auth", "install", "revoke", "rollback", 
+         "config_changes", "plugins", "--version"]
 HELP_TOPICS = ["all", "security", "paths", "automation", "testing"] + VERBS
+
 
 def _create_subparsers(helpful):
     subparsers = helpful.parser.add_subparsers(metavar="SUBCOMMAND")
 
     def add_subparser(name):  # pylint: disable=missing-docstring
-        if name == "plugins":
+        if name in ["plugins", "--version"]:
             func = plugins_cmd
         else:
             func = eval(name) # pylint: disable=eval-used
