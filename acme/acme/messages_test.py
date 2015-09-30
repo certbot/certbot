@@ -64,7 +64,7 @@ class ConstantTest(unittest.TestCase):
         class MockConstant(_Constant):  # pylint: disable=missing-docstring
             POSSIBLE_NAMES = {}
 
-        self.MockConstant = MockConstant  # pylint: disable=invalid-name
+        self.MockConstant = MockConstant
         self.const_a = MockConstant('a')
         self.const_b = MockConstant('b')
 
