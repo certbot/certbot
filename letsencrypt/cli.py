@@ -80,8 +80,8 @@ More detailed help:
   -h, --help [topic]    print this message, or detailed help on a topic;
                         the available topics are:
 
-   all, apache, automation, nginx, paths, security, testing, or any of the
-   subcommands
+   all, apache, automation, manual, nginx, paths, security, testing, or any of
+   the subcommands
 """
 
 
@@ -740,8 +740,7 @@ VERBS = {
     "config_changes" : config_changes,
     "plugins"        : plugins_cmd
 }
-HELP_TOPICS = (["all", "security", "paths", "automation", "testing", "apache", "nginx"]
-               + VERBS.keys())
+HELP_TOPICS = ["all", "security", "paths", "automation", "testing"] + VERBS.keys()
 
 def _create_subparsers(helpful):
     subparsers = helpful.parser.add_subparsers(metavar="SUBCOMMAND")
