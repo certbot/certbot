@@ -521,6 +521,7 @@ class HelpfulArgumentParser(object):
         self.parser._add_config_file_help = False  # pylint: disable=protected-access
         self.silent_parser = SilentParser(self.parser)
 
+        self.verb = None
         self.args = self.preprocess_args(args)
         help1 = self.prescan_for_flag("-h", self.help_topics)
         help2 = self.prescan_for_flag("--help", self.help_topics)
@@ -542,12 +543,16 @@ class HelpfulArgumentParser(object):
         """
         if "-h" in args or "--help" in args:
             # all verbs double as help arguments; don't get them confused
+            self.verb = "help"
             return args
 
         for i, token in enumerate(args):
             if token in VERBS:
                 reordered = args[:i] + args[i+1:] + [args[i]]
+                self.verb = token
                 return reordered
+
+        self.verb = "run"
         return args + ["run"]
 
     def prescan_for_flag(self, flag, possible_arguments):
@@ -782,18 +787,28 @@ def _create_subparsers(helpful):
 
 def _paths_parser(helpful):
     add = helpful.add
+    verb = helpful.verb
     helpful.add_group(
         "paths", description="Arguments changing execution paths & servers")
-    helpful.add("paths",
-        "--cert-path", default=flag_default("auth_cert_path"),
-        required=("install" in helpful.args or "revoke" in helpful.args),
-        help="Path to where certificate is saved (with auth), "
-             "installed (with install --csr) or revoked.")
-    helpful.add("paths",
-        "--key-path", required=("install" in helpful.args),
+
+    cph = "Path to where cert is saved (with auth), installed (with install --csr) or revoked."
+    if verb == "auth":
+        add("paths", "--cert-path", default=flag_default("auth_cert_path"), help=cph)
+    elif verb == "revoke":
+        add("paths", "--cert-path", type=read_file, required=True, help=cph)
+    else:
+        add("paths", "--cert-path", help=cph, required=(verb == "install"))
+
+    # revoke --key-path reads a file, install --key-path takes a string
+    add("paths", "--key-path", type=((verb == "revoke" and read_file) or str),
+        required=(verb == "install"),
         help="Path to private key for cert creation or revocation (if account key is missing)")
-    helpful.add("paths",
-        "--chain-path", help="Accompanying path to a certificate chain.")
+
+    default_cp = None
+    if verb == "auth":
+        default_cp = flag_default("auth_chain_path")
+    add("paths", "--chain-path", default=default_cp,
+        help="Accompanying path to a certificate chain.")
     add("paths", "--config-dir", default=flag_default("config_dir"),
         help=config_help("config_dir"))
     add("paths", "--work-dir", default=flag_default("work_dir"),
