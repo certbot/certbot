@@ -9,6 +9,7 @@ import os
 import pkg_resources
 import sys
 import time
+import types
 import traceback
 
 import configargparse
@@ -731,17 +732,16 @@ def create_parser(plugins, args):
 
 # For now unfortunately this constant just needs to match the code below;
 # there isn't an elegant way to autogenerate it in time.
-VERBS = ["run", "auth", "install", "revoke", "rollback", "config_changes",
-         "plugins"]
-
-HELP_TOPICS = (["all", "security", "paths", "automation", "testing", "apache", "nginx"] +
-               [v for v in VERBS])
-
+VERBS = ["run", "auth", "install", "revoke", "rollback", "config_changes", "plugins"]
+HELP_TOPICS = (["all", "security", "paths", "automation", "testing", "apache", "nginx"] + VERBS)
 
 def _create_subparsers(helpful):
     subparsers = helpful.parser.add_subparsers(metavar="SUBCOMMAND")
 
-    def add_subparser(name, func):  # pylint: disable=missing-docstring
+    def add_subparser(name):  # pylint: disable=missing-docstring
+        # Each subcommand is implemented by a function of the same name
+        func = eval(name) # pylint: disable=eval-used
+        assert isinstance(func, types.FunctionType), "squirrels in namespace"
         subparser = subparsers.add_parser(
             name, help=func.__doc__.splitlines()[0], description=func.__doc__)
         subparser.set_defaults(func=func)
@@ -752,18 +752,13 @@ def _create_subparsers(helpful):
     # these add_subparser objects return objects to which arguments could be
     # attached, but they have annoying arg ordering constrains so we use
     # groups instead: https://github.com/letsencrypt/letsencrypt/issues/820
+    for v in VERBS:
+        add_subparser(v)
 
-    add_subparser("run", run)
-    add_subparser("auth", auth)
     helpful.add_group("auth", description="Options for modifying how a cert is obtained")
-    add_subparser("install", install)
     helpful.add_group("install", description="Options for modifying how a cert is deployed")
-    add_subparser("revoke", revoke)
     helpful.add_group("revoke", description="Options for revocation of certs")
-    add_subparser("rollback", rollback)
     helpful.add_group("rollback", description="Options for reverting config changes")
-    add_subparser("config_changes", config_changes)
-    add_subparser("plugins", plugins_cmd)
     helpful.add_group("plugins", description="Plugin options")
 
     helpful.add("auth",
