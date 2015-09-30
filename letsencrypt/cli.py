@@ -786,6 +786,7 @@ def _paths_parser(helpful):
         "paths", description="Arguments changing execution paths & servers")
     helpful.add("paths",
         "--cert-path", default=flag_default("auth_cert_path"),
+        required=("install" in helpful.args or "revoke" in helpful.args),
         help="Path to where certificate is saved (with auth), "
              "installed (with install --csr) or revoked.")
     helpful.add("paths",
