@@ -1,6 +1,5 @@
 """Standalone authenticator."""
 import os
-import psutil
 import signal
 import socket
 import sys
