@@ -12,7 +12,7 @@ from letsencrypt.display import util as display_util
 logger = logging.getLogger(__name__)
 
 # Define a helper function to avoid verbose code
-util = zope.component.getUtility  # pylint: disable=invalid-name
+util = zope.component.getUtility
 
 
 def choose_plugin(prepared, question):
