@@ -85,6 +85,12 @@ class CLITest(unittest.TestCase):
             self.assertTrue("--manual-test-mode" not in out)
             self.assertTrue("--prepare" in out)
             self.assertTrue("Plugin options" in out)
+            output.truncate(0)
+            self.assertRaises(SystemExit, self._call_stdout, ['-h'])
+            out = output.getvalue()
+            from letsencrypt import cli
+            self.assertTrue(cli.USAGE in out)
+
 
     def test_rollback(self):
         _, _, _, client = self._call(['rollback'])
