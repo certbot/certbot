@@ -129,7 +129,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         self.chain = self.configuration["chain"]
         self.fullchain = self.configuration["fullchain"]
 
-    def consistent(self):
+    def _consistent(self):
         """Are the files associated with this lineage self-consistent?
 
         :returns: Whether the files stored in connection with this
@@ -187,7 +187,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         #      for x in ALL_FOUR))) == 1
         return True
 
-    def fix(self):
+    def _fix(self):
         """Attempt to fix defects or inconsistencies in this lineage.
 
         .. todo:: Currently unimplemented.
@@ -347,7 +347,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         smallest_current = min(self.current_version(x) for x in ALL_FOUR)
         return smallest_current < self.latest_common_version()
 
-    def update_link_to(self, kind, version):
+    def _update_link_to(self, kind, version):
         """Make the specified item point at the specified version.
 
         (Note that this method doesn't verify that the specified version
@@ -379,7 +379,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         :param int version: the desired version"""
 
         for kind in ALL_FOUR:
-            self.update_link_to(kind, version)
+            self._update_link_to(kind, version)
 
     def _notafterbefore(self, method, version):
         """Internal helper function for finding notbefore/notafter."""
