@@ -1,5 +1,6 @@
 """Tests for letsencrypt.error_handler."""
 import signal
+import sys
 import unittest
 
 import mock
@@ -49,6 +50,14 @@ class ErrorHandlerTest(unittest.TestCase):
         self.handler.call_registered()
         self.init_func.assert_called_once_with()
         bad_func.assert_called_once_with()
+
+    def test_sysexit_ignored(self):
+        try:
+            with self.handler:
+                sys.exit(0)
+        except SystemExit:
+            pass
+        self.assertFalse(self.init_func.called)
 
 
 if __name__ == "__main__":
