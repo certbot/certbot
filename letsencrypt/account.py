@@ -54,7 +54,7 @@ class Account(object):  # pylint: disable=too-few-public-methods
                 tz=pytz.UTC).replace(microsecond=0),
             creation_host=socket.getfqdn()) if meta is None else meta
 
-        self.id = hashlib.md5(  # pylint: disable=invalid-name
+        self.id = hashlib.md5(
             self.key.key.public_key().public_bytes(
                 encoding=serialization.Encoding.DER,
                 format=serialization.PublicFormat.SubjectPublicKeyInfo)

@@ -137,6 +137,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :raises .errors.PluginError: If there is any other error
 
         """
+        # Verify Apache is installed
+        for exe in (self.conf("ctl"), self.conf("enmod"),
+                    self.conf("dismod"), self.conf("init-script")):
+            if not le_util.exe_exists(exe):
+                raise errors.NoInstallationError
+
         # Make sure configuration is valid
         self.config_test()
 
