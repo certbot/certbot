@@ -70,6 +70,7 @@ def renew(cert, old_version):
     #      was an int, not a str)
     config.rsa_key_size = int(config.rsa_key_size)
     config.dvsni_port = int(config.dvsni_port)
+    zope.component.provideUtility(config)
     try:
         authenticator = plugins[renewalparams["authenticator"]]
     except KeyError:
@@ -85,7 +86,7 @@ def renew(cert, old_version):
     with open(cert.version("cert", old_version)) as f:
         sans = crypto_util.get_sans_from_cert(f.read())
     new_certr, new_chain, new_key, _ = le_client.obtain_certificate(sans)
-    if new_chain is not None:
+    if new_chain:
         # XXX: Assumes that there was no key change.  We need logic
         #      for figuring out whether there was or not.  Probably
         #      best is to have obtain_certificate return None for
@@ -94,8 +95,7 @@ def renew(cert, old_version):
         return cert.save_successor(
             old_version, OpenSSL.crypto.dump_certificate(
                 OpenSSL.crypto.FILETYPE_PEM, new_certr.body),
-            new_key.pem, OpenSSL.crypto.dump_certificate(
-                OpenSSL.crypto.FILETYPE_PEM, new_chain))
+            new_key.pem, crypto_util.dump_pyopenssl_chain(new_chain))
         # TODO: Notify results
     else:
         # TODO: Notify negative results

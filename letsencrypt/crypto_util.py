@@ -9,10 +9,13 @@ import logging
 import os
 
 import OpenSSL
+import zope.component
 
 from acme import crypto_util as acme_crypto_util
+from acme import jose
 
 from letsencrypt import errors
+from letsencrypt import interfaces
 from letsencrypt import le_util
 
 
@@ -44,8 +47,10 @@ def init_save_key(key_size, key_dir, keyname="key-letsencrypt.pem"):
         logger.exception(err)
         raise err
 
+    config = zope.component.getUtility(interfaces.IConfig)
     # Save file
-    le_util.make_or_verify_dir(key_dir, 0o700, os.geteuid())
+    le_util.make_or_verify_dir(key_dir, 0o700, os.geteuid(),
+                               config.strict_permissions)
     key_f, key_path = le_util.unique_file(
         os.path.join(key_dir, keyname), 0o600)
     key_f.write(key_pem)
@@ -72,8 +77,10 @@ def init_save_csr(privkey, names, path, csrname="csr-letsencrypt.pem"):
     """
     csr_pem, csr_der = make_csr(privkey.pem, names)
 
+    config = zope.component.getUtility(interfaces.IConfig)
     # Save CSR
-    le_util.make_or_verify_dir(path, 0o755, os.geteuid())
+    le_util.make_or_verify_dir(path, 0o755, os.geteuid(),
+                               config.strict_permissions)
     csr_f, csr_filename = le_util.unique_file(
         os.path.join(path, csrname), 0o644)
     csr_f.write(csr_pem)
@@ -270,3 +277,24 @@ def asn1_generalizedtime_to_dt(timestamp):
 def pyopenssl_x509_name_as_text(x509name):
     """Convert `OpenSSL.crypto.X509Name` to text."""
     return "/".join("{0}={1}" for key, value in x509name.get_components())
+
+
+def dump_pyopenssl_chain(chain, filetype=OpenSSL.crypto.FILETYPE_PEM):
+    """Dump certificate chain into a bundle.
+
+    :param list chain: List of `OpenSSL.crypto.X509` (or wrapped in
+        `acme.jose.ComparableX509`).
+
+    """
+    # XXX: returns empty string when no chain is available, which
+    # shuts up RenewableCert, but might not be the best solution...
+
+    def _dump_cert(cert):
+        if isinstance(cert, jose.ComparableX509):
+            # pylint: disable=protected-access
+            cert = cert._wrapped
+        return OpenSSL.crypto.dump_certificate(filetype, cert)
+
+    # assumes that OpenSSL.crypto.dump_certificate includes ending
+    # newline character
+    return "".join(_dump_cert(cert) for cert in chain)

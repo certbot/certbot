@@ -8,6 +8,7 @@ install_requires = [
     'mock<1.1.0',  # py26
     'PyOpenSSL',
     'pyparsing>=1.5.5',  # Python3 support; perhaps unnecessary?
+    'setuptools',  # pkg_resources
     'zope.interface',
 ]
 

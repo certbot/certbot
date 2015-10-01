@@ -68,14 +68,16 @@ The following tools are there to help you:
 Integration
 ~~~~~~~~~~~
 
-First, install `Go`_ 1.5 and start Boulder_, an ACME CA server::
+First, install `Go`_ 1.5, libtool-ltdl, mariadb-server and
+rabbitmq-server and then start Boulder_, an ACME CA server::
 
   ./tests/boulder-start.sh
 
 The script will download, compile and run the executable; please be
 patient - it will take some time... Once its ready, you will see
-``Server running, listening on 127.0.0.1:4000...``. You may now run
-(in a separate terminal)::
+``Server running, listening on 127.0.0.1:4000...``. Add an
+``/etc/hosts`` entry pointing ``le.wtf`` to 127.0.0.1.  You may now
+run (in a separate terminal)::
 
   ./tests/boulder-integration.sh && echo OK || echo FAIL
 
@@ -127,9 +129,8 @@ Docker
 
 OSX users will probably find it easiest to set up a Docker container for
 development. Let's Encrypt comes with a Dockerfile (``Dockerfile-dev``)
-for doing so. To use Docker on OSX, install boot2docker using the
-instructions at https://docs.docker.com/installation/mac/ and start it
-from the command line (``boot2docker init``).
+for doing so. To use Docker on OSX, install and setup docker-machine using the
+instructions at https://docs.docker.com/installation/mac/.
 
 To build the development Docker image::
 

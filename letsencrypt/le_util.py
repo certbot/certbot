@@ -18,6 +18,15 @@ Key = collections.namedtuple("Key", "file pem")
 CSR = collections.namedtuple("CSR", "file data form")
 
 
+# ANSI SGR escape codes
+# Formats text as bold or with increased intensity
+ANSI_SGR_BOLD = '\033[1m'
+# Colors text red
+ANSI_SGR_RED = "\033[31m"
+# Resets output format
+ANSI_SGR_RESET = "\033[0m"
+
+
 def run_script(params):
     """Run the script with the given params.
 
@@ -70,7 +79,7 @@ def exe_exists(exe):
     return False
 
 
-def make_or_verify_dir(directory, mode=0o755, uid=0):
+def make_or_verify_dir(directory, mode=0o755, uid=0, strict=False):
     """Make sure directory exists with proper permissions.
 
     :param str directory: Path to a directory.
@@ -89,9 +98,10 @@ def make_or_verify_dir(directory, mode=0o755, uid=0):
         os.makedirs(directory, mode)
     except OSError as exception:
         if exception.errno == errno.EEXIST:
-            if not check_permissions(directory, mode, uid):
+            if strict and not check_permissions(directory, mode, uid):
                 raise errors.Error(
-                    "%s exists, this client can't access it" % directory)
+                    "%s exists, but it should be owned by user %d with"
+                    "permissions %s" % (directory, uid, oct(mode)))
         else:
             raise
 

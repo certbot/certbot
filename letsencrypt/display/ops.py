@@ -233,6 +233,26 @@ def success_installation(domains):
         pause=False)
 
 
+def success_renewal(domains):
+    """Display a box confirming the renewal of an existing certificate.
+
+    .. todo:: This should be centered on the screen
+
+    :param list domains: domain names which were renewed
+
+    """
+    util(interfaces.IDisplay).notification(
+        "Your existing certificate has been successfully renewed, and the "
+        "new certificate has been installed.{1}{1}"
+        "The new certificate covers the following domains: {0}{1}{1}"
+        "You should test your configuration at:{1}{2}".format(
+            _gen_https_names(domains),
+            os.linesep,
+            os.linesep.join(_gen_ssl_lab_urls(domains))),
+        height=(14 + len(domains)),
+        pause=False)
+
+
 def _gen_ssl_lab_urls(domains):
     """Returns a list of urls.
 

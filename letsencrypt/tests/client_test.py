@@ -1,4 +1,7 @@
 """Tests for letsencrypt.client."""
+import os
+import shutil
+import tempfile
 import unittest
 
 import configobj
@@ -110,7 +113,7 @@ class ClientTest(unittest.TestCase):
         mock_crypto_util.init_save_key.assert_called_once_with(
             self.config.rsa_key_size, self.config.key_dir)
         mock_crypto_util.init_save_csr.assert_called_once_with(
-            mock.sentinel.key, domains, self.config.cert_dir)
+            mock.sentinel.key, domains, self.config.csr_dir)
         self._check_obtain_certificate()
 
     @mock.patch("letsencrypt.client.zope.component.getUtility")
@@ -144,6 +147,69 @@ class ClientTest(unittest.TestCase):
         msg = mock_zope().add_message.call_args[0][0]
         self.assertTrue("renewal but not automatic deployment" in msg)
         self.assertTrue(cert.cli_config.renewal_configs_dir in msg)
+
+    def test_save_certificate(self):
+        certs = ["matching_cert.pem", "cert.pem", "cert-san.pem"]
+        tmp_path = tempfile.mkdtemp()
+        os.chmod(tmp_path, 0o755)  # TODO: really??
+
+        certr = mock.MagicMock(body=test_util.load_cert(certs[0]))
+        cert1 = test_util.load_cert(certs[1])
+        cert2 = test_util.load_cert(certs[2])
+        candidate_cert_path = os.path.join(tmp_path, "certs", "cert.pem")
+        candidate_chain_path = os.path.join(tmp_path, "chains", "chain.pem")
+
+        cert_path, chain_path = self.client.save_certificate(
+            certr, [cert1, cert2], candidate_cert_path, candidate_chain_path)
+
+        self.assertEqual(os.path.dirname(cert_path),
+                         os.path.dirname(candidate_cert_path))
+        self.assertEqual(os.path.dirname(chain_path),
+                         os.path.dirname(candidate_chain_path))
+
+        with open(cert_path, "r") as cert_file:
+            cert_contents = cert_file.read()
+        self.assertEqual(cert_contents, test_util.load_vector(certs[0]))
+
+        with open(chain_path, "r") as chain_file:
+            chain_contents = chain_file.read()
+        self.assertEqual(chain_contents, test_util.load_vector(certs[1]) +
+                         test_util.load_vector(certs[2]))
+
+        shutil.rmtree(tmp_path)
+
+    def test_deploy_certificate(self):
+        self.assertRaises(errors.Error, self.client.deploy_certificate,
+                          ["foo.bar"], "key", "cert", "chain")
+
+        installer = mock.MagicMock()
+        self.client.installer = installer
+
+        self.client.deploy_certificate(["foo.bar"], "key", "cert", "chain")
+        installer.deploy_cert.assert_called_once_with(
+            "foo.bar", os.path.abspath("cert"),
+            os.path.abspath("key"), os.path.abspath("chain"))
+        self.assertEqual(installer.save.call_count, 1)
+        installer.restart.assert_called_once_with()
+
+    @mock.patch("letsencrypt.client.enhancements")
+    def test_enhance_config(self, mock_enhancements):
+        self.assertRaises(errors.Error,
+                          self.client.enhance_config, ["foo.bar"])
+
+        mock_enhancements.ask.return_value = True
+        installer = mock.MagicMock()
+        self.client.installer = installer
+
+        self.client.enhance_config(["foo.bar"])
+        installer.enhance.assert_called_once_with("foo.bar", "redirect")
+        self.assertEqual(installer.save.call_count, 1)
+        installer.restart.assert_called_once_with()
+
+        installer.enhance.side_effect = errors.PluginError
+        self.assertRaises(errors.PluginError,
+                          self.client.enhance_config, ["foo.bar"], True)
+        installer.recovery_routine.assert_called_once_with()
 
 
 class RollbackTest(unittest.TestCase):

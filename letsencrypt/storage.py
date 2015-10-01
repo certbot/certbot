@@ -11,6 +11,7 @@ import pytz
 import pyrfc3339
 
 from letsencrypt import constants
+from letsencrypt import crypto_util
 from letsencrypt import errors
 from letsencrypt import le_util
 
@@ -421,6 +422,23 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         """
         return self._notafterbefore(lambda x509: x509.get_notAfter(), version)
 
+    def names(self, version=None):
+        """What are the subject names of this certificate?
+
+        (If no version is specified, use the current version.)
+
+        :param int version: the desired version number
+        :returns: the subject names
+        :rtype: `list` of `str`
+
+        """
+        if version is None:
+            target = self.current_target("cert")
+        else:
+            target = self.version("cert", version)
+        with open(target) as f:
+            return crypto_util.get_sans_from_cert(f.read())
+
     def should_autodeploy(self):
         """Should this lineage now automatically deploy a newer version?
 
@@ -586,6 +604,8 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         with open(target["chain"], "w") as f:
             f.write(chain)
         with open(target["fullchain"], "w") as f:
+            # assumes that OpenSSL.crypto.dump_certificate includes
+            # ending newline character
             f.write(cert + chain)
 
         # Document what we've done in a new renewal config file
