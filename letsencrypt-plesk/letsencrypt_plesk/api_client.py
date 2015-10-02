@@ -94,31 +94,26 @@ class DictToXml(object):  # pylint: disable=too-few-public-methods
         self.doc = Document()
 
         root_name = str(structure.keys()[0])
-        self.root = self.doc.createElement(root_name)
+        root = self.doc.createElement(root_name)
 
-        self.doc.appendChild(self.root)
-        self._build(self.root, structure[root_name])
+        self.doc.appendChild(root)
+        self._build(root, structure[root_name])
 
-    def _build(self, father, structure):
+    def _build(self, parent, structure):
         if isinstance(structure, dict):
-            for k in structure:
-                tag = self.doc.createElement(k)
-                father.appendChild(tag)
-                self._build(tag, structure[k])
-
+            for node_name in structure:
+                tag = self.doc.createElement(node_name)
+                parent.appendChild(tag)
+                self._build(tag, structure[node_name])
         elif isinstance(structure, list):
-            grand_father = father.parentNode
-            tag_name = father.tagName
-            grand_father.removeChild(father)
-            for l in structure:
-                tag = self.doc.createElement(tag_name)
-                self._build(tag, l)
-                grand_father.appendChild(tag)
-
+            for node_structure in structure:
+                self._build(parent, node_structure)
+        elif structure is None:
+            return
         else:
-            data = str(structure)
-            tag = self.doc.createTextNode(data)
-            father.appendChild(tag)
+            node_data = str(structure)
+            tag = self.doc.createTextNode(node_data)
+            parent.appendChild(tag)
 
     def __str__(self):
         return self.doc.toprettyxml()
@@ -127,11 +122,13 @@ class DictToXml(object):  # pylint: disable=too-few-public-methods
 class XmlToDict(dict):  # pylint: disable=too-few-public-methods
     """Map XML into dictionary"""
 
-    def __init__(self, data):
+    def __init__(self, data, force_array=False):
         dom = parseString(data)
         root = dom.documentElement
+        root_name = root.tagName.encode('utf8')
+        self.force_array = force_array
         structure = {
-            root.tagName: self._get_children(root)
+            root_name: self._get_children(root)
         }
         super(XmlToDict, self).__init__(structure)
 
@@ -142,36 +139,29 @@ class XmlToDict(dict):  # pylint: disable=too-few-public-methods
         children = {}
         for child in node.childNodes:
             if child.nodeType == child.TEXT_NODE:
-                data = child.data
+                data = child.data.encode('utf8')
                 if 0 == len(data.strip()):
                     continue
                 elif isinstance(children, list):
-                    children = children + [data]
+                    children += [data]
                 elif isinstance(children, dict):
                     children = data
                 else:
                     children = [children, data]
-
-            elif child.tagName in children:
-                if not isinstance(children[child.tagName], list):
-                    children[child.tagName] = [children[child.tagName]]
-                children[child.tagName].append(self._get_children(child))
-
             else:
-                children[child.tagName] = self._get_children(child)
+                child_name = child.tagName.encode('utf8')
+                if self.force_array:
+                    if isinstance(children, dict) and len(children) > 0:
+                        children = [children]
+                    if isinstance(children, list):
+                        children += [{child_name: self._get_children(child)}]
+                    else:
+                        children[child_name] = self._get_children(child)
+
+                elif child_name in children:
+                    if not isinstance(children[child_name], list):
+                        children[child_name] = [children[child_name]]
+                    children[child_name].append(self._get_children(child))
+                else:
+                    children[child_name] = self._get_children(child)
         return children
-
-    def native(self):
-        """Encode all utf8 strings."""
-        # TODO encode utf8 by default and drop this method
-        return {x.encode('utf8'):
-                self._native_children(self[x]) for x in self}
-
-    def _native_children(self, node):
-        if isinstance(node, str):
-            return node.encode('utf8')
-        elif isinstance(node, list):
-            return [self._native_children(x) for x in node]
-        elif isinstance(node, dict):
-            return {x.encode('utf8'):
-                    self._native_children(node[x]) for x in node}

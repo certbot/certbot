@@ -10,9 +10,7 @@ class PleskConfiguratorTest(unittest.TestCase):
     def setUp(self):
         super(PleskConfiguratorTest, self).setUp()
         self.configurator = configurator.PleskConfigurator(
-            config=mock.MagicMock(
-                key=None
-            ),
+            config=mock.MagicMock(),
             name="plesk"
         )
         self.configurator.plesk_api_client = mock.MagicMock()
@@ -35,7 +33,7 @@ class PleskConfiguratorTest(unittest.TestCase):
             </get>
         </site>
         </packet>
-        """)
+        """, force_array=True)
         response = api_client.XmlToDict("""
         <packet version="1.6.7.0">
         <webspace>
@@ -83,7 +81,7 @@ class PleskConfiguratorTest(unittest.TestCase):
         """)
         api_request_mock.return_value = response
         names = self.configurator.get_all_names()
-        api_request_mock.assert_called_once_with(request.native())
+        api_request_mock.assert_called_once_with(request)
         self.assertEqual(
             names,
             ['first.example.com', 'second.example.com', 'third.example.com'])

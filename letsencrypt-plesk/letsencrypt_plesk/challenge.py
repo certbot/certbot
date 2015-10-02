@@ -31,10 +31,10 @@ class PleskChallenge(object):
 
     def _put_validation_file(self, domain, file_path, file_name, content):
         """Put file to the domain with validation content"""
-        request = {'packet': {'site': {'get': {
-            'filter': {'name': domain},
-            'dataset': {'hosting': {}},
-        }}}}
+        request = {'packet': {'site': {'get': [
+            {'filter': {'name': domain}},
+            {'dataset': {'hosting': {}}},
+        ]}}}
         response = self.plesk_api_client.request(request)
 
         result = response['packet']['site']['get']['result']

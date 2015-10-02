@@ -9,8 +9,9 @@ from letsencrypt import interfaces
 
 from letsencrypt.plugins import common
 
-from letsencrypt_plesk import challenge
 from letsencrypt_plesk import api_client
+from letsencrypt_plesk import challenge
+from letsencrypt_plesk import deployer
 
 logger = logging.getLogger(__name__)
 
@@ -31,17 +32,16 @@ class PleskConfigurator(common.Plugin):
         """Initialize Plesk Configurator."""
         super(PleskConfigurator, self).__init__(*args, **kwargs)
 
-        # These will be set in the prepare function
+        self.plesk_challenges = {}
+        self.plesk_deployers = {}
+        # This will be set in the prepare function
         self.plesk_api_client = None
-        self.plesk_challenge = None
 
     def prepare(self):
         """Prepare the authenticator/installer."""
         if self.plesk_api_client is None:
             self.plesk_api_client = api_client.PleskApiClient(
                 secret_key=self.conf('secret-key'))
-        # TODO challenge could be performed with multiple domains - use dict
-        self.plesk_challenge = challenge.PleskChallenge(self.plesk_api_client)
 
     @staticmethod
     def more_info():
@@ -57,12 +57,18 @@ class PleskConfigurator(common.Plugin):
 
     def perform(self, achalls):
         """Perform the configuration related challenge."""
-        return [self.plesk_challenge.perform(x) for x in achalls]
+        responses = []
+        for x in achalls:
+            plesk_challenge = challenge.PleskChallenge(self.plesk_api_client)
+            responses.append(plesk_challenge.perform(x))
+            self.plesk_challenges[x.domain] = plesk_challenge
+        return responses
 
     def cleanup(self, achalls):
         """Revert all challenges."""
         for x in achalls:
-            self.plesk_challenge.cleanup(x)
+            if x.domain in self.plesk_challenges:
+                self.plesk_challenges[x.domain].cleanup(x)
         # TODO too early to cleanup api
         # self.plesk_api_client.cleanup()
 
@@ -70,16 +76,16 @@ class PleskConfigurator(common.Plugin):
 
     def get_all_names(self):
         """Returns all names that may be authenticated."""
-        request = {'packet': {
-            'webspace': {'get': {
-                'filter': {},
-                'dataset': {'gen_info': {}},
-            }},
-            'site': {'get': {
-                'filter': {},
-                'dataset': {'gen_info': {}},
-            }},
-        }}
+        request = {'packet': [
+            {'webspace': {'get': [
+                {'filter': {}},
+                {'dataset': {'gen_info': {}}},
+            ]}},
+            {'site': {'get': [
+                {'filter': {}},
+                {'dataset': {'gen_info': {}}},
+            ]}},
+        ]}
         response = self.plesk_api_client.request(request)
         return self._compact_names([
             self._get_names(response['packet']['webspace']['get']['result']),
@@ -115,7 +121,9 @@ class PleskConfigurator(common.Plugin):
         :raises .PluginError: when cert cannot be deployed
 
         """
-        # TODO implement
+        plesk_deployer = deployer.PleskDeployer(self.plesk_api_client, domain)
+        plesk_deployer.install_cert(cert_path, key_path, chain_path)
+        self.plesk_deployers[domain] = plesk_deployer
 
     def enhance(self, domain, enhancement, options=None):
         """No enhancements are supported now."""
