@@ -4,14 +4,16 @@ import os
 
 from letsencrypt import errors
 
+from letsencrypt_plesk import api_client
+
 logger = logging.getLogger(__name__)
 
 
 class PleskChallenge(object):
     """Class performs challenges within the Plesk configurator."""
 
-    def __init__(self, configurator):
-        self.configurator = configurator
+    def __init__(self, plesk_api_client):
+        self.plesk_api_client = plesk_api_client
         self.www_root = None
         self.ftp_login = None
         self.verify_path = None
@@ -33,7 +35,7 @@ class PleskChallenge(object):
             'filter': {'name': domain},
             'dataset': {'hosting': {}},
         }}}}
-        response = self.configurator.plesk_api_client.request(request)
+        response = self.plesk_api_client.request(request)
 
         result = response['packet']['site']['get']['result']
         if not (result and 'ok' == result['status']):
@@ -53,9 +55,9 @@ class PleskChallenge(object):
             f.write(str(content))
             f.close()
         try:
-            self.configurator.plesk_api_client.filemng(
+            self.plesk_api_client.filemng(
                 [self.ftp_login, "mkdir", self.verify_path, "-p"])
-            self.configurator.plesk_api_client.filemng(
+            self.plesk_api_client.filemng(
                 [self.ftp_login, "cp2perm", tmp_path, self.full_path, "0644"])
         finally:
             os.unlink(tmp_path)
@@ -64,14 +66,14 @@ class PleskChallenge(object):
         """Remove validation file and directories."""
         try:
             if self.www_root and self.ftp_login:
-                self.configurator.plesk_api_client.filemng(
+                self.plesk_api_client.filemng(
                     [self.ftp_login, "rm", self.full_path])
 
                 while self._is_sub_path(self.verify_path, self.www_root):
-                    self.configurator.plesk_api_client.filemng(
+                    self.plesk_api_client.filemng(
                         [self.ftp_login, "rmdir", self.verify_path])
                     self.verify_path = os.path.dirname(self.verify_path)
-        except Exception as e:
+        except api_client.PleskApiException as e:
             logger.debug(str(e))
 
     @staticmethod

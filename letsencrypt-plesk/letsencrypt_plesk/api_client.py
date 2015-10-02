@@ -5,6 +5,7 @@ import subprocess
 import requests
 import logging
 
+from letsencrypt import errors
 from xml.dom.minidom import Document, parseString
 
 logger = logging.getLogger(__name__)
@@ -16,21 +17,22 @@ class PleskApiClient(object):
     CLI_PATH = "/usr/local/psa/bin/"
     BIN_PATH = "/usr/local/psa/admin/bin/"
 
-    def __init__(self, host='127.0.0.1', port=8443, key=None):
+    def __init__(self, host='127.0.0.1', port=8443, secret_key=None):
         self.host = host
         self.port = port
         self.scheme = 'https' if port == 8443 else 'http'
         self.secret_key_created = False
-        self.secret_key = key if key else self.get_secret_key()
+        self.secret_key = secret_key
 
     def request(self, request):
+        """Perform API-RPC request to Plesk"""
         if isinstance(request, dict):
             request = str(DictToXml(request))
         logger.debug("Plesk API-RPC request: %s", request)
         headers = {
             'Content-type': 'text/xml',
             'HTTP_PRETTY_PRINT': 'TRUE',
-            'KEY': self.secret_key,
+            'KEY': self.get_secret_key(),
         }
         response = requests.post(
             "{scheme}://{host}:{port}/enterprise/control/agent.php".format(
@@ -44,36 +46,49 @@ class PleskApiClient(object):
         return XmlToDict(response.text)
 
     def get_secret_key(self):
-        secret_key = self.execute(self.CLI_PATH + "secret_key", [
+        """Retrieve secret key for Plesk API or creates a new one"""
+        if self.secret_key:
+            return self.secret_key
+        self.secret_key = self.execute(self.CLI_PATH + "secret_key", [
             "--create", "-ip-address", "127.0.0.1", "-description", __name__,
         ])
         self.secret_key_created = True
-        return secret_key
+        return self.secret_key
 
     def cleanup(self):
-        """Remove secret key from Plesk"""
+        """Remove secret key from Plesk if it was created"""
         if self.secret_key and self.secret_key_created:
             try:
                 self.execute(self.CLI_PATH + "secret_key", [
                     "--delete", "-key", self.secret_key,
                 ])
-            except subprocess.CalledProcessError as e:
+            except PleskApiException as e:
                 logger.debug(str(e))
 
     def execute(self, command, arguments=None, stdin=None, environment=None):
+        """Execute CLI utility"""
         for name, value in (environment or {}).items():
             os.environ[name] = value
 
         process_args = [command] + (arguments or [])
         logger.debug("Plesk exec: %s", " ".join(process_args))
-        return subprocess.check_output(process_args, stdin=stdin)
+        try:
+            return subprocess.check_output(process_args, stdin=stdin)
+        except subprocess.CalledProcessError as e:
+            raise PleskApiException(e)
 
     def filemng(self, args):
+        """File operations in Plesk are implemented in filemng util"""
         # TODO replace with ftp client
         return self.execute(self.BIN_PATH + "filemng", args)
 
 
+class PleskApiException(errors.PluginError):
+    """Plesk API execution error"""
+
+
 class DictToXml(object):  # pylint: disable=too-few-public-methods
+    """Map dictionary into XML"""
 
     def __init__(self, structure):
         self.doc = Document()
@@ -110,6 +125,7 @@ class DictToXml(object):  # pylint: disable=too-few-public-methods
 
 
 class XmlToDict(dict):  # pylint: disable=too-few-public-methods
+    """Map XML into dictionary"""
 
     def __init__(self, data):
         dom = parseString(data)
@@ -147,6 +163,7 @@ class XmlToDict(dict):  # pylint: disable=too-few-public-methods
 
     def native(self):
         """Encode all utf8 strings."""
+        # TODO encode utf8 by default and drop this method
         return {x.encode('utf8'):
                 self._native_children(self[x]) for x in self}
 

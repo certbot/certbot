@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class PleskConfigurator(common.Plugin):
+    """Plesk Configurator"""
     zope.interface.implements(interfaces.IAuthenticator, interfaces.IInstaller)
     zope.interface.classProvides(interfaces.IPluginFactory)
 
@@ -23,7 +24,7 @@ class PleskConfigurator(common.Plugin):
 
     @classmethod
     def add_parser_arguments(cls, add):
-        add("key", default=None,
+        add("secret-key", default=None,
             help="Plesk API-RPC authentication secret key.")
 
     def __init__(self, *args, **kwargs):
@@ -38,9 +39,9 @@ class PleskConfigurator(common.Plugin):
         """Prepare the authenticator/installer."""
         if self.plesk_api_client is None:
             self.plesk_api_client = api_client.PleskApiClient(
-                key=self.conf('key'))
+                secret_key=self.conf('secret-key'))
         # TODO challenge could be performed with multiple domains - use dict
-        self.plesk_challenge = challenge.PleskChallenge(self)
+        self.plesk_challenge = challenge.PleskChallenge(self.plesk_api_client)
 
     @staticmethod
     def more_info():
@@ -62,7 +63,8 @@ class PleskConfigurator(common.Plugin):
         """Revert all challenges."""
         for x in achalls:
             self.plesk_challenge.cleanup(x)
-        self.plesk_api_client.cleanup()
+        # TODO too early to cleanup api
+        # self.plesk_api_client.cleanup()
 
     # Installer methods below
 
@@ -117,6 +119,7 @@ class PleskConfigurator(common.Plugin):
 
     def enhance(self, domain, enhancement, options=None):
         """No enhancements are supported now."""
+        pass  # pragma: no cover
 
     @staticmethod
     def supported_enhancements():
@@ -136,6 +139,7 @@ class PleskConfigurator(common.Plugin):
 
         """
         # TODO implement
+        return set()
 
     def save(self, title=None, temporary=False):
         """Saves all changes to the configuration files.
@@ -164,6 +168,18 @@ class PleskConfigurator(common.Plugin):
         """
         # TODO implement
 
+    def recovery_routine(self):
+        """Revert configuration to most recent finalized checkpoint.
+
+        Remove all changes (temporary and permanent) that have not been
+        finalized. This is useful to protect against crashes and other
+        execution interruptions.
+
+        :raises .errors.PluginError: If unable to recover the configuration
+
+        """
+        # TODO implement
+
     def view_config_changes(self):
         """Display all of the LE config changes.
 
@@ -175,7 +191,9 @@ class PleskConfigurator(common.Plugin):
     @staticmethod
     def config_test():
         """Plesk configuration is always valid."""
+        pass  # pragma: no cover
 
     @staticmethod
     def restart():
         """Web server has already restarted."""
+        pass  # pragma: no cover
