@@ -355,7 +355,7 @@ class GenChallengePathTest(unittest.TestCase):
 class MutuallyExclusiveTest(unittest.TestCase):
     """Tests for letsencrypt.auth_handler.mutually_exclusive."""
 
-    # pylint: disable=invalid-name,missing-docstring,too-few-public-methods
+    # pylint: disable=missing-docstring,too-few-public-methods
     class A(object):
         pass
 

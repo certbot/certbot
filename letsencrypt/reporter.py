@@ -9,6 +9,7 @@ import textwrap
 import zope.interface
 
 from letsencrypt import interfaces
+from letsencrypt import le_util
 
 
 logger = logging.getLogger(__name__)
@@ -30,14 +31,12 @@ class Reporter(object):
     LOW_PRIORITY = 2
     """Low priority constant. See `add_message`."""
 
-    _RESET = '\033[0m'
-    _BOLD = '\033[1m'
     _msg_type = collections.namedtuple('ReporterMsg', 'priority text on_crash')
 
     def __init__(self):
         self.messages = Queue.PriorityQueue()
 
-    def add_message(self, msg, priority, on_crash=False):
+    def add_message(self, msg, priority, on_crash=True):
         """Adds msg to the list of messages to be printed.
 
         :param str msg: Message to be displayed to the user.
@@ -76,7 +75,7 @@ class Reporter(object):
             no_exception = sys.exc_info()[0] is None
             bold_on = sys.stdout.isatty()
             if bold_on:
-                print self._BOLD
+                print le_util.ANSI_SGR_BOLD
             print 'IMPORTANT NOTES:'
             first_wrapper = textwrap.TextWrapper(
                 initial_indent=' - ', subsequent_indent=(' ' * 3))
@@ -87,7 +86,7 @@ class Reporter(object):
             msg = self.messages.get()
             if no_exception or msg.on_crash:
                 if bold_on and msg.priority > self.HIGH_PRIORITY:
-                    sys.stdout.write(self._RESET)
+                    sys.stdout.write(le_util.ANSI_SGR_RESET)
                     bold_on = False
                 lines = msg.text.splitlines()
                 print first_wrapper.fill(lines[0])
@@ -95,4 +94,4 @@ class Reporter(object):
                     print "\n".join(
                         next_wrapper.fill(line) for line in lines[1:])
         if bold_on:
-            sys.stdout.write(self._RESET)
+            sys.stdout.write(le_util.ANSI_SGR_RESET)

@@ -205,12 +205,9 @@ class IConfig(zope.interface.Interface):
     accounts_dir = zope.interface.Attribute(
         "Directory where all account information is stored.")
     backup_dir = zope.interface.Attribute("Configuration backups directory.")
-    cert_dir = zope.interface.Attribute(
+    csr_dir = zope.interface.Attribute(
         "Directory where newly generated Certificate Signing Requests "
-        "(CSRs) and certificates not enrolled in the renewer are saved.")
-    cert_key_backup = zope.interface.Attribute(
-        "Directory where all certificates and keys are stored. "
-        "Used for easy revocation.")
+        "(CSRs) are saved.")
     in_progress_dir = zope.interface.Attribute(
         "Directory used before a permanent checkpoint is finalized.")
     key_dir = zope.interface.Attribute("Keys storage.")
@@ -318,6 +315,17 @@ class IInstaller(IPlugin):
         """Revert `rollback` number of configuration checkpoints.
 
         :raises .PluginError: when configuration cannot be fully reverted
+
+        """
+
+    def recovery_routine():
+        """Revert configuration to most recent finalized checkpoint.
+
+        Remove all changes (temporary and permanent) that have not been
+        finalized. This is useful to protect against crashes and other
+        execution interruptions.
+
+        :raises .errors.PluginError: If unable to recover the configuration
 
         """
 
@@ -470,7 +478,7 @@ class IReporter(zope.interface.Interface):
     LOW_PRIORITY = zope.interface.Attribute(
         "Used to denote low priority messages")
 
-    def add_message(self, msg, priority, on_crash=False):
+    def add_message(self, msg, priority, on_crash=True):
         """Adds msg to the list of messages to be printed.
 
         :param str msg: Message to be displayed to the user.

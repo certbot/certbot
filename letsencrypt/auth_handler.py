@@ -11,6 +11,7 @@ from acme import messages
 from letsencrypt import achallenges
 from letsencrypt import constants
 from letsencrypt import errors
+from letsencrypt import error_handler
 from letsencrypt import interfaces
 
 
@@ -106,17 +107,16 @@ class AuthHandler(object):
         """Get Responses for challenges from authenticators."""
         cont_resp = []
         dv_resp = []
-        try:
-            if self.cont_c:
-                cont_resp = self.cont_auth.perform(self.cont_c)
-            if self.dv_c:
-                dv_resp = self.dv_auth.perform(self.dv_c)
-        # This will catch both specific types of errors.
-        except errors.AuthorizationError:
-            logger.critical("Failure in setting up challenges.")
-            logger.info("Attempting to clean up outstanding challenges...")
-            self._cleanup_challenges()
-            raise
+        with error_handler.ErrorHandler(self._cleanup_challenges):
+            try:
+                if self.cont_c:
+                    cont_resp = self.cont_auth.perform(self.cont_c)
+                if self.dv_c:
+                    dv_resp = self.dv_auth.perform(self.dv_c)
+            except errors.AuthorizationError:
+                logger.critical("Failure in setting up challenges.")
+                logger.info("Attempting to clean up outstanding challenges...")
+                raise
 
         assert len(cont_resp) == len(self.cont_c)
         assert len(dv_resp) == len(self.dv_c)
@@ -531,7 +531,7 @@ def _report_failed_challs(failed_achalls):
     reporter = zope.component.getUtility(interfaces.IReporter)
     for achalls in problems.itervalues():
         reporter.add_message(
-            _generate_failed_chall_msg(achalls), reporter.MEDIUM_PRIORITY, True)
+            _generate_failed_chall_msg(achalls), reporter.MEDIUM_PRIORITY)
 
 
 def _generate_failed_chall_msg(failed_achalls):

@@ -6,7 +6,9 @@ import unittest
 
 import OpenSSL
 import mock
+import zope.component
 
+from letsencrypt import interfaces
 from letsencrypt.tests import test_util
 
 
@@ -20,6 +22,8 @@ class InitSaveKeyTest(unittest.TestCase):
     """Tests for letsencrypt.crypto_util.init_save_key."""
     def setUp(self):
         logging.disable(logging.CRITICAL)
+        zope.component.provideUtility(
+            mock.Mock(strict_permissions=True), interfaces.IConfig)
         self.key_dir = tempfile.mkdtemp('key_dir')
 
     def tearDown(self):
@@ -48,6 +52,8 @@ class InitSaveCSRTest(unittest.TestCase):
     """Tests for letsencrypt.crypto_util.init_save_csr."""
 
     def setUp(self):
+        zope.component.provideUtility(
+            mock.Mock(strict_permissions=True), interfaces.IConfig)
         self.csr_dir = tempfile.mkdtemp('csr_dir')
 
     def tearDown(self):

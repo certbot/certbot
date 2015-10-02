@@ -17,6 +17,7 @@ class Installer(common.Plugin):
     zope.interface.classProvides(interfaces.IPluginFactory)
 
     description = "Null Installer"
+    hidden = True
 
     # pylint: disable=missing-docstring,no-self-use
 
@@ -45,6 +46,9 @@ class Installer(common.Plugin):
         pass  # pragma: no cover
 
     def rollback_checkpoints(self, rollback=1):
+        pass  # pragma: no cover
+
+    def recovery_routine(self):
         pass  # pragma: no cover
 
     def view_config_changes(self):

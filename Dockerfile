@@ -63,5 +63,5 @@ RUN virtualenv --no-site-packages -p python2 /opt/letsencrypt/venv && \
 # bash" and investigate, apply patches, etc.
 
 ENV PATH /opt/letsencrypt/venv/bin:$PATH
-# TODO: is --text really necessary?
-ENTRYPOINT [ "letsencrypt", "--text" ]
+
+ENTRYPOINT [ "letsencrypt" ]

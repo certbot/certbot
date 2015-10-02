@@ -68,12 +68,8 @@ ACCOUNTS_DIR = "accounts"
 BACKUP_DIR = "backups"
 """Directory (relative to `IConfig.work_dir`) where backups are kept."""
 
-CERT_DIR = "certs"
-"""See `.IConfig.cert_dir`."""
-
-CERT_KEY_BACKUP_DIR = "keys-certs"
-"""Directory where all certificates and keys are stored (relative to
-`IConfig.work_dir`). Used for easy revocation."""
+CSR_DIR = "csr"
+"""See `.IConfig.csr_dir`."""
 
 IN_PROGRESS_DIR = "IN_PROGRESS"
 """Directory used before a permanent checkpoint is finalized (relative to
