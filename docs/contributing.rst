@@ -67,6 +67,8 @@ The following tools are there to help you:
 
 Integration
 ~~~~~~~~~~~
+Mac OS X users: Run `./tests/mac-integration.sh` to configure the
+integration tests environment and start boulder
 
 First, install `Go`_ 1.5, libtool-ltdl, mariadb-server and
 rabbitmq-server and then start Boulder_, an ACME CA server::
