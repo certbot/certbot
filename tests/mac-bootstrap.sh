@@ -11,14 +11,14 @@ brew install libtool mariadb rabbitmq coreutils go
 mysql.server start
 
 rabbit_pid=`ps | grep rabbitmq | grep -v grep | awk '{ print $1}'`
-if [ -n rabbit_pid ]; then
+if [ -n "$rabbit_pid" ]; then
   echo "RabbitMQ already running"
 else
   rabbitmq-server &
 fi
 
 hosts_entry=`cat /etc/hosts | grep "127.0.0.1 le.wtf"`
-if [ -z hosts_entry ]; then
+if [ -z "$hosts_entry" ]; then
   echo "Adding hosts entry for le.wtf..."
   sudo sh -c "echo 127.0.0.1 le.wtf >> /etc/hosts"
 fi
