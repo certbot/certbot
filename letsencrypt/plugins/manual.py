@@ -159,6 +159,7 @@ binary for temporary key/certificate generation.""".replace("\n", "")
                     # don't care about setting stdout and stderr,
                     # we're in test mode anyway
                     shell=True,
+                    executable="/bin/bash",
                     # "preexec_fn" is UNIX specific, but so is "command"
                     preexec_fn=os.setsid)
             except OSError as error:  # ValueError should not happen!

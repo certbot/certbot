@@ -50,7 +50,11 @@ dir="$root/conf/archive/le1.wtf"
 for x in cert chain fullchain privkey;
 do
     latest="$(ls -1t $dir/ | grep -e "^${x}" | head -n1)"
-    live="$(readlink -f "$root/conf/live/le1.wtf/${x}.pem")"
+    if [ `uname`  == 'Darwin' ]; then
+      live="$(greadlink -f "$root/conf/live/le1.wtf/${x}.pem")"
+    else
+      live="$(readlink -f "$root/conf/live/le1.wtf/${x}.pem")"
+    fi
     [ "${dir}/${latest}" = "$live" ]  # renewer fails this test
 done
 

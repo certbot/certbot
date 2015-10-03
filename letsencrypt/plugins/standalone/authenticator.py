@@ -301,11 +301,14 @@ class StandaloneAuthenticator(common.Plugin):
         :param int port: The TCP port in question.
         :returns: True or False."""
 
-        listeners = [conn.pid for conn in psutil.net_connections()
-                     if conn.status == 'LISTEN' and
-                     conn.type == socket.SOCK_STREAM and
-                     conn.laddr[1] == port]
         try:
+
+            # net_connections() can raise AccessDenied on certain OSs
+            listeners = [conn.pid for conn in psutil.net_connections()
+                         if conn.status == 'LISTEN' and
+                         conn.type == socket.SOCK_STREAM and
+                         conn.laddr[1] == port]
+
             if listeners and listeners[0] is not None:
                 # conn.pid may be None if the current process doesn't have
                 # permission to identify the listening process!  Additionally,
