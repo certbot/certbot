@@ -1,6 +1,5 @@
 """Standalone authenticator."""
 import os
-import psutil
 import signal
 import socket
 import sys
@@ -289,47 +288,6 @@ class StandaloneAuthenticator(common.Plugin):
             # should terminate via sys.exit().
             return self.do_child_process(port)
 
-    def already_listening(self, port):  # pylint: disable=no-self-use
-        """Check if a process is already listening on the port.
-
-        If so, also tell the user via a display notification.
-
-        .. warning::
-            On some operating systems, this function can only usefully be
-            run as root.
-
-        :param int port: The TCP port in question.
-        :returns: True or False."""
-
-        listeners = [conn.pid for conn in psutil.net_connections()
-                     if conn.status == 'LISTEN' and
-                     conn.type == socket.SOCK_STREAM and
-                     conn.laddr[1] == port]
-        try:
-            if listeners and listeners[0] is not None:
-                # conn.pid may be None if the current process doesn't have
-                # permission to identify the listening process!  Additionally,
-                # listeners may have more than one element if separate
-                # sockets have bound the same port on separate interfaces.
-                # We currently only have UI to notify the user about one
-                # of them at a time.
-                pid = listeners[0]
-                name = psutil.Process(pid).name()
-                display = zope.component.getUtility(interfaces.IDisplay)
-                display.notification(
-                    "The program {0} (process ID {1}) is already listening "
-                    "on TCP port {2}. This will prevent us from binding to "
-                    "that port. Please stop the {0} program temporarily "
-                    "and then try again.".format(name, pid, port))
-                return True
-        except (psutil.NoSuchProcess, psutil.AccessDenied):
-            # Perhaps the result of a race where the process could have
-            # exited or relinquished the port (NoSuchProcess), or the result
-            # of an OS policy where we're not allowed to look up the process
-            # name (AccessDenied).
-            pass
-        return False
-
     # IAuthenticator method implementations follow
 
     def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use
@@ -383,12 +341,6 @@ class StandaloneAuthenticator(common.Plugin):
         if not self.tasks:
             raise ValueError("nothing for .perform() to do")
 
-        if self.already_listening(self.config.dvsni_port):
-            # If we know a process is already listening on this port,
-            # tell the user, and don't even attempt to bind it.  (This
-            # test is Linux-specific and won't indicate that the port
-            # is bound if invoked on a different operating system.)
-            return results_if_failure
         # Try to do the authentication; note that this creates
         # the listener subprocess via os.fork()
         if self.start_listener(self.config.dvsni_port):
