@@ -79,7 +79,7 @@ Current Features
 * web servers supported:
 
   - apache/2.x (tested and working on Ubuntu Linux)
-  - nginx/0.8.48+ (tested and mostly working on Ubuntu Linux)
+  - nginx/0.8.48+ (under development)
   - standalone (runs its own webserver to prove you control the domain)
 
 * the private key is generated locally on your system
