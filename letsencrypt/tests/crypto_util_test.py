@@ -212,23 +212,17 @@ class GetSANsFromCSRTest(unittest.TestCase):
         self.assertEqual(
             [], self._call(test_util.load_vector('csr-nosans.pem')))
 
-class PyOpenSslLoaderTest(unittest.TestCase):
-    def test_pyopenssl_load(self):
-        from letsencrypt.crypto_util import _pyopenssl_load
-
-        method_mock = mock.MagicMock()
-        fake_data = "this is test data"
-        fake_types = ('fake loading type',)
-        _pyopenssl_load(fake_data, method_mock, fake_types)
-        method_mock.assert_called_with(fake_types[0], fake_data)
 
 class CertLoaderTest(unittest.TestCase):
+    """Tests for letsencrypt.crypto_util.pyopenssl_load_certificate"""
+
     def test_it(self):
         from letsencrypt.crypto_util import pyopenssl_load_certificate
 
         cert, file_type = pyopenssl_load_certificate(CERT)
         self.assertEqual(cert.digest('sha1'),
             OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, CERT).digest('sha1'))
+
 
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover
