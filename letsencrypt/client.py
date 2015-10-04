@@ -111,6 +111,8 @@ class Client(object):
     :ivar .AuthHandler auth_handler: Authorizations handler that will
         dispatch DV and Continuity challenges to appropriate
         authenticators (providing `.IAuthenticator` interface).
+    :ivar .IAuthenticator dv_auth: Prepared (`.IAuthenticator.prepare`)
+        authenticator that can solve the `.constants.DV_CHALLENGES`.
     :ivar .IInstaller installer: Installer.
     :ivar acme.client.Client acme: Optional ACME client API handle.
        You might already have one from `register`.
@@ -118,14 +120,10 @@ class Client(object):
     """
 
     def __init__(self, config, account_, dv_auth, installer, acme=None):
-        """Initialize a client.
-
-        :param .IAuthenticator dv_auth: Prepared (`.IAuthenticator.prepare`)
-            authenticator that can solve the `.constants.DV_CHALLENGES`.
-
-        """
+        """Initialize a client."""
         self.config = config
         self.account = account_
+        self.dv_auth = dv_auth
         self.installer = installer
 
         # Initialize ACME if account is provided
@@ -215,8 +213,7 @@ class Client(object):
 
         return self._obtain_certificate(domains, csr) + (key, csr)
 
-    def obtain_and_enroll_certificate(
-            self, domains, authenticator, installer, plugins):
+    def obtain_and_enroll_certificate(self, domains, plugins):
         """Obtain and enroll certificate.
 
         Get a new certificate for the specified domains using the specified
@@ -224,12 +221,6 @@ class Client(object):
         containing it.
 
         :param list domains: Domains to request.
-        :param authenticator: The authenticator to use.
-        :type authenticator: :class:`letsencrypt.interfaces.IAuthenticator`
-
-        :param installer: The installer to use.
-        :type installer: :class:`letsencrypt.interfaces.IInstaller`
-
         :param plugins: A PluginsFactory object.
 
         :returns: A new :class:`letsencrypt.storage.RenewableCert` instance
@@ -241,9 +232,10 @@ class Client(object):
 
         # TODO: remove this dirty hack
         self.config.namespace.authenticator = plugins.find_init(
-            authenticator).name
-        if installer is not None:
-            self.config.namespace.installer = plugins.find_init(installer).name
+            self.dv_auth).name
+        if self.installer is not None:
+            self.config.namespace.installer = plugins.find_init(
+                self.installer).name
 
         # XXX: We clearly need a more general and correct way of getting
         # options into the configobj for the RenewableCert instance.
@@ -294,7 +286,7 @@ class Client(object):
                 "configured in the directories under {0}.").format(
                     cert.cli_config.renewal_configs_dir)
         reporter = zope.component.getUtility(interfaces.IReporter)
-        reporter.add_message(msg, reporter.LOW_PRIORITY, True)
+        reporter.add_message(msg, reporter.LOW_PRIORITY)
 
     def save_certificate(self, certr, chain_cert, cert_path, chain_path):
         # pylint: disable=no-self-use

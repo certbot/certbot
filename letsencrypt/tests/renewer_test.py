@@ -33,7 +33,12 @@ def fill_with_sample_data(rc_object):
 
 
 class BaseRenewableCertTest(unittest.TestCase):
+    """Base class for setting up Renewable Cert tests.
 
+    .. note:: It may be required to write out self.config for
+    your test.  Check :class:`.cli_test.DuplicateCertTest` for an example.
+
+    """
     def setUp(self):
         from letsencrypt import storage
         self.tempdir = tempfile.mkdtemp()

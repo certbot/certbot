@@ -7,6 +7,7 @@ install_requires = [
     'letsencrypt',
     'mock<1.1.0',  # py26
     'python-augeas',
+    'setuptools',  # pkg_resources
     'zope.component',
     'zope.interface',
 ]

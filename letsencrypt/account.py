@@ -54,7 +54,7 @@ class Account(object):  # pylint: disable=too-few-public-methods
                 tz=pytz.UTC).replace(microsecond=0),
             creation_host=socket.getfqdn()) if meta is None else meta
 
-        self.id = hashlib.md5(  # pylint: disable=invalid-name
+        self.id = hashlib.md5(
             self.key.key.public_key().public_bytes(
                 encoding=serialization.Encoding.DER,
                 format=serialization.PublicFormat.SubjectPublicKeyInfo)
@@ -92,13 +92,13 @@ def report_new_account(acc, config):
         "contain certificates and private keys obtained by Let's Encrypt "
         "so making regular backups of this folder is ideal.".format(
             config.config_dir),
-        reporter.MEDIUM_PRIORITY, True)
+        reporter.MEDIUM_PRIORITY)
 
     if acc.regr.body.emails:
         recovery_msg = ("If you lose your account credentials, you can "
                         "recover through e-mails sent to {0}.".format(
                             ", ".join(acc.regr.body.emails)))
-        reporter.add_message(recovery_msg, reporter.HIGH_PRIORITY, True)
+        reporter.add_message(recovery_msg, reporter.HIGH_PRIORITY)
 
 
 class AccountMemoryStorage(interfaces.AccountStorage):

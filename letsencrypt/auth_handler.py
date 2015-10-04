@@ -531,7 +531,7 @@ def _report_failed_challs(failed_achalls):
     reporter = zope.component.getUtility(interfaces.IReporter)
     for achalls in problems.itervalues():
         reporter.add_message(
-            _generate_failed_chall_msg(achalls), reporter.MEDIUM_PRIORITY, True)
+            _generate_failed_chall_msg(achalls), reporter.MEDIUM_PRIORITY)
 
 
 def _generate_failed_chall_msg(failed_achalls):
