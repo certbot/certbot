@@ -4,6 +4,7 @@ import collections
 import functools
 import logging
 import os
+import socket
 import sys
 
 import six
@@ -52,17 +53,51 @@ class HTTPSServer(TLSServer, BaseHTTPServer.HTTPServer):
 
 
 class ACMEServerMixin:  # pylint: disable=old-style-class,no-init
-    """ACME server common settings mixin."""
+    """ACME server common settings mixin.
+
+    .. warning::
+       Subclasses have to init ``_stopped = False`` (it's not done here,
+       because of old-style classes madness).
+
+    """
     server_version = "ACME standalone client"
     allow_reuse_address = True
+
+    def serve_forever2(self):
+        """Serve forever, until other thread calls `shutdown2`."""
+        while not self._stopped:
+            self.handle_request()
+
+    def shutdown2(self):
+        """Shutdown server loop from `serve_forever2`."""
+        self._stopped = True
+
+        # dummy request to terminate last server_forever2.handle_request()
+        sock = socket.socket()
+        try:
+            sock.connect(self.socket.getsockname())
+        except socket.error:
+            pass  # thread is probably already finished
+        finally:
+            sock.close()
+
+        self.server_close()
 
 
 class ACMETLSServer(HTTPSServer, ACMEServerMixin):
     """ACME TLS Server."""
 
+    def __init__(self, *args, **kwargs):
+        self._stopped = False
+        HTTPSServer.__init__(self, *args, **kwargs)
+
 
 class ACMEServer(BaseHTTPServer.HTTPServer, ACMEServerMixin):
     """ACME Server (non-TLS)."""
+
+    def __init__(self, *args, **kwargs):
+        self._stopped = False
+        BaseHTTPServer.HTTPServer.__init__(self, *args, **kwargs)
 
 
 class SimpleHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):

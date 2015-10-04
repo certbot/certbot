@@ -25,6 +25,26 @@ class TLSServerTest(unittest.TestCase):
         server.server_close()  # pylint: disable=no-member
 
 
+class ACMEServerMixinTest(unittest.TestCase):
+    """Tests for acme.standalone.ACMEServerMixin."""
+
+    def test_shutdown2_not_running(self):
+        from acme.standalone import ACMEServer
+        server = ACMEServer(("", 0), socketserver.BaseRequestHandler)
+        server.shutdown2()
+        server.shutdown2()
+
+
+class ACMEServerTest(unittest.TestCase):
+    """Test for acme.standalone.ACMEServer."""
+
+    def test_init(self):
+        from acme.standalone import ACMEServer
+        server = ACMEServer(("", 0), socketserver.BaseRequestHandler)
+        # pylint: disable=protected-access
+        self.assertFalse(server._stopped)
+
+
 class ACMESimpleHTTPTLSServerTestEndToEnd(unittest.TestCase):
     """End-to-end test for ACME TLS server with SimpleHTTP."""
 
@@ -45,12 +65,13 @@ class ACMESimpleHTTPTLSServerTestEndToEnd(unittest.TestCase):
         self.server = ACMETLSServer(('', 0), handler, certs=self.certs)
         self.server_thread = threading.Thread(
             # pylint: disable=no-member
-            target=self.server.handle_request)
+            target=self.server.serve_forever2)
         self.server_thread.start()
 
         self.port = self.server.socket.getsockname()[1]
 
     def tearDown(self):
+        self.server.shutdown2()
         self.server_thread.join()
 
     def test_index(self):

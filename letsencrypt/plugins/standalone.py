@@ -53,33 +53,15 @@ class ServerManager(object):
         except socket.error as error:
             errors.StandaloneBindError(error, port)
 
-        stop = threading.Event()
-        thread = threading.Thread(
-            target=self._serve,
-            args=(server, stop),
-        )
+        thread = threading.Thread(target=server.serve_forever2)
         thread.start()
-        self.servers[port] = (server, thread, stop)
+        self.servers[port] = (server, thread)
         return self.servers[port]
-
-    def _serve(self, server, stop):
-        while not stop.is_set():
-            server.handle_request()
 
     def stop(self, port):
         """Stop ACME server running on the specified ``port``."""
-        server, thread, stop = self.servers[port]
-        stop.set()
-
-        # dummy request to terminate last handle_request()
-        sock = socket.socket()
-        try:
-            sock.connect(server.socket.getsockname())
-        except socket.error:
-            pass  # thread is probably already finished
-        finally:
-            sock.close()
-
+        server, thread = self.servers[port]
+        server.shutdown2()
         thread.join()
         del self.servers[port]
 
@@ -170,7 +152,7 @@ class Authenticator(common.Plugin):
 
         for achall in achalls:
             if isinstance(achall, achallenges.SimpleHTTP):
-                server, _, _ = self.servers.run(self.config.simple_http_port, tls=tls)
+                server, _ = self.servers.run(self.config.simple_http_port, tls=tls)
                 response, validation = achall.gen_response_and_validation(tls=tls)
                 self.simple_http_resources.add(
                     acme_standalone.SimpleHTTPRequestHandler.SimpleHTTPResource(
@@ -179,7 +161,7 @@ class Authenticator(common.Plugin):
                 cert = self.simple_http_cert
                 domain = achall.domain
             else:  # DVSNI
-                server, _, _ = self.servers.run(self.config.dvsni_port, tls=True)
+                server, _ = self.servers.run(self.config.dvsni_port, tls=True)
                 response, cert, _ = achall.gen_cert_and_response(self.key)
                 domain = response.z_domain
             self.certs[domain] = (self.key, cert)
@@ -195,6 +177,6 @@ class Authenticator(common.Plugin):
             for achall in achalls:
                 if achall in server_achalls:
                     server_achalls.remove(achall)
-        for port, (server, _, _) in self.servers.items():
+        for port, (server, _) in self.servers.items():
             if not self.served[server]:
                 self.servers.stop(port)
