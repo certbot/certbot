@@ -176,6 +176,7 @@ class Authenticator(common.Plugin):
 
     @property
     def supported_challenges(self):
+        """Challenges supported by this plugin."""
         return set(challenges.Challenge.TYPES[name] for name in
                    self.conf("supported-challenges").split(","))
 
