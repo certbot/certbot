@@ -195,8 +195,7 @@ class ApacheParser(object):
             self.aug.set(nvh_path + "/arg", args[0])
         else:
             for i, arg in enumerate(args):
-                self.aug.set("%s/arg[%d]" % (nvh_path, i+1), arg)
-
+                self.aug.set("%s/arg[%d]" % (nvh_path, i + 1), arg)
 
     def _get_ifmod(self, aug_conf_path, mod):
         """Returns the path to <IfMod mod> and creates one if it doesn't exist.
@@ -242,6 +241,10 @@ class ApacheParser(object):
         Directives should be in the form of a case insensitive regex currently
 
         .. todo:: arg should probably be a list
+        .. todo:: arg search currently only supports direct matching. It does
+            not handle the case of variables or quoted arguments. This should
+            be adapted to use a generic search for the directive and then do a
+            case-insensitive self.get_arg filter
 
         Note: Augeas is inherently case sensitive while Apache is case
         insensitive.  Augeas 1.0 allows case insensitive regexes like
@@ -316,6 +319,14 @@ class ApacheParser(object):
 
         """
         value = self.aug.get(match)
+
+        # No need to strip quotes for variables, as apache2ctl already does this
+        # but we do need to strip quotes for all normal arguments.
+
+        # Note: normal argument may be a quoted variable
+        # e.g. strip now, not later
+        value = value.strip("'\"")
+
         variables = ApacheParser.arg_var_interpreter.findall(value)
 
         for var in variables:
@@ -391,10 +402,15 @@ class ApacheParser(object):
         #     logger.error("Error: Invalid regexp characters in %s", arg)
         #     return []
 
+        # Remove beginning and ending quotes
+        arg = arg.strip("'\"")
+
         # Standardize the include argument based on server root
         if not arg.startswith("/"):
             # Normpath will condense ../
             arg = os.path.normpath(os.path.join(self.root, arg))
+        else:
+            arg = os.path.normpath(arg)
 
         # Attempts to add a transform to the file if one does not already exist
         if os.path.isdir(arg):
@@ -568,7 +584,7 @@ def case_i(string):
     :param str string: string to make case i regex
 
     """
-    return "".join(["["+c.upper()+c.lower()+"]"
+    return "".join(["[" + c.upper() + c.lower() + "]"
                     if c.isalpha() else c for c in re.escape(string)])
 
 

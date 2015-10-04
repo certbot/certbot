@@ -141,7 +141,7 @@ class LetsHelpApacheTest(unittest.TestCase):
     @mock.patch(_MODULE_NAME + ".subprocess.Popen")
     def test_locate_config(self, mock_popen):
         mock_popen().communicate.side_effect = [
-            OSError, ("bad_output", None), (_COMPILE_SETTINGS, None),]
+            OSError, ("bad_output", None), (_COMPILE_SETTINGS, None)]
 
         self.assertRaises(
             SystemExit, letshelp_le_apache.locate_config, "ctl")

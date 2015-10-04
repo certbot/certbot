@@ -25,7 +25,7 @@ class DialogHandler(logging.Handler):  # pylint: disable=too-few-public-methods
         logging.Handler.__init__(self, level)
         self.height = height
         self.width = width
-        # "dialog" collides with module name... pylint: disable=invalid-name
+        # "dialog" collides with module name...
         self.d = dialog.Dialog() if d is None else d
         self.lines = []
 

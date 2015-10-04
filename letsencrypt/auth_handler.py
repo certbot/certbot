@@ -11,6 +11,7 @@ from acme import messages
 from letsencrypt import achallenges
 from letsencrypt import constants
 from letsencrypt import errors
+from letsencrypt import error_handler
 from letsencrypt import interfaces
 
 
@@ -106,17 +107,16 @@ class AuthHandler(object):
         """Get Responses for challenges from authenticators."""
         cont_resp = []
         dv_resp = []
-        try:
-            if self.cont_c:
-                cont_resp = self.cont_auth.perform(self.cont_c)
-            if self.dv_c:
-                dv_resp = self.dv_auth.perform(self.dv_c)
-        # This will catch both specific types of errors.
-        except errors.AuthorizationError:
-            logger.critical("Failure in setting up challenges.")
-            logger.info("Attempting to clean up outstanding challenges...")
-            self._cleanup_challenges()
-            raise
+        with error_handler.ErrorHandler(self._cleanup_challenges):
+            try:
+                if self.cont_c:
+                    cont_resp = self.cont_auth.perform(self.cont_c)
+                if self.dv_c:
+                    dv_resp = self.dv_auth.perform(self.dv_c)
+            except errors.AuthorizationError:
+                logger.critical("Failure in setting up challenges.")
+                logger.info("Attempting to clean up outstanding challenges...")
+                raise
 
         assert len(cont_resp) == len(self.cont_c)
         assert len(dv_resp) == len(self.dv_c)
@@ -244,7 +244,7 @@ class AuthHandler(object):
 
         """
         for authzr_challb in authzr.body.challenges:
-            if type(authzr_challb.chall) is type(achall.challb.chall):
+            if type(authzr_challb.chall) is type(achall.challb.chall):  # noqa
                 return authzr_challb
         raise errors.AuthorizationError(
             "Target challenge not found in authorization resource")
@@ -493,26 +493,27 @@ _ERROR_HELP_COMMON = (
 
 
 _ERROR_HELP = {
-    "connection" :
+    "connection":
         _ERROR_HELP_COMMON + " Additionally, please check that your computer "
         "has publicly routable IP address and no firewalls are preventing the "
         "server from communicating with the client.",
-    "dnssec" :
+    "dnssec":
         _ERROR_HELP_COMMON + " Additionally, if you have DNSSEC enabled for "
         "your domain, please ensure the signature is valid.",
-    "malformed" :
+    "malformed":
         "To fix these errors, please make sure that you did not provide any "
         "invalid information to the client and try running Let's Encrypt "
         "again.",
-    "serverInternal" :
+    "serverInternal":
         "Unfortunately, an error on the ACME server prevented you from completing "
         "authorization. Please try again later.",
-    "tls" :
+    "tls":
         _ERROR_HELP_COMMON + " Additionally, please check that you have an up "
         "to date TLS configuration that allows the server to communicate with "
         "the Let's Encrypt client.",
-    "unauthorized" : _ERROR_HELP_COMMON,
-    "unknownHost" : _ERROR_HELP_COMMON,}
+    "unauthorized": _ERROR_HELP_COMMON,
+    "unknownHost": _ERROR_HELP_COMMON,
+}
 
 
 def _report_failed_challs(failed_achalls):
@@ -530,7 +531,7 @@ def _report_failed_challs(failed_achalls):
     reporter = zope.component.getUtility(interfaces.IReporter)
     for achalls in problems.itervalues():
         reporter.add_message(
-            _generate_failed_chall_msg(achalls), reporter.MEDIUM_PRIORITY, True)
+            _generate_failed_chall_msg(achalls), reporter.MEDIUM_PRIORITY)
 
 
 def _generate_failed_chall_msg(failed_achalls):

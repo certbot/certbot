@@ -32,6 +32,7 @@ class ComplexParserTest(util.ParserTest):
                 "COMPLEX": "",
                 "tls_port": "1234",
                 "fnmatch_filename": "test_fnmatch.conf",
+                "tls_port_str": "1234"
             }
         )
 
@@ -49,13 +50,18 @@ class ComplexParserTest(util.ParserTest):
         self.assertEqual(len(matches), 1)
         self.assertEqual(self.parser.get_arg(matches[0]), "1234")
 
+    def test_basic_variable_parsing_quotes(self):
+        matches = self.parser.find_dir("TestVariablePortStr")
+
+        self.assertEqual(len(matches), 1)
+        self.assertEqual(self.parser.get_arg(matches[0]), "1234")
+
     def test_invalid_variable_parsing(self):
         del self.parser.variables["tls_port"]
 
         matches = self.parser.find_dir("TestVariablePort")
         self.assertRaises(
             errors.PluginError, self.parser.get_arg, matches[0])
-
 
     def test_basic_ifdefine(self):
         self.assertEqual(len(self.parser.find_dir("VAR_DIRECTIVE")), 2)
@@ -70,7 +76,6 @@ class ComplexParserTest(util.ParserTest):
         self.assertEqual(len(self.parser.find_dir("NESTED_DIRECTIVE")), 3)
         self.assertEqual(
             len(self.parser.find_dir("INVALID_NESTED_DIRECTIVE")), 0)
-
 
     def test_load_modules(self):
         """If only first is found, there is bad variable parsing."""
@@ -91,6 +96,7 @@ class ComplexParserTest(util.ParserTest):
         else:
             self.assertFalse(self.parser.find_dir("FNMATCH_DIRECTIVE"))
 
+    # NOTE: Only run one test per function otherwise you will have inf recursion
     def test_include(self):
         self.verify_fnmatch("test_fnmatch.?onf")
 
@@ -99,6 +105,15 @@ class ComplexParserTest(util.ParserTest):
 
     def test_include_fullpath(self):
         self.verify_fnmatch(os.path.join(self.config_path, "test_fnmatch.conf"))
+
+    def test_include_fullpath_trailing_slash(self):
+        self.verify_fnmatch(self.config_path + "//")
+
+    def test_include_single_quotes(self):
+        self.verify_fnmatch("'" + self.config_path + "'")
+
+    def test_include_double_quotes(self):
+        self.verify_fnmatch('"' + self.config_path + '"')
 
     def test_include_variable(self):
         self.verify_fnmatch("../complex_parsing/${fnmatch_filename}")

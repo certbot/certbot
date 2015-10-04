@@ -18,14 +18,15 @@ def option_namespace(name):
     """ArgumentParser options namespace (prefix of all options)."""
     return name + "-"
 
+
 def dest_namespace(name):
     """ArgumentParser dest namespace (prefix of all destinations)."""
     return name.replace("-", "_") + "_"
 
-private_ips_regex = re.compile(  # pylint: disable=invalid-name
+private_ips_regex = re.compile(
     r"(^127\.0\.0\.1)|(^10\.)|(^172\.1[6-9]\.)|"
     r"(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)")
-hostname_regex = re.compile(  # pylint: disable=invalid-name
+hostname_regex = re.compile(
     r"^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*[a-z]+$", re.IGNORECASE)
 
 
@@ -89,6 +90,7 @@ class Plugin(object):
         """
 
 # other
+
 
 class Addr(object):
     r"""Represents an virtual host address.
@@ -175,7 +177,7 @@ class Dvsni(object):
                             achall.chall.encode("token") + '.pem')
 
     def _setup_challenge_cert(self, achall, s=None):
-        # pylint: disable=invalid-name
+
         """Generate and write out challenge certificate."""
         cert_path = self.get_cert_path(achall)
         key_path = self.get_key_path(achall)

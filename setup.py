@@ -41,6 +41,8 @@ install_requires = [
     'pyrfc3339',
     'python2-pythondialog>=3.2.2rc1',  # Debian squeeze support, cf. #280
     'pytz',
+    'requests',
+    'setuptools',  # pkg_resources
     'zope.component',
     'zope.interface',
 ]
@@ -67,6 +69,7 @@ testing_extras = [
     'coverage',
     'nose',
     'nosexcover',
+    'pep8',
     'tox',
 ]
 
@@ -86,7 +89,6 @@ setup(
         'Operating System :: POSIX :: Linux',
         'Programming Language :: Python',
         'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Security',
@@ -115,8 +117,7 @@ setup(
             'letsencrypt-renewer = letsencrypt.renewer:main',
         ],
         'letsencrypt.plugins': [
-            'manual = letsencrypt.plugins.manual:ManualAuthenticator',
-            # TODO: null should probably not be presented to the user
+            'manual = letsencrypt.plugins.manual:Authenticator',
             'null = letsencrypt.plugins.null:Installer',
             'simplefs = letsencrypt.plugins.simplefs:Authenticator',
             'standalone = letsencrypt.plugins.standalone.authenticator'

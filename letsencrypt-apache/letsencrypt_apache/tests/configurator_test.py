@@ -37,8 +37,16 @@ class TwoVhost80Test(util.ApacheTest):
         shutil.rmtree(self.config_dir)
         shutil.rmtree(self.work_dir)
 
+    @mock.patch("letsencrypt_apache.configurator.le_util.exe_exists")
+    def test_prepare_no_install(self, mock_exe_exists):
+        mock_exe_exists.return_value = False
+        self.assertRaises(
+            errors.NoInstallationError, self.config.prepare)
+
     @mock.patch("letsencrypt_apache.parser.ApacheParser")
-    def test_prepare_version(self, _):
+    @mock.patch("letsencrypt_apache.configurator.le_util.exe_exists")
+    def test_prepare_version(self, mock_exe_exists, _):
+        mock_exe_exists.return_value = True
         self.config.version = None
         self.config.config_test = mock.Mock()
         self.config.get_version = mock.Mock(return_value=(1, 1))
@@ -551,6 +559,7 @@ class TwoVhost80Test(util.ApacheTest):
         self.assertRaises(
             errors.PluginError,
             self.config.enhance, "letsencrypt.demo", "redirect")
+
     def test_unknown_rewrite2(self):
         # Skip the enable mod
         self.config.parser.modules.add("rewrite_module")

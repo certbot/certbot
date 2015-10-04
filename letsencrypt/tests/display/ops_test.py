@@ -84,7 +84,7 @@ class PickPluginTest(unittest.TestCase):
 
     def test_no_default(self):
         self._call()
-        self.assertEqual(1, self.reg.ifaces.call_count)
+        self.assertEqual(1, self.reg.visible().ifaces.call_count)
 
     def test_no_candidate(self):
         self.assertTrue(self._call() is None)
@@ -94,7 +94,8 @@ class PickPluginTest(unittest.TestCase):
         plugin_ep.init.return_value = "foo"
         plugin_ep.misconfigured = False
 
-        self.reg.ifaces().verify().available.return_value = {"bar": plugin_ep}
+        self.reg.visible().ifaces().verify().available.return_value = {
+            "bar": plugin_ep}
         self.assertEqual("foo", self._call())
 
     def test_single_misconfigured(self):
@@ -102,13 +103,14 @@ class PickPluginTest(unittest.TestCase):
         plugin_ep.init.return_value = "foo"
         plugin_ep.misconfigured = True
 
-        self.reg.ifaces().verify().available.return_value = {"bar": plugin_ep}
+        self.reg.visible().ifaces().verify().available.return_value = {
+            "bar": plugin_ep}
         self.assertTrue(self._call() is None)
 
     def test_multiple(self):
         plugin_ep = mock.MagicMock()
         plugin_ep.init.return_value = "foo"
-        self.reg.ifaces().verify().available.return_value = {
+        self.reg.visible().ifaces().verify().available.return_value = {
             "bar": plugin_ep,
             "baz": plugin_ep,
         }
@@ -119,7 +121,7 @@ class PickPluginTest(unittest.TestCase):
             [plugin_ep, plugin_ep], self.question)
 
     def test_choose_plugin_none(self):
-        self.reg.ifaces().verify().available.return_value = {
+        self.reg.visible().ifaces().verify().available.return_value = {
             "bar": None,
             "baz": None,
         }
@@ -250,6 +252,7 @@ class GenSSLLabURLs(unittest.TestCase):
         self.assertTrue("eff.org" in urls[0])
         self.assertTrue("umich.edu" in urls[1])
 
+
 class GenHttpsNamesTest(unittest.TestCase):
     """Test _gen_https_names."""
     def setUp(self):
@@ -371,6 +374,28 @@ class SuccessInstallationTest(unittest.TestCase):
 
     @mock.patch("letsencrypt.display.ops.util")
     def test_success_installation(self, mock_util):
+        mock_util().notification.return_value = None
+        names = ["example.com", "abc.com"]
+
+        self._call(names)
+
+        self.assertEqual(mock_util().notification.call_count, 1)
+        arg = mock_util().notification.call_args_list[0][0][0]
+
+        for name in names:
+            self.assertTrue(name in arg)
+
+
+class SuccessRenewalTest(unittest.TestCase):
+    # pylint: disable=too-few-public-methods
+    """Test the success renewal message."""
+    @classmethod
+    def _call(cls, names):
+        from letsencrypt.display.ops import success_renewal
+        success_renewal(names)
+
+    @mock.patch("letsencrypt.display.ops.util")
+    def test_success_renewal(self, mock_util):
         mock_util().notification.return_value = None
         names = ["example.com", "abc.com"]
 
