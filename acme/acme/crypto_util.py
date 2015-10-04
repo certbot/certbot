@@ -70,6 +70,15 @@ class SSLSocket(object):  # pylint: disable=too-few-public-methods
     class FakeConnection(object):
         """Fake OpenSSL.SSL.Connection."""
 
+        MAKEFILE_SUPPORT = hasattr(socket, "_fileobject")
+        """Is `makefile` supported on your platform?
+
+        .. warning:: `makefile`, as currently implemented, is supported
+            on select platforms only, as it uses CPython's internal API.
+            You've been warned!
+
+        """
+
         # pylint: disable=missing-docstring
 
         def __init__(self, connection):
@@ -85,9 +94,10 @@ class SSLSocket(object):  # pylint: disable=too-few-public-methods
 
         # stuff below ripped off from
         # https://hg.python.org/cpython/file/2.7/Lib/ssl.py
-        # XXX: this uses Python's internal API
 
         def makefile(self, mode='r', bufsize=-1):
+            assert self.MAKEFILE_SUPPORT, (
+                "You need compatible version for makefile support")
             self._makefile_refs += 1
             # SocketServer.StreamRequesthandler.finish will try to
             # close the wfile/rfile.  close=True causes curl: (56)

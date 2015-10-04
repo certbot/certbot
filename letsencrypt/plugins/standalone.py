@@ -4,6 +4,7 @@ import functools
 import logging
 import random
 import socket
+import sys
 import threading
 
 import OpenSSL
@@ -121,7 +122,6 @@ class Authenticator(common.Plugin):
     zope.interface.classProvides(interfaces.IPluginFactory)
 
     description = "Standalone Authenticator"
-    supported_challenges = set([challenges.SimpleHTTP, challenges.DVSNI])
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
@@ -136,7 +136,7 @@ class Authenticator(common.Plugin):
         self.served = collections.defaultdict(set)
 
         # Stuff below is shared across threads (i.e. servers read
-        # values, main thread writes). Due to the nature of Cython's
+        # values, main thread writes). Due to the nature of CPython's
         # GIL, the operations are safe, c.f.
         # https://docs.python.org/2/faq/library.html#what-kinds-of-global-value-mutation-are-thread-safe
         self.certs = {}
@@ -157,7 +157,12 @@ class Authenticator(common.Plugin):
     # TODO: add --chall-pref flag
     def get_chall_pref(self, domain):
         # pylint: disable=unused-argument,missing-docstring
-        chall_pref = list(self.supported_challenges)
+        supported_challenges = set([challenges.SimpleHTTP, challenges.DVSNI])
+        if not self.config.no_simple_http_tls and not (
+                acme_standalone.ACMETLSServer.SIMPLE_HTTP_SUPPORT):
+            logger.debug("SimpleHTTPS not supported: %s", sys.version)
+            supported_challenges.discard(challenges.SimpleHTTP)
+        chall_pref = list(supported_challenges)
         random.shuffle(chall_pref)  # 50% for each challenge
         return chall_pref
 

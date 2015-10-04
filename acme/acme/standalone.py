@@ -87,6 +87,13 @@ class ACMEServerMixin:  # pylint: disable=old-style-class,no-init
 class ACMETLSServer(HTTPSServer, ACMEServerMixin):
     """ACME TLS Server."""
 
+    SIMPLE_HTTP_SUPPORT = crypto_util.SSLSocket.FakeConnection.MAKEFILE_SUPPORT
+    """Is SimpleHTTP supported on your platform.
+
+    Please see a warning for `acme.crypto_util.SSLSocket.FakeConnection`.
+
+    """
+
     def __init__(self, *args, **kwargs):
         self._stopped = False
         HTTPSServer.__init__(self, *args, **kwargs)

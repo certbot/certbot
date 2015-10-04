@@ -62,8 +62,8 @@ class AuthenticatorTest(unittest.TestCase):
 
     def setUp(self):
         from letsencrypt.plugins.standalone import Authenticator
-        config = mock.MagicMock(dvsni_port=1234, simple_http_port=4321)
-        self.auth = Authenticator(config, name="standalone")
+        self.config = mock.MagicMock(dvsni_port=1234, simple_http_port=4321)
+        self.auth = Authenticator(self.config, name="standalone")
 
     def test_more_info(self):
         self.assertTrue(isinstance(self.auth.more_info(), six.string_types))
@@ -74,9 +74,20 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertRaises(errors.MisconfigurationError, self.auth.prepare)
         mock_util.already_listening.assert_called_once_with(1234)
 
-    def test_get_chall_pref(self):
+    @mock.patch("letsencrypt.plugins.standalone.acme_standalone")
+    def test_get_chall_pref_tls_supported(self, mock_astandalone):
+        mock_astandalone.ACMETLSServer.SIMPLE_HTTP_SUPPORT = True
+        for no_simple_http_tls in True, False:
+            self.config.no_simple_http_tls = no_simple_http_tls
+            self.assertEqual(set(self.auth.get_chall_pref(domain=None)),
+                             set([challenges.DVSNI, challenges.SimpleHTTP]))
+
+    @mock.patch("letsencrypt.plugins.standalone.acme_standalone")
+    def test_get_chall_pref_simple_tls_not_supported(self, mock_astandalone):
+        mock_astandalone.ACMETLSServer.SIMPLE_HTTP_SUPPORT = False
+        self.config.no_simple_http_tls = False
         self.assertEqual(set(self.auth.get_chall_pref(domain=None)),
-                         set([challenges.SimpleHTTP, challenges.DVSNI]))
+                         set([challenges.DVSNI]))
 
     @mock.patch("letsencrypt.plugins.standalone.zope.component.getUtility")
     def test_perform(self, unused_mock_get_utility):
