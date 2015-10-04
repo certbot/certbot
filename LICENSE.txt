@@ -1,5 +1,5 @@
-Let's Encrypt:
-Copyright (c) Internet Security Research Group
+Let's Encrypt Python Client
+Copyright (c) Electronic Frontier Foundation and others
 Licensed Apache Version 2.0
 
 Incorporating code from nginxparser

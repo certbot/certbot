@@ -15,15 +15,15 @@ logger = logging.getLogger(__name__)
 # immediately.
 _SIGNALS = ([signal.SIGTERM] if os.name == "nt" else
             [signal.SIGTERM, signal.SIGHUP, signal.SIGQUIT,
-             signal.SIGXCPU, signal.SIGXFSZ, signal.SIGPWR])
+             signal.SIGXCPU, signal.SIGXFSZ])
 
 
 class ErrorHandler(object):
     """Registers functions to be called if an exception or signal occurs.
 
     This class allows you to register functions that will be called when
-    an exception or signal is encountered. The class works best as a
-    context manager. For example:
+    an exception (excluding SystemExit) or signal is encountered. The
+    class works best as a context manager. For example:
 
     with ErrorHandler(cleanup_func):
         do_something()
@@ -50,7 +50,8 @@ class ErrorHandler(object):
         self.set_signal_handlers()
 
     def __exit__(self, exec_type, exec_value, trace):
-        if exec_value is not None:
+        # SystemExit is ignored to properly handle forks that don't exec
+        if exec_type not in (None, SystemExit):
             logger.debug("Encountered exception:\n%s", "".join(
                 traceback.format_exception(exec_type, exec_value, trace)))
             self.call_registered()

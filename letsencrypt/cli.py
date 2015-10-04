@@ -80,8 +80,8 @@ More detailed help:
   -h, --help [topic]    print this message, or detailed help on a topic;
                         the available topics are:
 
-   all, apache, automation, nginx, paths, security, testing, or any of the
-   subcommands
+   all, apache, automation, manual, nginx, paths, security, testing, or any of
+   the subcommands
 """
 
 
@@ -267,6 +267,14 @@ def _treat_as_renewal(config, domains):
     return None
 
 
+def _report_new_cert(cert_path):
+    """Reports the creation of a new certificate to the user."""
+    reporter_util = zope.component.getUtility(interfaces.IReporter)
+    reporter_util.add_message("Congratulations! Your certificate has been "
+                              "saved at {0}.".format(cert_path),
+                              reporter_util.MEDIUM_PRIORITY)
+
+
 def _auth_from_domains(le_client, config, domains, plugins):
     """Authenticate and enroll certificate."""
     # Note: This can raise errors... caught above us though.
@@ -291,6 +299,8 @@ def _auth_from_domains(le_client, config, domains, plugins):
         lineage = le_client.obtain_and_enroll_certificate(domains, plugins)
         if not lineage:
             raise errors.Error("Certificate could not be obtained")
+
+    _report_new_cert(lineage.cert)
 
     return lineage
 
@@ -365,6 +375,7 @@ def auth(args, config, plugins):
             file=args.csr[0], data=args.csr[1], form="der"))
         le_client.save_certificate(
             certr, chain, args.cert_path, args.chain_path)
+        _report_new_cert(args.cert_path)
     else:
         domains = _find_domains(args, installer)
         _auth_from_domains(le_client, config, domains, plugins)
@@ -420,7 +431,7 @@ def plugins_cmd(args, config, plugins):  # TODO: Use IDisplay rather than print
     logger.debug("Expected interfaces: %s", args.ifaces)
 
     ifaces = [] if args.ifaces is None else args.ifaces
-    filtered = plugins.ifaces(ifaces)
+    filtered = plugins.visible().ifaces(ifaces)
     logger.debug("Filtered plugins: %r", filtered)
 
     if not args.init and not args.prepare:
@@ -489,9 +500,6 @@ class SilentParser(object):  # pylint: disable=too-few-public-methods
         self.parser.add_argument(*args, **kwargs)
 
 
-HELP_TOPICS = ["all", "security", "paths", "automation", "testing", "plugins"]
-
-
 class HelpfulArgumentParser(object):
     """Argparse Wrapper.
 
@@ -513,12 +521,13 @@ class HelpfulArgumentParser(object):
         self.parser._add_config_file_help = False  # pylint: disable=protected-access
         self.silent_parser = SilentParser(self.parser)
 
+        self.verb = None
         self.args = self.preprocess_args(args)
         help1 = self.prescan_for_flag("-h", self.help_topics)
         help2 = self.prescan_for_flag("--help", self.help_topics)
         assert max(True, "a") == "a", "Gravity changed direction"
         help_arg = max(help1, help2)
-        if help_arg == True:
+        if help_arg is True:
             # just --help with no topic; avoid argparse altogether
             print USAGE
             sys.exit(0)
@@ -529,13 +538,22 @@ class HelpfulArgumentParser(object):
     def preprocess_args(self, args):
         """Work around some limitations in argparse.
 
-        Currently, add the default verb "run" as a default.
+        Currently: add the default verb "run" as a default, and ensure that the
+        subcommand / verb comes last.
         """
+        if "-h" in args or "--help" in args:
+            # all verbs double as help arguments; don't get them confused
+            self.verb = "help"
+            return args
 
-        for token in args:
+        for i, token in enumerate(args):
             if token in VERBS:
-                return args
-        return ["run"] + args
+                reordered = args[:i] + args[i+1:] + [args[i]]
+                self.verb = token
+                return reordered
+
+        self.verb = "run"
+        return args + ["run"]
 
     def prescan_for_flag(self, flag, possible_arguments):
         """Checks cli input for flags.
@@ -713,77 +731,79 @@ def create_parser(plugins, args):
 
 # For now unfortunately this constant just needs to match the code below;
 # there isn't an elegant way to autogenerate it in time.
-VERBS = ["run", "auth", "install", "revoke", "rollback", "config_changes",
-         "plugins", "--help"]
-
+VERBS = ["run", "auth", "install", "revoke", "rollback", "config_changes", "plugins"]
+HELP_TOPICS = ["all", "security", "paths", "automation", "testing"] + VERBS
 
 def _create_subparsers(helpful):
     subparsers = helpful.parser.add_subparsers(metavar="SUBCOMMAND")
 
-    def add_subparser(name, func):  # pylint: disable=missing-docstring
-        subparser = subparsers.add_parser(
-            name, help=func.__doc__.splitlines()[0], description=func.__doc__)
+    def add_subparser(name):  # pylint: disable=missing-docstring
+        if name == "plugins":
+            func = plugins_cmd
+        else:
+            func = eval(name) # pylint: disable=eval-used
+        h = func.__doc__.splitlines()[0]
+        subparser = subparsers.add_parser(name, help=h, description=func.__doc__)
         subparser.set_defaults(func=func)
         return subparser
 
     # the order of add_subparser() calls is important: it defines the
     # order in which subparser names will be displayed in --help
-    add_subparser("run", run)
-    parser_auth = add_subparser("auth", auth)
-    parser_install = add_subparser("install", install)
-    parser_revoke = add_subparser("revoke", revoke)
-    parser_rollback = add_subparser("rollback", rollback)
-    add_subparser("config_changes", config_changes)
-    parser_plugins = add_subparser("plugins", plugins_cmd)
+    # these add_subparser objects return objects to which arguments could be
+    # attached, but they have annoying arg ordering constrains so we use
+    # groups instead: https://github.com/letsencrypt/letsencrypt/issues/820
+    for v in VERBS:
+        add_subparser(v)
 
-    parser_auth.add_argument(
-        "--csr", type=read_file, help="Path to a Certificate Signing "
-        "Request (CSR) in DER format.")
-    parser_auth.add_argument(
-        "--cert-path", default=flag_default("auth_cert_path"),
-        help="When using --csr this is where certificate is saved.")
-    parser_auth.add_argument(
-        "--chain-path", default=flag_default("auth_chain_path"),
-        help="When using --csr this is where certificate chain is saved.")
+    helpful.add_group("auth", description="Options for modifying how a cert is obtained")
+    helpful.add_group("install", description="Options for modifying how a cert is deployed")
+    helpful.add_group("revoke", description="Options for revocation of certs")
+    helpful.add_group("rollback", description="Options for reverting config changes")
+    helpful.add_group("plugins", description="Plugin options")
 
-    parser_install.add_argument(
-        "--cert-path", required=True, help="Path to a certificate that "
-        "is going to be installed.")
-    parser_install.add_argument(
-        "--key-path", required=True, help="Accompanying private key")
-    parser_install.add_argument(
-        "--chain-path", help="Accompanying path to a certificate chain.")
-    parser_revoke.add_argument(
-        "--cert-path", type=read_file, help="Revoke a specific certificate.",
-        required=True)
-    parser_revoke.add_argument(
-        "--key-path", type=read_file,
-        help="Revoke certificate using its accompanying key. Useful if "
-        "Account Key is lost.")
-
-    parser_rollback.add_argument(
+    helpful.add("auth",
+        "--csr", type=read_file, help="Path to a Certificate Signing Request (CSR) in DER format.")
+    helpful.add("rollback",
         "--checkpoints", type=int, metavar="N",
         default=flag_default("rollback_checkpoints"),
         help="Revert configuration N number of checkpoints.")
 
-    parser_plugins.add_argument(
+    helpful.add("plugins",
         "--init", action="store_true", help="Initialize plugins.")
-    parser_plugins.add_argument(
-        "--prepare", action="store_true",
-        help="Initialize and prepare plugins.")
-    parser_plugins.add_argument(
+    helpful.add("plugins",
+        "--prepare", action="store_true", help="Initialize and prepare plugins.")
+    helpful.add("plugins",
         "--authenticators", action="append_const", dest="ifaces",
-        const=interfaces.IAuthenticator,
-        help="Limit to authenticator plugins only.")
-    parser_plugins.add_argument(
+        const=interfaces.IAuthenticator, help="Limit to authenticator plugins only.")
+    helpful.add("plugins",
         "--installers", action="append_const", dest="ifaces",
         const=interfaces.IInstaller, help="Limit to installer plugins only.")
 
 
 def _paths_parser(helpful):
     add = helpful.add
+    verb = helpful.verb
     helpful.add_group(
         "paths", description="Arguments changing execution paths & servers")
+
+    cph = "Path to where cert is saved (with auth), installed (with install --csr) or revoked."
+    if verb == "auth":
+        add("paths", "--cert-path", default=flag_default("auth_cert_path"), help=cph)
+    elif verb == "revoke":
+        add("paths", "--cert-path", type=read_file, required=True, help=cph)
+    else:
+        add("paths", "--cert-path", help=cph, required=(verb == "install"))
+
+    # revoke --key-path reads a file, install --key-path takes a string
+    add("paths", "--key-path", type=((verb == "revoke" and read_file) or str),
+        required=(verb == "install"),
+        help="Path to private key for cert creation or revocation (if account key is missing)")
+
+    default_cp = None
+    if verb == "auth":
+        default_cp = flag_default("auth_chain_path")
+    add("paths", "--chain-path", default=default_cp,
+        help="Accompanying path to a certificate chain.")
     add("paths", "--config-dir", default=flag_default("config_dir"),
         help=config_help("config_dir"))
     add("paths", "--work-dir", default=flag_default("work_dir"),

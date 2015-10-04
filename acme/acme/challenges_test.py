@@ -17,6 +17,32 @@ CERT = test_util.load_cert('cert.pem')
 KEY = test_util.load_rsa_private_key('rsa512_key.pem')
 
 
+class ChallengeTest(unittest.TestCase):
+
+    def test_from_json_unrecognized(self):
+        from acme.challenges import Challenge
+        from acme.challenges import UnrecognizedChallenge
+        chall = UnrecognizedChallenge({"type": "foo"})
+        # pylint: disable=no-member
+        self.assertEqual(chall, Challenge.from_json(chall.jobj))
+
+
+class UnrecognizedChallengeTest(unittest.TestCase):
+
+    def setUp(self):
+        from acme.challenges import UnrecognizedChallenge
+        self.jobj = {"type": "foo"}
+        self.chall = UnrecognizedChallenge(self.jobj)
+
+    def test_to_partial_json(self):
+        self.assertEqual(self.jobj, self.chall.to_partial_json())
+
+    def test_from_json(self):
+        from acme.challenges import UnrecognizedChallenge
+        self.assertEqual(
+            self.chall, UnrecognizedChallenge.from_json(self.jobj))
+
+
 class SimpleHTTPTest(unittest.TestCase):
 
     def setUp(self):
