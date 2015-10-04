@@ -1,6 +1,8 @@
 """Tests for acme.standalone."""
 import os
+import shutil
 import threading
+import tempfile
 import time
 import unittest
 
@@ -115,21 +117,28 @@ class ACMESimpleHTTPTLSServerTestEndToEnd(unittest.TestCase):
 class TestSimpleServer(unittest.TestCase):
     """Tests for acme.standalone.simple_server."""
 
-    TEST_CWD = os.path.join(os.path.dirname(__file__), '..', 'examples', 'standalone')
-
     def setUp(self):
+        # mirror ../examples/standalone
+        self.test_cwd = tempfile.mkdtemp()
+        localhost_dir = os.path.join(self.test_cwd, 'localhost')
+        os.makedirs(localhost_dir)
+        shutil.copy(test_util.vector_path('cert.pem'), localhost_dir)
+        shutil.copy(test_util.vector_path('rsa512_key.pem'),
+                    os.path.join(localhost_dir, 'key.pem'))
+
         from acme.standalone import simple_server
         self.thread = threading.Thread(target=simple_server, kwargs={
             'cli_args': ('xxx', '--port', '1234'),
             'forever': False,
         })
         self.old_cwd = os.getcwd()
-        os.chdir(self.TEST_CWD)
+        os.chdir(self.test_cwd)
         self.thread.start()
 
     def tearDown(self):
         os.chdir(self.old_cwd)
         self.thread.join()
+        shutil.rmtree(self.test_cwd)
 
     def test_it(self):
         max_attempts = 5
