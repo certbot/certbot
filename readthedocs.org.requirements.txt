@@ -11,3 +11,4 @@
 -e .[docs]
 -e letsencrypt-apache
 -e letsencrypt-nginx
+-e letshelp-letsencrypt
