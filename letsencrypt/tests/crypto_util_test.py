@@ -8,6 +8,7 @@ import OpenSSL
 import mock
 import zope.component
 
+from letsencrypt import errors
 from letsencrypt import interfaces
 from letsencrypt.tests import test_util
 
@@ -216,12 +217,19 @@ class GetSANsFromCSRTest(unittest.TestCase):
 class CertLoaderTest(unittest.TestCase):
     """Tests for letsencrypt.crypto_util.pyopenssl_load_certificate"""
 
-    def test_it(self):
+    def test_load_valid_cert(self):
         from letsencrypt.crypto_util import pyopenssl_load_certificate
 
         cert, file_type = pyopenssl_load_certificate(CERT)
         self.assertEqual(cert.digest('sha1'),
                          OpenSSL.crypto.load_certificate(file_type, CERT).digest('sha1'))
+
+    def test_load_invalid_cert(self):
+        from letsencrypt.crypto_util import pyopenssl_load_certificate
+        bad_cert_data = CERT.replace("BEGIN CERTIFICATE", "ASDFASDFASDF!!!")
+
+        with self.assertRaises(errors.Error):
+            cert, file_type = pyopenssl_load_certificate(bad_cert_data)
 
 
 if __name__ == '__main__':
