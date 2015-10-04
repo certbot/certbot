@@ -1,4 +1,5 @@
 """Standalone Authenticator."""
+import argparse
 import collections
 import functools
 import logging
@@ -110,6 +111,27 @@ class ServerManager(object):
         return self._servers.copy()
 
 
+SUPPORTED_CHALLENGES = set([challenges.DVSNI, challenges.SimpleHTTP])
+
+
+def supported_challenges_validator(data):
+    """Supported challenges validator."""
+    challs = data.split(",")
+    unrecognized = [name for name in challs
+                    if name not in challenges.Challenge.TYPES]
+    if unrecognized:
+        raise argparse.ArgumentTypeError(
+            "Unrecognized challenges: {0}".format(", ".join(unrecognized)))
+
+    choices = set(chall.typ for chall in SUPPORTED_CHALLENGES)
+    if not set(challs).issubset(choices):
+        raise argparse.ArgumentTypeError(
+            "Plugin does not support the following (valid) "
+            "challenges: {0}".format(", ".join(challs - choices)))
+
+    return data
+
+
 class Authenticator(common.Plugin):
     """Standalone Authenticator.
 
@@ -145,6 +167,18 @@ class Authenticator(common.Plugin):
 
         self.servers = ServerManager(self.certs, self.simple_http_resources)
 
+    @classmethod
+    def add_parser_arguments(cls, add):
+        add("supported-challenges", help="Supported challenges, "
+            "order preferences are randomly chosen.",
+            type=supported_challenges_validator, default=",".join(
+                sorted(chall.typ for chall in SUPPORTED_CHALLENGES)))
+
+    @property
+    def supported_challenges(self):
+        return set(challenges.Challenge.TYPES[name] for name in
+                   self.conf("supported-challenges").split(","))
+
     def more_info(self):  # pylint: disable=missing-docstring
         return self.__doc__
 
@@ -155,10 +189,9 @@ class Authenticator(common.Plugin):
                 "At least one of the (possibly) required ports is "
                 "already taken.")
 
-    # TODO: add --chall-pref flag
     def get_chall_pref(self, domain):
         # pylint: disable=unused-argument,missing-docstring
-        supported_challenges = set([challenges.SimpleHTTP, challenges.DVSNI])
+        supported_challenges = self.supported_challenges
         if not self.config.no_simple_http_tls and not (
                 acme_standalone.ACMETLSServer.SIMPLE_HTTP_SUPPORT):
             logger.debug("SimpleHTTPS not supported: %s", sys.version)
