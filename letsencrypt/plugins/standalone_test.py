@@ -6,9 +6,15 @@ import mock
 import six
 
 from acme import challenges
+from acme import jose
+from acme import standalone as acme_standalone
 
+from letsencrypt import achallenges
 from letsencrypt import errors
 from letsencrypt import interfaces
+
+from letsencrypt.tests import acme_util
+from letsencrypt.tests import test_util
 
 
 class ServerManagerTest(unittest.TestCase):
@@ -120,6 +126,39 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertRaises(
             errors.StandaloneBindError, self._test_perform_bind_errors,
             socket.errno.ENOTCONN, [])
+
+    def test_perform2(self):
+        domain = b'localhost'
+        key = jose.JWK.load(test_util.load_vector('rsa512_key.pem'))
+        simple_http = achallenges.SimpleHTTP(
+            challb=acme_util.SIMPLE_HTTP_P, domain=domain, account_key=key)
+        dvsni = achallenges.DVSNI(
+            challb=acme_util.DVSNI_P, domain=domain, account_key=key)
+
+        self.auth.servers = mock.MagicMock()
+
+        def _run(port, tls):  # pylint: disable=unused-argument
+            return "server{0}".format(port), "thread{0}".format(port)
+
+        self.auth.servers.run.side_effect = _run
+        responses = self.auth.perform2([simple_http, dvsni])
+
+        self.assertTrue(isinstance(responses, list))
+        self.assertEqual(2, len(responses))
+        self.assertTrue(isinstance(responses[0], challenges.SimpleHTTPResponse))
+        self.assertTrue(isinstance(responses[1], challenges.DVSNIResponse))
+
+        self.assertEqual(self.auth.servers.run.mock_calls, [
+            mock.call(4321, tls=False), mock.call(1234, tls=True)])
+        self.assertEqual(self.auth.served, {
+            "server1234": set([dvsni]),
+            "server4321": set([simple_http]),
+        })
+        self.assertEqual(1, len(self.auth.simple_http_resources))
+        self.assertEqual(2, len(self.auth.certs))
+        self.assertEqual(list(self.auth.simple_http_resources), [
+            acme_standalone.SimpleHTTPRequestHandler.SimpleHTTPResource(
+                acme_util.SIMPLE_HTTP, responses[0], mock.ANY)])
 
     def test_cleanup(self):
         self.auth.servers = mock.Mock()
