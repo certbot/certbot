@@ -1,4 +1,5 @@
 """Tests for letsencrypt.plugins.standalone."""
+import argparse
 import socket
 import unittest
 
@@ -63,6 +64,28 @@ class ServerManagerTest(unittest.TestCase):
         self.assertEqual(self.mgr.running(), {})
 
 
+class SupportedChallengesValidatorTest(unittest.TestCase):
+    """Tests for plugins.standalone.supported_challenges_validator."""
+
+    def _call(self, data):
+        from letsencrypt.plugins.standalone import (
+            supported_challenges_validator)
+        return supported_challenges_validator(data)
+
+    def test_correct(self):
+        self.assertEqual("dvsni", self._call("dvsni"))
+        self.assertEqual("simpleHttp", self._call("simpleHttp"))
+        self.assertEqual("dvsni,simpleHttp", self._call("dvsni,simpleHttp"))
+        self.assertEqual("simpleHttp,dvsni", self._call("simpleHttp,dvsni"))
+
+    def test_unrecognized(self):
+        assert "foo" not in challenges.Challenge.TYPES
+        self.assertRaises(argparse.ArgumentTypeError, self._call, "foo")
+
+    def test_not_subset(self):
+        self.assertRaises(argparse.ArgumentTypeError, self._call, "dns")
+
+
 class AuthenticatorTest(unittest.TestCase):
     """Tests for letsencrypt.plugins.standalone.Authenticator."""
 
@@ -71,6 +94,10 @@ class AuthenticatorTest(unittest.TestCase):
         self.config = mock.MagicMock(dvsni_port=1234, simple_http_port=4321,
                                      standalone_supported_challenges="dvsni,simpleHttp")
         self.auth = Authenticator(self.config, name="standalone")
+
+    def test_supported_challenges(self):
+        self.assertEqual(self.auth.supported_challenges,
+                         set([challenges.DVSNI, challenges.SimpleHTTP]))
 
     def test_more_info(self):
         self.assertTrue(isinstance(self.auth.more_info(), six.string_types))

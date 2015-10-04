@@ -115,7 +115,11 @@ SUPPORTED_CHALLENGES = set([challenges.DVSNI, challenges.SimpleHTTP])
 
 
 def supported_challenges_validator(data):
-    """Supported challenges validator."""
+    """Supported challenges validator for the `argparse`.
+
+    It should be passed as `type` argument to `add_argument`.
+
+    """
     challs = data.split(",")
     unrecognized = [name for name in challs
                     if name not in challenges.Challenge.TYPES]
@@ -127,7 +131,7 @@ def supported_challenges_validator(data):
     if not set(challs).issubset(choices):
         raise argparse.ArgumentTypeError(
             "Plugin does not support the following (valid) "
-            "challenges: {0}".format(", ".join(challs - choices)))
+            "challenges: {0}".format(", ".join(set(challs) - choices)))
 
     return data
 
