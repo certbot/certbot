@@ -51,12 +51,15 @@ class ServerManager(object):
         try:
             server = cls(("", port), handler)
         except socket.error as error:
-            errors.StandaloneBindError(error, port)
+            raise errors.StandaloneBindError(error, port)
+
+        # if port == 0, then random free port on OS is taken
+        real_port = server.socket.getsockname()
 
         thread = threading.Thread(target=server.serve_forever2)
         thread.start()
-        self.servers[port] = (server, thread)
-        return self.servers[port]
+        self.servers[real_port] = (server, thread)
+        return self.servers[real_port]
 
     def stop(self, port):
         """Stop ACME server running on the specified ``port``."""
