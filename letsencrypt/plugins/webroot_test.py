@@ -1,4 +1,4 @@
-"""Tests for letsencrypt.plugins.simplefs."""
+"""Tests for letsencrypt.plugins.webroot."""
 import os
 import shutil
 import tempfile
@@ -19,19 +19,19 @@ KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
 
 class AuthenticatorTest(unittest.TestCase):
-    """Tests for letsencrypt.plugins.simplefs.Authenticator."""
+    """Tests for letsencrypt.plugins.webroot.Authenticator."""
 
     achall = achallenges.SimpleHTTP(
         challb=acme_util.SIMPLE_HTTP_P, domain=None, account_key=KEY)
 
     def setUp(self):
-        from letsencrypt.plugins.simplefs import Authenticator
+        from letsencrypt.plugins.webroot import Authenticator
         self.root = tempfile.mkdtemp()
         self.validation_path = os.path.join(
             self.root, ".well-known", "acme-challenge",
             "ZXZhR3hmQURzNnBTUmIyTEF2OUlaZjE3RHQzanV4R0orUEN0OTJ3citvQQ")
-        self.config = mock.MagicMock(simplefs_root=self.root)
-        self.auth = Authenticator(self.config, "simplefs")
+        self.config = mock.MagicMock(webroot_root=self.root)
+        self.auth = Authenticator(self.config, "webroot")
         self.auth.prepare()
 
     def tearDown(self):
@@ -48,11 +48,11 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertEqual(1, add.call_count)
 
     def test_prepare_bad_root(self):
-        self.config.simplefs_root = os.path.join(self.root, "null")
+        self.config.webroot_root = os.path.join(self.root, "null")
         self.assertRaises(errors.PluginError, self.auth.prepare)
 
     def test_prepare_missing_root(self):
-        self.config.simplefs_root = None
+        self.config.webroot_root = None
         self.assertRaises(errors.PluginError, self.auth.prepare)
 
     def test_prepare_full_root_exists(self):

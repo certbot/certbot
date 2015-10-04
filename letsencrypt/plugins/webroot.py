@@ -1,4 +1,4 @@
-"""SimpleFS plugin."""
+"""Webroot plugin."""
 import errno
 import logging
 import os
@@ -16,11 +16,11 @@ logger = logging.getLogger(__name__)
 
 
 class Authenticator(common.Plugin):
-    """SimpleFS Authenticator."""
+    """Webroot Authenticator."""
     zope.interface.implements(interfaces.IAuthenticator)
     zope.interface.classProvides(interfaces.IPluginFactory)
 
-    description = "SimpleFS Authenticator"
+    description = "Webroot Authenticator"
 
     MORE_INFO = """\
 Authenticator plugin that performs SimpleHTTP challenge by saving

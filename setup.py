@@ -119,7 +119,7 @@ setup(
         'letsencrypt.plugins': [
             'manual = letsencrypt.plugins.manual:Authenticator',
             'null = letsencrypt.plugins.null:Installer',
-            'simplefs = letsencrypt.plugins.simplefs:Authenticator',
+            'webroot = letsencrypt.plugins.webroot:Authenticator',
             'standalone = letsencrypt.plugins.standalone.authenticator'
             ':StandaloneAuthenticator',
         ],
