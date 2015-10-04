@@ -29,11 +29,11 @@ system. It expects that there is some other HTTP server configured
 to serve all files under specified web root ({0})."""
 
     def more_info(self):  # pylint: disable=missing-docstring,no-self-use
-        return self.MORE_INFO.format(self.conf("root"))
+        return self.MORE_INFO.format(self.conf("path"))
 
     @classmethod
     def add_parser_arguments(cls, add):
-        add("root", help="public_html / webroot path")
+        add("path", help="public_html / webroot path")
 
     def get_chall_pref(self, domain):  # pragma: no cover
         # pylint: disable=missing-docstring,no-self-use,unused-argument
@@ -44,15 +44,15 @@ to serve all files under specified web root ({0})."""
         self.full_root = None
 
     def prepare(self):  # pylint: disable=missing-docstring
-        root = self.conf("root")
-        if root is None:
+        path = self.conf("path")
+        if path is None:
             raise errors.PluginError("--{0} must be set".format(
-                self.option_name("root")))
-        if not os.path.isdir(root):
+                self.option_name("path")))
+        if not os.path.isdir(path):
             raise errors.PluginError(
-                root + " does not exist or is not a directory")
+                path + " does not exist or is not a directory")
         self.full_root = os.path.join(
-            root, challenges.SimpleHTTPResponse.URI_ROOT_PATH)
+            path, challenges.SimpleHTTPResponse.URI_ROOT_PATH)
 
         logger.debug("Creating root challenges validation dir at %s",
                      self.full_root)

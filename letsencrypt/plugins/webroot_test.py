@@ -26,21 +26,21 @@ class AuthenticatorTest(unittest.TestCase):
 
     def setUp(self):
         from letsencrypt.plugins.webroot import Authenticator
-        self.root = tempfile.mkdtemp()
+        self.path = tempfile.mkdtemp()
         self.validation_path = os.path.join(
-            self.root, ".well-known", "acme-challenge",
+            self.path, ".well-known", "acme-challenge",
             "ZXZhR3hmQURzNnBTUmIyTEF2OUlaZjE3RHQzanV4R0orUEN0OTJ3citvQQ")
-        self.config = mock.MagicMock(webroot_root=self.root)
+        self.config = mock.MagicMock(webroot_path=self.path)
         self.auth = Authenticator(self.config, "webroot")
         self.auth.prepare()
 
     def tearDown(self):
-        shutil.rmtree(self.root)
+        shutil.rmtree(self.path)
 
     def test_more_info(self):
         more_info = self.auth.more_info()
         self.assertTrue(isinstance(more_info, str))
-        self.assertTrue(self.root in more_info)
+        self.assertTrue(self.path in more_info)
 
     def test_add_parser_arguments(self):
         add = mock.MagicMock()
@@ -48,11 +48,11 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertEqual(1, add.call_count)
 
     def test_prepare_bad_root(self):
-        self.config.webroot_root = os.path.join(self.root, "null")
+        self.config.webroot_path = os.path.join(self.path, "null")
         self.assertRaises(errors.PluginError, self.auth.prepare)
 
     def test_prepare_missing_root(self):
-        self.config.webroot_root = None
+        self.config.webroot_path = None
         self.assertRaises(errors.PluginError, self.auth.prepare)
 
     def test_prepare_full_root_exists(self):
@@ -60,10 +60,10 @@ class AuthenticatorTest(unittest.TestCase):
         self.auth.prepare()  # shouldn't raise any exceptions
 
     def test_prepare_reraises_other_errors(self):
-        self.auth.full_root = os.path.join(self.root, "null")
-        os.chmod(self.root, 0o000)
+        self.auth.full_path = os.path.join(self.path, "null")
+        os.chmod(self.path, 0o000)
         self.assertRaises(errors.PluginError, self.auth.prepare)
-        os.chmod(self.root, 0o700)
+        os.chmod(self.path, 0o700)
 
     def test_perform_cleanup(self):
         responses = self.auth.perform([self.achall])
