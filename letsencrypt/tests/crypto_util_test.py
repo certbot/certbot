@@ -222,7 +222,13 @@ class PyOpenSslLoaderTest(unittest.TestCase):
         _pyopenssl_load(fake_data, method_mock, fake_types)
         method_mock.assert_called_with(fake_types[0], fake_data)
 
+class CertLoaderTest(unittest.TestCase):
+    def test_it(self):
+        from letsencrypt.crypto_util import pyopenssl_load_certificate
 
+        cert, file_type = pyopenssl_load_certificate(CERT)
+        self.assertEqual(cert.digest('sha1'),
+            OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, CERT).digest('sha1'))
 
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover
