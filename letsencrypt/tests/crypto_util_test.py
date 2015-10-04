@@ -229,7 +229,7 @@ class CertLoaderTest(unittest.TestCase):
         bad_cert_data = CERT.replace("BEGIN CERTIFICATE", "ASDFASDFASDF!!!")
 
         with self.assertRaises(errors.Error):
-            cert, file_type = pyopenssl_load_certificate(bad_cert_data)
+            pyopenssl_load_certificate(bad_cert_data)
 
 
 if __name__ == '__main__':
