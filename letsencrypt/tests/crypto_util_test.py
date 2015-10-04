@@ -221,7 +221,7 @@ class CertLoaderTest(unittest.TestCase):
 
         cert, file_type = pyopenssl_load_certificate(CERT)
         self.assertEqual(cert.digest('sha1'),
-                         OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, CERT).digest('sha1'))
+                         OpenSSL.crypto.load_certificate(file_type, CERT).digest('sha1'))
 
 
 if __name__ == '__main__':
