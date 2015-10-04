@@ -26,19 +26,19 @@ class ServerManagerTest(unittest.TestCase):
             self.mgr.simple_http_resources is self.simple_http_resources)
 
     def test_run_stop_non_tls(self):
-        server, thread = self.mgr.run(port=0, tls=False)
-        self.mgr.stop(port=server.socket.getsockname())
+        server, _ = self.mgr.run(port=0, tls=False)
+        self.mgr.stop(port=server.socket.getsockname()[1])
 
     def test_run_stop_tls(self):
-        server, thread = self.mgr.run(port=0, tls=True)
-        self.mgr.stop(port=server.socket.getsockname())
+        server, _ = self.mgr.run(port=0, tls=True)
+        self.mgr.stop(port=server.socket.getsockname()[1])
 
     def test_run_idempotent(self):
         server, thread = self.mgr.run(port=0, tls=False)
-        port = server.socket.getsockname()
+        port = server.socket.getsockname()[1]
         server2, thread2 = self.mgr.run(port=port, tls=False)
         self.assertTrue(server is server2)
-        self.assertTrue(thread2 is thread2)
+        self.assertTrue(thread is thread2)
         self.mgr.stop(port)
 
     def test_run_bind_error(self):
@@ -48,12 +48,12 @@ class ServerManagerTest(unittest.TestCase):
         self.assertRaises(
             errors.StandaloneBindError, self.mgr.run, port, tls=False)
 
-    def test_items(self):
+    def test_running(self):
         server, thread = self.mgr.run(port=0, tls=True)
-        port = server.socket.getsockname()
-        self.assertEqual(port, self.mgr.items()[0][0])
-        self.assertTrue(self.mgr.items()[0][1][0] is server)
-        self.assertTrue(self.mgr.items()[0][1][1] is thread)
+        port = server.socket.getsockname()[1]
+        self.assertEqual(port, self.mgr.running()[0][0])
+        self.assertTrue(self.mgr.running()[0][1][0] is server)
+        self.assertTrue(self.mgr.running()[0][1][1] is thread)
         self.mgr.stop(port=port)
 
 
@@ -79,7 +79,7 @@ class AuthenticatorTest(unittest.TestCase):
                          set([challenges.SimpleHTTP, challenges.DVSNI]))
 
     @mock.patch("letsencrypt.plugins.standalone.zope.component.getUtility")
-    def test_perform(self, mock_get_utility):
+    def test_perform(self, unused_mock_get_utility):
         achalls = [1, 2, 3]
         self.auth.perform2 = mock.Mock(return_value=mock.sentinel.responses)
         self.assertEqual(mock.sentinel.responses, self.auth.perform(achalls))
@@ -87,7 +87,7 @@ class AuthenticatorTest(unittest.TestCase):
 
     @mock.patch("letsencrypt.plugins.standalone.zope.component.getUtility")
     def _test_perform_bind_errors(self, errno, achalls, mock_get_utility):
-        def _perform2(achalls):
+        def _perform2(unused_achalls):
             raise errors.StandaloneBindError(mock.Mock(errno=errno), 1234)
 
         self.auth.perform2 = mock.MagicMock(side_effect=_perform2)
@@ -98,9 +98,11 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertTrue("1234" in notification.call_args[0][0])
 
     def test_perform_eacces(self):
+        # pylint: disable=no-value-for-parameter
         self._test_perform_bind_errors(socket.errno.EACCES, [])
 
     def test_perform_eaddrinuse(self):
+        # pylint: disable=no-value-for-parameter
         self._test_perform_bind_errors(socket.errno.EADDRINUSE, [])
 
     def test_perfom_unknown_bind_error(self):
@@ -109,9 +111,8 @@ class AuthenticatorTest(unittest.TestCase):
             socket.errno.ENOTCONN, [])
 
     def test_cleanup(self):
-        servers = {1: "server1", 2: "server2"}
         self.auth.servers = mock.Mock()
-        self.auth.servers.items.return_value = [
+        self.auth.servers.running.return_value = [
             (1, ("server1", "thread1")),
             (2, ("server2", "thread2")),
         ]
@@ -123,7 +124,7 @@ class AuthenticatorTest(unittest.TestCase):
             "server1": set(), "server2": set(["chall2", "chall3"])})
         self.auth.servers.stop.assert_called_once_with(1)
 
-        self.auth.servers.items.return_value = [
+        self.auth.servers.running.return_value = [
             (2, ("server2", "thread2")),
         ]
         self.auth.cleanup(["chall2"])

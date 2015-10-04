@@ -6,8 +6,6 @@ import random
 import socket
 import threading
 
-from six.moves import BaseHTTPServer  # pylint: disable=import-error
-
 import OpenSSL
 import zope.interface
 
@@ -26,17 +24,39 @@ logger = logging.getLogger(__name__)
 
 
 class ServerManager(object):
-    """Standalone servers manager."""
+    """Standalone servers manager.
 
+    Manager for `ACMEServer` and `ACMETLSServer` instances.
+
+    `certs` and `simple_http_resources` correspond to
+    `acme.crypto_util.SSLSocket.certs` and
+    `acme.crypto_util.SSLSocket.simple_http_resources` respectively. All
+    created servers share the same certificates and resources, so if
+    you're running both TLS and non-TLS instances, SimpleHTTP handlers
+    will serve the same URLs!
+
+    """
     def __init__(self, certs, simple_http_resources):
-        self.servers = {}
+        self._servers = {}
         self.certs = certs
         self.simple_http_resources = simple_http_resources
 
     def run(self, port, tls):
-        """Run ACME server on specified ``port``."""
-        if port in self.servers:
-            return self.servers[port]
+        """Run ACME server on specified ``port``.
+
+        This method is idempotent, i.e. all calls with the same pair of
+        ``(port, tls)`` will reuse the same server.
+
+        :param int port: Port to run the server on.
+        :param bool tls: TLS or non-TLS?
+
+        :returns: Server instance (`ACMEServerMixin`) and the
+            corresponding (already started) thread (`threading.Thread`).
+        :rtype: tuple
+
+        """
+        if port in self._servers:
+            return self._servers[port]
 
         logger.debug("Starting new server at %s (tls=%s)", port, tls)
         handler = acme_standalone.ACMERequestHandler.partial_init(
@@ -54,23 +74,38 @@ class ServerManager(object):
             raise errors.StandaloneBindError(error, port)
 
         # if port == 0, then random free port on OS is taken
-        real_port = server.socket.getsockname()
+        # pylint: disable=no-member
+        host, real_port = server.socket.getsockname()
 
         thread = threading.Thread(target=server.serve_forever2)
+        logger.debug("Starting server at %s:%d", host, real_port)
         thread.start()
-        self.servers[real_port] = (server, thread)
-        return self.servers[real_port]
+
+        self._servers[real_port] = (server, thread)
+        return self._servers[real_port]
 
     def stop(self, port):
-        """Stop ACME server running on the specified ``port``."""
-        server, thread = self.servers[port]
+        """Stop ACME server running on the specified ``port``.
+
+        :param int port:
+
+        """
+        server, thread = self._servers[port]
         server.shutdown2()
         thread.join()
-        del self.servers[port]
+        del self._servers[port]
 
-    def items(self):
-        """Return a list of all port, server tuples."""
-        return self.servers.items()
+    def running(self):
+        """Return all running instances.
+
+        Once the server is stopped using `stop`, it will not be
+        returned.
+
+        :returns: ``(port, (server, thread))``
+        :rtype: tuple
+
+        """
+        return self._servers.items()
 
 
 class Authenticator(common.Plugin):
@@ -98,7 +133,6 @@ class Authenticator(common.Plugin):
         self.simple_http_cert = acme_crypto_util.gen_ss_cert(
             self.key, domains=["temp server"])
 
-        self.responses = {}
         self.served = collections.defaultdict(set)
 
         # Stuff below is shared across threads (i.e. servers read
@@ -117,7 +151,8 @@ class Authenticator(common.Plugin):
         if any(util.already_listening(port) for port in
                (self.config.dvsni_port, self.config.simple_http_port)):
             raise errors.MisconfigurationError(
-                "One of the (possibly) required ports is already taken.")
+                "At least one of the (possibly) required ports is "
+                "already taken.")
 
     # TODO: add --chall-pref flag
     def get_chall_pref(self, domain):
@@ -167,7 +202,6 @@ class Authenticator(common.Plugin):
                 response, cert, _ = achall.gen_cert_and_response(self.key)
                 domain = response.z_domain
             self.certs[domain] = (self.key, cert)
-            self.responses[achall] = response
             self.served[server].add(achall)
             responses.append(response)
 
@@ -179,6 +213,6 @@ class Authenticator(common.Plugin):
             for achall in achalls:
                 if achall in server_achalls:
                     server_achalls.remove(achall)
-        for port, (server, _) in self.servers.items():
+        for port, (server, _) in self.servers.running():
             if not self.served[server]:
                 self.servers.stop(port)

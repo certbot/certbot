@@ -27,8 +27,14 @@ _DEFAULT_DVSNI_SSL_METHOD = OpenSSL.SSL.SSLv23_METHOD
 
 
 class SSLSocket(object):  # pylint: disable=too-few-public-methods
-    """SSL wrapper for sockets."""
+    """SSL wrapper for sockets.
 
+    :ivar socket sock: Original wrapped socket.
+    :ivar dict certs: Mapping from domain names (`bytes`) to
+        `OpenSSL.crypto.X509`.
+    :ivar method: See `OpenSSL.SSL.Context` for allowed values.
+
+    """
     def __init__(self, sock, certs, method=_DEFAULT_DVSNI_SSL_METHOD):
         self.sock = sock
         self.certs = certs
