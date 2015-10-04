@@ -4,7 +4,6 @@
     is capable of handling the signatures.
 
 """
-import datetime
 import logging
 import os
 
