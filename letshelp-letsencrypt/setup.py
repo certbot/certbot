@@ -4,7 +4,9 @@ from setuptools import setup
 from setuptools import find_packages
 
 
-install_requires = []
+install_requires = [
+    'setuptools',  # pkg_resources
+]
 if sys.version_info < (2, 7):
     install_requires.append('mock<1.1.0')
 else:

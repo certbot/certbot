@@ -25,6 +25,14 @@ class Challenge(jose.TypedJSONObjectWithFields):
     """ACME challenge."""
     TYPES = {}
 
+    @classmethod
+    def from_json(cls, jobj):
+        try:
+            return super(Challenge, cls).from_json(jobj)
+        except jose.UnrecognizedTypeError as error:
+            logger.debug(error)
+            return UnrecognizedChallenge.from_json(jobj)
+
 
 class ContinuityChallenge(Challenge):  # pylint: disable=abstract-method
     """Client validation challenges."""
@@ -40,6 +48,32 @@ class ChallengeResponse(jose.TypedJSONObjectWithFields):
     TYPES = {}
     resource_type = 'challenge'
     resource = fields.Resource(resource_type)
+
+
+class UnrecognizedChallenge(Challenge):
+    """Unrecognized challenge.
+
+    ACME specification defines a generic framework for challenges and
+    defines some standard challenges that are implemented in this
+    module. However, other implementations (including peers) might
+    define additional challenge types, which should be ignored if
+    unrecognized.
+
+    :ivar jobj: Original JSON decoded object.
+
+    """
+
+    def __init__(self, jobj):
+        super(UnrecognizedChallenge, self).__init__()
+        object.__setattr__(self, "jobj", jobj)
+
+    def to_partial_json(self):
+        # pylint: disable=no-member
+        return self.jobj
+
+    @classmethod
+    def from_json(cls, jobj):
+        return cls(jobj)
 
 
 @Challenge.register
@@ -514,10 +548,100 @@ class DNS(DVChallenge):
 
     """
     typ = "dns"
-    token = jose.Field("token")
+
+    LABEL = "_acme-challenge"
+    """Label clients prepend to the domain name being validated."""
+
+    TOKEN_SIZE = 128 / 8  # Based on the entropy value from the spec
+    """Minimum size of the :attr:`token` in bytes."""
+
+    token = jose.Field(
+        "token", encoder=jose.encode_b64jose, decoder=functools.partial(
+            jose.decode_b64jose, size=TOKEN_SIZE, minimum=True))
+
+    def gen_validation(self, account_key, alg=jose.RS256, **kwargs):
+        """Generate validation.
+
+        :param .JWK account_key: Private account key.
+        :param .JWA alg:
+
+        :returns: This challenge wrapped in `.JWS`
+        :rtype: .JWS
+
+        """
+        return jose.JWS.sign(
+            payload=self.json_dumps(sort_keys=True).encode('utf-8'),
+            key=account_key, alg=alg, **kwargs)
+
+    def check_validation(self, validation, account_public_key):
+        """Check validation.
+
+        :param JWS validation:
+        :type account_public_key:
+            `~cryptography.hazmat.primitives.asymmetric.rsa.RSAPublicKey`
+            or
+            `~cryptography.hazmat.primitives.asymmetric.dsa.DSAPublicKey`
+            or
+            `~cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePublicKey`
+            wrapped in `.ComparableKey`
+
+        :rtype: bool
+
+        """
+        if not validation.verify(key=account_public_key):
+            return False
+        try:
+            return self == self.json_loads(
+                validation.payload.decode('utf-8'))
+        except jose.DeserializationError as error:
+            logger.debug("Checking validation for DNS failed: %s", error)
+            return False
+
+    def gen_response(self, account_key, **kwargs):
+        """Generate response.
+
+        :param .JWK account_key: Private account key.
+        :param .JWA alg:
+
+        :rtype: DNSResponse
+
+        """
+        return DNSResponse(validation=self.gen_validation(
+            self, account_key, **kwargs))
+
+    def validation_domain_name(self, name):
+        """Domain name for TXT validation record.
+
+        :param unicode name: Domain name being validated.
+
+        """
+        return "{0}.{1}".format(self.LABEL, name)
 
 
 @ChallengeResponse.register
 class DNSResponse(ChallengeResponse):
-    """ACME "dns" challenge response."""
+    """ACME "dns" challenge response.
+
+    :param JWS validation:
+
+    """
     typ = "dns"
+
+    validation = jose.Field("validation", decoder=jose.JWS.from_json)
+
+    def check_validation(self, chall, account_public_key):
+        """Check validation.
+
+        :param challenges.DNS chall:
+        :type account_public_key:
+            `~cryptography.hazmat.primitives.asymmetric.rsa.RSAPublicKey`
+            or
+            `~cryptography.hazmat.primitives.asymmetric.dsa.DSAPublicKey`
+            or
+            `~cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePublicKey`
+            wrapped in `.ComparableKey`
+
+        :rtype: bool
+
+        """
+        return chall.check_validation(self.validation, account_public_key)

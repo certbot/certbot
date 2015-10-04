@@ -79,7 +79,7 @@ Current Features
 * web servers supported:
 
   - apache/2.x (tested and working on Ubuntu Linux)
-  - nginx/0.8.48+ (tested and mostly working on Ubuntu Linux)
+  - nginx/0.8.48+ (under development)
   - standalone (runs its own webserver to prove you control the domain)
 
 * the private key is generated locally on your system
@@ -115,6 +115,8 @@ Notes for developers: CONTRIBUTING.md_
 Main Website: https://letsencrypt.org/
 
 IRC Channel: #letsencrypt on `Freenode`_
+
+Community: https://community.letsencrypt.org
 
 Mailing list: `client-dev`_ (to subscribe without a Google account, send an
 email to client-dev+subscribe@letsencrypt.org)

@@ -8,6 +8,7 @@ install_requires = [
     'acme',
     'letsencrypt',
     'python-augeas',
+    'setuptools',  # pkg_resources
     'zope.component',
     'zope.interface',
 ]
@@ -24,7 +25,7 @@ setup(
     entry_points={
         'letsencrypt.plugins': [
             'apache = letsencrypt_apache.configurator:ApacheConfigurator',
-         ],
+        ],
     },
     include_package_data=True,
 )

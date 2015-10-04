@@ -38,15 +38,15 @@ class ValidatorTest(unittest.TestCase):
     @mock.patch("letsencrypt.validator.requests.get")
     def test_succesful_redirect(self, mock_get_request):
         mock_get_request.return_value = create_response(
-            301, {"location" : "https://test.com"})
+            301, {"location": "https://test.com"})
         self.assertTrue(self.validator.redirect("test.com"))
 
     @mock.patch("letsencrypt.validator.requests.get")
     def test_redirect_with_headers(self, mock_get_request):
         mock_get_request.return_value = create_response(
-            301, {"location" : "https://test.com"})
+            301, {"location": "https://test.com"})
         self.assertTrue(self.validator.redirect(
-            "test.com", headers={"Host" : "test.com"}))
+            "test.com", headers={"Host": "test.com"}))
 
     @mock.patch("letsencrypt.validator.requests.get")
     def test_redirect_missing_location(self, mock_get_request):
@@ -56,13 +56,13 @@ class ValidatorTest(unittest.TestCase):
     @mock.patch("letsencrypt.validator.requests.get")
     def test_redirect_wrong_status_code(self, mock_get_request):
         mock_get_request.return_value = create_response(
-            201, {"location" : "https://test.com"})
+            201, {"location": "https://test.com"})
         self.assertFalse(self.validator.redirect("test.com"))
 
     @mock.patch("letsencrypt.validator.requests.get")
     def test_redirect_wrong_redirect_code(self, mock_get_request):
         mock_get_request.return_value = create_response(
-            303, {"location" : "https://test.com"})
+            303, {"location": "https://test.com"})
         self.assertFalse(self.validator.redirect("test.com"))
 
     @mock.patch("letsencrypt.validator.requests.get")
@@ -106,6 +106,7 @@ class ValidatorTest(unittest.TestCase):
         self.assertRaises(
             NotImplementedError, self.validator.ocsp_stapling, "test.com")
 
+
 def create_response(status_code=200, headers=None):
     """Creates a requests.Response object for testing"""
     response = requests.Response()
@@ -118,4 +119,4 @@ def create_response(status_code=200, headers=None):
 
 
 if __name__ == '__main__':
-    unittest.main() # pragma: no cover
+    unittest.main()  # pragma: no cover

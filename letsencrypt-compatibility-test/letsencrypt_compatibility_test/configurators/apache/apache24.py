@@ -11,7 +11,7 @@ from letsencrypt_compatibility_test.configurators.apache import common as apache
 # config uses mod_heartbeat or mod_heartmonitor (which aren't installed and
 # therefore the config won't be loaded), I believe this isn't a problem
 # http://httpd.apache.org/docs/2.4/mod/mod_watchdog.html
-STATIC_MODULES = {"core", "so", "http", "mpm_event", "watchdog",}
+STATIC_MODULES = set(["core", "so", "http", "mpm_event", "watchdog"])
 
 
 SHARED_MODULES = {
@@ -31,7 +31,7 @@ SHARED_MODULES = {
     "session_cookie", "session_crypto", "session_dbd", "setenvif",
     "slotmem_shm", "socache_dbm", "socache_memcache", "socache_shmcb",
     "speling", "ssl", "status", "substitute", "unique_id", "userdir",
-    "vhost_alias",}
+    "vhost_alias"}
 
 
 class Proxy(apache_common.Proxy):
