@@ -121,11 +121,12 @@ Installation
 ============
 
 .. "pip install acme" doesn't search for "acme" in cwd, just like "pip
-   install -e acme" does
+   install -e acme" does; `-U setuptools pip` necessary for #722
 
 .. code-block:: shell
 
    virtualenv --no-site-packages -p python2 venv
+   ./venv/bin/pip install -U setuptools pip
    ./venv/bin/pip install -r requirements.txt acme/ . letsencrypt-apache/ letsencrypt-nginx/
 
 .. warning:: Please do **not** use ``python setup.py install``. Please
