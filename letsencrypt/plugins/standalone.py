@@ -99,7 +99,6 @@ class Authenticator(common.Plugin):
             self.key, domains=["temp server"])
 
         self.responses = {}
-        self.servers = {}
         self.served = collections.defaultdict(set)
 
         # Stuff below is shared across threads (i.e. servers read
@@ -118,7 +117,7 @@ class Authenticator(common.Plugin):
         if any(util.already_listening(port) for port in
                (self.config.dvsni_port, self.config.simple_http_port)):
             raise errors.MisconfigurationError(
-                "One of the (possibly) required ports is already taken taken.")
+                "One of the (possibly) required ports is already taken.")
 
     # TODO: add --chall-pref flag
     def get_chall_pref(self, domain):
