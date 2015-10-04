@@ -261,19 +261,6 @@ def get_sans_from_csr(csr, typ=OpenSSL.crypto.FILETYPE_PEM):
         csr, OpenSSL.crypto.load_certificate_request, typ)
 
 
-def asn1_generalizedtime_to_dt(timestamp):
-    """Convert ASN.1 GENERALIZEDTIME to datetime.
-
-    Useful for deserialization of `OpenSSL.crypto.X509.get_notAfter` and
-    `OpenSSL.crypto.X509.get_notAfter` outputs.
-
-    .. todo:: This function support only one format: `%Y%m%d%H%M%SZ`.
-        Implement remaining two.
-
-    """
-    return datetime.datetime.strptime(timestamp, '%Y%m%d%H%M%SZ')
-
-
 def dump_pyopenssl_chain(chain, filetype=OpenSSL.crypto.FILETYPE_PEM):
     """Dump certificate chain into a bundle.
 
