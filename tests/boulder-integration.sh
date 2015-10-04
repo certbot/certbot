@@ -21,8 +21,8 @@ common() {
         "$@"
 }
 
-common --domains le1.wtf auth
-common --domains le2.wtf run
+common --domains le1.wtf --standalone-supported-challenges dvsni auth
+common --domains le2.wtf --standalone-supported-challenges simpleHttp run
 common -a manual -d le.wtf auth
 common -a manual -d le.wtf --no-simple-http-tls auth
 
