@@ -49,7 +49,7 @@ class ServerManager(object):
             cls = BaseHTTPServer.HTTPServer
 
         try:
-            server = cls(('', port), handler)
+            server = cls(("", port), handler)
         except socket.error as error:
             errors.StandaloneBindError(error, port)
 
