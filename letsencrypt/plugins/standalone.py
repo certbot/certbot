@@ -8,6 +8,7 @@ import sys
 import threading
 
 import OpenSSL
+import six
 import zope.interface
 
 from acme import challenges
@@ -102,11 +103,11 @@ class ServerManager(object):
         Once the server is stopped using `stop`, it will not be
         returned.
 
-        :returns: ``(port, (server, thread))``
+        :returns: Mapping from port to ``(server, thread)``.
         :rtype: tuple
 
         """
-        return self._servers.items()
+        return self._servers.copy()
 
 
 class Authenticator(common.Plugin):
@@ -218,6 +219,6 @@ class Authenticator(common.Plugin):
             for achall in achalls:
                 if achall in server_achalls:
                     server_achalls.remove(achall)
-        for port, (server, _) in self.servers.running():
+        for port, (server, _) in six.iteritems(self.servers.running()):
             if not self.served[server]:
                 self.servers.stop(port)
