@@ -44,9 +44,9 @@ class ServerManager(object):
 
         if tls:
             cls = functools.partial(
-                acme_standalone.HTTPSServer, certs=self.certs)
+                acme_standalone.ACMETLSServer, certs=self.certs)
         else:
-            cls = BaseHTTPServer.HTTPServer
+            cls = acme_standalone.ACMEServer
 
         try:
             server = cls(("", port), handler)
