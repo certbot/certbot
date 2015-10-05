@@ -133,35 +133,44 @@ class XmlToDict(dict):  # pylint: disable=too-few-public-methods
         super(XmlToDict, self).__init__(structure)
 
     def _get_children(self, node):
-        if node.nodeType == node.TEXT_NODE:
-            return node.data
-
         children = {}
         for child in node.childNodes:
             if child.nodeType == child.TEXT_NODE:
-                data = child.data.encode('utf8')
-                if 0 == len(data.strip()):
-                    continue
-                elif isinstance(children, list):
-                    children += [data]
-                elif isinstance(children, dict):
-                    children = data
-                else:
-                    children = [children, data]
+                children = self._get_text_child(children, child)
+            elif self.force_array:
+                children = self._get_list_children(children, child)
             else:
-                child_name = child.tagName.encode('utf8')
-                if self.force_array:
-                    if isinstance(children, dict) and len(children) > 0:
-                        children = [children]
-                    if isinstance(children, list):
-                        children += [{child_name: self._get_children(child)}]
-                    else:
-                        children[child_name] = self._get_children(child)
+                children = self._get_dict_children(children, child)
+        return children
 
-                elif child_name in children:
-                    if not isinstance(children[child_name], list):
-                        children[child_name] = [children[child_name]]
-                    children[child_name].append(self._get_children(child))
-                else:
-                    children[child_name] = self._get_children(child)
+    @staticmethod
+    def _get_text_child(children, child):
+        data = child.data.encode('utf8')
+        if 0 == len(data.strip()):
+            return children
+        elif isinstance(children, list):
+            return children + [data]
+        elif isinstance(children, dict):
+            return data
+        else:
+            return [children, data]
+
+    def _get_list_children(self, children, child):
+        child_name = child.tagName.encode('utf8')
+        if isinstance(children, dict) and len(children) > 0:
+            children = [children]
+        if isinstance(children, list):
+            children += [{child_name: self._get_children(child)}]
+        else:
+            children[child_name] = self._get_children(child)
+        return children
+
+    def _get_dict_children(self, children, child):
+        child_name = child.tagName.encode('utf8')
+        if child_name in children:
+            if not isinstance(children[child_name], list):
+                children[child_name] = [children[child_name]]
+            children[child_name].append(self._get_children(child))
+        else:
+            children[child_name] = self._get_children(child)
         return children
