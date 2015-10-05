@@ -407,6 +407,14 @@ class RenewableCertTests(BaseRenewableCertTest):
             self.assertEqual(self.test_rc.should_autodeploy(), result)
             self.assertEqual(self.test_rc.should_autorenew(), result)
 
+    def test_autodeployment_is_enabled(self):
+        self.assertTrue(self.test_rc.autodeployment_is_enabled())
+        self.test_rc.configuration["autodeploy"] = "1"
+        self.assertTrue(self.test_rc.autodeployment_is_enabled())
+
+        self.test_rc.configuration["autodeploy"] = "0"
+        self.assertFalse(self.test_rc.autodeployment_is_enabled())
+
     def test_should_autodeploy(self):
         """Test should_autodeploy() on the basis of reasons other than
         expiry time window."""
@@ -426,6 +434,14 @@ class RenewableCertTests(BaseRenewableCertTest):
                 with open(where, "w") as f:
                     f.write(kind)
         self.assertFalse(self.test_rc.should_autodeploy())
+
+    def test_autorenewal_is_enabled(self):
+        self.assertTrue(self.test_rc.autorenewal_is_enabled())
+        self.test_rc.configuration["autorenew"] = "1"
+        self.assertTrue(self.test_rc.autorenewal_is_enabled())
+
+        self.test_rc.configuration["autorenew"] = "0"
+        self.assertFalse(self.test_rc.autorenewal_is_enabled())
 
     @mock.patch("letsencrypt.storage.RenewableCert.ocsp_revoked")
     def test_should_autorenew(self, mock_ocsp):
