@@ -1,1 +1,3 @@
+include LICENSE.txt
+include README.rst
 recursive-include letsencrypt_compatibility_test/testdata *
