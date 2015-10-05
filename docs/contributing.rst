@@ -21,10 +21,8 @@ Start by :ref:`installing Let's Encrypt prerequisites
 .. code-block:: shell
 
    ./bootstrap/dev/venv.sh
-   ./bootstrap/dev/venv3.sh
 
-Both of the commands suggest to activate the virtualenv (you can
-activate one at a time only):
+Activate the virtualenv:
 
 .. code-block:: shell
 
