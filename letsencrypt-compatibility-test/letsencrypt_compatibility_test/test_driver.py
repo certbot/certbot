@@ -30,7 +30,7 @@ tests that the plugin supports are performed.
 
 """
 
-PLUGINS = {"apache" : apache24.Proxy}
+PLUGINS = {"apache": apache24.Proxy}
 
 
 logger = logging.getLogger(__name__)
@@ -191,7 +191,7 @@ def test_enhancements(plugin, domains):
     success = True
     for domain in domains:
         verify = functools.partial(validator.Validator().redirect, "localhost",
-                                   plugin.http_port, headers={"Host" : domain})
+                                   plugin.http_port, headers={"Host": domain})
         if not _try_until_true(verify):
             logger.error("Improper redirect for domain %s", domain)
             success = False

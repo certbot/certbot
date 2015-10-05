@@ -14,8 +14,8 @@ class Addr(common.Addr):
         """
         if isinstance(other, self.__class__):
             return ((self.tup == other.tup) or
-                    (self.tup[0] == other.tup[0]
-                     and self.is_wildcard() and other.is_wildcard()))
+                    (self.tup[0] == other.tup[0] and
+                     self.is_wildcard() and other.is_wildcard()))
         return False
 
     def __ne__(self, other):

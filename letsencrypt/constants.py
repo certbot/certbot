@@ -16,7 +16,7 @@ CLI_DEFAULTS = dict(
                      "letsencrypt", "cli.ini"),
     ],
     verbose_count=-(logging.WARNING / 10),
-    server="https://acme-staging.api.letsencrypt.org/acme/new-reg",
+    server="https://acme-staging.api.letsencrypt.org/directory",
     rsa_key_size=2048,
     rollback_checkpoints=1,
     config_dir="/etc/letsencrypt",
@@ -68,12 +68,8 @@ ACCOUNTS_DIR = "accounts"
 BACKUP_DIR = "backups"
 """Directory (relative to `IConfig.work_dir`) where backups are kept."""
 
-CERT_DIR = "certs"
-"""See `.IConfig.cert_dir`."""
-
-CERT_KEY_BACKUP_DIR = "keys-certs"
-"""Directory where all certificates and keys are stored (relative to
-`IConfig.work_dir`). Used for easy revocation."""
+CSR_DIR = "csr"
+"""See `.IConfig.csr_dir`."""
 
 IN_PROGRESS_DIR = "IN_PROGRESS"
 """Directory used before a permanent checkpoint is finalized (relative to
@@ -88,7 +84,7 @@ LIVE_DIR = "live"
 TEMP_CHECKPOINT_DIR = "temp_checkpoint"
 """Temporary checkpoint directory (relative to `IConfig.work_dir`)."""
 
-RENEWAL_CONFIGS_DIR = "configs"
+RENEWAL_CONFIGS_DIR = "renewal"
 """Renewal configs directory, relative to `IConfig.config_dir`."""
 
 RENEWER_CONFIG_FILENAME = "renewer.conf"

@@ -8,7 +8,7 @@ import mock
 class DialogHandlerTest(unittest.TestCase):
 
     def setUp(self):
-        self.d = mock.MagicMock()  # pylint: disable=invalid-name
+        self.d = mock.MagicMock()
 
         from letsencrypt.log import DialogHandler
         self.handler = DialogHandler(height=2, width=6, d=self.d)

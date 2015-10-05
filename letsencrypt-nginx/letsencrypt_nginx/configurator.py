@@ -56,7 +56,7 @@ class NginxConfigurator(common.Plugin):
     zope.interface.implements(interfaces.IAuthenticator, interfaces.IInstaller)
     zope.interface.classProvides(interfaces.IPluginFactory)
 
-    description = "Nginx Web Server"
+    description = "Nginx Web Server - currently doesn't work"
 
     @classmethod
     def add_parser_arguments(cls, add):

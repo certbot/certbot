@@ -12,11 +12,11 @@ from letsencrypt.display import util as display_util
 logger = logging.getLogger(__name__)
 
 # Define a helper function to avoid verbose code
-util = zope.component.getUtility  # pylint: disable=invalid-name
+util = zope.component.getUtility
 
 
 def choose_plugin(prepared, question):
-    """Allow the user to choose ther plugin.
+    """Allow the user to choose their plugin.
 
     :param list prepared: List of `~.PluginEntryPoint`.
     :param str question: Question to be presented to the user.
@@ -25,8 +25,8 @@ def choose_plugin(prepared, question):
     :rtype: `~.PluginEntryPoint`
 
     """
-    opts = [plugin_ep.description_with_name
-            + (" [Misconfigured]" if plugin_ep.misconfigured else "")
+    opts = [plugin_ep.description_with_name +
+            (" [Misconfigured]" if plugin_ep.misconfigured else "")
             for plugin_ep in prepared]
 
     while True:
@@ -65,7 +65,7 @@ def pick_plugin(config, default, plugins, question, ifaces):
         # throw more UX-friendly error if default not in plugins
         filtered = plugins.filter(lambda p_ep: p_ep.name == default)
     else:
-        filtered = plugins.ifaces(ifaces)
+        filtered = plugins.visible().ifaces(ifaces)
 
     filtered.init(config)
     verified = filtered.verify(ifaces)
@@ -230,6 +230,26 @@ def success_installation(domains):
             os.linesep,
             os.linesep.join(_gen_ssl_lab_urls(domains))),
         height=(10 + len(domains)),
+        pause=False)
+
+
+def success_renewal(domains):
+    """Display a box confirming the renewal of an existing certificate.
+
+    .. todo:: This should be centered on the screen
+
+    :param list domains: domain names which were renewed
+
+    """
+    util(interfaces.IDisplay).notification(
+        "Your existing certificate has been successfully renewed, and the "
+        "new certificate has been installed.{1}{1}"
+        "The new certificate covers the following domains: {0}{1}{1}"
+        "You should test your configuration at:{1}{2}".format(
+            _gen_https_names(domains),
+            os.linesep,
+            os.linesep.join(_gen_ssl_lab_urls(domains))),
+        height=(14 + len(domains)),
         pause=False)
 
 

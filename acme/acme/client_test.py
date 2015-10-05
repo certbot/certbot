@@ -33,10 +33,14 @@ class ClientTest(unittest.TestCase):
         self.net.post.return_value = self.response
         self.net.get.return_value = self.response
 
+        self.directory = messages.Directory({
+            messages.NewRegistration: 'https://www.letsencrypt-demo.org/acme/new-reg',
+            messages.Revocation: 'https://www.letsencrypt-demo.org/acme/revoke-cert',
+        })
+
         from acme.client import Client
         self.client = Client(
-            new_reg_uri='https://www.letsencrypt-demo.org/acme/new-reg',
-            key=KEY, alg=jose.RS256, net=self.net)
+            directory=self.directory, key=KEY, alg=jose.RS256, net=self.net)
 
         self.identifier = messages.Identifier(
             typ=messages.IDENTIFIER_FQDN, value='example.com')
@@ -55,7 +59,8 @@ class ClientTest(unittest.TestCase):
         authzr_uri = 'https://www.letsencrypt-demo.org/acme/authz/1'
         challb = messages.ChallengeBody(
             uri=(authzr_uri + '/1'), status=messages.STATUS_VALID,
-            chall=challenges.DNS(token='foo'))
+            chall=challenges.DNS(token=jose.b64decode(
+                'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA')))
         self.challr = messages.ChallengeResource(
             body=challb, authzr_uri=authzr_uri)
         self.authz = messages.Authorization(
@@ -71,6 +76,13 @@ class ClientTest(unittest.TestCase):
             body=messages_test.CERT, authzrs=(self.authzr,),
             uri='https://www.letsencrypt-demo.org/acme/cert/1',
             cert_chain_uri='https://www.letsencrypt-demo.org/ca')
+
+    def test_init_downloads_directory(self):
+        uri = 'http://www.letsencrypt-demo.org/directory'
+        from acme.client import Client
+        self.client = Client(
+            directory=uri, key=KEY, alg=jose.RS256, net=self.net)
+        self.net.get.assert_called_once_with(uri)
 
     def test_register(self):
         # "Instance of 'Field' has no to_json/update member" bug:
@@ -155,7 +167,7 @@ class ClientTest(unittest.TestCase):
         self.response.links['up'] = {'url': self.challr.authzr_uri}
         self.response.json.return_value = self.challr.body.to_json()
 
-        chall_response = challenges.DNSResponse()
+        chall_response = challenges.DNSResponse(validation=None)
 
         self.client.answer_challenge(self.challr.body, chall_response)
 
@@ -164,8 +176,9 @@ class ClientTest(unittest.TestCase):
                           self.challr.body.update(uri='foo'), chall_response)
 
     def test_answer_challenge_missing_next(self):
-        self.assertRaises(errors.ClientError, self.client.answer_challenge,
-                          self.challr.body, challenges.DNSResponse())
+        self.assertRaises(
+            errors.ClientError, self.client.answer_challenge,
+            self.challr.body, challenges.DNSResponse(validation=None))
 
     def test_retry_after_date(self):
         self.response.headers['Retry-After'] = 'Fri, 31 Dec 1999 23:59:59 GMT'
@@ -335,21 +348,39 @@ class ClientTest(unittest.TestCase):
         self.assertEqual(
             self.client.check_cert(self.certr), self.client.refresh(self.certr))
 
-    def test_fetch_chain(self):
+    def test_fetch_chain_no_up_link(self):
+        self.assertEqual([], self.client.fetch_chain(self.certr.update(
+            cert_chain_uri=None)))
+
+    def test_fetch_chain_single(self):
         # pylint: disable=protected-access
         self.client._get_cert = mock.MagicMock()
-        self.client._get_cert.return_value = ("response", "certificate")
-        self.assertEqual(self.client._get_cert(self.certr.cert_chain_uri)[1],
+        self.client._get_cert.return_value = (
+            mock.MagicMock(links={}), "certificate")
+        self.assertEqual([self.client._get_cert(self.certr.cert_chain_uri)[1]],
                          self.client.fetch_chain(self.certr))
 
-    def test_fetch_chain_no_up_link(self):
-        self.assertTrue(self.client.fetch_chain(self.certr.update(
-            cert_chain_uri=None)) is None)
+    def test_fetch_chain_max(self):
+        # pylint: disable=protected-access
+        up_response = mock.MagicMock(links={'up': {'url': 'http://cert'}})
+        noup_response = mock.MagicMock(links={})
+        self.client._get_cert = mock.MagicMock()
+        self.client._get_cert.side_effect = [
+            (up_response, "cert")] * 9 + [(noup_response, "last_cert")]
+        chain = self.client.fetch_chain(self.certr, max_length=10)
+        self.assertEqual(chain, ["cert"] * 9 + ["last_cert"])
+
+    def test_fetch_chain_too_many(self):  # recursive
+        # pylint: disable=protected-access
+        response = mock.MagicMock(links={'up': {'url': 'http://cert'}})
+        self.client._get_cert = mock.MagicMock()
+        self.client._get_cert.return_value = (response, "certificate")
+        self.assertRaises(errors.Error, self.client.fetch_chain, self.certr)
 
     def test_revoke(self):
         self.client.revoke(self.certr.body)
-        self.net.post.assert_called_once_with(messages.Revocation.url(
-            self.client.new_reg_uri), mock.ANY)
+        self.net.post.assert_called_once_with(
+            self.directory[messages.Revocation], mock.ANY, content_type=None)
 
     def test_revoke_bad_status_raises_error(self):
         self.response.status_code = http_client.METHOD_NOT_ALLOWED
@@ -379,11 +410,14 @@ class ClientNetworkTest(unittest.TestCase):
             # pylint: disable=missing-docstring
             def __init__(self, value):
                 self.value = value
+
             def to_partial_json(self):
                 return {'foo': self.value}
+
             @classmethod
             def from_json(cls, value):
                 pass  # pragma: no cover
+
         # pylint: disable=protected-access
         jws_dump = self.net._wrap_in_jws(
             MockJSONDeSerializable('foo'), nonce=b'Tg')
@@ -487,6 +521,7 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
 
         self.all_nonces = [jose.b64encode(b'Nonce'), jose.b64encode(b'Nonce2')]
         self.available_nonces = self.all_nonces[:]
+
         def send_request(*args, **kwargs):
             # pylint: disable=unused-argument,missing-docstring
             if self.available_nonces:

@@ -37,7 +37,7 @@ class ChallengeFactoryTest(unittest.TestCase):
         self.dom = "test"
         self.handler.authzr[self.dom] = acme_util.gen_authzr(
             messages.STATUS_PENDING, self.dom, acme_util.CHALLENGES,
-            [messages.STATUS_PENDING]*6, False)
+            [messages.STATUS_PENDING] * 6, False)
 
     def test_all(self):
         cont_c, dv_c = self.handler._challenge_factory(
@@ -163,7 +163,7 @@ class GetAuthorizationsTest(unittest.TestCase):
                 messages.STATUS_VALID,
                 dom,
                 [challb.chall for challb in azr.body.challenges],
-                [messages.STATUS_VALID]*len(azr.body.challenges),
+                [messages.STATUS_VALID] * len(azr.body.challenges),
                 azr.body.combinations)
 
 
@@ -183,15 +183,15 @@ class PollChallengesTest(unittest.TestCase):
         self.doms = ["0", "1", "2"]
         self.handler.authzr[self.doms[0]] = acme_util.gen_authzr(
             messages.STATUS_PENDING, self.doms[0],
-            acme_util.DV_CHALLENGES, [messages.STATUS_PENDING]*3, False)
+            acme_util.DV_CHALLENGES, [messages.STATUS_PENDING] * 3, False)
 
         self.handler.authzr[self.doms[1]] = acme_util.gen_authzr(
             messages.STATUS_PENDING, self.doms[1],
-            acme_util.DV_CHALLENGES, [messages.STATUS_PENDING]*3, False)
+            acme_util.DV_CHALLENGES, [messages.STATUS_PENDING] * 3, False)
 
         self.handler.authzr[self.doms[2]] = acme_util.gen_authzr(
             messages.STATUS_PENDING, self.doms[2],
-            acme_util.DV_CHALLENGES, [messages.STATUS_PENDING]*3, False)
+            acme_util.DV_CHALLENGES, [messages.STATUS_PENDING] * 3, False)
 
         self.chall_update = {}
         for dom in self.doms:
@@ -282,6 +282,7 @@ class PollChallengesTest(unittest.TestCase):
         )
         return (new_authzr, "response")
 
+
 class GenChallengePathTest(unittest.TestCase):
     """Tests for letsencrypt.auth_handler.gen_challenge_path.
 
@@ -321,7 +322,7 @@ class GenChallengePathTest(unittest.TestCase):
         combos = acme_util.gen_combos(challbs)
         self.assertEqual(self._call(challbs, prefs, combos), (0, 2))
 
-         # dumb_path() trivial test
+        # dumb_path() trivial test
         self.assertTrue(self._call(challbs, prefs, None))
 
     def test_full_cont_server(self):
@@ -354,7 +355,7 @@ class GenChallengePathTest(unittest.TestCase):
 class MutuallyExclusiveTest(unittest.TestCase):
     """Tests for letsencrypt.auth_handler.mutually_exclusive."""
 
-    # pylint: disable=invalid-name,missing-docstring,too-few-public-methods
+    # pylint: disable=missing-docstring,too-few-public-methods
     class A(object):
         pass
 
@@ -427,26 +428,29 @@ class ReportFailedChallsTest(unittest.TestCase):
         from letsencrypt import achallenges
 
         kwargs = {
-            "chall" : acme_util.SIMPLE_HTTP,
+            "chall": acme_util.SIMPLE_HTTP,
             "uri": "uri",
             "status": messages.STATUS_INVALID,
             "error": messages.Error(typ="tls", detail="detail"),
         }
 
         self.simple_http = achallenges.SimpleHTTP(
-            challb=messages.ChallengeBody(**kwargs),# pylint: disable=star-args
+            # pylint: disable=star-args
+            challb=messages.ChallengeBody(**kwargs),
             domain="example.com",
             account_key="key")
 
         kwargs["chall"] = acme_util.DVSNI
         self.dvsni_same = achallenges.DVSNI(
-            challb=messages.ChallengeBody(**kwargs),# pylint: disable=star-args
+            # pylint: disable=star-args
+            challb=messages.ChallengeBody(**kwargs),
             domain="example.com",
             account_key="key")
 
         kwargs["error"] = messages.Error(typ="dnssec", detail="detail")
         self.dvsni_diff = achallenges.DVSNI(
-            challb=messages.ChallengeBody(**kwargs),# pylint: disable=star-args
+            # pylint: disable=star-args
+            challb=messages.ChallengeBody(**kwargs),
             domain="foo.bar",
             account_key="key")
 
@@ -477,7 +481,7 @@ def gen_dom_authzr(domain, unused_new_authzr_uri, challs):
     """Generates new authzr for domains."""
     return acme_util.gen_authzr(
         messages.STATUS_PENDING, domain, challs,
-        [messages.STATUS_PENDING]*len(challs))
+        [messages.STATUS_PENDING] * len(challs))
 
 
 if __name__ == "__main__":
