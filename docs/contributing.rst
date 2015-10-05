@@ -267,6 +267,17 @@ Please:
 .. _PEP 8 - Style Guide for Python Code:
   https://www.python.org/dev/peps/pep-0008
 
+Submitting a pull request
+=========================
+Steps:
+
+1. Write your code!
+2. Make sure your environment is set up properly and that you're in your virtualenv (this is a **very important** step).
+3. Run ``./pep8.travis.sh`` to do a cursory check of your code style. Fix any errors.
+4. Run ``tox -e lint`` to check for pylint errors. Fix any errors.
+5. Run ``tox`` to run the unit tests. Fix any errors.
+6. :ref:`Run the integration tests <integration>`.
+7. Submit the PR.
 
 Updating the documentation
 ==========================
