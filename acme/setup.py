@@ -4,6 +4,8 @@ from setuptools import setup
 from setuptools import find_packages
 
 
+version = '0.1.0.dev0'
+
 install_requires = [
     # load_pem_private/public_key (>=0.6)
     # rsa_recover_prime_factors (>=0.8)
@@ -34,7 +36,25 @@ testing_extras = [
 
 setup(
     name='acme',
+    version=version,
+    description='ACME protocol implementation',
+    url='https://github.com/letsencrypt/letsencrypt',
+    author="Let's Encrypt Project",
+    author_email='client-dev@letsencrypt.org',
+    license='Apache License 2.0',
+    classifiers=[
+        'Development Status :: 3 - Alpha',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: Apache Software License',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 2.7',
+        'Topic :: Internet :: WWW/HTTP',
+        'Topic :: Security',
+    ],
+
     packages=find_packages(),
+    include_package_data=True,
     install_requires=install_requires,
     extras_require={
         'testing': testing_extras,
