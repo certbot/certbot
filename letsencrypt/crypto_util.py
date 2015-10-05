@@ -201,29 +201,26 @@ def valid_privkey(privkey):
         return False
 
 
-def _pyopenssl_load(data, method, types=(
-        OpenSSL.crypto.FILETYPE_PEM, OpenSSL.crypto.FILETYPE_ASN1)):
-    openssl_errors = []
-    for filetype in types:
-        try:
-            return method(filetype, data), filetype
-        except OpenSSL.crypto.Error as error:  # TODO: anything else?
-            openssl_errors.append(error)
-    raise errors.Error("Unable to load: {0}".format(",".join(
-        str(error) for error in openssl_errors)))
-
-
 def pyopenssl_load_certificate(data):
     """Load PEM/DER certificate.
 
     :raises errors.Error:
 
     """
-    return _pyopenssl_load(data, OpenSSL.crypto.load_certificate)
+
+    openssl_errors = []
+
+    for file_type in (OpenSSL.crypto.FILETYPE_PEM, OpenSSL.crypto.FILETYPE_ASN1):
+        try:
+            return OpenSSL.crypto.load_certificate(file_type, data), file_type
+        except OpenSSL.crypto.Error as error:  # TODO: other errors?
+            openssl_errors.append(error)
+    raise errors.Error("Unable to load: {0}".format(",".join(
+        str(error) for error in openssl_errors)))
 
 
-def _get_sans_from_cert_or_req(
-        cert_or_req_str, load_func, typ=OpenSSL.crypto.FILETYPE_PEM):
+def _get_sans_from_cert_or_req(cert_or_req_str, load_func,
+                               typ=OpenSSL.crypto.FILETYPE_PEM):
     try:
         cert_or_req = load_func(typ, cert_or_req_str)
     except OpenSSL.crypto.Error as error:
