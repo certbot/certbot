@@ -1,2 +1,15 @@
 #!/bin/sh
-pacman -S git python2 python2-virtualenv gcc dialog augeas openssl libffi ca-certificates
+
+# "python-virtualenv" is Python3, but "python2-virtualenv" provides
+# only "virtualenv2" binary, not "virtualenv" necessary in
+# ./bootstrap/dev/_common_venv.sh
+pacman -S \
+  git \
+  python2 \
+  python-virtualenv \
+  gcc \
+  dialog \
+  augeas \
+  openssl \
+  libffi \
+  ca-certificates \
