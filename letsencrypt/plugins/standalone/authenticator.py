@@ -1,4 +1,5 @@
 """Standalone authenticator."""
+import logging
 import os
 import psutil
 import signal
@@ -17,6 +18,9 @@ from letsencrypt import crypto_util
 from letsencrypt import interfaces
 
 from letsencrypt.plugins import common
+
+
+logger = logging.getLogger(__name__)
 
 
 class StandaloneAuthenticator(common.Plugin):
@@ -302,13 +306,21 @@ class StandaloneAuthenticator(common.Plugin):
         :returns: True or False."""
 
         try:
+            net_connections = psutil.net_connections()
+        except psutil.AccessDenied as error:
+            logger.info("Access denied when trying to list network "
+            "connections: %s. Are you root?", error)
+            # this function is just a pre-check that often causes false
+            # positives and problems in testing (c.f. #680 on Mac, #255
+            # generally); we will fail later in bind() anyway
+            return False
 
-            # net_connections() can raise AccessDenied on certain OSs
-            listeners = [conn.pid for conn in psutil.net_connections()
-                         if conn.status == 'LISTEN' and
-                         conn.type == socket.SOCK_STREAM and
-                         conn.laddr[1] == port]
+        listeners = [conn.pid for conn in net_connections
+                     if conn.status == 'LISTEN' and
+                     conn.type == socket.SOCK_STREAM and
+                     conn.laddr[1] == port]
 
+        try:
             if listeners and listeners[0] is not None:
                 # conn.pid may be None if the current process doesn't have
                 # permission to identify the listening process!  Additionally,
