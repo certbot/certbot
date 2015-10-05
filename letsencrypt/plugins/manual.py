@@ -154,12 +154,18 @@ binary for temporary key/certificate generation.""".replace("\n", "")
         if self.conf("test-mode"):
             logger.debug("Test mode. Executing the manual command: %s", command)
             try:
+                # sh shipped with OS X does't support echo -n
+                if sys.platform == "darwin":
+                    executable = "/bin/bash"
+                else:
+                    executable = "/bin/sh"
+
                 self._httpd = subprocess.Popen(
                     command,
                     # don't care about setting stdout and stderr,
                     # we're in test mode anyway
                     shell=True,
-                    executable="/bin/bash",
+                    executable=executable,
                     # "preexec_fn" is UNIX specific, but so is "command"
                     preexec_fn=os.setsid)
             except OSError as error:  # ValueError should not happen!
