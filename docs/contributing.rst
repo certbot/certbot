@@ -68,8 +68,10 @@ The following tools are there to help you:
 
 Integration
 ~~~~~~~~~~~
+Mac OS X users: Run `./tests/mac-bootstrap.sh` instead of `boulder-start.sh` to
+install dependencies, configure the environment, and start boulder.
 
-First, install `Go`_ 1.5, libtool-ltdl, mariadb-server and
+Otherwise, install `Go`_ 1.5, libtool-ltdl, mariadb-server and
 rabbitmq-server and then start Boulder_, an ACME CA server::
 
   ./tests/boulder-start.sh

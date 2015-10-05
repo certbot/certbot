@@ -286,7 +286,7 @@ class Client(object):
                 "configured in the directories under {0}.").format(
                     cert.cli_config.renewal_configs_dir)
         reporter = zope.component.getUtility(interfaces.IReporter)
-        reporter.add_message(msg, reporter.LOW_PRIORITY, True)
+        reporter.add_message(msg, reporter.LOW_PRIORITY)
 
     def save_certificate(self, certr, chain_cert, cert_path, chain_path):
         # pylint: disable=no-self-use
