@@ -14,6 +14,12 @@ export PATH="/usr/sbin:$PATH"  # /usr/sbin/nginx
 export GOPATH="${GOPATH:-/tmp/go}"
 export PATH="$GOPATH/bin:$PATH"
 
+if [ `uname`  == 'Darwin' ]; then
+  readlink="greadlink"
+else
+  readlink="readlink"
+fi
+
 common() {
     letsencrypt_test \
         --authenticator standalone \
@@ -50,11 +56,7 @@ dir="$root/conf/archive/le1.wtf"
 for x in cert chain fullchain privkey;
 do
     latest="$(ls -1t $dir/ | grep -e "^${x}" | head -n1)"
-    if [ `uname`  == 'Darwin' ]; then
-      live="$(greadlink -f "$root/conf/live/le1.wtf/${x}.pem")"
-    else
-      live="$(readlink -f "$root/conf/live/le1.wtf/${x}.pem")"
-    fi
+    live="$($readlink -f "$root/conf/live/le1.wtf/${x}.pem")"
     [ "${dir}/${latest}" = "$live" ]  # renewer fails this test
 done
 
