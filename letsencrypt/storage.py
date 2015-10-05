@@ -542,7 +542,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             remaining = expiry - now
             if remaining < autorenew_interval:
                 return True
-            return False
+        return False
 
     @classmethod
     def new_lineage(cls, lineagename, cert, privkey, chain,

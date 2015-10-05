@@ -66,31 +66,34 @@ def get_apache_configurator(
 
     """
     backups = os.path.join(work_dir, "backups")
+    mock_le_config = mock.MagicMock(
+        apache_server_root=config_path,
+        apache_le_vhost_ext=constants.CLI_DEFAULTS["le_vhost_ext"],
+        backup_dir=backups,
+        config_dir=config_dir,
+        temp_checkpoint_dir=os.path.join(work_dir, "temp_checkpoints"),
+        in_progress_dir=os.path.join(backups, "IN_PROGRESS"),
+        work_dir=work_dir)
 
     with mock.patch("letsencrypt_apache.configurator."
                     "subprocess.Popen") as mock_popen:
-        with mock.patch("letsencrypt_apache.parser.ApacheParser."
-                        "update_runtime_variables"):
-            # This indicates config_test passes
-            mock_popen().communicate.return_value = ("Fine output", "No problems")
-            mock_popen().returncode = 0
+        # This indicates config_test passes
+        mock_popen().communicate.return_value = ("Fine output", "No problems")
+        mock_popen().returncode = 0
+        with mock.patch("letsencrypt_apache.configurator.le_util."
+                        "exe_exists") as mock_exe_exists:
+            mock_exe_exists.return_value = True
+            with mock.patch("letsencrypt_apache.parser.ApacheParser."
+                            "update_runtime_variables"):
+                config = configurator.ApacheConfigurator(
+                    config=mock_le_config,
+                    name="apache",
+                    version=version)
+                # This allows testing scripts to set it a bit more quickly
+                if conf is not None:
+                    config.conf = conf  # pragma: no cover
 
-            config = configurator.ApacheConfigurator(
-                config=mock.MagicMock(
-                    apache_server_root=config_path,
-                    apache_le_vhost_ext=constants.CLI_DEFAULTS["le_vhost_ext"],
-                    backup_dir=backups,
-                    config_dir=config_dir,
-                    temp_checkpoint_dir=os.path.join(work_dir, "temp_checkpoints"),
-                    in_progress_dir=os.path.join(backups, "IN_PROGRESS"),
-                    work_dir=work_dir),
-                name="apache",
-                version=version)
-            # This allows testing scripts to set it a bit more quickly
-            if conf is not None:
-                config.conf = conf  # pragma: no cover
-
-            config.prepare()
+                config.prepare()
 
     return config
 
