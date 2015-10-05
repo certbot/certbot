@@ -57,7 +57,6 @@ class CLITest(unittest.TestCase):
                 ret = cli.main(args)
         return ret, None, stderr, client
 
-
     def test_no_flags(self):
         with mock.patch('letsencrypt.cli.run') as mock_run:
             self._call([])
@@ -90,7 +89,6 @@ class CLITest(unittest.TestCase):
             out = output.getvalue()
             from letsencrypt import cli
             self.assertTrue(cli.USAGE in out)
-
 
     def test_rollback(self):
         _, _, _, client = self._call(['rollback'])
