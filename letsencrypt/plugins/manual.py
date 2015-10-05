@@ -153,13 +153,13 @@ binary for temporary key/certificate generation.""".replace("\n", "")
             ct=response.CONTENT_TYPE, port=port)
         if self.conf("test-mode"):
             logger.debug("Test mode. Executing the manual command: %s", command)
+            # sh shipped with OS X does't support echo -n
+            if sys.platform == "darwin":
+                executable = "/bin/bash"
+            else:
+                executable = "/bin/sh"
+                
             try:
-                # sh shipped with OS X does't support echo -n
-                if sys.platform == "darwin":
-                    executable = "/bin/bash"
-                else:
-                    executable = "/bin/sh"
-
                 self._httpd = subprocess.Popen(
                     command,
                     # don't care about setting stdout and stderr,
