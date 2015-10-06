@@ -1,3 +1,5 @@
+import sys
+
 from setuptools import setup
 from setuptools import find_packages
 
@@ -7,12 +9,16 @@ version = '0.1.0.dev0'
 install_requires = [
     'acme=={0}'.format(version),
     'letsencrypt=={0}'.format(version),
-    'mock<1.1.0',  # py26
     'PyOpenSSL',
     'pyparsing>=1.5.5',  # Python3 support; perhaps unnecessary?
     'setuptools',  # pkg_resources
     'zope.interface',
 ]
+
+if sys.version_info < (2, 7):
+    install_requires.append('mock<1.1.0')
+else:
+    install_requires.append('mock')
 
 setup(
     name='letsencrypt-nginx',
