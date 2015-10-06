@@ -16,7 +16,7 @@ fi
 
 cover () {
   if [ "$1" = "letsencrypt" ]; then
-    min=97
+    min=98
   elif [ "$1" = "acme" ]; then
     min=100
   elif [ "$1" = "letsencrypt_apache" ]; then
