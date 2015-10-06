@@ -7,9 +7,9 @@ Contributing
 Hacking
 =======
 
-The code base, including your pull requests, **must** have 100% unit
-test coverage, pass our `integration`_ tests **and** be compliant with
-the :ref:`coding style <coding-style>`.
+All changes in your pull request **must** have 100% unit test coverage, pass
+our `integration`_ tests, **and** be compliant with the
+:ref:`coding style <coding-style>`.
 
 
 Bootstrap
