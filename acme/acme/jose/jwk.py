@@ -88,7 +88,7 @@ class JWK(json_util.TypedJSONObjectWithFields):
                 exceptions[loader] = error
 
         # no luck
-        raise errors.Error("Unable to deserialize key: {0}".format(exceptions))
+        raise errors.Error('Unable to deserialize key: {0}'.format(exceptions))
 
     @classmethod
     def load(cls, data, password=None, backend=None):
@@ -109,17 +109,17 @@ class JWK(json_util.TypedJSONObjectWithFields):
         try:
             key = cls._load_cryptography_key(data, password, backend)
         except errors.Error as error:
-            logger.debug("Loading symmetric key, assymentric failed: %s", error)
+            logger.debug('Loading symmetric key, assymentric failed: %s', error)
             return JWKOct(key=data)
 
         if cls.typ is not NotImplemented and not isinstance(
                 key, cls.cryptography_key_types):
-            raise errors.Error("Unable to deserialize {0} into {1}".format(
+            raise errors.Error('Unable to deserialize {0} into {1}'.format(
                 key.__class__, cls.__class__))
         for jwk_cls in six.itervalues(cls.TYPES):
             if isinstance(key, jwk_cls.cryptography_key_types):
                 return jwk_cls(key=key)
-        raise errors.Error("Unsupported algorithm: {0}".format(key.__class__))
+        raise errors.Error('Unsupported algorithm: {0}'.format(key.__class__))
 
 
 @JWK.register
@@ -235,7 +235,7 @@ class JWKRSA(JWK):
                     jobj.get(x) for x in ('p', 'q', 'dp', 'dq', 'qi'))
                 if tuple(param for param in all_params if param is None):
                     raise errors.Error(
-                        "Some private parameters are missing: {0}".format(
+                        'Some private parameters are missing: {0}'.format(
                             all_params))
                 p, q, dp, dq, qi = tuple(
                     cls._decode_param(x) for x in all_params)
