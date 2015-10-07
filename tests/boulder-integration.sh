@@ -24,7 +24,6 @@ common() {
 common --domains le1.wtf --standalone-supported-challenges dvsni auth
 common --domains le2.wtf --standalone-supported-challenges simpleHttp run
 common -a manual -d le.wtf auth
-common -a manual -d le.wtf --no-simple-http-tls auth
 
 export CSR_PATH="${root}/csr.der" KEY_PATH="${root}/key.pem" \
        OPENSSL_CNF=examples/openssl.cnf
