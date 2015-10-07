@@ -33,9 +33,9 @@ class ServerManagerTest(unittest.TestCase):
             self.mgr.simple_http_resources is self.simple_http_resources)
 
     def _test_run_stop(self, tls):
-        server, _ = self.mgr.run(port=0, tls=tls)
-        port = server.socket.getsockname()[1]
-        self.assertEqual(self.mgr.running(), {port: (server, mock.ANY)})
+        server = self.mgr.run(port=0, tls=tls)
+        port = server.socket.getsockname()[1]  # pylint: disable=no-member
+        self.assertEqual(self.mgr.running(), {port: server})
         self.mgr.stop(port=port)
         self.assertEqual(self.mgr.running(), {})
 
@@ -46,12 +46,11 @@ class ServerManagerTest(unittest.TestCase):
         self._test_run_stop(tls=False)
 
     def test_run_idempotent(self):
-        server, thread = self.mgr.run(port=0, tls=False)
-        port = server.socket.getsockname()[1]
-        server2, thread2 = self.mgr.run(port=port, tls=False)
-        self.assertEqual(self.mgr.running(), {port: (server, thread)})
+        server = self.mgr.run(port=0, tls=False)
+        port = server.socket.getsockname()[1]  # pylint: disable=no-member
+        server2 = self.mgr.run(port=port, tls=False)
+        self.assertEqual(self.mgr.running(), {port: server})
         self.assertTrue(server is server2)
-        self.assertTrue(thread is thread2)
         self.mgr.stop(port)
         self.assertEqual(self.mgr.running(), {})
 
@@ -166,7 +165,7 @@ class AuthenticatorTest(unittest.TestCase):
         self.auth.servers = mock.MagicMock()
 
         def _run(port, tls):  # pylint: disable=unused-argument
-            return "server{0}".format(port), "thread{0}".format(port)
+            return "server{0}".format(port)
 
         self.auth.servers.run.side_effect = _run
         responses = self.auth.perform2([simple_http, dvsni])
@@ -191,8 +190,8 @@ class AuthenticatorTest(unittest.TestCase):
     def test_cleanup(self):
         self.auth.servers = mock.Mock()
         self.auth.servers.running.return_value = {
-            1: ("server1", "thread1"),
-            2: ("server2", "thread2"),
+            1: "server1",
+            2: "server2",
         }
         self.auth.served["server1"].add("chall1")
         self.auth.served["server2"].update(["chall2", "chall3"])
@@ -203,7 +202,7 @@ class AuthenticatorTest(unittest.TestCase):
         self.auth.servers.stop.assert_called_once_with(1)
 
         self.auth.servers.running.return_value = {
-            2: ("server2", "thread2"),
+            2: "server2",
         }
         self.auth.cleanup(["chall2"])
         self.assertEqual(self.auth.served, {
