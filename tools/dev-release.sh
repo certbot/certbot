@@ -70,7 +70,7 @@ echo "Testing packages"
 cd "dist.$version"
 # start local PyPI
 python -m SimpleHTTPServer $PORT &
-# cd .. is NOT done on purpose: we make sure that all subpacakges are
+# cd .. is NOT done on purpose: we make sure that all subpackages are
 # installed from local PyPI rather than current directory (repo root)
 virtualenv --no-site-packages ../venv
 . ../venv/bin/activate
@@ -82,15 +82,16 @@ pip install \
 # stop local PyPI
 kill $!
 
-# freeze before installing anythin else, so that we know end-user KGS
-mkdir kgs
-kgs="kgs/$version"
+# freeze before installing anything else, so that we know end-user KGS
+# make sure "twine upload" doesn't catch "kgs"
+mkdir ../kgs
+kgs="../kgs/$version"
 pip freeze | tee $kgs
 pip install nose
 # TODO: letsencrypt_apache fails due to symlink, c.f. #838
 nosetests letsencrypt $SUBPKGS || true
 
 echo "New root: $root"
-echo "KGS is at $root/$kgs"
+echo "KGS is at $root/kgs"
 echo "In order to upload packages run the following command:"
 echo twine upload "$root/dist.$version/*/*"
