@@ -68,7 +68,7 @@ class AuthenticatorTest(unittest.TestCase):
         mock_popen.side_effect = OSError
         self.assertEqual([False], self.auth_test_mode.perform(self.achalls))
 
-    @mock.patch("letsencrypt.plugins.manual.socket.socket", autospec=True)
+    @mock.patch("letsencrypt.plugins.manual.socket.socket")
     @mock.patch("letsencrypt.plugins.manual.time.sleep", autospec=True)
     @mock.patch("letsencrypt.plugins.manual.subprocess.Popen", autospec=True)
     def test_perform_test_command_run_failure(
@@ -78,7 +78,7 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertRaises(
             errors.Error, self.auth_test_mode.perform, self.achalls)
 
-    @mock.patch("letsencrypt.plugins.manual.socket.socket", autospec=True)
+    @mock.patch("letsencrypt.plugins.manual.socket.socket")
     @mock.patch("letsencrypt.plugins.manual.time.sleep", autospec=True)
     @mock.patch("acme.challenges.SimpleHTTPResponse.simple_verify",
                 autospec=True)

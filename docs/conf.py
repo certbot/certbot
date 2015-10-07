@@ -30,7 +30,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 # read version number (and other metadata) from package init
 init_fn = os.path.join(here, '..', 'letsencrypt', '__init__.py')
 with codecs.open(init_fn, encoding='utf8') as fd:
-    meta = dict(re.findall(r"""__([a-z]+)__ = "([^"]+)""", fd.read()))
+    meta = dict(re.findall(r"""__([a-z]+)__ = '([^']+)""", fd.read()))
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the

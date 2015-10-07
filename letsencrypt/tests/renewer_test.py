@@ -124,46 +124,47 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertRaises(
             errors.CertStorageError, storage.RenewableCert, config, defaults)
 
-    def test_consistent(self):  # pylint: disable=too-many-statements
+    def test_consistent(self):
+        # pylint: disable=too-many-statements,protected-access
         oldcert = self.test_rc.cert
         self.test_rc.cert = "relative/path"
         # Absolute path for item requirement
-        self.assertFalse(self.test_rc.consistent())
+        self.assertFalse(self.test_rc._consistent())
         self.test_rc.cert = oldcert
         # Items must exist requirement
-        self.assertFalse(self.test_rc.consistent())
+        self.assertFalse(self.test_rc._consistent())
         # Items must be symlinks requirements
         fill_with_sample_data(self.test_rc)
-        self.assertFalse(self.test_rc.consistent())
+        self.assertFalse(self.test_rc._consistent())
         unlink_all(self.test_rc)
         # Items must point to desired place if they are relative
         for kind in ALL_FOUR:
             os.symlink(os.path.join("..", kind + "17.pem"),
                        getattr(self.test_rc, kind))
-        self.assertFalse(self.test_rc.consistent())
+        self.assertFalse(self.test_rc._consistent())
         unlink_all(self.test_rc)
         # Items must point to desired place if they are absolute
         for kind in ALL_FOUR:
             os.symlink(os.path.join(self.tempdir, kind + "17.pem"),
                        getattr(self.test_rc, kind))
-        self.assertFalse(self.test_rc.consistent())
+        self.assertFalse(self.test_rc._consistent())
         unlink_all(self.test_rc)
         # Items must point to things that exist
         for kind in ALL_FOUR:
             os.symlink(os.path.join("..", "..", "archive", "example.org",
                                     kind + "17.pem"),
                        getattr(self.test_rc, kind))
-        self.assertFalse(self.test_rc.consistent())
+        self.assertFalse(self.test_rc._consistent())
         # This version should work
         fill_with_sample_data(self.test_rc)
-        self.assertTrue(self.test_rc.consistent())
+        self.assertTrue(self.test_rc._consistent())
         # Items must point to things that follow the naming convention
         os.unlink(self.test_rc.fullchain)
         os.symlink(os.path.join("..", "..", "archive", "example.org",
                                 "fullchain_17.pem"), self.test_rc.fullchain)
         with open(self.test_rc.fullchain, "w") as f:
             f.write("wrongly-named fullchain")
-        self.assertFalse(self.test_rc.consistent())
+        self.assertFalse(self.test_rc._consistent())
 
     def test_current_target(self):
         # Relative path logic
@@ -260,14 +261,15 @@ class RenewableCertTests(BaseRenewableCertTest):
                 with open(where, "w") as f:
                     f.write(kind)
                 self.assertEqual(ver, self.test_rc.current_version(kind))
-        self.test_rc.update_link_to("cert", 3)
-        self.test_rc.update_link_to("privkey", 2)
+        # pylint: disable=protected-access
+        self.test_rc._update_link_to("cert", 3)
+        self.test_rc._update_link_to("privkey", 2)
         self.assertEqual(3, self.test_rc.current_version("cert"))
         self.assertEqual(2, self.test_rc.current_version("privkey"))
         self.assertEqual(5, self.test_rc.current_version("chain"))
         self.assertEqual(5, self.test_rc.current_version("fullchain"))
         # Currently we are allowed to update to a version that doesn't exist
-        self.test_rc.update_link_to("chain", 3000)
+        self.test_rc._update_link_to("chain", 3000)
         # However, current_version doesn't allow querying the resulting
         # version (because it's a broken link).
         self.assertEqual(os.path.basename(os.readlink(self.test_rc.chain)),
@@ -406,6 +408,14 @@ class RenewableCertTests(BaseRenewableCertTest):
             self.assertEqual(self.test_rc.should_autodeploy(), result)
             self.assertEqual(self.test_rc.should_autorenew(), result)
 
+    def test_autodeployment_is_enabled(self):
+        self.assertTrue(self.test_rc.autodeployment_is_enabled())
+        self.test_rc.configuration["autodeploy"] = "1"
+        self.assertTrue(self.test_rc.autodeployment_is_enabled())
+
+        self.test_rc.configuration["autodeploy"] = "0"
+        self.assertFalse(self.test_rc.autodeployment_is_enabled())
+
     def test_should_autodeploy(self):
         """Test should_autodeploy() on the basis of reasons other than
         expiry time window."""
@@ -425,6 +435,14 @@ class RenewableCertTests(BaseRenewableCertTest):
                 with open(where, "w") as f:
                     f.write(kind)
         self.assertFalse(self.test_rc.should_autodeploy())
+
+    def test_autorenewal_is_enabled(self):
+        self.assertTrue(self.test_rc.autorenewal_is_enabled())
+        self.test_rc.configuration["autorenew"] = "1"
+        self.assertTrue(self.test_rc.autorenewal_is_enabled())
+
+        self.test_rc.configuration["autorenew"] = "0"
+        self.assertFalse(self.test_rc.autorenewal_is_enabled())
 
     @mock.patch("letsencrypt.storage.RenewableCert.ocsp_revoked")
     def test_should_autorenew(self, mock_ocsp):
@@ -508,7 +526,8 @@ class RenewableCertTests(BaseRenewableCertTest):
             self.defaults, self.cli_config)
         # This consistency check tests most relevant properties about the
         # newly created cert lineage.
-        self.assertTrue(result.consistent())
+        # pylint: disable=protected-access
+        self.assertTrue(result._consistent())
         self.assertTrue(os.path.exists(os.path.join(
             self.cli_config.renewal_configs_dir, "the-lineage.com.conf")))
         with open(result.fullchain) as f:
@@ -579,9 +598,10 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertRaises(
             errors.CertStorageError,
             self.test_rc.newest_available_version, "elephant")
+        # pylint: disable=protected-access
         self.assertRaises(
             errors.CertStorageError,
-            self.test_rc.update_link_to, "elephant", 17)
+            self.test_rc._update_link_to, "elephant", 17)
 
     def test_ocsp_revoked(self):
         # XXX: This is currently hardcoded to False due to a lack of an
