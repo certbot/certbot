@@ -89,3 +89,7 @@ RENEWAL_CONFIGS_DIR = "renewal"
 
 RENEWER_CONFIG_FILENAME = "renewer.conf"
 """Renewer config file name (relative to `IConfig.config_dir`)."""
+
+developer = True
+#developer = False
+"""Enables EULA"""
