@@ -702,8 +702,6 @@ def create_parser(plugins, args):
         help=config_help("dvsni_port"))
     helpful.add("testing", "--simple-http-port", type=int,
                 help=config_help("simple_http_port"))
-    helpful.add("testing", "--no-simple-http-tls", action="store_true",
-                help=config_help("no_simple_http_tls"))
 
     helpful.add_group(
         "security", description="Security parameters & server settings")
