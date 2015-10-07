@@ -53,15 +53,12 @@ class HTTPSServer(TLSServer, BaseHTTPServer.HTTPServer):
 
 
 class ACMEServerMixin:  # pylint: disable=old-style-class,no-init
-    """ACME server common settings mixin.
-
-    .. warning::
-       Subclasses have to init ``_stopped = False`` (it's not done here,
-       because of old-style classes madness).
-
-    """
+    """ACME server common settings mixin."""
     server_version = "ACME standalone client"
     allow_reuse_address = True
+
+    def __init__(self):
+        self._stopped = False
 
     def serve_forever2(self):
         """Serve forever, until other thread calls `shutdown2`."""
@@ -95,7 +92,7 @@ class ACMETLSServer(HTTPSServer, ACMEServerMixin):
     """
 
     def __init__(self, *args, **kwargs):
-        self._stopped = False
+        ACMEServerMixin.__init__(self)
         HTTPSServer.__init__(self, *args, **kwargs)
 
 
@@ -103,7 +100,7 @@ class ACMEServer(BaseHTTPServer.HTTPServer, ACMEServerMixin):
     """ACME Server (non-TLS)."""
 
     def __init__(self, *args, **kwargs):
-        self._stopped = False
+        ACMEServerMixin.__init__(self)
         BaseHTTPServer.HTTPServer.__init__(self, *args, **kwargs)
 
 
