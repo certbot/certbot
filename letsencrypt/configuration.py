@@ -37,8 +37,7 @@ class NamespaceConfig(object):
         self.namespace = namespace
 
         # XXX: breaks renewer in some bizarre way
-        #if self.no_simple_http_tls and (
-        #        self.simple_http_port == self.dvsni_port):
+        #if self.simple_http_port == self.dvsni_port:
         #    raise errors.Error(
         #        "Trying to run SimpleHTTP non-TLS and DVSNI "
         #        "on the same port ({0})".format(self.dvsni_port))
@@ -82,10 +81,8 @@ class NamespaceConfig(object):
     def simple_http_port(self):  # pylint: disable=missing-docstring
         if self.namespace.simple_http_port is not None:
             return self.namespace.simple_http_port
-        if self.no_simple_http_tls:
-            return challenges.SimpleHTTPResponse.PORT
         else:
-            return challenges.SimpleHTTPResponse.TLS_PORT
+            return challenges.SimpleHTTPResponse.PORT
 
 
 class RenewerConfiguration(object):

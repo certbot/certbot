@@ -5,7 +5,6 @@ import functools
 import logging
 import random
 import socket
-import sys
 import threading
 
 import OpenSSL
@@ -198,12 +197,7 @@ class Authenticator(common.Plugin):
 
     def get_chall_pref(self, domain):
         # pylint: disable=unused-argument,missing-docstring
-        supported_challenges = self.supported_challenges
-        if not self.config.no_simple_http_tls and not (
-                acme_standalone.ACMETLSServer.SIMPLE_HTTP_SUPPORT):
-            logger.debug("SimpleHTTPS not supported: %s", sys.version)
-            supported_challenges.discard(challenges.SimpleHTTP)
-        chall_pref = list(supported_challenges)
+        chall_pref = list(self.supported_challenges)
         random.shuffle(chall_pref)  # 50% for each challenge
         return chall_pref
 
@@ -231,12 +225,13 @@ class Authenticator(common.Plugin):
     def perform2(self, achalls):
         """Perform achallenges without IDisplay interaction."""
         responses = []
-        tls = not self.config.no_simple_http_tls
 
         for achall in achalls:
             if isinstance(achall, achallenges.SimpleHTTP):
-                server = self.servers.run(self.config.simple_http_port, tls=tls)
-                response, validation = achall.gen_response_and_validation(tls=tls)
+                server = self.servers.run(
+                    self.config.simple_http_port, tls=False)
+                response, validation = achall.gen_response_and_validation(
+                    tls=False)
                 self.simple_http_resources.add(
                     acme_standalone.SimpleHTTPRequestHandler.SimpleHTTPResource(
                         chall=achall.chall, response=response,

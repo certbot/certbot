@@ -107,20 +107,9 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertRaises(errors.MisconfigurationError, self.auth.prepare)
         mock_util.already_listening.assert_called_once_with(1234)
 
-    @mock.patch("letsencrypt.plugins.standalone.acme_standalone")
-    def test_get_chall_pref_tls_supported(self, mock_astandalone):
-        mock_astandalone.ACMETLSServer.SIMPLE_HTTP_SUPPORT = True
-        for no_simple_http_tls in True, False:
-            self.config.no_simple_http_tls = no_simple_http_tls
-            self.assertEqual(set(self.auth.get_chall_pref(domain=None)),
-                             set([challenges.DVSNI, challenges.SimpleHTTP]))
-
-    @mock.patch("letsencrypt.plugins.standalone.acme_standalone")
-    def test_get_chall_pref_simple_tls_not_supported(self, mock_astandalone):
-        mock_astandalone.ACMETLSServer.SIMPLE_HTTP_SUPPORT = False
-        self.config.no_simple_http_tls = False
+    def test_get_chall_pref(self):
         self.assertEqual(set(self.auth.get_chall_pref(domain=None)),
-                         set([challenges.DVSNI]))
+                         set([challenges.DVSNI, challenges.SimpleHTTP]))
 
     @mock.patch("letsencrypt.plugins.standalone.zope.component.getUtility")
     def test_perform(self, unused_mock_get_utility):

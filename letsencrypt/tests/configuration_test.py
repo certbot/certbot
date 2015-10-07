@@ -49,13 +49,8 @@ class NamespaceConfigTest(unittest.TestCase):
 
     def test_simple_http_port(self):
         self.assertEqual(4321, self.config.simple_http_port)
-
         self.namespace.simple_http_port = None
-        self.namespace.no_simple_http_tls = True
         self.assertEqual(80, self.config.simple_http_port)
-
-        self.namespace.no_simple_http_tls = False
-        self.assertEqual(443, self.config.simple_http_port)
 
 
 class RenewerConfigurationTest(unittest.TestCase):
