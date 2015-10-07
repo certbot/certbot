@@ -965,7 +965,7 @@ def main(cli_args=sys.argv[1:]):
     atexit.register(report.atexit_print_messages)
 
     # TODO: remove developer EULA prompt for the launch
-    if developer == 1:
+    if config.developer == 1:
       if not config.eula:
         eula = pkg_resources.resource_string("letsencrypt", "EULA")
         if not zope.component.getUtility(interfaces.IDisplay).yesno(
