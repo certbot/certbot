@@ -309,7 +309,7 @@ class StandaloneAuthenticator(common.Plugin):
             net_connections = psutil.net_connections()
         except psutil.AccessDenied as error:
             logger.info("Access denied when trying to list network "
-            "connections: %s. Are you root?", error)
+                        "connections: %s. Are you root?", error)
             # this function is just a pre-check that often causes false
             # positives and problems in testing (c.f. #680 on Mac, #255
             # generally); we will fail later in bind() anyway

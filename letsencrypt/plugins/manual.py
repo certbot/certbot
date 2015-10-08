@@ -133,7 +133,7 @@ binary for temporary key/certificate generation.""".replace("\n", "")
             if sys.platform == "darwin":
                 executable = "/bin/bash"
             else:
-                executable = "/bin/sh"
+                executable = None
                 
             try:
                 self._httpd = subprocess.Popen(
