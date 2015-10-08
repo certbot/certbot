@@ -91,7 +91,7 @@ class JSONDeSerializableTest(unittest.TestCase):
 
     def test_json_dumps_pretty(self):
         self.assertEqual(
-            self.seq.json_dumps_pretty(), '[\n    "foo1",\n    "foo2"\n]')
+            self.seq.json_dumps_pretty(), '[\n    "foo1", \n    "foo2"\n]')
 
     def test_json_dump_default(self):
         from acme.jose.interfaces import JSONDeSerializable

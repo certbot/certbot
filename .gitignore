@@ -2,9 +2,9 @@
 *.egg-info/
 .eggs/
 build/
-dist/
-/venv/
-/venv3/
+dist*/
+/venv*/
+/kgs/
 /.tox/
 letsencrypt.log
 

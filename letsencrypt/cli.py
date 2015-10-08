@@ -702,8 +702,6 @@ def create_parser(plugins, args):
         help=config_help("dvsni_port"))
     helpful.add("testing", "--simple-http-port", type=int,
                 help=config_help("simple_http_port"))
-    helpful.add("testing", "--no-simple-http-tls", action="store_true",
-                help=config_help("no_simple_http_tls"))
 
     helpful.add_group(
         "security", description="Security parameters & server settings")
@@ -729,10 +727,12 @@ def create_parser(plugins, args):
 
     return helpful.parser, helpful.args
 
+
 # For now unfortunately this constant just needs to match the code below;
 # there isn't an elegant way to autogenerate it in time.
 VERBS = ["run", "auth", "install", "revoke", "rollback", "config_changes", "plugins"]
 HELP_TOPICS = ["all", "security", "paths", "automation", "testing"] + VERBS
+
 
 def _create_subparsers(helpful):
     subparsers = helpful.parser.add_subparsers(metavar="SUBCOMMAND")
@@ -741,7 +741,7 @@ def _create_subparsers(helpful):
         if name == "plugins":
             func = plugins_cmd
         else:
-            func = eval(name) # pylint: disable=eval-used
+            func = eval(name)  # pylint: disable=eval-used
         h = func.__doc__.splitlines()[0]
         subparser = subparsers.add_parser(name, help=h, description=func.__doc__)
         subparser.set_defaults(func=func)
@@ -762,22 +762,23 @@ def _create_subparsers(helpful):
     helpful.add_group("plugins", description="Plugin options")
 
     helpful.add("auth",
-        "--csr", type=read_file, help="Path to a Certificate Signing Request (CSR) in DER format.")
+                "--csr", type=read_file,
+                help="Path to a Certificate Signing Request (CSR) in DER format.")
     helpful.add("rollback",
-        "--checkpoints", type=int, metavar="N",
-        default=flag_default("rollback_checkpoints"),
-        help="Revert configuration N number of checkpoints.")
+                "--checkpoints", type=int, metavar="N",
+                default=flag_default("rollback_checkpoints"),
+                help="Revert configuration N number of checkpoints.")
 
     helpful.add("plugins",
-        "--init", action="store_true", help="Initialize plugins.")
+                "--init", action="store_true", help="Initialize plugins.")
     helpful.add("plugins",
-        "--prepare", action="store_true", help="Initialize and prepare plugins.")
+                "--prepare", action="store_true", help="Initialize and prepare plugins.")
     helpful.add("plugins",
-        "--authenticators", action="append_const", dest="ifaces",
-        const=interfaces.IAuthenticator, help="Limit to authenticator plugins only.")
+                "--authenticators", action="append_const", dest="ifaces",
+                const=interfaces.IAuthenticator, help="Limit to authenticator plugins only.")
     helpful.add("plugins",
-        "--installers", action="append_const", dest="ifaces",
-        const=interfaces.IInstaller, help="Limit to installer plugins only.")
+                "--installers", action="append_const", dest="ifaces",
+                const=interfaces.IInstaller, help="Limit to installer plugins only.")
 
 
 def _paths_parser(helpful):
