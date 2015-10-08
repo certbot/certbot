@@ -1,3 +1,5 @@
+import sys
+
 from setuptools import setup
 from setuptools import find_packages
 
@@ -9,9 +11,13 @@ install_requires = [
     'letsencrypt-apache=={0}'.format(version),
     'letsencrypt-nginx=={0}'.format(version),
     'docker-py',
-    'mock<1.1.0',  # py26
     'zope.interface',
 ]
+
+if sys.version_info < (2, 7):
+    install_requires.append('mock<1.1.0')
+else:
+    install_requires.append('mock')
 
 setup(
     name='letsencrypt-compatibility-test',

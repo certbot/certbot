@@ -4,14 +4,12 @@ import shutil
 import tempfile
 import unittest
 
-import configobj
 import OpenSSL
 import mock
 
 from acme import jose
 
 from letsencrypt import account
-from letsencrypt import configuration
 from letsencrypt import errors
 from letsencrypt import le_util
 
@@ -120,29 +118,28 @@ class ClientTest(unittest.TestCase):
     def test_report_renewal_status(self, mock_zope):
         # pylint: disable=protected-access
         cert = mock.MagicMock()
-        cert.configuration = configobj.ConfigObj()
-        cert.cli_config = configuration.RenewerConfiguration(self.config)
+        cert.cli_config.renewal_configs_dir = "/foo/bar/baz"
 
-        cert.configuration["autorenew"] = "True"
-        cert.configuration["autodeploy"] = "True"
+        cert.autorenewal_is_enabled.return_value = True
+        cert.autodeployment_is_enabled.return_value = True
         self.client._report_renewal_status(cert)
         msg = mock_zope().add_message.call_args[0][0]
         self.assertTrue("renewal and deployment has been" in msg)
         self.assertTrue(cert.cli_config.renewal_configs_dir in msg)
 
-        cert.configuration["autorenew"] = "False"
+        cert.autorenewal_is_enabled.return_value = False
         self.client._report_renewal_status(cert)
         msg = mock_zope().add_message.call_args[0][0]
         self.assertTrue("deployment but not automatic renewal" in msg)
         self.assertTrue(cert.cli_config.renewal_configs_dir in msg)
 
-        cert.configuration["autodeploy"] = "False"
+        cert.autodeployment_is_enabled.return_value = False
         self.client._report_renewal_status(cert)
         msg = mock_zope().add_message.call_args[0][0]
         self.assertTrue("renewal and deployment has not" in msg)
         self.assertTrue(cert.cli_config.renewal_configs_dir in msg)
 
-        cert.configuration["autorenew"] = "True"
+        cert.autorenewal_is_enabled.return_value = True
         self.client._report_renewal_status(cert)
         msg = mock_zope().add_message.call_args[0][0]
         self.assertTrue("renewal but not automatic deployment" in msg)

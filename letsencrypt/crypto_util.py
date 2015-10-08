@@ -4,7 +4,6 @@
     is capable of handling the signatures.
 
 """
-import datetime
 import logging
 import os
 
@@ -256,24 +255,6 @@ def get_sans_from_csr(csr, typ=OpenSSL.crypto.FILETYPE_PEM):
     """
     return _get_sans_from_cert_or_req(
         csr, OpenSSL.crypto.load_certificate_request, typ)
-
-
-def asn1_generalizedtime_to_dt(timestamp):
-    """Convert ASN.1 GENERALIZEDTIME to datetime.
-
-    Useful for deserialization of `OpenSSL.crypto.X509.get_notAfter` and
-    `OpenSSL.crypto.X509.get_notAfter` outputs.
-
-    .. todo:: This function support only one format: `%Y%m%d%H%M%SZ`.
-        Implement remaining two.
-
-    """
-    return datetime.datetime.strptime(timestamp, '%Y%m%d%H%M%SZ')
-
-
-def pyopenssl_x509_name_as_text(x509name):
-    """Convert `OpenSSL.crypto.X509Name` to text."""
-    return "/".join("{0}={1}" for key, value in x509name.get_components())
 
 
 def dump_pyopenssl_chain(chain, filetype=OpenSSL.crypto.FILETYPE_PEM):

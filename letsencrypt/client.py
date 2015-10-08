@@ -268,19 +268,15 @@ class Client(object):
         :param .RenewableCert cert: Newly issued certificate
 
         """
-        if ("autorenew" not in cert.configuration or
-                cert.configuration.as_bool("autorenew")):
-            if ("autodeploy" not in cert.configuration or
-                    cert.configuration.as_bool("autodeploy")):
+        if cert.autorenewal_is_enabled():
+            if cert.autodeployment_is_enabled():
                 msg = "Automatic renewal and deployment has "
             else:
                 msg = "Automatic renewal but not automatic deployment has "
+        elif cert.autodeployment_is_enabled():
+            msg = "Automatic deployment but not automatic renewal has "
         else:
-            if ("autodeploy" not in cert.configuration or
-                    cert.configuration.as_bool("autodeploy")):
-                msg = "Automatic deployment but not automatic renewal has "
-            else:
-                msg = "Automatic renewal and deployment has not "
+            msg = "Automatic renewal and deployment has not "
 
         msg += ("been enabled for your certificate. These settings can be "
                 "configured in the directories under {0}.").format(
