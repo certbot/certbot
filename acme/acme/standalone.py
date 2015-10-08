@@ -44,15 +44,7 @@ class TLSServer(socketserver.TCPServer):
         return socketserver.TCPServer.server_bind(self)
 
 
-class HTTPSServer(TLSServer, BaseHTTPServer.HTTPServer):
-    """HTTPS Server."""
-
-    def server_bind(self):
-        self._wrap_sock()
-        BaseHTTPServer.HTTPServer.server_bind(self)
-
-
-class ACMEServerMixin:  # pylint: disable=old-style-class,no-init
+class ACMEServerMixin:  # pylint: disable=old-style-class
     """ACME server common settings mixin."""
     server_version = "ACME standalone client"
     allow_reuse_address = True
@@ -81,27 +73,23 @@ class ACMEServerMixin:  # pylint: disable=old-style-class,no-init
         self.server_close()
 
 
-class ACMETLSServer(HTTPSServer, ACMEServerMixin):
-    """ACME TLS Server."""
+class DVSNIServer(TLSServer, ACMEServerMixin):
+    """DVSNI Server."""
 
-    SIMPLE_HTTP_SUPPORT = crypto_util.SSLSocket.FakeConnection.MAKEFILE_SUPPORT
-    """Is SimpleHTTP supported on your platform.
-
-    Please see a warning for `acme.crypto_util.SSLSocket.FakeConnection`.
-
-    """
-
-    def __init__(self, *args, **kwargs):
+    def __init__(self, server_address, certs):
         ACMEServerMixin.__init__(self)
-        HTTPSServer.__init__(self, *args, **kwargs)
+        TLSServer.__init__(
+            self, server_address, socketserver.BaseRequestHandler, certs=certs)
 
 
-class ACMEServer(BaseHTTPServer.HTTPServer, ACMEServerMixin):
-    """ACME Server (non-TLS)."""
+class SimpleHTTPServer(BaseHTTPServer.HTTPServer, ACMEServerMixin):
+    """SimpleHTTP Server."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, server_address, resources):
         ACMEServerMixin.__init__(self)
-        BaseHTTPServer.HTTPServer.__init__(self, *args, **kwargs)
+        BaseHTTPServer.HTTPServer.__init__(
+            self, server_address, SimpleHTTPRequestHandler.partial_init(
+                simple_http_resources=resources))
 
 
 class SimpleHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
@@ -133,14 +121,14 @@ class SimpleHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-type", "text/html")
         self.end_headers()
-        self.wfile.write(self.server.server_version)
+        self.wfile.write(self.server.server_version.encode())
 
     def handle_404(self):
         """Handler 404 Not Found errors."""
         self.send_response(http_client.NOT_FOUND, message="Not Found")
         self.send_header("Content-type", "text/html")
         self.end_headers()
-        self.wfile.write("404")
+        self.wfile.write(b"404")
 
     def handle_simple_http_resource(self):
         """Handle SimpleHTTP provisioned resources."""
@@ -171,24 +159,8 @@ class SimpleHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             cls, simple_http_resources=simple_http_resources)
 
 
-class ACMERequestHandler(SimpleHTTPRequestHandler):
-    """ACME request handler."""
-
-    def handle_one_request(self):
-        """Handle single request.
-
-        Makes sure that DVSNI probers are ignored.
-
-        """
-        try:
-            return SimpleHTTPRequestHandler.handle_one_request(self)
-        except OpenSSL.SSL.ZeroReturnError:
-            logger.debug("Client prematurely closed connection (prober?). "
-                         "Ignoring request.")
-
-
-def simple_server(cli_args, forever=True):
-    """Run simple standalone client server."""
+def simple_dvsni_server(cli_args, forever=True):
+    """Run simple standalone DVSNI server."""
     logging.basicConfig(level=logging.DEBUG)
 
     parser = argparse.ArgumentParser()
@@ -198,7 +170,6 @@ def simple_server(cli_args, forever=True):
     args = parser.parse_args(cli_args[1:])
 
     certs = {}
-    resources = {}
 
     _, hosts, _ = next(os.walk('.'))
     for host in hosts:
@@ -206,15 +177,13 @@ def simple_server(cli_args, forever=True):
             cert_contents = cert_file.read()
         with open(os.path.join(host, "key.pem")) as key_file:
             key_contents = key_file.read()
-        certs[host] = (
+        certs[host.encode()] = (
             OpenSSL.crypto.load_privatekey(
                 OpenSSL.crypto.FILETYPE_PEM, key_contents),
             OpenSSL.crypto.load_certificate(
                 OpenSSL.crypto.FILETYPE_PEM, cert_contents))
 
-    handler = ACMERequestHandler.partial_init(
-        simple_http_resources=resources)
-    server = ACMETLSServer(('', int(args.port)), handler, certs=certs)
+    server = DVSNIServer(('', int(args.port)), certs=certs)
     six.print_("Serving at https://localhost:{0}...".format(
         server.socket.getsockname()[1]))
     if forever:  # pragma: no cover
@@ -224,4 +193,4 @@ def simple_server(cli_args, forever=True):
 
 
 if __name__ == "__main__":
-    sys.exit(simple_server(sys.argv))  # pragma: no cover
+    sys.exit(simple_dvsni_server(sys.argv))  # pragma: no cover

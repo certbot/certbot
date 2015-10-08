@@ -1,7 +1,6 @@
 """Standalone Authenticator."""
 import argparse
 import collections
-import functools
 import logging
 import random
 import socket
@@ -61,25 +60,19 @@ class ServerManager(object):
         if port in self._instances:
             return self._instances[port].server
 
-        logger.debug("Starting new server at %s (tls=%s)", port, tls)
-        handler = acme_standalone.ACMERequestHandler.partial_init(
-            self.simple_http_resources)
-
-        if tls:
-            cls = functools.partial(
-                acme_standalone.ACMETLSServer, certs=self.certs)
-        else:
-            cls = acme_standalone.ACMEServer
-
+        address = ("", port)
         try:
-            server = cls(("", port), handler)
+            if tls:
+                server = acme_standalone.DVSNIServer(address, self.certs)
+            else:
+                server = acme_standalone.SimpleHTTPServer(
+                    address, self.simple_http_resources)
         except socket.error as error:
             raise errors.StandaloneBindError(error, port)
 
         # if port == 0, then random free port on OS is taken
         # pylint: disable=no-member
         host, real_port = server.socket.getsockname()
-
         thread = threading.Thread(target=server.serve_forever2)
         logger.debug("Starting server at %s:%d", host, real_port)
         thread.start()

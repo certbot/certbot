@@ -70,20 +70,10 @@ class SSLSocket(object):  # pylint: disable=too-few-public-methods
     class FakeConnection(object):
         """Fake OpenSSL.SSL.Connection."""
 
-        MAKEFILE_SUPPORT = hasattr(socket, "_fileobject")
-        """Is `makefile` supported on your platform?
-
-        .. warning:: `makefile`, as currently implemented, is supported
-            on select platforms only, as it uses CPython's internal API.
-            You've been warned!
-
-        """
-
         # pylint: disable=missing-docstring
 
         def __init__(self, connection):
             self._wrapped = connection
-            self._makefile_refs = 0
 
         def __getattr__(self, name):
             return getattr(self._wrapped, name)
@@ -91,27 +81,6 @@ class SSLSocket(object):  # pylint: disable=too-few-public-methods
         def shutdown(self, *unused_args):
             # OpenSSL.SSL.Connection.shutdown doesn't accept any args
             return self._wrapped.shutdown()
-
-        # stuff below ripped off from
-        # https://hg.python.org/cpython/file/2.7/Lib/ssl.py
-
-        def makefile(self, mode='r', bufsize=-1):
-            assert self.MAKEFILE_SUPPORT, (
-                "You need compatible version for makefile support")
-            self._makefile_refs += 1
-            # SocketServer.StreamRequesthandler.finish will try to
-            # close the wfile/rfile.  close=True causes curl: (56)
-            # GnuTLS recv error (-110): The TLS connection was
-            # non-properly terminated.
-            # TODO: doesn't work in Python3
-            # pylint: disable=protected-access
-            return socket._fileobject(self._wrapped, mode, bufsize, close=False)
-
-        def close(self):
-            if self._makefile_refs < 1:
-                self._wrapped.close()
-            else:
-                self._makefile_refs -= 1
 
     def accept(self):  # pylint: disable=missing-docstring
         sock, addr = self.sock.accept()
