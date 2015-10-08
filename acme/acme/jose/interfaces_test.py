@@ -1,6 +1,8 @@
 """Tests for acme.jose.interfaces."""
 import unittest
 
+import six
+
 
 class JSONDeSerializableTest(unittest.TestCase):
     # pylint: disable=too-many-instance-attributes
@@ -90,8 +92,9 @@ class JSONDeSerializableTest(unittest.TestCase):
         self.assertEqual('["foo1", "foo2"]', self.seq.json_dumps())
 
     def test_json_dumps_pretty(self):
-        self.assertEqual(
-            self.seq.json_dumps_pretty(), '[\n    "foo1", \n    "foo2"\n]')
+        filler = ' ' if six.PY2 else ''
+        self.assertEqual(self.seq.json_dumps_pretty(),
+                         '[\n    "foo1",{0}\n    "foo2"\n]'.format(filler))
 
     def test_json_dump_default(self):
         from acme.jose.interfaces import JSONDeSerializable
