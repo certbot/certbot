@@ -92,6 +92,10 @@ class NginxDvsni(common.Dvsni):
         included = False
         directive = ['include', self.challenge_conf]
         root = self.configurator.parser.loc["root"]
+
+        self.configurator.parser.add_http_directives(root,
+            ['server_names_hash_bucket_size', '128'])
+
         main = self.configurator.parser.parsed[root]
         for entry in main:
             if entry[0] == ['http']:

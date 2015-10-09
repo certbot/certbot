@@ -110,10 +110,6 @@ class NginxConfigurator(common.Plugin):
         self.parser = parser.NginxParser(
             self.conf('server-root'), self.mod_ssl_conf)
 
-        filep = self.parser.loc["root"]
-        self.parser.add_http_directives(filep,
-            ['server_names_hash_bucket_size', '128'])
-
         # Set Version
         if self.version is None:
             self.version = self.get_version()
