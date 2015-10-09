@@ -12,7 +12,7 @@ from letsencrypt.display import util as display_util
 logger = logging.getLogger(__name__)
 
 # Define a helper function to avoid verbose code
-util = zope.component.getUtility  # pylint: disable=invalid-name
+util = zope.component.getUtility
 
 
 def choose_plugin(prepared, question):
@@ -65,7 +65,7 @@ def pick_plugin(config, default, plugins, question, ifaces):
         # throw more UX-friendly error if default not in plugins
         filtered = plugins.filter(lambda p_ep: p_ep.name == default)
     else:
-        filtered = plugins.ifaces(ifaces)
+        filtered = plugins.visible().ifaces(ifaces)
 
     filtered.init(config)
     verified = filtered.verify(ifaces)

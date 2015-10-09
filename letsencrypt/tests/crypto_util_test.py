@@ -6,7 +6,10 @@ import unittest
 
 import OpenSSL
 import mock
+import zope.component
 
+from letsencrypt import errors
+from letsencrypt import interfaces
 from letsencrypt.tests import test_util
 
 
@@ -20,6 +23,8 @@ class InitSaveKeyTest(unittest.TestCase):
     """Tests for letsencrypt.crypto_util.init_save_key."""
     def setUp(self):
         logging.disable(logging.CRITICAL)
+        zope.component.provideUtility(
+            mock.Mock(strict_permissions=True), interfaces.IConfig)
         self.key_dir = tempfile.mkdtemp('key_dir')
 
     def tearDown(self):
@@ -48,6 +53,8 @@ class InitSaveCSRTest(unittest.TestCase):
     """Tests for letsencrypt.crypto_util.init_save_csr."""
 
     def setUp(self):
+        zope.component.provideUtility(
+            mock.Mock(strict_permissions=True), interfaces.IConfig)
         self.csr_dir = tempfile.mkdtemp('csr_dir')
 
     def tearDown(self):
@@ -205,6 +212,24 @@ class GetSANsFromCSRTest(unittest.TestCase):
     def test_parse_no_sans(self):
         self.assertEqual(
             [], self._call(test_util.load_vector('csr-nosans.pem')))
+
+
+class CertLoaderTest(unittest.TestCase):
+    """Tests for letsencrypt.crypto_util.pyopenssl_load_certificate"""
+
+    def test_load_valid_cert(self):
+        from letsencrypt.crypto_util import pyopenssl_load_certificate
+
+        cert, file_type = pyopenssl_load_certificate(CERT)
+        self.assertEqual(cert.digest('sha1'),
+                         OpenSSL.crypto.load_certificate(file_type, CERT).digest('sha1'))
+
+    def test_load_invalid_cert(self):
+        from letsencrypt.crypto_util import pyopenssl_load_certificate
+        bad_cert_data = CERT.replace("BEGIN CERTIFICATE", "ASDFASDFASDF!!!")
+
+        with self.assertRaises(errors.Error):
+            pyopenssl_load_certificate(bad_cert_data)
 
 
 if __name__ == '__main__':

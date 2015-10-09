@@ -23,7 +23,7 @@ from letsencrypt.plugins import common
 logger = logging.getLogger(__name__)
 
 
-class ManualAuthenticator(common.Plugin):
+class Authenticator(common.Plugin):
     """Manual Authenticator.
 
     .. todo:: Support for `~.challenges.DVSNI`.
@@ -53,7 +53,7 @@ command on the target server (as root):
     # served and makes it more obvious that Python command will serve
     # anything recursively under the cwd
 
-    HTTP_TEMPLATE = """\
+    CMD_TEMPLATE = """\
 mkdir -p {root}/public_html/{response.URI_ROOT_PATH}
 cd {root}/public_html
 echo -n {validation} > {response.URI_ROOT_PATH}/{encoded_token}
@@ -63,33 +63,10 @@ $(command -v python2 || command -v python2.7 || command -v python2.6) -c \\
 SimpleHTTPServer.SimpleHTTPRequestHandler.extensions_map = {{'': '{ct}'}}; \\
 s = BaseHTTPServer.HTTPServer(('', {port}), SimpleHTTPServer.SimpleHTTPRequestHandler); \\
 s.serve_forever()" """
-    """Non-TLS command template."""
-
-    # https://www.piware.de/2011/01/creating-an-https-server-in-python/
-    HTTPS_TEMPLATE = """\
-mkdir -p {root}/public_html/{response.URI_ROOT_PATH}
-cd {root}/public_html
-echo -n {validation} > {response.URI_ROOT_PATH}/{encoded_token}
-# run only once per server:
-openssl req -new -newkey rsa:4096 -subj "/" -days 1 -nodes -x509 -keyout ../key.pem -out ../cert.pem
-$(command -v python2 || command -v python2.7 || command -v python2.6) -c \\
-"import BaseHTTPServer, SimpleHTTPServer, ssl; \\
-SimpleHTTPServer.SimpleHTTPRequestHandler.extensions_map = {{'': '{ct}'}}; \\
-s = BaseHTTPServer.HTTPServer(('', {port}), SimpleHTTPServer.SimpleHTTPRequestHandler); \\
-s.socket = ssl.wrap_socket(s.socket, keyfile='../key.pem', certfile='../cert.pem'); \\
-s.serve_forever()" """
-    """TLS command template.
-
-    According to the ACME specification, "the ACME server MUST ignore
-    the certificate provided by the HTTPS server", so the first command
-    generates temporary self-signed certificate.
-
-    """
+    """Command template."""
 
     def __init__(self, *args, **kwargs):
-        super(ManualAuthenticator, self).__init__(*args, **kwargs)
-        self.template = (self.HTTP_TEMPLATE if self.config.no_simple_http_tls
-                         else self.HTTPS_TEMPLATE)
+        super(Authenticator, self).__init__(*args, **kwargs)
         self._root = (tempfile.mkdtemp() if self.conf("test-mode")
                       else "/tmp/letsencrypt")
         self._httpd = None
@@ -97,8 +74,7 @@ s.serve_forever()" """
     @classmethod
     def add_parser_arguments(cls, add):
         add("test-mode", action="store_true",
-            help="Test mode. Executes the manual command in subprocess. "
-            "Requires openssl to be installed unless --no-simple-http-tls.")
+            help="Test mode. Executes the manual command in subprocess.")
 
     def prepare(self):  # pylint: disable=missing-docstring,no-self-use
         pass  # pragma: no cover
@@ -142,11 +118,11 @@ binary for temporary key/certificate generation.""".replace("\n", "")
         # users, but will not work if multiple domains point at the
         # same server: default command doesn't support virtual hosts
         response, validation = achall.gen_response_and_validation(
-            tls=(not self.config.no_simple_http_tls))
+            tls=False)  # SimpleHTTP TLS is dead: ietf-wg-acme/acme#7
 
         port = (response.port if self.config.simple_http_port is None
                 else int(self.config.simple_http_port))
-        command = self.template.format(
+        command = self.CMD_TEMPLATE.format(
             root=self._root, achall=achall, response=response,
             validation=pipes.quote(validation.json_dumps()),
             encoded_token=achall.chall.encode("token"),
@@ -182,6 +158,8 @@ binary for temporary key/certificate generation.""".replace("\n", "")
                 achall.account_key.public_key(), self.config.simple_http_port):
             return response
         else:
+            logger.error(
+                "Self-verify of challenge failed, authorization abandoned.")
             if self.conf("test-mode") and self._httpd.poll() is not None:
                 # simply verify cause command failure...
                 return False

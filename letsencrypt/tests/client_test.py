@@ -4,14 +4,12 @@ import shutil
 import tempfile
 import unittest
 
-import configobj
 import OpenSSL
 import mock
 
 from acme import jose
 
 from letsencrypt import account
-from letsencrypt import configuration
 from letsencrypt import errors
 from letsencrypt import le_util
 
@@ -113,36 +111,35 @@ class ClientTest(unittest.TestCase):
         mock_crypto_util.init_save_key.assert_called_once_with(
             self.config.rsa_key_size, self.config.key_dir)
         mock_crypto_util.init_save_csr.assert_called_once_with(
-            mock.sentinel.key, domains, self.config.cert_dir)
+            mock.sentinel.key, domains, self.config.csr_dir)
         self._check_obtain_certificate()
 
     @mock.patch("letsencrypt.client.zope.component.getUtility")
     def test_report_renewal_status(self, mock_zope):
         # pylint: disable=protected-access
         cert = mock.MagicMock()
-        cert.configuration = configobj.ConfigObj()
-        cert.cli_config = configuration.RenewerConfiguration(self.config)
+        cert.cli_config.renewal_configs_dir = "/foo/bar/baz"
 
-        cert.configuration["autorenew"] = "True"
-        cert.configuration["autodeploy"] = "True"
+        cert.autorenewal_is_enabled.return_value = True
+        cert.autodeployment_is_enabled.return_value = True
         self.client._report_renewal_status(cert)
         msg = mock_zope().add_message.call_args[0][0]
         self.assertTrue("renewal and deployment has been" in msg)
         self.assertTrue(cert.cli_config.renewal_configs_dir in msg)
 
-        cert.configuration["autorenew"] = "False"
+        cert.autorenewal_is_enabled.return_value = False
         self.client._report_renewal_status(cert)
         msg = mock_zope().add_message.call_args[0][0]
         self.assertTrue("deployment but not automatic renewal" in msg)
         self.assertTrue(cert.cli_config.renewal_configs_dir in msg)
 
-        cert.configuration["autodeploy"] = "False"
+        cert.autodeployment_is_enabled.return_value = False
         self.client._report_renewal_status(cert)
         msg = mock_zope().add_message.call_args[0][0]
         self.assertTrue("renewal and deployment has not" in msg)
         self.assertTrue(cert.cli_config.renewal_configs_dir in msg)
 
-        cert.configuration["autorenew"] = "True"
+        cert.autorenewal_is_enabled.return_value = True
         self.client._report_renewal_status(cert)
         msg = mock_zope().add_message.call_args[0][0]
         self.assertTrue("renewal but not automatic deployment" in msg)
@@ -177,6 +174,39 @@ class ClientTest(unittest.TestCase):
                          test_util.load_vector(certs[2]))
 
         shutil.rmtree(tmp_path)
+
+    def test_deploy_certificate(self):
+        self.assertRaises(errors.Error, self.client.deploy_certificate,
+                          ["foo.bar"], "key", "cert", "chain")
+
+        installer = mock.MagicMock()
+        self.client.installer = installer
+
+        self.client.deploy_certificate(["foo.bar"], "key", "cert", "chain")
+        installer.deploy_cert.assert_called_once_with(
+            "foo.bar", os.path.abspath("cert"),
+            os.path.abspath("key"), os.path.abspath("chain"))
+        self.assertEqual(installer.save.call_count, 1)
+        installer.restart.assert_called_once_with()
+
+    @mock.patch("letsencrypt.client.enhancements")
+    def test_enhance_config(self, mock_enhancements):
+        self.assertRaises(errors.Error,
+                          self.client.enhance_config, ["foo.bar"])
+
+        mock_enhancements.ask.return_value = True
+        installer = mock.MagicMock()
+        self.client.installer = installer
+
+        self.client.enhance_config(["foo.bar"])
+        installer.enhance.assert_called_once_with("foo.bar", "redirect")
+        self.assertEqual(installer.save.call_count, 1)
+        installer.restart.assert_called_once_with()
+
+        installer.enhance.side_effect = errors.PluginError
+        self.assertRaises(errors.PluginError,
+                          self.client.enhance_config, ["foo.bar"], True)
+        installer.recovery_routine.assert_called_once_with()
 
 
 class RollbackTest(unittest.TestCase):

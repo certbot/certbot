@@ -17,22 +17,20 @@ from letsencrypt.tests import test_util
 KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
 
-class ManualAuthenticatorTest(unittest.TestCase):
-    """Tests for letsencrypt.plugins.manual.ManualAuthenticator."""
+class AuthenticatorTest(unittest.TestCase):
+    """Tests for letsencrypt.plugins.manual.Authenticator."""
 
     def setUp(self):
-        from letsencrypt.plugins.manual import ManualAuthenticator
+        from letsencrypt.plugins.manual import Authenticator
         self.config = mock.MagicMock(
-            no_simple_http_tls=True, simple_http_port=4430,
-            manual_test_mode=False)
-        self.auth = ManualAuthenticator(config=self.config, name="manual")
+            simple_http_port=8080, manual_test_mode=False)
+        self.auth = Authenticator(config=self.config, name="manual")
         self.achalls = [achallenges.SimpleHTTP(
             challb=acme_util.SIMPLE_HTTP_P, domain="foo.com", account_key=KEY)]
 
         config_test_mode = mock.MagicMock(
-            no_simple_http_tls=True, simple_http_port=4430,
-            manual_test_mode=True)
-        self.auth_test_mode = ManualAuthenticator(
+            simple_http_port=8080, manual_test_mode=True)
+        self.auth_test_mode = Authenticator(
             config=config_test_mode, name="manual")
 
     def test_more_info(self):
@@ -55,7 +53,7 @@ class ManualAuthenticatorTest(unittest.TestCase):
         self.assertEqual([resp], self.auth.perform(self.achalls))
         self.assertEqual(1, mock_raw_input.call_count)
         mock_verify.assert_called_with(
-            self.achalls[0].challb.chall, "foo.com", KEY.public_key(), 4430)
+            self.achalls[0].challb.chall, "foo.com", KEY.public_key(), 8080)
 
         message = mock_stdout.write.mock_calls[0][1][0]
         self.assertTrue(self.achalls[0].chall.encode("token") in message)
@@ -68,7 +66,7 @@ class ManualAuthenticatorTest(unittest.TestCase):
         mock_popen.side_effect = OSError
         self.assertEqual([False], self.auth_test_mode.perform(self.achalls))
 
-    @mock.patch("letsencrypt.plugins.manual.socket.socket", autospec=True)
+    @mock.patch("letsencrypt.plugins.manual.socket.socket")
     @mock.patch("letsencrypt.plugins.manual.time.sleep", autospec=True)
     @mock.patch("letsencrypt.plugins.manual.subprocess.Popen", autospec=True)
     def test_perform_test_command_run_failure(
@@ -78,7 +76,7 @@ class ManualAuthenticatorTest(unittest.TestCase):
         self.assertRaises(
             errors.Error, self.auth_test_mode.perform, self.achalls)
 
-    @mock.patch("letsencrypt.plugins.manual.socket.socket", autospec=True)
+    @mock.patch("letsencrypt.plugins.manual.socket.socket")
     @mock.patch("letsencrypt.plugins.manual.time.sleep", autospec=True)
     @mock.patch("acme.challenges.SimpleHTTPResponse.simple_verify",
                 autospec=True)

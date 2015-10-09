@@ -274,6 +274,7 @@ class AuthorizationTest(unittest.TestCase):
     def setUp(self):
         from acme.messages import ChallengeBody
         from acme.messages import STATUS_VALID
+
         self.challbs = (
             ChallengeBody(
                 uri='http://challb1', status=STATUS_VALID,
