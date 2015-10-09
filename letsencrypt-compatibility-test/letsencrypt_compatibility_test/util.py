@@ -25,6 +25,7 @@ IP_REGEX = re.compile(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$")
 def create_le_config(parent_dir):
     """Sets up LE dirs in parent_dir and returns the config dict"""
     config = copy.deepcopy(constants.CLI_DEFAULTS)
+    config["strict_permissions"] = False
 
     le_dir = os.path.join(parent_dir, "letsencrypt")
     config["config_dir"] = os.path.join(le_dir, "config")
