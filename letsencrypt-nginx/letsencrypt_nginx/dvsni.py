@@ -93,8 +93,7 @@ class NginxDvsni(common.Dvsni):
         directive = ['include', self.challenge_conf]
         root = self.configurator.parser.loc["root"]
 
-        self.configurator.parser.add_http_directives(root,
-            ['server_names_hash_bucket_size', '128'])
+        bucket_directive = ['server_names_hash_bucket_size', '128']
 
         main = self.configurator.parser.parsed[root]
         for entry in main:
@@ -102,6 +101,8 @@ class NginxDvsni(common.Dvsni):
                 body = entry[1]
                 if directive not in body:
                     body.append(directive)
+                if bucket_directive not in body:
+                    body.append(bucket_directive)
                 included = True
                 break
         if not included:
