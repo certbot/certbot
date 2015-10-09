@@ -123,6 +123,7 @@ class PleskConfigurator(common.Plugin):
         """
         plesk_deployer = deployer.PleskDeployer(self.plesk_api_client, domain)
         plesk_deployer.install_cert(cert_path, key_path, chain_path)
+        plesk_deployer.assign_cert()
         self.plesk_deployers[domain] = plesk_deployer
 
     def enhance(self, domain, enhancement, options=None):

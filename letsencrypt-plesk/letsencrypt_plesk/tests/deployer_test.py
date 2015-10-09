@@ -12,7 +12,7 @@ class PleskConfiguratorTest(unittest.TestCase):
         super(PleskConfiguratorTest, self).setUp()
         self.deployer = deployer.PleskDeployer(
             plesk_api_client=mock.MagicMock(),
-            domain="domain.example.com"
+            domain="example.com"
         )
 
     def test_install_cert(self):
@@ -21,13 +21,13 @@ class PleskConfiguratorTest(unittest.TestCase):
         <packet>
         <certificate>
             <install>
-                <name>Lets Encrypt domain.example.com</name>
-                <site>domain.example.com</site>
+                <name>Lets Encrypt example.com</name>
+                <site>example.com</site>
                 <content>
                     <csr/>
                     <pvt>-----PRIVATE-----</pvt>
                     <cert>-----CERTIFICATE-----</cert>
-                    <ca>-----CHAIN-----</ca>
+                    <ca/>
                     </content>
                 </install>
             </certificate>
@@ -47,8 +47,7 @@ class PleskConfiguratorTest(unittest.TestCase):
         api_request_mock.return_value = response
         self.deployer.install_cert(
             cert_path=self._mock_file('-----CERTIFICATE-----'),
-            key_path=self._mock_file('-----PRIVATE-----'),
-            chain_path=self._mock_file('-----CHAIN-----'))
+            key_path=self._mock_file('-----PRIVATE-----'))
         api_request_mock.assert_called_once_with(request)
 
     def _mock_file(self, data):
@@ -64,7 +63,7 @@ class PleskConfiguratorTest(unittest.TestCase):
         <certificate>
             <get-pool>
                 <filter>
-                    <domain-name>domain.example.com</domain-name>
+                    <domain-name>example.com</domain-name>
                 </filter>
             </get-pool>
             </certificate>
@@ -76,11 +75,11 @@ class PleskConfiguratorTest(unittest.TestCase):
                 <get-pool>
                     <result>
                         <status>ok</status>
-                        <filter-id>domain.example.com</filter-id>
+                        <filter-id>example.com</filter-id>
                         <id>1</id>
                         <certificates>
                             <certificate>
-                                <name>Lets Encrypt domain.example.com</name>
+                                <name>Lets Encrypt example.com</name>
                             </certificate>
                             <certificate>
                                 <name>My Own Cert</name>
@@ -96,7 +95,51 @@ class PleskConfiguratorTest(unittest.TestCase):
         api_request_mock.assert_called_once_with(request)
         self.assertEqual(
             certs,
-            ['Lets Encrypt domain.example.com', 'My Own Cert'])
+            ['Lets Encrypt example.com', 'My Own Cert'])
+
+    def test_assign_cert(self):
+        api_request_mock = self.deployer.plesk_api_client.request
+        request = api_client.XmlToDict("""
+        <packet>
+            <site>
+                <set>
+                    <filter>
+                        <name>example.com</name>
+                    </filter>
+                    <values>
+                        <hosting>
+                            <vrt_hst>
+                                <property>
+                                    <name>ssl</name>
+                                    <value>true</value>
+                                </property>
+                                <property>
+                                    <name>certificate_name</name>
+                                    <value>Lets Encrypt example.com</value>
+                                </property>
+                            </vrt_hst>
+                        </hosting>
+                    </values>
+                </set>
+            </site>
+        </packet>
+        """, force_array=True)
+        response = api_client.XmlToDict("""
+        <packet version="1.6.7.0">
+            <site>
+                <set>
+                    <result>
+                        <status>ok</status>
+                        <filter-id>example.com</filter-id>
+                        <id>1</id>
+                    </result>
+                </set>
+            </site>
+        </packet>
+        """)
+        api_request_mock.return_value = response
+        self.deployer.assign_cert()
+        api_request_mock.assert_called_once_with(request)
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

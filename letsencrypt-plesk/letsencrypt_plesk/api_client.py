@@ -64,6 +64,8 @@ class PleskApiClient(object):
                 ])
             except PleskApiException as e:
                 logger.debug(str(e))
+            self.secret_key = None
+            self.secret_key_created = False
 
     def execute(self, command, arguments=None, stdin=None, environment=None):
         """Execute CLI utility"""

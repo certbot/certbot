@@ -37,12 +37,12 @@ class PleskChallenge(object):
         ]}}}
         response = self.plesk_api_client.request(request)
 
-        result = response['packet']['site']['get']['result']
-        if not (result and 'ok' == result['status']):
-            error_text = str(result['errtext'])
-            raise errors.DvAuthError("Site get failure: " + error_text)
+        api_result = response['packet']['site']['get']['result']
+        if 'ok' != api_result['status']:
+            error_text = str(api_result['errtext'])
+            raise errors.DvAuthError('Site get failure: %s' % error_text)
 
-        hosting_props = result['data']['hosting']['vrt_hst']['property']
+        hosting_props = api_result['data']['hosting']['vrt_hst']['property']
         self.www_root = next(
             x['value'] for x in hosting_props if 'www_root' == x['name'])
         self.ftp_login = next(
