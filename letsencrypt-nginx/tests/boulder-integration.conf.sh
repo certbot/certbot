@@ -45,6 +45,7 @@ http {
     '"\$http_user_agent" "\$http_x_forwarded_for"';
 
   default_type application/octet-stream;
+  $directives
 
   server {
     # IPv4.
