@@ -146,6 +146,10 @@ def main(config=None, args=sys.argv[1:]):
     # take precedence over this one.
     config.merge(configobj.ConfigObj(cli_config.renewer_config_file))
 
+    # If the folder does not exist we need to create it. 
+    if not os.path.isdir(cli_config.renewal_configs_dir):
+        os.makedirs(cli_config.renewal_configs_dir)
+
     for i in os.listdir(cli_config.renewal_configs_dir):
         print "Processing", i
         if not i.endswith(".conf"):
