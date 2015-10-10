@@ -99,10 +99,10 @@ class NginxDvsni(common.Dvsni):
         for entry in main:
             if entry[0] == ['http']:
                 body = entry[1]
-                if directive not in body:
-                    body.append(directive)
                 if bucket_directive not in body:
-                    body.append(bucket_directive)
+                    body.insert(0, directive)
+                if directive not in body:
+                    body.insert(0, directive)
                 included = True
                 break
         if not included:
