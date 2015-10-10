@@ -104,10 +104,14 @@ class NginxConfiguratorTest(util.NginxTest):
         # Get the default SSL vhost
         self.config.deploy_cert(
             "www.example.com",
-            "example/cert.pem", "example/key.pem")
+            "example/cert.pem",
+            "example/key.pem",
+            "example/fullchain.pem")
         self.config.deploy_cert(
             "another.alias",
-            "/etc/nginx/cert.pem", "/etc/nginx/key.pem")
+            "/etc/nginx/cert.pem",
+            "/etc/nginx/key.pem",
+            "/etc/nginx/fullchain.pem")
         self.config.save()
 
         self.config.parser.load()
@@ -126,7 +130,7 @@ class NginxConfiguratorTest(util.NginxTest):
                             ['listen', '5001 ssl'],
                             ['access_log', access_log],
                             ['error_log', error_log],
-                            ['ssl_certificate', 'example/cert.pem'],
+                            ['ssl_certificate', 'example/fullchain.pem'],
                             ['ssl_certificate_key', 'example/key.pem'],
                             ['include',
                              self.config.parser.loc["ssl_options"]]]]],
@@ -143,7 +147,7 @@ class NginxConfiguratorTest(util.NginxTest):
                            ['listen', '5001 ssl'],
                            ['access_log', access_log],
                            ['error_log', error_log],
-                           ['ssl_certificate', '/etc/nginx/cert.pem'],
+                           ['ssl_certificate', '/etc/nginx/fullchain.pem'],
                            ['ssl_certificate_key', '/etc/nginx/key.pem'],
                            ['include',
                             self.config.parser.loc["ssl_options"]]]],
@@ -156,16 +160,16 @@ class NginxConfiguratorTest(util.NginxTest):
         # Get the default SSL vhost
         self.config.deploy_cert(
             "www.example.com",
-            "example/cert.pem", "example/key.pem")
+            "example/cert.pem", "example/key.pem", "example/fullchain.pem")
         self.config.deploy_cert(
             "another.alias",
-            "/etc/nginx/cert.pem", "/etc/nginx/key.pem")
+            "/etc/nginx/cert.pem", "/etc/nginx/key.pem", "/etc/nginx/fullchain.pem")
         self.config.save()
 
         self.config.parser.load()
         self.assertEqual(set([
-            ('example/cert.pem', 'example/key.pem', example_conf),
-            ('/etc/nginx/cert.pem', '/etc/nginx/key.pem', nginx_conf),
+            ('example/fullchain.pem', 'example/key.pem', example_conf),
+            ('/etc/nginx/fullchain.pem', '/etc/nginx/key.pem', nginx_conf),
         ]), self.config.get_all_certs_keys())
 
     @mock.patch("letsencrypt_nginx.configurator.dvsni.NginxDvsni.perform")
