@@ -172,11 +172,10 @@ def main(config=None, cli_args=sys.argv[1:]):
     if (not os.path.isdir(cli_config.renewal_configs_dir) or
         not os.path.isdir(cli_config.config_dir)):
         print "Could not find config directory. Exiting. "
-    else:
-        le_util.make_or_verify_dir(
-                cli_config.work_dir, constants.CONFIG_DIRS_MODE, uid)
-        le_util.make_or_verify_dir(
-                cli_config.logs_dir, constants.CONFIG_DIRS_MODE, uid)
+    le_util.make_or_verify_dir(
+            cli_config.work_dir, constants.CONFIG_DIRS_MODE, uid)
+    le_util.make_or_verify_dir(
+            cli_config.logs_dir, constants.CONFIG_DIRS_MODE, uid)
 
     for i in os.listdir(cli_config.renewal_configs_dir):
         print "Processing", i
