@@ -17,14 +17,14 @@ import zope.component
 
 from letsencrypt import account
 from letsencrypt import configuration
+from letsencrypt import constants
 from letsencrypt import cli
 from letsencrypt import client
 from letsencrypt import crypto_util
 from letsencrypt import errors
+from letsencrypt import le_util
 from letsencrypt import notify
 from letsencrypt import storage
-from letsencrypt import constants
-from letsencrypt import le_util
 
 from letsencrypt.display import util as display_util
 from letsencrypt.plugins import disco as plugins_disco
