@@ -169,14 +169,14 @@ def main(config=None, cli_args=sys.argv[1:]):
     config.merge(configobj.ConfigObj(cli_config.renewer_config_file))
     # Ensure that all of the needed folders have been created before continuing
     uid = os.geteuid()
-    le_util.make_or_verify_dir(
-            cli_config.renewal_configs_dir, constants.CONFIG_DIRS_MODE, uid)
-    le_util.make_or_verify_dir(
-        cli_config.config_dir, constants.CONFIG_DIRS_MODE, uid)
-    le_util.make_or_verify_dir(
-            cli_config.work_dir, constants.CONFIG_DIRS_MODE, uid)
-    le_util.make_or_verify_dir(
-            cli_config.logs_dir, constants.CONFIG_DIRS_MODE, uid)
+    if (not os.path.isdir(cli_config.renewal_configs_dir) or
+        not os.path.isdir(cli_config.config_dir)):
+        print "Could not find config directory. Exiting. "
+    else:
+        le_util.make_or_verify_dir(
+                cli_config.work_dir, constants.CONFIG_DIRS_MODE, uid)
+        le_util.make_or_verify_dir(
+                cli_config.logs_dir, constants.CONFIG_DIRS_MODE, uid)
 
     for i in os.listdir(cli_config.renewal_configs_dir):
         print "Processing", i
