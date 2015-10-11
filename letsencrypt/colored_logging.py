@@ -18,6 +18,7 @@ class StreamHandler(logging.StreamHandler):
 
     def __init__(self, stream=None):
         if sys.version_info < (2, 7):
+            # pylint: disable=non-parent-init-called
             logging.StreamHandler.__init__(self)  # pragma: no cover
         else:
             super(StreamHandler, self).__init__(stream)
