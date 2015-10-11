@@ -17,7 +17,10 @@ class StreamHandler(logging.StreamHandler):
     """
 
     def __init__(self, stream=None):
-        super(StreamHandler, self).__init__(stream)
+        if sys.version_info < (2, 7):
+            StreamHandler.__init__(self)  # pragma: no cover
+        else:
+            super(StreamHandler, self).__init__(stream)
         self.colored = (sys.stderr.isatty() if stream is None else
                         stream.isatty())
         self.red_level = logging.WARNING
