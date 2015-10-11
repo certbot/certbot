@@ -8,6 +8,7 @@ within lineages of successor certificates, according to configuration.
 
 """
 import argparse
+import logging
 import os
 import sys
 
@@ -18,6 +19,7 @@ import zope.component
 from letsencrypt import account
 from letsencrypt import configuration
 from letsencrypt import constants
+from letsencrypt import colored_logging
 from letsencrypt import cli
 from letsencrypt import client
 from letsencrypt import crypto_util
@@ -28,6 +30,9 @@ from letsencrypt import storage
 
 from letsencrypt.display import util as display_util
 from letsencrypt.plugins import disco as plugins_disco
+
+
+logger = logging.getLogger(__name__)
 
 
 class _AttrDict(dict):
@@ -106,6 +111,12 @@ def renew(cert, old_version):
     #       (where fewer than all names were renewed)
 
 
+def _cli_log_handler(args, level, fmt):  # pylint: disable=unused-argument
+    handler = colored_logging.StreamHandler()
+    handler.setFormatter(logging.Formatter(fmt))
+    return handler
+
+
 def _paths_parser(parser):
     add = parser.add_argument_group("paths").add_argument
     add("--config-dir", default=cli.flag_default("config_dir"),
@@ -121,11 +132,16 @@ def _paths_parser(parser):
 def _create_parser():
     parser = argparse.ArgumentParser()
     #parser.add_argument("--cron", action="store_true", help="Run as cronjob.")
-    # pylint: disable=protected-access
+    parser.add_argument(
+        "-v", "--verbose", dest="verbose_count", action="count",
+        default=cli.flag_default("verbose_count"), help="This flag can be used "
+        "multiple times to incrementally increase the verbosity of output, "
+        "e.g. -vvv.")
+
     return _paths_parser(parser)
 
 
-def main(config=None, args=sys.argv[1:]):
+def main(config=None, cli_args=sys.argv[1:]):
     """Main function for autorenewer script."""
     # TODO: Distinguish automated invocation from manual invocation,
     #       perhaps by looking at sys.argv[0] and inhibiting automated
@@ -135,8 +151,12 @@ def main(config=None, args=sys.argv[1:]):
 
     zope.component.provideUtility(display_util.FileDisplay(sys.stdout))
 
-    cli_config = configuration.RenewerConfiguration(
-        _create_parser().parse_args(args))
+    args = _create_parser().parse_args(cli_args)
+
+    le_util.make_or_verify_dir(args.logs_dir, 0o700, os.geteuid())
+    cli.setup_logging(args, _cli_log_handler, logfile='renewer.log')
+
+    cli_config = configuration.RenewerConfiguration(args)
 
     config = storage.config_with_defaults(config)
     # Now attempt to read the renewer config file and augment or replace
