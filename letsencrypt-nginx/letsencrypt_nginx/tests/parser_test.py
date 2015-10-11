@@ -156,8 +156,8 @@ class NginxParserTest(util.NginxTest):
 
         # Check that our server block got inserted first among all server
         # blocks.
-        http_block = filter(lambda x: x[0] == ['http'], root)[0][1]
-        server_blocks = filter(lambda x: x[0] == ['server'], http_block)
+        http_block = [x for x in root if x[0] == ['http']][0][1]
+        server_blocks = [x for x in http_block if x[0] == ['server']]
         self.assertEqual(server_blocks[0], block)
 
     def test_replace_server_directives(self):
