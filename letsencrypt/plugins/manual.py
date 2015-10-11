@@ -134,7 +134,6 @@ binary for temporary key/certificate generation.""".replace("\n", "")
                 executable = "/bin/bash"
             else:
                 executable = None
-                
             try:
                 self._httpd = subprocess.Popen(
                     command,
