@@ -131,12 +131,14 @@ class NginxParserTest(util.NginxTest):
         ssl_re = re.compile(r'\n\s+ssl_certificate /etc/ssl/cert.pem')
         dump = nginxparser.dumps(nparser.parsed[nparser.abs_path('nginx.conf')])
         self.assertEqual(1, len(re.findall(ssl_re, dump)))
-        nparser.add_server_directives(nparser.abs_path('server.conf'),
+
+        server_conf = nparser.abs_path('server.conf')
+        nparser.add_server_directives(server_conf,
                                       set(['alias', 'another.alias',
                                            'somename']),
                                       [['foo', 'bar'], ['ssl_certificate',
                                                         '/etc/ssl/cert2.pem']])
-        self.assertEqual(nparser.parsed[nparser.abs_path('server.conf')],
+        self.assertEqual(nparser.parsed[server_conf],
                          [['ssl_certificate', '/etc/ssl/cert2.pem'],
                           ['foo', 'bar'],
                           ['server_name', 'somename  alias  another.alias']])
@@ -151,6 +153,12 @@ class NginxParserTest(util.NginxTest):
         root = nparser.parsed[filep]
         self.assertTrue(util.contains_at_depth(root, ['http'], 1))
         self.assertTrue(util.contains_at_depth(root, block, 2))
+
+        # Check that our server block got inserted first among all server
+        # blocks.
+        http_block = filter(lambda x: x[0] == ['http'], root)[0][1]
+        server_blocks = filter(lambda x: x[0] == ['server'], http_block)
+        self.assertEqual(server_blocks[0], block)
 
     def test_replace_server_directives(self):
         nparser = parser.NginxParser(self.config_path, self.ssl_options)

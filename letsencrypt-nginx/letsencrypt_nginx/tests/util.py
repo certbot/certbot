@@ -93,7 +93,9 @@ def contains_at_depth(haystack, needle, n):
     Return true if the needle is present in one of the sub-iterables in haystack
     at depth n. Haystack must be an iterable.
     """
-    if not isinstance(haystack, collections.Iterable):
+    # Specifically use hasattr rather than isinstance(..., collections.Iterable)
+    # because we want to include lists but reject strings.
+    if not hasattr(haystack, '__iter__'):
         return False
     if n == 0:
         return needle in haystack
