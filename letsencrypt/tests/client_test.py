@@ -177,15 +177,19 @@ class ClientTest(unittest.TestCase):
 
     def test_deploy_certificate(self):
         self.assertRaises(errors.Error, self.client.deploy_certificate,
-                          ["foo.bar"], "key", "cert", "chain")
+                          ["foo.bar"], "key", "cert", "chain", "fullchain")
 
         installer = mock.MagicMock()
         self.client.installer = installer
 
-        self.client.deploy_certificate(["foo.bar"], "key", "cert", "chain")
+        self.client.deploy_certificate(["foo.bar"], "key", "cert", "chain",
+            "fullchain")
         installer.deploy_cert.assert_called_once_with(
-            "foo.bar", os.path.abspath("cert"),
-            os.path.abspath("key"), os.path.abspath("chain"))
+            cert_path=os.path.abspath("cert"),
+            chain_path=os.path.abspath("chain"),
+            domain='foo.bar',
+            fullchain_path='fullchain',
+            key_path=os.path.abspath("key"))
         self.assertEqual(installer.save.call_count, 1)
         installer.restart.assert_called_once_with()
 

@@ -163,7 +163,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         temp_install(self.mod_ssl_conf)
 
-    def deploy_cert(self, domain, cert_path, key_path, chain_path=None):
+    def deploy_cert(self, domain, cert_path, key_path,
+        chain_path=None, fullchain_path=None): # pylint: disable=unused-argument
         """Deploys certificate to specified virtual host.
 
         Currently tries to find the last directives to deploy the cert in

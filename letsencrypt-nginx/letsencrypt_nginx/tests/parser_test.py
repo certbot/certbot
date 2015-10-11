@@ -128,18 +128,18 @@ class NginxParserTest(util.NginxTest):
                                            r'~^(www\.)?(example|bar)\.']),
                                       [['foo', 'bar'], ['ssl_certificate',
                                                         '/etc/ssl/cert.pem']])
-        ssl_re = re.compile(r'foo bar;\n\s+ssl_certificate /etc/ssl/cert.pem')
-        self.assertEqual(1, len(re.findall(ssl_re, nginxparser.dumps(
-            nparser.parsed[nparser.abs_path('nginx.conf')]))))
+        ssl_re = re.compile(r'\n\s+ssl_certificate /etc/ssl/cert.pem')
+        dump = nginxparser.dumps(nparser.parsed[nparser.abs_path('nginx.conf')])
+        self.assertEqual(1, len(re.findall(ssl_re, dump)))
         nparser.add_server_directives(nparser.abs_path('server.conf'),
                                       set(['alias', 'another.alias',
                                            'somename']),
                                       [['foo', 'bar'], ['ssl_certificate',
                                                         '/etc/ssl/cert2.pem']])
         self.assertEqual(nparser.parsed[nparser.abs_path('server.conf')],
-                         [['server_name', 'somename  alias  another.alias'],
+                         [['ssl_certificate', '/etc/ssl/cert2.pem'],
                           ['foo', 'bar'],
-                          ['ssl_certificate', '/etc/ssl/cert2.pem']])
+                          ['server_name', 'somename  alias  another.alias']])
 
     def test_add_http_directives(self):
         nparser = parser.NginxParser(self.config_path, self.ssl_options)
@@ -148,8 +148,9 @@ class NginxParserTest(util.NginxTest):
                  [['listen', '80'],
                   ['server_name', 'localhost']]]
         nparser.add_http_directives(filep, block)
-        self.assertEqual(nparser.parsed[filep][-1][0], ['http'])
-        self.assertEqual(nparser.parsed[filep][-1][1][-1], block)
+        root = nparser.parsed[filep]
+        self.assertTrue(util.contains_at_depth(root, ['http'], 1))
+        self.assertTrue(util.contains_at_depth(root, block, 2))
 
     def test_replace_server_directives(self):
         nparser = parser.NginxParser(self.config_path, self.ssl_options)

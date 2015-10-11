@@ -175,12 +175,13 @@ class Proxy(configurators_common.Proxy):
         else:
             return {"example.com"}
 
-    def deploy_cert(self, domain, cert_path, key_path, chain_path=None):
+    def deploy_cert(self, domain, cert_path, key_path, chain_path=None,
+        fullchain_path=None):
         """Installs cert"""
         cert_path, key_path, chain_path = self.copy_certs_and_keys(
             cert_path, key_path, chain_path)
         self._apache_configurator.deploy_cert(
-            domain, cert_path, key_path, chain_path)
+            domain, cert_path, key_path, chain_path, fullchain_path)
 
 
 def _is_apache_command(command):

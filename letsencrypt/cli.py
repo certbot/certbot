@@ -337,9 +337,9 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
 
     lineage = _auth_from_domains(le_client, config, domains, plugins)
 
-    # TODO: We also need to pass the fullchain (for Nginx)
     le_client.deploy_certificate(
-        domains, lineage.privkey, lineage.cert, lineage.chain)
+        domains, lineage.privkey, lineage.cert,
+        lineage.chain, lineage.fullchain)
     le_client.enhance_config(domains, args.redirect)
 
     if len(lineage.available_versions("cert")) == 1:
@@ -392,7 +392,8 @@ def install(args, config, plugins):
         args, config, authenticator=None, installer=installer)
     assert args.cert_path is not None  # required=True in the subparser
     le_client.deploy_certificate(
-        domains, args.key_path, args.cert_path, args.chain_path)
+        domains, args.key_path, args.cert_path, args.chain_path,
+        args.fullchain_path)
     le_client.enhance_config(domains, args.redirect)
 
 
@@ -803,6 +804,8 @@ def _paths_parser(helpful):
     default_cp = None
     if verb == "auth":
         default_cp = flag_default("auth_chain_path")
+    add("paths", "--fullchain-path", default=default_cp,
+        help="Accompanying path to a full certificate chain (cert plus chain).")
     add("paths", "--chain-path", default=default_cp,
         help="Accompanying path to a certificate chain.")
     add("paths", "--config-dir", default=flag_default("config_dir"),

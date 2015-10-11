@@ -38,5 +38,5 @@ if ! go get bitbucket.org/liamstask/goose/cmd/goose ; then
   exit 1
 fi
 ./test/create_db.sh
-./start.py &
+./start.py > /dev/null &
 # Hopefully start.py bootstraps before integration test is started...
