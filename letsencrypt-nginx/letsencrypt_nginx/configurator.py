@@ -6,6 +6,7 @@ import shutil
 import socket
 import subprocess
 import sys
+import time
 
 import OpenSSL
 import zope.interface
@@ -612,6 +613,10 @@ def nginx_restart(nginx_ctl, nginx_conf="/etc/nginx.conf"):
     except (OSError, ValueError):
         logger.fatal("Nginx Restart Failed - Please Check the Configuration")
         sys.exit(1)
+    # Nginx can take a moment to recognize a newly added TLS SNI servername, so sleep
+    # for a second. TODO: Check for expected servername and loop until it
+    # appears or return an error if looping too long.
+    time.sleep(1)
 
     return True
 
