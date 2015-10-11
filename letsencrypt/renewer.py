@@ -23,6 +23,8 @@ from letsencrypt import crypto_util
 from letsencrypt import errors
 from letsencrypt import notify
 from letsencrypt import storage
+from letsencrypt import constants
+from letsencrypt import le_util
 
 from letsencrypt.display import util as display_util
 from letsencrypt.plugins import disco as plugins_disco
@@ -145,10 +147,16 @@ def main(config=None, args=sys.argv[1:]):
     # specify a config file on the command line, which, if provided, should
     # take precedence over this one.
     config.merge(configobj.ConfigObj(cli_config.renewer_config_file))
-
-    # If the folder does not exist we need to create it. 
-    if not os.path.isdir(cli_config.renewal_configs_dir):
-        os.makedirs(cli_config.renewal_configs_dir)
+    # Ensure that all of the needed folders have been created before continuing
+    uid = os.geteuid()
+    le_util.make_or_verify_dir(
+            cli_config.renewal_configs_dir, constants.CONFIG_DIRS_MODE, uid)
+    le_util.make_or_verify_dir(
+        cli_config.config_dir, constants.CONFIG_DIRS_MODE, uid)
+    le_util.make_or_verify_dir(
+            cli_config.work_dir, constants.CONFIG_DIRS_MODE, uid)
+    le_util.make_or_verify_dir(
+            cli_config.logs_dir, constants.CONFIG_DIRS_MODE, uid)
 
     for i in os.listdir(cli_config.renewal_configs_dir):
         print "Processing", i
