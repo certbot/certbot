@@ -35,7 +35,8 @@ class StreamHandler(logging.StreamHandler):
         :rtype: str
 
         """
-        out = (StreamHandler.format(self, record) if sys.version_info < (2, 7)
+        out = (logging.StreamHandler.format(self, record)
+               if sys.version_info < (2, 7)
                else super(StreamHandler, self).format(record))
         if self.colored and record.levelno >= self.red_level:
             return ''.join((le_util.ANSI_SGR_RED, out, le_util.ANSI_SGR_RESET))
