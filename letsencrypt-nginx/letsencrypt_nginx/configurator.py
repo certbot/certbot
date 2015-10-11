@@ -149,13 +149,13 @@ class NginxConfigurator(common.Plugin):
 
         try:
             self.parser.add_server_directives(vhost.filep, vhost.names,
-                                              cert_directives, True)
+                                              cert_directives, replace=True)
             self.parser.add_server_directives(vhost.filep, vhost.names,
-                                              stapling_directives, False)
+                                              stapling_directives, replace=False)
             logger.info("Deployed Certificate to VirtualHost %s for %s",
                         vhost.filep, vhost.names)
-        except errors.MisconfigurationError, e:
-            logger.debug(e)
+        except errors.MisconfigurationError as error:
+            logger.debug(error)
             logger.warn(
                 "Cannot find a cert or key directive in %s for %s. "
                 "VirtualHost was not modified.", vhost.filep, vhost.names)

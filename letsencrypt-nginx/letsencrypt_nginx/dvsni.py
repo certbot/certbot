@@ -96,11 +96,10 @@ class NginxDvsni(common.Dvsni):
         bucket_directive = ['server_names_hash_bucket_size', '128']
 
         main = self.configurator.parser.parsed[root]
-        for key, value in main:
+        for key, body in main:
             if key == ['http']:
-                body = value
                 found_bucket = False
-                for key, value in body: # pylint: disable=unused-variable
+                for key, _ in body:
                     if key == bucket_directive[0]:
                         found_bucket = True
                 if not found_bucket:

@@ -86,12 +86,14 @@ def filter_comments(tree):
 
     return list(traverse(tree))
 
+
 def contains_at_depth(haystack, needle, n):
-    """
+    """Is the needle in haystack at depth n?
+
     Return true if the needle is present in one of the sub-iterables in haystack
     at depth n. Haystack must be an iterable.
     """
-    if not hasattr(haystack, '__iter__'):
+    if not isinstance(haystack, collections.Iterable):
         return False
     if n == 0:
         return needle in haystack
