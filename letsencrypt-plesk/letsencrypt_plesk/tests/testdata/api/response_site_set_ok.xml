@@ -1,0 +1,11 @@
+<packet version="1.6.7.0">
+    <site>
+        <set>
+            <result>
+                <status>ok</status>
+                <filter-id>example.com</filter-id>
+                <id>1</id>
+            </result>
+        </set>
+    </site>
+</packet>

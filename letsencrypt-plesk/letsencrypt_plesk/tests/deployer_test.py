@@ -1,54 +1,27 @@
 """Test for letsencrypt_plesk.configurator."""
 import unittest
-import mock
 import os
 
 from letsencrypt_plesk import deployer
-from letsencrypt_plesk import api_client
+from letsencrypt_plesk.tests import api_mock
 
 
-class PleskConfiguratorTest(unittest.TestCase):
+class PleskDeployerTest(unittest.TestCase):
     def setUp(self):
-        super(PleskConfiguratorTest, self).setUp()
+        super(PleskDeployerTest, self).setUp()
         self.deployer = deployer.PleskDeployer(
-            plesk_api_client=mock.MagicMock(),
-            domain="example.com"
-        )
+            plesk_api_client=api_mock.PleskApiMock(),
+            domain="example.com")
 
     def test_install_cert(self):
-        api_request_mock = self.deployer.plesk_api_client.request
-        request = api_client.XmlToDict("""
-        <packet>
-        <certificate>
-            <install>
-                <name>Lets Encrypt example.com</name>
-                <site>example.com</site>
-                <content>
-                    <csr/>
-                    <pvt>-----PRIVATE-----</pvt>
-                    <cert>-----CERTIFICATE-----</cert>
-                    <ca/>
-                    </content>
-                </install>
-            </certificate>
-        </packet>
-        """, force_array=True)
-        response = api_client.XmlToDict("""
-        <packet version="1.6.7.0">
-            <certificate>
-                <install>
-                    <result>
-                        <status>ok</status>
-                    </result>
-                </install>
-            </certificate>
-        </packet>
-        """)
-        api_request_mock.return_value = response
+        self.deployer.plesk_api_client.expects_request(
+            'request_certificate_install')
+        self.deployer.plesk_api_client.will_response(
+            'response_certificate_install_ok')
         self.deployer.install_cert(
             cert_path=self._mock_file('-----CERTIFICATE-----'),
             key_path=self._mock_file('-----PRIVATE-----'))
-        api_request_mock.assert_called_once_with(request)
+        self.deployer.plesk_api_client.assert_called()
 
     def _mock_file(self, data):
         tmp_file = os.tmpnam()
@@ -57,89 +30,23 @@ class PleskConfiguratorTest(unittest.TestCase):
         return tmp_file
 
     def test_get_certs(self):
-        api_request_mock = self.deployer.plesk_api_client.request
-        request = api_client.XmlToDict("""
-        <packet>
-        <certificate>
-            <get-pool>
-                <filter>
-                    <domain-name>example.com</domain-name>
-                </filter>
-            </get-pool>
-            </certificate>
-        </packet>
-        """, force_array=True)
-        response = api_client.XmlToDict("""
-        <packet version="1.6.7.0">
-            <certificate>
-                <get-pool>
-                    <result>
-                        <status>ok</status>
-                        <filter-id>example.com</filter-id>
-                        <id>1</id>
-                        <certificates>
-                            <certificate>
-                                <name>Lets Encrypt example.com</name>
-                            </certificate>
-                            <certificate>
-                                <name>My Own Cert</name>
-                            </certificate>
-                        </certificates>
-                    </result>
-                </get-pool>
-            </certificate>
-        </packet>
-        """)
-        api_request_mock.return_value = response
+        self.deployer.plesk_api_client.expects_request(
+            'request_certificate_get_pool')
+        self.deployer.plesk_api_client.will_response(
+            'response_certificate_get_pool_many')
         certs = self.deployer.get_certs()
-        api_request_mock.assert_called_once_with(request)
+        self.deployer.plesk_api_client.assert_called()
         self.assertEqual(
             certs,
             ['Lets Encrypt example.com', 'My Own Cert'])
 
     def test_assign_cert(self):
-        api_request_mock = self.deployer.plesk_api_client.request
-        request = api_client.XmlToDict("""
-        <packet>
-            <site>
-                <set>
-                    <filter>
-                        <name>example.com</name>
-                    </filter>
-                    <values>
-                        <hosting>
-                            <vrt_hst>
-                                <property>
-                                    <name>ssl</name>
-                                    <value>true</value>
-                                </property>
-                                <property>
-                                    <name>certificate_name</name>
-                                    <value>Lets Encrypt example.com</value>
-                                </property>
-                            </vrt_hst>
-                        </hosting>
-                    </values>
-                </set>
-            </site>
-        </packet>
-        """, force_array=True)
-        response = api_client.XmlToDict("""
-        <packet version="1.6.7.0">
-            <site>
-                <set>
-                    <result>
-                        <status>ok</status>
-                        <filter-id>example.com</filter-id>
-                        <id>1</id>
-                    </result>
-                </set>
-            </site>
-        </packet>
-        """)
-        api_request_mock.return_value = response
+        self.deployer.plesk_api_client.expects_request(
+            'request_site_set_certificate')
+        self.deployer.plesk_api_client.will_response(
+            'response_site_set_ok')
         self.deployer.assign_cert()
-        api_request_mock.assert_called_once_with(request)
+        self.deployer.plesk_api_client.assert_called()
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

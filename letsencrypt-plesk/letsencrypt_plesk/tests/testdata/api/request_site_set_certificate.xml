@@ -1,0 +1,23 @@
+<packet>
+    <site>
+        <set>
+            <filter>
+                <name>example.com</name>
+            </filter>
+            <values>
+                <hosting>
+                    <vrt_hst>
+                        <property>
+                            <name>ssl</name>
+                            <value>true</value>
+                        </property>
+                        <property>
+                            <name>certificate_name</name>
+                            <value>Lets Encrypt example.com</value>
+                        </property>
+                    </vrt_hst>
+                </hosting>
+            </values>
+        </set>
+    </site>
+</packet>

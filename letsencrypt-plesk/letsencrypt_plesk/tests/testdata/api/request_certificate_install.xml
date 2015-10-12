@@ -1,0 +1,14 @@
+<packet>
+    <certificate>
+        <install>
+            <name>Lets Encrypt example.com</name>
+            <site>example.com</site>
+            <content>
+                <csr/>
+                <pvt>-----PRIVATE-----</pvt>
+                <cert>-----CERTIFICATE-----</cert>
+                <ca/>
+            </content>
+        </install>
+    </certificate>
+</packet>
