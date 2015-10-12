@@ -336,7 +336,8 @@ class Client(object):
 
         return os.path.abspath(act_cert_path), cert_chain_abspath
 
-    def deploy_certificate(self, domains, privkey_path, cert_path, chain_path):
+    def deploy_certificate(self, domains, privkey_path,
+            cert_path, chain_path, fullchain_path):
         """Install certificate
 
         :param list domains: list of domains to install the certificate
@@ -357,8 +358,10 @@ class Client(object):
                 # TODO: Provide a fullchain reference for installers like
                 #       nginx that want it
                 self.installer.deploy_cert(
-                    dom, os.path.abspath(cert_path),
-                    os.path.abspath(privkey_path), chain_path)
+                    domain=dom, cert_path=os.path.abspath(cert_path),
+                    key_path=os.path.abspath(privkey_path),
+                    chain_path=chain_path,
+                    fullchain_path=fullchain_path)
 
             self.installer.save("Deployed Let's Encrypt Certificate")
             # sites may have been enabled / final cleanup
