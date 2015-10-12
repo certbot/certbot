@@ -169,8 +169,8 @@ def main(config=None, cli_args=sys.argv[1:]):
     # take precedence over this one.
     config.merge(configobj.ConfigObj(cli_config.renewer_config_file))
     # Ensure that all of the needed folders have been created before continuing
-    le_util.make_or_verify_dir(
-            cli_config.work_dir, constants.CONFIG_DIRS_MODE, uid)
+    le_util.make_or_verify_dir(cli_config.work_dir,
+                               constants.CONFIG_DIRS_MODE, uid)
 
     for i in os.listdir(cli_config.renewal_configs_dir):
         print "Processing", i
