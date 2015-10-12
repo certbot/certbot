@@ -9,5 +9,7 @@ export VENV_ARGS="--python python2"
   -e .[dev,docs,testing] \
   -e letsencrypt-apache \
   -e letsencrypt-nginx \
+  -e letsencrypt-plesk \
   -e letshelp-letsencrypt \
   -e letsencrypt-compatibility-test
+
