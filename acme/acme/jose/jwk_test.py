@@ -25,8 +25,23 @@ class JWKTest(unittest.TestCase):
         self.assertRaises(errors.Error, JWKRSA.load, DSA_PEM)
 
 
-class JWKOctTest(unittest.TestCase):
+class JWKTestBaseMixin(object):
+    """Mixin test for JWK subclass tests."""
+
+    thumbprint = NotImplemented
+
+    def test_thumbprint_private(self):
+        self.assertEqual(self.thumbprint, self.jwk.thumbprint())
+
+    def test_thumbprint_public(self):
+        self.assertEqual(self.thumbprint, self.jwk.public_key().thumbprint())
+
+
+class JWKOctTest(unittest.TestCase, JWKTestBaseMixin):
     """Tests for acme.jose.jwk.JWKOct."""
+
+    thumbprint = (b"=,\xdd;I\x1a+i\x02x\x8a\x12?06IM\xc2\x80"
+                  b"\xe4\xc3\x1a\xfc\x89\xf3)'\xce\xccm\xfd5")
 
     def setUp(self):
         from acme.jose.jwk import JWKOct
@@ -52,9 +67,12 @@ class JWKOctTest(unittest.TestCase):
         self.assertTrue(self.jwk.public_key() is self.jwk)
 
 
-class JWKRSATest(unittest.TestCase):
+class JWKRSATest(unittest.TestCase, JWKTestBaseMixin):
     """Tests for acme.jose.jwk.JWKRSA."""
     # pylint: disable=too-many-instance-attributes
+
+    thumbprint = (b'\x08\xfa1\x87\x1d\x9b6H/*\x1eW\xc2\xe3\xf6P'
+                  b'\xefs\x0cKB\x87\xcf\x85yO\x045\x0e\x91\x80\x0b')
 
     def setUp(self):
         from acme.jose.jwk import JWKRSA
@@ -87,6 +105,7 @@ class JWKRSATest(unittest.TestCase):
             'dq': 'bHh2u7etM8LKKCF2pY2UdQ',
             'qi': 'oi45cEkbVoJjAbnQpFY87Q',
         })
+        self.jwk = self.private
 
     def test_init_auto_comparable(self):
         self.assertTrue(isinstance(

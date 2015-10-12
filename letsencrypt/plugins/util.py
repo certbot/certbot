@@ -1,10 +1,14 @@
 """Plugin utilities."""
+import logging
 import socket
 
 import psutil
 import zope.component
 
 from letsencrypt import interfaces
+
+
+logger = logging.getLogger(__name__)
 
 
 def already_listening(port):
@@ -17,9 +21,20 @@ def already_listening(port):
         run as root.
 
     :param int port: The TCP port in question.
-    :returns: True or False."""
+    :returns: True or False.
 
-    listeners = [conn.pid for conn in psutil.net_connections()
+    """
+    try:
+        net_connections = psutil.net_connections()
+    except psutil.AccessDenied as error:
+        logger.info("Access denied when trying to list network "
+                    "connections: %s. Are you root?", error)
+        # this function is just a pre-check that often causes false
+        # positives and problems in testing (c.f. #680 on Mac, #255
+        # generally); we will fail later in bind() anyway
+        return False
+
+    listeners = [conn.pid for conn in net_connections
                  if conn.status == 'LISTEN' and
                  conn.type == socket.SOCK_STREAM and
                  conn.laddr[1] == port]
