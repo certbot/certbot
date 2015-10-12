@@ -153,7 +153,8 @@ def main(config=None, cli_args=sys.argv[1:]):
 
     args = _create_parser().parse_args(cli_args)
 
-    le_util.make_or_verify_dir(args.logs_dir, 0o700, os.geteuid())
+    uid = os.geteuid()
+    le_util.make_or_verify_dir(args.logs_dir, 0o700, uid)
     cli.setup_logging(args, _cli_log_handler, logfile='renewer.log')
 
     cli_config = configuration.RenewerConfiguration(args)
@@ -168,10 +169,6 @@ def main(config=None, cli_args=sys.argv[1:]):
     # take precedence over this one.
     config.merge(configobj.ConfigObj(cli_config.renewer_config_file))
     # Ensure that all of the needed folders have been created before continuing
-    uid = os.geteuid()
-    if (not os.path.isdir(cli_config.renewal_configs_dir) or
-        not os.path.isdir(cli_config.config_dir)):
-        print "Could not find config directory. Exiting. "
     le_util.make_or_verify_dir(
             cli_config.work_dir, constants.CONFIG_DIRS_MODE, uid)
     le_util.make_or_verify_dir(
