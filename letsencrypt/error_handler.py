@@ -22,8 +22,8 @@ class ErrorHandler(object):
     """Registers functions to be called if an exception or signal occurs.
 
     This class allows you to register functions that will be called when
-    an exception or signal is encountered. The class works best as a
-    context manager. For example:
+    an exception (excluding SystemExit) or signal is encountered. The
+    class works best as a context manager. For example:
 
     with ErrorHandler(cleanup_func):
         do_something()
@@ -50,7 +50,8 @@ class ErrorHandler(object):
         self.set_signal_handlers()
 
     def __exit__(self, exec_type, exec_value, trace):
-        if exec_value is not None:
+        # SystemExit is ignored to properly handle forks that don't exec
+        if exec_type not in (None, SystemExit):
             logger.debug("Encountered exception:\n%s", "".join(
                 traceback.format_exception(exec_type, exec_value, trace)))
             self.call_registered()

@@ -4,7 +4,6 @@
     is capable of handling the signatures.
 
 """
-import datetime
 import logging
 import os
 
@@ -201,29 +200,26 @@ def valid_privkey(privkey):
         return False
 
 
-def _pyopenssl_load(data, method, types=(
-        OpenSSL.crypto.FILETYPE_PEM, OpenSSL.crypto.FILETYPE_ASN1)):
-    openssl_errors = []
-    for filetype in types:
-        try:
-            return method(filetype, data), filetype
-        except OpenSSL.crypto.Error as error:  # TODO: anything else?
-            openssl_errors.append(error)
-    raise errors.Error("Unable to load: {0}".format(",".join(
-        str(error) for error in openssl_errors)))
-
-
 def pyopenssl_load_certificate(data):
     """Load PEM/DER certificate.
 
     :raises errors.Error:
 
     """
-    return _pyopenssl_load(data, OpenSSL.crypto.load_certificate)
+
+    openssl_errors = []
+
+    for file_type in (OpenSSL.crypto.FILETYPE_PEM, OpenSSL.crypto.FILETYPE_ASN1):
+        try:
+            return OpenSSL.crypto.load_certificate(file_type, data), file_type
+        except OpenSSL.crypto.Error as error:  # TODO: other errors?
+            openssl_errors.append(error)
+    raise errors.Error("Unable to load: {0}".format(",".join(
+        str(error) for error in openssl_errors)))
 
 
-def _get_sans_from_cert_or_req(
-        cert_or_req_str, load_func, typ=OpenSSL.crypto.FILETYPE_PEM):
+def _get_sans_from_cert_or_req(cert_or_req_str, load_func,
+                               typ=OpenSSL.crypto.FILETYPE_PEM):
     try:
         cert_or_req = load_func(typ, cert_or_req_str)
     except OpenSSL.crypto.Error as error:
@@ -259,24 +255,6 @@ def get_sans_from_csr(csr, typ=OpenSSL.crypto.FILETYPE_PEM):
     """
     return _get_sans_from_cert_or_req(
         csr, OpenSSL.crypto.load_certificate_request, typ)
-
-
-def asn1_generalizedtime_to_dt(timestamp):
-    """Convert ASN.1 GENERALIZEDTIME to datetime.
-
-    Useful for deserialization of `OpenSSL.crypto.X509.get_notAfter` and
-    `OpenSSL.crypto.X509.get_notAfter` outputs.
-
-    .. todo:: This function support only one format: `%Y%m%d%H%M%SZ`.
-        Implement remaining two.
-
-    """
-    return datetime.datetime.strptime(timestamp, '%Y%m%d%H%M%SZ')
-
-
-def pyopenssl_x509_name_as_text(x509name):
-    """Convert `OpenSSL.crypto.X509Name` to text."""
-    return "/".join("{0}={1}" for key, value in x509name.get_components())
 
 
 def dump_pyopenssl_chain(chain, filetype=OpenSSL.crypto.FILETYPE_PEM):

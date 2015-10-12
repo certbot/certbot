@@ -702,8 +702,6 @@ def create_parser(plugins, args):
         help=config_help("dvsni_port"))
     helpful.add("testing", "--simple-http-port", type=int,
                 help=config_help("simple_http_port"))
-    helpful.add("testing", "--no-simple-http-tls", action="store_true",
-                help=config_help("no_simple_http_tls"))
 
     helpful.add_group(
         "security", description="Security parameters & server settings")
@@ -729,10 +727,12 @@ def create_parser(plugins, args):
 
     return helpful.parser, helpful.args
 
+
 # For now unfortunately this constant just needs to match the code below;
 # there isn't an elegant way to autogenerate it in time.
 VERBS = ["run", "auth", "install", "revoke", "rollback", "config_changes", "plugins"]
 HELP_TOPICS = ["all", "security", "paths", "automation", "testing"] + VERBS
+
 
 def _create_subparsers(helpful):
     subparsers = helpful.parser.add_subparsers(metavar="SUBCOMMAND")
@@ -741,7 +741,7 @@ def _create_subparsers(helpful):
         if name == "plugins":
             func = plugins_cmd
         else:
-            func = eval(name) # pylint: disable=eval-used
+            func = eval(name)  # pylint: disable=eval-used
         h = func.__doc__.splitlines()[0]
         subparser = subparsers.add_parser(name, help=h, description=func.__doc__)
         subparser.set_defaults(func=func)
@@ -762,22 +762,23 @@ def _create_subparsers(helpful):
     helpful.add_group("plugins", description="Plugin options")
 
     helpful.add("auth",
-        "--csr", type=read_file, help="Path to a Certificate Signing Request (CSR) in DER format.")
+                "--csr", type=read_file,
+                help="Path to a Certificate Signing Request (CSR) in DER format.")
     helpful.add("rollback",
-        "--checkpoints", type=int, metavar="N",
-        default=flag_default("rollback_checkpoints"),
-        help="Revert configuration N number of checkpoints.")
+                "--checkpoints", type=int, metavar="N",
+                default=flag_default("rollback_checkpoints"),
+                help="Revert configuration N number of checkpoints.")
 
     helpful.add("plugins",
-        "--init", action="store_true", help="Initialize plugins.")
+                "--init", action="store_true", help="Initialize plugins.")
     helpful.add("plugins",
-        "--prepare", action="store_true", help="Initialize and prepare plugins.")
+                "--prepare", action="store_true", help="Initialize and prepare plugins.")
     helpful.add("plugins",
-        "--authenticators", action="append_const", dest="ifaces",
-        const=interfaces.IAuthenticator, help="Limit to authenticator plugins only.")
+                "--authenticators", action="append_const", dest="ifaces",
+                const=interfaces.IAuthenticator, help="Limit to authenticator plugins only.")
     helpful.add("plugins",
-        "--installers", action="append_const", dest="ifaces",
-        const=interfaces.IInstaller, help="Limit to installer plugins only.")
+                "--installers", action="append_const", dest="ifaces",
+                const=interfaces.IInstaller, help="Limit to installer plugins only.")
 
 
 def _paths_parser(helpful):
@@ -838,9 +839,23 @@ def _plugins_parsing(helpful, plugins):
     helpful.add_plugin_args(plugins)
 
 
-def _setup_logging(args):
-    level = -args.verbose_count * 10
-    fmt = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
+def setup_log_file_handler(args, logfile, fmt):
+    """Setup file debug logging."""
+    log_file_path = os.path.join(args.logs_dir, logfile)
+    handler = logging.handlers.RotatingFileHandler(
+        log_file_path, maxBytes=2 ** 20, backupCount=10)
+    # rotate on each invocation, rollover only possible when maxBytes
+    # is nonzero and backupCount is nonzero, so we set maxBytes as big
+    # as possible not to overrun in single CLI invocation (1MB).
+    handler.doRollover()  # TODO: creates empty letsencrypt.log.1 file
+    handler.setLevel(logging.DEBUG)
+    handler_formatter = logging.Formatter(fmt=fmt)
+    handler_formatter.converter = time.gmtime  # don't use localtime
+    handler.setFormatter(handler_formatter)
+    return handler, log_file_path
+
+
+def _cli_log_handler(args, level, fmt):
     if args.text_mode:
         handler = colored_logging.StreamHandler()
         handler.setFormatter(logging.Formatter(fmt))
@@ -849,30 +864,26 @@ def _setup_logging(args):
         # dialog box is small, display as less as possible
         handler.setFormatter(logging.Formatter("%(message)s"))
     handler.setLevel(level)
+    return handler
+
+
+def setup_logging(args, cli_handler_factory, logfile):
+    """Setup logging."""
+    fmt = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
+    level = -args.verbose_count * 10
+    file_handler, log_file_path = setup_log_file_handler(
+        args, logfile=logfile, fmt=fmt)
+    cli_handler = cli_handler_factory(args, level, fmt)
 
     # TODO: use fileConfig?
 
-    # unconditionally log to file for debugging purposes
-    # TODO: change before release?
-    log_file_name = os.path.join(args.logs_dir, 'letsencrypt.log')
-    file_handler = logging.handlers.RotatingFileHandler(
-        log_file_name, maxBytes=2 ** 20, backupCount=10)
-    # rotate on each invocation, rollover only possible when maxBytes
-    # is nonzero and backupCount is nonzero, so we set maxBytes as big
-    # as possible not to overrun in single CLI invocation (1MB).
-    file_handler.doRollover()  # TODO: creates empty letsencrypt.log.1 file
-    file_handler.setLevel(logging.DEBUG)
-    file_handler_formatter = logging.Formatter(fmt=fmt)
-    file_handler_formatter.converter = time.gmtime  # don't use localtime
-    file_handler.setFormatter(file_handler_formatter)
-
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.DEBUG)  # send all records to handlers
-    root_logger.addHandler(handler)
+    root_logger.addHandler(cli_handler)
     root_logger.addHandler(file_handler)
 
     logger.debug("Root logging level set at %d", level)
-    logger.info("Saving debug log to %s", log_file_name)
+    logger.info("Saving debug log to %s", log_file_path)
 
 
 def _handle_exception(exc_type, exc_value, trace, args):
@@ -941,7 +952,7 @@ def main(cli_args=sys.argv[1:]):
     # private key! #525
     le_util.make_or_verify_dir(
         args.logs_dir, 0o700, os.geteuid(), "--strict-permissions" in cli_args)
-    _setup_logging(args)
+    setup_logging(args, _cli_log_handler, logfile='letsencrypt.log')
 
     # do not log `args`, as it contains sensitive data (e.g. revoke --key)!
     logger.debug("Arguments: %r", cli_args)

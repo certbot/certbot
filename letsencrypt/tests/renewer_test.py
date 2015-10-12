@@ -44,8 +44,15 @@ class BaseRenewableCertTest(unittest.TestCase):
         self.tempdir = tempfile.mkdtemp()
 
         self.cli_config = configuration.RenewerConfiguration(
-            namespace=mock.MagicMock(config_dir=self.tempdir))
+            namespace=mock.MagicMock(
+                config_dir=self.tempdir,
+                work_dir=self.tempdir,
+                logs_dir=self.tempdir,
+            )
+        )
+
         # TODO: maybe provide RenewerConfiguration.make_dirs?
+        # TODO: main() should create those dirs, c.f. #902
         os.makedirs(os.path.join(self.tempdir, "live", "example.org"))
         os.makedirs(os.path.join(self.tempdir, "archive", "example.org"))
         os.makedirs(os.path.join(self.tempdir, "renewal"))
@@ -61,6 +68,9 @@ class BaseRenewableCertTest(unittest.TestCase):
         self.defaults = configobj.ConfigObj()
         self.test_rc = storage.RenewableCert(
             self.config, self.defaults, self.cli_config)
+
+    def tearDown(self):
+        shutil.rmtree(self.tempdir)
 
     def _write_out_ex_kinds(self):
         for kind in ALL_FOUR:
@@ -79,11 +89,6 @@ class BaseRenewableCertTest(unittest.TestCase):
 class RenewableCertTests(BaseRenewableCertTest):
     # pylint: disable=too-many-public-methods
     """Tests for letsencrypt.renewer.*."""
-    def setUp(self):
-        super(RenewableCertTests, self).setUp()
-
-    def tearDown(self):
-        shutil.rmtree(self.tempdir)
 
     def test_initialization(self):
         self.assertEqual(self.test_rc.lineagename, "example.org")
@@ -123,46 +128,47 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertRaises(
             errors.CertStorageError, storage.RenewableCert, config, defaults)
 
-    def test_consistent(self):  # pylint: disable=too-many-statements
+    def test_consistent(self):
+        # pylint: disable=too-many-statements,protected-access
         oldcert = self.test_rc.cert
         self.test_rc.cert = "relative/path"
         # Absolute path for item requirement
-        self.assertFalse(self.test_rc.consistent())
+        self.assertFalse(self.test_rc._consistent())
         self.test_rc.cert = oldcert
         # Items must exist requirement
-        self.assertFalse(self.test_rc.consistent())
+        self.assertFalse(self.test_rc._consistent())
         # Items must be symlinks requirements
         fill_with_sample_data(self.test_rc)
-        self.assertFalse(self.test_rc.consistent())
+        self.assertFalse(self.test_rc._consistent())
         unlink_all(self.test_rc)
         # Items must point to desired place if they are relative
         for kind in ALL_FOUR:
             os.symlink(os.path.join("..", kind + "17.pem"),
                        getattr(self.test_rc, kind))
-        self.assertFalse(self.test_rc.consistent())
+        self.assertFalse(self.test_rc._consistent())
         unlink_all(self.test_rc)
         # Items must point to desired place if they are absolute
         for kind in ALL_FOUR:
             os.symlink(os.path.join(self.tempdir, kind + "17.pem"),
                        getattr(self.test_rc, kind))
-        self.assertFalse(self.test_rc.consistent())
+        self.assertFalse(self.test_rc._consistent())
         unlink_all(self.test_rc)
         # Items must point to things that exist
         for kind in ALL_FOUR:
             os.symlink(os.path.join("..", "..", "archive", "example.org",
                                     kind + "17.pem"),
                        getattr(self.test_rc, kind))
-        self.assertFalse(self.test_rc.consistent())
+        self.assertFalse(self.test_rc._consistent())
         # This version should work
         fill_with_sample_data(self.test_rc)
-        self.assertTrue(self.test_rc.consistent())
+        self.assertTrue(self.test_rc._consistent())
         # Items must point to things that follow the naming convention
         os.unlink(self.test_rc.fullchain)
         os.symlink(os.path.join("..", "..", "archive", "example.org",
                                 "fullchain_17.pem"), self.test_rc.fullchain)
         with open(self.test_rc.fullchain, "w") as f:
             f.write("wrongly-named fullchain")
-        self.assertFalse(self.test_rc.consistent())
+        self.assertFalse(self.test_rc._consistent())
 
     def test_current_target(self):
         # Relative path logic
@@ -259,14 +265,15 @@ class RenewableCertTests(BaseRenewableCertTest):
                 with open(where, "w") as f:
                     f.write(kind)
                 self.assertEqual(ver, self.test_rc.current_version(kind))
-        self.test_rc.update_link_to("cert", 3)
-        self.test_rc.update_link_to("privkey", 2)
+        # pylint: disable=protected-access
+        self.test_rc._update_link_to("cert", 3)
+        self.test_rc._update_link_to("privkey", 2)
         self.assertEqual(3, self.test_rc.current_version("cert"))
         self.assertEqual(2, self.test_rc.current_version("privkey"))
         self.assertEqual(5, self.test_rc.current_version("chain"))
         self.assertEqual(5, self.test_rc.current_version("fullchain"))
         # Currently we are allowed to update to a version that doesn't exist
-        self.test_rc.update_link_to("chain", 3000)
+        self.test_rc._update_link_to("chain", 3000)
         # However, current_version doesn't allow querying the resulting
         # version (because it's a broken link).
         self.assertEqual(os.path.basename(os.readlink(self.test_rc.chain)),
@@ -405,6 +412,14 @@ class RenewableCertTests(BaseRenewableCertTest):
             self.assertEqual(self.test_rc.should_autodeploy(), result)
             self.assertEqual(self.test_rc.should_autorenew(), result)
 
+    def test_autodeployment_is_enabled(self):
+        self.assertTrue(self.test_rc.autodeployment_is_enabled())
+        self.test_rc.configuration["autodeploy"] = "1"
+        self.assertTrue(self.test_rc.autodeployment_is_enabled())
+
+        self.test_rc.configuration["autodeploy"] = "0"
+        self.assertFalse(self.test_rc.autodeployment_is_enabled())
+
     def test_should_autodeploy(self):
         """Test should_autodeploy() on the basis of reasons other than
         expiry time window."""
@@ -424,6 +439,14 @@ class RenewableCertTests(BaseRenewableCertTest):
                 with open(where, "w") as f:
                     f.write(kind)
         self.assertFalse(self.test_rc.should_autodeploy())
+
+    def test_autorenewal_is_enabled(self):
+        self.assertTrue(self.test_rc.autorenewal_is_enabled())
+        self.test_rc.configuration["autorenew"] = "1"
+        self.assertTrue(self.test_rc.autorenewal_is_enabled())
+
+        self.test_rc.configuration["autorenew"] = "0"
+        self.assertFalse(self.test_rc.autorenewal_is_enabled())
 
     @mock.patch("letsencrypt.storage.RenewableCert.ocsp_revoked")
     def test_should_autorenew(self, mock_ocsp):
@@ -507,7 +530,8 @@ class RenewableCertTests(BaseRenewableCertTest):
             self.defaults, self.cli_config)
         # This consistency check tests most relevant properties about the
         # newly created cert lineage.
-        self.assertTrue(result.consistent())
+        # pylint: disable=protected-access
+        self.assertTrue(result._consistent())
         self.assertTrue(os.path.exists(os.path.join(
             self.cli_config.renewal_configs_dir, "the-lineage.com.conf")))
         with open(result.fullchain) as f:
@@ -578,9 +602,10 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertRaises(
             errors.CertStorageError,
             self.test_rc.newest_available_version, "elephant")
+        # pylint: disable=protected-access
         self.assertRaises(
             errors.CertStorageError,
-            self.test_rc.update_link_to, "elephant", 17)
+            self.test_rc._update_link_to, "elephant", 17)
 
     def test_ocsp_revoked(self):
         # XXX: This is currently hardcoded to False due to a lack of an
@@ -645,11 +670,17 @@ class RenewableCertTests(BaseRenewableCertTest):
         # This should fail because the renewal itself appears to fail
         self.assertFalse(renewer.renew(self.test_rc, 1))
 
+    def _common_cli_args(self):
+        return [
+            "--config-dir", self.cli_config.config_dir,
+            "--work-dir", self.cli_config.work_dir,
+            "--logs-dir", self.cli_config.logs_dir,
+        ]
+
     @mock.patch("letsencrypt.renewer.notify")
     @mock.patch("letsencrypt.storage.RenewableCert")
     @mock.patch("letsencrypt.renewer.renew")
     def test_main(self, mock_renew, mock_rc, mock_notify):
-        """Test for main() function."""
         from letsencrypt import renewer
         mock_rc_instance = mock.MagicMock()
         mock_rc_instance.should_autodeploy.return_value = True
@@ -671,8 +702,7 @@ class RenewableCertTests(BaseRenewableCertTest):
                                "example.com.conf"), "w") as f:
             f.write("cert = cert.pem\nprivkey = privkey.pem\n")
             f.write("chain = chain.pem\nfullchain = fullchain.pem\n")
-        renewer.main(self.defaults, args=[
-            '--config-dir', self.cli_config.config_dir])
+        renewer.main(self.defaults, cli_args=self._common_cli_args())
         self.assertEqual(mock_rc.call_count, 2)
         self.assertEqual(mock_rc_instance.update_all_links_to.call_count, 2)
         self.assertEqual(mock_notify.notify.call_count, 4)
@@ -685,8 +715,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         mock_happy_instance.should_autorenew.return_value = False
         mock_happy_instance.latest_common_version.return_value = 10
         mock_rc.return_value = mock_happy_instance
-        renewer.main(self.defaults, args=[
-            '--config-dir', self.cli_config.config_dir])
+        renewer.main(self.defaults, cli_args=self._common_cli_args())
         self.assertEqual(mock_rc.call_count, 4)
         self.assertEqual(mock_happy_instance.update_all_links_to.call_count, 0)
         self.assertEqual(mock_notify.notify.call_count, 4)
@@ -697,8 +726,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         with open(os.path.join(self.cli_config.renewal_configs_dir,
                                "bad.conf"), "w") as f:
             f.write("incomplete = configfile\n")
-        renewer.main(self.defaults, args=[
-            '--config-dir', self.cli_config.config_dir])
+        renewer.main(self.defaults, cli_args=self._common_cli_args())
         # The errors.CertStorageError is caught inside and nothing happens.
 
 

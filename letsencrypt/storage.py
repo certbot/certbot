@@ -129,7 +129,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         self.chain = self.configuration["chain"]
         self.fullchain = self.configuration["fullchain"]
 
-    def consistent(self):
+    def _consistent(self):
         """Are the files associated with this lineage self-consistent?
 
         :returns: Whether the files stored in connection with this
@@ -187,7 +187,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         #      for x in ALL_FOUR))) == 1
         return True
 
-    def fix(self):
+    def _fix(self):
         """Attempt to fix defects or inconsistencies in this lineage.
 
         .. todo:: Currently unimplemented.
@@ -347,7 +347,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         smallest_current = min(self.current_version(x) for x in ALL_FOUR)
         return smallest_current < self.latest_common_version()
 
-    def update_link_to(self, kind, version):
+    def _update_link_to(self, kind, version):
         """Make the specified item point at the specified version.
 
         (Note that this method doesn't verify that the specified version
@@ -379,7 +379,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         :param int version: the desired version"""
 
         for kind in ALL_FOUR:
-            self.update_link_to(kind, version)
+            self._update_link_to(kind, version)
 
     def _notafterbefore(self, method, version):
         """Internal helper function for finding notbefore/notafter."""
@@ -439,6 +439,18 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         with open(target) as f:
             return crypto_util.get_sans_from_cert(f.read())
 
+    def autodeployment_is_enabled(self):
+        """Is automatic deployment enabled for this cert?
+
+        If autodeploy is not specified, defaults to True.
+
+        :returns: True if automatic deployment is enabled
+        :rtype: bool
+
+        """
+        return ("autodeploy" not in self.configuration or
+                self.configuration.as_bool("autodeploy"))
+
     def should_autodeploy(self):
         """Should this lineage now automatically deploy a newer version?
 
@@ -453,8 +465,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         :rtype: bool
 
         """
-        if ("autodeploy" not in self.configuration or
-                self.configuration.as_bool("autodeploy")):
+        if self.autodeployment_is_enabled():
             if self.has_pending_deployment():
                 interval = self.configuration.get("deploy_before_expiry",
                                                   "5 days")
@@ -488,6 +499,18 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         # certificate is not revoked).
         return False
 
+    def autorenewal_is_enabled(self):
+        """Is automatic renewal enabled for this cert?
+
+        If autorenew is not specified, defaults to True.
+
+        :returns: True if automatic renewal is enabled
+        :rtype: bool
+
+        """
+        return ("autorenew" not in self.configuration or
+                self.configuration.as_bool("autorenew"))
+
     def should_autorenew(self):
         """Should we now try to autorenew the most recent cert version?
 
@@ -504,8 +527,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         :rtype: bool
 
         """
-        if ("autorenew" not in self.configuration or
-                self.configuration.as_bool("autorenew")):
+        if self.autorenewal_is_enabled():
             # Consider whether to attempt to autorenew this cert now
 
             # Renewals on the basis of revocation

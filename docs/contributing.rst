@@ -7,38 +7,37 @@ Contributing
 Hacking
 =======
 
-Start by :doc:`installing dependencies and setting up Let's Encrypt
-<using>`.
+All changes in your pull request **must** have 100% unit test coverage, pass
+our `integration`_ tests, **and** be compliant with the
+:ref:`coding style <coding-style>`.
 
-When you're done activate the virtualenv:
+
+Bootstrap
+---------
+
+Start by :ref:`installing Let's Encrypt prerequisites
+<prerequisites>`. Then run:
 
 .. code-block:: shell
 
-   source ./venv/bin/activate
+   ./bootstrap/dev/venv.sh
 
-This step should prepend you prompt with ``(venv)`` and save you from
-typing ``./venv/bin/...``. It is also required to run some of the
-`testing`_ tools. Virtualenv can be disabled at any time by typing
-``deactivate``. More information can be found in `virtualenv
+Activate the virtualenv:
+
+.. code-block:: shell
+
+   source ./$VENV_NAME/bin/activate
+
+This step should prepend you prompt with ``($VENV_NAME)`` and save you
+from typing ``./$VENV_NAME/bin/...``. It is also required to run some
+of the `testing`_ tools. Virtualenv can be disabled at any time by
+typing ``deactivate``. More information can be found in `virtualenv
 documentation`_.
 
-Install the development packages:
-
-.. code-block:: shell
-
-   pip install -r requirements.txt -e acme -e .[dev,docs,testing] -e letsencrypt-apache -e letsencrypt-nginx -e letshelp-letsencrypt
-
-.. note:: `-e` (short for `--editable`) turns on *editable mode* in
-          which any source code changes in the current working
-          directory are "live" and no further `pip install ...`
-          invocations are necessary while developing.
-
-          This is roughly equivalent to `python setup.py develop`. For
-          more info see `man pip`.
-
-The code base, including your pull requests, **must** have 100% unit
-test coverage, pass our `integration`_ tests **and** be compliant with
-the :ref:`coding style <coding-style>`.
+Note that packages are installed in so called *editable mode*, in
+which any source code changes in the current working directory are
+"live" and no further ``./bootstrap/dev/venv.sh`` or ``pip install
+...`` invocations are necessary while developing.
 
 .. _`virtualenv documentation`: https://virtualenv.pypa.io
 
@@ -67,8 +66,10 @@ The following tools are there to help you:
 
 Integration
 ~~~~~~~~~~~
+Mac OS X users: Run `./tests/mac-bootstrap.sh` instead of `boulder-start.sh` to
+install dependencies, configure the environment, and start boulder.
 
-First, install `Go`_ 1.5, libtool-ltdl, mariadb-server and
+Otherwise, install `Go`_ 1.5, libtool-ltdl, mariadb-server and
 rabbitmq-server and then start Boulder_, an ACME CA server::
 
   ./tests/boulder-start.sh
@@ -266,6 +267,22 @@ Please:
 .. _PEP 8 - Style Guide for Python Code:
   https://www.python.org/dev/peps/pep-0008
 
+Submitting a pull request
+=========================
+
+Steps:
+
+1. Write your code!
+2. Make sure your environment is set up properly and that you're in your
+   virtualenv. You can do this by running ``./bootstrap/dev/venv.sh``.
+   (this is a **very important** step)
+3. Run ``./pep8.travis.sh`` to do a cursory check of your code style.
+   Fix any errors.
+4. Run ``tox -e lint`` to check for pylint errors. Fix any errors.
+5. Run ``tox`` to run the entire test suite including coverage. Fix any errors.
+6. If your code touches communication with an ACME server/Boulder, you
+   should run the integration tests, see `integration`_.
+7. Submit the PR.
 
 Updating the documentation
 ==========================

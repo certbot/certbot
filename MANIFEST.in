@@ -2,6 +2,8 @@ include requirements.txt
 include README.rst
 include CHANGES.rst
 include CONTRIBUTING.md
+include LICENSE.txt
 include linter_plugin.py
 include letsencrypt/EULA
+recursive-include docs *
 recursive-include letsencrypt/tests/testdata *
