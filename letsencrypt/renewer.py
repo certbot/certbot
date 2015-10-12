@@ -18,6 +18,7 @@ import zope.component
 
 from letsencrypt import account
 from letsencrypt import configuration
+from letsencrypt import constants
 from letsencrypt import colored_logging
 from letsencrypt import cli
 from letsencrypt import client
@@ -152,7 +153,8 @@ def main(config=None, cli_args=sys.argv[1:]):
 
     args = _create_parser().parse_args(cli_args)
 
-    le_util.make_or_verify_dir(args.logs_dir, 0o700, os.geteuid())
+    uid = os.geteuid()
+    le_util.make_or_verify_dir(args.logs_dir, 0o700, uid)
     cli.setup_logging(args, _cli_log_handler, logfile='renewer.log')
 
     cli_config = configuration.RenewerConfiguration(args)
@@ -166,6 +168,9 @@ def main(config=None, cli_args=sys.argv[1:]):
     # specify a config file on the command line, which, if provided, should
     # take precedence over this one.
     config.merge(configobj.ConfigObj(cli_config.renewer_config_file))
+    # Ensure that all of the needed folders have been created before continuing
+    le_util.make_or_verify_dir(
+            cli_config.work_dir, constants.CONFIG_DIRS_MODE, uid)
 
     for i in os.listdir(cli_config.renewal_configs_dir):
         print "Processing", i
