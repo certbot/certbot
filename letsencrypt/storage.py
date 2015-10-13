@@ -206,9 +206,9 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
     #       filesystem errors, or crashes.)
 
     def _lockfiles(self):
-        """Returns the path of all lockfiles used by this lineage.
+        """Returns the kind and path of all used lockfiles.
 
-        :returns: the path of all lockfiles used by this lineage
+        :returns: list of (kind, lockfile) tuples
         :rtype: list
 
         """
@@ -216,9 +216,29 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         for kind in ALL_FOUR:
             lock_dir = os.path.dirname(getattr(self, kind))
             lock_base = "{0}.lock".format(kind)
-            lockfiles.append(os.path.join(lock_dir, lock_base))
+            lockfiles.append((kind, os.path.join(lock_dir, lock_base)))
 
         return lockfiles
+
+    def _fix_symlinks(self):
+        """Fixes symlinks in the event of an incomplete version update.
+
+        If there is no problem with the current symlinks, this function
+        has no effect.
+
+        """
+        lockfiles = self._lockfiles()
+        if all(os.path.exists(lockfile) for lockfile in lockfiles):
+            for kind, lockfile in lockfiles:
+                link = getattr(self, kind)
+                if os.path.lexists(link):
+                    os.unlink(link)
+                with open(lockfile) as f:
+                    os.symlink(f.readline().rstrip(), link)
+        else:
+            for _, lockfile in lockfiles:
+                if os.path.exists(lockfile):
+                    os.unlink(lockfile)
 
     def current_target(self, kind):
         """Returns full path to which the specified item currently points.
@@ -395,15 +415,14 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
         """
         lockfiles = self._lockfiles()
-        for lockfile in lockfiles:
-            kind = os.path.splitext(os.path.basename(lockfile))[0]
+        for kind, lockfile in lockfiles:
             with open(lockfile, "w") as f:
                 f.write("{0}\n".format(self.current_target(kind)))
 
         for kind in ALL_FOUR:
             self._update_link_to(kind, version)
 
-        for lockfile in lockfiles:
+        for _, lockfile in lockfiles:
             os.unlink(lockfile)
 
     def _notafterbefore(self, method, version):
