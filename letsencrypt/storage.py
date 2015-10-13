@@ -13,6 +13,7 @@ import pyrfc3339
 from letsencrypt import constants
 from letsencrypt import crypto_util
 from letsencrypt import errors
+from letsencrypt import error_handler
 from letsencrypt import le_util
 
 ALL_FOUR = ("cert", "privkey", "chain", "fullchain")
@@ -129,6 +130,8 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         self.chain = self.configuration["chain"]
         self.fullchain = self.configuration["fullchain"]
 
+        self._fix_symlinks()
+
     def _consistent(self):
         """Are the files associated with this lineage self-consistent?
 
@@ -228,7 +231,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
         """
         lockfiles = self._lockfiles()
-        if all(os.path.exists(lockfile) for lockfile in lockfiles):
+        if all(os.path.exists(lockfile[1]) for lockfile in lockfiles):
             for kind, lockfile in lockfiles:
                 link = getattr(self, kind)
                 if os.path.lexists(link):
@@ -414,16 +417,17 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         :param int version: the desired version
 
         """
-        lockfiles = self._lockfiles()
-        for kind, lockfile in lockfiles:
-            with open(lockfile, "w") as f:
-                f.write("{0}\n".format(self.current_target(kind)))
+        with error_handler.ErrorHandler(self._fix_symlinks):
+            lockfiles = self._lockfiles()
+            for kind, lockfile in lockfiles:
+                with open(lockfile, "w") as f:
+                    f.write("{0}\n".format(self.current_target(kind)))
 
-        for kind in ALL_FOUR:
-            self._update_link_to(kind, version)
+            for kind in ALL_FOUR:
+                self._update_link_to(kind, version)
 
-        for _, lockfile in lockfiles:
-            os.unlink(lockfile)
+            for _, lockfile in lockfiles:
+                os.unlink(lockfile)
 
     def _notafterbefore(self, method, version):
         """Internal helper function for finding notbefore/notafter."""
