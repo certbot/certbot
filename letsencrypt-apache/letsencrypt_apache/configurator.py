@@ -1,5 +1,6 @@
 """Apache Configuration based off of Augeas Configurator."""
 # pylint: disable=too-many-lines
+import filecmp
 import itertools
 import logging
 import os
@@ -946,9 +947,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         enabled_dir = os.path.join(self.parser.root, "sites-enabled")
         for entry in os.listdir(enabled_dir):
-            if os.path.realpath(os.path.join(enabled_dir, entry)) == avail_fp:
-                return True
-
+            try:
+                if filecmp.cmp(avail_fp, os.path.join(enabled_dir, entry)):
+                    return True
+            except OSError:
+                pass
         return False
 
     def enable_site(self, vhost):
