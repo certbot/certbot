@@ -378,8 +378,19 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
         :param int version: the desired version"""
 
+        lockfiles = []
+        for kind in ALL_FOUR:
+            lockfile = os.path.join(os.path.dirname(getattr(self, kind)),
+                                    "{0}.lock".format(kind))
+            with open(lockfile, "w") as f:
+                f.write("{0}\n".format(self.current_target(kind)))
+            lockfiles.append(lockfile)
+
         for kind in ALL_FOUR:
             self._update_link_to(kind, version)
+
+        for lockfile in lockfiles:
+            os.unlink(lockfile)
 
     def _notafterbefore(self, method, version):
         """Internal helper function for finding notbefore/notafter."""
