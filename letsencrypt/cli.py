@@ -304,31 +304,54 @@ def _auth_from_domains(le_client, config, domains, plugins):
 
     return lineage
 
+class ConfiguratorError(TypeError):
+    pass
+
+def set_configurator(previously, now):
+    """Setting configurators multiple ways is okay, as long as they all agree"""
+    if previously:
+        if previously != now:
+            raise ConfiguratorError, "Too many flags setting configurators/installers/authenticators %s -> %s" % (`previously`,`now`)
+    return now
+
+def pick_configurator(args, config, plugins, verb):
+    """Figure out which configurator we're going to use"""
+    installer = authenticator = args.configurator
+    print "args.configurator", args.configurator
+    installer = set_configurator(installer, args.installer)
+    authenticator = set_configurator(authenticator, args.authenticator)
+    print "installer", installer
+    if args.nginx:
+        installer = set_configurator(installer, nginx)
+        authenticator = set_configurator(authenticator, nginx)
+    if args.apache:
+        installer = set_configurator(installer, apache)
+        authenticator = set_configurator(authenticator, apache)
+
+    if authenticator == installer:
+        # TODO: this assumes that user doesn't want to pick authenticator
+        #       and installer separately...
+        authenticator = installer = display_ops.pick_configurator(config, args.installer, plugins)
+        #print "ainstaller", installer
+    else:
+        installer = display_ops.pick_installer(config, installer, plugins)
+        authenticator = display_ops.pick_authenticator(config, authenticator, plugins)
+        #print "binstaller", installer
+
+    if installer is None or authenticator is None:
+        #print installer, authenticator
+        raise ConfiguratorError, "Configurator could not be determined"
+    return installer, authenticator
+
 
 # TODO: Make run as close to auth + install as possible
 # Possible difficulties: args.csr was hacked into auth
 def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-locals
     """Obtain a certificate and install."""
-    # Begin authenticator and installer setup
-    if args.configurator is not None and (args.installer is not None or
-                                          args.authenticator is not None):
-        return ("Either --configurator or --authenticator/--installer"
-                "pair, but not both, is allowed")
-
-    if args.authenticator is not None or args.installer is not None:
-        installer = display_ops.pick_installer(
-            config, args.installer, plugins)
-        authenticator = display_ops.pick_authenticator(
-            config, args.authenticator, plugins)
-    else:
-        # TODO: this assumes that user doesn't want to pick authenticator
-        #       and installer separately...
-        authenticator = installer = display_ops.pick_configurator(
-            config, args.configurator, plugins)
-
-    if installer is None or authenticator is None:
-        return "Configurator could not be determined"
-    # End authenticator and installer setup
+    try:
+        installer, authenticator = pick_configurator(args, config, plugins, "run")
+    except ConfiguratorError, e:
+        return e.message
 
     domains = _find_domains(args, installer)
 
@@ -656,6 +679,8 @@ def create_parser(plugins, args):
         None, "-t", "--text", dest="text_mode", action="store_true",
         help="Use the text output instead of the curses UI.")
     helpful.add(None, "-m", "--email", help=config_help("email"))
+    helpful.add(None, "--apache", help="Obtain and install certs using Apache")
+    helpful.add(None, "--nginx", help="Obtain and install certs using Nginx")
     # positional arg shadows --domains, instead of appending, and
     # --domains is useful, because it can be stored in config
     #for subparser in parser_run, parser_auth, parser_install:
