@@ -205,6 +205,21 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
     #       happen as a result of random tampering by a sysadmin, or
     #       filesystem errors, or crashes.)
 
+    def _lockfiles(self):
+        """Returns the path of all lockfiles used by this lineage.
+
+        :returns: the path of all lockfiles used by this lineage
+        :rtype: list
+
+        """
+        lockfiles = []
+        for kind in ALL_FOUR:
+            lock_dir = os.path.dirname(getattr(self, kind))
+            lock_base = "{0}.lock".format(kind)
+            lockfiles.append(os.path.join(lock_dir, lock_base))
+
+        return lockfiles
+
     def current_target(self, kind):
         """Returns full path to which the specified item currently points.
 
@@ -376,15 +391,14 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
     def update_all_links_to(self, version):
         """Change all member objects to point to the specified version.
 
-        :param int version: the desired version"""
+        :param int version: the desired version
 
-        lockfiles = []
-        for kind in ALL_FOUR:
-            lockfile = os.path.join(os.path.dirname(getattr(self, kind)),
-                                    "{0}.lock".format(kind))
+        """
+        lockfiles = self._lockfiles()
+        for lockfile in lockfiles:
+            kind = os.path.splitext(os.path.basename(lockfile))[0]
             with open(lockfile, "w") as f:
                 f.write("{0}\n".format(self.current_target(kind)))
-            lockfiles.append(lockfile)
 
         for kind in ALL_FOUR:
             self._update_link_to(kind, version)
