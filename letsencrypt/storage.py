@@ -208,8 +208,8 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
     #       happen as a result of random tampering by a sysadmin, or
     #       filesystem errors, or crashes.)
 
-    def _lockfiles(self):
-        """Returns the kind and path of all used lockfiles.
+    def _symlink_lockfiles(self):
+        """Returns the kind and path of all symlink lockfiles.
 
         :returns: list of (kind, lockfile) tuples
         :rtype: list
@@ -230,7 +230,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         has no effect.
 
         """
-        lockfiles = self._lockfiles()
+        lockfiles = self._symlink_lockfiles()
         if all(os.path.exists(lockfile[1]) for lockfile in lockfiles):
             for kind, lockfile in lockfiles:
                 link = getattr(self, kind)
@@ -418,7 +418,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
         """
         with error_handler.ErrorHandler(self._fix_symlinks):
-            lockfiles = self._lockfiles()
+            lockfiles = self._symlink_lockfiles()
             for kind, lockfile in lockfiles:
                 with open(lockfile, "w") as f:
                     f.write("{0}\n".format(self.current_target(kind)))

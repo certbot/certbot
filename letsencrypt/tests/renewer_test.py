@@ -290,7 +290,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertEqual("cert8.pem",
                          os.path.basename(self.test_rc.version("cert", 8)))
 
-    def test_update_all_links_to(self):
+    def test_update_all_links_to_success(self):
         for ver in xrange(1, 6):
             for kind in ALL_FOUR:
                 where = getattr(self.test_rc, kind)
@@ -307,6 +307,38 @@ class RenewableCertTests(BaseRenewableCertTest):
             for kind in ALL_FOUR:
                 self.assertEqual(ver, self.test_rc.current_version(kind))
             self.assertEqual(self.test_rc.latest_common_version(), 5)
+
+    def test_update_all_links_to_partial_failure(self):
+        def unlink_or_raise(path, real_unlink=os.unlink):
+            # pylint: disable=missing-docstring
+            if "fullchain" in path and not path.endswith(".pem"):
+                raise ValueError
+            else:
+                real_unlink(path)
+
+        self._write_out_ex_kinds()
+        with mock.patch("letsencrypt.storage.os.unlink") as mock_unlink:
+            mock_unlink.side_effect = unlink_or_raise
+            self.assertRaises(ValueError, self.test_rc.update_all_links_to, 12)
+
+        for kind in ALL_FOUR:
+            self.assertEqual(self.test_rc.current_version(kind), 12)
+
+    def test_update_all_links_to_full_failure(self):
+        def unlink_or_raise(path, real_unlink=os.unlink):
+            # pylint: disable=missing-docstring
+            if "fullchain" in path:
+                raise ValueError
+            else:
+                real_unlink(path)
+
+        self._write_out_ex_kinds()
+        with mock.patch("letsencrypt.storage.os.unlink") as mock_unlink:
+            mock_unlink.side_effect = unlink_or_raise
+            self.assertRaises(ValueError, self.test_rc.update_all_links_to, 12)
+
+        for kind in ALL_FOUR:
+            self.assertEqual(self.test_rc.current_version(kind), 11)
 
     def test_has_pending_deployment(self):
         for ver in xrange(1, 6):
