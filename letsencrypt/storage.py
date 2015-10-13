@@ -238,10 +238,10 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
                     os.unlink(link)
                 with open(lockfile) as f:
                     os.symlink(f.readline().rstrip(), link)
-        else:
-            for _, lockfile in lockfiles:
-                if os.path.exists(lockfile):
-                    os.unlink(lockfile)
+
+        for _, lockfile in lockfiles:
+            if os.path.exists(lockfile):
+                os.unlink(lockfile)
 
     def current_target(self, kind):
         """Returns full path to which the specified item currently points.
