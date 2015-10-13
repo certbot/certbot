@@ -1,0 +1,11 @@
+<packet version="1.6.7.0">
+    <certificate>
+        <install>
+            <result>
+                <status>error</status>
+                <errcode>8002</errcode>
+                <errtext>Unable to set pvt content to certificate : Probably, the private key format is invalid.</errtext>
+            </result>
+        </install>
+    </certificate>
+</packet>

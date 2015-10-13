@@ -1,7 +1,9 @@
 """Test for letsencrypt_plesk.deployer."""
 import unittest
+import pkg_resources
 import os
 
+from letsencrypt import errors
 from letsencrypt_plesk import deployer
 from letsencrypt_plesk.tests import api_mock
 
@@ -19,15 +21,25 @@ class PleskDeployerTest(unittest.TestCase):
         self.deployer.plesk_api_client.will_response(
             'response_certificate_install_ok')
         self.deployer.install_cert(
-            cert_path=self._mock_file('-----CERTIFICATE-----'),
-            key_path=self._mock_file('-----PRIVATE-----'))
+            cert_path=self._mock_file('test.crt'),
+            key_path=self._mock_file('test.key'))
         self.deployer.plesk_api_client.assert_called()
 
-    def _mock_file(self, data):
-        tmp_file = os.tmpnam()
-        with open(tmp_file, 'w') as f:
-            f.write(data)
-        return tmp_file
+    def test_install_cert_error(self):
+        self.deployer.plesk_api_client.expects_request(
+            'request_certificate_install')
+        self.deployer.plesk_api_client.will_response(
+            'response_certificate_install_error')
+        self.assertRaises(errors.PluginError,
+                          self.deployer.install_cert,
+                          cert_path=self._mock_file('test.crt'),
+                          key_path=self._mock_file('test.key'))
+        self.deployer.plesk_api_client.assert_called()
+
+    @staticmethod
+    def _mock_file(name):
+        return pkg_resources.resource_filename(
+            "letsencrypt_plesk.tests", os.path.join("testdata", name))
 
     def test_get_certs_none(self):
         self.deployer.plesk_api_client.expects_request(
@@ -61,8 +73,16 @@ class PleskDeployerTest(unittest.TestCase):
         self.deployer.plesk_api_client.expects_request(
             'request_site_set_certificate')
         self.deployer.plesk_api_client.will_response(
-            'response_site_set_ok')
+            'response_site_set_certificate_ok')
         self.deployer.assign_cert()
+        self.deployer.plesk_api_client.assert_called()
+
+    def test_assign_cert_error(self):
+        self.deployer.plesk_api_client.expects_request(
+            'request_site_set_certificate')
+        self.deployer.plesk_api_client.will_response(
+            'response_site_set_certificate_error')
+        self.assertRaises(errors.PluginError, self.deployer.assign_cert)
         self.deployer.plesk_api_client.assert_called()
 
 if __name__ == "__main__":

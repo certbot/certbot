@@ -27,8 +27,6 @@ class PleskApiMock(object):
         """Assert that API has met the expectations"""
         if self._request:
             self.request.assert_called_once_with(self._request)
-        else:
-            self.request.assert_not_called()
         self._request = None
 
     @staticmethod

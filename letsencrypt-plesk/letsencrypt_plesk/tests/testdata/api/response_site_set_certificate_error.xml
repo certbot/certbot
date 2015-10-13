@@ -1,0 +1,13 @@
+<packet version="1.6.7.0">
+    <site>
+        <set>
+            <result>
+                <status>error</status>
+                <errcode>1013</errcode>
+                <errtext>Unable to find certificate</errtext>
+                <filter-id>example.com</filter-id>
+                <id>1</id>
+            </result>
+        </set>
+    </site>
+</packet>
