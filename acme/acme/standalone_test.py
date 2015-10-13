@@ -1,6 +1,7 @@
 """Tests for acme.standalone."""
 import os
 import shutil
+import socket
 import threading
 import tempfile
 import time
@@ -40,9 +41,27 @@ class ACMEServerMixinTest(unittest.TestCase):
                 ACMEServerMixin.__init__(self)
         self.server = _MockServer(("", 0), socketserver.BaseRequestHandler)
 
+    def _busy_wait(self):  # pragma: no cover
+        # This function is used to avoid race coditions in tests, but
+        # not all of the functionality is always used, hence "no
+        # cover"
+        while True:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            try:
+                # pylint: disable=no-member
+                sock.connect(self.server.socket.getsockname())
+            except socket.error:
+                pass
+            else:
+                break
+            finally:
+                sock.close()
+            time.sleep(1)
+
     def test_serve_shutdown(self):
         thread = threading.Thread(target=self.server.serve_forever2)
         thread.start()
+        self._busy_wait()
         self.server.shutdown2()
 
     def test_shutdown2_not_running(self):
