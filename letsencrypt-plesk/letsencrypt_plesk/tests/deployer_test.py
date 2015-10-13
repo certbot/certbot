@@ -1,4 +1,4 @@
-"""Test for letsencrypt_plesk.configurator."""
+"""Test for letsencrypt_plesk.deployer."""
 import unittest
 import os
 
@@ -29,16 +29,33 @@ class PleskDeployerTest(unittest.TestCase):
             f.write(data)
         return tmp_file
 
-    def test_get_certs(self):
+    def test_get_certs_none(self):
+        self.deployer.plesk_api_client.expects_request(
+            'request_certificate_get_pool')
+        self.deployer.plesk_api_client.will_response(
+            'response_certificate_get_pool_none')
+        certs = self.deployer.get_certs()
+        self.deployer.plesk_api_client.assert_called()
+        self.assertEqual(certs, [])
+
+    def test_get_certs_one(self):
+        self.deployer.plesk_api_client.expects_request(
+            'request_certificate_get_pool')
+        self.deployer.plesk_api_client.will_response(
+            'response_certificate_get_pool_one')
+        certs = self.deployer.get_certs()
+        self.deployer.plesk_api_client.assert_called()
+        self.assertEqual(certs, ['example-certificate'])
+
+    def test_get_certs_many(self):
         self.deployer.plesk_api_client.expects_request(
             'request_certificate_get_pool')
         self.deployer.plesk_api_client.will_response(
             'response_certificate_get_pool_many')
         certs = self.deployer.get_certs()
         self.deployer.plesk_api_client.assert_called()
-        self.assertEqual(
-            certs,
-            ['Lets Encrypt example.com', 'My Own Cert'])
+        self.assertEqual(certs, [
+            'first-certificate', 'second-certificate'])
 
     def test_assign_cert(self):
         self.deployer.plesk_api_client.expects_request(

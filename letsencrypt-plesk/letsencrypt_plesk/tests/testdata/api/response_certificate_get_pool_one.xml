@@ -7,10 +7,7 @@
                 <id>1</id>
                 <certificates>
                     <certificate>
-                        <name>first-certificate</name>
-                    </certificate>
-                    <certificate>
-                        <name>second-certificate</name>
+                        <name>example-certificate</name>
                     </certificate>
                 </certificates>
             </result>

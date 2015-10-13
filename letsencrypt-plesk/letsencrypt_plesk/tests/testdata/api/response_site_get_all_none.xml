@@ -1,0 +1,16 @@
+<packet version="1.6.7.0">
+    <webspace>
+        <get>
+            <result>
+                <status>ok</status>
+            </result>
+        </get>
+    </webspace>
+    <site>
+        <get>
+            <result>
+                <status>ok</status>
+            </result>
+        </get>
+    </site>
+</packet>
