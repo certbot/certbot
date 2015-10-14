@@ -7,6 +7,7 @@ import zope.interface
 from acme import challenges
 
 from letsencrypt import constants
+from letsencrypt import errors
 from letsencrypt import interfaces
 
 
@@ -36,11 +37,10 @@ class NamespaceConfig(object):
     def __init__(self, namespace):
         self.namespace = namespace
 
-        # XXX: breaks renewer in some bizarre way
-        #if self.simple_http_port == self.dvsni_port:
-        #    raise errors.Error(
-        #        "Trying to run SimpleHTTP non-TLS and DVSNI "
-        #        "on the same port ({0})".format(self.dvsni_port))
+        if self.simple_http_port == self.dvsni_port:
+            raise errors.Error(
+                "Trying to run SimpleHTTP and DVSNI "
+                "on the same port ({0})".format(self.dvsni_port))
 
     def __getattr__(self, name):
         return getattr(self.namespace, name)

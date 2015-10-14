@@ -4,6 +4,8 @@ import unittest
 
 import mock
 
+from letsencrypt import errors
+
 
 class NamespaceConfigTest(unittest.TestCase):
     """Tests for letsencrypt.configuration.NamespaceConfig."""
@@ -12,9 +14,14 @@ class NamespaceConfigTest(unittest.TestCase):
         self.namespace = mock.MagicMock(
             config_dir='/tmp/config', work_dir='/tmp/foo', foo='bar',
             server='https://acme-server.org:443/new',
-            dvsni_port='1234', simple_http_port=4321)
+            dvsni_port=1234, simple_http_port=4321)
         from letsencrypt.configuration import NamespaceConfig
         self.config = NamespaceConfig(self.namespace)
+
+    def test_init_same_ports(self):
+        self.namespace.dvsni_port = 4321
+        from letsencrypt.configuration import NamespaceConfig
+        self.assertRaises(errors.Error, NamespaceConfig, self.namespace)
 
     def test_proxy_getattr(self):
         self.assertEqual(self.config.foo, 'bar')
