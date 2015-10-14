@@ -122,15 +122,9 @@ bash``.
 Installation
 ============
 
-.. "pip install acme" doesn't search for "acme" in cwd, just like "pip
-   install -e acme" does; `-U setuptools pip` necessary for #722
-
 .. code-block:: shell
 
-   virtualenv --no-site-packages -p python2 venv
-   ./venv/bin/pip install -U setuptools
-   ./venv/bin/pip install -U pip
-   ./venv/bin/pip install -r requirements.txt acme/ . letsencrypt-apache/ letsencrypt-nginx/
+   source ./bootstrap/venv.sh
 
 .. warning:: Please do **not** use ``python setup.py install``. Please
              do **not** attempt the installation commands as
@@ -148,13 +142,13 @@ To get a new certificate run:
 
 .. code-block:: shell
 
-   sudo ./venv/bin/letsencrypt auth
+   (letsencrypt)$ letsencrypt auth
 
 The ``letsencrypt`` commandline tool has a builtin help:
 
 .. code-block:: shell
 
-   ./venv/bin/letsencrypt --help
+   (letsencrypt)$ letsencrypt --help
 
 
 Configuration file
