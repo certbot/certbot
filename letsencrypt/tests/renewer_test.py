@@ -103,6 +103,12 @@ class RenewableCertTests(BaseRenewableCertTest):
 
         """
         from letsencrypt import storage
+        broken = os.path.join(self.tempdir, "broken.conf")
+        with open(broken, "w") as f:
+            f.write("[No closing bracket for you!")
+        self.assertRaises(errors.CertStorageError, storage.RenewableCert,
+                          broken, self.cli_config)
+        os.unlink(broken)
         self.assertRaises(errors.CertStorageError, storage.RenewableCert,
                           "fun", self.cli_config)
 
