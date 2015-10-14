@@ -81,49 +81,49 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         renewal configuration file and/or systemwide defaults.
 
     """
-    def __init__(self, configfile, config_opts=None, cli_config=None):
+    def __init__(self, config_filename, cli_config):
         """Instantiate a RenewableCert object from an existing lineage.
 
-        :param configobj.ConfigObj configfile: an already-parsed
-            ConfigObj object made from reading the renewal config file
+        :param str config_filename: the path to the renewal config file
             that defines this lineage.
-
-        :param configobj.ConfigObj config_opts: systemwide defaults for
-            renewal properties not otherwise specified in the individual
-            renewal config file.
-        :param .RenewerConfiguration cli_config:
+        :param .RenewerConfiguration: parsed command line arguments
 
         :raises .CertStorageError: if the configuration file's name didn't end
             in ".conf", or the file is missing or broken.
-        :raises TypeError: if the provided renewal configuration isn't a
-            ConfigObj object.
 
         """
         self.cli_config = cli_config
-        if isinstance(configfile, configobj.ConfigObj):
-            if not os.path.basename(configfile.filename).endswith(".conf"):
-                raise errors.CertStorageError(
-                    "renewal config file name must end in .conf")
-            self.lineagename = os.path.basename(
-                configfile.filename)[:-len(".conf")]
-        else:
-            raise TypeError("RenewableCert config must be ConfigObj object")
+        if not config_filename.endswith(".conf"):
+            raise errors.CertStorageError(
+                "renewal config file name must end in .conf")
+        self.lineagename = os.path.basename(
+            config_filename[:-len(".conf")])
 
         # self.configuration should be used to read parameters that
         # may have been chosen based on default values from the
         # systemwide renewal configuration; self.configfile should be
         # used to make and save changes.
-        self.configfile = configfile
+        try:
+            self.configfile = configobj.ConfigObj(config_filename)
+        except configobj.ConfigObjError:
+            raise errors.CertStorageError(
+                "error parsing {0}".format(config_filename))
+
         # TODO: Do we actually use anything from defaults and do we want to
         #       read further defaults from the systemwide renewal configuration
         #       file at this stage?
-        self.configuration = config_with_defaults(config_opts)
-        self.configuration.merge(self.configfile)
+        try:
+            self.configuration = config_with_defaults(
+                configobj.ConfigObj(cli_config.renewer_config_file))
+            self.configuration.merge(self.configfile)
+        except:
+            raise errors.CertStorageError(
+                "error parsing {0}".format(cli_config.renewer_config_file))
 
         if not all(x in self.configuration for x in ALL_FOUR):
             raise errors.CertStorageError(
                 "renewal config file {0} is missing a required "
-                "file reference".format(configfile))
+                "file reference".format(self.configfile))
 
         self.cert = self.configuration["cert"]
         self.privkey = self.configuration["privkey"]
@@ -622,6 +622,8 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         :param configobj.ConfigObj config: renewal configuration
             defaults, affecting, for example, the locations of the
             directories where the associated files will be saved
+        :param .RenewerConfiguration cli_config: parsed command line
+            arguments
 
         :returns: the newly-created RenewalCert object
         :rtype: :class:`storage.renewableCert`"""
@@ -691,7 +693,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         # TODO: add human-readable comments explaining other available
         #       parameters
         new_config.write()
-        return cls(new_config, config, cli_config)
+        return cls(new_config.filename, cli_config)
 
     def save_successor(self, prior_version, new_cert, new_privkey, new_chain):
         """Save new cert and chain as a successor of a prior version.

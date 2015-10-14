@@ -12,7 +12,6 @@ import time
 import traceback
 
 import configargparse
-import configobj
 import OpenSSL
 import zope.component
 import zope.interface.exceptions
@@ -167,25 +166,21 @@ def _init_le_client(args, config, authenticator, installer):
     return client.Client(config, acc, authenticator, installer, acme=acme)
 
 
-def _find_duplicative_certs(domains, config, renew_config):
+def _find_duplicative_certs(config, domains):
     """Find existing certs that duplicate the request."""
 
     identical_names_cert, subset_names_cert = None, None
 
-    configs_dir = renew_config.renewal_configs_dir
+    cli_config = configuration.RenewerConfiguration(config)
+    configs_dir = cli_config.renewal_configs_dir
     # Verify the directory is there
     le_util.make_or_verify_dir(configs_dir, mode=0o755, uid=os.geteuid())
 
-    cli_config = configuration.RenewerConfiguration(config)
     for renewal_file in os.listdir(configs_dir):
         try:
             full_path = os.path.join(configs_dir, renewal_file)
-            rc_config = configobj.ConfigObj(renew_config.renewer_config_file)
-            rc_config.merge(configobj.ConfigObj(full_path))
-            rc_config.filename = full_path
-            candidate_lineage = storage.RenewableCert(
-                rc_config, config_opts=None, cli_config=cli_config)
-        except (configobj.ConfigObjError, errors.CertStorageError, IOError):
+            candidate_lineage = storage.RenewableCert(full_path, cli_config)
+        except (errors.CertStorageError, IOError):
             logger.warning("Renewal configuration file %s is broken. "
                            "Skipping.", full_path)
             continue
@@ -217,7 +212,7 @@ def _treat_as_renewal(config, domains):
     # kind of certificate to be obtained with renewal = False.)
     if not config.duplicate:
         ident_names_cert, subset_names_cert = _find_duplicative_certs(
-            domains, config, configuration.RenewerConfiguration(config))
+            config, domains)
         # I am not sure whether that correctly reads the systemwide
         # configuration file.
         question = None
