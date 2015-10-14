@@ -20,6 +20,34 @@ done
 # later steps, causing "ImportError: cannot import name unpack_url"
 if [ ! -d $VENV_PATH ]
 then
+  BOOTSTRAP=`dirname $0`/bootstrap
+  if [ ! -f $BOOTSTRAP/debian.sh ] ; then
+    echo "Cannot find the letsencrypt bootstrap scripts in $BOOTSTRAP"
+    exit 1
+  fi
+  if [ -f /etc/debian_version ] ; then
+    echo "Bootstrapping dependencies for Debian-based OSes..."
+    sudo $BOOTSTRAP/_deb_common.sh
+  elif [ -f /etc/arch-release ] ; then
+    echo "Bootstrapping dependencies for Archlinux..."
+    sudo $BOOTSTRAP/archlinux.sh
+  elif [ -f /etc/redhat-release ] ; then
+    echo "Bootstrapping dependencies for RedHat-based OSes..."
+    sudo $BOOTSTRAP/_rpm_common.sh
+  elif uname | grep -iq FreeBSD ; then
+    echo "Bootstrapping dependencies for FreeBSD..."
+    sudo $BOOTSTRAP/freebsd.sh
+  elif uname | grep -iq Darwin ; then
+    echo "Bootstrapping dependencies for Mac OS X..."
+    sudo $BOOTSTRAP/mac.sh
+  else
+    echo "Sorry, I don't know how to bootstrap Let's Encrypt on your operating system!"
+    echo
+    echo "You will need to bootstrap, configure virtualenv, and run a pip install manually"
+    echo "Please see https://letsencrypt.readthedocs.org/en/latest/using.html#prerequisites"
+    echo "for more info"
+  fi
+
   echo "Creating virtual environment..."
   if [ "$VERBOSE" = 1 ] ; then
     virtualenv --no-site-packages --python python2 $VENV_PATH
