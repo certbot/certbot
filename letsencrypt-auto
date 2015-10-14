@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/sh -e
 #
 # Installs and updates the letencrypt virtualenv, and runs letsencrypt
 # using that virtual environment.  This allows the client to function decently
@@ -39,7 +39,8 @@ then
     sudo $BOOTSTRAP/freebsd.sh
   elif uname | grep -iq Darwin ; then
     echo "Bootstrapping dependencies for Mac OS X..."
-    sudo $BOOTSTRAP/mac.sh
+    echo "WARNING: Mac support is very experimental at present..."
+    $BOOTSTRAP/mac.sh
   else
     echo "Sorry, I don't know how to bootstrap Let's Encrypt on your operating system!"
     echo
