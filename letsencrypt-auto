@@ -1,0 +1,45 @@
+#!/bin/bash -e
+#
+# Installs and updates the letencrypt virtualenv, and runs letsencrypt
+# using that virtual environment.  This allows the client to function decently
+# without requiring specific versions of its dependencies from the operating
+# system.
+
+XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share}
+VENV_NAME="letsencrypt"
+VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
+VENV_BIN=${VENV_PATH}/bin
+
+for arg in "$@" ; do 
+  if [ "$arg" = "-v" ] || [ "$arg" = "--verbose" ] ; then
+    VERBOSE=1
+  fi
+done
+
+# virtualenv call is not idempotent: it overwrites pip upgraded in
+# later steps, causing "ImportError: cannot import name unpack_url"
+if [ ! -d $VENV_PATH ]
+then
+  echo "Creating virtual environment..."
+  if [ "$VERBOSE" = 1 ] ; then
+    virtualenv --no-site-packages --python python2 $VENV_PATH
+  else
+    virtualenv --no-site-packages --python python2 $VENV_PATH > /dev/null
+  fi
+fi
+
+echo "Updating letsencrypt and virtual environment dependencies..."
+if [ "$VERBOSE" = 1 ]  ; then
+  $VENV_BIN/pip install -U setuptools
+  $VENV_BIN/pip install -U pip
+  $VENV_BIN/pip install -U letsencrypt letsencrypt-apache letsencrypt-nginx
+else
+  $VENV_BIN/pip install -U setuptools > /dev/null
+  $VENV_BIN/pip install -U pip > /dev/null
+  $VENV_BIN/pip install -U letsencrypt letsencrypt-apache letsencrypt-nginx > /dev/null
+fi
+
+# TODO: install apache and nginx plugins by default?
+# --pre is not necessary for dev releases in more recent pip versions
+
+sudo $VENV_BIN/letsencrypt $@
