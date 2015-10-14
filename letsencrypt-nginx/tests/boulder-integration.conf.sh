@@ -20,7 +20,6 @@ events {
 }
 
 http {
-  server_names_hash_bucket_size 2048;
   # Set an array of temp and cache file options that will otherwise default to
   # restricted locations accessible only to root.
   client_body_temp_path $root/client_body;
