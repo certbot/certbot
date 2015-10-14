@@ -46,27 +46,21 @@ class _AttrDict(dict):
         self.__dict__ = self
 
 
-def renew(cert, old_version):
+def renew(cert):
     """Perform automated renewal of the referenced cert, if possible.
 
     :param letsencrypt.storage.RenewableCert cert: The certificate
         lineage to attempt to renew.
-    :param int old_version: The version of the certificate lineage
-        relative to which the renewal should be attempted.
-
-    :returns: A number referring to newly created version of this cert
-        lineage, or ``False`` if renewal was not successful.
-    :rtype: `int` or `bool`
 
     """
     # TODO: handle partial success (some names can be renewed but not
     #       others)
     # TODO: handle obligatory key rotation vs. optional key rotation vs.
     #       requested key rotation
-    if "renewalparams" not in cert.configfile:
+    renewalparams = cert.configfile.get("renewalparams")
+    if renewalparams is None:
         # TODO: notify user?
         return False
-    renewalparams = cert.configfile["renewalparams"]
     if "authenticator" not in renewalparams:
         # TODO: notify user?
         return False
@@ -90,25 +84,29 @@ def renew(cert, old_version):
         account_id=renewalparams["account"])
 
     le_client = client.Client(config, acc, authenticator, None)
+    old_version = cert.latest_common_version()
     with open(cert.version("cert", old_version)) as f:
         sans = crypto_util.get_sans_from_cert(f.read())
     new_certr, new_chain, new_key, _ = le_client.obtain_certificate(sans)
-    if new_chain:
-        # XXX: Assumes that there was no key change.  We need logic
-        #      for figuring out whether there was or not.  Probably
-        #      best is to have obtain_certificate return None for
-        #      new_key if the old key is to be used (since save_successor
-        #      already understands this distinction!)
-        return cert.save_successor(
-            old_version, OpenSSL.crypto.dump_certificate(
-                OpenSSL.crypto.FILETYPE_PEM, new_certr.body),
-            new_key.pem, crypto_util.dump_pyopenssl_chain(new_chain))
-        # TODO: Notify results
-    else:
-        # TODO: Notify negative results
-        return False
-    # TODO: Consider the case where the renewal was partially successful
-    #       (where fewer than all names were renewed)
+    cert.save_successor(
+        old_version, OpenSSL.crypto.dump_certificate(
+            OpenSSL.crypto.FILETYPE_PEM, new_certr.body),
+        new_key.pem, crypto_util.dump_pyopenssl_chain(new_chain))
+    notify.notify("Autorenewed a cert!!!", "root", "It worked!")
+
+
+def deploy(cert):
+    """Update the cert version, restart the server, and notify the user.
+
+
+    :param letsencrypt.storage.RenewableCert cert: The certificate
+        lineage to deploy
+
+    """
+    cert.update_all_links_to(cert.latest_common_version())
+    # TODO: restart web server (invoke IInstaller.restart() method)
+    # TODO: explain what happened
+    notify.notify("Autodeployed a cert!!!", "root", "It worked!")
 
 
 def _cli_log_handler(args, level, fmt):  # pylint: disable=unused-argument
@@ -179,7 +177,6 @@ def main(config=None, cli_args=sys.argv[1:]):
         rc_config = configobj.ConfigObj(cli_config.renewer_config_file)
         rc_config.merge(configobj.ConfigObj(
             os.path.join(cli_config.renewal_configs_dir, i)))
-        # TODO: this is a dirty hack!
         rc_config.filename = os.path.join(cli_config.renewal_configs_dir, i)
         try:
             # TODO: Before trying to initialize the RenewableCert object,
@@ -200,15 +197,6 @@ def main(config=None, cli_args=sys.argv[1:]):
             # config rather than simply ignoring it.
             continue
         if cert.should_autorenew():
-            # Note: not cert.current_version() because the basis for
-            # the renewal is the latest version, even if it hasn't been
-            # deployed yet!
-            old_version = cert.latest_common_version()
-            renew(cert, old_version)
-            notify.notify("Autorenewed a cert!!!", "root", "It worked!")
-            # TODO: explain what happened
+            renew(cert)
         if cert.should_autodeploy():
-            cert.update_all_links_to(cert.latest_common_version())
-            # TODO: restart web server (invoke IInstaller.restart() method)
-            notify.notify("Autodeployed a cert!!!", "root", "It worked!")
-            # TODO: explain what happened
+            deploy(cert)
