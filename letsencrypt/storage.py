@@ -108,17 +108,10 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         except configobj.ConfigObjError:
             raise errors.CertStorageError(
                 "error parsing {0}".format(config_filename))
-
         # TODO: Do we actually use anything from defaults and do we want to
         #       read further defaults from the systemwide renewal configuration
         #       file at this stage?
-        try:
-            self.configuration = config_with_defaults(
-                configobj.ConfigObj(cli_config.renewer_config_file))
-            self.configuration.merge(self.configfile)
-        except:
-            raise errors.CertStorageError(
-                "error parsing {0}".format(cli_config.renewer_config_file))
+        self.configuration = config_with_defaults(self.configfile)
 
         if not all(x in self.configuration for x in ALL_FOUR):
             raise errors.CertStorageError(
