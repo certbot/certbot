@@ -28,18 +28,21 @@ common() {
 }
 
 # TODO: boulder#985
+common_dvsni() {
+    common --dvsni-port 5001 --simple-http-port 0 "$@"
+}
 common_http() {
     common --dvsni-port 0 --simple-http-port 5001 "$@"
 }
 
-common --domains le1.wtf --standalone-supported-challenges dvsni auth
+common_dvsni --domains le1.wtf --standalone-supported-challenges dvsni auth
 common_http --domains le2.wtf --standalone-supported-challenges simpleHttp run
 common_http -a manual -d le.wtf auth
 
 export CSR_PATH="${root}/csr.der" KEY_PATH="${root}/key.pem" \
        OPENSSL_CNF=examples/openssl.cnf
 ./examples/generate-csr.sh le3.wtf
-common auth --csr "$CSR_PATH" \
+common_dvsni auth --csr "$CSR_PATH" \
        --cert-path "${root}/csr/cert.pem" \
        --chain-path "${root}/csr/chain.pem"
 openssl x509 -in "${root}/csr/0000_cert.pem" -text
