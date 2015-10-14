@@ -27,9 +27,14 @@ common() {
         "$@"
 }
 
+# TODO: boulder#985
+common_http() {
+    common --dvsni-port 0 --simple-http-port 5001 "$@"
+}
+
 common --domains le1.wtf --standalone-supported-challenges dvsni auth
-common --domains le2.wtf --standalone-supported-challenges simpleHttp run
-common -a manual -d le.wtf auth
+common_http --domains le2.wtf --standalone-supported-challenges simpleHttp run
+common_http -a manual -d le.wtf auth
 
 export CSR_PATH="${root}/csr.der" KEY_PATH="${root}/key.pem" \
        OPENSSL_CNF=examples/openssl.cnf
