@@ -11,7 +11,8 @@ VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
 VENV_BIN=${VENV_PATH}/bin
 
 for arg in "$@" ; do 
-  if [ "$arg" = "-v" ] || [ "$arg" = "--verbose" ] ; then
+  # This first clause is redundant with the third, but hedging on portability
+  if [ "$arg" = "-v" ] || [ "$arg" = "--verbose" ] || echo "$arg" | grep -E -- -v+ ; then
     VERBOSE=1
   fi
 done
