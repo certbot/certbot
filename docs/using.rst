@@ -22,8 +22,6 @@ above method instead.
    https://github.com/letsencrypt/letsencrypt/archive/master.zip
 
 
-.. _prerequisites:
-
 Installation and Usage
 ======================
 
@@ -33,9 +31,13 @@ To install and run the client you just need to type:
 
    ./letsencrypt-auto
 
-.. warning:: Please do **not** use ``python setup.py install``.  That mode of
-             operation might corrupt your operating system and is **not supported**
-             by the Let's Encrypt team!
+(Once letsencrypt is packaged by distributions, the command will just be
+``letsencrypt``.  ``letsencrypt-auto`` is a wrapper which installs virtualized
+dependencies and provides automated updates during the beta program)
+
+.. warning:: Please do **not** use ``python setup.py install`` or ``sudo pip install`.
+             Those mode of operation might corrupt your operating system and is
+             **not supported** by the Let's Encrypt team!
 
 The ``letsencrypt`` commandline tool has a builtin help:
 
@@ -48,7 +50,7 @@ Configuration file
 ------------------
 
 It is possible to specify configuration file with
-``letsencrypt --config cli.ini`` (or shorter ``-c cli.ini``). For
+``letsencrypt-auto --config cli.ini`` (or shorter ``-c cli.ini``). For
 instance, if you are a contributor, you might find the following
 handy:
 
@@ -72,7 +74,7 @@ By default, the following locations are searched:
 Running with Docker
 ===================
 
-Docker_ is another way to quickly obtaintesting certs. From the
+Docker_ is another way to quickly obtain testing certs. From the
 server that the domain your requesting a cert for resolves to,
 `install Docker`_, issue the following command:
 
