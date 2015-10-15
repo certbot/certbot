@@ -2,26 +2,6 @@
 Using the Let's Encrypt client
 ==============================
 
-Quick start
-===========
-
-Using Docker_ you can quickly get yourself a testing cert. From the
-server that the domain your requesting a cert for resolves to,
-`install Docker`_, issue the following command:
-
-.. code-block:: shell
-
-   sudo docker run -it --rm -p 443:443 --name letsencrypt \
-               -v "/etc/letsencrypt:/etc/letsencrypt" \
-               -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
-               quay.io/letsencrypt/letsencrypt:latest
-
-and follow the instructions. Your new cert will be available in
-``/etc/letsencrypt/certs``.
-
-.. _Docker: https://docker.com
-.. _`install Docker`: https://docs.docker.com/docker/userguide/
-
 
 Getting the code
 ================
@@ -174,3 +154,25 @@ By default, the following locations are searched:
 
 .. _Augeas: http://augeas.net/
 .. _Virtualenv: https://virtualenv.pypa.io
+
+Running with Docker
+===================
+
+Docker_ is another way to quickly obtaintesting certs. From the
+server that the domain your requesting a cert for resolves to,
+`install Docker`_, issue the following command:
+
+.. code-block:: shell
+
+   sudo docker auth -it --rm -p 443:443 --name letsencrypt \
+               -v "/etc/letsencrypt:/etc/letsencrypt" \
+               -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
+               quay.io/letsencrypt/letsencrypt:latest
+
+and follow the instructions. Your new cert will be available in
+``/etc/letsencrypt/certs``.
+
+.. _Docker: https://docker.com
+.. _`install Docker`: https://docs.docker.com/docker/userguide/
+
+
