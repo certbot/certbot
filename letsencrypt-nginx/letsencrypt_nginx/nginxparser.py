@@ -84,9 +84,13 @@ class RawNginxDumper(object):
                     else:
                         yield spacer * current_indent + key + spacer + values + ';'
 
-    def as_string(self):
+    def __str__(self):
         """Return the parsed block as a string."""
         return '\n'.join(self) + '\n'
+    
+    def as_string(self):
+        """Return the parsed block as a string."""
+        return str(self)
 
 
 # Shortcut functions to respect Python's serialization interface
@@ -122,7 +126,7 @@ def dumps(blocks, indentation=4):
     :rtype: str
 
     """
-    return RawNginxDumper(blocks, indentation).as_string()
+    return str(RawNginxDumper(blocks, indentation))
 
 
 def dump(blocks, _file, indentation=4):
