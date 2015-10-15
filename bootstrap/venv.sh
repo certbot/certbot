@@ -20,9 +20,7 @@ fi
 pip install -U setuptools
 pip install -U pip
 
-# TODO: install apache and nginx plugins by default?
-# --pre is not necessary for dev releases in more recent pip versions
-pip install -U letsencrypt letsencrypt-apache letsencrypt-nginx
+pip install -U letsencrypt letsencrypt-apache # letsencrypt-nginx
 
 echo
 echo "Congratulations, Let's Encrypt has been successfully installed/updated!"
