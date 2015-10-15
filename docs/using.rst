@@ -67,10 +67,6 @@ By default, the following locations are searched:
 .. keep it up to date with constants.py
 
 
-.. _Augeas: http://augeas.net/
-.. _Virtualenv: https://virtualenv.pypa.io
-
-
 Running with Docker
 ===================
 

@@ -312,6 +312,8 @@ In general:
 * ``virtualenv`` and ``pip`` are used for managing other python library
   dependencies
 
+.. _Augeas: http://augeas.net/
+.. _Virtualenv: https://virtualenv.pypa.io
 
 Ubuntu
 ------
