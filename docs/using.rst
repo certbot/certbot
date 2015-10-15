@@ -24,17 +24,62 @@ above method instead.
 
 .. _prerequisites:
 
-Prerequisites
-=============
+Installation and Usage
+======================
 
-The demo code is supported and known to work on **Ubuntu and
-Debian**. Therefore, prerequisites for other platforms listed below
-are provided mainly for the :ref:`developers <hacking>` reference.
+To install and run the client you just need to type:
+
+.. code-block:: shell
+
+   ./letsencrypt-auto
+
+.. warning:: Please do **not** use ``python setup.py install``.  That mode of
+             operation might corrupt your operating system and is **not supported**
+             by the Let's Encrypt team!
+
+The ``letsencrypt`` commandline tool has a builtin help:
+
+.. code-block:: shell
+
+   ./letsencrypt-auto --help
+
+
+Configuration file
+------------------
+
+It is possible to specify configuration file with
+``letsencrypt --config cli.ini`` (or shorter ``-c cli.ini``). For
+instance, if you are a contributor, you might find the following
+handy:
+
+.. include:: ../examples/dev-cli.ini
+   :code: ini
+
+By default, the following locations are searched:
+
+- ``/etc/letsencrypt/cli.ini``
+- ``$XDG_CONFIG_HOME/letsencrypt/cli.ini`` (or
+  ``~/.config/letsencrypt/cli.ini`` if ``$XDG_CONFIG_HOME`` is not
+  set).
+
+.. keep it up to date with constants.py
+
+
+.. _Augeas: http://augeas.net/
+.. _Virtualenv: https://virtualenv.pypa.io
+
+Notes on OS depedencies
+=======================
+
+OS level dependencies are managed by scripts in ``bootstrap``.  Some notes
+are provided here mainly for the :ref:`developers <hacking>` reference.
 
 In general:
 
 * ``sudo`` is required as a suggested way of running privileged process
 * `Augeas`_ is required for the Python bindings
+* ``virtualenv`` and ``pip`` are used for managing other python library
+  dependencies
 
 
 Ubuntu
@@ -99,61 +144,7 @@ below), you will need a compatbile shell, e.g. ``pkg install bash &&
 bash``.
 
 
-Installation
-============
 
-.. code-block:: shell
-
-   source ./bootstrap/venv.sh
-
-.. warning:: Please do **not** use ``python setup.py install``. Please
-             do **not** attempt the installation commands as
-             superuser/root and/or without Virtualenv_, e.g. ``sudo
-             python setup.py install``, ``sudo pip install``, ``sudo
-             ./venv/bin/...``. These modes of operation might corrupt
-             your operating system and are **not supported** by the
-             Let's Encrypt team!
-
-
-Usage
-=====
-
-To get a new certificate run:
-
-.. code-block:: shell
-
-   (letsencrypt)$ letsencrypt auth
-
-The ``letsencrypt`` commandline tool has a builtin help:
-
-.. code-block:: shell
-
-   (letsencrypt)$ letsencrypt --help
-
-
-Configuration file
-------------------
-
-It is possible to specify configuration file with
-``letsencrypt --config cli.ini`` (or shorter ``-c cli.ini``). For
-instance, if you are a contributor, you might find the following
-handy:
-
-.. include:: ../examples/dev-cli.ini
-   :code: ini
-
-By default, the following locations are searched:
-
-- ``/etc/letsencrypt/cli.ini``
-- ``$XDG_CONFIG_HOME/letsencrypt/cli.ini`` (or
-  ``~/.config/letsencrypt/cli.ini`` if ``$XDG_CONFIG_HOME`` is not
-  set).
-
-.. keep it up to date with constants.py
-
-
-.. _Augeas: http://augeas.net/
-.. _Virtualenv: https://virtualenv.pypa.io
 
 Running with Docker
 ===================
