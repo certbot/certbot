@@ -128,8 +128,8 @@ class CLITest(unittest.TestCase):
         self._auth_new_request_common(mock_client)
         self.assertEqual(
             mock_client.obtain_and_enroll_certificate.call_count, 1)
-        self.assertTrue(
-            cert_path in mock_get_utility().add_message.call_args[0][0])
+        msg = mock_get_utility().add_message.call_args_list[0][0][0]
+        self.assertTrue(cert_path in msg)
 
     def test_auth_new_request_failure(self):
         mock_client = mock.MagicMock()
@@ -164,8 +164,8 @@ class CLITest(unittest.TestCase):
         self.assertEqual(mock_lineage.save_successor.call_count, 1)
         mock_lineage.update_all_links_to.assert_called_once_with(
             mock_lineage.latest_common_version())
-        self.assertTrue(
-            cert_path in mock_get_utility().add_message.call_args[0][0])
+        msg = mock_get_utility().add_message.call_args_list[0][0][0]
+        self.assertTrue(cert_path in msg)
 
     @mock.patch('letsencrypt.cli.display_ops.pick_installer')
     @mock.patch('letsencrypt.cli.zope.component.getUtility')

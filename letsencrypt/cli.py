@@ -287,8 +287,8 @@ def _report_renewal_status(cert, authenticator, installer):
     msg = ["Your certificate will expire at {0}. ".format(
         cert.notafter().ctime())]
     # pylint: disable=no-member
-    if (installer is not None or (authenticator is not None and
-            interfaces.IInstaller.implementedBy(authenticator))):
+    if (installer is not None or
+            interfaces.IInstaller.providedBy(authenticator)):
         msg.append(
             "Let's Encrypt can automatically renew and deploy new versions of "
             "this certificate for you. To do this, use a job scheduler like "
