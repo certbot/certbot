@@ -68,11 +68,13 @@ echo "Updating letsencrypt and virtual environment dependencies..."
 if [ "$VERBOSE" = 1 ]  ; then
   $VENV_BIN/pip install -U setuptools
   $VENV_BIN/pip install -U pip
-  $VENV_BIN/pip install -U letsencrypt letsencrypt-apache letsencrypt-nginx
+  # nginx is buggy / disabled for now...
+  $VENV_BIN/pip install -U letsencrypt letsencrypt-apache #letsencrypt-nginx
 else
   $VENV_BIN/pip install -U setuptools > /dev/null
   $VENV_BIN/pip install -U pip > /dev/null
-  $VENV_BIN/pip install -U letsencrypt letsencrypt-apache letsencrypt-nginx > /dev/null
+  # nginx is buggy / disabled for now...
+  $VENV_BIN/pip install -U letsencrypt letsencrypt-apache > /dev/null
 fi
 
 # Explain what's about to happen, for the benefit of those getting sudo
