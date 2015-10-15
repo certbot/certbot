@@ -275,6 +275,47 @@ def _report_new_cert(cert_path):
                               reporter_util.MEDIUM_PRIORITY)
 
 
+def _report_renewal_status(cert, authenticator, installer):
+    """Informs the user about automatic renewal and deployment.
+
+    :param .RenewableCert cert: Newly issued certificate
+    :param .IAuthenticator authenticator: Selected authenticator
+    :param .IInstaller installer: Selected installer (if it exists)
+
+    """
+    reporter_util = zope.component.getUtility(interfaces.IReporter)
+    msg = ["Your certificate will expire at {0}. ".format(
+        cert.notafter().ctime())]
+    # pylint: disable=no-member
+    if (installer is not None or
+            interfaces.IInstaller.implementedBy(authenticator)):
+        msg.append(
+            "Let's Encrypt can automatically renew and deploy new versions of "
+            "this certificate for you. To do this, use a job scheduler like "
+            "cron to run '{0}' once per day. Currently, ".format(os.path.join(
+                os.path.dirname(sys.executable), "letsencrypt-renewer")))
+        if cert.autorenewal_is_enabled():
+            if cert.autodeployment_is_enabled():
+                msg.append("automatic renewal and deployment has ")
+            else:
+                msg.append("automatic renewal but not automatic deployment has ")
+        elif cert.autodeployment_is_enabled():
+            msg.append("automatic deployment but not automatic renewal has ")
+        else:
+            msg.append("automatic renewal and deployment has not ")
+        msg.append(
+            "been enabled for your certificate. These settings can be "
+            "configured in the directories under {0}.".format(
+                cert.cli_config.renewal_configs_dir))
+    else:
+        # Since no installer was used, don't suggested the renewer
+        msg.append(
+            "To obtain new versions of this certificate, simply run the Let's "
+            "Encrypt client again.")
+
+    reporter_util.add_message(''.join(msg), reporter_util.MEDIUM_PRIORITY)
+
+
 def _auth_from_domains(le_client, config, domains, plugins):
     """Authenticate and enroll certificate."""
     # Note: This can raise errors... caught above us though.
