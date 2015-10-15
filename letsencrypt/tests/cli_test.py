@@ -112,6 +112,44 @@ class CLITest(unittest.TestCase):
                   for r in xrange(len(flags)))):
             self._call(['plugins'] + list(args))
 
+    @mock.patch('letsencrypt.cli.zope.component.getUtility')
+    def test_report_renewal_status(self, mock_get_utility):
+        from letsencrypt import cli
+        # pylint: disable=protected-access
+        cert = mock.MagicMock()
+        cert.notafter().date.return_value = "1970-01-01"
+
+        cli._report_renewal_status(cert, None, None)
+        msg = mock_get_utility().add_message.call_args[0][0]
+        self.assertTrue("1970-01-01" in msg)
+        self.assertTrue("client again" in msg)
+
+        installer = mock.MagicMock()
+        cert.autorenewal_is_enabled.return_value = True
+        cert.autodeployment_is_enabled.return_value = True
+        cli._report_renewal_status(cert, None, installer)
+        msg = mock_get_utility().add_message.call_args[0][0]
+        self.assertTrue("1970-01-01" in msg)
+        self.assertTrue("automatic renewal and deployment has" in msg)
+
+        cert.autodeployment_is_enabled.return_value = False
+        cli._report_renewal_status(cert, None, installer)
+        msg = mock_get_utility().add_message.call_args[0][0]
+        self.assertTrue("1970-01-01" in msg)
+        self.assertTrue("automatic renewal but not automatic deploy" in msg)
+
+        cert.autorenewal_is_enabled.return_value = False
+        cli._report_renewal_status(cert, None, installer)
+        msg = mock_get_utility().add_message.call_args[0][0]
+        self.assertTrue("1970-01-01" in msg)
+        self.assertTrue("automatic renewal and deployment has not" in msg)
+
+        cert.autodeployment_is_enabled.return_value = True
+        cli._report_renewal_status(cert, None, installer)
+        msg = mock_get_utility().add_message.call_args[0][0]
+        self.assertTrue("1970-01-01" in msg)
+        self.assertTrue("automatic deployment but not automatic renew" in msg)
+
     def test_auth_bad_args(self):
         ret, _, _, _ = self._call(['-d', 'foo.bar', 'auth', '--csr', CSR])
         self.assertEqual(ret, '--domains and --csr are mutually exclusive')

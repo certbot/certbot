@@ -285,7 +285,7 @@ def _report_renewal_status(cert, authenticator, installer):
     """
     reporter_util = zope.component.getUtility(interfaces.IReporter)
     msg = ["Your certificate will expire at {0}. ".format(
-        cert.notafter().ctime())]
+        cert.notafter().date())]
     # pylint: disable=no-member
     if (installer is not None or
             interfaces.IInstaller.providedBy(authenticator)):
