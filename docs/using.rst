@@ -68,83 +68,6 @@ By default, the following locations are searched:
 .. _Augeas: http://augeas.net/
 .. _Virtualenv: https://virtualenv.pypa.io
 
-Notes on OS depedencies
-=======================
-
-OS level dependencies are managed by scripts in ``bootstrap``.  Some notes
-are provided here mainly for the :ref:`developers <hacking>` reference.
-
-In general:
-
-* ``sudo`` is required as a suggested way of running privileged process
-* `Augeas`_ is required for the Python bindings
-* ``virtualenv`` and ``pip`` are used for managing other python library
-  dependencies
-
-
-Ubuntu
-------
-
-.. code-block:: shell
-
-   sudo ./bootstrap/ubuntu.sh
-
-
-Debian
-------
-
-.. code-block:: shell
-
-   sudo ./bootstrap/debian.sh
-
-For squeeze you will need to:
-
-- Use ``virtualenv --no-site-packages -p python`` instead of ``-p python2``.
-
-
-.. _`#280`: https://github.com/letsencrypt/letsencrypt/issues/280
-
-
-Mac OSX
--------
-
-.. code-block:: shell
-
-   ./bootstrap/mac.sh
-
-
-Fedora
-------
-
-.. code-block:: shell
-
-   sudo ./bootstrap/fedora.sh
-
-
-Centos 7
---------
-
-.. code-block:: shell
-
-   sudo ./bootstrap/centos.sh
-
-
-FreeBSD
--------
-
-.. code-block:: shell
-
-   sudo ./bootstrap/freebsd.sh
-
-Bootstrap script for FreeBSD uses ``pkg`` for package installation,
-i.e. it does not use ports.
-
-FreeBSD by default uses ``tcsh``. In order to activate virtulenv (see
-below), you will need a compatbile shell, e.g. ``pkg install bash &&
-bash``.
-
-
-
 
 Running with Docker
 ===================
@@ -158,12 +81,10 @@ server that the domain your requesting a cert for resolves to,
    sudo docker auth -it --rm -p 443:443 --name letsencrypt \
                -v "/etc/letsencrypt:/etc/letsencrypt" \
                -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
-               quay.io/letsencrypt/letsencrypt:latest
+               quay.io/letsencrypt/letsencrypt:latest auth
 
 and follow the instructions. Your new cert will be available in
 ``/etc/letsencrypt/certs``.
 
 .. _Docker: https://docker.com
 .. _`install Docker`: https://docs.docker.com/docker/userguide/
-
-

@@ -371,24 +371,3 @@ i.e. it does not use ports.
 FreeBSD by default uses ``tcsh``. In order to activate virtulenv (see
 below), you will need a compatbile shell, e.g. ``pkg install bash &&
 bash``.
-
-
-Running with Docker
-===================
-
-Docker_ is another way to quickly obtaintesting certs. From the
-server that the domain your requesting a cert for resolves to,
-`install Docker`_, issue the following command:
-
-.. code-block:: shell
-
-   sudo docker auth -it --rm -p 443:443 --name letsencrypt \
-               -v "/etc/letsencrypt:/etc/letsencrypt" \
-               -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
-               quay.io/letsencrypt/letsencrypt:latest
-
-and follow the instructions. Your new cert will be available in
-``/etc/letsencrypt/certs``.
-
-.. _Docker: https://docker.com
-.. _`install Docker`: https://docs.docker.com/docker/userguide/
