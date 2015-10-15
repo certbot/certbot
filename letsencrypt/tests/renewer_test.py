@@ -639,12 +639,15 @@ class RenewableCertTests(BaseRenewableCertTest):
         with open(self.test_rc.cert, "w") as f:
             f.write(test_cert)
 
-        # Fails because renewalparams are missing
+        # Fails because renewalparams are invalid
         renewer.renew(self.test_rc)
         self.assertEqual(self.test_rc.latest_common_version(), 1)
-        self.test_rc.configfile["renewalparams"] = {"dvsni_port": "4430"}
+        self.test_rc.configfile["renewalparams"] = {"dvsni_port": ""}
         self.test_rc.configfile["renewalparams"]["rsa_key_size"] = "2048"
+        renewer.renew(self.test_rc)
+        self.assertEqual(self.test_rc.latest_common_version(), 1)
         # Fails because there's no authenticator specified
+        self.test_rc.configfile["renewalparams"]["dvsni_port"] = "4430"
         renewer.renew(self.test_rc)
         self.assertEqual(self.test_rc.latest_common_version(), 1)
         self.test_rc.configfile["renewalparams"]["server"] = "acme.example.com"
@@ -688,17 +691,12 @@ class RenewableCertTests(BaseRenewableCertTest):
         mock_notify.assert_not_called()
         mock_install.restart.assert_not_called()
 
-        self.test_rc.configfile["renewalparams"] = {"dvsni_port": "4430"}
+        self.test_rc.configfile["renewalparams"] = {"rsa_key_size": "4096"}
         renewer.deploy(self.test_rc)
         mock_notify.assert_not_called()
         mock_install.restart.assert_not_called()
 
-        self.test_rc.configfile["renewalparams"]["rsa_key_size"] = "2048"
-        renewer.deploy(self.test_rc)
-        mock_notify.assert_not_called()
-        mock_install.restart.assert_not_called()
-
-        self.test_rc.configfile["renewalparams"]["installer"] = "fake"
+        self.test_rc.configfile["renewalparams"] = {"installer": "fake"}
         renewer.deploy(self.test_rc)
         mock_notify.assert_not_called()
         mock_install.restart.assert_not_called()

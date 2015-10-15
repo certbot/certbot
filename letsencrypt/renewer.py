@@ -60,16 +60,21 @@ def renew(cert):
     config = _prepare_config(cert)
     if config is None:
         # TODO: notify user?
-        return False
+        return
+    try:
+        config.rsa_key_size = int(config.rsa_key_size)
+        config.dvsni_port = int(config.dvsni_port)
+    except (AttributeError, ValueError):
+        return
     authenticator_name = getattr(config, "authenticator", None)
     if authenticator_name is None:
         # TODO: notify user?
-        return False
+        return
     # Instantiate the appropriate authenticator
     authenticator = _get_prepared_plugin(authenticator_name, config)
     if authenticator is None:
         # TODO: notify user?
-        return False
+        return
     acc = account.AccountFileStorage(config).load(
         account_id=config.account)
 
@@ -98,15 +103,15 @@ def deploy(cert):
     config = _prepare_config(cert)
     if config is None:
         # TODO: notify user?
-        return False
+        return
     installer_name = getattr(config, "installer", None)
     if installer_name is None:
         # TODO: notify user?
-        return False
+        return
     installer = _get_prepared_plugin(installer_name, config)
     if installer is None:
         # TODO: notify user?
-        return False
+        return
     installer.restart()
 
     notify.notify("Autodeployed a cert!!!", "root", "It worked!")
@@ -125,14 +130,9 @@ def _prepare_config(cert):
     renewalparams = cert.configfile.get("renewalparams")
     if renewalparams is None:
         return None
-    config = configuration.NamespaceConfig(_AttrDict(renewalparams))
     # XXX: this loses type data (for example, the fact that key_size
     #      was an int, not a str)
-    for attr in "rsa_key_size", "dvsni_port":
-        if not hasattr(config, attr):
-            return None
-    config.rsa_key_size = int(config.rsa_key_size)
-    config.dvsni_port = int(config.dvsni_port)
+    config = configuration.NamespaceConfig(_AttrDict(renewalparams))
     zope.component.provideUtility(config)
 
     return config

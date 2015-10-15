@@ -313,7 +313,7 @@ def _report_renewal_status(cert, authenticator, installer):
             "To obtain new versions of this certificate, simply run the Let's "
             "Encrypt client again.")
 
-    reporter_util.add_message(''.join(msg), reporter_util.MEDIUM_PRIORITY)
+    reporter_util.add_message("".join(msg), reporter_util.MEDIUM_PRIORITY)
 
 
 def _auth_from_domains(le_client, config, domains, plugins):
