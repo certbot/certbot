@@ -32,23 +32,23 @@ class ServerManagerTest(unittest.TestCase):
         self.assertTrue(
             self.mgr.simple_http_resources is self.simple_http_resources)
 
-    def _test_run_stop(self, tls):
-        server = self.mgr.run(port=0, tls=tls)
+    def _test_run_stop(self, challenge_type):
+        server = self.mgr.run(port=0, challenge_type=challenge_type)
         port = server.socket.getsockname()[1]  # pylint: disable=no-member
         self.assertEqual(self.mgr.running(), {port: server})
         self.mgr.stop(port=port)
         self.assertEqual(self.mgr.running(), {})
 
-    def test_run_stop_tls(self):
-        self._test_run_stop(tls=True)
+    def test_run_stop_dvsni(self):
+        self._test_run_stop(challenges.DVSNI)
 
-    def test_run_stop_non_tls(self):
-        self._test_run_stop(tls=False)
+    def test_run_stop_simplehttp(self):
+        self._test_run_stop(challenges.SimpleHTTP)
 
     def test_run_idempotent(self):
-        server = self.mgr.run(port=0, tls=False)
+        server = self.mgr.run(port=0, challenge_type=challenges.SimpleHTTP)
         port = server.socket.getsockname()[1]  # pylint: disable=no-member
-        server2 = self.mgr.run(port=port, tls=False)
+        server2 = self.mgr.run(port=port, challenge_type=challenges.SimpleHTTP)
         self.assertEqual(self.mgr.running(), {port: server})
         self.assertTrue(server is server2)
         self.mgr.stop(port)
@@ -59,7 +59,8 @@ class ServerManagerTest(unittest.TestCase):
         some_server.bind(("", 0))
         port = some_server.getsockname()[1]
         self.assertRaises(
-            errors.StandaloneBindError, self.mgr.run, port, tls=False)
+            errors.StandaloneBindError, self.mgr.run, port,
+            challenge_type=challenges.SimpleHTTP)
         self.assertEqual(self.mgr.running(), {})
 
 
@@ -165,7 +166,9 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertTrue(isinstance(responses[1], challenges.DVSNIResponse))
 
         self.assertEqual(self.auth.servers.run.mock_calls, [
-            mock.call(4321, tls=False), mock.call(1234, tls=True)])
+            mock.call(4321, challenges.SimpleHTTP),
+            mock.call(1234, challenges.DVSNI),
+        ])
         self.assertEqual(self.auth.served, {
             "server1234": set([dvsni]),
             "server4321": set([simple_http]),

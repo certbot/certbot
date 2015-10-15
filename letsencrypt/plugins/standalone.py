@@ -44,27 +44,29 @@ class ServerManager(object):
         self.certs = certs
         self.simple_http_resources = simple_http_resources
 
-    def run(self, port, tls):
+    def run(self, port, challenge_type):
         """Run ACME server on specified ``port``.
 
         This method is idempotent, i.e. all calls with the same pair of
-        ``(port, tls)`` will reuse the same server.
+        ``(port, challenge_type)`` will reuse the same server.
 
         :param int port: Port to run the server on.
-        :param bool tls: TLS or non-TLS?
+        :param challenge_type: Subclass of `acme.challenges.Challenge`,
+            either `acme.challenge.SimpleHTTP` or `acme.challenges.DVSNI`.
 
         :returns: Server instance.
         :rtype: ACMEServerMixin
 
         """
+        assert challenge_type in (challenges.DVSNI, challenges.SimpleHTTP)
         if port in self._instances:
             return self._instances[port].server
 
         address = ("", port)
         try:
-            if tls:
+            if challenge_type is challenges.DVSNI:
                 server = acme_standalone.DVSNIServer(address, self.certs)
-            else:
+            else:  # challenges.SimpleHTTP
                 server = acme_standalone.SimpleHTTPServer(
                     address, self.simple_http_resources)
         except socket.error as error:
@@ -224,7 +226,7 @@ class Authenticator(common.Plugin):
         for achall in achalls:
             if isinstance(achall, achallenges.SimpleHTTP):
                 server = self.servers.run(
-                    self.config.simple_http_port, tls=False)
+                    self.config.simple_http_port, challenges.SimpleHTTP)
                 response, validation = achall.gen_response_and_validation(
                     tls=False)
                 self.simple_http_resources.add(
@@ -234,7 +236,7 @@ class Authenticator(common.Plugin):
                 cert = self.simple_http_cert
                 domain = achall.domain
             else:  # DVSNI
-                server = self.servers.run(self.config.dvsni_port, tls=True)
+                server = self.servers.run(self.config.dvsni_port, challenges.DVSNI)
                 response, cert, _ = achall.gen_cert_and_response(self.key)
                 domain = response.z_domain
             self.certs[domain] = (self.key, cert)
