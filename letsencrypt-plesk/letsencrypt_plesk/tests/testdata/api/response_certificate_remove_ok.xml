@@ -1,0 +1,9 @@
+<packet version="1.6.7.0">
+    <certificate>
+        <remove>
+            <result>
+                <status>ok</status>
+            </result>
+        </remove>
+    </certificate>
+</packet>

@@ -90,3 +90,20 @@ class PleskDeployer(object):
             error_text = str(api_result['errtext'])
             raise errors.PluginError(
                 'Assign certificate failure: %s' % error_text)
+
+    def remove_cert(self):
+        """Remove certificate from the domain repository in Plesk."""
+        request = {'packet': {
+            'certificate': {
+                'remove': [
+                    {'filter': {'name': self.cert_name()}},
+                    {'site': self.domain},
+                ]
+            }
+        }}
+        response = self.plesk_api_client.request(request)
+        api_result = response['packet']['certificate']['remove']['result']
+        if 'ok' != api_result['status']:
+            error_text = str(api_result['errtext'])
+            raise errors.PluginError(
+                'Remove certificate failure: %s' % error_text)

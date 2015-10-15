@@ -85,5 +85,21 @@ class PleskDeployerTest(unittest.TestCase):
         self.assertRaises(errors.PluginError, self.deployer.assign_cert)
         self.deployer.plesk_api_client.assert_called()
 
+    def test_remove_cert(self):
+        self.deployer.plesk_api_client.expects_request(
+            'request_certificate_remove')
+        self.deployer.plesk_api_client.will_response(
+            'response_certificate_remove_ok')
+        self.deployer.remove_cert()
+        self.deployer.plesk_api_client.assert_called()
+
+    def test_remove_cert_error(self):
+        self.deployer.plesk_api_client.expects_request(
+            'request_certificate_remove')
+        self.deployer.plesk_api_client.will_response(
+            'response_certificate_remove_error')
+        self.assertRaises(errors.PluginError, self.deployer.remove_cert)
+        self.deployer.plesk_api_client.assert_called()
+
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
