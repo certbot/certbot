@@ -297,6 +297,8 @@ commands:
 This should generate documentation in the ``docs/_build/html``
 directory.
 
+.. _prerequisites:
+
 Notes on OS depedencies
 =======================
 
