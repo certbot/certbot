@@ -68,7 +68,7 @@ else
   $VENV_BIN/pip install -U letsencrypt letsencrypt-apache letsencrypt-nginx > /dev/null
 fi
 
-# TODO: install apache and nginx plugins by default?
-# --pre is not necessary for dev releases in more recent pip versions
-
+# Explain what's about to happen, for the benefit of those getting sudo
+# password prompts...
+echo "Running with virtualenv:" sudo $VENV_BIN/letsencrypt "$@"
 sudo $VENV_BIN/letsencrypt $@
