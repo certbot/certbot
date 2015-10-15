@@ -275,6 +275,47 @@ def _report_new_cert(cert_path):
                               reporter_util.MEDIUM_PRIORITY)
 
 
+def _report_renewal_status(cert, authenticator, installer):
+    """Informs the user about automatic renewal and deployment.
+
+    :param .RenewableCert cert: Newly issued certificate
+    :param .IAuthenticator authenticator: Selected authenticator
+    :param .IInstaller installer: Selected installer (if it exists)
+
+    """
+    reporter_util = zope.component.getUtility(interfaces.IReporter)
+    msg = ["Your certificate will expire on {0}. ".format(
+        cert.notafter().date())]
+    # pylint: disable=no-member
+    if (installer is not None or
+            interfaces.IInstaller.providedBy(authenticator)):
+        msg.append(
+            "Let's Encrypt can automatically renew and deploy new versions of "
+            "this certificate for you. To do this, use a job scheduler like "
+            "cron to run '{0}' once per day. Currently, ".format(os.path.join(
+                os.path.dirname(sys.executable), "letsencrypt-renewer")))
+        if cert.autorenewal_is_enabled():
+            if cert.autodeployment_is_enabled():
+                msg.append("automatic renewal and deployment has ")
+            else:
+                msg.append("automatic renewal but not automatic deployment has ")
+        elif cert.autodeployment_is_enabled():
+            msg.append("automatic deployment but not automatic renewal has ")
+        else:
+            msg.append("automatic renewal and deployment has not ")
+        msg.append(
+            "been enabled for your certificate. These settings can be "
+            "configured with the files in {0}.".format(
+                cert.cli_config.renewal_configs_dir))
+    else:
+        # Since no installer was used, don't suggested the renewer
+        msg.append(
+            "To obtain new versions of this certificate, simply run the Let's "
+            "Encrypt client again.")
+
+    reporter_util.add_message("".join(msg), reporter_util.MEDIUM_PRIORITY)
+
+
 def _auth_from_domains(le_client, config, domains, plugins):
     """Authenticate and enroll certificate."""
     # Note: This can raise errors... caught above us though.
@@ -301,12 +342,6 @@ def _auth_from_domains(le_client, config, domains, plugins):
             raise errors.Error("Certificate could not be obtained")
 
     _report_new_cert(lineage.cert)
-    reporter_util = zope.component.getUtility(interfaces.IReporter)
-    reporter_util.add_message(
-        "Your certificate will expire on {0}. To obtain a new version of the "
-        "certificate in the future, simply run this client again.".format(
-            lineage.notafter().date()),
-        reporter_util.MEDIUM_PRIORITY)
 
     return lineage
 
@@ -342,6 +377,7 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
     le_client = _init_le_client(args, config, authenticator, installer)
 
     lineage = _auth_from_domains(le_client, config, domains, plugins)
+    _report_renewal_status(lineage, authenticator, installer)
 
     le_client.deploy_certificate(
         domains, lineage.privkey, lineage.cert,
@@ -384,7 +420,8 @@ def auth(args, config, plugins):
         _report_new_cert(args.cert_path)
     else:
         domains = _find_domains(args, installer)
-        _auth_from_domains(le_client, config, domains, plugins)
+        lineage = _auth_from_domains(le_client, config, domains, plugins)
+        _report_renewal_status(lineage, authenticator, installer)
 
 
 def install(args, config, plugins):

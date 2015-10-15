@@ -46,69 +46,118 @@ class _AttrDict(dict):
         self.__dict__ = self
 
 
-def renew(cert, old_version):
+def renew(cert):
     """Perform automated renewal of the referenced cert, if possible.
 
     :param letsencrypt.storage.RenewableCert cert: The certificate
         lineage to attempt to renew.
-    :param int old_version: The version of the certificate lineage
-        relative to which the renewal should be attempted.
-
-    :returns: A number referring to newly created version of this cert
-        lineage, or ``False`` if renewal was not successful.
-    :rtype: `int` or `bool`
 
     """
     # TODO: handle partial success (some names can be renewed but not
     #       others)
     # TODO: handle obligatory key rotation vs. optional key rotation vs.
     #       requested key rotation
-    if "renewalparams" not in cert.configfile:
+    config = _prepare_config(cert)
+    if config is None:
         # TODO: notify user?
-        return False
-    renewalparams = cert.configfile["renewalparams"]
-    if "authenticator" not in renewalparams:
-        # TODO: notify user?
-        return False
-    # Instantiate the appropriate authenticator
-    plugins = plugins_disco.PluginsRegistry.find_all()
-    config = configuration.NamespaceConfig(_AttrDict(renewalparams))
-    # XXX: this loses type data (for example, the fact that key_size
-    #      was an int, not a str)
-    config.rsa_key_size = int(config.rsa_key_size)
-    config.dvsni_port = int(config.dvsni_port)
-    zope.component.provideUtility(config)
+        return
     try:
-        authenticator = plugins[renewalparams["authenticator"]]
-    except KeyError:
-        # TODO: Notify user? (authenticator could not be found)
-        return False
-    authenticator = authenticator.init(config)
-
-    authenticator.prepare()
+        config.rsa_key_size = int(config.rsa_key_size)
+        config.dvsni_port = int(config.dvsni_port)
+    except (AttributeError, ValueError):
+        return
+    authenticator_name = getattr(config, "authenticator", None)
+    if authenticator_name is None:
+        # TODO: notify user?
+        return
+    # Instantiate the appropriate authenticator
+    authenticator = _get_prepared_plugin(authenticator_name, config)
+    if authenticator is None:
+        # TODO: notify user?
+        return
     acc = account.AccountFileStorage(config).load(
-        account_id=renewalparams["account"])
+        account_id=config.account)
 
     le_client = client.Client(config, acc, authenticator, None)
+    old_version = cert.latest_common_version()
     with open(cert.version("cert", old_version)) as f:
         sans = crypto_util.get_sans_from_cert(f.read())
     new_certr, new_chain, new_key, _ = le_client.obtain_certificate(sans)
-    if new_chain:
-        # XXX: Assumes that there was no key change.  We need logic
-        #      for figuring out whether there was or not.  Probably
-        #      best is to have obtain_certificate return None for
-        #      new_key if the old key is to be used (since save_successor
-        #      already understands this distinction!)
-        return cert.save_successor(
-            old_version, OpenSSL.crypto.dump_certificate(
-                OpenSSL.crypto.FILETYPE_PEM, new_certr.body),
-            new_key.pem, crypto_util.dump_pyopenssl_chain(new_chain))
-        # TODO: Notify results
-    else:
-        # TODO: Notify negative results
-        return False
-    # TODO: Consider the case where the renewal was partially successful
-    #       (where fewer than all names were renewed)
+    cert.save_successor(
+        old_version, OpenSSL.crypto.dump_certificate(
+            OpenSSL.crypto.FILETYPE_PEM, new_certr.body),
+        new_key.pem, crypto_util.dump_pyopenssl_chain(new_chain))
+    notify.notify("Autorenewed a cert!!!", "root", "It worked!")
+
+
+def deploy(cert):
+    """Update the cert version, restart the server, and notify the user.
+
+
+    :param letsencrypt.storage.RenewableCert cert: The certificate
+        lineage to deploy
+
+    """
+    cert.update_all_links_to(cert.latest_common_version())
+
+    config = _prepare_config(cert)
+    if config is None:
+        # TODO: notify user?
+        return
+    installer_name = getattr(config, "installer", None)
+    if installer_name is None:
+        # TODO: notify user?
+        return
+    installer = _get_prepared_plugin(installer_name, config)
+    if installer is None:
+        # TODO: notify user?
+        return
+    installer.restart()
+
+    notify.notify("Autodeployed a cert!!!", "root", "It worked!")
+
+
+def _prepare_config(cert):
+    """Prepares the configuration of renewal parameters for use.
+
+    :param .storage.RenewableCert cert: The certificate
+        lineage to attempt to renew.
+
+    :returns: configuration or ``None`` if an error occurs
+    :rtype: .configuration.NamespaceConfig
+
+    """
+    renewalparams = cert.configfile.get("renewalparams")
+    if renewalparams is None:
+        return None
+    # XXX: this loses type data (for example, the fact that key_size
+    #      was an int, not a str)
+    config = configuration.NamespaceConfig(_AttrDict(renewalparams))
+    zope.component.provideUtility(config)
+
+    return config
+
+
+def _get_prepared_plugin(plugin_name, config):
+    """Returns a prepared plugin, initialized with config
+
+    :param str plugin_type: The name of the desired plugin
+    :param .configuration.NamespaceConfig config: Renewal parameters
+
+    :returns: Prepared plugin or ``None`` if no plugin was found
+    :rtype: IPlugin
+
+    """
+    plugins = plugins_disco.PluginsRegistry.find_all()
+    try:
+        plugin = plugins[plugin_name]
+    except KeyError:
+        return None
+
+    plugin = plugin.init(config)
+    plugin.prepare()
+
+    return plugin
 
 
 def _cli_log_handler(args, level, fmt):  # pylint: disable=unused-argument
@@ -179,7 +228,6 @@ def main(config=None, cli_args=sys.argv[1:]):
         rc_config = configobj.ConfigObj(cli_config.renewer_config_file)
         rc_config.merge(configobj.ConfigObj(
             os.path.join(cli_config.renewal_configs_dir, i)))
-        # TODO: this is a dirty hack!
         rc_config.filename = os.path.join(cli_config.renewal_configs_dir, i)
         try:
             # TODO: Before trying to initialize the RenewableCert object,
@@ -200,15 +248,6 @@ def main(config=None, cli_args=sys.argv[1:]):
             # config rather than simply ignoring it.
             continue
         if cert.should_autorenew():
-            # Note: not cert.current_version() because the basis for
-            # the renewal is the latest version, even if it hasn't been
-            # deployed yet!
-            old_version = cert.latest_common_version()
-            renew(cert, old_version)
-            notify.notify("Autorenewed a cert!!!", "root", "It worked!")
-            # TODO: explain what happened
+            renew(cert)
         if cert.should_autodeploy():
-            cert.update_all_links_to(cert.latest_common_version())
-            # TODO: restart web server (invoke IInstaller.restart() method)
-            notify.notify("Autodeployed a cert!!!", "root", "It worked!")
-            # TODO: explain what happened
+            deploy(cert)
