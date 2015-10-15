@@ -86,4 +86,4 @@ fi
 # Explain what's about to happen, for the benefit of those getting sudo
 # password prompts...
 echo "Running with virtualenv:" $SUDO $VENV_BIN/letsencrypt "$@"
-$SUDO $VENV_BIN/letsencrypt $@
+$SUDO $VENV_BIN/letsencrypt "$@"
