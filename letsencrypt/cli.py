@@ -284,7 +284,7 @@ def _report_renewal_status(cert, authenticator, installer):
 
     """
     reporter_util = zope.component.getUtility(interfaces.IReporter)
-    msg = ["Your certificate will expire at {0}. ".format(
+    msg = ["Your certificate will expire on {0}. ".format(
         cert.notafter().date())]
     # pylint: disable=no-member
     if (installer is not None or
@@ -305,7 +305,7 @@ def _report_renewal_status(cert, authenticator, installer):
             msg.append("automatic renewal and deployment has not ")
         msg.append(
             "been enabled for your certificate. These settings can be "
-            "configured in the directories under {0}.".format(
+            "configured with the files in {0}.".format(
                 cert.cli_config.renewal_configs_dir))
     else:
         # Since no installer was used, don't suggested the renewer
