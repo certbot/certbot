@@ -57,31 +57,21 @@ def renew(cert):
     #       others)
     # TODO: handle obligatory key rotation vs. optional key rotation vs.
     #       requested key rotation
-    renewalparams = cert.configfile.get("renewalparams")
-    if renewalparams is None:
+    config = _prepare_config(cert)
+    if config is None:
         # TODO: notify user?
         return False
-    if "authenticator" not in renewalparams:
+    authenticator_name = getattr(config, "authenticator", None)
+    if authenticator_name is None:
         # TODO: notify user?
         return False
     # Instantiate the appropriate authenticator
-    plugins = plugins_disco.PluginsRegistry.find_all()
-    config = configuration.NamespaceConfig(_AttrDict(renewalparams))
-    # XXX: this loses type data (for example, the fact that key_size
-    #      was an int, not a str)
-    config.rsa_key_size = int(config.rsa_key_size)
-    config.dvsni_port = int(config.dvsni_port)
-    zope.component.provideUtility(config)
-    try:
-        authenticator = plugins[renewalparams["authenticator"]]
-    except KeyError:
-        # TODO: Notify user? (authenticator could not be found)
+    authenticator = _get_prepared_plugin(authenticator_name, config)
+    if authenticator is None:
+        # TODO: notify user?
         return False
-    authenticator = authenticator.init(config)
-
-    authenticator.prepare()
     acc = account.AccountFileStorage(config).load(
-        account_id=renewalparams["account"])
+        account_id=config.account)
 
     le_client = client.Client(config, acc, authenticator, None)
     old_version = cert.latest_common_version()
@@ -104,9 +94,70 @@ def deploy(cert):
 
     """
     cert.update_all_links_to(cert.latest_common_version())
-    # TODO: restart web server (invoke IInstaller.restart() method)
-    # TODO: explain what happened
+
+    config = _prepare_config(cert)
+    if config is None:
+        # TODO: notify user?
+        return False
+    installer_name = getattr(config, "installer", None)
+    if installer_name is None:
+        # TODO: notify user?
+        return False
+    installer = _get_prepared_plugin(installer_name, config)
+    if installer is None:
+        # TODO: notify user?
+        return False
+    installer.restart()
+
     notify.notify("Autodeployed a cert!!!", "root", "It worked!")
+
+
+def _prepare_config(cert):
+    """Prepares the configuration of renewal parameters for use.
+
+    :param .storage.RenewableCert cert: The certificate
+        lineage to attempt to renew.
+
+    :returns: configuration or ``None`` if an error occurs
+    :rtype: .configuration.NamespaceConfig
+
+    """
+    renewalparams = cert.configfile.get("renewalparams")
+    if renewalparams is None:
+        return None
+    config = configuration.NamespaceConfig(_AttrDict(renewalparams))
+    # XXX: this loses type data (for example, the fact that key_size
+    #      was an int, not a str)
+    for attr in "rsa_key_size", "dvsni_port":
+        if not hasattr(config, attr):
+            return None
+    config.rsa_key_size = int(config.rsa_key_size)
+    config.dvsni_port = int(config.dvsni_port)
+    zope.component.provideUtility(config)
+
+    return config
+
+
+def _get_prepared_plugin(plugin_name, config):
+    """Returns a prepared plugin, initialized with config
+
+    :param str plugin_type: The name of the desired plugin
+    :param .configuration.NamespaceConfig config: Renewal parameters
+
+    :returns: Prepared plugin or ``None`` if no plugin was found
+    :rtype: IPlugin
+
+    """
+    plugins = plugins_disco.PluginsRegistry.find_all()
+    try:
+        plugin = plugins[plugin_name]
+    except KeyError:
+        return None
+
+    plugin = plugin.init(config)
+    plugin.prepare()
+
+    return plugin
 
 
 def _cli_log_handler(args, level, fmt):  # pylint: disable=unused-argument

@@ -642,14 +642,13 @@ class RenewableCertTests(BaseRenewableCertTest):
         # Fails because renewalparams are missing
         renewer.renew(self.test_rc)
         self.assertEqual(self.test_rc.latest_common_version(), 1)
-        self.test_rc.configfile["renewalparams"] = {"some": "stuff"}
+        self.test_rc.configfile["renewalparams"] = {"dvsni_port": "4430"}
+        self.test_rc.configfile["renewalparams"]["rsa_key_size"] = "2048"
         # Fails because there's no authenticator specified
         renewer.renew(self.test_rc)
         self.assertEqual(self.test_rc.latest_common_version(), 1)
-        self.test_rc.configfile["renewalparams"]["rsa_key_size"] = "2048"
         self.test_rc.configfile["renewalparams"]["server"] = "acme.example.com"
         self.test_rc.configfile["renewalparams"]["authenticator"] = "fake"
-        self.test_rc.configfile["renewalparams"]["dvsni_port"] = "4430"
         self.test_rc.configfile["renewalparams"]["account"] = "abcde"
         mock_auth = mock.MagicMock()
         mock_pd.PluginsRegistry.find_all.return_value = {"apache": mock_auth}
@@ -669,6 +668,45 @@ class RenewableCertTests(BaseRenewableCertTest):
         # TODO: We could also make several assertions about calls that should
         #       have been made to the mock functions here.
 
+    @mock.patch("letsencrypt.renewer.plugins_disco.PluginsRegistry.find_all")
+    @mock.patch("letsencrypt.renewer.notify.notify")
+    def test_deploy(self, mock_notify, mock_find_all):
+        from letsencrypt import renewer
+
+        test_cert = test_util.load_vector("cert-san.pem")
+        for kind in ALL_FOUR:
+            os.symlink(os.path.join("..", "..", "archive", "example.org",
+                                    kind + "1.pem"),
+                       getattr(self.test_rc, kind))
+        fill_with_sample_data(self.test_rc)
+        with open(self.test_rc.cert, "w") as f:
+            f.write(test_cert)
+
+        mock_install = mock.MagicMock()
+        mock_find_all.return_value = {"apache": mock_install}
+        renewer.deploy(self.test_rc)
+        mock_notify.assert_not_called()
+        mock_install.restart.assert_not_called()
+
+        self.test_rc.configfile["renewalparams"] = {"dvsni_port": "4430"}
+        renewer.deploy(self.test_rc)
+        mock_notify.assert_not_called()
+        mock_install.restart.assert_not_called()
+
+        self.test_rc.configfile["renewalparams"]["rsa_key_size"] = "2048"
+        renewer.deploy(self.test_rc)
+        mock_notify.assert_not_called()
+        mock_install.restart.assert_not_called()
+
+        self.test_rc.configfile["renewalparams"]["installer"] = "fake"
+        renewer.deploy(self.test_rc)
+        mock_notify.assert_not_called()
+        mock_install.restart.assert_not_called()
+
+        self.test_rc.configfile["renewalparams"]["installer"] = "apache"
+        renewer.deploy(self.test_rc)
+        self.assertEqual(mock_notify.call_count, 1)
+
     def _common_cli_args(self):
         return [
             "--config-dir", self.cli_config.config_dir,
@@ -677,8 +715,9 @@ class RenewableCertTests(BaseRenewableCertTest):
         ]
 
     @mock.patch("letsencrypt.storage.RenewableCert")
+    @mock.patch("letsencrypt.renewer.deploy")
     @mock.patch("letsencrypt.renewer.renew")
-    def test_main(self, mock_renew, mock_rc):
+    def test_main(self, mock_renew, mock_deploy, mock_rc):
         from letsencrypt import renewer
         mock_rc_instance = mock.MagicMock()
         mock_rc_instance.should_autodeploy.return_value = True
@@ -702,8 +741,8 @@ class RenewableCertTests(BaseRenewableCertTest):
             f.write("chain = chain.pem\nfullchain = fullchain.pem\n")
         renewer.main(self.defaults, cli_args=self._common_cli_args())
         self.assertEqual(mock_rc.call_count, 2)
-        self.assertEqual(mock_rc_instance.update_all_links_to.call_count, 2)
         self.assertEqual(mock_renew.call_count, 2)
+        self.assertEqual(mock_deploy.call_count, 2)
         # If we have instances that don't need any work done, no work should
         # be done (call counts associated with processing deployments or
         # renewals should not increase).
@@ -714,8 +753,8 @@ class RenewableCertTests(BaseRenewableCertTest):
         mock_rc.return_value = mock_happy_instance
         renewer.main(self.defaults, cli_args=self._common_cli_args())
         self.assertEqual(mock_rc.call_count, 4)
-        self.assertEqual(mock_happy_instance.update_all_links_to.call_count, 0)
         self.assertEqual(mock_renew.call_count, 2)
+        self.assertEqual(mock_deploy.call_count, 2)
 
     def test_bad_config_file(self):
         from letsencrypt import renewer
