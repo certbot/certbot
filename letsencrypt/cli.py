@@ -342,6 +342,12 @@ def _auth_from_domains(le_client, config, domains, plugins):
             raise errors.Error("Certificate could not be obtained")
 
     _report_new_cert(lineage.cert)
+    reporter_util = zope.component.getUtility(interfaces.IReporter)
+    reporter_util.add_message(
+        "Your certificate will expire on {0}. To obtain a new version of the "
+        "certificate in the future, simply run this client again.".format(
+            lineage.notafter().date()),
+        reporter_util.MEDIUM_PRIORITY)
 
     return lineage
 
