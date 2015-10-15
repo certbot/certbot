@@ -110,17 +110,9 @@ class PleskConfigurator(common.Plugin):
                 compact.append(name)
         return compact
 
-    def deploy_cert(self, domain, cert_path, key_path, chain_path=None):
-        """Deploy certificate.
-
-        :param str domain: domain to deploy certificate file
-        :param str cert_path: absolute path to the certificate file
-        :param str key_path: absolute path to the private key file
-        :param str chain_path: absolute path to the certificate chain file
-
-        :raises .PluginError: when cert cannot be deployed
-
-        """
+    def deploy_cert(self, domain, cert_path, key_path, chain_path=None,
+                    fullchain_path=None):  # pylint: disable=unused-argument
+        """Deploy certificate in Plesk via API."""
         plesk_deployer = deployer.PleskDeployer(self.plesk_api_client, domain)
         plesk_deployer.install_cert(cert_path, key_path, chain_path)
         plesk_deployer.assign_cert()
