@@ -287,8 +287,8 @@ def _report_renewal_status(cert, authenticator, installer):
     msg = ["Your certificate will expire at {0}. ".format(
         cert.notafter().ctime())]
     # pylint: disable=no-member
-    if (installer is not None or
-            interfaces.IInstaller.implementedBy(authenticator)):
+    if (installer is not None or (authenticator is not None and
+            interfaces.IInstaller.implementedBy(authenticator))):
         msg.append(
             "Let's Encrypt can automatically renew and deploy new versions of "
             "this certificate for you. To do this, use a job scheduler like "
@@ -377,6 +377,7 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
     le_client = _init_le_client(args, config, authenticator, installer)
 
     lineage = _auth_from_domains(le_client, config, domains, plugins)
+    _report_renewal_status(lineage, authenticator, installer)
 
     le_client.deploy_certificate(
         domains, lineage.privkey, lineage.cert,
@@ -419,7 +420,8 @@ def auth(args, config, plugins):
         _report_new_cert(args.cert_path)
     else:
         domains = _find_domains(args, installer)
-        _auth_from_domains(le_client, config, domains, plugins)
+        lineage = _auth_from_domains(le_client, config, domains, plugins)
+        _report_renewal_status(lineage, authenticator, installer)
 
 
 def install(args, config, plugins):
