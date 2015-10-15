@@ -46,7 +46,8 @@ class TLSServer(socketserver.TCPServer):
 
 class ACMEServerMixin:  # pylint: disable=old-style-class
     """ACME server common settings mixin."""
-    server_version = "ACME standalone client"
+    # TODO: c.f. #858
+    server_version = "ACME client standalone challenge solver"
     allow_reuse_address = True
 
     def __init__(self):
@@ -95,7 +96,7 @@ class SimpleHTTPServer(BaseHTTPServer.HTTPServer, ACMEServerMixin):
 class SimpleHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     """SimpleHTTP challenge handler.
 
-    Adheres to the stdlib"s `socketserver.BaseRequestHandler` interface.
+    Adheres to the stdlib's `socketserver.BaseRequestHandler` interface.
 
     :ivar set simple_http_resources: A set of `SimpleHTTPResource`
         objects. TODO: better name?
@@ -119,7 +120,7 @@ class SimpleHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     def handle_index(self):
         """Handle index page."""
         self.send_response(200)
-        self.send_header("Content-type", "text/html")
+        self.send_header("Content-Type", "text/html")
         self.end_headers()
         self.wfile.write(self.server.server_version.encode())
 

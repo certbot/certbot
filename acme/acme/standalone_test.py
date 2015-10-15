@@ -122,7 +122,8 @@ class SimpleHTTPServerTest(unittest.TestCase):
     def test_index(self):
         response = requests.get(
             'http://localhost:{0}'.format(self.port), verify=False)
-        self.assertEqual(response.text, 'ACME standalone client')
+        self.assertEqual(
+            response.text, 'ACME client standalone challenge solver')
         self.assertTrue(response.ok)
 
     def test_404(self):
