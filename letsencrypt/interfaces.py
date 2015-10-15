@@ -241,13 +241,15 @@ class IInstaller(IPlugin):
 
         """
 
-    def deploy_cert(domain, cert_path, key_path, chain_path=None):
+    def deploy_cert(domain, cert_path, key_path, chain_path, fullchain_path):
         """Deploy certificate.
 
         :param str domain: domain to deploy certificate file
         :param str cert_path: absolute path to the certificate file
         :param str key_path: absolute path to the private key file
         :param str chain_path: absolute path to the certificate chain file
+        :param str fullchain_path: absolute path to the certificate fullchain
+            file (cert plus chain)
 
         :raises .PluginError: when cert cannot be deployed
 

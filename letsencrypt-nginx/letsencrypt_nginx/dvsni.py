@@ -90,14 +90,22 @@ class NginxDvsni(common.Dvsni):
         # Add the 'include' statement for the challenges if it doesn't exist
         # already in the main config
         included = False
-        directive = ['include', self.challenge_conf]
+        include_directive = ['include', self.challenge_conf]
         root = self.configurator.parser.loc["root"]
+
+        bucket_directive = ['server_names_hash_bucket_size', '128']
+
         main = self.configurator.parser.parsed[root]
-        for entry in main:
-            if entry[0] == ['http']:
-                body = entry[1]
-                if directive not in body:
-                    body.append(directive)
+        for key, body in main:
+            if key == ['http']:
+                found_bucket = False
+                for key, _ in body:
+                    if key == bucket_directive[0]:
+                        found_bucket = True
+                if not found_bucket:
+                    body.insert(0, bucket_directive)
+                if include_directive not in body:
+                    body.insert(0, include_directive)
                 included = True
                 break
         if not included:
