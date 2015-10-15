@@ -182,11 +182,7 @@ class Authenticator(common.Plugin):
         return self.__doc__
 
     def prepare(self):  # pylint: disable=missing-docstring
-        if any(util.already_listening(port) for port in
-               (self.config.dvsni_port, self.config.simple_http_port)):
-            raise errors.MisconfigurationError(
-                "At least one of the (possibly) required ports is "
-                "already taken.")
+        pass
 
     def get_chall_pref(self, domain):
         # pylint: disable=unused-argument,missing-docstring
@@ -195,6 +191,12 @@ class Authenticator(common.Plugin):
         return chall_pref
 
     def perform(self, achalls):  # pylint: disable=missing-docstring
+        if any(util.already_listening(port) for port in
+               (self.config.dvsni_port, self.config.simple_http_port)):
+            raise errors.MisconfigurationError(
+                "At least one of the (possibly) required ports is "
+                "already taken.")
+
         try:
             return self.perform2(achalls)
         except errors.StandaloneBindError as error:
