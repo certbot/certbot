@@ -32,11 +32,10 @@ export PATH="$GOPATH/bin:$PATH"
 go get -d github.com/letsencrypt/boulder/...
 cd $GOPATH/src/github.com/letsencrypt/boulder
 # goose is needed for ./test/create_db.sh
-if ! go get bitbucket.org/liamstask/goose/cmd/goose ; then
-  echo Problems installing goose... perhaps rm -rf \$GOPATH \("$GOPATH"\)
-  echo and try again...
-  exit 1
-fi
+wget https://github.com/jsha/boulder-tools/raw/master/goose.gz && \
+  mkdir $GOPATH/bin && \
+  zcat goose.gz > $GOPATH/bin/goose && \
+  chmod +x $GOPATH/bin/goose
 ./test/create_db.sh
 ./start.py &
 # Hopefully start.py bootstraps before integration test is started...
