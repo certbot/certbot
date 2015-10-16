@@ -67,7 +67,18 @@ def to_dict(config_dict):
 
 
 class BaseConfig(object):
-    """Top level config class for common methods."""
+    """Top level config class for common methods.
+    
+    Requirements for using class:
+    - list all properties with getters *and* setters in class
+    variable 'config_properties'
+    - __init__ of child classes must be callable with *only*
+    keyword arguments to allow method calls to update to create
+    a new config
+    ... more ...
+    """
+
+    config_properties = []
 
     def __init__(self):
         # container for validated properties with JSON names
@@ -77,6 +88,27 @@ class BaseConfig(object):
         s = '< %s %s >' % (self.__class__.__name__,
                            pprint.pformat(self._data))
         return s
+
+    def update(self, newer_config, merge=False, **kwargs):
+        fresh_config = self.__class__(**kwargs)
+        if not isinstance(newer_config, self.__class__):
+            raise ConfigError('Attempting to update a %s with a %s' % (
+                self.__class__,
+                newer_config.__class__))
+        for prop_name in self.config_properties:
+            prop = self.__class__.__dict__.get(prop_name)
+            assert prop
+            new_value = prop.fget(newer_config)
+            old_value = prop.fget(self)
+            if new_value is not None:
+                prop.fset(fresh_config, new_value)
+            elif merge and old_value is not None:
+                prop.fset(fresh_config, old_value)
+        return fresh_config
+
+    def merge(self, newer_config, **kwargs):
+        kwargs['merge'] = True
+        return self.update(newer_config, **kwargs)
 
     def to_json(self):
         d = to_dict(self._data)
@@ -129,7 +161,10 @@ class Config(BaseConfig):
     def update(self, other_config):
         """Update properties of config from a 'newer' config and force verification."""
         #TODO add this
+        new_config = Config()
         raise NotImplemented
+        
+
 
     def from_json_dict(self, json_dict):
         """Assign JSON data to Config properties and declare sub-objects.
@@ -187,6 +222,14 @@ class Config(BaseConfig):
     def timestamp(self, value):
         self._data['timestamp'] = parse_timestamp(value, 'timestamp')
 
+    @property
+    def tls_policies(self):
+        return self._data.get('tls-policies')
+
+    @property
+    def acceptable_mxs(self):
+        return self._data.get('acceptable-mxs')
+
     def make_tls_policy_dict(self, policy_dict):
         tls_policy_dict = self._data['tls-policies']
         for domain_suffix, settings in policy_dict.iteritems():
@@ -208,9 +251,19 @@ class Config(BaseConfig):
             acceptable_mxs_dict[domain] = new_domain_policy
 
     def is_valid(self):
-        #TODO implement with checks to make sure domains don't overlap
-        # and every acceptable mx has a tls policy, etc.
-        raise NotImplemented
+        #TODO implement checks to make sure domains don't overlap
+        #TODO add debug logging for troubleshooting stake
+        for mx_config in self.acceptable_mxs.values():
+            if not mx_config.is_valid():
+                return False
+            for domain_suffix in mx_config.accept_mx_domains:
+                # check to make sure every accepted MX has a TLS policy
+                if not domain_suffix in self.tls_policies:
+                    return False
+        for tls_config in self.tls_policies.values():
+            if not tls_config.is_valid():
+                return False
+        return True
         
 
 class TLSPolicy(BaseConfig):
@@ -218,7 +271,10 @@ class TLSPolicy(BaseConfig):
     ENFORCE_MODES = ('enforce', 'log-only')
     TLS_VERSIONS = ('TLSv1', 'TLSv1.1', 'TLSv1.2', 'TLSv1.3')
 
-    def __init__(self, domain_suffix):
+    config_properties = ['comment', 'enforce_mode', 'min_tls_version',
+                         'require_tls', 'require_valid_certificate']
+ 
+    def __init__(self, domain_suffix=None):
         super(self.__class__, self).__init__()
         self.domain_suffix = domain_suffix
         #TODO add support for two designed but yet unsupported attrs
@@ -256,6 +312,12 @@ class TLSPolicy(BaseConfig):
         else:
             return True
 
+    def update(self, newer_policy, **kwargs):
+        fresh_policy = super(self.__class__, self).update(newer_policy,
+                                                          domain_suffix=self.domain_suffix)
+        fresh_policy.domain_suffix = self.domain_suffix
+        return fresh_policy
+
     @property
     def comment(self):
         return self._data.get('comment')
@@ -278,7 +340,7 @@ class TLSPolicy(BaseConfig):
 
     @min_tls_version.setter
     def min_tls_version(self, value):
-        """Should this be dealing only with strings processed by map ... lower()?"""
+        """TODO: Should this be dealing only with strings processed by map ... lower()?"""
         tls_versions = [ver.lower() for ver in self.TLS_VERSIONS]
         tls_versions.extend(self.TLS_VERSIONS)
         self._data['min-tls-version'] = verify_member_of(value, tls_versions, 'min-tls-version')
@@ -309,10 +371,14 @@ class AcceptableMX(BaseConfig):
     Configuration of the acceptable MX suffix domains must match up with TLS policies
     for the suffix domains.
     """
-    def __init__(self, domain):
+    def __init__(self, domain=None):
         super(self.__class__, self).__init__()
         self.domain = domain
         self._data['accept-mx-domains'] = []
+
+    @property
+    def accept_mx_domains(self):
+        return self._data.get('accept-mx-domains')
 
     def add_acceptable_mx(self, domain_suffix):
         unique_domain_suffixes = set(self._data['accept-mx-domains'])
