@@ -14,7 +14,7 @@ export PATH="/usr/sbin:$PATH"  # /usr/sbin/nginx
 export GOPATH="${GOPATH:-/tmp/go}"
 export PATH="$GOPATH/bin:$PATH"
 
-if [ `uname`  == 'Darwin' ]; then
+if [ `uname` = "Darwin" ];then
   readlink="greadlink"
 else
   readlink="readlink"
@@ -32,7 +32,7 @@ common_dvsni() {
     common --dvsni-port 5001 --simple-http-port 0 "$@"
 }
 common_http() {
-    common --dvsni-port 0 --simple-http-port 5001 "$@"
+    common --dvsni-port 0 --simple-http-port ${SIMPLE_HTTP_PORT:-5001} "$@"
 }
 
 common_dvsni --domains le1.wtf --standalone-supported-challenges dvsni auth
