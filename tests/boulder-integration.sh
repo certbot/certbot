@@ -14,7 +14,7 @@ export PATH="/usr/sbin:$PATH"  # /usr/sbin/nginx
 export GOPATH="${GOPATH:-/tmp/go}"
 export PATH="$GOPATH/bin:$PATH"
 
-if [ `uname`  == 'Darwin' ]; then
+if [ `uname` = "Darwin" ];then
   readlink="greadlink"
 else
   readlink="readlink"
