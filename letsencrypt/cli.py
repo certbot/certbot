@@ -304,14 +304,15 @@ def _auth_from_domains(le_client, config, domains, plugins):
 
     return lineage
 
-class ConfiguratorError(TypeError):
+class ConfiguratorError(TypeError): # pylint: disable=missing-docstring
     pass
 
 def set_configurator(previously, now):
     """Setting configurators multiple ways is okay, as long as they all agree"""
     if previously:
         if previously != now:
-            raise ConfiguratorError, "Too many flags setting configurators/installers/authenticators %s -> %s" % (`previously`,`now`)
+            msg = "Too many flags setting configurators/installers/authenticators %s -> %s"
+            raise ConfiguratorError, msg % (`previously`, `now`)
     return now
 
 def diagnose_configurator_problem(cfg_type, requested):
@@ -330,7 +331,7 @@ def diagnose_configurator_problem(cfg_type, requested):
             msg = "The " + requested + " plugin is not working; there may be problems "
             msg += "with your existing configuration"
             raise ConfiguratorError, msg
-    raise ConfiguratorError, "Installer could not be determined or is not installed"
+    raise ConfiguratorError, cfg_type + " could not be determined or is not installed"
 
 
 
@@ -342,7 +343,7 @@ def choose_configurator_plugins(args, config, plugins, verb):
     if verb == "auth":
         need_auth = True
     if verb == "install":
-        need_install = True
+        need_inst = True
 
     # Which plugins did the user request?
     req_inst = req_auth = args.configurator
@@ -355,7 +356,7 @@ def choose_configurator_plugins(args, config, plugins, verb):
         req_inst = set_configurator(req_inst, "apache")
         req_auth = set_configurator(req_auth, "apache")
 
-    logger.debug("Requested authenticator %s and installer %s" % (req_auth, req_inst))
+    logger.debug("Requested authenticator %s and installer %s", req_auth, req_inst)
 
     # Try to meet the user's request and/or ask them to pick plugins
     if verb == "run" and req_auth == req_inst:
@@ -367,7 +368,7 @@ def choose_configurator_plugins(args, config, plugins, verb):
             installer = display_ops.pick_installer(config, req_inst, plugins)
         if need_auth:
             authenticator = display_ops.pick_authenticator(config, req_auth, plugins)
-    logger.debug("Selected authenticator %s and installer %s" % (authenticator, installer))
+    logger.debug("Selected authenticator %s and installer %s", authenticator, installer)
 
     if need_inst and not installer:
         diagnose_configurator_problem("installer", req_inst)
