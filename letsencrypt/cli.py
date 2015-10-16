@@ -314,33 +314,66 @@ def set_configurator(previously, now):
             raise ConfiguratorError, "Too many flags setting configurators/installers/authenticators %s -> %s" % (`previously`,`now`)
     return now
 
-def pick_configurator(args, config, plugins, verb):
+def diagnose_configurator_problem(cfg_type, requested):
+    """
+    Raise the most helpful error message about a plugin being unavailable
+    @cfg_type -- "installer" or "authenticator"
+    @requested -- which plugin the user wanted
+    """
+    plugins = plugins_disco.PluginsRegistry.find_all()
+
+    if requested:
+        if requested not in plugins:
+            msg = "The requested " + requested + " plugin does not appear to be installed"
+            raise ConfiguratorError, msg
+        else:
+            msg = "The " + requested + " plugin is not working; there may be problems "
+            msg += "with your existing configuration"
+            raise ConfiguratorError, msg
+    raise ConfiguratorError, "Installer could not be determined or is not installed"
+
+
+
+def choose_configurator_plugins(args, config, plugins, verb):
     """Figure out which configurator we're going to use"""
-    installer = authenticator = args.configurator
-    print "args.configurator", args.configurator
-    installer = set_configurator(installer, args.installer)
-    authenticator = set_configurator(authenticator, args.authenticator)
-    print "installer", installer
+
+    # Which plugins do we need?
+    need_inst = need_auth = (verb == "run")
+    if verb == "auth":
+        need_auth = True
+    if verb == "install":
+        need_install = True
+
+    # Which plugins did the user request?
+    req_inst = req_auth = args.configurator
+    req_inst = set_configurator(req_inst, args.installer)
+    req_auth = set_configurator(req_auth, args.authenticator)
     if args.nginx:
-        installer = set_configurator(installer, nginx)
-        authenticator = set_configurator(authenticator, nginx)
+        req_inst = set_configurator(req_inst, "nginx")
+        req_auth = set_configurator(req_auth, "nginx")
     if args.apache:
-        installer = set_configurator(installer, apache)
-        authenticator = set_configurator(authenticator, apache)
+        req_inst = set_configurator(req_inst, "apache")
+        req_auth = set_configurator(req_auth, "apache")
 
-    if authenticator == installer:
-        # TODO: this assumes that user doesn't want to pick authenticator
-        #       and installer separately...
-        authenticator = installer = display_ops.pick_configurator(config, args.installer, plugins)
-        #print "ainstaller", installer
+    logger.debug("Requested authenticator %s and installer %s" % (req_auth, req_inst))
+
+    # Try to meet the user's request and/or ask them to pick plugins
+    if verb == "run" and req_auth == req_inst:
+        # Unless the user has explicitly asked for different auth/install,
+        # only consider offering a single choice
+        authenticator = installer = display_ops.pick_configurator(config, req_inst, plugins)
     else:
-        installer = display_ops.pick_installer(config, installer, plugins)
-        authenticator = display_ops.pick_authenticator(config, authenticator, plugins)
-        #print "binstaller", installer
+        if need_inst:
+            installer = display_ops.pick_installer(config, req_inst, plugins)
+        if need_auth:
+            authenticator = display_ops.pick_authenticator(config, req_auth, plugins)
+    logger.debug("Selected authenticator %s and installer %s" % (authenticator, installer))
 
-    if installer is None or authenticator is None:
-        #print installer, authenticator
-        raise ConfiguratorError, "Configurator could not be determined"
+    if need_inst and not installer:
+        diagnose_configurator_problem("installer", req_inst)
+    if need_auth and not authenticator:
+        diagnose_configurator_problem("authenticator", req_auth)
+
     return installer, authenticator
 
 
@@ -349,7 +382,7 @@ def pick_configurator(args, config, plugins, verb):
 def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-locals
     """Obtain a certificate and install."""
     try:
-        installer, authenticator = pick_configurator(args, config, plugins, "run")
+        installer, authenticator = choose_configurator_plugins(args, config, plugins, "run")
     except ConfiguratorError, e:
         return e.message
 
@@ -679,8 +712,10 @@ def create_parser(plugins, args):
         None, "-t", "--text", dest="text_mode", action="store_true",
         help="Use the text output instead of the curses UI.")
     helpful.add(None, "-m", "--email", help=config_help("email"))
-    helpful.add(None, "--apache", help="Obtain and install certs using Apache")
-    helpful.add(None, "--nginx", help="Obtain and install certs using Nginx")
+    helpful.add(None, "--apache", action="store_true",
+                help="Obtain and install certs using Apache")
+    helpful.add(None, "--nginx", action="store_true",
+                help="Obtain and install certs using Nginx")
     # positional arg shadows --domains, instead of appending, and
     # --domains is useful, because it can be stored in config
     #for subparser in parser_run, parser_auth, parser_install:
