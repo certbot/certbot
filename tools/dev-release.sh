@@ -25,6 +25,7 @@ git tag --delete "$tag" || true
 root="$(mktemp -d -t le.$version.XXX)"
 echo "Cloning into fresh copy at $root"  # clean repo = no artificats
 git clone . $root
+git rev-parse HEAD
 cd $root
 git branch -f "$DEV_RELEASE_BRANCH"
 git checkout "$DEV_RELEASE_BRANCH"
