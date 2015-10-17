@@ -309,6 +309,9 @@ class ConfiguratorError(TypeError): # pylint: disable=missing-docstring
 
 def set_configurator(previously, now):
     """Setting configurators multiple ways is okay, as long as they all agree"""
+    if now is None:
+        # we're not actually setting anything
+        return previously
     if previously:
         if previously != now:
             msg = "Too many flags setting configurators/installers/authenticators %s -> %s"
