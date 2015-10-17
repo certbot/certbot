@@ -304,9 +304,6 @@ def _auth_from_domains(le_client, config, domains, plugins):
 
     return lineage
 
-class ConfiguratorError(TypeError): # pylint: disable=missing-docstring
-    pass
-
 def set_configurator(previously, now):
     """Setting configurators multiple ways is okay, as long as they all agree"""
     if now is None:
@@ -315,7 +312,7 @@ def set_configurator(previously, now):
     if previously:
         if previously != now:
             msg = "Too many flags setting configurators/installers/authenticators %s -> %s"
-            raise ConfiguratorError, msg % (`previously`, `now`)
+            raise errors.ConfiguratorError, msg % (`previously`, `now`)
     return now
 
 def diagnose_configurator_problem(cfg_type, requested):
@@ -329,12 +326,12 @@ def diagnose_configurator_problem(cfg_type, requested):
     if requested:
         if requested not in plugins:
             msg = "The requested " + requested + " plugin does not appear to be installed"
-            raise ConfiguratorError, msg
+            raise errors.ConfiguratorError, msg
         else:
             msg = "The " + requested + " plugin is not working; there may be problems "
             msg += "with your existing configuration"
-            raise ConfiguratorError, msg
-    raise ConfiguratorError, cfg_type + " could not be determined or is not installed"
+            raise errors.ConfiguratorError, msg
+    raise errors.ConfiguratorError, cfg_type + " could not be determined or is not installed"
 
 
 
@@ -387,7 +384,7 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
     """Obtain a certificate and install."""
     try:
         installer, authenticator = choose_configurator_plugins(args, config, plugins, "run")
-    except ConfiguratorError, e:
+    except errors.ConfiguratorError, e:
         return e.message
 
     domains = _find_domains(args, installer)

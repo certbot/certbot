@@ -24,6 +24,8 @@ class SubprocessError(Error):
 class CertStorageError(Error):
     """Generic `.CertStorage` error."""
 
+class ConfiguratorError(Error):
+    """A problem with plugin/configurator selection or setup"""
 
 # Auth Handler Errors
 class AuthorizationError(Error):
