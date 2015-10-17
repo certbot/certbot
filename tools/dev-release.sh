@@ -10,8 +10,8 @@ RELEASE_GPG_KEY="${RELEASE_GPG_KEY:-148C30F6F7E429337A72D992B00B9CC82D7ADF2C}"
 PORT=${PORT:-1234}
 
 # subpackages to be released
-SUBPKGS=${SUBPKGS:-"acme letsencrypt_apache letsencrypt_nginx letshelp_letsencrypt"}
-subpkgs_dirs="$(echo $SUBPKGS | sed s/_/-/g)"
+SUBPKGS=${SUBPKGS:-"acme letsencrypt-apache letsencrypt-nginx letshelp-letsencrypt"}
+subpkgs_modules="$(echo $SUBPKGS | sed s/-/_/g)"
 # letsencrypt_compatibility_test is not packaged because:
 # - it is not meant to be used by anyone else than Let's Encrypt devs
 # - it causes problems when running nosetests - the latter tries to
@@ -29,7 +29,7 @@ cd $root
 git branch -f "$DEV_RELEASE_BRANCH"
 git checkout "$DEV_RELEASE_BRANCH"
 
-for pkg_dir in $subpkgs_dirs
+for pkg_dir in $SUBPKGS
 do
   sed -i $x "s/^version.*/version = '$version'/" $pkg_dir/setup.py
 done
@@ -41,7 +41,7 @@ git tag --local-user "$RELEASE_GPG_KEY" \
     --sign --message "Release $version" "$tag"
 
 echo "Preparing sdists and wheels"
-for pkg_dir in . $subpkgs_dirs
+for pkg_dir in . $SUBPKGS
 do
   cd $pkg_dir
 
@@ -61,7 +61,7 @@ done
 
 mkdir "dist.$version"
 mv dist "dist.$version/letsencrypt"
-for pkg_dir in $subpkgs_dirs
+for pkg_dir in $SUBPKGS
 do
   mv $pkg_dir/dist "dist.$version/$pkg_dir/"
 done
@@ -89,7 +89,7 @@ mkdir ../kgs
 kgs="../kgs/$version"
 pip freeze | tee $kgs
 pip install nose
-nosetests letsencrypt $SUBPKGS
+nosetests letsencrypt $subpkgs_modules
 
 echo "New root: $root"
 echo "KGS is at $root/kgs"
