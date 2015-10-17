@@ -15,6 +15,7 @@ from letsencrypt.tests import test_util
 
 RSA256_KEY = test_util.load_vector('rsa256_key.pem')
 RSA512_KEY = test_util.load_vector('rsa512_key.pem')
+CERT_PATH = test_util.vector_path('cert.pem')
 CERT = test_util.load_vector('cert.pem')
 SAN_CERT = test_util.load_vector('cert-san.pem')
 
@@ -230,6 +231,24 @@ class CertLoaderTest(unittest.TestCase):
 
         with self.assertRaises(errors.Error):
             pyopenssl_load_certificate(bad_cert_data)
+
+
+class NotBeforeTest(unittest.TestCase):
+    """Tests for letsencrypt.crypto_util.notBefore"""
+
+    def test_notBefore(self):
+        from letsencrypt.crypto_util import notBefore
+        self.assertEqual(notBefore(CERT_PATH).isoformat(),
+                         '2014-12-11T22:34:45+00:00')
+
+
+class NotAfterTest(unittest.TestCase):
+    """Tests for letsencrypt.crypto_util.notAfter"""
+
+    def test_notAfter(self):
+        from letsencrypt.crypto_util import notAfter
+        self.assertEqual(notAfter(CERT_PATH).isoformat(),
+                         '2014-12-18T22:34:45+00:00')
 
 
 if __name__ == '__main__':
