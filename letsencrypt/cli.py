@@ -334,8 +334,8 @@ def diagnose_configurator_problem(cfg_type, requested, plugins):
             msg = ("The {0} plugin is not working; there may be problems with "
                    "your existing configuration").format(requested)
             raise errors.ConfiguratorError, msg
-    raise errors.ConfiguratorError, cfg_type + " could not be determined or is not installed"
-
+    raise errors.ConfiguratorError,
+          "{0} could not be determined or is not installed".format(cfg_type)
 
 
 def choose_configurator_plugins(args, config, plugins, verb):
@@ -349,8 +349,14 @@ def choose_configurator_plugins(args, config, plugins, verb):
     need_inst = need_auth = (verb == "run")
     if verb == "auth":
         need_auth = True
+        if args.installer:
+            msg = "Specifying an installer doesn't make sense in auth mode"
+            raise errors.ConfiguratorError, msg
     if verb == "install":
         need_inst = True
+        if args.authenticator:
+            msg = "Specifying an authenticator doesn't make sense in install mode"
+            raise errors.ConfiguratorError, msg
 
     # Which plugins did the user request?
     req_inst = req_auth = args.configurator
@@ -421,12 +427,9 @@ def auth(args, config, plugins):
 
     try:
         installer, authenticator = choose_configurator_plugins(args, config, plugins, "auth")
+        installer = None # we're doing auth!
     except errors.ConfiguratorError, e:
         return e.message
-
-    installer = None # we're doing auth!
-    if args.installer:
-        return "Specifying an installer doesn't make sense in auth mode!"
 
     # TODO: Handle errors from _init_le_client?
     le_client = _init_le_client(args, config, authenticator, installer)
@@ -446,9 +449,16 @@ def auth(args, config, plugins):
 def install(args, config, plugins):
     """Install a previously obtained cert in a server."""
     # XXX: Update for renewer/RenewableCert
-    installer = display_ops.pick_installer(config, args.installer, plugins)
-    if installer is None:
-        return "Installer could not be determined"
+
+    try:
+        installer, authenticator = choose_configurator_plugins(args, config, plugins, "auth")
+        authenticator = None # we're doing install!
+    except errors.ConfiguratorError, e:
+        return e.message
+
+    if args.authenticator:
+        return "Specifying an authenticator doesn't make sense in install mode!"
+
     domains = _find_domains(args, installer)
     le_client = _init_le_client(
         args, config, authenticator=None, installer=installer)
