@@ -75,7 +75,10 @@ class CLITest(unittest.TestCase):
             output.truncate(0)
             self.assertRaises(SystemExit, self._call_stdout, ['-h', 'nginx'])
             out = output.getvalue()
-            self.assertTrue("--nginx-ctl" in out)
+            from letsencrypt.plugins import disco
+            if "nginx" in disco.PluginsRegistry.find_all():
+                # may be false while building distributions without plugins
+                self.assertTrue("--nginx-ctl" in out)
             self.assertTrue("--manual-test-mode" not in out)
             self.assertTrue("--checkpoints" not in out)
             output.truncate(0)
