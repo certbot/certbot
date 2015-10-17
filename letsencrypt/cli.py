@@ -419,15 +419,14 @@ def auth(args, config, plugins):
         # supplied, check if CSR matches given domains?
         return "--domains and --csr are mutually exclusive"
 
-    authenticator = display_ops.pick_authenticator(
-        config, args.authenticator, plugins)
-    if authenticator is None:
-        return "Authenticator could not be determined"
+    try:
+        installer, authenticator = choose_configurator_plugins(args, config, plugins, "auth")
+    except errors.ConfiguratorError, e:
+        return e.message
 
-    if args.installer is not None:
-        installer = display_ops.pick_installer(config, args.installer, plugins)
-    else:
-        installer = None
+    installer = None # we're doing auth!
+    if args.installer:
+        return "Specifying an installer doesn't make sense in auth mode!"
 
     # TODO: Handle errors from _init_le_client?
     le_client = _init_le_client(args, config, authenticator, installer)
