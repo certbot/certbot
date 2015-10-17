@@ -5,10 +5,8 @@ import re
 import time
 
 import configobj
-import OpenSSL
 import parsedatetime
 import pytz
-import pyrfc3339
 
 from letsencrypt import constants
 from letsencrypt import crypto_util
@@ -381,47 +379,6 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         for kind in ALL_FOUR:
             self._update_link_to(kind, version)
 
-    def _notafterbefore(self, method, version):
-        """Internal helper function for finding notbefore/notafter."""
-        if version is None:
-            target = self.current_target("cert")
-        else:
-            target = self.version("cert", version)
-        pem = open(target).read()
-        x509 = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM,
-                                               pem)
-        i = method(x509)
-        return pyrfc3339.parse(i[0:4] + "-" + i[4:6] + "-" + i[6:8] + "T" +
-                               i[8:10] + ":" + i[10:12] + ":" + i[12:])
-
-    def notbefore(self, version=None):
-        """When does the specified cert version start being valid?
-
-        (If no version is specified, use the current version.)
-
-        :param int version: the desired version number
-
-        :returns: the notBefore value from the specified cert version in
-            this lineage
-        :rtype: :class:`datetime.datetime`
-
-        """
-        return self._notafterbefore(lambda x509: x509.get_notBefore(), version)
-
-    def notafter(self, version=None):
-        """When does the specified cert version stop being valid?
-
-        (If no version is specified, use the current version.)
-
-        :param int version: the desired version number
-
-        :returns: the notAfter value from the specified cert version in
-            this lineage
-        :rtype: :class:`datetime.datetime`
-
-        """
-        return self._notafterbefore(lambda x509: x509.get_notAfter(), version)
-
     def names(self, version=None):
         """What are the subject names of this certificate?
 
@@ -470,7 +427,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
                 interval = self.configuration.get("deploy_before_expiry",
                                                   "5 days")
                 autodeploy_interval = parse_time_interval(interval)
-                expiry = self.notafter()
+                expiry = crypto_util.notAfter(self.current_target("cert"))
                 now = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
                 remaining = expiry - now
                 if remaining < autodeploy_interval:
@@ -537,7 +494,8 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             # Renewals on the basis of expiry time
             interval = self.configuration.get("renew_before_expiry", "10 days")
             autorenew_interval = parse_time_interval(interval)
-            expiry = self.notafter(self.latest_common_version())
+            expiry = crypto_util.notAfter(self.version(
+                "cert", self.latest_common_version()))
             now = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
             remaining = expiry - now
             if remaining < autorenew_interval:
