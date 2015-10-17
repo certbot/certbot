@@ -377,9 +377,9 @@ def auth(args, config, plugins):
     if args.csr is not None:
         certr, chain = le_client.obtain_certificate_from_csr(le_util.CSR(
             file=args.csr[0], data=args.csr[1], form="der"))
-        le_client.save_certificate(
+        cert_path, _ = le_client.save_certificate(
             certr, chain, args.cert_path, args.chain_path)
-        _report_new_cert(args.cert_path)
+        _report_new_cert(cert_path)
     else:
         domains = _find_domains(args, installer)
         _auth_from_domains(le_client, config, domains, plugins)

@@ -187,6 +187,7 @@ class CLITest(unittest.TestCase):
         mock_client = mock.MagicMock()
         mock_client.obtain_certificate_from_csr.return_value = ('certr',
                                                                 'chain')
+        mock_client.save_certificate.return_value = cert_path, None
         mock_init.return_value = mock_client
 
         installer = 'installer'
