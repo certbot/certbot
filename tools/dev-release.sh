@@ -22,6 +22,15 @@ tag="v$version"
 mv "dist.$version" "dist.$version.$(date +%s).bak" || true
 git tag --delete "$tag" || true
 
+tmpvenv=$(mktemp -d)
+virtualenv --no-site-packages $tmpvenv
+. $tmpvenv/bin/activate
+pip install -U setuptools
+pip install -U pip
+pip install -U wheel
+# updating virtualenv does some crazy stuff...
+pip install -U virtualenv
+
 root="$(mktemp -d -t le.$version.XXX)"
 echo "Cloning into fresh copy at $root"  # clean repo = no artificats
 git clone . $root
