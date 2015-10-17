@@ -315,13 +315,16 @@ def set_configurator(previously, now):
             raise errors.ConfiguratorError, msg % (`previously`, `now`)
     return now
 
-def diagnose_configurator_problem(cfg_type, requested):
+def diagnose_configurator_problem(cfg_type, requested, plugins):
     """
     Raise the most helpful error message about a plugin being unavailable
-    @cfg_type -- "installer" or "authenticator"
-    @requested -- which plugin the user wanted
+
+    :param string cfg_type: either "installer" or "authenticator"
+    :param string requested: the plugin that was requested
+    :param PluginRegistry plugins: available plugins
+
+    :raises error.ConfiguratorError if there was a problem
     """
-    plugins = plugins_disco.PluginsRegistry.find_all()
 
     if requested:
         if requested not in plugins:
@@ -336,7 +339,11 @@ def diagnose_configurator_problem(cfg_type, requested):
 
 
 def choose_configurator_plugins(args, config, plugins, verb):
-    """Figure out which configurator we're going to use"""
+    """
+    Figure out which configurator we're going to use
+
+    :raises error.ConfiguratorError if there was a problem
+    """
 
     # Which plugins do we need?
     need_inst = need_auth = (verb == "run")
@@ -371,9 +378,9 @@ def choose_configurator_plugins(args, config, plugins, verb):
     logger.debug("Selected authenticator %s and installer %s", authenticator, installer)
 
     if need_inst and not installer:
-        diagnose_configurator_problem("installer", req_inst)
+        diagnose_configurator_problem("installer", req_inst, plugins)
     if need_auth and not authenticator:
-        diagnose_configurator_problem("authenticator", req_auth)
+        diagnose_configurator_problem("authenticator", req_auth, plugins)
 
     return installer, authenticator
 
