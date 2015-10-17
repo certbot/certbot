@@ -25,10 +25,12 @@ git tag --delete "$tag" || true
 tmpvenv=$(mktemp -d)
 virtualenv --no-site-packages $tmpvenv
 . $tmpvenv/bin/activate
+# update setuptools/pip just like in other places in the repo
 pip install -U setuptools
-pip install -U pip
-pip install -U wheel
-# updating virtualenv does some crazy stuff...
+pip install -U pip  # latest pip => no --pre for dev releases
+pip install -U wheel  # setup.py bdist_wheel newer versions of
+# virtualenv inherit setuptools/pip/wheel versions from current env
+# when creating a child env
 pip install -U virtualenv
 
 root="$(mktemp -d -t le.$version.XXX)"
