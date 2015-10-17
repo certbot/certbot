@@ -29,7 +29,6 @@ from letsencrypt import configuration
 from letsencrypt import constants
 from letsencrypt import client
 from letsencrypt import crypto_util
-from letsencrypt import errors
 from letsencrypt import interfaces
 from letsencrypt import le_util
 from letsencrypt import log
@@ -38,6 +37,7 @@ from letsencrypt import storage
 
 from letsencrypt.display import util as display_util
 from letsencrypt.display import ops as display_ops
+from letsencrypt.errors import Error, ConfiguratorError, CertStorageError
 from letsencrypt.plugins import disco as plugins_disco
 
 
@@ -92,7 +92,7 @@ def _find_domains(args, installer):
         domains = args.domains
 
     if not domains:
-        raise errors.Error("Please specify --domains, or --installer that "
+        raise Error("Please specify --domains, or --installer that "
                            "will help in domain names autodiscovery")
 
     return domains
@@ -145,9 +145,9 @@ def _determine_account(args, config):
             try:
                 acc, acme = client.register(
                     config, account_storage, tos_cb=_tos_cb)
-            except errors.Error as error:
+            except Error as error:
                 logger.debug(error, exc_info=True)
-                raise errors.Error(
+                raise Error(
                     "Unable to register an account with ACME server")
 
     args.account = acc.id
@@ -185,7 +185,7 @@ def _find_duplicative_certs(domains, config, renew_config):
             rc_config.filename = full_path
             candidate_lineage = storage.RenewableCert(
                 rc_config, config_opts=None, cli_config=cli_config)
-        except (configobj.ConfigObjError, errors.CertStorageError, IOError):
+        except (configobj.ConfigObjError, CertStorageError, IOError):
             logger.warning("Renewal configuration file %s is broken. "
                            "Skipping.", full_path)
             continue
@@ -257,7 +257,7 @@ def _treat_as_renewal(config, domains):
                     br=os.linesep
                 ),
                 reporter_util.HIGH_PRIORITY)
-            raise errors.Error(
+            raise Error(
                 "User did not use proper CLI and would like "
                 "to reinvoke the client.")
 
@@ -298,7 +298,7 @@ def _auth_from_domains(le_client, config, domains, plugins):
         # TREAT AS NEW REQUEST
         lineage = le_client.obtain_and_enroll_certificate(domains, plugins)
         if not lineage:
-            raise errors.Error("Certificate could not be obtained")
+            raise Error("Certificate could not be obtained")
 
     _report_new_cert(lineage.cert)
 
@@ -312,7 +312,7 @@ def set_configurator(previously, now):
     if previously:
         if previously != now:
             msg = "Too many flags setting configurators/installers/authenticators %s -> %s"
-            raise errors.ConfiguratorError, msg % (`previously`, `now`)
+            raise ConfiguratorError, msg % (`previously`, `now`)
     return now
 
 def diagnose_configurator_problem(cfg_type, requested, plugins):
@@ -329,13 +329,12 @@ def diagnose_configurator_problem(cfg_type, requested, plugins):
     if requested:
         if requested not in plugins:
             msg = "The requested {0} plugin does not appear to be installed".format(requested)
-            raise errors.ConfiguratorError, msg
+            raise ConfiguratorError, msg
         else:
             msg = ("The {0} plugin is not working; there may be problems with "
                    "your existing configuration").format(requested)
-            raise errors.ConfiguratorError, msg
-    raise errors.ConfiguratorError,
-          "{0} could not be determined or is not installed".format(cfg_type)
+            raise ConfiguratorError, msg
+    raise ConfiguratorError, "{0} could not be determined or is not installed".format(cfg_type)
 
 
 def choose_configurator_plugins(args, config, plugins, verb):
@@ -350,13 +349,12 @@ def choose_configurator_plugins(args, config, plugins, verb):
     if verb == "auth":
         need_auth = True
         if args.installer:
-            msg = "Specifying an installer doesn't make sense in auth mode"
-            raise errors.ConfiguratorError, msg
+            raise ConfiguratorError, "Specifying an installer doesn't make sense in auth mode"
     if verb == "install":
         need_inst = True
         if args.authenticator:
             msg = "Specifying an authenticator doesn't make sense in install mode"
-            raise errors.ConfiguratorError, msg
+            raise ConfiguratorError, msg
 
     # Which plugins did the user request?
     req_inst = req_auth = args.configurator
@@ -396,7 +394,7 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
     """Obtain a certificate and install."""
     try:
         installer, authenticator = choose_configurator_plugins(args, config, plugins, "run")
-    except errors.ConfiguratorError, e:
+    except ConfiguratorError, e:
         return e.message
 
     domains = _find_domains(args, installer)
@@ -428,7 +426,7 @@ def auth(args, config, plugins):
     try:
         installer, authenticator = choose_configurator_plugins(args, config, plugins, "auth")
         installer = None # we're doing auth!
-    except errors.ConfiguratorError, e:
+    except ConfiguratorError, e:
         return e.message
 
     # TODO: Handle errors from _init_le_client?
@@ -453,7 +451,7 @@ def install(args, config, plugins):
     try:
         installer, authenticator = choose_configurator_plugins(args, config, plugins, "auth")
         authenticator = None # we're doing install!
-    except errors.ConfiguratorError, e:
+    except ConfiguratorError, e:
         return e.message
 
     if args.authenticator:
@@ -992,7 +990,7 @@ def _handle_exception(exc_type, exc_value, trace, args):
                 sys.exit("".join(
                     traceback.format_exception(exc_type, exc_value, trace)))
 
-        if issubclass(exc_type, errors.Error):
+        if issubclass(exc_type, Error):
             sys.exit(exc_value)
         else:
             # Tell the user a bit about what happened, without overwhelming
@@ -1056,7 +1054,7 @@ def main(cli_args=sys.argv[1:]):
         eula = pkg_resources.resource_string("letsencrypt", "EULA")
         if not zope.component.getUtility(interfaces.IDisplay).yesno(
                 eula, "Agree", "Cancel"):
-            raise errors.Error("Must agree to TOS")
+            raise Error("Must agree to TOS")
 
     if not os.geteuid() == 0:
         logger.warning(
