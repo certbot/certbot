@@ -15,6 +15,7 @@ from letsencrypt import errors
 
 from letsencrypt.tests import renewer_test
 from letsencrypt.tests import test_util
+from letsencrypt.plugins import disco
 
 
 CSR = test_util.vector_path('csr.der')
@@ -75,7 +76,6 @@ class CLITest(unittest.TestCase):
             output.truncate(0)
             self.assertRaises(SystemExit, self._call_stdout, ['-h', 'nginx'])
             out = output.getvalue()
-            from letsencrypt.plugins import disco
             if "nginx" in disco.PluginsRegistry.find_all():
                 # may be false while building distributions without plugins
                 self.assertTrue("--nginx-ctl" in out)
@@ -92,6 +92,20 @@ class CLITest(unittest.TestCase):
             out = output.getvalue()
             from letsencrypt import cli
             self.assertTrue(cli.USAGE in out)
+
+    def test_configurator_selection(self):
+        output = StringIO.StringIO()
+        plugins = disco.PluginsRegistry.find_all()
+        if "apache" in plugins:
+ 
+            with mock.patch('letsencrypt.cli.sys.stdout', new=output):
+                self.assertRaises(SystemExit, self._call_stdout,
+                                  ['--agree-eula', '--apache', '--authenticator', 'standalone'])
+                #import sys
+                #sys.stderr.write(repr(self._call_stdout(['--agree-eula', '--apache', '--authenticator', 'standalone'])))
+                out = output.getvalue()
+                self.assertTrue("Too many flags setting" in out)
+                # TODO add tests with a broken plugin, a missing plugin, etc
 
     def test_rollback(self):
         _, _, _, client = self._call(['rollback'])
