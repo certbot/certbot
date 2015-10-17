@@ -119,18 +119,23 @@ class CLITest(unittest.TestCase):
         ret, _, _, _ = self._call(['-a', 'bad_auth', 'auth'])
         self.assertEqual(ret, 'Authenticator could not be determined')
 
+    @mock.patch('letsencrypt.crypto_util.notAfter')
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
-    def test_auth_new_request_success(self, mock_get_utility):
+    def test_auth_new_request_success(self, mock_get_utility, mock_notAfter):
         cert_path = '/etc/letsencrypt/live/foo.bar'
+        date = '1970-01-01'
+        mock_notAfter().date.return_value = date
+
         mock_lineage = mock.MagicMock(cert=cert_path)
         mock_client = mock.MagicMock()
         mock_client.obtain_and_enroll_certificate.return_value = mock_lineage
         self._auth_new_request_common(mock_client)
         self.assertEqual(
             mock_client.obtain_and_enroll_certificate.call_count, 1)
-        msg = mock_get_utility().add_message.call_args_list[0][0][0]
-        self.assertTrue(cert_path in msg)
-        self.assertEqual(mock_get_utility().add_message.call_count, 2)
+        self.assertTrue(
+            cert_path in mock_get_utility().add_message.call_args[0][0])
+        self.assertTrue(
+            date in mock_get_utility().add_message.call_args[0][0])
 
     def test_auth_new_request_failure(self):
         mock_client = mock.MagicMock()
@@ -150,6 +155,7 @@ class CLITest(unittest.TestCase):
     @mock.patch('letsencrypt.cli._init_le_client')
     def test_auth_renewal(self, mock_init, mock_renewal, mock_get_utility):
         cert_path = '/etc/letsencrypt/live/foo.bar'
+
         mock_lineage = mock.MagicMock(cert=cert_path)
         mock_cert = mock.MagicMock(body='body')
         mock_key = mock.MagicMock(pem='pem_key')
@@ -165,19 +171,24 @@ class CLITest(unittest.TestCase):
         self.assertEqual(mock_lineage.save_successor.call_count, 1)
         mock_lineage.update_all_links_to.assert_called_once_with(
             mock_lineage.latest_common_version())
-        msg = mock_get_utility().add_message.call_args_list[0][0][0]
-        self.assertTrue(cert_path in msg)
-        self.assertEqual(mock_get_utility().add_message.call_count, 2)
+        self.assertTrue(
+            cert_path in mock_get_utility().add_message.call_args[0][0])
 
+    @mock.patch('letsencrypt.crypto_util.notAfter')
     @mock.patch('letsencrypt.cli.display_ops.pick_installer')
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
     @mock.patch('letsencrypt.cli._init_le_client')
-    def test_auth_csr(self, mock_init, mock_get_utility, mock_pick_installer):
+    def test_auth_csr(self, mock_init, mock_get_utility,
+                      mock_pick_installer, mock_notAfter):
         cert_path = '/etc/letsencrypt/live/foo.bar'
+        date = '1970-01-01'
+        mock_notAfter().date.return_value = date
+
         mock_client = mock.MagicMock()
         mock_client.obtain_certificate_from_csr.return_value = ('certr',
                                                                 'chain')
         mock_init.return_value = mock_client
+
         installer = 'installer'
         self._call(
             ['-a', 'standalone', '-i', installer, 'auth', '--csr', CSR,
@@ -187,6 +198,8 @@ class CLITest(unittest.TestCase):
             'certr', 'chain', cert_path, '/')
         self.assertTrue(
             cert_path in mock_get_utility().add_message.call_args[0][0])
+        self.assertTrue(
+            date in mock_get_utility().add_message.call_args[0][0])
 
     @mock.patch('letsencrypt.cli.sys')
     def test_handle_exception(self, mock_sys):
