@@ -88,10 +88,6 @@ class RawNginxDumper(object):
         """Return the parsed block as a string."""
         return '\n'.join(self) + '\n'
 
-    def as_string(self):
-        """Return the parsed block as a string."""
-        return str(self)
-
 
 # Shortcut functions to respect Python's serialization interface
 # (like pyyaml, picker or json)
