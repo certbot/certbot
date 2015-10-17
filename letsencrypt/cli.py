@@ -328,11 +328,11 @@ def diagnose_configurator_problem(cfg_type, requested, plugins):
 
     if requested:
         if requested not in plugins:
-            msg = "The requested " + requested + " plugin does not appear to be installed"
+            msg = "The requested {0} plugin does not appear to be installed".format(requested)
             raise errors.ConfiguratorError, msg
         else:
-            msg = "The " + requested + " plugin is not working; there may be problems "
-            msg += "with your existing configuration"
+            msg = ("The {0} plugin is not working; there may be problems with "
+                   "your existing configuration").format(requested)
             raise errors.ConfiguratorError, msg
     raise errors.ConfiguratorError, cfg_type + " could not be determined or is not installed"
 
@@ -362,7 +362,6 @@ def choose_configurator_plugins(args, config, plugins, verb):
     if args.apache:
         req_inst = set_configurator(req_inst, "apache")
         req_auth = set_configurator(req_auth, "apache")
-
     logger.debug("Requested authenticator %s and installer %s", req_auth, req_inst)
 
     # Try to meet the user's request and/or ask them to pick plugins

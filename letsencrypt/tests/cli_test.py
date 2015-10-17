@@ -13,9 +13,10 @@ from letsencrypt import account
 from letsencrypt import configuration
 from letsencrypt import errors
 
+from letsencrypt.plugins import disco
+
 from letsencrypt.tests import renewer_test
 from letsencrypt.tests import test_util
-from letsencrypt.plugins import disco
 
 
 CSR = test_util.vector_path('csr.der')
