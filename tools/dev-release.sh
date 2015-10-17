@@ -74,9 +74,10 @@ python -m SimpleHTTPServer $PORT &
 # installed from local PyPI rather than current directory (repo root)
 virtualenv --no-site-packages ../venv
 . ../venv/bin/activate
-# Now, use our local PyPI. --pre allows installation of pre-release (incl. dev)
+pip install -U setuptools
+pip install -U pip
+# Now, use our local PyPI
 pip install \
-  --pre \
   --extra-index-url http://localhost:$PORT \
   letsencrypt $SUBPKGS
 # stop local PyPI
