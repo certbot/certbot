@@ -46,6 +46,10 @@ class Plugin(object):
         """ArgumentParser options namespace (prefix of all options)."""
         return option_namespace(self.name)
 
+    def option_name(self, name):
+        """Option name (include plugin namespace)."""
+        return self.option_namespace + name
+
     @property
     def dest_namespace(self):
         """ArgumentParser dest namespace (prefix of all destinations)."""

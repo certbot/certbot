@@ -51,6 +51,9 @@ class PluginTest(unittest.TestCase):
     def test_option_namespace(self):
         self.assertEqual("mock-", self.plugin.option_namespace)
 
+    def test_option_name(self):
+        self.assertEqual("mock-foo_bar", self.plugin.option_name("foo_bar"))
+
     def test_dest_namespace(self):
         self.assertEqual("mock_", self.plugin.dest_namespace)
 
