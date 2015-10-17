@@ -310,7 +310,7 @@ def _notAfterBefore(cert_path, method):
     :param function method: one of ``OpenSSL.crypto.X509.get_notBefore``
         or ``OpenSSL.crypto.X509.get_notAfter``
 
-    :returns: the notBefore value from the cert at cert_path
+    :returns: the notBefore or notAfter value from the cert at cert_path
     :rtype: :class:`datetime.datetime`
 
     """
