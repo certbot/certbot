@@ -97,15 +97,11 @@ class CLITest(unittest.TestCase):
         output = StringIO.StringIO()
         plugins = disco.PluginsRegistry.find_all()
         if "apache" in plugins:
- 
-            with mock.patch('letsencrypt.cli.sys.stdout', new=output):
-                self.assertRaises(SystemExit, self._call_stdout,
-                                  ['--agree-eula', '--apache', '--authenticator', 'standalone'])
-                #import sys
-                #sys.stderr.write(repr(self._call_stdout(['--agree-eula', '--apache', '--authenticator', 'standalone'])))
-                out = output.getvalue()
-                self.assertTrue("Too many flags setting" in out)
-                # TODO add tests with a broken plugin, a missing plugin, etc
+            from letsencrypt import cli 
+            args = ['--agree-eula', '--apache', '--authenticator', 'standalone']
+            ret, _, _, _ = self._call(args)
+            self.assertTrue("Too many flags setting" in ret)
+            # TODO add tests with a broken plugin, a missing plugin, etc
 
     def test_rollback(self):
         _, _, _, client = self._call(['rollback'])
