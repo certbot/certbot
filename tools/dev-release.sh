@@ -88,8 +88,7 @@ mkdir ../kgs
 kgs="../kgs/$version"
 pip freeze | tee $kgs
 pip install nose
-# TODO: letsencrypt_apache fails due to symlink, c.f. #838
-nosetests letsencrypt $SUBPKGS || true
+nosetests letsencrypt $SUBPKGS
 
 echo "New root: $root"
 echo "KGS is at $root/kgs"

@@ -22,6 +22,15 @@ env:
     - TOXENV=lint
     - TOXENV=cover
 
+
+# Only build pushes to the master branch, PRs, and branches beginning with
+# `test-`. This reduces the number of simultaneous Travis runs, which speeds
+# turnaround time on review since there is a cap of 5 simultaneous runs.
+branches:
+  only:
+    - master
+    - /^test-.*$/
+
 sudo: false  # containers
 addons:
   # make sure simplehttp simple verification works (custom /etc/hosts)

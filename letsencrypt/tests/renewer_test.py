@@ -44,8 +44,16 @@ class BaseRenewableCertTest(unittest.TestCase):
         self.tempdir = tempfile.mkdtemp()
 
         self.cli_config = configuration.RenewerConfiguration(
-            namespace=mock.MagicMock(config_dir=self.tempdir))
+            namespace=mock.MagicMock(
+                config_dir=self.tempdir,
+                work_dir=self.tempdir,
+                logs_dir=self.tempdir,
+                no_simple_http_tls=False,
+            )
+        )
+
         # TODO: maybe provide RenewerConfiguration.make_dirs?
+        # TODO: main() should create those dirs, c.f. #902
         os.makedirs(os.path.join(self.tempdir, "live", "example.org"))
         os.makedirs(os.path.join(self.tempdir, "archive", "example.org"))
         os.makedirs(os.path.join(self.tempdir, "renewal"))
@@ -61,6 +69,9 @@ class BaseRenewableCertTest(unittest.TestCase):
         self.defaults = configobj.ConfigObj()
         self.test_rc = storage.RenewableCert(
             self.config, self.defaults, self.cli_config)
+
+    def tearDown(self):
+        shutil.rmtree(self.tempdir)
 
     def _write_out_ex_kinds(self):
         for kind in ALL_FOUR:
@@ -79,11 +90,6 @@ class BaseRenewableCertTest(unittest.TestCase):
 class RenewableCertTests(BaseRenewableCertTest):
     # pylint: disable=too-many-public-methods
     """Tests for letsencrypt.renewer.*."""
-    def setUp(self):
-        super(RenewableCertTests, self).setUp()
-
-    def tearDown(self):
-        shutil.rmtree(self.tempdir)
 
     def test_initialization(self):
         self.assertEqual(self.test_rc.lineagename, "example.org")
@@ -644,6 +650,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.test_rc.configfile["renewalparams"]["server"] = "acme.example.com"
         self.test_rc.configfile["renewalparams"]["authenticator"] = "fake"
         self.test_rc.configfile["renewalparams"]["dvsni_port"] = "4430"
+        self.test_rc.configfile["renewalparams"]["simple_http_port"] = "1234"
         self.test_rc.configfile["renewalparams"]["account"] = "abcde"
         mock_auth = mock.MagicMock()
         mock_pd.PluginsRegistry.find_all.return_value = {"apache": mock_auth}
@@ -665,11 +672,17 @@ class RenewableCertTests(BaseRenewableCertTest):
         # This should fail because the renewal itself appears to fail
         self.assertFalse(renewer.renew(self.test_rc, 1))
 
+    def _common_cli_args(self):
+        return [
+            "--config-dir", self.cli_config.config_dir,
+            "--work-dir", self.cli_config.work_dir,
+            "--logs-dir", self.cli_config.logs_dir,
+        ]
+
     @mock.patch("letsencrypt.renewer.notify")
     @mock.patch("letsencrypt.storage.RenewableCert")
     @mock.patch("letsencrypt.renewer.renew")
     def test_main(self, mock_renew, mock_rc, mock_notify):
-        """Test for main() function."""
         from letsencrypt import renewer
         mock_rc_instance = mock.MagicMock()
         mock_rc_instance.should_autodeploy.return_value = True
@@ -691,8 +704,7 @@ class RenewableCertTests(BaseRenewableCertTest):
                                "example.com.conf"), "w") as f:
             f.write("cert = cert.pem\nprivkey = privkey.pem\n")
             f.write("chain = chain.pem\nfullchain = fullchain.pem\n")
-        renewer.main(self.defaults, args=[
-            '--config-dir', self.cli_config.config_dir])
+        renewer.main(self.defaults, cli_args=self._common_cli_args())
         self.assertEqual(mock_rc.call_count, 2)
         self.assertEqual(mock_rc_instance.update_all_links_to.call_count, 2)
         self.assertEqual(mock_notify.notify.call_count, 4)
@@ -705,8 +717,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         mock_happy_instance.should_autorenew.return_value = False
         mock_happy_instance.latest_common_version.return_value = 10
         mock_rc.return_value = mock_happy_instance
-        renewer.main(self.defaults, args=[
-            '--config-dir', self.cli_config.config_dir])
+        renewer.main(self.defaults, cli_args=self._common_cli_args())
         self.assertEqual(mock_rc.call_count, 4)
         self.assertEqual(mock_happy_instance.update_all_links_to.call_count, 0)
         self.assertEqual(mock_notify.notify.call_count, 4)
@@ -717,8 +728,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         with open(os.path.join(self.cli_config.renewal_configs_dir,
                                "bad.conf"), "w") as f:
             f.write("incomplete = configfile\n")
-        renewer.main(self.defaults, args=[
-            '--config-dir', self.cli_config.config_dir])
+        renewer.main(self.defaults, cli_args=self._common_cli_args())
         # The errors.CertStorageError is caught inside and nothing happens.
 
 

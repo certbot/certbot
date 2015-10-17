@@ -5,7 +5,6 @@ import os
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
 import OpenSSL
-import zope.component
 
 from acme import client as acme_client
 from acme import jose
@@ -19,7 +18,6 @@ from letsencrypt import continuity_auth
 from letsencrypt import crypto_util
 from letsencrypt import errors
 from letsencrypt import error_handler
-from letsencrypt import interfaces
 from letsencrypt import le_util
 from letsencrypt import reverter
 from letsencrypt import storage
@@ -258,31 +256,7 @@ class Client(object):
                 OpenSSL.crypto.FILETYPE_PEM, certr.body),
             key.pem, crypto_util.dump_pyopenssl_chain(chain),
             params, config, cli_config)
-        self._report_renewal_status(lineage)
         return lineage
-
-    def _report_renewal_status(self, cert):
-        # pylint: disable=no-self-use
-        """Informs the user about automatic renewal and deployment.
-
-        :param .RenewableCert cert: Newly issued certificate
-
-        """
-        if cert.autorenewal_is_enabled():
-            if cert.autodeployment_is_enabled():
-                msg = "Automatic renewal and deployment has "
-            else:
-                msg = "Automatic renewal but not automatic deployment has "
-        elif cert.autodeployment_is_enabled():
-            msg = "Automatic deployment but not automatic renewal has "
-        else:
-            msg = "Automatic renewal and deployment has not "
-
-        msg += ("been enabled for your certificate. These settings can be "
-                "configured in the directories under {0}.").format(
-                    cert.cli_config.renewal_configs_dir)
-        reporter = zope.component.getUtility(interfaces.IReporter)
-        reporter.add_message(msg, reporter.LOW_PRIORITY)
 
     def save_certificate(self, certr, chain_cert, cert_path, chain_path):
         # pylint: disable=no-self-use
@@ -336,7 +310,8 @@ class Client(object):
 
         return os.path.abspath(act_cert_path), cert_chain_abspath
 
-    def deploy_certificate(self, domains, privkey_path, cert_path, chain_path):
+    def deploy_certificate(self, domains, privkey_path,
+                           cert_path, chain_path, fullchain_path):
         """Install certificate
 
         :param list domains: list of domains to install the certificate
@@ -357,8 +332,10 @@ class Client(object):
                 # TODO: Provide a fullchain reference for installers like
                 #       nginx that want it
                 self.installer.deploy_cert(
-                    dom, os.path.abspath(cert_path),
-                    os.path.abspath(privkey_path), chain_path)
+                    domain=dom, cert_path=os.path.abspath(cert_path),
+                    key_path=os.path.abspath(privkey_path),
+                    chain_path=chain_path,
+                    fullchain_path=fullchain_path)
 
             self.installer.save("Deployed Let's Encrypt Certificate")
             # sites may have been enabled / final cleanup

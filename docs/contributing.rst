@@ -267,6 +267,22 @@ Please:
 .. _PEP 8 - Style Guide for Python Code:
   https://www.python.org/dev/peps/pep-0008
 
+Submitting a pull request
+=========================
+
+Steps:
+
+1. Write your code!
+2. Make sure your environment is set up properly and that you're in your
+   virtualenv. You can do this by running ``./bootstrap/dev/venv.sh``.
+   (this is a **very important** step)
+3. Run ``./pep8.travis.sh`` to do a cursory check of your code style.
+   Fix any errors.
+4. Run ``tox -e lint`` to check for pylint errors. Fix any errors.
+5. Run ``tox`` to run the entire test suite including coverage. Fix any errors.
+6. If your code touches communication with an ACME server/Boulder, you
+   should run the integration tests, see `integration`_.
+7. Submit the PR.
 
 Updating the documentation
 ==========================
@@ -280,3 +296,82 @@ commands:
 
 This should generate documentation in the ``docs/_build/html``
 directory.
+
+.. _prerequisites:
+
+Notes on OS depedencies
+=======================
+
+OS level dependencies are managed by scripts in ``bootstrap``.  Some notes
+are provided here mainly for the :ref:`developers <hacking>` reference.
+
+In general:
+
+* ``sudo`` is required as a suggested way of running privileged process
+* `Augeas`_ is required for the Python bindings
+* ``virtualenv`` and ``pip`` are used for managing other python library
+  dependencies
+
+.. _Augeas: http://augeas.net/
+.. _Virtualenv: https://virtualenv.pypa.io
+
+Ubuntu
+------
+
+.. code-block:: shell
+
+   sudo ./bootstrap/ubuntu.sh
+
+
+Debian
+------
+
+.. code-block:: shell
+
+   sudo ./bootstrap/debian.sh
+
+For squeeze you will need to:
+
+- Use ``virtualenv --no-site-packages -p python`` instead of ``-p python2``.
+
+
+.. _`#280`: https://github.com/letsencrypt/letsencrypt/issues/280
+
+
+Mac OSX
+-------
+
+.. code-block:: shell
+
+   ./bootstrap/mac.sh
+
+
+Fedora
+------
+
+.. code-block:: shell
+
+   sudo ./bootstrap/fedora.sh
+
+
+Centos 7
+--------
+
+.. code-block:: shell
+
+   sudo ./bootstrap/centos.sh
+
+
+FreeBSD
+-------
+
+.. code-block:: shell
+
+   sudo ./bootstrap/freebsd.sh
+
+Bootstrap script for FreeBSD uses ``pkg`` for package installation,
+i.e. it does not use ports.
+
+FreeBSD by default uses ``tcsh``. In order to activate virtulenv (see
+below), you will need a compatbile shell, e.g. ``pkg install bash &&
+bash``.

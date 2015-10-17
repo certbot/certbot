@@ -114,37 +114,6 @@ class ClientTest(unittest.TestCase):
             mock.sentinel.key, domains, self.config.csr_dir)
         self._check_obtain_certificate()
 
-    @mock.patch("letsencrypt.client.zope.component.getUtility")
-    def test_report_renewal_status(self, mock_zope):
-        # pylint: disable=protected-access
-        cert = mock.MagicMock()
-        cert.cli_config.renewal_configs_dir = "/foo/bar/baz"
-
-        cert.autorenewal_is_enabled.return_value = True
-        cert.autodeployment_is_enabled.return_value = True
-        self.client._report_renewal_status(cert)
-        msg = mock_zope().add_message.call_args[0][0]
-        self.assertTrue("renewal and deployment has been" in msg)
-        self.assertTrue(cert.cli_config.renewal_configs_dir in msg)
-
-        cert.autorenewal_is_enabled.return_value = False
-        self.client._report_renewal_status(cert)
-        msg = mock_zope().add_message.call_args[0][0]
-        self.assertTrue("deployment but not automatic renewal" in msg)
-        self.assertTrue(cert.cli_config.renewal_configs_dir in msg)
-
-        cert.autodeployment_is_enabled.return_value = False
-        self.client._report_renewal_status(cert)
-        msg = mock_zope().add_message.call_args[0][0]
-        self.assertTrue("renewal and deployment has not" in msg)
-        self.assertTrue(cert.cli_config.renewal_configs_dir in msg)
-
-        cert.autorenewal_is_enabled.return_value = True
-        self.client._report_renewal_status(cert)
-        msg = mock_zope().add_message.call_args[0][0]
-        self.assertTrue("renewal but not automatic deployment" in msg)
-        self.assertTrue(cert.cli_config.renewal_configs_dir in msg)
-
     def test_save_certificate(self):
         certs = ["matching_cert.pem", "cert.pem", "cert-san.pem"]
         tmp_path = tempfile.mkdtemp()
@@ -177,15 +146,19 @@ class ClientTest(unittest.TestCase):
 
     def test_deploy_certificate(self):
         self.assertRaises(errors.Error, self.client.deploy_certificate,
-                          ["foo.bar"], "key", "cert", "chain")
+                          ["foo.bar"], "key", "cert", "chain", "fullchain")
 
         installer = mock.MagicMock()
         self.client.installer = installer
 
-        self.client.deploy_certificate(["foo.bar"], "key", "cert", "chain")
+        self.client.deploy_certificate(
+            ["foo.bar"], "key", "cert", "chain", "fullchain")
         installer.deploy_cert.assert_called_once_with(
-            "foo.bar", os.path.abspath("cert"),
-            os.path.abspath("key"), os.path.abspath("chain"))
+            cert_path=os.path.abspath("cert"),
+            chain_path=os.path.abspath("chain"),
+            domain='foo.bar',
+            fullchain_path='fullchain',
+            key_path=os.path.abspath("key"))
         self.assertEqual(installer.save.call_count, 1)
         installer.restart.assert_called_once_with()
 

@@ -476,8 +476,12 @@ def _add_directives(block, directives, replace=False):
     :param list directives: The new directives.
 
     """
-    if replace:
-        for directive in directives:
+    for directive in directives:
+        if not replace:
+            # We insert new directives at the top of the block, mostly
+            # to work around https://trac.nginx.org/nginx/ticket/810
+            block.insert(0, directive)
+        else:
             changed = False
             if len(directive) == 0:
                 continue
@@ -489,5 +493,3 @@ def _add_directives(block, directives, replace=False):
                 raise errors.MisconfigurationError(
                     'LetsEncrypt expected directive for %s in the Nginx '
                     'config but did not find it.' % directive[0])
-    else:
-        block.extend(directives)

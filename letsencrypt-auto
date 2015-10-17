@@ -1,0 +1,89 @@
+#!/bin/sh -e
+#
+# Installs and updates the letencrypt virtualenv, and runs letsencrypt
+# using that virtual environment.  This allows the client to function decently
+# without requiring specific versions of its dependencies from the operating
+# system.
+
+XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share}
+VENV_NAME="letsencrypt"
+VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
+VENV_BIN=${VENV_PATH}/bin
+
+if test "`id -u`" -ne "0" ; then
+  SUDO=sudo
+else
+  SUDO=
+fi
+
+for arg in "$@" ; do 
+  # This first clause is redundant with the third, but hedging on portability
+  if [ "$arg" = "-v" ] || [ "$arg" = "--verbose" ] || echo "$arg" | grep -E -- -v+ ; then
+    VERBOSE=1
+  fi
+done
+
+# virtualenv call is not idempotent: it overwrites pip upgraded in
+# later steps, causing "ImportError: cannot import name unpack_url"
+if [ ! -d $VENV_PATH ]
+then
+  BOOTSTRAP=`dirname $0`/bootstrap
+  if [ ! -f $BOOTSTRAP/debian.sh ] ; then
+    echo "Cannot find the letsencrypt bootstrap scripts in $BOOTSTRAP"
+    exit 1
+  fi
+  if [ -f /etc/debian_version ] ; then
+    echo "Bootstrapping dependencies for Debian-based OSes..."
+    $SUDO $BOOTSTRAP/_deb_common.sh
+  elif [ -f /etc/arch-release ] ; then
+    echo "Bootstrapping dependencies for Archlinux..."
+    $SUDO $BOOTSTRAP/archlinux.sh
+  elif [ -f /etc/redhat-release ] ; then
+    echo "Bootstrapping dependencies for RedHat-based OSes..."
+    $SUDO $BOOTSTRAP/_rpm_common.sh
+  elif uname | grep -iq FreeBSD ; then
+    echo "Bootstrapping dependencies for FreeBSD..."
+    $SUDO $BOOTSTRAP/freebsd.sh
+  elif uname | grep -iq Darwin ; then
+    echo "Bootstrapping dependencies for Mac OS X..."
+    echo "WARNING: Mac support is very experimental at present..."
+    $BOOTSTRAP/mac.sh
+  else
+    echo "Sorry, I don't know how to bootstrap Let's Encrypt on your operating system!"
+    echo
+    echo "You will need to bootstrap, configure virtualenv, and run a pip install manually"
+    echo "Please see https://letsencrypt.readthedocs.org/en/latest/contributing.html#prerequisites"
+    echo "for more info"
+  fi
+
+  echo "Creating virtual environment..."
+  if [ "$VERBOSE" = 1 ] ; then
+    virtualenv --no-site-packages --python python2 $VENV_PATH
+  else
+    virtualenv --no-site-packages --python python2 $VENV_PATH > /dev/null
+  fi
+fi
+
+echo -n "Updating letsencrypt and virtual environment dependencies..."
+if [ "$VERBOSE" = 1 ]  ; then
+  echo
+  $VENV_BIN/pip install -U setuptools
+  $VENV_BIN/pip install -U pip
+  # nginx is buggy / disabled for now...
+  $VENV_BIN/pip install -U letsencrypt letsencrypt-apache #letsencrypt-nginx
+else
+  $VENV_BIN/pip install -U setuptools > /dev/null
+  echo -n .
+  $VENV_BIN/pip install -U pip > /dev/null
+  echo -n .
+  # nginx is buggy / disabled for now...
+  $VENV_BIN/pip install -U letsencrypt > /dev/null
+  echo -n .
+  $VENV_BIN/pip install -U letsencrypt-apache > /dev/null
+  echo
+fi
+
+# Explain what's about to happen, for the benefit of those getting sudo
+# password prompts...
+echo "Running with virtualenv:" $SUDO $VENV_BIN/letsencrypt "$@"
+$SUDO $VENV_BIN/letsencrypt "$@"
