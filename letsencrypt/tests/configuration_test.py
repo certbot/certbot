@@ -4,6 +4,8 @@ import unittest
 
 import mock
 
+from letsencrypt import errors
+
 
 class NamespaceConfigTest(unittest.TestCase):
     """Tests for letsencrypt.configuration.NamespaceConfig."""
@@ -11,9 +13,15 @@ class NamespaceConfigTest(unittest.TestCase):
     def setUp(self):
         self.namespace = mock.MagicMock(
             config_dir='/tmp/config', work_dir='/tmp/foo', foo='bar',
-            server='https://acme-server.org:443/new')
+            server='https://acme-server.org:443/new',
+            dvsni_port=1234, simple_http_port=4321)
         from letsencrypt.configuration import NamespaceConfig
         self.config = NamespaceConfig(self.namespace)
+
+    def test_init_same_ports(self):
+        self.namespace.dvsni_port = 4321
+        from letsencrypt.configuration import NamespaceConfig
+        self.assertRaises(errors.Error, NamespaceConfig, self.namespace)
 
     def test_proxy_getattr(self):
         self.assertEqual(self.config.foo, 'bar')
@@ -45,6 +53,11 @@ class NamespaceConfigTest(unittest.TestCase):
         self.assertEqual(self.config.in_progress_dir, '/tmp/foo/../p')
         self.assertEqual(self.config.key_dir, '/tmp/config/keys')
         self.assertEqual(self.config.temp_checkpoint_dir, '/tmp/foo/t')
+
+    def test_simple_http_port(self):
+        self.assertEqual(4321, self.config.simple_http_port)
+        self.namespace.simple_http_port = None
+        self.assertEqual(80, self.config.simple_http_port)
 
 
 class RenewerConfigurationTest(unittest.TestCase):

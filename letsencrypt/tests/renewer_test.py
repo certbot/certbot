@@ -48,6 +48,7 @@ class BaseRenewableCertTest(unittest.TestCase):
                 config_dir=self.tempdir,
                 work_dir=self.tempdir,
                 logs_dir=self.tempdir,
+                no_simple_http_tls=False,
             )
         )
 
@@ -649,6 +650,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.test_rc.configfile["renewalparams"]["server"] = "acme.example.com"
         self.test_rc.configfile["renewalparams"]["authenticator"] = "fake"
         self.test_rc.configfile["renewalparams"]["dvsni_port"] = "4430"
+        self.test_rc.configfile["renewalparams"]["simple_http_port"] = "1234"
         self.test_rc.configfile["renewalparams"]["account"] = "abcde"
         mock_auth = mock.MagicMock()
         mock_pd.PluginsRegistry.find_all.return_value = {"apache": mock_auth}

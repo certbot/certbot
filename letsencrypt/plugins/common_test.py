@@ -2,6 +2,7 @@
 import unittest
 
 import mock
+import OpenSSL
 
 from acme import challenges
 from acme import jose
@@ -144,7 +145,9 @@ class DvsniTest(unittest.TestCase):
 
         response = challenges.DVSNIResponse(validation=mock.Mock())
         achall = mock.MagicMock()
-        achall.gen_cert_and_response.return_value = (response, "cert", "key")
+        key = test_util.load_pyopenssl_private_key("rsa512_key.pem")
+        achall.gen_cert_and_response.return_value = (
+            response, test_util.load_cert("cert.pem"), key)
 
         with mock.patch("letsencrypt.plugins.common.open",
                         mock_open, create=True):
@@ -156,10 +159,12 @@ class DvsniTest(unittest.TestCase):
 
         # pylint: disable=no-member
         mock_open.assert_called_once_with(self.sni.get_cert_path(achall), "wb")
-        mock_open.return_value.write.assert_called_once_with("cert")
+        mock_open.return_value.write.assert_called_once_with(
+            test_util.load_vector("cert.pem"))
         mock_safe_open.assert_called_once_with(
             self.sni.get_key_path(achall), "wb", chmod=0o400)
-        mock_safe_open.return_value.write.assert_called_once_with("key")
+        mock_safe_open.return_value.write.assert_called_once_with(
+            OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM, key))
 
 
 if __name__ == "__main__":

@@ -1,6 +1,8 @@
 """Tests for letsencrypt.achallenges."""
 import unittest
 
+import OpenSSL
+
 from acme import challenges
 from acme import jose
 
@@ -22,10 +24,10 @@ class DVSNITest(unittest.TestCase):
         self.assertEqual(self.challb.token, self.achall.token)
 
     def test_gen_cert_and_response(self):
-        response, cert_pem, key_pem = self.achall.gen_cert_and_response()
+        response, cert, key = self.achall.gen_cert_and_response()
         self.assertTrue(isinstance(response, challenges.DVSNIResponse))
-        self.assertTrue(isinstance(cert_pem, bytes))
-        self.assertTrue(isinstance(key_pem, bytes))
+        self.assertTrue(isinstance(cert, OpenSSL.crypto.X509))
+        self.assertTrue(isinstance(key, OpenSSL.crypto.PKey))
 
 
 if __name__ == "__main__":
