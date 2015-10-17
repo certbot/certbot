@@ -348,8 +348,6 @@ def choose_configurator_plugins(args, config, plugins, verb):
     need_inst = need_auth = (verb == "run")
     if verb == "auth":
         need_auth = True
-        if args.installer:
-            raise ConfiguratorError, "Specifying an installer doesn't make sense in auth mode"
     if verb == "install":
         need_inst = True
         if args.authenticator:
@@ -424,8 +422,8 @@ def auth(args, config, plugins):
         return "--domains and --csr are mutually exclusive"
 
     try:
+        # installers are used in auth mode to determine domain names
         installer, authenticator = choose_configurator_plugins(args, config, plugins, "auth")
-        installer = None # we're doing auth!
     except ConfiguratorError, e:
         return e.message
 
@@ -449,8 +447,7 @@ def install(args, config, plugins):
     # XXX: Update for renewer/RenewableCert
 
     try:
-        installer, authenticator = choose_configurator_plugins(args, config, plugins, "auth")
-        authenticator = None # we're doing install!
+        installer, _ = choose_configurator_plugins(args, config, plugins, "auth")
     except ConfiguratorError, e:
         return e.message
 
@@ -903,7 +900,7 @@ def _plugins_parsing(helpful, plugins):
     helpful.add(
         "plugins", "-a", "--authenticator", help="Authenticator plugin name.")
     helpful.add(
-        "plugins", "-i", "--installer", help="Installer plugin name.")
+        "plugins", "-i", "--installer", help="Installer plugin name (also used to find domains).")
     helpful.add(
         "plugins", "--configurator", help="Name of the plugin that is "
         "both an authenticator and an installer. Should not be used "
