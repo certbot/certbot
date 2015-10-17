@@ -94,10 +94,8 @@ class CLITest(unittest.TestCase):
             self.assertTrue(cli.USAGE in out)
 
     def test_configurator_selection(self):
-        output = StringIO.StringIO()
         plugins = disco.PluginsRegistry.find_all()
         if "apache" in plugins:
-            from letsencrypt import cli 
             args = ['--agree-eula', '--apache', '--authenticator', 'standalone']
             ret, _, _, _ = self._call(args)
             self.assertTrue("Too many flags setting" in ret)
