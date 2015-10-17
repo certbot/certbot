@@ -47,3 +47,10 @@ Errors
 
 .. automodule:: acme.errors
    :members:
+
+
+Standalone
+----------
+
+.. automodule:: acme.standalone
+   :members:

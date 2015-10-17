@@ -311,7 +311,7 @@ class Client(object):
         return os.path.abspath(act_cert_path), cert_chain_abspath
 
     def deploy_certificate(self, domains, privkey_path,
-            cert_path, chain_path, fullchain_path):
+                           cert_path, chain_path, fullchain_path):
         """Install certificate
 
         :param list domains: list of domains to install the certificate

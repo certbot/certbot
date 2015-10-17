@@ -151,8 +151,8 @@ class ClientTest(unittest.TestCase):
         installer = mock.MagicMock()
         self.client.installer = installer
 
-        self.client.deploy_certificate(["foo.bar"], "key", "cert", "chain",
-            "fullchain")
+        self.client.deploy_certificate(
+            ["foo.bar"], "key", "cert", "chain", "fullchain")
         installer.deploy_cert.assert_called_once_with(
             cert_path=os.path.abspath("cert"),
             chain_path=os.path.abspath("chain"),

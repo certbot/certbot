@@ -88,6 +88,9 @@ class SimpleHTTP(DVChallenge):
     TOKEN_SIZE = 128 / 8  # Based on the entropy value from the spec
     """Minimum size of the :attr:`token` in bytes."""
 
+    URI_ROOT_PATH = ".well-known/acme-challenge"
+    """URI root path for the server provisioned resource."""
+
     # TODO: acme-spec doesn't specify token as base64-encoded value
     token = jose.Field(
         "token", encoder=jose.encode_b64jose, decoder=functools.partial(
@@ -106,6 +109,11 @@ class SimpleHTTP(DVChallenge):
         # URI_ROOT_PATH!
         return b'..' not in self.token and b'/' not in self.token
 
+    @property
+    def path(self):
+        """Path (starting with '/') for provisioned resource."""
+        return '/' + self.URI_ROOT_PATH + '/' + self.encode('token')
+
 
 @ChallengeResponse.register
 class SimpleHTTPResponse(ChallengeResponse):
@@ -117,12 +125,12 @@ class SimpleHTTPResponse(ChallengeResponse):
     typ = "simpleHttp"
     tls = jose.Field("tls", default=True, omitempty=True)
 
-    URI_ROOT_PATH = ".well-known/acme-challenge"
-    """URI root path for the server provisioned resource."""
-
+    URI_ROOT_PATH = SimpleHTTP.URI_ROOT_PATH
     _URI_TEMPLATE = "{scheme}://{domain}/" + URI_ROOT_PATH + "/{token}"
 
     CONTENT_TYPE = "application/jose+json"
+    PORT = 80
+    TLS_PORT = 443
 
     @property
     def scheme(self):
@@ -132,7 +140,7 @@ class SimpleHTTPResponse(ChallengeResponse):
     @property
     def port(self):
         """Port that the ACME client should be listening for validation."""
-        return 443 if self.tls else 80
+        return self.TLS_PORT if self.tls else self.PORT
 
     def uri(self, domain, chall):
         """Create an URI to the provisioned resource.

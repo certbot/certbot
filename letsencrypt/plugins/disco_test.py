@@ -8,11 +8,11 @@ import zope.interface
 from letsencrypt import errors
 from letsencrypt import interfaces
 
-from letsencrypt.plugins.standalone import authenticator
+from letsencrypt.plugins import standalone
 
 EP_SA = pkg_resources.EntryPoint(
-    "sa", "letsencrypt.plugins.standalone.authenticator",
-    attrs=("StandaloneAuthenticator",),
+    "sa", "letsencrypt.plugins.standalone",
+    attrs=("Authenticator",),
     dist=mock.MagicMock(key="letsencrypt"))
 
 
@@ -71,8 +71,7 @@ class PluginEntryPointTest(unittest.TestCase):
         self.assertTrue(self.plugin_ep.entry_point is EP_SA)
         self.assertEqual("sa", self.plugin_ep.name)
 
-        self.assertTrue(
-            self.plugin_ep.plugin_cls is authenticator.StandaloneAuthenticator)
+        self.assertTrue(self.plugin_ep.plugin_cls is standalone.Authenticator)
 
     def test_init(self):
         config = mock.MagicMock()
@@ -174,8 +173,7 @@ class PluginsRegistryTest(unittest.TestCase):
         with mock.patch("letsencrypt.plugins.disco.pkg_resources") as mock_pkg:
             mock_pkg.iter_entry_points.return_value = iter([EP_SA])
             plugins = PluginsRegistry.find_all()
-        self.assertTrue(plugins["sa"].plugin_cls
-                        is authenticator.StandaloneAuthenticator)
+        self.assertTrue(plugins["sa"].plugin_cls is standalone.Authenticator)
         self.assertTrue(plugins["sa"].entry_point is EP_SA)
 
     def test_getitem(self):

@@ -555,7 +555,7 @@ class HelpfulArgumentParser(object):
 
         for i, token in enumerate(args):
             if token in VERBS:
-                reordered = args[:i] + args[i+1:] + [args[i]]
+                reordered = args[:i] + args[(i + 1):] + [args[i]]
                 self.verb = token
                 return reordered
 
