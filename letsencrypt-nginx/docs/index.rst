@@ -18,6 +18,10 @@ Contents:
    api
 
 
+.. automodule:: letsencrypt_nginx
+   :members:
+
+
 Indices and tables
 ==================
 
