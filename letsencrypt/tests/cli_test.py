@@ -105,6 +105,15 @@ class CLITest(unittest.TestCase):
         else:
             self.assertTrue("The requested apache plugin does not appear" in ret)
 
+        # Sending nginx a non-existent conf dir will simulate misconfiguration
+        args = ["install", "--nginx", "--cert-path", "/tmp/blah", "--key-path", "/tmp/blah",
+                "--nginx-server-root", "/nonexistent/thing"]
+        ret, _, _, _ = self._call(args)
+
+        if "nginx" in plugins:
+            self.assertTrue("The nginx plugin is not working" in ret)
+        else:
+            self.assertTrue("The requested nginx plugin does not appear" in ret)
 
     def test_rollback(self):
         _, _, _, client = self._call(['rollback'])
