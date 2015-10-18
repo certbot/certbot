@@ -41,7 +41,7 @@ testing_extras = [
 setup(
     name='acme',
     version=version,
-    description='ACME protocol implementation',
+    description='ACME protocol implementation in Python',
     url='https://github.com/letsencrypt/letsencrypt',
     author="Let's Encrypt Project",
     author_email='client-dev@letsencrypt.org',
