@@ -323,7 +323,7 @@ def diagnose_configurator_problem(cfg_type, requested, plugins):
     :param string requested: the plugin that was requested
     :param PluginRegistry plugins: available plugins
 
-    :raises error.ConfiguratorError if there was a problem
+    :raises error.ConfiguratorError: if there was a problem
     """
 
     if requested:

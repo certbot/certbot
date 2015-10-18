@@ -98,10 +98,13 @@ class CLITest(unittest.TestCase):
         plugins = disco.PluginsRegistry.find_all()
         args = ['--agree-eula', '--apache', '--authenticator', 'standalone']
         ret, _, _, _ = self._call(args)
+        # TODO replace these cases with .mockery to test both paths regardless
+        # of what's actually installed
         if "apache" in plugins:
             self.assertTrue("Too many flags setting" in ret)
         else:
-            self.assertTrue("The requested apache plugin does not" in ret)
+            self.assertTrue("The requested apache plugin does not appear" in ret)
+
 
     def test_rollback(self):
         _, _, _, client = self._call(['rollback'])
