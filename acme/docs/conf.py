@@ -16,10 +16,14 @@ import sys
 import os
 import shlex
 
+
+here = os.path.abspath(os.path.dirname(__file__))
+
+
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(0, os.path.abspath(os.path.join(here, '..')))
 
 # -- General configuration ------------------------------------------------
 
@@ -271,7 +275,8 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     (master_doc, 'acme-python', u'acme-python Documentation',
-     [author], 1)
+     [author], 1),
+    ('man/jws', 'jws', u'jws script documentation', [project], 1),
 ]
 
 # If true, show URL addresses after external links.
