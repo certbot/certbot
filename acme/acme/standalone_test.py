@@ -35,14 +35,21 @@ class ACMEServerMixinTest(unittest.TestCase):
     def setUp(self):
         from acme.standalone import ACMEServerMixin
 
+        class _MockHandler(socketserver.BaseRequestHandler):
+            # pylint: disable=missing-docstring,no-member,no-init
+
+            def handle(self):
+                self.request.sendall(b"DONE")
+
         class _MockServer(socketserver.TCPServer, ACMEServerMixin):
             def __init__(self, *args, **kwargs):
                 socketserver.TCPServer.__init__(self, *args, **kwargs)
                 ACMEServerMixin.__init__(self)
-        self.server = _MockServer(("", 0), socketserver.BaseRequestHandler)
+
+        self.server = _MockServer(("", 0), _MockHandler)
 
     def _busy_wait(self):  # pragma: no cover
-        # This function is used to avoid race coditions in tests, but
+        # This function is used to avoid race conditions in tests, but
         # not all of the functionality is always used, hence "no
         # cover"
         while True:
@@ -53,6 +60,7 @@ class ACMEServerMixinTest(unittest.TestCase):
             except socket.error:
                 pass
             else:
+                sock.recv(4)  # wait until handle_request is actually called
                 break
             finally:
                 sock.close()
