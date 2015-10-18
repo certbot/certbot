@@ -201,20 +201,20 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
     #       happen as a result of random tampering by a sysadmin, or
     #       filesystem errors, or crashes.)
 
-    def _symlink_lockfiles(self):
-        """Returns the kind and path of all symlink lockfiles.
+    def _previous_symlinks(self):
+        """Returns the kind and path of all symlinks used in recovery.
 
-        :returns: list of (kind, lockfile) tuples
+        :returns: list of (kind, symlink) tuples
         :rtype: list
 
         """
-        lockfiles = []
+        previous_symlinks = []
         for kind in ALL_FOUR:
-            lock_dir = os.path.dirname(getattr(self, kind))
-            lock_base = "{0}.lock".format(kind)
-            lockfiles.append((kind, os.path.join(lock_dir, lock_base)))
+            link_dir = os.path.dirname(getattr(self, kind))
+            link_base = "previous_{0}.pem".format(kind)
+            previous_symlinks.append((kind, os.path.join(link_dir, link_base)))
 
-        return lockfiles
+        return previous_symlinks
 
     def _fix_symlinks(self):
         """Fixes symlinks in the event of an incomplete version update.
@@ -223,18 +223,17 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         has no effect.
 
         """
-        lockfiles = self._symlink_lockfiles()
-        if all(os.path.exists(lockfile[1]) for lockfile in lockfiles):
-            for kind, lockfile in lockfiles:
-                link = getattr(self, kind)
-                if os.path.lexists(link):
-                    os.unlink(link)
-                with open(lockfile) as f:
-                    os.symlink(f.readline().rstrip(), link)
+        previous_symlinks = self._previous_symlinks()
+        if all(os.path.exists(link[1]) for link in previous_symlinks):
+            for kind, previous_link in previous_symlinks:
+                current_link = getattr(self, kind)
+                if os.path.lexists(current_link):
+                    os.unlink(current_link)
+                os.symlink(os.readlink(previous_link), current_link)
 
-        for _, lockfile in lockfiles:
-            if os.path.exists(lockfile):
-                os.unlink(lockfile)
+        for _, link in previous_symlinks:
+            if os.path.exists(link):
+                os.unlink(link)
 
     def current_target(self, kind):
         """Returns full path to which the specified item currently points.
@@ -411,16 +410,15 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
         """
         with error_handler.ErrorHandler(self._fix_symlinks):
-            lockfiles = self._symlink_lockfiles()
-            for kind, lockfile in lockfiles:
-                with open(lockfile, "w") as f:
-                    f.write("{0}\n".format(self.current_target(kind)))
+            previous_links = self._previous_symlinks()
+            for kind, link in previous_links:
+                os.symlink(self.current_target(kind), link)
 
             for kind in ALL_FOUR:
                 self._update_link_to(kind, version)
 
-            for _, lockfile in lockfiles:
-                os.unlink(lockfile)
+            for _, link in previous_links:
+                os.unlink(link)
 
     def _notafterbefore(self, method, version):
         """Internal helper function for finding notbefore/notafter."""

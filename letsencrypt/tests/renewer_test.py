@@ -309,7 +309,7 @@ class RenewableCertTests(BaseRenewableCertTest):
     def test_update_all_links_to_partial_failure(self):
         def unlink_or_raise(path, real_unlink=os.unlink):
             # pylint: disable=missing-docstring
-            if "fullchain" in path and not path.endswith(".pem"):
+            if "fullchain" in path and "prev" in path:
                 raise ValueError
             else:
                 real_unlink(path)
