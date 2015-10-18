@@ -4,45 +4,43 @@ import threading
 import time
 import unittest
 
-import mock
-import OpenSSL
+from six.moves import socketserver  # pylint: disable=import-error
 
 from acme import errors
 from acme import jose
 from acme import test_util
 
 
-class ServeProbeSNITest(unittest.TestCase):
-    """Tests for acme.crypto_util._serve_sni/probe_sni."""
+class SSLSocketAndProbeSNITest(unittest.TestCase):
+    """Tests for acme.crypto_util.SSLSocket/probe_sni."""
 
     def setUp(self):
         self.cert = test_util.load_cert('cert.pem')
-        key = OpenSSL.crypto.load_privatekey(
-            OpenSSL.crypto.FILETYPE_PEM,
-            test_util.load_vector('rsa512_key.pem'))
+        key = test_util.load_pyopenssl_private_key('rsa512_key.pem')
         # pylint: disable=protected-access
         certs = {b'foo': (key, self.cert._wrapped)}
 
-        sock = socket.socket()
-        sock.bind(('', 0))  # pick random port
-        self.port = sock.getsockname()[1]
+        from acme.crypto_util import SSLSocket
 
-        self.server = threading.Thread(target=self._run_server, args=(certs, sock))
-        self.server.start()
+        class _TestServer(socketserver.TCPServer):
+
+            # pylint: disable=too-few-public-methods
+            # six.moves.* | pylint: disable=attribute-defined-outside-init,no-init
+
+            def server_bind(self):  # pylint: disable=missing-docstring
+                self.socket = SSLSocket(socket.socket(), certs=certs)
+                socketserver.TCPServer.server_bind(self)
+
+        self.server = _TestServer(('', 0), socketserver.BaseRequestHandler)
+        self.port = self.server.socket.getsockname()[1]
+        self.server_thread = threading.Thread(
+            # pylint: disable=no-member
+            target=self.server.handle_request)
+        self.server_thread.start()
         time.sleep(1)  # TODO: avoid race conditions in other way
 
-    @classmethod
-    def _run_server(cls, certs, sock):
-        from acme.crypto_util import _serve_sni
-        # TODO: improve testing of server errors and their conditions
-        try:
-            return _serve_sni(
-                certs, sock, accept=mock.Mock(side_effect=[True, False]))
-        except errors.Error:
-            pass
-
     def tearDown(self):
-        self.server.join()
+        self.server_thread.join()
 
     def _probe(self, name):
         from acme.crypto_util import probe_sni

@@ -70,12 +70,12 @@ class ReportNewAccountTest(unittest.TestCase):
         from letsencrypt.account import report_new_account
         report_new_account(self.acc, self.config)
 
-    @mock.patch("letsencrypt.client.zope.component.queryUtility")
+    @mock.patch("letsencrypt.account.zope.component.queryUtility")
     def test_no_reporter(self, mock_zope):
         mock_zope.return_value = None
         self._call()
 
-    @mock.patch("letsencrypt.client.zope.component.queryUtility")
+    @mock.patch("letsencrypt.account.zope.component.queryUtility")
     def test_it(self, mock_zope):
         self._call()
         call_list = mock_zope().add_message.call_args_list

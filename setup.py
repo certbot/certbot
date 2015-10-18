@@ -43,6 +43,7 @@ install_requires = [
     'pytz',
     'requests',
     'setuptools',  # pkg_resources
+    'six',
     'zope.component',
     'zope.interface',
 ]
@@ -130,8 +131,8 @@ setup(
         'letsencrypt.plugins': [
             'manual = letsencrypt.plugins.manual:Authenticator',
             'null = letsencrypt.plugins.null:Installer',
-            'standalone = letsencrypt.plugins.standalone.authenticator'
-            ':StandaloneAuthenticator',
+            'standalone = letsencrypt.plugins.standalone:Authenticator',
+            'webroot = letsencrypt.plugins.webroot:Authenticator',
         ],
     },
 )
