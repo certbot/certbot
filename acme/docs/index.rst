@@ -13,6 +13,9 @@ Contents:
 
    api
 
+.. automodule:: acme
+   :members:
+
 
 Indices and tables
 ==================
