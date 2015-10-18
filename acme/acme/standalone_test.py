@@ -36,6 +36,8 @@ class ACMEServerMixinTest(unittest.TestCase):
         from acme.standalone import ACMEServerMixin
 
         class _MockHandler(socketserver.BaseRequestHandler):
+            # pylint: disable=missing-docstring,no-member,no-init
+
             def handle(self):
                 self.request.sendall(b"DONE")
 
