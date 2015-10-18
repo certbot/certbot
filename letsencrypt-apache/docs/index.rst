@@ -18,6 +18,10 @@ Contents:
    api
 
 
+.. automodule:: letsencrypt_apache
+   :members:
+
+
 Indices and tables
 ==================
 
