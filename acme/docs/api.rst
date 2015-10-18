@@ -5,4 +5,4 @@ API Documentation
 .. toctree::
    :glob:
 
-   api/**
+   api/*
