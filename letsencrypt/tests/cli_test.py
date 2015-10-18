@@ -96,11 +96,12 @@ class CLITest(unittest.TestCase):
 
     def test_configurator_selection(self):
         plugins = disco.PluginsRegistry.find_all()
+        args = ['--agree-eula', '--apache', '--authenticator', 'standalone']
+        ret, _, _, _ = self._call(args)
         if "apache" in plugins:
-            args = ['--agree-eula', '--apache', '--authenticator', 'standalone']
-            ret, _, _, _ = self._call(args)
             self.assertTrue("Too many flags setting" in ret)
-            # TODO add tests with a broken plugin, a missing plugin, etc
+        else:
+            self.assertTrue("The requested apache plugin does not" in ret)
 
     def test_rollback(self):
         _, _, _, client = self._call(['rollback'])
@@ -126,7 +127,7 @@ class CLITest(unittest.TestCase):
         self.assertEqual(ret, '--domains and --csr are mutually exclusive')
 
         ret, _, _, _ = self._call(['-a', 'bad_auth', 'auth'])
-        self.assertEqual(ret, 'Authenticator could not be determined')
+        self.assertEqual(ret, 'The requested bad_auth plugin does not appear to be installed')
 
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
     def test_auth_new_request_success(self, mock_get_utility):

@@ -367,12 +367,13 @@ def choose_configurator_plugins(args, config, plugins, verb):
     logger.debug("Requested authenticator %s and installer %s", req_auth, req_inst)
 
     # Try to meet the user's request and/or ask them to pick plugins
+    authenticator = installer = None
     if verb == "run" and req_auth == req_inst:
         # Unless the user has explicitly asked for different auth/install,
         # only consider offering a single choice
         authenticator = installer = display_ops.pick_configurator(config, req_inst, plugins)
     else:
-        if need_inst:
+        if need_inst or req_inst:
             installer = display_ops.pick_installer(config, req_inst, plugins)
         if need_auth:
             authenticator = display_ops.pick_authenticator(config, req_auth, plugins)
