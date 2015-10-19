@@ -76,26 +76,21 @@ class UnrecognizedChallenge(Challenge):
         return cls(jobj)
 
 
-@Challenge.register
-class SimpleHTTP(DVChallenge):
-    """ACME "simpleHttp" challenge.
+class _TokenDVChallenge(DVChallenge):
+    """DV Challenge with token.
 
     :ivar unicode token:
 
     """
-    typ = "simpleHttp"
-
     TOKEN_SIZE = 128 / 8  # Based on the entropy value from the spec
     """Minimum size of the :attr:`token` in bytes."""
-
-    URI_ROOT_PATH = ".well-known/acme-challenge"
-    """URI root path for the server provisioned resource."""
 
     # TODO: acme-spec doesn't specify token as base64-encoded value
     token = jose.Field(
         "token", encoder=jose.encode_b64jose, decoder=functools.partial(
             jose.decode_b64jose, size=TOKEN_SIZE, minimum=True))
 
+    # XXX: rename to ~token_good_for_url
     @property
     def good_token(self):  # XXX: @token.decoder
         """Is `token` good?
@@ -108,6 +103,15 @@ class SimpleHTTP(DVChallenge):
         # TODO: check that path combined with uri does not go above
         # URI_ROOT_PATH!
         return b'..' not in self.token and b'/' not in self.token
+
+
+@Challenge.register  # pylint: disable=too-many-ancestors
+class SimpleHTTP(_TokenDVChallenge):
+    """ACME "simpleHttp" challenge."""
+    typ = "simpleHttp"
+
+    URI_ROOT_PATH = ".well-known/acme-challenge"
+    """URI root path for the server provisioned resource."""
 
     @property
     def path(self):
@@ -274,8 +278,8 @@ class SimpleHTTPProvisionedResource(jose.JSONObjectWithFields):
     tls = jose.Field("tls", omitempty=False)
 
 
-@Challenge.register
-class DVSNI(DVChallenge):
+@Challenge.register  # pylint: disable=too-many-ancestors
+class DVSNI(_TokenDVChallenge):
     """ACME "dvsni" challenge.
 
     :ivar bytes token: Random data, **not** base64-encoded.
@@ -285,13 +289,6 @@ class DVSNI(DVChallenge):
 
     PORT = 443
     """Port to perform DVSNI challenge."""
-
-    TOKEN_SIZE = 128 / 8  # Based on the entropy value from the spec
-    """Minimum size of the :attr:`token` in bytes."""
-
-    token = jose.Field(
-        "token", encoder=jose.encode_b64jose, decoder=functools.partial(
-            jose.decode_b64jose, size=TOKEN_SIZE, minimum=True))
 
     def gen_response(self, account_key, alg=jose.RS256, **kwargs):
         """Generate response.
@@ -548,8 +545,8 @@ class ProofOfPossessionResponse(ChallengeResponse):
         return self.signature.verify(self.nonce)
 
 
-@Challenge.register
-class DNS(DVChallenge):
+@Challenge.register  # pylint: disable=too-many-ancestors
+class DNS(_TokenDVChallenge):
     """ACME "dns" challenge.
 
     :ivar unicode token:
@@ -559,13 +556,6 @@ class DNS(DVChallenge):
 
     LABEL = "_acme-challenge"
     """Label clients prepend to the domain name being validated."""
-
-    TOKEN_SIZE = 128 / 8  # Based on the entropy value from the spec
-    """Minimum size of the :attr:`token` in bytes."""
-
-    token = jose.Field(
-        "token", encoder=jose.encode_b64jose, decoder=functools.partial(
-            jose.decode_b64jose, size=TOKEN_SIZE, minimum=True))
 
     def gen_validation(self, account_key, alg=jose.RS256, **kwargs):
         """Generate validation.
