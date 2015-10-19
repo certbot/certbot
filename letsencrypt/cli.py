@@ -394,6 +394,7 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
     try:
         installer, authenticator = choose_configurator_plugins(args, config, plugins, "run")
     except ConfiguratorError, e:
+        logger.warn("Exiting with message {0}".format(e.message))
         return e.message
 
     domains = _find_domains(args, installer)
