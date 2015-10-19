@@ -37,7 +37,7 @@ from letsencrypt import storage
 
 from letsencrypt.display import util as display_util
 from letsencrypt.display import ops as display_ops
-from letsencrypt.errors import Error, ConfiguratorError, CertStorageError
+from letsencrypt.errors import Error, PluginSelectionError, CertStorageError
 from letsencrypt.plugins import disco as plugins_disco
 
 
@@ -312,7 +312,7 @@ def set_configurator(previously, now):
     if previously:
         if previously != now:
             msg = "Too many flags setting configurators/installers/authenticators %s -> %s"
-            raise ConfiguratorError, msg % (`previously`, `now`)
+            raise PluginSelectionError, msg % (`previously`, `now`)
     return now
 
 def diagnose_configurator_problem(cfg_type, requested, plugins):
@@ -323,25 +323,25 @@ def diagnose_configurator_problem(cfg_type, requested, plugins):
     :param string requested: the plugin that was requested
     :param PluginRegistry plugins: available plugins
 
-    :raises error.ConfiguratorError: if there was a problem
+    :raises error.PluginSelectionError: if there was a problem
     """
 
     if requested:
         if requested not in plugins:
             msg = "The requested {0} plugin does not appear to be installed".format(requested)
-            raise ConfiguratorError, msg
+            raise PluginSelectionError, msg
         else:
             msg = ("The {0} plugin is not working; there may be problems with "
                    "your existing configuration").format(requested)
-            raise ConfiguratorError, msg
-    raise ConfiguratorError, "{0} could not be determined or is not installed".format(cfg_type)
+            raise PluginSelectionError, msg
+    raise PluginSelectionError, "{0} could not be determined or is not installed".format(cfg_type)
 
 
 def choose_configurator_plugins(args, config, plugins, verb):
     """
     Figure out which configurator we're going to use
 
-    :raises error.ConfiguratorError if there was a problem
+    :raises error.PluginSelectionError if there was a problem
     """
 
     # Which plugins do we need?
@@ -352,7 +352,7 @@ def choose_configurator_plugins(args, config, plugins, verb):
         need_inst = True
         if args.authenticator:
             msg = "Specifying an authenticator doesn't make sense in install mode"
-            raise ConfiguratorError, msg
+            raise PluginSelectionError, msg
 
     # Which plugins did the user request?
     req_inst = req_auth = args.configurator
@@ -393,8 +393,7 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
     """Obtain a certificate and install."""
     try:
         installer, authenticator = choose_configurator_plugins(args, config, plugins, "run")
-    except ConfiguratorError, e:
-        logger.warn("Exiting with message {0}".format(e.message))
+    except PluginSelectionError, e:
         return e.message
 
     domains = _find_domains(args, installer)
@@ -426,7 +425,7 @@ def auth(args, config, plugins):
     try:
         # installers are used in auth mode to determine domain names
         installer, authenticator = choose_configurator_plugins(args, config, plugins, "auth")
-    except ConfiguratorError, e:
+    except PluginSelectionError, e:
         return e.message
 
     # TODO: Handle errors from _init_le_client?
@@ -450,7 +449,7 @@ def install(args, config, plugins):
 
     try:
         installer, _ = choose_configurator_plugins(args, config, plugins, "auth")
-    except ConfiguratorError, e:
+    except PluginSelectionError, e:
         return e.message
 
     if args.authenticator:
@@ -1007,6 +1006,8 @@ def _handle_exception(exc_type, exc_value, trace, args):
             traceback.format_exception(exc_type, exc_value, trace)))
 
 
+# this copy of plugins can be mocked out
+plugins_testable = plugins_disco.PluginsRegistry.find_all()
 def main(cli_args=sys.argv[1:]):
     """Command line argument parsing and main script execution."""
     sys.excepthook = functools.partial(_handle_exception, args=None)
@@ -1066,8 +1067,11 @@ def main(cli_args=sys.argv[1:]):
         #    "{0}Root is required to run letsencrypt.  Please use sudo.{0}"
         #    .format(os.linesep))
 
-    return args.func(args, config, plugins)
+    return args.func(args, config, plugins_testable)
 
 
 if __name__ == "__main__":
-    sys.exit(main())  # pragma: no cover
+    err_string = main()
+    if err_string:
+        logger.warn("Exiting with message %s", err_string)
+    sys.exit(err_string)  # pragma: no cover

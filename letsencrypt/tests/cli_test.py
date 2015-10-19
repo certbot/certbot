@@ -95,24 +95,26 @@ class CLITest(unittest.TestCase):
             self.assertTrue(cli.USAGE in out)
 
     def test_configurator_selection(self):
-        plugins = disco.PluginsRegistry.find_all()
+        real_plugins = disco.PluginsRegistry.find_all()
         args = ['--agree-eula', '--apache', '--authenticator', 'standalone']
-        ret, _, _, _ = self._call(args)
-        # TODO replace these cases with .mockery to test both paths regardless
-        # of what's actually installed
-        if "apache" in plugins:
+
+        with mock.patch('letsencrypt.cli.plugins_testable') as plugins:
+            plugins.return_value = {"apache": True, "nginx": True}
+            ret, _, _, _ = self._call(args)
             self.assertTrue("Too many flags setting" in ret)
-        else:
-            self.assertTrue("The requested apache plugin does not appear" in ret)
 
-        # Sending nginx a non-existent conf dir will simulate misconfiguration
-        args = ["install", "--nginx", "--cert-path", "/tmp/blah", "--key-path", "/tmp/blah",
-                "--nginx-server-root", "/nonexistent/thing"]
-        ret, _, _, _ = self._call(args)
-
-        if "nginx" in plugins:
+        if "nginx" in real_plugins:
+            # Sending nginx a non-existent conf dir will simulate misconfiguration
+            # (we can only do that if letsencrypt-nginx is actually present)
+            args = ["install", "--nginx", "--cert-path", "/tmp/blah", "--key-path", "/tmp/blah",
+                    "--nginx-server-root", "/nonexistent/thing"]
+            ret, _, _, _ = self._call(args)
             self.assertTrue("The nginx plugin is not working" in ret)
-        else:
+
+        # But we can pretend that nginx is uninstalled, even if it is
+        with mock.patch('letsencrypt.cli.plugins_testable') as plugins:
+            plugins.return_value = {}
+            ret, _, _, _ = self._call(args)
             self.assertTrue("The requested nginx plugin does not appear" in ret)
 
     def test_rollback(self):
