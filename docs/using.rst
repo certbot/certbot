@@ -85,4 +85,4 @@ and follow the instructions. Your new cert will be available in
 ``/etc/letsencrypt/certs``.
 
 .. _Docker: https://docker.com
-.. _`install Docker`: https://docs.docker.com/docker/userguide/
+.. _`install Docker`: https://docs.docker.com/userguide/
