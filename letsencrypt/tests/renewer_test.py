@@ -48,7 +48,6 @@ class BaseRenewableCertTest(unittest.TestCase):
                 config_dir=self.tempdir,
                 work_dir=self.tempdir,
                 logs_dir=self.tempdir,
-                no_simple_http_tls=False,
             )
         )
 
