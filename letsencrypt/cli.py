@@ -1012,7 +1012,7 @@ def _handle_exception(exc_type, exc_value, trace, args):
 
 
 # this copy of plugins can be mocked out
-plugins_testable = plugins_disco.PluginsRegistry.find_all()
+plugins_testable = plugins_disco.PluginsRegistry.find_all
 def main(cli_args=sys.argv[1:]):
     """Command line argument parsing and main script execution."""
     sys.excepthook = functools.partial(_handle_exception, args=None)
@@ -1072,7 +1072,7 @@ def main(cli_args=sys.argv[1:]):
         #    "{0}Root is required to run letsencrypt.  Please use sudo.{0}"
         #    .format(os.linesep))
 
-    return args.func(args, config, plugins_testable)
+    return args.func(args, config, plugins_testable())
 
 
 if __name__ == "__main__":
