@@ -269,9 +269,13 @@ def _treat_as_renewal(config, domains):
 
 def _report_new_cert(cert_path):
     """Reports the creation of a new certificate to the user."""
+    expiry = crypto_util.notAfter(cert_path).date()
     reporter_util = zope.component.getUtility(interfaces.IReporter)
     reporter_util.add_message("Congratulations! Your certificate has been "
-                              "saved at {0}.".format(cert_path),
+                              "saved at {0} and will expire on {1}. To obtain "
+                              "a new version of the certificate in the "
+                              "future, simply run Let's Encrypt again.".format(
+                                  cert_path, expiry),
                               reporter_util.MEDIUM_PRIORITY)
 
 
@@ -301,12 +305,6 @@ def _auth_from_domains(le_client, config, domains, plugins):
             raise Error("Certificate could not be obtained")
 
     _report_new_cert(lineage.cert)
-    reporter_util = zope.component.getUtility(interfaces.IReporter)
-    reporter_util.add_message(
-        "Your certificate will expire on {0}. To obtain a new version of the "
-        "certificate in the future, simply run this client again.".format(
-            lineage.notafter().date()),
-        reporter_util.MEDIUM_PRIORITY)
 
     return lineage
 
@@ -453,9 +451,9 @@ def auth(args, config, plugins):
     if args.csr is not None:
         certr, chain = le_client.obtain_certificate_from_csr(le_util.CSR(
             file=args.csr[0], data=args.csr[1], form="der"))
-        le_client.save_certificate(
+        cert_path, _ = le_client.save_certificate(
             certr, chain, args.cert_path, args.chain_path)
-        _report_new_cert(args.cert_path)
+        _report_new_cert(cert_path)
     else:
         domains = _find_domains(args, installer)
         _auth_from_domains(le_client, config, domains, plugins)
