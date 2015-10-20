@@ -60,7 +60,7 @@ the cert.  """
 # altogether
 USAGE = SHORT_USAGE + """Major SUBCOMMANDS are:
 
-  (default) everything Obtain & install a cert in your current webserver
+  (default) run        Obtain & install a cert in your current webserver
   auth                 Authenticate & obtain cert, but do not install it
   install              Install a previously obtained cert in a server
   revoke               Revoke a previously obtained certificate
