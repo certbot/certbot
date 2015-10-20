@@ -71,8 +71,8 @@ Choice of server for authentication/installation:
 
   --apache          Use the Apache plugin for authentication & installation
   --nginx           Use the Nginx plugin for authentication & installation
-  --standalone      Run a standalone webserver (for authentication only, changes
-                                                  the default command to "auth")
+  --standalone      Run a standalone webserver for authentication
+
   OR:
   --authenticator standalone --installer nginx
 
@@ -639,12 +639,8 @@ class HelpfulArgumentParser(object):
                 self.verb = token
                 return reordered
 
-        if "--standalone" in args and "--installer" not in args and "-i" not in args:
-            self.verb = "auth"
-            return args + ["auth"]
-        else:
-            self.verb = "run"
-            return args + ["run"]
+        self.verb = "run"
+        return args + ["run"]
 
     def prescan_for_flag(self, flag, possible_arguments):
         """Checks cli input for flags.
