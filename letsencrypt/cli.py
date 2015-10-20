@@ -71,7 +71,8 @@ Choice of server for authentication/installation:
 
   --apache          Use the Apache plugin for authentication & installation
   --nginx           Use the Nginx plugin for authentication & installation
-  --standalone      Run a standalone HTTPS server (for authentication only)
+  --standalone      Run a standalone webserver (for authentication only, changes
+                                                  the default command to "auth")
   OR:
   --authenticator standalone --installer nginx
 
@@ -746,13 +747,6 @@ def create_parser(plugins, args):
         None, "-t", "--text", dest="text_mode", action="store_true",
         help="Use the text output instead of the curses UI.")
     helpful.add(None, "-m", "--email", help=config_help("email"))
-    helpful.add(None, "--apache", action="store_true",
-                help="Obtain and install certs using Apache")
-    helpful.add(None, "--nginx", action="store_true",
-                help="Obtain and install certs using Nginx")
-    helpful.add(None, "--standalone", action="store_true",
-                help=('Obtain certs using a "standalone" webserver. '
-                      'Changes the default "run" command to "auth".')
     # positional arg shadows --domains, instead of appending, and
     # --domains is useful, because it can be stored in config
     #for subparser in parser_run, parser_auth, parser_install:
@@ -865,7 +859,6 @@ def _create_subparsers(helpful):
                 "--checkpoints", type=int, metavar="N",
                 default=flag_default("rollback_checkpoints"),
                 help="Revert configuration N number of checkpoints.")
-
     helpful.add("plugins",
                 "--init", action="store_true", help="Initialize plugins.")
     helpful.add("plugins",
@@ -930,6 +923,15 @@ def _plugins_parsing(helpful, plugins):
         "plugins", "--configurator", help="Name of the plugin that is "
         "both an authenticator and an installer. Should not be used "
         "together with --authenticator or --installer.")
+    helpful.add("plugins", "--apache", action="store_true",
+                help="Obtain and install certs using Apache")
+    helpful.add("plugins", "--nginx", action="store_true",
+                help="Obtain and install certs using Nginx")
+    helpful.add("plugins", "--standalone", action="store_true",
+                help=('Obtain certs using a "standalone" webserver. '
+                      'Changes the default "run" command to "auth".'))
+
+
 
     # things should not be reorder past/pre this comment:
     # plugins_group should be displayed in --help before plugin
