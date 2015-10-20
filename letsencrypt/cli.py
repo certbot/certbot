@@ -365,8 +365,7 @@ def choose_configurator_plugins(args, config, plugins, verb):
     if verb == "install":
         need_inst = True
         if args.authenticator:
-            msg = "Specifying an authenticator doesn't make sense in install mode"
-            raise PluginSelectionError, msg
+            logger.warn("Specifying an authenticator doesn't make sense in install mode")
 
     # Which plugins did the user request?
     req_inst = req_auth = args.configurator
