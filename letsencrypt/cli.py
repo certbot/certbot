@@ -464,9 +464,6 @@ def install(args, config, plugins):
     except PluginSelectionError, e:
         return e.message
 
-    if args.authenticator:
-        return "Specifying an authenticator doesn't make sense in install mode!"
-
     domains = _find_domains(args, installer)
     le_client = _init_le_client(
         args, config, authenticator=None, installer=installer)
