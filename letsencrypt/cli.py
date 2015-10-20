@@ -334,12 +334,21 @@ def diagnose_configurator_problem(cfg_type, requested, plugins):
     if requested:
         if requested not in plugins:
             msg = "The requested {0} plugin does not appear to be installed".format(requested)
-            raise PluginSelectionError, msg
         else:
             msg = ("The {0} plugin is not working; there may be problems with "
                    "your existing configuration").format(requested)
-            raise PluginSelectionError, msg
-    raise PluginSelectionError, "{0} could not be determined or is not installed".format(cfg_type)
+    elif cfg_type == "installer":
+        if os.path.exists("/etc/debian_version"):
+            # Debian... installers are at least possible
+            msg = ('No installers seem to be present and working on your system; '
+                   'fix that or try running letsencrypt with the "auth" command')
+        else:
+            # XXX update this logic as we make progress on #788 and nginx support
+            msg = ('No installers are available on your OS yet; try running '
+                   '"letsencrypt-auto auth" to get a cert you can install manually')
+    else:
+        msg = "{0} could not be determined or is not installed".format(cfg_type)
+    raise PluginSelectionError, msg
 
 
 def choose_configurator_plugins(args, config, plugins, verb):
