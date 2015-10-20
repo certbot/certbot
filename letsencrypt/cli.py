@@ -751,7 +751,8 @@ def create_parser(plugins, args):
     helpful.add(None, "--nginx", action="store_true",
                 help="Obtain and install certs using Nginx")
     helpful.add(None, "--standalone", action="store_true",
-                help='Obtain certs using a "standalone" webserver on port 443.')
+                help=('Obtain certs using a "standalone" webserver. '
+                      'Changes the default "run" command to "auth".')
     # positional arg shadows --domains, instead of appending, and
     # --domains is useful, because it can be stored in config
     #for subparser in parser_run, parser_auth, parser_install:
