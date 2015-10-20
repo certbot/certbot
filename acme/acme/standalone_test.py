@@ -101,8 +101,8 @@ class DVSNIServerTest(unittest.TestCase):
         self.assertFalse(self.server._stopped)
 
     def test_dvsni(self):
-        cert = crypto_util.probe_sni(
-            b'localhost', *self.server.socket.getsockname())
+        host, port = self.server.socket.getsockname()[:2]
+        cert = crypto_util.probe_sni(b'localhost', host=host, port=port)
         self.assertEqual(jose.ComparableX509(cert),
                          jose.ComparableX509(self.certs[b'localhost'][1]))
 
