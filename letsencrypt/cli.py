@@ -72,7 +72,7 @@ Choice of server for authentication/installation:
   --apache          Use the Apache plugin for authentication & installation
   --nginx           Use the Nginx plugin for authentication & installation
   --standalone      Run a standalone webserver for authentication
-    OR:
+  OR:
   --authenticator standalone --installer nginx
 
 More detailed help:
