@@ -382,6 +382,8 @@ def choose_configurator_plugins(args, config, plugins, verb):
     if args.apache:
         req_inst = set_configurator(req_inst, "apache")
         req_auth = set_configurator(req_auth, "apache")
+    if args.standalone:
+        req_auth = set_configurator(req_auth, "standalone")
     logger.debug("Requested authenticator %s and installer %s", req_auth, req_inst)
 
     # Try to meet the user's request and/or ask them to pick plugins
@@ -636,8 +638,12 @@ class HelpfulArgumentParser(object):
                 self.verb = token
                 return reordered
 
-        self.verb = "run"
-        return args + ["run"]
+        if "--standalone" in args and "--installer" not in args and "-i" not in args:
+            self.verb = "auth"
+            return args + ["auth"]
+        else:
+            self.verb = "run"
+            return args + ["run"]
 
     def prescan_for_flag(self, flag, possible_arguments):
         """Checks cli input for flags.
@@ -744,6 +750,8 @@ def create_parser(plugins, args):
                 help="Obtain and install certs using Apache")
     helpful.add(None, "--nginx", action="store_true",
                 help="Obtain and install certs using Nginx")
+    helpful.add(None, "--standalone`", action="store_true",
+                help='Obtain certs using a "standalone" webserver on port 443.')
     # positional arg shadows --domains, instead of appending, and
     # --domains is useful, because it can be stored in config
     #for subparser in parser_run, parser_auth, parser_install:
