@@ -72,7 +72,7 @@ Choice of server for authentication/installation:
   --apache          Use the Apache plugin for authentication & installation
   --nginx           Use the Nginx plugin for authentication & installation
   --standalone      Run a standalone webserver for authentication
-OR:
+    OR:
   --authenticator standalone --installer nginx
 
 More detailed help:
@@ -923,7 +923,7 @@ def _plugins_parsing(helpful, plugins):
     helpful.add("plugins", "--nginx", action="store_true",
                 help="Obtain and install certs using Nginx")
     helpful.add("plugins", "--standalone", action="store_true",
-                help=("Obtain certs using a "standalone" webserver.")
+                help="Obtain certs using a "standalone" webserver.")
 
     # things should not be reorder past/pre this comment:
     # plugins_group should be displayed in --help before plugin
