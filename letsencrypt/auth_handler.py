@@ -153,10 +153,8 @@ class AuthHandler(object):
         """
         active_achalls = []
         for achall, resp in itertools.izip(achalls, resps):
-            # XXX: make sure that all achalls, including those
-            # corresponding to None or False returned from
-            # Authenticator are removed from the queue and thus avoid
-            # infinite loop
+            # This line needs to be outside of the if block below to
+            # ensure failed challenges are cleaned up correctly
             active_achalls.append(achall)
 
             # Don't send challenges for None and False authenticator responses
