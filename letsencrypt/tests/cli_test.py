@@ -38,7 +38,7 @@ class CLITest(unittest.TestCase):
         from letsencrypt import cli
         args = ['--text', '--config-dir', self.config_dir,
                 '--work-dir', self.work_dir, '--logs-dir', self.logs_dir,
-                '--agree-eula'] + args
+                '--agree-dev-preview'] + args
         with mock.patch('letsencrypt.cli.sys.stdout') as stdout:
             with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
                 with mock.patch('letsencrypt.cli.client') as client:
@@ -53,7 +53,7 @@ class CLITest(unittest.TestCase):
         from letsencrypt import cli
         args = ['--text', '--config-dir', self.config_dir,
                 '--work-dir', self.work_dir, '--logs-dir', self.logs_dir,
-                '--agree-eula'] + args
+                '--agree-dev-preview'] + args
         with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
             with mock.patch('letsencrypt.cli.client') as client:
                 ret = cli.main(args)
@@ -96,7 +96,8 @@ class CLITest(unittest.TestCase):
 
     def test_configurator_selection(self):
         real_plugins = disco.PluginsRegistry.find_all()
-        args = ['--agree-eula', '--apache', '--authenticator', 'standalone']
+        args = ['--agree-dev-preview', '--apache',
+                '--authenticator', 'standalone']
 
         # This needed two calls to find_all(), which we're avoiding for now
         # because of possible side effects:
