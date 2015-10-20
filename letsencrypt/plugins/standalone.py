@@ -72,13 +72,12 @@ class ServerManager(object):
         except socket.error as error:
             raise errors.StandaloneBindError(error, port)
 
-        # if port == 0, then random free port on OS is taken
-        # pylint: disable=no-member
-        host, real_port = server.socket.getsockname()
         thread = threading.Thread(target=server.serve_forever2)
-        logger.debug("Starting server at %s:%d", host, real_port)
         thread.start()
 
+        # if port == 0, then random free port on OS is taken
+        # pylint: disable=no-member
+        _, real_port = server.socket.getsockname()
         self._instances[real_port] = self._Instance(server, thread)
         return server
 
@@ -89,6 +88,8 @@ class ServerManager(object):
 
         """
         instance = self._instances[port]
+        logger.debug("Stopping server at %s:%d...",
+                     *instance.server.socket.getsockname())
         instance.server.shutdown2()
         instance.thread.join()
         del self._instances[port]

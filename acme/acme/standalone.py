@@ -55,6 +55,7 @@ class ACMEServerMixin:  # pylint: disable=old-style-class
 
     def serve_forever2(self):
         """Serve forever, until other thread calls `shutdown2`."""
+        logger.debug("Starting server at %s:%d...", *self.socket.getsockname())
         while not self._stopped:
             self.handle_request()
 
