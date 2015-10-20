@@ -32,7 +32,7 @@ RUN /opt/letsencrypt/src/ubuntu.sh && \
 # the above is not likely to change, so by putting it further up the
 # Dockerfile we make sure we cache as much as possible
 
-COPY setup.py README.rst CHANGES.rst MANIFEST.in requirements.txt EULA linter_plugin.py tox.cover.sh tox.ini pep8.travis.sh .pep8 .pylintrc /opt/letsencrypt/src/
+COPY setup.py README.rst CHANGES.rst MANIFEST.in requirements.txt DISCLAIMER linter_plugin.py tox.cover.sh tox.ini pep8.travis.sh .pep8 .pylintrc /opt/letsencrypt/src/
 
 # all above files are necessary for setup.py, however, package source
 # code directory has to be copied separately to a subdirectory...

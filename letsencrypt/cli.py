@@ -763,8 +763,8 @@ def create_parser(plugins, args):
         help="Select renewal by default when domains are a superset of a "
              "a previously attained cert")
     helpful.add(
-        "automation", "--agree-eula", dest="eula", action="store_true",
-        help="Agree to the Let's Encrypt Developer Preview EULA")
+        "automation", "--agree-dev-preview", action="store_true",
+        help="Agree to the Let's Encrypt Developer Preview Disclaimer")
     helpful.add(
         "automation", "--agree-tos", dest="tos", action="store_true",
         help="Agree to the Let's Encrypt Subscriber Agreement")
@@ -1060,11 +1060,11 @@ def main(cli_args=sys.argv[1:]):
     zope.component.provideUtility(report)
     atexit.register(report.atexit_print_messages)
 
-    # TODO: remove developer EULA prompt for the launch
-    if not config.eula:
-        eula = pkg_resources.resource_string("letsencrypt", "EULA")
+    # TODO: remove developer preview prompt for the launch
+    if not config.agree_dev_preview:
+        disclaimer = pkg_resources.resource_string("letsencrypt", "DISCLAIMER")
         if not zope.component.getUtility(interfaces.IDisplay).yesno(
-                eula, "Agree", "Cancel"):
+                disclaimer, "Agree", "Cancel"):
             raise Error("Must agree to TOS")
 
     if not os.geteuid() == 0:
