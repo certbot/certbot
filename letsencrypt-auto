@@ -5,9 +5,9 @@
 # without requiring specific versions of its dependencies from the operating
 # system.
 
-XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share}
-VENV_NAME="letsencrypt"
-VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
+#XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share}
+LETSENCRYPT_VENV=/opt/letsencrypt/
+VENV_PATH=${VENV_PATH:-"/opt/letsencrypt"}
 VENV_BIN=${VENV_PATH}/bin
 
 if test "`id -u`" -ne "0" ; then
