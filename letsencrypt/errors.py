@@ -24,7 +24,6 @@ class SubprocessError(Error):
 class CertStorageError(Error):
     """Generic `.CertStorage` error."""
 
-
 # Auth Handler Errors
 class AuthorizationError(Error):
     """Authorization error."""
@@ -65,6 +64,8 @@ class DvsniError(DvAuthError):
 class PluginError(Error):
     """Let's Encrypt Plugin error."""
 
+class PluginSelectionError(Error):
+    """A problem with plugin/configurator selection or setup"""
 
 class NoInstallationError(PluginError):
     """Let's Encrypt No Installation error."""

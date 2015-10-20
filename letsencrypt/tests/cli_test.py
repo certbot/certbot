@@ -13,6 +13,8 @@ from letsencrypt import account
 from letsencrypt import configuration
 from letsencrypt import errors
 
+from letsencrypt.plugins import disco
+
 from letsencrypt.tests import renewer_test
 from letsencrypt.tests import test_util
 
@@ -75,7 +77,6 @@ class CLITest(unittest.TestCase):
             output.truncate(0)
             self.assertRaises(SystemExit, self._call_stdout, ['-h', 'nginx'])
             out = output.getvalue()
-            from letsencrypt.plugins import disco
             if "nginx" in disco.PluginsRegistry.find_all():
                 # may be false while building distributions without plugins
                 self.assertTrue("--nginx-ctl" in out)
@@ -92,6 +93,27 @@ class CLITest(unittest.TestCase):
             out = output.getvalue()
             from letsencrypt import cli
             self.assertTrue(cli.USAGE in out)
+
+    def test_configurator_selection(self):
+        real_plugins = disco.PluginsRegistry.find_all()
+        args = ['--agree-eula', '--apache', '--authenticator', 'standalone']
+
+        # This needed two calls to find_all(), which we're avoiding for now
+        # because of possible side effects:
+        # https://github.com/letsencrypt/letsencrypt/commit/51ed2b681f87b1eb29088dd48718a54f401e4855
+        #with mock.patch('letsencrypt.cli.plugins_testable') as plugins:
+        #    plugins.return_value = {"apache": True, "nginx": True}
+        #    ret, _, _, _ = self._call(args)
+        #    self.assertTrue("Too many flags setting" in ret)
+
+        args = ["install", "--nginx", "--cert-path", "/tmp/blah", "--key-path", "/tmp/blah",
+                "--nginx-server-root", "/nonexistent/thing", "-d",
+                "example.com", "--debug"]
+        if "nginx" in real_plugins:
+            # Sending nginx a non-existent conf dir will simulate misconfiguration
+            # (we can only do that if letsencrypt-nginx is actually present)
+            ret, _, _, _ = self._call(args)
+            self.assertTrue("The nginx plugin is not working" in ret)
 
     def test_rollback(self):
         _, _, _, client = self._call(['rollback'])
@@ -117,7 +139,7 @@ class CLITest(unittest.TestCase):
         self.assertEqual(ret, '--domains and --csr are mutually exclusive')
 
         ret, _, _, _ = self._call(['-a', 'bad_auth', 'auth'])
-        self.assertEqual(ret, 'Authenticator could not be determined')
+        self.assertEqual(ret, 'The requested bad_auth plugin does not appear to be installed')
 
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
     def test_auth_new_request_success(self, mock_get_utility):
