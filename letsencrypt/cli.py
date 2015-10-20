@@ -307,7 +307,6 @@ def _auth_from_domains(le_client, config, domains, plugins):
 def set_configurator(previously, now):
     """
     Setting configurators multiple ways is okay, as long as they all agree
-    
     :param string previously: previously identified request for the installer/authenticator
     :param string requested: the request currently being processed
     """
