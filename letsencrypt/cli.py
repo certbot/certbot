@@ -1042,6 +1042,7 @@ def main(cli_args=sys.argv[1:]):
         args.logs_dir, 0o700, os.geteuid(), "--strict-permissions" in cli_args)
     setup_logging(args, _cli_log_handler, logfile='letsencrypt.log')
 
+    logger.debug("letsencrypt version: %s", letsencrypt.__version__)
     # do not log `args`, as it contains sensitive data (e.g. revoke --key)!
     logger.debug("Arguments: %r", cli_args)
     logger.debug("Discovered plugins: %r", plugins)
