@@ -103,19 +103,14 @@ class CLITest(unittest.TestCase):
             ret, _, _, _ = self._call(args)
             self.assertTrue("Too many flags setting" in ret)
 
+        args = ["install", "--nginx", "--cert-path", "/tmp/blah", "--key-path", "/tmp/blah",
+                "--nginx-server-root", "/nonexistent/thing", "-d",
+                "example.com", "--debug"]
         if "nginx" in real_plugins:
             # Sending nginx a non-existent conf dir will simulate misconfiguration
             # (we can only do that if letsencrypt-nginx is actually present)
-            args = ["install", "--nginx", "--cert-path", "/tmp/blah", "--key-path", "/tmp/blah",
-                    "--nginx-server-root", "/nonexistent/thing"]
             ret, _, _, _ = self._call(args)
             self.assertTrue("The nginx plugin is not working" in ret)
-
-        # But we can pretend that nginx is uninstalled, even if it is
-        with mock.patch('letsencrypt.cli.plugins_testable') as plugins:
-            plugins.return_value = {}
-            ret, _, _, _ = self._call(args)
-            self.assertTrue("The requested nginx plugin does not appear" in ret)
 
     def test_rollback(self):
         _, _, _, client = self._call(['rollback'])
