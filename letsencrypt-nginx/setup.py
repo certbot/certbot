@@ -4,7 +4,7 @@ from setuptools import setup
 from setuptools import find_packages
 
 
-version = '0.1.0.dev0'
+version = '0.0.0.dev20151020'
 
 install_requires = [
     'acme=={0}'.format(version),
