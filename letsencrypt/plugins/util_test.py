@@ -98,6 +98,10 @@ class AlreadyListeningTest(unittest.TestCase):
         self.assertEqual(mock_get_utility.call_count, 1)
         mock_process.assert_called_once_with(4420)
 
+    @mock.patch("letsencrypt.plugins.util.psutil.net_connections")
+    def test_access_denied_exception(self, mock_net):
+        mock_net.side_effect = psutil.AccessDenied("")
+        self.assertFalse(self._call(12345))
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
