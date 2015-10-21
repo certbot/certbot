@@ -18,7 +18,7 @@ fi
 
 for arg in "$@" ; do 
   # This first clause is redundant with the third, but hedging on portability
-  if [ "$arg" = "-v" ] || [ "$arg" = "--verbose" ] || echo "$arg" | grep -E -- -v+ ; then
+  if [ "$arg" = "-v" ] || [ "$arg" = "--verbose" ] || echo "$arg" | grep -E -- "-v+$" ; then
     VERBOSE=1
   fi
 done
