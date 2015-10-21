@@ -1,16 +1,22 @@
 #!/bin/sh
 
-# Tested with:
-#   - Ubuntu:
-#     - 12.04 (x64, Travis)
-#     - 14.04 (x64, Vagrant)
-#     - 14.10 (x64)
-#   - Debian:
-#     - 6.0.10 "squeeze" (x64)
-#     - 7.8 "wheezy" (x64)
-#     - 8.0 "jessie" (x64)
-#   - Raspbian:
-#     - 7.8 (armhf)
+# Current version tested with:
+#
+# - Ubuntu
+#     - 14.04 (x64)
+#     - 15.04 (x64)
+# - Debian
+#     - 7.9 "wheezy" (x64)
+#     - sid (2015-10-21) (x64)
+
+# Past versions tested with:
+#
+# - Debian 8.0 "jessie" (x64)
+# - Raspbian 7.8 (armhf)
+
+# Believed not to work:
+#
+# - Debian 6.0.10 "squeeze" (x64)
 
 apt-get update
 
