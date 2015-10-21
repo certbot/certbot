@@ -51,6 +51,7 @@ class ACMEServerMixin:  # pylint: disable=old-style-class
     allow_reuse_address = True
 
     def __init__(self):
+        self.timeout = 3
         self._stopped = False
 
     def serve_forever2(self):
@@ -64,7 +65,7 @@ class ACMEServerMixin:  # pylint: disable=old-style-class
         """Shutdown server loop from `serve_forever2`."""
         self._stopped = True
 
-        # dummy request to terminate last server_forever2.handle_request()
+        # dummy request to terminate last serve_forever2.handle_request()
         sock = socket.socket()
         try:
             sock.connect(self.socket.getsockname())
