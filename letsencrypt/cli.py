@@ -93,7 +93,7 @@ def _find_domains(args, installer):
 
     if not domains:
         raise Error("Please specify --domains, or --installer that "
-                           "will help in domain names autodiscovery")
+                    "will help in domain names autodiscovery")
 
     return domains
 
@@ -308,6 +308,7 @@ def _auth_from_domains(le_client, config, domains, plugins):
 
     return lineage
 
+
 def set_configurator(previously, now):
     """
     Setting configurators multiple ways is okay, as long as they all agree
@@ -319,9 +320,10 @@ def set_configurator(previously, now):
         return previously
     if previously:
         if previously != now:
-            msg = "Too many flags setting configurators/installers/authenticators %s -> %s"
-            raise PluginSelectionError, msg % (`previously`, `now`)
+            msg = "Too many flags setting configurators/installers/authenticators {0} -> {1}"
+            raise PluginSelectionError(msg.format(repr(previously), repr(now)))
     return now
+
 
 def diagnose_configurator_problem(cfg_type, requested, plugins):
     """
@@ -351,7 +353,7 @@ def diagnose_configurator_problem(cfg_type, requested, plugins):
                    '"letsencrypt-auto auth" to get a cert you can install manually')
     else:
         msg = "{0} could not be determined or is not installed".format(cfg_type)
-    raise PluginSelectionError, msg
+    raise PluginSelectionError(msg)
 
 
 def choose_configurator_plugins(args, config, plugins, verb):
