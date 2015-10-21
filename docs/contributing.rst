@@ -372,6 +372,6 @@ FreeBSD
 Bootstrap script for FreeBSD uses ``pkg`` for package installation,
 i.e. it does not use ports.
 
-FreeBSD by default uses ``tcsh``. In order to activate virtulenv (see
-below), you will need a compatbile shell, e.g. ``pkg install bash &&
+FreeBSD by default uses ``tcsh``. In order to activate virtualenv (see
+below), you will need a compatible shell, e.g. ``pkg install bash &&
 bash``.
