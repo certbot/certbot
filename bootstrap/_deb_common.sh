@@ -12,46 +12,33 @@
 #   - Raspbian:
 #     - 7.8 (armhf)
 
+apt-get update
 
 # virtualenv binary can be found in different packages depending on
 # distro version (#346)
-newer () {
-  apt-get install -y lsb-release --no-install-recommends
-  distro=$(lsb_release -si)
-  # 6.0.10 => 60, 14.04 => 1404
-  # TODO: in sid version==unstable
-  version=$(lsb_release -sr | awk -F '.' '{print $1 $2}')
-  if [ "$distro" = "Ubuntu" -a "$version" -ge 1410 ]
-  then
-    return 0;
-  elif [ "$distro" = "Debian" -a "$version" -ge 80 ]
-  then
-    return 0;
-  else
-    return 1;
-  fi
-}
 
-apt-get update
-
-# you can force newer if lsb_release is not available (e.g. Docker
-# debian:jessie base image)
-if [ "$1" = "newer" ] || newer
-then
+virtualenv=
+if apt-cache show virtualenv > /dev/null ; then
   virtualenv="virtualenv"
-else
-  virtualenv="python-virtualenv"
 fi
 
+if apt-cache show python-virtualenv > /dev/null ; then
+  virtualenv="$virualenv python-virtualenv"
+fi
 
 apt-get install -y --no-install-recommends \
   git-core \
   python \
   python-dev \
-  "$virtualenv" \
+  $virtualenv \
   gcc \
   dialog \
   libaugeas0 \
   libssl-dev \
   libffi-dev \
   ca-certificates \
+
+if ! which virtualenv > /dev/null ; then
+  echo Failed to install a working \"virtualenv\" command, exiting
+  exit 1
+fi
