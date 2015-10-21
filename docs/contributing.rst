@@ -84,14 +84,8 @@ run (in a separate terminal)::
 
 If you would like to test `letsencrypt_nginx` plugin (highly
 encouraged) make sure to install prerequisites as listed in
-``letsencrypt-nginx/tests/boulder-integration.sh``:
-
-.. include:: ../letsencrypt-nginx/tests/boulder-integration.sh
-   :start-line: 1
-   :end-line: 2
-   :code: shell
-
-and rerun the integration tests suite.
+``letsencrypt-nginx/tests/boulder-integration.sh`` and rerun
+the integration tests suite.
 
 .. _Boulder: https://github.com/letsencrypt/boulder
 .. _Go: https://golang.org
