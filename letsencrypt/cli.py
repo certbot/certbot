@@ -267,16 +267,22 @@ def _treat_as_renewal(config, domains):
     return None
 
 
-def _report_new_cert(cert_path):
-    """Reports the creation of a new certificate to the user."""
-    expiry = crypto_util.notAfter(cert_path).date()
+def _report_new_cert(lineage):
+    """
+    Reports the creation of a new certificate to the user.
+    :param RenewableCert lineage: the lineage of the new cert
+    """
+    expiry = crypto_util.notAfter(lineage.cert).date()
     reporter_util = zope.component.getUtility(interfaces.IReporter)
-    reporter_util.add_message("Congratulations! Your certificate has been "
-                              "saved at {0} and will expire on {1}. To obtain "
-                              "a new version of the certificate in the "
-                              "future, simply run Let's Encrypt again.".format(
-                                  cert_path, expiry),
-                              reporter_util.MEDIUM_PRIORITY)
+    # Tell the user about fullchain.pem because that's what modern webservers
+    # (Nginx and Apache2.4) will want.
+    # XXX Perhaps one day we could detect the presence of known old webservers
+    # and say something more informative here.
+    msg = ("Congratulations! Your certificate and chain have been saved at {0}."
+           " Your cert will expire on {1}. To obtain a new version of the "
+           "certificate in the future, simply run Let's Encrypt again."
+           .format(lineage.fullchain, expiry))
+    reporter_util.add_message(msg, reporter_util.MEDIUM_PRIORITY)
 
 
 def _auth_from_domains(le_client, config, domains, plugins):
@@ -304,7 +310,7 @@ def _auth_from_domains(le_client, config, domains, plugins):
         if not lineage:
             raise Error("Certificate could not be obtained")
 
-    _report_new_cert(lineage.cert)
+    _report_new_cert(lineage)
 
     return lineage
 
