@@ -23,7 +23,7 @@ if apt-cache show virtualenv > /dev/null ; then
 fi
 
 if apt-cache show python-virtualenv > /dev/null ; then
-  virtualenv="$virualenv python-virtualenv"
+  virtualenv="$virtualenv python-virtualenv"
 fi
 
 apt-get install -y --no-install-recommends \
