@@ -51,6 +51,7 @@ class ACMEServerMixin:  # pylint: disable=old-style-class
     allow_reuse_address = True
 
     def __init__(self):
+        self.timeout = 3
         self._stopped = False
 
     def serve_forever2(self):
