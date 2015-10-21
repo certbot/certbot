@@ -130,10 +130,7 @@ binary for temporary key/certificate generation.""".replace("\n", "")
         if self.conf("test-mode"):
             logger.debug("Test mode. Executing the manual command: %s", command)
             # sh shipped with OS X does't support echo -n
-            if sys.platform == "darwin":
-                executable = "/bin/bash"
-            else:
-                executable = None
+            executable = "/bin/bash" if sys.platform == "darwin" else None
             try:
                 self._httpd = subprocess.Popen(
                     command,
