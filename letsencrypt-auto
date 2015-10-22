@@ -1,5 +1,8 @@
 #!/bin/sh -e
 #
+# A script to run the latest release version of the Let's Encrypt in a
+# virtual environment
+#
 # Installs and updates the letencrypt virtualenv, and runs letsencrypt
 # using that virtual environment.  This allows the client to function decently
 # without requiring specific versions of its dependencies from the operating

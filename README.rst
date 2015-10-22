@@ -80,7 +80,7 @@ Current Features
 
   - apache/2.x (tested and working on Ubuntu Linux)
   - nginx/0.8.48+ (under development)
-  - standalone (runs it's own simple webserver to prove you control a domain)
+  - standalone (runs its own simple webserver to prove you control a domain)
 
 * The private key is generated locally on your system.
 * Can talk to the Let's Encrypt (demo) CA or optionally to other ACME
