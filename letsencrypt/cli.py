@@ -268,11 +268,11 @@ def _treat_as_renewal(config, domains):
 
 
 def _report_new_cert(cert_path, fullchain_path):
-    """
-    Reports the creation of a new certificate to the user.
+    """Reports the creation of a new certificate to the user.
 
     :param str cert_path: path to cert
     :param str fullchain_path: path to full chain
+
     """
     expiry = crypto_util.notAfter(cert_path).date()
     reporter_util = zope.component.getUtility(interfaces.IReporter)
