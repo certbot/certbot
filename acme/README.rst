@@ -1,1 +1,1 @@
-ACME protocol implementation for Python
+ACME protocol implementation in Python
