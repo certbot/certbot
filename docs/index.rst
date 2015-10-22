@@ -13,7 +13,6 @@ Welcome to the Let's Encrypt client documentation!
    :maxdepth: 1
 
    api
-   pkgs
 
 
 Indices and tables

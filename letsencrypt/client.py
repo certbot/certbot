@@ -329,8 +329,6 @@ class Client(object):
 
         with error_handler.ErrorHandler(self.installer.recovery_routine):
             for dom in domains:
-                # TODO: Provide a fullchain reference for installers like
-                #       nginx that want it
                 self.installer.deploy_cert(
                     domain=dom, cert_path=os.path.abspath(cert_path),
                     key_path=os.path.abspath(privkey_path),

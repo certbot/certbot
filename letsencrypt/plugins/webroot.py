@@ -72,8 +72,7 @@ to serve all files under specified web root ({0})."""
         return os.path.join(self.full_root, achall.chall.encode("token"))
 
     def _perform_single(self, achall):
-        response, validation = achall.gen_response_and_validation(
-            tls=(not self.config.no_simple_http_tls))
+        response, validation = achall.gen_response_and_validation(tls=False)
         path = self._path_for_achall(achall)
         logger.debug("Attempting to save validation to %s", path)
         with open(path, "w") as validation_file:

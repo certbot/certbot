@@ -32,6 +32,12 @@ if sys.version_info < (2, 7):
 else:
     install_requires.append('mock')
 
+docs_extras = [
+    'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
+    'sphinx_rtd_theme',
+    'sphinxcontrib-programoutput',
+]
+
 testing_extras = [
     'nose',
     'tox',
@@ -41,7 +47,7 @@ testing_extras = [
 setup(
     name='acme',
     version=version,
-    description='ACME protocol implementation',
+    description='ACME protocol implementation in Python',
     url='https://github.com/letsencrypt/letsencrypt',
     author="Let's Encrypt Project",
     author_email='client-dev@letsencrypt.org',
@@ -64,6 +70,7 @@ setup(
     include_package_data=True,
     install_requires=install_requires,
     extras_require={
+        'docs': docs_extras,
         'testing': testing_extras,
     },
     entry_points={

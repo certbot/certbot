@@ -20,6 +20,11 @@ if sys.version_info < (2, 7):
 else:
     install_requires.append('mock')
 
+docs_extras = [
+    'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
+    'sphinx_rtd_theme',
+]
+
 setup(
     name='letsencrypt-nginx',
     version=version,
@@ -48,6 +53,9 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=install_requires,
+    extras_require={
+        'docs': docs_extras,
+    },
     entry_points={
         'letsencrypt.plugins': [
             'nginx = letsencrypt_nginx.configurator:NginxConfigurator',

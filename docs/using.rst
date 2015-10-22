@@ -76,7 +76,7 @@ server that the domain your requesting a cert for resolves to,
 
 .. code-block:: shell
 
-   sudo docker auth -it --rm -p 443:443 --name letsencrypt \
+   sudo docker run -it --rm -p 443:443 --name letsencrypt \
                -v "/etc/letsencrypt:/etc/letsencrypt" \
                -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
                quay.io/letsencrypt/letsencrypt:latest auth
@@ -85,4 +85,4 @@ and follow the instructions. Your new cert will be available in
 ``/etc/letsencrypt/certs``.
 
 .. _Docker: https://docker.com
-.. _`install Docker`: https://docs.docker.com/docker/userguide/
+.. _`install Docker`: https://docs.docker.com/userguide/

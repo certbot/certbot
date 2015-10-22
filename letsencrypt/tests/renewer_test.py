@@ -7,7 +7,6 @@ import unittest
 
 import configobj
 import mock
-import pytz
 
 from letsencrypt import configuration
 from letsencrypt import errors
@@ -48,7 +47,6 @@ class BaseRenewableCertTest(unittest.TestCase):
                 config_dir=self.tempdir,
                 work_dir=self.tempdir,
                 logs_dir=self.tempdir,
-                no_simple_http_tls=False,
             )
         )
 
@@ -348,26 +346,6 @@ class RenewableCertTests(BaseRenewableCertTest):
             f.write(test_cert)
         self.assertEqual(self.test_rc.names(12),
                          ["example.com", "www.example.com"])
-
-    def _test_notafterbefore(self, function, timestamp):
-        test_cert = test_util.load_vector("cert.pem")
-        os.symlink(os.path.join("..", "..", "archive", "example.org",
-                                "cert12.pem"), self.test_rc.cert)
-        with open(self.test_rc.cert, "w") as f:
-            f.write(test_cert)
-        desired_time = datetime.datetime.utcfromtimestamp(timestamp)
-        desired_time = desired_time.replace(tzinfo=pytz.UTC)
-        for result in (function(), function(12)):
-            self.assertEqual(result, desired_time)
-            self.assertEqual(result.utcoffset(), datetime.timedelta(0))
-
-    def test_notbefore(self):
-        self._test_notafterbefore(self.test_rc.notbefore, 1418337285)
-        # 2014-12-11 22:34:45+00:00 = Unix time 1418337285
-
-    def test_notafter(self):
-        self._test_notafterbefore(self.test_rc.notafter, 1418942085)
-        # 2014-12-18 22:34:45+00:00 = Unix time 1418942085
 
     @mock.patch("letsencrypt.storage.datetime")
     def test_time_interval_judgments(self, mock_datetime):
