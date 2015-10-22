@@ -114,7 +114,7 @@ class ClientTest(unittest.TestCase):
             mock.sentinel.key, domains, self.config.csr_dir)
         self._check_obtain_certificate()
 
-    def test_save_certificate(self):
+    def test_save_certificate(self): # pylint: disable=too-many-locals
         certs = ["matching_cert.pem", "cert.pem", "cert-san.pem"]
         tmp_path = tempfile.mkdtemp()
         os.chmod(tmp_path, 0o755)  # TODO: really??

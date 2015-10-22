@@ -259,7 +259,7 @@ class Client(object):
         return lineage
 
     def save_certificate(self, certr, chain_cert, cert_path, chain_path, fullchain_path):
-        # pylint: disable=no-self-use
+        # pylint: disable=no-self-use,too-many-locals
         """Saves the certificate received from the ACME server.
 
         :param certr: ACME "certificate" resource.
@@ -295,6 +295,9 @@ class Client(object):
         logger.info("Server issued certificate; certificate written to %s",
                     act_cert_path)
 
+        # TODO too long, refactor... either split this into another function
+        # up one level (though it needs a copy of cert_pem) or find a way to
+        # reuse machinery from storage.py
         if chain_cert:
             chain_file, act_chain_path = le_util.unique_file(chain_path, 0o644)
             # TODO: Except
