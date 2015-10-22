@@ -32,7 +32,7 @@ class Authenticator(common.Plugin):
     zope.interface.implements(interfaces.IAuthenticator)
     zope.interface.classProvides(interfaces.IPluginFactory)
 
-    description = "Manual Authenticator"
+    description = "Manually Edit Your Configuration"
 
     MESSAGE_TEMPLATE = """\
 Make sure your web server displays the following content at
@@ -82,10 +82,10 @@ s.serve_forever()" """
     def more_info(self):  # pylint: disable=missing-docstring,no-self-use
         return """\
 This plugin requires user's manual intervention in setting up a HTTP
-server for solving SimpleHTTP challenges and thus does not need to be
-run as a privilidged process. Alternatively shows instructions on how
-to use Python's built-in HTTP server and, in case of HTTPS, openssl
-binary for temporary key/certificate generation.""".replace("\n", "")
+ server for solving SimpleHTTP challenges and thus does not need to be
+ run as a privilidged process. Alternatively shows instructions on how
+ to use Python's built-in HTTP server and, in case of HTTPS, openssl
+ binary for temporary key/certificate generation.""".replace("\n", "")
 
     def get_chall_pref(self, domain):
         # pylint: disable=missing-docstring,no-self-use,unused-argument
