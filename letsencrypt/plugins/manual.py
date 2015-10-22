@@ -31,6 +31,7 @@ class Authenticator(common.Plugin):
     """
     zope.interface.implements(interfaces.IAuthenticator)
     zope.interface.classProvides(interfaces.IPluginFactory)
+    hidden = True
 
     description = "Manually Edit Your Configuration"
 

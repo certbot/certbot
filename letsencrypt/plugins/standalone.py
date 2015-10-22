@@ -134,6 +134,8 @@ def supported_challenges_validator(data):
 
 
 class Authenticator(common.Plugin):
+    """Standalone Authenticator."""
+
     zope.interface.implements(interfaces.IAuthenticator)
     zope.interface.classProvides(interfaces.IPluginFactory)
 
@@ -178,7 +180,7 @@ class Authenticator(common.Plugin):
 This authenticator creates its own ephemeral TCP listener on the
  necessary port in order to respond to incoming DVSNI and SimpleHTTP
  challenges from the certificate authority. Therefore, it does not
- rely on any existing server program.""".replace("\n","")
+ rely on any existing server program.""".replace("\n", "")
 
     def prepare(self):  # pylint: disable=missing-docstring
         pass
