@@ -346,26 +346,25 @@ class DuplicativeCertsTest(renewer_test.BaseRenewableCertTest):
             f.write(test_cert)
 
         # No overlap at all
-        result = _find_duplicative_certs(['wow.net', 'hooray.org'],
-                                         self.config, self.cli_config)
+        result = _find_duplicative_certs(
+            self.cli_config, ['wow.net', 'hooray.org'])
         self.assertEqual(result, (None, None))
 
         # Totally identical
-        result = _find_duplicative_certs(['example.com', 'www.example.com'],
-                                         self.config, self.cli_config)
+        result = _find_duplicative_certs(
+            self.cli_config, ['example.com', 'www.example.com'])
         self.assertTrue(result[0].configfile.filename.endswith('example.org.conf'))
         self.assertEqual(result[1], None)
 
         # Superset
-        result = _find_duplicative_certs(['example.com', 'www.example.com',
-                                          'something.new'], self.config,
-                                         self.cli_config)
+        result = _find_duplicative_certs(
+            self.cli_config, ['example.com', 'www.example.com', 'something.new'])
         self.assertEqual(result[0], None)
         self.assertTrue(result[1].configfile.filename.endswith('example.org.conf'))
 
         # Partial overlap doesn't count
-        result = _find_duplicative_certs(['example.com', 'something.new'],
-                                         self.config, self.cli_config)
+        result = _find_duplicative_certs(
+            self.cli_config, ['example.com', 'something.new'])
         self.assertEqual(result, (None, None))
 
 
