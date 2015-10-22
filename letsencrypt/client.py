@@ -258,8 +258,8 @@ class Client(object):
             params, config, cli_config)
         return lineage
 
-    def save_certificate(self, certr, chain_cert, cert_path, chain_path):
-        # pylint: disable=no-self-use
+    def save_certificate(self, certr, chain_cert,
+                         cert_path, chain_path, fullchain_path):
         """Saves the certificate received from the ACME server.
 
         :param certr: ACME "certificate" resource.
@@ -268,24 +268,23 @@ class Client(object):
         :param list chain_cert:
         :param str cert_path: Candidate path to a certificate.
         :param str chain_path: Candidate path to a certificate chain.
+        :param str fullchain_path: Candidate path to a full cert chain.
 
-        :returns: cert_path, chain_path (absolute paths to the actual files)
+        :returns: cert_path, chain_path, and fullchain_path as absolute
+            paths to the actual files
         :rtype: `tuple` of `str`
 
         :raises IOError: If unable to find room to write the cert files
 
         """
-        for path in cert_path, chain_path:
+        for path in cert_path, chain_path, fullchain_path:
             le_util.make_or_verify_dir(
                 os.path.dirname(path), 0o755, os.geteuid(),
                 self.config.strict_permissions)
 
-        # try finally close
-        cert_chain_abspath = None
-        cert_file, act_cert_path = le_util.unique_file(cert_path, 0o644)
-        # TODO: Except
         cert_pem = OpenSSL.crypto.dump_certificate(
             OpenSSL.crypto.FILETYPE_PEM, certr.body)
+        cert_file, act_cert_path = le_util.unique_file(cert_path, 0o644)
         try:
             cert_file.write(cert_pem)
         finally:
@@ -293,22 +292,15 @@ class Client(object):
         logger.info("Server issued certificate; certificate written to %s",
                     act_cert_path)
 
+        cert_chain_abspath = None
+        fullchain_abspath = None
         if chain_cert:
-            chain_file, act_chain_path = le_util.unique_file(
-                chain_path, 0o644)
-            # TODO: Except
             chain_pem = crypto_util.dump_pyopenssl_chain(chain_cert)
-            try:
-                chain_file.write(chain_pem)
-            finally:
-                chain_file.close()
+            cert_chain_abspath = _save_chain(chain_pem, chain_path)
+            fullchain_abspath = _save_chain(cert_pem + chain_pem,
+                                            fullchain_path)
 
-            logger.info("Cert chain written to %s", act_chain_path)
-
-            # This expects a valid chain file
-            cert_chain_abspath = os.path.abspath(act_chain_path)
-
-        return os.path.abspath(act_cert_path), cert_chain_abspath
+        return os.path.abspath(act_cert_path), cert_chain_abspath, fullchain_abspath
 
     def deploy_certificate(self, domains, privkey_path,
                            cert_path, chain_path, fullchain_path):
@@ -465,3 +457,25 @@ def view_config_changes(config):
     rev = reverter.Reverter(config)
     rev.recovery_routine()
     rev.view_config_changes()
+
+
+def _save_chain(chain_pem, chain_path):
+    """Saves chain_pem at a unique path based on chain_path.
+
+    :param str chain_pem: certificate chain in PEM format
+    :param str chain_path: candidate path for the cert chain
+
+    :returns: absolute path to saved cert chain
+    :rtype: str
+
+    """
+    chain_file, act_chain_path = le_util.unique_file(chain_path, 0o644)
+    try:
+        chain_file.write(chain_pem)
+    finally:
+        chain_file.close()
+
+    logger.info("Cert chain written to %s", act_chain_path)
+
+    # This expects a valid chain file
+    return os.path.abspath(act_chain_path)

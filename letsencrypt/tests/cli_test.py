@@ -149,7 +149,7 @@ class CLITest(unittest.TestCase):
         date = '1970-01-01'
         mock_notAfter().date.return_value = date
 
-        mock_lineage = mock.MagicMock(cert=cert_path)
+        mock_lineage = mock.MagicMock(cert=cert_path, fullchain=cert_path)
         mock_client = mock.MagicMock()
         mock_client.obtain_and_enroll_certificate.return_value = mock_lineage
         self._auth_new_request_common(mock_client)
@@ -177,9 +177,10 @@ class CLITest(unittest.TestCase):
     @mock.patch('letsencrypt.cli._treat_as_renewal')
     @mock.patch('letsencrypt.cli._init_le_client')
     def test_auth_renewal(self, mock_init, mock_renewal, mock_get_utility):
-        cert_path = '/etc/letsencrypt/live/foo.bar'
+        cert_path = '/etc/letsencrypt/live/foo.bar/cert.pem'
+        chain_path = '/etc/letsencrypt/live/foo.bar/fullchain.pem'
 
-        mock_lineage = mock.MagicMock(cert=cert_path)
+        mock_lineage = mock.MagicMock(cert=cert_path, fullchain=chain_path)
         mock_cert = mock.MagicMock(body='body')
         mock_key = mock.MagicMock(pem='pem_key')
         mock_renewal.return_value = mock_lineage
@@ -195,7 +196,7 @@ class CLITest(unittest.TestCase):
         mock_lineage.update_all_links_to.assert_called_once_with(
             mock_lineage.latest_common_version())
         self.assertTrue(
-            cert_path in mock_get_utility().add_message.call_args[0][0])
+            chain_path in mock_get_utility().add_message.call_args[0][0])
 
     @mock.patch('letsencrypt.crypto_util.notAfter')
     @mock.patch('letsencrypt.cli.display_ops.pick_installer')
@@ -203,23 +204,24 @@ class CLITest(unittest.TestCase):
     @mock.patch('letsencrypt.cli._init_le_client')
     def test_auth_csr(self, mock_init, mock_get_utility,
                       mock_pick_installer, mock_notAfter):
-        cert_path = '/etc/letsencrypt/live/foo.bar'
+        cert_path = '/etc/letsencrypt/live/blahcert.pem'
         date = '1970-01-01'
         mock_notAfter().date.return_value = date
 
         mock_client = mock.MagicMock()
         mock_client.obtain_certificate_from_csr.return_value = ('certr',
                                                                 'chain')
-        mock_client.save_certificate.return_value = cert_path, None
+        mock_client.save_certificate.return_value = cert_path, None, None
         mock_init.return_value = mock_client
 
         installer = 'installer'
         self._call(
             ['-a', 'standalone', '-i', installer, 'auth', '--csr', CSR,
-             '--cert-path', cert_path, '--chain-path', '/'])
+             '--cert-path', cert_path, '--fullchain-path', '/',
+             '--chain-path', '/'])
         self.assertEqual(mock_pick_installer.call_args[0][1], installer)
         mock_client.save_certificate.assert_called_once_with(
-            'certr', 'chain', cert_path, '/')
+            'certr', 'chain', cert_path, '/', '/')
         self.assertTrue(
             cert_path in mock_get_utility().add_message.call_args[0][0])
         self.assertTrue(
@@ -344,26 +346,25 @@ class DuplicativeCertsTest(renewer_test.BaseRenewableCertTest):
             f.write(test_cert)
 
         # No overlap at all
-        result = _find_duplicative_certs(['wow.net', 'hooray.org'],
-                                         self.config, self.cli_config)
+        result = _find_duplicative_certs(
+            self.cli_config, ['wow.net', 'hooray.org'])
         self.assertEqual(result, (None, None))
 
         # Totally identical
-        result = _find_duplicative_certs(['example.com', 'www.example.com'],
-                                         self.config, self.cli_config)
+        result = _find_duplicative_certs(
+            self.cli_config, ['example.com', 'www.example.com'])
         self.assertTrue(result[0].configfile.filename.endswith('example.org.conf'))
         self.assertEqual(result[1], None)
 
         # Superset
-        result = _find_duplicative_certs(['example.com', 'www.example.com',
-                                          'something.new'], self.config,
-                                         self.cli_config)
+        result = _find_duplicative_certs(
+            self.cli_config, ['example.com', 'www.example.com', 'something.new'])
         self.assertEqual(result[0], None)
         self.assertTrue(result[1].configfile.filename.endswith('example.org.conf'))
 
         # Partial overlap doesn't count
-        result = _find_duplicative_certs(['example.com', 'something.new'],
-                                         self.config, self.cli_config)
+        result = _find_duplicative_certs(
+            self.cli_config, ['example.com', 'something.new'])
         self.assertEqual(result, (None, None))
 
 

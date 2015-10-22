@@ -76,23 +76,23 @@ server automatically!::
 Current Features
 ----------------
 
-* web servers supported:
+* Supports multiple web servers:
 
   - apache/2.x (tested and working on Ubuntu Linux)
   - nginx/0.8.48+ (under development)
-  - standalone (runs its own webserver to prove you control the domain)
+  - standalone (runs its own simple webserver to prove you control a domain)
 
-* the private key is generated locally on your system
-* can talk to the Let's Encrypt (demo) CA or optionally to other ACME
-  compliant services
-* can get domain-validated (DV) certificates
-* can revoke certificates
-* adjustable RSA key bitlength (2048 (default), 4096, ...)
-* optionally can install a http->https redirect, so your site effectively
+* The private key is generated locally on your system.
+* Can talk to the Let's Encrypt (demo) CA or optionally to other ACME
+  compliant services.
+* Can get domain-validated (DV) certificates.
+* Can revoke certificates.
+* Adjustable RSA key bit-length (2048 (default), 4096, ...).
+* Can optionally install a http -> https redirect, so your site effectively
   runs https only (Apache only)
-* fully automated
-* configuration changes are logged and can be reverted using the CLI
-* text and ncurses UI
+* Fully automated.
+* Configuration changes are logged and can be reverted.
+* Text and ncurses UI.
 * Free and Open Source Software, made with Python.
 
 

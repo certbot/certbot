@@ -12,7 +12,6 @@ import time
 import traceback
 
 import configargparse
-import configobj
 import OpenSSL
 import zope.component
 import zope.interface.exceptions
@@ -167,25 +166,21 @@ def _init_le_client(args, config, authenticator, installer):
     return client.Client(config, acc, authenticator, installer, acme=acme)
 
 
-def _find_duplicative_certs(domains, config, renew_config):
+def _find_duplicative_certs(config, domains):
     """Find existing certs that duplicate the request."""
 
     identical_names_cert, subset_names_cert = None, None
 
-    configs_dir = renew_config.renewal_configs_dir
+    cli_config = configuration.RenewerConfiguration(config)
+    configs_dir = cli_config.renewal_configs_dir
     # Verify the directory is there
     le_util.make_or_verify_dir(configs_dir, mode=0o755, uid=os.geteuid())
 
-    cli_config = configuration.RenewerConfiguration(config)
     for renewal_file in os.listdir(configs_dir):
         try:
             full_path = os.path.join(configs_dir, renewal_file)
-            rc_config = configobj.ConfigObj(renew_config.renewer_config_file)
-            rc_config.merge(configobj.ConfigObj(full_path))
-            rc_config.filename = full_path
-            candidate_lineage = storage.RenewableCert(
-                rc_config, config_opts=None, cli_config=cli_config)
-        except (configobj.ConfigObjError, CertStorageError, IOError):
+            candidate_lineage = storage.RenewableCert(full_path, cli_config)
+        except (CertStorageError, IOError):
             logger.warning("Renewal configuration file %s is broken. "
                            "Skipping.", full_path)
             continue
@@ -217,7 +212,7 @@ def _treat_as_renewal(config, domains):
     # kind of certificate to be obtained with renewal = False.)
     if not config.duplicate:
         ident_names_cert, subset_names_cert = _find_duplicative_certs(
-            domains, config, configuration.RenewerConfiguration(config))
+            config, domains)
         # I am not sure whether that correctly reads the systemwide
         # configuration file.
         question = None
@@ -267,16 +262,31 @@ def _treat_as_renewal(config, domains):
     return None
 
 
-def _report_new_cert(cert_path):
-    """Reports the creation of a new certificate to the user."""
+def _report_new_cert(cert_path, fullchain_path):
+    """Reports the creation of a new certificate to the user.
+
+    :param str cert_path: path to cert
+    :param str fullchain_path: path to full chain
+
+    """
     expiry = crypto_util.notAfter(cert_path).date()
     reporter_util = zope.component.getUtility(interfaces.IReporter)
-    reporter_util.add_message("Congratulations! Your certificate has been "
-                              "saved at {0} and will expire on {1}. To obtain "
-                              "a new version of the certificate in the "
-                              "future, simply run Let's Encrypt again.".format(
-                                  cert_path, expiry),
-                              reporter_util.MEDIUM_PRIORITY)
+    if fullchain_path:
+        # Print the path to fullchain.pem because that's what modern webservers
+        # (Nginx and Apache2.4) will want.
+        and_chain = "and chain have"
+        path = fullchain_path
+    else:
+        # Unless we're in .csr mode and there really isn't one
+        and_chain = "has "
+        path = cert_path
+    # XXX Perhaps one day we could detect the presence of known old webservers
+    # and say something more informative here.
+    msg = ("Congratulations! Your certificate {0} been saved at {1}."
+           " Your cert will expire on {2}. To obtain a new version of the "
+           "certificate in the future, simply run Let's Encrypt again."
+           .format(and_chain, path, expiry))
+    reporter_util.add_message(msg, reporter_util.MEDIUM_PRIORITY)
 
 
 def _auth_from_domains(le_client, config, domains, plugins):
@@ -304,7 +314,7 @@ def _auth_from_domains(le_client, config, domains, plugins):
         if not lineage:
             raise Error("Certificate could not be obtained")
 
-    _report_new_cert(lineage.cert)
+    _report_new_cert(lineage.cert, lineage.fullchain)
 
     return lineage
 
@@ -312,8 +322,8 @@ def _auth_from_domains(le_client, config, domains, plugins):
 def set_configurator(previously, now):
     """
     Setting configurators multiple ways is okay, as long as they all agree
-    :param string previously: previously identified request for the installer/authenticator
-    :param string requested: the request currently being processed
+    :param str previously: previously identified request for the installer/authenticator
+    :param str requested: the request currently being processed
     """
     if now is None:
         # we're not actually setting anything
@@ -329,8 +339,8 @@ def diagnose_configurator_problem(cfg_type, requested, plugins):
     """
     Raise the most helpful error message about a plugin being unavailable
 
-    :param string cfg_type: either "installer" or "authenticator"
-    :param string requested: the plugin that was requested
+    :param str cfg_type: either "installer" or "authenticator"
+    :param str requested: the plugin that was requested
     :param PluginRegistry plugins: available plugins
 
     :raises error.PluginSelectionError: if there was a problem
@@ -455,9 +465,9 @@ def auth(args, config, plugins):
     if args.csr is not None:
         certr, chain = le_client.obtain_certificate_from_csr(le_util.CSR(
             file=args.csr[0], data=args.csr[1], form="der"))
-        cert_path, _ = le_client.save_certificate(
-            certr, chain, args.cert_path, args.chain_path)
-        _report_new_cert(cert_path)
+        cert_path, _, cert_fullchain = le_client.save_certificate(
+            certr, chain, args.cert_path, args.chain_path, args.fullchain_path)
+        _report_new_cert(cert_path, cert_fullchain)
     else:
         domains = _find_domains(args, installer)
         _auth_from_domains(le_client, config, domains, plugins)

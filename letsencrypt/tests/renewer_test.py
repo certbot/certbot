@@ -62,11 +62,11 @@ class BaseRenewableCertTest(unittest.TestCase):
                                         kind + ".pem")
         config.filename = os.path.join(self.tempdir, "renewal",
                                        "example.org.conf")
+        config.write()
         self.config = config
 
         self.defaults = configobj.ConfigObj()
-        self.test_rc = storage.RenewableCert(
-            self.config, self.defaults, self.cli_config)
+        self.test_rc = storage.RenewableCert(config.filename, self.cli_config)
 
     def tearDown(self):
         shutil.rmtree(self.tempdir)
@@ -98,34 +98,32 @@ class RenewableCertTests(BaseRenewableCertTest):
 
     def test_renewal_bad_config(self):
         """Test that the RenewableCert constructor will complain if
-        the renewal configuration file doesn't end in ".conf" or if it
-        isn't a ConfigObj."""
+        the renewal configuration file doesn't end in ".conf"
+
+        """
         from letsencrypt import storage
-        defaults = configobj.ConfigObj()
-        config = configobj.ConfigObj()
-        # These files don't exist and aren't created here; the point of the test
-        # is to confirm that the constructor rejects them outright because of
-        # the configfile's name.
-        for kind in ALL_FOUR:
-            config["cert"] = "nonexistent_" + kind + ".pem"
-        config.filename = "nonexistent_sillyfile"
-        self.assertRaises(
-            errors.CertStorageError, storage.RenewableCert, config, defaults)
-        self.assertRaises(TypeError, storage.RenewableCert, "fun", defaults)
+        broken = os.path.join(self.tempdir, "broken.conf")
+        with open(broken, "w") as f:
+            f.write("[No closing bracket for you!")
+        self.assertRaises(errors.CertStorageError, storage.RenewableCert,
+                          broken, self.cli_config)
+        os.unlink(broken)
+        self.assertRaises(errors.CertStorageError, storage.RenewableCert,
+                          "fun", self.cli_config)
 
     def test_renewal_incomplete_config(self):
         """Test that the RenewableCert constructor will complain if
         the renewal configuration file is missing a required file element."""
         from letsencrypt import storage
-        defaults = configobj.ConfigObj()
         config = configobj.ConfigObj()
         config["cert"] = "imaginary_cert.pem"
         # Here the required privkey is missing.
         config["chain"] = "imaginary_chain.pem"
         config["fullchain"] = "imaginary_fullchain.pem"
-        config.filename = "imaginary_config.conf"
-        self.assertRaises(
-            errors.CertStorageError, storage.RenewableCert, config, defaults)
+        config.filename = os.path.join(self.tempdir, "imaginary_config.conf")
+        config.write()
+        self.assertRaises(errors.CertStorageError, storage.RenewableCert,
+                          config.filename, self.cli_config)
 
     def test_consistent(self):
         # pylint: disable=too-many-statements,protected-access
@@ -289,7 +287,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertEqual("cert8.pem",
                          os.path.basename(self.test_rc.version("cert", 8)))
 
-    def test_update_all_links_to(self):
+    def test_update_all_links_to_success(self):
         for ver in xrange(1, 6):
             for kind in ALL_FOUR:
                 where = getattr(self.test_rc, kind)
@@ -306,6 +304,39 @@ class RenewableCertTests(BaseRenewableCertTest):
             for kind in ALL_FOUR:
                 self.assertEqual(ver, self.test_rc.current_version(kind))
             self.assertEqual(self.test_rc.latest_common_version(), 5)
+
+    def test_update_all_links_to_partial_failure(self):
+        def unlink_or_raise(path, real_unlink=os.unlink):
+            # pylint: disable=missing-docstring
+            basename = os.path.basename(path)
+            if "fullchain" in basename and basename.startswith("prev"):
+                raise ValueError
+            else:
+                real_unlink(path)
+
+        self._write_out_ex_kinds()
+        with mock.patch("letsencrypt.storage.os.unlink") as mock_unlink:
+            mock_unlink.side_effect = unlink_or_raise
+            self.assertRaises(ValueError, self.test_rc.update_all_links_to, 12)
+
+        for kind in ALL_FOUR:
+            self.assertEqual(self.test_rc.current_version(kind), 12)
+
+    def test_update_all_links_to_full_failure(self):
+        def unlink_or_raise(path, real_unlink=os.unlink):
+            # pylint: disable=missing-docstring
+            if "fullchain" in os.path.basename(path):
+                raise ValueError
+            else:
+                real_unlink(path)
+
+        self._write_out_ex_kinds()
+        with mock.patch("letsencrypt.storage.os.unlink") as mock_unlink:
+            mock_unlink.side_effect = unlink_or_raise
+            self.assertRaises(ValueError, self.test_rc.update_all_links_to, 12)
+
+        for kind in ALL_FOUR:
+            self.assertEqual(self.test_rc.current_version(kind), 11)
 
     def test_has_pending_deployment(self):
         for ver in xrange(1, 6):
@@ -668,10 +699,6 @@ class RenewableCertTests(BaseRenewableCertTest):
         mock_rc_instance.latest_common_version.return_value = 10
         mock_rc.return_value = mock_rc_instance
         with open(os.path.join(self.cli_config.renewal_configs_dir,
-                               "README"), "w") as f:
-            f.write("This is a README file to make sure that the renewer is")
-            f.write("able to correctly ignore files that don't end in .conf.")
-        with open(os.path.join(self.cli_config.renewal_configs_dir,
                                "example.org.conf"), "w") as f:
             # This isn't actually parsed in this test; we have a separate
             # test_initialization that tests the initialization, assuming
@@ -682,7 +709,7 @@ class RenewableCertTests(BaseRenewableCertTest):
                                "example.com.conf"), "w") as f:
             f.write("cert = cert.pem\nprivkey = privkey.pem\n")
             f.write("chain = chain.pem\nfullchain = fullchain.pem\n")
-        renewer.main(self.defaults, cli_args=self._common_cli_args())
+        renewer.main(cli_args=self._common_cli_args())
         self.assertEqual(mock_rc.call_count, 2)
         self.assertEqual(mock_rc_instance.update_all_links_to.call_count, 2)
         self.assertEqual(mock_notify.notify.call_count, 4)
@@ -695,7 +722,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         mock_happy_instance.should_autorenew.return_value = False
         mock_happy_instance.latest_common_version.return_value = 10
         mock_rc.return_value = mock_happy_instance
-        renewer.main(self.defaults, cli_args=self._common_cli_args())
+        renewer.main(cli_args=self._common_cli_args())
         self.assertEqual(mock_rc.call_count, 4)
         self.assertEqual(mock_happy_instance.update_all_links_to.call_count, 0)
         self.assertEqual(mock_notify.notify.call_count, 4)
@@ -706,7 +733,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         with open(os.path.join(self.cli_config.renewal_configs_dir,
                                "bad.conf"), "w") as f:
             f.write("incomplete = configfile\n")
-        renewer.main(self.defaults, cli_args=self._common_cli_args())
+        renewer.main(cli_args=self._common_cli_args())
         # The errors.CertStorageError is caught inside and nothing happens.
 
 
