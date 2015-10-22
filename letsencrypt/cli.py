@@ -270,8 +270,9 @@ def _treat_as_renewal(config, domains):
 def _report_new_cert(cert_path, fullchain_path):
     """
     Reports the creation of a new certificate to the user.
-    :param string cert_path: path to cert
-    :param string fullchain_path: path to full chain
+
+    :param str cert_path: path to cert
+    :param str fullchain_path: path to full chain
     """
     expiry = crypto_util.notAfter(cert_path).date()
     reporter_util = zope.component.getUtility(interfaces.IReporter)
@@ -326,8 +327,8 @@ def _auth_from_domains(le_client, config, domains, plugins):
 def set_configurator(previously, now):
     """
     Setting configurators multiple ways is okay, as long as they all agree
-    :param string previously: previously identified request for the installer/authenticator
-    :param string requested: the request currently being processed
+    :param str previously: previously identified request for the installer/authenticator
+    :param str requested: the request currently being processed
     """
     if now is None:
         # we're not actually setting anything
@@ -343,8 +344,8 @@ def diagnose_configurator_problem(cfg_type, requested, plugins):
     """
     Raise the most helpful error message about a plugin being unavailable
 
-    :param string cfg_type: either "installer" or "authenticator"
-    :param string requested: the plugin that was requested
+    :param str cfg_type: either "installer" or "authenticator"
+    :param str requested: the plugin that was requested
     :param PluginRegistry plugins: available plugins
 
     :raises error.PluginSelectionError: if there was a problem
