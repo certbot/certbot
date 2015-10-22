@@ -267,21 +267,29 @@ def _treat_as_renewal(config, domains):
     return None
 
 
-def _report_new_cert(lineage):
+def _report_new_cert(cert_path, fullchain_path):
     """
     Reports the creation of a new certificate to the user.
-    :param RenewableCert lineage: the lineage of the new cert
+    :param string cert_path: path to cert
+    :param string fullchain_path: path to full chain
     """
-    expiry = crypto_util.notAfter(lineage.cert).date()
+    expiry = crypto_util.notAfter(cert_path).date()
     reporter_util = zope.component.getUtility(interfaces.IReporter)
-    # Tell the user about fullchain.pem because that's what modern webservers
-    # (Nginx and Apache2.4) will want.
+    if fullchain_path:
+        # Print the path to fullchain.pem because that's what modern webservers
+        # (Nginx and Apache2.4) will want.
+        and_chain = "and chain have"
+        path = fullchain_path
+    else:
+        # Unless we're in .csr mode and there really isn't one
+        and_chain = "has "
+        path = cert_path
     # XXX Perhaps one day we could detect the presence of known old webservers
     # and say something more informative here.
-    msg = ("Congratulations! Your certificate and chain have been saved at {0}."
-           " Your cert will expire on {1}. To obtain a new version of the "
+    msg = ("Congratulations! Your certificate {0} been saved at {1}."
+           " Your cert will expire on {2}. To obtain a new version of the "
            "certificate in the future, simply run Let's Encrypt again."
-           .format(lineage.fullchain, expiry))
+           .format(and_chain, path, expiry))
     reporter_util.add_message(msg, reporter_util.MEDIUM_PRIORITY)
 
 
@@ -310,7 +318,7 @@ def _auth_from_domains(le_client, config, domains, plugins):
         if not lineage:
             raise Error("Certificate could not be obtained")
 
-    _report_new_cert(lineage)
+    _report_new_cert(lineage.cert, lineage.fullchain)
 
     return lineage
 
@@ -461,9 +469,9 @@ def auth(args, config, plugins):
     if args.csr is not None:
         certr, chain = le_client.obtain_certificate_from_csr(le_util.CSR(
             file=args.csr[0], data=args.csr[1], form="der"))
-        cert_path, _ = le_client.save_certificate(
-            certr, chain, args.cert_path, args.chain_path)
-        _report_new_cert(cert_path)
+        cert_path, _, cert_fullchain = le_client.save_certificate(
+            certr, chain, args.cert_path, args.chain_path, args.fullchain_path)
+        _report_new_cert(cert_path, cert_fullchain)
     else:
         domains = _find_domains(args, installer)
         _auth_from_domains(le_client, config, domains, plugins)

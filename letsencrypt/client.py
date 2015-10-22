@@ -258,7 +258,7 @@ class Client(object):
             params, config, cli_config)
         return lineage
 
-    def save_certificate(self, certr, chain_cert, cert_path, chain_path):
+    def save_certificate(self, certr, chain_cert, cert_path, chain_path, fullchain_path):
         # pylint: disable=no-self-use
         """Saves the certificate received from the ACME server.
 
@@ -268,20 +268,22 @@ class Client(object):
         :param list chain_cert:
         :param str cert_path: Candidate path to a certificate.
         :param str chain_path: Candidate path to a certificate chain.
+        :param str fullchain_path: Candidate path to a full cert chain.
 
-        :returns: cert_path, chain_path (absolute paths to the actual files)
+        :returns: cert_path, chain_path, fullchain_path (absolute paths to the actual files)
         :rtype: `tuple` of `str`
 
         :raises IOError: If unable to find room to write the cert files
 
         """
-        for path in cert_path, chain_path:
+        for path in cert_path, chain_path, fullchain_path:
             le_util.make_or_verify_dir(
                 os.path.dirname(path), 0o755, os.geteuid(),
                 self.config.strict_permissions)
 
         # try finally close
         cert_chain_abspath = None
+        fullchain_abspath = None
         cert_file, act_cert_path = le_util.unique_file(cert_path, 0o644)
         # TODO: Except
         cert_pem = OpenSSL.crypto.dump_certificate(
@@ -294,8 +296,7 @@ class Client(object):
                     act_cert_path)
 
         if chain_cert:
-            chain_file, act_chain_path = le_util.unique_file(
-                chain_path, 0o644)
+            chain_file, act_chain_path = le_util.unique_file(chain_path, 0o644)
             # TODO: Except
             chain_pem = crypto_util.dump_pyopenssl_chain(chain_cert)
             try:
@@ -308,7 +309,17 @@ class Client(object):
             # This expects a valid chain file
             cert_chain_abspath = os.path.abspath(act_chain_path)
 
-        return os.path.abspath(act_cert_path), cert_chain_abspath
+            # fullchain is cert + chain
+            fullchain_file, act_fullchain_path = le_util.unique_file(
+                 fullchain_path, 0o644)
+            try:
+                fullchain_file.write(cert_pem + chain_pem)
+            finally:
+                fullchain_file.close()
+            logger.info("Cert chain written to %s", act_fullchain_path)
+            fullchain_abspath = os.path.abspath(act_fullchain_path)
+
+        return os.path.abspath(act_cert_path), cert_chain_abspath, fullchain_abspath
 
     def deploy_certificate(self, domains, privkey_path,
                            cert_path, chain_path, fullchain_path):
