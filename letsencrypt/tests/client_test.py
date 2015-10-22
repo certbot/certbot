@@ -114,20 +114,20 @@ class ClientTest(unittest.TestCase):
             mock.sentinel.key, domains, self.config.csr_dir)
         self._check_obtain_certificate()
 
-    def test_save_certificate(self): # pylint: disable=too-many-locals
+    def test_save_certificate(self):
         certs = ["matching_cert.pem", "cert.pem", "cert-san.pem"]
         tmp_path = tempfile.mkdtemp()
         os.chmod(tmp_path, 0o755)  # TODO: really??
 
         certr = mock.MagicMock(body=test_util.load_cert(certs[0]))
-        cert1 = test_util.load_cert(certs[1])
-        cert2 = test_util.load_cert(certs[2])
+        chain_cert = [test_util.load_cert(certs[1]),
+                      test_util.load_cert(certs[2])]
         candidate_cert_path = os.path.join(tmp_path, "certs", "cert.pem")
         candidate_chain_path = os.path.join(tmp_path, "chains", "chain.pem")
         candidate_fullchain_path = os.path.join(tmp_path, "chains", "fullchain.pem")
 
         cert_path, chain_path, fullchain_path = self.client.save_certificate(
-            certr, [cert1, cert2], candidate_cert_path, candidate_chain_path,
+            certr, chain_cert, candidate_cert_path, candidate_chain_path,
             candidate_fullchain_path)
 
         self.assertEqual(os.path.dirname(cert_path),
