@@ -308,7 +308,8 @@ class RenewableCertTests(BaseRenewableCertTest):
     def test_update_all_links_to_partial_failure(self):
         def unlink_or_raise(path, real_unlink=os.unlink):
             # pylint: disable=missing-docstring
-            if "fullchain" in path and "prev" in path:
+            basename = os.path.basename(path)
+            if "fullchain" in basename and basename.startswith("prev"):
                 raise ValueError
             else:
                 real_unlink(path)
@@ -324,7 +325,7 @@ class RenewableCertTests(BaseRenewableCertTest):
     def test_update_all_links_to_full_failure(self):
         def unlink_or_raise(path, real_unlink=os.unlink):
             # pylint: disable=missing-docstring
-            if "fullchain" in path:
+            if "fullchain" in os.path.basename(path):
                 raise ValueError
             else:
                 real_unlink(path)
