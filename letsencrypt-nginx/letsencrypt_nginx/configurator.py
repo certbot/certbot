@@ -119,7 +119,7 @@ class NginxConfigurator(common.Plugin):
 
     # Entry point in main.py for installing cert
     def deploy_cert(self, domain, cert_path, key_path,
-            chain_path, fullchain_path):
+                    chain_path, fullchain_path):
         # pylint: disable=unused-argument
         """Deploys certificate to specified virtual host.
 

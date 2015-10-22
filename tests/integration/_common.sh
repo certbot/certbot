@@ -20,7 +20,7 @@ letsencrypt_test () {
         --manual-test-mode \
         $store_flags \
         --text \
-        --agree-eula \
+        --agree-dev-preview \
         --agree-tos \
         --email "" \
         --renew-by-default \

@@ -112,11 +112,11 @@ class NginxConfiguratorTest(util.NginxTest):
         generated_conf = self.config.parser.parsed[example_conf]
 
         self.assertTrue(util.contains_at_depth(generated_conf,
-            ['ssl_stapling', 'on'], 2))
+                                               ['ssl_stapling', 'on'], 2))
         self.assertTrue(util.contains_at_depth(generated_conf,
-            ['ssl_stapling_verify', 'on'], 2))
+                                               ['ssl_stapling_verify', 'on'], 2))
         self.assertTrue(util.contains_at_depth(generated_conf,
-            ['ssl_trusted_certificate', 'example/chain.pem'], 2))
+                                               ['ssl_trusted_certificate', 'example/chain.pem'], 2))
 
     def test_deploy_cert(self):
         server_conf = self.config.parser.abs_path('server.conf')
@@ -165,19 +165,20 @@ class NginxConfiguratorTest(util.NginxTest):
         self.assertEqual([['server_name', 'somename  alias  another.alias']],
                          parsed_server_conf)
         self.assertTrue(util.contains_at_depth(parsed_nginx_conf,
-                       [['server'],
-                        [['include', self.config.parser.loc["ssl_options"]],
-                         ['ssl_certificate_key', '/etc/nginx/key.pem'],
-                         ['ssl_certificate', '/etc/nginx/fullchain.pem'],
-                         ['error_log', error_log],
-                         ['access_log', access_log],
-                         ['listen', '5001 ssl'],
-                         ['listen', '8000'],
-                         ['listen', 'somename:8080'],
-                         ['include', 'server.conf'],
-                         [['location', '/'],
-                          [['root', 'html'], ['index', 'index.html index.htm']]]]],
-                         2))
+                                               [['server'],
+                                                [['include', self.config.parser.loc["ssl_options"]],
+                                                 ['ssl_certificate_key', '/etc/nginx/key.pem'],
+                                                 ['ssl_certificate', '/etc/nginx/fullchain.pem'],
+                                                 ['error_log', error_log],
+                                                 ['access_log', access_log],
+                                                 ['listen', '5001 ssl'],
+                                                 ['listen', '8000'],
+                                                 ['listen', 'somename:8080'],
+                                                 ['include', 'server.conf'],
+                                                 [['location', '/'],
+                                                  [['root', 'html'],
+                                                   ['index', 'index.html index.htm']]]]],
+                                               2))
 
     def test_get_all_certs_keys(self):
         nginx_conf = self.config.parser.abs_path('nginx.conf')

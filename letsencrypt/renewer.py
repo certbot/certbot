@@ -94,7 +94,7 @@ def renew(cert, old_version):
         sans = crypto_util.get_sans_from_cert(f.read())
     new_certr, new_chain, new_key, _ = le_client.obtain_certificate(sans)
     if new_chain:
-        # XXX: Assumes that there was no key change.  We need logic
+        # XXX: Assumes that there was a key change.  We need logic
         #      for figuring out whether there was or not.  Probably
         #      best is to have obtain_certificate return None for
         #      new_key if the old key is to be used (since save_successor

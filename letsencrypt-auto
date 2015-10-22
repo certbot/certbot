@@ -1,5 +1,8 @@
 #!/bin/sh -e
 #
+# A script to run the latest release version of the Let's Encrypt in a
+# virtual environment
+#
 # Installs and updates the letencrypt virtualenv, and runs letsencrypt
 # using that virtual environment.  This allows the client to function decently
 # without requiring specific versions of its dependencies from the operating
@@ -18,7 +21,7 @@ fi
 
 for arg in "$@" ; do 
   # This first clause is redundant with the third, but hedging on portability
-  if [ "$arg" = "-v" ] || [ "$arg" = "--verbose" ] || echo "$arg" | grep -E -- -v+ ; then
+  if [ "$arg" = "-v" ] || [ "$arg" = "--verbose" ] || echo "$arg" | grep -E -- "-v+$" ; then
     VERBOSE=1
   fi
 done
@@ -69,8 +72,12 @@ if [ "$VERBOSE" = 1 ]  ; then
   echo
   $VENV_BIN/pip install -U setuptools
   $VENV_BIN/pip install -U pip
-  # nginx is buggy / disabled for now...
-  $VENV_BIN/pip install -U letsencrypt letsencrypt-apache #letsencrypt-nginx
+  $VENV_BIN/pip install -U letsencrypt letsencrypt-apache 
+  # nginx is buggy / disabled for now, but upgrade it if the user has
+  # installed it manually
+  if $VENV_BIN/pip freeze | grep -q letsencrypt-nginx ; then
+    $VENV_BIN/pip install -U letsencrypt letsencrypt-nginx 
+  fi
 else
   $VENV_BIN/pip install -U setuptools > /dev/null
   echo -n .
@@ -80,6 +87,10 @@ else
   $VENV_BIN/pip install -U letsencrypt > /dev/null
   echo -n .
   $VENV_BIN/pip install -U letsencrypt-apache > /dev/null
+  if $VENV_BIN/pip freeze | grep -q letsencrypt-nginx ; then
+    echo -n .
+    $VENV_BIN/pip install -U letsencrypt-nginx > /dev/null
+  fi
   echo
 fi
 

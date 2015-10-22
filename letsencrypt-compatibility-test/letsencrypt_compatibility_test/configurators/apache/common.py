@@ -176,7 +176,7 @@ class Proxy(configurators_common.Proxy):
             return {"example.com"}
 
     def deploy_cert(self, domain, cert_path, key_path, chain_path=None,
-            fullchain_path=None):
+                    fullchain_path=None):
         """Installs cert"""
         cert_path, key_path, chain_path = self.copy_certs_and_keys(
             cert_path, key_path, chain_path)
