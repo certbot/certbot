@@ -10,5 +10,4 @@
 -e acme
 -e .
 -e letsencrypt-apache
--e letsencrypt-nginx
 -e letsencrypt-compatibility-test[docs]
