@@ -1,4 +1,9 @@
-recursive-include letsencrypt *.json
-recursive-include letsencrypt *.sh
-recursive-include letsencrypt *.conf
-recursive-include letsencrypt/client/tests/testdata *
+include requirements.txt
+include README.rst
+include CHANGES.rst
+include CONTRIBUTING.md
+include LICENSE.txt
+include linter_plugin.py
+include letsencrypt/DISCLAIMER
+recursive-include docs *
+recursive-include letsencrypt/tests/testdata *

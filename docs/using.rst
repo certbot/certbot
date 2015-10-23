@@ -2,59 +2,87 @@
 Using the Let's Encrypt client
 ==============================
 
-Prerequisites
-=============
 
-The demo code is supported and known to work on **Ubuntu only** (even
-closely related `Debian is known to fail`_).
+Getting the code
+================
 
-Therefore, prerequisites for other platforms listed below are provided
-mainly for the :ref:`developers <hacking>` reference.
+Please `install Git`_ and run the following commands:
 
-In general:
+.. code-block:: shell
 
-* `swig`_ is required for compiling `m2crypto`_
-* `augeas`_ is required for the ``python-augeas`` bindings
+   git clone https://github.com/letsencrypt/letsencrypt
+   cd letsencrypt
 
-.. _Debian is known to fail: https://github.com/letsencrypt/lets-encrypt-preview/issues/68
+Alternatively you could `download the ZIP archive`_ and extract the
+snapshot of our repository, but it's strongly recommended to use the
+above method instead.
 
-Ubuntu
-------
-
-::
-
-    sudo apt-get install python python-setuptools python-virtualenv python-dev \
-                 gcc swig dialog libaugeas0 libssl-dev ca-certificates openssl
+.. _`install Git`: https://git-scm.com/book/en/v2/Getting-Started-Installing-Git
+.. _`download the ZIP archive`:
+   https://github.com/letsencrypt/letsencrypt/archive/master.zip
 
 
-Mac OSX
--------
+Installation and Usage
+======================
 
-::
+To install and run the client you just need to type:
 
-    sudo brew install augeas swig
+.. code-block:: shell
 
+   ./letsencrypt-auto
 
-Installation
-============
+(Once letsencrypt is packaged by distributions, the command will just be
+``letsencrypt``.  ``letsencrypt-auto`` is a wrapper which installs virtualized
+dependencies and provides automated updates during the beta program)
 
-::
+.. warning:: Please do **not** use ``python setup.py install`` or ``sudo pip install`.
+             Those mode of operation might corrupt your operating system and is
+             **not supported** by the Let's Encrypt team!
 
-    virtualenv --no-site-packages -p python2 venv
-    ./venv/bin/python setup.py install
-    sudo ./venv/bin/letsencrypt
+The ``letsencrypt`` commandline tool has a builtin help:
 
+.. code-block:: shell
 
-Usage
-=====
-
-The letsencrypt commandline tool has a builtin help:
-
-::
-
-   letsencrypt --help
+   ./letsencrypt-auto --help
 
 
-.. _augeas: http://augeas.net/
-.. _m2crypto: https://github.com/M2Crypto/M2Crypto
-.. _swig: http://www.swig.org/
+Configuration file
+------------------
+
+It is possible to specify configuration file with
+``letsencrypt-auto --config cli.ini`` (or shorter ``-c cli.ini``). For
+instance, if you are a contributor, you might find the following
+handy:
+
+.. include:: ../examples/dev-cli.ini
+   :code: ini
+
+By default, the following locations are searched:
+
+- ``/etc/letsencrypt/cli.ini``
+- ``$XDG_CONFIG_HOME/letsencrypt/cli.ini`` (or
+  ``~/.config/letsencrypt/cli.ini`` if ``$XDG_CONFIG_HOME`` is not
+  set).
+
+.. keep it up to date with constants.py
+
+
+Running with Docker
+===================
+
+Docker_ is another way to quickly obtain testing certs. From the
+server that the domain your requesting a cert for resolves to,
+`install Docker`_, issue the following command:
+
+.. code-block:: shell
+
+   sudo docker run -it --rm -p 443:443 --name letsencrypt \
+               -v "/etc/letsencrypt:/etc/letsencrypt" \
+               -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
+               quay.io/letsencrypt/letsencrypt:latest auth
+
+and follow the instructions. Your new cert will be available in
+``/etc/letsencrypt/certs``.
+
+.. _Docker: https://docker.com
+.. _`install Docker`: https://docs.docker.com/userguide/

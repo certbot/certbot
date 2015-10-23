@@ -19,7 +19,7 @@ persistent=yes
 
 # List of plugins (as comma separated values of python modules names) to load,
 # usually to register additional checkers.
-load-plugins=
+load-plugins=linter_plugin
 
 
 [MESSAGES CONTROL]
@@ -38,7 +38,8 @@ load-plugins=
 # --enable=similarities". If you want to run only the classes checker, but have
 # no Warning level messages displayed, use"--disable=all --enable=classes
 # --disable=W"
-disable=fixme,locally-disabled
+disable=fixme,locally-disabled,abstract-class-not-used,bad-continuation,too-few-public-methods,no-self-use,invalid-name
+# abstract-class-not-used cannot be disabled locally (at least in pylint 1.4.1)
 
 
 [REPORTS]
@@ -81,7 +82,7 @@ required-attributes=
 bad-functions=map,filter,apply,input,file
 
 # Good variable names which should always be accepted, separated by a comma
-good-names=i,j,k,ex,Run,_,fd
+good-names=f,i,j,k,ex,Run,_,fd,logger
 
 # Bad variable names which should always be refused, separated by a comma
 bad-names=foo,bar,baz,toto,tutu,tata
@@ -100,7 +101,7 @@ function-rgx=[a-z_][a-z0-9_]{2,40}$
 function-name-hint=[a-z_][a-z0-9_]{2,40}$
 
 # Regular expression matching correct variable names
-variable-rgx=[a-z_][a-z0-9_]{2,30}$
+variable-rgx=[a-z_][a-z0-9_]{1,30}$
 
 # Naming hint for variable names
 variable-name-hint=[a-z_][a-z0-9_]{2,30}$
@@ -148,10 +149,10 @@ module-rgx=(([a-z_][a-z0-9_]*)|([A-Z][a-zA-Z0-9]+))$
 module-name-hint=(([a-z_][a-z0-9_]*)|([A-Z][a-zA-Z0-9]+))$
 
 # Regular expression matching correct method names
-method-rgx=[a-z_][a-z0-9_]{2,40}$
+method-rgx=[a-z_][a-z0-9_]{2,50}$
 
 # Naming hint for method names
-method-name-hint=[a-z_][a-z0-9_]{2,40}$
+method-name-hint=[a-z_][a-z0-9_]{2,50}$
 
 # Regular expression which should only match function or class names that do
 # not require a docstring.
@@ -172,7 +173,7 @@ notes=FIXME,XXX,TODO
 
 # Logging modules to check that the string format arguments are in logging
 # function parameter format
-logging-modules=logging
+logging-modules=logging,logger
 
 
 [VARIABLES]
@@ -192,7 +193,7 @@ additional-builtins=
 [SIMILARITIES]
 
 # Minimum lines number of a similarity.
-min-similarity-lines=4
+min-similarity-lines=6
 
 # Ignore comments when computing similarities.
 ignore-comments=yes
@@ -207,7 +208,7 @@ ignore-imports=yes
 [FORMAT]
 
 # Maximum number of characters on a single line.
-max-line-length=80
+max-line-length=100
 
 # Regexp for a line that is allowed to be longer than the limit.
 ignore-long-lines=^\s*(# )?<?https?://\S+>?$
@@ -217,7 +218,7 @@ ignore-long-lines=^\s*(# )?<?https?://\S+>?$
 single-line-if-stmt=no
 
 # List of optional constructs for which whitespace checking is disabled
-no-space-check=trailing-comma,dict-separator
+no-space-check=trailing-comma
 
 # Maximum number of lines in a module
 max-module-lines=1250
@@ -227,7 +228,8 @@ max-module-lines=1250
 indent-string='    '
 
 # Number of spaces of indent required inside a hanging or continued line.
-indent-after-paren=4
+# This does something silly/broken...
+#indent-after-paren=4
 
 
 [TYPECHECK]
@@ -239,9 +241,9 @@ ignore-mixin-members=yes
 # List of module names for which member attributes should not be checked
 # (useful for modules/projects where namespaces are manipulated during runtime
 # and thus existing member attributes cannot be deduced by static analysis
-
-# Get rid of the spurious no-member errors in pkg_resources
-ignored-modules=pkg_resources
+ignored-modules=pkg_resources,confargparse,argparse,six.moves,six.moves.urllib
+# import errors ignored only in 1.4.4
+# https://bitbucket.org/logilab/pylint/commits/cd000904c9e2
 
 # List of classes names for which member attributes should not be checked
 # (useful for classes with attributes dynamically set).
@@ -313,7 +315,7 @@ max-branches=12
 max-statements=50
 
 # Maximum number of parents for a class (see R0901).
-max-parents=7
+max-parents=12
 
 # Maximum number of attributes for a class (see R0902).
 max-attributes=7

@@ -1,8 +1,24 @@
 *.pyc
-*.egg-info
+*.egg-info/
+.eggs/
 build/
-dist/
-venv/
-.tox/
+dist*/
+/venv*/
+/kgs/
+/.tox/
+letsencrypt.log
+
+# coverage
 .coverage
-m3
+/htmlcov/
+
+/.vagrant
+
+# editor temporary files
+*~
+*.swp
+\#*#
+.idea
+
+# auth --cert-path --chain-path
+/*.pem
