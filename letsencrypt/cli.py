@@ -53,11 +53,7 @@ SHORT_USAGE = """
 
 The Let's Encrypt agent can obtain and install HTTPS/TLS/SSL certificates.  By
 default, it will attempt to use a webserver both for obtaining and installing
-the cert.  """
-
-# This is the short help for letsencrypt --help, where we disable argparse
-# altogether
-USAGE = SHORT_USAGE + """Major SUBCOMMANDS are:
+the cert. Major SUBCOMMANDS are:
 
   (default) run        Obtain & install a cert in your current webserver
   auth                 Authenticate & obtain cert, but do not install it
@@ -66,7 +62,12 @@ USAGE = SHORT_USAGE + """Major SUBCOMMANDS are:
   rollback             Rollback server configuration changes made during install
   config_changes       Show changes made to server config during installation
 
-Choice of server for authentication/installation:
+"""
+
+
+# This is the short help for letsencrypt --help, where we disable argparse
+# altogether
+USAGE = SHORT_USAGE + """Choice of server for authentication/installation:
 
   --apache          Use the Apache plugin for authentication & installation
   --nginx           Use the Nginx plugin for authentication & installation
@@ -604,9 +605,19 @@ class HelpfulArgumentParser(object):
     'letsencrypt --help security' for security options.
 
     """
+
+    # Maps verbs/subcommands to the functions that implement them
+    VERBS = {"auth": auth, "config_changes": config_changes,
+             "install": install, "plugins": plugins_cmd,
+             "revoke": revoke, "rollback": rollback, "run": run}
+
+    # List of topics for which additional help can be provided
+    HELP_TOPICS = ["all", "security",
+                   "paths", "automation", "testing"] + VERBS.keys()
+
     def __init__(self, args, plugins):
         plugin_names = [name for name, _p in plugins.iteritems()]
-        self.help_topics = HELP_TOPICS + plugin_names + [None]
+        self.help_topics = self.HELP_TOPICS + plugin_names + [None]
         self.parser = configargparse.ArgParser(
             usage=SHORT_USAGE,
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -617,8 +628,8 @@ class HelpfulArgumentParser(object):
         self.parser._add_config_file_help = False  # pylint: disable=protected-access
         self.silent_parser = SilentParser(self.parser)
 
-        self.verb = None
-        self.args = self.preprocess_args(args)
+        self.args = args
+        self.determine_verb()
         help1 = self.prescan_for_flag("-h", self.help_topics)
         help2 = self.prescan_for_flag("--help", self.help_topics)
         assert max(True, "a") == "a", "Gravity changed direction"
@@ -631,25 +642,32 @@ class HelpfulArgumentParser(object):
         #print self.visible_topics
         self.groups = {}  # elements are added by .add_group()
 
-    def preprocess_args(self, args):
-        """Work around some limitations in argparse.
+    def parse_args(self):
+        """Parses command line arguments and returns the result.
 
-        Currently: add the default verb "run" as a default, and ensure that the
-        subcommand / verb comes last.
+        :returns: parsed command line arguments
+        :rtype: argparse.Namespace
+
         """
-        if "-h" in args or "--help" in args:
+        parsed_args = self.parser.parse_args(self.args)
+        parsed_args.func = self.VERBS[self.verb]
+
+        return parsed_args
+
+    def determine_verb(self):
+        """Determines the verb/subcommand provided by the user."""
+        if "-h" in self.args or "--help" in self.args:
             # all verbs double as help arguments; don't get them confused
             self.verb = "help"
-            return args
+            return
 
-        for i, token in enumerate(args):
-            if token in VERBS:
-                reordered = args[:i] + args[(i + 1):] + [args[i]]
+        for i, token in enumerate(self.args):
+            if token in self.VERBS:
                 self.verb = token
-                return reordered
+                self.args.pop(i)
+                return
 
         self.verb = "run"
-        return args + ["run"]
 
     def prescan_for_flag(self, flag, possible_arguments):
         """Checks cli input for flags.
@@ -738,8 +756,16 @@ class HelpfulArgumentParser(object):
             return dict([(t, t == chosen_topic) for t in self.help_topics])
 
 
-def create_parser(plugins, args):
-    """Create parser."""
+def parse_args(plugins, args):
+    """Returns parsed command line arguments.
+
+    :param .PluginsRegistry plugins: available plugins
+    :param list args: command line arguments with the program name removed
+
+    :returns: parsed command line arguments
+    :rtype: argparse.Namespace
+
+    """
     helpful = HelpfulArgumentParser(args, plugins)
 
     # --help is automatically provided by argparse
@@ -821,36 +847,10 @@ def create_parser(plugins, args):
 
     _create_subparsers(helpful)
 
-    return helpful.parser, helpful.args
-
-
-# For now unfortunately this constant just needs to match the code below;
-# there isn't an elegant way to autogenerate it in time.
-VERBS = ["run", "auth", "install", "revoke", "rollback", "config_changes", "plugins"]
-HELP_TOPICS = ["all", "security", "paths", "automation", "testing"] + VERBS
+    return helpful.parse_args()
 
 
 def _create_subparsers(helpful):
-    subparsers = helpful.parser.add_subparsers(metavar="SUBCOMMAND")
-
-    def add_subparser(name):  # pylint: disable=missing-docstring
-        if name == "plugins":
-            func = plugins_cmd
-        else:
-            func = eval(name)  # pylint: disable=eval-used
-        h = func.__doc__.splitlines()[0]
-        subparser = subparsers.add_parser(name, help=h, description=func.__doc__)
-        subparser.set_defaults(func=func)
-        return subparser
-
-    # the order of add_subparser() calls is important: it defines the
-    # order in which subparser names will be displayed in --help
-    # these add_subparser objects return objects to which arguments could be
-    # attached, but they have annoying arg ordering constrains so we use
-    # groups instead: https://github.com/letsencrypt/letsencrypt/issues/820
-    for v in VERBS:
-        add_subparser(v)
-
     helpful.add_group("auth", description="Options for modifying how a cert is obtained")
     helpful.add_group("install", description="Options for modifying how a cert is deployed")
     helpful.add_group("revoke", description="Options for revocation of certs")
@@ -1040,8 +1040,7 @@ def main(cli_args=sys.argv[1:]):
 
     # note: arg parser internally handles --help (and exits afterwards)
     plugins = plugins_disco.PluginsRegistry.find_all()
-    parser, tweaked_cli_args = create_parser(plugins, cli_args)
-    args = parser.parse_args(tweaked_cli_args)
+    args = parse_args(plugins, cli_args)
     config = configuration.NamespaceConfig(args)
     zope.component.provideUtility(config)
 

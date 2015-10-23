@@ -60,7 +60,7 @@ class CLITest(unittest.TestCase):
         return ret, None, stderr, client
 
     def test_no_flags(self):
-        with mock.patch('letsencrypt.cli.run') as mock_run:
+        with MockedVerb("run") as mock_run:
             self._call([])
             self.assertEqual(1, mock_run.call_count)
 
@@ -366,6 +366,32 @@ class DuplicativeCertsTest(renewer_test.BaseRenewableCertTest):
         result = _find_duplicative_certs(
             self.cli_config, ['example.com', 'something.new'])
         self.assertEqual(result, (None, None))
+
+
+class MockedVerb(object):
+    """Simple class that can be used for mocking out verbs/subcommands.
+
+    Storing a dictionary of verbs and the functions that implement them
+    makes mocking much more complicated. This class can be used as a
+    simple context manager for mocking out verbs in CLI tests.
+
+    """
+    def __init__(self, verb_name):
+        from letsencrypt import cli
+
+        self.verb_dict = cli.HelpfulArgumentParser.VERBS
+        self.verb_func = None
+        self.verb_name = verb_name
+
+    def __enter__(self):
+        self.verb_func = self.verb_dict[self.verb_name]
+        mocked_func = mock.MagicMock()
+        self.verb_dict[self.verb_name] = mocked_func
+
+        return mocked_func
+
+    def __exit__(self, unused_type, unused_value, unused_trace):
+        self.verb_dict[self.verb_name] = self.verb_func
 
 
 if __name__ == '__main__':
