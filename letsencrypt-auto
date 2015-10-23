@@ -3,15 +3,28 @@
 # A script to run the latest release version of the Let's Encrypt in a
 # virtual environment
 #
+# ./letsencrypt-auto     --      run the latest public release from PyPI
+#
+# ./lesencrypt-dev       --      run the copy from the local tree, including
+#                                experimental plugins
+#
 # Installs and updates the letencrypt virtualenv, and runs letsencrypt
 # using that virtual environment.  This allows the client to function decently
 # without requiring specific versions of its dependencies from the operating
 # system.
 
 XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share}
-VENV_NAME="letsencrypt"
+if [ "`basename \"$0\"`" = "letsencrypt-dev" ] ; then
+  # use a different venv for letsencrypt-dev and letsencrypt-auto execution
+  VENV_NAME="letsencrypt-dev"
+  DEVMODE=1
+else  # ./letsencrypt-auto
+  VENV_NAME="letsencrypt"
+  DEVMODE=
+fi
 VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
 VENV_BIN=${VENV_PATH}/bin
+
 
 if test "`id -u`" -ne "0" ; then
   SUDO=sudo
@@ -26,11 +39,12 @@ for arg in "$@" ; do
   fi
 done
 
+LE_ROOT="`dirname $0`"
+BOOTSTRAP=$LE_ROOT/bootstrap
 # virtualenv call is not idempotent: it overwrites pip upgraded in
 # later steps, causing "ImportError: cannot import name unpack_url"
 if [ ! -d $VENV_PATH ]
 then
-  BOOTSTRAP=`dirname $0`/bootstrap
   if [ ! -f $BOOTSTRAP/debian.sh ] ; then
     echo "Cannot find the letsencrypt bootstrap scripts in $BOOTSTRAP"
     exit 1
@@ -65,10 +79,27 @@ then
   else
     virtualenv --no-site-packages --python python2 $VENV_PATH > /dev/null
   fi
+
 fi
 
-echo -n "Updating letsencrypt and virtual environment dependencies..."
-if [ "$VERBOSE" = 1 ]  ; then
+if [ "$DEVMODE" = 1 ] ; then
+  echo "Updating letsencrypt virtual environment based on local tree..."
+  # TODO -- only run this block if the setup.py files are newer than $VENV_PATH
+  # TODO -- factorise to make this respect $VERBOSE though because it's local,
+  #         it shouldn't be as prone to interesting errors
+  $VENV_BIN/pip install -U setuptools > /dev/null
+  $VENV_BIN/pip install -U pip > /dev/null
+  cd $LE_ROOT
+  $VENV_BIN/pip install \
+    -r requirements.txt \
+    -e acme[testing] \
+    -e .[dev,docs,testing] \
+    -e letsencrypt-apache \
+    -e letsencrypt-nginx \
+    -e letshelp-letsencrypt \
+    -e letsencrypt-compatibility-test > /dev/null
+elif [ "$VERBOSE" = 1 ]  ; then
+  echo -n "Updating letsencrypt and virtual environment dependencies..."
   echo
   $VENV_BIN/pip install -U setuptools
   $VENV_BIN/pip install -U pip
@@ -79,6 +110,7 @@ if [ "$VERBOSE" = 1 ]  ; then
     $VENV_BIN/pip install -U letsencrypt letsencrypt-nginx 
   fi
 else
+  echo -n "Updating letsencrypt and virtual environment dependencies..."
   $VENV_BIN/pip install -U setuptools > /dev/null
   echo -n .
   $VENV_BIN/pip install -U pip > /dev/null
