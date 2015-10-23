@@ -275,40 +275,6 @@ directory.
 Other methods for running the client
 ====================================
 
-Lower level venv scripts
-------------------------
-
-You can get slightly lower level exposure to virtualenv by using these
-scripts as an alternative to ``letsencrypt-dev``.
-
-these
-by :ref:`installing Let's Encrypt prerequisites <prerequisites>`. Then run:
-
-.. code-block:: shell
-
-   ./bootstrap/dev/venv.sh
-
-Activate the virtualenv:
-
-.. code-block:: shell
-
-   source ./$VENV_NAME/bin/activate
-
-This step should prepend you prompt with ``($VENV_NAME)`` and save you
-from typing ``./$VENV_NAME/bin/...``. It is also required to run some
-of the `testing`_ tools. Virtualenv can be disabled at any time by
-typing ``deactivate``. More information can be found in `virtualenv
-documentation`_.
-
-Note that packages are installed in so called *editable mode*, in
-which any source code changes in the current working directory are
-"live" and no further ``./bootstrap/dev/venv.sh`` or ``pip install
-...`` invocations are necessary while developing.
-
-.. _`virtualenv documentation`: https://virtualenv.pypa.io
-
-
-
 Vagrant
 -------
 
