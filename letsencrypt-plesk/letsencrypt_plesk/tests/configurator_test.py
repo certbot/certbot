@@ -2,8 +2,10 @@
 import unittest
 import mock
 
+from letsencrypt import errors
 from letsencrypt_plesk import configurator
 from letsencrypt_plesk.tests import api_mock
+from acme import challenges
 
 
 class PleskConfiguratorTest(unittest.TestCase):
@@ -47,6 +49,21 @@ class PleskConfiguratorTest(unittest.TestCase):
 
     def test_supported_enhancements(self):
         self.assertEqual([], self.configurator.supported_enhancements())
+
+    def test_enhance(self):
+        self.assertRaises(errors.NotSupportedError, self.configurator.enhance,
+                          'example.com', 'redirect')
+
+    def test_view_config_changes(self):
+        self.assertRaises(errors.NotSupportedError,
+                          self.configurator.view_config_changes)
+
+    def test_get_all_certs_keys(self):
+        self.assertEqual([], self.configurator.get_all_certs_keys())
+
+    def test_get_chall_pref(self):
+        self.assertEqual([challenges.SimpleHTTP],
+                         self.configurator.get_chall_pref('example.com'))
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

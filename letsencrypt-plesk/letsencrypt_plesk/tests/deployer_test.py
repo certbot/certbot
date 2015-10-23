@@ -2,6 +2,7 @@
 import unittest
 import pkg_resources
 import os
+import mock
 
 from letsencrypt import errors
 from letsencrypt_plesk import deployer
@@ -14,15 +15,17 @@ class PleskDeployerTest(unittest.TestCase):
         self.deployer = deployer.PleskDeployer(
             plesk_api_client=api_mock.PleskApiMock(),
             domain="example.com")
+        with open(self._mock_file('test.crt')) as cert_file:
+            with open(self._mock_file('test.key')) as key_file:
+                self.deployer.init_cert(cert_data=cert_file.read(),
+                                        key_data=key_file.read())
 
     def test_install_cert(self):
         self.deployer.plesk_api_client.expects_request(
             'request_certificate_install')
         self.deployer.plesk_api_client.will_response(
             'response_certificate_install_ok')
-        self.deployer.install_cert(
-            cert_path=self._mock_file('test.crt'),
-            key_path=self._mock_file('test.key'))
+        self.deployer.install_cert()
         self.deployer.plesk_api_client.assert_called()
 
     def test_install_cert_error(self):
@@ -30,10 +33,7 @@ class PleskDeployerTest(unittest.TestCase):
             'request_certificate_install')
         self.deployer.plesk_api_client.will_response(
             'response_certificate_install_error')
-        self.assertRaises(errors.PluginError,
-                          self.deployer.install_cert,
-                          cert_path=self._mock_file('test.crt'),
-                          key_path=self._mock_file('test.key'))
+        self.assertRaises(errors.PluginError, self.deployer.install_cert)
         self.deployer.plesk_api_client.assert_called()
 
     @staticmethod
@@ -100,6 +100,15 @@ class PleskDeployerTest(unittest.TestCase):
             'response_certificate_remove_error')
         self.assertRaises(errors.PluginError, self.deployer.remove_cert)
         self.deployer.plesk_api_client.assert_called()
+
+    def test_revert(self):
+        self.deployer.cert_installed = True
+        self.deployer.cert_assigned = True
+        self.deployer.remove_cert = mock.MagicMock()
+        self.deployer.revert()
+        self.deployer.remove_cert.assert_called_once_with()
+        self.assertFalse(self.deployer.cert_installed)
+        self.assertFalse(self.deployer.cert_assigned)
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

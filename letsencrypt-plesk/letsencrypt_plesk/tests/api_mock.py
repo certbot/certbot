@@ -34,4 +34,3 @@ class PleskApiMock(object):
         return pkg_resources.resource_filename(
             "letsencrypt_plesk.tests", os.path.join(
                 "testdata", "api", filename + ".xml"))
-

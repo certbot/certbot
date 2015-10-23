@@ -6,6 +6,7 @@ import zope.interface
 from acme import challenges
 
 from letsencrypt import interfaces
+from letsencrypt import errors
 
 from letsencrypt.plugins import common
 
@@ -42,6 +43,8 @@ class PleskConfigurator(common.Plugin):
         if self.plesk_api_client is None:
             self.plesk_api_client = api_client.PleskApiClient(
                 secret_key=self.conf('secret-key'))
+        # TODO raise .NoInstallationError when Plesk cannot be located
+        # TODO raise .NotSupportedError when Plesk version is not supported
 
     @staticmethod
     def more_info():
@@ -110,84 +113,62 @@ class PleskConfigurator(common.Plugin):
                 compact.append(name)
         return compact
 
-    def deploy_cert(self, domain, cert_path, key_path, chain_path=None,
-                    fullchain_path=None):  # pylint: disable=unused-argument
-        """Deploy certificate in Plesk via API."""
-        plesk_deployer = deployer.PleskDeployer(self.plesk_api_client, domain)
-        plesk_deployer.install_cert(cert_path, key_path, chain_path)
-        plesk_deployer.assign_cert()
-        self.plesk_deployers[domain] = plesk_deployer
-
-    def enhance(self, domain, enhancement, options=None):
+    @staticmethod
+    def enhance(unused_domain, unused_enhancement, unused_options=None):
         """No enhancements are supported now."""
-        pass  # pragma: no cover
+        raise errors.NotSupportedError('No enhancements are supported now.')
 
     @staticmethod
     def supported_enhancements():
         """Returns a list of supported enhancements."""
         return []
 
-    def get_all_certs_keys(self):
-        """Retrieve all certs and keys set in configuration.
+    @staticmethod
+    def get_all_certs_keys():
+        """No ability to retrieve certificate data from Plesk."""
+        return []
 
-        :returns: tuples with form `[(cert, key, path)]`, where:
+    def deploy_cert(self, domain, cert_path, key_path, chain_path=None,
+                    fullchain_path=None):  # pylint: disable=unused-argument
+        """Initialize deploy certificate in Plesk via API."""
+        plesk_deployer = deployer.PleskDeployer(self.plesk_api_client, domain)
+        with open(cert_path) as cert_file:
+            cert_data = cert_file.read()
+        with open(key_path) as key_file:
+            key_data = key_file.read()
+        if chain_path:
+            with open(chain_path) as chain_file:
+                chain_data = chain_file.read()
+        else:
+            chain_data = None
 
-            - `cert` - str path to certificate file
-            - `key` - str path to associated key file
-            - `path` - file path to configuration file
+        plesk_deployer.init_cert(cert_data, key_data, chain_data)
+        self.plesk_deployers[domain] = plesk_deployer
 
-        :rtype: list
+    def save(self, unused_title=None, unused_temporary=False):
+        """Push Plesk to deploy certificate."""
+        for domain in self.plesk_deployers:
+            plesk_deployer = self.plesk_deployers[domain]
+            if plesk_deployer.cert_name() in plesk_deployer.get_certs():
+                plesk_deployer.remove_cert()
+            plesk_deployer.install_cert()
+            plesk_deployer.assign_cert()
 
-        """
-        # TODO implement
-        return set()
-
-    def save(self, title=None, temporary=False):
-        """Saves all changes to the configuration files.
-
-        Both title and temporary are needed because a save may be
-        intended to be permanent, but the save is not ready to be a full
-        checkpoint
-
-        :param str title: The title of the save. If a title is given, the
-            configuration will be saved as a new checkpoint and put in a
-            timestamped directory. `title` has no effect if temporary is true.
-
-        :param bool temporary: Indicates whether the changes made will
-            be quickly reversed in the future (challenges)
-
-        :raises .PluginError: when save is unsuccessful
-
-        """
-        # TODO implement
-
-    def rollback_checkpoints(self, rollback=1):
-        """Revert `rollback` number of configuration checkpoints.
-
-        :raises .PluginError: when configuration cannot be fully reverted
-
-        """
-        # TODO implement
+    def rollback_checkpoints(self, unused_rollback=1):
+        """Revert deployer state to the previous."""
+        for domain in self.plesk_deployers:
+            self.plesk_deployers[domain].revert()
 
     def recovery_routine(self):
-        """Revert configuration to most recent finalized checkpoint.
+        """Revert deployer changes."""
+        for domain in self.plesk_deployers:
+            self.plesk_deployers[domain].revert()
 
-        Remove all changes (temporary and permanent) that have not been
-        finalized. This is useful to protect against crashes and other
-        execution interruptions.
-
-        :raises .errors.PluginError: If unable to recover the configuration
-
-        """
-        # TODO implement
-
-    def view_config_changes(self):
-        """Display all of the LE config changes.
-
-        :raises .PluginError: when config changes cannot be parsed
-
-        """
-        # TODO implement
+    @staticmethod
+    def view_config_changes():
+        """No ability to preview configs generated by Plesk."""
+        raise errors.NotSupportedError(
+            'No ability to preview configs generated by Plesk')
 
     @staticmethod
     def config_test():

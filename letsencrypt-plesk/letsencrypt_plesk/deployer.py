@@ -13,6 +13,8 @@ class PleskDeployer(object):
         """Initialize Plesk Certificate Deployer"""
         self.plesk_api_client = plesk_api_client
         self.domain = domain
+        self.cert_data = self.key_data = self.chain_data = None
+        self.cert_installed = self.cert_assigned = False
 
     def cert_name(self):
         """Return name of the domain certificate in Plesk."""
@@ -37,7 +39,13 @@ class PleskDeployer(object):
             certs = [certs]
         return [cert['name'] for cert in certs]
 
-    def install_cert(self, cert_path, key_path, chain_path=None):
+    def init_cert(self, cert_data, key_data, chain_data=None):
+        """Initialize certificate data."""
+        self.cert_data = cert_data
+        self.key_data = key_data
+        self.chain_data = chain_data if chain_data else {}
+
+    def install_cert(self):
         """Install certificate to the domain repository in Plesk."""
         request = {'packet': {
             'certificate': {
@@ -46,9 +54,9 @@ class PleskDeployer(object):
                     {'site': self.domain},
                     {'content': [
                         {'csr': {}},
-                        {'pvt': self._read_file(key_path)},
-                        {'cert': self._read_file(cert_path)},
-                        {'ca': self._read_file(chain_path)},
+                        {'pvt': self.key_data},
+                        {'cert': self.cert_data},
+                        {'ca': self.chain_data},
                     ]}
                 ]
             }
@@ -59,13 +67,7 @@ class PleskDeployer(object):
             error_text = str(api_result['errtext'])
             raise errors.PluginError(
                 'Install certificate failure: %s' % error_text)
-
-    @staticmethod
-    def _read_file(path):
-        if not path:
-            return {}
-        with open(path) as f:
-            return f.read()
+        self.cert_installed = True
 
     def assign_cert(self):
         """Assign certificate to the domain and enable SSL."""
@@ -90,6 +92,7 @@ class PleskDeployer(object):
             error_text = str(api_result['errtext'])
             raise errors.PluginError(
                 'Assign certificate failure: %s' % error_text)
+        self.cert_assigned = True
 
     def remove_cert(self):
         """Remove certificate from the domain repository in Plesk."""
@@ -107,3 +110,10 @@ class PleskDeployer(object):
             error_text = str(api_result['errtext'])
             raise errors.PluginError(
                 'Remove certificate failure: %s' % error_text)
+
+    def revert(self):
+        """Revert changes in Plesk."""
+        if self.cert_installed:
+            self.remove_cert()
+            self.cert_installed = False
+        self.cert_assigned = False
