@@ -10,23 +10,41 @@ Hacking
 Running a local copy of the client
 ----------------------------------
 
-Running the client in developer mode from your local tree is very similar to
-running the released versions of the client; just replace ``letsencrypt-auto``
-with ``letsencrypt-dev``:
+Running the client in developer mode from your local tree is a little
+different than running ``letsencrypt-auto``.  To get set up, do these things
+once:
 
 .. code-block:: shell
 
    git clone https://github.com/letsencrypt/letsencrypt
    cd letsencrypt
-   ./letsencrypt-dev
+   ./bootstrap/install-deps.sh
+   ./bootstrap/dev/venv.sh
+
+Then in each shell where you're working on the client, do:
+
+.. code-block:: shell
+
+   ./venv/bin/activate
+
+After that, your shell will be using the virtual environment, and you run the
+client by typing:
+
+.. code-block:: shell
+
+   letsencrypt
+
+Activating a shell in this way makes it easier to run unit tests
+with ``tox`` and integration tests, as described below.
 
 
 Find issues to work on
 ----------------------
 
-You can find the open issues in the `github issue tracker`_.  If you're
-starting work on something, post a comment to let others know and seek
-feedback on your plan where appropriate.
+You can find the open issues in the `github issue tracker`_.  Comparatively
+easy ones are marked `Good Volunteer Task`_.  If you're starting work on
+something, post a comment to let others know and seek feedback on your plan
+where appropriate.
 
 Once you've got a working branch, you can open a pull request.  All changes in
 your pull request must have thorough unit test coverage, pass our
@@ -34,6 +52,7 @@ your pull request must have thorough unit test coverage, pass our
 <coding-style>`.
 
 .. _github issue tracker: https://github.com/letsencrypt/letsencrypt/issues
+.. _Good Volunteer Task: https://github.com/letsencrypt/letsencrypt/issues?q=is%3Aopen+is%3Aissue+label%3A%22Good+Volunteer+Task%22
 
 Testing
 -------
@@ -59,6 +78,8 @@ The following tools are there to help you:
 
 Integration testing with the boulder CA
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. _integration:
 
 Generally it is sufficient to open a pull request and let Github and Travis run
 integration tests for you.
@@ -144,12 +165,14 @@ in a separate branch).
 Installer
 ---------
 
-Installers classes exist to actually setup the certificate in a server,
+Installers plugins exist to actually setup the certificate in a server,
 possibly tweak the security configuration to make it more correct and secure
 (Fix some mixed content problems, turn on HSTS, redirect to HTTPS, etc).
 Installer plugins tell the main client about their abilities to do the latter
-via the :meth:`~.IInstaller.supported_enhancements` call. We currently only
-have one Installer written (still developing), `~.ApacheConfigurator`.
+via the :meth:`~.IInstaller.supported_enhancements` call. We currently
+have two Installers in the tree, the `~.ApacheConfigurator`. and the
+`~.NginxConfigurator`.  External projects have made some progress toward
+support for IIS, Icecast and Plesk.
 
 Installers and Authenticators will oftentimes be the same class/object
 (because for instance both tasks can be performed by a webserver like nginx)
