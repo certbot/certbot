@@ -7,40 +7,33 @@ Contributing
 Hacking
 =======
 
-All changes in your pull request **must** have 100% unit test coverage, pass
-our `integration`_ tests, **and** be compliant with the
-:ref:`coding style <coding-style>`.
+Running a local copy of the client
+----------------------------------
 
-
-Bootstrap
----------
-
-Start by :ref:`installing Let's Encrypt prerequisites
-<prerequisites>`. Then run:
+Running the client in developer mode from your local tree is very similar to
+running the released versions of the client; just replace ``letsencrypt-auto``
+with ``letsencrypt-dev``:
 
 .. code-block:: shell
 
-   ./bootstrap/dev/venv.sh
+   git clone https://github.com/letsencrypt/letsencrypt
+   cd letsencrypt
+   ./letsencrypt-dev
 
-Activate the virtualenv:
 
-.. code-block:: shell
+Find issues to work on
+----------------------
 
-   source ./$VENV_NAME/bin/activate
+You can find the open issues in the `github issue tracker`_.  If you're
+starting work on something, post a comment to let others know and seek
+feedback on your plan where appropriate.
 
-This step should prepend you prompt with ``($VENV_NAME)`` and save you
-from typing ``./$VENV_NAME/bin/...``. It is also required to run some
-of the `testing`_ tools. Virtualenv can be disabled at any time by
-typing ``deactivate``. More information can be found in `virtualenv
-documentation`_.
+Once you've got a working branch, you can open a pull request.  All changes in
+your pull request must have thorough unit test coverage, pass our
+`integration`_ tests, and be compliant with the :ref:`coding style
+<coding-style>`.
 
-Note that packages are installed in so called *editable mode*, in
-which any source code changes in the current working directory are
-"live" and no further ``./bootstrap/dev/venv.sh`` or ``pip install
-...`` invocations are necessary while developing.
-
-.. _`virtualenv documentation`: https://virtualenv.pypa.io
-
+.. _github issue tracker: https://github.com/letsencrypt/letsencrypt/issues
 
 Testing
 -------
@@ -64,8 +57,12 @@ The following tools are there to help you:
   but you won't get TAB completion...
 
 
-Integration
-~~~~~~~~~~~
+Integration testing with the boulder CA
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Generally it is sufficient to open a pull request and let Github and Travis run
+integration tests for you.
+
 Mac OS X users: Run `./tests/mac-bootstrap.sh` instead of `boulder-start.sh` to
 install dependencies, configure the environment, and start boulder.
 
@@ -89,55 +86,6 @@ the integration tests suite.
 
 .. _Boulder: https://github.com/letsencrypt/boulder
 .. _Go: https://golang.org
-
-
-Vagrant
--------
-
-If you are a Vagrant user, Let's Encrypt comes with a Vagrantfile that
-automates setting up a development environment in an Ubuntu 14.04
-LTS VM. To set it up, simply run ``vagrant up``. The repository is
-synced to ``/vagrant``, so you can get started with:
-
-.. code-block:: shell
-
-  vagrant ssh
-  cd /vagrant
-  ./venv/bin/pip install -r requirements.txt .[dev,docs,testing]
-  sudo ./venv/bin/letsencrypt
-
-Support for other Linux distributions coming soon.
-
-.. note::
-   Unfortunately, Python distutils and, by extension, setup.py and
-   tox, use hard linking quite extensively. Hard linking is not
-   supported by the default sync filesystem in Vagrant. As a result,
-   all actions with these commands are *significantly slower* in
-   Vagrant. One potential fix is to `use NFS`_ (`related issue`_).
-
-.. _use NFS: http://docs.vagrantup.com/v2/synced-folders/nfs.html
-.. _related issue: https://github.com/ClusterHQ/flocker/issues/516
-
-
-Docker
-------
-
-OSX users will probably find it easiest to set up a Docker container for
-development. Let's Encrypt comes with a Dockerfile (``Dockerfile-dev``)
-for doing so. To use Docker on OSX, install and setup docker-machine using the
-instructions at https://docs.docker.com/installation/mac/.
-
-To build the development Docker image::
-
-  docker build -t letsencrypt -f Dockerfile-dev .
-
-Now run tests inside the Docker image:
-
-.. code-block:: shell
-
-  docker run -it letsencrypt bash
-  cd src
-  tox -e py27
 
 
 Code components and layout
@@ -292,6 +240,94 @@ This should generate documentation in the ``docs/_build/html``
 directory.
 
 .. _prerequisites:
+
+
+Other methods for running the client
+====================================
+
+Lower level venv scripts
+------------------------
+
+You can get slightly lower level exposure to virtualenv by using these
+scripts as an alternative to ``letsencrypt-dev``.
+
+these
+by :ref:`installing Let's Encrypt prerequisites <prerequisites>`. Then run:
+
+.. code-block:: shell
+
+   ./bootstrap/dev/venv.sh
+
+Activate the virtualenv:
+
+.. code-block:: shell
+
+   source ./$VENV_NAME/bin/activate
+
+This step should prepend you prompt with ``($VENV_NAME)`` and save you
+from typing ``./$VENV_NAME/bin/...``. It is also required to run some
+of the `testing`_ tools. Virtualenv can be disabled at any time by
+typing ``deactivate``. More information can be found in `virtualenv
+documentation`_.
+
+Note that packages are installed in so called *editable mode*, in
+which any source code changes in the current working directory are
+"live" and no further ``./bootstrap/dev/venv.sh`` or ``pip install
+...`` invocations are necessary while developing.
+
+.. _`virtualenv documentation`: https://virtualenv.pypa.io
+
+
+
+Vagrant
+-------
+
+If you are a Vagrant user, Let's Encrypt comes with a Vagrantfile that
+automates setting up a development environment in an Ubuntu 14.04
+LTS VM. To set it up, simply run ``vagrant up``. The repository is
+synced to ``/vagrant``, so you can get started with:
+
+.. code-block:: shell
+
+  vagrant ssh
+  cd /vagrant
+  ./venv/bin/pip install -r requirements.txt .[dev,docs,testing]
+  sudo ./venv/bin/letsencrypt
+
+Support for other Linux distributions coming soon.
+
+.. note::
+   Unfortunately, Python distutils and, by extension, setup.py and
+   tox, use hard linking quite extensively. Hard linking is not
+   supported by the default sync filesystem in Vagrant. As a result,
+   all actions with these commands are *significantly slower* in
+   Vagrant. One potential fix is to `use NFS`_ (`related issue`_).
+
+.. _use NFS: http://docs.vagrantup.com/v2/synced-folders/nfs.html
+.. _related issue: https://github.com/ClusterHQ/flocker/issues/516
+
+
+Docker
+------
+
+OSX users will probably find it easiest to set up a Docker container for
+development. Let's Encrypt comes with a Dockerfile (``Dockerfile-dev``)
+for doing so. To use Docker on OSX, install and setup docker-machine using the
+instructions at https://docs.docker.com/installation/mac/.
+
+To build the development Docker image::
+
+  docker build -t letsencrypt -f Dockerfile-dev .
+
+Now run tests inside the Docker image:
+
+.. code-block:: shell
+
+  docker run -it letsencrypt bash
+  cd src
+  tox -e py27
+
+
 
 Notes on OS depedencies
 =======================
