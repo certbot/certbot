@@ -119,7 +119,8 @@ which implement bindings to alternative UI libraries.
 Authenticators
 --------------
 
-Authenticators are plugins designed to solve challenges received from
+Authenticators are plugins designed prove that this client deserves a
+certificate for some domain name by solving challenges received from
 the ACME server. From the protocol, there are essentially two
 different types of challenges. Challenges that must be solved by
 individual plugins in order to satisfy domain validation (subclasses
@@ -143,17 +144,23 @@ in a separate branch).
 Installer
 ---------
 
-Installers classes exist to actually setup the certificate and be able
-to enhance the configuration. (Turn on HSTS, redirect to HTTPS,
-etc). You can indicate your abilities through the
-:meth:`~.IInstaller.supported_enhancements` call. We currently only
+Installers classes exist to actually setup the certificate in a server,
+possibly tweak the security configuration to make it more correct and secure
+(Fix some mixed content problems, turn on HSTS, redirect to HTTPS, etc).
+Installer plugins tell the main client about their abilities to do the latter
+via the :meth:`~.IInstaller.supported_enhancements` call. We currently only
 have one Installer written (still developing), `~.ApacheConfigurator`.
 
-Installers and Authenticators will oftentimes be the same
-class/object. Installers and Authenticators are kept separate because
+Installers and Authenticators will oftentimes be the same class/object
+(because for instance both tasks can be performed by a webserver like nginx)
+though this is not always the case (the standalone plugin is an authenticator
+that listens on port 443, but it cannot install certs; a postfix plugin would
+be an installer but not an authenticator).
+
+Installers and Authenticators are kept separate because
 it should be possible to use the `~.StandaloneAuthenticator` (it sets
 up its own Python server to perform challenges) with a program that
-cannot solve challenges itself. (Imagine MTA installers).
+cannot solve challenges itself (Such as MTA installers).
 
 
 Installer Development
