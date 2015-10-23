@@ -341,7 +341,7 @@ def diagnose_configurator_problem(cfg_type, requested, plugins):
 
     :param str cfg_type: either "installer" or "authenticator"
     :param str requested: the plugin that was requested
-    :param PluginRegistry plugins: available plugins
+    :param .PluginsRegistry plugins: available plugins
 
     :raises error.PluginSelectionError: if there was a problem
     """
