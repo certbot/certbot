@@ -324,9 +324,8 @@ Now run tests inside the Docker image:
   tox -e py27
 
 
-
-Notes on OS depedencies
-=======================
+Notes on OS dependencies
+========================
 
 OS level dependencies are managed by scripts in ``bootstrap``.  Some notes
 are provided here mainly for the :ref:`developers <hacking>` reference.
