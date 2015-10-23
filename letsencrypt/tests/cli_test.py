@@ -372,8 +372,13 @@ class MockedVerb(object):
     """Simple class that can be used for mocking out verbs/subcommands.
 
     Storing a dictionary of verbs and the functions that implement them
-    makes mocking much more complicated. This class can be used as a
-    simple context manager for mocking out verbs in CLI tests.
+    in letsencrypt.cli makes mocking much more complicated. This class
+    can be used as a simple context manager for mocking out verbs in CLI
+    tests. For example:
+
+    with MockedVerb("run") as mock_run:
+        self._call([])
+        self.assertEqual(1, mock_run.call_count)
 
     """
     def __init__(self, verb_name):
