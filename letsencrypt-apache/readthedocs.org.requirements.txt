@@ -7,4 +7,6 @@
 # in --editable mode (-e), just "pip install .[docs]" does not work as
 # expected and "pip install -e .[docs]" must be used instead
 
+-e acme
+-e .
 -e letsencrypt-apache[docs]
