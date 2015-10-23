@@ -9,4 +9,5 @@
 
 -e acme
 -e .
+-e letsencrypt-apache
 -e letsencrypt-compatibility-test[docs]
