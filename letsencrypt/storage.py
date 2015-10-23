@@ -5,14 +5,13 @@ import re
 import time
 
 import configobj
-import OpenSSL
 import parsedatetime
 import pytz
-import pyrfc3339
 
 from letsencrypt import constants
 from letsencrypt import crypto_util
 from letsencrypt import errors
+from letsencrypt import error_handler
 from letsencrypt import le_util
 
 ALL_FOUR = ("cert", "privkey", "chain", "fullchain")
@@ -80,54 +79,49 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         renewal configuration file and/or systemwide defaults.
 
     """
-    def __init__(self, configfile, config_opts=None, cli_config=None):
+    def __init__(self, config_filename, cli_config):
         """Instantiate a RenewableCert object from an existing lineage.
 
-        :param configobj.ConfigObj configfile: an already-parsed
-            ConfigObj object made from reading the renewal config file
+        :param str config_filename: the path to the renewal config file
             that defines this lineage.
-
-        :param configobj.ConfigObj config_opts: systemwide defaults for
-            renewal properties not otherwise specified in the individual
-            renewal config file.
-        :param .RenewerConfiguration cli_config:
+        :param .RenewerConfiguration: parsed command line arguments
 
         :raises .CertStorageError: if the configuration file's name didn't end
             in ".conf", or the file is missing or broken.
-        :raises TypeError: if the provided renewal configuration isn't a
-            ConfigObj object.
 
         """
         self.cli_config = cli_config
-        if isinstance(configfile, configobj.ConfigObj):
-            if not os.path.basename(configfile.filename).endswith(".conf"):
-                raise errors.CertStorageError(
-                    "renewal config file name must end in .conf")
-            self.lineagename = os.path.basename(
-                configfile.filename)[:-len(".conf")]
-        else:
-            raise TypeError("RenewableCert config must be ConfigObj object")
+        if not config_filename.endswith(".conf"):
+            raise errors.CertStorageError(
+                "renewal config file name must end in .conf")
+        self.lineagename = os.path.basename(
+            config_filename[:-len(".conf")])
 
         # self.configuration should be used to read parameters that
         # may have been chosen based on default values from the
         # systemwide renewal configuration; self.configfile should be
         # used to make and save changes.
-        self.configfile = configfile
+        try:
+            self.configfile = configobj.ConfigObj(config_filename)
+        except configobj.ConfigObjError:
+            raise errors.CertStorageError(
+                "error parsing {0}".format(config_filename))
         # TODO: Do we actually use anything from defaults and do we want to
         #       read further defaults from the systemwide renewal configuration
         #       file at this stage?
-        self.configuration = config_with_defaults(config_opts)
-        self.configuration.merge(self.configfile)
+        self.configuration = config_with_defaults(self.configfile)
 
         if not all(x in self.configuration for x in ALL_FOUR):
             raise errors.CertStorageError(
                 "renewal config file {0} is missing a required "
-                "file reference".format(configfile))
+                "file reference".format(self.configfile))
 
         self.cert = self.configuration["cert"]
         self.privkey = self.configuration["privkey"]
         self.chain = self.configuration["chain"]
         self.fullchain = self.configuration["fullchain"]
+
+        self._fix_symlinks()
 
     def _consistent(self):
         """Are the files associated with this lineage self-consistent?
@@ -204,6 +198,40 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
     #       targets may not exist.  (This shouldn't happen, but might
     #       happen as a result of random tampering by a sysadmin, or
     #       filesystem errors, or crashes.)
+
+    def _previous_symlinks(self):
+        """Returns the kind and path of all symlinks used in recovery.
+
+        :returns: list of (kind, symlink) tuples
+        :rtype: list
+
+        """
+        previous_symlinks = []
+        for kind in ALL_FOUR:
+            link_dir = os.path.dirname(getattr(self, kind))
+            link_base = "previous_{0}.pem".format(kind)
+            previous_symlinks.append((kind, os.path.join(link_dir, link_base)))
+
+        return previous_symlinks
+
+    def _fix_symlinks(self):
+        """Fixes symlinks in the event of an incomplete version update.
+
+        If there is no problem with the current symlinks, this function
+        has no effect.
+
+        """
+        previous_symlinks = self._previous_symlinks()
+        if all(os.path.exists(link[1]) for link in previous_symlinks):
+            for kind, previous_link in previous_symlinks:
+                current_link = getattr(self, kind)
+                if os.path.lexists(current_link):
+                    os.unlink(current_link)
+                os.symlink(os.readlink(previous_link), current_link)
+
+        for _, link in previous_symlinks:
+            if os.path.exists(link):
+                os.unlink(link)
 
     def current_target(self, kind):
         """Returns full path to which the specified item currently points.
@@ -376,51 +404,19 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
     def update_all_links_to(self, version):
         """Change all member objects to point to the specified version.
 
-        :param int version: the desired version"""
-
-        for kind in ALL_FOUR:
-            self._update_link_to(kind, version)
-
-    def _notafterbefore(self, method, version):
-        """Internal helper function for finding notbefore/notafter."""
-        if version is None:
-            target = self.current_target("cert")
-        else:
-            target = self.version("cert", version)
-        pem = open(target).read()
-        x509 = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM,
-                                               pem)
-        i = method(x509)
-        return pyrfc3339.parse(i[0:4] + "-" + i[4:6] + "-" + i[6:8] + "T" +
-                               i[8:10] + ":" + i[10:12] + ":" + i[12:])
-
-    def notbefore(self, version=None):
-        """When does the specified cert version start being valid?
-
-        (If no version is specified, use the current version.)
-
-        :param int version: the desired version number
-
-        :returns: the notBefore value from the specified cert version in
-            this lineage
-        :rtype: :class:`datetime.datetime`
+        :param int version: the desired version
 
         """
-        return self._notafterbefore(lambda x509: x509.get_notBefore(), version)
+        with error_handler.ErrorHandler(self._fix_symlinks):
+            previous_links = self._previous_symlinks()
+            for kind, link in previous_links:
+                os.symlink(self.current_target(kind), link)
 
-    def notafter(self, version=None):
-        """When does the specified cert version stop being valid?
+            for kind in ALL_FOUR:
+                self._update_link_to(kind, version)
 
-        (If no version is specified, use the current version.)
-
-        :param int version: the desired version number
-
-        :returns: the notAfter value from the specified cert version in
-            this lineage
-        :rtype: :class:`datetime.datetime`
-
-        """
-        return self._notafterbefore(lambda x509: x509.get_notAfter(), version)
+            for _, link in previous_links:
+                os.unlink(link)
 
     def names(self, version=None):
         """What are the subject names of this certificate?
@@ -470,7 +466,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
                 interval = self.configuration.get("deploy_before_expiry",
                                                   "5 days")
                 autodeploy_interval = parse_time_interval(interval)
-                expiry = self.notafter()
+                expiry = crypto_util.notAfter(self.current_target("cert"))
                 now = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
                 remaining = expiry - now
                 if remaining < autodeploy_interval:
@@ -537,7 +533,8 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             # Renewals on the basis of expiry time
             interval = self.configuration.get("renew_before_expiry", "10 days")
             autorenew_interval = parse_time_interval(interval)
-            expiry = self.notafter(self.latest_common_version())
+            expiry = crypto_util.notAfter(self.version(
+                "cert", self.latest_common_version()))
             now = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
             remaining = expiry - now
             if remaining < autorenew_interval:
@@ -574,6 +571,8 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         :param configobj.ConfigObj config: renewal configuration
             defaults, affecting, for example, the locations of the
             directories where the associated files will be saved
+        :param .RenewerConfiguration cli_config: parsed command line
+            arguments
 
         :returns: the newly-created RenewalCert object
         :rtype: :class:`storage.renewableCert`"""
@@ -643,7 +642,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         # TODO: add human-readable comments explaining other available
         #       parameters
         new_config.write()
-        return cls(new_config, config, cli_config)
+        return cls(new_config.filename, cli_config)
 
     def save_successor(self, prior_version, new_cert, new_privkey, new_chain):
         """Save new cert and chain as a successor of a prior version.

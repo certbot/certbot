@@ -17,13 +17,6 @@ import os
 import re
 import sys
 
-import mock
-
-
-# http://docs.readthedocs.org/en/latest/faq.html#i-get-import-errors-on-libraries-that-depend-on-c-modules
-# c.f. #262
-sys.modules.update(
-    (mod_name, mock.MagicMock()) for mod_name in ['augeas'])
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -36,13 +29,11 @@ with codecs.open(init_fn, encoding='utf8') as fd:
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath(os.path.join(here, '..')))
-for pkg in 'acme', 'letsencrypt-apache', 'letsencrypt-nginx':
-    sys.path.insert(0, os.path.abspath(os.path.join(here, '..', pkg)))
 
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-#needs_sphinx = '1.0'
+needs_sphinx = '1.0'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -74,7 +65,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Let\'s Encrypt'
-copyright = u'2014, Let\'s Encrypt Project'
+copyright = u'2014-2015, Let\'s Encrypt Project'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -125,6 +116,9 @@ pygments_style = 'sphinx'
 
 # If true, keep warnings as "system message" paragraphs in the built documents.
 #keep_warnings = False
+
+# If true, `todo` and `todoList` produce output, else they produce nothing.
+todo_include_todos = True
 
 
 # -- Options for HTML output ----------------------------------------------
@@ -289,7 +283,6 @@ man_pages = [
      [project], 1),
     ('man/letsencrypt-renewer', 'letsencrypt-renewer',
      u'letsencrypt-renewer script documentation', [project], 1),
-    ('man/jws', 'jws', u'jws script documentation', [project], 1),
 ]
 
 # If true, show URL addresses after external links.
@@ -320,7 +313,7 @@ texinfo_documents = [
 #texinfo_no_detailmenu = False
 
 
-# Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'http://docs.python.org/': None}
-
-todo_include_todos = True
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/', None),
+    'acme': ('https://acme-python.readthedocs.org', None),
+}

@@ -8,6 +8,7 @@ import logging
 import os
 
 import OpenSSL
+import pyrfc3339
 import zope.component
 
 from acme import crypto_util as acme_crypto_util
@@ -276,3 +277,48 @@ def dump_pyopenssl_chain(chain, filetype=OpenSSL.crypto.FILETYPE_PEM):
     # assumes that OpenSSL.crypto.dump_certificate includes ending
     # newline character
     return "".join(_dump_cert(cert) for cert in chain)
+
+
+def notBefore(cert_path):
+    """When does the cert at cert_path start being valid?
+
+    :param str cert_path: path to a cert in PEM format
+
+    :returns: the notBefore value from the cert at cert_path
+    :rtype: :class:`datetime.datetime`
+
+    """
+    return _notAfterBefore(cert_path, OpenSSL.crypto.X509.get_notBefore)
+
+
+def notAfter(cert_path):
+    """When does the cert at cert_path stop being valid?
+
+    :param str cert_path: path to a cert in PEM format
+
+    :returns: the notAfter value from the cert at cert_path
+    :rtype: :class:`datetime.datetime`
+
+    """
+    return _notAfterBefore(cert_path, OpenSSL.crypto.X509.get_notAfter)
+
+
+def _notAfterBefore(cert_path, method):
+    """Internal helper function for finding notbefore/notafter.
+
+    :param str cert_path: path to a cert in PEM format
+    :param function method: one of ``OpenSSL.crypto.X509.get_notBefore``
+        or ``OpenSSL.crypto.X509.get_notAfter``
+
+    :returns: the notBefore or notAfter value from the cert at cert_path
+    :rtype: :class:`datetime.datetime`
+
+    """
+    with open(cert_path) as f:
+        x509 = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM,
+                                               f.read())
+    timestamp = method(x509)
+    reformatted_timestamp = [timestamp[0:4], "-", timestamp[4:6], "-",
+                             timestamp[6:8], "T", timestamp[8:10], ":",
+                             timestamp[10:12], ":", timestamp[12:]]
+    return pyrfc3339.parse("".join(reformatted_timestamp))

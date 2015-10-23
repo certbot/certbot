@@ -14,7 +14,7 @@ export PATH="/usr/sbin:$PATH"  # /usr/sbin/nginx
 export GOPATH="${GOPATH:-/tmp/go}"
 export PATH="$GOPATH/bin:$PATH"
 
-if [ `uname`  == 'Darwin' ]; then
+if [ `uname` = "Darwin" ];then
   readlink="greadlink"
 else
   readlink="readlink"
@@ -27,8 +27,8 @@ common() {
         "$@"
 }
 
-common --domains le1.wtf auth
-common --domains le2.wtf run
+common --domains le1.wtf --standalone-supported-challenges dvsni auth
+common --domains le2.wtf --standalone-supported-challenges simpleHttp run
 common -a manual -d le.wtf auth
 
 export CSR_PATH="${root}/csr.der" KEY_PATH="${root}/key.pem" \

@@ -84,14 +84,8 @@ run (in a separate terminal)::
 
 If you would like to test `letsencrypt_nginx` plugin (highly
 encouraged) make sure to install prerequisites as listed in
-``letsencrypt-nginx/tests/boulder-integration.sh``:
-
-.. include:: ../letsencrypt-nginx/tests/boulder-integration.sh
-   :start-line: 1
-   :end-line: 2
-   :code: shell
-
-and rerun the integration tests suite.
+``letsencrypt-nginx/tests/boulder-integration.sh`` and rerun
+the integration tests suite.
 
 .. _Boulder: https://github.com/letsencrypt/boulder
 .. _Go: https://golang.org
@@ -299,8 +293,8 @@ directory.
 
 .. _prerequisites:
 
-Notes on OS depedencies
-=======================
+Notes on OS dependencies
+========================
 
 OS level dependencies are managed by scripts in ``bootstrap``.  Some notes
 are provided here mainly for the :ref:`developers <hacking>` reference.
@@ -372,6 +366,6 @@ FreeBSD
 Bootstrap script for FreeBSD uses ``pkg`` for package installation,
 i.e. it does not use ports.
 
-FreeBSD by default uses ``tcsh``. In order to activate virtulenv (see
-below), you will need a compatbile shell, e.g. ``pkg install bash &&
+FreeBSD by default uses ``tcsh``. In order to activate virtualenv (see
+below), you will need a compatible shell, e.g. ``pkg install bash &&
 bash``.
