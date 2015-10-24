@@ -805,7 +805,6 @@ def create_parser(plugins, args):
     helpful.add(
         "security", "-B", "--rsa-key-size", type=int, metavar="N",
         default=flag_default("rsa_key_size"), help=config_help("rsa_key_size"))
-    # TODO: resolve - assumes binary logic while client.py assumes ternary.
     helpful.add(
         "security", "-r", "--redirect", action="store_true",
         help="Automatically redirect all HTTP traffic to HTTPS for the newly "
@@ -1107,3 +1106,4 @@ if __name__ == "__main__":
     if err_string:
         logger.warn("Exiting with message %s", err_string)
     sys.exit(err_string)  # pragma: no cover
+v
