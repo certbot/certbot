@@ -99,6 +99,15 @@ whole process is described in :doc:`dev`.
    Let's Encrypt team!
 
 
+Plugins
+=======
+
+Third party plugins are listed at
+https://github.com/letsencrypt/letsencrypt/wiki/Plugins. If that
+that's not enough, you can always :ref:`write your own plugin
+<dev-plugin>`.
+
+
 Configuration file
 ==================
 

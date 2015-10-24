@@ -211,6 +211,7 @@ We currently offer a pythondialog and "text" mode for displays. Display
 plugins implement the `~letsencrypt.interfaces.IDisplay`
 interface.
 
+.. _dev-plugin:
 
 Writing your own plugin
 =======================
