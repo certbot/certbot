@@ -1,8 +1,6 @@
-==============================
-Using the Let's Encrypt client
-==============================
-
-Welcome to the User Guide!
+==========
+User Guide
+==========
 
 .. contents:: Table of Contents
    :local:

@@ -1,8 +1,6 @@
-============
-Contributing
-============
-
-Welcome to the Developer's Guide!
+===============
+Developer Guide
+===============
 
 .. contents:: Table of Contents
    :local:
