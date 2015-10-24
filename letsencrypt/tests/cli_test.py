@@ -42,7 +42,7 @@ class CLITest(unittest.TestCase):
         with mock.patch('letsencrypt.cli.sys.stdout') as stdout:
             with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
                 with mock.patch('letsencrypt.cli.client') as client:
-                    ret = cli.main(args)
+                    ret = cli.main(args, True)
         return ret, stdout, stderr, client
 
     def _call_stdout(self, args):

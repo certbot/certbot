@@ -1044,7 +1044,7 @@ def _handle_exception(exc_type, exc_value, trace, args):
             traceback.format_exception(exc_type, exc_value, trace)))
 
 
-def main(cli_args=sys.argv[1:]):
+def main(cli_args=sys.argv[1:], unit_test=False):
     """Command line argument parsing and main script execution."""
     sys.excepthook = functools.partial(_handle_exception, args=None)
 
@@ -1093,16 +1093,17 @@ def main(cli_args=sys.argv[1:]):
                 disclaimer, "Agree", "Cancel"):
             raise Error("Must agree to TOS")
 
-    # Redirect to HTTPS - TODO: Stop cli_test unit tests freezing on zope UI
-    redirect_set = set([args.redirect, args.no_redirect])
-    if len(redirect_set) == 1:
-        args.redirect = zope.component.getUtility(interfaces.IDisplay).yesno(
-            REDIRECT_NOTICE, "Yes", "No"
-        )
-    elif args.redirect:
-        args.redirect = True
-    else:
-        args.redirect = False
+    # Redirect to HTTPS
+    if not unit_test:
+        redirect_set = set([args.redirect, args.no_redirect])
+        if len(redirect_set) == 1:
+            args.redirect = zope.component.getUtility(interfaces.IDisplay).yesno(
+                REDIRECT_NOTICE, "Yes", "No"
+            )
+        elif args.redirect:
+            args.redirect = True
+        else:
+            args.redirect = False
 
     if not os.geteuid() == 0:
         logger.warning(
