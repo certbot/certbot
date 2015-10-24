@@ -271,8 +271,6 @@ commands:
 This should generate documentation in the ``docs/_build/html``
 directory.
 
-.. _prerequisites:
-
 
 Other methods for running the client
 ====================================
@@ -325,6 +323,8 @@ Now run tests inside the Docker image:
   cd src
   tox -e py27
 
+
+.. _prerequisites:
 
 Notes on OS dependencies
 ========================
