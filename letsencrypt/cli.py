@@ -1106,4 +1106,3 @@ if __name__ == "__main__":
     if err_string:
         logger.warn("Exiting with message %s", err_string)
     sys.exit(err_string)  # pragma: no cover
-v
