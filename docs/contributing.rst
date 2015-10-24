@@ -11,8 +11,7 @@ Running a local copy of the client
 ----------------------------------
 
 Running the client in developer mode from your local tree is a little
-different than running ``letsencrypt-auto``.  To get set up, do these things
-once:
+different than running ``letsencrypt-auto``.  Let's get set up!:
 
 .. code-block:: shell
 
@@ -34,9 +33,7 @@ client by typing:
 
    letsencrypt
 
-Activating a shell in this way makes it easier to run unit tests
-with ``tox`` and integration tests, as described below. To reverse this, you
-can type ``deactivate``.  More information can be found in the `virtualenv docs`_.
+It's easier to run unit tests when you activate shells with ``tox`` and integration tests, as described below. To reverse this, you can type ``deactivate``.  More information can be found in the `virtualenv docs`_.
 
 .. _`virtualenv docs`: https://virtualenv.pypa.io
 
