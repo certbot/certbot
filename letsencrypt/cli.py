@@ -38,7 +38,7 @@ from letsencrypt.display import util as display_util
 from letsencrypt.display import ops as display_ops
 from letsencrypt.errors import Error, PluginSelectionError, CertStorageError
 from letsencrypt.plugins import disco as plugins_disco
-from letsencrypt.tests import test_util
+
 
 logger = logging.getLogger(__name__)
 
@@ -85,8 +85,6 @@ More detailed help:
 
 REDIRECT_NOTICE = "Automatically redirect all HTTP traffic to HTTPS for the newly " \
                   "authenticated vhost?"
-
-TEST_CSR = test_util.vector_path('csr.der')
 
 
 def _find_domains(args, installer):
