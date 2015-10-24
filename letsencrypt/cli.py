@@ -84,6 +84,9 @@ More detailed help:
    the subcommands
 """
 
+REDIRECT_NOTICE = "Automatically redirect all HTTP traffic to HTTPS for the newly " \
+                  "authenticated vhost?"
+
 
 def _find_domains(args, installer):
     if args.domains is None:
@@ -437,6 +440,7 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
     le_client.deploy_certificate(
         domains, lineage.privkey, lineage.cert,
         lineage.chain, lineage.fullchain)
+
     le_client.enhance_config(domains, args.redirect)
 
     if len(lineage.available_versions("cert")) == 1:
@@ -840,6 +844,10 @@ def prepare_and_parse_args(plugins, args):
         help="Automatically redirect all HTTP traffic to HTTPS for the newly "
              "authenticated vhost.")
     helpful.add(
+        "security", "-n", "--no-redirect", action="store_true",
+        help="Do not automatically redirect all HTTP traffic to HTTPS for the newly "
+             "authenticated vhost.")
+    helpful.add(
         "security", "--strict-permissions", action="store_true",
         help="Require that all configuration files are owned by the current "
              "user; only needed if your config is somewhere unsafe like /tmp/")
@@ -1040,7 +1048,7 @@ def _handle_exception(exc_type, exc_value, trace, args):
             traceback.format_exception(exc_type, exc_value, trace)))
 
 
-def main(cli_args=sys.argv[1:]):
+def main(cli_args=sys.argv[1:], unit_test=False):
     """Command line argument parsing and main script execution."""
     sys.excepthook = functools.partial(_handle_exception, args=None)
 
@@ -1087,6 +1095,18 @@ def main(cli_args=sys.argv[1:]):
         if not zope.component.getUtility(interfaces.IDisplay).yesno(
                 disclaimer, "Agree", "Cancel"):
             raise Error("Must agree to TOS")
+
+    # Redirect to HTTPS
+    if not unit_test:
+        redirect_set = set([args.redirect, args.no_redirect])
+        if len(redirect_set) == 1:
+            args.redirect = zope.component.getUtility(interfaces.IDisplay).yesno(
+                REDIRECT_NOTICE, "Yes", "No"
+            )
+        elif args.redirect:
+            args.redirect = True
+        else:
+            args.redirect = False
 
     if not os.geteuid() == 0:
         logger.warning(
