@@ -20,7 +20,7 @@ letsencrypt_test () {
         --manual-test-mode \
         $store_flags \
         --text \
-        -r \
+        --no-redirect \
         --agree-dev-preview \
         --agree-tos \
         --email "" \
