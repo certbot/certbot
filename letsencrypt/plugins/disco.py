@@ -125,6 +125,7 @@ class PluginEntryPoint(object):
         """Return the Exception raised during plugin setup, or None if all is well"""
         if isinstance(self._prepared, Exception):
             return self._prepared
+        return None
 
     @property
     def available(self):
