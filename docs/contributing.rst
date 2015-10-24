@@ -140,7 +140,7 @@ which implement bindings to alternative UI libraries.
 Authenticators
 --------------
 
-Authenticators are plugins designed prove that this client deserves a
+Authenticators are plugins designed to prove that this client deserves a
 certificate for some domain name by solving challenges received from
 the ACME server. From the protocol, there are essentially two
 different types of challenges. Challenges that must be solved by
