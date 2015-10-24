@@ -35,8 +35,10 @@ client by typing:
    letsencrypt
 
 Activating a shell in this way makes it easier to run unit tests
-with ``tox`` and integration tests, as described below.
+with ``tox`` and integration tests, as described below. To reverse this, you
+can type ``deactivate``.  More information can be found in the `virtualenv docs`_.
 
+.. _`virtualenv docs`: https://virtualenv.pypa.io
 
 Find issues to work on
 ----------------------
