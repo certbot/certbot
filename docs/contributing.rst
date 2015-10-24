@@ -2,6 +2,12 @@
 Contributing
 ============
 
+Welcome to the Developer's Guide!
+
+.. contents:: Table of Contents
+   :local:
+
+
 .. _hacking:
 
 Hacking
