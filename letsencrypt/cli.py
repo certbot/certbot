@@ -438,6 +438,7 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
     le_client.deploy_certificate(
         domains, lineage.privkey, lineage.cert,
         lineage.chain, lineage.fullchain)
+
     le_client.enhance_config(domains, args.redirect)
 
     if len(lineage.available_versions("cert")) == 1:
@@ -835,11 +836,14 @@ def prepare_and_parse_args(plugins, args):
     helpful.add(
         "security", "-B", "--rsa-key-size", type=int, metavar="N",
         default=flag_default("rsa_key_size"), help=config_help("rsa_key_size"))
-    # TODO: resolve - assumes binary logic while client.py assumes ternary.
     helpful.add(
         "security", "-r", "--redirect", action="store_true",
         help="Automatically redirect all HTTP traffic to HTTPS for the newly "
-             "authenticated vhost.")
+             "authenticated vhost.", dest="redirect", default=None)
+    helpful.add(
+        "security", "-n", "--no-redirect", action="store_false",
+        help="Do not automatically redirect all HTTP traffic to HTTPS for the newly "
+             "authenticated vhost.", dest="redirect", default=None)
     helpful.add(
         "security", "--strict-permissions", action="store_true",
         help="Require that all configuration files are owned by the current "
