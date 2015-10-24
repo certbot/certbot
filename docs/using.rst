@@ -35,6 +35,12 @@ To install and run the client you just need to type:
 ``letsencrypt``.  ``letsencrypt-auto`` is a wrapper which installs virtualized
 dependencies and provides automated updates during the beta program)
 
+The ``letsencrypt`` commandline tool has a builtin help:
+
+.. code-block:: shell
+
+   ./letsencrypt-auto --help
+
 .. warning:: Please do **not** use ``python setup.py install`` or
    ``python pip install .``. Please do **not** attempt the
    installation commands as superuser/root and/or without virtual
@@ -42,12 +48,6 @@ dependencies and provides automated updates during the beta program)
    install``, ``sudo ./venv/bin/...``. These modes of operation might
    corrupt your operating system and are **not supported** by the
    Let's Encrypt team!
-
-The ``letsencrypt`` commandline tool has a builtin help:
-
-.. code-block:: shell
-
-   ./letsencrypt-auto --help
 
 
 Configuration file
