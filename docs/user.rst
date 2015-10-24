@@ -102,6 +102,27 @@ whole process is described in :doc:`dev`.
 Plugins
 =======
 
+Officially supported plugins:
+
+========== = = ================================================================
+Plugin     A I Notes and status
+========== = = ================================================================
+standalone Y N Very stable. Uses port 80 (force by
+               ``--standalone-supported-challenges simpleHttp``) or 443
+               (force by ``statndalone-supported-challenges dvsni``).
+webroot    Y N Works with already running webserver, by writing necessary files
+               to the disk (``--webroot-path`` should be pointed to your
+               ``public_html``). Currently, when multiple domains are specified
+               (`-d`), they must all use the same web root path.
+manual     Y N Hidden from standard UI, use with ``--a manual``. Requires to
+               copy and paste commands into a new terminal session. Allows to
+               run client on machine different than target webserver, e.g. your
+               laptop.
+apache     Y Y Alpha - might break stuff, so be careful. Support for
+               Debian-derived distros only.
+nginx      Y Y Very experimental. Not included in letsencrypt-auto_.
+========== = = ================================================================
+
 Third party plugins are listed at
 https://github.com/letsencrypt/letsencrypt/wiki/Plugins. If that
 that's not enough, you can always :ref:`write your own plugin
