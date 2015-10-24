@@ -5,6 +5,7 @@ User Guide
 .. contents:: Table of Contents
    :local:
 
+.. _installation:
 
 Installation
 ============
@@ -154,3 +155,25 @@ By default, the following locations are searched:
 .. [#venv] By using this virtualized Python enviroment (`virtualenv
            <https://virtualenv.pypa.io>`_) we don't pollute the main
            OS space with packages from PyPI!
+
+
+Getting help
+============
+
+If you're having problems you can chat with us on `IRC (#letsencrypt @
+Freenode) <https://webchat.freenode.net?channels=%23letsencrypt>`_ or
+get support on our `forums <https://community.letsencrypt.org>`_.
+
+If you find a bug in the software, please do report it in our `issue
+tracker
+<https://github.com/letsencrypt/letsencrypt/issues>`_. Remember to
+give us us as much information as possible:
+
+- copy and paste exact command line used and the output (though mind
+  that the latter might include some personally identifiable
+  information, including your email and domains)
+- copy and paste logs from ``/var/log/letsencrypt`` (though mind they
+  also might contain personally identifiable information)
+- copy and paste ``letsencrypt --version`` output
+- your operating system, including specific version
+- specify which installation_ method you've chosen
