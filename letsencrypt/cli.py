@@ -352,7 +352,8 @@ def diagnose_configurator_problem(cfg_type, requested, plugins):
             msg = "The requested {0} plugin does not appear to be installed".format(requested)
         else:
             msg = ("The {0} plugin is not working; there may be problems with "
-                   "your existing configuration").format(requested)
+                   "your existing configuration.\nThe error was: {1!r}"
+                   .format(requested, plugins[requested].problem))
     elif cfg_type == "installer":
         if os.path.exists("/etc/debian_version"):
             # Debian... installers are at least possible
