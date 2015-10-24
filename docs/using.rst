@@ -50,11 +50,10 @@ Configuration file
 ------------------
 
 It is possible to specify configuration file with
-``letsencrypt-auto --config cli.ini`` (or shorter ``-c cli.ini``). For
-instance, if you are a contributor, you might find the following
-handy:
+``letsencrypt-auto --config cli.ini`` (or shorter ``-c cli.ini``). An
+example configuration file is shown below:
 
-.. include:: ../examples/dev-cli.ini
+.. include:: ../examples/cli.ini
    :code: ini
 
 By default, the following locations are searched:
