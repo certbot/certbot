@@ -124,7 +124,9 @@ def get_email():
     """
     while True:
         code, email = zope.component.getUtility(interfaces.IDisplay).input(
-            "Enter email address (used for urgent notices and lost key recovery)")
+            "Enter email address (mandatory since no "
+            "--allow-unsafe-registration was provided)"
+            "(used for urgent notices and lost key recovery)")
 
         if code == display_util.OK:
             if le_util.safe_email(email):
