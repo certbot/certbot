@@ -436,6 +436,7 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
     le_client.deploy_certificate(
         domains, lineage.privkey, lineage.cert,
         lineage.chain, lineage.fullchain)
+
     le_client.enhance_config(domains, args.redirect)
 
     if len(lineage.available_versions("cert")) == 1:
@@ -808,7 +809,11 @@ def create_parser(plugins, args):
     helpful.add(
         "security", "-r", "--redirect", action="store_true",
         help="Automatically redirect all HTTP traffic to HTTPS for the newly "
-             "authenticated vhost.")
+             "authenticated vhost.", dest="redirect", default=None)
+    helpful.add(
+        "security", "-n", "--no-redirect", action="store_false",
+        help="Do not automatically redirect all HTTP traffic to HTTPS for the newly "
+             "authenticated vhost.", dest="redirect", default=None)
     helpful.add(
         "security", "--strict-permissions", action="store_true",
         help="Require that all configuration files are owned by the current "
