@@ -182,7 +182,7 @@ class Authenticator(common.Plugin):
                    self.conf("supported-challenges").split(","))
 
     def more_info(self):  # pylint: disable=missing-docstring
-        return self.__doc__
+        return self.__doc__.replace("\n", "").replace("    ", " ")
 
     def prepare(self):  # pylint: disable=missing-docstring
         pass
