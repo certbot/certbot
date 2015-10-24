@@ -655,7 +655,11 @@ class HelpfulArgumentParser(object):
         return parsed_args
 
     def determine_verb(self):
-        """Determines the verb/subcommand provided by the user."""
+        """Determines the verb/subcommand provided by the user.
+
+        This function works around some of the limitations of argparse.
+
+        """
         if "-h" in self.args or "--help" in self.args:
             # all verbs double as help arguments; don't get them confused
             self.verb = "help"
@@ -756,7 +760,7 @@ class HelpfulArgumentParser(object):
             return dict([(t, t == chosen_topic) for t in self.help_topics])
 
 
-def parse_args(plugins, args):
+def prepare_and_parse_args(plugins, args):
     """Returns parsed command line arguments.
 
     :param .PluginsRegistry plugins: available plugins
@@ -1040,7 +1044,7 @@ def main(cli_args=sys.argv[1:]):
 
     # note: arg parser internally handles --help (and exits afterwards)
     plugins = plugins_disco.PluginsRegistry.find_all()
-    args = parse_args(plugins, cli_args)
+    args = prepare_and_parse_args(plugins, cli_args)
     config = configuration.NamespaceConfig(args)
     zope.component.provideUtility(config)
 
