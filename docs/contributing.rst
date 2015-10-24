@@ -76,10 +76,10 @@ The following tools are there to help you:
   but you won't get TAB completion...
 
 
+.. _integration:
+
 Integration testing with the boulder CA
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. _integration:
 
 Generally it is sufficient to open a pull request and let Github and Travis run
 integration tests for you.
