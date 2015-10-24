@@ -8,7 +8,6 @@ Welcome to the Let's Encrypt client documentation!
    using
    contributing
    packaging
-   plugins
 
 .. toctree::
    :maxdepth: 1
