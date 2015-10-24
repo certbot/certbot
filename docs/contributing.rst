@@ -16,7 +16,7 @@ once:
 
 .. code-block:: shell
 
-   git clone https://github.com/letsencrypt/letsencrypt
+   git clone https://github.com/letsencrypt/letsencrypt.git
    cd letsencrypt
    ./bootstrap/install-deps.sh
    ./bootstrap/dev/venv.sh

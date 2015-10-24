@@ -9,7 +9,7 @@ else
   SUDO=
 fi
 
-BOOTSTRAP=`dirname $0`/bootstrap
+BOOTSTRAP=`dirname $0`/
 if [ ! -f $BOOTSTRAP/debian.sh ] ; then
   echo "Cannot find the letsencrypt bootstrap scripts in $BOOTSTRAP"
   exit 1
