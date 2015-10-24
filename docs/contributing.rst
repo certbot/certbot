@@ -7,40 +7,54 @@ Contributing
 Hacking
 =======
 
-All changes in your pull request **must** have 100% unit test coverage, pass
-our `integration`_ tests, **and** be compliant with the
-:ref:`coding style <coding-style>`.
+Running a local copy of the client
+----------------------------------
 
-
-Bootstrap
----------
-
-Start by :ref:`installing Let's Encrypt prerequisites
-<prerequisites>`. Then run:
+Running the client in developer mode from your local tree is a little
+different than running ``letsencrypt-auto``.  To get set up, do these things
+once:
 
 .. code-block:: shell
 
+   git clone https://github.com/letsencrypt/letsencrypt
+   cd letsencrypt
+   ./bootstrap/install-deps.sh
    ./bootstrap/dev/venv.sh
 
-Activate the virtualenv:
+Then in each shell where you're working on the client, do:
 
 .. code-block:: shell
 
-   source ./$VENV_NAME/bin/activate
+   ./venv/bin/activate
 
-This step should prepend you prompt with ``($VENV_NAME)`` and save you
-from typing ``./$VENV_NAME/bin/...``. It is also required to run some
-of the `testing`_ tools. Virtualenv can be disabled at any time by
-typing ``deactivate``. More information can be found in `virtualenv
-documentation`_.
+After that, your shell will be using the virtual environment, and you run the
+client by typing:
 
-Note that packages are installed in so called *editable mode*, in
-which any source code changes in the current working directory are
-"live" and no further ``./bootstrap/dev/venv.sh`` or ``pip install
-...`` invocations are necessary while developing.
+.. code-block:: shell
 
-.. _`virtualenv documentation`: https://virtualenv.pypa.io
+   letsencrypt
 
+Activating a shell in this way makes it easier to run unit tests
+with ``tox`` and integration tests, as described below. To reverse this, you
+can type ``deactivate``.  More information can be found in the `virtualenv docs`_.
+
+.. _`virtualenv docs`: https://virtualenv.pypa.io
+
+Find issues to work on
+----------------------
+
+You can find the open issues in the `github issue tracker`_.  Comparatively
+easy ones are marked `Good Volunteer Task`_.  If you're starting work on
+something, post a comment to let others know and seek feedback on your plan
+where appropriate.
+
+Once you've got a working branch, you can open a pull request.  All changes in
+your pull request must have thorough unit test coverage, pass our
+`integration`_ tests, and be compliant with the :ref:`coding style
+<coding-style>`.
+
+.. _github issue tracker: https://github.com/letsencrypt/letsencrypt/issues
+.. _Good Volunteer Task: https://github.com/letsencrypt/letsencrypt/issues?q=is%3Aopen+is%3Aissue+label%3A%22Good+Volunteer+Task%22
 
 Testing
 -------
@@ -64,8 +78,14 @@ The following tools are there to help you:
   but you won't get TAB completion...
 
 
-Integration
-~~~~~~~~~~~
+.. _integration:
+
+Integration testing with the boulder CA
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Generally it is sufficient to open a pull request and let Github and Travis run
+integration tests for you.
+
 Mac OS X users: Run `./tests/mac-bootstrap.sh` instead of `boulder-start.sh` to
 install dependencies, configure the environment, and start boulder.
 
@@ -89,55 +109,6 @@ the integration tests suite.
 
 .. _Boulder: https://github.com/letsencrypt/boulder
 .. _Go: https://golang.org
-
-
-Vagrant
--------
-
-If you are a Vagrant user, Let's Encrypt comes with a Vagrantfile that
-automates setting up a development environment in an Ubuntu 14.04
-LTS VM. To set it up, simply run ``vagrant up``. The repository is
-synced to ``/vagrant``, so you can get started with:
-
-.. code-block:: shell
-
-  vagrant ssh
-  cd /vagrant
-  ./venv/bin/pip install -r requirements.txt .[dev,docs,testing]
-  sudo ./venv/bin/letsencrypt
-
-Support for other Linux distributions coming soon.
-
-.. note::
-   Unfortunately, Python distutils and, by extension, setup.py and
-   tox, use hard linking quite extensively. Hard linking is not
-   supported by the default sync filesystem in Vagrant. As a result,
-   all actions with these commands are *significantly slower* in
-   Vagrant. One potential fix is to `use NFS`_ (`related issue`_).
-
-.. _use NFS: http://docs.vagrantup.com/v2/synced-folders/nfs.html
-.. _related issue: https://github.com/ClusterHQ/flocker/issues/516
-
-
-Docker
-------
-
-OSX users will probably find it easiest to set up a Docker container for
-development. Let's Encrypt comes with a Dockerfile (``Dockerfile-dev``)
-for doing so. To use Docker on OSX, install and setup docker-machine using the
-instructions at https://docs.docker.com/installation/mac/.
-
-To build the development Docker image::
-
-  docker build -t letsencrypt -f Dockerfile-dev .
-
-Now run tests inside the Docker image:
-
-.. code-block:: shell
-
-  docker run -it letsencrypt bash
-  cd src
-  tox -e py27
 
 
 Code components and layout
@@ -171,7 +142,8 @@ which implement bindings to alternative UI libraries.
 Authenticators
 --------------
 
-Authenticators are plugins designed to solve challenges received from
+Authenticators are plugins designed to prove that this client deserves a
+certificate for some domain name by solving challenges received from
 the ACME server. From the protocol, there are essentially two
 different types of challenges. Challenges that must be solved by
 individual plugins in order to satisfy domain validation (subclasses
@@ -195,17 +167,25 @@ in a separate branch).
 Installer
 ---------
 
-Installers classes exist to actually setup the certificate and be able
-to enhance the configuration. (Turn on HSTS, redirect to HTTPS,
-etc). You can indicate your abilities through the
-:meth:`~.IInstaller.supported_enhancements` call. We currently only
-have one Installer written (still developing), `~.ApacheConfigurator`.
+Installers plugins exist to actually setup the certificate in a server,
+possibly tweak the security configuration to make it more correct and secure
+(Fix some mixed content problems, turn on HSTS, redirect to HTTPS, etc).
+Installer plugins tell the main client about their abilities to do the latter
+via the :meth:`~.IInstaller.supported_enhancements` call. We currently
+have two Installers in the tree, the `~.ApacheConfigurator`. and the
+`~.NginxConfigurator`.  External projects have made some progress toward
+support for IIS, Icecast and Plesk.
 
-Installers and Authenticators will oftentimes be the same
-class/object. Installers and Authenticators are kept separate because
+Installers and Authenticators will oftentimes be the same class/object
+(because for instance both tasks can be performed by a webserver like nginx)
+though this is not always the case (the standalone plugin is an authenticator
+that listens on port 443, but it cannot install certs; a postfix plugin would
+be an installer but not an authenticator).
+
+Installers and Authenticators are kept separate because
 it should be possible to use the `~.StandaloneAuthenticator` (it sets
 up its own Python server to perform challenges) with a program that
-cannot solve challenges itself. (Imagine MTA installers).
+cannot solve challenges itself (Such as MTA installers).
 
 
 Installer Development
@@ -292,6 +272,59 @@ This should generate documentation in the ``docs/_build/html``
 directory.
 
 .. _prerequisites:
+
+
+Other methods for running the client
+====================================
+
+Vagrant
+-------
+
+If you are a Vagrant user, Let's Encrypt comes with a Vagrantfile that
+automates setting up a development environment in an Ubuntu 14.04
+LTS VM. To set it up, simply run ``vagrant up``. The repository is
+synced to ``/vagrant``, so you can get started with:
+
+.. code-block:: shell
+
+  vagrant ssh
+  cd /vagrant
+  ./venv/bin/pip install -r requirements.txt .[dev,docs,testing]
+  sudo ./venv/bin/letsencrypt
+
+Support for other Linux distributions coming soon.
+
+.. note::
+   Unfortunately, Python distutils and, by extension, setup.py and
+   tox, use hard linking quite extensively. Hard linking is not
+   supported by the default sync filesystem in Vagrant. As a result,
+   all actions with these commands are *significantly slower* in
+   Vagrant. One potential fix is to `use NFS`_ (`related issue`_).
+
+.. _use NFS: http://docs.vagrantup.com/v2/synced-folders/nfs.html
+.. _related issue: https://github.com/ClusterHQ/flocker/issues/516
+
+
+Docker
+------
+
+OSX users will probably find it easiest to set up a Docker container for
+development. Let's Encrypt comes with a Dockerfile (``Dockerfile-dev``)
+for doing so. To use Docker on OSX, install and setup docker-machine using the
+instructions at https://docs.docker.com/installation/mac/.
+
+To build the development Docker image::
+
+  docker build -t letsencrypt -f Dockerfile-dev .
+
+Now run tests inside the Docker image:
+
+.. code-block:: shell
+
+  docker run -it letsencrypt bash
+  cd src
+  tox -e py27
+
 
 Notes on OS dependencies
 ========================
