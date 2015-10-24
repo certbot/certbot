@@ -127,9 +127,9 @@ def _determine_account(args, config):
         elif len(accounts) == 1:
             acc = accounts[0]
         else:  # no account registered yet
-            if args.email is None:
+            if args.email is None and not args.allow_unsafe_registration:
                 args.email = display_ops.get_email()
-            if not args.email:  # get_email might return ""
+            else:
                 args.email = None
 
             def _tos_cb(regr):
@@ -782,6 +782,16 @@ def prepare_and_parse_args(plugins, args):
     helpful.add(
         None, "-t", "--text", dest="text_mode", action="store_true",
         help="Use the text output instead of the curses UI.")
+    helpful.add(
+        None, "--allow-unsafe-registration", action="store_true",
+        help="Specifying this flag enables registering an account with no "
+             "email address. This is strongly discouraged, because in the "
+             "event of key loss or account compromise you will irrevocably "
+             "lose access to your account. You will also be unable to receive "
+             "notice about impending expiration of revocation of your "
+             "certificates. Updates to the Subscriber Agreement will still "
+             "affect you, and will be effective N days after posting an "
+             "update to the web site.")
     helpful.add(None, "-m", "--email", help=config_help("email"))
     # positional arg shadows --domains, instead of appending, and
     # --domains is useful, because it can be stored in config
