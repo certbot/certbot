@@ -14,7 +14,7 @@ the letsencrypt-auto_ method described below. It's the fastest, the
 most thourougly tested and the most reliable way of getting our
 software and the free SSL certificates!
 
-.. letsencrypt-auto:
+.. _letsencrypt-auto:
 
 letsencrypt-auto
 ----------------
