@@ -25,7 +25,7 @@ Then in each shell where you're working on the client, do:
 
 .. code-block:: shell
 
-   ./venv/bin/activate
+   source ./venv/bin/activate
 
 After that, your shell will be using the virtual environment, and you run the
 client by typing:
