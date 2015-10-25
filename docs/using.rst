@@ -150,13 +150,6 @@ By default, the following locations are searched:
 .. keep it up to date with constants.py
 
 
-.. rubric:: Footnotes
-
-.. [#venv] By using this virtualized Python enviroment (`virtualenv
-           <https://virtualenv.pypa.io>`_) we don't pollute the main
-           OS space with packages from PyPI!
-
-
 Getting help
 ============
 
@@ -177,3 +170,10 @@ give us us as much information as possible:
 - copy and paste ``letsencrypt --version`` output
 - your operating system, including specific version
 - specify which installation_ method you've chosen
+
+
+.. rubric:: Footnotes
+
+.. [#venv] By using this virtualized Python enviroment (`virtualenv
+           <https://virtualenv.pypa.io>`_) we don't pollute the main
+           OS space with packages from PyPI!
