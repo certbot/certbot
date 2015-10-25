@@ -834,14 +834,14 @@ def prepare_and_parse_args(plugins, args):
     helpful.add_group(
         "security", description="Security parameters & server settings")
     helpful.add(
-        "security", "-B", "--rsa-key-size", type=int, metavar="N",
+        "security", "--rsa-key-size", type=int, metavar="N",
         default=flag_default("rsa_key_size"), help=config_help("rsa_key_size"))
     helpful.add(
-        "security", "-r", "--redirect", action="store_true",
+        "security", "--redirect", action="store_true",
         help="Automatically redirect all HTTP traffic to HTTPS for the newly "
              "authenticated vhost.", dest="redirect", default=None)
     helpful.add(
-        "security", "-n", "--no-redirect", action="store_false",
+        "security", "--no-redirect", action="store_false",
         help="Do not automatically redirect all HTTP traffic to HTTPS for the newly "
              "authenticated vhost.", dest="redirect", default=None)
     helpful.add(
