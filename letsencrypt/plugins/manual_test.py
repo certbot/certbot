@@ -63,6 +63,12 @@ class AuthenticatorTest(unittest.TestCase):
         mock_verify.return_value = False
         self.assertEqual([None], self.auth.perform(self.achalls))
 
+    @mock.patch("letsencrypt.plugins.manual.zope.component.getUtility")
+    def test_disagree_with_ip_logging(self, mock_interaction):
+        mock_interaction().yesno.return_value = False
+
+        self.assertRaises(errors.PluginError, self.auth.perform, self.achalls)
+
     @mock.patch("letsencrypt.plugins.manual.subprocess.Popen", autospec=True)
     def test_perform_test_command_oserror(self, mock_popen):
         mock_popen.side_effect = OSError
@@ -105,17 +111,6 @@ class AuthenticatorTest(unittest.TestCase):
         httpd.poll.return_value = None
         self.auth_test_mode.cleanup(self.achalls)
         mock_killpg.assert_called_once_with(1234, signal.SIGTERM)
-
-    @mock.patch("letsencrypt.plugins.manual.zope.component.getUtility")
-    @mock.patch("letsencrypt.plugins.manual.sys.stdout")
-    @mock.patch("acme.challenges.SimpleHTTPResponse.simple_verify")
-    @mock.patch("__builtin__.raw_input")
-    def test_disagree_with_ip_logging(self, mock_raw_input, mock_verify, mock_stdout,
-                                      mock_interaction):
-        # pylint: disable=unused-argument
-        mock_interaction().yesno.return_value = False
-
-        self.assertRaises(errors.PluginError, self.auth.perform, self.achalls)
 
 
 if __name__ == "__main__":
