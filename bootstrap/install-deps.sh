@@ -34,7 +34,7 @@ else
   echo "Sorry, I don't know how to bootstrap Let's Encrypt on your operating system!"
   echo
   echo "You will need to bootstrap, configure virtualenv, and run a pip install manually"
-  echo "Please see https://letsencrypt.readthedocs.org/en/latest/dev.html#prerequisites"
+  echo "Please see https://letsencrypt.readthedocs.org/en/latest/contributing.html#prerequisites"
   echo "for more info"
   exit 1
 fi

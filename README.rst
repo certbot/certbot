@@ -68,7 +68,7 @@ server automatically!::
    :alt: Docker Repository on Quay.io
 
 .. _`installation instructions`:
-   https://letsencrypt.readthedocs.org/en/latest/user.html
+   https://letsencrypt.readthedocs.org/en/latest/using.html
 
 .. _watch demo video: https://www.youtube.com/watch?v=Gas_sSB-5SU
 

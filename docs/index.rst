@@ -5,8 +5,8 @@ Welcome to the Let's Encrypt client documentation!
    :maxdepth: 2
 
    intro
-   user
-   dev
+   using
+   contributing
    packaging
 
 .. toctree::

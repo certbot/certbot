@@ -89,7 +89,7 @@ From source
 -----------
 
 Installation from source is only supported for developers and the
-whole process is described in :doc:`dev`.
+whole process is described in :doc:`contributing`.
 
 .. warning:: Please do **not** use ``python setup.py install`` or
    ``python pip install .``. Please do **not** attempt the
