@@ -162,7 +162,7 @@ binary for temporary key/certificate generation.""".replace("\n", "")
         else:
             if not zope.component.getUtility(interfaces.IDisplay).yesno(
                     self.IP_DISCLAIMER, "Yes", "No"):
-                raise errors.Error("Must agree to IP logging to proceed")
+                raise errors.PluginError("Must agree to IP logging to proceed")
 
             self._notify_and_wait(self.MESSAGE_TEMPLATE.format(
                 validation=validation.json_dumps(), response=response,
