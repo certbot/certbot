@@ -59,9 +59,22 @@ Throughout the documentation, whenever you see references to
 Running with Docker
 -------------------
 
-Docker_ is another way to quickly obtain testing certs. From the
-server that the domain your requesting a cert for resolves to,
-`install Docker`_, issue the following command:
+Docker_ is an amazingly simple and quick way to obtain a
+certificate. However, this mode of operation is unable to install
+certificates or configure your webserver, because our installer
+plugins cannot reach it from inside the Docker container.
+
+You should definitely read the :ref:`where-certs` section, in order to
+know how to manage the certs
+manually. https://github.com/letsencrypt/letsencrypt/wiki/Ciphersuite-guidance
+provides some information about recommended ciphersuites. If none of
+these make much sense to you, you should definitely use the
+letsencrypt-auto_ method, which enables you to use installer plugins
+that cover both of those hard topics.
+
+If you're still not convinced and have decided to use this method,
+from the server that the domain your requesting a cert for resolves
+to, `install Docker`_, issue the following command:
 
 .. code-block:: shell
 
@@ -70,8 +83,9 @@ server that the domain your requesting a cert for resolves to,
                -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
                quay.io/letsencrypt/letsencrypt:latest auth
 
-and follow the instructions. Your new cert will be available in
-``/etc/letsencrypt/certs``.
+and follow the instructions (note that ``auth`` command is explicitly
+used - no installer plugins involved). Your new cert will be available
+in ``/etc/letsencrypt/live`` on the host.
 
 .. _Docker: https://docker.com
 .. _`install Docker`: https://docs.docker.com/userguide/
@@ -148,6 +162,8 @@ every month).
 Let's Encrypt is working hard on automating the renewal process. Until
 the tool is ready, we are sorry for the inconvenience!
 
+
+.. _where-certs:
 
 Where are my certificates?
 ==========================
