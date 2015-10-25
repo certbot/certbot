@@ -67,7 +67,8 @@ class AuthenticatorTest(unittest.TestCase):
     @mock.patch("letsencrypt.plugins.manual.Authenticator._notify_and_wait")
     def test_disagree_with_ip_logging(self, mock_notify, mock_interaction):
         mock_interaction().yesno.return_value = False
-        mock_notify.side_effect = errors.Error("Exception not raised, continued execution even after disagreeing with IP logging")
+        mock_notify.side_effect = errors.Error("Exception not raised, \
+            continued execution even after disagreeing with IP logging")
 
         self.assertRaises(errors.PluginError, self.auth.perform, self.achalls)
 
