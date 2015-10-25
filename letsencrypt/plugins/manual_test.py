@@ -64,8 +64,10 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertEqual([None], self.auth.perform(self.achalls))
 
     @mock.patch("letsencrypt.plugins.manual.zope.component.getUtility")
-    def test_disagree_with_ip_logging(self, mock_interaction):
+    @mock.patch("letsencrypt.plugins.manual.Authenticator._notify_and_wait")
+    def test_disagree_with_ip_logging(self, mock_notify, mock_interaction):
         mock_interaction().yesno.return_value = False
+        mock_notify.side_effect = errors.Error("Exception not raised, continued execution even after disagreeing with IP logging")
 
         self.assertRaises(errors.PluginError, self.auth.perform, self.achalls)
 
