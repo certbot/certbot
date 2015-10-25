@@ -130,6 +130,73 @@ that's not enough, you can always :ref:`write your own plugin
 <dev-plugin>`.
 
 
+Where are my certificates?
+==========================
+
+First of all, we encourage you to use Apache or nginx installers, both
+which perform the certificate managemant automatically. If, however,
+you prefer to manage everything by hand, this section provides
+information on where to find necessary files.
+
+All generated keys and issued certificates can be found in
+``/etc/letsencrypt/live/$domain``. Rather than copying, please point
+your (web) server configuration directly to those files (or create
+symlinks). During the renewal_, ``/etc/letsencrypt/live`` is updated
+with the latest necessary files.
+
+.. note:: ``/etc/letsencrypt/archive`` and ``/etc/letsencrypt/keys``
+   contain all previous keys and certificates, while
+   ``/etc/letsencrypt/live`` symlinks to the latest versions.
+
+The following files are available:
+
+``privkey.pem``
+  Private key for the certificate.
+
+  .. warning:: This **must be kept secret at all times**! Never share
+     it with anyone, including Let's Encrypt developers. You cannot
+     put it into safe, however - your server still needs to access
+     this file in order for SSL/TLS to work.
+
+  This is what Apache needs for `SSLCertificateKeyFile
+  <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatekeyfile>`_,
+  and nginx for `ssl_certificate_key
+  <http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate_key>`_.
+
+``cert.pem``
+  Server certificate only.
+
+  This is what Apache needs for `SSLCertificateFile
+  <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatefile>`_.
+
+``chain.pem``
+  All certificates that need to be served by the browser **excluding**
+  server certificate, i.e. root and intermediate certificates only.
+
+  This is what Apache needs for `SSLCertificateChainFile
+  <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatechainfile>`_.
+
+``fullchain.pem``
+  All certificates, **including** server certificate. This is
+  concatenation of ``chain.pem`` and ``cert.pem``.
+
+  This is what nginx needs for `ssl_certificate
+  <http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate>`_.
+
+
+For both chain files, all certificates are ordered from root (primary
+certificate) towards leaf.
+
+Please note, that **you must use** either ``chain.pem`` or
+``fullchain.pem``. In case of webservers, using only ``cert.pem``,
+will cause nasty errors served through the browsers!
+
+.. note:: All files are PEM-encoded (as the filename suffix
+   suggests). If you need other format, such as DER or PFX, then you
+   could convert using ``openssl``, but this means you will not
+   benefit from automatic renewal_!
+
+
 Configuration file
 ==================
 
