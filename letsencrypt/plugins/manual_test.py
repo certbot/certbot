@@ -106,6 +106,18 @@ class AuthenticatorTest(unittest.TestCase):
         self.auth_test_mode.cleanup(self.achalls)
         mock_killpg.assert_called_once_with(1234, signal.SIGTERM)
 
+    @mock.patch("letsencrypt.plugins.manual.zope.component.getUtility")
+    @mock.patch("letsencrypt.plugins.manual.sys.stdout")
+    @mock.patch("acme.challenges.SimpleHTTPResponse.simple_verify")
+    @mock.patch("__builtin__.raw_input")
+    def test_disagree_with_ip_logging(self, mock_raw_input, mock_verify, mock_stdout, mock_interaction):
+        mock_verify.return_value = True
+        mock_interaction().yesno.return_value = False
+
+        resp = challenges.SimpleHTTPResponse(tls=False)
+        with self.assertRaises(errors.PluginError):
+            self.auth.perform(self.achalls)
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
