@@ -82,14 +82,14 @@ Distro packages
 
 Unfortunately, this is an ongoing effort. If you'd like to package
 Let's Encrypt client for your distribution of choice please have a
-look at :doc:`packaging`.
+look at the :doc:`packaging`.
 
 
 From source
 -----------
 
 Installation from source is only supported for developers and the
-whole process is described in :doc:`contributing`.
+whole process is described in the :doc:`contributing`.
 
 .. warning:: Please do **not** use ``python setup.py install`` or
    ``python pip install .``. Please do **not** attempt the
