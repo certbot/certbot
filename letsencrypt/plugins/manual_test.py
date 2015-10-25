@@ -43,11 +43,13 @@ class AuthenticatorTest(unittest.TestCase):
     def test_perform_empty(self):
         self.assertEqual([], self.auth.perform([]))
 
+    @mock.patch("letsencrypt.proof_of_possession.zope.component.getUtility")
     @mock.patch("letsencrypt.plugins.manual.sys.stdout")
     @mock.patch("acme.challenges.SimpleHTTPResponse.simple_verify")
     @mock.patch("__builtin__.raw_input")
-    def test_perform(self, mock_raw_input, mock_verify, mock_stdout):
+    def test_perform(self, mock_raw_input, mock_verify, mock_stdout, mock_input, mock_interaction):
         mock_verify.return_value = True
+        mock_interaction.yesno.return_value = True
 
         resp = challenges.SimpleHTTPResponse(tls=False)
         self.assertEqual([resp], self.auth.perform(self.achalls))
