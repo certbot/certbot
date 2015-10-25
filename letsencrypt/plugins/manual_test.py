@@ -115,8 +115,7 @@ class AuthenticatorTest(unittest.TestCase):
         # pylint: disable=unused-argument
         mock_interaction().yesno.return_value = False
 
-        with self.assertRaises(errors.PluginError):
-            self.auth.perform(self.achalls)
+        self.assertRaises(errors.PluginError, self.auth.perform, self.achalls)
 
 
 if __name__ == "__main__":
