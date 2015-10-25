@@ -161,7 +161,7 @@ binary for temporary key/certificate generation.""".replace("\n", "")
                 raise errors.Error("Couldn't execute manual command")
         else:
             if not zope.component.getUtility(interfaces.IDisplay).yesno(
-                self.IP_DISCLAIMER, "Yes", "No"):
+                    self.IP_DISCLAIMER, "Yes", "No"):
                 raise errors.Error("Must agree to proceed")
 
             self._notify_and_wait(self.MESSAGE_TEMPLATE.format(
