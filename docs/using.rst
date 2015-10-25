@@ -130,6 +130,25 @@ that's not enough, you can always :ref:`write your own plugin
 <dev-plugin>`.
 
 
+Renewal
+=======
+
+.. note:: Let's Encrypt CA issues short lived certificates (90
+   days). Make sure you renew the certificates at least once in 3
+   months.
+
+In order to renew certificates simply call the ``letsencrypt`` (or
+letsencrypt-auto_) again, and use the same values when prompted. You
+can automate it slightly by passing necessary flags on the CLI (see
+`--help all`), or even further using the :ref:`config-file`. If you're
+sure that UI doesn't prompt for any details you can add the command to
+``crontab`` (make it less than every 90 days to avoid problems, say
+every month).
+
+Let's Encrypt is working hard on automating the renewal process. Until
+the tool is ready, we are sorry for the inconvenience!
+
+
 Where are my certificates?
 ==========================
 
@@ -196,6 +215,8 @@ will cause nasty errors served through the browsers!
    could convert using ``openssl``, but this means you will not
    benefit from automatic renewal_!
 
+
+.. _config-file:
 
 Configuration file
 ==================
