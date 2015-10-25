@@ -48,6 +48,15 @@ command on the target server (as root):
 {command}
 """
 
+    # a disclaimer about your current IP being transmitted to Let's Encrypt's servers.
+    IP_DISCLAIMER = """\
+NOTE: The IP of this machine will be publicly logged as having requested this certificate. \
+If you're running letsencrypt in manual mode on a machine that is not your server, \
+please ensure you're okay with that.
+
+Are you OK with your IP being logged?
+"""
+
     # "cd /tmp/letsencrypt" makes sure user doesn't serve /root,
     # separate "public_html" ensures that cert.pem/key.pem are not
     # served and makes it more obvious that Python command will serve
@@ -151,6 +160,10 @@ binary for temporary key/certificate generation.""".replace("\n", "")
             if self._httpd.poll() is not None:
                 raise errors.Error("Couldn't execute manual command")
         else:
+            if not zope.component.getUtility(interfaces.IDisplay).yesno(
+                    self.IP_DISCLAIMER, "Yes", "No"):
+                raise errors.PluginError("Must agree to IP logging to proceed")
+
             self._notify_and_wait(self.MESSAGE_TEMPLATE.format(
                 validation=validation.json_dumps(), response=response,
                 uri=response.uri(achall.domain, achall.challb.chall),

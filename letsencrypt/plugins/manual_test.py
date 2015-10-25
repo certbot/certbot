@@ -43,11 +43,13 @@ class AuthenticatorTest(unittest.TestCase):
     def test_perform_empty(self):
         self.assertEqual([], self.auth.perform([]))
 
+    @mock.patch("letsencrypt.plugins.manual.zope.component.getUtility")
     @mock.patch("letsencrypt.plugins.manual.sys.stdout")
     @mock.patch("acme.challenges.SimpleHTTPResponse.simple_verify")
     @mock.patch("__builtin__.raw_input")
-    def test_perform(self, mock_raw_input, mock_verify, mock_stdout):
+    def test_perform(self, mock_raw_input, mock_verify, mock_stdout, mock_interaction):
         mock_verify.return_value = True
+        mock_interaction().yesno.return_value = True
 
         resp = challenges.SimpleHTTPResponse(tls=False)
         self.assertEqual([resp], self.auth.perform(self.achalls))
@@ -60,6 +62,15 @@ class AuthenticatorTest(unittest.TestCase):
 
         mock_verify.return_value = False
         self.assertEqual([None], self.auth.perform(self.achalls))
+
+    @mock.patch("letsencrypt.plugins.manual.zope.component.getUtility")
+    @mock.patch("letsencrypt.plugins.manual.Authenticator._notify_and_wait")
+    def test_disagree_with_ip_logging(self, mock_notify, mock_interaction):
+        mock_interaction().yesno.return_value = False
+        mock_notify.side_effect = errors.Error("Exception not raised, \
+            continued execution even after disagreeing with IP logging")
+
+        self.assertRaises(errors.PluginError, self.auth.perform, self.achalls)
 
     @mock.patch("letsencrypt.plugins.manual.subprocess.Popen", autospec=True)
     def test_perform_test_command_oserror(self, mock_popen):
