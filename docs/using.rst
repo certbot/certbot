@@ -12,7 +12,7 @@ Installation
 
 Unless you have a very specific requirements, we kindly ask you to use
 the letsencrypt-auto_ method described below. It's the fastest, the
-most thourougly tested and the most reliable way of getting our
+most thoroughly tested and the most reliable way of getting our
 software and the free SSL certificates!
 
 .. _letsencrypt-auto:
@@ -21,8 +21,8 @@ letsencrypt-auto
 ----------------
 
 ``letsencrypt-auto`` is a wrapper which installs some dependencies
-from your OS standard package repostories (e.g using `apt-get` or
-`yum`), and for other depencies it sets up a virtualized Python
+from your OS standard package repositories (e.g using `apt-get` or
+`yum`), and for other dependencies it sets up a virtualized Python
 environment with packages downloaded from PyPI [#venv]_. It also
 provides automated updates.
 
@@ -48,7 +48,7 @@ To install and run the client you just need to type:
    ./letsencrypt-auto
 
 Throughout the documentation, whenever you see references to
-``letsencrypt`` script/binary, you can subsitute in
+``letsencrypt`` script/binary, you can substitute in
 ``letsencrypt-auto``. For example, to get the help you would type:
 
 .. code-block:: shell
@@ -110,7 +110,7 @@ Plugin     A I Notes and status
 ========== = = ================================================================
 standalone Y N Very stable. Uses port 80 (force by
                ``--standalone-supported-challenges simpleHttp``) or 443
-               (force by ``statndalone-supported-challenges dvsni``).
+               (force by ``standalone-supported-challenges dvsni``).
 webroot    Y N Works with already running webserver, by writing necessary files
                to the disk (``--webroot-path`` should be pointed to your
                ``public_html``). Currently, when multiple domains are specified
@@ -174,6 +174,6 @@ give us us as much information as possible:
 
 .. rubric:: Footnotes
 
-.. [#venv] By using this virtualized Python enviroment (`virtualenv
+.. [#venv] By using this virtualized Python environment (`virtualenv
            <https://virtualenv.pypa.io>`_) we don't pollute the main
            OS space with packages from PyPI!
