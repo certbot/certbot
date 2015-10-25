@@ -127,7 +127,7 @@ def _determine_account(args, config):
         elif len(accounts) == 1:
             acc = accounts[0]
         else:  # no account registered yet
-            if args.email is None and not args.allow_unsafe_registration:
+            if args.email is None and not args.register_unsafely_without_email:
                 args.email = display_ops.get_email()
             else:
                 args.email = None
@@ -783,7 +783,7 @@ def prepare_and_parse_args(plugins, args):
         None, "-t", "--text", dest="text_mode", action="store_true",
         help="Use the text output instead of the curses UI.")
     helpful.add(
-        None, "--allow-unsafe-registration", action="store_true",
+        None, "--register-unsafely-without-email", action="store_true",
         help="Specifying this flag enables registering an account with no "
              "email address. This is strongly discouraged, because in the "
              "event of key loss or account compromise you will irrevocably "
