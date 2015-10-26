@@ -36,7 +36,6 @@ install_requires = [
     'configobj',
     'cryptography>=0.7',  # load_pem_x509_certificate
     'parsedatetime',
-    'psutil>=2.1.0',  # net_connections introduced in 2.1.0
     'PyOpenSSL',
     'pyrfc3339',
     'python2-pythondialog>=3.2.2rc1',  # Debian squeeze support, cf. #280
@@ -47,6 +46,11 @@ install_requires = [
     'zope.component',
     'zope.interface',
 ]
+
+if 'gnukfreebsd' not in sys.platform:
+    install_requires.append(
+    'psutil>=2.1.0',  # net_connections introduced in 2.1.0
+    )
 
 # env markers in extras_require cause problems with older pip: #517
 if sys.version_info < (2, 7):
