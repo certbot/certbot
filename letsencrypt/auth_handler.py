@@ -486,7 +486,7 @@ def is_preferred(offered_challb, satisfied,
 
 _ERROR_HELP_COMMON = (
     "To fix these errors, please make sure that your domain name was entered "
-    "correctly and the DNS A/AAAA record(s) for that domain contains the "
+    "correctly and the DNS A record(s) for that domain contains the "
     "right IP address.")
 
 
