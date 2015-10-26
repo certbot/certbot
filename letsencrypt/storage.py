@@ -2,7 +2,6 @@
 import datetime
 import os
 import re
-import time
 
 import configobj
 import parsedatetime
@@ -24,8 +23,8 @@ def config_with_defaults(config=None):
     return defaults_copy
 
 
-def parse_time_interval(interval, textparser=parsedatetime.Calendar()):
-    """Parse the time specified time interval.
+def add_time_interval(base_time, interval, textparser=parsedatetime.Calendar()):
+    """Parse the time specified time interval, and add it to the base_time
 
     The interval can be in the English-language format understood by
     parsedatetime, e.g., '10 days', '3 weeks', '6 months', '9 hours', or
@@ -33,15 +32,19 @@ def parse_time_interval(interval, textparser=parsedatetime.Calendar()):
     hours'. If an integer is found with no associated unit, it is
     interpreted by default as a number of days.
 
+    :param datetime.datetime base_time: The time to be added with the interval.
     :param str interval: The time interval to parse.
 
-    :returns: The interpretation of the time interval.
-    :rtype: :class:`datetime.timedelta`"""
+    :returns: The base_time plus the interpretation of the time interval.
+    :rtype: :class:`datetime.datetime`"""
 
     if interval.strip().isdigit():
         interval += " days"
-    return datetime.timedelta(0, time.mktime(textparser.parse(
-        interval, time.localtime(0))[0]))
+
+    # try to use the same timezone, but fallback to UTC
+    tzinfo = base_time.tzinfo or pytz.UTC
+
+    return textparser.parseDT(interval, base_time, tzinfo=tzinfo)[0]
 
 
 class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
@@ -465,11 +468,9 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             if self.has_pending_deployment():
                 interval = self.configuration.get("deploy_before_expiry",
                                                   "5 days")
-                autodeploy_interval = parse_time_interval(interval)
                 expiry = crypto_util.notAfter(self.current_target("cert"))
-                now = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
-                remaining = expiry - now
-                if remaining < autodeploy_interval:
+                now = pytz.UTC.fromutc(datetime.datetime.utcnow())
+                if expiry < add_time_interval(now, interval):
                     return True
         return False
 
@@ -532,12 +533,10 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
             # Renewals on the basis of expiry time
             interval = self.configuration.get("renew_before_expiry", "10 days")
-            autorenew_interval = parse_time_interval(interval)
             expiry = crypto_util.notAfter(self.version(
                 "cert", self.latest_common_version()))
-            now = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
-            remaining = expiry - now
-            if remaining < autorenew_interval:
+            now = pytz.UTC.fromutc(datetime.datetime.utcnow())
+            if expiry < add_time_interval(now, interval):
                 return True
         return False
 
