@@ -129,6 +129,8 @@ Plugin     A I Notes and status
 standalone Y N Very stable. Uses port 80 (force by
                ``--standalone-supported-challenges simpleHttp``) or 443
                (force by ``standalone-supported-challenges dvsni``).
+apache     Y Y Alpha. Automates Apache installation, works fairly well but on
+               Debian-based distributions only for now.
 webroot    Y N Works with already running webserver, by writing necessary files
                to the disk (``--webroot-path`` should be pointed to your
                ``public_html``). Currently, when multiple domains are specified
@@ -137,8 +139,6 @@ manual     Y N Hidden from standard UI, use with ``--a manual``. Requires to
                copy and paste commands into a new terminal session. Allows to
                run client on machine different than target webserver, e.g. your
                laptop.
-apache     Y Y Alpha - might break stuff, so be careful. Support for
-               Debian-derived distros only.
 nginx      Y Y Very experimental. Not included in letsencrypt-auto_.
 ========== = = ================================================================
 
