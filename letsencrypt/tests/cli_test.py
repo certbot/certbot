@@ -116,6 +116,7 @@ class CLITest(unittest.TestCase):
             ret, _, _, _ = self._call(args)
             self.assertTrue("The nginx plugin is not working" in ret)
             self.assertTrue("Could not find configuration root" in ret)
+            self.assertTrue("NoInstallationError" in ret)
 
         with MockedVerb("auth") as mock_auth:
             from letsencrypt import cli
