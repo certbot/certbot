@@ -1,5 +1,6 @@
 """Tests for letsencrypt.renewer."""
 import datetime
+import time
 import os
 import tempfile
 import shutil
@@ -631,9 +632,31 @@ class RenewableCertTests(BaseRenewableCertTest):
         intended = {"": 0, "17 days": 17, "23": 23, "1 month": 31,
                     "7 weeks": 49, "1 year 1 day": 366, "1 year-1 day": 364,
                     "4 years": 1461}
-        for time in intended:
-            self.assertEqual(storage.parse_time_interval(time),
-                             datetime.timedelta(intended[time]))
+
+        # save the original timezone info
+        original_tz = os.environ.get('TZ', None)
+
+        try:
+            # set to GMT timezone, and run the test
+            os.environ['TZ'] = 'GMT'
+            time.tzset()
+            for time_str in intended:
+                self.assertEqual(storage.parse_time_interval(time_str),
+                                 datetime.timedelta(intended[time_str]))
+
+            # set to BST timezone, and run the test again
+            os.environ['TZ'] = 'Europe/London'
+            time.tzset()
+            for time_str in intended:
+                self.assertEqual(storage.parse_time_interval(time_str),
+                                 datetime.timedelta(intended[time_str]))
+        finally:
+            # restore the timezone
+            if original_tz is None:
+                del os.environ['TZ']
+            else:
+                os.environ['TZ'] = original_tz
+            time.tzset()
 
     @mock.patch("letsencrypt.renewer.plugins_disco")
     @mock.patch("letsencrypt.account.AccountFileStorage")

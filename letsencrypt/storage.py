@@ -1,4 +1,5 @@
 """Renewable certificates storage."""
+import calendar
 import datetime
 import os
 import re
@@ -40,8 +41,8 @@ def parse_time_interval(interval, textparser=parsedatetime.Calendar()):
 
     if interval.strip().isdigit():
         interval += " days"
-    return datetime.timedelta(0, time.mktime(textparser.parse(
-        interval, time.localtime(0))[0]))
+    return datetime.timedelta(0, calendar.timegm(textparser.parse(
+        interval, time.gmtime(0))[0]))
 
 
 class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
