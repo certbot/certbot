@@ -2,7 +2,14 @@
 import logging
 import socket
 
-import psutil
+try:
+    import psutil
+    psutil__net_connections = psutil.net_connections
+except ImportError:
+    def psutil__net_connections():
+        "When psutil is not available, returns no connection information"
+        return []
+
 import zope.component
 
 from letsencrypt import interfaces
@@ -25,7 +32,7 @@ def already_listening(port):
 
     """
     try:
-        net_connections = psutil.net_connections()
+        net_connections = psutil__net_connections()
     except psutil.AccessDenied as error:
         logger.info("Access denied when trying to list network "
                     "connections: %s. Are you root?", error)

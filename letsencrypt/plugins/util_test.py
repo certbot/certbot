@@ -2,9 +2,12 @@
 import unittest
 
 import mock
-import psutil
+try:
+    import psutil
+except ImportError:
+    psutil = None
 
-
+@unittest.skipIf(psutil is None, "psutil not available")
 class AlreadyListeningTest(unittest.TestCase):
     """Tests for letsencrypt.plugins.already_listening."""
     def _call(self, *args, **kwargs):
