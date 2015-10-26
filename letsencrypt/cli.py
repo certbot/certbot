@@ -69,6 +69,11 @@ if "nginx" in plugins:
     nginx_doc = "--nginx           Use the Nginx plugin for authentication & installation"
 else:
     nginx_doc = "(nginx support is experimental, buggy, and not installed by default)"
+if "apache" in plugins:
+    apache_doc = "--apache          Use the Apache plugin for authentication & installation"
+else:
+    apache_doc = "(the apache plugin is not installed)"
+
 
 
 # This is the short help for letsencrypt --help, where we disable argparse
