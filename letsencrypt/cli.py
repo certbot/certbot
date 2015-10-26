@@ -64,18 +64,24 @@ the cert. Major SUBCOMMANDS are:
 
 """
 
+plugins = plugins_disco.PluginsRegistry.find_all()
+if "nginx" in plugins:
+    nginx_doc = "--nginx           Use the Nginx plugin for authentication & installation"
+else:
+    nginx_doc = "(nginx support is experimental, buggy, and not installed by default)"
+
 
 # This is the short help for letsencrypt --help, where we disable argparse
 # altogether
 USAGE = SHORT_USAGE + """Choice of server plugins for obtaining and installing cert:
 
   --apache          Use the Apache plugin for authentication & installation
-  --nginx           Use the Nginx plugin for authentication & installation
   --standalone      Run a standalone webserver for authentication
+  %s
 
 OR use different servers to obtain (authenticate) the cert and then install it:
 
-  --authenticator standalone --installer nginx
+  --authenticator standalone --installer apache
 
 More detailed help:
 
@@ -84,7 +90,7 @@ More detailed help:
 
    all, automation, paths, security, testing, or any of the subcommands or
    plugins (certonly, install, nginx, apache, standalone, etc)
-"""
+""" % nginx_doc
 
 
 def _find_domains(args, installer):
@@ -1061,7 +1067,7 @@ def main(cli_args=sys.argv[1:]):
     sys.excepthook = functools.partial(_handle_exception, args=None)
 
     # note: arg parser internally handles --help (and exits afterwards)
-    plugins = plugins_disco.PluginsRegistry.find_all()
+    global plugins
     args = prepare_and_parse_args(plugins, cli_args)
     config = configuration.NamespaceConfig(args)
     zope.component.provideUtility(config)
