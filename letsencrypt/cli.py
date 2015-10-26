@@ -377,7 +377,7 @@ def choose_configurator_plugins(args, config, plugins, verb):
 
     # Which plugins do we need?
     need_inst = need_auth = (verb == "run")
-    if verb in ("auth", "certonly"):
+    if verb == "auth":
         need_auth = True
     if verb == "install":
         need_inst = True
@@ -457,7 +457,7 @@ def auth(args, config, plugins):
 
     try:
         # installers are used in auth mode to determine domain names
-        installer, authenticator = choose_configurator_plugins(args, config, plugins, "certonly")
+        installer, authenticator = choose_configurator_plugins(args, config, plugins, "auth")
     except PluginSelectionError, e:
         return e.message
 
@@ -481,7 +481,7 @@ def install(args, config, plugins):
     # XXX: Update for renewer/RenewableCert
 
     try:
-        installer, _ = choose_configurator_plugins(args, config, plugins, "certonly")
+        installer, _ = choose_configurator_plugins(args, config, plugins, "auth")
     except PluginSelectionError, e:
         return e.message
 
@@ -899,7 +899,7 @@ def _paths_parser(helpful):
         "paths", description="Arguments changing execution paths & servers")
 
     cph = "Path to where cert is saved (with auth), installed (with install --csr) or revoked."
-    if verb in ("auth", "certonly"):
+    if verb == "auth":
         add("paths", "--cert-path", default=flag_default("auth_cert_path"), help=cph)
     elif verb == "revoke":
         add("paths", "--cert-path", type=read_file, required=True, help=cph)
@@ -912,7 +912,7 @@ def _paths_parser(helpful):
         help="Path to private key for cert creation or revocation (if account key is missing)")
 
     default_cp = None
-    if verb in ("auth", "certonly"):
+    if verb == "auth":
         default_cp = flag_default("auth_chain_path")
     add("paths", "--fullchain-path", default=default_cp,
         help="Accompanying path to a full certificate chain (cert plus chain).")
