@@ -10,11 +10,6 @@ User Guide
 Installation
 ============
 
-Unless you have a very specific requirements, we kindly ask you to use
-the letsencrypt-auto_ method described below. It's the fastest, the
-most thoroughly tested and the most reliable way of getting our
-software and the free SSL certificates!
-
 .. _letsencrypt-auto:
 
 letsencrypt-auto
@@ -112,6 +107,15 @@ whole process is described in the :doc:`contributing`.
    install``, ``sudo ./venv/bin/...``. These modes of operation might
    corrupt your operating system and are **not supported** by the
    Let's Encrypt team!
+
+
+Comparison of different methods
+-------------------------------
+
+Unless you have a very specific requirements, we kindly ask you to use
+the letsencrypt-auto_ method. It's the fastest, the most thoroughly
+tested and the most reliable way of getting our software and the free
+SSL certificates!
 
 
 Plugins
