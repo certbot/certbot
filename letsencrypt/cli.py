@@ -377,7 +377,7 @@ def choose_configurator_plugins(args, config, plugins, verb):
 
     # Which plugins do we need?
     need_inst = need_auth = (verb == "run")
-    if verb in ("auth","certonly"):
+    if verb in ("auth", "certonly"):
         need_auth = True
     if verb == "install":
         need_inst = True
@@ -669,7 +669,12 @@ class HelpfulArgumentParser(object):
 
         for i, token in enumerate(self.args):
             if token in self.VERBS:
-                self.verb = token
+                verb = token
+                if verb == "certonly":
+                    verb = "auth"
+                if verb == "everything":
+                    verb = "run"
+                self.verb = verb
                 self.args.pop(i)
                 return
 
