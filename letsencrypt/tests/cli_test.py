@@ -115,6 +115,12 @@ class CLITest(unittest.TestCase):
             # (we can only do that if letsencrypt-nginx is actually present)
             ret, _, _, _ = self._call(args)
             self.assertTrue("The nginx plugin is not working" in ret)
+            self.assertTrue("Could not find configuration root" in ret)
+
+        with MockedVerb("auth") as mock_auth:
+            from letsencrypt import cli
+            self._call(["certonly", "--standalone"])
+            self.assertEqual(1, mock_auth.call_count)
 
     def test_rollback(self):
         _, _, _, client = self._call(['rollback'])
