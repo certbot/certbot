@@ -56,7 +56,7 @@ default, it will attempt to use a webserver both for obtaining and installing
 the cert. Major SUBCOMMANDS are:
 
   (default) run        Obtain & install a cert in your current webserver
-  auth                 Authenticate & obtain cert, but do not install it
+  certonly             Aka "auth": obtain cert, but do not install it
   install              Install a previously obtained cert in a server
   revoke               Revoke a previously obtained certificate
   rollback             Rollback server configuration changes made during install
@@ -358,11 +358,11 @@ def diagnose_configurator_problem(cfg_type, requested, plugins):
         if os.path.exists("/etc/debian_version"):
             # Debian... installers are at least possible
             msg = ('No installers seem to be present and working on your system; '
-                   'fix that or try running letsencrypt with the "auth" command')
+                   'fix that or try running letsencrypt with the "certonly" command')
         else:
             # XXX update this logic as we make progress on #788 and nginx support
             msg = ('No installers are available on your OS yet; try running '
-                   '"letsencrypt-auto auth" to get a cert you can install manually')
+                   '"letsencrypt-auto certonly" to get a cert you can install manually')
     else:
         msg = "{0} could not be determined or is not installed".format(cfg_type)
     raise PluginSelectionError(msg)
@@ -377,7 +377,7 @@ def choose_configurator_plugins(args, config, plugins, verb):
 
     # Which plugins do we need?
     need_inst = need_auth = (verb == "run")
-    if verb == "auth":
+    if verb in ("auth","certonly"):
         need_auth = True
     if verb == "install":
         need_inst = True
@@ -457,7 +457,7 @@ def auth(args, config, plugins):
 
     try:
         # installers are used in auth mode to determine domain names
-        installer, authenticator = choose_configurator_plugins(args, config, plugins, "auth")
+        installer, authenticator = choose_configurator_plugins(args, config, plugins, "certonly")
     except PluginSelectionError, e:
         return e.message
 
@@ -481,7 +481,7 @@ def install(args, config, plugins):
     # XXX: Update for renewer/RenewableCert
 
     try:
-        installer, _ = choose_configurator_plugins(args, config, plugins, "auth")
+        installer, _ = choose_configurator_plugins(args, config, plugins, "certonly")
     except PluginSelectionError, e:
         return e.message
 
@@ -609,7 +609,7 @@ class HelpfulArgumentParser(object):
     """
 
     # Maps verbs/subcommands to the functions that implement them
-    VERBS = {"auth": auth, "config_changes": config_changes,
+    VERBS = {"auth": auth, "certonly": auth, "config_changes": config_changes,
              "install": install, "plugins": plugins_cmd,
              "revoke": revoke, "rollback": rollback, "run": run}
 
@@ -894,7 +894,7 @@ def _paths_parser(helpful):
         "paths", description="Arguments changing execution paths & servers")
 
     cph = "Path to where cert is saved (with auth), installed (with install --csr) or revoked."
-    if verb == "auth":
+    if verb in ("auth", "certonly"):
         add("paths", "--cert-path", default=flag_default("auth_cert_path"), help=cph)
     elif verb == "revoke":
         add("paths", "--cert-path", type=read_file, required=True, help=cph)
@@ -907,7 +907,7 @@ def _paths_parser(helpful):
         help="Path to private key for cert creation or revocation (if account key is missing)")
 
     default_cp = None
-    if verb == "auth":
+    if verb in ("auth", "certonly"):
         default_cp = flag_default("auth_chain_path")
     add("paths", "--fullchain-path", default=default_cp,
         help="Accompanying path to a full certificate chain (cert plus chain).")
