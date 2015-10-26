@@ -56,7 +56,7 @@ default, it will attempt to use a webserver both for obtaining and installing
 the cert. Major SUBCOMMANDS are:
 
   (default) run        Obtain & install a cert in your current webserver
-  certonly             Aka "auth": obtain cert, but do not install it
+  certonly             Obtain cert, but do not install it (aka "auth")
   install              Install a previously obtained cert in a server
   revoke               Revoke a previously obtained certificate
   rollback             Rollback server configuration changes made during install
@@ -67,12 +67,14 @@ the cert. Major SUBCOMMANDS are:
 
 # This is the short help for letsencrypt --help, where we disable argparse
 # altogether
-USAGE = SHORT_USAGE + """Choice of server for authentication/installation:
+USAGE = SHORT_USAGE + """Choice of server plugins for obtaining and installing cert:
 
   --apache          Use the Apache plugin for authentication & installation
   --nginx           Use the Nginx plugin for authentication & installation
   --standalone      Run a standalone webserver for authentication
-  OR:
+
+OR use different servers to obtain (authenticate) the cert and then install it:
+
   --authenticator standalone --installer nginx
 
 More detailed help:
@@ -80,8 +82,8 @@ More detailed help:
   -h, --help [topic]    print this message, or detailed help on a topic;
                         the available topics are:
 
-   all, apache, automation, manual, nginx, paths, security, testing, or any of
-   the subcommands
+   all, automation, paths, security, testing, or any of the subcommands or
+   plugins (certonly, install, nginx, apache, standalone, etc)
 """
 
 
@@ -759,6 +761,10 @@ class HelpfulArgumentParser(object):
         """
         # topics maps each topic to whether it should be documented by
         # argparse on the command line
+        if chosen_topic == "certonly":
+            chosen_topic = "auth"
+        if chosen_topic == "everything":
+            chosen_topic = "run"
         if chosen_topic == "all":
             return dict([(t, True) for t in self.help_topics])
         elif not chosen_topic:
