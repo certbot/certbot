@@ -33,7 +33,7 @@ To install and run the client you just need to type:
 
 (Once letsencrypt is packaged by distributions, the command will just be
 ``letsencrypt``.  ``letsencrypt-auto`` is a wrapper which installs virtualized
-dependencies and provides automated updates during the beta program)
+dependencies and provides automated updates during the beta program.)
 
 The ``letsencrypt`` commandline tool has a builtin help:
 
@@ -74,8 +74,8 @@ Running with Docker
 ===================
 
 Docker_ is another way to quickly obtain testing certs. From the
-server that the domain your requesting a cert for resolves to,
-`install Docker`_, issue the following command:
+server that the domain you're requesting a cert for resolves to,
+`install Docker`_, then issue the following command:
 
 .. code-block:: shell
 
