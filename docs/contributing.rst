@@ -312,7 +312,6 @@ synced to ``/vagrant``, so you can get started with:
 
   vagrant ssh
   cd /vagrant
-  ./venv/bin/pip install -r requirements.txt .[dev,docs,testing]
   sudo ./venv/bin/letsencrypt
 
 Support for other Linux distributions coming soon.
