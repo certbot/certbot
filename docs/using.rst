@@ -143,7 +143,7 @@ nginx      Y Y Very experimental. Not included in letsencrypt-auto_.
 ========== = = ================================================================
 
 Third party plugins are listed at
-https://github.com/letsencrypt/letsencrypt/wiki/Plugins. If that
+https://github.com/letsencrypt/letsencrypt/wiki/Plugins. If
 that's not enough, you can always :ref:`write your own plugin
 <dev-plugin>`.
 
