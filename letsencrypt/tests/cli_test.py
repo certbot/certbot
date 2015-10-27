@@ -69,30 +69,42 @@ class CLITest(unittest.TestCase):
         self.assertRaises(SystemExit, self._call, ['--help', 'all'])
         output = StringIO.StringIO()
         with mock.patch('letsencrypt.cli.sys.stdout', new=output):
+            plugins = disco.PluginsRegistry.find_all()
             self.assertRaises(SystemExit, self._call_stdout, ['--help', 'all'])
             out = output.getvalue()
             self.assertTrue("--configurator" in out)
             self.assertTrue("how a cert is deployed" in out)
             self.assertTrue("--manual-test-mode" in out)
             output.truncate(0)
+
             self.assertRaises(SystemExit, self._call_stdout, ['-h', 'nginx'])
             out = output.getvalue()
-            if "nginx" in disco.PluginsRegistry.find_all():
+            if "nginx" in plugins:
                 # may be false while building distributions without plugins
                 self.assertTrue("--nginx-ctl" in out)
             self.assertTrue("--manual-test-mode" not in out)
             self.assertTrue("--checkpoints" not in out)
             output.truncate(0)
+
+            self.assertRaises(SystemExit, self._call_stdout, ['-h'])
+            out = output.getvalue()
+            if "nginx" in plugins:
+                self.assertTrue("Use the Nginx plugin" in out)
+            else:
+                self.assertTrue("(nginx support is experimental" in out)
+            output.truncate(0)
+
             self.assertRaises(SystemExit, self._call_stdout, ['--help', 'plugins'])
             out = output.getvalue()
             self.assertTrue("--manual-test-mode" not in out)
             self.assertTrue("--prepare" in out)
             self.assertTrue("Plugin options" in out)
             output.truncate(0)
+
             self.assertRaises(SystemExit, self._call_stdout, ['-h'])
             out = output.getvalue()
             from letsencrypt import cli
-            self.assertTrue(cli.USAGE in out)
+            self.assertTrue(cli.usage_strings(plugins)[0] in out)
 
     def test_configurator_selection(self):
         real_plugins = disco.PluginsRegistry.find_all()

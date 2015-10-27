@@ -64,23 +64,11 @@ the cert. Major SUBCOMMANDS are:
 
 """
 
-plugins = plugins_disco.PluginsRegistry.find_all()
-if "nginx" in plugins:
-    nginx_doc = "--nginx           Use the Nginx plugin for authentication & installation"
-else:
-    nginx_doc = "(nginx support is experimental, buggy, and not installed by default)"
-if "apache" in plugins:
-    apache_doc = "--apache          Use the Apache plugin for authentication & installation"
-else:
-    apache_doc = "(the apache plugin is not installed)"
-
-
-
 # This is the short help for letsencrypt --help, where we disable argparse
 # altogether
 USAGE = SHORT_USAGE + """Choice of server plugins for obtaining and installing cert:
 
-  --apache          Use the Apache plugin for authentication & installation
+  %s
   --standalone      Run a standalone webserver for authentication
   %s
 
@@ -95,7 +83,20 @@ More detailed help:
 
    all, automation, paths, security, testing, or any of the subcommands or
    plugins (certonly, install, nginx, apache, standalone, etc)
-""" % nginx_doc
+"""
+
+def usage_strings(plugins):
+    """Make usage strings late so that plugins can be initialised late"""
+    print plugins
+    if "nginx" in plugins:
+        nginx_doc = "--nginx           Use the Nginx plugin for authentication & installation"
+    else:
+        nginx_doc = "(nginx support is experimental, buggy, and not installed by default)"
+    if "apache" in plugins:
+        apache_doc = "--apache          Use the Apache plugin for authentication & installation"
+    else:
+        apache_doc = "(the apache plugin is not installed)"
+    return USAGE % (apache_doc, nginx_doc), SHORT_USAGE
 
 
 def _find_domains(args, installer):
@@ -633,8 +634,9 @@ class HelpfulArgumentParser(object):
     def __init__(self, args, plugins):
         plugin_names = [name for name, _p in plugins.iteritems()]
         self.help_topics = self.HELP_TOPICS + plugin_names + [None]
+        usage, short_usage = usage_strings(plugins)
         self.parser = configargparse.ArgParser(
-            usage=SHORT_USAGE,
+            usage=short_usage,
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
             args_for_setting_config_path=["-c", "--config"],
             default_config_files=flag_default("config_files"))
@@ -651,7 +653,7 @@ class HelpfulArgumentParser(object):
         help_arg = max(help1, help2)
         if help_arg is True:
             # just --help with no topic; avoid argparse altogether
-            print USAGE
+            print usage
             sys.exit(0)
         self.visible_topics = self.determine_help_topics(help_arg)
         #print self.visible_topics
@@ -1072,7 +1074,7 @@ def main(cli_args=sys.argv[1:]):
     sys.excepthook = functools.partial(_handle_exception, args=None)
 
     # note: arg parser internally handles --help (and exits afterwards)
-    global plugins
+    plugins = plugins_disco.PluginsRegistry.find_all()
     args = prepare_and_parse_args(plugins, cli_args)
     config = configuration.NamespaceConfig(args)
     zope.component.provideUtility(config)
