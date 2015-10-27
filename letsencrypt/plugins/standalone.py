@@ -181,6 +181,15 @@ class Authenticator(common.Plugin):
         return set(challenges.Challenge.TYPES[name] for name in
                    self.conf("supported-challenges").split(","))
 
+    @property
+    def _necessary_ports(self):
+        necessary_ports = set()
+        if challenges.SimpleHTTP in self.supported_challenges:
+            necessary_ports.add(self.config.simple_http_port)
+        if challenges.DVSNI in self.supported_challenges:
+            necessary_ports.add(self.config.dvsni_port)
+        return necessary_ports
+
     def more_info(self):  # pylint: disable=missing-docstring
         return self.__doc__
 
@@ -194,8 +203,7 @@ class Authenticator(common.Plugin):
         return chall_pref
 
     def perform(self, achalls):  # pylint: disable=missing-docstring
-        if any(util.already_listening(port) for port in
-               (self.config.dvsni_port, self.config.simple_http_port)):
+        if any(util.already_listening(port) for port in self._necessary_ports):
             raise errors.MisconfigurationError(
                 "At least one of the (possibly) required ports is "
                 "already taken.")
