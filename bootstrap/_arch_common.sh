@@ -17,3 +17,4 @@ pacman -S --needed \
   openssl \
   libffi \
   ca-certificates \
+  pkg-config \
