@@ -21,5 +21,6 @@ pip install -U setuptools
 pip install -U pip
 pip install "$@"
 
+set +x
 echo "Please run the following command to activate developer environment:"
 echo "source $VENV_NAME/bin/activate"
