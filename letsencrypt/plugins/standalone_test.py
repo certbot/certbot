@@ -107,10 +107,15 @@ class AuthenticatorTest(unittest.TestCase):
                          set([challenges.DVSNI, challenges.SimpleHTTP]))
 
     @mock.patch("letsencrypt.plugins.standalone.util")
-    def test_perform_misconfiguration(self, mock_util):
-        mock_util.already_listening.return_value = True
-        self.assertRaises(errors.MisconfigurationError, self.auth.perform, [])
-        mock_util.already_listening.assert_called_once_with(1234)
+    def test_perform_alredy_listening(self, mock_util):
+        for chall, port in ((challenges.DVSNI.typ, 1234),
+                            (challenges.SimpleHTTP.typ, 4321)):
+            mock_util.already_listening.return_value = True
+            self.config.standalone_supported_challenges = chall
+            self.assertRaises(
+                errors.MisconfigurationError, self.auth.perform, [])
+            mock_util.already_listening.assert_called_once_with(port)
+            mock_util.already_listening.reset_mock()
 
     @mock.patch("letsencrypt.plugins.standalone.zope.component.getUtility")
     def test_perform(self, unused_mock_get_utility):
