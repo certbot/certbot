@@ -110,7 +110,7 @@ Documentation: https://letsencrypt.readthedocs.org
 
 Software project: https://github.com/letsencrypt/letsencrypt
 
-Notes for developers: CONTRIBUTING.md_
+Notes for developers: https://letsencrypt.readthedocs.org/en/latest/contributing.html
 
 Main Website: https://letsencrypt.org/
 
@@ -123,4 +123,3 @@ email to client-dev+subscribe@letsencrypt.org)
 
 .. _Freenode: https://freenode.net
 .. _client-dev: https://groups.google.com/a/letsencrypt.org/forum/#!forum/client-dev
-.. _CONTRIBUTING.md: https://github.com/letsencrypt/letsencrypt/blob/master/CONTRIBUTING.md
