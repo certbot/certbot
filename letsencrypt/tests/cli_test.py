@@ -131,7 +131,6 @@ class CLITest(unittest.TestCase):
             self.assertTrue("NoInstallationError" in ret)
 
         with MockedVerb("auth") as mock_auth:
-            from letsencrypt import cli
             self._call(["certonly", "--standalone"])
             self.assertEqual(1, mock_auth.call_count)
 
