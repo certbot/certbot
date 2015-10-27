@@ -43,6 +43,7 @@ apt-get install -y --no-install-recommends \
   libssl-dev \
   libffi-dev \
   ca-certificates \
+  libssl-dev
 
 if ! which virtualenv > /dev/null ; then
   echo Failed to install a working \"virtualenv\" command, exiting
