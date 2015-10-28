@@ -132,7 +132,7 @@ class CLITest(unittest.TestCase):
 
         with MockedVerb("certonly") as mock_certonly:
             self._call(["auth", "--standalone"])
-            self.assertEqual(1, mock_auth.call_count)
+            self.assertEqual(1, mock_certonly.call_count)
 
     def test_rollback(self):
         _, _, _, client = self._call(['rollback'])
