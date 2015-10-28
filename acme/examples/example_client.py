@@ -15,7 +15,7 @@ from acme import jose
 logging.basicConfig(level=logging.DEBUG)
 
 
-NEW_REG_URL = 'https://www.letsencrypt-demo.org/acme/new-reg'
+DIRECTORY_URL = 'https://acme-staging.api.letsencrypt.org/directory'
 BITS = 2048  # minimum for Boulder
 DOMAIN = 'example1.com'  # example.com is ignored by Boulder
 
@@ -24,7 +24,7 @@ key = jose.JWKRSA(key=rsa.generate_private_key(
     public_exponent=65537,
     key_size=BITS,
     backend=default_backend()))
-acme = client.Client(NEW_REG_URL, key)
+acme = client.Client(DIRECTORY_URL, key)
 
 regr = acme.register()
 logging.info('Auto-accepting TOS: %s', regr.terms_of_service)
