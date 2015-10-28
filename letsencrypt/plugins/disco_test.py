@@ -51,7 +51,7 @@ class PluginEntryPointTest(unittest.TestCase):
 
     def test_description(self):
         self.assertEqual(
-                "Run A Standalone Webserver To Prove That You Control Domains",
+                "Automatically configure and run a simple webserver",
                 self.plugin_ep.description)
 
     def test_description_with_name(self):
