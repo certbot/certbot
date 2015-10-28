@@ -9,6 +9,7 @@ from acme import challenges
 from acme import client as acme_client
 from acme import messages
 
+from letsencrypt import achallenges
 from letsencrypt import errors
 from letsencrypt import le_util
 
@@ -283,6 +284,22 @@ class PollChallengesTest(unittest.TestCase):
         return (new_authzr, "response")
 
 
+class ChallbToAchallTest(unittest.TestCase):
+    """Tests for letsencrypt.auth_handler.challb_to_achall."""
+
+    def _call(self, challb):
+        from letsencrypt.auth_handler import challb_to_achall
+        return challb_to_achall(challb, "account_key", "domain")
+
+    def test_it(self):
+        self.assertEqual(
+            self._call(acme_util.HTTP01_P),
+            achallenges.KeyAuthorizationAnnotatedChallenge(
+                challb=acme_util.HTTP01_P, account_key="account_key",
+                domain="domain"),
+        )
+
+
 class GenChallengePathTest(unittest.TestCase):
     """Tests for letsencrypt.auth_handler.gen_challenge_path.
 
@@ -425,8 +442,6 @@ class ReportFailedChallsTest(unittest.TestCase):
     # pylint: disable=protected-access
 
     def setUp(self):
-        from letsencrypt import achallenges
-
         kwargs = {
             "chall": acme_util.SIMPLE_HTTP,
             "uri": "uri",

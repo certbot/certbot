@@ -358,7 +358,9 @@ def challb_to_achall(challb, account_key, domain):
     elif isinstance(chall, challenges.ProofOfPossession):
         return achallenges.ProofOfPossession(
             challb=challb, domain=domain)
-
+    elif isinstance(chall, challenges.KeyAuthorizationChallenge):
+        return achallenges.KeyAuthorizationAnnotatedChallenge(
+            challb=challb, domain=domain, account_key=account_key)
     else:
         raise errors.Error(
             "Received unsupported challenge of type: %s", chall.typ)

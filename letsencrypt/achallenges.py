@@ -45,6 +45,15 @@ class AnnotatedChallenge(jose.ImmutableMap):
         return getattr(self.challb, name)
 
 
+class KeyAuthorizationAnnotatedChallenge(AnnotatedChallenge):
+    """Client annotated `KeyAuthorizationChallenge` challenge."""
+    __slots__ = ('challb', 'domain', 'account_key')
+
+    def response_and_validation(self):
+        """Generate response and validation."""
+        return self.challb.chall.response_and_validation(self.account_key)
+
+
 class DVSNI(AnnotatedChallenge):
     """Client annotated "dvsni" ACME challenge.
 
