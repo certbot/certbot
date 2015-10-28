@@ -191,7 +191,7 @@ class Authenticator(common.Plugin):
         return necessary_ports
 
     def more_info(self):  # pylint: disable=missing-docstring
-        return self.__doc__
+        return self.__doc__.replace("\n", "").replace("    ", " ")
 
     def prepare(self):  # pylint: disable=missing-docstring
         pass
