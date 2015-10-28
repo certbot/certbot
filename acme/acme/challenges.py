@@ -249,7 +249,7 @@ class HTTP01Response(KeyAuthorizationChallengeResponse):
                 "Using non-standard port for SimpleHTTP verification: %s", port)
             domain += ":{0}".format(port)
 
-        uri = self.uri(domain, chall)
+        uri = chall.uri(domain)
         logger.debug("Verifying %s at %s...", chall.typ, uri)
         try:
             http_response = requests.get(uri)
