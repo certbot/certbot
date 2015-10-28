@@ -87,7 +87,6 @@ More detailed help:
 
 def usage_strings(plugins):
     """Make usage strings late so that plugins can be initialised late"""
-    print plugins
     if "nginx" in plugins:
         nginx_doc = "--nginx           Use the Nginx plugin for authentication & installation"
     else:
@@ -391,7 +390,7 @@ def choose_configurator_plugins(args, config, plugins, verb):
 
     # Which plugins do we need?
     need_inst = need_auth = (verb == "run")
-    if verb == "auth":
+    if verb == "certonly":
         need_auth = True
     if verb == "install":
         need_inst = True
@@ -461,7 +460,7 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
         display_ops.success_renewal(domains)
 
 
-def auth(args, config, plugins):
+def obtaincert(args, config, plugins):
     """Authenticate & obtain cert, but do not install it."""
 
     if args.domains is not None and args.csr is not None:
@@ -471,7 +470,7 @@ def auth(args, config, plugins):
 
     try:
         # installers are used in auth mode to determine domain names
-        installer, authenticator = choose_configurator_plugins(args, config, plugins, "auth")
+        installer, authenticator = choose_configurator_plugins(args, config, plugins, "certonly")
     except PluginSelectionError, e:
         return e.message
 
@@ -495,7 +494,7 @@ def install(args, config, plugins):
     # XXX: Update for renewer/RenewableCert
 
     try:
-        installer, _ = choose_configurator_plugins(args, config, plugins, "auth")
+        installer, _ = choose_configurator_plugins(args, config, plugins, "certonly")
     except PluginSelectionError, e:
         return e.message
 
@@ -623,7 +622,7 @@ class HelpfulArgumentParser(object):
     """
 
     # Maps verbs/subcommands to the functions that implement them
-    VERBS = {"auth": auth, "certonly": auth, "config_changes": config_changes,
+    VERBS = {"auth": obtaincert, "certonly": obtaincert, "config_changes": config_changes,
              "install": install, "plugins": plugins_cmd,
              "revoke": revoke, "rollback": rollback, "run": run}
 
@@ -685,8 +684,8 @@ class HelpfulArgumentParser(object):
         for i, token in enumerate(self.args):
             if token in self.VERBS:
                 verb = token
-                if verb == "certonly":
-                    verb = "auth"
+                if verb == "auth":
+                    verb = "certonly"
                 if verb == "everything":
                     verb = "run"
                 self.verb = verb
@@ -774,8 +773,8 @@ class HelpfulArgumentParser(object):
         """
         # topics maps each topic to whether it should be documented by
         # argparse on the command line
-        if chosen_topic == "certonly":
-            chosen_topic = "auth"
+        if chosen_topic == "auth":
+            chosen_topic = "certonly"
         if chosen_topic == "everything":
             chosen_topic = "run"
         if chosen_topic == "all":
@@ -884,13 +883,13 @@ def prepare_and_parse_args(plugins, args):
 
 
 def _create_subparsers(helpful):
-    helpful.add_group("auth", description="Options for modifying how a cert is obtained")
+    helpful.add_group("certonly", description="Options for modifying how a cert is obtained")
     helpful.add_group("install", description="Options for modifying how a cert is deployed")
     helpful.add_group("revoke", description="Options for revocation of certs")
     helpful.add_group("rollback", description="Options for reverting config changes")
     helpful.add_group("plugins", description="Plugin options")
 
-    helpful.add("auth",
+    helpful.add("certonly",
                 "--csr", type=read_file,
                 help="Path to a Certificate Signing Request (CSR) in DER"
                 " format; note that the .csr file *must* contain a Subject"
@@ -918,7 +917,7 @@ def _paths_parser(helpful):
         "paths", description="Arguments changing execution paths & servers")
 
     cph = "Path to where cert is saved (with auth), installed (with install --csr) or revoked."
-    if verb == "auth":
+    if verb == "certonly":
         add("paths", "--cert-path", default=flag_default("auth_cert_path"), help=cph)
     elif verb == "revoke":
         add("paths", "--cert-path", type=read_file, required=True, help=cph)
@@ -931,7 +930,7 @@ def _paths_parser(helpful):
         help="Path to private key for cert creation or revocation (if account key is missing)")
 
     default_cp = None
-    if verb == "auth":
+    if verb == "certonly":
         default_cp = flag_default("auth_chain_path")
     add("paths", "--fullchain-path", default=default_cp,
         help="Accompanying path to a full certificate chain (cert plus chain).")
