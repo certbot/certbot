@@ -57,8 +57,13 @@ class ACMEServerMixin:  # pylint: disable=old-style-class
         """Serve forever, until other thread calls `shutdown2`."""
         logger.debug("Starting server at %s:%d...",
                      *self.socket.getsockname()[:2])
+
+        # set timeout to make sure never hanging in the handle_request() calls
+        self.timeout = 1
         while not self._stopped:
             self.handle_request()
+
+        # do we need to restore the original timeout value?
 
     def shutdown2(self):
         """Shutdown server loop from `serve_forever2`."""

@@ -88,8 +88,8 @@ class DVSNIServerTest(unittest.TestCase):
         }
         from acme.standalone import DVSNIServer
         self.server = DVSNIServer(("", 0), certs=self.certs)
-        # pylint: disable=no-member
-        self.thread = threading.Thread(target=self.server.handle_request)
+        # use serve_forever2() instead of handle_request() to avoid hanging
+        self.thread = threading.Thread(target=self.server.serve_forever2)
         self.thread.start()
 
     def tearDown(self):
@@ -120,7 +120,8 @@ class SimpleHTTPServerTest(unittest.TestCase):
 
         # pylint: disable=no-member
         self.port = self.server.socket.getsockname()[1]
-        self.thread = threading.Thread(target=self.server.handle_request)
+        # use serve_forever2() instead of handle_request() to avoid hanging
+        self.thread = threading.Thread(target=self.server.serve_forever2)
         self.thread.start()
 
     def tearDown(self):
