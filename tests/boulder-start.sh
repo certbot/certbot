@@ -37,5 +37,7 @@ wget https://github.com/jsha/boulder-tools/raw/master/goose.gz && \
   zcat goose.gz > $GOPATH/bin/goose && \
   chmod +x $GOPATH/bin/goose
 ./test/create_db.sh
+# listenbuddy is needed for ./start.py
+go get github.com/jsha/listenbuddy
 ./start.py &
 # Hopefully start.py bootstraps before integration test is started...
