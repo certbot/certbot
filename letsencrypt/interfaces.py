@@ -199,23 +199,28 @@ class IConfig(zope.interface.Interface):
         "Email used for registration and recovery contact.")
     rsa_key_size = zope.interface.Attribute("Size of the RSA key.")
 
-    config_dir = zope.interface.Attribute("Configuration directory.")
-    work_dir = zope.interface.Attribute("Working directory.")
+    config_dir = zope.interface.Attribute(
+        "Absolute path to the configuration directory.")
+    work_dir = zope.interface.Attribute(
+        "Absolute path to the working directory.")
 
     accounts_dir = zope.interface.Attribute(
-        "Directory where all account information is stored.")
-    backup_dir = zope.interface.Attribute("Configuration backups directory.")
+        "Absolute path to the directory "
+        "where all account information is stored.")
+    backup_dir = zope.interface.Attribute(
+        "Absolute path to the configuration backups directory.")
     csr_dir = zope.interface.Attribute(
-        "Directory where newly generated Certificate Signing Requests "
-        "(CSRs) are saved.")
+        "Absolute path to the directory where newly generated Certificate Signing "
+        "Requests (CSRs) are saved.")
     in_progress_dir = zope.interface.Attribute(
-        "Directory used before a permanent checkpoint is finalized.")
-    key_dir = zope.interface.Attribute("Keys storage.")
+        "Absolute path to the directory used "
+        "before a permanent checkpoint is finalized.")
+    key_dir = zope.interface.Attribute("Absolute path to the keys storage.")
     temp_checkpoint_dir = zope.interface.Attribute(
-        "Temporary checkpoint directory.")
+        "Absolute path to the temporary checkpoint directory.")
 
     renewer_config_file = zope.interface.Attribute(
-        "Location of renewal configuration file.")
+        "Absolute path of the renewal configuration file.")
 
     no_verify_ssl = zope.interface.Attribute(
         "Disable SSL certificate verification.")

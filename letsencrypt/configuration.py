@@ -52,6 +52,34 @@ class NamespaceConfig(object):
         return (parsed.netloc + parsed.path).replace('/', os.path.sep)
 
     @property
+    def config_dir(self):  # pylint: disable=missing-docstring
+        return os.path.abspath(self.namespace.config_dir)
+
+    @property
+    def work_dir(self):  # pylint: disable=missing-docstring
+        return os.path.abspath(self.namespace.work_dir)
+
+    @property
+    def logs_dir(self):  # pylint: disable=missing-docstring
+        return os.path.abspath(self.namespace.logs_dir)
+
+    @property
+    def cert_path(self):  # pylint: disable=missing-docstring
+        return os.path.abspath(self.namespace.cert_path)
+
+    @property
+    def key_path(self):  # pylint: disable=missing-docstring
+        return os.path.abspath(self.namespace.key_path)
+
+    @property
+    def chain_path(self):  # pylint: disable=missing-docstring
+        return os.path.abspath(self.namespace.chain_path)
+
+    @property
+    def fullchain_path(self):  # pylint: disable=missing-docstring
+        return os.path.abspath(self.namespace.fullchain_path)
+
+    @property
     def accounts_dir(self):  # pylint: disable=missing-docstring
         return os.path.join(
             self.namespace.config_dir, constants.ACCOUNTS_DIR, self.server_path)
