@@ -140,12 +140,11 @@ class Authenticator(common.Plugin):
     necessary port in order to respond to incoming DVSNI and SimpleHTTP
     challenges from the certificate authority. Therefore, it does not
     rely on any existing server program.
-
     """
     zope.interface.implements(interfaces.IAuthenticator)
     zope.interface.classProvides(interfaces.IPluginFactory)
 
-    description = "Standalone Authenticator"
+    description = "Automatically configure and run a simple webserver"
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
@@ -191,7 +190,10 @@ class Authenticator(common.Plugin):
         return necessary_ports
 
     def more_info(self):  # pylint: disable=missing-docstring
-        return self.__doc__
+        return("This authenticator creates its own ephemeral TCP listener "
+                "on the necessary port in order to respond to incoming DVSNI "
+                "and SimpleHTTP challenges from the certificate authority. "
+                "Therefore, it does not rely on any existing server program.")
 
     def prepare(self):  # pylint: disable=missing-docstring
         pass
