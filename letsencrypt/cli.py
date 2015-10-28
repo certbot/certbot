@@ -466,8 +466,9 @@ def auth(args, config, plugins):
 
     # This is a special case; cert and chain are simply saved
     if args.csr is not None:
+        csr = read_file(args.csr)
         certr, chain = le_client.obtain_certificate_from_csr(le_util.CSR(
-            file=args.csr[0], data=args.csr[1], form="der"))
+            file=csr[0], data=csr[1], form="der"))
         cert_path, _, cert_fullchain = le_client.save_certificate(
             certr, chain, args.cert_path, args.chain_path, args.fullchain_path)
         _report_new_cert(cert_path, cert_fullchain)
@@ -497,18 +498,20 @@ def install(args, config, plugins):
 
 def revoke(args, config, unused_plugins):  # TODO: coop with renewal config
     """Revoke a previously obtained certificate."""
+    cert = read_file(args.cert_path)
     if args.key_path is not None:  # revocation by cert key
+        key = read_file(args.key_path)
         logger.debug("Revoking %s using cert key %s",
-                     args.cert_path[0], args.key_path[0])
+                     cert[0], key[0])
         acme = acme_client.Client(
-            config.server, key=jose.JWK.load(args.key_path[1]))
+            config.server, key=jose.JWK.load(key[1]))
     else:  # revocation by account key
-        logger.debug("Revoking %s using Account Key", args.cert_path[0])
+        logger.debug("Revoking %s using Account Key", cert[0])
         acc, _ = _determine_account(args, config)
         # pylint: disable=protected-access
         acme = client._acme_from_config_key(config, acc.key)
     acme.revoke(jose.ComparableX509(crypto_util.pyopenssl_load_certificate(
-        args.cert_path[1])[0]))
+        cert[1])[0]))
 
 
 def rollback(args, config, plugins):
@@ -560,13 +563,10 @@ def read_file(filename, mode="rb"):
     :returns: A tuple of filename and its contents
     :rtype: tuple
 
-    :raises argparse.ArgumentTypeError: File does not exist or is not readable.
+    :raises IOError: File does not exist or is not readable.
 
     """
-    try:
-        return filename, open(filename, mode).read()
-    except IOError as exc:
-        raise argparse.ArgumentTypeError(exc.strerror)
+    return filename, open(filename, mode).read()
 
 
 def flag_default(name):
@@ -867,7 +867,7 @@ def _create_subparsers(helpful):
     helpful.add_group("plugins", description="Plugin options")
 
     helpful.add("auth",
-                "--csr", type=read_file,
+                "--csr",
                 help="Path to a Certificate Signing Request (CSR) in DER"
                 " format; note that the .csr file *must* contain a Subject"
                 " Alternative Name field for each domain you want certified.")
@@ -896,14 +896,12 @@ def _paths_parser(helpful):
     cph = "Path to where cert is saved (with auth), installed (with install --csr) or revoked."
     if verb == "auth":
         add("paths", "--cert-path", default=flag_default("auth_cert_path"), help=cph)
-    elif verb == "revoke":
-        add("paths", "--cert-path", type=read_file, required=True, help=cph)
     else:
-        add("paths", "--cert-path", help=cph, required=(verb == "install"))
+        add("paths", "--cert-path", help=cph,
+            required=(verb in ["install", "revoke"]))
 
     # revoke --key-path reads a file, install --key-path takes a string
-    add("paths", "--key-path", type=((verb == "revoke" and read_file) or str),
-        required=(verb == "install"),
+    add("paths", "--key-path", required=(verb == "install"),
         help="Path to private key for cert creation or revocation (if account key is missing)")
 
     default_cp = None
