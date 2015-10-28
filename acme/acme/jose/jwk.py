@@ -35,7 +35,7 @@ class JWK(json_util.TypedJSONObjectWithFields):
     _thumbprint_json_dumps_params = {
         # "no whitespace or line breaks before or after any syntactic
         # elements"
-        'indent': 0,
+        'indent': None,
         'separators': (',', ':'),
         # "members ordered lexicographically by the Unicode [UNICODE]
         # code points of the member names"

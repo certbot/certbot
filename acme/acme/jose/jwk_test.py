@@ -1,4 +1,5 @@
 """Tests for acme.jose.jwk."""
+import binascii
 import unittest
 
 from acme import test_util
@@ -40,8 +41,9 @@ class JWKTestBaseMixin(object):
 class JWKOctTest(unittest.TestCase, JWKTestBaseMixin):
     """Tests for acme.jose.jwk.JWKOct."""
 
-    thumbprint = (b"=,\xdd;I\x1a+i\x02x\x8a\x12?06IM\xc2\x80"
-                  b"\xe4\xc3\x1a\xfc\x89\xf3)'\xce\xccm\xfd5")
+    thumbprint = (b"\xf3\xe7\xbe\xa8`\xd2\xdap\xe9}\x9c\xce>"
+                  b"\xd0\xfcI\xbe\xcd\x92'\xd4o\x0e\xf41\xea"
+                  b"\x8e(\x8a\xb2i\x1c")
 
     def setUp(self):
         from acme.jose.jwk import JWKOct
@@ -71,8 +73,8 @@ class JWKRSATest(unittest.TestCase, JWKTestBaseMixin):
     """Tests for acme.jose.jwk.JWKRSA."""
     # pylint: disable=too-many-instance-attributes
 
-    thumbprint = (b'\x08\xfa1\x87\x1d\x9b6H/*\x1eW\xc2\xe3\xf6P'
-                  b'\xefs\x0cKB\x87\xcf\x85yO\x045\x0e\x91\x80\x0b')
+    thumbprint = (b'\x83K\xdc#3\x98\xca\x98\xed\xcb\x80\x80<\x0c'
+                  b'\xf0\x95\xb9H\xb2*l\xbd$\xe5&|O\x91\xd4 \xb0Y')
 
     def setUp(self):
         from acme.jose.jwk import JWKRSA
@@ -167,6 +169,22 @@ class JWKRSATest(unittest.TestCase, JWKTestBaseMixin):
                           {'kty': 'RSA', 'e': 'AQAB', 'n': ''})
         self.assertRaises(errors.DeserializationError, JWK.from_json,
                           {'kty': 'RSA', 'e': 'AQAB', 'n': '1'})
+
+    def test_thumbprint_go_jose(self):
+        # https://github.com/square/go-jose/blob/4ddd71883fa547d37fbf598071f04512d8bafee3/jwk.go#L155
+        # https://github.com/square/go-jose/blob/4ddd71883fa547d37fbf598071f04512d8bafee3/jwk_test.go#L331-L344
+        # https://github.com/square/go-jose/blob/4ddd71883fa547d37fbf598071f04512d8bafee3/jwk_test.go#L384
+        from acme.jose.jwk import JWKRSA
+        key = JWKRSA.json_loads("""{
+    "kty": "RSA",
+    "kid": "bilbo.baggins@hobbiton.example",
+    "use": "sig",
+    "n": "n4EPtAOCc9AlkeQHPzHStgAbgs7bTZLwUBZdR8_KuKPEHLd4rHVTeT-O-XV2jRojdNhxJWTDvNd7nqQ0VEiZQHz_AJmSCpMaJMRBSFKrKb2wqVwGU_NsYOYL-QtiWN2lbzcEe6XC0dApr5ydQLrHqkHHig3RBordaZ6Aj-oBHqFEHYpPe7Tpe-OfVfHd1E6cS6M1FZcD1NNLYD5lFHpPI9bTwJlsde3uhGqC0ZCuEHg8lhzwOHrtIQbS0FVbb9k3-tVTU4fg_3L_vniUFAKwuCLqKnS2BYwdq_mzSnbLY7h_qixoR7jig3__kRhuaxwUkRz5iaiQkqgc5gHdrNP5zw",
+    "e": "AQAB"
+}""")
+        self.assertEqual(
+            binascii.hexlify(key.thumbprint()),
+            b"f63838e96077ad1fc01c3f8405774dedc0641f558ebb4b40dccf5f9b6d66a932")
 
 
 if __name__ == '__main__':
