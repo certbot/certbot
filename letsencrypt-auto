@@ -12,6 +12,7 @@ XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share}
 VENV_NAME="letsencrypt"
 VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
 VENV_BIN=${VENV_PATH}/bin
+PYTHON_VER="python2"
 
 if test "`id -u`" -ne "0" ; then
   SUDO=sudo
@@ -46,7 +47,16 @@ then
     $SUDO $BOOTSTRAP/manjaro.sh
   elif [ -f /etc/redhat-release ] ; then
     echo "Bootstrapping dependencies for RedHat-based OSes..."
-    $SUDO $BOOTSTRAP/_rpm_common.sh
+    if [ `lsb_release -is` == "CentOS" ]; then
+        $SUDO $BOOTSTRAP/centos.sh
+	if [ `lsb_release -rs | cut -f1 -d.` -eq 6 ]; then
+		source /opt/rh/python27/enable
+		PYTHON_VER="python2.7"
+		SCL="scl enable python27 "
+	fi
+    else
+        $SUDO $BOOTSTRAP/_rpm_common.sh
+    fi
   elif uname | grep -iq FreeBSD ; then
     echo "Bootstrapping dependencies for FreeBSD..."
     $SUDO $BOOTSTRAP/freebsd.sh
@@ -62,11 +72,12 @@ then
     echo "for more info"
   fi
 
-  echo "Creating virtual environment..."
+
+  echo "Creating virtual environment...$VENV_PATH"
   if [ "$VERBOSE" = 1 ] ; then
-    virtualenv --no-site-packages --python python2 $VENV_PATH
+    virtualenv --no-site-packages --python $PYTHON_VER $VENV_PATH
   else
-    virtualenv --no-site-packages --python python2 $VENV_PATH > /dev/null
+    virtualenv --no-site-packages --python $PYTHON_VER $VENV_PATH > /dev/null
   fi
 fi
 
@@ -99,5 +110,9 @@ fi
 
 # Explain what's about to happen, for the benefit of those getting sudo
 # password prompts...
-echo "Running with virtualenv:" $SUDO $VENV_BIN/letsencrypt "$@"
-$SUDO $VENV_BIN/letsencrypt "$@"
+if [ -z "$SCL" ] ; then
+    echo "Running with virtualenv:" $SUDO $VENV_BIN/letsencrypt "$@"
+    $SUDO $VENV_BIN/letsencrypt "$@"
+else
+    echo "Now run: $SUDO $SCL \"$VENV_BIN/letsencrypt $@\""
+fi
