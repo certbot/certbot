@@ -14,7 +14,7 @@ from acme import test_util
 
 
 CERT = test_util.load_cert('cert.pem')
-KEY = test_util.load_rsa_private_key('rsa512_key.pem')
+KEY = jose.JWKRSA(key=test_util.load_rsa_private_key('rsa512_key.pem'))
 
 
 class ChallengeTest(unittest.TestCase):
@@ -237,18 +237,15 @@ class DVSNITest(unittest.TestCase):
             jose.DeserializationError, DVSNI.from_json, self.jmsg)
 
     def test_gen_response(self):
-        key = jose.JWKRSA(key=KEY)
         from acme.challenges import DVSNI
         self.assertEqual(self.msg, DVSNI.json_loads(
-            self.msg.gen_response(key).validation.payload.decode()))
+            self.msg.gen_response(KEY).validation.payload.decode()))
 
 
 class DVSNIResponseTest(unittest.TestCase):
     # pylint: disable=too-many-instance-attributes
 
     def setUp(self):
-        self.key = jose.JWKRSA(key=KEY)
-
         from acme.challenges import DVSNI
         self.chall = DVSNI(
             token=jose.b64decode(b'a82d5ff8ef740d12881f6d3c2277ab2e'))
@@ -256,7 +253,7 @@ class DVSNIResponseTest(unittest.TestCase):
         from acme.challenges import DVSNIResponse
         self.validation = jose.JWS.sign(
             payload=self.chall.json_dumps(sort_keys=True).encode(),
-            key=self.key, alg=jose.RS256)
+            key=KEY, alg=jose.RS256)
         self.msg = DVSNIResponse(validation=self.validation)
         self.jmsg_to = {
             'resource': 'challenge',
@@ -340,22 +337,22 @@ class DVSNIResponseTest(unittest.TestCase):
     def test_simple_verify_wrong_payload(self):
         for payload in b'', b'{}':
             msg = self.msg.update(validation=jose.JWS.sign(
-                payload=payload, key=self.key, alg=jose.RS256))
+                payload=payload, key=KEY, alg=jose.RS256))
             self.assertFalse(msg.simple_verify(
-                self.chall, self.domain, self.key.public_key()))
+                self.chall, self.domain, KEY.public_key()))
 
     def test_simple_verify_wrong_token(self):
         msg = self.msg.update(validation=jose.JWS.sign(
             payload=self.chall.update(token=(b'b' * 20)).json_dumps().encode(),
-            key=self.key, alg=jose.RS256))
+            key=KEY, alg=jose.RS256))
         self.assertFalse(msg.simple_verify(
-            self.chall, self.domain, self.key.public_key()))
+            self.chall, self.domain, KEY.public_key()))
 
     @mock.patch('acme.challenges.DVSNIResponse.verify_cert', autospec=True)
     def test_simple_verify(self, mock_verify_cert):
         mock_verify_cert.return_value = mock.sentinel.verification
         self.assertEqual(mock.sentinel.verification, self.msg.simple_verify(
-            self.chall, self.domain, self.key.public_key(),
+            self.chall, self.domain, KEY.public_key(),
             cert=mock.sentinel.cert))
         mock_verify_cert.assert_called_once_with(self.msg, mock.sentinel.cert)
 
@@ -363,7 +360,7 @@ class DVSNIResponseTest(unittest.TestCase):
     def test_simple_verify_false_on_probe_error(self, mock_probe_cert):
         mock_probe_cert.side_effect = errors.Error
         self.assertFalse(self.msg.simple_verify(
-            self.chall, self.domain, self.key.public_key()))
+            self.chall, self.domain, KEY.public_key()))
 
 
 class RecoveryContactTest(unittest.TestCase):
@@ -442,7 +439,7 @@ class RecoveryContactResponseTest(unittest.TestCase):
 class ProofOfPossessionHintsTest(unittest.TestCase):
 
     def setUp(self):
-        jwk = jose.JWKRSA(key=KEY.public_key())
+        jwk = KEY.public_key()
         issuers = (
             'C=US, O=SuperT LLC, CN=SuperTrustworthy Public CA',
             'O=LessTrustworthy CA Inc, CN=LessTrustworthy But StillSecure',
@@ -511,7 +508,7 @@ class ProofOfPossessionTest(unittest.TestCase):
     def setUp(self):
         from acme.challenges import ProofOfPossession
         hints = ProofOfPossession.Hints(
-            jwk=jose.JWKRSA(key=KEY.public_key()), cert_fingerprints=(),
+            jwk=KEY.public_key(), cert_fingerprints=(),
             certs=(), serial_numbers=(), subject_key_identifiers=(),
             issuers=(), authorized_for=())
         self.msg = ProofOfPossession(
@@ -551,7 +548,7 @@ class ProofOfPossessionResponseTest(unittest.TestCase):
         # nonce and challenge nonce are the same, don't make the same
         # mistake here...
         signature = other.Signature(
-            alg=jose.RS256, jwk=jose.JWKRSA(key=KEY.public_key()),
+            alg=jose.RS256, jwk=KEY.public_key(),
             sig=b'\xa7\xc1\xe7\xe82o\xbc\xcd\xd0\x1e\x010#Z|\xaf\x15\x83'
                 b'\x94\x8f#\x9b\nQo(\x80\x15,\x08\xfcz\x1d\xfd\xfd.\xaap'
                 b'\xfa\x06\xd1\xa2f\x8d8X2>%d\xbd%\xe1T\xdd\xaa0\x18\xde'
@@ -659,14 +656,12 @@ class DNSTest(unittest.TestCase):
 class DNSResponseTest(unittest.TestCase):
 
     def setUp(self):
-        self.key = jose.JWKRSA(key=KEY)
-
         from acme.challenges import DNS
         self.chall = DNS(token=jose.b64decode(
             b"evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA"))
         self.validation = jose.JWS.sign(
             payload=self.chall.json_dumps(sort_keys=True).encode(),
-            key=self.key, alg=jose.RS256)
+            key=KEY, alg=jose.RS256)
 
         from acme.challenges import DNSResponse
         self.msg = DNSResponse(validation=self.validation)
@@ -694,7 +689,7 @@ class DNSResponseTest(unittest.TestCase):
 
     def test_check_validation(self):
         self.assertTrue(
-            self.msg.check_validation(self.chall, self.key.public_key()))
+            self.msg.check_validation(self.chall, KEY.public_key()))
 
 
 if __name__ == '__main__':

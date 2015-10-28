@@ -189,13 +189,7 @@ class SimpleHTTPResponse(ChallengeResponse):
 
         :param .JWS validation:
         :param challenges.SimpleHTTP chall:
-        :type account_public_key:
-            `~cryptography.hazmat.primitives.asymmetric.rsa.RSAPublicKey`
-            or
-            `~cryptography.hazmat.primitives.asymmetric.dsa.DSAPublicKey`
-            or
-            `~cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePublicKey`
-            wrapped in `.ComparableKey`
+        :param .JWK account_public_key:
 
         :rtype: bool
 
@@ -221,16 +215,9 @@ class SimpleHTTPResponse(ChallengeResponse):
 
         :param challenges.SimpleHTTP chall: Corresponding challenge.
         :param unicode domain: Domain name being verified.
-        :param account_public_key: Public key for the key pair
+        :param JWK account_public_key: Public key for the key pair
             being authorized. If ``None`` key verification is not
             performed!
-        :type account_public_key:
-            `~cryptography.hazmat.primitives.asymmetric.rsa.RSAPublicKey`
-            or
-            `~cryptography.hazmat.primitives.asymmetric.dsa.DSAPublicKey`
-            or
-            `~cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePublicKey`
-            wrapped in `.ComparableKey`
         :param int port: Port used in the validation.
 
         :returns: ``True`` iff validation is successful, ``False``
@@ -403,16 +390,11 @@ class DVSNIResponse(ChallengeResponse):
 
         :param .challenges.DVSNI chall: Corresponding challenge.
         :param str domain: Domain name being validated.
-        :type account_public_key:
-            `~cryptography.hazmat.primitives.asymmetric.rsa.RSAPublicKey`
-            or
-            `~cryptography.hazmat.primitives.asymmetric.dsa.DSAPublicKey`
-            or
-            `~cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePublicKey`
-            wrapped in `.ComparableKey`
+        :param JWK account_public_key:
         :param OpenSSL.crypto.X509 cert: Optional certificate. If not
             provided (``None``) certificate will be retrieved using
             `probe_cert`.
+
 
         :returns: ``True`` iff client's control of the domain has been
             verified, ``False`` otherwise.
@@ -488,7 +470,7 @@ class ProofOfPossession(ContinuityChallenge):
     class Hints(jose.JSONObjectWithFields):
         """Hints for "proofOfPossession" challenge.
 
-        :ivar jwk: JSON Web Key (:class:`acme.jose.JWK`)
+        :ivar JWK jwk: JSON Web Key
         :ivar tuple cert_fingerprints: `tuple` of `unicode`
         :ivar tuple certs: Sequence of :class:`acme.jose.ComparableX509`
             certificates.
@@ -575,14 +557,7 @@ class DNS(_TokenDVChallenge):
         """Check validation.
 
         :param JWS validation:
-        :type account_public_key:
-            `~cryptography.hazmat.primitives.asymmetric.rsa.RSAPublicKey`
-            or
-            `~cryptography.hazmat.primitives.asymmetric.dsa.DSAPublicKey`
-            or
-            `~cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePublicKey`
-            wrapped in `.ComparableKey`
-
+        :param JWK account_public_key:
         :rtype: bool
 
         """
@@ -631,13 +606,7 @@ class DNSResponse(ChallengeResponse):
         """Check validation.
 
         :param challenges.DNS chall:
-        :type account_public_key:
-            `~cryptography.hazmat.primitives.asymmetric.rsa.RSAPublicKey`
-            or
-            `~cryptography.hazmat.primitives.asymmetric.dsa.DSAPublicKey`
-            or
-            `~cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePublicKey`
-            wrapped in `.ComparableKey`
+        :param JWK account_public_key:
 
         :rtype: bool
 
