@@ -26,17 +26,13 @@ logger = logging.getLogger(__name__)
 class Authenticator(common.Plugin):
     """Manual Authenticator.
 
-    This plugin requires user's manual intervention in setting up a HTTP
-    server for solving SimpleHTTP challenges and thus does not need to be
-    run as a privilidged process. Alternatively shows instructions on how
-    to use Python's built-in HTTP server and, in case of HTTPS, openssl
-    binary for temporary key/certificate generation.
+    .. todo:: Support for `~.challenges.DVSNI`.
     """
     zope.interface.implements(interfaces.IAuthenticator)
     zope.interface.classProvides(interfaces.IPluginFactory)
-#    hidden = True
+    hidden = True
 
-    description = "Manually Edit Your Configuration"
+    description = "Manually Configure And Run A Simple Python Webserver"
 
     MESSAGE_TEMPLATE = """\
 Make sure your web server displays the following content at
@@ -84,7 +80,11 @@ s.serve_forever()" """
         pass  # pragma: no cover
 
     def more_info(self):  # pylint: disable=missing-docstring,no-self-use
-        return self.__doc__.replace("\n    ", " ")
+        return ("This plugin requires user's manual intervention in setting "
+                "up a HTTP server for solving SimpleHTTP challenges and thus "
+                "does not need to be run as a privilidged process. "
+                "Alternatively shows instructions on how to use Python's "
+                "built-in HTTP server.")
 
     def get_chall_pref(self, domain):
         # pylint: disable=missing-docstring,no-self-use,unused-argument

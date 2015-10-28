@@ -144,7 +144,7 @@ class Authenticator(common.Plugin):
     zope.interface.implements(interfaces.IAuthenticator)
     zope.interface.classProvides(interfaces.IPluginFactory)
 
-    description = "LE Will Automatically Test Your Domain"
+    description = "Run A Standalone Webserver To Prove That You Control Domains"
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
@@ -181,7 +181,10 @@ class Authenticator(common.Plugin):
                    self.conf("supported-challenges").split(","))
 
     def more_info(self):  # pylint: disable=missing-docstring
-        return self.__doc__.replace("\n    ", " ")
+        return("This authenticator creates its own ephemeral TCP listener "
+                "on the necessary port in order to respond to incoming DVSNI "
+                "and SimpleHTTP challenges from the certificate authority. "
+                "Therefore, it does not rely on any existing server program.")
 
     def prepare(self):  # pylint: disable=missing-docstring
         pass
