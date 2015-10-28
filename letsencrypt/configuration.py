@@ -82,28 +82,28 @@ class NamespaceConfig(object):
     @property
     def accounts_dir(self):  # pylint: disable=missing-docstring
         return os.path.join(
-            self.namespace.config_dir, constants.ACCOUNTS_DIR, self.server_path)
+            self.config_dir, constants.ACCOUNTS_DIR, self.server_path)
 
     @property
     def backup_dir(self):  # pylint: disable=missing-docstring
-        return os.path.join(self.namespace.work_dir, constants.BACKUP_DIR)
+        return os.path.join(self.work_dir, constants.BACKUP_DIR)
 
     @property
     def csr_dir(self):  # pylint: disable=missing-docstring
-        return os.path.join(self.namespace.config_dir, constants.CSR_DIR)
+        return os.path.join(self.config_dir, constants.CSR_DIR)
 
     @property
     def in_progress_dir(self):  # pylint: disable=missing-docstring
-        return os.path.join(self.namespace.work_dir, constants.IN_PROGRESS_DIR)
+        return os.path.join(self.work_dir, constants.IN_PROGRESS_DIR)
 
     @property
     def key_dir(self):  # pylint: disable=missing-docstring
-        return os.path.join(self.namespace.config_dir, constants.KEY_DIR)
+        return os.path.join(self.config_dir, constants.KEY_DIR)
 
     @property
     def temp_checkpoint_dir(self):  # pylint: disable=missing-docstring
         return os.path.join(
-            self.namespace.work_dir, constants.TEMP_CHECKPOINT_DIR)
+            self.work_dir, constants.TEMP_CHECKPOINT_DIR)
 
     @property
     def simple_http_port(self):  # pylint: disable=missing-docstring
@@ -124,18 +124,18 @@ class RenewerConfiguration(object):
 
     @property
     def archive_dir(self):  # pylint: disable=missing-docstring
-        return os.path.join(self.namespace.config_dir, constants.ARCHIVE_DIR)
+        return os.path.join(self.config_dir, constants.ARCHIVE_DIR)
 
     @property
     def live_dir(self):  # pylint: disable=missing-docstring
-        return os.path.join(self.namespace.config_dir, constants.LIVE_DIR)
+        return os.path.join(self.config_dir, constants.LIVE_DIR)
 
     @property
     def renewal_configs_dir(self):  # pylint: disable=missing-docstring
         return os.path.join(
-            self.namespace.config_dir, constants.RENEWAL_CONFIGS_DIR)
+            self.config_dir, constants.RENEWAL_CONFIGS_DIR)
 
     @property
     def renewer_config_file(self):  # pylint: disable=missing-docstring
         return os.path.join(
-            self.namespace.config_dir, constants.RENEWER_CONFIG_FILENAME)
+            self.config_dir, constants.RENEWER_CONFIG_FILENAME)

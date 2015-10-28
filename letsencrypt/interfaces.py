@@ -219,9 +219,6 @@ class IConfig(zope.interface.Interface):
     temp_checkpoint_dir = zope.interface.Attribute(
         "Absolute path to the temporary checkpoint directory.")
 
-    renewer_config_file = zope.interface.Attribute(
-        "Absolute path of the renewal configuration file.")
-
     no_verify_ssl = zope.interface.Attribute(
         "Disable SSL certificate verification.")
     dvsni_port = zope.interface.Attribute(
