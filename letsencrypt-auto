@@ -12,6 +12,7 @@ XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share}
 VENV_NAME="letsencrypt"
 VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
 VENV_BIN=${VENV_PATH}/bin
+PYTHON_EXE=python2
 
 if test "`id -u`" -ne "0" ; then
   SUDO=sudo
@@ -50,6 +51,10 @@ then
   elif uname | grep -iq FreeBSD ; then
     echo "Bootstrapping dependencies for FreeBSD..."
     $SUDO $BOOTSTRAP/freebsd.sh
+  elif uname | grep -iq OpenBSD ; then
+    echo "Bootstrapping dependencies for OpenBSD..."
+    $SUDO $BOOTSTRAP/openbsd.sh
+    PYTHON_EXE=python2.7
   elif uname | grep -iq Darwin ; then
     echo "Bootstrapping dependencies for Mac OS X..."
     echo "WARNING: Mac support is very experimental at present..."
@@ -64,9 +69,9 @@ then
 
   echo "Creating virtual environment..."
   if [ "$VERBOSE" = 1 ] ; then
-    virtualenv --no-site-packages --python python2 $VENV_PATH
+    virtualenv --no-site-packages --python $PYTHON_EXE $VENV_PATH
   else
-    virtualenv --no-site-packages --python python2 $VENV_PATH > /dev/null
+    virtualenv --no-site-packages --python $PYTHON_EXE $VENV_PATH > /dev/null
   fi
 fi
 
