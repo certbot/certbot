@@ -278,7 +278,7 @@ class AuthorizationTest(unittest.TestCase):
         self.challbs = (
             ChallengeBody(
                 uri='http://challb1', status=STATUS_VALID,
-                chall=challenges.SimpleHTTP(token=b'IlirfxKKXAsHtmzK29Pj8A')),
+                chall=challenges.HTTP01(token=b'IlirfxKKXAsHtmzK29Pj8A')),
             ChallengeBody(uri='http://challb2', status=STATUS_VALID,
                           chall=challenges.DNS(
                               token=b'DGyRejmCefe7v4NfDGDKfA')),

@@ -43,6 +43,149 @@ class UnrecognizedChallengeTest(unittest.TestCase):
             self.chall, UnrecognizedChallenge.from_json(self.jobj))
 
 
+class KeyAuthorizationChallengeResponseTest(unittest.TestCase):
+
+    def setUp(self):
+        def _encode(name):
+            assert name == "token"
+            return "foo"
+        self.chall = mock.Mock()
+        self.chall.encode.side_effect = _encode
+
+    def test_verify_ok(self):
+        from acme.challenges import KeyAuthorizationChallengeResponse
+        response = KeyAuthorizationChallengeResponse(
+            key_authorization='foo.oKGqedy-b-acd5eoybm2f-NVFxvyOoET5CNy3xnv8WY')
+        self.assertTrue(response.verify(self.chall, KEY.public_key()))
+
+    def test_verify_wrong_token(self):
+        from acme.challenges import KeyAuthorizationChallengeResponse
+        response = KeyAuthorizationChallengeResponse(
+            key_authorization='bar.oKGqedy-b-acd5eoybm2f-NVFxvyOoET5CNy3xnv8WY')
+        self.assertFalse(response.verify(self.chall, KEY.public_key()))
+
+    def test_verify_wrong_thumbprint(self):
+        from acme.challenges import KeyAuthorizationChallengeResponse
+        response = KeyAuthorizationChallengeResponse(
+            key_authorization='foo.oKGqedy-b-acd5eoybm2f-NVFxv')
+        self.assertFalse(response.verify(self.chall, KEY.public_key()))
+
+    def test_verify_wrong_form(self):
+        from acme.challenges import KeyAuthorizationChallengeResponse
+        response = KeyAuthorizationChallengeResponse(
+            key_authorization='.foo.oKGqedy-b-acd5eoybm2f-NVFxvyOoET5CNy3xnv8WY')
+        self.assertFalse(response.verify(self.chall, KEY.public_key()))
+
+
+class HTTP01ResponseTest(unittest.TestCase):
+    # pylint: disable=too-many-instance-attributes
+
+    def setUp(self):
+        from acme.challenges import HTTP01Response
+        self.msg = HTTP01Response(key_authorization=u'foo')
+        self.jmsg = {
+            'resource': 'challenge',
+            'type': 'http-01',
+            'keyAuthorization': u'foo',
+        }
+
+        from acme.challenges import HTTP01
+        self.chall = HTTP01(token=(b'x' * 16))
+        self.response = self.chall.response(KEY)
+        self.good_headers = {'Content-Type': HTTP01.CONTENT_TYPE}
+
+    def test_to_partial_json(self):
+        self.assertEqual(self.jmsg, self.msg.to_partial_json())
+
+    def test_from_json(self):
+        from acme.challenges import HTTP01Response
+        self.assertEqual(
+            self.msg, HTTP01Response.from_json(self.jmsg))
+
+    def test_from_json_hashable(self):
+        from acme.challenges import HTTP01Response
+        hash(HTTP01Response.from_json(self.jmsg))
+
+    def test_simple_verify_bad_key_authorization(self):
+        key2 = jose.JWKRSA.load(test_util.load_vector('rsa256_key.pem'))
+        self.response.simple_verify(self.chall, "local", key2.public_key())
+
+    @mock.patch("acme.challenges.requests.get")
+    def test_simple_verify_good_validation(self, mock_get):
+        validation = self.chall.validation(KEY)
+        mock_get.return_value = mock.MagicMock(
+            text=validation, headers=self.good_headers)
+        self.assertTrue(self.response.simple_verify(
+            self.chall, "local", KEY.public_key()))
+        mock_get.assert_called_once_with(self.chall.uri("local"))
+
+    @mock.patch("acme.challenges.requests.get")
+    def test_simple_verify_bad_validation(self, mock_get):
+        mock_get.return_value = mock.MagicMock(
+            text="!", headers=self.good_headers)
+        self.assertFalse(self.response.simple_verify(
+            self.chall, "local", KEY.public_key()))
+
+    @mock.patch("acme.challenges.requests.get")
+    def test_simple_verify_bad_content_type(self, mock_get):
+        mock_get().text = self.chall.token
+        self.assertFalse(self.response.simple_verify(
+            self.chall, "local", KEY.public_key()))
+
+    @mock.patch("acme.challenges.requests.get")
+    def test_simple_verify_connection_error(self, mock_get):
+        mock_get.side_effect = requests.exceptions.RequestException
+        self.assertFalse(self.response.simple_verify(
+            self.chall, "local", KEY.public_key()))
+
+    @mock.patch("acme.challenges.requests.get")
+    def test_simple_verify_port(self, mock_get):
+        self.response.simple_verify(
+            self.chall, domain="local",
+            account_public_key=KEY.public_key(), port=8080)
+        self.assertEqual("local:8080", urllib_parse.urlparse(
+            mock_get.mock_calls[0][1][0]).netloc)
+
+
+class HTTP01Test(unittest.TestCase):
+
+    def setUp(self):
+        from acme.challenges import HTTP01
+        self.msg = HTTP01(
+            token=jose.decode_b64jose(
+                'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ+PCt92wr+oA'))
+        self.jmsg = {
+            'type': 'http-01',
+            'token': 'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA',
+        }
+
+    def test_path(self):
+        self.assertEqual(self.msg.path, '/.well-known/acme-challenge/'
+                         'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA')
+
+    def test_uri(self):
+        self.assertEqual(
+            'http://example.com/.well-known/acme-challenge/'
+            'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA',
+            self.msg.uri('example.com'))
+
+    def test_to_partial_json(self):
+        self.assertEqual(self.jmsg, self.msg.to_partial_json())
+
+    def test_from_json(self):
+        from acme.challenges import HTTP01
+        self.assertEqual(self.msg, HTTP01.from_json(self.jmsg))
+
+    def test_from_json_hashable(self):
+        from acme.challenges import HTTP01
+        hash(HTTP01.from_json(self.jmsg))
+
+    def test_good_token(self):
+        self.assertTrue(self.msg.good_token)
+        self.assertFalse(
+            self.msg.update(token=b'..').good_token)
+
+
 class SimpleHTTPTest(unittest.TestCase):
 
     def setUp(self):
@@ -54,6 +197,10 @@ class SimpleHTTPTest(unittest.TestCase):
             'type': 'simpleHttp',
             'token': 'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA',
         }
+
+    def test_path(self):
+        self.assertEqual(self.msg.path, '/.well-known/acme-challenge/'
+                         'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA')
 
     def test_to_partial_json(self):
         self.assertEqual(self.jmsg, self.msg.to_partial_json())

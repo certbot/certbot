@@ -1,9 +1,11 @@
 """ACME Identifier Validation Challenges."""
+import abc
 import functools
 import hashlib
 import logging
 import socket
 
+from cryptography.hazmat.primitives import hashes
 import OpenSSL
 import requests
 
@@ -79,7 +81,7 @@ class UnrecognizedChallenge(Challenge):
 class _TokenDVChallenge(DVChallenge):
     """DV Challenge with token.
 
-    :ivar unicode token:
+    :ivar bytes token:
 
     """
     TOKEN_SIZE = 128 / 8  # Based on the entropy value from the spec
@@ -103,6 +105,217 @@ class _TokenDVChallenge(DVChallenge):
         # TODO: check that path combined with uri does not go above
         # URI_ROOT_PATH!
         return b'..' not in self.token and b'/' not in self.token
+
+
+class KeyAuthorizationChallengeResponse(ChallengeResponse):
+    """Response to Challenges based on Key Authorization.
+
+    :param unicode key_authorization:
+
+    """
+    key_authorization = jose.Field("keyAuthorization")
+    thumbprint_hash_function = hashes.SHA256
+
+    def verify(self, chall, account_public_key):
+        """Verify the key authorization.
+
+        :param KeyAuthorization chall: Challenge that corresponds to
+            this response.
+        :param JWK account_public_key:
+
+        :return: ``True`` iff verification of the key authorization was
+            successful.
+        :rtype: bool
+
+        """
+        parts = self.key_authorization.split('.')  # pylint: disable=no-member
+        if len(parts) != 2:
+            logger.debug("Key authorization (%r) is not well formed",
+                         self.key_authorization)
+            return False
+
+        if parts[0] != chall.encode("token"):
+            logger.debug("Mismatching token in key authorization: "
+                         "%r instead of %r", parts[0], chall.encode("token"))
+            return False
+
+        thumbprint = jose.b64encode(account_public_key.thumbprint(
+            hash_function=self.thumbprint_hash_function)).decode()
+        if parts[1] != thumbprint:
+            logger.debug("Mismatching thumbprint in key authorization: "
+                         "%r instead of %r", parts[0], thumbprint)
+            return False
+
+        return True
+
+
+class KeyAuthorizationChallenge(_TokenDVChallenge):
+    # pylint: disable=abstract-class-little-used,too-many-ancestors
+    """Challenge based on Key Authorization.
+
+    :param response_cls: Subclass of `KeyAuthorizationChallengeResponse`
+        that will be used to generate `response`.
+
+    """
+    __metaclass__ = abc.ABCMeta
+
+    response_cls = NotImplemented
+    thumbprint_hash_function = (
+        KeyAuthorizationChallengeResponse.thumbprint_hash_function)
+
+    def key_authorization(self, account_key):
+        """Generate Key Authorization.
+
+        :param JWK account_key:
+        :rtype unicode:
+
+        """
+        return self.encode("token") + "." + jose.b64encode(
+            account_key.thumbprint(
+                hash_function=self.thumbprint_hash_function)).decode()
+
+    def response(self, account_key):
+        """Generate response to the challenge.
+
+        :param JWK account_key:
+
+        :returns: Response (initialized `response_cls`) to the challenge.
+        :rtype: KeyAuthorizationChallengeResponse
+
+        """
+        return self.response_cls(
+            key_authorization=self.key_authorization(account_key))
+
+    @abc.abstractmethod
+    def validation(self, account_key):
+        """Generate validation for the challenge.
+
+        Subclasses must implement this method, but they are likely to
+        return completely different data structures, depending on what's
+        necessary to complete the challenge. Interepretation of that
+        return value must be known to the caller.
+
+        :param JWK account_key:
+        :returns: Challenge-specific validation.
+
+        """
+        raise NotImplementedError()  # pragma: no cover
+
+    def response_and_validation(self, account_key):
+        """Generate response and validation.
+
+        Convenience function that return results of `response` and
+        `validation`.
+
+        :param JWK account_key:
+        :rtype: tuple
+
+        """
+        return (self.response(account_key), self.validation(account_key))
+
+
+@ChallengeResponse.register
+class HTTP01Response(KeyAuthorizationChallengeResponse):
+    """ACME http-01 challenge response."""
+    typ = "http-01"
+
+    PORT = 80
+
+    def simple_verify(self, chall, domain, account_public_key, port=None):
+        """Simple verify.
+
+        :param challenges.SimpleHTTP chall: Corresponding challenge.
+        :param unicode domain: Domain name being verified.
+        :param account_public_key: Public key for the key pair
+            being authorized. If ``None`` key verification is not
+            performed!
+        :param JWK account_public_key:
+        :param int port: Port used in the validation.
+
+        :returns: ``True`` iff validation is successful, ``False``
+            otherwise.
+        :rtype: bool
+
+        """
+        if not self.verify(chall, account_public_key):
+            logger.debug("Verification of key authorization in response failed")
+            return False
+
+        # TODO: ACME specification defines URI template that doesn't
+        # allow to use a custom port... Make sure port is not in the
+        # request URI, if it's standard.
+        if port is not None and port != self.PORT:
+            logger.warning(
+                "Using non-standard port for SimpleHTTP verification: %s", port)
+            domain += ":{0}".format(port)
+
+        uri = self.uri(domain, chall)
+        logger.debug("Verifying %s at %s...", chall.typ, uri)
+        try:
+            http_response = requests.get(uri)
+        except requests.exceptions.RequestException as error:
+            logger.error("Unable to reach %s: %s", uri, error)
+            return False
+        logger.debug("Received %s: %s. Headers: %s", http_response,
+                     http_response.text, http_response.headers)
+
+        found_ct = http_response.headers.get(
+            "Content-Type", chall.CONTENT_TYPE)
+        if found_ct != chall.CONTENT_TYPE:
+            logger.debug("Wrong Content-Type: found %r, expected %r",
+                         found_ct, chall.CONTENT_TYPE)
+            return False
+
+        if self.key_authorization != http_response.text:
+            logger.debug("Key authorization from response (%r) doesn't match "
+                         "HTTP response (%r)", self.key_authorization,
+                         http_response.text)
+            return False
+
+        return True
+
+
+@Challenge.register  # pylint: disable=too-many-ancestors
+class HTTP01(KeyAuthorizationChallenge):
+    """ACME http-01 challenge."""
+    response_cls = HTTP01Response
+    typ = response_cls.typ
+
+    CONTENT_TYPE = "text/plain"
+    """Content-Type header that must be used for provisioned resource."""
+
+    URI_ROOT_PATH = ".well-known/acme-challenge"
+    """URI root path for the server provisioned resource."""
+
+    @property
+    def path(self):
+        """Path (starting with '/') for provisioned resource.
+
+        :rtype: string
+
+        """
+        return '/' + self.URI_ROOT_PATH + '/' + self.encode('token')
+
+    def uri(self, domain):
+        """Create an URI to the provisioned resource.
+
+        Forms an URI to the HTTPS server provisioned resource
+        (containing :attr:`~SimpleHTTP.token`).
+
+        :param unicode domain: Domain name being verified.
+        :rtype: string
+
+        """
+        return "http://" + domain + self.path
+
+    def validation(self, account_key):
+        """Generate validation.
+
+        :param JWK account_key:
+        :rtype: unicode
+
+        """
+        return self.key_authorization(account_key)
 
 
 @Challenge.register  # pylint: disable=too-many-ancestors
@@ -229,7 +442,7 @@ class SimpleHTTPResponse(ChallengeResponse):
         # allow to use a custom port... Make sure port is not in the
         # request URI, if it's standard.
         if port is not None and port != self.port:
-            logger.warn(
+            logger.warning(
                 "Using non-standard port for SimpleHTTP verification: %s", port)
             domain += ":{0}".format(port)
 
@@ -529,11 +742,7 @@ class ProofOfPossessionResponse(ChallengeResponse):
 
 @Challenge.register  # pylint: disable=too-many-ancestors
 class DNS(_TokenDVChallenge):
-    """ACME "dns" challenge.
-
-    :ivar unicode token:
-
-    """
+    """ACME "dns" challenge."""
     typ = "dns"
 
     LABEL = "_acme-challenge"
