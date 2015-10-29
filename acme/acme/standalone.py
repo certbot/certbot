@@ -4,7 +4,6 @@ import collections
 import functools
 import logging
 import os
-import socket
 import sys
 
 import six
@@ -50,37 +49,11 @@ class ACMEServerMixin:  # pylint: disable=old-style-class
     server_version = "ACME client standalone challenge solver"
     allow_reuse_address = True
 
-    def __init__(self):
-        self._stopped = False
-
-    def serve_forever2(self):
-        """Serve forever, until other thread calls `shutdown2`."""
-        logger.debug("Starting server at %s:%d...",
-                     *self.socket.getsockname()[:2])
-        while not self._stopped:
-            self.handle_request()
-
-    def shutdown2(self):
-        """Shutdown server loop from `serve_forever2`."""
-        self._stopped = True
-
-        # dummy request to terminate last server_forever2.handle_request()
-        sock = socket.socket()
-        try:
-            sock.connect(self.socket.getsockname())
-        except socket.error:
-            pass  # thread is probably already finished
-        finally:
-            sock.close()
-
-        self.server_close()
-
 
 class DVSNIServer(TLSServer, ACMEServerMixin):
     """DVSNI Server."""
 
     def __init__(self, server_address, certs):
-        ACMEServerMixin.__init__(self)
         TLSServer.__init__(
             self, server_address, socketserver.BaseRequestHandler, certs=certs)
 
@@ -89,7 +62,6 @@ class SimpleHTTPServer(BaseHTTPServer.HTTPServer, ACMEServerMixin):
     """SimpleHTTP Server."""
 
     def __init__(self, server_address, resources):
-        ACMEServerMixin.__init__(self)
         BaseHTTPServer.HTTPServer.__init__(
             self, server_address, SimpleHTTPRequestHandler.partial_init(
                 simple_http_resources=resources))
