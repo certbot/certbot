@@ -37,7 +37,7 @@ class Authenticator(common.Plugin):
     zope.interface.classProvides(interfaces.IPluginFactory)
     hidden = True
 
-    description = "Manually edit your server configuration"
+    description = "Manually configure an HTTP server"
 
     MESSAGE_TEMPLATE = """\
 Make sure your web server displays the following content at
