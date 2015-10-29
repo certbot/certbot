@@ -144,7 +144,7 @@ class Authenticator(common.Plugin):
     zope.interface.implements(interfaces.IAuthenticator)
     zope.interface.classProvides(interfaces.IPluginFactory)
 
-    description = "Automatically configure and run a simple webserver"
+    description = "Automatically use a temporary webserver"
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
