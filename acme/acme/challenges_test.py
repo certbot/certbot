@@ -363,7 +363,7 @@ class DVSNIResponseTest(unittest.TestCase):
         chall = mock.Mock()
         chall.probe_cert.side_effect = errors.Error
         self.assertFalse(self.msg.simple_verify(
-            self.chall, self.domain, self.key.public_key()))
+            self.chall, self.domain, self.key.public_key(), host="127.0.0.1"))
 
 
 class RecoveryContactTest(unittest.TestCase):
