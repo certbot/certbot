@@ -219,6 +219,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 self.parser.add_dir(
                     vhost.path, "SSLCertificateChainFile", chain_path)
             else:
+                # TODO: THIS???
                 self.aug.set(path["chain_path"][-1], chain_path)
 
         # Save notes about the transaction that took place

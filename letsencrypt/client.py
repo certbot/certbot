@@ -334,6 +334,7 @@ class Client(object):
                     key_path=os.path.abspath(privkey_path),
                     chain_path=chain_path,
                     fullchain_path=fullchain_path)
+                # TODO: call self.installer.save() << in progress save
 
             self.installer.save("Deployed Let's Encrypt Certificate")
             # sites may have been enabled / final cleanup
