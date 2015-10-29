@@ -14,7 +14,11 @@ VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
 VENV_BIN=${VENV_PATH}/bin
 
 if test "`id -u`" -ne "0" ; then
-  SUDO=sudo
+  if ! type "sudo" > /dev/null; then
+    SUDO="su -c"
+  else
+    SUDO=sudo
+  fi
 else
   SUDO=
 fi
