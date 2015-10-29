@@ -307,8 +307,8 @@ texinfo_documents = [
 
 intersphinx_mapping = {
     'python': ('https://docs.python.org/', None),
-    'acme': ('https://acme-python.readthedocs.org', None),
-    'letsencrypt': ('https://letsencrypt.readthedocs.org', None),
-    'letsencrypt-apache': ('https://letsencrypt-apache.readthedocs.org', None),
-    'letsencrypt-nginx': ('https://letsencrypt-nginx.readthedocs.org', None),
+    'acme': ('https://acme-python.readthedocs.org/en/latest/', None),
+    'letsencrypt': ('https://letsencrypt.readthedocs.org/en/latest/', None),
+    'letsencrypt-apache': ('https://letsencrypt-apache.readthedocs.org/en/latest/', None),
+    'letsencrypt-nginx': ('https://letsencrypt-nginx.readthedocs.org/en/latest/', None),
 }
