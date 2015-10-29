@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/bin/bash -e
 #
 # A script to run the latest release version of the Let's Encrypt in a
 # virtual environment
