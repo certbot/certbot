@@ -359,14 +359,11 @@ class DVSNIResponseTest(unittest.TestCase):
             cert=mock.sentinel.cert))
         mock_verify_cert.assert_called_once_with(self.msg, mock.sentinel.cert)
 
-    @mock.patch('acme.challenges.socket.gethostbyname')
-    def test_simple_verify_false_on_probe_error(self, mock_gethostbyname):
-        chall = mock.Mock()
-        chall.probe_cert.side_effect = errors.Error
-
-        mock_gethostbyname.return_value = '127.0.0.2'
+    @mock.patch('acme.challenges.DVSNIResponse.probe_cert')
+    def test_simple_verify_false_on_probe_error(self, mock_probe_cert):
+        mock_probe_cert.side_effect = errors.Error
         self.assertFalse(self.msg.simple_verify(
-            self.chall, self.domain, self.key.public_key(), host="127.0.0.1"))
+            self.chall, self.domain, self.key.public_key()))
 
 
 class RecoveryContactTest(unittest.TestCase):
