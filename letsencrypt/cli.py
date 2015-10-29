@@ -622,7 +622,8 @@ class HelpfulArgumentParser(object):
     """
 
     # Maps verbs/subcommands to the functions that implement them
-    VERBS = {"auth": obtaincert, "certonly": obtaincert, "config_changes": config_changes,
+    VERBS = {"auth": obtaincert, "certonly": obtaincert,
+             "config_changes": config_changes, "everything": run,
              "install": install, "plugins": plugins_cmd,
              "revoke": revoke, "rollback": rollback, "run": run}
 
