@@ -37,7 +37,7 @@ class Authenticator(common.Plugin):
     zope.interface.classProvides(interfaces.IPluginFactory)
     hidden = True
 
-    description = "Manually configure and run a simple Python webserver"
+    description = "Manually configure an HTTP server"
 
     MESSAGE_TEMPLATE = """\
 Make sure your web server displays the following content at
