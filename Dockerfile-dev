@@ -46,6 +46,7 @@ COPY letsencrypt /opt/letsencrypt/src/letsencrypt/
 COPY acme /opt/letsencrypt/src/acme/
 COPY letsencrypt-apache /opt/letsencrypt/src/letsencrypt-apache/
 COPY letsencrypt-nginx /opt/letsencrypt/src/letsencrypt-nginx/
+COPY letsencrypt-plesk /opt/letsencrypt/src/letsencrypt-plesk/
 COPY letshelp-letsencrypt /opt/letsencrypt/src/letshelp-letsencrypt/
 COPY letsencrypt-compatibility-test /opt/letsencrypt/src/letsencrypt-compatibility-test/
 COPY tests /opt/letsencrypt/src/tests/
@@ -57,6 +58,7 @@ RUN virtualenv --no-site-packages -p python2 /opt/letsencrypt/venv && \
     -e /opt/letsencrypt/src \
     -e /opt/letsencrypt/src/letsencrypt-apache \
     -e /opt/letsencrypt/src/letsencrypt-nginx \
+    -e /opt/letsencrypt/src/letsencrypt-plesk \
     -e /opt/letsencrypt/src/letshelp-letsencrypt \
     -e /opt/letsencrypt/src/letsencrypt-compatibility-test \
     -e /opt/letsencrypt/src[dev,docs,testing]

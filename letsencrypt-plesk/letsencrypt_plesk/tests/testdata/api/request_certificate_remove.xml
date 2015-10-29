@@ -1,0 +1,10 @@
+<packet>
+    <certificate>
+        <remove>
+            <filter>
+                <name>Lets Encrypt example.com</name>
+            </filter>
+            <site>example.com</site>
+        </remove>
+    </certificate>
+</packet>

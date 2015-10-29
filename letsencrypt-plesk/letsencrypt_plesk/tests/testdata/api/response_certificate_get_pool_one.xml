@@ -1,0 +1,16 @@
+<packet version="1.6.7.0">
+    <certificate>
+        <get-pool>
+            <result>
+                <status>ok</status>
+                <filter-id>example.com</filter-id>
+                <id>1</id>
+                <certificates>
+                    <certificate>
+                        <name>example-certificate</name>
+                    </certificate>
+                </certificates>
+            </result>
+        </get-pool>
+    </certificate>
+</packet>

@@ -10,7 +10,12 @@ cd /vagrant
 sudo ./bootstrap/ubuntu.sh
 if [ ! -d "venv" ]; then
   virtualenv --no-site-packages -p python2 venv
-  ./venv/bin/pip install -r requirements.txt -e acme -e .[dev,docs,testing] -e letsencrypt-apache -e letsencrypt-nginx
+  ./venv/bin/pip install -r requirements.txt \
+    -e acme \
+    -e .[dev,docs,testing] \
+    -e letsencrypt-apache \
+    -e letsencrypt-nginx \
+    -e letsencrypt-plesk
 fi
 SETUP_SCRIPT
 
@@ -25,6 +30,11 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       # letsencrypt.client.tests.display.util_test.NcursesDisplayTest
       v.memory = 1024
     end
+    config.vm.network "forwarded_port", guest: 80, host: 1080
+    config.vm.network "forwarded_port", guest: 433, host: 10443
+    # Plesk ports
+    config.vm.network "forwarded_port", guest: 8443, host: 8443
+    config.vm.network "forwarded_port", guest: 8880, host: 8880
   end
 
 end

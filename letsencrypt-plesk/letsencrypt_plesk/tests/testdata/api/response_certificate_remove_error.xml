@@ -1,0 +1,11 @@
+<packet version="1.6.7.0">
+    <certificate>
+        <remove>
+            <result>
+                <status>error</status>
+                <errcode>1015</errcode>
+                <errtext>domain does not exist</errtext>
+            </result>
+        </remove>
+    </certificate>
+</packet>

@@ -1,0 +1,14 @@
+<packet>
+    <webspace>
+        <get>
+            <filter></filter>
+            <dataset><gen_info/></dataset>
+        </get>
+    </webspace>
+    <site>
+        <get>
+            <filter></filter>
+            <dataset><gen_info/></dataset>
+        </get>
+    </site>
+</packet>
