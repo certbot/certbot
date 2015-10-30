@@ -101,6 +101,24 @@ class CLITest(unittest.TestCase):
             self.assertTrue("Plugin options" in out)
             output.truncate(0)
 
+            self.assertRaises(SystemExit, self._call_stdout, ['--help', 'install'])
+            out = output.getvalue()
+            self.assertTrue("--cert-path" in out)
+            self.assertTrue("--key-path" in out)
+            output.truncate(0)
+
+            self.assertRaises(SystemExit, self._call_stdout, ['--help', 'revoke'])
+            out = output.getvalue()
+            self.assertTrue("--cert-path" in out)
+            self.assertTrue("--key-path" in out)
+            output.truncate(0)
+
+            self.assertRaises(SystemExit, self._call_stdout, ['--help', 'config_changes'])
+            out = output.getvalue()
+            self.assertTrue("--cert-path" not in out)
+            self.assertTrue("--key-path" not in out)
+            output.truncate(0)
+
             self.assertRaises(SystemExit, self._call_stdout, ['-h'])
             out = output.getvalue()
             from letsencrypt import cli
