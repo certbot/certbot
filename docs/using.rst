@@ -128,7 +128,7 @@ Plugin     A I Notes and status
 ========== = = ================================================================
 standalone Y N Very stable. Uses port 80 (force by
                ``--standalone-supported-challenges simpleHttp``) or 443
-               (force by ``standalone-supported-challenges dvsni``).
+               (force by ``--standalone-supported-challenges dvsni``).
 apache     Y Y Alpha. Automates Apache installation, works fairly well but on
                Debian-based distributions only for now.
 webroot    Y N Works with already running webserver, by writing necessary files
