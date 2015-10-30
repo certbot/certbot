@@ -49,12 +49,15 @@ then
     echo "Bootstrapping dependencies for RedHat-based OSes..."
     if [ `lsb_release -is` == "CentOS" ]; then
         $SUDO $BOOTSTRAP/centos.sh
-	if [ `lsb_release -rs | cut -f1 -d.` -eq 6 ]; then
+	if [[ `lsb_release -rs | cut -f1 -d.` -eq 6 ]] && [[ ! -f /etc/yum.repos.d/ius.repo || ! -f /usr/bin/python2.7 ]] ; then
 		source /opt/rh/python27/enable
 		PYTHON_VER="python2.7"
 		SCL="scl enable python27 "
 	fi
     else
+        if [[ `lsb_release -rs | cut -f1 -d.` -eq 6 ]] && [[ -f /usr/bin/python2.7 ]]; then
+            PYTHON_VER="python2.7"
+        fi
         $SUDO $BOOTSTRAP/_rpm_common.sh
     fi
   elif uname | grep -iq FreeBSD ; then
