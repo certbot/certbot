@@ -106,6 +106,12 @@ class CLITest(unittest.TestCase):
             from letsencrypt import cli
             self.assertTrue(cli.usage_strings(plugins)[0] in out)
 
+    @mock.patch('letsencrypt.cli.display_ops')
+    def test_installer_selection(self, mock_display_ops):
+        self._call(['install', '--domain', 'foo.bar', '--cert-path', 'cert',
+                    '--key-path', 'key', '--chain-path', 'chain'])
+        self.assertEqual(mock_display_ops.pick_installer.call_count, 1)
+
     def test_configurator_selection(self):
         real_plugins = disco.PluginsRegistry.find_all()
         args = ['--agree-dev-preview', '--apache',
@@ -221,7 +227,7 @@ class CLITest(unittest.TestCase):
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
     @mock.patch('letsencrypt.cli._init_le_client')
     def test_certonly_csr(self, mock_init, mock_get_utility,
-                      mock_pick_installer, mock_notAfter):
+                          mock_pick_installer, mock_notAfter):
         cert_path = '/etc/letsencrypt/live/blahcert.pem'
         date = '1970-01-01'
         mock_notAfter().date.return_value = date
