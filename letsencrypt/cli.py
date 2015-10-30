@@ -468,7 +468,6 @@ def install(args, config, plugins):
     # XXX: Update for renewer/RenewableCert
 
     try:
-        #TODO: maybe an error? not choose_configurator_plugins?
         installer, _ = choose_configurator_plugins(args, config, plugins, "auth")
     except PluginSelectionError, e:
         return e.message
