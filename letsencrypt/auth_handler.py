@@ -486,29 +486,29 @@ def is_preferred(offered_challb, satisfied,
 
 _ERROR_HELP_COMMON = (
     "To fix these errors, please make sure that your domain name was entered "
-    "correctly and the DNS A record(s) for that domain contains the "
+    "correctly and the DNS A record(s) for that domain contain(s) the "
     "right IP address.")
 
 
 _ERROR_HELP = {
     "connection":
         _ERROR_HELP_COMMON + " Additionally, please check that your computer "
-        "has publicly routable IP address and no firewalls are preventing the "
-        "server from communicating with the client.",
+        "has a publicly routable IP address and that no firewalls are preventing "
+        "the server from communicating with the client.",
     "dnssec":
         _ERROR_HELP_COMMON + " Additionally, if you have DNSSEC enabled for "
-        "your domain, please ensure the signature is valid.",
+        "your domain, please ensure that the signature is valid.",
     "malformed":
         "To fix these errors, please make sure that you did not provide any "
-        "invalid information to the client and try running Let's Encrypt "
+        "invalid information to the client, and try running Let's Encrypt "
         "again.",
     "serverInternal":
         "Unfortunately, an error on the ACME server prevented you from completing "
         "authorization. Please try again later.",
     "tls":
-        _ERROR_HELP_COMMON + " Additionally, please check that you have an up "
-        "to date TLS configuration that allows the server to communicate with "
-        "the Let's Encrypt client.",
+        _ERROR_HELP_COMMON + " Additionally, please check that you have an "
+        "up-to-date TLS configuration that allows the server to communicate "
+        "with the Let's Encrypt client.",
     "unauthorized": _ERROR_HELP_COMMON,
     "unknownHost": _ERROR_HELP_COMMON,
 }
