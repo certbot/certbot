@@ -21,7 +21,6 @@ $tool install -y \
   python \
   python-devel \
   python-virtualenv \
-  python-devel \
   gcc \
   dialog \
   augeas-libs \
