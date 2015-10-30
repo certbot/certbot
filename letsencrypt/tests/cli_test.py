@@ -69,30 +69,42 @@ class CLITest(unittest.TestCase):
         self.assertRaises(SystemExit, self._call, ['--help', 'all'])
         output = StringIO.StringIO()
         with mock.patch('letsencrypt.cli.sys.stdout', new=output):
+            plugins = disco.PluginsRegistry.find_all()
             self.assertRaises(SystemExit, self._call_stdout, ['--help', 'all'])
             out = output.getvalue()
             self.assertTrue("--configurator" in out)
             self.assertTrue("how a cert is deployed" in out)
             self.assertTrue("--manual-test-mode" in out)
             output.truncate(0)
+
             self.assertRaises(SystemExit, self._call_stdout, ['-h', 'nginx'])
             out = output.getvalue()
-            if "nginx" in disco.PluginsRegistry.find_all():
+            if "nginx" in plugins:
                 # may be false while building distributions without plugins
                 self.assertTrue("--nginx-ctl" in out)
             self.assertTrue("--manual-test-mode" not in out)
             self.assertTrue("--checkpoints" not in out)
             output.truncate(0)
+
+            self.assertRaises(SystemExit, self._call_stdout, ['-h'])
+            out = output.getvalue()
+            if "nginx" in plugins:
+                self.assertTrue("Use the Nginx plugin" in out)
+            else:
+                self.assertTrue("(nginx support is experimental" in out)
+            output.truncate(0)
+
             self.assertRaises(SystemExit, self._call_stdout, ['--help', 'plugins'])
             out = output.getvalue()
             self.assertTrue("--manual-test-mode" not in out)
             self.assertTrue("--prepare" in out)
             self.assertTrue("Plugin options" in out)
             output.truncate(0)
+
             self.assertRaises(SystemExit, self._call_stdout, ['-h'])
             out = output.getvalue()
             from letsencrypt import cli
-            self.assertTrue(cli.USAGE in out)
+            self.assertTrue(cli.usage_strings(plugins)[0] in out)
 
     def test_configurator_selection(self):
         real_plugins = disco.PluginsRegistry.find_all()
@@ -115,6 +127,12 @@ class CLITest(unittest.TestCase):
             # (we can only do that if letsencrypt-nginx is actually present)
             ret, _, _, _ = self._call(args)
             self.assertTrue("The nginx plugin is not working" in ret)
+            self.assertTrue("Could not find configuration root" in ret)
+            self.assertTrue("NoInstallationError" in ret)
+
+        with MockedVerb("certonly") as mock_certonly:
+            self._call(["auth", "--standalone"])
+            self.assertEqual(1, mock_certonly.call_count)
 
     def test_rollback(self):
         _, _, _, client = self._call(['rollback'])
@@ -135,16 +153,16 @@ class CLITest(unittest.TestCase):
                   for r in xrange(len(flags)))):
             self._call(['plugins'] + list(args))
 
-    def test_auth_bad_args(self):
-        ret, _, _, _ = self._call(['-d', 'foo.bar', 'auth', '--csr', CSR])
+    def test_certonly_bad_args(self):
+        ret, _, _, _ = self._call(['-d', 'foo.bar', 'certonly', '--csr', CSR])
         self.assertEqual(ret, '--domains and --csr are mutually exclusive')
 
-        ret, _, _, _ = self._call(['-a', 'bad_auth', 'auth'])
+        ret, _, _, _ = self._call(['-a', 'bad_auth', 'certonly'])
         self.assertEqual(ret, 'The requested bad_auth plugin does not appear to be installed')
 
     @mock.patch('letsencrypt.crypto_util.notAfter')
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
-    def test_auth_new_request_success(self, mock_get_utility, mock_notAfter):
+    def test_certonly_new_request_success(self, mock_get_utility, mock_notAfter):
         cert_path = '/etc/letsencrypt/live/foo.bar'
         date = '1970-01-01'
         mock_notAfter().date.return_value = date
@@ -152,7 +170,7 @@ class CLITest(unittest.TestCase):
         mock_lineage = mock.MagicMock(cert=cert_path, fullchain=cert_path)
         mock_client = mock.MagicMock()
         mock_client.obtain_and_enroll_certificate.return_value = mock_lineage
-        self._auth_new_request_common(mock_client)
+        self._certonly_new_request_common(mock_client)
         self.assertEqual(
             mock_client.obtain_and_enroll_certificate.call_count, 1)
         self.assertTrue(
@@ -160,23 +178,23 @@ class CLITest(unittest.TestCase):
         self.assertTrue(
             date in mock_get_utility().add_message.call_args[0][0])
 
-    def test_auth_new_request_failure(self):
+    def test_certonly_new_request_failure(self):
         mock_client = mock.MagicMock()
         mock_client.obtain_and_enroll_certificate.return_value = False
         self.assertRaises(errors.Error,
-                          self._auth_new_request_common, mock_client)
+                          self._certonly_new_request_common, mock_client)
 
-    def _auth_new_request_common(self, mock_client):
+    def _certonly_new_request_common(self, mock_client):
         with mock.patch('letsencrypt.cli._treat_as_renewal') as mock_renewal:
             mock_renewal.return_value = None
             with mock.patch('letsencrypt.cli._init_le_client') as mock_init:
                 mock_init.return_value = mock_client
-                self._call(['-d', 'foo.bar', '-a', 'standalone', 'auth'])
+                self._call(['-d', 'foo.bar', '-a', 'standalone', 'certonly'])
 
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
     @mock.patch('letsencrypt.cli._treat_as_renewal')
     @mock.patch('letsencrypt.cli._init_le_client')
-    def test_auth_renewal(self, mock_init, mock_renewal, mock_get_utility):
+    def test_certonly_renewal(self, mock_init, mock_renewal, mock_get_utility):
         cert_path = '/etc/letsencrypt/live/foo.bar/cert.pem'
         chain_path = '/etc/letsencrypt/live/foo.bar/fullchain.pem'
 
@@ -190,7 +208,7 @@ class CLITest(unittest.TestCase):
         mock_init.return_value = mock_client
         with mock.patch('letsencrypt.cli.OpenSSL'):
             with mock.patch('letsencrypt.cli.crypto_util'):
-                self._call(['-d', 'foo.bar', '-a', 'standalone', 'auth'])
+                self._call(['-d', 'foo.bar', '-a', 'standalone', 'certonly'])
         mock_client.obtain_certificate.assert_called_once_with(['foo.bar'])
         self.assertEqual(mock_lineage.save_successor.call_count, 1)
         mock_lineage.update_all_links_to.assert_called_once_with(
@@ -202,7 +220,7 @@ class CLITest(unittest.TestCase):
     @mock.patch('letsencrypt.cli.display_ops.pick_installer')
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
     @mock.patch('letsencrypt.cli._init_le_client')
-    def test_auth_csr(self, mock_init, mock_get_utility,
+    def test_certonly_csr(self, mock_init, mock_get_utility,
                       mock_pick_installer, mock_notAfter):
         cert_path = '/etc/letsencrypt/live/blahcert.pem'
         date = '1970-01-01'
@@ -216,7 +234,7 @@ class CLITest(unittest.TestCase):
 
         installer = 'installer'
         self._call(
-            ['-a', 'standalone', '-i', installer, 'auth', '--csr', CSR,
+            ['-a', 'standalone', '-i', installer, 'certonly', '--csr', CSR,
              '--cert-path', cert_path, '--fullchain-path', '/',
              '--chain-path', '/'])
         self.assertEqual(mock_pick_installer.call_args[0][1], installer)

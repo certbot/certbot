@@ -56,7 +56,7 @@ default, it will attempt to use a webserver both for obtaining and installing
 the cert. Major SUBCOMMANDS are:
 
   (default) run        Obtain & install a cert in your current webserver
-  auth                 Authenticate & obtain cert, but do not install it
+  certonly             Obtain cert, but do not install it (aka "auth")
   install              Install a previously obtained cert in a server
   revoke               Revoke a previously obtained certificate
   rollback             Rollback server configuration changes made during install
@@ -64,25 +64,38 @@ the cert. Major SUBCOMMANDS are:
 
 """
 
-
 # This is the short help for letsencrypt --help, where we disable argparse
 # altogether
-USAGE = SHORT_USAGE + """Choice of server for authentication/installation:
+USAGE = SHORT_USAGE + """Choice of server plugins for obtaining and installing cert:
 
-  --apache          Use the Apache plugin for authentication & installation
-  --nginx           Use the Nginx plugin for authentication & installation
+  %s
   --standalone      Run a standalone webserver for authentication
-  OR:
-  --authenticator standalone --installer nginx
+  %s
+
+OR use different servers to obtain (authenticate) the cert and then install it:
+
+  --authenticator standalone --installer apache
 
 More detailed help:
 
   -h, --help [topic]    print this message, or detailed help on a topic;
                         the available topics are:
 
-   all, apache, automation, manual, nginx, paths, security, testing, or any of
-   the subcommands
+   all, automation, paths, security, testing, or any of the subcommands or
+   plugins (certonly, install, nginx, apache, standalone, etc)
 """
+
+def usage_strings(plugins):
+    """Make usage strings late so that plugins can be initialised late"""
+    if "nginx" in plugins:
+        nginx_doc = "--nginx           Use the Nginx plugin for authentication & installation"
+    else:
+        nginx_doc = "(nginx support is experimental, buggy, and not installed by default)"
+    if "apache" in plugins:
+        apache_doc = "--apache          Use the Apache plugin for authentication & installation"
+    else:
+        apache_doc = "(the apache plugin is not installed)"
+    return USAGE % (apache_doc, nginx_doc), SHORT_USAGE
 
 
 def _find_domains(args, installer):
@@ -358,11 +371,11 @@ def diagnose_configurator_problem(cfg_type, requested, plugins):
         if os.path.exists("/etc/debian_version"):
             # Debian... installers are at least possible
             msg = ('No installers seem to be present and working on your system; '
-                   'fix that or try running letsencrypt with the "auth" command')
+                   'fix that or try running letsencrypt with the "certonly" command')
         else:
             # XXX update this logic as we make progress on #788 and nginx support
             msg = ('No installers are available on your OS yet; try running '
-                   '"letsencrypt-auto auth" to get a cert you can install manually')
+                   '"letsencrypt-auto certonly" to get a cert you can install manually')
     else:
         msg = "{0} could not be determined or is not installed".format(cfg_type)
     raise PluginSelectionError(msg)
@@ -377,7 +390,7 @@ def choose_configurator_plugins(args, config, plugins, verb):
 
     # Which plugins do we need?
     need_inst = need_auth = (verb == "run")
-    if verb == "auth":
+    if verb == "certonly":
         need_auth = True
     if verb == "install":
         need_inst = True
@@ -447,7 +460,7 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
         display_ops.success_renewal(domains)
 
 
-def auth(args, config, plugins):
+def obtaincert(args, config, plugins):
     """Authenticate & obtain cert, but do not install it."""
 
     if args.domains is not None and args.csr is not None:
@@ -457,7 +470,7 @@ def auth(args, config, plugins):
 
     try:
         # installers are used in auth mode to determine domain names
-        installer, authenticator = choose_configurator_plugins(args, config, plugins, "auth")
+        installer, authenticator = choose_configurator_plugins(args, config, plugins, "certonly")
     except PluginSelectionError, e:
         return e.message
 
@@ -481,7 +494,7 @@ def install(args, config, plugins):
     # XXX: Update for renewer/RenewableCert
 
     try:
-        installer, _ = choose_configurator_plugins(args, config, plugins, "auth")
+        installer, _ = choose_configurator_plugins(args, config, plugins, "certonly")
     except PluginSelectionError, e:
         return e.message
 
@@ -609,7 +622,8 @@ class HelpfulArgumentParser(object):
     """
 
     # Maps verbs/subcommands to the functions that implement them
-    VERBS = {"auth": auth, "config_changes": config_changes,
+    VERBS = {"auth": obtaincert, "certonly": obtaincert,
+             "config_changes": config_changes, "everything": run,
              "install": install, "plugins": plugins_cmd,
              "revoke": revoke, "rollback": rollback, "run": run}
 
@@ -620,8 +634,9 @@ class HelpfulArgumentParser(object):
     def __init__(self, args, plugins):
         plugin_names = [name for name, _p in plugins.iteritems()]
         self.help_topics = self.HELP_TOPICS + plugin_names + [None]
+        usage, short_usage = usage_strings(plugins)
         self.parser = configargparse.ArgParser(
-            usage=SHORT_USAGE,
+            usage=short_usage,
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
             args_for_setting_config_path=["-c", "--config"],
             default_config_files=flag_default("config_files"))
@@ -638,7 +653,7 @@ class HelpfulArgumentParser(object):
         help_arg = max(help1, help2)
         if help_arg is True:
             # just --help with no topic; avoid argparse altogether
-            print USAGE
+            print usage
             sys.exit(0)
         self.visible_topics = self.determine_help_topics(help_arg)
         #print self.visible_topics
@@ -669,7 +684,12 @@ class HelpfulArgumentParser(object):
 
         for i, token in enumerate(self.args):
             if token in self.VERBS:
-                self.verb = token
+                verb = token
+                if verb == "auth":
+                    verb = "certonly"
+                if verb == "everything":
+                    verb = "run"
+                self.verb = verb
                 self.args.pop(i)
                 return
 
@@ -754,6 +774,10 @@ class HelpfulArgumentParser(object):
         """
         # topics maps each topic to whether it should be documented by
         # argparse on the command line
+        if chosen_topic == "auth":
+            chosen_topic = "certonly"
+        if chosen_topic == "everything":
+            chosen_topic = "run"
         if chosen_topic == "all":
             return dict([(t, True) for t in self.help_topics])
         elif not chosen_topic:
@@ -860,13 +884,13 @@ def prepare_and_parse_args(plugins, args):
 
 
 def _create_subparsers(helpful):
-    helpful.add_group("auth", description="Options for modifying how a cert is obtained")
+    helpful.add_group("certonly", description="Options for modifying how a cert is obtained")
     helpful.add_group("install", description="Options for modifying how a cert is deployed")
     helpful.add_group("revoke", description="Options for revocation of certs")
     helpful.add_group("rollback", description="Options for reverting config changes")
     helpful.add_group("plugins", description="Plugin options")
 
-    helpful.add("auth",
+    helpful.add("certonly",
                 "--csr", type=read_file,
                 help="Path to a Certificate Signing Request (CSR) in DER"
                 " format; note that the .csr file *must* contain a Subject"
@@ -894,7 +918,7 @@ def _paths_parser(helpful):
         "paths", description="Arguments changing execution paths & servers")
 
     cph = "Path to where cert is saved (with auth), installed (with install --csr) or revoked."
-    if verb == "auth":
+    if verb == "certonly":
         add("paths", "--cert-path", default=flag_default("auth_cert_path"), help=cph)
     elif verb == "revoke":
         add("paths", "--cert-path", type=read_file, required=True, help=cph)
@@ -907,7 +931,7 @@ def _paths_parser(helpful):
         help="Path to private key for cert creation or revocation (if account key is missing)")
 
     default_cp = None
-    if verb == "auth":
+    if verb == "certonly":
         default_cp = flag_default("auth_chain_path")
     add("paths", "--fullchain-path", default=default_cp,
         help="Accompanying path to a full certificate chain (cert plus chain).")
