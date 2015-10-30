@@ -6,7 +6,7 @@
 
 # Both "gcc-multilib" and "gcc" packages provide gcc. If user already has
 # "gcc-multilib" installed, let's stick to their choice
-if pacman -Qc gcc-multilib &>/dev/null
+if pacman -T gcc-multilib &>/dev/null
 then
 	GCC_PACKAGE="gcc-multilib";
 else
