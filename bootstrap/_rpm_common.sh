@@ -20,11 +20,15 @@ $tool install -y \
   git-core \
   python \
   python-devel \
-  python-virtualenv \
-  python-devel \
+  python-setuptools \
   gcc \
   dialog \
   augeas-libs \
   openssl-devel \
   libffi-devel \
   ca-certificates \
+
+if ! $tool install -y python-virtualenv ; then
+    easy_install pip
+    pip install virtualenv
+fi
