@@ -915,14 +915,14 @@ def _paths_parser(helpful):
     add = helpful.add
     verb = helpful.verb
     if verb == "help":
-      verb = helpful.help_arg
+        verb = helpful.help_arg
     helpful.add_group(
         "paths", description="Arguments changing execution paths & servers")
 
     cph = "Path to where cert is saved (with auth --csr), installed from or revoked."
     section = "paths"
     if verb in ("install", "revoke", "certonly"):
-      section = verb
+        section = verb
     if verb == "certonly":
         add(section, "--cert-path", default=flag_default("auth_cert_path"), help=cph)
     elif verb == "revoke":
@@ -932,7 +932,7 @@ def _paths_parser(helpful):
 
     section = "paths"
     if verb in ("install", "revoke"):
-      section = verb
+        section = verb
     print helpful.help_arg, helpful.help_arg == "install"
     # revoke --key-path reads a file, install --key-path takes a string
     add(section, "--key-path", type=((verb == "revoke" and read_file) or str),
