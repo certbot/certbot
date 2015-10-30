@@ -9,8 +9,11 @@ import unittest
 
 import mock
 
+from acme import jose
+
 from letsencrypt import account
 from letsencrypt import configuration
+from letsencrypt import crypto_util
 from letsencrypt import errors
 
 from letsencrypt.plugins import disco
@@ -19,7 +22,9 @@ from letsencrypt.tests import renewer_test
 from letsencrypt.tests import test_util
 
 
+CERT = test_util.vector_path('cert.pem')
 CSR = test_util.vector_path('csr.der')
+KEY = test_util.vector_path('rsa256_key.pem')
 
 
 class CLITest(unittest.TestCase):
@@ -226,6 +231,29 @@ class CLITest(unittest.TestCase):
             cert_path in mock_get_utility().add_message.call_args[0][0])
         self.assertTrue(
             date in mock_get_utility().add_message.call_args[0][0])
+
+    @mock.patch('letsencrypt.cli.acme_client')
+    def test_revoke_with_key(self, mock_acme_client):
+        server = 'foo.bar'
+        self._call(['--cert-path', CERT, '--key-path', KEY,
+                    '--server', server, 'revoke'])
+        with open(KEY) as f:
+            mock_acme_client.Client.assert_called_once_with(
+                server, key=jose.JWK.load(f.read()))
+        with open(CERT) as f:
+            mock_acme_client.Client().revoke.assert_called_once_with(
+                jose.ComparableX509(crypto_util.pyopenssl_load_certificate(
+                    f.read())[0]))
+
+    @mock.patch('letsencrypt.cli._determine_account')
+    def test_revoke_without_key(self, mock_determine_account):
+        mock_determine_account.return_value = (mock.MagicMock(), None)
+        _, _, _, client = self._call(['--cert-path', CERT, 'revoke'])
+        with open(CERT) as f:
+            # pylint: disable=protected-access
+            client._acme_from_config_key().revoke.assert_called_once_with(
+                jose.ComparableX509(crypto_util.pyopenssl_load_certificate(
+                    f.read())[0]))
 
     @mock.patch('letsencrypt.cli.sys')
     def test_handle_exception(self, mock_sys):
