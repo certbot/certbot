@@ -28,7 +28,7 @@ class Authenticator(common.Plugin):
 
        This plugin requires user's manual intervention in setting up a HTTP
        server for solving SimpleHTTP challenges and thus does not need to be
-       run as a privilidged process. Alternatively shows instructions on how
+       run as a privileged process. Alternatively shows instructions on how
        to use Python's built-in HTTP server.
 
     .. todo:: Support for `~.challenges.DVSNI`.
@@ -95,8 +95,8 @@ s.serve_forever()" """
 
     def more_info(self):  # pylint: disable=missing-docstring,no-self-use
         return ("This plugin requires user's manual intervention in setting "
-                "up a HTTP server for solving SimpleHTTP challenges and thus "
-                "does not need to be run as a privilidged process. "
+                "up an HTTP server for solving SimpleHTTP challenges and thus "
+                "does not need to be run as a privileged process. "
                 "Alternatively shows instructions on how to use Python's "
                 "built-in HTTP server.")
 
