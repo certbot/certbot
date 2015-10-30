@@ -31,7 +31,8 @@ class ContinuityAuthenticator(object):
         :type installer: :class:`letsencrypt.interfaces.IInstaller`
 
         """
-        self.proof_of_pos = proof_of_possession.ProofOfPossession(installer)
+        self.proof_of_pos = proof_of_possession.ProofOfPossession(
+            installer, config)
 
     def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use
         """Return list of challenge preferences."""

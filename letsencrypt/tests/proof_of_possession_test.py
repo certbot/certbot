@@ -10,6 +10,7 @@ from acme import jose
 from acme import messages
 
 from letsencrypt import achallenges
+from letsencrypt import crypto_util
 from letsencrypt import proof_of_possession
 from letsencrypt.display import util as display_util
 
@@ -27,13 +28,14 @@ CERT3_KEY = test_util.load_rsa_private_key("rsa512_key_2.pem").public_key()
 class ProofOfPossessionTest(unittest.TestCase):
     def setUp(self):
         self.installer = mock.MagicMock()
+        self.config = mock.MagicMock()
         self.cert1_path = tempfile.mkstemp()[1]
         certs = [CERT0_PATH, self.cert1_path, CERT2_PATH, CERT3_PATH]
         keys = [None, None, CERT2_KEY_PATH, CERT3_KEY_PATH]
         self.installer.get_all_certs_keys.return_value = zip(
             certs, keys, 4 * [None])
         self.proof_of_pos = proof_of_possession.ProofOfPossession(
-            self.installer)
+            self.installer, self.config)
 
         hints = challenges.ProofOfPossession.Hints(
             jwk=jose.JWKRSA(key=CERT3_KEY), cert_fingerprints=(),
@@ -76,6 +78,15 @@ class ProofOfPossessionTest(unittest.TestCase):
         self.assertFalse(self.proof_of_pos.perform(self.achall))
         self.assertFalse(self.proof_of_pos.perform(self.achall))
         self.assertFalse(self.proof_of_pos.perform(self.achall))
+        self.assertTrue(self.proof_of_pos.perform(self.achall).verify())
+
+    def test_perform_with_key_dir(self):
+        # Remove the matching certificate
+        self.installer.get_all_certs_keys.return_value.pop()
+
+        self.config.key_dir = tempfile.mkdtemp('key_dir')
+        crypto_util.init_save_key(2048, self.config.key_dir)
+
         self.assertTrue(self.proof_of_pos.perform(self.achall).verify())
 
 

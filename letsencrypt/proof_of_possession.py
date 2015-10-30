@@ -26,8 +26,9 @@ class ProofOfPossession(object):  # pylint: disable=too-few-public-methods
     :type installer: :class:`~letsencrypt.interfaces.IInstaller`
 
     """
-    def __init__(self, installer):
+    def __init__(self, installer, config):
         self.installer = installer
+        self.config = config
 
     def perform(self, achall):
         """Perform the Proof of Possession Challenge.
@@ -60,6 +61,13 @@ class ProofOfPossession(object):  # pylint: disable=too-few-public-methods
             cert_key = achall.alg.kty(key=cert_obj.public_key())
             if cert_key == achall.hints.jwk:
                 return self._gen_response(achall, key)
+
+        if os.path.isdir(str(self.config.key_dir)):
+            for key_file in os.listdir(self.config.key_dir):
+                full_path = os.path.join(self.config.key_dir, key_file)
+                response = self._gen_response(achall, full_path)
+                if response is not False:
+                    return response
 
         # Is there are different prompt we should give the user?
         code, key = zope.component.getUtility(
