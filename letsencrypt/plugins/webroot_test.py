@@ -6,6 +6,7 @@ import unittest
 
 import mock
 
+from acme import challenges
 from acme import jose
 
 from letsencrypt import achallenges
@@ -21,8 +22,8 @@ KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 class AuthenticatorTest(unittest.TestCase):
     """Tests for letsencrypt.plugins.webroot.Authenticator."""
 
-    achall = achallenges.SimpleHTTP(
-        challb=acme_util.SIMPLE_HTTP_P, domain=None, account_key=KEY)
+    achall = achallenges.KeyAuthorizationAnnotatedChallenge(
+        challb=acme_util.HTTP01_P, domain=None, account_key=KEY)
 
     def setUp(self):
         from letsencrypt.plugins.webroot import Authenticator
@@ -70,9 +71,11 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertEqual(1, len(responses))
         self.assertTrue(os.path.exists(self.validation_path))
         with open(self.validation_path) as validation_f:
-            validation = jose.JWS.json_loads(validation_f.read())
-        self.assertTrue(responses[0].check_validation(
-            validation, self.achall.chall, KEY.public_key()))
+            validation = validation_f.read()
+        self.assertTrue(
+            challenges.KeyAuthorizationChallengeResponse(
+                key_authorization=validation).verify(
+                    self.achall.chall, KEY.public_key()))
 
         self.auth.cleanup([self.achall])
         self.assertFalse(os.path.exists(self.validation_path))
