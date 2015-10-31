@@ -16,15 +16,6 @@ from letsencrypt import le_util
 from letsencrypt.tests import acme_util
 
 
-TRANSLATE = {
-    "dvsni": "DVSNI",
-    "simpleHttp": "SimpleHTTP",
-    "dns": "DNS",
-    "recoveryContact": "RecoveryContact",
-    "proofOfPossession": "ProofOfPossession",
-}
-
-
 class ChallengeFactoryTest(unittest.TestCase):
     # pylint: disable=protected-access
 
