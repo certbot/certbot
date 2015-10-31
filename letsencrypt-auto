@@ -26,6 +26,13 @@ for arg in "$@" ; do
   fi
 done
 
+if [ -f /etc/debian_version ] ; then
+    # squeeze needs Python 2.6, `python2` doesn't exist
+    if grep -q '^6\.0' /etc/debian_version ; then
+        LE_PYTHON=${LE_PYTHON:-python}
+    fi
+fi
+
 # virtualenv call is not idempotent: it overwrites pip upgraded in
 # later steps, causing "ImportError: cannot import name unpack_url"
 if [ ! -d $VENV_PATH ]
@@ -67,9 +74,9 @@ then
 
   echo "Creating virtual environment..."
   if [ "$VERBOSE" = 1 ] ; then
-    virtualenv --no-site-packages --python python2 $VENV_PATH
+    virtualenv --no-site-packages --python ${LE_PYTHON:-python2} $VENV_PATH
   else
-    virtualenv --no-site-packages --python python2 $VENV_PATH > /dev/null
+    virtualenv --no-site-packages --python ${LE_PYTHON:-python2} $VENV_PATH > /dev/null
   fi
 fi
 

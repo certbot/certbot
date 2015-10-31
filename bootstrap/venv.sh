@@ -13,7 +13,7 @@ VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
 # later steps, causing "ImportError: cannot import name unpack_url"
 if [ ! -d $VENV_PATH ]
 then
-  virtualenv --no-site-packages --python python2 $VENV_PATH
+  virtualenv --no-site-packages --python ${LE_PYTHON:-python2} $VENV_PATH
 fi
 
 . $VENV_PATH/bin/activate
