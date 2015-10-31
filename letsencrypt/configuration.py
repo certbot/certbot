@@ -39,7 +39,7 @@ class NamespaceConfig(object):
 
         if self.simple_http_port == self.dvsni_port:
             raise errors.Error(
-                "Trying to run SimpleHTTP and DVSNI "
+                "Trying to run http-01 and DVSNI "
                 "on the same port ({0})".format(self.dvsni_port))
 
     def __getattr__(self, name):
@@ -82,7 +82,7 @@ class NamespaceConfig(object):
         if self.namespace.simple_http_port is not None:
             return self.namespace.simple_http_port
         else:
-            return challenges.SimpleHTTPResponse.PORT
+            return challenges.HTTP01Response.PORT
 
 
 class RenewerConfiguration(object):

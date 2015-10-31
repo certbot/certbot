@@ -309,8 +309,8 @@ class GenChallengePathTest(unittest.TestCase):
         return gen_challenge_path(challbs, preferences, combinations)
 
     def test_common_case(self):
-        """Given DVSNI and SimpleHTTP with appropriate combos."""
-        challbs = (acme_util.DVSNI_P, acme_util.SIMPLE_HTTP_P)
+        """Given DVSNI and HTTP01 with appropriate combos."""
+        challbs = (acme_util.DVSNI_P, acme_util.HTTP01_P)
         prefs = [challenges.DVSNI]
         combos = ((0,), (1,))
 
@@ -325,7 +325,7 @@ class GenChallengePathTest(unittest.TestCase):
         challbs = (acme_util.POP_P,
                    acme_util.RECOVERY_CONTACT_P,
                    acme_util.DVSNI_P,
-                   acme_util.SIMPLE_HTTP_P)
+                   acme_util.HTTP01_P)
         prefs = [challenges.ProofOfPossession, challenges.DVSNI]
         combos = acme_util.gen_combos(challbs)
         self.assertEqual(self._call(challbs, prefs, combos), (0, 2))
@@ -337,12 +337,12 @@ class GenChallengePathTest(unittest.TestCase):
         challbs = (acme_util.RECOVERY_CONTACT_P,
                    acme_util.POP_P,
                    acme_util.DVSNI_P,
-                   acme_util.SIMPLE_HTTP_P,
+                   acme_util.HTTP01_P,
                    acme_util.DNS_P)
         # Typical webserver client that can do everything except DNS
         # Attempted to make the order realistic
         prefs = [challenges.ProofOfPossession,
-                 challenges.SimpleHTTP,
+                 challenges.HTTP01,
                  challenges.DVSNI,
                  challenges.RecoveryContact]
         combos = acme_util.gen_combos(challbs)
@@ -411,8 +411,8 @@ class IsPreferredTest(unittest.TestCase):
     def _call(cls, chall, satisfied):
         from letsencrypt.auth_handler import is_preferred
         return is_preferred(chall, satisfied, exclusive_groups=frozenset([
-            frozenset([challenges.DVSNI, challenges.SimpleHTTP]),
-            frozenset([challenges.DNS, challenges.SimpleHTTP]),
+            frozenset([challenges.DVSNI, challenges.HTTP01]),
+            frozenset([challenges.DNS, challenges.HTTP01]),
         ]))
 
     def test_empty_satisfied(self):
@@ -421,7 +421,7 @@ class IsPreferredTest(unittest.TestCase):
     def test_mutually_exclusvie(self):
         self.assertFalse(
             self._call(
-                acme_util.DVSNI_P, frozenset([acme_util.SIMPLE_HTTP_P])))
+                acme_util.DVSNI_P, frozenset([acme_util.HTTP01_P])))
 
     def test_mutually_exclusive_same_type(self):
         self.assertTrue(
@@ -434,13 +434,13 @@ class ReportFailedChallsTest(unittest.TestCase):
 
     def setUp(self):
         kwargs = {
-            "chall": acme_util.SIMPLE_HTTP,
+            "chall": acme_util.HTTP01,
             "uri": "uri",
             "status": messages.STATUS_INVALID,
             "error": messages.Error(typ="tls", detail="detail"),
         }
 
-        self.simple_http = achallenges.SimpleHTTP(
+        self.http01 = achallenges.KeyAuthorizationAnnotatedChallenge(
             # pylint: disable=star-args
             challb=messages.ChallengeBody(**kwargs),
             domain="example.com",
@@ -464,7 +464,7 @@ class ReportFailedChallsTest(unittest.TestCase):
     def test_same_error_and_domain(self, mock_zope):
         from letsencrypt import auth_handler
 
-        auth_handler._report_failed_challs([self.simple_http, self.dvsni_same])
+        auth_handler._report_failed_challs([self.http01, self.dvsni_same])
         call_list = mock_zope().add_message.call_args_list
         self.assertTrue(len(call_list) == 1)
         self.assertTrue("Domains: example.com\n" in call_list[0][0][0])
@@ -473,7 +473,7 @@ class ReportFailedChallsTest(unittest.TestCase):
     def test_different_errors_and_domains(self, mock_zope):
         from letsencrypt import auth_handler
 
-        auth_handler._report_failed_challs([self.simple_http, self.dvsni_diff])
+        auth_handler._report_failed_challs([self.http01, self.dvsni_diff])
         self.assertTrue(mock_zope().add_message.call_count == 2)
 
 
