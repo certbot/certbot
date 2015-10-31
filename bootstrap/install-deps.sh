@@ -23,6 +23,9 @@ elif [ -f /etc/arch-release ] ; then
 elif [ -f /etc/redhat-release ] ; then
   echo "Bootstrapping dependencies for RedHat-based OSes..."
   $SUDO $BOOTSTRAP/_rpm_common.sh
+elif [ -f /etc/gentoo-release ] ; then
+  echo "Bootstrapping dependencies for Gentoo-based OSes..."
+  $SUDO $BOOTSTRAP/_gentoo_common.sh
 elif uname | grep -iq FreeBSD ; then
   echo "Bootstrapping dependencies for FreeBSD..."
   $SUDO $BOOTSTRAP/freebsd.sh

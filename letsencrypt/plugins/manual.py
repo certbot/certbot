@@ -70,7 +70,7 @@ Are you OK with your IP being logged?
     CMD_TEMPLATE = """\
 mkdir -p {root}/public_html/{response.URI_ROOT_PATH}
 cd {root}/public_html
-echo -n {validation} > {response.URI_ROOT_PATH}/{encoded_token}
+printf "%s" {validation} > {response.URI_ROOT_PATH}/{encoded_token}
 # run only once per server:
 $(command -v python2 || command -v python2.7 || command -v python2.6) -c \\
 "import BaseHTTPServer, SimpleHTTPServer; \\
@@ -142,15 +142,14 @@ s.serve_forever()" """
             ct=response.CONTENT_TYPE, port=port)
         if self.conf("test-mode"):
             logger.debug("Test mode. Executing the manual command: %s", command)
-            # sh shipped with OS X does't support echo -n
-            executable = "/bin/bash" if sys.platform == "darwin" else None
+            # sh shipped with OS X does't support echo -n, but supports printf
             try:
                 self._httpd = subprocess.Popen(
                     command,
                     # don't care about setting stdout and stderr,
                     # we're in test mode anyway
                     shell=True,
-                    executable=executable,
+                    executable=None,
                     # "preexec_fn" is UNIX specific, but so is "command"
                     preexec_fn=os.setsid)
             except OSError as error:  # ValueError should not happen!

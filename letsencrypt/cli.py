@@ -85,6 +85,7 @@ More detailed help:
    plugins (certonly, install, nginx, apache, standalone, etc)
 """
 
+
 def usage_strings(plugins):
     """Make usage strings late so that plugins can be initialised late"""
     if "nginx" in plugins:
@@ -494,7 +495,8 @@ def install(args, config, plugins):
     # XXX: Update for renewer/RenewableCert
 
     try:
-        installer, _ = choose_configurator_plugins(args, config, plugins, "certonly")
+        installer, _ = choose_configurator_plugins(args, config,
+                                                   plugins, "install")
     except PluginSelectionError, e:
         return e.message
 
