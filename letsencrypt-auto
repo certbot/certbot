@@ -19,7 +19,13 @@ else
   SUDO=
 fi
 
-for arg in "$@" ; do 
+if timeout 1 sh -c 'cat < /dev/null > /dev/tcp/127.0.0.1/80' >/dev/null 2>&1 ; then
+  echo "Looks like port 80 is already taken. This might interfere with letsencrypt's setup"
+  echo "Please stop any servers that you might be running on port 80 before resuming this setup"
+  exit
+fi
+
+for arg in "$@" ; do
   # This first clause is redundant with the third, but hedging on portability
   if [ "$arg" = "-v" ] || [ "$arg" = "--verbose" ] || echo "$arg" | grep -E -- "-v+$" ; then
     VERBOSE=1
