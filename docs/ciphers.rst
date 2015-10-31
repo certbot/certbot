@@ -192,6 +192,20 @@ or
 
 to disable automatic configuration updates. These features have not yet
 been implemented and this syntax may change then they are implemented.
-The status of this feature is tracked as issue #1123 in our bug tracker.
+
+
+TODO
+----
+
+The status of this feature is tracked as part of issue #1123 in our
+bug tracker.
 
 https://github.com/letsencrypt/letsencrypt/issues/1123
+
+Prior to implementation of #1123, the client does not actually modify
+ciphersuites (this is intended to be implemented as a "configuration
+enhancement", but the only configuration enhancement implemented
+so far is redirecting HTTP requests to HTTPS in web servers, the
+"redirect" enhancement). The changes here would probably be either a new
+"ciphersuite" enhancement in each plugin that provides an installer,
+or a family of enhancements, one per selectable ciphersuite configuration.
