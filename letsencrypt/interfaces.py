@@ -223,7 +223,7 @@ class IConfig(zope.interface.Interface):
         "Port number to perform DVSNI challenge. "
         "Boulder in testing mode defaults to 5001.")
 
-    simple_http_port = zope.interface.Attribute(
+    http01_port = zope.interface.Attribute(
         "Port used in the SimpleHttp challenge.")
 
 

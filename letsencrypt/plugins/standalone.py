@@ -185,7 +185,7 @@ class Authenticator(common.Plugin):
     def _necessary_ports(self):
         necessary_ports = set()
         if challenges.HTTP01 in self.supported_challenges:
-            necessary_ports.add(self.config.simple_http_port)
+            necessary_ports.add(self.config.http01_port)
         if challenges.DVSNI in self.supported_challenges:
             necessary_ports.add(self.config.dvsni_port)
         return necessary_ports
@@ -238,7 +238,7 @@ class Authenticator(common.Plugin):
         for achall in achalls:
             if isinstance(achall.chall, challenges.HTTP01):
                 server = self.servers.run(
-                    self.config.simple_http_port, challenges.HTTP01)
+                    self.config.http01_port, challenges.HTTP01)
                 response, validation = achall.response_and_validation()
                 self.simple_http_resources.add(
                     acme_standalone.HTTP01RequestHandler.HTTP01Resource(

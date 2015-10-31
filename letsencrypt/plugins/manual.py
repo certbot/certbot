@@ -132,8 +132,8 @@ s.serve_forever()" """
         # same server: default command doesn't support virtual hosts
         response, validation = achall.response_and_validation()
 
-        port = (response.port if self.config.simple_http_port is None
-                else int(self.config.simple_http_port))
+        port = (response.port if self.config.http01_port is None
+                else int(self.config.http01_port))
         command = self.CMD_TEMPLATE.format(
             root=self._root, achall=achall, response=response,
             # TODO(kuba): pipes still necessary?
@@ -174,7 +174,7 @@ s.serve_forever()" """
 
         if response.simple_verify(
                 achall.chall, achall.domain,
-                achall.account_key.public_key(), self.config.simple_http_port):
+                achall.account_key.public_key(), self.config.http01_port):
             return response
         else:
             logger.error(

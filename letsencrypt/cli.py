@@ -854,8 +854,8 @@ def prepare_and_parse_args(plugins, args):
     helpful.add(
         "testing", "--dvsni-port", type=int, default=flag_default("dvsni_port"),
         help=config_help("dvsni_port"))
-    helpful.add("testing", "--simple-http-port", type=int,
-                help=config_help("simple_http_port"))
+    helpful.add("testing", "--http-01-port", dest="http01_port", type=int,
+                help=config_help("http01_port"))
 
     helpful.add_group(
         "security", description="Security parameters & server settings")
