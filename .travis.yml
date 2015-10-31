@@ -1,18 +1,72 @@
 language: python
 
-before_install: >
-  travis_retry sudo apt-get install python python-setuptools
-  python-virtualenv python-dev gcc swig dialog libaugeas0 libssl-dev
+services:
+  - rabbitmq
+  - mysql
 
-install: travis_retry python setup.py dev  # installs tox
-script: travis_retry tox
+# http://docs.travis-ci.com/user/ci-environment/#CI-environment-OS
+# gimme has to be kept in sync with Boulder's Go version setting in .travis.yml
+before_install:
+  - '[ "xxx$BOULDER_INTEGRATION" = "xxx" ] || eval "$(gimme 1.5.1)"'
 
+# using separate envs with different TOXENVs creates 4x1 Travis build
+# matrix, which allows us to clearly distinguish which component under
+# test has failed
 env:
-  - TOXENV=py26
-  - TOXENV=py27
-  - TOXENV=lint
-  - TOXENV=cover
+  global:
+    - GOPATH=/tmp/go
+    - PATH=$GOPATH/bin:$PATH
+  matrix:
+    - TOXENV=py26 BOULDER_INTEGRATION=1
+    - TOXENV=py27 BOULDER_INTEGRATION=1
+    - TOXENV=lint
+    - TOXENV=cover
+
+
+# Only build pushes to the master branch, PRs, and branches beginning with
+# `test-`. This reduces the number of simultaneous Travis runs, which speeds
+# turnaround time on review since there is a cap of 5 simultaneous runs.
+branches:
+  only:
+    - master
+    - /^test-.*$/
+
+sudo: false  # containers
+addons:
+  # make sure simplehttp simple verification works (custom /etc/hosts)
+  hosts:
+    - le.wtf
+  mariadb: "10.0"
+  apt:
+    packages:  # keep in sync with bootstrap/ubuntu.sh and Boulder
+    - lsb-release
+    - python
+    - python-dev
+    - python-virtualenv
+    - gcc
+    - dialog
+    - libaugeas0
+    - libssl-dev
+    - libffi-dev
+    - ca-certificates
+    # For letsencrypt-nginx integration testing
+    - nginx-light
+    - openssl
+    # For Boulder integration testing
+    - rsyslog
+
+install: "travis_retry pip install tox coveralls"
+before_script: '[ "xxx$BOULDER_INTEGRATION" = "xxx" ] || ./tests/boulder-start.sh'
+script: 'travis_retry tox && ([ "xxx$BOULDER_INTEGRATION" = "xxx" ] || (source .tox/$TOXENV/bin/activate && ./tests/boulder-integration.sh))'
+
+after_success: '[ "$TOXENV" == "cover" ] && coveralls'
 
 notifications:
   email: false
-  irc: "chat.freenode.net#letsencrypt"
+  irc:
+    channels:
+      - "chat.freenode.net#letsencrypt"
+    on_success: never
+    on_failure: always
+    use_notice: true
+    skip_join: true

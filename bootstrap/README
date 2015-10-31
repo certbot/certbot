@@ -1,0 +1,7 @@
+This directory contains scripts that install necessary OS-specific
+prerequisite dependencies (see docs/using.rst).
+
+General dependencies:
+- git-core: requirements.txt git+https://*
+- ca-certificates: communication with demo ACMO server at
+  https://www.letsencrypt-demo.org, requirements.txt git+https://*

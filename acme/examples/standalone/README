@@ -1,0 +1,2 @@
+python -m acme.standalone -p 1234
+curl -k https://localhost:1234
