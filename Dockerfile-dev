@@ -32,7 +32,8 @@ RUN /opt/letsencrypt/src/ubuntu.sh && \
 # the above is not likely to change, so by putting it further up the
 # Dockerfile we make sure we cache as much as possible
 
-COPY setup.py README.rst CHANGES.rst MANIFEST.in requirements.txt DISCLAIMER linter_plugin.py tox.cover.sh tox.ini pep8.travis.sh .pep8 .pylintrc /opt/letsencrypt/src/
+# py26reqs.txt not installed!
+COPY setup.py README.rst CHANGES.rst MANIFEST.in DISCLAIMER linter_plugin.py tox.cover.sh tox.ini pep8.travis.sh .pep8 .pylintrc /opt/letsencrypt/src/
 
 # all above files are necessary for setup.py, however, package source
 # code directory has to be copied separately to a subdirectory...
@@ -52,7 +53,6 @@ COPY tests /opt/letsencrypt/src/tests/
 
 RUN virtualenv --no-site-packages -p python2 /opt/letsencrypt/venv && \
     /opt/letsencrypt/venv/bin/pip install \
-    -r /opt/letsencrypt/src/requirements.txt \
     -e /opt/letsencrypt/src/acme \
     -e /opt/letsencrypt/src \
     -e /opt/letsencrypt/src/letsencrypt-apache \

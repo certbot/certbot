@@ -48,7 +48,7 @@ COPY letsencrypt-apache /opt/letsencrypt/src/letsencrypt-apache/
 COPY letsencrypt-nginx /opt/letsencrypt/src/letsencrypt-nginx/
 
 
-# requirements.txt not installed!
+# py26reqs.txt not installed!
 RUN virtualenv --no-site-packages -p python2 /opt/letsencrypt/venv && \
     /opt/letsencrypt/venv/bin/pip install \
     -e /opt/letsencrypt/src/acme \
