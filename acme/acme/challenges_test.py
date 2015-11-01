@@ -571,8 +571,6 @@ class ProofOfPossessionResponseTest(unittest.TestCase):
 class DNSTest(unittest.TestCase):
 
     def setUp(self):
-        self.account_key = jose.JWKRSA.load(
-            test_util.load_vector('rsa512_key.pem'))
         from acme.challenges import DNS
         self.msg = DNS(token=jose.b64decode(
             b'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA'))
@@ -594,34 +592,33 @@ class DNSTest(unittest.TestCase):
 
     def test_gen_check_validation(self):
         self.assertTrue(self.msg.check_validation(
-            self.msg.gen_validation(self.account_key),
-            self.account_key.public_key()))
+            self.msg.gen_validation(KEY), KEY.public_key()))
 
     def test_gen_check_validation_wrong_key(self):
         key2 = jose.JWKRSA.load(test_util.load_vector('rsa1024_key.pem'))
         self.assertFalse(self.msg.check_validation(
-            self.msg.gen_validation(self.account_key), key2.public_key()))
+            self.msg.gen_validation(KEY), key2.public_key()))
 
     def test_check_validation_wrong_payload(self):
         validations = tuple(
-            jose.JWS.sign(payload=payload, alg=jose.RS256, key=self.account_key)
+            jose.JWS.sign(payload=payload, alg=jose.RS256, key=KEY)
             for payload in (b'', b'{}')
         )
         for validation in validations:
             self.assertFalse(self.msg.check_validation(
-                validation, self.account_key.public_key()))
+                validation, KEY.public_key()))
 
     def test_check_validation_wrong_fields(self):
         bad_validation = jose.JWS.sign(
             payload=self.msg.update(token=b'x' * 20).json_dumps().encode('utf-8'),
-            alg=jose.RS256, key=self.account_key)
+            alg=jose.RS256, key=KEY)
         self.assertFalse(self.msg.check_validation(
-            bad_validation, self.account_key.public_key()))
+            bad_validation, KEY.public_key()))
 
     def test_gen_response(self):
         with mock.patch('acme.challenges.DNS.gen_validation') as mock_gen:
             mock_gen.return_value = mock.sentinel.validation
-            response = self.msg.gen_response(self.account_key)
+            response = self.msg.gen_response(KEY)
         from acme.challenges import DNSResponse
         self.assertTrue(isinstance(response, DNSResponse))
         self.assertEqual(response.validation, mock.sentinel.validation)
