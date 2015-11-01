@@ -21,6 +21,12 @@ from acme.jose import util
 logger = logging.getLogger(__name__)
 
 
+# TODO: bug in pylint?
+# ************* Module acme.challenges
+# R:153, 0: Abstract class is only referenced 1 times (abstract-class-little-used)
+# pylint: disable=abstract-class-little-used
+
+
 class JWK(json_util.TypedJSONObjectWithFields):
     # pylint: disable=too-few-public-methods
     """JSON Web Key."""
