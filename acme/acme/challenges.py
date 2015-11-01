@@ -187,7 +187,7 @@ class KeyAuthorizationChallenge(_TokenDVChallenge):
             key_authorization=self.key_authorization(account_key))
 
     @abc.abstractmethod
-    def validation(self, account_key):
+    def validation(self, account_key, **kwargs):
         """Generate validation for the challenge.
 
         Subclasses must implement this method, but they are likely to
@@ -201,7 +201,7 @@ class KeyAuthorizationChallenge(_TokenDVChallenge):
         """
         raise NotImplementedError()  # pragma: no cover
 
-    def response_and_validation(self, account_key):
+    def response_and_validation(self, account_key, *args, **kwargs):
         """Generate response and validation.
 
         Convenience function that return results of `response` and
@@ -211,7 +211,8 @@ class KeyAuthorizationChallenge(_TokenDVChallenge):
         :rtype: tuple
 
         """
-        return (self.response(account_key), self.validation(account_key))
+        return (self.response(account_key),
+                self.validation(account_key, *args, **kwargs))
 
 
 @ChallengeResponse.register
@@ -308,7 +309,7 @@ class HTTP01(KeyAuthorizationChallenge):
         """
         return "http://" + domain + self.path
 
-    def validation(self, account_key):
+    def validation(self, account_key, **unused_kwargs):
         """Generate validation.
 
         :param JWK account_key:
@@ -316,6 +317,127 @@ class HTTP01(KeyAuthorizationChallenge):
 
         """
         return self.key_authorization(account_key)
+
+
+@ChallengeResponse.register
+class TLSSNI01Response(KeyAuthorizationChallengeResponse):
+    """ACME tls-sni-01 challenge response."""
+    typ = "tls-sni-01"
+
+    DOMAIN_SUFFIX = b".acme.invalid"
+    """Domain name suffix."""
+
+    PORT = 443
+
+    @property
+    def z(self):
+        """``z`` value used for verification."""
+        return hashlib.sha256(
+            self.key_authorization.encode("utf-8")).hexdigest().encode()
+
+    @property
+    def z_domain(self):
+        """Domain name used for verification, generated from `z`."""
+        return self.z[:32] + b'.' + self.z[32:] + self.DOMAIN_SUFFIX
+
+    def gen_cert(self, key=None, bits=2048):
+        """Generate tls-sni-01 certificate.
+
+        :param OpenSSL.crypto.PKey key: Optional private key used in
+            certificate generation. If not provided (``None``), then
+            fresh key will be generated.
+        :param int bits: Number of bits for newly generated key.
+
+        :rtype: `tuple` of `OpenSSL.crypto.X509` and `OpenSSL.crypto.PKey`
+
+        """
+        if key is None:
+            key = OpenSSL.crypto.PKey()
+            key.generate_key(OpenSSL.crypto.TYPE_RSA, bits)
+        return crypto_util.gen_ss_cert(key, [
+            # z_domain is too big to fit into CN, hence first dummy domain
+            'dummy', self.z_domain.decode()], force_san=True), key
+
+    def probe_cert(self, domain, **kwargs):
+        """Probe tls-sni-01 challenge certificate.
+
+        :param unicode domain:
+
+        """
+        # TODO: domain is not necessary if host is provided
+        if "host" not in kwargs:
+            host = socket.gethostbyname(domain)
+            logging.debug('%s resolved to %s', domain, host)
+            kwargs["host"] = host
+
+        kwargs.setdefault("port", self.PORT)
+        kwargs["name"] = self.z_domain
+        # TODO: try different methods?
+        # pylint: disable=protected-access
+        return crypto_util.probe_sni(**kwargs)
+
+    def verify_cert(self, cert):
+        """Verify tls-sni-01 challenge certificate."""
+        # pylint: disable=protected-access
+        sans = crypto_util._pyopenssl_cert_or_req_san(cert)
+        logging.debug('Certificate %s. SANs: %s', cert.digest('sha1'), sans)
+        return self.z_domain.decode() in sans
+
+    def simple_verify(self, chall, domain, account_public_key,
+                      cert=None, **kwargs):
+        """Simple verify.
+
+        Verify ``validation`` using ``account_public_key``, optionally
+        probe tls-sni-01 certificate and check using `verify_cert`.
+
+        :param .challenges.TLSSNI01 chall: Corresponding challenge.
+        :param str domain: Domain name being validated.
+        :param JWK account_public_key:
+        :param OpenSSL.crypto.X509 cert: Optional certificate. If not
+            provided (``None``) certificate will be retrieved using
+            `probe_cert`.
+
+
+        :returns: ``True`` iff client's control of the domain has been
+            verified, ``False`` otherwise.
+        :rtype: bool
+
+        """
+        if not self.verify(chall, account_public_key):
+            logger.debug("Verification of key authorization in response failed")
+            return False
+
+        if cert is None:
+            try:
+                cert = self.probe_cert(domain=domain, **kwargs)
+            except errors.Error as error:
+                logger.debug(error, exc_info=True)
+                return False
+
+        return self.verify_cert(cert)
+
+
+@Challenge.register  # pylint: disable=too-many-ancestors
+class TLSSNI01(KeyAuthorizationChallenge):
+    """ACME tls-sni-01 challenge."""
+    response_cls = TLSSNI01Response
+    typ = response_cls.typ
+
+    # boulder#962, ietf-wg-acme#22
+    #n = jose.Field("n", encoder=int, decoder=int)
+
+    def validation(self, account_key, **kwargs):
+        """Generate validation.
+
+        :param JWK account_key:
+        :param OpenSSL.crypto.PKey cert_key: Optional private key used
+            in certificate generation. If not provided (``None``), then
+            fresh key will be generated.
+
+        :rtype: `tuple` of `OpenSSL.crypto.X509` and `OpenSSL.crypto.PKey`
+
+        """
+        return self.response(account_key).gen_cert(key=kwargs.get('cert_key'))
 
 
 @Challenge.register  # pylint: disable=too-many-ancestors
