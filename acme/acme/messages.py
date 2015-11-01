@@ -24,6 +24,7 @@ class Error(jose.JSONObjectWithFields, Exception):
         'connection': 'The server could not connect to the client for DV',
         'dnssec': 'The server could not validate a DNSSEC signed domain',
         'malformed': 'The request message was malformed',
+        'rateLimited': 'There were too many requests of a given type',
         'serverInternal': 'The server experienced an internal error',
         'tls': 'The server experienced a TLS error during DV',
         'unauthorized': 'The client lacks sufficient authorization',

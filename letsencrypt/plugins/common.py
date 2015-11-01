@@ -5,6 +5,7 @@ import re
 import shutil
 import tempfile
 
+import OpenSSL
 import zope.interface
 
 from acme.jose import util as jose_util
@@ -44,6 +45,10 @@ class Plugin(object):
     def option_namespace(self):
         """ArgumentParser options namespace (prefix of all options)."""
         return option_namespace(self.name)
+
+    def option_name(self, name):
+        """Option name (include plugin namespace)."""
+        return self.option_namespace + name
 
     @property
     def dest_namespace(self):
@@ -181,7 +186,11 @@ class Dvsni(object):
         self.configurator.reverter.register_file_creation(True, key_path)
         self.configurator.reverter.register_file_creation(True, cert_path)
 
-        response, cert_pem, key_pem = achall.gen_cert_and_response(s)
+        response, cert, key = achall.gen_cert_and_response(s)
+        cert_pem = OpenSSL.crypto.dump_certificate(
+            OpenSSL.crypto.FILETYPE_PEM, cert)
+        key_pem = OpenSSL.crypto.dump_privatekey(
+            OpenSSL.crypto.FILETYPE_PEM, key)
 
         # Write out challenge cert and key
         with open(cert_path, "wb") as cert_chall_fd:

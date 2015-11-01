@@ -4,11 +4,11 @@
     is capable of handling the signatures.
 
 """
-import datetime
 import logging
 import os
 
 import OpenSSL
+import pyrfc3339
 import zope.component
 
 from acme import crypto_util as acme_crypto_util
@@ -258,24 +258,6 @@ def get_sans_from_csr(csr, typ=OpenSSL.crypto.FILETYPE_PEM):
         csr, OpenSSL.crypto.load_certificate_request, typ)
 
 
-def asn1_generalizedtime_to_dt(timestamp):
-    """Convert ASN.1 GENERALIZEDTIME to datetime.
-
-    Useful for deserialization of `OpenSSL.crypto.X509.get_notAfter` and
-    `OpenSSL.crypto.X509.get_notAfter` outputs.
-
-    .. todo:: This function support only one format: `%Y%m%d%H%M%SZ`.
-        Implement remaining two.
-
-    """
-    return datetime.datetime.strptime(timestamp, '%Y%m%d%H%M%SZ')
-
-
-def pyopenssl_x509_name_as_text(x509name):
-    """Convert `OpenSSL.crypto.X509Name` to text."""
-    return "/".join("{0}={1}" for key, value in x509name.get_components())
-
-
 def dump_pyopenssl_chain(chain, filetype=OpenSSL.crypto.FILETYPE_PEM):
     """Dump certificate chain into a bundle.
 
@@ -295,3 +277,48 @@ def dump_pyopenssl_chain(chain, filetype=OpenSSL.crypto.FILETYPE_PEM):
     # assumes that OpenSSL.crypto.dump_certificate includes ending
     # newline character
     return "".join(_dump_cert(cert) for cert in chain)
+
+
+def notBefore(cert_path):
+    """When does the cert at cert_path start being valid?
+
+    :param str cert_path: path to a cert in PEM format
+
+    :returns: the notBefore value from the cert at cert_path
+    :rtype: :class:`datetime.datetime`
+
+    """
+    return _notAfterBefore(cert_path, OpenSSL.crypto.X509.get_notBefore)
+
+
+def notAfter(cert_path):
+    """When does the cert at cert_path stop being valid?
+
+    :param str cert_path: path to a cert in PEM format
+
+    :returns: the notAfter value from the cert at cert_path
+    :rtype: :class:`datetime.datetime`
+
+    """
+    return _notAfterBefore(cert_path, OpenSSL.crypto.X509.get_notAfter)
+
+
+def _notAfterBefore(cert_path, method):
+    """Internal helper function for finding notbefore/notafter.
+
+    :param str cert_path: path to a cert in PEM format
+    :param function method: one of ``OpenSSL.crypto.X509.get_notBefore``
+        or ``OpenSSL.crypto.X509.get_notAfter``
+
+    :returns: the notBefore or notAfter value from the cert at cert_path
+    :rtype: :class:`datetime.datetime`
+
+    """
+    with open(cert_path) as f:
+        x509 = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM,
+                                               f.read())
+    timestamp = method(x509)
+    reformatted_timestamp = [timestamp[0:4], "-", timestamp[4:6], "-",
+                             timestamp[6:8], "T", timestamp[8:10], ":",
+                             timestamp[10:12], ":", timestamp[12:]]
+    return pyrfc3339.parse("".join(reformatted_timestamp))

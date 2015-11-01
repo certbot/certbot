@@ -19,8 +19,6 @@ Note, that all annotated challenges act as a proxy objects::
 """
 import logging
 
-import OpenSSL
-
 from acme import challenges
 from acme import jose
 
@@ -56,10 +54,10 @@ class DVSNI(AnnotatedChallenge):
     __slots__ = ('challb', 'domain', 'account_key')
     acme_type = challenges.DVSNI
 
-    def gen_cert_and_response(self, key_pem=None, bits=2048, alg=jose.RS256):
+    def gen_cert_and_response(self, key=None, bits=2048, alg=jose.RS256):
         """Generate a DVSNI cert and response.
 
-        :param bytes key_pem: Private PEM-encoded key used for
+        :param OpenSSL.crypto.PKey key: Private key used for
             certificate generation. If none provided, a fresh key will
             be generated.
         :param int bits: Number of bits for fresh key generation.
@@ -67,23 +65,15 @@ class DVSNI(AnnotatedChallenge):
 
         :returns: ``(response, cert_pem, key_pem)`` tuple,  where
             ``response`` is an instance of
-            `acme.challenges.DVSNIResponse`, ``cert_pem`` is the
-            PEM-encoded certificate and ``key_pem`` is PEM-encoded
-            private key.
+            `acme.challenges.DVSNIResponse`, ``cert`` is a certificate
+            (`OpenSSL.crypto.X509`) and ``key`` is a private key
+            (`OpenSSL.crypto.PKey`).
         :rtype: tuple
 
         """
-        key = None if key_pem is None else OpenSSL.crypto.load_privatekey(
-            OpenSSL.crypto.FILETYPE_PEM, key_pem)
         response = self.challb.chall.gen_response(self.account_key, alg=alg)
         cert, key = response.gen_cert(key=key, bits=bits)
-
-        cert_pem = OpenSSL.crypto.dump_certificate(
-            OpenSSL.crypto.FILETYPE_PEM, cert)
-        key_pem = OpenSSL.crypto.dump_privatekey(
-            OpenSSL.crypto.FILETYPE_PEM, key)
-
-        return response, cert_pem, key_pem
+        return response, cert, key
 
 
 class SimpleHTTP(AnnotatedChallenge):

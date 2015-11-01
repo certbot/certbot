@@ -26,13 +26,19 @@ logger = logging.getLogger(__name__)
 class Authenticator(common.Plugin):
     """Manual Authenticator.
 
+    This plugin requires user's manual intervention in setting up a HTTP
+    server for solving SimpleHTTP challenges and thus does not need to
+    be run as a privileged process. Alternatively shows instructions on
+    how to use Python's built-in HTTP server.
+
     .. todo:: Support for `~.challenges.DVSNI`.
 
     """
     zope.interface.implements(interfaces.IAuthenticator)
     zope.interface.classProvides(interfaces.IPluginFactory)
+    hidden = True
 
-    description = "Manual Authenticator"
+    description = "Manually configure an HTTP server"
 
     MESSAGE_TEMPLATE = """\
 Make sure your web server displays the following content at
@@ -48,48 +54,34 @@ command on the target server (as root):
 {command}
 """
 
+    # a disclaimer about your current IP being transmitted to Let's Encrypt's servers.
+    IP_DISCLAIMER = """\
+NOTE: The IP of this machine will be publicly logged as having requested this certificate. \
+If you're running letsencrypt in manual mode on a machine that is not your server, \
+please ensure you're okay with that.
+
+Are you OK with your IP being logged?
+"""
+
     # "cd /tmp/letsencrypt" makes sure user doesn't serve /root,
     # separate "public_html" ensures that cert.pem/key.pem are not
     # served and makes it more obvious that Python command will serve
     # anything recursively under the cwd
 
-    HTTP_TEMPLATE = """\
+    CMD_TEMPLATE = """\
 mkdir -p {root}/public_html/{response.URI_ROOT_PATH}
 cd {root}/public_html
-echo -n {validation} > {response.URI_ROOT_PATH}/{encoded_token}
+printf "%s" {validation} > {response.URI_ROOT_PATH}/{encoded_token}
 # run only once per server:
 $(command -v python2 || command -v python2.7 || command -v python2.6) -c \\
 "import BaseHTTPServer, SimpleHTTPServer; \\
 SimpleHTTPServer.SimpleHTTPRequestHandler.extensions_map = {{'': '{ct}'}}; \\
 s = BaseHTTPServer.HTTPServer(('', {port}), SimpleHTTPServer.SimpleHTTPRequestHandler); \\
 s.serve_forever()" """
-    """Non-TLS command template."""
-
-    # https://www.piware.de/2011/01/creating-an-https-server-in-python/
-    HTTPS_TEMPLATE = """\
-mkdir -p {root}/public_html/{response.URI_ROOT_PATH}
-cd {root}/public_html
-echo -n {validation} > {response.URI_ROOT_PATH}/{encoded_token}
-# run only once per server:
-openssl req -new -newkey rsa:4096 -subj "/" -days 1 -nodes -x509 -keyout ../key.pem -out ../cert.pem
-$(command -v python2 || command -v python2.7 || command -v python2.6) -c \\
-"import BaseHTTPServer, SimpleHTTPServer, ssl; \\
-SimpleHTTPServer.SimpleHTTPRequestHandler.extensions_map = {{'': '{ct}'}}; \\
-s = BaseHTTPServer.HTTPServer(('', {port}), SimpleHTTPServer.SimpleHTTPRequestHandler); \\
-s.socket = ssl.wrap_socket(s.socket, keyfile='../key.pem', certfile='../cert.pem'); \\
-s.serve_forever()" """
-    """TLS command template.
-
-    According to the ACME specification, "the ACME server MUST ignore
-    the certificate provided by the HTTPS server", so the first command
-    generates temporary self-signed certificate.
-
-    """
+    """Command template."""
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
-        self.template = (self.HTTP_TEMPLATE if self.config.no_simple_http_tls
-                         else self.HTTPS_TEMPLATE)
         self._root = (tempfile.mkdtemp() if self.conf("test-mode")
                       else "/tmp/letsencrypt")
         self._httpd = None
@@ -97,19 +89,17 @@ s.serve_forever()" """
     @classmethod
     def add_parser_arguments(cls, add):
         add("test-mode", action="store_true",
-            help="Test mode. Executes the manual command in subprocess. "
-            "Requires openssl to be installed unless --no-simple-http-tls.")
+            help="Test mode. Executes the manual command in subprocess.")
 
     def prepare(self):  # pylint: disable=missing-docstring,no-self-use
         pass  # pragma: no cover
 
     def more_info(self):  # pylint: disable=missing-docstring,no-self-use
-        return """\
-This plugin requires user's manual intervention in setting up a HTTP
-server for solving SimpleHTTP challenges and thus does not need to be
-run as a privilidged process. Alternatively shows instructions on how
-to use Python's built-in HTTP server and, in case of HTTPS, openssl
-binary for temporary key/certificate generation.""".replace("\n", "")
+        return ("This plugin requires user's manual intervention in setting "
+                "up an HTTP server for solving SimpleHTTP challenges and thus "
+                "does not need to be run as a privileged process. "
+                "Alternatively shows instructions on how to use Python's "
+                "built-in HTTP server.")
 
     def get_chall_pref(self, domain):
         # pylint: disable=missing-docstring,no-self-use,unused-argument
@@ -142,23 +132,25 @@ binary for temporary key/certificate generation.""".replace("\n", "")
         # users, but will not work if multiple domains point at the
         # same server: default command doesn't support virtual hosts
         response, validation = achall.gen_response_and_validation(
-            tls=(not self.config.no_simple_http_tls))
+            tls=False)  # SimpleHTTP TLS is dead: ietf-wg-acme/acme#7
 
         port = (response.port if self.config.simple_http_port is None
                 else int(self.config.simple_http_port))
-        command = self.template.format(
+        command = self.CMD_TEMPLATE.format(
             root=self._root, achall=achall, response=response,
             validation=pipes.quote(validation.json_dumps()),
             encoded_token=achall.chall.encode("token"),
             ct=response.CONTENT_TYPE, port=port)
         if self.conf("test-mode"):
             logger.debug("Test mode. Executing the manual command: %s", command)
+            # sh shipped with OS X does't support echo -n, but supports printf
             try:
                 self._httpd = subprocess.Popen(
                     command,
                     # don't care about setting stdout and stderr,
                     # we're in test mode anyway
                     shell=True,
+                    executable=None,
                     # "preexec_fn" is UNIX specific, but so is "command"
                     preexec_fn=os.setsid)
             except OSError as error:  # ValueError should not happen!
@@ -172,6 +164,10 @@ binary for temporary key/certificate generation.""".replace("\n", "")
             if self._httpd.poll() is not None:
                 raise errors.Error("Couldn't execute manual command")
         else:
+            if not zope.component.getUtility(interfaces.IDisplay).yesno(
+                    self.IP_DISCLAIMER, "Yes", "No"):
+                raise errors.PluginError("Must agree to IP logging to proceed")
+
             self._notify_and_wait(self.MESSAGE_TEMPLATE.format(
                 validation=validation.json_dumps(), response=response,
                 uri=response.uri(achall.domain, achall.challb.chall),

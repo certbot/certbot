@@ -7,7 +7,7 @@ from PyInstaller.hooks.hookutils import collect_data_files
 
 #datas = collect_data_files('letsencrypt')
 datas = [
-    ('../letsencrypt/EULA', 'letsencrypt'),
+    ('../letsencrypt/DISCLAIMER', 'letsencrypt'),
 ]
 
 hiddenimports = [

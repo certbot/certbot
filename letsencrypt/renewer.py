@@ -8,24 +8,30 @@ within lineages of successor certificates, according to configuration.
 
 """
 import argparse
+import logging
 import os
 import sys
 
-import configobj
 import OpenSSL
 import zope.component
 
 from letsencrypt import account
 from letsencrypt import configuration
+from letsencrypt import constants
+from letsencrypt import colored_logging
 from letsencrypt import cli
 from letsencrypt import client
 from letsencrypt import crypto_util
 from letsencrypt import errors
+from letsencrypt import le_util
 from letsencrypt import notify
 from letsencrypt import storage
 
 from letsencrypt.display import util as display_util
 from letsencrypt.plugins import disco as plugins_disco
+
+
+logger = logging.getLogger(__name__)
 
 
 class _AttrDict(dict):
@@ -70,6 +76,7 @@ def renew(cert, old_version):
     #      was an int, not a str)
     config.rsa_key_size = int(config.rsa_key_size)
     config.dvsni_port = int(config.dvsni_port)
+    config.namespace.simple_http_port = int(config.namespace.simple_http_port)
     zope.component.provideUtility(config)
     try:
         authenticator = plugins[renewalparams["authenticator"]]
@@ -87,7 +94,7 @@ def renew(cert, old_version):
         sans = crypto_util.get_sans_from_cert(f.read())
     new_certr, new_chain, new_key, _ = le_client.obtain_certificate(sans)
     if new_chain:
-        # XXX: Assumes that there was no key change.  We need logic
+        # XXX: Assumes that there was a key change.  We need logic
         #      for figuring out whether there was or not.  Probably
         #      best is to have obtain_certificate return None for
         #      new_key if the old key is to be used (since save_successor
@@ -102,6 +109,12 @@ def renew(cert, old_version):
         return False
     # TODO: Consider the case where the renewal was partially successful
     #       (where fewer than all names were renewed)
+
+
+def _cli_log_handler(args, level, fmt):  # pylint: disable=unused-argument
+    handler = colored_logging.StreamHandler()
+    handler.setFormatter(logging.Formatter(fmt))
+    return handler
 
 
 def _paths_parser(parser):
@@ -119,11 +132,16 @@ def _paths_parser(parser):
 def _create_parser():
     parser = argparse.ArgumentParser()
     #parser.add_argument("--cron", action="store_true", help="Run as cronjob.")
-    # pylint: disable=protected-access
+    parser.add_argument(
+        "-v", "--verbose", dest="verbose_count", action="count",
+        default=cli.flag_default("verbose_count"), help="This flag can be used "
+        "multiple times to incrementally increase the verbosity of output, "
+        "e.g. -vvv.")
+
     return _paths_parser(parser)
 
 
-def main(config=None, args=sys.argv[1:]):
+def main(cli_args=sys.argv[1:]):
     """Main function for autorenewer script."""
     # TODO: Distinguish automated invocation from manual invocation,
     #       perhaps by looking at sys.argv[0] and inhibiting automated
@@ -131,30 +149,27 @@ def main(config=None, args=sys.argv[1:]):
     #       turned it off. (The boolean parameter should probably be
     #       called renewer_enabled.)
 
+    # TODO: When we have a more elaborate renewer command line, we will
+    #       presumably also be able to specify a config file on the
+    #       command line, which, if provided, should take precedence over
+    #       te default config files
+
     zope.component.provideUtility(display_util.FileDisplay(sys.stdout))
 
-    cli_config = configuration.RenewerConfiguration(
-        _create_parser().parse_args(args))
+    args = _create_parser().parse_args(cli_args)
 
-    config = storage.config_with_defaults(config)
-    # Now attempt to read the renewer config file and augment or replace
-    # the renewer defaults with any options contained in that file.  If
-    # renewer_config_file is undefined or if the file is nonexistent or
-    # empty, this .merge() will have no effect.  TODO: when we have a more
-    # elaborate renewer command line, we will presumably also be able to
-    # specify a config file on the command line, which, if provided, should
-    # take precedence over this one.
-    config.merge(configobj.ConfigObj(cli_config.renewer_config_file))
+    uid = os.geteuid()
+    le_util.make_or_verify_dir(args.logs_dir, 0o700, uid)
+    cli.setup_logging(args, _cli_log_handler, logfile='renewer.log')
 
-    for i in os.listdir(cli_config.renewal_configs_dir):
-        print "Processing", i
-        if not i.endswith(".conf"):
-            continue
-        rc_config = configobj.ConfigObj(cli_config.renewer_config_file)
-        rc_config.merge(configobj.ConfigObj(
-            os.path.join(cli_config.renewal_configs_dir, i)))
-        # TODO: this is a dirty hack!
-        rc_config.filename = os.path.join(cli_config.renewal_configs_dir, i)
+    cli_config = configuration.RenewerConfiguration(args)
+
+    # Ensure that all of the needed folders have been created before continuing
+    le_util.make_or_verify_dir(cli_config.work_dir,
+                               constants.CONFIG_DIRS_MODE, uid)
+
+    for renewal_file in os.listdir(cli_config.renewal_configs_dir):
+        print "Processing", renewal_file
         try:
             # TODO: Before trying to initialize the RenewableCert object,
             #       we could check here whether the combination of the config
@@ -164,7 +179,7 @@ def main(config=None, args=sys.argv[1:]):
             #       RenewableCert object for this cert at all, which could
             #       dramatically improve performance for large deployments
             #       where autorenewal is widely turned off.
-            cert = storage.RenewableCert(rc_config, cli_config=cli_config)
+            cert = storage.RenewableCert(renewal_file, cli_config)
         except errors.CertStorageError:
             # This indicates an invalid renewal configuration file, such
             # as one missing a required parameter (in the future, perhaps

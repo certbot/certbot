@@ -56,7 +56,7 @@ class Account(object):  # pylint: disable=too-few-public-methods
 
         self.id = hashlib.md5(
             self.key.key.public_key().public_bytes(
-                encoding=serialization.Encoding.DER,
+                encoding=serialization.Encoding.PEM,
                 format=serialization.PublicFormat.SubjectPublicKeyInfo)
         ).hexdigest()
         # Implementation note: Email? Multiple accounts can have the

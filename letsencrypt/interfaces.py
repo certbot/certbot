@@ -223,8 +223,6 @@ class IConfig(zope.interface.Interface):
         "Port number to perform DVSNI challenge. "
         "Boulder in testing mode defaults to 5001.")
 
-    no_simple_http_tls = zope.interface.Attribute(
-        "Do not use TLS when solving SimpleHTTP challenges.")
     simple_http_port = zope.interface.Attribute(
         "Port used in the SimpleHttp challenge.")
 
@@ -243,13 +241,15 @@ class IInstaller(IPlugin):
 
         """
 
-    def deploy_cert(domain, cert_path, key_path, chain_path=None):
+    def deploy_cert(domain, cert_path, key_path, chain_path, fullchain_path):
         """Deploy certificate.
 
         :param str domain: domain to deploy certificate file
         :param str cert_path: absolute path to the certificate file
         :param str key_path: absolute path to the private key file
         :param str chain_path: absolute path to the certificate chain file
+        :param str fullchain_path: absolute path to the certificate fullchain
+            file (cert plus chain)
 
         :raises .PluginError: when cert cannot be deployed
 

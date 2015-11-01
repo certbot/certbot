@@ -13,6 +13,8 @@ from letsencrypt import account
 from letsencrypt import configuration
 from letsencrypt import errors
 
+from letsencrypt.plugins import disco
+
 from letsencrypt.tests import renewer_test
 from letsencrypt.tests import test_util
 
@@ -36,7 +38,7 @@ class CLITest(unittest.TestCase):
         from letsencrypt import cli
         args = ['--text', '--config-dir', self.config_dir,
                 '--work-dir', self.work_dir, '--logs-dir', self.logs_dir,
-                '--agree-eula'] + args
+                '--agree-dev-preview'] + args
         with mock.patch('letsencrypt.cli.sys.stdout') as stdout:
             with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
                 with mock.patch('letsencrypt.cli.client') as client:
@@ -51,15 +53,14 @@ class CLITest(unittest.TestCase):
         from letsencrypt import cli
         args = ['--text', '--config-dir', self.config_dir,
                 '--work-dir', self.work_dir, '--logs-dir', self.logs_dir,
-                '--agree-eula'] + args
+                '--agree-dev-preview'] + args
         with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
             with mock.patch('letsencrypt.cli.client') as client:
                 ret = cli.main(args)
         return ret, None, stderr, client
 
-
     def test_no_flags(self):
-        with mock.patch('letsencrypt.cli.run') as mock_run:
+        with MockedVerb("run") as mock_run:
             self._call([])
             self.assertEqual(1, mock_run.call_count)
 
@@ -68,29 +69,76 @@ class CLITest(unittest.TestCase):
         self.assertRaises(SystemExit, self._call, ['--help', 'all'])
         output = StringIO.StringIO()
         with mock.patch('letsencrypt.cli.sys.stdout', new=output):
+            plugins = disco.PluginsRegistry.find_all()
             self.assertRaises(SystemExit, self._call_stdout, ['--help', 'all'])
             out = output.getvalue()
             self.assertTrue("--configurator" in out)
             self.assertTrue("how a cert is deployed" in out)
             self.assertTrue("--manual-test-mode" in out)
             output.truncate(0)
+
             self.assertRaises(SystemExit, self._call_stdout, ['-h', 'nginx'])
             out = output.getvalue()
-            self.assertTrue("--nginx-ctl" in out)
+            if "nginx" in plugins:
+                # may be false while building distributions without plugins
+                self.assertTrue("--nginx-ctl" in out)
             self.assertTrue("--manual-test-mode" not in out)
             self.assertTrue("--checkpoints" not in out)
             output.truncate(0)
+
+            self.assertRaises(SystemExit, self._call_stdout, ['-h'])
+            out = output.getvalue()
+            if "nginx" in plugins:
+                self.assertTrue("Use the Nginx plugin" in out)
+            else:
+                self.assertTrue("(nginx support is experimental" in out)
+            output.truncate(0)
+
             self.assertRaises(SystemExit, self._call_stdout, ['--help', 'plugins'])
             out = output.getvalue()
             self.assertTrue("--manual-test-mode" not in out)
             self.assertTrue("--prepare" in out)
             self.assertTrue("Plugin options" in out)
             output.truncate(0)
+
             self.assertRaises(SystemExit, self._call_stdout, ['-h'])
             out = output.getvalue()
             from letsencrypt import cli
-            self.assertTrue(cli.USAGE in out)
+            self.assertTrue(cli.usage_strings(plugins)[0] in out)
 
+    @mock.patch('letsencrypt.cli.display_ops')
+    def test_installer_selection(self, mock_display_ops):
+        self._call(['install', '--domain', 'foo.bar', '--cert-path', 'cert',
+                    '--key-path', 'key', '--chain-path', 'chain'])
+        self.assertEqual(mock_display_ops.pick_installer.call_count, 1)
+
+    def test_configurator_selection(self):
+        real_plugins = disco.PluginsRegistry.find_all()
+        args = ['--agree-dev-preview', '--apache',
+                '--authenticator', 'standalone']
+
+        # This needed two calls to find_all(), which we're avoiding for now
+        # because of possible side effects:
+        # https://github.com/letsencrypt/letsencrypt/commit/51ed2b681f87b1eb29088dd48718a54f401e4855
+        #with mock.patch('letsencrypt.cli.plugins_testable') as plugins:
+        #    plugins.return_value = {"apache": True, "nginx": True}
+        #    ret, _, _, _ = self._call(args)
+        #    self.assertTrue("Too many flags setting" in ret)
+
+        args = ["install", "--nginx", "--cert-path", "/tmp/blah", "--key-path", "/tmp/blah",
+                "--nginx-server-root", "/nonexistent/thing", "-d",
+                "example.com", "--debug"]
+        if "nginx" in real_plugins:
+            # Sending nginx a non-existent conf dir will simulate misconfiguration
+            # (we can only do that if letsencrypt-nginx is actually present)
+            ret, _, _, _ = self._call(args)
+            self.assertTrue("The nginx plugin is not working" in ret)
+            self.assertTrue("Could not find configuration root" in ret)
+            self.assertTrue("NoInstallationError" in ret)
+
+        with MockedVerb("certonly") as mock_certonly:
+            self._call(["auth", "--standalone"])
+            self.assertEqual(1, mock_certonly.call_count)
 
     def test_rollback(self):
         _, _, _, client = self._call(['rollback'])
@@ -111,44 +159,52 @@ class CLITest(unittest.TestCase):
                   for r in xrange(len(flags)))):
             self._call(['plugins'] + list(args))
 
-    def test_auth_bad_args(self):
-        ret, _, _, _ = self._call(['-d', 'foo.bar', 'auth', '--csr', CSR])
+    def test_certonly_bad_args(self):
+        ret, _, _, _ = self._call(['-d', 'foo.bar', 'certonly', '--csr', CSR])
         self.assertEqual(ret, '--domains and --csr are mutually exclusive')
 
-        ret, _, _, _ = self._call(['-a', 'bad_auth', 'auth'])
-        self.assertEqual(ret, 'Authenticator could not be determined')
+        ret, _, _, _ = self._call(['-a', 'bad_auth', 'certonly'])
+        self.assertEqual(ret, 'The requested bad_auth plugin does not appear to be installed')
 
+    @mock.patch('letsencrypt.crypto_util.notAfter')
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
-    def test_auth_new_request_success(self, mock_get_utility):
+    def test_certonly_new_request_success(self, mock_get_utility, mock_notAfter):
         cert_path = '/etc/letsencrypt/live/foo.bar'
-        mock_lineage = mock.MagicMock(cert=cert_path)
+        date = '1970-01-01'
+        mock_notAfter().date.return_value = date
+
+        mock_lineage = mock.MagicMock(cert=cert_path, fullchain=cert_path)
         mock_client = mock.MagicMock()
         mock_client.obtain_and_enroll_certificate.return_value = mock_lineage
-        self._auth_new_request_common(mock_client)
+        self._certonly_new_request_common(mock_client)
         self.assertEqual(
             mock_client.obtain_and_enroll_certificate.call_count, 1)
         self.assertTrue(
             cert_path in mock_get_utility().add_message.call_args[0][0])
+        self.assertTrue(
+            date in mock_get_utility().add_message.call_args[0][0])
 
-    def test_auth_new_request_failure(self):
+    def test_certonly_new_request_failure(self):
         mock_client = mock.MagicMock()
         mock_client.obtain_and_enroll_certificate.return_value = False
         self.assertRaises(errors.Error,
-                          self._auth_new_request_common, mock_client)
+                          self._certonly_new_request_common, mock_client)
 
-    def _auth_new_request_common(self, mock_client):
+    def _certonly_new_request_common(self, mock_client):
         with mock.patch('letsencrypt.cli._treat_as_renewal') as mock_renewal:
             mock_renewal.return_value = None
             with mock.patch('letsencrypt.cli._init_le_client') as mock_init:
                 mock_init.return_value = mock_client
-                self._call(['-d', 'foo.bar', '-a', 'standalone', 'auth'])
+                self._call(['-d', 'foo.bar', '-a', 'standalone', 'certonly'])
 
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
     @mock.patch('letsencrypt.cli._treat_as_renewal')
     @mock.patch('letsencrypt.cli._init_le_client')
-    def test_auth_renewal(self, mock_init, mock_renewal, mock_get_utility):
-        cert_path = '/etc/letsencrypt/live/foo.bar'
-        mock_lineage = mock.MagicMock(cert=cert_path)
+    def test_certonly_renewal(self, mock_init, mock_renewal, mock_get_utility):
+        cert_path = '/etc/letsencrypt/live/foo.bar/cert.pem'
+        chain_path = '/etc/letsencrypt/live/foo.bar/fullchain.pem'
+
+        mock_lineage = mock.MagicMock(cert=cert_path, fullchain=chain_path)
         mock_cert = mock.MagicMock(body='body')
         mock_key = mock.MagicMock(pem='pem_key')
         mock_renewal.return_value = mock_lineage
@@ -158,32 +214,42 @@ class CLITest(unittest.TestCase):
         mock_init.return_value = mock_client
         with mock.patch('letsencrypt.cli.OpenSSL'):
             with mock.patch('letsencrypt.cli.crypto_util'):
-                self._call(['-d', 'foo.bar', '-a', 'standalone', 'auth'])
+                self._call(['-d', 'foo.bar', '-a', 'standalone', 'certonly'])
         mock_client.obtain_certificate.assert_called_once_with(['foo.bar'])
         self.assertEqual(mock_lineage.save_successor.call_count, 1)
         mock_lineage.update_all_links_to.assert_called_once_with(
             mock_lineage.latest_common_version())
         self.assertTrue(
-            cert_path in mock_get_utility().add_message.call_args[0][0])
+            chain_path in mock_get_utility().add_message.call_args[0][0])
 
+    @mock.patch('letsencrypt.crypto_util.notAfter')
     @mock.patch('letsencrypt.cli.display_ops.pick_installer')
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
     @mock.patch('letsencrypt.cli._init_le_client')
-    def test_auth_csr(self, mock_init, mock_get_utility, mock_pick_installer):
-        cert_path = '/etc/letsencrypt/live/foo.bar'
+    def test_certonly_csr(self, mock_init, mock_get_utility,
+                          mock_pick_installer, mock_notAfter):
+        cert_path = '/etc/letsencrypt/live/blahcert.pem'
+        date = '1970-01-01'
+        mock_notAfter().date.return_value = date
+
         mock_client = mock.MagicMock()
         mock_client.obtain_certificate_from_csr.return_value = ('certr',
                                                                 'chain')
+        mock_client.save_certificate.return_value = cert_path, None, None
         mock_init.return_value = mock_client
+
         installer = 'installer'
         self._call(
-            ['-a', 'standalone', '-i', installer, 'auth', '--csr', CSR,
-             '--cert-path', cert_path, '--chain-path', '/'])
+            ['-a', 'standalone', '-i', installer, 'certonly', '--csr', CSR,
+             '--cert-path', cert_path, '--fullchain-path', '/',
+             '--chain-path', '/'])
         self.assertEqual(mock_pick_installer.call_args[0][1], installer)
         mock_client.save_certificate.assert_called_once_with(
-            'certr', 'chain', cert_path, '/')
+            'certr', 'chain', cert_path, '/', '/')
         self.assertTrue(
             cert_path in mock_get_utility().add_message.call_args[0][0])
+        self.assertTrue(
+            date in mock_get_utility().add_message.call_args[0][0])
 
     @mock.patch('letsencrypt.cli.sys')
     def test_handle_exception(self, mock_sys):
@@ -304,27 +370,57 @@ class DuplicativeCertsTest(renewer_test.BaseRenewableCertTest):
             f.write(test_cert)
 
         # No overlap at all
-        result = _find_duplicative_certs(['wow.net', 'hooray.org'],
-                                         self.config, self.cli_config)
+        result = _find_duplicative_certs(
+            self.cli_config, ['wow.net', 'hooray.org'])
         self.assertEqual(result, (None, None))
 
         # Totally identical
-        result = _find_duplicative_certs(['example.com', 'www.example.com'],
-                                         self.config, self.cli_config)
+        result = _find_duplicative_certs(
+            self.cli_config, ['example.com', 'www.example.com'])
         self.assertTrue(result[0].configfile.filename.endswith('example.org.conf'))
         self.assertEqual(result[1], None)
 
         # Superset
-        result = _find_duplicative_certs(['example.com', 'www.example.com',
-                                          'something.new'], self.config,
-                                         self.cli_config)
+        result = _find_duplicative_certs(
+            self.cli_config, ['example.com', 'www.example.com', 'something.new'])
         self.assertEqual(result[0], None)
         self.assertTrue(result[1].configfile.filename.endswith('example.org.conf'))
 
         # Partial overlap doesn't count
-        result = _find_duplicative_certs(['example.com', 'something.new'],
-                                         self.config, self.cli_config)
+        result = _find_duplicative_certs(
+            self.cli_config, ['example.com', 'something.new'])
         self.assertEqual(result, (None, None))
+
+
+class MockedVerb(object):
+    """Simple class that can be used for mocking out verbs/subcommands.
+
+    Storing a dictionary of verbs and the functions that implement them
+    in letsencrypt.cli makes mocking much more complicated. This class
+    can be used as a simple context manager for mocking out verbs in CLI
+    tests. For example:
+
+    with MockedVerb("run") as mock_run:
+        self._call([])
+        self.assertEqual(1, mock_run.call_count)
+
+    """
+    def __init__(self, verb_name):
+        from letsencrypt import cli
+
+        self.verb_dict = cli.HelpfulArgumentParser.VERBS
+        self.verb_func = None
+        self.verb_name = verb_name
+
+    def __enter__(self):
+        self.verb_func = self.verb_dict[self.verb_name]
+        mocked_func = mock.MagicMock()
+        self.verb_dict[self.verb_name] = mocked_func
+
+        return mocked_func
+
+    def __exit__(self, unused_type, unused_value, unused_trace):
+        self.verb_dict[self.verb_name] = self.verb_func
 
 
 if __name__ == '__main__':

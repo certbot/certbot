@@ -121,6 +121,13 @@ class PluginEntryPoint(object):
         return isinstance(self._prepared, errors.MisconfigurationError)
 
     @property
+    def problem(self):
+        """Return the Exception raised during plugin setup, or None if all is well"""
+        if isinstance(self._prepared, Exception):
+            return self._prepared
+        return None
+
+    @property
     def available(self):
         """Is plugin available, i.e. prepared or misconfigured?"""
         return self._prepared is True or self.misconfigured

@@ -6,6 +6,7 @@ import shutil
 import socket
 import subprocess
 import sys
+import time
 
 import OpenSSL
 import zope.interface
@@ -117,30 +118,44 @@ class NginxConfigurator(common.Plugin):
         temp_install(self.mod_ssl_conf)
 
     # Entry point in main.py for installing cert
-    def deploy_cert(self, domain, cert_path, key_path, chain_path=None):
+    def deploy_cert(self, domain, cert_path, key_path,
+                    chain_path, fullchain_path):
         # pylint: disable=unused-argument
         """Deploys certificate to specified virtual host.
 
         .. note:: Aborts if the vhost is missing ssl_certificate or
             ssl_certificate_key.
 
-        .. note:: Nginx doesn't have a cert chain directive, so the last
-            parameter is always ignored. It expects the cert file to have
-            the concatenated chain.
+        .. note:: Nginx doesn't have a cert chain directive.
+            It expects the cert file to have the concatenated chain.
+            However, we use the chain file as input to the
+            ssl_trusted_certificate directive, used for verify OCSP responses.
 
         .. note:: This doesn't save the config files!
 
         """
         vhost = self.choose_vhost(domain)
-        directives = [['ssl_certificate', cert_path],
-                      ['ssl_certificate_key', key_path]]
+        cert_directives = [['ssl_certificate', fullchain_path],
+                           ['ssl_certificate_key', key_path]]
+
+        # OCSP stapling was introduced in Nginx 1.3.7. If we have that version
+        # or greater, add config settings for it.
+        stapling_directives = []
+        if self.version >= (1, 3, 7):
+            stapling_directives = [
+                ['ssl_trusted_certificate', chain_path],
+                ['ssl_stapling', 'on'],
+                ['ssl_stapling_verify', 'on']]
 
         try:
             self.parser.add_server_directives(vhost.filep, vhost.names,
-                                              directives, True)
+                                              cert_directives, replace=True)
+            self.parser.add_server_directives(vhost.filep, vhost.names,
+                                              stapling_directives, replace=False)
             logger.info("Deployed Certificate to VirtualHost %s for %s",
                         vhost.filep, vhost.names)
-        except errors.MisconfigurationError:
+        except errors.MisconfigurationError as error:
+            logger.debug(error)
             logger.warn(
                 "Cannot find a cert or key directive in %s for %s. "
                 "VirtualHost was not modified.", vhost.filep, vhost.names)
@@ -598,6 +613,10 @@ def nginx_restart(nginx_ctl, nginx_conf="/etc/nginx.conf"):
     except (OSError, ValueError):
         logger.fatal("Nginx Restart Failed - Please Check the Configuration")
         sys.exit(1)
+    # Nginx can take a moment to recognize a newly added TLS SNI servername, so sleep
+    # for a second. TODO: Check for expected servername and loop until it
+    # appears or return an error if looping too long.
+    time.sleep(1)
 
     return True
 

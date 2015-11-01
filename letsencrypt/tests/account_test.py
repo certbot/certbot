@@ -45,16 +45,16 @@ class AccountTest(unittest.TestCase):
 
     def test_id(self):
         self.assertEqual(
-            self.acc.id, "2ba35a3bdf380ed76a5ac9e740568395")
+            self.acc.id, "bca5889f66457d5b62fbba7b25f9ab6f")
 
     def test_slug(self):
         self.assertEqual(
-            self.acc.slug, "test.letsencrypt.org@2015-07-04T14:04:10Z (2ba3)")
+            self.acc.slug, "test.letsencrypt.org@2015-07-04T14:04:10Z (bca5)")
 
     def test_repr(self):
         self.assertEqual(
             repr(self.acc),
-            "<Account(2ba35a3bdf380ed76a5ac9e740568395)>")
+            "<Account(bca5889f66457d5b62fbba7b25f9ab6f)>")
 
 
 class ReportNewAccountTest(unittest.TestCase):
@@ -70,12 +70,12 @@ class ReportNewAccountTest(unittest.TestCase):
         from letsencrypt.account import report_new_account
         report_new_account(self.acc, self.config)
 
-    @mock.patch("letsencrypt.client.zope.component.queryUtility")
+    @mock.patch("letsencrypt.account.zope.component.queryUtility")
     def test_no_reporter(self, mock_zope):
         mock_zope.return_value = None
         self._call()
 
-    @mock.patch("letsencrypt.client.zope.component.queryUtility")
+    @mock.patch("letsencrypt.account.zope.component.queryUtility")
     def test_it(self, mock_zope):
         self._call()
         call_list = mock_zope().add_message.call_args_list

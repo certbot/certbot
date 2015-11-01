@@ -4,14 +4,11 @@
 # Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
 VAGRANTFILE_API_VERSION = "2"
 
-# Setup instructions from docs/using.rst
+# Setup instructions from docs/contributing.rst
 $ubuntu_setup_script = <<SETUP_SCRIPT
 cd /vagrant
-sudo ./bootstrap/ubuntu.sh
-if [ ! -d "venv" ]; then
-  virtualenv --no-site-packages -p python2 venv
-  ./venv/bin/pip install -r requirements.txt -e acme -e .[dev,docs,testing] -e letsencrypt-apache -e letsencrypt-nginx
-fi
+./bootstrap/install-deps.sh
+./bootstrap/dev/venv.sh
 SETUP_SCRIPT
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|

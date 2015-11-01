@@ -9,7 +9,3 @@
 
 -e acme
 -e .[docs]
--e letsencrypt-apache
--e letsencrypt-nginx
--e letsencrypt-compatibility-test
--e letshelp-letsencrypt

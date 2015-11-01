@@ -1,33 +1,18 @@
 #!/bin/bash
 # An extremely simplified version of `a2enmod` for enabling modules in the
-# httpd docker image. First argument is the server_root and the second is the
-# module to be enabled.
+# httpd docker image. First argument is the Apache ServerRoot which should be
+# an absolute path. The second is the module to be enabled, such as `ssl`.
 
-APACHE_CONFDIR=$1
+confdir=$1
+module=$2
 
-enable () {
-    echo "LoadModule "$1"_module /usr/local/apache2/modules/mod_"$1".so" >> \
-        $APACHE_CONFDIR"/test.conf"
-    available_base="/mods-available/"$1".conf"
-    available_conf=$APACHE_CONFDIR$available_base
-    enabled_dir=$APACHE_CONFDIR"/mods-enabled"
-    enabled_conf=$enabled_dir"/"$1".conf"
-    if [ -e "$available_conf" -a -d "$enabled_dir" -a ! -e "$enabled_conf" ]
-    then
-        ln -s "..$available_base" $enabled_conf
-    fi
-}
-
-if [ $2 == "ssl" ]
+echo "LoadModule ${module}_module " \
+    "/usr/local/apache2/modules/mod_${module}.so" >> "${confdir}/test.conf"
+availbase="/mods-available/${module}.conf"
+availconf=$confdir$availbase
+enabldir="$confdir/mods-enabled"
+enablconf="$enabldir/${module}.conf"
+if [ -e $availconf -a -d $enabldir -a ! -e $enablconf ]
 then
-    # Enables ssl and all its dependencies
-    enable "setenvif"
-    enable "mime"
-    enable "socache_shmcb"
-    enable "ssl"
-elif [ $2 == "rewrite" ]
-then
-    enable "rewrite"
-else
-    exit 1
+    ln -s "..$availbase" $enablconf
 fi

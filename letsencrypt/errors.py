@@ -66,6 +66,10 @@ class PluginError(Error):
     """Let's Encrypt Plugin error."""
 
 
+class PluginSelectionError(Error):
+    """A problem with plugin/configurator selection or setup"""
+
+
 class NoInstallationError(PluginError):
     """Let's Encrypt No Installation error."""
 
@@ -80,3 +84,13 @@ class NotSupportedError(PluginError):
 
 class RevokerError(Error):
     """Let's Encrypt Revoker error."""
+
+
+class StandaloneBindError(Error):
+    """Standalone plugin bind error."""
+
+    def __init__(self, socket_error, port):
+        super(StandaloneBindError, self).__init__(
+            "Problem binding to port {0}: {1}".format(port, socket_error))
+        self.socket_error = socket_error
+        self.port = port

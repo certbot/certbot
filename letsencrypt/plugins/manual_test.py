@@ -23,15 +23,13 @@ class AuthenticatorTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.plugins.manual import Authenticator
         self.config = mock.MagicMock(
-            no_simple_http_tls=True, simple_http_port=4430,
-            manual_test_mode=False)
+            simple_http_port=8080, manual_test_mode=False)
         self.auth = Authenticator(config=self.config, name="manual")
         self.achalls = [achallenges.SimpleHTTP(
             challb=acme_util.SIMPLE_HTTP_P, domain="foo.com", account_key=KEY)]
 
         config_test_mode = mock.MagicMock(
-            no_simple_http_tls=True, simple_http_port=4430,
-            manual_test_mode=True)
+            simple_http_port=8080, manual_test_mode=True)
         self.auth_test_mode = Authenticator(
             config=config_test_mode, name="manual")
 
@@ -45,17 +43,19 @@ class AuthenticatorTest(unittest.TestCase):
     def test_perform_empty(self):
         self.assertEqual([], self.auth.perform([]))
 
+    @mock.patch("letsencrypt.plugins.manual.zope.component.getUtility")
     @mock.patch("letsencrypt.plugins.manual.sys.stdout")
     @mock.patch("acme.challenges.SimpleHTTPResponse.simple_verify")
     @mock.patch("__builtin__.raw_input")
-    def test_perform(self, mock_raw_input, mock_verify, mock_stdout):
+    def test_perform(self, mock_raw_input, mock_verify, mock_stdout, mock_interaction):
         mock_verify.return_value = True
+        mock_interaction().yesno.return_value = True
 
         resp = challenges.SimpleHTTPResponse(tls=False)
         self.assertEqual([resp], self.auth.perform(self.achalls))
         self.assertEqual(1, mock_raw_input.call_count)
         mock_verify.assert_called_with(
-            self.achalls[0].challb.chall, "foo.com", KEY.public_key(), 4430)
+            self.achalls[0].challb.chall, "foo.com", KEY.public_key(), 8080)
 
         message = mock_stdout.write.mock_calls[0][1][0]
         self.assertTrue(self.achalls[0].chall.encode("token") in message)
@@ -63,12 +63,21 @@ class AuthenticatorTest(unittest.TestCase):
         mock_verify.return_value = False
         self.assertEqual([None], self.auth.perform(self.achalls))
 
+    @mock.patch("letsencrypt.plugins.manual.zope.component.getUtility")
+    @mock.patch("letsencrypt.plugins.manual.Authenticator._notify_and_wait")
+    def test_disagree_with_ip_logging(self, mock_notify, mock_interaction):
+        mock_interaction().yesno.return_value = False
+        mock_notify.side_effect = errors.Error("Exception not raised, \
+            continued execution even after disagreeing with IP logging")
+
+        self.assertRaises(errors.PluginError, self.auth.perform, self.achalls)
+
     @mock.patch("letsencrypt.plugins.manual.subprocess.Popen", autospec=True)
     def test_perform_test_command_oserror(self, mock_popen):
         mock_popen.side_effect = OSError
         self.assertEqual([False], self.auth_test_mode.perform(self.achalls))
 
-    @mock.patch("letsencrypt.plugins.manual.socket.socket", autospec=True)
+    @mock.patch("letsencrypt.plugins.manual.socket.socket")
     @mock.patch("letsencrypt.plugins.manual.time.sleep", autospec=True)
     @mock.patch("letsencrypt.plugins.manual.subprocess.Popen", autospec=True)
     def test_perform_test_command_run_failure(
@@ -78,7 +87,7 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertRaises(
             errors.Error, self.auth_test_mode.perform, self.achalls)
 
-    @mock.patch("letsencrypt.plugins.manual.socket.socket", autospec=True)
+    @mock.patch("letsencrypt.plugins.manual.socket.socket")
     @mock.patch("letsencrypt.plugins.manual.time.sleep", autospec=True)
     @mock.patch("acme.challenges.SimpleHTTPResponse.simple_verify",
                 autospec=True)

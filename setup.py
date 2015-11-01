@@ -35,7 +35,6 @@ install_requires = [
     'ConfigArgParse',
     'configobj',
     'cryptography>=0.7',  # load_pem_x509_certificate
-    'mock<1.1.0',  # py26
     'parsedatetime',
     'psutil>=2.1.0',  # net_connections introduced in 2.1.0
     'PyOpenSSL',
@@ -44,14 +43,20 @@ install_requires = [
     'pytz',
     'requests',
     'setuptools',  # pkg_resources
+    'six',
     'zope.component',
     'zope.interface',
 ]
 
 # env markers in extras_require cause problems with older pip: #517
 if sys.version_info < (2, 7):
-    # only some distros recognize stdlib argparse as already satisfying
-    install_requires.append('argparse')
+    install_requires.extend([
+        # only some distros recognize stdlib argparse as already satisfying
+        'argparse',
+        'mock<1.1.0',
+    ])
+else:
+    install_requires.append('mock')
 
 dev_extras = [
     # Pin astroid==1.3.5, pylint==1.4.2 as a workaround for #289
@@ -94,6 +99,7 @@ setup(
         'Operating System :: POSIX :: Linux',
         'Programming Language :: Python',
         'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Security',
@@ -126,8 +132,8 @@ setup(
         'letsencrypt.plugins': [
             'manual = letsencrypt.plugins.manual:Authenticator',
             'null = letsencrypt.plugins.null:Installer',
-            'standalone = letsencrypt.plugins.standalone.authenticator'
-            ':StandaloneAuthenticator',
+            'standalone = letsencrypt.plugins.standalone:Authenticator',
+            'webroot = letsencrypt.plugins.webroot:Authenticator',
         ],
     },
 )
