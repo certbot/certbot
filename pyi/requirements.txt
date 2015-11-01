@@ -1,0 +1,3 @@
+cryptography>=1.0
+# PyInstaller v2.1 does NOT work
+git+https://github.com/pyinstaller/pyinstaller.git@9d0e0ad4c1c02964bbff86edbf7400cd40958b1a#egg=pyinstaller
