@@ -26,12 +26,13 @@ logger = logging.getLogger(__name__)
 class Authenticator(common.Plugin):
     """Manual Authenticator.
 
-       This plugin requires user's manual intervention in setting up a HTTP
-       server for solving http-01 challenges and thus does not need to be
-       run as a privileged process. Alternatively shows instructions on how
-       to use Python's built-in HTTP server.
+    This plugin requires user's manual intervention in setting up a HTTP
+    server for solving http-01 challenges and thus does not need to be
+    run as a privileged process. Alternatively shows instructions on how
+    to use Python's built-in HTTP server.
 
     .. todo:: Support for `~.challenges.DVSNI`.
+
     """
     zope.interface.implements(interfaces.IAuthenticator)
     zope.interface.classProvides(interfaces.IPluginFactory)
