@@ -49,9 +49,10 @@ class KeyAuthorizationAnnotatedChallenge(AnnotatedChallenge):
     """Client annotated `KeyAuthorizationChallenge` challenge."""
     __slots__ = ('challb', 'domain', 'account_key')
 
-    def response_and_validation(self):
+    def response_and_validation(self, *args, **kwargs):
         """Generate response and validation."""
-        return self.challb.chall.response_and_validation(self.account_key)
+        return self.challb.chall.response_and_validation(
+            self.account_key, *args, **kwargs)
 
 
 class DVSNI(AnnotatedChallenge):

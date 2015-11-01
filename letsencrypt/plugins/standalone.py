@@ -11,7 +11,6 @@ import six
 import zope.interface
 
 from acme import challenges
-from acme import crypto_util as acme_crypto_util
 from acme import standalone as acme_standalone
 
 from letsencrypt import errors
@@ -51,19 +50,19 @@ class ServerManager(object):
 
         :param int port: Port to run the server on.
         :param challenge_type: Subclass of `acme.challenges.Challenge`,
-            either `acme.challenge.HTTP01` or `acme.challenges.DVSNI`.
+            either `acme.challenge.HTTP01` or `acme.challenges.TLSSNI01`.
 
         :returns: Server instance.
         :rtype: ACMEServerMixin
 
         """
-        assert challenge_type in (challenges.DVSNI, challenges.HTTP01)
+        assert challenge_type in (challenges.TLSSNI01, challenges.HTTP01)
         if port in self._instances:
             return self._instances[port].server
 
         address = ("", port)
         try:
-            if challenge_type is challenges.DVSNI:
+            if challenge_type is challenges.TLSSNI01:
                 server = acme_standalone.DVSNIServer(address, self.certs)
             else:  # challenges.HTTP01
                 server = acme_standalone.HTTP01Server(
@@ -109,7 +108,7 @@ class ServerManager(object):
                     in six.iteritems(self._instances))
 
 
-SUPPORTED_CHALLENGES = set([challenges.DVSNI, challenges.HTTP01])
+SUPPORTED_CHALLENGES = set([challenges.TLSSNI01, challenges.HTTP01])
 
 
 def supported_challenges_validator(data):
@@ -138,7 +137,7 @@ class Authenticator(common.Plugin):
     """Standalone Authenticator.
 
     This authenticator creates its own ephemeral TCP listener on the
-    necessary port in order to respond to incoming DVSNI and HTTP01
+    necessary port in order to respond to incoming tls-sni-01 and http-01
     challenges from the certificate authority. Therefore, it does not
     rely on any existing server program.
     """
@@ -150,7 +149,7 @@ class Authenticator(common.Plugin):
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
 
-        # one self-signed key for all DVSNI certificates
+        # one self-signed key for all tls-sni-01 certificates
         self.key = OpenSSL.crypto.PKey()
         self.key.generate_key(OpenSSL.crypto.TYPE_RSA, bits=2048)
 
@@ -183,15 +182,16 @@ class Authenticator(common.Plugin):
         necessary_ports = set()
         if challenges.HTTP01 in self.supported_challenges:
             necessary_ports.add(self.config.http01_port)
-        if challenges.DVSNI in self.supported_challenges:
+        if challenges.TLSSNI01 in self.supported_challenges:
             necessary_ports.add(self.config.dvsni_port)
         return necessary_ports
 
     def more_info(self):  # pylint: disable=missing-docstring
         return("This authenticator creates its own ephemeral TCP listener "
-               "on the necessary port in order to respond to incoming DVSNI "
-               "and HTTP01 challenges from the certificate authority. "
-               "Therefore, it does not rely on any existing server program.")
+               "on the necessary port in order to respond to incoming "
+               "tls-sni-01 and http-01 challenges from the certificate "
+               "authority. Therefore, it does not rely on any existing "
+               "server program.")
 
     def prepare(self):  # pylint: disable=missing-docstring
         pass
@@ -241,9 +241,11 @@ class Authenticator(common.Plugin):
                     acme_standalone.HTTP01RequestHandler.HTTP01Resource(
                         chall=achall.chall, response=response,
                         validation=validation))
-            else:  # DVSNI
-                server = self.servers.run(self.config.dvsni_port, challenges.DVSNI)
-                response, cert, _ = achall.gen_cert_and_response(self.key)
+            else:  # tls-sni-01
+                server = self.servers.run(
+                    self.config.dvsni_port, challenges.TLSSNI01)
+                response, (cert, _) = achall.response_and_validation(
+                    cert_key=self.key)
                 self.certs[response.z_domain] = (self.key, cert)
             self.served[server].add(achall)
             responses.append(response)
