@@ -27,7 +27,7 @@ CERT3_KEY = test_util.load_rsa_private_key("rsa512_key_2.pem").public_key()
 
 class ProofOfPossessionTest(unittest.TestCase):
     def setUp(self):
-        self.config = mock.MagicMock()
+        self.config = mock.MagicMock(key_dir='/foo/bar')
         self.installer = mock.MagicMock()
         self.cert1_path = tempfile.mkstemp()[1]
         certs = [CERT0_PATH, self.cert1_path, CERT2_PATH, CERT3_PATH]

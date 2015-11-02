@@ -62,7 +62,7 @@ class ProofOfPossession(object):  # pylint: disable=too-few-public-methods
             if cert_key == achall.hints.jwk:
                 return self._gen_response(achall, key)
 
-        if os.path.isdir(str(self.config.key_dir)):
+        if os.path.isdir(self.config.key_dir):
             for key_file in os.listdir(self.config.key_dir):
                 full_path = os.path.join(self.config.key_dir, key_file)
                 response = self._gen_response(achall, full_path)
