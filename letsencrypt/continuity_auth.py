@@ -32,7 +32,7 @@ class ContinuityAuthenticator(object):
 
         """
         self.proof_of_pos = proof_of_possession.ProofOfPossession(
-            installer, config)
+            config, installer)
 
     def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use
         """Return list of challenge preferences."""

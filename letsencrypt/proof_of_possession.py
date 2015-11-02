@@ -26,9 +26,9 @@ class ProofOfPossession(object):  # pylint: disable=too-few-public-methods
     :type installer: :class:`~letsencrypt.interfaces.IInstaller`
 
     """
-    def __init__(self, installer, config):
-        self.installer = installer
+    def __init__(self, config, installer):
         self.config = config
+        self.installer = installer
 
     def perform(self, achall):
         """Perform the Proof of Possession Challenge.

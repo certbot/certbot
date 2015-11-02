@@ -27,15 +27,15 @@ CERT3_KEY = test_util.load_rsa_private_key("rsa512_key_2.pem").public_key()
 
 class ProofOfPossessionTest(unittest.TestCase):
     def setUp(self):
-        self.installer = mock.MagicMock()
         self.config = mock.MagicMock()
+        self.installer = mock.MagicMock()
         self.cert1_path = tempfile.mkstemp()[1]
         certs = [CERT0_PATH, self.cert1_path, CERT2_PATH, CERT3_PATH]
         keys = [None, None, CERT2_KEY_PATH, CERT3_KEY_PATH]
         self.installer.get_all_certs_keys.return_value = zip(
             certs, keys, 4 * [None])
         self.proof_of_pos = proof_of_possession.ProofOfPossession(
-            self.installer, self.config)
+            self.config, self.installer)
 
         hints = challenges.ProofOfPossession.Hints(
             jwk=jose.JWKRSA(key=CERT3_KEY), cert_fingerprints=(),
