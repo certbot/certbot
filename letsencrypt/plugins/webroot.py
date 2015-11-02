@@ -41,6 +41,7 @@ and reload your daemon.
 import errno
 import logging
 import os
+import shlex
 
 import zope.interface
 
@@ -80,35 +81,91 @@ to serve all files under specified web root ({0})."""
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
-        self.full_root = None
+        self.default_root = None
+        self.domain_roots = {}
 
     def prepare(self):  # pylint: disable=missing-docstring
         path = self.conf("path")
         if path is None:
             raise errors.PluginError("--{0} must be set".format(
                 self.option_name("path")))
+        self._parse_path_argument(path)
+        if self.default_root:
+            self.default_root = self._make_full_root(self.default_root)
+        for domain, path in self.domain_roots.items():
+            self.domain_roots[domain] = self._make_full_root(path)
+
+    def _parse_path_argument(self, path):
+        self.default_root = None
+        self.domain_roots = {}
+        error = 'argument --{0}: '.format(self.option_name('path'))
+
+        def _split_path(s):
+            lex = shlex.shlex(s, posix=True)
+            lex.whitespace_split = True
+            lex.whitespace += ','
+            lex.commenters = ''
+            return list(lex)
+
+        def _split_domain_path(s):
+            lex = shlex.shlex(s, posix=True)
+            lex.whitespace_split = True
+            lex.whitespace = ':'
+            lex.commenters = ''
+            res = list(lex)
+            if len(res) == 1:
+                return res
+            else:
+                return (res[0], ':'.join(res[1:]))
+
+        try:
+            items = _split_path(path)
+        except ValueError as e:
+            raise errors.PluginError(error + e.message)
+
+        if not items:
+            raise errors.PluginError(error + 'expected one argument')
+
+        for item in items:
+            res = _split_domain_path(item)
+            if len(res) == 1:
+                path = res[0]
+                if self.default_root:
+                    raise errors.PluginError(error + 'default path already defined')
+                self.default_root = path
+            else:
+                domain, path = res
+                if domain in self.domain_roots:
+                    raise errors.PluginError(
+                        error + 'path for domain {0} already defined'.format(domain))
+                self.domain_roots[domain] = path
+
+    def _make_full_root(self, path):
         if not os.path.isdir(path):
             raise errors.PluginError(
                 path + " does not exist or is not a directory")
-        self.full_root = os.path.join(
+        full_root = os.path.join(
             path, challenges.SimpleHTTPResponse.URI_ROOT_PATH)
 
         logger.debug("Creating root challenges validation dir at %s",
-                     self.full_root)
+                     full_root)
         try:
-            os.makedirs(self.full_root)
+            os.makedirs(full_root)
         except OSError as exception:
             if exception.errno != errno.EEXIST:
                 raise errors.PluginError(
                     "Couldn't create root for SimpleHTTP "
                     "challenge responses: {0}", exception)
+        return full_root
 
     def perform(self, achalls):  # pylint: disable=missing-docstring
-        assert self.full_root is not None
         return [self._perform_single(achall) for achall in achalls]
 
     def _path_for_achall(self, achall):
-        return os.path.join(self.full_root, achall.chall.encode("token"))
+        full_root = self.domain_roots.get(achall.domain, self.default_root)
+        if not full_root:
+            raise errors.PluginError("Cannot find path for domain: {0}".format(achall.domain))
+        return os.path.join(full_root, achall.chall.encode("token"))
 
     def _perform_single(self, achall):
         response, validation = achall.gen_response_and_validation(tls=False)
