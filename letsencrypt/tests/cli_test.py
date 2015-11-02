@@ -68,7 +68,6 @@ class CLITest(unittest.TestCase):
         "Run a help command, and return the help string for scrutiny"
         output = StringIO.StringIO()
         with mock.patch('letsencrypt.cli.sys.stdout', new=output):
-            plugins = disco.PluginsRegistry.find_all()
             self.assertRaises(SystemExit, self._call_stdout, args)
             out = output.getvalue()
             return out
