@@ -45,7 +45,7 @@ class AuthenticatorTest(unittest.TestCase):
     def test_add_parser_arguments(self):
         add = mock.MagicMock()
         self.auth.add_parser_arguments(add)
-        self.assertEqual(1, add.call_count)
+        self.assertEqual(2, add.call_count)
 
     def test_prepare_bad_root(self):
         self.config.webroot_path = os.path.join(self.path, "null")
@@ -53,6 +53,7 @@ class AuthenticatorTest(unittest.TestCase):
 
     def test_prepare_missing_root(self):
         self.config.webroot_path = None
+        self.config.webroot_domain_path = None
         self.assertRaises(errors.PluginError, self.auth.prepare)
 
     def test_prepare_full_root_exists(self):
