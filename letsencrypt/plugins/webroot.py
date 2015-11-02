@@ -1,4 +1,43 @@
-"""Webroot plugin."""
+"""Webroot plugin.
+
+Content-Type
+------------
+
+This plugin requires your webserver to use a specific `Content-Type`
+header in the HTTP response.
+
+Apache2
+~~~~~~~
+
+.. note:: Instructions written and tested for Debian Jessie. Other
+   operating systems might use something very similar, but you might
+   still need to readjust some commands.
+
+Create ``/etc/apache2/conf-available/letsencrypt-simplehttp.conf``, with
+the following contents::
+
+  <IfModule mod_headers.c>
+    <LocationMatch "/.well-known/acme-challenge/*">
+      Header set Content-Type "application/jose+json"
+    </LocationMatch>
+  </IfModule>
+
+and then run ``a2enmod headers; a2enconf letsencrypt``; depending on the
+output you will have to either ``service apache2 restart`` or ``service
+apache2 reload``.
+
+nginx
+~~~~~
+
+Use the following snippet in your ``server{...}`` stanza::
+
+  location ~ /.well-known/acme-challenge/(.*) {
+    default_type application/jose+json;
+  }
+
+and reload your daemon.
+
+"""
 import errno
 import logging
 import os
