@@ -41,7 +41,7 @@ RENEWER_DEFAULTS = dict(
 
 
 EXCLUSIVE_CHALLENGES = frozenset([frozenset([
-    challenges.DVSNI, challenges.SimpleHTTP])])
+    challenges.DVSNI, challenges.HTTP01])])
 """Mutually exclusive challenges."""
 
 

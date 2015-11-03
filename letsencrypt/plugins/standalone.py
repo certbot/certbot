@@ -14,7 +14,6 @@ from acme import challenges
 from acme import crypto_util as acme_crypto_util
 from acme import standalone as acme_standalone
 
-from letsencrypt import achallenges
 from letsencrypt import errors
 from letsencrypt import interfaces
 
@@ -33,7 +32,7 @@ class ServerManager(object):
     `acme.crypto_util.SSLSocket.certs` and
     `acme.crypto_util.SSLSocket.simple_http_resources` respectively. All
     created servers share the same certificates and resources, so if
-    you're running both TLS and non-TLS instances, SimpleHTTP handlers
+    you're running both TLS and non-TLS instances, HTTP01 handlers
     will serve the same URLs!
 
     """
@@ -52,13 +51,13 @@ class ServerManager(object):
 
         :param int port: Port to run the server on.
         :param challenge_type: Subclass of `acme.challenges.Challenge`,
-            either `acme.challenge.SimpleHTTP` or `acme.challenges.DVSNI`.
+            either `acme.challenge.HTTP01` or `acme.challenges.DVSNI`.
 
         :returns: Server instance.
         :rtype: ACMEServerMixin
 
         """
-        assert challenge_type in (challenges.DVSNI, challenges.SimpleHTTP)
+        assert challenge_type in (challenges.DVSNI, challenges.HTTP01)
         if port in self._instances:
             return self._instances[port].server
 
@@ -66,8 +65,8 @@ class ServerManager(object):
         try:
             if challenge_type is challenges.DVSNI:
                 server = acme_standalone.DVSNIServer(address, self.certs)
-            else:  # challenges.SimpleHTTP
-                server = acme_standalone.SimpleHTTPServer(
+            else:  # challenges.HTTP01
+                server = acme_standalone.HTTP01Server(
                     address, self.simple_http_resources)
         except socket.error as error:
             raise errors.StandaloneBindError(error, port)
@@ -110,7 +109,7 @@ class ServerManager(object):
                     in six.iteritems(self._instances))
 
 
-SUPPORTED_CHALLENGES = set([challenges.DVSNI, challenges.SimpleHTTP])
+SUPPORTED_CHALLENGES = set([challenges.DVSNI, challenges.HTTP01])
 
 
 def supported_challenges_validator(data):
@@ -139,7 +138,7 @@ class Authenticator(common.Plugin):
     """Standalone Authenticator.
 
     This authenticator creates its own ephemeral TCP listener on the
-    necessary port in order to respond to incoming DVSNI and SimpleHTTP
+    necessary port in order to respond to incoming DVSNI and HTTP01
     challenges from the certificate authority. Therefore, it does not
     rely on any existing server program.
     """
@@ -151,10 +150,10 @@ class Authenticator(common.Plugin):
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
 
-        # one self-signed key for all DVSNI and SimpleHTTP certificates
+        # one self-signed key for all DVSNI and HTTP01 certificates
         self.key = OpenSSL.crypto.PKey()
         self.key.generate_key(OpenSSL.crypto.TYPE_RSA, bits=2048)
-        # TODO: generate only when the first SimpleHTTP challenge is solved
+        # TODO: generate only when the first HTTP01 challenge is solved
         self.simple_http_cert = acme_crypto_util.gen_ss_cert(
             self.key, domains=["temp server"])
 
@@ -185,17 +184,17 @@ class Authenticator(common.Plugin):
     @property
     def _necessary_ports(self):
         necessary_ports = set()
-        if challenges.SimpleHTTP in self.supported_challenges:
-            necessary_ports.add(self.config.simple_http_port)
+        if challenges.HTTP01 in self.supported_challenges:
+            necessary_ports.add(self.config.http01_port)
         if challenges.DVSNI in self.supported_challenges:
             necessary_ports.add(self.config.dvsni_port)
         return necessary_ports
 
     def more_info(self):  # pylint: disable=missing-docstring
         return("This authenticator creates its own ephemeral TCP listener "
-                "on the necessary port in order to respond to incoming DVSNI "
-                "and SimpleHTTP challenges from the certificate authority. "
-                "Therefore, it does not rely on any existing server program.")
+               "on the necessary port in order to respond to incoming DVSNI "
+               "and HTTP01 challenges from the certificate authority. "
+               "Therefore, it does not rely on any existing server program.")
 
     def prepare(self):  # pylint: disable=missing-docstring
         pass
@@ -237,13 +236,12 @@ class Authenticator(common.Plugin):
         responses = []
 
         for achall in achalls:
-            if isinstance(achall, achallenges.SimpleHTTP):
+            if isinstance(achall.chall, challenges.HTTP01):
                 server = self.servers.run(
-                    self.config.simple_http_port, challenges.SimpleHTTP)
-                response, validation = achall.gen_response_and_validation(
-                    tls=False)
+                    self.config.http01_port, challenges.HTTP01)
+                response, validation = achall.response_and_validation()
                 self.simple_http_resources.add(
-                    acme_standalone.SimpleHTTPRequestHandler.SimpleHTTPResource(
+                    acme_standalone.HTTP01RequestHandler.HTTP01Resource(
                         chall=achall.chall, response=response,
                         validation=validation))
                 cert = self.simple_http_cert

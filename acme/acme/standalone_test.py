@@ -54,16 +54,16 @@ class DVSNIServerTest(unittest.TestCase):
                          jose.ComparableX509(self.certs[b'localhost'][1]))
 
 
-class SimpleHTTPServerTest(unittest.TestCase):
-    """Tests for acme.standalone.SimpleHTTPServer."""
+class HTTP01ServerTest(unittest.TestCase):
+    """Tests for acme.standalone.HTTP01Server."""
 
     def setUp(self):
         self.account_key = jose.JWK.load(
             test_util.load_vector('rsa1024_key.pem'))
         self.resources = set()
 
-        from acme.standalone import SimpleHTTPServer
-        self.server = SimpleHTTPServer(('', 0), resources=self.resources)
+        from acme.standalone import HTTP01Server
+        self.server = HTTP01Server(('', 0), resources=self.resources)
 
         # pylint: disable=no-member
         self.port = self.server.socket.getsockname()[1]
@@ -86,25 +86,24 @@ class SimpleHTTPServerTest(unittest.TestCase):
             'http://localhost:{0}/foo'.format(self.port), verify=False)
         self.assertEqual(response.status_code, http_client.NOT_FOUND)
 
-    def _test_simple_http(self, add):
-        chall = challenges.SimpleHTTP(token=(b'x' * 16))
-        response = challenges.SimpleHTTPResponse(tls=False)
+    def _test_http01(self, add):
+        chall = challenges.HTTP01(token=(b'x' * 16))
+        response, validation = chall.response_and_validation(self.account_key)
 
-        from acme.standalone import SimpleHTTPRequestHandler
-        resource = SimpleHTTPRequestHandler.SimpleHTTPResource(
-            chall=chall, response=response, validation=response.gen_validation(
-                chall, self.account_key))
+        from acme.standalone import HTTP01RequestHandler
+        resource = HTTP01RequestHandler.HTTP01Resource(
+            chall=chall, response=response, validation=validation)
         if add:
             self.resources.add(resource)
         return resource.response.simple_verify(
             resource.chall, 'localhost', self.account_key.public_key(),
             port=self.port)
 
-    def test_simple_http_found(self):
-        self.assertTrue(self._test_simple_http(add=True))
+    def test_http01_found(self):
+        self.assertTrue(self._test_http01(add=True))
 
-    def test_simple_http_not_found(self):
-        self.assertFalse(self._test_simple_http(add=False))
+    def test_http01_not_found(self):
+        self.assertFalse(self._test_http01(add=False))
 
 
 class TestSimpleDVSNIServer(unittest.TestCase):

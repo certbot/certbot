@@ -76,7 +76,7 @@ def renew(cert, old_version):
     #      was an int, not a str)
     config.rsa_key_size = int(config.rsa_key_size)
     config.dvsni_port = int(config.dvsni_port)
-    config.namespace.simple_http_port = int(config.namespace.simple_http_port)
+    config.namespace.http01_port = int(config.namespace.http01_port)
     zope.component.provideUtility(config)
     try:
         authenticator = plugins[renewalparams["authenticator"]]
