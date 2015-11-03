@@ -26,7 +26,7 @@ class NginxDvsni(common.Dvsni):
         larger array. NginxDvsni is capable of solving many challenges
         at once which causes an indexing issue within NginxConfigurator
         who must return all responses in order.  Imagine NginxConfigurator
-        maintaining state about where all of the SimpleHTTP Challenges,
+        maintaining state about where all of the http-01 Challenges,
         Dvsni Challenges belong in the response array.  This is an optional
         utility.
 

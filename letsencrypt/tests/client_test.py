@@ -163,7 +163,7 @@ class ClientTest(unittest.TestCase):
             domain='foo.bar',
             fullchain_path='fullchain',
             key_path=os.path.abspath("key"))
-        self.assertEqual(installer.save.call_count, 1)
+        self.assertEqual(installer.save.call_count, 2)
         installer.restart.assert_called_once_with()
 
     @mock.patch("letsencrypt.client.enhancements")

@@ -73,7 +73,7 @@ to, `install Docker`_, then issue the following command:
 
 .. code-block:: shell
 
-   sudo docker run -it --rm -p 443:443 --name letsencrypt \
+   sudo docker run -it --rm -p 443:443 -p 80:80 --name letsencrypt \
                -v "/etc/letsencrypt:/etc/letsencrypt" \
                -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
                quay.io/letsencrypt/letsencrypt:latest auth
@@ -127,15 +127,15 @@ Officially supported plugins:
 Plugin     A I Notes and status
 ========== = = ================================================================
 standalone Y N Very stable. Uses port 80 (force by
-               ``--standalone-supported-challenges simpleHttp``) or 443
-               (force by ``standalone-supported-challenges dvsni``).
+               ``--standalone-supported-challenges http-01``) or 443
+               (force by ``--standalone-supported-challenges dvsni``).
 apache     Y Y Alpha. Automates Apache installation, works fairly well but on
                Debian-based distributions only for now.
 webroot    Y N Works with already running webserver, by writing necessary files
                to the disk (``--webroot-path`` should be pointed to your
                ``public_html``). Currently, when multiple domains are specified
                (`-d`), they must all use the same web root path.
-manual     Y N Hidden from standard UI, use with ``--a manual``. Requires to
+manual     Y N Hidden from standard UI, use with ``-a manual``. Requires to
                copy and paste commands into a new terminal session. Allows to
                run client on machine different than target webserver, e.g. your
                laptop.
@@ -162,6 +162,9 @@ can automate it slightly by passing necessary flags on the CLI (see
 sure that UI doesn't prompt for any details you can add the command to
 ``crontab`` (make it less than every 90 days to avoid problems, say
 every month).
+
+Please note that the CA will send notification emails to the address
+you provide if you do not renew certificates that are about to expire.
 
 Let's Encrypt is working hard on automating the renewal process. Until
 the tool is ready, we are sorry for the inconvenience!

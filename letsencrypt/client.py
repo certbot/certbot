@@ -326,6 +326,7 @@ class Client(object):
                     key_path=os.path.abspath(privkey_path),
                     chain_path=chain_path,
                     fullchain_path=fullchain_path)
+                self.installer.save()  # needed by the Apache plugin
 
             self.installer.save("Deployed Let's Encrypt Certificate")
             # sites may have been enabled / final cleanup

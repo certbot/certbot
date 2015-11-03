@@ -1,9 +1,11 @@
 """ACME Identifier Validation Challenges."""
+import abc
 import functools
 import hashlib
 import logging
 import socket
 
+from cryptography.hazmat.primitives import hashes
 import OpenSSL
 import requests
 
@@ -76,26 +78,21 @@ class UnrecognizedChallenge(Challenge):
         return cls(jobj)
 
 
-@Challenge.register
-class SimpleHTTP(DVChallenge):
-    """ACME "simpleHttp" challenge.
+class _TokenDVChallenge(DVChallenge):
+    """DV Challenge with token.
 
-    :ivar unicode token:
+    :ivar bytes token:
 
     """
-    typ = "simpleHttp"
-
     TOKEN_SIZE = 128 / 8  # Based on the entropy value from the spec
     """Minimum size of the :attr:`token` in bytes."""
-
-    URI_ROOT_PATH = ".well-known/acme-challenge"
-    """URI root path for the server provisioned resource."""
 
     # TODO: acme-spec doesn't specify token as base64-encoded value
     token = jose.Field(
         "token", encoder=jose.encode_b64jose, decoder=functools.partial(
             jose.decode_b64jose, size=TOKEN_SIZE, minimum=True))
 
+    # XXX: rename to ~token_good_for_url
     @property
     def good_token(self):  # XXX: @token.decoder
         """Is `token` good?
@@ -109,124 +106,130 @@ class SimpleHTTP(DVChallenge):
         # URI_ROOT_PATH!
         return b'..' not in self.token and b'/' not in self.token
 
-    @property
-    def path(self):
-        """Path (starting with '/') for provisioned resource."""
-        return '/' + self.URI_ROOT_PATH + '/' + self.encode('token')
 
+class KeyAuthorizationChallengeResponse(ChallengeResponse):
+    """Response to Challenges based on Key Authorization.
 
-@ChallengeResponse.register
-class SimpleHTTPResponse(ChallengeResponse):
-    """ACME "simpleHttp" challenge response.
-
-    :ivar bool tls:
+    :param unicode key_authorization:
 
     """
-    typ = "simpleHttp"
-    tls = jose.Field("tls", default=True, omitempty=True)
+    key_authorization = jose.Field("keyAuthorization")
+    thumbprint_hash_function = hashes.SHA256
 
-    URI_ROOT_PATH = SimpleHTTP.URI_ROOT_PATH
-    _URI_TEMPLATE = "{scheme}://{domain}/" + URI_ROOT_PATH + "/{token}"
+    def verify(self, chall, account_public_key):
+        """Verify the key authorization.
 
-    CONTENT_TYPE = "application/jose+json"
-    PORT = 80
-    TLS_PORT = 443
+        :param KeyAuthorization chall: Challenge that corresponds to
+            this response.
+        :param JWK account_public_key:
 
-    @property
-    def scheme(self):
-        """URL scheme for the provisioned resource."""
-        return "https" if self.tls else "http"
-
-    @property
-    def port(self):
-        """Port that the ACME client should be listening for validation."""
-        return self.TLS_PORT if self.tls else self.PORT
-
-    def uri(self, domain, chall):
-        """Create an URI to the provisioned resource.
-
-        Forms an URI to the HTTPS server provisioned resource
-        (containing :attr:`~SimpleHTTP.token`).
-
-        :param unicode domain: Domain name being verified.
-        :param challenges.SimpleHTTP chall:
-
-        """
-        return self._URI_TEMPLATE.format(
-            scheme=self.scheme, domain=domain, token=chall.encode("token"))
-
-    def gen_resource(self, chall):
-        """Generate provisioned resource.
-
-        :param challenges.SimpleHTTP chall:
-        :rtype: SimpleHTTPProvisionedResource
-
-        """
-        return SimpleHTTPProvisionedResource(token=chall.token, tls=self.tls)
-
-    def gen_validation(self, chall, account_key, alg=jose.RS256, **kwargs):
-        """Generate validation.
-
-        :param challenges.SimpleHTTP chall:
-        :param .JWK account_key: Private account key.
-        :param .JWA alg:
-
-        :returns: `.SimpleHTTPProvisionedResource` signed in `.JWS`
-        :rtype: .JWS
-
-        """
-        return jose.JWS.sign(
-            payload=self.gen_resource(chall).json_dumps(
-                sort_keys=True).encode('utf-8'),
-            key=account_key, alg=alg, **kwargs)
-
-    def check_validation(self, validation, chall, account_public_key):
-        """Check validation.
-
-        :param .JWS validation:
-        :param challenges.SimpleHTTP chall:
-        :type account_public_key:
-            `~cryptography.hazmat.primitives.asymmetric.rsa.RSAPublicKey`
-            or
-            `~cryptography.hazmat.primitives.asymmetric.dsa.DSAPublicKey`
-            or
-            `~cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePublicKey`
-            wrapped in `.ComparableKey`
-
+        :return: ``True`` iff verification of the key authorization was
+            successful.
         :rtype: bool
 
         """
-        if not validation.verify(key=account_public_key):
+        parts = self.key_authorization.split('.')  # pylint: disable=no-member
+        if len(parts) != 2:
+            logger.debug("Key authorization (%r) is not well formed",
+                         self.key_authorization)
             return False
 
-        try:
-            resource = SimpleHTTPProvisionedResource.json_loads(
-                validation.payload.decode('utf-8'))
-        except jose.DeserializationError as error:
-            logger.debug(error)
+        if parts[0] != chall.encode("token"):
+            logger.debug("Mismatching token in key authorization: "
+                         "%r instead of %r", parts[0], chall.encode("token"))
             return False
 
-        return resource.token == chall.token and resource.tls == self.tls
+        thumbprint = jose.b64encode(account_public_key.thumbprint(
+            hash_function=self.thumbprint_hash_function)).decode()
+        if parts[1] != thumbprint:
+            logger.debug("Mismatching thumbprint in key authorization: "
+                         "%r instead of %r", parts[0], thumbprint)
+            return False
+
+        return True
+
+
+class KeyAuthorizationChallenge(_TokenDVChallenge):
+    # pylint: disable=abstract-class-little-used,too-many-ancestors
+    """Challenge based on Key Authorization.
+
+    :param response_cls: Subclass of `KeyAuthorizationChallengeResponse`
+        that will be used to generate `response`.
+
+    """
+    __metaclass__ = abc.ABCMeta
+
+    response_cls = NotImplemented
+    thumbprint_hash_function = (
+        KeyAuthorizationChallengeResponse.thumbprint_hash_function)
+
+    def key_authorization(self, account_key):
+        """Generate Key Authorization.
+
+        :param JWK account_key:
+        :rtype unicode:
+
+        """
+        return self.encode("token") + "." + jose.b64encode(
+            account_key.thumbprint(
+                hash_function=self.thumbprint_hash_function)).decode()
+
+    def response(self, account_key):
+        """Generate response to the challenge.
+
+        :param JWK account_key:
+
+        :returns: Response (initialized `response_cls`) to the challenge.
+        :rtype: KeyAuthorizationChallengeResponse
+
+        """
+        return self.response_cls(
+            key_authorization=self.key_authorization(account_key))
+
+    @abc.abstractmethod
+    def validation(self, account_key):
+        """Generate validation for the challenge.
+
+        Subclasses must implement this method, but they are likely to
+        return completely different data structures, depending on what's
+        necessary to complete the challenge. Interepretation of that
+        return value must be known to the caller.
+
+        :param JWK account_key:
+        :returns: Challenge-specific validation.
+
+        """
+        raise NotImplementedError()  # pragma: no cover
+
+    def response_and_validation(self, account_key):
+        """Generate response and validation.
+
+        Convenience function that return results of `response` and
+        `validation`.
+
+        :param JWK account_key:
+        :rtype: tuple
+
+        """
+        return (self.response(account_key), self.validation(account_key))
+
+
+@ChallengeResponse.register
+class HTTP01Response(KeyAuthorizationChallengeResponse):
+    """ACME http-01 challenge response."""
+    typ = "http-01"
+
+    PORT = 80
 
     def simple_verify(self, chall, domain, account_public_key, port=None):
         """Simple verify.
-
-        According to the ACME specification, "the ACME server MUST
-        ignore the certificate provided by the HTTPS server", so
-        ``requests.get`` is called with ``verify=False``.
 
         :param challenges.SimpleHTTP chall: Corresponding challenge.
         :param unicode domain: Domain name being verified.
         :param account_public_key: Public key for the key pair
             being authorized. If ``None`` key verification is not
             performed!
-        :type account_public_key:
-            `~cryptography.hazmat.primitives.asymmetric.rsa.RSAPublicKey`
-            or
-            `~cryptography.hazmat.primitives.asymmetric.dsa.DSAPublicKey`
-            or
-            `~cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePublicKey`
-            wrapped in `.ComparableKey`
+        :param JWK account_public_key:
         :param int port: Port used in the validation.
 
         :returns: ``True`` iff validation is successful, ``False``
@@ -234,48 +237,89 @@ class SimpleHTTPResponse(ChallengeResponse):
         :rtype: bool
 
         """
+        if not self.verify(chall, account_public_key):
+            logger.debug("Verification of key authorization in response failed")
+            return False
+
         # TODO: ACME specification defines URI template that doesn't
         # allow to use a custom port... Make sure port is not in the
         # request URI, if it's standard.
-        if port is not None and port != self.port:
-            logger.warn(
+        if port is not None and port != self.PORT:
+            logger.warning(
                 "Using non-standard port for SimpleHTTP verification: %s", port)
             domain += ":{0}".format(port)
 
-        uri = self.uri(domain, chall)
+        uri = chall.uri(domain)
         logger.debug("Verifying %s at %s...", chall.typ, uri)
         try:
-            http_response = requests.get(uri, verify=False)
+            http_response = requests.get(uri)
         except requests.exceptions.RequestException as error:
             logger.error("Unable to reach %s: %s", uri, error)
             return False
         logger.debug("Received %s: %s. Headers: %s", http_response,
                      http_response.text, http_response.headers)
 
-        if self.CONTENT_TYPE != http_response.headers.get(
-                "Content-Type", self.CONTENT_TYPE):
+        found_ct = http_response.headers.get(
+            "Content-Type", chall.CONTENT_TYPE)
+        if found_ct != chall.CONTENT_TYPE:
+            logger.debug("Wrong Content-Type: found %r, expected %r",
+                         found_ct, chall.CONTENT_TYPE)
             return False
 
-        try:
-            validation = jose.JWS.json_loads(http_response.text)
-        except jose.DeserializationError as error:
-            logger.debug(error)
+        if self.key_authorization != http_response.text:
+            logger.debug("Key authorization from response (%r) doesn't match "
+                         "HTTP response (%r)", self.key_authorization,
+                         http_response.text)
             return False
 
-        return self.check_validation(validation, chall, account_public_key)
+        return True
 
 
-class SimpleHTTPProvisionedResource(jose.JSONObjectWithFields):
-    """SimpleHTTP provisioned resource."""
-    typ = fields.Fixed("type", SimpleHTTP.typ)
-    token = SimpleHTTP._fields["token"]
-    # If the "tls" field is not included in the response, then
-    # validation object MUST have its "tls" field set to "true".
-    tls = jose.Field("tls", omitempty=False)
+@Challenge.register  # pylint: disable=too-many-ancestors
+class HTTP01(KeyAuthorizationChallenge):
+    """ACME http-01 challenge."""
+    response_cls = HTTP01Response
+    typ = response_cls.typ
+
+    CONTENT_TYPE = "text/plain"
+    """Only valid value for Content-Type if the header is included."""
+
+    URI_ROOT_PATH = ".well-known/acme-challenge"
+    """URI root path for the server provisioned resource."""
+
+    @property
+    def path(self):
+        """Path (starting with '/') for provisioned resource.
+
+        :rtype: string
+
+        """
+        return '/' + self.URI_ROOT_PATH + '/' + self.encode('token')
+
+    def uri(self, domain):
+        """Create an URI to the provisioned resource.
+
+        Forms an URI to the HTTPS server provisioned resource
+        (containing :attr:`~SimpleHTTP.token`).
+
+        :param unicode domain: Domain name being verified.
+        :rtype: string
+
+        """
+        return "http://" + domain + self.path
+
+    def validation(self, account_key):
+        """Generate validation.
+
+        :param JWK account_key:
+        :rtype: unicode
+
+        """
+        return self.key_authorization(account_key)
 
 
-@Challenge.register
-class DVSNI(DVChallenge):
+@Challenge.register  # pylint: disable=too-many-ancestors
+class DVSNI(_TokenDVChallenge):
     """ACME "dvsni" challenge.
 
     :ivar bytes token: Random data, **not** base64-encoded.
@@ -285,13 +329,6 @@ class DVSNI(DVChallenge):
 
     PORT = 443
     """Port to perform DVSNI challenge."""
-
-    TOKEN_SIZE = 128 / 8  # Based on the entropy value from the spec
-    """Minimum size of the :attr:`token` in bytes."""
-
-    token = jose.Field(
-        "token", encoder=jose.encode_b64jose, decoder=functools.partial(
-            jose.decode_b64jose, size=TOKEN_SIZE, minimum=True))
 
     def gen_response(self, account_key, alg=jose.RS256, **kwargs):
         """Generate response.
@@ -406,16 +443,11 @@ class DVSNIResponse(ChallengeResponse):
 
         :param .challenges.DVSNI chall: Corresponding challenge.
         :param str domain: Domain name being validated.
-        :type account_public_key:
-            `~cryptography.hazmat.primitives.asymmetric.rsa.RSAPublicKey`
-            or
-            `~cryptography.hazmat.primitives.asymmetric.dsa.DSAPublicKey`
-            or
-            `~cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePublicKey`
-            wrapped in `.ComparableKey`
+        :param JWK account_public_key:
         :param OpenSSL.crypto.X509 cert: Optional certificate. If not
             provided (``None``) certificate will be retrieved using
             `probe_cert`.
+
 
         :returns: ``True`` iff client's control of the domain has been
             verified, ``False`` otherwise.
@@ -491,7 +523,7 @@ class ProofOfPossession(ContinuityChallenge):
     class Hints(jose.JSONObjectWithFields):
         """Hints for "proofOfPossession" challenge.
 
-        :ivar jwk: JSON Web Key (:class:`acme.jose.JWK`)
+        :ivar JWK jwk: JSON Web Key
         :ivar tuple cert_fingerprints: `tuple` of `unicode`
         :ivar tuple certs: Sequence of :class:`acme.jose.ComparableX509`
             certificates.
@@ -548,24 +580,13 @@ class ProofOfPossessionResponse(ChallengeResponse):
         return self.signature.verify(self.nonce)
 
 
-@Challenge.register
-class DNS(DVChallenge):
-    """ACME "dns" challenge.
-
-    :ivar unicode token:
-
-    """
+@Challenge.register  # pylint: disable=too-many-ancestors
+class DNS(_TokenDVChallenge):
+    """ACME "dns" challenge."""
     typ = "dns"
 
     LABEL = "_acme-challenge"
     """Label clients prepend to the domain name being validated."""
-
-    TOKEN_SIZE = 128 / 8  # Based on the entropy value from the spec
-    """Minimum size of the :attr:`token` in bytes."""
-
-    token = jose.Field(
-        "token", encoder=jose.encode_b64jose, decoder=functools.partial(
-            jose.decode_b64jose, size=TOKEN_SIZE, minimum=True))
 
     def gen_validation(self, account_key, alg=jose.RS256, **kwargs):
         """Generate validation.
@@ -585,14 +606,7 @@ class DNS(DVChallenge):
         """Check validation.
 
         :param JWS validation:
-        :type account_public_key:
-            `~cryptography.hazmat.primitives.asymmetric.rsa.RSAPublicKey`
-            or
-            `~cryptography.hazmat.primitives.asymmetric.dsa.DSAPublicKey`
-            or
-            `~cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePublicKey`
-            wrapped in `.ComparableKey`
-
+        :param JWK account_public_key:
         :rtype: bool
 
         """
@@ -641,13 +655,7 @@ class DNSResponse(ChallengeResponse):
         """Check validation.
 
         :param challenges.DNS chall:
-        :type account_public_key:
-            `~cryptography.hazmat.primitives.asymmetric.rsa.RSAPublicKey`
-            or
-            `~cryptography.hazmat.primitives.asymmetric.dsa.DSAPublicKey`
-            or
-            `~cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePublicKey`
-            wrapped in `.ComparableKey`
+        :param JWK account_public_key:
 
         :rtype: bool
 

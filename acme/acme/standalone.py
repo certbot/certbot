@@ -4,7 +4,6 @@ import collections
 import functools
 import logging
 import os
-import socket
 import sys
 
 import six
@@ -50,62 +49,35 @@ class ACMEServerMixin:  # pylint: disable=old-style-class
     server_version = "ACME client standalone challenge solver"
     allow_reuse_address = True
 
-    def __init__(self):
-        self._stopped = False
-
-    def serve_forever2(self):
-        """Serve forever, until other thread calls `shutdown2`."""
-        logger.debug("Starting server at %s:%d...",
-                     *self.socket.getsockname()[:2])
-        while not self._stopped:
-            self.handle_request()
-
-    def shutdown2(self):
-        """Shutdown server loop from `serve_forever2`."""
-        self._stopped = True
-
-        # dummy request to terminate last server_forever2.handle_request()
-        sock = socket.socket()
-        try:
-            sock.connect(self.socket.getsockname())
-        except socket.error:
-            pass  # thread is probably already finished
-        finally:
-            sock.close()
-
-        self.server_close()
-
 
 class DVSNIServer(TLSServer, ACMEServerMixin):
     """DVSNI Server."""
 
     def __init__(self, server_address, certs):
-        ACMEServerMixin.__init__(self)
         TLSServer.__init__(
             self, server_address, socketserver.BaseRequestHandler, certs=certs)
 
 
-class SimpleHTTPServer(BaseHTTPServer.HTTPServer, ACMEServerMixin):
-    """SimpleHTTP Server."""
+class HTTP01Server(BaseHTTPServer.HTTPServer, ACMEServerMixin):
+    """HTTP01 Server."""
 
     def __init__(self, server_address, resources):
-        ACMEServerMixin.__init__(self)
         BaseHTTPServer.HTTPServer.__init__(
-            self, server_address, SimpleHTTPRequestHandler.partial_init(
+            self, server_address, HTTP01RequestHandler.partial_init(
                 simple_http_resources=resources))
 
 
-class SimpleHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
-    """SimpleHTTP challenge handler.
+class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+    """HTTP01 challenge handler.
 
     Adheres to the stdlib's `socketserver.BaseRequestHandler` interface.
 
-    :ivar set simple_http_resources: A set of `SimpleHTTPResource`
+    :ivar set simple_http_resources: A set of `HTTP01Resource`
         objects. TODO: better name?
 
     """
-    SimpleHTTPResource = collections.namedtuple(
-        "SimpleHTTPResource", "chall response validation")
+    HTTP01Resource = collections.namedtuple(
+        "HTTP01Resource", "chall response validation")
 
     def __init__(self, *args, **kwargs):
         self.simple_http_resources = kwargs.pop("simple_http_resources", set())
@@ -114,7 +86,7 @@ class SimpleHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     def do_GET(self):  # pylint: disable=invalid-name,missing-docstring
         if self.path == "/":
             self.handle_index()
-        elif self.path.startswith("/" + challenges.SimpleHTTP.URI_ROOT_PATH):
+        elif self.path.startswith("/" + challenges.HTTP01.URI_ROOT_PATH):
             self.handle_simple_http_resource()
         else:
             self.handle_404()
@@ -134,15 +106,15 @@ class SimpleHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         self.wfile.write(b"404")
 
     def handle_simple_http_resource(self):
-        """Handle SimpleHTTP provisioned resources."""
+        """Handle HTTP01 provisioned resources."""
         for resource in self.simple_http_resources:
             if resource.chall.path == self.path:
-                logger.debug("Serving SimpleHTTP with token %r",
+                logger.debug("Serving HTTP01 with token %r",
                              resource.chall.encode("token"))
                 self.send_response(http_client.OK)
-                self.send_header("Content-type", resource.response.CONTENT_TYPE)
+                self.send_header("Content-type", resource.chall.CONTENT_TYPE)
                 self.end_headers()
-                self.wfile.write(resource.validation.json_dumps().encode())
+                self.wfile.write(resource.validation.encode())
                 return
         else:  # pylint: disable=useless-else-on-loop
             logger.debug("No resources to serve")

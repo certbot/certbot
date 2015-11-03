@@ -51,7 +51,7 @@ class PluginEntryPointTest(unittest.TestCase):
 
     def test_description(self):
         self.assertEqual(
-                "Automatically configure and run a simple webserver",
+                "Automatically use a temporary webserver",
                 self.plugin_ep.description)
 
     def test_description_with_name(self):

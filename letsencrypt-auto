@@ -47,6 +47,9 @@ then
   elif [ -f /etc/redhat-release ] ; then
     echo "Bootstrapping dependencies for RedHat-based OSes..."
     $SUDO $BOOTSTRAP/_rpm_common.sh
+  elif [ -f /etc/gentoo-release ] ; then
+    echo "Bootstrapping dependencies for Gentoo-based OSes..."
+    $SUDO $BOOTSTRAP/_gentoo_common.sh
   elif uname | grep -iq FreeBSD ; then
     echo "Bootstrapping dependencies for FreeBSD..."
     $SUDO $BOOTSTRAP/freebsd.sh
@@ -70,7 +73,7 @@ then
   fi
 fi
 
-echo -n "Updating letsencrypt and virtual environment dependencies..."
+printf "Updating letsencrypt and virtual environment dependencies..."
 if [ "$VERBOSE" = 1 ]  ; then
   echo
   $VENV_BIN/pip install -U setuptools
@@ -83,15 +86,15 @@ if [ "$VERBOSE" = 1 ]  ; then
   fi
 else
   $VENV_BIN/pip install -U setuptools > /dev/null
-  echo -n .
+  printf .
   $VENV_BIN/pip install -U pip > /dev/null
-  echo -n .
+  printf .
   # nginx is buggy / disabled for now...
   $VENV_BIN/pip install -U letsencrypt > /dev/null
-  echo -n .
+  printf .
   $VENV_BIN/pip install -U letsencrypt-apache > /dev/null
   if $VENV_BIN/pip freeze | grep -q letsencrypt-nginx ; then
-    echo -n .
+    printf .
     $VENV_BIN/pip install -U letsencrypt-nginx > /dev/null
   fi
   echo

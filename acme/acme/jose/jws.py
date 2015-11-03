@@ -104,7 +104,7 @@ class Header(json_util.JSONObjectWithFields):
         .. todo:: Supports only "jwk" header parameter lookup.
 
         :returns: (Public) key found in the header.
-        :rtype: :class:`acme.jose.jwk.JWK`
+        :rtype: .JWK
 
         :raises acme.jose.errors.Error: if key could not be found
 
@@ -194,8 +194,7 @@ class Signature(json_util.JSONObjectWithFields):
     def verify(self, payload, key=None):
         """Verify.
 
-        :param key: Key used for verification.
-        :type key: :class:`acme.jose.jwk.JWK`
+        :param JWK key: Key used for verification.
 
         """
         key = self.combined.find_key() if key is None else key
@@ -208,8 +207,7 @@ class Signature(json_util.JSONObjectWithFields):
              protect=frozenset(), **kwargs):
         """Sign.
 
-        :param key: Key for signature.
-        :type key: :class:`acme.jose.jwk.JWK`
+        :param JWK key: Key for signature.
 
         """
         assert isinstance(key, alg.kty)

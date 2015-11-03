@@ -23,13 +23,13 @@ class AuthenticatorTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.plugins.manual import Authenticator
         self.config = mock.MagicMock(
-            simple_http_port=8080, manual_test_mode=False)
+            http01_port=8080, manual_test_mode=False)
         self.auth = Authenticator(config=self.config, name="manual")
-        self.achalls = [achallenges.SimpleHTTP(
-            challb=acme_util.SIMPLE_HTTP_P, domain="foo.com", account_key=KEY)]
+        self.achalls = [achallenges.KeyAuthorizationAnnotatedChallenge(
+            challb=acme_util.HTTP01_P, domain="foo.com", account_key=KEY)]
 
         config_test_mode = mock.MagicMock(
-            simple_http_port=8080, manual_test_mode=True)
+            http01_port=8080, manual_test_mode=True)
         self.auth_test_mode = Authenticator(
             config=config_test_mode, name="manual")
 
@@ -45,13 +45,13 @@ class AuthenticatorTest(unittest.TestCase):
 
     @mock.patch("letsencrypt.plugins.manual.zope.component.getUtility")
     @mock.patch("letsencrypt.plugins.manual.sys.stdout")
-    @mock.patch("acme.challenges.SimpleHTTPResponse.simple_verify")
+    @mock.patch("acme.challenges.HTTP01Response.simple_verify")
     @mock.patch("__builtin__.raw_input")
     def test_perform(self, mock_raw_input, mock_verify, mock_stdout, mock_interaction):
         mock_verify.return_value = True
         mock_interaction().yesno.return_value = True
 
-        resp = challenges.SimpleHTTPResponse(tls=False)
+        resp = self.achalls[0].response(KEY)
         self.assertEqual([resp], self.auth.perform(self.achalls))
         self.assertEqual(1, mock_raw_input.call_count)
         mock_verify.assert_called_with(
@@ -89,7 +89,7 @@ class AuthenticatorTest(unittest.TestCase):
 
     @mock.patch("letsencrypt.plugins.manual.socket.socket")
     @mock.patch("letsencrypt.plugins.manual.time.sleep", autospec=True)
-    @mock.patch("acme.challenges.SimpleHTTPResponse.simple_verify",
+    @mock.patch("acme.challenges.HTTP01Response.simple_verify",
                 autospec=True)
     @mock.patch("letsencrypt.plugins.manual.subprocess.Popen", autospec=True)
     def test_perform_test_mode(self, mock_popen, mock_verify, mock_sleep,

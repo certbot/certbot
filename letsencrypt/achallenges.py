@@ -45,6 +45,15 @@ class AnnotatedChallenge(jose.ImmutableMap):
         return getattr(self.challb, name)
 
 
+class KeyAuthorizationAnnotatedChallenge(AnnotatedChallenge):
+    """Client annotated `KeyAuthorizationChallenge` challenge."""
+    __slots__ = ('challb', 'domain', 'account_key')
+
+    def response_and_validation(self):
+        """Generate response and validation."""
+        return self.challb.chall.response_and_validation(self.account_key)
+
+
 class DVSNI(AnnotatedChallenge):
     """Client annotated "dvsni" ACME challenge.
 
@@ -74,31 +83,6 @@ class DVSNI(AnnotatedChallenge):
         response = self.challb.chall.gen_response(self.account_key, alg=alg)
         cert, key = response.gen_cert(key=key, bits=bits)
         return response, cert, key
-
-
-class SimpleHTTP(AnnotatedChallenge):
-    """Client annotated "simpleHttp" ACME challenge."""
-    __slots__ = ('challb', 'domain', 'account_key')
-    acme_type = challenges.SimpleHTTP
-
-    def gen_response_and_validation(self, tls):
-        """Generates a SimpleHTTP response and validation.
-
-        :param bool tls: True if TLS should be used
-
-        :returns: ``(response, validation)`` tuple, where ``response`` is
-            an instance of `acme.challenges.SimpleHTTPResponse` and
-            ``validation`` is an instance of
-            `acme.challenges.SimpleHTTPProvisionedResource`.
-        :rtype: tuple
-
-        """
-        response = challenges.SimpleHTTPResponse(tls=tls)
-
-        validation = response.gen_validation(
-            self.challb.chall, self.account_key)
-        logger.debug("Simple HTTP validation payload: %s", validation.payload)
-        return response, validation
 
 
 class DNS(AnnotatedChallenge):

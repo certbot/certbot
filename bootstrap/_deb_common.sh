@@ -33,7 +33,7 @@ if apt-cache show python-virtualenv > /dev/null ; then
 fi
 
 apt-get install -y --no-install-recommends \
-  git-core \
+  git \
   python \
   python-dev \
   $virtualenv \

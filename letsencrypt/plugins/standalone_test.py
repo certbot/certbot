@@ -43,12 +43,12 @@ class ServerManagerTest(unittest.TestCase):
         self._test_run_stop(challenges.DVSNI)
 
     def test_run_stop_simplehttp(self):
-        self._test_run_stop(challenges.SimpleHTTP)
+        self._test_run_stop(challenges.HTTP01)
 
     def test_run_idempotent(self):
-        server = self.mgr.run(port=0, challenge_type=challenges.SimpleHTTP)
+        server = self.mgr.run(port=0, challenge_type=challenges.HTTP01)
         port = server.socket.getsockname()[1]  # pylint: disable=no-member
-        server2 = self.mgr.run(port=port, challenge_type=challenges.SimpleHTTP)
+        server2 = self.mgr.run(port=port, challenge_type=challenges.HTTP01)
         self.assertEqual(self.mgr.running(), {port: server})
         self.assertTrue(server is server2)
         self.mgr.stop(port)
@@ -60,7 +60,7 @@ class ServerManagerTest(unittest.TestCase):
         port = some_server.getsockname()[1]
         self.assertRaises(
             errors.StandaloneBindError, self.mgr.run, port,
-            challenge_type=challenges.SimpleHTTP)
+            challenge_type=challenges.HTTP01)
         self.assertEqual(self.mgr.running(), {})
 
 
@@ -74,9 +74,9 @@ class SupportedChallengesValidatorTest(unittest.TestCase):
 
     def test_correct(self):
         self.assertEqual("dvsni", self._call("dvsni"))
-        self.assertEqual("simpleHttp", self._call("simpleHttp"))
-        self.assertEqual("dvsni,simpleHttp", self._call("dvsni,simpleHttp"))
-        self.assertEqual("simpleHttp,dvsni", self._call("simpleHttp,dvsni"))
+        self.assertEqual("http-01", self._call("http-01"))
+        self.assertEqual("dvsni,http-01", self._call("dvsni,http-01"))
+        self.assertEqual("http-01,dvsni", self._call("http-01,dvsni"))
 
     def test_unrecognized(self):
         assert "foo" not in challenges.Challenge.TYPES
@@ -91,25 +91,26 @@ class AuthenticatorTest(unittest.TestCase):
 
     def setUp(self):
         from letsencrypt.plugins.standalone import Authenticator
-        self.config = mock.MagicMock(dvsni_port=1234, simple_http_port=4321,
-                                     standalone_supported_challenges="dvsni,simpleHttp")
+        self.config = mock.MagicMock(
+            dvsni_port=1234, http01_port=4321,
+            standalone_supported_challenges="dvsni,http-01")
         self.auth = Authenticator(self.config, name="standalone")
 
     def test_supported_challenges(self):
         self.assertEqual(self.auth.supported_challenges,
-                         set([challenges.DVSNI, challenges.SimpleHTTP]))
+                         set([challenges.DVSNI, challenges.HTTP01]))
 
     def test_more_info(self):
         self.assertTrue(isinstance(self.auth.more_info(), six.string_types))
 
     def test_get_chall_pref(self):
         self.assertEqual(set(self.auth.get_chall_pref(domain=None)),
-                         set([challenges.DVSNI, challenges.SimpleHTTP]))
+                         set([challenges.DVSNI, challenges.HTTP01]))
 
     @mock.patch("letsencrypt.plugins.standalone.util")
     def test_perform_alredy_listening(self, mock_util):
         for chall, port in ((challenges.DVSNI.typ, 1234),
-                            (challenges.SimpleHTTP.typ, 4321)):
+                            (challenges.HTTP01.typ, 4321)):
             mock_util.already_listening.return_value = True
             self.config.standalone_supported_challenges = chall
             self.assertRaises(
@@ -152,8 +153,8 @@ class AuthenticatorTest(unittest.TestCase):
     def test_perform2(self):
         domain = b'localhost'
         key = jose.JWK.load(test_util.load_vector('rsa512_key.pem'))
-        simple_http = achallenges.SimpleHTTP(
-            challb=acme_util.SIMPLE_HTTP_P, domain=domain, account_key=key)
+        simple_http = achallenges.KeyAuthorizationAnnotatedChallenge(
+            challb=acme_util.HTTP01_P, domain=domain, account_key=key)
         dvsni = achallenges.DVSNI(
             challb=acme_util.DVSNI_P, domain=domain, account_key=key)
 
@@ -167,11 +168,11 @@ class AuthenticatorTest(unittest.TestCase):
 
         self.assertTrue(isinstance(responses, list))
         self.assertEqual(2, len(responses))
-        self.assertTrue(isinstance(responses[0], challenges.SimpleHTTPResponse))
+        self.assertTrue(isinstance(responses[0], challenges.HTTP01Response))
         self.assertTrue(isinstance(responses[1], challenges.DVSNIResponse))
 
         self.assertEqual(self.auth.servers.run.mock_calls, [
-            mock.call(4321, challenges.SimpleHTTP),
+            mock.call(4321, challenges.HTTP01),
             mock.call(1234, challenges.DVSNI),
         ])
         self.assertEqual(self.auth.served, {
@@ -181,8 +182,8 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertEqual(1, len(self.auth.simple_http_resources))
         self.assertEqual(2, len(self.auth.certs))
         self.assertEqual(list(self.auth.simple_http_resources), [
-            acme_standalone.SimpleHTTPRequestHandler.SimpleHTTPResource(
-                acme_util.SIMPLE_HTTP, responses[0], mock.ANY)])
+            acme_standalone.HTTP01RequestHandler.HTTP01Resource(
+                acme_util.HTTP01, responses[0], mock.ANY)])
 
     def test_cleanup(self):
         self.auth.servers = mock.Mock()

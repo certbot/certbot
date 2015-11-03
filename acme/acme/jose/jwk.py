@@ -47,6 +47,8 @@ class JWK(json_util.TypedJSONObjectWithFields):
 
         https://tools.ietf.org/html/rfc7638
 
+        :returns bytes:
+
         """
         digest = hashes.Hash(hash_function(), backend=default_backend())
         digest.update(json.dumps(
