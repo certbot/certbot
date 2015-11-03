@@ -64,47 +64,56 @@ class CLITest(unittest.TestCase):
             self._call([])
             self.assertEqual(1, mock_run.call_count)
 
+    def _help_output(self, args):
+        "Run a help command, and return the help string for scrutiny"
+        output = StringIO.StringIO()
+        with mock.patch('letsencrypt.cli.sys.stdout', new=output):
+            self.assertRaises(SystemExit, self._call_stdout, args)
+            out = output.getvalue()
+            return out
+
     def test_help(self):
         self.assertRaises(SystemExit, self._call, ['--help'])
         self.assertRaises(SystemExit, self._call, ['--help', 'all'])
-        output = StringIO.StringIO()
-        with mock.patch('letsencrypt.cli.sys.stdout', new=output):
-            plugins = disco.PluginsRegistry.find_all()
-            self.assertRaises(SystemExit, self._call_stdout, ['--help', 'all'])
-            out = output.getvalue()
-            self.assertTrue("--configurator" in out)
-            self.assertTrue("how a cert is deployed" in out)
-            self.assertTrue("--manual-test-mode" in out)
-            output.truncate(0)
+        plugins = disco.PluginsRegistry.find_all()
+        out = self._help_output(['--help', 'all'])
+        self.assertTrue("--configurator" in out)
+        self.assertTrue("how a cert is deployed" in out)
+        self.assertTrue("--manual-test-mode" in out)
 
-            self.assertRaises(SystemExit, self._call_stdout, ['-h', 'nginx'])
-            out = output.getvalue()
-            if "nginx" in plugins:
-                # may be false while building distributions without plugins
-                self.assertTrue("--nginx-ctl" in out)
-            self.assertTrue("--manual-test-mode" not in out)
-            self.assertTrue("--checkpoints" not in out)
-            output.truncate(0)
+        out = self._help_output(['-h', 'nginx'])
+        if "nginx" in plugins:
+            # may be false while building distributions without plugins
+            self.assertTrue("--nginx-ctl" in out)
+        self.assertTrue("--manual-test-mode" not in out)
+        self.assertTrue("--checkpoints" not in out)
 
-            self.assertRaises(SystemExit, self._call_stdout, ['-h'])
-            out = output.getvalue()
-            if "nginx" in plugins:
-                self.assertTrue("Use the Nginx plugin" in out)
-            else:
-                self.assertTrue("(nginx support is experimental" in out)
-            output.truncate(0)
+        out = self._help_output(['-h'])
+        if "nginx" in plugins:
+            self.assertTrue("Use the Nginx plugin" in out)
+        else:
+            self.assertTrue("(nginx support is experimental" in out)
 
-            self.assertRaises(SystemExit, self._call_stdout, ['--help', 'plugins'])
-            out = output.getvalue()
-            self.assertTrue("--manual-test-mode" not in out)
-            self.assertTrue("--prepare" in out)
-            self.assertTrue("Plugin options" in out)
-            output.truncate(0)
+        out = self._help_output(['--help', 'plugins'])
+        self.assertTrue("--manual-test-mode" not in out)
+        self.assertTrue("--prepare" in out)
+        self.assertTrue("Plugin options" in out)
 
-            self.assertRaises(SystemExit, self._call_stdout, ['-h'])
-            out = output.getvalue()
-            from letsencrypt import cli
-            self.assertTrue(cli.usage_strings(plugins)[0] in out)
+        out = self._help_output(['--help', 'install'])
+        self.assertTrue("--cert-path" in out)
+        self.assertTrue("--key-path" in out)
+
+        out = self._help_output(['--help', 'revoke'])
+        self.assertTrue("--cert-path" in out)
+        self.assertTrue("--key-path" in out)
+
+        out = self._help_output(['-h', 'config_changes'])
+        self.assertTrue("--cert-path" not in out)
+        self.assertTrue("--key-path" not in out)
+
+        out = self._help_output(['-h'])
+        from letsencrypt import cli
+        self.assertTrue(cli.usage_strings(plugins)[0] in out)
 
     @mock.patch('letsencrypt.cli.display_ops')
     def test_installer_selection(self, mock_display_ops):

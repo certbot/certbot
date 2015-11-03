@@ -652,12 +652,12 @@ class HelpfulArgumentParser(object):
         help1 = self.prescan_for_flag("-h", self.help_topics)
         help2 = self.prescan_for_flag("--help", self.help_topics)
         assert max(True, "a") == "a", "Gravity changed direction"
-        help_arg = max(help1, help2)
-        if help_arg is True:
+        self.help_arg = max(help1, help2)
+        if self.help_arg is True:
             # just --help with no topic; avoid argparse altogether
             print usage
             sys.exit(0)
-        self.visible_topics = self.determine_help_topics(help_arg)
+        self.visible_topics = self.determine_help_topics(self.help_arg)
         #print self.visible_topics
         self.groups = {}  # elements are added by .add_group()
 
@@ -875,12 +875,12 @@ def prepare_and_parse_args(plugins, args):
         help="Require that all configuration files are owned by the current "
              "user; only needed if your config is somewhere unsafe like /tmp/")
 
+    _create_subparsers(helpful)
     _paths_parser(helpful)
     # _plugins_parsing should be the last thing to act upon the main
     # parser (--help should display plugin-specific options last)
     _plugins_parsing(helpful, plugins)
 
-    _create_subparsers(helpful)
 
     return helpful.parse_args()
 
@@ -916,19 +916,28 @@ def _create_subparsers(helpful):
 def _paths_parser(helpful):
     add = helpful.add
     verb = helpful.verb
+    if verb == "help":
+        verb = helpful.help_arg
     helpful.add_group(
         "paths", description="Arguments changing execution paths & servers")
 
-    cph = "Path to where cert is saved (with auth), installed (with install --csr) or revoked."
+    cph = "Path to where cert is saved (with auth --csr), installed from or revoked."
+    section = "paths"
+    if verb in ("install", "revoke", "certonly"):
+        section = verb
     if verb == "certonly":
-        add("paths", "--cert-path", default=flag_default("auth_cert_path"), help=cph)
+        add(section, "--cert-path", default=flag_default("auth_cert_path"), help=cph)
     elif verb == "revoke":
-        add("paths", "--cert-path", type=read_file, required=True, help=cph)
+        add(section, "--cert-path", type=read_file, required=True, help=cph)
     else:
-        add("paths", "--cert-path", help=cph, required=(verb == "install"))
+        add(section, "--cert-path", help=cph, required=(verb == "install"))
 
+    section = "paths"
+    if verb in ("install", "revoke"):
+        section = verb
+    print helpful.help_arg, helpful.help_arg == "install"
     # revoke --key-path reads a file, install --key-path takes a string
-    add("paths", "--key-path", type=((verb == "revoke" and read_file) or str),
+    add(section, "--key-path", type=((verb == "revoke" and read_file) or str),
         required=(verb == "install"),
         help="Path to private key for cert creation or revocation (if account key is missing)")
 
