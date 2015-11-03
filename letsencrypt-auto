@@ -14,8 +14,10 @@ VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
 VENV_BIN=${VENV_PATH}/bin
 
 if test "`id -u`" -ne "0" ; then
-  if ! type sudo &>/dev/null; then
-    sudo() {
+  if type sudo &>/dev/null; then
+    SUDO=sudo
+  else
+    su_sudo() {
       args=""
       while [ $# -ne 0 ]; do
         args="$args'$(printf "%s" "$1" | sed -e "s/'/'\"'\"'/g")' "
@@ -23,8 +25,8 @@ if test "`id -u`" -ne "0" ; then
       done
       su root -c "$args"
     }
+    SUDO=su_sudo
   fi
-  SUDO=sudo
 else
   SUDO=
 fi
