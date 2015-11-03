@@ -282,7 +282,7 @@ class HTTP01(KeyAuthorizationChallenge):
     typ = response_cls.typ
 
     CONTENT_TYPE = "text/plain"
-    """Content-Type header that must be used for provisioned resource."""
+    """Only valid value for Content-Type if the header is included."""
 
     URI_ROOT_PATH = ".well-known/acme-challenge"
     """URI root path for the server provisioned resource."""
