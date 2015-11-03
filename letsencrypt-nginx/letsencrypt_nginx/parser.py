@@ -491,5 +491,5 @@ def _add_directives(block, directives, replace=False):
                     changed = True
             if not changed:
                 raise errors.MisconfigurationError(
-                    'LetsEncrypt expected directive for %s in the Nginx '
+                    'Let\'s Encrypt expected directive for %s in the Nginx '
                     'config but did not find it.' % directive[0])

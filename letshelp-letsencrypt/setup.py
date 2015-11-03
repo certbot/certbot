@@ -14,6 +14,11 @@ if sys.version_info < (2, 7):
 else:
     install_requires.append('mock')
 
+docs_extras = [
+    'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
+    'sphinx_rtd_theme',
+]
+
 setup(
     name='letshelp-letsencrypt',
     version=version,
@@ -29,6 +34,7 @@ setup(
         'Operating System :: POSIX :: Linux',
         'Programming Language :: Python',
         'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Security',
@@ -41,6 +47,9 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=install_requires,
+    extras_require={
+        'docs': docs_extras,
+    },
     entry_points={
         'console_scripts': [
             'letshelp-letsencrypt-apache = letshelp_letsencrypt.apache:main',

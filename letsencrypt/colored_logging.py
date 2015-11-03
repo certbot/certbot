@@ -17,7 +17,12 @@ class StreamHandler(logging.StreamHandler):
     """
 
     def __init__(self, stream=None):
-        super(StreamHandler, self).__init__(stream)
+        if sys.version_info < (2, 7):
+            # pragma: no cover
+            # pylint: disable=non-parent-init-called
+            logging.StreamHandler.__init__(self, stream)
+        else:
+            super(StreamHandler, self).__init__(stream)
         self.colored = (sys.stderr.isatty() if stream is None else
                         stream.isatty())
         self.red_level = logging.WARNING
@@ -31,10 +36,10 @@ class StreamHandler(logging.StreamHandler):
         :rtype: str
 
         """
-        output = super(StreamHandler, self).format(record)
+        out = (logging.StreamHandler.format(self, record)
+               if sys.version_info < (2, 7)
+               else super(StreamHandler, self).format(record))
         if self.colored and record.levelno >= self.red_level:
-            return ''.join((le_util.ANSI_SGR_RED,
-                            output,
-                            le_util.ANSI_SGR_RESET))
+            return ''.join((le_util.ANSI_SGR_RED, out, le_util.ANSI_SGR_RESET))
         else:
-            return output
+            return out

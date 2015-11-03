@@ -50,7 +50,9 @@ class PluginEntryPointTest(unittest.TestCase):
                 name, PluginEntryPoint.entry_point_to_plugin_name(entry_point))
 
     def test_description(self):
-        self.assertEqual("Standalone Authenticator", self.plugin_ep.description)
+        self.assertEqual(
+                "Automatically use a temporary webserver",
+                self.plugin_ep.description)
 
     def test_description_with_name(self):
         self.plugin_ep.plugin_cls = mock.MagicMock(description="Desc")
@@ -68,6 +70,7 @@ class PluginEntryPointTest(unittest.TestCase):
         self.assertFalse(self.plugin_ep.prepared)
         self.assertFalse(self.plugin_ep.misconfigured)
         self.assertFalse(self.plugin_ep.available)
+        self.assertTrue(self.plugin_ep.problem is None)
         self.assertTrue(self.plugin_ep.entry_point is EP_SA)
         self.assertEqual("sa", self.plugin_ep.name)
 
@@ -131,6 +134,8 @@ class PluginEntryPointTest(unittest.TestCase):
                                    errors.MisconfigurationError))
         self.assertTrue(self.plugin_ep.prepared)
         self.assertTrue(self.plugin_ep.misconfigured)
+        self.assertTrue(isinstance(self.plugin_ep.problem,
+                                   errors.MisconfigurationError))
         self.assertTrue(self.plugin_ep.available)
 
     def test_prepare_no_installation(self):
