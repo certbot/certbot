@@ -10,7 +10,6 @@ from acme import jose
 from acme import messages
 
 from letsencrypt import achallenges
-from letsencrypt import crypto_util
 from letsencrypt import proof_of_possession
 from letsencrypt.display import util as display_util
 
@@ -84,8 +83,7 @@ class ProofOfPossessionTest(unittest.TestCase):
         # Remove the matching certificate
         self.installer.get_all_certs_keys.return_value.pop()
 
-        self.config.key_dir = tempfile.mkdtemp('key_dir')
-        crypto_util.init_save_key(2048, self.config.key_dir)
+        self.config.key_dir = os.path.dirname(CERT3_KEY_PATH)
 
         self.assertTrue(self.proof_of_pos.perform(self.achall).verify())
 

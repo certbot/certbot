@@ -45,7 +45,7 @@ class ProofOfPossession(object):  # pylint: disable=too-few-public-methods
                 not isinstance(achall.hints.jwk, achall.alg.kty)):
             return None
 
-        for cert, key, _ in self.installer.get_all_certs_keys():
+        for cert, key_path, _ in self.installer.get_all_certs_keys():
             with open(cert) as cert_file:
                 cert_data = cert_file.read()
             try:
@@ -60,26 +60,27 @@ class ProofOfPossession(object):  # pylint: disable=too-few-public-methods
 
             cert_key = achall.alg.kty(key=cert_obj.public_key())
             if cert_key == achall.hints.jwk:
-                return self._gen_response(achall, key)
+                return self._gen_response(achall, key_path)
 
         if os.path.isdir(self.config.key_dir):
             for key_file in os.listdir(self.config.key_dir):
-                full_path = os.path.join(self.config.key_dir, key_file)
-                response = self._gen_response(achall, full_path)
-                if response is not False:
-                    return response
+                key_path = os.path.join(self.config.key_dir, key_file)
+                jwk = self._gen_jwk(achall, key_path)
+                # pylint: disable=no-member
+                if jwk and jwk.public_key() == achall.hints.jwk:
+                    return self._gen_response(achall, key_path)
 
         # Is there are different prompt we should give the user?
-        code, key = zope.component.getUtility(
+        code, key_path = zope.component.getUtility(
             interfaces.IDisplay).input(
                 "Path to private key for identifier: %s " % achall.domain)
         if code != display_util.CANCEL:
-            return self._gen_response(achall, key)
+            return self._gen_response(achall, key_path)
 
         # If we get here, the key wasn't found
         return False
 
-    def _gen_response(self, achall, key_path):  # pylint: disable=no-self-use
+    def _gen_response(self, achall, key_path):
         """Create the response to the Proof of Possession Challenge.
 
         :param achall: Proof of Possession Challenge
@@ -93,15 +94,38 @@ class ProofOfPossession(object):  # pylint: disable=too-few-public-methods
             or False
 
         """
+        jwk = self._gen_jwk(achall, key_path)
+        if jwk:
+            try:
+                # pylint: disable=no-member
+                sig = other.Signature.from_msg(achall.nonce, jwk.key,
+                                               alg=achall.alg)
+            except (IndexError, ValueError, TypeError, jose.errors.Error):
+                return False
+            return challenges.ProofOfPossessionResponse(nonce=achall.nonce,
+                                                        signature=sig)
+        return False
+
+    def _gen_jwk(self, achall, key_path):
+        """Create a JWK that contains a public key
+
+        :param achall: Proof of Possession Challenge
+        :type achall: :class:`letsencrypt.achallenges.ProofOfPossession`
+
+        :param str key_path: Path to the key corresponding to the hinted to
+            public key.
+
+        :returns: JWK or False if the key cannot be loaded
+        :rtype: :class:`acme.jose.JWK`
+            or False
+
+        """
         if os.path.isfile(key_path):
             with open(key_path, 'rb') as key:
                 try:
                     # Needs to be changed if JWKES doesn't have a key attribute
                     jwk = achall.alg.kty.load(key.read())
-                    sig = other.Signature.from_msg(achall.nonce, jwk.key,
-                                                   alg=achall.alg)
                 except (IndexError, ValueError, TypeError, jose.errors.Error):
                     return False
-            return challenges.ProofOfPossessionResponse(nonce=achall.nonce,
-                                                        signature=sig)
+            return jwk
         return False
