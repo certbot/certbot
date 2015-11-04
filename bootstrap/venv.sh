@@ -25,9 +25,9 @@ pip install -U letsencrypt letsencrypt-apache # letsencrypt-nginx
 echo
 echo "Congratulations, Let's Encrypt has been successfully installed/updated!"
 echo
-echo -n "Your prompt should now be prepended with ($VENV_NAME). Next "
-echo -n "time, if the prompt is different, 'source' this script again "
-echo -n "before running 'letsencrypt'."
+printf "%s" "Your prompt should now be prepended with ($VENV_NAME). Next "
+printf "time, if the prompt is different, 'source' this script again "
+printf "before running 'letsencrypt'."
 echo
 echo
 echo "You can now run 'letsencrypt --help'."

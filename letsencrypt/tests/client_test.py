@@ -120,18 +120,22 @@ class ClientTest(unittest.TestCase):
         os.chmod(tmp_path, 0o755)  # TODO: really??
 
         certr = mock.MagicMock(body=test_util.load_cert(certs[0]))
-        cert1 = test_util.load_cert(certs[1])
-        cert2 = test_util.load_cert(certs[2])
+        chain_cert = [test_util.load_cert(certs[1]),
+                      test_util.load_cert(certs[2])]
         candidate_cert_path = os.path.join(tmp_path, "certs", "cert.pem")
         candidate_chain_path = os.path.join(tmp_path, "chains", "chain.pem")
+        candidate_fullchain_path = os.path.join(tmp_path, "chains", "fullchain.pem")
 
-        cert_path, chain_path = self.client.save_certificate(
-            certr, [cert1, cert2], candidate_cert_path, candidate_chain_path)
+        cert_path, chain_path, fullchain_path = self.client.save_certificate(
+            certr, chain_cert, candidate_cert_path, candidate_chain_path,
+            candidate_fullchain_path)
 
         self.assertEqual(os.path.dirname(cert_path),
                          os.path.dirname(candidate_cert_path))
         self.assertEqual(os.path.dirname(chain_path),
                          os.path.dirname(candidate_chain_path))
+        self.assertEqual(os.path.dirname(fullchain_path),
+                         os.path.dirname(candidate_fullchain_path))
 
         with open(cert_path, "r") as cert_file:
             cert_contents = cert_file.read()

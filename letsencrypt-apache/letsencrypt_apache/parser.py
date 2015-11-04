@@ -122,7 +122,7 @@ class ApacheParser(object):
         """
         try:
             proc = subprocess.Popen(
-                [ctl, "-D", "DUMP_RUN_CFG"],
+                [ctl, "-t", "-D", "DUMP_RUN_CFG"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
             stdout, stderr = proc.communicate()

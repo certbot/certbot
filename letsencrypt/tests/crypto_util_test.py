@@ -228,9 +228,8 @@ class CertLoaderTest(unittest.TestCase):
     def test_load_invalid_cert(self):
         from letsencrypt.crypto_util import pyopenssl_load_certificate
         bad_cert_data = CERT.replace("BEGIN CERTIFICATE", "ASDFASDFASDF!!!")
-
-        with self.assertRaises(errors.Error):
-            pyopenssl_load_certificate(bad_cert_data)
+        self.assertRaises(
+            errors.Error, pyopenssl_load_certificate, bad_cert_data)
 
 
 class NotBeforeTest(unittest.TestCase):

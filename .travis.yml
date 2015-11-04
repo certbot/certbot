@@ -17,6 +17,7 @@ env:
     - GOPATH=/tmp/go
     - PATH=$GOPATH/bin:$PATH
   matrix:
+    - TOXENV=py26 BOULDER_INTEGRATION=1
     - TOXENV=py27 BOULDER_INTEGRATION=1
     - TOXENV=lint
     - TOXENV=cover
@@ -38,7 +39,6 @@ addons:
   mariadb: "10.0"
   apt:
     packages:  # keep in sync with bootstrap/ubuntu.sh and Boulder
-    - lsb-release
     - python
     - python-dev
     - python-virtualenv
