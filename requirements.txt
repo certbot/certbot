@@ -1,2 +1,0 @@
-# https://github.com/bw2/ConfigArgParse/issues/17
-git+https://github.com/kuba/ConfigArgParse.git@python2.6#egg=ConfigArgParse

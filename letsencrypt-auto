@@ -19,12 +19,19 @@ else
   SUDO=
 fi
 
-for arg in "$@" ; do 
+for arg in "$@" ; do
   # This first clause is redundant with the third, but hedging on portability
   if [ "$arg" = "-v" ] || [ "$arg" = "--verbose" ] || echo "$arg" | grep -E -- "-v+$" ; then
     VERBOSE=1
   fi
 done
+
+if [ -f /etc/debian_version ] ; then
+    # squeeze needs Python 2.6, `python2` doesn't exist
+    if grep -q '^6\.0' /etc/debian_version ; then
+        LE_PYTHON=${LE_PYTHON:-python}
+    fi
+fi
 
 # virtualenv call is not idempotent: it overwrites pip upgraded in
 # later steps, causing "ImportError: cannot import name unpack_url"
@@ -67,9 +74,9 @@ then
 
   echo "Creating virtual environment..."
   if [ "$VERBOSE" = 1 ] ; then
-    virtualenv --no-site-packages --python python2 $VENV_PATH
+    virtualenv --no-site-packages --python ${LE_PYTHON:-python2} $VENV_PATH
   else
-    virtualenv --no-site-packages --python python2 $VENV_PATH > /dev/null
+    virtualenv --no-site-packages --python ${LE_PYTHON:-python2} $VENV_PATH > /dev/null
   fi
 fi
 
@@ -78,11 +85,11 @@ if [ "$VERBOSE" = 1 ]  ; then
   echo
   $VENV_BIN/pip install -U setuptools
   $VENV_BIN/pip install -U pip
-  $VENV_BIN/pip install -U letsencrypt letsencrypt-apache 
+  $VENV_BIN/pip install -r py26reqs.txt -U letsencrypt letsencrypt-apache
   # nginx is buggy / disabled for now, but upgrade it if the user has
   # installed it manually
   if $VENV_BIN/pip freeze | grep -q letsencrypt-nginx ; then
-    $VENV_BIN/pip install -U letsencrypt letsencrypt-nginx 
+    $VENV_BIN/pip install -U letsencrypt letsencrypt-nginx
   fi
 else
   $VENV_BIN/pip install -U setuptools > /dev/null
@@ -90,6 +97,8 @@ else
   $VENV_BIN/pip install -U pip > /dev/null
   printf .
   # nginx is buggy / disabled for now...
+  $VENV_BIN/pip install -r py26reqs.txt
+  printf .
   $VENV_BIN/pip install -U letsencrypt > /dev/null
   printf .
   $VENV_BIN/pip install -U letsencrypt-apache > /dev/null
