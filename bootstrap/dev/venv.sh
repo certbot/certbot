@@ -11,3 +11,5 @@ export VENV_ARGS="--python python2"
   -e letsencrypt-nginx \
   -e letshelp-letsencrypt \
   -e letsencrypt-compatibility-test
+
+find . -iname *.pyc -exec rm '{}' ';'
