@@ -30,11 +30,11 @@ class AugeasConfigurator(common.Plugin):
     def __init__(self, *args, **kwargs):
         super(AugeasConfigurator, self).__init__(*args, **kwargs)
 
-        # Set Augeas flags to not save backup (we do it ourselves)
-        # Set Augeas to not load anything by default
-        my_flags = augeas.Augeas.NONE | augeas.Augeas.NO_MODL_AUTOLOAD
-        my_dir = os.path.dirname(constants.AUGEAS_HTTPD_LENS)
-        self.aug = augeas.Augeas(loadpath=my_dir, flags=my_flags)
+        self.aug = augeas.Augeas(
+            loadpath=constants.AUGEAS_LENS_DIR,
+            # Do not save backup (we do it ourselves), do not load
+            # anything by default
+            flags=(augeas.Augeas.NONE | augeas.Augeas.NO_MODL_AUTOLOAD))
         self.save_notes = ""
 
         # See if any temporary changes need to be recovered
