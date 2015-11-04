@@ -12,4 +12,8 @@ export VENV_ARGS="--python python2"
   -e letshelp-letsencrypt \
   -e letsencrypt-compatibility-test
 
-find . -iname '*.pyc' -exec rm '{}' ';'
+# Workaround for https://github.com/letsencrypt/letsencrypt/issues/1342
+# Ensure we are at the top of a letsencrypt developer tree first
+if grep -q github.com/letsencrypt/letsencrypt .git/config ; then
+  find . -iname '*.pyc' -exec rm '{}' ';'
+fi
