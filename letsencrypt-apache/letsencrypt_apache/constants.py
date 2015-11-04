@@ -20,6 +20,10 @@ MOD_SSL_CONF_SRC = pkg_resources.resource_filename(
 """Path to the Apache mod_ssl config file found in the Let's Encrypt
 distribution."""
 
+AUGEAS_LENS_DIR = pkg_resources.resource_filename(
+    "letsencrypt_apache", "augeas_lens")
+"""Path to the Augeas lens directory"""
+
 REWRITE_HTTPS_ARGS = [
     "^", "https://%{SERVER_NAME}%{REQUEST_URI}", "[L,QSA,R=permanent]"]
 """Apache rewrite rule arguments used for redirections to https vhost"""
