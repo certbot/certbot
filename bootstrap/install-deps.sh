@@ -25,7 +25,7 @@ elif [ -f /etc/redhat-release ] ; then
   $SUDO $BOOTSTRAP/_rpm_common.sh
 elif [ -f /etc/gentoo-release ] ; then
   echo "Bootstrapping dependencies for Gentoo-based OSes..."
-  $SUDO $BOOTSTRAP/_gentoo_common.sh
+  $SUDO $BOOTSTRAP/gentoo.sh
 elif [ -f /etc/exherbo-release ] ; then
   echo "Bootstrapping dependencies for Exherbo-based OSes..."
   $SUDO $BOOTSTRAP/exherbo.sh
