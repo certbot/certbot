@@ -24,7 +24,23 @@ for arg in "$@" ; do
   if [ "$arg" = "-v" ] || [ "$arg" = "--verbose" ] || echo "$arg" | grep -E -- "-v+$" ; then
     VERBOSE=1
   fi
+  if [ "$arg" = "--debug" ] ; then
+    DEBUG=1
+  fi
 done
+
+ExperimentalBootstrap() {
+  # Arguments: Platform name, boostrap script name, SUDO command (iff needed)
+  if [ "$DEBUG" = 1 ] ; then
+    echo "Bootstrapping dependencies for $1..."
+    "$3" "$BOOTSTRAP/$2"
+  else
+    echo "WARNING: $1 support is very experimental at present..."
+    echo "if you would like to work on improving it, please ensure you have backups"
+    echo "and then run this script again with the --debug flag!"
+    exit 1
+  fi
+}
 
 # virtualenv call is not idempotent: it overwrites pip upgraded in
 # later steps, causing "ImportError: cannot import name unpack_url"
@@ -38,25 +54,19 @@ then
   if [ -f /etc/debian_version ] ; then
     echo "Bootstrapping dependencies for Debian-based OSes..."
     $SUDO $BOOTSTRAP/_deb_common.sh
-  elif [ -f /etc/arch-release ] ; then
-    echo "Bootstrapping dependencies for Archlinux..."
-    $SUDO $BOOTSTRAP/archlinux.sh
-  elif [ -f /etc/manjaro-release ] ; then
-    echo "Bootstrapping dependencies for Manjaro Linux..."
-    $SUDO $BOOTSTRAP/manjaro.sh
   elif [ -f /etc/redhat-release ] ; then
     echo "Bootstrapping dependencies for RedHat-based OSes..."
     $SUDO $BOOTSTRAP/_rpm_common.sh
+  elif [ -f /etc/arch-release ] ; then
+    ExperimentalBootstrap "Archlinux" archlinux.sh "$SUDO"
+  elif [ -f /etc/manjaro-release ] ; then
+    ExperimentalBootstrap "Manjaro Linux" majaro.sh "$SUDO"
   elif [ -f /etc/gentoo-release ] ; then
-    echo "Bootstrapping dependencies for Gentoo-based OSes..."
-    $SUDO $BOOTSTRAP/_gentoo_common.sh
+    ExperimentalBootstrap "Gentoo" _gentoo_common.sh "$SUDO"
   elif uname | grep -iq FreeBSD ; then
-    echo "Bootstrapping dependencies for FreeBSD..."
-    $SUDO $BOOTSTRAP/freebsd.sh
+    ExperimentalBootstrap "FreeBSD" freebsd.sh "$SUDO"
   elif uname | grep -iq Darwin ; then
-    echo "Bootstrapping dependencies for Mac OS X..."
-    echo "WARNING: Mac support is very experimental at present..."
-    $BOOTSTRAP/mac.sh
+    ExperimentalBootstrap "Mac OS X" mac.sh
   else
     echo "Sorry, I don't know how to bootstrap Let's Encrypt on your operating system!"
     echo
