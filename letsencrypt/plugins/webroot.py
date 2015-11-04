@@ -18,7 +18,7 @@ the following contents::
 
   <IfModule mod_headers.c>
     <LocationMatch "/.well-known/acme-challenge/*">
-      Header set Content-Type "application/jose+json"
+      Header set Content-Type "text/plain"
     </LocationMatch>
   </IfModule>
 
@@ -32,7 +32,7 @@ nginx
 Use the following snippet in your ``server{...}`` stanza::
 
   location ~ /.well-known/acme-challenge/(.*) {
-    default_type application/jose+json;
+    default_type text/plain;
   }
 
 and reload your daemon.
