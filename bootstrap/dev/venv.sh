@@ -12,4 +12,4 @@ export VENV_ARGS="--python python2"
   -e letshelp-letsencrypt \
   -e letsencrypt-compatibility-test
 
-find . -iname *.pyc -exec rm '{}' ';'
+find . -iname '*.pyc' -exec rm '{}' ';'
