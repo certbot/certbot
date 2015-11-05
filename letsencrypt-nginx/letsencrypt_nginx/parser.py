@@ -257,6 +257,8 @@ class NginxParser(object):
 
         ..note :: If replace is True, this raises a misconfiguration error
         if the directive does not already exist.
+        ..note :: If replace is False nothing gets added if an identical
+        block exists already.
 
         ..todo :: Doesn't match server blocks whose server_name directives are
             split across multiple conf files.
@@ -480,7 +482,9 @@ def _add_directives(block, directives, replace=False):
         if not replace:
             # We insert new directives at the top of the block, mostly
             # to work around https://trac.nginx.org/nginx/ticket/810
-            block.insert(0, directive)
+            # Only add directive if its not already in the block
+            if directive not in block:
+                block.insert(0, directive)
         else:
             changed = False
             if len(directive) == 0:
