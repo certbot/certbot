@@ -13,14 +13,14 @@ VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
 # later steps, causing "ImportError: cannot import name unpack_url"
 if [ ! -d $VENV_PATH ]
 then
-  virtualenv --no-site-packages --python python2 $VENV_PATH
+  virtualenv --no-site-packages --python ${LE_PYTHON:-python2} $VENV_PATH
 fi
 
 . $VENV_PATH/bin/activate
 pip install -U setuptools
 pip install -U pip
 
-pip install -U letsencrypt letsencrypt-apache # letsencrypt-nginx
+pip install -U -r py26reqs.txt letsencrypt letsencrypt-apache # letsencrypt-nginx
 
 echo
 echo "Congratulations, Let's Encrypt has been successfully installed/updated!"

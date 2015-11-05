@@ -1,4 +1,4 @@
-include requirements.txt
+include py26reqs.txt
 include README.rst
 include CHANGES.rst
 include CONTRIBUTING.md
