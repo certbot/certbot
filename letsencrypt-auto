@@ -40,12 +40,26 @@ ExperimentalBootstrap() {
     exit 1
   fi
 }
-if [ -f /etc/debian_version ] ; then
-    # squeeze needs Python 2.6, `python2` doesn't exist
-    if grep -q '^6\.0' /etc/debian_version ; then
-        LE_PYTHON=${LE_PYTHON:-python}
-    fi
-fi
+
+
+
+DeterminePythonVersion() {
+  if which python2 > /dev/null ; then
+    export LE_PYTHON=python2
+  elif which python2.7 > /dev/null ; then
+    export LE_PYTHON=python2.7
+  elif which python > /dev/null ; then
+    export LE_PYTHON=python
+  else
+    echo "Cannot find any Pythons... please install one!"
+  fi
+
+  PYVER=`$LE_PYTHON --version 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
+  if [ $PYVER -eq 26 ] ; then
+    ExperimentalBootstrap "Python 2.6" true
+  fi
+}
+
 
 # virtualenv call is not idempotent: it overwrites pip upgraded in
 # later steps, causing "ImportError: cannot import name unpack_url"
@@ -56,6 +70,7 @@ then
     echo "Cannot find the letsencrypt bootstrap scripts in $BOOTSTRAP"
     exit 1
   fi
+
   if [ -f /etc/debian_version ] ; then
     echo "Bootstrapping dependencies for Debian-based OSes..."
     $SUDO $BOOTSTRAP/_deb_common.sh
@@ -80,13 +95,17 @@ then
     echo "for more info"
   fi
 
+  DeterminePythonVersion
   echo "Creating virtual environment..."
   if [ "$VERBOSE" = 1 ] ; then
-    virtualenv --no-site-packages --python ${LE_PYTHON:-python2} $VENV_PATH
+    virtualenv --no-site-packages --python $LE_PYTHON $VENV_PATH
   else
-    virtualenv --no-site-packages --python ${LE_PYTHON:-python2} $VENV_PATH > /dev/null
+    virtualenv --no-site-packages --python $LE_PYTHON $VENV_PATH > /dev/null
   fi
+else
+  DeterminePythonVersion
 fi
+
 
 printf "Updating letsencrypt and virtual environment dependencies..."
 if [ "$VERBOSE" = 1 ]  ; then
