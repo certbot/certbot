@@ -2,11 +2,11 @@ language: python
 
 services:
   - rabbitmq
-  - mysql
 
 # http://docs.travis-ci.com/user/ci-environment/#CI-environment-OS
 # gimme has to be kept in sync with Boulder's Go version setting in .travis.yml
 before_install:
+  - sudo apt-get install -y mariadb-server mariadb-server-10.0
   - '[ "xxx$BOULDER_INTEGRATION" = "xxx" ] || eval "$(gimme 1.5.1)"'
 
 # using separate envs with different TOXENVs creates 4x1 Travis build
@@ -56,12 +56,6 @@ addons:
     - openssl
     # For Boulder integration testing
     - rsyslog
-    - mysql
-
-
-before_install:
-  - sudo apt-get update
-  - sudo apt-get install -y mysql-client-core-5.6 mysql-server-5.6 mysql-client-5.6
 
 install: "travis_retry pip install tox coveralls"
 before_script: '[ "xxx$BOULDER_INTEGRATION" = "xxx" ] || ./tests/boulder-start.sh'
