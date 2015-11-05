@@ -1,6 +1,5 @@
 """Class of Augeas Configurators."""
 import logging
-import os
 
 import augeas
 
@@ -31,6 +30,7 @@ class AugeasConfigurator(common.Plugin):
         super(AugeasConfigurator, self).__init__(*args, **kwargs)
 
         self.aug = augeas.Augeas(
+            # specify a directory to load our preferred lens from
             loadpath=constants.AUGEAS_LENS_DIR,
             # Do not save backup (we do it ourselves), do not load
             # anything by default
