@@ -42,14 +42,13 @@ ExperimentalBootstrap() {
 }
 
 
-
 DeterminePythonVersion() {
   if which python2 > /dev/null ; then
-    export LE_PYTHON=python2
+    export LE_PYTHON=${LE_PYTHON:-python2}
   elif which python2.7 > /dev/null ; then
-    export LE_PYTHON=python2.7
+    export LE_PYTHON=${LE_PYTHON:-python2.7}
   elif which python > /dev/null ; then
-    export LE_PYTHON=python
+    export LE_PYTHON=${LE_PYTHON:-python}
   else
     echo "Cannot find any Pythons... please install one!"
   fi
@@ -57,6 +56,10 @@ DeterminePythonVersion() {
   PYVER=`$LE_PYTHON --version 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
   if [ $PYVER -eq 26 ] ; then
     ExperimentalBootstrap "Python 2.6" true
+  elif [ $PYVER -lt 26 ] ; then
+    echo "You have an ancient version of Python entombed in your operating system..."
+    echo "This isn't going to work."
+    exit 1
   fi
 }
 
