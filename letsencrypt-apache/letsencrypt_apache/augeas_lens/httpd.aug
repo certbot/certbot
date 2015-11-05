@@ -59,17 +59,24 @@ let empty               = Util.empty_dos
 let indent              = Util.indent
 
 (* borrowed from shellvars.aug *)
-let char_arg_dir  = /[^ '"\t\r\n]|\\\\"|\\\\'/
+let char_arg_dir  = /[^\\ '"\t\r\n]|\\\\"|\\\\'/
 let char_arg_sec  = /[^ '"\t\r\n>]|\\\\"|\\\\'/
-let dquot = /"([^"\\\r\n]|\\\\.)*"/
-let squot = /'([^'\\\r\n]|\\\\.)*'/
+let cdot = /\\\\./
+let cl = /\\\\\n/
+let dquot =
+     let no_dquot = /[^"\\\r\n]/
+  in /"/ . (no_dquot|cdot|cl)* . /"/
+let squot =
+     let no_squot = /[^'\\\r\n]/
+  in /'/ . (no_squot|cdot|cl)* . /'/
+let comp = /[<>=]?=/
 
 (******************************************************************
  *                            Attributes
  *****************************************************************)
 
 let arg_dir = [ label "arg" . store (char_arg_dir+|dquot|squot) ]
-let arg_sec = [ label "arg" . store (char_arg_sec+|dquot|squot) ]
+let arg_sec = [ label "arg" . store (char_arg_sec+|comp|dquot|squot) ]
 
 let argv (l:lens) = l . (sep_spc . l)*
 
@@ -77,13 +84,16 @@ let directive = [ indent . label "directive" . store word .
                   (sep_spc . argv arg_dir)? . eol ]
 
 let section (body:lens) =
+    (* opt_eol includes empty lines *)
+    let opt_eol = del /([ \t]*#?\r?\n)*/ "\n" in
     let inner = (sep_spc . argv arg_sec)? . sep_osp .
-             dels ">" . eol . body* . indent . dels "</" in
+             dels ">" . opt_eol . ((body|comment) . (body|empty|comment)*)? .
+             indent . dels "</" in
     let kword = key word in
     let dword = del word "a" in
         [ indent . dels "<" . square kword inner dword . del ">" ">" . eol ]
 
-let rec content = section (content|directive|comment|empty)
+let rec content = section (content|directive)
 
 let lns = (content|directive|comment|empty)*
 
@@ -91,6 +101,7 @@ let filter = (incl "/etc/apache2/apache2.conf") .
              (incl "/etc/apache2/httpd.conf") .
              (incl "/etc/apache2/ports.conf") .
              (incl "/etc/apache2/conf.d/*") .
+             (incl "/etc/apache2/conf-available/*.conf") .
              (incl "/etc/apache2/mods-available/*") .
              (incl "/etc/apache2/sites-available/*") .
              (incl "/etc/httpd/conf.d/*.conf") .
