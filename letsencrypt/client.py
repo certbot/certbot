@@ -336,6 +336,7 @@ class Client(object):
 
     def _rollback_and_restart(self):
         """Rollback the most recent checkpoint and restart the webserver"""
+        logger.critical("Rolling back to previous server configuration...")
         try:
             self.installer.rollback_checkpoints()
             self.installer.restart()
@@ -346,6 +347,8 @@ class Client(object):
             logger.critical("Please submit a bug report to "
                             "https://github.com/letsencrypt/letsencrypt")
             raise
+        logger.critical("Rollback successful; your server has "
+                        "been restarted with your old configuration")
 
     def enhance_config(self, domains, redirect=None):
         """Enhance the configuration.
