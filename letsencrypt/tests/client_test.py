@@ -166,6 +166,27 @@ class ClientTest(unittest.TestCase):
         self.assertEqual(installer.save.call_count, 2)
         installer.restart.assert_called_once_with()
 
+    def test_deploy_certificate_restart_failure_with_recovery(self):
+        installer = mock.MagicMock()
+        installer.restart.side_effect = [errors.PluginError, None]
+        self.client.installer = installer
+
+        self.assertRaises(errors.PluginError, self.client.deploy_certificate,
+                          ["foo.bar"], "key", "cert", "chain", "fullchain")
+        installer.rollback_checkpoints.assert_called_once_with()
+        self.assertEqual(installer.restart.call_count, 2)
+
+    def test_deploy_certificate_restart_failure_without_recovery(self):
+        installer = mock.MagicMock()
+        installer.restart.side_effect = errors.PluginError
+        installer.rollback_checkpoints.side_effect = errors.ReverterError
+        self.client.installer = installer
+
+        self.assertRaises(errors.PluginError, self.client.deploy_certificate,
+                          ["foo.bar"], "key", "cert", "chain", "fullchain")
+        installer.rollback_checkpoints.assert_called_once_with()
+        self.assertEqual(installer.restart.call_count, 1)
+
     @mock.patch("letsencrypt.client.enhancements")
     def test_enhance_config(self, mock_enhancements):
         self.assertRaises(errors.Error,
