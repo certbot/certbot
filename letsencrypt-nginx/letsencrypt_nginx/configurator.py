@@ -93,7 +93,7 @@ class NginxConfigurator(common.Plugin):
         # These will be set in the prepare function
         self.parser = None
         self.version = version
-        self._enhance_func = {}  # TODO: Support at least redirects
+        self._enhance_func = {"redirect": self._enable_redirect}
 
         # Set up reverter
         self.reverter = reverter.Reverter(self.config)
@@ -344,7 +344,7 @@ class NginxConfigurator(common.Plugin):
     ##################################
     def supported_enhancements(self):  # pylint: disable=no-self-use
         """Returns currently supported enhancements."""
-        return []
+        return ['redirect']
 
     def enhance(self, domain, enhancement, options=None):
         """Enhance configuration.
@@ -365,6 +365,26 @@ class NginxConfigurator(common.Plugin):
                 "Unsupported enhancement: {0}".format(enhancement))
         except errors.PluginError:
             logger.warn("Failed %s for %s", enhancement, domain)
+
+    def _enable_redirect(self, vhost, unused_options):
+        """Redirect all equivalent HTTP traffic to ssl_vhost.
+
+        Add rewrite directive to non https traffic
+
+        .. note:: This function saves the configuration
+
+        :param vhost: Destination of traffic, an ssl enabled vhost
+        :type vhost: :class:`~letsencrypt_nginx.obj.VirtualHost`
+
+        :param unused_options: Not currently used
+        :type unused_options: Not Available
+        """
+        redirect_block = [[['if', '($scheme != "https")'],
+            [['return', '301 https://$host$request_uri']]
+        ]]
+        self.parser.add_server_directives(vhost.filep, vhost.names,
+            redirect_block)
+        logger.info("Redirecting all traffic to ssl in %s", vhost.filep)
 
     ######################################
     # Nginx server management (IInstaller)
