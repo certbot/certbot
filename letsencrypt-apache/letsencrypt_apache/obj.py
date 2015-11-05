@@ -113,8 +113,8 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
     # ?: is used for not returning enclosed characters
     strip_name = re.compile(r"^(?:.+://)?([^ :$]*)")
 
-    def __init__(self, filep, path, addrs, ssl, enabled, modmacro=False,
-                 name=None, aliases=None):
+    def __init__(self, filep, path, addrs, ssl, enabled, name=None,
+                 aliases=None, modmacro=False):
 
         # pylint: disable=too-many-arguments
         """Initialize a VH."""
