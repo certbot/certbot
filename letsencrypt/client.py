@@ -329,8 +329,23 @@ class Client(object):
                 self.installer.save()  # needed by the Apache plugin
 
             self.installer.save("Deployed Let's Encrypt Certificate")
-            # sites may have been enabled / final cleanup
+
+        # sites may have been enabled / final cleanup
+        with error_handler.ErrorHandler(self._rollback_and_restart):
             self.installer.restart()
+
+    def _rollback_and_restart(self):
+        """Rollback the most recent checkpoint and restart the webserver"""
+        try:
+            self.installer.rollback_checkpoints()
+            self.installer.restart()
+        except:
+            # TODO: suggest letshelp-letsencypt here
+            logger.critical("Failure to rollback config "
+                            "changes and restart your server")
+            logger.critical("Please submit a bug report to "
+                            "https://github.com/letsencrypt/letsencrypt")
+            raise
 
     def enhance_config(self, domains, redirect=None):
         """Enhance the configuration.
