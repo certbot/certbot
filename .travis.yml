@@ -38,6 +38,8 @@ addons:
     - le.wtf
   mariadb: "10.0"
   apt:
+    sources:
+    - augeas # get an up to date version of Augeas
     packages:  # keep in sync with bootstrap/ubuntu.sh and Boulder
     - python
     - python-dev
