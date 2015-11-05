@@ -13,7 +13,7 @@ Apache2
    operating systems might use something very similar, but you might
    still need to readjust some commands.
 
-Create ``/etc/apache2/conf-available/letsencrypt-simplehttp.conf``, with
+Create ``/etc/apache2/conf-available/letsencrypt.conf``, with
 the following contents::
 
   <IfModule mod_headers.c>
