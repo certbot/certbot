@@ -102,6 +102,7 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
 
     :ivar bool ssl: SSLEngine on in vhost
     :ivar bool enabled: Virtual host is enabled
+    :ivar bool modmacro: VirtualHost is using mod_macro
 
     https://httpd.apache.org/docs/2.4/vhosts/details.html
 
@@ -112,7 +113,9 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
     # ?: is used for not returning enclosed characters
     strip_name = re.compile(r"^(?:.+://)?([^ :$]*)")
 
-    def __init__(self, filep, path, addrs, ssl, enabled, name=None, aliases=None):
+    def __init__(self, filep, path, addrs, ssl, enabled, modmacro=False,
+                 name=None, aliases=None):
+
         # pylint: disable=too-many-arguments
         """Initialize a VH."""
         self.filep = filep
@@ -122,6 +125,7 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
         self.aliases = aliases if aliases is not None else set()
         self.ssl = ssl
         self.enabled = enabled
+        self.modmacro = modmacro
 
     def get_names(self):
         """Return a set of all names."""

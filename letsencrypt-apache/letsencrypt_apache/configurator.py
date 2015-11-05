@@ -348,8 +348,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         all_names = set()
 
+        vhost_macro = []
+
         for vhost in self.vhosts:
             all_names.update(vhost.get_names())
+            if vhost.modmacro:
+                vhost_macro.append(vhost.filep)
 
             for addr in vhost.addrs:
                 if common.hostname_regex.match(addr.get_addr()):
@@ -358,6 +362,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     name = self.get_name_from_ip(addr)
                     if name:
                         all_names.add(name)
+
+        if len(vhost_macro) > 0:
+            zope.component.getUtility(interfaces.IDisplay).notification(
+                "Apache mod_macro seems to be in use in file(s):\n{0}"
+                "\n\nUnfortunately mod_macro is not yet supported".format(
+                    "\n  ".join(vhost_macro)))
 
         return all_names
 
@@ -395,11 +405,34 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             "ServerAlias", None, start=host.path, exclude=False)
 
         for alias in serveralias_match:
-            host.aliases.add(self.parser.get_arg(alias))
+            serveralias = self.parser.get_arg(alias)
+            if not self._is_mod_macro(serveralias):
+                host.aliases.add(serveralias)
+            else:
+                host.modmacro = True
 
         if servername_match:
             # Get last ServerName as each overwrites the previous
-            host.name = self.parser.get_arg(servername_match[-1])
+            servername = self.parser.get_arg(servername_match[-1])
+            if not self._is_mod_macro(servername):
+                host.name = servername
+            else:
+                host.modmacro = True
+
+    def _is_mod_macro(self, name):
+        """Helper function for _add_servernames().
+        Checks if the ServerName / ServerAlias belongs to a macro
+
+        :param str name: Name to check and filter out if it's a variable
+
+        :returns: boolean
+        :rtype: boolean
+
+        """
+
+        if "$" in name:
+            return True
+        return False
 
     def _create_vhost(self, path):
         """Used by get_virtual_hosts to create vhost objects
@@ -1236,7 +1269,7 @@ def get_file_path(vhost_path):
     avail_fp = vhost_path[6:]
     # This can be optimized...
     while True:
-        # Cast both to lowercase to be case insensitive
+        # Cast all to lowercase to be case insensitive
         find_if = avail_fp.lower().find("/ifmodule")
         if find_if != -1:
             avail_fp = avail_fp[:find_if]
@@ -1244,6 +1277,10 @@ def get_file_path(vhost_path):
         find_vh = avail_fp.lower().find("/virtualhost")
         if find_vh != -1:
             avail_fp = avail_fp[:find_vh]
+            continue
+        find_macro = avail_fp.lower().find("/macro")
+        if find_macro != -1:
+            avail_fp = avail_fp[:find_macro]
             continue
         break
     return avail_fp
