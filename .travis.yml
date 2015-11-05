@@ -31,7 +31,10 @@ branches:
     - master
     - /^test-.*$/
 
-sudo: false  # containers
+# enable Trusty beta on travis 
+sudo: required
+dist: trusty
+
 addons:
   # make sure simplehttp simple verification works (custom /etc/hosts)
   hosts:
