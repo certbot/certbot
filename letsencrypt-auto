@@ -23,8 +23,7 @@ for arg in "$@" ; do
   # This first clause is redundant with the third, but hedging on portability
   if [ "$arg" = "-v" ] || [ "$arg" = "--verbose" ] || echo "$arg" | grep -E -- "-v+$" ; then
     VERBOSE=1
-  fi
-  if [ "$arg" = "--debug" ] ; then
+  elif [ "$arg" = "--debug" ] ; then
     DEBUG=1
   fi
 done
