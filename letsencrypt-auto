@@ -31,8 +31,10 @@ done
 ExperimentalBootstrap() {
   # Arguments: Platform name, boostrap script name, SUDO command (iff needed)
   if [ "$DEBUG" = 1 ] ; then
-    echo "Bootstrapping dependencies for $1..."
-    "$3" "$BOOTSTRAP/$2"
+    if [ "$2" != "" ]  ; then
+      echo "Bootstrapping dependencies for $1..."
+      "$3" "$BOOTSTRAP/$2"
+    fi
   else
     echo "WARNING: $1 support is very experimental at present..."
     echo "if you would like to work on improving it, please ensure you have backups"
@@ -55,7 +57,7 @@ DeterminePythonVersion() {
 
   PYVER=`$LE_PYTHON --version 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
   if [ $PYVER -eq 26 ] ; then
-    ExperimentalBootstrap "Python 2.6" true
+    ExperimentalBootstrap "Python 2.6"
   elif [ $PYVER -lt 26 ] ; then
     echo "You have an ancient version of Python entombed in your operating system..."
     echo "This isn't going to work."
