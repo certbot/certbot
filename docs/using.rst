@@ -176,7 +176,7 @@ Where are my certificates?
 ==========================
 
 First of all, we encourage you to use Apache or nginx installers, both
-which perform the certificate managemant automatically. If, however,
+which perform the certificate management automatically. If, however,
 you prefer to manage everything by hand, this section provides
 information on where to find necessary files.
 
