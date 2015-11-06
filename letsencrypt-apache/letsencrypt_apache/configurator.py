@@ -334,8 +334,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             if len(reasonable_vhosts) == 1:
                 best_candidate = reasonable_vhosts[0]
 
-        if best_candidate is not None and best_candidate.modmacro is True:
-            return None
         return best_candidate
 
     def _without_modmacro(self, vhosts):
