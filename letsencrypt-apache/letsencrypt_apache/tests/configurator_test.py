@@ -509,6 +509,29 @@ class TwoVhost80Test(util.ApacheTest):
 
     @mock.patch("letsencrypt.le_util.run_script")
     @mock.patch("letsencrypt.le_util.exe_exists")
+    def test_hsts(self, mock_exe, _):
+        self.config.parser.update_runtime_variables = mock.Mock()
+        self.config.parser.modules.add("mod_ssl.c")
+        mock_exe.return_value = True
+
+        # This will create an ssl vhost for letsencrypt.demo
+        self.config.enhance("letsencrypt.demo", "hsts")
+
+        self.assertTrue("headers_module" in self.config.parser.modules)
+
+        # Get the ssl vhost for letsencrypt.demo
+        ssl_vhost = self.config.assoc["letsencrypt.demo"]
+
+        # These are not immediately available in find_dir even with save() and
+        # load(). They must be found in sites-available
+        hsts_header = self.config.parser.find_dir(
+                "Header", None, ssl_vhost.path)
+        # four args to HSTS header
+        self.assertEqual(len(hsts_header), 4)
+
+
+    @mock.patch("letsencrypt.le_util.run_script")
+    @mock.patch("letsencrypt.le_util.exe_exists")
     def test_redirect_well_formed_http(self, mock_exe, _):
         self.config.parser.update_runtime_variables = mock.Mock()
         mock_exe.return_value = True
