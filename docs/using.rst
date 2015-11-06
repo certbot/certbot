@@ -86,8 +86,15 @@ in ``/etc/letsencrypt/live`` on the host.
 .. _`install Docker`: https://docs.docker.com/userguide/
 
 
-Distro packages
----------------
+Operating System Packages
+--------------------------
+
+**FreeBSD**
+
+  * Port: ``cd /usr/ports/security/py-letsencrypt && make install clean``
+  * Package: ``pkg install py27-letsencrypt``
+
+**Other Operating Systems**
 
 Unfortunately, this is an ongoing effort. If you'd like to package
 Let's Encrypt client for your distribution of choice please have a
