@@ -145,21 +145,25 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
             "Name: {name}\n"
             "Aliases: {aliases}\n"
             "TLS Enabled: {tls}\n"
-            "Site Enabled: {active}".format(
+            "Site Enabled: {active}\n"
+            "mod_macro Vhost: {modmacro}".format(
                 filename=self.filep,
                 vhpath=self.path,
                 addrs=", ".join(str(addr) for addr in self.addrs),
                 name=self.name if self.name is not None else "",
                 aliases=", ".join(name for name in self.aliases),
                 tls="Yes" if self.ssl else "No",
-                active="Yes" if self.enabled else "No"))
+                active="Yes" if self.enabled else "No",
+                modmacro="Yes" if self.modmacro else "No"))
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
             return (self.filep == other.filep and self.path == other.path and
                     self.addrs == other.addrs and
                     self.get_names() == other.get_names() and
-                    self.ssl == other.ssl and self.enabled == other.enabled)
+                    self.ssl == other.ssl and
+                    self.enabled == other.enabled and
+                    self.modmacro == other.modmacro)
 
         return False
 
