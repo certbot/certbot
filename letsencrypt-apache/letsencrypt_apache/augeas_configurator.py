@@ -7,6 +7,8 @@ from letsencrypt import errors
 from letsencrypt import reverter
 from letsencrypt.plugins import common
 
+from letsencrypt_apache import constants
+
 logger = logging.getLogger(__name__)
 
 
@@ -27,10 +29,12 @@ class AugeasConfigurator(common.Plugin):
     def __init__(self, *args, **kwargs):
         super(AugeasConfigurator, self).__init__(*args, **kwargs)
 
-        # Set Augeas flags to not save backup (we do it ourselves)
-        # Set Augeas to not load anything by default
-        my_flags = augeas.Augeas.NONE | augeas.Augeas.NO_MODL_AUTOLOAD
-        self.aug = augeas.Augeas(flags=my_flags)
+        self.aug = augeas.Augeas(
+            # specify a directory to load our preferred lens from
+            loadpath=constants.AUGEAS_LENS_DIR,
+            # Do not save backup (we do it ourselves), do not load
+            # anything by default
+            flags=(augeas.Augeas.NONE | augeas.Augeas.NO_MODL_AUTOLOAD))
         self.save_notes = ""
 
         # See if any temporary changes need to be recovered
