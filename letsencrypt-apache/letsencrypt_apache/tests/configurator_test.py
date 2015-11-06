@@ -179,6 +179,7 @@ class TwoVhost80Test(util.ApacheTest):
             self.config._find_best_vhost("example.demo"), self.vh_truth[2])
 
     def test_without_modmacro(self):
+        # pylint: disable=protected-access
         self.assertEqual(len(self.vh_truth)-1,
                          len(self.config._without_modmacro(self.vh_truth)))
 
