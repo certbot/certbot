@@ -81,7 +81,8 @@ then
     echo "Bootstrapping dependencies for RedHat-based OSes..."
     $SUDO $BOOTSTRAP/_rpm_common.sh
   elif [ -f /etc/arch-release ] ; then
-    ExperimentalBootstrap "Archlinux" archlinux.sh "$SUDO"
+    echo "Bootstrapping dependencies for Archlinux..."
+    $SUDO $BOOTSTRAP/archlinux.sh
   elif [ -f /etc/manjaro-release ] ; then
     ExperimentalBootstrap "Manjaro Linux" majaro.sh "$SUDO"
   elif [ -f /etc/gentoo-release ] ; then
