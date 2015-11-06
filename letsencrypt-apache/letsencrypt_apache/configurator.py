@@ -122,7 +122,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.parser = None
         self.version = version
         self.vhosts = None
-        self._enhance_func = {"redirect": self._enable_redirect}
+        self._enhance_func = {"redirect": self._enable_redirect,
+                "hsts": self._enable_hsts}
 
     @property
     def mod_ssl_conf(self):
@@ -681,7 +682,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     ############################################################################
     def supported_enhancements(self):  # pylint: disable=no-self-use
         """Returns currently supported enhancements."""
-        return ["redirect"]
+        return ["redirect", "hsts"]
 
     def enhance(self, domain, enhancement, options=None):
         """Enhance configuration.
@@ -707,6 +708,71 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         except errors.PluginError:
             logger.warn("Failed %s for %s", enhancement, domain)
             raise
+
+    def _enable_hsts(self, ssl_vhost, unused_options):
+        """Enables the HSTS header on all HTTP responses. 
+
+        .. note:: HSTS defends against SSL stripping attacks.
+
+
+        Adds the Strict-Transport-Security header with max-age=31536000 (1 year)
+        and includeSubDomains (all subdomains are also set with HSTS).
+
+        .. note:: This function saves the configuration
+
+        :param ssl_vhost: Destination of traffic, an ssl enabled vhost
+        :type ssl_vhost: :class:`~letsencrypt_apache.obj.VirtualHost`
+
+        :param unused_options: Not currently used
+        :type unused_options: Not Available
+
+        :returns: Success, general_vhost (HTTP vhost)
+        :rtype: (bool, :class:`~letsencrypt_apache.obj.VirtualHost`)
+
+        :raises .errors.PluginError: If no viable HTTP host can be created or
+            used for the HSTS.
+
+        """
+        if "headers_module" not in self.parser.modules:
+            self.enable_mod("headers")
+        
+        # Check if HSTS header is already set
+        self._verify_no_hsts_header(ssl_vhost)
+        
+        # Add directives to server
+        self.parser.add_dir(ssl_vhost.path, "Header", constants.HSTS_ARGS)
+        self.save_notes += ("Adding HSTS header to every response from ssl "
+                            "vhost in %s\n" % (ssl_vhost.filep))
+        self.save()
+        logger.info("Adding HSTS header to every response from ssl vhost in %s",
+                ssl_vhost.filep)
+
+    def _verify_no_hsts_header(self, ssl_vhost):
+        """Checks to see if existing HSTS settings is in place.
+
+        Checks to see if virtualhost already contains a HSTS header 
+
+        :param vhost: vhost to check
+        :type vhost: :class:`~letsencrypt_apache.obj.VirtualHost`
+
+        :returns: boolean
+        :rtype: (bool)
+
+        :raises errors.PluginError: When an HSTS header exists
+
+        """
+        header_path = self.parser.find_dir("Header", None, start=ssl_vhost.path)
+        if header_path:
+            # "Existing Header directive for virtualhost"
+            for match in header_path:
+                if match == "Strict-Transport-Security":
+                    raise errors.PluginError("Existing HSTS header")
+
+            for match, arg in itertools.izip(header_path, constants.HSTS_ARGS):
+                if self.aug.get(match) != arg:
+                    raise errors.PluginError("Unknown Existing HSTS header")
+            raise errors.PluginError("Let's Encrypt has already enabled HSTS")
+
 
     def _enable_redirect(self, ssl_vhost, unused_options):
         """Redirect all equivalent HTTP traffic to ssl_vhost.
