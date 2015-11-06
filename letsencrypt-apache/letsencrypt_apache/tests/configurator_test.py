@@ -183,6 +183,11 @@ class TwoVhost80Test(util.ApacheTest):
         self.assertEqual(len(self.vh_truth)-1,
                          len(self.config._without_modmacro(self.vh_truth)))
 
+    def test_is_mod_macro(self):
+        # pylint: disable=protected-access
+        self.assertEqual(self.config._is_mod_macro("$domain"), True)
+        self.assertEqual(self.config._is_mod_macro("www.example.com"), False)
+
     def test_non_default_vhosts(self):
         # pylint: disable=protected-access
         self.assertEqual(len(self.config._non_default_vhosts()), 4)
