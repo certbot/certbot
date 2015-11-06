@@ -340,12 +340,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """Return all non mod_macro vhosts
 
         :param vhosts: List of VirtualHosts
-        :type vhosts: (:class:`list` of :class:`~letsencrypt_apache.obj.VirtualHost`)
+        :type vhosts: :class:`list` of
+                :class:`~letsencrypt_apache.obj.VirtualHost`
 
         :returns: List of VirtualHosts without mod_macro
-        :rtype: (:class:`list` of :class:`~letsencrypt_apache.obj.VirtualHost`)
+        :rtype: :class:`list` of :class:`~letsencrypt_apache.obj.VirtualHost`
         """
-        return [vh for vh in vhosts if vh.modmacro == False]
+        return [vh for vh in vhosts if vh.modmacro is False]
 
     def _non_default_vhosts(self):
         """Return all non _default_ only vhosts."""
