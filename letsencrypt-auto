@@ -14,6 +14,10 @@ VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
 VENV_BIN=${VENV_PATH}/bin
 
 if test "`id -u`" -ne "0" ; then
+  if ! command -v sudo > /dev/null; then
+    echo "This must run as root."
+    exit 1
+  fi
   SUDO=sudo
 else
   SUDO=
