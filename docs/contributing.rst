@@ -151,7 +151,7 @@ certificate for some domain name by solving challenges received from
 the ACME server. From the protocol, there are essentially two
 different types of challenges. Challenges that must be solved by
 individual plugins in order to satisfy domain validation (subclasses
-of `~.DVChallenge`, i.e. `~.challenges.DVSNI`,
+of `~.DVChallenge`, i.e. `~.challenges.TLSSNI01`,
 `~.challenges.HTTP01`, `~.challenges.DNS`) and continuity specific
 challenges (subclasses of `~.ContinuityChallenge`,
 i.e. `~.challenges.RecoveryToken`, `~.challenges.RecoveryContact`,
@@ -160,7 +160,7 @@ always handled by the `~.ContinuityAuthenticator`, while plugins are
 expected to handle `~.DVChallenge` types.
 Right now, we have two authenticator plugins, the `~.ApacheConfigurator`
 and the `~.StandaloneAuthenticator`. The Standalone and Apache
-authenticators only solve the `~.challenges.DVSNI` challenge currently.
+authenticators only solve the `~.challenges.TLSSNI01` challenge currently.
 (You can set which challenges your authenticator can handle through the
 :meth:`~.IAuthenticator.get_chall_pref`.
 
