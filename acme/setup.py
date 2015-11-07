@@ -4,7 +4,7 @@ from setuptools import setup
 from setuptools import find_packages
 
 
-version = '0.1.0.dev0'
+version = '0.0.0.dev20151107'
 
 install_requires = [
     # load_pem_private/public_key (>=0.6)
