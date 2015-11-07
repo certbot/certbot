@@ -28,8 +28,8 @@ REWRITE_HTTPS_ARGS = [
     "^", "https://%{SERVER_NAME}%{REQUEST_URI}", "[L,QSA,R=permanent]"]
 """Apache rewrite rule arguments used for redirections to https vhost"""
 
-HSTS_ARGS = [ 
-    "always", "set", "Strict-Transport-Security", 
+HSTS_ARGS = [
+    "always", "set", "Strict-Transport-Security",
     "\"max-age=31536000; includeSubDomains\""]
 """Apache header arguments for HSTS"""
 

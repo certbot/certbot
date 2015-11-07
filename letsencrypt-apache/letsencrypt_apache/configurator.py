@@ -710,7 +710,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             raise
 
     def _enable_hsts(self, ssl_vhost, unused_options):
-        """Enables the HSTS header on all HTTP responses. 
+        """Enables the HSTS header on all HTTP responses.
 
         .. note:: HSTS defends against SSL stripping attacks.
 
@@ -735,10 +735,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         if "headers_module" not in self.parser.modules:
             self.enable_mod("headers")
-        
+
         # Check if HSTS header is already set
         self._verify_no_hsts_header(ssl_vhost)
-        
+
         # Add directives to server
         self.parser.add_dir(ssl_vhost.path, "Header", constants.HSTS_ARGS)
         self.save_notes += ("Adding HSTS header to every response from ssl "
@@ -750,7 +750,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     def _verify_no_hsts_header(self, ssl_vhost):
         """Checks to see if existing HSTS settings is in place.
 
-        Checks to see if virtualhost already contains a HSTS header 
+        Checks to see if virtualhost already contains a HSTS header
 
         :param vhost: vhost to check
         :type vhost: :class:`~letsencrypt_apache.obj.VirtualHost`
