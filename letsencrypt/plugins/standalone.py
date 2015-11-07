@@ -28,9 +28,9 @@ class ServerManager(object):
 
     Manager for `ACMEServer` and `ACMETLSServer` instances.
 
-    `certs` and `simple_http_resources` correspond to
+    `certs` and `http_01_resources` correspond to
     `acme.crypto_util.SSLSocket.certs` and
-    `acme.crypto_util.SSLSocket.simple_http_resources` respectively. All
+    `acme.crypto_util.SSLSocket.http_01_resources` respectively. All
     created servers share the same certificates and resources, so if
     you're running both TLS and non-TLS instances, HTTP01 handlers
     will serve the same URLs!
@@ -38,10 +38,10 @@ class ServerManager(object):
     """
     _Instance = collections.namedtuple("_Instance", "server thread")
 
-    def __init__(self, certs, simple_http_resources):
+    def __init__(self, certs, http_01_resources):
         self._instances = {}
         self.certs = certs
-        self.simple_http_resources = simple_http_resources
+        self.http_01_resources = http_01_resources
 
     def run(self, port, challenge_type):
         """Run ACME server on specified ``port``.
@@ -67,7 +67,7 @@ class ServerManager(object):
                 server = acme_standalone.DVSNIServer(address, self.certs)
             else:  # challenges.HTTP01
                 server = acme_standalone.HTTP01Server(
-                    address, self.simple_http_resources)
+                    address, self.http_01_resources)
         except socket.error as error:
             raise errors.StandaloneBindError(error, port)
 
@@ -150,12 +150,9 @@ class Authenticator(common.Plugin):
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
 
-        # one self-signed key for all DVSNI and HTTP01 certificates
+        # one self-signed key for all DVSNI certificates
         self.key = OpenSSL.crypto.PKey()
         self.key.generate_key(OpenSSL.crypto.TYPE_RSA, bits=2048)
-        # TODO: generate only when the first HTTP01 challenge is solved
-        self.simple_http_cert = acme_crypto_util.gen_ss_cert(
-            self.key, domains=["temp server"])
 
         self.served = collections.defaultdict(set)
 
@@ -164,9 +161,9 @@ class Authenticator(common.Plugin):
         # GIL, the operations are safe, c.f.
         # https://docs.python.org/2/faq/library.html#what-kinds-of-global-value-mutation-are-thread-safe
         self.certs = {}
-        self.simple_http_resources = set()
+        self.http_01_resources = set()
 
-        self.servers = ServerManager(self.certs, self.simple_http_resources)
+        self.servers = ServerManager(self.certs, self.http_01_resources)
 
     @classmethod
     def add_parser_arguments(cls, add):
@@ -240,17 +237,14 @@ class Authenticator(common.Plugin):
                 server = self.servers.run(
                     self.config.http01_port, challenges.HTTP01)
                 response, validation = achall.response_and_validation()
-                self.simple_http_resources.add(
+                self.http_01_resources.add(
                     acme_standalone.HTTP01RequestHandler.HTTP01Resource(
                         chall=achall.chall, response=response,
                         validation=validation))
-                cert = self.simple_http_cert
-                domain = achall.domain
             else:  # DVSNI
                 server = self.servers.run(self.config.dvsni_port, challenges.DVSNI)
                 response, cert, _ = achall.gen_cert_and_response(self.key)
-                domain = response.z_domain
-            self.certs[domain] = (self.key, cert)
+                self.certs[response.z_domain] = (self.key, cert)
             self.served[server].add(achall)
             responses.append(response)
 

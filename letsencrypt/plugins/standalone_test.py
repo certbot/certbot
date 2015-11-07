@@ -24,13 +24,13 @@ class ServerManagerTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.plugins.standalone import ServerManager
         self.certs = {}
-        self.simple_http_resources = {}
-        self.mgr = ServerManager(self.certs, self.simple_http_resources)
+        self.http_01_resources = {}
+        self.mgr = ServerManager(self.certs, self.http_01_resources)
 
     def test_init(self):
         self.assertTrue(self.mgr.certs is self.certs)
         self.assertTrue(
-            self.mgr.simple_http_resources is self.simple_http_resources)
+            self.mgr.http_01_resources is self.http_01_resources)
 
     def _test_run_stop(self, challenge_type):
         server = self.mgr.run(port=0, challenge_type=challenge_type)
@@ -42,7 +42,7 @@ class ServerManagerTest(unittest.TestCase):
     def test_run_stop_dvsni(self):
         self._test_run_stop(challenges.DVSNI)
 
-    def test_run_stop_simplehttp(self):
+    def test_run_stop_http_01(self):
         self._test_run_stop(challenges.HTTP01)
 
     def test_run_idempotent(self):
@@ -153,7 +153,7 @@ class AuthenticatorTest(unittest.TestCase):
     def test_perform2(self):
         domain = b'localhost'
         key = jose.JWK.load(test_util.load_vector('rsa512_key.pem'))
-        simple_http = achallenges.KeyAuthorizationAnnotatedChallenge(
+        http_01 = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.HTTP01_P, domain=domain, account_key=key)
         dvsni = achallenges.DVSNI(
             challb=acme_util.DVSNI_P, domain=domain, account_key=key)
@@ -164,7 +164,7 @@ class AuthenticatorTest(unittest.TestCase):
             return "server{0}".format(port)
 
         self.auth.servers.run.side_effect = _run
-        responses = self.auth.perform2([simple_http, dvsni])
+        responses = self.auth.perform2([http_01, dvsni])
 
         self.assertTrue(isinstance(responses, list))
         self.assertEqual(2, len(responses))
@@ -177,11 +177,11 @@ class AuthenticatorTest(unittest.TestCase):
         ])
         self.assertEqual(self.auth.served, {
             "server1234": set([dvsni]),
-            "server4321": set([simple_http]),
+            "server4321": set([http_01]),
         })
-        self.assertEqual(1, len(self.auth.simple_http_resources))
-        self.assertEqual(2, len(self.auth.certs))
-        self.assertEqual(list(self.auth.simple_http_resources), [
+        self.assertEqual(1, len(self.auth.http_01_resources))
+        self.assertEqual(1, len(self.auth.certs))
+        self.assertEqual(list(self.auth.http_01_resources), [
             acme_standalone.HTTP01RequestHandler.HTTP01Resource(
                 acme_util.HTTP01, responses[0], mock.ANY)])
 
