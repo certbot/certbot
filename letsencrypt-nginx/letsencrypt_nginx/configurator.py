@@ -14,7 +14,6 @@ import zope.interface
 from acme import challenges
 from acme import crypto_util as acme_crypto_util
 
-from letsencrypt import achallenges
 from letsencrypt import constants as core_constants
 from letsencrypt import crypto_util
 from letsencrypt import errors
@@ -537,7 +536,7 @@ class NginxConfigurator(common.Plugin):
     ###########################################################################
     def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use
         """Return list of challenge preferences."""
-        return [challenges.DVSNI]
+        return [challenges.TLSSNI01]
 
     # Entry point in main.py for performing challenges
     def perform(self, achalls):
@@ -553,11 +552,10 @@ class NginxConfigurator(common.Plugin):
         nginx_dvsni = dvsni.NginxDvsni(self)
 
         for i, achall in enumerate(achalls):
-            if isinstance(achall, achallenges.DVSNI):
-                # Currently also have dvsni hold associated index
-                # of the challenge. This helps to put all of the responses back
-                # together when they are all complete.
-                nginx_dvsni.add_chall(achall, i)
+            # Currently also have dvsni hold associated index
+            # of the challenge. This helps to put all of the responses back
+            # together when they are all complete.
+            nginx_dvsni.add_chall(achall, i)
 
         sni_response = nginx_dvsni.perform()
         # Must restart in order to activate the challenges.
