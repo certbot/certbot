@@ -246,7 +246,7 @@ class NginxParser(object):
                 # Can't be a server block
                 return False
 
-            if item[0] == 'server_name':
+            if len(item) > 0 and item[0] == 'server_name':
                 server_names.update(_get_servernames(item[1]))
 
         return server_names == names
@@ -425,7 +425,7 @@ def _is_include_directive(entry):
 
     """
     return (isinstance(entry, list) and
-            entry[0] == 'include' and len(entry) == 2 and
+            len(entry) == 2 and entry[0] == 'include' and
             isinstance(entry[1], str))
 
 
