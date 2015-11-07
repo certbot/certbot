@@ -492,10 +492,10 @@ class TwoVhost80Test(util.ApacheTest):
     def test_get_chall_pref(self):
         self.assertTrue(isinstance(self.config.get_chall_pref(""), list))
 
-    def test_temp_install(self):
-        from letsencrypt_apache.configurator import temp_install
+    def test_install_ssl_options_conf(self):
+        from letsencrypt_apache.configurator import install_ssl_options_conf
         path = os.path.join(self.work_dir, "test_it")
-        temp_install(path)
+        install_ssl_options_conf(path)
         self.assertTrue(os.path.isfile(path))
 
     # TEST ENHANCEMENTS
