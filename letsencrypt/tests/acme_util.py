@@ -16,8 +16,6 @@ HTTP01 = challenges.HTTP01(
     token="evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ+PCt92wr+oA")
 TLSSNI01 = challenges.TLSSNI01(
     token=jose.b64decode(b"evaGxfADs6pSRb2LAv9IZf17Dt3juxGJyPCt92wrDoA"))
-DVSNI = challenges.DVSNI(
-    token=jose.b64decode(b"evaGxfADs6pSRb2LAv9IZf17Dt3juxGJyPCt92wrDoA"))
 DNS = challenges.DNS(token="17817c66b60ce2e4012dfad92657527a")
 RECOVERY_CONTACT = challenges.RecoveryContact(
     activation_url="https://example.ca/sendrecovery/a5bd99383fb0",
@@ -81,7 +79,6 @@ def chall_to_challb(chall, status):  # pylint: disable=redefined-outer-name
 
 
 # Pending ChallengeBody objects
-DVSNI_P = chall_to_challb(DVSNI, messages.STATUS_PENDING)
 TLSSNI01_P = chall_to_challb(TLSSNI01, messages.STATUS_PENDING)
 HTTP01_P = chall_to_challb(HTTP01, messages.STATUS_PENDING)
 DNS_P = chall_to_challb(DNS, messages.STATUS_PENDING)
