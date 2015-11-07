@@ -54,11 +54,11 @@ class DVSNIServer(TLSServer, ACMEServerMixin):
 
     def __init__(self, server_address, certs):
         TLSServer.__init__(
-            self, server_address, DVSNIRequestHandler, certs=certs)
+            self, server_address, BaseRequestHandlerWithLogging, certs=certs)
 
 
-class DVSNIRequestHandler(socketserver.BaseRequestHandler):
-    """DVSNI request handler."""
+class BaseRequestHandlerWithLogging(socketserver.BaseRequestHandler):
+    """BaseRequestHandler with logging."""
 
     def log_message(self, format, *args):  # pylint: disable=redefined-builtin
         """Log arbitrary message."""
