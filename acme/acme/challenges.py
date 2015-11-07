@@ -246,7 +246,7 @@ class HTTP01Response(KeyAuthorizationChallengeResponse):
         # request URI, if it's standard.
         if port is not None and port != self.PORT:
             logger.warning(
-                "Using non-standard port for SimpleHTTP verification: %s", port)
+                "Using non-standard port for http-01 verification: %s", port)
             domain += ":{0}".format(port)
 
         uri = chall.uri(domain)
