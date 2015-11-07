@@ -21,7 +21,7 @@ class DvsniPerformTest(util.ApacheTest):
 
         config = util.get_apache_configurator(
             self.config_path, self.config_dir, self.work_dir)
-        config.config.dvsni_port = 443
+        config.config.tls_sni_01_port = 443
 
         from letsencrypt_apache import dvsni
         self.sni = dvsni.ApacheDvsni(config)

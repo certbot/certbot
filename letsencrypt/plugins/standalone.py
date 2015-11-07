@@ -183,7 +183,7 @@ class Authenticator(common.Plugin):
         if challenges.HTTP01 in self.supported_challenges:
             necessary_ports.add(self.config.http01_port)
         if challenges.TLSSNI01 in self.supported_challenges:
-            necessary_ports.add(self.config.dvsni_port)
+            necessary_ports.add(self.config.tls_sni_01_port)
         return necessary_ports
 
     def more_info(self):  # pylint: disable=missing-docstring
@@ -243,7 +243,7 @@ class Authenticator(common.Plugin):
                         validation=validation))
             else:  # tls-sni-01
                 server = self.servers.run(
-                    self.config.dvsni_port, challenges.TLSSNI01)
+                    self.config.tls_sni_01_port, challenges.TLSSNI01)
                 response, (cert, _) = achall.response_and_validation(
                     cert_key=self.key)
                 self.certs[response.z_domain] = (self.key, cert)

@@ -297,7 +297,7 @@ class NginxConfigurator(common.Plugin):
         """Make a server SSL.
 
         Make a server SSL based on server_name and filename by adding a
-        ``listen IConfig.dvsni_port ssl`` directive to the server block.
+        ``listen IConfig.tls_sni_01_port ssl`` directive to the server block.
 
         .. todo:: Maybe this should create a new block instead of modifying
             the existing one?
@@ -307,7 +307,7 @@ class NginxConfigurator(common.Plugin):
 
         """
         snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
-        ssl_block = [['listen', '{0} ssl'.format(self.config.dvsni_port)],
+        ssl_block = [['listen', '{0} ssl'.format(self.config.tls_sni_01_port)],
                      # access and error logs necessary for integration
                      # testing (non-root)
                      ['access_log', os.path.join(
@@ -321,7 +321,8 @@ class NginxConfigurator(common.Plugin):
             vhost.filep, vhost.names, ssl_block)
         vhost.ssl = True
         vhost.raw.extend(ssl_block)
-        vhost.addrs.add(obj.Addr('', str(self.config.dvsni_port), True, False))
+        vhost.addrs.add(obj.Addr(
+            '', str(self.config.tls_sni_01_port), True, False))
 
     def get_all_certs_keys(self):
         """Find all existing keys, certs from configuration.

@@ -62,7 +62,7 @@ class ApacheDvsni(common.Dvsni):
 
         # Prepare the server for HTTPS
         self.configurator.prepare_server_https(
-            str(self.configurator.config.dvsni_port), True)
+            str(self.configurator.config.tls_sni_01_port), True)
 
         responses = []
 
@@ -114,14 +114,15 @@ class ApacheDvsni(common.Dvsni):
 
         # TODO: Checkout _default_ rules.
         dvsni_addrs = set()
-        default_addr = obj.Addr(("*", str(self.configurator.config.dvsni_port)))
+        default_addr = obj.Addr(("*", str(
+            self.configurator.config.tls_sni_01_port)))
 
         for addr in vhost.addrs:
             if "_default_" == addr.get_addr():
                 dvsni_addrs.add(default_addr)
             else:
                 dvsni_addrs.add(
-                    addr.get_sni_addr(self.configurator.config.dvsni_port))
+                    addr.get_sni_addr(self.configurator.config.tls_sni_01_port))
 
         return dvsni_addrs
 

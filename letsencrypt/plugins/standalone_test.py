@@ -92,7 +92,7 @@ class AuthenticatorTest(unittest.TestCase):
     def setUp(self):
         from letsencrypt.plugins.standalone import Authenticator
         self.config = mock.MagicMock(
-            dvsni_port=1234, http01_port=4321,
+            tls_sni_01_port=1234, http01_port=4321,
             standalone_supported_challenges="tls-sni-01,http-01")
         self.auth = Authenticator(self.config, name="standalone")
 
