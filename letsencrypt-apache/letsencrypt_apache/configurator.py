@@ -328,25 +328,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # No winners here... is there only one reasonable vhost?
         if best_candidate is None:
             # reasonable == Not all _default_ addrs
+            vhosts = self._non_default_vhosts()
             # remove mod_macro hosts from reasonable vhosts
-            reasonable_vhosts = self._without_modmacro(
-                self._non_default_vhosts())
+            reasonable_vhosts = [vh for vh
+                                 in vhosts if vh.modmacro is False]
             if len(reasonable_vhosts) == 1:
                 best_candidate = reasonable_vhosts[0]
 
         return best_candidate
-
-    def _without_modmacro(self, vhosts):
-        """Return all non mod_macro vhosts
-
-        :param vhosts: List of VirtualHosts
-        :type vhosts: :class:`list` of
-                :class:`~letsencrypt_apache.obj.VirtualHost`
-
-        :returns: List of VirtualHosts without mod_macro
-        :rtype: :class:`list` of :class:`~letsencrypt_apache.obj.VirtualHost`
-        """
-        return [vh for vh in vhosts if vh.modmacro is False]
 
     def _non_default_vhosts(self):
         """Return all non _default_ only vhosts."""
