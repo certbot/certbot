@@ -879,7 +879,6 @@ def prepare_and_parse_args(plugins, args):
     # parser (--help should display plugin-specific options last)
     _plugins_parsing(helpful, plugins)
 
-
     return helpful.parse_args()
 
 
