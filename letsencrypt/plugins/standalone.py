@@ -63,7 +63,7 @@ class ServerManager(object):
         address = ("", port)
         try:
             if challenge_type is challenges.TLSSNI01:
-                server = acme_standalone.DVSNIServer(address, self.certs)
+                server = acme_standalone.TLSSNI01Server(address, self.certs)
             else:  # challenges.HTTP01
                 server = acme_standalone.HTTP01Server(
                     address, self.http_01_resources)

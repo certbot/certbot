@@ -30,7 +30,7 @@ class TLSServer(socketserver.TCPServer):
         self.certs = kwargs.pop("certs", {})
         self.method = kwargs.pop(
             # pylint: disable=protected-access
-            "method", crypto_util._DEFAULT_DVSNI_SSL_METHOD)
+            "method", crypto_util._DEFAULT_TLSSNI01_SSL_METHOD)
         self.allow_reuse_address = kwargs.pop("allow_reuse_address", True)
         socketserver.TCPServer.__init__(self, *args, **kwargs)
 
@@ -50,8 +50,8 @@ class ACMEServerMixin:  # pylint: disable=old-style-class
     allow_reuse_address = True
 
 
-class DVSNIServer(TLSServer, ACMEServerMixin):
-    """DVSNI Server."""
+class TLSSNI01Server(TLSServer, ACMEServerMixin):
+    """TLSSNI01 Server."""
 
     def __init__(self, server_address, certs):
         TLSServer.__init__(
@@ -134,8 +134,8 @@ class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             cls, simple_http_resources=simple_http_resources)
 
 
-def simple_dvsni_server(cli_args, forever=True):
-    """Run simple standalone DVSNI server."""
+def simple_tls_sni_01_server(cli_args, forever=True):
+    """Run simple standalone TLSSNI01 server."""
     logging.basicConfig(level=logging.DEBUG)
 
     parser = argparse.ArgumentParser()
@@ -158,7 +158,7 @@ def simple_dvsni_server(cli_args, forever=True):
             OpenSSL.crypto.load_certificate(
                 OpenSSL.crypto.FILETYPE_PEM, cert_contents))
 
-    server = DVSNIServer(('', int(args.port)), certs=certs)
+    server = TLSSNI01Server(('', int(args.port)), certs=certs)
     six.print_("Serving at https://localhost:{0}...".format(
         server.socket.getsockname()[1]))
     if forever:  # pragma: no cover
@@ -168,4 +168,4 @@ def simple_dvsni_server(cli_args, forever=True):
 
 
 if __name__ == "__main__":
-    sys.exit(simple_dvsni_server(sys.argv))  # pragma: no cover
+    sys.exit(simple_tls_sni_01_server(sys.argv))  # pragma: no cover
