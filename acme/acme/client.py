@@ -481,11 +481,13 @@ class ClientNetwork(object):
     JSON_ERROR_CONTENT_TYPE = 'application/problem+json'
     REPLAY_NONCE_HEADER = 'Replay-Nonce'
 
-    def __init__(self, key, alg=jose.RS256, verify_ssl=True):
+    def __init__(self, key, alg=jose.RS256, verify_ssl=True,
+                 user_agent='acme-python'):
         self.key = key
         self.alg = alg
         self.verify_ssl = verify_ssl
         self._nonces = set()
+        self.user_agent = user_agent
 
     def _wrap_in_jws(self, obj, nonce):
         """Wrap `JSONDeSerializable` object in JWS.
@@ -578,6 +580,8 @@ class ClientNetwork(object):
         logging.debug('Sending %s request to %s. args: %r, kwargs: %r',
                       method, url, args, kwargs)
         kwargs['verify'] = self.verify_ssl
+        kwargs.setdefault('headers', {})
+        kwargs['headers'].setdefault('User-Agent', self.user_agent)
         response = requests.request(method, url, *args, **kwargs)
         logging.debug('Received %s. Headers: %s. Content: %r',
                       response, response.headers, response.content)
