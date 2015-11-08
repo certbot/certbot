@@ -221,6 +221,12 @@ class HTTP01Response(KeyAuthorizationChallengeResponse):
     typ = "http-01"
 
     PORT = 80
+    """Verification port as defined by the protocol.
+
+    You can override it (e.g. for testing) by passing ``port`` to
+    `simple_verify`.
+
+    """
 
     def simple_verify(self, chall, domain, account_public_key, port=None):
         """Simple verify.
@@ -328,6 +334,12 @@ class TLSSNI01Response(KeyAuthorizationChallengeResponse):
     """Domain name suffix."""
 
     PORT = 443
+    """Verification port as defined by the protocol.
+
+    You can override it (e.g. for testing) by passing ``port`` to
+    `simple_verify`.
+
+    """
 
     @property
     def z(self):
@@ -396,6 +408,7 @@ class TLSSNI01Response(KeyAuthorizationChallengeResponse):
         :param OpenSSL.crypto.X509 cert: Optional certificate. If not
             provided (``None``) certificate will be retrieved using
             `probe_cert`.
+        :param int port: Port used to probe the certificate.
 
 
         :returns: ``True`` iff client's control of the domain has been
