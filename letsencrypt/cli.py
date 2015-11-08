@@ -7,7 +7,6 @@ import logging
 import logging.handlers
 import os
 import pkg_resources
-import re
 import sys
 import time
 import traceback
