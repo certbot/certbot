@@ -144,7 +144,7 @@ def _check_config_domain_sanity(domains):
         raise errors.ConfigurationError(
             "Punycode domains are not supported")
     # FQDN, checks:
-    #  Characters used, domain parts < 63 chars, tld > 3 < 6 chars
+    #  Characters used, domain parts < 63 chars, tld > 1 < 7 chars
     fqdn = re.compile("^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\\.)+[A-Za-z]{2,6}$")
     if any(True for d in domains if not fqdn.match(d)):
         raise errors.ConfigurationError("Requested domain is not FQDN")
