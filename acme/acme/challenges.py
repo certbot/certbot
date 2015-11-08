@@ -345,7 +345,7 @@ class TLSSNI01Response(KeyAuthorizationChallengeResponse):
     def z(self):
         """``z`` value used for verification."""
         return hashlib.sha256(
-            self.key_authorization.encode("utf-8")).hexdigest().encode()
+            self.key_authorization.encode("utf-8")).hexdigest().lower().encode()
 
     @property
     def z_domain(self):
