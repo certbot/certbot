@@ -34,8 +34,8 @@ HSTS_ARGS = ["always", "set", "Strict-Transport-Security",
 """Apache header arguments for HSTS"""
 
 UIR_ARGS = ["always", "set", "Content-Security-Policy",
-    "upgrade-insecure-requests"] 
+    "upgrade-insecure-requests"]
 
-HEADER_ARGS = {"Strict-Transport-Security" : HSTS_ARGS,
-        "Upgrade-Insecure-Requests" : UIR_ARGS}
+HEADER_ARGS = {"Strict-Transport-Security": HSTS_ARGS,
+        "Upgrade-Insecure-Requests": UIR_ARGS}
 

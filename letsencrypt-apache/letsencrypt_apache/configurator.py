@@ -710,28 +710,25 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             raise
 
     def _set_http_header(self, ssl_vhost, header_name):
-        # TODO REWRITE COMMENT
-        """Enables the HSTS header on all HTTP responses.
+        """Enables header header_name on ssl_vhost.
 
-        .. note:: HSTS defends against SSL stripping attacks.
-
-
-        Adds the Strict-Transport-Security header with max-age=31536000 (1 year)
-        and includeSubDomains (all subdomains are also set with HSTS).
+        If header_name is not already set, a new Header directive is placed in
+        ssl_vhost's configuration with arguments from:
+        constants.HTTP_HEADER[header_name]
 
         .. note:: This function saves the configuration
 
         :param ssl_vhost: Destination of traffic, an ssl enabled vhost
         :type ssl_vhost: :class:`~letsencrypt_apache.obj.VirtualHost`
 
-        :param unused_options: Not currently used
-        :type unused_options: Not Available
+        :param header_name: a header name, e.g: Strict-Transport-Security
+        :type str
 
         :returns: Success, general_vhost (HTTP vhost)
         :rtype: (bool, :class:`~letsencrypt_apache.obj.VirtualHost`)
 
         :raises .errors.PluginError: If no viable HTTP host can be created or
-            used for the HSTS.
+            set with header header_name.
 
         """
         if "headers_module" not in self.parser.modules:
@@ -744,7 +741,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.parser.add_dir(ssl_vhost.path, "Header",
                 constants.HEADER_ARGS[header_name])
 
-        self.save_notes += ("Adding %s header to ssl vhost in %s\n" % 
+        self.save_notes += ("Adding %s header to ssl vhost in %s\n" %
                 (header_name, ssl_vhost.filep))
 
         self.save()
@@ -752,10 +749,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 ssl_vhost.filep)
 
     def _verify_no_http_header(self, ssl_vhost, header_name):
-        # TODO revise comment
-        """Checks to see if existing HSTS settings is in place.
+        """Checks to see if existing header_name header is in place.
 
-        Checks to see if virtualhost already contains a HSTS header
+        Checks to see if virtualhost already contains a header_name header
 
         :param vhost: vhost to check
         :type vhost: :class:`~letsencrypt_apache.obj.VirtualHost`
@@ -763,17 +759,17 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :returns: boolean
         :rtype: (bool)
 
-        :raises errors.PluginError: When an HSTS header exists
+        :raises errors.PluginError: When header header_name exists
 
         """
         header_path = self.parser.find_dir("Header", None, start=ssl_vhost.path)
         if header_path:
             # "Existing Header directive for virtualhost"
             for match in header_path:
-                if self.aug.get(match) == header_name.lower():
+                if self.aug.get(match).lower() == header_name.lower():
                     raise errors.PluginError("Existing %s header" %
                             (header_name))
-          
+
     def _enable_redirect(self, ssl_vhost, unused_options):
         """Redirect all equivalent HTTP traffic to ssl_vhost.
 
