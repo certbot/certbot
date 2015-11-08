@@ -343,13 +343,21 @@ class TLSSNI01Response(KeyAuthorizationChallengeResponse):
 
     @property
     def z(self):
-        """``z`` value used for verification."""
+        """``z`` value used for verification.
+
+        :rtype bytes:
+
+        """
         return hashlib.sha256(
             self.key_authorization.encode("utf-8")).hexdigest().lower().encode()
 
     @property
     def z_domain(self):
-        """Domain name used for verification, generated from `z`."""
+        """Domain name used for verification, generated from `z`.
+
+        :rtype bytes:
+
+        """
         return self.z[:32] + b'.' + self.z[32:] + self.DOMAIN_SUFFIX
 
     def gen_cert(self, key=None, bits=2048):
