@@ -1165,16 +1165,16 @@ def _check_config_domain_sanity(domains):
     # Check if there's a wildcard domain
     if any(d.startswith("*.") for d in domains):
         raise errors.ConfigurationError(
-            "Error: Wildcard domains are not supported")
+            "Wildcard domains are not supported")
     # Punycode
     if any("xn--" in d for d in domains):
         raise errors.ConfigurationError(
-            "Error: Punycode domains are not supported")
+            "Punycode domains are not supported")
     # FQDN, checks:
     #  Characters used, domain parts < 63 chars, tld > 3 < 6 chars
     fqdn = re.compile("^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\\.)+[A-Za-z]{2,6}$")
     if any(True for d in domains if not fqdn.match(d)):
-        raise errors.ConfigurationError("Error: Requested domain is not FQDN")
+        raise errors.ConfigurationError("Requested domain is not FQDN")
 
 if __name__ == "__main__":
     err_string = main()
