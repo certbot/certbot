@@ -182,12 +182,10 @@ class CLITest(unittest.TestCase):
                           ['-d', 'this.is.xn--ls8h.tld'])
         # FQDN
         self.assertRaises(errors.ConfigurationError,
-                          "Error: Requested domain is not FQDN",
                           self._call,
                           ['-d', 'comma,gotwrong.tld'])
         # FQDN 2
         self.assertRaises(errors.ConfigurationError,
-                          "Error: Requested domain is not FQDN",
                           self._call,
                           ['-d', 'illegal.character=.tld'])
         # Wildcard
