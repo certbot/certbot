@@ -15,6 +15,7 @@ from letsencrypt import errors
 from letsencrypt.tests import acme_util
 
 from letsencrypt_apache import configurator
+from letsencrypt_apache import constants
 from letsencrypt_apache import obj
 
 from letsencrypt_apache.tests import util
@@ -509,13 +510,14 @@ class TwoVhost80Test(util.ApacheTest):
 
     @mock.patch("letsencrypt.le_util.run_script")
     @mock.patch("letsencrypt.le_util.exe_exists")
-    def test_hsts(self, mock_exe, _):
+    def test_http_header_hsts(self, mock_exe, _):
         self.config.parser.update_runtime_variables = mock.Mock()
         self.config.parser.modules.add("mod_ssl.c")
         mock_exe.return_value = True
 
         # This will create an ssl vhost for letsencrypt.demo
-        self.config.enhance("letsencrypt.demo", "hsts")
+        self.config.enhance("letsencrypt.demo", "http-header",
+                "Strict-Transport-Security")
 
         self.assertTrue("headers_module" in self.config.parser.modules)
 
@@ -526,6 +528,31 @@ class TwoVhost80Test(util.ApacheTest):
         # load(). They must be found in sites-available
         hsts_header = self.config.parser.find_dir(
                 "Header", None, ssl_vhost.path)
+
+        # four args to HSTS header
+        self.assertEqual(len(hsts_header), 4)
+
+    @mock.patch("letsencrypt.le_util.run_script")
+    @mock.patch("letsencrypt.le_util.exe_exists")
+    def test_http_header_hsts_with_conflict(self, mock_exe, _):
+        mock_exe.return_value = True
+        self.config.parser.update_runtime_variables = mock.Mock()
+        self.config.parser.modules.add("mod_ssl.c")
+
+        ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[3])
+        self.config.parser.add_dir(
+            ssl_vhost.path, "Header", constants.HEADER_ARGS[
+                "Strict-Transport-Security"])
+
+        # This will create an ssl vhost for letsencrypt.demo
+        self.config.enhance(self.vh_truth[3].name, "http-header",
+                "Strict-Transport-Security")
+
+        # These are not immediately available in find_dir even with save() and
+        # load(). They must be found in sites-available
+        hsts_header = self.config.parser.find_dir(
+                "Header", None, ssl_vhost.path)
+
         # four args to HSTS header
         self.assertEqual(len(hsts_header), 4)
 
