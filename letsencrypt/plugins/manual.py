@@ -31,7 +31,7 @@ class Authenticator(common.Plugin):
     run as a privileged process. Alternatively shows instructions on how
     to use Python's built-in HTTP server.
 
-    .. todo:: Support for `~.challenges.DVSNI`.
+    .. todo:: Support for `~.challenges.TLSSNI01`.
 
     """
     zope.interface.implements(interfaces.IAuthenticator)

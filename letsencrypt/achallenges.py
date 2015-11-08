@@ -49,40 +49,10 @@ class KeyAuthorizationAnnotatedChallenge(AnnotatedChallenge):
     """Client annotated `KeyAuthorizationChallenge` challenge."""
     __slots__ = ('challb', 'domain', 'account_key')
 
-    def response_and_validation(self):
+    def response_and_validation(self, *args, **kwargs):
         """Generate response and validation."""
-        return self.challb.chall.response_and_validation(self.account_key)
-
-
-class DVSNI(AnnotatedChallenge):
-    """Client annotated "dvsni" ACME challenge.
-
-    :ivar .JWK account_key: Authorized Account Key
-
-    """
-    __slots__ = ('challb', 'domain', 'account_key')
-    acme_type = challenges.DVSNI
-
-    def gen_cert_and_response(self, key=None, bits=2048, alg=jose.RS256):
-        """Generate a DVSNI cert and response.
-
-        :param OpenSSL.crypto.PKey key: Private key used for
-            certificate generation. If none provided, a fresh key will
-            be generated.
-        :param int bits: Number of bits for fresh key generation.
-        :param .JWAAlgorithm alg:
-
-        :returns: ``(response, cert_pem, key_pem)`` tuple,  where
-            ``response`` is an instance of
-            `acme.challenges.DVSNIResponse`, ``cert`` is a certificate
-            (`OpenSSL.crypto.X509`) and ``key`` is a private key
-            (`OpenSSL.crypto.PKey`).
-        :rtype: tuple
-
-        """
-        response = self.challb.chall.gen_response(self.account_key, alg=alg)
-        cert, key = response.gen_cert(key=key, bits=bits)
-        return response, cert, key
+        return self.challb.chall.response_and_validation(
+            self.account_key, *args, **kwargs)
 
 
 class DNS(AnnotatedChallenge):

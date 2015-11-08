@@ -14,12 +14,12 @@ class NamespaceConfigTest(unittest.TestCase):
         self.namespace = mock.MagicMock(
             config_dir='/tmp/config', work_dir='/tmp/foo', foo='bar',
             server='https://acme-server.org:443/new',
-            dvsni_port=1234, http01_port=4321)
+            tls_sni_01_port=1234, http01_port=4321)
         from letsencrypt.configuration import NamespaceConfig
         self.config = NamespaceConfig(self.namespace)
 
     def test_init_same_ports(self):
-        self.namespace.dvsni_port = 4321
+        self.namespace.tls_sni_01_port = 4321
         from letsencrypt.configuration import NamespaceConfig
         self.assertRaises(errors.Error, NamespaceConfig, self.namespace)
 

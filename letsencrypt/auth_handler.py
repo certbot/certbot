@@ -344,8 +344,8 @@ def challb_to_achall(challb, account_key, domain):
     chall = challb.chall
     logger.info("%s challenge for %s", chall.typ, domain)
 
-    if isinstance(chall, challenges.DVSNI):
-        return achallenges.DVSNI(
+    if isinstance(chall, challenges.KeyAuthorizationChallenge):
+        return achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=challb, domain=domain, account_key=account_key)
     elif isinstance(chall, challenges.DNS):
         return achallenges.DNS(challb=challb, domain=domain)
@@ -355,9 +355,6 @@ def challb_to_achall(challb, account_key, domain):
     elif isinstance(chall, challenges.ProofOfPossession):
         return achallenges.ProofOfPossession(
             challb=challb, domain=domain)
-    elif isinstance(chall, challenges.KeyAuthorizationChallenge):
-        return achallenges.KeyAuthorizationAnnotatedChallenge(
-            challb=challb, domain=domain, account_key=account_key)
     else:
         raise errors.Error(
             "Received unsupported challenge of type: %s", chall.typ)

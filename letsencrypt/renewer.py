@@ -75,7 +75,7 @@ def renew(cert, old_version):
     # XXX: this loses type data (for example, the fact that key_size
     #      was an int, not a str)
     config.rsa_key_size = int(config.rsa_key_size)
-    config.dvsni_port = int(config.dvsni_port)
+    config.tls_sni_01_port = int(config.tls_sni_01_port)
     config.namespace.http01_port = int(config.namespace.http01_port)
     zope.component.provideUtility(config)
     try:
