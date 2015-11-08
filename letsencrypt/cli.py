@@ -1158,7 +1158,8 @@ def check_config_sanity(args):
         # Punycode
         if any("xn--" in d for d in args.domains):
             raise errors.ConfigurationError("Error: Punycode domains are not supported")
-        # Check for FQDN
+        # FQDN, checks:
+        #  Characters used, domain parts < 63 chars, tld > 3 < 6 chars
         fqdn = re.compile("^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\\.)+[A-Za-z]{2,6}$")
         if any(True for d in args.domains if not fqdn.match(d)):
             raise errors.ConfigurationError("Error: Requested domain is not FQDN")
