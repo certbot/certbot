@@ -177,25 +177,23 @@ class CLITest(unittest.TestCase):
 
     def test_check_config_sanity_domain(self):
         # Punycode
-        self.assertRaisesRegexp(errors.ConfigurationError,
-                                "Error: Punycode domains are not supported",
-                                self._call,
-                                ['-d', 'this.is.xn--ls8h.tld'])
+        self.assertRaises(errors.ConfigurationError,
+                          self._call,
+                          ['-d', 'this.is.xn--ls8h.tld'])
         # FQDN
-        self.assertRaisesRegexp(errors.ConfigurationError,
-                                "Error: Requested domain is not FQDN",
-                                self._call,
-                                ['-d', 'comma,gotwrong.tld'])
+        self.assertRaises(errors.ConfigurationError,
+                          "Error: Requested domain is not FQDN",
+                          self._call,
+                          ['-d', 'comma,gotwrong.tld'])
         # FQDN 2
-        self.assertRaisesRegexp(errors.ConfigurationError,
-                                "Error: Requested domain is not FQDN",
-                                self._call,
-                                ['-d', 'illegal.character=.tld'])
+        self.assertRaises(errors.ConfigurationError,
+                          "Error: Requested domain is not FQDN",
+                          self._call,
+                          ['-d', 'illegal.character=.tld'])
         # Wildcard
-        self.assertRaisesRegexp(errors.ConfigurationError,
-                                "Error: Wildcard domains are not supported",
-                                self._call,
-                                ['-d', '*.wildcard.tld'])
+        self.assertRaises(errors.ConfigurationError,
+                          self._call,
+                          ['-d', '*.wildcard.tld'])
 
     @mock.patch('letsencrypt.crypto_util.notAfter')
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
