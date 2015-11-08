@@ -7,6 +7,7 @@ import logging
 import logging.handlers
 import os
 import pkg_resources
+import re
 import sys
 import time
 import traceback
@@ -36,7 +37,12 @@ from letsencrypt import storage
 
 from letsencrypt.display import util as display_util
 from letsencrypt.display import ops as display_ops
-from letsencrypt.errors import Error, PluginSelectionError, CertStorageError
+from letsencrypt.errors import (
+    CertStorageError,
+    ConfigurationError,
+    Error,
+    PluginSelectionError
+)
 from letsencrypt.plugins import disco as plugins_disco
 
 
@@ -1085,6 +1091,8 @@ def main(cli_args=sys.argv[1:]):
     # note: arg parser internally handles --help (and exits afterwards)
     plugins = plugins_disco.PluginsRegistry.find_all()
     args = prepare_and_parse_args(plugins, cli_args)
+    # Check command line parameters sanity, and error out in case of problem.
+    check_config_sanity(args)
     config = configuration.NamespaceConfig(args)
     zope.component.provideUtility(config)
 
@@ -1139,6 +1147,26 @@ def main(cli_args=sys.argv[1:]):
 
     return args.func(args, config, plugins)
 
+def check_config_sanity(args):
+    """Validate command line options and display error message if
+    requirements are not met.
+
+    :param args: Command line options
+    :type args: :class:`argparse.Namespace`
+
+    """
+    # Domain checks
+    if args.domains is not None:
+        # Check if there's a wildcard domain
+        if any(True for d in args.domains if d.startswith("*")):
+            raise ConfigurationError("Error: Wildcard domains are not supported")
+        # Punycode
+        if any(True for d in args.domains if "xn--" in d):
+            raise ConfigurationError("Error: Punycode domains are not supported")
+        # Check for FQDN
+        fqdn = re.compile("^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\\.)+[A-Za-z]{2,6}$")
+        if any(True for d in args.domains if not fqdn.match(d)):
+            raise ConfigurationError("Error: Requested domain is not FQDN")
 
 if __name__ == "__main__":
     err_string = main()
