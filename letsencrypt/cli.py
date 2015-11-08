@@ -1153,10 +1153,10 @@ def check_config_sanity(args):
     # Domain checks
     if args.domains is not None:
         # Check if there's a wildcard domain
-        if any(True for d in args.domains if d.startswith("*.")):
+        if any(d.startswith("*.") for d in args.domains):
             raise errors.ConfigurationError("Error: Wildcard domains are not supported")
         # Punycode
-        if any(True for d in args.domains if "xn--" in d):
+        if any("xn--" in d for d in args.domains):
             raise errors.ConfigurationError("Error: Punycode domains are not supported")
         # Check for FQDN
         fqdn = re.compile("^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\\.)+[A-Za-z]{2,6}$")
