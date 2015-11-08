@@ -1158,7 +1158,7 @@ def check_config_sanity(args):
     # Domain checks
     if args.domains is not None:
         # Check if there's a wildcard domain
-        if any(True for d in args.domains if d.startswith("*")):
+        if any(True for d in args.domains if d.startswith("*.")):
             raise ConfigurationError("Error: Wildcard domains are not supported")
         # Punycode
         if any(True for d in args.domains if "xn--" in d):
