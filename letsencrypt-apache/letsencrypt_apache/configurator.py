@@ -213,21 +213,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         # Assign the final directives; order is maintained in find_dir
         if self.version >= (2, 4, 8):
-            logger.debug("Apache version (%s) is >= 2.4.8",
-                         ".".join(map(str,self.version)))
-            for directive in ["SSLCertificateKeyFile", "SSLCertificateChainFile",
-                              "SSLCACertificatePath"]:
-                logging.debug("Trying to delete directive '%s'", directive)
-                directive_tree = self.parser.find_dir(directive, None, vhost.path)
-                logging.debug(directive_tree)
-                if directive_tree:
-                    logger.debug("Removing directive %s", directive)
-                    self.aug.remove(re.sub(r"/\w*$", "", directive_tree[-1]))
-            logging.debug("fullchain path: %s", fullchain_path)
             self.aug.set(path["cert_path"][-1], fullchain_path)
         elif self.version < (2, 4, 8):
-            logger.debug("Apache version (%s) is < 2.4.8",
-                         ".".join(map(str,self.version)))
+            self.aug.set(path["cert_path"][-1], cert_path)
+            self.aug.set(path["chain_path"][-1], chain_path)
 
         # Save notes about the transaction that took place
         self.save_notes += ("Changed vhost at %s with addresses of %s\n"
@@ -583,6 +572,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Update Addresses
         self._update_ssl_vhosts_addrs(vh_p)
 
+        # Remove existing SSL directives
+        logging.info("Removing existing SSL directives")
+        self._remove_existing_ssl_directives(vh_p)
+
         # Add directives
         self._add_dummy_ssl_directives(vh_p)
 
@@ -650,6 +643,16 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             ssl_addrs.add(ssl_addr)
 
         return ssl_addrs
+
+    def _remove_existing_ssl_directives(self, vh_path):
+        for directive in ["SSLCertificateKeyFile", "SSLCertificateChainFile",
+                          "SSLCACertificatePath", "SSLCertificateFile"]:
+            logger.debug("Trying to delete directive '%s'", directive)
+            directive_tree = self.parser.find_dir(directive, None, vh_path)
+            logger.debug("Parser found %s", directive_tree)
+            if directive_tree:
+                    logger.debug("Removing directive %s", directive)
+                    self.aug.remove(re.sub(r"/\w*$", "", directive_tree[-1]))
 
     def _add_dummy_ssl_directives(self, vh_path):
         self.parser.add_dir(vh_path, "SSLCertificateFile",
