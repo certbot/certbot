@@ -1087,7 +1087,6 @@ def main(cli_args=sys.argv[1:]):
     plugins = plugins_disco.PluginsRegistry.find_all()
     args = prepare_and_parse_args(plugins, cli_args)
     # Check command line parameters sanity, and error out in case of problem.
-    check_config_sanity(args)
     config = configuration.NamespaceConfig(args)
     zope.component.provideUtility(config)
 
@@ -1141,40 +1140,6 @@ def main(cli_args=sys.argv[1:]):
         #    .format(os.linesep))
 
     return args.func(args, config, plugins)
-
-def check_config_sanity(args):
-    """Validate command line options and display error message if
-    requirements are not met.
-
-    :param args: Command line options
-    :type args: :class:`argparse.Namespace`
-
-    """
-    # Domain checks
-    if args.domains is not None:
-        _check_config_domain_sanity(args.domains)
-
-def _check_config_domain_sanity(domains):
-    """Helper method for check_config_sanity which validates
-    domain flag values and errors out if the requirements are not met.
-
-    :param domains: List of domains
-    :type args: `list` of `string`
-
-    """
-    # Check if there's a wildcard domain
-    if any(d.startswith("*.") for d in domains):
-        raise errors.ConfigurationError(
-            "Wildcard domains are not supported")
-    # Punycode
-    if any("xn--" in d for d in domains):
-        raise errors.ConfigurationError(
-            "Punycode domains are not supported")
-    # FQDN, checks:
-    #  Characters used, domain parts < 63 chars, tld > 3 < 6 chars
-    fqdn = re.compile("^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\\.)+[A-Za-z]{2,6}$")
-    if any(True for d in domains if not fqdn.match(d)):
-        raise errors.ConfigurationError("Requested domain is not FQDN")
 
 if __name__ == "__main__":
     err_string = main()
