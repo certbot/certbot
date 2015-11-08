@@ -212,14 +212,22 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         logger.info("Deploying Certificate to VirtualHost %s", vhost.filep)
 
         # Assign the final directives; order is maintained in find_dir
-        self.aug.set(path["cert_path"][-1], cert_path)
-        self.aug.set(path["cert_key"][-1], key_path)
-        if chain_path is not None:
-            if not path["chain_path"]:
-                self.parser.add_dir(
-                    vhost.path, "SSLCertificateChainFile", chain_path)
-            else:
-                self.aug.set(path["chain_path"][-1], chain_path)
+        if self.version >= (2, 4, 8):
+            logger.debug("Apache version (%s) is >= 2.4.8",
+                         ".".join(map(str,self.version)))
+            for directive in ["SSLCertificateKeyFile", "SSLCertificateChainFile",
+                              "SSLCACertificatePath"]:
+                logging.debug("Trying to delete directive '%s'", directive)
+                directive_tree = self.parser.find_dir(directive, None, vhost.path)
+                logging.debug(directive_tree)
+                if directive_tree:
+                    logger.debug("Removing directive %s", directive)
+                    self.aug.remove(re.sub(r"/\w*$", "", directive_tree[-1]))
+            logging.debug("fullchain path: %s", fullchain_path)
+            self.aug.set(path["cert_path"][-1], fullchain_path)
+        elif self.version < (2, 4, 8):
+            logger.debug("Apache version (%s) is < 2.4.8",
+                         ".".join(map(str,self.version)))
 
         # Save notes about the transaction that took place
         self.save_notes += ("Changed vhost at %s with addresses of %s\n"
