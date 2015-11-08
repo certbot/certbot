@@ -38,10 +38,6 @@ class NamespaceConfig(object):
     def __init__(self, namespace):
         self.namespace = namespace
         check_config_sanity(self)
-        if self.http01_port == self.tls_sni_01_port:
-            raise errors.Error(
-                "Trying to run http-01 and tls-sni-01 "
-                "on the same port ({0})".format(self.tls_sni_01_port))
 
     def __getattr__(self, name):
         return getattr(self.namespace, name)
@@ -122,6 +118,12 @@ def check_config_sanity(config):
     :type args: :class:`letsencrypt.interfaces.IConfig`
 
     """
+    # Port check
+    if config.http01_port == config.tls_sni_01_port:
+        raise errors.Error(
+            "Trying to run http-01 and tls-sni-01 "
+            "on the same port ({0})".format(config.tls_sni_01_port))
+
     # Domain checks
     if config.namespace.domains is not None:
         _check_config_domain_sanity(config.namespace.domains)
