@@ -13,7 +13,6 @@ import zope.interface
 
 from acme import challenges
 
-from letsencrypt import achallenges
 from letsencrypt import errors
 from letsencrypt import interfaces
 from letsencrypt import le_util
@@ -1117,7 +1116,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     ###########################################################################
     def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use
         """Return list of challenge preferences."""
-        return [challenges.DVSNI]
+        return [challenges.TLSSNI01]
 
     def perform(self, achalls):
         """Perform the configuration related challenge.
@@ -1132,11 +1131,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         apache_dvsni = dvsni.ApacheDvsni(self)
 
         for i, achall in enumerate(achalls):
-            if isinstance(achall, achallenges.DVSNI):
-                # Currently also have dvsni hold associated index
-                # of the challenge. This helps to put all of the responses back
-                # together when they are all complete.
-                apache_dvsni.add_chall(achall, i)
+            # Currently also have dvsni hold associated index
+            # of the challenge. This helps to put all of the responses back
+            # together when they are all complete.
+            apache_dvsni.add_chall(achall, i)
 
         sni_response = apache_dvsni.perform()
         if sni_response:

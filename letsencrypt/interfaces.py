@@ -219,8 +219,8 @@ class IConfig(zope.interface.Interface):
 
     no_verify_ssl = zope.interface.Attribute(
         "Disable SSL certificate verification.")
-    dvsni_port = zope.interface.Attribute(
-        "Port number to perform DVSNI challenge. "
+    tls_sni_01_port = zope.interface.Attribute(
+        "Port number to perform tls-sni-01 challenge. "
         "Boulder in testing mode defaults to 5001.")
 
     http01_port = zope.interface.Attribute(

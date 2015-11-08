@@ -28,8 +28,8 @@ class TLSServerTest(unittest.TestCase):
         server.server_close()  # pylint: disable=no-member
 
 
-class DVSNIServerTest(unittest.TestCase):
-    """Test for acme.standalone.DVSNIServer."""
+class TLSSNI01ServerTest(unittest.TestCase):
+    """Test for acme.standalone.TLSSNI01Server."""
 
     def setUp(self):
         self.certs = {
@@ -37,8 +37,8 @@ class DVSNIServerTest(unittest.TestCase):
                            # pylint: disable=protected-access
                            test_util.load_cert('cert.pem')._wrapped),
         }
-        from acme.standalone import DVSNIServer
-        self.server = DVSNIServer(("", 0), certs=self.certs)
+        from acme.standalone import TLSSNI01Server
+        self.server = TLSSNI01Server(("", 0), certs=self.certs)
         # pylint: disable=no-member
         self.thread = threading.Thread(target=self.server.serve_forever)
         self.thread.start()
@@ -106,8 +106,8 @@ class HTTP01ServerTest(unittest.TestCase):
         self.assertFalse(self._test_http01(add=False))
 
 
-class TestSimpleDVSNIServer(unittest.TestCase):
-    """Tests for acme.standalone.simple_dvsni_server."""
+class TestSimpleTLSSNI01Server(unittest.TestCase):
+    """Tests for acme.standalone.simple_tls_sni_01_server."""
 
     def setUp(self):
         # mirror ../examples/standalone
@@ -118,12 +118,14 @@ class TestSimpleDVSNIServer(unittest.TestCase):
         shutil.copy(test_util.vector_path('rsa512_key.pem'),
                     os.path.join(localhost_dir, 'key.pem'))
 
-        from acme.standalone import simple_dvsni_server
+        from acme.standalone import simple_tls_sni_01_server
         self.port = 1234
-        self.thread = threading.Thread(target=simple_dvsni_server, kwargs={
-            'cli_args': ('xxx', '--port', str(self.port)),
-            'forever': False,
-        })
+        self.thread = threading.Thread(
+            target=simple_tls_sni_01_server, kwargs={
+                'cli_args': ('xxx', '--port', str(self.port)),
+                'forever': False,
+            },
+        )
         self.old_cwd = os.getcwd()
         os.chdir(self.test_cwd)
         self.thread.start()
