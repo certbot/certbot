@@ -161,7 +161,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Get all of the available vhosts
         self.vhosts = self.get_virtual_hosts()
 
-        temp_install(self.mod_ssl_conf)
+        install_ssl_options_conf(self.mod_ssl_conf)
 
     def deploy_cert(self, domain, cert_path, key_path,
                     chain_path=None, fullchain_path=None):  # pylint: disable=unused-argument
@@ -1247,12 +1247,18 @@ def get_file_path(vhost_path):
     return avail_fp
 
 
-def temp_install(options_ssl):
-    """Temporary install for convenience."""
-    # WARNING: THIS IS A POTENTIAL SECURITY VULNERABILITY
-    # THIS SHOULD BE HANDLED BY THE PACKAGE MANAGER
-    # AND TAKEN OUT BEFORE RELEASE, INSTEAD
-    # SHOWING A NICE ERROR MESSAGE ABOUT THE PROBLEM.
+def install_ssl_options_conf(options_ssl):
+    """
+    Copy Let's Encrypt's SSL options file into the system's config dir if
+    required.
+    """
+    # XXX if we ever try to enforce a local privilege boundary (eg, running
+    # letsencrypt for unprivileged users via setuid), this function will need
+    # to be modified.
+
+    # XXX if the user is in security-autoupdate mode, we should be willing to
+    # overwrite the options_ssl file at least if it's unmodified:
+    # https://github.com/letsencrypt/letsencrypt/issues/1123
 
     # Check to make sure options-ssl.conf is installed
     if not os.path.isfile(options_ssl):
