@@ -214,13 +214,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Assign the final directives; order is maintained in find_dir
         if self.version >= (2, 4, 8):
             logger.debug("Apache version (%s) is >= 2.4.8",
-                         ".".join(map(str,self.version)))
+                         ".".join(str(i) for i in self.version))
             set_cert_path = fullchain_path
             self.aug.set(path["cert_path"][-1], fullchain_path)
             self.aug.set(path["cert_key"][-1], key_path)
         elif self.version < (2, 4, 8):
             logger.debug("Apache version (%s) is < 2.4.8",
-                         ".".join(map(str,self.version)))
+                         ".".join(str(i) for i in self.version))
             set_cert_path = cert_path
             self.aug.set(path["cert_path"][-1], cert_path)
             self.aug.set(path["cert_key"][-1], key_path)
@@ -663,8 +663,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             directive_tree = self.parser.find_dir(directive, None, vh_path)
             logger.debug("Parser found %s", directive_tree)
             if directive_tree:
-                    logger.debug("Removing directive %s", directive)
-                    self.aug.remove(re.sub(r"/\w*$", "", directive_tree[-1]))
+                logger.debug("Removing directive %s", directive)
+                self.aug.remove(re.sub(r"/\w*$", "", directive_tree[-1]))
 
     def _add_dummy_ssl_directives(self, vh_path):
         self.parser.add_dir(vh_path, "SSLCertificateFile",
