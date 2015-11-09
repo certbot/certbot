@@ -633,31 +633,37 @@ class ClientNetwork(object):
         Update self.user_agent from data in self.user_agent_object
         """
 
-        self.user_agent_object = keyval_map
-        uao = self.user_agent_object
+        if keyval_map['user_agent'] is None:
+            del keyval_map['user_agent']
 
-        client_name = 'LetsEncryptPythonClient'
-        if 'client_name' in uao:
-            client_name = uao['client_name']
-            del uao['client_name']
+            self.user_agent_object = keyval_map
+            uao = self.user_agent_object
 
-        le_version = ''
-        if 'le_version' in uao:
-            le_version = uao['le_version']
-            del uao['le_version']
+            client_name = 'LetsEncryptPythonClient'
+            if 'client_name' in uao:
+                client_name = uao['client_name']
+                del uao['client_name']
 
-        dist_version = ''
-        if 'dist_version' in uao:
-            dist_version = uao['dist_version']
-            del uao['dist_version']
+            le_version = ''
+            if 'le_version' in uao:
+                le_version = uao['le_version']
+                del uao['le_version']
 
-        user_agent = '%s/%s (%s)' % (
-            client_name,
-            le_version,
-            dist_version
-        )
+            dist_version = ''
+            if 'dist_version' in uao:
+                dist_version = uao['dist_version']
+                del uao['dist_version']
 
-        for kv_pair in uao.iteritems():
-            user_agent += ' %s/%s' % kv_pair
+            user_agent = '%s/%s (%s)' % (
+                client_name,
+                le_version,
+                dist_version
+            )
 
-        self.user_agent = user_agent
+            for kv_pair in uao.iteritems():
+                user_agent += ' %s/%s' % kv_pair
+
+            self.user_agent = user_agent
+
+        else:
+            self.user_agent = keyval_map['user_agent']

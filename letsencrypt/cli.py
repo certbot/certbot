@@ -481,6 +481,7 @@ def update_useragent(user_agent, le_client, names):
         'client_name': 'LetsEncryptPythonClient',
         'le_version': letsencrypt.__version__,
         'dist_version': os_info,
+        'user_agent': user_agent,
 
         'Authenticator': auth_name,
         'Installer': inst_name
@@ -961,7 +962,7 @@ def prepare_and_parse_args(plugins, args):
         help="Require that all configuration files are owned by the current "
              "user; only needed if your config is somewhere unsafe like /tmp/")
     helpful.add(
-        "security", "--user-agent", type=str, default="",
+        "security", "--user-agent", type=str, default=None,
         help="Set a custom user agent string for the client. User agent strings allow "
              "the CA to collect high level statistics about success rates by OS and "
              "plugin. If you wish to hide your server OS version from the Let's "
