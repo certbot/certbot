@@ -33,7 +33,11 @@ ExperimentalBootstrap() {
   if [ "$DEBUG" = 1 ] ; then
     if [ "$2" != "" ]  ; then
       echo "Bootstrapping dependencies for $1..."
-      "$3" "$BOOTSTRAP/$2"
+      if [ "$3" != "" ]  ; then
+        "$3" "$BOOTSTRAP/$2"
+      else
+        "$BOOTSTRAP/$2"
+      fi
     fi
   else
     echo "WARNING: $1 support is very experimental at present..."
