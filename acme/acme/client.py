@@ -488,6 +488,7 @@ class ClientNetwork(object):
         self.verify_ssl = verify_ssl
         self._nonces = set()
         self.user_agent = user_agent
+        self.user_agent_object = dict()
 
     def _wrap_in_jws(self, obj, nonce):
         """Wrap `JSONDeSerializable` object in JWS.
@@ -626,3 +627,16 @@ class ClientNetwork(object):
         response = self._send_request('POST', url, data=data, **kwargs)
         self._add_nonce(response)
         return self._check_response(response, content_type=content_type)
+
+    def _parse_user_agent_object(self):
+        user_agent = ''
+
+        for kv_pair in self.user_agent_object.iteritems(): user_agent += '%s:%s ' % kv_pair
+
+        self.user_agent = user_agent
+
+    def update_user_agent(self, keyval_map):
+        for key, value in keyval_map.iteritems():
+            self.user_agent_object[key] = value
+
+        self._parse_user_agent_object()

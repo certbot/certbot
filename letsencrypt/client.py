@@ -124,6 +124,8 @@ class Client(object):
         self.dv_auth = dv_auth
         self.installer = installer
 
+        # Add in User Agent code
+
         # Initialize ACME if account is provided
         if acme is None and self.account is not None:
             acme = _acme_from_config_key(config, self.account.key)

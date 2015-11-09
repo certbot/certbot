@@ -10,6 +10,7 @@ import pkg_resources
 import sys
 import time
 import traceback
+import platform
 
 import configargparse
 import OpenSSL
@@ -432,6 +433,26 @@ def choose_configurator_plugins(args, config, plugins, verb):
 
     return installer, authenticator
 
+def update_useragent(opt_out, le_client, plugins, names):
+    if opt_out:
+        return
+
+    auth_n, inst_n = names
+
+    useragent_args = {
+        'platform': platform.platform(),
+        'plugins': ','.join([
+            '%s-%s' % (
+                plugins.get(p).name,
+                str(plugins.get(p).problem).replace(' ', '_')
+            ) for p in plugins
+         ]),
+
+        'authenticator': auth_n,
+        'installer': inst_n
+    }
+
+    le_client.acme.net.update_user_agent(useragent_args)
 
 # TODO: Make run as close to auth + install as possible
 # Possible difficulties: args.csr was hacked into auth
@@ -446,6 +467,14 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
 
     # TODO: Handle errors from _init_le_client?
     le_client = _init_le_client(args, config, authenticator, installer)
+
+    update_useragent(
+        args.opt_out_statistics,
+        le_client,
+        plugins,
+        (authenticator.name,
+         installer.name)
+    )
 
     lineage = _auth_from_domains(le_client, config, domains, plugins)
 
@@ -478,6 +507,14 @@ def obtaincert(args, config, plugins):
     # TODO: Handle errors from _init_le_client?
     le_client = _init_le_client(args, config, authenticator, installer)
 
+    update_useragent(
+        args.opt_out_statistics,
+        le_client,
+        plugins,
+        (authenticator.name,
+         installer.name)
+    )
+
     # This is a special case; cert and chain are simply saved
     if args.csr is not None:
         certr, chain = le_client.obtain_certificate_from_csr(le_util.CSR(
@@ -503,6 +540,16 @@ def install(args, config, plugins):
     domains = _find_domains(args, installer)
     le_client = _init_le_client(
         args, config, authenticator=None, installer=installer)
+
+    update_useragent(
+        args.opt_out_statistics,
+        le_client,
+        plugins,
+        (authenticator.name,
+         installer.name)
+    )
+
+
     assert args.cert_path is not None  # required=True in the subparser
     le_client.deploy_certificate(
         domains, args.key_path, args.cert_path, args.chain_path,
@@ -517,6 +564,7 @@ def revoke(args, config, unused_plugins):  # TODO: coop with renewal config
                      args.cert_path[0], args.key_path[0])
         acme = acme_client.Client(
             config.server, key=jose.JWK.load(args.key_path[1]))
+
     else:  # revocation by account key
         logger.debug("Revoking %s using Account Key", args.cert_path[0])
         acc, _ = _determine_account(args, config)
@@ -873,6 +921,10 @@ def prepare_and_parse_args(plugins, args):
         "security", "--strict-permissions", action="store_true",
         help="Require that all configuration files are owned by the current "
              "user; only needed if your config is somewhere unsafe like /tmp/")
+    helpful.add(
+        "security", "--opt-out-statistics", action="store_true",
+        help="Do not send statistical data back to LetsEncrypt via ACME"
+    )
 
     _create_subparsers(helpful)
     _paths_parser(helpful)
