@@ -460,18 +460,18 @@ def get_os_info():
         ).communicate()[0]
 
     else:
-        os_ver = 'X'
+        os_ver = ''
 
     return os_type, os_ver
 
 
-def update_useragent(opt_out, le_client, names):
+def update_useragent(user_agent, le_client, names):
     """
     Update the ACME HTTP request's useragent to include
     information pertaining to plugins and modules
     """
 
-    if opt_out:
+    if user_agent == '':
         return
 
     auth_name, inst_name = names
@@ -486,7 +486,7 @@ def update_useragent(opt_out, le_client, names):
         'Installer': inst_name
     }
 
-    le_client.acme.net.update_user_agent(useragent_args)
+    le_client.acme.net.set_user_agent(useragent_args)
 
 
 # TODO: Make run as close to auth + install as possible
@@ -512,9 +512,9 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
         inst_name = installer.name
 
     update_useragent(
-        args.opt_out_statistics,
+        args.user_agent,
         le_client,
-        (auth_name, 
+        (auth_name,
          inst_name)
     )
 
@@ -585,7 +585,7 @@ def install(args, config, plugins):
     update_useragent(
         args.opt_out_statistics,
         le_client,
-        (authenticator.name,
+        ('None',
          installer.name)
     )
 
@@ -961,8 +961,11 @@ def prepare_and_parse_args(plugins, args):
         help="Require that all configuration files are owned by the current "
              "user; only needed if your config is somewhere unsafe like /tmp/")
     helpful.add(
-        "security", "--opt-out-statistics", action="store_true",
-        help="Do not send statistical data back to LetsEncrypt via ACME"
+        "security", "--user-agent", type=str, default="",
+        help="Set a custom user agent string for the client. User agent strings allow "
+             "the CA to collect high level statistics about success rates by OS and "
+             "plugin. If you wish to hide your server OS version from the Let's "
+             "Encrypt server, set this to \"\"."
     )
 
     _create_subparsers(helpful)

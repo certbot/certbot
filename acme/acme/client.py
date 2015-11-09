@@ -615,7 +615,6 @@ class ClientNetwork(object):
         else:
             raise errors.MissingNonce(response)
 
-
     def _get_nonce(self, url):
         if not self._nonces:
             logging.debug('Requesting fresh nonce')
@@ -629,11 +628,12 @@ class ClientNetwork(object):
         self._add_nonce(response)
         return self._check_response(response, content_type=content_type)
 
-    def _parse_user_agent_object(self):
+    def set_user_agent(self, keyval_map):
         """
         Update self.user_agent from data in self.user_agent_object
         """
 
+        self.user_agent_object = keyval_map
         uao = self.user_agent_object
 
         client_name = 'LetsEncryptPythonClient'
@@ -657,18 +657,7 @@ class ClientNetwork(object):
             dist_version
         )
 
-        for kv_pair in uao.iteritems(): user_agent += ' %s/%s' % kv_pair
+        for kv_pair in uao.iteritems():
+            user_agent += ' %s/%s' % kv_pair
+
         self.user_agent = user_agent
-
-    def update_user_agent(self, keyval_map=None):
-        """
-        Parse keyval_map and call _parse_user_agent_object to update
-        self.user_agent
-        """
-
-        # Allows self.user_agent_object to be modified externally & updated
-        if keyval_map is not None:
-            for key, value in keyval_map.iteritems():
-                self.user_agent_object[key] = value
-
-        self._parse_user_agent_object()
