@@ -11,6 +11,7 @@ import sys
 import time
 import traceback
 import platform
+import subprocess
 
 import configargparse
 import OpenSSL
@@ -433,26 +434,60 @@ def choose_configurator_plugins(args, config, plugins, verb):
 
     return installer, authenticator
 
-def update_useragent(opt_out, le_client, plugins, names):
+
+def get_os_info():
+    """
+    Get Operating System type/distribution and version
+    """
+
+    info = platform.system_alias(
+        platform.system(),
+        platform.release(),
+        platform.version()
+    )
+
+    os_type, os_ver, _ = info
+    os_type = os_type.lower()
+
+    if os_type.startswith('linux'):
+        info = platform.linux_distribution()
+        os_type, os_ver, _ = info
+
+    elif os_type.startswith('darwin'):
+        os_ver = subprocess.Popen(
+            ["sw_vers", "-productVersion"],
+            stdout=subprocess.PIPE
+        ).communicate()[0]
+
+    else:
+        os_ver = 'X'
+
+    return os_type, os_ver
+
+
+def update_useragent(opt_out, le_client, names):
+    """
+    Update the ACME HTTP request's useragent to include
+    information pertaining to plugins and modules
+    """
+
     if opt_out:
         return
 
-    auth_n, inst_n = names
+    auth_name, inst_name = names
+    os_info = ' '.join(get_os_info())
 
     useragent_args = {
-        'platform': platform.platform(),
-        'plugins': ','.join([
-            '%s-%s' % (
-                plugins.get(p).name,
-                str(plugins.get(p).problem).replace(' ', '_')
-            ) for p in plugins
-         ]),
+        'client_name': 'LetsEncryptPythonClient',
+        'le_version': letsencrypt.__version__,
+        'dist_version': os_info,
 
-        'authenticator': auth_n,
-        'installer': inst_n
+        'Authenticator': auth_name,
+        'Installer': inst_name
     }
 
     le_client.acme.net.update_user_agent(useragent_args)
+
 
 # TODO: Make run as close to auth + install as possible
 # Possible difficulties: args.csr was hacked into auth
@@ -468,12 +503,19 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
     # TODO: Handle errors from _init_le_client?
     le_client = _init_le_client(args, config, authenticator, installer)
 
+    auth_name = 'None'
+    if authenticator is not None:
+        auth_name = authenticator.name
+
+    inst_name = 'None'
+    if installer is not None:
+        inst_name = installer.name
+
     update_useragent(
         args.opt_out_statistics,
         le_client,
-        plugins,
-        (authenticator.name,
-         installer.name)
+        (auth_name, 
+         inst_name)
     )
 
     lineage = _auth_from_domains(le_client, config, domains, plugins)
@@ -510,7 +552,6 @@ def obtaincert(args, config, plugins):
     update_useragent(
         args.opt_out_statistics,
         le_client,
-        plugins,
         (authenticator.name,
          installer.name)
     )
@@ -544,11 +585,9 @@ def install(args, config, plugins):
     update_useragent(
         args.opt_out_statistics,
         le_client,
-        plugins,
         (authenticator.name,
          installer.name)
     )
-
 
     assert args.cert_path is not None  # required=True in the subparser
     le_client.deploy_certificate(
@@ -931,7 +970,6 @@ def prepare_and_parse_args(plugins, args):
     # _plugins_parsing should be the last thing to act upon the main
     # parser (--help should display plugin-specific options last)
     _plugins_parsing(helpful, plugins)
-
 
     return helpful.parse_args()
 
