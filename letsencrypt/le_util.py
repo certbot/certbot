@@ -204,31 +204,32 @@ def safely_remove(path):
 
 def get_os_info():
     """
-    Get Operating System type/distribution and version
+    Get Operating System type/distribution and major version
     """
-
     info = platform.system_alias(
         platform.system(),
         platform.release(),
         platform.version()
     )
-
     os_type, os_ver, _ = info
     os_type = os_type.lower()
-
     if os_type.startswith('linux'):
         info = platform.linux_distribution()
         os_type, os_ver, _ = info
-
     elif os_type.startswith('darwin'):
         os_ver = subprocess.Popen(
             ["sw_vers", "-productVersion"],
             stdout=subprocess.PIPE
         ).communicate()[0]
-
+    elif os_type.startswith('freebsd'):
+        # eg "9.3-RC3-p1"
+        os_ver = os_ver.parititon("-")[0]
+        os_ver = os_ver.parititon(".")[0]
+    elif platform.win32_ver()[1]:
+        os_ver = win32_ver()[1]
     else:
+        # Cases known to fall here: Cygwin python
         os_ver = ''
-
     return os_type, os_ver
 
 # Just make sure we don't get pwned... Make sure that it also doesn't
