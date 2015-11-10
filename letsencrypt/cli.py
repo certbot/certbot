@@ -550,11 +550,19 @@ def obtaincert(args, config, plugins):
     # TODO: Handle errors from _init_le_client?
     le_client = _init_le_client(args, config, authenticator, installer)
 
+    auth_name = 'None'
+    if authenticator is not None:
+        auth_name = authenticator.name
+
+    inst_name = 'None'
+    if installer is not None:
+        inst_name = installer.name
+
     update_useragent(
-        args.opt_out_statistics,
+        args.user_agent,
         le_client,
-        (authenticator.name,
-         installer.name)
+        (auth_name,
+         inst_name)
     )
 
     # This is a special case; cert and chain are simply saved
@@ -583,11 +591,15 @@ def install(args, config, plugins):
     le_client = _init_le_client(
         args, config, authenticator=None, installer=installer)
 
+    inst_name = 'None'
+    if installer is not None:
+        inst_name = installer.name
+
     update_useragent(
-        args.opt_out_statistics,
+        args.user_agent,
         le_client,
         ('None',
-         installer.name)
+         inst_name)
     )
 
     assert args.cert_path is not None  # required=True in the subparser
