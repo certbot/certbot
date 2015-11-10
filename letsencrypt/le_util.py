@@ -224,8 +224,8 @@ def get_os_info():
         ).communicate()[0]
     elif os_type.startswith('freebsd'):
         # eg "9.3-RC3-p1"
-        os_ver = os_ver.parititon("-")[0]
-        os_ver = os_ver.parititon(".")[0]
+        os_ver = os_ver.partition("-")[0]
+        os_ver = os_ver.partition(".")[0]
     elif platform.win32_ver()[1]:
         os_ver = platform.win32_ver()[1]
     else:

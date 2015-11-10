@@ -169,7 +169,7 @@ def _determine_account(args, config):
 
 
 def _init_le_client(args, config, authenticator, installer):
-    config.deterimine_user_agent(authenticator, installer)
+    config.determine_user_agent(authenticator, installer)
     if authenticator is not None:
         # if authenticator was given, then we will need account...
         acc, acme = _determine_account(args, config)
