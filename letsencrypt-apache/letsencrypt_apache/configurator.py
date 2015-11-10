@@ -441,7 +441,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         is_enabled = self.is_site_enabled(filename)
 
         macro = False
-        if "/Macro/" in path:
+        if "/macro/" in path.lower():
             macro = True
 
         vhost = obj.VirtualHost(filename, path, addrs, is_ssl,
