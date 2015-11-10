@@ -410,33 +410,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         for alias in serveralias_match:
             serveralias = self.parser.get_arg(alias)
-            if not self._is_mod_macro(serveralias):
+            if not host.modmacro:
                 host.aliases.add(serveralias)
-            else:
-                host.modmacro = True
 
         if servername_match:
             # Get last ServerName as each overwrites the previous
             servername = self.parser.get_arg(servername_match[-1])
-            if not self._is_mod_macro(servername):
+            if not host.modmacro:
                 host.name = servername
-            else:
-                host.modmacro = True
-
-    def _is_mod_macro(self, name):
-        """Helper function for _add_servernames().
-        Checks if the ServerName / ServerAlias belongs to a macro
-
-        :param str name: Name to check and filter out if it's a variable
-
-        :returns: boolean
-        :rtype: boolean
-
-        """
-
-        if "$" in name:
-            return True
-        return False
 
     def _create_vhost(self, path):
         """Used by get_virtual_hosts to create vhost objects
@@ -459,7 +440,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         filename = get_file_path(path)
         is_enabled = self.is_site_enabled(filename)
 
-        vhost = obj.VirtualHost(filename, path, addrs, is_ssl, is_enabled)
+        macro = False
+        if "/Macro/" in path:
+            macro = True
+
+        vhost = obj.VirtualHost(filename, path, addrs, is_ssl,
+                                is_enabled, modmacro=macro)
         self._add_servernames(vhost)
         return vhost
 
