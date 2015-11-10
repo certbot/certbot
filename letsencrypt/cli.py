@@ -1246,7 +1246,6 @@ def main(cli_args=sys.argv[1:]):
 
     return args.func(args, config, plugins)
 
-
 if __name__ == "__main__":
     err_string = main()
     if err_string:
