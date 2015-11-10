@@ -230,6 +230,38 @@ class TwoVhost80Test(util.ApacheTest):
             self.config.enable_site,
             obj.VirtualHost("asdf", "afsaf", set(), False, False))
 
+    def test_deploy_cert_newssl(self):
+        self.config = util.get_apache_configurator(
+            self.config_path, self.config_dir, self.work_dir, version=(2, 4, 16))
+
+        self.config.parser.modules.add("ssl_module")
+        self.config.parser.modules.add("mod_ssl.c")
+
+        # Get the default 443 vhost
+        self.config.assoc["random.demo"] = self.vh_truth[1]
+        self.config.deploy_cert(
+            "random.demo", "example/cert.pem", "example/key.pem",
+            "example/cert_chain.pem", "example/fullchain.pem")
+        self.config.save()
+
+        # Verify ssl_module was enabled.
+        self.assertTrue(self.vh_truth[1].enabled)
+        self.assertTrue("ssl_module" in self.config.parser.modules)
+
+        loc_cert = self.config.parser.find_dir(
+            "sslcertificatefile", "example/fullchain.pem", self.vh_truth[1].path)
+        loc_key = self.config.parser.find_dir(
+            "sslcertificateKeyfile", "example/key.pem", self.vh_truth[1].path)
+
+        # Verify one directive was found in the correct file
+        self.assertEqual(len(loc_cert), 1)
+        self.assertEqual(configurator.get_file_path(loc_cert[0]),
+                         self.vh_truth[1].filep)
+
+        self.assertEqual(len(loc_key), 1)
+        self.assertEqual(configurator.get_file_path(loc_key[0]),
+                         self.vh_truth[1].filep)
+
     def test_deploy_cert(self):
         self.config.parser.modules.add("ssl_module")
         self.config.parser.modules.add("mod_ssl.c")
@@ -346,6 +378,21 @@ class TwoVhost80Test(util.ApacheTest):
                          self.config.is_name_vhost(ssl_vhost))
 
         self.assertEqual(len(self.config.vhosts), 5)
+
+    def test_remove_existing_ssl_directives(self):
+        # pylint: disable=protected-access
+        BOGUS_DIRECTIVES = ["SSLCertificateKeyFile", "SSLCertificateChainFile",
+                            "SSLCACertificatePath", "SSLCertificateFile"]
+        for directive in BOGUS_DIRECTIVES:
+            self.config.parser.add_dir(self.vh_truth[0].path, directive, ["bogus"])
+        self.config.save()
+        self.config._remove_existing_ssl_directives(self.vh_truth[0].path)
+        self.config.save()
+
+        for directive in BOGUS_DIRECTIVES:
+            self.assertEqual(
+                self.config.parser.find_dir(directive, None, self.vh_truth[0].path),
+                [])
 
     def test_make_vhost_ssl_extra_vhs(self):
         self.config.aug.match = mock.Mock(return_value=["p1", "p2"])
