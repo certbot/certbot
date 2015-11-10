@@ -487,7 +487,8 @@ def update_useragent(user_agent, le_client, names):
         'Installer': inst_name
     }
 
-    le_client.acme.net.set_user_agent(useragent_args)
+    if hasattr(le_client.acme, 'net'):
+        le_client.acme.net.set_user_agent(useragent_args)
 
 
 # TODO: Make run as close to auth + install as possible
