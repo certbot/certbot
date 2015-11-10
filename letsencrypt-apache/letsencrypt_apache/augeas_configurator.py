@@ -162,18 +162,6 @@ class AugeasConfigurator(common.Plugin):
         # Need to reload configuration after these changes take effect
         self.aug.load()
 
-    def revert_challenge_config(self):
-        """Used to cleanup challenge configurations.
-
-        :raises .errors.PluginError: If unable to revert the challenge config.
-
-        """
-        try:
-            self.reverter.revert_temporary_config()
-        except errors.ReverterError as err:
-            raise errors.PluginError(str(err))
-        self.aug.load()
-
     def rollback_checkpoints(self, rollback=1):
         """Rollback saved checkpoints.
 

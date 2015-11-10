@@ -76,20 +76,6 @@ class AugeasConfiguratorTest(util.ApacheTest):
         self.assertRaises(
             errors.PluginError, self.config.recovery_routine)
 
-    def test_revert_challenge_config(self):
-        mock_load = mock.Mock()
-        self.config.aug.load = mock_load
-
-        self.config.revert_challenge_config()
-        self.assertEqual(mock_load.call_count, 1)
-
-    def test_revert_challenge_config_error(self):
-        self.config.reverter.revert_temporary_config = mock.Mock(
-            side_effect=errors.ReverterError)
-
-        self.assertRaises(
-            errors.PluginError, self.config.revert_challenge_config)
-
     def test_rollback_checkpoints(self):
         mock_load = mock.Mock()
         self.config.aug.load = mock_load
