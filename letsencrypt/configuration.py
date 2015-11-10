@@ -37,6 +37,7 @@ class NamespaceConfig(object):
 
     def __init__(self, namespace):
         self.namespace = namespace
+        # Check command line parameters sanity, and error out in case of problem.
         check_config_sanity(self)
 
     def __getattr__(self, name):
@@ -120,7 +121,7 @@ def check_config_sanity(config):
     """
     # Port check
     if config.http01_port == config.tls_sni_01_port:
-        raise errors.Error(
+        raise errors.ConfigurationError(
             "Trying to run http-01 and tls-sni-01 "
             "on the same port ({0})".format(config.tls_sni_01_port))
 
@@ -134,7 +135,9 @@ def _check_config_domain_sanity(domains):
     domain flag values and errors out if the requirements are not met.
 
     :param domains: List of domains
-    :type args: `list` of `string`
+    :type domains: `list` of `string`
+    :raises ConfigurationError: for invalid domains and cases where Let's
+                                Encrypt currently will not issue certificates
 
     """
     # Check if there's a wildcard domain
@@ -145,8 +148,10 @@ def _check_config_domain_sanity(domains):
     if any("xn--" in d for d in domains):
         raise errors.ConfigurationError(
             "Punycode domains are not supported")
-    # FQDN, checks:
+    # FQDN checks from
+    # http://www.mkyong.com/regular-expressions/domain-name-regular-expression-example/
     #  Characters used, domain parts < 63 chars, tld > 1 < 7 chars
+    #  first and last char is not "-"
     fqdn = re.compile("^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\\.)+[A-Za-z]{2,6}$")
     if any(True for d in domains if not fqdn.match(d)):
-        raise errors.ConfigurationError("Requested domain is not FQDN")
+        raise errors.ConfigurationError("Requested domain is not a FQDN")

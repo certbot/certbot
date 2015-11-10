@@ -95,5 +95,6 @@ class StandaloneBindError(Error):
         self.socket_error = socket_error
         self.port = port
 
+
 class ConfigurationError(Error):
     """Configuration sanity error."""

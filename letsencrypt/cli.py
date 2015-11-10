@@ -107,7 +107,7 @@ def _find_domains(args, installer):
 
     if not domains:
         raise errors.Error("Please specify --domains, or --installer that "
-                    "will help in domain names autodiscovery")
+                           "will help in domain names autodiscovery")
 
     return domains
 
@@ -1085,7 +1085,6 @@ def main(cli_args=sys.argv[1:]):
     # note: arg parser internally handles --help (and exits afterwards)
     plugins = plugins_disco.PluginsRegistry.find_all()
     args = prepare_and_parse_args(plugins, cli_args)
-    # Check command line parameters sanity, and error out in case of problem.
     config = configuration.NamespaceConfig(args)
     zope.component.provideUtility(config)
 
