@@ -32,7 +32,8 @@ logger = logging.getLogger(__name__)
 def _acme_from_config_key(config, key):
     # TODO: Allow for other alg types besides RS256
     return acme_client.Client(directory=config.server, key=key,
-                              verify_ssl=(not config.no_verify_ssl))
+                              verify_ssl=(not config.no_verify_ssl),
+                              ua=config.user_agent)
 
 
 def register(config, account_storage, tos_cb=None):

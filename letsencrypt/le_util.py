@@ -3,6 +3,7 @@ import collections
 import errno
 import logging
 import os
+import platform
 import re
 import subprocess
 import stat
@@ -226,7 +227,7 @@ def get_os_info():
         os_ver = os_ver.parititon("-")[0]
         os_ver = os_ver.parititon(".")[0]
     elif platform.win32_ver()[1]:
-        os_ver = win32_ver()[1]
+        os_ver = platform.win32_ver()[1]
     else:
         # Cases known to fall here: Cygwin python
         os_ver = ''

@@ -37,6 +37,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
     :ivar key: `.JWK` (private)
     :ivar alg: `.JWASignature`
     :ivar bool verify_ssl: Verify SSL certificates?
+    :ivar str ua: User agent string to send to the server.
     :ivar .ClientNetwork net: Client network. Useful for testing. If not
         supplied, it will be initialized using `key`, `alg` and
         `verify_ssl`.
@@ -45,7 +46,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
     DER_CONTENT_TYPE = 'application/pkix-cert'
 
     def __init__(self, directory, key, alg=jose.RS256, verify_ssl=True,
-                 net=None):
+                 net=None, ua="acme-python"):
         """Initialize.
 
         :param directory: Directory Resource (`.messages.Directory`) or
@@ -53,7 +54,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
 
         """
         self.key = key
-        self.net = ClientNetwork(key, alg, verify_ssl) if net is None else net
+        self.net = ClientNetwork(key, alg, verify_ssl, user_agent) if net is None else net
 
         if isinstance(directory, six.string_types):
             self.directory = messages.Directory.from_json(

@@ -169,6 +169,7 @@ def _determine_account(args, config):
 
 
 def _init_le_client(args, config, authenticator, installer):
+    config.deterimine_user_agent(authenticator, installer)
     if authenticator is not None:
         # if authenticator was given, then we will need account...
         acc, acme = _determine_account(args, config)
@@ -521,6 +522,7 @@ def revoke(args, config, unused_plugins):  # TODO: coop with renewal config
         logger.debug("Revoking %s using Account Key", args.cert_path[0])
         acc, _ = _determine_account(args, config)
         # pylint: disable=protected-access
+        config.determine_user_agent(None, None)
         acme = client._acme_from_config_key(config, acc.key)
     acme.revoke(jose.ComparableX509(crypto_util.pyopenssl_load_certificate(
         args.cert_path[1])[0]))
