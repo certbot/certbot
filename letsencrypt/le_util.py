@@ -202,6 +202,35 @@ def safely_remove(path):
             raise
 
 
+def get_os_info():
+    """
+    Get Operating System type/distribution and version
+    """
+
+    info = platform.system_alias(
+        platform.system(),
+        platform.release(),
+        platform.version()
+    )
+
+    os_type, os_ver, _ = info
+    os_type = os_type.lower()
+
+    if os_type.startswith('linux'):
+        info = platform.linux_distribution()
+        os_type, os_ver, _ = info
+
+    elif os_type.startswith('darwin'):
+        os_ver = subprocess.Popen(
+            ["sw_vers", "-productVersion"],
+            stdout=subprocess.PIPE
+        ).communicate()[0]
+
+    else:
+        os_ver = ''
+
+    return os_type, os_ver
+
 # Just make sure we don't get pwned... Make sure that it also doesn't
 # start with a period or have two consecutive periods <- this needs to
 # be done in addition to the regex
