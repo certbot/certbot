@@ -52,7 +52,7 @@ class BasicParserTest(util.ParserTest):
         test2 = self.parser.find_dir("documentroot")
 
         self.assertEqual(len(test), 1)
-        self.assertEqual(len(test2), 3)
+        self.assertEqual(len(test2), 4)
 
     def test_add_dir(self):
         aug_default = "/files" + self.parser.loc["default"]
