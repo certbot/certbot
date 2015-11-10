@@ -1157,7 +1157,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         # If all of the challenges have been finished, clean up everything
         if not self._chall_out:
-            self.revert_challenge_config()
+            self.recovery_routine()
             self.restart()
             self.parser.init_modules()
 
