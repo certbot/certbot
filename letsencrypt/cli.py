@@ -30,6 +30,7 @@ from letsencrypt import configuration
 from letsencrypt import constants
 from letsencrypt import client
 from letsencrypt import crypto_util
+from letsencrypt import errors
 from letsencrypt import interfaces
 from letsencrypt import le_util
 from letsencrypt import log
@@ -38,7 +39,6 @@ from letsencrypt import storage
 
 from letsencrypt.display import util as display_util
 from letsencrypt.display import ops as display_ops
-from letsencrypt.errors import Error, PluginSelectionError, CertStorageError
 from letsencrypt.plugins import disco as plugins_disco
 
 
@@ -108,8 +108,8 @@ def _find_domains(args, installer):
         domains = args.domains
 
     if not domains:
-        raise Error("Please specify --domains, or --installer that "
-                    "will help in domain names autodiscovery")
+        raise errors.Error("Please specify --domains, or --installer that "
+                           "will help in domain names autodiscovery")
 
     return domains
 
@@ -161,9 +161,9 @@ def _determine_account(args, config):
             try:
                 acc, acme = client.register(
                     config, account_storage, tos_cb=_tos_cb)
-            except Error as error:
+            except errors.Error as error:
                 logger.debug(error, exc_info=True)
-                raise Error(
+                raise errors.Error(
                     "Unable to register an account with ACME server")
 
     args.account = acc.id
@@ -197,7 +197,7 @@ def _find_duplicative_certs(config, domains):
         try:
             full_path = os.path.join(configs_dir, renewal_file)
             candidate_lineage = storage.RenewableCert(full_path, cli_config)
-        except (CertStorageError, IOError):
+        except (errors.CertStorageError, IOError):
             logger.warning("Renewal configuration file %s is broken. "
                            "Skipping.", full_path)
             continue
@@ -269,7 +269,7 @@ def _treat_as_renewal(config, domains):
                     br=os.linesep
                 ),
                 reporter_util.HIGH_PRIORITY)
-            raise Error(
+            raise errors.Error(
                 "User did not use proper CLI and would like "
                 "to reinvoke the client.")
 
@@ -329,7 +329,7 @@ def _auth_from_domains(le_client, config, domains, plugins):
         # TREAT AS NEW REQUEST
         lineage = le_client.obtain_and_enroll_certificate(domains, plugins)
         if not lineage:
-            raise Error("Certificate could not be obtained")
+            raise errors.Error("Certificate could not be obtained")
 
     _report_new_cert(lineage.cert, lineage.fullchain)
 
@@ -348,7 +348,7 @@ def set_configurator(previously, now):
     if previously:
         if previously != now:
             msg = "Too many flags setting configurators/installers/authenticators {0} -> {1}"
-            raise PluginSelectionError(msg.format(repr(previously), repr(now)))
+            raise errors.PluginSelectionError(msg.format(repr(previously), repr(now)))
     return now
 
 
@@ -381,7 +381,7 @@ def diagnose_configurator_problem(cfg_type, requested, plugins):
                    '"letsencrypt-auto certonly" to get a cert you can install manually')
     else:
         msg = "{0} could not be determined or is not installed".format(cfg_type)
-    raise PluginSelectionError(msg)
+    raise errors.PluginSelectionError(msg)
 
 
 def choose_configurator_plugins(args, config, plugins, verb):
@@ -495,7 +495,7 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
     """Obtain a certificate and install."""
     try:
         installer, authenticator = choose_configurator_plugins(args, config, plugins, "run")
-    except PluginSelectionError, e:
+    except errors.PluginSelectionError, e:
         return e.message
 
     domains = _find_domains(args, installer)
@@ -542,7 +542,7 @@ def obtaincert(args, config, plugins):
     try:
         # installers are used in auth mode to determine domain names
         installer, authenticator = choose_configurator_plugins(args, config, plugins, "certonly")
-    except PluginSelectionError, e:
+    except errors.PluginSelectionError, e:
         return e.message
 
     # TODO: Handle errors from _init_le_client?
@@ -581,7 +581,7 @@ def install(args, config, plugins):
     try:
         installer, _ = choose_configurator_plugins(args, config,
                                                    plugins, "install")
-    except PluginSelectionError, e:
+    except errors.PluginSelectionError, e:
         return e.message
 
     domains = _find_domains(args, installer)
@@ -1162,7 +1162,7 @@ def _handle_exception(exc_type, exc_value, trace, args):
                 sys.exit("".join(
                     traceback.format_exception(exc_type, exc_value, trace)))
 
-        if issubclass(exc_type, Error):
+        if issubclass(exc_type, errors.Error):
             sys.exit(exc_value)
         else:
             # Tell the user a bit about what happened, without overwhelming
@@ -1226,7 +1226,7 @@ def main(cli_args=sys.argv[1:]):
         disclaimer = pkg_resources.resource_string("letsencrypt", "DISCLAIMER")
         if not zope.component.getUtility(interfaces.IDisplay).yesno(
                 disclaimer, "Agree", "Cancel"):
-            raise Error("Must agree to TOS")
+            raise errors.Error("Must agree to TOS")
 
     if not os.geteuid() == 0:
         logger.warning(
