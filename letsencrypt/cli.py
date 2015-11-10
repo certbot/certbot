@@ -811,7 +811,9 @@ def prepare_and_parse_args(plugins, args):
     # --domains is useful, because it can be stored in config
     #for subparser in parser_run, parser_auth, parser_install:
     #    subparser.add_argument("domains", nargs="*", metavar="domain")
-    helpful.add(None, "-d", "--domains", metavar="DOMAIN", action="append")
+    helpful.add(None, "-d", "--domains", metavar="DOMAIN", action="append",
+                help="Domain names to apply. Use multiple -d flags if you want "
+                "to specify multiple domains")
     helpful.add(
         None, "--duplicate", dest="duplicate", action="store_true",
         help="Allow getting a certificate that duplicates an existing one")
