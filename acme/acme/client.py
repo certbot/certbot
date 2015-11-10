@@ -488,6 +488,7 @@ class ClientNetwork(object):
         self.verify_ssl = verify_ssl
         self._nonces = set()
         self.user_agent = user_agent
+        self.user_agent_object = dict()
 
     def _wrap_in_jws(self, obj, nonce):
         """Wrap `JSONDeSerializable` object in JWS.
@@ -626,3 +627,43 @@ class ClientNetwork(object):
         response = self._send_request('POST', url, data=data, **kwargs)
         self._add_nonce(response)
         return self._check_response(response, content_type=content_type)
+
+    def set_user_agent(self, keyval_map):
+        """
+        Update self.user_agent from data in self.user_agent_object
+        """
+
+        if keyval_map['user_agent'] is None:
+            del keyval_map['user_agent']
+
+            self.user_agent_object = keyval_map
+            uao = self.user_agent_object
+
+            client_name = 'LetsEncryptPythonClient'
+            if 'client_name' in uao:
+                client_name = uao['client_name']
+                del uao['client_name']
+
+            le_version = ''
+            if 'le_version' in uao:
+                le_version = uao['le_version']
+                del uao['le_version']
+
+            dist_version = ''
+            if 'dist_version' in uao:
+                dist_version = uao['dist_version']
+                del uao['dist_version']
+
+            user_agent = '%s/%s (%s)' % (
+                client_name,
+                le_version,
+                dist_version
+            )
+
+            for kv_pair in uao.iteritems():
+                user_agent += ' %s/%s' % kv_pair
+
+            self.user_agent = user_agent
+
+        else:
+            self.user_agent = keyval_map['user_agent']

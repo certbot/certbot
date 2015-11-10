@@ -21,6 +21,7 @@ letsencrypt_test () {
         $store_flags \
         --text \
         --no-redirect \
+        --user-agent "" \
         --agree-dev-preview \
         --agree-tos \
         --email "" \
