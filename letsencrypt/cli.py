@@ -470,10 +470,8 @@ def update_useragent(user_agent, le_client, names):
     Update the ACME HTTP request's useragent to include
     information pertaining to plugins and modules
     """
-
     if user_agent == '':
         return
-
     auth_name, inst_name = names
     os_info = ' '.join(get_os_info())
 
@@ -516,8 +514,7 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
     update_useragent(
         args.user_agent,
         le_client,
-        (auth_name,
-         inst_name)
+        (auth_name, inst_name)
     )
 
     lineage = _auth_from_domains(le_client, config, domains, plugins)
@@ -562,8 +559,7 @@ def obtaincert(args, config, plugins):
     update_useragent(
         args.user_agent,
         le_client,
-        (auth_name,
-         inst_name)
+        (auth_name, inst_name)
     )
 
     # This is a special case; cert and chain are simply saved
@@ -599,8 +595,7 @@ def install(args, config, plugins):
     update_useragent(
         args.user_agent,
         le_client,
-        ('None',
-         inst_name)
+        ('None', inst_name)
     )
 
     assert args.cert_path is not None  # required=True in the subparser
@@ -1243,7 +1238,6 @@ def main(cli_args=sys.argv[1:]):
         #return (
         #    "{0}Root is required to run letsencrypt.  Please use sudo.{0}"
         #    .format(os.linesep))
-
     return args.func(args, config, plugins)
 
 if __name__ == "__main__":
