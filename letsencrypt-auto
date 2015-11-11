@@ -14,7 +14,32 @@ VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
 VENV_BIN=${VENV_PATH}/bin
 
 if test "`id -u`" -ne "0" ; then
-  SUDO=sudo
+  if command -v sudo 1>/dev/null 2>&1; then
+    SUDO=sudo
+  else
+    # `sudo` command does not exist, use `su` instead.
+    # Because the parameters in `su -c` has to be a string,
+    # we need properly escape it
+    su_sudo() {
+      args=""
+      # This `while` loop iterates over all parameters given to this function.
+      # For each parameter, all `'` will be replace by `'"'"'`, and the escaped string
+      # will be wrap in a pair of `'`, then append to `$args` string
+      # For example, `echo "It's only 1\$\!"` will be escaped to:
+      #   'echo' 'It'"'"'s only 1$!'
+      #     │       │└┼┘│
+      #     │       │ │ └── `'s only 1$!'` the literal string
+      #     │       │ └── `\"'\"` is a single quote (as a string)
+      #     │       └── `'It'`, to be concatenated with the strings followed it
+      #     └── `echo` wrapped in a pair of `'`, it's totally fine for the shell command itself
+      while [ $# -ne 0 ]; do
+        args="$args'$(printf "%s" "$1" | sed -e "s/'/'\"'\"'/g")' "
+        shift
+      done
+      su root -c "$args"
+    }
+    SUDO=su_sudo
+  fi
 else
   SUDO=
 fi
