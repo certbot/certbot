@@ -27,11 +27,16 @@ for arg in "$@" ; do
   fi
 done
 
+# letsencrypt-auto needs root access to bootstrap OS dependencies, and
+# letsencrypt itself needs root access for almost all modes of operation
+# The "normal" case is that sudo is used for the steps that need root, but
+# this script *can* be run as root (not recommended), or fall back to using
+# `su`
 if test "`id -u`" -ne "0" ; then
   if command -v sudo 1>/dev/null 2>&1; then
     SUDO=sudo
   else
-    # `sudo` command does not exist, use `su` instead.
+    echo \"sudo\" is not available, will use \"su\" for installation steps...
     # Because the parameters in `su -c` has to be a string,
     # we need properly escape it
     su_sudo() {
