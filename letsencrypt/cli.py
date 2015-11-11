@@ -453,7 +453,7 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
         domains, lineage.privkey, lineage.cert,
         lineage.chain, lineage.fullchain)
 
-    le_client.enhance_config(domains, args.redirect)
+    le_client.enhance_config(domains, args)
 
     if len(lineage.available_versions("cert")) == 1:
         display_ops.success_installation(domains)
@@ -507,7 +507,7 @@ def install(args, config, plugins):
     le_client.deploy_certificate(
         domains, args.key_path, args.cert_path, args.chain_path,
         args.fullchain_path)
-    le_client.enhance_config(domains, args.redirect)
+    le_client.enhance_config(domains, args)
 
 
 def revoke(args, config, unused_plugins):  # TODO: coop with renewal config
