@@ -13,6 +13,7 @@ from letsencrypt import account
 from letsencrypt import cli
 from letsencrypt import configuration
 from letsencrypt import errors
+from letsencrypt import le_util
 
 from letsencrypt.plugins import disco
 
@@ -43,7 +44,7 @@ class CLITest(unittest.TestCase):
         with mock.patch('letsencrypt.cli.sys.stdout') as stdout:
             with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
                 with mock.patch('letsencrypt.cli.client') as client:
-                    ret = cli.main(args)
+                    ret = cli.main(args[:]) # NOTE: parser can alter its args!
         return ret, stdout, stderr, client
 
     def _call_stdout(self, args):
@@ -54,7 +55,7 @@ class CLITest(unittest.TestCase):
         args = self.standard_args + args
         with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
             with mock.patch('letsencrypt.cli.client') as client:
-                ret = cli.main(args)
+                ret = cli.main(args[:])  # NOTE: parser can alter its args!
         return ret, None, stderr, client
 
     def test_no_flags(self):
@@ -115,21 +116,31 @@ class CLITest(unittest.TestCase):
 
     @mock.patch('letsencrypt.cli.sys.stdout')
     @mock.patch('letsencrypt.cli.sys.stderr')
-    @mock.patch('letsencrypt.cli.client.acme_client.ClientNetwork')
     @mock.patch('letsencrypt.cli.client.acme_client.Client')
     @mock.patch('letsencrypt.cli._determine_account')
     @mock.patch('letsencrypt.cli.client.Client.obtain_and_enroll_certificate')
     @mock.patch('letsencrypt.cli._auth_from_domains')
-    def test_user_agent(self, _afd, _obt, det, _client, acme_net, _out, _err):
-        ua = "bandersnatch"
+    def test_user_agent(self, _afd, _obt, det, _client, _err, _out):
         # Normally the client is totally mocked out, but here we need more
         # arguments to automate it...
-        args = ["--user-agent", ua, "--standalone", "certonly", 
-                "-m", "none@none.com", "-d", "example.com", '--agree-tos'] 
-        args += self.standard_args
+        args = ["--standalone", "certonly", "-m", "none@none.com",
+                "-d", "example.com", '--agree-tos'] + self.standard_args
         det.return_value = mock.MagicMock(), None
-        cli.main(args)
-        acme_net.assert_called_once_with(mock.ANY, verify_ssl=True, user_agent=ua)
+        with mock.patch('letsencrypt.cli.client.acme_client.ClientNetwork') as acme_net:
+            cli.main(args[:])  # Protect args from alteration
+            os_ver = " ".join(le_util.get_os_info())
+            ua = acme_net.call_args[1]["user_agent"]
+            self.assertTrue(os_ver in ua)
+            import platform
+            plat = platform.platform()
+            if "linux" in plat.lower():
+                self.assertTrue(platform.linux_distribution()[0] in ua)
+
+        with mock.patch('letsencrypt.cli.client.acme_client.ClientNetwork') as acme_net:
+            ua = "bandersnatch"
+            args += ["--user-agent", ua]
+            cli.main(args)
+            acme_net.assert_called_once_with(mock.ANY, verify_ssl=True, user_agent=ua)
 
     @mock.patch('letsencrypt.cli.display_ops')
     def test_installer_selection(self, mock_display_ops):

@@ -92,7 +92,7 @@ class NamespaceConfig(object):
 
         if self.namespace.user_agent is None:
             ua = "LetsEncryptPythonClient/{0} ({1}) Authenticator/{2} Installer/{3}"
-            ua = ua.format(letsencrypt.__version__, le_util.get_os_info(),
+            ua = ua.format(letsencrypt.__version__, " ".join(le_util.get_os_info()),
                            authenticator.name if authenticator else "none",
                            installer.name if installer else "none")
             self.namespace.user_agent = ua

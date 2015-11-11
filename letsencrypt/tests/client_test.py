@@ -70,8 +70,8 @@ class ClientTest(unittest.TestCase):
                 dv_auth=None, installer=None)
 
     def test_init_acme_verify_ssl(self):
-        self.acme_client.assert_called_once_with(
-            directory=mock.ANY, key=mock.ANY, verify_ssl=True)
+        net = self.acme_client.call_args[1]["net"]
+        self.assertTrue(net.verify_ssl)
 
     def _mock_obtain_certificate(self):
         self.client.auth_handler = mock.MagicMock()
