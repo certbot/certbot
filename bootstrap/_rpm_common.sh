@@ -16,10 +16,12 @@ else
 fi
 
 # "git-core" seems to be an alias for "git" in CentOS 7 (yum search fails)
+# Amazon Linux 2015.03 needs python27-virtualenv rather than python-virtualenv
 $tool install -y \
   git-core \
   python \
   python-devel \
+  python27-virtualenv \
   python-virtualenv \
   gcc \
   dialog \
