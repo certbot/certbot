@@ -206,6 +206,7 @@ def safely_remove(path):
 def get_os_info():
     """
     Get Operating System type/distribution and major version
+    :returns: (`str` os_name, `str` os_version)
     """
     info = platform.system_alias(
         platform.system(),
@@ -216,7 +217,12 @@ def get_os_info():
     os_type = os_type.lower()
     if os_type.startswith('linux'):
         info = platform.linux_distribution()
-        os_type, os_ver, _ = info
+        # On arch, platform.linux_distribution() is reportedly ('','',''),
+        # so handle it defensively
+        if info[0]:
+            os_type = info[0]
+        if info[1]:
+            os_ver = info[1]
     elif os_type.startswith('darwin'):
         os_ver = subprocess.Popen(
             ["sw_vers", "-productVersion"],
