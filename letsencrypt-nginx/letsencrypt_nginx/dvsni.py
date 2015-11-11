@@ -99,8 +99,8 @@ class NginxDvsni(common.TLSSNI01):
         for key, body in main:
             if key == ['http']:
                 found_bucket = False
-                for key, _ in body:
-                    if key == bucket_directive[0]:
+                for k, _ in body:
+                    if k == bucket_directive[0]:
                         found_bucket = True
                 if not found_bucket:
                     body.insert(0, bucket_directive)
