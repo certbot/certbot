@@ -381,8 +381,8 @@ class TwoVhost80Test(util.ApacheTest):
 
     def test_remove_existing_ssl_directives(self):
         # pylint: disable=protected-access
-        BOGUS_DIRECTIVES = ["SSLCertificateKeyFile", "SSLCertificateChainFile",
-                            "SSLCACertificatePath", "SSLCertificateFile"]
+        BOGUS_DIRECTIVES = ["SSLCertificateKeyFile",
+                            "SSLCertificateChainFile", "SSLCertificateFile"]
         for directive in BOGUS_DIRECTIVES:
             self.config.parser.add_dir(self.vh_truth[0].path, directive, ["bogus"])
         self.config.save()
