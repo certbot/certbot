@@ -1,10 +1,12 @@
 """Let's Encrypt client API."""
+import functools
 import logging
 import os
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
 import OpenSSL
+import zope.component
 
 from acme import client as acme_client
 from acme import jose
@@ -18,6 +20,7 @@ from letsencrypt import continuity_auth
 from letsencrypt import crypto_util
 from letsencrypt import errors
 from letsencrypt import error_handler
+from letsencrypt import interfaces
 from letsencrypt import le_util
 from letsencrypt import reverter
 from letsencrypt import storage
@@ -331,24 +334,13 @@ class Client(object):
             self.installer.save("Deployed Let's Encrypt Certificate")
 
         # sites may have been enabled / final cleanup
-        with error_handler.ErrorHandler(self._rollback_and_restart):
+        restart_error_handler = error_handler.ErrorHandler(functools.partial(
+            self._rollback_and_restart,
+            "We were unable to install your certificate, however, we "
+            "successfully rolled back your server to its previous "
+            "configuration."))
+        with restart_error_handler:
             self.installer.restart()
-
-    def _rollback_and_restart(self):
-        """Rollback the most recent checkpoint and restart the webserver"""
-        logger.critical("Rolling back to previous server configuration...")
-        try:
-            self.installer.rollback_checkpoints()
-            self.installer.restart()
-        except:
-            # TODO: suggest letshelp-letsencypt here
-            logger.critical("Failure to rollback config "
-                            "changes and restart your server")
-            logger.critical("Please submit a bug report to "
-                            "https://github.com/letsencrypt/letsencrypt")
-            raise
-        logger.critical("Rollback successful; your server has "
-                        "been restarted with your old configuration")
 
     def enhance_config(self, domains, redirect=None):
         """Enhance the configuration.
@@ -395,7 +387,35 @@ class Client(object):
                     raise
 
             self.installer.save("Add Redirects")
+
+        restart_error_handler = error_handler.ErrorHandler(functools.partial(
+            self._rollback_and_restart,
+            "We were unable to setup a redirect for your server, however, we "
+            "successfully installed your certificate. If you'd like to revert "
+            "these changes as well, run 'letsencrypt rollback'."))
+        with restart_error_handler:
             self.installer.restart()
+
+    def _rollback_and_restart(self, reporter_msg):
+        """Rollback the most recent checkpoint and restart the webserver
+
+        :param str reporter_msg: message to show on successful rollback
+
+        """
+        logger.critical("Rolling back to previous server configuration...")
+        reporter = zope.component.getUtility(interfaces.IReporter)
+        try:
+            self.installer.rollback_checkpoints()
+            self.installer.restart()
+        except:
+            # TODO: suggest letshelp-letsencypt here
+            reporter.add_message(
+                "An error occured and we failed to rollback your config and "
+                "restart your server. Please submit a bug report to "
+                "https://github.com/letsencrypt/letsencrypt",
+                reporter.HIGH_PRIORITY)
+            raise
+        reporter.add_message(reporter_msg, reporter.HIGH_PRIORITY)
 
 
 def validate_key_csr(privkey, csr=None):
