@@ -10,6 +10,7 @@ import unittest
 import mock
 
 from letsencrypt import account
+from letsencrypt import cli
 from letsencrypt import configuration
 from letsencrypt import errors
 
@@ -30,15 +31,15 @@ class CLITest(unittest.TestCase):
         self.config_dir = os.path.join(self.tmp_dir, 'config')
         self.work_dir = os.path.join(self.tmp_dir, 'work')
         self.logs_dir = os.path.join(self.tmp_dir, 'logs')
+        self.standard_args = ['--text', '--config-dir', self.config_dir,
+            '--work-dir', self.work_dir, '--logs-dir', self.logs_dir,
+            '--agree-dev-preview']
 
     def tearDown(self):
         shutil.rmtree(self.tmp_dir)
 
     def _call(self, args):
-        from letsencrypt import cli
-        args = ['--text', '--config-dir', self.config_dir,
-                '--work-dir', self.work_dir, '--logs-dir', self.logs_dir,
-                '--agree-dev-preview'] + args
+        args = self.standard_args + args
         with mock.patch('letsencrypt.cli.sys.stdout') as stdout:
             with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
                 with mock.patch('letsencrypt.cli.client') as client:
@@ -50,10 +51,7 @@ class CLITest(unittest.TestCase):
         Variant of _call that preserves stdout so that it can be mocked by the
         caller.
         """
-        from letsencrypt import cli
-        args = ['--text', '--config-dir', self.config_dir,
-                '--work-dir', self.work_dir, '--logs-dir', self.logs_dir,
-                '--agree-dev-preview'] + args
+        args = self.standard_args + args
         with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
             with mock.patch('letsencrypt.cli.client') as client:
                 ret = cli.main(args)
@@ -112,8 +110,26 @@ class CLITest(unittest.TestCase):
         self.assertTrue("--key-path" not in out)
 
         out = self._help_output(['-h'])
-        from letsencrypt import cli
         self.assertTrue(cli.usage_strings(plugins)[0] in out)
+
+
+    @mock.patch('letsencrypt.cli.sys.stdout')
+    @mock.patch('letsencrypt.cli.sys.stderr')
+    @mock.patch('letsencrypt.cli.client.acme_client.ClientNetwork')
+    @mock.patch('letsencrypt.cli.client.acme_client.Client')
+    @mock.patch('letsencrypt.cli._determine_account')
+    @mock.patch('letsencrypt.cli.client.Client.obtain_and_enroll_certificate')
+    @mock.patch('letsencrypt.cli._auth_from_domains')
+    def test_user_agent(self, _afd, _obt, det, _client, acme_net, _out, _err):
+        ua = "bandersnatch"
+        # Normally the client is totally mocked out, but here we need more
+        # arguments to automate it...
+        args = ["--user-agent", ua, "--standalone", "certonly", 
+                "-m", "none@none.com", "-d", "example.com", '--agree-tos'] 
+        args += self.standard_args
+        det.return_value = mock.MagicMock(), None
+        cli.main(args)
+        acme_net.assert_called_once_with(mock.ANY, verify_ssl=True, user_agent=ua)
 
     @mock.patch('letsencrypt.cli.display_ops')
     def test_installer_selection(self, mock_display_ops):
@@ -281,8 +297,6 @@ class CLITest(unittest.TestCase):
     @mock.patch('letsencrypt.cli.sys')
     def test_handle_exception(self, mock_sys):
         # pylint: disable=protected-access
-        from letsencrypt import cli
-
         mock_open = mock.mock_open()
         with mock.patch('letsencrypt.cli.open', mock_open, create=True):
             exception = Exception('detail')
@@ -433,8 +447,6 @@ class MockedVerb(object):
 
     """
     def __init__(self, verb_name):
-        from letsencrypt import cli
-
         self.verb_dict = cli.HelpfulArgumentParser.VERBS
         self.verb_func = None
         self.verb_name = verb_name
