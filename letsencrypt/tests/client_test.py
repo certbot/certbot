@@ -227,8 +227,10 @@ class ClientTest(unittest.TestCase):
         self.assertRaises(errors.Error,
                           self.client.enhance_config, ["foo.bar"])
 
+    @mock.patch("letsencrypt.client.zope.component.getUtility")
     @mock.patch("letsencrypt.client.enhancements")
-    def test_enhance_config_enhance_failure(self, mock_enhancements):
+    def test_enhance_config_enhance_failure(self, mock_enhancements,
+                                            mock_get_utility):
         mock_enhancements.ask.return_value = True
         installer = mock.MagicMock()
         self.client.installer = installer
@@ -237,9 +239,12 @@ class ClientTest(unittest.TestCase):
         self.assertRaises(errors.PluginError,
                           self.client.enhance_config, ["foo.bar"], True)
         installer.recovery_routine.assert_called_once_with()
+        self.assertEqual(mock_get_utility().add_message.call_count, 1)
 
+    @mock.patch("letsencrypt.client.zope.component.getUtility")
     @mock.patch("letsencrypt.client.enhancements")
-    def test_enhance_config_save_failure(self, mock_enhancements):
+    def test_enhance_config_save_failure(self, mock_enhancements,
+                                         mock_get_utility):
         mock_enhancements.ask.return_value = True
         installer = mock.MagicMock()
         self.client.installer = installer
@@ -248,6 +253,7 @@ class ClientTest(unittest.TestCase):
         self.assertRaises(errors.PluginError,
                           self.client.enhance_config, ["foo.bar"], True)
         installer.recovery_routine.assert_called_once_with()
+        self.assertEqual(mock_get_utility().add_message.call_count, 1)
 
     @mock.patch("letsencrypt.client.zope.component.getUtility")
     @mock.patch("letsencrypt.client.enhancements")

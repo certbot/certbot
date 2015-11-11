@@ -120,6 +120,12 @@ class Client(object):
 
     """
 
+    # Message to show if enabling a redirect fails, but recovery is successful
+    _SUCCESSFUL_REDIRECT_RECOVERY_MSG = (
+        "We were unable to setup a redirect for your server, however, we "
+        "successfully installed your certificate. If you'd like to revert "
+        "these changes as well, run 'letsencrypt rollback'.")
+
     def __init__(self, config, account_, dv_auth, installer, acme=None):
         """Initialize a client."""
         self.config = config
@@ -378,7 +384,10 @@ class Client(object):
         :type vhost: :class:`letsencrypt.interfaces.IInstaller`
 
         """
-        with error_handler.ErrorHandler(self.installer.recovery_routine):
+        enhance_error_handler = error_handler.ErrorHandler(
+            functools.partial(self._recovery_routine_with_msg,
+                              self._SUCCESSFUL_REDIRECT_RECOVERY_MSG))
+        with enhance_error_handler:
             for dom in domains:
                 try:
                     self.installer.enhance(dom, "redirect")
@@ -388,18 +397,26 @@ class Client(object):
 
             self.installer.save("Add Redirects")
 
-        restart_error_handler = error_handler.ErrorHandler(functools.partial(
-            self._rollback_and_restart,
-            "We were unable to setup a redirect for your server, however, we "
-            "successfully installed your certificate. If you'd like to revert "
-            "these changes as well, run 'letsencrypt rollback'."))
+        restart_error_handler = error_handler.ErrorHandler(
+            functools.partial(self._rollback_and_restart,
+                              self._SUCCESSFUL_REDIRECT_RECOVERY_MSG))
         with restart_error_handler:
             self.installer.restart()
 
-    def _rollback_and_restart(self, reporter_msg):
+    def _recovery_routine_with_msg(self, success_msg):
+        """Calls the installer's recovery routine and prints success_msg
+
+        :param str success_msg: message to show on successful recovery
+
+        """
+        self.installer.recovery_routine()
+        reporter = zope.component.getUtility(interfaces.IReporter)
+        reporter.add_message(success_msg, reporter.HIGH_PRIORITY)
+
+    def _rollback_and_restart(self, success_msg):
         """Rollback the most recent checkpoint and restart the webserver
 
-        :param str reporter_msg: message to show on successful rollback
+        :param str success_msg: message to show on successful rollback
 
         """
         logger.critical("Rolling back to previous server configuration...")
@@ -415,7 +432,7 @@ class Client(object):
                 "https://github.com/letsencrypt/letsencrypt",
                 reporter.HIGH_PRIORITY)
             raise
-        reporter.add_message(reporter_msg, reporter.HIGH_PRIORITY)
+        reporter.add_message(success_msg, reporter.HIGH_PRIORITY)
 
 
 def validate_key_csr(privkey, csr=None):
