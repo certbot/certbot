@@ -15,6 +15,11 @@ VENV_BIN=${VENV_PATH}/bin
 
 if test "`id -u`" -ne "0" ; then
   SUDO=sudo
+  if test ! -x "`which $SUDO 2>/dev/null`" ; then
+      echo "WARNING: Not running as root and no working 'sudo' command found."
+      echo "Either run as root or install and configure 'sudo' for your OS."
+      exit 1
+  fi
 else
   SUDO=
 fi
