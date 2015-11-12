@@ -1,5 +1,4 @@
 """Let's Encrypt client API."""
-import functools
 import logging
 import os
 
@@ -119,12 +118,6 @@ class Client(object):
        You might already have one from `register`.
 
     """
-
-    # Message to show if enabling a redirect fails, but recovery is successful
-    _SUCCESSFUL_REDIRECT_RECOVERY_MSG = (
-        "We were unable to setup a redirect for your server, however, we "
-        "successfully installed your certificate. If you'd like to revert "
-        "these changes as well, run 'letsencrypt rollback'.")
 
     def __init__(self, config, account_, dv_auth, installer, acme=None):
         """Initialize a client."""
@@ -339,13 +332,11 @@ class Client(object):
 
             self.installer.save("Deployed Let's Encrypt Certificate")
 
-        # sites may have been enabled / final cleanup
-        restart_error_handler = error_handler.ErrorHandler(functools.partial(
-            self._rollback_and_restart,
-            "We were unable to install your certificate, however, we "
-            "successfully rolled back your server to its previous "
-            "configuration."))
-        with restart_error_handler:
+        msg = ("We were unable to install your certificate, "
+               "however, we successfully restored your "
+               "server to its prior configuration.")
+        with error_handler.ErrorHandler(self._rollback_and_restart, msg):
+            # sites may have been enabled / final cleanup
             self.installer.restart()
 
     def enhance_config(self, domains, redirect=None):
@@ -384,10 +375,9 @@ class Client(object):
         :type vhost: :class:`letsencrypt.interfaces.IInstaller`
 
         """
-        enhance_error_handler = error_handler.ErrorHandler(
-            functools.partial(self._recovery_routine_with_msg,
-                              self._SUCCESSFUL_REDIRECT_RECOVERY_MSG))
-        with enhance_error_handler:
+        msg = ("We were unable to set up a redirect for your server, "
+               "however, we successfully installed your certificate.")
+        with error_handler.ErrorHandler(self._recovery_routine_with_msg, msg):
             for dom in domains:
                 try:
                     self.installer.enhance(dom, "redirect")
@@ -397,10 +387,7 @@ class Client(object):
 
             self.installer.save("Add Redirects")
 
-        restart_error_handler = error_handler.ErrorHandler(
-            functools.partial(self._rollback_and_restart,
-                              self._SUCCESSFUL_REDIRECT_RECOVERY_MSG))
-        with restart_error_handler:
+        with error_handler.ErrorHandler(self._rollback_and_restart, msg):
             self.installer.restart()
 
     def _recovery_routine_with_msg(self, success_msg):
@@ -427,7 +414,7 @@ class Client(object):
         except:
             # TODO: suggest letshelp-letsencypt here
             reporter.add_message(
-                "An error occured and we failed to rollback your config and "
+                "An error occured and we failed to restore your config and "
                 "restart your server. Please submit a bug report to "
                 "https://github.com/letsencrypt/letsencrypt",
                 reporter.HIGH_PRIORITY)
