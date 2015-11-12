@@ -353,25 +353,19 @@ class Client(object):
     def enhance_config(self, domains, config=None):
         """Enhance the configuration.
 
-        .. todo:: This needs to handle the specific enhancements offered by the
-            installer. We will also have to find a method to pass in the chosen
-            values efficiently.
-
         :param list domains: list of domains to configure
 
         :ivar namespace: Namespace typically produced by
             :meth:`argparse.ArgumentParser.parse_args`.
         :type namespace: :class:`argparse.Namespace`
 
-
-        :param redirect: If traffic should be forwarded from HTTP to HTTPS.
-        :type redirect: bool or None
-
         :raises .errors.Error: if no installer is specified in the
             client.
 
         """
         redirect = config.redirect
+        hsts = config.hsts
+        uir = config.uir # Upgrade Insecure Requests
 
         if self.installer is None:
             logger.warning("No installer is specified, there isn't any "
@@ -381,27 +375,27 @@ class Client(object):
         if redirect is None:
             redirect = enhancements.ask("redirect")
 
-        # When support for more enhancements are added, the call to the
-        # plugin's `enhance` function should be wrapped by an ErrorHandler
         if redirect:
-            self.redirect_to_ssl(domains)
+            self.apply_enhancement(domains, "redirect")
 
-    def redirect_to_ssl(self, domains):
+    def apply_enhancement(self, domains, enhancement, options=None):
+        # TODO change comment
         """Redirect all traffic from HTTP to HTTPS
 
-        :param vhost: list of ssl_vhosts
-        :type vhost: :class:`letsencrypt.interfaces.IInstaller`
+        :param domains: list of ssl_vhosts
+        :type str 
 
         """
         with error_handler.ErrorHandler(self.installer.recovery_routine):
             for dom in domains:
                 try:
-                    self.installer.enhance(dom, "redirect")
+                    self.installer.enhance(dom, enhancement)
                 except errors.PluginError:
-                    logger.warn("Unable to perform redirect for %s", dom)
+                    logger.warn("Unable to set enhancement %s for %s",
+                            enhancement, dom)
                     raise
 
-            self.installer.save("Add Redirects")
+            self.installer.save("Add enhancement %s" % (enhancement))
             self.installer.restart()
 
 
