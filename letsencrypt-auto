@@ -8,16 +8,35 @@
 # without requiring specific versions of its dependencies from the operating
 # system.
 
+# Note: you can set XDG_DATA_HOME or VENV_PATH before running this script,
+# if you want to change where the virtual environment will be installed
 XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share}
 VENV_NAME="letsencrypt"
 VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
 VENV_BIN=${VENV_PATH}/bin
 
+# This script takes the same arguments as the main letsencrypt program, but it
+# additionally responds to --verbose (more output) and --debug (allow support
+# for experimental platforms)
+for arg in "$@" ; do
+  # This first clause is redundant with the third, but hedging on portability
+  if [ "$arg" = "-v" ] || [ "$arg" = "--verbose" ] || echo "$arg" | grep -E -- "-v+$" ; then
+    VERBOSE=1
+  elif [ "$arg" = "--debug" ] ; then
+    DEBUG=1
+  fi
+done
+
+# letsencrypt-auto needs root access to bootstrap OS dependencies, and
+# letsencrypt itself needs root access for almost all modes of operation
+# The "normal" case is that sudo is used for the steps that need root, but
+# this script *can* be run as root (not recommended), or fall back to using
+# `su`
 if test "`id -u`" -ne "0" ; then
   if command -v sudo 1>/dev/null 2>&1; then
     SUDO=sudo
   else
-    # `sudo` command does not exist, use `su` instead.
+    echo \"sudo\" is not available, will use \"su\" for installation steps...
     # Because the parameters in `su -c` has to be a string,
     # we need properly escape it
     su_sudo() {
@@ -43,15 +62,6 @@ if test "`id -u`" -ne "0" ; then
 else
   SUDO=
 fi
-
-for arg in "$@" ; do
-  # This first clause is redundant with the third, but hedging on portability
-  if [ "$arg" = "-v" ] || [ "$arg" = "--verbose" ] || echo "$arg" | grep -E -- "-v+$" ; then
-    VERBOSE=1
-  elif [ "$arg" = "--debug" ] ; then
-    DEBUG=1
-  fi
-done
 
 ExperimentalBootstrap() {
   # Arguments: Platform name, boostrap script name, SUDO command (iff needed)
