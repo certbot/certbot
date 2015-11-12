@@ -939,7 +939,6 @@ def _paths_parser(helpful):
     section = "paths"
     if verb in ("install", "revoke"):
         section = verb
-    print helpful.help_arg, helpful.help_arg == "install"
     # revoke --key-path reads a file, install --key-path takes a string
     add(section, "--key-path", type=((verb == "revoke" and read_file) or str),
         required=(verb == "install"),
