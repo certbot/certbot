@@ -367,6 +367,7 @@ class Client(object):
         hsts = config.hsts
         uir = config.uir # Upgrade Insecure Requests
 
+
         if self.installer is None:
             logger.warning("No installer is specified, there isn't any "
                            "configuration to enhance.")
@@ -377,6 +378,16 @@ class Client(object):
 
         if redirect:
             self.apply_enhancement(domains, "redirect")
+
+        if hsts:
+            self.apply_enhancement(domains, "http-header",
+                    "Strict-Transport-Security")
+        if uir:
+            self.apply_enhancement(domains, "http-header",
+                    "Upgrade-Insecure-Requests")
+
+        if (redirect or hsts or uir):
+            self.installer.restart()
 
     def apply_enhancement(self, domains, enhancement, options=None):
         # TODO change comment
@@ -389,14 +400,13 @@ class Client(object):
         with error_handler.ErrorHandler(self.installer.recovery_routine):
             for dom in domains:
                 try:
-                    self.installer.enhance(dom, enhancement)
+                    self.installer.enhance(dom, enhancement, options)
                 except errors.PluginError:
                     logger.warn("Unable to set enhancement %s for %s",
                             enhancement, dom)
                     raise
 
             self.installer.save("Add enhancement %s" % (enhancement))
-            self.installer.restart()
 
 
 def validate_key_csr(privkey, csr=None):
