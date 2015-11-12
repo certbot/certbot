@@ -176,5 +176,5 @@ PS384 = JWASignature.register(_JWAPS('PS384', hashes.SHA384))
 PS512 = JWASignature.register(_JWAPS('PS512', hashes.SHA512))
 
 ES256 = JWASignature.register(_JWAES('ES256'))
-ES256 = JWASignature.register(_JWAES('ES384'))
-ES256 = JWASignature.register(_JWAES('ES512'))
+ES384 = JWASignature.register(_JWAES('ES384'))
+ES512 = JWASignature.register(_JWAES('ES512'))

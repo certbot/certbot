@@ -107,6 +107,10 @@ class NginxConfigurator(common.Plugin):
     # This is called in determine_authenticator and determine_installer
     def prepare(self):
         """Prepare the authenticator/installer."""
+        # Verify Nginx is installed
+        if not le_util.exe_exists(self.conf('ctl')):
+            raise errors.NoInstallationError
+
         self.parser = parser.NginxParser(
             self.conf('server-root'), self.mod_ssl_conf)
 
