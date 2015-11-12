@@ -212,13 +212,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         logger.info("Deploying Certificate to VirtualHost %s", vhost.filep)
 
         # Assign the final directives; order is maintained in find_dir
-        if self.version >= (2, 4, 8):
+        if self.version >= (2, 4, 8) and fullchain_path is not None:
             logger.debug("Apache version (%s) is >= 2.4.8",
                          ".".join(str(i) for i in self.version))
             set_cert_path = fullchain_path
             self.aug.set(path["cert_path"][-1], fullchain_path)
             self.aug.set(path["cert_key"][-1], key_path)
-        elif self.version < (2, 4, 8):
+        else: # fall back to old SSL cert method
             logger.debug("Apache version (%s) is < 2.4.8",
                          ".".join(str(i) for i in self.version))
             set_cert_path = cert_path
