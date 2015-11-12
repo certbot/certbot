@@ -106,7 +106,7 @@ def _find_domains(args, installer):
         domains = args.domains
 
     if not domains:
-        raise errors.Error("Please specify --domain, or --installer that "
+        raise errors.Error("Please specify --domains, or --installer that "
                            "will help in domain names autodiscovery")
 
     return domains
@@ -465,9 +465,9 @@ def obtaincert(args, config, plugins):
     """Authenticate & obtain cert, but do not install it."""
 
     if args.domains is not None and args.csr is not None:
-        # TODO: --csr could have a priority, when --domain is
+        # TODO: --csr could have a priority, when --domains is
         # supplied, check if CSR matches given domains?
-        return "--domain and --csr are mutually exclusive"
+        return "--domains and --csr are mutually exclusive"
 
     try:
         # installers are used in auth mode to determine domain names
@@ -831,11 +831,11 @@ def prepare_and_parse_args(plugins, args):
         None, "-t", "--text", dest="text_mode", action="store_true",
         help="Use the text output instead of the curses UI.")
     helpful.add(None, "-m", "--email", help=config_help("email"))
-    # positional arg shadows --domain, instead of appending, and
-    # --domain is useful, because it can be stored in config
+    # positional arg shadows --domains, instead of appending, and
+    # --domains is useful, because it can be stored in config
     #for subparser in parser_run, parser_auth, parser_install:
     #    subparser.add_argument("domains", nargs="*", metavar="domain")
-    helpful.add(None, "-d", "--domain", dest="domains",
+    helpful.add(None, "-d", "--domains", dest="domains",
                 metavar="DOMAIN", action="append",
                 help="Domain names to apply. For multiple domains you can use "
                 "multiple -d flags or enter a comma separated list of domains"

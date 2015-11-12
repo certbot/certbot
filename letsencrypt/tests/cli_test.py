@@ -117,7 +117,7 @@ class CLITest(unittest.TestCase):
 
     @mock.patch('letsencrypt.cli.display_ops')
     def test_installer_selection(self, mock_display_ops):
-        self._call(['install', '--domain', 'foo.bar', '--cert-path', 'cert',
+        self._call(['install', '--domains', 'foo.bar', '--cert-path', 'cert',
                     '--key-path', 'key', '--chain-path', 'chain'])
         self.assertEqual(mock_display_ops.pick_installer.call_count, 1)
 
@@ -170,7 +170,7 @@ class CLITest(unittest.TestCase):
 
     def test_certonly_bad_args(self):
         ret, _, _, _ = self._call(['-d', 'foo.bar', 'certonly', '--csr', CSR])
-        self.assertEqual(ret, '--domain and --csr are mutually exclusive')
+        self.assertEqual(ret, '--domains and --csr are mutually exclusive')
 
         ret, _, _, _ = self._call(['-a', 'bad_auth', 'certonly'])
         self.assertEqual(ret, 'The requested bad_auth plugin does not appear to be installed')
