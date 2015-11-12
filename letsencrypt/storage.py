@@ -16,6 +16,8 @@ from letsencrypt import errors
 from letsencrypt import error_handler
 from letsencrypt import le_util
 
+logger = logging.getLogger(__name__)
+
 ALL_FOUR = ("cert", "privkey", "chain", "fullchain")
 
 
@@ -141,11 +143,13 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         # Each element must be referenced with an absolute path
         if any(not os.path.isabs(x) for x in
                (self.cert, self.privkey, self.chain, self.fullchain)):
+            logger.debug("Element is not reference with an absolute file")
             return False
 
         # Each element must exist and be a symbolic link
         if any(not os.path.islink(x) for x in
                (self.cert, self.privkey, self.chain, self.fullchain)):
+            logger.debug("Element is not a symbolic link")
             return False
         for kind in ALL_FOUR:
             link = getattr(self, kind)
@@ -160,16 +164,23 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
                 self.cli_config.archive_dir, self.lineagename)
             if not os.path.samefile(os.path.dirname(target),
                                     desired_directory):
+                #TODO: Split next line correctly
+                logger.debug("Element does not point within the cert "
+                             "lineage's directory within the official "
+                             "archive directory")
                 return False
 
             # The link must point to a file that exists
             if not os.path.exists(target):
+                logger.debug("File does not exist")
                 return False
 
             # The link must point to a file that follows the archive
             # naming convention
             pattern = re.compile(r"^{0}([0-9]+)\.pem$".format(kind))
             if not pattern.match(os.path.basename(target)):
+                logger.debug("Files does not follow the archive naming "
+                             "convention")
                 return False
 
             # It is NOT required that the link's target be a regular
