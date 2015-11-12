@@ -371,12 +371,14 @@ class Client(object):
             client.
 
         """
+        redirect = config.redirect
+
         if self.installer is None:
             logger.warning("No installer is specified, there isn't any "
                            "configuration to enhance.")
             raise errors.Error("No installer available")
 
-        if config.redirect is None:
+        if redirect is None:
             redirect = enhancements.ask("redirect")
 
         # When support for more enhancements are added, the call to the
