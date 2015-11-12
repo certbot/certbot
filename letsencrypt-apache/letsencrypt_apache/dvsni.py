@@ -7,14 +7,14 @@ from letsencrypt_apache import obj
 from letsencrypt_apache import parser
 
 
-class ApacheDvsni(common.Dvsni):
+class ApacheDvsni(common.TLSSNI01):
     """Class performs DVSNI challenges within the Apache configurator.
 
     :ivar configurator: ApacheConfigurator object
     :type configurator: :class:`~apache.configurator.ApacheConfigurator`
 
-    :ivar list achalls: Annotated :class:`~letsencrypt.achallenges.DVSNI`
-        challenges.
+    :ivar list achalls: Annotated tls-sni-01
+        (`.KeyAuthorizationAnnotatedChallenge`) challenges.
 
     :param list indices: Meant to hold indices of challenges in a
         larger array. ApacheDvsni is capable of solving many challenges
@@ -62,7 +62,7 @@ class ApacheDvsni(common.Dvsni):
 
         # Prepare the server for HTTPS
         self.configurator.prepare_server_https(
-            str(self.configurator.config.dvsni_port), True)
+            str(self.configurator.config.tls_sni_01_port), True)
 
         responses = []
 
@@ -114,14 +114,15 @@ class ApacheDvsni(common.Dvsni):
 
         # TODO: Checkout _default_ rules.
         dvsni_addrs = set()
-        default_addr = obj.Addr(("*", str(self.configurator.config.dvsni_port)))
+        default_addr = obj.Addr(("*", str(
+            self.configurator.config.tls_sni_01_port)))
 
         for addr in vhost.addrs:
             if "_default_" == addr.get_addr():
                 dvsni_addrs.add(default_addr)
             else:
                 dvsni_addrs.add(
-                    addr.get_sni_addr(self.configurator.config.dvsni_port))
+                    addr.get_sni_addr(self.configurator.config.tls_sni_01_port))
 
         return dvsni_addrs
 
@@ -144,8 +145,8 @@ class ApacheDvsni(common.Dvsni):
     def _get_config_text(self, achall, ip_addrs):
         """Chocolate virtual server configuration text
 
-        :param achall: Annotated DVSNI challenge.
-        :type achall: :class:`letsencrypt.achallenges.DVSNI`
+        :param .KeyAuthorizationAnnotatedChallenge achall: Annotated
+            DVSNI challenge.
 
         :param list ip_addrs: addresses of challenged domain
             :class:`list` of type `~.obj.Addr`
@@ -164,7 +165,7 @@ class ApacheDvsni(common.Dvsni):
         # https://docs.python.org/2.7/reference/lexical_analysis.html
         return self.VHOST_TEMPLATE.format(
             vhost=ips,
-            server_name=achall.gen_response(achall.account_key).z_domain,
+            server_name=achall.response(achall.account_key).z_domain,
             ssl_options_conf_path=self.configurator.mod_ssl_conf,
             cert_path=self.get_cert_path(achall),
             key_path=self.get_key_path(achall),

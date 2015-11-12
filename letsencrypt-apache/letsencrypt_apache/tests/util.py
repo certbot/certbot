@@ -124,6 +124,11 @@ def get_vh_truth(temp_dir, config_name):
                 os.path.join(aug_pre, "letsencrypt.conf/VirtualHost"),
                 set([obj.Addr.fromstring("*:80")]), False, True,
                 "letsencrypt.demo"),
+            obj.VirtualHost(
+                os.path.join(prefix, "mod_macro-example.conf"),
+                os.path.join(aug_pre,
+                             "mod_macro-example.conf/Macro/VirtualHost"),
+                set([obj.Addr.fromstring("*:80")]), False, True, modmacro=True)
         ]
         return vh_truth
 

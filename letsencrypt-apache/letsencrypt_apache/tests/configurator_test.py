@@ -59,14 +59,20 @@ class TwoVhost80Test(util.ApacheTest):
         # Weak test..
         ApacheConfigurator.add_parser_arguments(mock.MagicMock())
 
-    def test_get_all_names(self):
+    @mock.patch("zope.component.getUtility")
+    def test_get_all_names(self, mock_getutility):
+        mock_getutility.notification = mock.MagicMock(return_value=True)
         names = self.config.get_all_names()
         self.assertEqual(names, set(
             ["letsencrypt.demo", "encryption-example.demo", "ip-172-30-0-17"]))
 
+    @mock.patch("zope.component.getUtility")
     @mock.patch("letsencrypt_apache.configurator.socket.gethostbyaddr")
-    def test_get_all_names_addrs(self, mock_gethost):
+    def test_get_all_names_addrs(self, mock_gethost, mock_getutility):
         mock_gethost.side_effect = [("google.com", "", ""), socket.error]
+        notification = mock.Mock()
+        notification.notification = mock.Mock(return_value=True)
+        mock_getutility.return_value = notification
         vhost = obj.VirtualHost(
             "fp", "ap",
             set([obj.Addr(("8.8.8.8", "443")),
@@ -97,7 +103,7 @@ class TwoVhost80Test(util.ApacheTest):
 
         """
         vhs = self.config.get_virtual_hosts()
-        self.assertEqual(len(vhs), 4)
+        self.assertEqual(len(vhs), 5)
         found = 0
 
         for vhost in vhs:
@@ -108,7 +114,7 @@ class TwoVhost80Test(util.ApacheTest):
             else:
                 raise Exception("Missed: %s" % vhost)  # pragma: no cover
 
-        self.assertEqual(found, 4)
+        self.assertEqual(found, 5)
 
     @mock.patch("letsencrypt_apache.display_ops.select_vhost")
     def test_choose_vhost_none_avail(self, mock_select):
@@ -172,9 +178,14 @@ class TwoVhost80Test(util.ApacheTest):
         self.assertEqual(
             self.config._find_best_vhost("example.demo"), self.vh_truth[2])
 
+    def test_is_mod_macro(self):
+        # pylint: disable=protected-access
+        self.assertEqual(self.config._is_mod_macro("$domain"), True)
+        self.assertEqual(self.config._is_mod_macro("www.example.com"), False)
+
     def test_non_default_vhosts(self):
         # pylint: disable=protected-access
-        self.assertEqual(len(self.config._non_default_vhosts()), 3)
+        self.assertEqual(len(self.config._non_default_vhosts()), 4)
 
     def test_is_site_enabled(self):
         """Test if site is enabled.
@@ -345,7 +356,7 @@ class TwoVhost80Test(util.ApacheTest):
         self.assertEqual(self.config.is_name_vhost(self.vh_truth[0]),
                          self.config.is_name_vhost(ssl_vhost))
 
-        self.assertEqual(len(self.config.vhosts), 5)
+        self.assertEqual(len(self.config.vhosts), 6)
 
     def test_make_vhost_ssl_extra_vhs(self):
         self.config.aug.match = mock.Mock(return_value=["p1", "p2"])
@@ -382,8 +393,8 @@ class TwoVhost80Test(util.ApacheTest):
         account_key, achall1, achall2 = self.get_achalls()
 
         dvsni_ret_val = [
-            achall1.gen_response(account_key),
-            achall2.gen_response(account_key),
+            achall1.response(account_key),
+            achall2.response(account_key),
         ]
 
         mock_dvsni_perform.return_value = dvsni_ret_val
@@ -492,10 +503,10 @@ class TwoVhost80Test(util.ApacheTest):
     def test_get_chall_pref(self):
         self.assertTrue(isinstance(self.config.get_chall_pref(""), list))
 
-    def test_temp_install(self):
-        from letsencrypt_apache.configurator import temp_install
+    def test_install_ssl_options_conf(self):
+        from letsencrypt_apache.configurator import install_ssl_options_conf
         path = os.path.join(self.work_dir, "test_it")
-        temp_install(path)
+        install_ssl_options_conf(path)
         self.assertTrue(os.path.isfile(path))
 
     # TEST ENHANCEMENTS
@@ -587,20 +598,20 @@ class TwoVhost80Test(util.ApacheTest):
         self.vh_truth[1].aliases = set(["yes.default.com"])
 
         self.config._enable_redirect(self.vh_truth[1], "")  # pylint: disable=protected-access
-        self.assertEqual(len(self.config.vhosts), 5)
+        self.assertEqual(len(self.config.vhosts), 6)
 
     def get_achalls(self):
         """Return testing achallenges."""
         account_key = self.rsa512jwk
-        achall1 = achallenges.DVSNI(
+        achall1 = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(
-                challenges.DVSNI(
+                challenges.TLSSNI01(
                     token="jIq_Xy1mXGN37tb4L6Xj_es58fW571ZNyXekdZzhh7Q"),
                 "pending"),
             domain="encryption-example.demo", account_key=account_key)
-        achall2 = achallenges.DVSNI(
+        achall2 = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(
-                challenges.DVSNI(
+                challenges.TLSSNI01(
                     token="uqnaPzxtrndteOqtrXb0Asl5gOJfWAnnx6QJyvcmlDU"),
                 "pending"),
             domain="letsencrypt.demo", account_key=account_key)

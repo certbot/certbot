@@ -115,24 +115,24 @@ class AddrTest(unittest.TestCase):
         self.assertEqual(set_a, set_b)
 
 
-class DvsniTest(unittest.TestCase):
-    """Tests for letsencrypt.plugins.common.DvsniTest."""
+class TLSSNI01Test(unittest.TestCase):
+    """Tests for letsencrypt.plugins.common.TLSSNI01."""
 
     auth_key = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
     achalls = [
-        achallenges.DVSNI(
+        achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(
-                challenges.DVSNI(token=b'dvsni1'), "pending"),
+                challenges.TLSSNI01(token=b'token1'), "pending"),
             domain="encryption-example.demo", account_key=auth_key),
-        achallenges.DVSNI(
+        achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(
-                challenges.DVSNI(token=b'dvsni2'), "pending"),
+                challenges.TLSSNI01(token=b'token2'), "pending"),
             domain="letsencrypt.demo", account_key=auth_key),
     ]
 
     def setUp(self):
-        from letsencrypt.plugins.common import Dvsni
-        self.sni = Dvsni(configurator=mock.MagicMock())
+        from letsencrypt.plugins.common import TLSSNI01
+        self.sni = TLSSNI01(configurator=mock.MagicMock())
 
     def test_add_chall(self):
         self.sni.add_chall(self.achalls[0], 0)
@@ -146,11 +146,11 @@ class DvsniTest(unittest.TestCase):
         # http://www.voidspace.org.uk/python/mock/helpers.html#mock.mock_open
         mock_open, mock_safe_open = mock.mock_open(), mock.mock_open()
 
-        response = challenges.DVSNIResponse(validation=mock.Mock())
+        response = challenges.TLSSNI01Response()
         achall = mock.MagicMock()
         key = test_util.load_pyopenssl_private_key("rsa512_key.pem")
-        achall.gen_cert_and_response.return_value = (
-            response, test_util.load_cert("cert.pem"), key)
+        achall.response_and_validation.return_value = (
+            response, (test_util.load_cert("cert.pem"), key))
 
         with mock.patch("letsencrypt.plugins.common.open",
                         mock_open, create=True):

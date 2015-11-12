@@ -18,7 +18,7 @@ letsencrypt_test_nginx () {
         "$@"
 }
 
-letsencrypt_test_nginx --domains nginx.wtf run
+letsencrypt_test_nginx --domain nginx.wtf run
 echo | openssl s_client -connect localhost:5001 \
     | openssl x509 -out $root/nginx.pem
 diff -q $root/nginx.pem $root/conf/live/nginx.wtf/cert.pem

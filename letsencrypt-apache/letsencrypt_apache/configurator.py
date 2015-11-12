@@ -13,7 +13,6 @@ import zope.interface
 
 from acme import challenges
 
-from letsencrypt import achallenges
 from letsencrypt import errors
 from letsencrypt import interfaces
 from letsencrypt import le_util
@@ -162,7 +161,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Get all of the available vhosts
         self.vhosts = self.get_virtual_hosts()
 
-        temp_install(self.mod_ssl_conf)
+        install_ssl_options_conf(self.mod_ssl_conf)
 
     def deploy_cert(self, domain, cert_path, key_path,
                     chain_path=None, fullchain_path=None):  # pylint: disable=unused-argument
@@ -307,6 +306,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         best_points = 0
 
         for vhost in self.vhosts:
+            if vhost.modmacro is True:
+                continue
             if target_name in vhost.get_names():
                 points = 2
             elif any(addr.get_addr() == target_name for addr in vhost.addrs):
@@ -326,7 +327,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # No winners here... is there only one reasonable vhost?
         if best_candidate is None:
             # reasonable == Not all _default_ addrs
-            reasonable_vhosts = self._non_default_vhosts()
+            vhosts = self._non_default_vhosts()
+            # remove mod_macro hosts from reasonable vhosts
+            reasonable_vhosts = [vh for vh
+                                 in vhosts if vh.modmacro is False]
             if len(reasonable_vhosts) == 1:
                 best_candidate = reasonable_vhosts[0]
 
@@ -348,8 +352,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         all_names = set()
 
+        vhost_macro = []
+
         for vhost in self.vhosts:
             all_names.update(vhost.get_names())
+            if vhost.modmacro:
+                vhost_macro.append(vhost.filep)
 
             for addr in vhost.addrs:
                 if common.hostname_regex.match(addr.get_addr()):
@@ -358,6 +366,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     name = self.get_name_from_ip(addr)
                     if name:
                         all_names.add(name)
+
+        if len(vhost_macro) > 0:
+            zope.component.getUtility(interfaces.IDisplay).notification(
+                "Apache mod_macro seems to be in use in file(s):\n{0}"
+                "\n\nUnfortunately mod_macro is not yet supported".format(
+                    "\n  ".join(vhost_macro)))
 
         return all_names
 
@@ -395,11 +409,34 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             "ServerAlias", None, start=host.path, exclude=False)
 
         for alias in serveralias_match:
-            host.aliases.add(self.parser.get_arg(alias))
+            serveralias = self.parser.get_arg(alias)
+            if not self._is_mod_macro(serveralias):
+                host.aliases.add(serveralias)
+            else:
+                host.modmacro = True
 
         if servername_match:
             # Get last ServerName as each overwrites the previous
-            host.name = self.parser.get_arg(servername_match[-1])
+            servername = self.parser.get_arg(servername_match[-1])
+            if not self._is_mod_macro(servername):
+                host.name = servername
+            else:
+                host.modmacro = True
+
+    def _is_mod_macro(self, name):
+        """Helper function for _add_servernames().
+        Checks if the ServerName / ServerAlias belongs to a macro
+
+        :param str name: Name to check and filter out if it's a variable
+
+        :returns: boolean
+        :rtype: boolean
+
+        """
+
+        if "$" in name:
+            return True
+        return False
 
     def _create_vhost(self, path):
         """Used by get_virtual_hosts to create vhost objects
@@ -1117,7 +1154,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     ###########################################################################
     def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use
         """Return list of challenge preferences."""
-        return [challenges.DVSNI]
+        return [challenges.TLSSNI01]
 
     def perform(self, achalls):
         """Perform the configuration related challenge.
@@ -1132,11 +1169,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         apache_dvsni = dvsni.ApacheDvsni(self)
 
         for i, achall in enumerate(achalls):
-            if isinstance(achall, achallenges.DVSNI):
-                # Currently also have dvsni hold associated index
-                # of the challenge. This helps to put all of the responses back
-                # together when they are all complete.
-                apache_dvsni.add_chall(achall, i)
+            # Currently also have dvsni hold associated index
+            # of the challenge. This helps to put all of the responses back
+            # together when they are all complete.
+            apache_dvsni.add_chall(achall, i)
 
         sni_response = apache_dvsni.perform()
         if sni_response:
@@ -1236,7 +1272,7 @@ def get_file_path(vhost_path):
     avail_fp = vhost_path[6:]
     # This can be optimized...
     while True:
-        # Cast both to lowercase to be case insensitive
+        # Cast all to lowercase to be case insensitive
         find_if = avail_fp.lower().find("/ifmodule")
         if find_if != -1:
             avail_fp = avail_fp[:find_if]
@@ -1245,16 +1281,26 @@ def get_file_path(vhost_path):
         if find_vh != -1:
             avail_fp = avail_fp[:find_vh]
             continue
+        find_macro = avail_fp.lower().find("/macro")
+        if find_macro != -1:
+            avail_fp = avail_fp[:find_macro]
+            continue
         break
     return avail_fp
 
 
-def temp_install(options_ssl):
-    """Temporary install for convenience."""
-    # WARNING: THIS IS A POTENTIAL SECURITY VULNERABILITY
-    # THIS SHOULD BE HANDLED BY THE PACKAGE MANAGER
-    # AND TAKEN OUT BEFORE RELEASE, INSTEAD
-    # SHOWING A NICE ERROR MESSAGE ABOUT THE PROBLEM.
+def install_ssl_options_conf(options_ssl):
+    """
+    Copy Let's Encrypt's SSL options file into the system's config dir if
+    required.
+    """
+    # XXX if we ever try to enforce a local privilege boundary (eg, running
+    # letsencrypt for unprivileged users via setuid), this function will need
+    # to be modified.
+
+    # XXX if the user is in security-autoupdate mode, we should be willing to
+    # overwrite the options_ssl file at least if it's unmodified:
+    # https://github.com/letsencrypt/letsencrypt/issues/1123
 
     # Check to make sure options-ssl.conf is installed
     if not os.path.isfile(options_ssl):

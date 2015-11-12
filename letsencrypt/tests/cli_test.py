@@ -170,10 +170,28 @@ class CLITest(unittest.TestCase):
 
     def test_certonly_bad_args(self):
         ret, _, _, _ = self._call(['-d', 'foo.bar', 'certonly', '--csr', CSR])
-        self.assertEqual(ret, '--domains and --csr are mutually exclusive')
+        self.assertEqual(ret, '--domain and --csr are mutually exclusive')
 
         ret, _, _, _ = self._call(['-a', 'bad_auth', 'certonly'])
         self.assertEqual(ret, 'The requested bad_auth plugin does not appear to be installed')
+
+    def test_check_config_sanity_domain(self):
+        # Punycode
+        self.assertRaises(errors.ConfigurationError,
+                          self._call,
+                          ['-d', 'this.is.xn--ls8h.tld'])
+        # FQDN
+        self.assertRaises(errors.ConfigurationError,
+                          self._call,
+                          ['-d', 'comma,gotwrong.tld'])
+        # FQDN 2
+        self.assertRaises(errors.ConfigurationError,
+                          self._call,
+                          ['-d', 'illegal.character=.tld'])
+        # Wildcard
+        self.assertRaises(errors.ConfigurationError,
+                          self._call,
+                          ['-d', '*.wildcard.tld'])
 
     @mock.patch('letsencrypt.crypto_util.notAfter')
     @mock.patch('letsencrypt.cli.zope.component.getUtility')

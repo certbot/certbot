@@ -1,6 +1,7 @@
 """Let's Encrypt user-supplied configuration."""
 import os
 import urlparse
+import re
 
 import zope.interface
 
@@ -36,11 +37,8 @@ class NamespaceConfig(object):
 
     def __init__(self, namespace):
         self.namespace = namespace
-
-        if self.http01_port == self.dvsni_port:
-            raise errors.Error(
-                "Trying to run http-01 and DVSNI "
-                "on the same port ({0})".format(self.dvsni_port))
+        # Check command line parameters sanity, and error out in case of problem.
+        check_config_sanity(self)
 
     def __getattr__(self, name):
         return getattr(self.namespace, name)
@@ -111,3 +109,49 @@ class RenewerConfiguration(object):
     def renewer_config_file(self):  # pylint: disable=missing-docstring
         return os.path.join(
             self.namespace.config_dir, constants.RENEWER_CONFIG_FILENAME)
+
+
+def check_config_sanity(config):
+    """Validate command line options and display error message if
+    requirements are not met.
+
+    :param config: IConfig instance holding user configuration
+    :type args: :class:`letsencrypt.interfaces.IConfig`
+
+    """
+    # Port check
+    if config.http01_port == config.tls_sni_01_port:
+        raise errors.ConfigurationError(
+            "Trying to run http-01 and tls-sni-01 "
+            "on the same port ({0})".format(config.tls_sni_01_port))
+
+    # Domain checks
+    if config.namespace.domains is not None:
+        _check_config_domain_sanity(config.namespace.domains)
+
+
+def _check_config_domain_sanity(domains):
+    """Helper method for check_config_sanity which validates
+    domain flag values and errors out if the requirements are not met.
+
+    :param domains: List of domains
+    :type domains: `list` of `string`
+    :raises ConfigurationError: for invalid domains and cases where Let's
+                                Encrypt currently will not issue certificates
+
+    """
+    # Check if there's a wildcard domain
+    if any(d.startswith("*.") for d in domains):
+        raise errors.ConfigurationError(
+            "Wildcard domains are not supported")
+    # Punycode
+    if any("xn--" in d for d in domains):
+        raise errors.ConfigurationError(
+            "Punycode domains are not supported")
+    # FQDN checks from
+    # http://www.mkyong.com/regular-expressions/domain-name-regular-expression-example/
+    #  Characters used, domain parts < 63 chars, tld > 1 < 7 chars
+    #  first and last char is not "-"
+    fqdn = re.compile("^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\\.)+[A-Za-z]{2,6}$")
+    if any(True for d in domains if not fqdn.match(d)):
+        raise errors.ConfigurationError("Requested domain is not a FQDN")

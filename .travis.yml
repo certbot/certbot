@@ -2,11 +2,12 @@ language: python
 
 services:
   - rabbitmq
-  - mysql
+  - mariadb
 
 # http://docs.travis-ci.com/user/ci-environment/#CI-environment-OS
 # gimme has to be kept in sync with Boulder's Go version setting in .travis.yml
 before_install:
+  - 'dpkg -s libaugeas0'
   - '[ "xxx$BOULDER_INTEGRATION" = "xxx" ] || eval "$(gimme 1.5.1)"'
 
 # using separate envs with different TOXENVs creates 4x1 Travis build
@@ -31,13 +32,17 @@ branches:
     - master
     - /^test-.*$/
 
-sudo: false  # containers
+# container-based infrastructure
+sudo: false
+
 addons:
   # make sure simplehttp simple verification works (custom /etc/hosts)
   hosts:
     - le.wtf
   mariadb: "10.0"
   apt:
+    sources:
+    - augeas
     packages:  # keep in sync with bootstrap/ubuntu.sh and Boulder
     - python
     - python-dev

@@ -34,7 +34,7 @@ class PerformTest(unittest.TestCase):
     def test_unexpected(self):
         self.assertRaises(
             errors.ContAuthError, self.auth.perform, [
-                achallenges.DVSNI(
+                achallenges.KeyAuthorizationAnnotatedChallenge(
                     challb=None, domain="0", account_key="invalid_key")])
 
     def test_chall_pref(self):
@@ -53,7 +53,7 @@ class CleanupTest(unittest.TestCase):
             mock.MagicMock(server="demo_server.org"), None)
 
     def test_unexpected(self):
-        unexpected = achallenges.DVSNI(
+        unexpected = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=None, domain="0", account_key="dummy_key")
         self.assertRaises(errors.ContAuthError, self.auth.cleanup, [unexpected])
 

@@ -23,7 +23,7 @@ CLI_DEFAULTS = dict(
     work_dir="/var/lib/letsencrypt",
     logs_dir="/var/log/letsencrypt",
     no_verify_ssl=False,
-    dvsni_port=challenges.DVSNI.PORT,
+    tls_sni_01_port=challenges.TLSSNI01Response.PORT,
 
     auth_cert_path="./cert.pem",
     auth_chain_path="./chain.pem",
@@ -41,7 +41,7 @@ RENEWER_DEFAULTS = dict(
 
 
 EXCLUSIVE_CHALLENGES = frozenset([frozenset([
-    challenges.DVSNI, challenges.HTTP01])])
+    challenges.TLSSNI01, challenges.HTTP01])])
 """Mutually exclusive challenges."""
 
 

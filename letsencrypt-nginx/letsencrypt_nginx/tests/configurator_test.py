@@ -1,3 +1,4 @@
+# pylint: disable=too-many-public-methods
 """Test for letsencrypt_nginx.configurator."""
 import os
 import shutil
@@ -29,6 +30,12 @@ class NginxConfiguratorTest(util.NginxTest):
         shutil.rmtree(self.config_dir)
         shutil.rmtree(self.work_dir)
 
+    @mock.patch("letsencrypt_nginx.configurator.le_util.exe_exists")
+    def test_prepare_no_install(self, mock_exe_exists):
+        mock_exe_exists.return_value = False
+        self.assertRaises(
+            errors.NoInstallationError, self.config.prepare)
+
     def test_prepare(self):
         self.assertEquals((1, 6, 2), self.config.version)
         self.assertEquals(5, len(self.config.parser.parsed))
@@ -51,7 +58,7 @@ class NginxConfiguratorTest(util.NginxTest):
             errors.PluginError, self.config.enhance, 'myhost', 'redirect')
 
     def test_get_chall_pref(self):
-        self.assertEqual([challenges.DVSNI],
+        self.assertEqual([challenges.TLSSNI01],
                          self.config.get_chall_pref('myhost'))
 
     def test_save(self):
@@ -210,22 +217,22 @@ class NginxConfiguratorTest(util.NginxTest):
     def test_perform(self, mock_restart, mock_dvsni_perform):
         # Only tests functionality specific to configurator.perform
         # Note: As more challenges are offered this will have to be expanded
-        achall1 = achallenges.DVSNI(
+        achall1 = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=messages.ChallengeBody(
-                chall=challenges.DVSNI(token="kNdwjwOeX0I_A8DXt9Msmg"),
+                chall=challenges.TLSSNI01(token="kNdwjwOeX0I_A8DXt9Msmg"),
                 uri="https://ca.org/chall0_uri",
                 status=messages.Status("pending"),
             ), domain="localhost", account_key=self.rsa512jwk)
-        achall2 = achallenges.DVSNI(
+        achall2 = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=messages.ChallengeBody(
-                chall=challenges.DVSNI(token="m8TdO1qik4JVFtgPPurJmg"),
+                chall=challenges.TLSSNI01(token="m8TdO1qik4JVFtgPPurJmg"),
                 uri="https://ca.org/chall1_uri",
                 status=messages.Status("pending"),
             ), domain="example.com", account_key=self.rsa512jwk)
 
         dvsni_ret_val = [
-            achall1.gen_response(self.rsa512jwk),
-            achall2.gen_response(self.rsa512jwk),
+            achall1.response(self.rsa512jwk),
+            achall2.response(self.rsa512jwk),
         ]
 
         mock_dvsni_perform.return_value = dvsni_ret_val

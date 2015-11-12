@@ -135,22 +135,22 @@ class Addr(object):
         return self.__class__((self.tup[0], port))
 
 
-class Dvsni(object):
-    """Class that perform DVSNI challenges."""
+class TLSSNI01(object):
+    """Class that performs tls-sni-01 challenges."""
 
     def __init__(self, configurator):
         self.configurator = configurator
         self.achalls = []
         self.indices = []
         self.challenge_conf = os.path.join(
-            configurator.config.config_dir, "le_dvsni_cert_challenge.conf")
+            configurator.config.config_dir, "le_tls_sni_01_cert_challenge.conf")
         # self.completed = 0
 
     def add_chall(self, achall, idx=None):
-        """Add challenge to DVSNI object to perform at once.
+        """Add challenge to TLSSNI01 object to perform at once.
 
-        :param achall: Annotated DVSNI challenge.
-        :type achall: :class:`letsencrypt.achallenges.DVSNI`
+        :param .KeyAuthorizationAnnotatedChallenge achall: Annotated
+            TLSSNI01 challenge.
 
         :param int idx: index to challenge in a larger array
 
@@ -162,8 +162,8 @@ class Dvsni(object):
     def get_cert_path(self, achall):
         """Returns standardized name for challenge certificate.
 
-        :param achall: Annotated DVSNI challenge.
-        :type achall: :class:`letsencrypt.achallenges.DVSNI`
+        :param .KeyAuthorizationAnnotatedChallenge achall: Annotated
+            tls-sni-01 challenge.
 
         :returns: certificate file name
         :rtype: str
@@ -177,7 +177,7 @@ class Dvsni(object):
         return os.path.join(self.configurator.config.work_dir,
                             achall.chall.encode("token") + '.pem')
 
-    def _setup_challenge_cert(self, achall, s=None):
+    def _setup_challenge_cert(self, achall, cert_key=None):
 
         """Generate and write out challenge certificate."""
         cert_path = self.get_cert_path(achall)
@@ -186,7 +186,8 @@ class Dvsni(object):
         self.configurator.reverter.register_file_creation(True, key_path)
         self.configurator.reverter.register_file_creation(True, cert_path)
 
-        response, cert, key = achall.gen_cert_and_response(s)
+        response, (cert, key) = achall.response_and_validation(
+            cert_key=cert_key)
         cert_pem = OpenSSL.crypto.dump_certificate(
             OpenSSL.crypto.FILETYPE_PEM, cert)
         key_pem = OpenSSL.crypto.dump_privatekey(

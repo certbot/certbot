@@ -396,7 +396,8 @@ class ClientNetworkTest(unittest.TestCase):
 
         from acme.client import ClientNetwork
         self.net = ClientNetwork(
-            key=KEY, alg=jose.RS256, verify_ssl=self.verify_ssl)
+            key=KEY, alg=jose.RS256, verify_ssl=self.verify_ssl,
+            user_agent='acme-python-test')
 
         self.response = mock.MagicMock(ok=True, status_code=http_client.OK)
         self.response.headers = {}
@@ -479,7 +480,7 @@ class ClientNetworkTest(unittest.TestCase):
         self.assertEqual(self.response, self.net._send_request(
             'HEAD', 'url', 'foo', bar='baz'))
         mock_requests.request.assert_called_once_with(
-            'HEAD', 'url', 'foo', verify=mock.ANY, bar='baz')
+            'HEAD', 'url', 'foo', verify=mock.ANY, bar='baz', headers=mock.ANY)
 
     @mock.patch('acme.client.requests')
     def test_send_request_verify_ssl(self, mock_requests):
@@ -492,7 +493,20 @@ class ClientNetworkTest(unittest.TestCase):
             self.assertEqual(
                 self.response, self.net._send_request('GET', 'url'))
             mock_requests.request.assert_called_once_with(
-                'GET', 'url', verify=verify)
+                'GET', 'url', verify=verify, headers=mock.ANY)
+
+    @mock.patch('acme.client.requests')
+    def test_send_request_user_agent(self, mock_requests):
+        mock_requests.request.return_value = self.response
+        # pylint: disable=protected-access
+        self.net._send_request('GET', 'url', headers={'bar': 'baz'})
+        mock_requests.request.assert_called_once_with(
+            'GET', 'url', verify=mock.ANY,
+            headers={'User-Agent': 'acme-python-test', 'bar': 'baz'})
+
+        self.net._send_request('GET', 'url', headers={'User-Agent': 'foo2'})
+        mock_requests.request.assert_called_with(
+            'GET', 'url', verify=mock.ANY, headers={'User-Agent': 'foo2'})
 
     @mock.patch('acme.client.requests')
     def test_requests_error_passthrough(self, mock_requests):
