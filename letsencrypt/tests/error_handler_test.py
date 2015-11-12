@@ -13,7 +13,7 @@ class ErrorHandlerTest(unittest.TestCase):
         from letsencrypt import error_handler
 
         self.init_func = mock.MagicMock()
-        self.init_args = {42}
+        self.init_args = set((42,))
         self.init_kwargs = {'foo': 'bar'}
         self.handler = error_handler.ErrorHandler(self.init_func,
                                                   *self.init_args,
