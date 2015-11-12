@@ -193,6 +193,27 @@ class CLITest(unittest.TestCase):
                           self._call,
                           ['-d', '*.wildcard.tld'])
 
+    def test_parse_domains(self):
+        from letsencrypt import cli
+        plugins = disco.PluginsRegistry.find_all()
+
+        short_args = ['-d', 'example.com']
+        namespace = cli.prepare_and_parse_args(plugins, short_args)
+        self.assertEqual(namespace.domains, ['example.com'])
+
+        short_args = ['-d', 'example.com,another.net,third.org,example.com']
+        namespace = cli.prepare_and_parse_args(plugins, short_args)
+        self.assertEqual(namespace.domains, ['example.com', 'another.net',
+                                             'third.org'])
+
+        long_args = ['--domains', 'example.com']
+        namespace = cli.prepare_and_parse_args(plugins, long_args)
+        self.assertEqual(namespace.domains, ['example.com'])
+
+        long_args = ['--domains', 'example.com,another.net,example.com']
+        namespace = cli.prepare_and_parse_args(plugins, long_args)
+        self.assertEqual(namespace.domains, ['example.com', 'another.net'])
+
     @mock.patch('letsencrypt.crypto_util.notAfter')
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
     def test_certonly_new_request_success(self, mock_get_utility, mock_notAfter):
