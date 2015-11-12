@@ -168,6 +168,48 @@ class CLITest(unittest.TestCase):
                   for r in xrange(len(flags)))):
             self._call(['plugins'] + list(args))
 
+    @mock.patch('letsencrypt.cli.plugins_disco')
+    def test_plugins_no_args(self, mock_disco):
+        ifaces = []
+        plugins = mock_disco.PluginsRegistry.find_all()
+
+        _, stdout, _, _ = self._call(['plugins'])
+        plugins.visible.assert_called_once_with()
+        plugins.visible().ifaces.assert_called_once_with(ifaces)
+        filtered = plugins.visible().ifaces()
+        stdout.write.called_once_with(str(filtered))
+
+    @mock.patch('letsencrypt.cli.plugins_disco')
+    def test_plugins_init(self, mock_disco):
+        ifaces = []
+        plugins = mock_disco.PluginsRegistry.find_all()
+
+        _, stdout, _, _ = self._call(['plugins', '--init'])
+        plugins.visible.assert_called_once_with()
+        plugins.visible().ifaces.assert_called_once_with(ifaces)
+        filtered = plugins.visible().ifaces()
+        self.assertEqual(filtered.init.call_count, 1)
+        filtered.verify.assert_called_once_with(ifaces)
+        verified = filtered.verify()
+        stdout.write.called_once_with(str(verified))
+
+    @mock.patch('letsencrypt.cli.plugins_disco')
+    def test_plugins_prepare(self, mock_disco):
+        ifaces = []
+        plugins = mock_disco.PluginsRegistry.find_all()
+
+        _, stdout, _, _ = self._call(['plugins', '--init', '--prepare'])
+        plugins.visible.assert_called_once_with()
+        plugins.visible().ifaces.assert_called_once_with(ifaces)
+        filtered = plugins.visible().ifaces()
+        self.assertEqual(filtered.init.call_count, 1)
+        filtered.verify.assert_called_once_with(ifaces)
+        verified = filtered.verify()
+        verified.prepare.assert_called_once_with()
+        verified.available.assert_called_once_with()
+        available = verified.available()
+        stdout.write.called_once_with(str(available))
+
     def test_certonly_bad_args(self):
         ret, _, _, _ = self._call(['-d', 'foo.bar', 'certonly', '--csr', CSR])
         self.assertEqual(ret, '--domain and --csr are mutually exclusive')
