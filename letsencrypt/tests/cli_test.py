@@ -121,7 +121,9 @@ class CLITest(unittest.TestCase):
                     '--key-path', 'key', '--chain-path', 'chain'])
         self.assertEqual(mock_display_ops.pick_installer.call_count, 1)
 
-    def test_configurator_selection(self):
+    @mock.patch('letsencrypt.le_util.exe_exists')
+    def test_configurator_selection(self, mock_exe_exists):
+        mock_exe_exists.return_value = True
         real_plugins = disco.PluginsRegistry.find_all()
         args = ['--agree-dev-preview', '--apache',
                 '--authenticator', 'standalone']
