@@ -549,6 +549,7 @@ def plugins_cmd(args, config, plugins):  # TODO: Use IDisplay rather than print
     logger.debug("Filtered plugins: %r", filtered)
 
     if not args.init and not args.prepare:
+        print str(filtered)
         return
 
     filtered.init(config)
@@ -556,11 +557,13 @@ def plugins_cmd(args, config, plugins):  # TODO: Use IDisplay rather than print
     logger.debug("Verified plugins: %r", verified)
 
     if not args.prepare:
+        print str(verified)
         return
 
     verified.prepare()
     available = verified.available()
     logger.debug("Prepared plugins: %s", available)
+    print str(available)
 
 
 def read_file(filename, mode="rb"):
@@ -936,6 +939,7 @@ def _paths_parser(helpful):
     section = "paths"
     if verb in ("install", "revoke"):
         section = verb
+    print helpful.help_arg, helpful.help_arg == "install"
     # revoke --key-path reads a file, install --key-path takes a string
     add(section, "--key-path", type=((verb == "revoke" and read_file) or str),
         required=(verb == "install"),
