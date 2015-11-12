@@ -1,3 +1,4 @@
+# pylint: disable=too-many-public-methods
 """Test for letsencrypt_nginx.configurator."""
 import os
 import shutil
@@ -28,6 +29,12 @@ class NginxConfiguratorTest(util.NginxTest):
         shutil.rmtree(self.temp_dir)
         shutil.rmtree(self.config_dir)
         shutil.rmtree(self.work_dir)
+
+    @mock.patch("letsencrypt_nginx.configurator.le_util.exe_exists")
+    def test_prepare_no_install(self, mock_exe_exists):
+        mock_exe_exists.return_value = False
+        self.assertRaises(
+            errors.NoInstallationError, self.config.prepare)
 
     def test_prepare(self):
         self.assertEquals((1, 6, 2), self.config.version)
