@@ -386,14 +386,14 @@ class Client(object):
             self.apply_enhancement(domains, "http-header",
                     "Upgrade-Insecure-Requests")
 
-        if (redirect or hsts or uir):
+        if redirect or hsts or uir:
             self.installer.restart()
 
     def apply_enhancement(self, domains, enhancement, options=None):
-        """Applies an enhacement on all domains. 
+        """Applies an enhacement on all domains.
 
         :param domains: list of ssl_vhosts
-        :type list of str 
+        :type list of str
 
         :param enhancement: name of enhancement, e.g. http-header
         :type str
