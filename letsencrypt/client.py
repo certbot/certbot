@@ -390,11 +390,17 @@ class Client(object):
             self.installer.restart()
 
     def apply_enhancement(self, domains, enhancement, options=None):
-        # TODO change comment
-        """Redirect all traffic from HTTP to HTTPS
+        """Applies an enhacement on all domains. 
 
         :param domains: list of ssl_vhosts
-        :type str 
+        :type list of str 
+
+        :param enhancement: name of enhancement, e.g. http-header
+        :type str
+
+        .. note:: when more options are need make options a list.
+        :param options: options to enhancement, e.g. Strict-Transport-Security
+        :type str
 
         """
         with error_handler.ErrorHandler(self.installer.recovery_routine):
