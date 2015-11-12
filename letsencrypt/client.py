@@ -350,7 +350,7 @@ class Client(object):
         logger.critical("Rollback successful; your server has "
                         "been restarted with your old configuration")
 
-    def enhance_config(self, domains, redirect=None):
+    def enhance_config(self, domains, config=None):
         """Enhance the configuration.
 
         .. todo:: This needs to handle the specific enhancements offered by the
@@ -358,6 +358,11 @@ class Client(object):
             values efficiently.
 
         :param list domains: list of domains to configure
+
+        :ivar namespace: Namespace typically produced by
+            :meth:`argparse.ArgumentParser.parse_args`.
+        :type namespace: :class:`argparse.Namespace`
+
 
         :param redirect: If traffic should be forwarded from HTTP to HTTPS.
         :type redirect: bool or None
@@ -371,7 +376,7 @@ class Client(object):
                            "configuration to enhance.")
             raise errors.Error("No installer available")
 
-        if redirect is None:
+        if config.redirect is None:
             redirect = enhancements.ask("redirect")
 
         # When support for more enhancements are added, the call to the
