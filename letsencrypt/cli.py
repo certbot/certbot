@@ -668,7 +668,31 @@ class HelpfulArgumentParser(object):
         parsed_args = self.parser.parse_args(self.args)
         parsed_args.func = self.VERBS[self.verb]
 
+        parsed_args.domains = self._parse_domains(parsed_args.domains)
         return parsed_args
+
+    def _parse_domains(self, domains):
+        """Helper function for parse_args() that parses domains from a
+        (possibly) comma separated list and returns list of unique domains.
+
+        :param domains: List of domain flags
+        :type domains: `list` of `string`
+
+        :returns: List of unique domains
+        :rtype: `list` of `string`
+
+        """
+
+        uniqd = None
+
+        if domains:
+            dlist = []
+            for domain in domains:
+                dlist.extend([d.strip() for d in domain.split(",")])
+            # Make sure we don't have duplicates
+            uniqd = [d for i,d in enumerate(dlist) if d not in dlist[:i]]
+
+        return uniqd
 
     def determine_verb(self):
         """Determines the verb/subcommand provided by the user.
