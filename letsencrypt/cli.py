@@ -837,8 +837,9 @@ def prepare_and_parse_args(plugins, args):
     #    subparser.add_argument("domains", nargs="*", metavar="domain")
     helpful.add(None, "-d", "--domain", dest="domains",
                 metavar="DOMAIN", action="append",
-                help="Domain names to apply. Use multiple -d flags if you want "
-                "to specify multiple domains")
+                help="Domain names to apply. For multiple domains you can use "
+                "multiple -d flags or enter a comma separated list of domains"
+                "as a parameter.")
     helpful.add(
         None, "--duplicate", dest="duplicate", action="store_true",
         help="Allow getting a certificate that duplicates an existing one")
