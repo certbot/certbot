@@ -690,7 +690,7 @@ class HelpfulArgumentParser(object):
             for domain in domains:
                 dlist.extend([d.strip() for d in domain.split(",")])
             # Make sure we don't have duplicates
-            uniqd = [d for i,d in enumerate(dlist) if d not in dlist[:i]]
+            uniqd = [d for i, d in enumerate(dlist) if d not in dlist[:i]]
 
         return uniqd
 
