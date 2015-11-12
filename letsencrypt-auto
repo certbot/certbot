@@ -171,7 +171,7 @@ else
   $VENV_BIN/pip install -U pip > /dev/null
   printf .
   # nginx is buggy / disabled for now...
-  $VENV_BIN/pip install -r py26reqs.txt
+  $VENV_BIN/pip install -r py26reqs.txt > /dev/null
   printf .
   $VENV_BIN/pip install -U letsencrypt > /dev/null
   printf .
