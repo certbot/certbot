@@ -202,11 +202,15 @@ class Authenticator(common.Plugin):
         random.shuffle(chall_pref)  # 50% for each challenge
         return chall_pref
 
-    def perform(self, achalls):  # pylint: disable=missing-docstring
+    def check_required_ports(self):
+        """Check if required ports are available, else raise an Error."""
         if any(util.already_listening(port) for port in self._necessary_ports):
             raise errors.MisconfigurationError(
                 "At least one of the (possibly) required ports is "
                 "already taken.")
+
+    def perform(self, achalls):  # pylint: disable=missing-docstring
+        self.check_required_ports()
 
         try:
             return self.perform2(achalls)
