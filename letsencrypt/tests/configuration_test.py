@@ -113,6 +113,28 @@ class RenewerConfigurationTest(unittest.TestCase):
             self.config.renewal_configs_dir, '/tmp/config/renewal_configs')
         self.assertEqual(self.config.renewer_config_file, '/tmp/config/r.conf')
 
+    def test_absolute_paths(self):
+        from letsencrypt.configuration import NamespaceConfig
+        from letsencrypt.configuration import RenewerConfiguration
+
+        config_base = "foo"
+        work_base = "bar"
+        logs_base = "baz"
+
+        mock_namespace = mock.MagicMock(spec=['config_dir', 'work_dir',
+                                              'logs_dir', 'http01_port',
+                                              'tls_sni_01_port',
+                                              'domains', 'server'])
+        mock_namespace.config_dir = config_base
+        mock_namespace.work_dir = work_base
+        mock_namespace.logs_dir = logs_base
+        config = RenewerConfiguration(NamespaceConfig(mock_namespace))
+
+        self.assertTrue(os.path.isabs(config.archive_dir))
+        self.assertTrue(os.path.isabs(config.live_dir))
+        self.assertTrue(os.path.isabs(config.renewal_configs_dir))
+        self.assertTrue(os.path.isabs(config.renewer_config_file))
+
 
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover
