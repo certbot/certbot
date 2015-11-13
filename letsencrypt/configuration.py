@@ -3,7 +3,6 @@ import os
 import urlparse
 import re
 
-import letsencrypt
 import zope.interface
 
 from acme import challenges
@@ -11,7 +10,6 @@ from acme import challenges
 from letsencrypt import constants
 from letsencrypt import errors
 from letsencrypt import interfaces
-from letsencrypt import le_util
 
 
 class NamespaceConfig(object):
@@ -83,21 +81,6 @@ class NamespaceConfig(object):
             return self.namespace.http01_port
         else:
             return challenges.HTTP01Response.PORT
-
-    def determine_user_agent(self, authenticator, installer):
-        """
-        Set a user_agent string in the config based on the choice of plugins.
-        (this wasn't knowable at construction time)
-        """
-
-        if self.namespace.user_agent is None:
-            ua = "LetsEncryptPythonClient/{0} ({1}) Authenticator/{2} Installer/{3}"
-            ua = ua.format(letsencrypt.__version__, " ".join(le_util.get_os_info()),
-                           authenticator.name if authenticator else "none",
-                           installer.name if installer else "none")
-            self.namespace.user_agent = ua
-        else:
-            assert isinstance(self.namespace.user_agent, str), "User Agent not a string?"
 
 
 class RenewerConfiguration(object):

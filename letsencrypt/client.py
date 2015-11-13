@@ -10,6 +10,8 @@ from acme import client as acme_client
 from acme import jose
 from acme import messages
 
+import letsencrypt
+
 from letsencrypt import account
 from letsencrypt import auth_handler
 from letsencrypt import configuration
@@ -29,11 +31,29 @@ from letsencrypt.display import enhancements
 logger = logging.getLogger(__name__)
 
 
-def _acme_from_config_key(config, key):
+def acme_from_config_key(config, key):
+    "Wrange ACME client construction"
     # TODO: Allow for other alg types besides RS256
     net = acme_client.ClientNetwork(key, verify_ssl=(not config.no_verify_ssl),
-                                    user_agent=config.user_agent)
+                                    user_agent=_determine_user_agent(config))
     return acme_client.Client(directory=config.server, key=key, net=net)
+
+
+def _determine_user_agent(config):
+    """
+    Set a user_agent string in the config based on the choice of plugins.
+    (this wasn't knowable at construction time)
+
+    :rtype: `str`
+    """
+
+    if config.user_agent is None:
+        ua = "LetsEncryptPythonClient/{0} ({1}) Authenticator/{2} Installer/{3}"
+        ua = ua.format(letsencrypt.__version__, " ".join(le_util.get_os_info()),
+                       config.authenticator, config.installer)
+    else:
+        ua = config.user_agent
+    return ua
 
 
 def register(config, account_storage, tos_cb=None):
@@ -85,7 +105,7 @@ def register(config, account_storage, tos_cb=None):
             public_exponent=65537,
             key_size=config.rsa_key_size,
             backend=default_backend())))
-    acme = _acme_from_config_key(config, key)
+    acme = acme_from_config_key(config, key)
     # TODO: add phone?
     regr = acme.register(messages.NewRegistration.from_data(email=config.email))
 
@@ -128,7 +148,7 @@ class Client(object):
 
         # Initialize ACME if account is provided
         if acme is None and self.account is not None:
-            acme = _acme_from_config_key(config, self.account.key)
+            acme = acme_from_config_key(config, self.account.key)
         self.acme = acme
 
         # TODO: Check if self.config.enroll_autorenew is None. If
@@ -213,7 +233,7 @@ class Client(object):
 
         return self._obtain_certificate(domains, csr) + (key, csr)
 
-    def obtain_and_enroll_certificate(self, domains, plugins):
+    def obtain_and_enroll_certificate(self, domains):
         """Obtain and enroll certificate.
 
         Get a new certificate for the specified domains using the specified
@@ -229,13 +249,6 @@ class Client(object):
 
         """
         certr, chain, key, _ = self.obtain_certificate(domains)
-
-        # TODO: remove this dirty hack
-        self.config.namespace.authenticator = plugins.find_init(
-            self.dv_auth).name
-        if self.installer is not None:
-            self.config.namespace.installer = plugins.find_init(
-                self.installer).name
 
         # XXX: We clearly need a more general and correct way of getting
         # options into the configobj for the RenewableCert instance.

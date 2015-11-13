@@ -142,8 +142,9 @@ class CLITest(unittest.TestCase):
             cli.main(args)
             acme_net.assert_called_once_with(mock.ANY, verify_ssl=True, user_agent=ua)
 
+    @mock.patch('letsencrypt.cli.record_chosen_plugins')
     @mock.patch('letsencrypt.cli.display_ops')
-    def test_installer_selection(self, mock_display_ops):
+    def test_installer_selection(self, mock_display_ops, _rec):
         self._call(['install', '--domain', 'foo.bar', '--cert-path', 'cert',
                     '--key-path', 'key', '--chain-path', 'chain'])
         self.assertEqual(mock_display_ops.pick_installer.call_count, 1)
@@ -280,7 +281,8 @@ class CLITest(unittest.TestCase):
     @mock.patch('letsencrypt.cli.display_ops.pick_installer')
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
     @mock.patch('letsencrypt.cli._init_le_client')
-    def test_certonly_csr(self, mock_init, mock_get_utility,
+    @mock.patch('letsencrypt.cli.record_chosen_plugins')
+    def test_certonly_csr(self, _rec, mock_init, mock_get_utility,
                           mock_pick_installer, mock_notAfter):
         cert_path = '/etc/letsencrypt/live/blahcert.pem'
         date = '1970-01-01'
