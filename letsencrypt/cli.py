@@ -931,26 +931,28 @@ def _paths_parser(helpful):
     if verb in ("install", "revoke", "certonly"):
         section = verb
     if verb == "certonly":
-        add(section, "--cert-path", default=flag_default("auth_cert_path"), help=cph)
+        add(section, "--cert-path", type=os.path.abspath,
+            default=flag_default("auth_cert_path"), help=cph)
     elif verb == "revoke":
         add(section, "--cert-path", type=read_file, required=True, help=cph)
     else:
-        add(section, "--cert-path", help=cph, required=(verb == "install"))
+        add(section, "--cert-path", type=os.path.abspath,
+            help=cph, required=(verb == "install"))
 
     section = "paths"
     if verb in ("install", "revoke"):
         section = verb
     # revoke --key-path reads a file, install --key-path takes a string
-    add(section, "--key-path", type=((verb == "revoke" and read_file) or str),
-        required=(verb == "install"),
+    add(section, "--key-path", required=(verb == "install"),
+        type=((verb == "revoke" and read_file) or os.path.abspath),
         help="Path to private key for cert creation or revocation (if account key is missing)")
 
     default_cp = None
     if verb == "certonly":
         default_cp = flag_default("auth_chain_path")
-    add("paths", "--fullchain-path", default=default_cp,
+    add("paths", "--fullchain-path", default=default_cp, type=os.path.abspath,
         help="Accompanying path to a full certificate chain (cert plus chain).")
-    add("paths", "--chain-path", default=default_cp,
+    add("paths", "--chain-path", default=default_cp, type=os.path.abspath,
         help="Accompanying path to a certificate chain.")
     add("paths", "--config-dir", default=flag_default("config_dir"),
         help=config_help("config_dir"))
