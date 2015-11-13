@@ -27,8 +27,8 @@ common() {
         "$@"
 }
 
-common --domain le1.wtf --standalone-supported-challenges tls-sni-01 auth
-common --domain le2.wtf --standalone-supported-challenges http-01 run
+common --domains le1.wtf --standalone-supported-challenges tls-sni-01 auth
+common --domains le2.wtf --standalone-supported-challenges http-01 run
 common -a manual -d le.wtf auth
 
 export CSR_PATH="${root}/csr.der" KEY_PATH="${root}/key.pem" \
@@ -40,7 +40,7 @@ common auth --csr "$CSR_PATH" \
 openssl x509 -in "${root}/csr/0000_cert.pem" -text
 openssl x509 -in "${root}/csr/0000_chain.pem" -text
 
-common --domain le3.wtf install \
+common --domains le3.wtf install \
        --cert-path "${root}/csr/cert.pem" \
        --key-path "${root}/csr/key.pem"
 
