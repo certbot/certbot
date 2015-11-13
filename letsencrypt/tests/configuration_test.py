@@ -59,6 +59,36 @@ class NamespaceConfigTest(unittest.TestCase):
         self.namespace.http01_port = None
         self.assertEqual(80, self.config.http01_port)
 
+    def test_absolute_paths(self):
+        from letsencrypt.configuration import NamespaceConfig
+
+        config_base = "foo"
+        work_base = "bar"
+        logs_base = "baz"
+
+        config = NamespaceConfig(mock.MagicMock(
+            config_dir=config_base, work_dir=work_base, logs_dir=logs_base))
+
+        self.assertTrue(os.path.isabs(config.config_dir))
+        self.assertEqual(config.config_dir,
+                         os.path.join(os.getcwd(), config_base))
+        self.assertTrue(os.path.isabs(config.work_dir))
+        self.assertEqual(config.work_dir,
+                         os.path.join(os.getcwd(), work_base))
+        self.assertTrue(os.path.isabs(config.logs_dir))
+        self.assertEqual(config.logs_dir,
+                         os.path.join(os.getcwd(), logs_base))
+        self.assertTrue(os.path.isabs(config.cert_path))
+        self.assertTrue(os.path.isabs(config.key_path))
+        self.assertTrue(os.path.isabs(config.chain_path))
+        self.assertTrue(os.path.isabs(config.fullchain_path))
+        self.assertTrue(os.path.isabs(config.accounts_dir))
+        self.assertTrue(os.path.isabs(config.backup_dir))
+        self.assertTrue(os.path.isabs(config.csr_dir))
+        self.assertTrue(os.path.isabs(config.in_progress_dir))
+        self.assertTrue(os.path.isabs(config.key_dir))
+        self.assertTrue(os.path.isabs(config.temp_checkpoint_dir))
+
 
 class RenewerConfigurationTest(unittest.TestCase):
     """Test for letsencrypt.configuration.RenewerConfiguration."""
