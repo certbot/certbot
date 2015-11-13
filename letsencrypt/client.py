@@ -5,6 +5,7 @@ import os
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
 import OpenSSL
+import zope.component
 
 from acme import client as acme_client
 from acme import jose
@@ -18,6 +19,7 @@ from letsencrypt import continuity_auth
 from letsencrypt import crypto_util
 from letsencrypt import errors
 from letsencrypt import error_handler
+from letsencrypt import interfaces
 from letsencrypt import le_util
 from letsencrypt import reverter
 from letsencrypt import storage
@@ -330,25 +332,12 @@ class Client(object):
 
             self.installer.save("Deployed Let's Encrypt Certificate")
 
-        # sites may have been enabled / final cleanup
-        with error_handler.ErrorHandler(self._rollback_and_restart):
+        msg = ("We were unable to install your certificate, "
+               "however, we successfully restored your "
+               "server to its prior configuration.")
+        with error_handler.ErrorHandler(self._rollback_and_restart, msg):
+            # sites may have been enabled / final cleanup
             self.installer.restart()
-
-    def _rollback_and_restart(self):
-        """Rollback the most recent checkpoint and restart the webserver"""
-        logger.critical("Rolling back to previous server configuration...")
-        try:
-            self.installer.rollback_checkpoints()
-            self.installer.restart()
-        except:
-            # TODO: suggest letshelp-letsencypt here
-            logger.critical("Failure to rollback config "
-                            "changes and restart your server")
-            logger.critical("Please submit a bug report to "
-                            "https://github.com/letsencrypt/letsencrypt")
-            raise
-        logger.critical("Rollback successful; your server has "
-                        "been restarted with your old configuration")
 
     def enhance_config(self, domains, redirect=None):
         """Enhance the configuration.
@@ -386,7 +375,9 @@ class Client(object):
         :type vhost: :class:`letsencrypt.interfaces.IInstaller`
 
         """
-        with error_handler.ErrorHandler(self.installer.recovery_routine):
+        msg = ("We were unable to set up a redirect for your server, "
+               "however, we successfully installed your certificate.")
+        with error_handler.ErrorHandler(self._recovery_routine_with_msg, msg):
             for dom in domains:
                 try:
                     self.installer.enhance(dom, "redirect")
@@ -395,7 +386,40 @@ class Client(object):
                     raise
 
             self.installer.save("Add Redirects")
+
+        with error_handler.ErrorHandler(self._rollback_and_restart, msg):
             self.installer.restart()
+
+    def _recovery_routine_with_msg(self, success_msg):
+        """Calls the installer's recovery routine and prints success_msg
+
+        :param str success_msg: message to show on successful recovery
+
+        """
+        self.installer.recovery_routine()
+        reporter = zope.component.getUtility(interfaces.IReporter)
+        reporter.add_message(success_msg, reporter.HIGH_PRIORITY)
+
+    def _rollback_and_restart(self, success_msg):
+        """Rollback the most recent checkpoint and restart the webserver
+
+        :param str success_msg: message to show on successful rollback
+
+        """
+        logger.critical("Rolling back to previous server configuration...")
+        reporter = zope.component.getUtility(interfaces.IReporter)
+        try:
+            self.installer.rollback_checkpoints()
+            self.installer.restart()
+        except:
+            # TODO: suggest letshelp-letsencypt here
+            reporter.add_message(
+                "An error occured and we failed to restore your config and "
+                "restart your server. Please submit a bug report to "
+                "https://github.com/letsencrypt/letsencrypt",
+                reporter.HIGH_PRIORITY)
+            raise
+        reporter.add_message(success_msg, reporter.HIGH_PRIORITY)
 
 
 def validate_key_csr(privkey, csr=None):
