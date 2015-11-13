@@ -569,7 +569,7 @@ def plugins_cmd(args, config, plugins):  # TODO: Use IDisplay rather than print
 def read_file(filename, mode="rb"):
     """Returns the given file's contents.
 
-    :param str filename: Filename
+    :param str filename: filename as an absolute path
     :param str mode: open mode (see `open`)
 
     :returns: A tuple of filename and its contents
@@ -579,6 +579,7 @@ def read_file(filename, mode="rb"):
 
     """
     try:
+        filename = os.path.abspath(filename)
         return filename, open(filename, mode).read()
     except IOError as exc:
         raise argparse.ArgumentTypeError(exc.strerror)
