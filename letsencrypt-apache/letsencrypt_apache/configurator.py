@@ -584,10 +584,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Update Addresses
         self._update_ssl_vhosts_addrs(vh_p)
 
-        # Remove existing SSL directives
-        logger.info("Removing existing SSL directives")
-        self._remove_existing_ssl_directives(vh_p)
-
         # Add directives
         self._add_dummy_ssl_directives(vh_p)
 
