@@ -23,7 +23,7 @@ from letsencrypt.tests import test_util
 CSR = test_util.vector_path('csr.der')
 
 
-class CLITest(unittest.TestCase):
+class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     """Tests for different commands."""
 
     def setUp(self):
@@ -115,6 +115,23 @@ class CLITest(unittest.TestCase):
         out = self._help_output(['-h'])
         from letsencrypt import cli
         self.assertTrue(cli.usage_strings(plugins)[0] in out)
+
+    def test_install_abspath(self):
+        cert = 'cert'
+        key = 'key'
+        chain = 'chain'
+        fullchain = 'fullchain'
+
+        with MockedVerb('install') as mock_install:
+            self._call(['install', '--cert-path', cert, '--key-path', 'key',
+                        '--chain-path', 'chain',
+                        '--fullchain-path', 'fullchain'])
+
+        args = mock_install.call_args[0][0]
+        self.assertEqual(args.cert_path, os.path.abspath(cert))
+        self.assertEqual(args.key_path, os.path.abspath(key))
+        self.assertEqual(args.chain_path, os.path.abspath(chain))
+        self.assertEqual(args.fullchain_path, os.path.abspath(fullchain))
 
     @mock.patch('letsencrypt.cli.display_ops')
     def test_installer_selection(self, mock_display_ops):
@@ -210,6 +227,23 @@ class CLITest(unittest.TestCase):
         verified.available.assert_called_once_with()
         available = verified.available()
         stdout.write.called_once_with(str(available))
+
+    def test_certonly_abspath(self):
+        cert = 'cert'
+        key = 'key'
+        chain = 'chain'
+        fullchain = 'fullchain'
+
+        with MockedVerb('certonly') as mock_obtaincert:
+            self._call(['certonly', '--cert-path', cert, '--key-path', 'key',
+                        '--chain-path', 'chain',
+                        '--fullchain-path', 'fullchain'])
+
+        args = mock_obtaincert.call_args[0][0]
+        self.assertEqual(args.cert_path, os.path.abspath(cert))
+        self.assertEqual(args.key_path, os.path.abspath(key))
+        self.assertEqual(args.chain_path, os.path.abspath(chain))
+        self.assertEqual(args.fullchain_path, os.path.abspath(fullchain))
 
     def test_certonly_bad_args(self):
         ret, _, _, _ = self._call(['-d', 'foo.bar', 'certonly', '--csr', CSR])
