@@ -10,9 +10,12 @@ import unittest
 
 import mock
 
+from acme import jose
+
 from letsencrypt import account
 from letsencrypt import cli
 from letsencrypt import configuration
+from letsencrypt import crypto_util
 from letsencrypt import errors
 from letsencrypt import le_util
 
@@ -22,7 +25,9 @@ from letsencrypt.tests import renewer_test
 from letsencrypt.tests import test_util
 
 
+CERT = test_util.vector_path('cert.pem')
 CSR = test_util.vector_path('csr.der')
+KEY = test_util.vector_path('rsa256_key.pem')
 
 
 class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
@@ -406,13 +411,13 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertTrue(
             date in mock_get_utility().add_message.call_args[0][0])
 
-    @mock.patch('letsencrypt.cli.acme_client')
+    @mock.patch('letsencrypt.cli.client.acme_from_config_key')
     def test_revoke_with_key(self, mock_acme_client):
         server = 'foo.bar'
         self._call(['--cert-path', CERT, '--key-path', KEY,
                     '--server', server, 'revoke'])
         with open(KEY) as f:
-            mock_acme_client.Client.assert_called_once_with(
+            mock_acme_client.assert_called_once_with(
                 server, key=jose.JWK.load(f.read()))
         with open(CERT) as f:
             mock_acme_client.Client().revoke.assert_called_once_with(
