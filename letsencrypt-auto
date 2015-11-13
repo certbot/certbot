@@ -83,11 +83,11 @@ ExperimentalBootstrap() {
 }
 
 DeterminePythonVersion() {
-  if which python2 > /dev/null ; then
+  if command -v python2 > /dev/null ; then
     export LE_PYTHON=${LE_PYTHON:-python2}
-  elif which python2.7 > /dev/null ; then
+  elif command -v python2.7 > /dev/null ; then
     export LE_PYTHON=${LE_PYTHON:-python2.7}
-  elif which python > /dev/null ; then
+  elif command -v python > /dev/null ; then
     export LE_PYTHON=${LE_PYTHON:-python}
   else
     echo "Cannot find any Pythons... please install one!"
