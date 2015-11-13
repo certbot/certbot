@@ -66,8 +66,14 @@ class NamespaceConfigTest(unittest.TestCase):
         work_base = "bar"
         logs_base = "baz"
 
-        config = NamespaceConfig(mock.MagicMock(
-            config_dir=config_base, work_dir=work_base, logs_dir=logs_base))
+        mock_namespace = mock.MagicMock(spec=['config_dir', 'work_dir',
+                                              'logs_dir', 'http01_port',
+                                              'tls_sni_01_port',
+                                              'domains', 'server'])
+        mock_namespace.config_dir = config_base
+        mock_namespace.work_dir = work_base
+        mock_namespace.logs_dir = logs_base
+        config = NamespaceConfig(mock_namespace)
 
         self.assertTrue(os.path.isabs(config.config_dir))
         self.assertEqual(config.config_dir,
@@ -78,10 +84,6 @@ class NamespaceConfigTest(unittest.TestCase):
         self.assertTrue(os.path.isabs(config.logs_dir))
         self.assertEqual(config.logs_dir,
                          os.path.join(os.getcwd(), logs_base))
-        self.assertTrue(os.path.isabs(config.cert_path))
-        self.assertTrue(os.path.isabs(config.key_path))
-        self.assertTrue(os.path.isabs(config.chain_path))
-        self.assertTrue(os.path.isabs(config.fullchain_path))
         self.assertTrue(os.path.isabs(config.accounts_dir))
         self.assertTrue(os.path.isabs(config.backup_dir))
         self.assertTrue(os.path.isabs(config.csr_dir))
