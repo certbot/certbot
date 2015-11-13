@@ -1,4 +1,5 @@
 """Tests for letsencrypt.cli."""
+import argparse
 import itertools
 import os
 import shutil
@@ -355,6 +356,20 @@ class CLITest(unittest.TestCase):
             KeyboardInterrupt, exc_value=interrupt, trace=None, args=None)
         mock_sys.exit.assert_called_with(''.join(
             traceback.format_exception_only(KeyboardInterrupt, interrupt)))
+
+    def test_read_file(self):
+        from letsencrypt import cli
+        rel_test_path = os.path.relpath(os.path.join(self.tmp_dir, 'foo'))
+        self.assertRaises(
+            argparse.ArgumentTypeError, cli.read_file, rel_test_path)
+
+        test_contents = 'bar\n'
+        with open(rel_test_path, 'w') as f:
+            f.write(test_contents)
+
+        path, contents = cli.read_file(rel_test_path)
+        self.assertEqual(path, os.path.abspath(path))
+        self.assertEqual(contents, test_contents)
 
 
 class DetermineAccountTest(unittest.TestCase):
