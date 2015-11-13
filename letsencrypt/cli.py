@@ -569,10 +569,10 @@ def plugins_cmd(args, config, plugins):  # TODO: Use IDisplay rather than print
 def read_file(filename, mode="rb"):
     """Returns the given file's contents.
 
-    :param str filename: filename as an absolute path
+    :param str filename: path to file
     :param str mode: open mode (see `open`)
 
-    :returns: A tuple of filename and its contents
+    :returns: absolute path of filename and its contents
     :rtype: tuple
 
     :raises argparse.ArgumentTypeError: File does not exist or is not readable.
