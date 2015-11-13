@@ -386,6 +386,7 @@ class TwoVhost80Test(util.ApacheTest):
         for directive in BOGUS_DIRECTIVES:
             self.config.parser.add_dir(self.vh_truth[0].path, directive, ["bogus"])
         self.config.save()
+
         self.config._remove_existing_ssl_directives(self.vh_truth[0].path)
         self.config.save()
 
@@ -393,6 +394,31 @@ class TwoVhost80Test(util.ApacheTest):
             self.assertEqual(
                 self.config.parser.find_dir(directive, None, self.vh_truth[0].path),
                 [])
+
+    def test_remove_existing_ssl_directives_minus_some(self):
+        # pylint: disable=protected-access
+        BOGUS_DIRECTIVES = ["SSLCertificateKeyFile",
+                            "SSLCertificateChainFile", "SSLCertificateFile"]
+        MINUS_DIRECTIVES = ["SSLCertificateKeyFile", "SSLCertificateFile"]
+        for directive in BOGUS_DIRECTIVES:
+            self.config.parser.add_dir(self.vh_truth[0].path, directive, ["bogus"])
+        self.config.save()
+
+        self.config._remove_existing_ssl_directives(self.vh_truth[0].path,
+                                                    minus=MINUS_DIRECTIVES)
+        self.config.save()
+
+        for directive in BOGUS_DIRECTIVES:
+            if directive not in MINUS_DIRECTIVES:
+                self.assertEqual(
+                    self.config.parser.find_dir(directive, None, self.vh_truth[0].path),
+                    [],
+                    msg="directive %s should have been removed" % directive)
+            else:
+                self.assertNotEqual(
+                    self.config.parser.find_dir(directive, None, self.vh_truth[0].path),
+                    [],
+                    msg="directive %s should still exist" % directive)
 
     def test_make_vhost_ssl_extra_vhs(self):
         self.config.aug.match = mock.Mock(return_value=["p1", "p2"])

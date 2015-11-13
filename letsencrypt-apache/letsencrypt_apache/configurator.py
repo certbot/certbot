@@ -652,9 +652,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         return ssl_addrs
 
-    def _remove_existing_ssl_directives(self, vh_path):
-        for directive in ["SSLCertificateKeyFile", "SSLCertificateChainFile",
-                          "SSLCertificateFile"]:
+    def _remove_existing_ssl_directives(self, vh_path, minus={}):
+        directives_to_remove = list({"SSLCertificateKeyFile", "SSLCertificateChainFile",
+                                     "SSLCertificateFile"} - set(minus))
+        for directive in directives_to_remove:
             logger.debug("Trying to delete directive '%s'", directive)
             directive_tree = self.parser.find_dir(directive, None, vh_path)
             logger.debug("Parser found %s", directive_tree)
