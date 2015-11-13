@@ -206,7 +206,9 @@ def safely_remove(path):
 def get_os_info():
     """
     Get Operating System type/distribution and major version
-    :returns: (`str` os_name, `str` os_version)
+
+    :returns: (os_name, os_version)
+    :rtype: `tuple` of `str`
     """
     info = platform.system_alias(
         platform.system(),

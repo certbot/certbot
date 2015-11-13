@@ -893,7 +893,7 @@ def _create_subparsers(helpful):
     helpful.add_group("rollback", description="Options for reverting config changes")
     helpful.add_group("plugins", description="Plugin options")
     helpful.add(
-        "certonly", "--user-agent", type=str, default=None,
+        None, "--user-agent", type=str, default=None,
         help="Set a custom user agent string for the client. User agent strings allow "
              "the CA to collect high level statistics about success rates by OS and "
              "plugin. If you wish to hide your server OS version from the Let's "
