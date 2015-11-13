@@ -27,3 +27,4 @@ $tool install -y \
   openssl-devel \
   libffi-devel \
   ca-certificates \
+  which \
