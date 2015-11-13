@@ -1,4 +1,5 @@
 """Tests for letsencrypt.cli."""
+import argparse
 import itertools
 import os
 import shutil
@@ -22,7 +23,7 @@ from letsencrypt.tests import test_util
 CSR = test_util.vector_path('csr.der')
 
 
-class CLITest(unittest.TestCase):
+class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     """Tests for different commands."""
 
     def setUp(self):
@@ -114,6 +115,23 @@ class CLITest(unittest.TestCase):
         out = self._help_output(['-h'])
         from letsencrypt import cli
         self.assertTrue(cli.usage_strings(plugins)[0] in out)
+
+    def test_install_abspath(self):
+        cert = 'cert'
+        key = 'key'
+        chain = 'chain'
+        fullchain = 'fullchain'
+
+        with MockedVerb('install') as mock_install:
+            self._call(['install', '--cert-path', cert, '--key-path', 'key',
+                        '--chain-path', 'chain',
+                        '--fullchain-path', 'fullchain'])
+
+        args = mock_install.call_args[0][0]
+        self.assertEqual(args.cert_path, os.path.abspath(cert))
+        self.assertEqual(args.key_path, os.path.abspath(key))
+        self.assertEqual(args.chain_path, os.path.abspath(chain))
+        self.assertEqual(args.fullchain_path, os.path.abspath(fullchain))
 
     @mock.patch('letsencrypt.cli.display_ops')
     def test_installer_selection(self, mock_display_ops):
@@ -209,6 +227,23 @@ class CLITest(unittest.TestCase):
         verified.available.assert_called_once_with()
         available = verified.available()
         stdout.write.called_once_with(str(available))
+
+    def test_certonly_abspath(self):
+        cert = 'cert'
+        key = 'key'
+        chain = 'chain'
+        fullchain = 'fullchain'
+
+        with MockedVerb('certonly') as mock_obtaincert:
+            self._call(['certonly', '--cert-path', cert, '--key-path', 'key',
+                        '--chain-path', 'chain',
+                        '--fullchain-path', 'fullchain'])
+
+        args = mock_obtaincert.call_args[0][0]
+        self.assertEqual(args.cert_path, os.path.abspath(cert))
+        self.assertEqual(args.key_path, os.path.abspath(key))
+        self.assertEqual(args.chain_path, os.path.abspath(chain))
+        self.assertEqual(args.fullchain_path, os.path.abspath(fullchain))
 
     def test_certonly_bad_args(self):
         ret, _, _, _ = self._call(['-d', 'foo.bar', 'certonly', '--csr', CSR])
@@ -355,6 +390,20 @@ class CLITest(unittest.TestCase):
             KeyboardInterrupt, exc_value=interrupt, trace=None, args=None)
         mock_sys.exit.assert_called_with(''.join(
             traceback.format_exception_only(KeyboardInterrupt, interrupt)))
+
+    def test_read_file(self):
+        from letsencrypt import cli
+        rel_test_path = os.path.relpath(os.path.join(self.tmp_dir, 'foo'))
+        self.assertRaises(
+            argparse.ArgumentTypeError, cli.read_file, rel_test_path)
+
+        test_contents = 'bar\n'
+        with open(rel_test_path, 'w') as f:
+            f.write(test_contents)
+
+        path, contents = cli.read_file(rel_test_path)
+        self.assertEqual(path, os.path.abspath(path))
+        self.assertEqual(contents, test_contents)
 
 
 class DetermineAccountTest(unittest.TestCase):

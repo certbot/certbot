@@ -692,6 +692,9 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.test_rc.configfile["renewalparams"]["http01_port"] = "1234"
         self.test_rc.configfile["renewalparams"]["account"] = "abcde"
         self.test_rc.configfile["renewalparams"]["domains"] = ["example.com"]
+        self.test_rc.configfile["renewalparams"]["config_dir"] = "config"
+        self.test_rc.configfile["renewalparams"]["work_dir"] = "work"
+        self.test_rc.configfile["renewalparams"]["logs_dir"] = "logs"
         mock_auth = mock.MagicMock()
         mock_pd.PluginsRegistry.find_all.return_value = {"apache": mock_auth}
         # Fails because "fake" != "apache"
