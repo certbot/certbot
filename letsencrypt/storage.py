@@ -265,6 +265,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             raise errors.CertStorageError("unknown kind of item")
         link = getattr(self, kind)
         if not os.path.exists(link):
+            logger.debug("File does not exist")
             return None
         target = os.readlink(link)
         if not os.path.isabs(target):
@@ -289,11 +290,13 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         pattern = re.compile(r"^{0}([0-9]+)\.pem$".format(kind))
         target = self.current_target(kind)
         if target is None or not os.path.exists(target):
+            logger.debug("File does not exist")
             target = ""
         matches = pattern.match(os.path.basename(target))
         if matches:
             return int(matches.groups()[0])
         else:
+            logger.debug("No matches")
             return None
 
     def version(self, kind, version):
@@ -543,6 +546,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
             # Renewals on the basis of revocation
             if self.ocsp_revoked(self.latest_common_version()):
+                logger.debug("Should renew, certificate is revoked")
                 return True
 
             # Renewals on the basis of expiry time
@@ -551,6 +555,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
                 "cert", self.latest_common_version()))
             now = pytz.UTC.fromutc(datetime.datetime.utcnow())
             if expiry < add_time_interval(now, interval):
+                logger.debug("Should renew, certificate is expired")
                 return True
         return False
 
