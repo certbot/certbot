@@ -142,8 +142,6 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             cli.main(args)
             acme_net.assert_called_once_with(mock.ANY, verify_ssl=True, user_agent=ua)
 
-        self._call(['install', '--domain', 'foo.bar', '--cert-path', 'cert',
-
     def test_install_abspath(self):
         cert = 'cert'
         key = 'key'
