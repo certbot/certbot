@@ -970,7 +970,8 @@ def _paths_parser(helpful):
     # revoke --key-path reads a file, install --key-path takes a string
     add(section, "--key-path", required=(verb == "install"),
         type=((verb == "revoke" and read_file) or os.path.abspath),
-        help="Path to private key for cert creation or revocation (if account key is missing)")
+        help="Path to private key for cert installation "
+             "or revocation (if account key is missing)")
 
     default_cp = None
     if verb == "certonly":
