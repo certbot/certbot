@@ -298,7 +298,8 @@ class IInstaller(IPlugin):
 
         Both title and temporary are needed because a save may be
         intended to be permanent, but the save is not ready to be a full
-        checkpoint
+        checkpoint. If an exception is raised, it is assumed a new
+        checkpoint was not created.
 
         :param str title: The title of the save. If a title is given, the
             configuration will be saved as a new checkpoint and put in a

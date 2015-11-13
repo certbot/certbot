@@ -40,7 +40,7 @@ common auth --csr "$CSR_PATH" \
 openssl x509 -in "${root}/csr/0000_cert.pem" -text
 openssl x509 -in "${root}/csr/0000_chain.pem" -text
 
-common --domain le3.wtf install \
+common --domains le3.wtf install \
        --cert-path "${root}/csr/cert.pem" \
        --key-path "${root}/csr/key.pem"
 

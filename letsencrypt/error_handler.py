@@ -1,4 +1,5 @@
 """Registers functions to be called if an exception or signal occurs."""
+import functools
 import logging
 import os
 import signal
@@ -40,11 +41,11 @@ class ErrorHandler(object):
     to be called again by the next signal handler.
 
     """
-    def __init__(self, func=None):
+    def __init__(self, func=None, *args, **kwargs):
         self.funcs = []
         self.prev_handlers = {}
         if func is not None:
-            self.register(func)
+            self.register(func, *args, **kwargs)
 
     def __enter__(self):
         self.set_signal_handlers()
@@ -57,9 +58,13 @@ class ErrorHandler(object):
             self.call_registered()
         self.reset_signal_handlers()
 
-    def register(self, func):
-        """Registers func to be called if an error occurs."""
-        self.funcs.append(func)
+    def register(self, func, *args, **kwargs):
+        """Sets func to be called with *args and **kwargs during cleanup
+
+        :param function func: function to be called in case of an error
+
+        """
+        self.funcs.append(functools.partial(func, *args, **kwargs))
 
     def call_registered(self):
         """Calls all registered functions"""

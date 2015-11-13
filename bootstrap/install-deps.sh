@@ -29,6 +29,9 @@ elif [ -f /etc/gentoo-release ] ; then
 elif uname | grep -iq FreeBSD ; then
   echo "Bootstrapping dependencies for FreeBSD..."
   $SUDO $BOOTSTRAP/freebsd.sh
+elif `grep -qs openSUSE /etc/os-release` ; then
+  echo "Bootstrapping dependencies for openSUSE.."
+  $SUDO $BOOTSTRAP/suse.sh
 elif uname | grep -iq Darwin ; then
   echo "Bootstrapping dependencies for Mac OS X..."
   echo "WARNING: Mac support is very experimental at present..."

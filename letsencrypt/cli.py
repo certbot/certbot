@@ -557,6 +557,7 @@ def plugins_cmd(args, config, plugins):  # TODO: Use IDisplay rather than print
     logger.debug("Filtered plugins: %r", filtered)
 
     if not args.init and not args.prepare:
+        print str(filtered)
         return
 
     filtered.init(config)
@@ -564,17 +565,19 @@ def plugins_cmd(args, config, plugins):  # TODO: Use IDisplay rather than print
     logger.debug("Verified plugins: %r", verified)
 
     if not args.prepare:
+        print str(verified)
         return
 
     verified.prepare()
     available = verified.available()
     logger.debug("Prepared plugins: %s", available)
+    print str(available)
 
 
 def read_file(filename, mode="rb"):
     """Returns the given file's contents.
 
-    :param str filename: Filename
+    :param str filename: filename as an absolute path
     :param str mode: open mode (see `open`)
 
     :returns: A tuple of filename and its contents
@@ -584,6 +587,7 @@ def read_file(filename, mode="rb"):
 
     """
     try:
+        filename = os.path.abspath(filename)
         return filename, open(filename, mode).read()
     except IOError as exc:
         raise argparse.ArgumentTypeError(exc.strerror)
@@ -676,7 +680,31 @@ class HelpfulArgumentParser(object):
         parsed_args = self.parser.parse_args(self.args)
         parsed_args.func = self.VERBS[self.verb]
 
+        parsed_args.domains = self._parse_domains(parsed_args.domains)
         return parsed_args
+
+    def _parse_domains(self, domains):
+        """Helper function for parse_args() that parses domains from a
+        (possibly) comma separated list and returns list of unique domains.
+
+        :param domains: List of domain flags
+        :type domains: `list` of `string`
+
+        :returns: List of unique domains
+        :rtype: `list` of `string`
+
+        """
+
+        uniqd = None
+
+        if domains:
+            dlist = []
+            for domain in domains:
+                dlist.extend([d.strip() for d in domain.split(",")])
+            # Make sure we don't have duplicates
+            uniqd = [d for i, d in enumerate(dlist) if d not in dlist[:i]]
+
+        return uniqd
 
     def determine_verb(self):
         """Determines the verb/subcommand provided by the user.
@@ -819,7 +847,11 @@ def prepare_and_parse_args(plugins, args):
     # --domains is useful, because it can be stored in config
     #for subparser in parser_run, parser_auth, parser_install:
     #    subparser.add_argument("domains", nargs="*", metavar="domain")
-    helpful.add(None, "-d", "--domains", metavar="DOMAIN", action="append")
+    helpful.add(None, "-d", "--domains", dest="domains",
+                metavar="DOMAIN", action="append",
+                help="Domain names to apply. For multiple domains you can use "
+                "multiple -d flags or enter a comma separated list of domains"
+                "as a parameter.")
     helpful.add(
         None, "--duplicate", dest="duplicate", action="store_true",
         help="Allow getting a certificate that duplicates an existing one")
@@ -888,7 +920,6 @@ def prepare_and_parse_args(plugins, args):
     # parser (--help should display plugin-specific options last)
     _plugins_parsing(helpful, plugins)
 
-
     return helpful.parse_args()
 
 
@@ -939,26 +970,28 @@ def _paths_parser(helpful):
     if verb in ("install", "revoke", "certonly"):
         section = verb
     if verb == "certonly":
-        add(section, "--cert-path", default=flag_default("auth_cert_path"), help=cph)
+        add(section, "--cert-path", type=os.path.abspath,
+            default=flag_default("auth_cert_path"), help=cph)
     elif verb == "revoke":
         add(section, "--cert-path", type=read_file, required=True, help=cph)
     else:
-        add(section, "--cert-path", help=cph, required=(verb == "install"))
+        add(section, "--cert-path", type=os.path.abspath,
+            help=cph, required=(verb == "install"))
 
     section = "paths"
     if verb in ("install", "revoke"):
         section = verb
     # revoke --key-path reads a file, install --key-path takes a string
-    add(section, "--key-path", type=((verb == "revoke" and read_file) or str),
-        required=(verb == "install"),
+    add(section, "--key-path", required=(verb == "install"),
+        type=((verb == "revoke" and read_file) or os.path.abspath),
         help="Path to private key for cert creation or revocation (if account key is missing)")
 
     default_cp = None
     if verb == "certonly":
         default_cp = flag_default("auth_chain_path")
-    add("paths", "--fullchain-path", default=default_cp,
+    add("paths", "--fullchain-path", default=default_cp, type=os.path.abspath,
         help="Accompanying path to a full certificate chain (cert plus chain).")
-    add("paths", "--chain-path", default=default_cp,
+    add("paths", "--chain-path", default=default_cp, type=os.path.abspath,
         help="Accompanying path to a certificate chain.")
     add("paths", "--config-dir", default=flag_default("config_dir"),
         help=config_help("config_dir"))
