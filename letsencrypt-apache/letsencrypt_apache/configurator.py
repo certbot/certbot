@@ -265,6 +265,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Try to find a reasonable vhost
         vhost = self._find_best_vhost(target_name)
         if vhost is not None:
+            if vhost.ssl:
+                # remove existing SSL directives (minus the ones we'll use anyway,
+                # since we want to preserve order)
+                self._remove_existing_ssl_directives(
+                    vhost,
+                    minus=['SSLCertificatePath', 'SSLCertificateKeyFile'])
             if not vhost.ssl:
                 vhost = self.make_vhost_ssl(vhost)
 
