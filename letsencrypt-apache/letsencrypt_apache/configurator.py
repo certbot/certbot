@@ -210,25 +210,27 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 "Unable to find cert and/or key directives")
 
         logger.info("Deploying Certificate to VirtualHost %s", vhost.filep)
+        logger.debug("Apache version is %s",
+                     ".".join(str(i) for i in self.version))
 
-        # Assign the final directives; order is maintained in find_dir
-        if self.version >= (2, 4, 8) and fullchain_path is not None:
-            logger.debug("Apache version (%s) is >= 2.4.8",
-                         ".".join(str(i) for i in self.version))
-            set_cert_path = fullchain_path
-            self.aug.set(path["cert_path"][-1], fullchain_path)
-            self.aug.set(path["cert_key"][-1], key_path)
-        else: # fall back to old SSL cert method
-            logger.debug("Apache version (%s) is < 2.4.8",
-                         ".".join(str(i) for i in self.version))
+        if self.version < (2, 4, 8) or (chain_path and not fullchain_path):
+            # install SSLCertificateFile, SSLCertificateKeyFile, and SSLCertificateChainFile directives
             set_cert_path = cert_path
             self.aug.set(path["cert_path"][-1], cert_path)
             self.aug.set(path["cert_key"][-1], key_path)
-            if not path["chain_path"]:
-                self.parser.add_dir(vhost.path,
-                                    "SSLCertificateChainFile", chain_path)
-            else:
-                self.aug.set(path["chain_path"][-1], chain_path)
+            if chain_path is not None:
+                if not path["chain_path"]:
+                    self.parser.add_dir(vhost.path,
+                                        "SSLCertificateChainFile", chain_path)
+                else:
+                    self.aug.set(path["chain_path"][-1], chain_path)
+        else:
+            if not fullchain_path:
+                raise errors.PluginError("Please provide the --fullchain-path\
+ option pointing to your full chain file")
+            set_cert_path = fullchain_path
+            self.aug.set(path["cert_path"][-1], fullchain_path)
+            self.aug.set(path["cert_key"][-1], key_path)
 
         # Save notes about the transaction that took place
         self.save_notes += ("Changed vhost at %s with addresses of %s\n"
