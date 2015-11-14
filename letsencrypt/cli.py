@@ -17,7 +17,6 @@ import zope.component
 import zope.interface.exceptions
 import zope.interface.verify
 
-from acme import client as acme_client
 from acme import jose
 
 import letsencrypt
@@ -38,7 +37,6 @@ from letsencrypt import storage
 from letsencrypt.display import util as display_util
 from letsencrypt.display import ops as display_ops
 from letsencrypt.plugins import disco as plugins_disco
-
 
 logger = logging.getLogger(__name__)
 
@@ -304,7 +302,7 @@ def _report_new_cert(cert_path, fullchain_path):
     reporter_util.add_message(msg, reporter_util.MEDIUM_PRIORITY)
 
 
-def _auth_from_domains(le_client, config, domains, plugins):
+def _auth_from_domains(le_client, config, domains):
     """Authenticate and enroll certificate."""
     # Note: This can raise errors... caught above us though.
     lineage = _treat_as_renewal(config, domains)
@@ -325,7 +323,7 @@ def _auth_from_domains(le_client, config, domains, plugins):
         #       configuration values from this attempt? <- Absolutely (jdkasten)
     else:
         # TREAT AS NEW REQUEST
-        lineage = le_client.obtain_and_enroll_certificate(domains, plugins)
+        lineage = le_client.obtain_and_enroll_certificate(domains)
         if not lineage:
             raise errors.Error("Certificate could not be obtained")
 
@@ -425,12 +423,21 @@ def choose_configurator_plugins(args, config, plugins, verb):
             authenticator = display_ops.pick_authenticator(config, req_auth, plugins)
     logger.debug("Selected authenticator %s and installer %s", authenticator, installer)
 
+    # Report on any failures
     if need_inst and not installer:
         diagnose_configurator_problem("installer", req_inst, plugins)
     if need_auth and not authenticator:
         diagnose_configurator_problem("authenticator", req_auth, plugins)
 
+    record_chosen_plugins(config, plugins, authenticator, installer)
     return installer, authenticator
+
+
+def record_chosen_plugins(config, plugins, auth, inst):
+    "Update the config entries to reflect the plugins we actually selected."
+    cn = config.namespace
+    cn.authenticator = plugins.find_init(auth).name if auth else "none"
+    cn.installer = plugins.find_init(inst).name if inst else "none"
 
 
 # TODO: Make run as close to auth + install as possible
@@ -447,7 +454,7 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
     # TODO: Handle errors from _init_le_client?
     le_client = _init_le_client(args, config, authenticator, installer)
 
-    lineage = _auth_from_domains(le_client, config, domains, plugins)
+    lineage = _auth_from_domains(le_client, config, domains)
 
     le_client.deploy_certificate(
         domains, lineage.privkey, lineage.cert,
@@ -461,7 +468,7 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
         display_ops.success_renewal(domains)
 
 
-def obtaincert(args, config, plugins):
+def obtain_cert(args, config, plugins):
     """Authenticate & obtain cert, but do not install it."""
 
     if args.domains is not None and args.csr is not None:
@@ -487,7 +494,7 @@ def obtaincert(args, config, plugins):
         _report_new_cert(cert_path, cert_fullchain)
     else:
         domains = _find_domains(args, installer)
-        _auth_from_domains(le_client, config, domains, plugins)
+        _auth_from_domains(le_client, config, domains)
 
 
 def install(args, config, plugins):
@@ -512,18 +519,19 @@ def install(args, config, plugins):
 
 def revoke(args, config, unused_plugins):  # TODO: coop with renewal config
     """Revoke a previously obtained certificate."""
+    # For user-agent construction
+    config.namespace.installer = config.namespace.authenticator = "none"
     if args.key_path is not None:  # revocation by cert key
         logger.debug("Revoking %s using cert key %s",
                      args.cert_path[0], args.key_path[0])
-        acme = acme_client.Client(
-            config.server, key=jose.JWK.load(args.key_path[1]))
+        key = jose.JWK.load(args.key_path[1])
     else:  # revocation by account key
         logger.debug("Revoking %s using Account Key", args.cert_path[0])
         acc, _ = _determine_account(args, config)
-        # pylint: disable=protected-access
-        acme = client._acme_from_config_key(config, acc.key)
-    acme.revoke(jose.ComparableX509(crypto_util.pyopenssl_load_certificate(
-        args.cert_path[1])[0]))
+        key = acc.key
+    acme = client.acme_from_config_key(config, key)
+    cert = crypto_util.pyopenssl_load_certificate(args.cert_path[1])[0]
+    acme.revoke(jose.ComparableX509(cert))
 
 
 def rollback(args, config, plugins):
@@ -625,7 +633,7 @@ class HelpfulArgumentParser(object):
     """
 
     # Maps verbs/subcommands to the functions that implement them
-    VERBS = {"auth": obtaincert, "certonly": obtaincert,
+    VERBS = {"auth": obtain_cert, "certonly": obtain_cert,
              "config_changes": config_changes, "everything": run,
              "install": install, "plugins": plugins_cmd,
              "revoke": revoke, "rollback": rollback, "run": run}
@@ -921,7 +929,13 @@ def _create_subparsers(helpful):
     helpful.add_group("revoke", description="Options for revocation of certs")
     helpful.add_group("rollback", description="Options for reverting config changes")
     helpful.add_group("plugins", description="Plugin options")
-
+    helpful.add(
+        None, "--user-agent", default=None,
+        help="Set a custom user agent string for the client. User agent strings allow "
+             "the CA to collect high level statistics about success rates by OS and "
+             "plugin. If you wish to hide your server OS version from the Let's "
+             'Encrypt server, set this to "".'
+    )
     helpful.add("certonly",
                 "--csr", type=read_file,
                 help="Path to a Certificate Signing Request (CSR) in DER"
