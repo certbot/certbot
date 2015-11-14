@@ -213,7 +213,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         logger.debug("Apache version is %s",
                      ".".join(str(i) for i in self.version))
 
-        if self.version < (2, 4, 8) or (chain_path and not fullchain_path):
+        if self.version < (2, 4, 8):
             # install SSLCertificateFile, SSLCertificateKeyFile,
             # and SSLCertificateChainFile directives
             set_cert_path = cert_path
