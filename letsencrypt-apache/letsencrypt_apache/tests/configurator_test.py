@@ -262,6 +262,20 @@ class TwoVhost80Test(util.ApacheTest):
         self.assertEqual(configurator.get_file_path(loc_key[0]),
                          self.vh_truth[1].filep)
 
+    def test_deploy_cert_newssl_no_fullchain(self):
+        self.config = util.get_apache_configurator(
+            self.config_path, self.config_dir, self.work_dir, version=(2, 4, 16))
+
+        self.config.parser.modules.add("ssl_module")
+        self.config.parser.modules.add("mod_ssl.c")
+
+        # Get the default 443 vhost
+        self.config.assoc["random.demo"] = self.vh_truth[1]
+        self.assertRaises(errors.PluginError,
+                          lambda: self.config.deploy_cert(
+                              "random.demo", "example/cert.pem", "example/key.pem",
+                              "example/cert_chain.pem"))
+
     def test_deploy_cert(self):
         self.config.parser.modules.add("ssl_module")
         self.config.parser.modules.add("mod_ssl.c")
