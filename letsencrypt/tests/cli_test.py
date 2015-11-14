@@ -46,12 +46,18 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         shutil.rmtree(self.tmp_dir)
 
     def _call(self, args):
+        "Run the cli with output streams and actual client mocked out"
+        with mock.patch('letsencrypt.cli.client') as client:
+            ret, stdout, stderr = self._call_no_clientmock(args)
+            return ret, stdout, stderr, client
+
+    def _call_no_clientmock(self, args):
+        "Run the client with output streams mocked out"
         args = self.standard_args + args
         with mock.patch('letsencrypt.cli.sys.stdout') as stdout:
             with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
-                with mock.patch('letsencrypt.cli.client') as client:
-                    ret = cli.main(args[:]) # NOTE: parser can alter its args!
-        return ret, stdout, stderr, client
+                ret = cli.main(args[:]) # NOTE: parser can alter its args!
+        return ret, stdout, stderr
 
     def _call_stdout(self, args):
         """
@@ -119,20 +125,18 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         out = self._help_output(['-h'])
         self.assertTrue(cli.usage_strings(plugins)[0] in out)
 
-    @mock.patch('letsencrypt.cli.sys.stdout')
-    @mock.patch('letsencrypt.cli.sys.stderr')
     @mock.patch('letsencrypt.cli.client.acme_client.Client')
     @mock.patch('letsencrypt.cli._determine_account')
     @mock.patch('letsencrypt.cli.client.Client.obtain_and_enroll_certificate')
     @mock.patch('letsencrypt.cli._auth_from_domains')
-    def test_user_agent(self, _afd, _obt, det, _client, _err, _out):
+    def test_user_agent(self, _afd, _obt, det, _client):
         # Normally the client is totally mocked out, but here we need more
         # arguments to automate it...
         args = ["--standalone", "certonly", "-m", "none@none.com",
                 "-d", "example.com", '--agree-tos'] + self.standard_args
         det.return_value = mock.MagicMock(), None
         with mock.patch('letsencrypt.cli.client.acme_client.ClientNetwork') as acme_net:
-            cli.main(args[:])  # Protect args from alteration
+            self._call_no_clientmock(args)
             os_ver = " ".join(le_util.get_os_info())
             ua = acme_net.call_args[1]["user_agent"]
             self.assertTrue(os_ver in ua)
@@ -144,7 +148,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         with mock.patch('letsencrypt.cli.client.acme_client.ClientNetwork') as acme_net:
             ua = "bandersnatch"
             args += ["--user-agent", ua]
-            cli.main(args)
+            self._call_no_clientmock(args)
             acme_net.assert_called_once_with(mock.ANY, verify_ssl=True, user_agent=ua)
 
     def test_install_abspath(self):
@@ -305,7 +309,6 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
                           ['-d', '*.wildcard.tld'])
 
     def test_parse_domains(self):
-        from letsencrypt import cli
         plugins = disco.PluginsRegistry.find_all()
 
         short_args = ['-d', 'example.com']
@@ -411,28 +414,27 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertTrue(
             date in mock_get_utility().add_message.call_args[0][0])
 
-    @mock.patch('letsencrypt.cli.client.acme_from_config_key')
+    @mock.patch('letsencrypt.cli.client.acme_client')
     def test_revoke_with_key(self, mock_acme_client):
         server = 'foo.bar'
-        self._call(['--cert-path', CERT, '--key-path', KEY,
-                    '--server', server, 'revoke'])
+        self._call_no_clientmock(['--cert-path', CERT, '--key-path', KEY,
+                                 '--server', server, 'revoke'])
         with open(KEY) as f:
-            mock_acme_client.assert_called_once_with(
-                server, key=jose.JWK.load(f.read()))
+            mock_acme_client.Client.assert_called_once_with(
+                server, key=jose.JWK.load(f.read()), net=mock.ANY)
         with open(CERT) as f:
-            mock_acme_client.Client().revoke.assert_called_once_with(
-                jose.ComparableX509(crypto_util.pyopenssl_load_certificate(
-                    f.read())[0]))
+            cert = crypto_util.pyopenssl_load_certificate(f.read())[0]
+            mock_revoke = mock_acme_client.Client().revoke
+            mock_revoke.assert_called_once_with(jose.ComparableX509(cert))
 
     @mock.patch('letsencrypt.cli._determine_account')
     def test_revoke_without_key(self, mock_determine_account):
         mock_determine_account.return_value = (mock.MagicMock(), None)
         _, _, _, client = self._call(['--cert-path', CERT, 'revoke'])
         with open(CERT) as f:
-            # pylint: disable=protected-access
-            client._acme_from_config_key().revoke.assert_called_once_with(
-                jose.ComparableX509(crypto_util.pyopenssl_load_certificate(
-                    f.read())[0]))
+            cert = crypto_util.pyopenssl_load_certificate(f.read())[0]
+            mock_revoke = client.acme_from_config_key().revoke
+            mock_revoke.assert_called_once_with(jose.ComparableX509(cert))
 
     @mock.patch('letsencrypt.cli.sys')
     def test_handle_exception(self, mock_sys):
@@ -469,7 +471,6 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             traceback.format_exception_only(KeyboardInterrupt, interrupt)))
 
     def test_read_file(self):
-        from letsencrypt import cli
         rel_test_path = os.path.relpath(os.path.join(self.tmp_dir, 'foo'))
         self.assertRaises(
             argparse.ArgumentTypeError, cli.read_file, rel_test_path)

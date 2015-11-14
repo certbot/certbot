@@ -38,7 +38,7 @@ def acme_from_config_key(config, key):
     # TODO: Allow for other alg types besides RS256
     net = acme_client.ClientNetwork(key, verify_ssl=(not config.no_verify_ssl),
                                     user_agent=_determine_user_agent(config))
-    return acme_client.Client(directory=config.server, key=key, net=net)
+    return acme_client.Client(config.server, key=key, net=net)
 
 
 def _determine_user_agent(config):
