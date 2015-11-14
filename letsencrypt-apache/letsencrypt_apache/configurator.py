@@ -214,7 +214,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                      ".".join(str(i) for i in self.version))
 
         if self.version < (2, 4, 8) or (chain_path and not fullchain_path):
-            # install SSLCertificateFile, SSLCertificateKeyFile, and SSLCertificateChainFile directives
+            # install SSLCertificateFile, SSLCertificateKeyFile,
+            # and SSLCertificateChainFile directives
             set_cert_path = cert_path
             self.aug.set(path["cert_path"][-1], cert_path)
             self.aug.set(path["cert_key"][-1], key_path)
@@ -660,7 +661,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         return ssl_addrs
 
-    def _remove_existing_ssl_directives(self, vh_path, minus={}):
+    def _remove_existing_ssl_directives(self, vh_path, minus=None):
+        minus = minus or {}
         directives_to_remove = list({"SSLCertificateKeyFile", "SSLCertificateChainFile",
                                      "SSLCertificateFile"} - set(minus))
         for directive in directives_to_remove:
