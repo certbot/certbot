@@ -134,6 +134,8 @@ then
     ExperimentalBootstrap "FreeBSD" freebsd.sh "$SUDO"
   elif uname | grep -iq Darwin ; then
     ExperimentalBootstrap "Mac OS X" mac.sh
+  elif grep -iq "Amazon Linux" /etc/issue ; then
+    ExperimentalBootstrap "Amazon Linux" amazon_linux.sh
   else
     echo "Sorry, I don't know how to bootstrap Let's Encrypt on your operating system!"
     echo
