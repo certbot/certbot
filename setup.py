@@ -3,7 +3,11 @@ import os
 import re
 import sys
 
-from setuptools import setup
+try:
+    from setuptools import setup
+except ImportError:
+    from distutils.core import setup
+
 from setuptools import find_packages
 
 # Workaround for http://bugs.python.org/issue8876, see
@@ -46,6 +50,14 @@ install_requires = [
     'six',
     'zope.component',
     'zope.interface',
+]
+
+packages = [
+    'letsencrypt',
+    'letsencrypt.plugins',
+    'letsencrypt.tests',
+    'letsencrypt.display',
+    'letsencrypt.tests.display'
 ]
 
 # env markers in extras_require cause problems with older pip: #517
@@ -109,7 +121,7 @@ setup(
         'Topic :: Utilities',
     ],
 
-    packages=find_packages(exclude=['docs', 'examples', 'tests', 'venv']),
+    packages=packages,
     include_package_data=True,
 
     install_requires=install_requires,
