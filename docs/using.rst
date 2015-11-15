@@ -94,6 +94,13 @@ Operating System Packages
   * Port: ``cd /usr/ports/security/py-letsencrypt && make install clean``
   * Package: ``pkg install py27-letsencrypt``
 
+**Arch Linux**
+
+.. code-block:: shell
+
+   sudo pacman -S letsencrypt letsencrypt-nginx letsencrypt-apache \
+                  letshelp-letsencrypt
+
 **Other Operating Systems**
 
 Unfortunately, this is an ongoing effort. If you'd like to package
