@@ -204,7 +204,7 @@ The following files are available:
 
   .. warning:: This **must be kept secret at all times**! Never share
      it with anyone, including Let's Encrypt developers. You cannot
-     put it into safe, however - your server still needs to access
+     put it into a safe, however - your server still needs to access
      this file in order for SSL/TLS to work.
 
   This is what Apache needs for `SSLCertificateKeyFile
