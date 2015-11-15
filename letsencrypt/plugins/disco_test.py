@@ -51,8 +51,8 @@ class PluginEntryPointTest(unittest.TestCase):
 
     def test_description(self):
         self.assertEqual(
-                "Automatically use a temporary webserver",
-                self.plugin_ep.description)
+            "Automatically use a temporary webserver",
+            self.plugin_ep.description)
 
     def test_description_with_name(self):
         self.plugin_ep.plugin_cls = mock.MagicMock(description="Desc")

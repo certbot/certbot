@@ -15,7 +15,7 @@ letsencrypt_test () {
     letsencrypt \
         --server "${SERVER:-http://localhost:4000/directory}" \
         --no-verify-ssl \
-        --dvsni-port 5001 \
+        --tls-sni-01-port 5001 \
         --http-01-port 5002 \
         --manual-test-mode \
         $store_flags \

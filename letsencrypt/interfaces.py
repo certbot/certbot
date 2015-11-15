@@ -219,8 +219,8 @@ class IConfig(zope.interface.Interface):
 
     no_verify_ssl = zope.interface.Attribute(
         "Disable SSL certificate verification.")
-    dvsni_port = zope.interface.Attribute(
-        "Port number to perform DVSNI challenge. "
+    tls_sni_01_port = zope.interface.Attribute(
+        "Port number to perform tls-sni-01 challenge. "
         "Boulder in testing mode defaults to 5001.")
 
     http01_port = zope.interface.Attribute(
@@ -298,7 +298,8 @@ class IInstaller(IPlugin):
 
         Both title and temporary are needed because a save may be
         intended to be permanent, but the save is not ready to be a full
-        checkpoint
+        checkpoint. If an exception is raised, it is assumed a new
+        checkpoint was not created.
 
         :param str title: The title of the save. If a title is given, the
             configuration will be saved as a new checkpoint and put in a

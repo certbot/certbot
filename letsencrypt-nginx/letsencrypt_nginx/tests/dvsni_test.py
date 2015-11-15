@@ -19,22 +19,22 @@ from letsencrypt_nginx.tests import util
 class DvsniPerformTest(util.NginxTest):
     """Test the NginxDVSNI challenge."""
 
-    account_key = common_test.DvsniTest.auth_key
+    account_key = common_test.TLSSNI01Test.auth_key
     achalls = [
-        achallenges.DVSNI(
+        achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(
-                challenges.DVSNI(token="kNdwjwOeX0I_A8DXt9Msmg"), "pending"),
+                challenges.TLSSNI01(token="kNdwjwOeX0I_A8DXt9Msmg"), "pending"),
             domain="www.example.com", account_key=account_key),
-        achallenges.DVSNI(
+        achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(
-                challenges.DVSNI(
+                challenges.TLSSNI01(
                     token="\xba\xa9\xda?<m\xaewmx\xea\xad\xadv\xf4\x02\xc9y"
                           "\x80\xe2_X\t\xe7\xc7\xa4\t\xca\xf7&\x945"
                 ), "pending"),
             domain="blah", account_key=account_key),
-        achallenges.DVSNI(
+        achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(
-                challenges.DVSNI(
+                challenges.TLSSNI01(
                     token="\x8c\x8a\xbf_-f\\cw\xee\xd6\xf8/\xa5\xe3\xfd"
                           "\xeb9\xf1\xf5\xb9\xefVM\xc9w\xa4u\x9c\xe1\x87\xb4"
                 ), "pending"),
@@ -70,7 +70,7 @@ class DvsniPerformTest(util.NginxTest):
     @mock.patch("letsencrypt_nginx.configurator.NginxConfigurator.save")
     def test_perform1(self, mock_save):
         self.sni.add_chall(self.achalls[0])
-        response = self.achalls[0].gen_response(self.account_key)
+        response = self.achalls[0].response(self.account_key)
         mock_setup_cert = mock.MagicMock(return_value=response)
 
         # pylint: disable=protected-access
@@ -92,7 +92,7 @@ class DvsniPerformTest(util.NginxTest):
         acme_responses = []
         for achall in self.achalls:
             self.sni.add_chall(achall)
-            acme_responses.append(achall.gen_response(self.account_key))
+            acme_responses.append(achall.response(self.account_key))
 
         mock_setup_cert = mock.MagicMock(side_effect=acme_responses)
         # pylint: disable=protected-access
@@ -139,9 +139,9 @@ class DvsniPerformTest(util.NginxTest):
 
         for vhost in vhs:
             if vhost.addrs == set(v_addr1):
-                response = self.achalls[0].gen_response(self.account_key)
+                response = self.achalls[0].response(self.account_key)
             else:
-                response = self.achalls[2].gen_response(self.account_key)
+                response = self.achalls[2].response(self.account_key)
                 self.assertEqual(vhost.addrs, set(v_addr2))
             self.assertEqual(vhost.names, set([response.z_domain]))
 

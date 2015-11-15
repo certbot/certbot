@@ -17,7 +17,6 @@ import zope.component
 import zope.interface.exceptions
 import zope.interface.verify
 
-from acme import client as acme_client
 from acme import jose
 
 import letsencrypt
@@ -28,6 +27,7 @@ from letsencrypt import configuration
 from letsencrypt import constants
 from letsencrypt import client
 from letsencrypt import crypto_util
+from letsencrypt import errors
 from letsencrypt import interfaces
 from letsencrypt import le_util
 from letsencrypt import log
@@ -36,9 +36,7 @@ from letsencrypt import storage
 
 from letsencrypt.display import util as display_util
 from letsencrypt.display import ops as display_ops
-from letsencrypt.errors import Error, PluginSelectionError, CertStorageError
 from letsencrypt.plugins import disco as plugins_disco
-
 
 logger = logging.getLogger(__name__)
 
@@ -106,8 +104,8 @@ def _find_domains(args, installer):
         domains = args.domains
 
     if not domains:
-        raise Error("Please specify --domains, or --installer that "
-                    "will help in domain names autodiscovery")
+        raise errors.Error("Please specify --domains, or --installer that "
+                           "will help in domain names autodiscovery")
 
     return domains
 
@@ -159,9 +157,9 @@ def _determine_account(args, config):
             try:
                 acc, acme = client.register(
                     config, account_storage, tos_cb=_tos_cb)
-            except Error as error:
+            except errors.Error as error:
                 logger.debug(error, exc_info=True)
-                raise Error(
+                raise errors.Error(
                     "Unable to register an account with ACME server")
 
     args.account = acc.id
@@ -195,7 +193,7 @@ def _find_duplicative_certs(config, domains):
         try:
             full_path = os.path.join(configs_dir, renewal_file)
             candidate_lineage = storage.RenewableCert(full_path, cli_config)
-        except (CertStorageError, IOError):
+        except (errors.CertStorageError, IOError):
             logger.warning("Renewal configuration file %s is broken. "
                            "Skipping.", full_path)
             continue
@@ -267,7 +265,7 @@ def _treat_as_renewal(config, domains):
                     br=os.linesep
                 ),
                 reporter_util.HIGH_PRIORITY)
-            raise Error(
+            raise errors.Error(
                 "User did not use proper CLI and would like "
                 "to reinvoke the client.")
 
@@ -304,7 +302,7 @@ def _report_new_cert(cert_path, fullchain_path):
     reporter_util.add_message(msg, reporter_util.MEDIUM_PRIORITY)
 
 
-def _auth_from_domains(le_client, config, domains, plugins):
+def _auth_from_domains(le_client, config, domains):
     """Authenticate and enroll certificate."""
     # Note: This can raise errors... caught above us though.
     lineage = _treat_as_renewal(config, domains)
@@ -325,9 +323,9 @@ def _auth_from_domains(le_client, config, domains, plugins):
         #       configuration values from this attempt? <- Absolutely (jdkasten)
     else:
         # TREAT AS NEW REQUEST
-        lineage = le_client.obtain_and_enroll_certificate(domains, plugins)
+        lineage = le_client.obtain_and_enroll_certificate(domains)
         if not lineage:
-            raise Error("Certificate could not be obtained")
+            raise errors.Error("Certificate could not be obtained")
 
     _report_new_cert(lineage.cert, lineage.fullchain)
 
@@ -346,7 +344,7 @@ def set_configurator(previously, now):
     if previously:
         if previously != now:
             msg = "Too many flags setting configurators/installers/authenticators {0} -> {1}"
-            raise PluginSelectionError(msg.format(repr(previously), repr(now)))
+            raise errors.PluginSelectionError(msg.format(repr(previously), repr(now)))
     return now
 
 
@@ -379,7 +377,7 @@ def diagnose_configurator_problem(cfg_type, requested, plugins):
                    '"letsencrypt-auto certonly" to get a cert you can install manually')
     else:
         msg = "{0} could not be determined or is not installed".format(cfg_type)
-    raise PluginSelectionError(msg)
+    raise errors.PluginSelectionError(msg)
 
 
 def choose_configurator_plugins(args, config, plugins, verb):
@@ -425,12 +423,21 @@ def choose_configurator_plugins(args, config, plugins, verb):
             authenticator = display_ops.pick_authenticator(config, req_auth, plugins)
     logger.debug("Selected authenticator %s and installer %s", authenticator, installer)
 
+    # Report on any failures
     if need_inst and not installer:
         diagnose_configurator_problem("installer", req_inst, plugins)
     if need_auth and not authenticator:
         diagnose_configurator_problem("authenticator", req_auth, plugins)
 
+    record_chosen_plugins(config, plugins, authenticator, installer)
     return installer, authenticator
+
+
+def record_chosen_plugins(config, plugins, auth, inst):
+    "Update the config entries to reflect the plugins we actually selected."
+    cn = config.namespace
+    cn.authenticator = plugins.find_init(auth).name if auth else "none"
+    cn.installer = plugins.find_init(inst).name if inst else "none"
 
 
 # TODO: Make run as close to auth + install as possible
@@ -439,7 +446,7 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
     """Obtain a certificate and install."""
     try:
         installer, authenticator = choose_configurator_plugins(args, config, plugins, "run")
-    except PluginSelectionError, e:
+    except errors.PluginSelectionError, e:
         return e.message
 
     domains = _find_domains(args, installer)
@@ -447,7 +454,7 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
     # TODO: Handle errors from _init_le_client?
     le_client = _init_le_client(args, config, authenticator, installer)
 
-    lineage = _auth_from_domains(le_client, config, domains, plugins)
+    lineage = _auth_from_domains(le_client, config, domains)
 
     le_client.deploy_certificate(
         domains, lineage.privkey, lineage.cert,
@@ -461,7 +468,7 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
         display_ops.success_renewal(domains)
 
 
-def obtaincert(args, config, plugins):
+def obtain_cert(args, config, plugins):
     """Authenticate & obtain cert, but do not install it."""
 
     if args.domains is not None and args.csr is not None:
@@ -472,7 +479,7 @@ def obtaincert(args, config, plugins):
     try:
         # installers are used in auth mode to determine domain names
         installer, authenticator = choose_configurator_plugins(args, config, plugins, "certonly")
-    except PluginSelectionError, e:
+    except errors.PluginSelectionError, e:
         return e.message
 
     # TODO: Handle errors from _init_le_client?
@@ -487,7 +494,7 @@ def obtaincert(args, config, plugins):
         _report_new_cert(cert_path, cert_fullchain)
     else:
         domains = _find_domains(args, installer)
-        _auth_from_domains(le_client, config, domains, plugins)
+        _auth_from_domains(le_client, config, domains)
 
 
 def install(args, config, plugins):
@@ -497,7 +504,7 @@ def install(args, config, plugins):
     try:
         installer, _ = choose_configurator_plugins(args, config,
                                                    plugins, "install")
-    except PluginSelectionError, e:
+    except errors.PluginSelectionError, e:
         return e.message
 
     domains = _find_domains(args, installer)
@@ -512,18 +519,19 @@ def install(args, config, plugins):
 
 def revoke(args, config, unused_plugins):  # TODO: coop with renewal config
     """Revoke a previously obtained certificate."""
+    # For user-agent construction
+    config.namespace.installer = config.namespace.authenticator = "none"
     if args.key_path is not None:  # revocation by cert key
         logger.debug("Revoking %s using cert key %s",
                      args.cert_path[0], args.key_path[0])
-        acme = acme_client.Client(
-            config.server, key=jose.JWK.load(args.key_path[1]))
+        key = jose.JWK.load(args.key_path[1])
     else:  # revocation by account key
         logger.debug("Revoking %s using Account Key", args.cert_path[0])
         acc, _ = _determine_account(args, config)
-        # pylint: disable=protected-access
-        acme = client._acme_from_config_key(config, acc.key)
-    acme.revoke(jose.ComparableX509(crypto_util.pyopenssl_load_certificate(
-        args.cert_path[1])[0]))
+        key = acc.key
+    acme = client.acme_from_config_key(config, key)
+    cert = crypto_util.pyopenssl_load_certificate(args.cert_path[1])[0]
+    acme.revoke(jose.ComparableX509(cert))
 
 
 def rollback(args, config, plugins):
@@ -549,6 +557,7 @@ def plugins_cmd(args, config, plugins):  # TODO: Use IDisplay rather than print
     logger.debug("Filtered plugins: %r", filtered)
 
     if not args.init and not args.prepare:
+        print str(filtered)
         return
 
     filtered.init(config)
@@ -556,26 +565,29 @@ def plugins_cmd(args, config, plugins):  # TODO: Use IDisplay rather than print
     logger.debug("Verified plugins: %r", verified)
 
     if not args.prepare:
+        print str(verified)
         return
 
     verified.prepare()
     available = verified.available()
     logger.debug("Prepared plugins: %s", available)
+    print str(available)
 
 
 def read_file(filename, mode="rb"):
     """Returns the given file's contents.
 
-    :param str filename: Filename
+    :param str filename: path to file
     :param str mode: open mode (see `open`)
 
-    :returns: A tuple of filename and its contents
+    :returns: absolute path of filename and its contents
     :rtype: tuple
 
     :raises argparse.ArgumentTypeError: File does not exist or is not readable.
 
     """
     try:
+        filename = os.path.abspath(filename)
         return filename, open(filename, mode).read()
     except IOError as exc:
         raise argparse.ArgumentTypeError(exc.strerror)
@@ -621,7 +633,7 @@ class HelpfulArgumentParser(object):
     """
 
     # Maps verbs/subcommands to the functions that implement them
-    VERBS = {"auth": obtaincert, "certonly": obtaincert,
+    VERBS = {"auth": obtain_cert, "certonly": obtain_cert,
              "config_changes": config_changes, "everything": run,
              "install": install, "plugins": plugins_cmd,
              "revoke": revoke, "rollback": rollback, "run": run}
@@ -668,7 +680,31 @@ class HelpfulArgumentParser(object):
         parsed_args = self.parser.parse_args(self.args)
         parsed_args.func = self.VERBS[self.verb]
 
+        parsed_args.domains = self._parse_domains(parsed_args.domains)
         return parsed_args
+
+    def _parse_domains(self, domains):
+        """Helper function for parse_args() that parses domains from a
+        (possibly) comma separated list and returns list of unique domains.
+
+        :param domains: List of domain flags
+        :type domains: `list` of `string`
+
+        :returns: List of unique domains
+        :rtype: `list` of `string`
+
+        """
+
+        uniqd = None
+
+        if domains:
+            dlist = []
+            for domain in domains:
+                dlist.extend([d.strip() for d in domain.split(",")])
+            # Make sure we don't have duplicates
+            uniqd = [d for i, d in enumerate(dlist) if d not in dlist[:i]]
+
+        return uniqd
 
     def determine_verb(self):
         """Determines the verb/subcommand provided by the user.
@@ -811,7 +847,11 @@ def prepare_and_parse_args(plugins, args):
     # --domains is useful, because it can be stored in config
     #for subparser in parser_run, parser_auth, parser_install:
     #    subparser.add_argument("domains", nargs="*", metavar="domain")
-    helpful.add(None, "-d", "--domains", metavar="DOMAIN", action="append")
+    helpful.add(None, "-d", "--domains", dest="domains",
+                metavar="DOMAIN", action="append",
+                help="Domain names to apply. For multiple domains you can use "
+                "multiple -d flags or enter a comma separated list of domains"
+                "as a parameter.")
     helpful.add(
         None, "--duplicate", dest="duplicate", action="store_true",
         help="Allow getting a certificate that duplicates an existing one")
@@ -850,8 +890,9 @@ def prepare_and_parse_args(plugins, args):
         help=config_help("no_verify_ssl"),
         default=flag_default("no_verify_ssl"))
     helpful.add(
-        "testing", "--dvsni-port", type=int, default=flag_default("dvsni_port"),
-        help=config_help("dvsni_port"))
+        "testing", "--tls-sni-01-port", type=int,
+        default=flag_default("tls_sni_01_port"),
+        help=config_help("tls_sni_01_port"))
     helpful.add("testing", "--http-01-port", dest="http01_port", type=int,
                 help=config_help("http01_port"))
 
@@ -889,7 +930,6 @@ def prepare_and_parse_args(plugins, args):
     # parser (--help should display plugin-specific options last)
     _plugins_parsing(helpful, plugins)
 
-
     return helpful.parse_args()
 
 
@@ -899,7 +939,13 @@ def _create_subparsers(helpful):
     helpful.add_group("revoke", description="Options for revocation of certs")
     helpful.add_group("rollback", description="Options for reverting config changes")
     helpful.add_group("plugins", description="Plugin options")
-
+    helpful.add(
+        None, "--user-agent", default=None,
+        help="Set a custom user agent string for the client. User agent strings allow "
+             "the CA to collect high level statistics about success rates by OS and "
+             "plugin. If you wish to hide your server OS version from the Let's "
+             'Encrypt server, set this to "".'
+    )
     helpful.add("certonly",
                 "--csr", type=read_file,
                 help="Path to a Certificate Signing Request (CSR) in DER"
@@ -934,26 +980,29 @@ def _paths_parser(helpful):
     if verb in ("install", "revoke", "certonly"):
         section = verb
     if verb == "certonly":
-        add(section, "--cert-path", default=flag_default("auth_cert_path"), help=cph)
+        add(section, "--cert-path", type=os.path.abspath,
+            default=flag_default("auth_cert_path"), help=cph)
     elif verb == "revoke":
         add(section, "--cert-path", type=read_file, required=True, help=cph)
     else:
-        add(section, "--cert-path", help=cph, required=(verb == "install"))
+        add(section, "--cert-path", type=os.path.abspath,
+            help=cph, required=(verb == "install"))
 
     section = "paths"
     if verb in ("install", "revoke"):
         section = verb
     # revoke --key-path reads a file, install --key-path takes a string
-    add(section, "--key-path", type=((verb == "revoke" and read_file) or str),
-        required=(verb == "install"),
-        help="Path to private key for cert creation or revocation (if account key is missing)")
+    add(section, "--key-path", required=(verb == "install"),
+        type=((verb == "revoke" and read_file) or os.path.abspath),
+        help="Path to private key for cert installation "
+             "or revocation (if account key is missing)")
 
     default_cp = None
     if verb == "certonly":
         default_cp = flag_default("auth_chain_path")
-    add("paths", "--fullchain-path", default=default_cp,
+    add("paths", "--fullchain-path", default=default_cp, type=os.path.abspath,
         help="Accompanying path to a full certificate chain (cert plus chain).")
-    add("paths", "--chain-path", default=default_cp,
+    add("paths", "--chain-path", default=default_cp, type=os.path.abspath,
         help="Accompanying path to a certificate chain.")
     add("paths", "--config-dir", default=flag_default("config_dir"),
         help=config_help("config_dir"))
@@ -1069,7 +1118,7 @@ def _handle_exception(exc_type, exc_value, trace, args):
                 sys.exit("".join(
                     traceback.format_exception(exc_type, exc_value, trace)))
 
-        if issubclass(exc_type, Error):
+        if issubclass(exc_type, errors.Error):
             sys.exit(exc_value)
         else:
             # Tell the user a bit about what happened, without overwhelming
@@ -1133,7 +1182,7 @@ def main(cli_args=sys.argv[1:]):
         disclaimer = pkg_resources.resource_string("letsencrypt", "DISCLAIMER")
         if not zope.component.getUtility(interfaces.IDisplay).yesno(
                 disclaimer, "Agree", "Cancel"):
-            raise Error("Must agree to TOS")
+            raise errors.Error("Must agree to TOS")
 
     if not os.geteuid() == 0:
         logger.warning(
@@ -1147,7 +1196,6 @@ def main(cli_args=sys.argv[1:]):
         #    .format(os.linesep))
 
     return args.func(args, config, plugins)
-
 
 if __name__ == "__main__":
     err_string = main()

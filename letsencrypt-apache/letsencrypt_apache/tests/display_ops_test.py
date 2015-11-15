@@ -57,7 +57,7 @@ class SelectVhostTest(unittest.TestCase):
 
     @mock.patch("letsencrypt_apache.display_ops.zope.component.getUtility")
     def test_multiple_names(self, mock_util):
-        mock_util().menu.return_value = (display_util.OK, 4)
+        mock_util().menu.return_value = (display_util.OK, 5)
 
         self.vhosts.append(
             obj.VirtualHost(
@@ -65,7 +65,7 @@ class SelectVhostTest(unittest.TestCase):
                 False, False,
                 "wildcard.com", set(["*.wildcard.com"])))
 
-        self.assertEqual(self.vhosts[4], self._call(self.vhosts))
+        self.assertEqual(self.vhosts[5], self._call(self.vhosts))
 
 
 if __name__ == "__main__":

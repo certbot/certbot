@@ -1,4 +1,5 @@
 """Tests for letsencrypt.cli."""
+import argparse
 import itertools
 import os
 import shutil
@@ -9,9 +10,14 @@ import unittest
 
 import mock
 
+from acme import jose
+
 from letsencrypt import account
+from letsencrypt import cli
 from letsencrypt import configuration
+from letsencrypt import crypto_util
 from letsencrypt import errors
+from letsencrypt import le_util
 
 from letsencrypt.plugins import disco
 
@@ -19,10 +25,12 @@ from letsencrypt.tests import renewer_test
 from letsencrypt.tests import test_util
 
 
+CERT = test_util.vector_path('cert.pem')
 CSR = test_util.vector_path('csr.der')
+KEY = test_util.vector_path('rsa256_key.pem')
 
 
-class CLITest(unittest.TestCase):
+class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     """Tests for different commands."""
 
     def setUp(self):
@@ -30,33 +38,36 @@ class CLITest(unittest.TestCase):
         self.config_dir = os.path.join(self.tmp_dir, 'config')
         self.work_dir = os.path.join(self.tmp_dir, 'work')
         self.logs_dir = os.path.join(self.tmp_dir, 'logs')
+        self.standard_args = ['--text', '--config-dir', self.config_dir,
+            '--work-dir', self.work_dir, '--logs-dir', self.logs_dir,
+            '--agree-dev-preview']
 
     def tearDown(self):
         shutil.rmtree(self.tmp_dir)
 
     def _call(self, args):
-        from letsencrypt import cli
-        args = ['--text', '--config-dir', self.config_dir,
-                '--work-dir', self.work_dir, '--logs-dir', self.logs_dir,
-                '--agree-dev-preview'] + args
+        "Run the cli with output streams and actual client mocked out"
+        with mock.patch('letsencrypt.cli.client') as client:
+            ret, stdout, stderr = self._call_no_clientmock(args)
+            return ret, stdout, stderr, client
+
+    def _call_no_clientmock(self, args):
+        "Run the client with output streams mocked out"
+        args = self.standard_args + args
         with mock.patch('letsencrypt.cli.sys.stdout') as stdout:
             with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
-                with mock.patch('letsencrypt.cli.client') as client:
-                    ret = cli.main(args)
-        return ret, stdout, stderr, client
+                ret = cli.main(args[:]) # NOTE: parser can alter its args!
+        return ret, stdout, stderr
 
     def _call_stdout(self, args):
         """
         Variant of _call that preserves stdout so that it can be mocked by the
         caller.
         """
-        from letsencrypt import cli
-        args = ['--text', '--config-dir', self.config_dir,
-                '--work-dir', self.work_dir, '--logs-dir', self.logs_dir,
-                '--agree-dev-preview'] + args
+        args = self.standard_args + args
         with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
             with mock.patch('letsencrypt.cli.client') as client:
-                ret = cli.main(args)
+                ret = cli.main(args[:])  # NOTE: parser can alter its args!
         return ret, None, stderr, client
 
     def test_no_flags(self):
@@ -112,16 +123,61 @@ class CLITest(unittest.TestCase):
         self.assertTrue("--key-path" not in out)
 
         out = self._help_output(['-h'])
-        from letsencrypt import cli
         self.assertTrue(cli.usage_strings(plugins)[0] in out)
 
+    @mock.patch('letsencrypt.cli.client.acme_client.Client')
+    @mock.patch('letsencrypt.cli._determine_account')
+    @mock.patch('letsencrypt.cli.client.Client.obtain_and_enroll_certificate')
+    @mock.patch('letsencrypt.cli._auth_from_domains')
+    def test_user_agent(self, _afd, _obt, det, _client):
+        # Normally the client is totally mocked out, but here we need more
+        # arguments to automate it...
+        args = ["--standalone", "certonly", "-m", "none@none.com",
+                "-d", "example.com", '--agree-tos'] + self.standard_args
+        det.return_value = mock.MagicMock(), None
+        with mock.patch('letsencrypt.cli.client.acme_client.ClientNetwork') as acme_net:
+            self._call_no_clientmock(args)
+            os_ver = " ".join(le_util.get_os_info())
+            ua = acme_net.call_args[1]["user_agent"]
+            self.assertTrue(os_ver in ua)
+            import platform
+            plat = platform.platform()
+            if "linux" in plat.lower():
+                self.assertTrue(platform.linux_distribution()[0] in ua)
+
+        with mock.patch('letsencrypt.cli.client.acme_client.ClientNetwork') as acme_net:
+            ua = "bandersnatch"
+            args += ["--user-agent", ua]
+            self._call_no_clientmock(args)
+            acme_net.assert_called_once_with(mock.ANY, verify_ssl=True, user_agent=ua)
+
+    def test_install_abspath(self):
+        cert = 'cert'
+        key = 'key'
+        chain = 'chain'
+        fullchain = 'fullchain'
+
+        with MockedVerb('install') as mock_install:
+            self._call(['install', '--cert-path', cert, '--key-path', 'key',
+                        '--chain-path', 'chain',
+                        '--fullchain-path', 'fullchain'])
+
+        args = mock_install.call_args[0][0]
+        self.assertEqual(args.cert_path, os.path.abspath(cert))
+        self.assertEqual(args.key_path, os.path.abspath(key))
+        self.assertEqual(args.chain_path, os.path.abspath(chain))
+        self.assertEqual(args.fullchain_path, os.path.abspath(fullchain))
+
+    @mock.patch('letsencrypt.cli.record_chosen_plugins')
     @mock.patch('letsencrypt.cli.display_ops')
-    def test_installer_selection(self, mock_display_ops):
-        self._call(['install', '--domain', 'foo.bar', '--cert-path', 'cert',
+    def test_installer_selection(self, mock_display_ops, _rec):
+        self._call(['install', '--domains', 'foo.bar', '--cert-path', 'cert',
                     '--key-path', 'key', '--chain-path', 'chain'])
         self.assertEqual(mock_display_ops.pick_installer.call_count, 1)
 
-    def test_configurator_selection(self):
+    @mock.patch('letsencrypt.le_util.exe_exists')
+    def test_configurator_selection(self, mock_exe_exists):
+        mock_exe_exists.return_value = True
         real_plugins = disco.PluginsRegistry.find_all()
         args = ['--agree-dev-preview', '--apache',
                 '--authenticator', 'standalone']
@@ -168,12 +224,109 @@ class CLITest(unittest.TestCase):
                   for r in xrange(len(flags)))):
             self._call(['plugins'] + list(args))
 
+    @mock.patch('letsencrypt.cli.plugins_disco')
+    def test_plugins_no_args(self, mock_disco):
+        ifaces = []
+        plugins = mock_disco.PluginsRegistry.find_all()
+
+        _, stdout, _, _ = self._call(['plugins'])
+        plugins.visible.assert_called_once_with()
+        plugins.visible().ifaces.assert_called_once_with(ifaces)
+        filtered = plugins.visible().ifaces()
+        stdout.write.called_once_with(str(filtered))
+
+    @mock.patch('letsencrypt.cli.plugins_disco')
+    def test_plugins_init(self, mock_disco):
+        ifaces = []
+        plugins = mock_disco.PluginsRegistry.find_all()
+
+        _, stdout, _, _ = self._call(['plugins', '--init'])
+        plugins.visible.assert_called_once_with()
+        plugins.visible().ifaces.assert_called_once_with(ifaces)
+        filtered = plugins.visible().ifaces()
+        self.assertEqual(filtered.init.call_count, 1)
+        filtered.verify.assert_called_once_with(ifaces)
+        verified = filtered.verify()
+        stdout.write.called_once_with(str(verified))
+
+    @mock.patch('letsencrypt.cli.plugins_disco')
+    def test_plugins_prepare(self, mock_disco):
+        ifaces = []
+        plugins = mock_disco.PluginsRegistry.find_all()
+
+        _, stdout, _, _ = self._call(['plugins', '--init', '--prepare'])
+        plugins.visible.assert_called_once_with()
+        plugins.visible().ifaces.assert_called_once_with(ifaces)
+        filtered = plugins.visible().ifaces()
+        self.assertEqual(filtered.init.call_count, 1)
+        filtered.verify.assert_called_once_with(ifaces)
+        verified = filtered.verify()
+        verified.prepare.assert_called_once_with()
+        verified.available.assert_called_once_with()
+        available = verified.available()
+        stdout.write.called_once_with(str(available))
+
+    def test_certonly_abspath(self):
+        cert = 'cert'
+        key = 'key'
+        chain = 'chain'
+        fullchain = 'fullchain'
+
+        with MockedVerb('certonly') as mock_obtaincert:
+            self._call(['certonly', '--cert-path', cert, '--key-path', 'key',
+                        '--chain-path', 'chain',
+                        '--fullchain-path', 'fullchain'])
+
+        args = mock_obtaincert.call_args[0][0]
+        self.assertEqual(args.cert_path, os.path.abspath(cert))
+        self.assertEqual(args.key_path, os.path.abspath(key))
+        self.assertEqual(args.chain_path, os.path.abspath(chain))
+        self.assertEqual(args.fullchain_path, os.path.abspath(fullchain))
+
     def test_certonly_bad_args(self):
         ret, _, _, _ = self._call(['-d', 'foo.bar', 'certonly', '--csr', CSR])
         self.assertEqual(ret, '--domains and --csr are mutually exclusive')
 
         ret, _, _, _ = self._call(['-a', 'bad_auth', 'certonly'])
         self.assertEqual(ret, 'The requested bad_auth plugin does not appear to be installed')
+
+    def test_check_config_sanity_domain(self):
+        # Punycode
+        self.assertRaises(errors.ConfigurationError,
+                          self._call,
+                          ['-d', 'this.is.xn--ls8h.tld'])
+        # FQDN
+        self.assertRaises(errors.ConfigurationError,
+                          self._call,
+                          ['-d', 'comma,gotwrong.tld'])
+        # FQDN 2
+        self.assertRaises(errors.ConfigurationError,
+                          self._call,
+                          ['-d', 'illegal.character=.tld'])
+        # Wildcard
+        self.assertRaises(errors.ConfigurationError,
+                          self._call,
+                          ['-d', '*.wildcard.tld'])
+
+    def test_parse_domains(self):
+        plugins = disco.PluginsRegistry.find_all()
+
+        short_args = ['-d', 'example.com']
+        namespace = cli.prepare_and_parse_args(plugins, short_args)
+        self.assertEqual(namespace.domains, ['example.com'])
+
+        short_args = ['-d', 'example.com,another.net,third.org,example.com']
+        namespace = cli.prepare_and_parse_args(plugins, short_args)
+        self.assertEqual(namespace.domains, ['example.com', 'another.net',
+                                             'third.org'])
+
+        long_args = ['--domains', 'example.com']
+        namespace = cli.prepare_and_parse_args(plugins, long_args)
+        self.assertEqual(namespace.domains, ['example.com'])
+
+        long_args = ['--domains', 'example.com,another.net,example.com']
+        namespace = cli.prepare_and_parse_args(plugins, long_args)
+        self.assertEqual(namespace.domains, ['example.com', 'another.net'])
 
     @mock.patch('letsencrypt.crypto_util.notAfter')
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
@@ -235,7 +388,8 @@ class CLITest(unittest.TestCase):
     @mock.patch('letsencrypt.cli.display_ops.pick_installer')
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
     @mock.patch('letsencrypt.cli._init_le_client')
-    def test_certonly_csr(self, mock_init, mock_get_utility,
+    @mock.patch('letsencrypt.cli.record_chosen_plugins')
+    def test_certonly_csr(self, _rec, mock_init, mock_get_utility,
                           mock_pick_installer, mock_notAfter):
         cert_path = '/etc/letsencrypt/live/blahcert.pem'
         date = '1970-01-01'
@@ -260,11 +414,31 @@ class CLITest(unittest.TestCase):
         self.assertTrue(
             date in mock_get_utility().add_message.call_args[0][0])
 
+    @mock.patch('letsencrypt.cli.client.acme_client')
+    def test_revoke_with_key(self, mock_acme_client):
+        server = 'foo.bar'
+        self._call_no_clientmock(['--cert-path', CERT, '--key-path', KEY,
+                                 '--server', server, 'revoke'])
+        with open(KEY) as f:
+            mock_acme_client.Client.assert_called_once_with(
+                server, key=jose.JWK.load(f.read()), net=mock.ANY)
+        with open(CERT) as f:
+            cert = crypto_util.pyopenssl_load_certificate(f.read())[0]
+            mock_revoke = mock_acme_client.Client().revoke
+            mock_revoke.assert_called_once_with(jose.ComparableX509(cert))
+
+    @mock.patch('letsencrypt.cli._determine_account')
+    def test_revoke_without_key(self, mock_determine_account):
+        mock_determine_account.return_value = (mock.MagicMock(), None)
+        _, _, _, client = self._call(['--cert-path', CERT, 'revoke'])
+        with open(CERT) as f:
+            cert = crypto_util.pyopenssl_load_certificate(f.read())[0]
+            mock_revoke = client.acme_from_config_key().revoke
+            mock_revoke.assert_called_once_with(jose.ComparableX509(cert))
+
     @mock.patch('letsencrypt.cli.sys')
     def test_handle_exception(self, mock_sys):
         # pylint: disable=protected-access
-        from letsencrypt import cli
-
         mock_open = mock.mock_open()
         with mock.patch('letsencrypt.cli.open', mock_open, create=True):
             exception = Exception('detail')
@@ -295,6 +469,19 @@ class CLITest(unittest.TestCase):
             KeyboardInterrupt, exc_value=interrupt, trace=None, args=None)
         mock_sys.exit.assert_called_with(''.join(
             traceback.format_exception_only(KeyboardInterrupt, interrupt)))
+
+    def test_read_file(self):
+        rel_test_path = os.path.relpath(os.path.join(self.tmp_dir, 'foo'))
+        self.assertRaises(
+            argparse.ArgumentTypeError, cli.read_file, rel_test_path)
+
+        test_contents = 'bar\n'
+        with open(rel_test_path, 'w') as f:
+            f.write(test_contents)
+
+        path, contents = cli.read_file(rel_test_path)
+        self.assertEqual(path, os.path.abspath(path))
+        self.assertEqual(contents, test_contents)
 
 
 class DetermineAccountTest(unittest.TestCase):
@@ -415,8 +602,6 @@ class MockedVerb(object):
 
     """
     def __init__(self, verb_name):
-        from letsencrypt import cli
-
         self.verb_dict = cli.HelpfulArgumentParser.VERBS
         self.verb_func = None
         self.verb_name = verb_name

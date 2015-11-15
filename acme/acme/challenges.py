@@ -187,7 +187,7 @@ class KeyAuthorizationChallenge(_TokenDVChallenge):
             key_authorization=self.key_authorization(account_key))
 
     @abc.abstractmethod
-    def validation(self, account_key):
+    def validation(self, account_key, **kwargs):
         """Generate validation for the challenge.
 
         Subclasses must implement this method, but they are likely to
@@ -201,7 +201,7 @@ class KeyAuthorizationChallenge(_TokenDVChallenge):
         """
         raise NotImplementedError()  # pragma: no cover
 
-    def response_and_validation(self, account_key):
+    def response_and_validation(self, account_key, *args, **kwargs):
         """Generate response and validation.
 
         Convenience function that return results of `response` and
@@ -211,7 +211,8 @@ class KeyAuthorizationChallenge(_TokenDVChallenge):
         :rtype: tuple
 
         """
-        return (self.response(account_key), self.validation(account_key))
+        return (self.response(account_key),
+                self.validation(account_key, *args, **kwargs))
 
 
 @ChallengeResponse.register
@@ -220,6 +221,12 @@ class HTTP01Response(KeyAuthorizationChallengeResponse):
     typ = "http-01"
 
     PORT = 80
+    """Verification port as defined by the protocol.
+
+    You can override it (e.g. for testing) by passing ``port`` to
+    `simple_verify`.
+
+    """
 
     def simple_verify(self, chall, domain, account_public_key, port=None):
         """Simple verify.
@@ -246,7 +253,7 @@ class HTTP01Response(KeyAuthorizationChallengeResponse):
         # request URI, if it's standard.
         if port is not None and port != self.PORT:
             logger.warning(
-                "Using non-standard port for SimpleHTTP verification: %s", port)
+                "Using non-standard port for http-01 verification: %s", port)
             domain += ":{0}".format(port)
 
         uri = chall.uri(domain)
@@ -308,7 +315,7 @@ class HTTP01(KeyAuthorizationChallenge):
         """
         return "http://" + domain + self.path
 
-    def validation(self, account_key):
+    def validation(self, account_key, **unused_kwargs):
         """Generate validation.
 
         :param JWK account_key:
@@ -318,89 +325,50 @@ class HTTP01(KeyAuthorizationChallenge):
         return self.key_authorization(account_key)
 
 
-@Challenge.register  # pylint: disable=too-many-ancestors
-class DVSNI(_TokenDVChallenge):
-    """ACME "dvsni" challenge.
-
-    :ivar bytes token: Random data, **not** base64-encoded.
-
-    """
-    typ = "dvsni"
-
-    PORT = 443
-    """Port to perform DVSNI challenge."""
-
-    def gen_response(self, account_key, alg=jose.RS256, **kwargs):
-        """Generate response.
-
-        :param .JWK account_key: Private account key.
-        :rtype: .DVSNIResponse
-
-        """
-        return DVSNIResponse(validation=jose.JWS.sign(
-            payload=self.json_dumps(sort_keys=True).encode('utf-8'),
-            key=account_key, alg=alg, **kwargs))
-
-
 @ChallengeResponse.register
-class DVSNIResponse(ChallengeResponse):
-    """ACME "dvsni" challenge response.
-
-    :param bytes s: Random data, **not** base64-encoded.
-
-    """
-    typ = "dvsni"
+class TLSSNI01Response(KeyAuthorizationChallengeResponse):
+    """ACME tls-sni-01 challenge response."""
+    typ = "tls-sni-01"
 
     DOMAIN_SUFFIX = b".acme.invalid"
     """Domain name suffix."""
 
-    PORT = DVSNI.PORT
-    """Port to perform DVSNI challenge."""
+    PORT = 443
+    """Verification port as defined by the protocol.
 
-    validation = jose.Field("validation", decoder=jose.JWS.from_json)
+    You can override it (e.g. for testing) by passing ``port`` to
+    `simple_verify`.
+
+    """
 
     @property
-    def z(self):  # pylint: disable=invalid-name
-        """The ``z``  parameter.
+    def z(self):
+        """``z`` value used for verification.
 
-        :rtype: bytes
+        :rtype bytes:
 
         """
-        # Instance of 'Field' has no 'signature' member
-        # pylint: disable=no-member
-        return hashlib.sha256(self.validation.signature.encode(
-            "signature").encode("utf-8")).hexdigest().encode()
+        return hashlib.sha256(
+            self.key_authorization.encode("utf-8")).hexdigest().lower().encode()
 
     @property
     def z_domain(self):
-        """Domain name for certificate subjectAltName.
+        """Domain name used for verification, generated from `z`.
 
-        :rtype: bytes
-
-        """
-        z = self.z  # pylint: disable=invalid-name
-        return z[:32] + b'.' + z[32:] + self.DOMAIN_SUFFIX
-
-    @property
-    def chall(self):
-        """Get challenge encoded in the `validation` payload.
-
-        :rtype: challenges.DVSNI
+        :rtype bytes:
 
         """
-        # pylint: disable=no-member
-        return DVSNI.json_loads(self.validation.payload.decode('utf-8'))
+        return self.z[:32] + b'.' + self.z[32:] + self.DOMAIN_SUFFIX
 
     def gen_cert(self, key=None, bits=2048):
-        """Generate DVSNI certificate.
+        """Generate tls-sni-01 certificate.
 
         :param OpenSSL.crypto.PKey key: Optional private key used in
             certificate generation. If not provided (``None``), then
             fresh key will be generated.
         :param int bits: Number of bits for newly generated key.
 
-        :rtype: `tuple` of `OpenSSL.crypto.X509` and
-            `OpenSSL.crypto.PKey`
+        :rtype: `tuple` of `OpenSSL.crypto.X509` and `OpenSSL.crypto.PKey`
 
         """
         if key is None:
@@ -411,11 +379,12 @@ class DVSNIResponse(ChallengeResponse):
             'dummy', self.z_domain.decode()], force_san=True), key
 
     def probe_cert(self, domain, **kwargs):
-        """Probe DVSNI challenge certificate.
+        """Probe tls-sni-01 challenge certificate.
 
         :param unicode domain:
 
         """
+        # TODO: domain is not necessary if host is provided
         if "host" not in kwargs:
             host = socket.gethostbyname(domain)
             logging.debug('%s resolved to %s', domain, host)
@@ -428,7 +397,7 @@ class DVSNIResponse(ChallengeResponse):
         return crypto_util.probe_sni(**kwargs)
 
     def verify_cert(self, cert):
-        """Verify DVSNI challenge certificate."""
+        """Verify tls-sni-01 challenge certificate."""
         # pylint: disable=protected-access
         sans = crypto_util._pyopenssl_cert_or_req_san(cert)
         logging.debug('Certificate %s. SANs: %s', cert.digest('sha1'), sans)
@@ -439,14 +408,15 @@ class DVSNIResponse(ChallengeResponse):
         """Simple verify.
 
         Verify ``validation`` using ``account_public_key``, optionally
-        probe DVSNI certificate and check using `verify_cert`.
+        probe tls-sni-01 certificate and check using `verify_cert`.
 
-        :param .challenges.DVSNI chall: Corresponding challenge.
+        :param .challenges.TLSSNI01 chall: Corresponding challenge.
         :param str domain: Domain name being validated.
         :param JWK account_public_key:
         :param OpenSSL.crypto.X509 cert: Optional certificate. If not
             provided (``None``) certificate will be retrieved using
             `probe_cert`.
+        :param int port: Port used to probe the certificate.
 
 
         :returns: ``True`` iff client's control of the domain has been
@@ -454,20 +424,8 @@ class DVSNIResponse(ChallengeResponse):
         :rtype: bool
 
         """
-        # pylint: disable=no-member
-        if not self.validation.verify(key=account_public_key):
-            return False
-
-        # TODO: it's not checked that payload has exectly 2 fields!
-        try:
-            decoded_chall = self.chall
-        except jose.DeserializationError as error:
-            logger.debug(error, exc_info=True)
-            return False
-
-        if decoded_chall.token != chall.token:
-            logger.debug("Wrong token: expected %r, found %r",
-                         chall.token, decoded_chall.token)
+        if not self.verify(chall, account_public_key):
+            logger.debug("Verification of key authorization in response failed")
             return False
 
         if cert is None:
@@ -478,6 +436,29 @@ class DVSNIResponse(ChallengeResponse):
                 return False
 
         return self.verify_cert(cert)
+
+
+@Challenge.register  # pylint: disable=too-many-ancestors
+class TLSSNI01(KeyAuthorizationChallenge):
+    """ACME tls-sni-01 challenge."""
+    response_cls = TLSSNI01Response
+    typ = response_cls.typ
+
+    # boulder#962, ietf-wg-acme#22
+    #n = jose.Field("n", encoder=int, decoder=int)
+
+    def validation(self, account_key, **kwargs):
+        """Generate validation.
+
+        :param JWK account_key:
+        :param OpenSSL.crypto.PKey cert_key: Optional private key used
+            in certificate generation. If not provided (``None``), then
+            fresh key will be generated.
+
+        :rtype: `tuple` of `OpenSSL.crypto.X509` and `OpenSSL.crypto.PKey`
+
+        """
+        return self.response(account_key).gen_cert(key=kwargs.get('cert_key'))
 
 
 @Challenge.register

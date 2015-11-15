@@ -8,17 +8,16 @@
 # without requiring specific versions of its dependencies from the operating
 # system.
 
+# Note: you can set XDG_DATA_HOME or VENV_PATH before running this script,
+# if you want to change where the virtual environment will be installed
 XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share}
 VENV_NAME="letsencrypt"
 VENV_PATH=${VENV_PATH:-"$XDG_DATA_HOME/$VENV_NAME"}
 VENV_BIN=${VENV_PATH}/bin
 
-if test "`id -u`" -ne "0" ; then
-  SUDO=sudo
-else
-  SUDO=
-fi
-
+# This script takes the same arguments as the main letsencrypt program, but it
+# additionally responds to --verbose (more output) and --debug (allow support
+# for experimental platforms)
 for arg in "$@" ; do
   # This first clause is redundant with the third, but hedging on portability
   if [ "$arg" = "-v" ] || [ "$arg" = "--verbose" ] || echo "$arg" | grep -E -- "-v+$" ; then
@@ -28,12 +27,52 @@ for arg in "$@" ; do
   fi
 done
 
+# letsencrypt-auto needs root access to bootstrap OS dependencies, and
+# letsencrypt itself needs root access for almost all modes of operation
+# The "normal" case is that sudo is used for the steps that need root, but
+# this script *can* be run as root (not recommended), or fall back to using
+# `su`
+if test "`id -u`" -ne "0" ; then
+  if command -v sudo 1>/dev/null 2>&1; then
+    SUDO=sudo
+  else
+    echo \"sudo\" is not available, will use \"su\" for installation steps...
+    # Because the parameters in `su -c` has to be a string,
+    # we need properly escape it
+    su_sudo() {
+      args=""
+      # This `while` loop iterates over all parameters given to this function.
+      # For each parameter, all `'` will be replace by `'"'"'`, and the escaped string
+      # will be wrap in a pair of `'`, then append to `$args` string
+      # For example, `echo "It's only 1\$\!"` will be escaped to:
+      #   'echo' 'It'"'"'s only 1$!'
+      #     │       │└┼┘│
+      #     │       │ │ └── `'s only 1$!'` the literal string
+      #     │       │ └── `\"'\"` is a single quote (as a string)
+      #     │       └── `'It'`, to be concatenated with the strings followed it
+      #     └── `echo` wrapped in a pair of `'`, it's totally fine for the shell command itself
+      while [ $# -ne 0 ]; do
+        args="$args'$(printf "%s" "$1" | sed -e "s/'/'\"'\"'/g")' "
+        shift
+      done
+      su root -c "$args"
+    }
+    SUDO=su_sudo
+  fi
+else
+  SUDO=
+fi
+
 ExperimentalBootstrap() {
   # Arguments: Platform name, boostrap script name, SUDO command (iff needed)
   if [ "$DEBUG" = 1 ] ; then
     if [ "$2" != "" ]  ; then
       echo "Bootstrapping dependencies for $1..."
-      "$3" "$BOOTSTRAP/$2"
+      if [ "$3" != "" ] ; then
+        "$3" "$BOOTSTRAP/$2"
+      else
+        "$BOOTSTRAP/$2"
+      fi
     fi
   else
     echo "WARNING: $1 support is very experimental at present..."
@@ -43,13 +82,12 @@ ExperimentalBootstrap() {
   fi
 }
 
-
 DeterminePythonVersion() {
-  if which python2 > /dev/null ; then
-    export LE_PYTHON=${LE_PYTHON:-python2}
-  elif which python2.7 > /dev/null ; then
+  if command -v python2.7 > /dev/null ; then
     export LE_PYTHON=${LE_PYTHON:-python2.7}
-  elif which python > /dev/null ; then
+  elif command -v python2 > /dev/null ; then
+    export LE_PYTHON=${LE_PYTHON:-python2}
+  elif command -v python > /dev/null ; then
     export LE_PYTHON=${LE_PYTHON:-python}
   else
     echo "Cannot find any Pythons... please install one!"
@@ -82,6 +120,9 @@ then
   elif [ -f /etc/redhat-release ] ; then
     echo "Bootstrapping dependencies for RedHat-based OSes..."
     $SUDO $BOOTSTRAP/_rpm_common.sh
+  elif `grep -q openSUSE /etc/os-release` ; then
+    echo "Bootstrapping dependencies for openSUSE-based OSes..."
+    $SUDO $BOOTSTRAP/_suse_common.sh
   elif [ -f /etc/arch-release ] ; then
     echo "Bootstrapping dependencies for Archlinux..."
     $SUDO $BOOTSTRAP/archlinux.sh
@@ -93,6 +134,8 @@ then
     ExperimentalBootstrap "FreeBSD" freebsd.sh "$SUDO"
   elif uname | grep -iq Darwin ; then
     ExperimentalBootstrap "Mac OS X" mac.sh
+  elif grep -iq "Amazon Linux" /etc/issue ; then
+    ExperimentalBootstrap "Amazon Linux" amazon_linux.sh
   else
     echo "Sorry, I don't know how to bootstrap Let's Encrypt on your operating system!"
     echo
@@ -130,7 +173,7 @@ else
   $VENV_BIN/pip install -U pip > /dev/null
   printf .
   # nginx is buggy / disabled for now...
-  $VENV_BIN/pip install -r py26reqs.txt
+  $VENV_BIN/pip install -r py26reqs.txt > /dev/null
   printf .
   $VENV_BIN/pip install -U letsencrypt > /dev/null
   printf .

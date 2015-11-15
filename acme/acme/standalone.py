@@ -6,7 +6,6 @@ import logging
 import os
 import sys
 
-import six
 from six.moves import BaseHTTPServer  # pylint: disable=import-error
 from six.moves import http_client  # pylint: disable=import-error
 from six.moves import socketserver  # pylint: disable=import-error
@@ -30,7 +29,7 @@ class TLSServer(socketserver.TCPServer):
         self.certs = kwargs.pop("certs", {})
         self.method = kwargs.pop(
             # pylint: disable=protected-access
-            "method", crypto_util._DEFAULT_DVSNI_SSL_METHOD)
+            "method", crypto_util._DEFAULT_TLSSNI01_SSL_METHOD)
         self.allow_reuse_address = kwargs.pop("allow_reuse_address", True)
         socketserver.TCPServer.__init__(self, *args, **kwargs)
 
@@ -50,12 +49,25 @@ class ACMEServerMixin:  # pylint: disable=old-style-class
     allow_reuse_address = True
 
 
-class DVSNIServer(TLSServer, ACMEServerMixin):
-    """DVSNI Server."""
+class TLSSNI01Server(TLSServer, ACMEServerMixin):
+    """TLSSNI01 Server."""
 
     def __init__(self, server_address, certs):
         TLSServer.__init__(
-            self, server_address, socketserver.BaseRequestHandler, certs=certs)
+            self, server_address, BaseRequestHandlerWithLogging, certs=certs)
+
+
+class BaseRequestHandlerWithLogging(socketserver.BaseRequestHandler):
+    """BaseRequestHandler with logging."""
+
+    def log_message(self, format, *args):  # pylint: disable=redefined-builtin
+        """Log arbitrary message."""
+        logger.debug("%s - - %s", self.client_address[0], format % args)
+
+    def handle(self):
+        """Handle request."""
+        self.log_message("Incoming request")
+        socketserver.BaseRequestHandler.handle(self)
 
 
 class HTTP01Server(BaseHTTPServer.HTTPServer, ACMEServerMixin):
@@ -83,6 +95,15 @@ class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         self.simple_http_resources = kwargs.pop("simple_http_resources", set())
         socketserver.BaseRequestHandler.__init__(self, *args, **kwargs)
 
+    def log_message(self, format, *args):  # pylint: disable=redefined-builtin
+        """Log arbitrary message."""
+        logger.debug("%s - - %s", self.client_address[0], format % args)
+
+    def handle(self):
+        """Handle request."""
+        self.log_message("Incoming request")
+        BaseHTTPServer.BaseHTTPRequestHandler.handle(self)
+
     def do_GET(self):  # pylint: disable=invalid-name,missing-docstring
         if self.path == "/":
             self.handle_index()
@@ -109,17 +130,17 @@ class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         """Handle HTTP01 provisioned resources."""
         for resource in self.simple_http_resources:
             if resource.chall.path == self.path:
-                logger.debug("Serving HTTP01 with token %r",
-                             resource.chall.encode("token"))
+                self.log_message("Serving HTTP01 with token %r",
+                                 resource.chall.encode("token"))
                 self.send_response(http_client.OK)
                 self.send_header("Content-type", resource.chall.CONTENT_TYPE)
                 self.end_headers()
                 self.wfile.write(resource.validation.encode())
                 return
         else:  # pylint: disable=useless-else-on-loop
-            logger.debug("No resources to serve")
-        logger.debug("%s does not correspond to any resource. ignoring",
-                     self.path)
+            self.log_message("No resources to serve")
+        self.log_message("%s does not correspond to any resource. ignoring",
+                         self.path)
 
     @classmethod
     def partial_init(cls, simple_http_resources):
@@ -134,8 +155,8 @@ class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             cls, simple_http_resources=simple_http_resources)
 
 
-def simple_dvsni_server(cli_args, forever=True):
-    """Run simple standalone DVSNI server."""
+def simple_tls_sni_01_server(cli_args, forever=True):
+    """Run simple standalone TLSSNI01 server."""
     logging.basicConfig(level=logging.DEBUG)
 
     parser = argparse.ArgumentParser()
@@ -158,9 +179,8 @@ def simple_dvsni_server(cli_args, forever=True):
             OpenSSL.crypto.load_certificate(
                 OpenSSL.crypto.FILETYPE_PEM, cert_contents))
 
-    server = DVSNIServer(('', int(args.port)), certs=certs)
-    six.print_("Serving at https://localhost:{0}...".format(
-        server.socket.getsockname()[1]))
+    server = TLSSNI01Server(('', int(args.port)), certs=certs)
+    logger.info("Serving at https://%s:%s...", *server.socket.getsockname()[:2])
     if forever:  # pragma: no cover
         server.serve_forever()
     else:
@@ -168,4 +188,4 @@ def simple_dvsni_server(cli_args, forever=True):
 
 
 if __name__ == "__main__":
-    sys.exit(simple_dvsni_server(sys.argv))  # pragma: no cover
+    sys.exit(simple_tls_sni_01_server(sys.argv))  # pragma: no cover

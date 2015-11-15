@@ -3,6 +3,7 @@ import collections
 import errno
 import logging
 import os
+import platform
 import re
 import subprocess
 import stat
@@ -201,6 +202,45 @@ def safely_remove(path):
         if err.errno != errno.ENOENT:
             raise
 
+
+def get_os_info():
+    """
+    Get Operating System type/distribution and major version
+
+    :returns: (os_name, os_version)
+    :rtype: `tuple` of `str`
+    """
+    info = platform.system_alias(
+        platform.system(),
+        platform.release(),
+        platform.version()
+    )
+    os_type, os_ver, _ = info
+    os_type = os_type.lower()
+    if os_type.startswith('linux'):
+        info = platform.linux_distribution()
+        # On arch, platform.linux_distribution() is reportedly ('','',''),
+        # so handle it defensively
+        if info[0]:
+            os_type = info[0]
+        if info[1]:
+            os_ver = info[1]
+    elif os_type.startswith('darwin'):
+        os_ver = subprocess.Popen(
+            ["sw_vers", "-productVersion"],
+            stdout=subprocess.PIPE
+        ).communicate()[0]
+        os_ver = os_ver.partition(".")[0]
+    elif os_type.startswith('freebsd'):
+        # eg "9.3-RC3-p1"
+        os_ver = os_ver.partition("-")[0]
+        os_ver = os_ver.partition(".")[0]
+    elif platform.win32_ver()[1]:
+        os_ver = platform.win32_ver()[1]
+    else:
+        # Cases known to fall here: Cygwin python
+        os_ver = ''
+    return os_type, os_ver
 
 # Just make sure we don't get pwned... Make sure that it also doesn't
 # start with a period or have two consecutive periods <- this needs to
