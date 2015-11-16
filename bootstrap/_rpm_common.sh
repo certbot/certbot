@@ -16,16 +16,20 @@ else
 fi
 
 # "git-core" seems to be an alias for "git" in CentOS 7 (yum search fails)
+DEPS="git-core
+    python
+    python-devel
+    python-virtualenv
+    gcc
+    dialog
+    augeas-libs
+    openssl-devel
+    libffi-devel
+    ca-certificates "
+
 # Amazon Linux 2015.03 needs python27-virtualenv rather than python-virtualenv
-$tool install -y \
-  git-core \
-  python \
-  python-devel \
-  python27-virtualenv \
-  python-virtualenv \
-  gcc \
-  dialog \
-  augeas-libs \
-  openssl-devel \
-  libffi-devel \
-  ca-certificates \
+if grep -iq "Amazon Linux" /etc/issue ; then
+    DEPS+=python27-virtualenv
+fi
+
+$tool install -y $DEPS
