@@ -232,6 +232,32 @@ class ClientTest(unittest.TestCase):
         self.assertEqual(installer.save.call_count, 1)
         installer.restart.assert_called_once_with()
 
+    @mock.patch("letsencrypt.client.enhancements")
+    def test_enhance_config_no_ask(self, mock_enhancements):
+        self.assertRaises(errors.Error,
+                          self.client.enhance_config, ["foo.bar"])
+
+        mock_enhancements.ask.return_value = True
+        installer = mock.MagicMock()
+        self.client.installer = installer
+
+        config = ConfigHelper(redirect=True, hsts=False, uir=False)
+        self.client.enhance_config(["foo.bar"], config)
+        installer.enhance.assert_called_with("foo.bar", "redirect", None)
+
+        config = ConfigHelper(redirect=False, hsts=True, uir=False)
+        self.client.enhance_config(["foo.bar"], config)
+        installer.enhance.assert_called_with("foo.bar", "http-header",
+                "Strict-Transport-Security")
+
+        config = ConfigHelper(redirect=False, hsts=False, uir=True)
+        self.client.enhance_config(["foo.bar"], config)
+        installer.enhance.assert_called_with("foo.bar", "http-header",
+                "Upgrade-Insecure-Requests")
+
+        self.assertEqual(installer.save.call_count, 3)
+        self.assertEqual(installer.restart.call_count, 3)
+
     def test_enhance_config_no_installer(self):
         self.assertRaises(errors.Error,
                           self.client.enhance_config, ["foo.bar"])
