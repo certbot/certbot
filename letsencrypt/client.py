@@ -410,6 +410,9 @@ class Client(object):
         :param options: options to enhancement, e.g. Strict-Transport-Security
         :type str
 
+        :raises .errors.Error: if no installer is specified in the
+            client.
+
         """
         msg = ("We were unable to set up enhancement %s for your server, "
                "however, we successfully installed your certificate."

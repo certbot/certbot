@@ -913,12 +913,12 @@ def prepare_and_parse_args(plugins, args):
         "security", "--hsts", action="store_true",
         help="Add the Strict-Transport-Security header to every HTTP response."
              " Forcing browser to use always use SSL for the domain."
-             " Defends against SSL Stripping.", dest="hsts")
+             " Defends against SSL Stripping.", dest="hsts", default=False)
     helpful.add(
         "security", "--uir", action="store_true",
         help="Add the \"Content-Security-Policy: upgrade-insecure-requests\""
              " header to every HTTP response. Forcing the browser to use"
-             " https:// for every http:// resource.", dest="uir")
+             " https:// for every http:// resource.", dest="uir", default=False)
     helpful.add(
         "security", "--strict-permissions", action="store_true",
         help="Require that all configuration files are owned by the current "
