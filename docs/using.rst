@@ -42,6 +42,11 @@ To install and run the client you just need to type:
 
    ./letsencrypt-auto
 
+.. note:: On RedHat/CentOS 6 you will need to enable the EPEL_
+   repository before install.
+
+.. _EPEL: http://fedoraproject.org/wiki/EPEL
+
 Throughout the documentation, whenever you see references to
 ``letsencrypt`` script/binary, you can substitute in
 ``letsencrypt-auto``. For example, to get the help you would type:
