@@ -114,26 +114,36 @@ def pick_configurator(
         config, default, plugins, question,
         (interfaces.IAuthenticator, interfaces.IInstaller))
 
-
-def get_email():
+def get_email(more=False, invalid=False):
     """Prompt for valid email address.
+
+    :param bool more: -- explain why the email is strongly advisable, but how to
+        skip it
+    "param bool invalid: -- true if the user just typed something, but it wasn't
+        a valid-looking email
 
     :returns: Email or ``None`` if cancelled by user.
     :rtype: str
 
     """
-    while True:
-        code, email = zope.component.getUtility(interfaces.IDisplay).input(
-            "Enter email address "
-            "(used for urgent notices and lost key recovery)\n\n"
-            "If you really want to skip this, run the client with "
-            "--register-unsafely-without-email")
+    msg = "Enter email address (used for urgent notices and lost key recovery)"
+    if invalid:
+        msg = "There seem to be problems with that address. " + msg
+    if more:
+        msg += ('\n\nIf you really want to skip this, you can run the client with '
+                '--register-unsafely-without-email but make sure you backup your '
+                'account key from /etc/letsencrypt/accounts\n\n')
+    code, email = zope.component.getUtility(interfaces.IDisplay).input(msg)
 
-        if code == display_util.OK:
-            if le_util.safe_email(email):
-                return email
+    if code == display_util.OK:
+        if le_util.safe_email(email):
+            return email
         else:
-            return None
+            # TODO catch the server's ACME invalid email address error, and
+            # make a similar call when that happens
+            return get_email(more=True, invalid=(email != ""))
+    else:
+        return None
 
 
 def choose_account(accounts):
