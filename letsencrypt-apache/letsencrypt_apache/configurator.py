@@ -268,19 +268,21 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Try to find a reasonable vhost
         vhost = self._find_best_vhost(target_name)
         if vhost is not None:
-            if vhost.ssl:
-                # remove existing SSL directives (minus the ones we'll use anyway,
-                # since we want to preserve order)
-                self._remove_existing_ssl_directives(
-                    vhost,
-                    minus=['SSLCertificatePath', 'SSLCertificateKeyFile'])
             if not vhost.ssl:
                 vhost = self.make_vhost_ssl(vhost)
 
             self.assoc[target_name] = vhost
             return vhost
 
-        return self._choose_vhost_from_list(target_name)
+        vhost = self._choose_vhost_from_list(target_name)
+        if vhost.ssl:
+            # remove duplicated or conflicting ssl directives
+            self._deduplicate_directives(vhost.path,
+                ["SSLCertificateFile", "SSLCertificateKeyFile"])
+            # remove all problematic directives
+            self._remove_directives(vhost.path, ["SSLCertificateChainFile"])
+
+        return vhost
 
     def _choose_vhost_from_list(self, target_name):
         # Select a vhost from a list
@@ -661,17 +663,17 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         return ssl_addrs
 
-    def _remove_existing_ssl_directives(self, vh_path, minus=None):
-        minus = minus or set()
-        directives_to_remove = list(set(["SSLCertificateKeyFile", "SSLCertificateChainFile",
-                                     "SSLCertificateFile"]) - set(minus))
-        for directive in directives_to_remove:
-            logger.debug("Trying to delete directive '%s'", directive)
-            directive_tree = self.parser.find_dir(directive, None, vh_path)
-            logger.debug("Parser found %s", directive_tree)
-            if directive_tree:
-                logger.debug("Removing directive %s", directive)
-                self.aug.remove(re.sub(r"/\w*$", "", directive_tree[-1]))
+    def _deduplicate_directives(self, vh_path, directives):
+        for directive in directives:
+            while len(self.parser.find_dir(directive, None, vh_path, False)) > 1:
+                directive_path = self.parser.find_dir(directive, None, vh_path, False)
+                self.aug.remove(re.sub(r"/\w*$", "", directive_path[0]))
+
+    def _remove_directives(self, vh_path, directives):
+        for directive in directives:
+            while len(self.parser.find_dir(directive, None, vh_path, False)) > 0:
+                directive_path = self.parser.find_dir(directive, None, vh_path, False)
+                self.aug.remove(re.sub(r"/\w*$", "", directive_path[0]))
 
     def _add_dummy_ssl_directives(self, vh_path):
         self.parser.add_dir(vh_path, "SSLCertificateFile",
