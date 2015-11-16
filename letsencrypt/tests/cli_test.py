@@ -488,7 +488,8 @@ class DetermineAccountTest(unittest.TestCase):
     """Tests for letsencrypt.cli._determine_account."""
 
     def setUp(self):
-        self.args = mock.MagicMock(account=None, email=None)
+        self.args = mock.MagicMock(account=None, email=None,
+            register_unsafely_without_email=False)
         self.config = configuration.NamespaceConfig(self.args)
         self.accs = [mock.MagicMock(id='x'), mock.MagicMock(id='y')]
         self.account_storage = account.AccountMemoryStorage()

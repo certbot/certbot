@@ -138,7 +138,7 @@ def perform_registration(acme, config):
     :returns: the same value as acme.register
     """
     try:
-        regr = acme.register(messages.NewRegistration.from_data(email=config.email))
+        return acme.register(messages.NewRegistration.from_data(email=config.email))
     except messages.Error, e:
         if "MX record" in repr(e):
             config.namespace.email = display_ops.get_email(more=True, invalid=True)
