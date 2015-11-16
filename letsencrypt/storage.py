@@ -164,7 +164,6 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
                 self.cli_config.archive_dir, self.lineagename)
             if not os.path.samefile(os.path.dirname(target),
                                     desired_directory):
-                #TODO: Split next line correctly
                 logger.debug("Element does not point within the cert "
                              "lineage's directory within the official "
                              "archive directory")
@@ -607,6 +606,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
                   cli_config.live_dir):
             if not os.path.exists(i):
                 os.makedirs(i, 0700)
+                logger.debug("Creating CLI config directories")
         config_file, config_filename = le_util.unique_lineage_name(
             cli_config.renewal_configs_dir, lineagename)
         if not config_filename.endswith(".conf"):
@@ -627,6 +627,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
                 "live directory exists for " + lineagename)
         os.mkdir(archive)
         os.mkdir(live_dir)
+        logger.debug("Archive and live directories created")
         relative_archive = os.path.join("..", "..", "archive", lineagename)
 
         # Put the data into the appropriate files on disk
@@ -636,15 +637,19 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             os.symlink(os.path.join(relative_archive, kind + "1.pem"),
                        target[kind])
         with open(target["cert"], "w") as f:
+            logger.debug("Writing certificate")
             f.write(cert)
         with open(target["privkey"], "w") as f:
+            logger.debug("Writing private key")
             f.write(privkey)
             # XXX: Let's make sure to get the file permissions right here
         with open(target["chain"], "w") as f:
+            logger.debug("Writing chain")
             f.write(chain)
         with open(target["fullchain"], "w") as f:
             # assumes that OpenSSL.crypto.dump_certificate includes
             # ending newline character
+            logger.debug("Writing full chain")
             f.write(cert + chain)
 
         # Document what we've done in a new renewal config file
@@ -659,6 +664,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
                                                     " in the renewal process"]
         # TODO: add human-readable comments explaining other available
         #       parameters
+        logger.debug("Writing new config")
         new_config.write()
         return cls(new_config.filename, cli_config)
 
@@ -712,13 +718,17 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             os.symlink(old_privkey, target["privkey"])
         else:
             with open(target["privkey"], "w") as f:
+                logger.debug("Writing new private key")
                 f.write(new_privkey)
 
         # Save everything else
         with open(target["cert"], "w") as f:
+            logger.debug("Writing certificate")
             f.write(new_cert)
         with open(target["chain"], "w") as f:
+            logger.debug("Writing chain")
             f.write(new_chain)
         with open(target["fullchain"], "w") as f:
+            logger.debug("Writing full chain")
             f.write(new_cert + new_chain)
         return target_version
