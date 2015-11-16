@@ -115,7 +115,7 @@ def register(config, account_storage, tos_cb=None):
             backend=default_backend())))
     acme = acme_from_config_key(config, key)
     # TODO: add phone?
-    regr = acme.register(messages.NewRegistration.from_data(email=config.email))
+    regr = perform_registration(acme, config)
 
     if regr.terms_of_service is not None:
         if tos_cb is not None and not tos_cb(regr):
@@ -130,6 +130,21 @@ def register(config, account_storage, tos_cb=None):
 
     return acc, acme
 
+def perform_registration(acme, config):
+    """
+    Actually register new account, trying repeatedly if there are email
+    problems
+
+    :returns: the same value as acme.register
+    """
+    try:
+        regr = acme.register(messages.NewRegistration.from_data(email=config.email))
+    except messages.Error, e:
+        if "MX record" in repr(e):
+            config.namespace.email = display_ops.get_email(more=True, invalid=True)
+            return perform_registration(acme, config)
+        else:
+            raise
 
 class Client(object):
     """ACME protocol client.
