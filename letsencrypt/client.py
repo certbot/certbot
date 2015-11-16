@@ -359,7 +359,7 @@ class Client(object):
 
         :param list domains: list of domains to configure
 
-        :ivar namespace: Namespace typically produced by
+        :ivar config: Namespace typically produced by
             :meth:`argparse.ArgumentParser.parse_args`.
         :type namespace: :class:`argparse.Namespace`
 
@@ -367,29 +367,32 @@ class Client(object):
             client.
 
         """
-        redirect = config.redirect
-        hsts = config.hsts
-        uir = config.uir # Upgrade Insecure Requests
-
 
         if self.installer is None:
             logger.warning("No installer is specified, there isn't any "
                            "configuration to enhance.")
             raise errors.Error("No installer available")
 
-        if redirect is None:
+        if config is None:
             redirect = enhancements.ask("redirect")
+            if redirect:
+                self.apply_enhancement(domains, "redirect")
+        else:
+            redirect = config.redirect
+            hsts = config.hsts
+            uir = config.uir # Upgrade Insecure Requests
 
-        if redirect:
-            self.apply_enhancement(domains, "redirect")
+            if redirect:
+                self.apply_enhancement(domains, "redirect")
 
-        if hsts:
-            self.apply_enhancement(domains, "http-header",
-                    "Strict-Transport-Security")
-        if uir:
-            self.apply_enhancement(domains, "http-header",
-                    "Upgrade-Insecure-Requests")
+            if hsts:
+                self.apply_enhancement(domains, "http-header",
+                        "Strict-Transport-Security")
+            if uir:
+                self.apply_enhancement(domains, "http-header",
+                        "Upgrade-Insecure-Requests")
 
+        msg = ("We were unable to restart web server")
         if redirect or hsts or uir:
             with error_handler.ErrorHandler(self._rollback_and_restart, msg):
                 self.installer.restart()
@@ -408,8 +411,9 @@ class Client(object):
         :type str
 
         """
-        msg = ("We were unable to set up a redirect for your server, "
-               "however, we successfully installed your certificate.")
+        msg = ("We were unable to set up enhancement %s for your server, "
+               "however, we successfully installed your certificate."
+               % (enhancement))
         with error_handler.ErrorHandler(self._recovery_routine_with_msg, msg):
             for dom in domains:
                 try:
