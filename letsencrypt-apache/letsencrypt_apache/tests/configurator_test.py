@@ -123,6 +123,37 @@ class TwoVhost80Test(util.ApacheTest):
             self.vh_truth[1], self.config.choose_vhost("none.com"))
 
     @mock.patch("letsencrypt_apache.display_ops.select_vhost")
+    def test_choose_vhost_cleans_vhost_ssl(self, mock_select):
+        for directive in ["SSLCertificateFile", "SSLCertificateKeyFile",
+                          "SSLCertificateChainFile", "SSLCACertificatePath"]:
+            for _ in range(10):
+                self.config.parser.add_dir(self.vh_truth[1].path, directive, ["bogus"])
+        self.config.save()
+        mock_select.return_value = self.vh_truth[1]
+
+        vhost = self.config.choose_vhost("none.com")
+        self.config.save()
+
+        with open(vhost.filep) as f:
+            print f.read()
+
+        loc_cert = self.config.parser.find_dir(
+            'SSLCertificateFile', None, self.vh_truth[1].path, False)
+        loc_key = self.config.parser.find_dir(
+            'SSLCertificateKeyFile', None, self.vh_truth[1].path, False)
+        loc_chain = self.config.parser.find_dir(
+            'SSLCertificateChainFile', None, self.vh_truth[1].path, False)
+        loc_cacert = self.config.parser.find_dir(
+            'SSLCACertificatePath', None, self.vh_truth[1].path, False)
+
+        self.assertEqual(len(loc_cert), 1)
+        self.assertEqual(len(loc_key), 1)
+
+        self.assertEqual(len(loc_chain), 0)
+
+        self.assertEqual(len(loc_cacert), 10)
+
+    @mock.patch("letsencrypt_apache.display_ops.select_vhost")
     def test_choose_vhost_select_vhost_non_ssl(self, mock_select):
         mock_select.return_value = self.vh_truth[0]
         chosen_vhost = self.config.choose_vhost("none.com")
@@ -393,46 +424,37 @@ class TwoVhost80Test(util.ApacheTest):
 
         self.assertEqual(len(self.config.vhosts), 5)
 
-    def test_remove_existing_ssl_directives(self):
+    def test_deduplicate_directives(self):
         # pylint: disable=protected-access
-        BOGUS_DIRECTIVES = ["SSLCertificateKeyFile",
-                            "SSLCertificateChainFile", "SSLCertificateFile"]
-        for directive in BOGUS_DIRECTIVES:
-            self.config.parser.add_dir(self.vh_truth[0].path, directive, ["bogus"])
+        DIRECTIVE = "Foo"
+        for _ in range(10):
+            self.config.parser.add_dir(self.vh_truth[1].path, DIRECTIVE, ["bar"])
         self.config.save()
 
-        self.config._remove_existing_ssl_directives(self.vh_truth[0].path)
+        self.config._deduplicate_directives(self.vh_truth[1].path, [DIRECTIVE])
         self.config.save()
 
-        for directive in BOGUS_DIRECTIVES:
+        self.assertEqual(
+                         len(self.config.parser.find_dir(
+                             DIRECTIVE, None, self.vh_truth[1].path, False)),
+                         1)
+
+    def test_remove_directives(self):
+        # pylint: disable=protected-access
+        DIRECTIVES = ["Foo", "Bar"]
+        for directive in DIRECTIVES:
+            for _ in range(10):
+                self.config.parser.add_dir(self.vh_truth[1].path, directive, ["baz"])
+        self.config.save()
+
+        self.config._remove_directives(self.vh_truth[1].path, DIRECTIVES)
+        self.config.save()
+
+        for directive in DIRECTIVES:
             self.assertEqual(
-                self.config.parser.find_dir(directive, None, self.vh_truth[0].path),
-                [])
-
-    def test_remove_existing_ssl_directives_minus_some(self):
-        # pylint: disable=protected-access
-        BOGUS_DIRECTIVES = ["SSLCertificateKeyFile",
-                            "SSLCertificateChainFile", "SSLCertificateFile"]
-        MINUS_DIRECTIVES = ["SSLCertificateKeyFile", "SSLCertificateFile"]
-        for directive in BOGUS_DIRECTIVES:
-            self.config.parser.add_dir(self.vh_truth[0].path, directive, ["bogus"])
-        self.config.save()
-
-        self.config._remove_existing_ssl_directives(self.vh_truth[0].path,
-                                                    minus=MINUS_DIRECTIVES)
-        self.config.save()
-
-        for directive in BOGUS_DIRECTIVES:
-            if directive not in MINUS_DIRECTIVES:
-                self.assertEqual(
-                    self.config.parser.find_dir(directive, None, self.vh_truth[0].path),
-                    [],
-                    msg="directive %s should have been removed" % directive)
-            else:
-                self.assertNotEqual(
-                    self.config.parser.find_dir(directive, None, self.vh_truth[0].path),
-                    [],
-                    msg="directive %s should still exist" % directive)
+                             len(self.config.parser.find_dir(
+                                 directive, None, self.vh_truth[1].path, False)),
+                             0)
 
     def test_make_vhost_ssl_extra_vhs(self):
         self.config.aug.match = mock.Mock(return_value=["p1", "p2"])
