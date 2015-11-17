@@ -155,7 +155,7 @@ def _check_config_domain_sanity(domains):
             "Punycode domains are not supported")
     # FQDN checks from
     # http://www.mkyong.com/regular-expressions/domain-name-regular-expression-example/
-    #  Characters used, domain parts < 63 chars, tld > 1 < 7 chars
+    #  Characters used, domain parts < 63 chars, tld > 1 < 13 chars
     #  first and last char is not "-"
     fqdn = re.compile("^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\\.)+[A-Za-z]{2,12}$")
     if any(True for d in domains if not fqdn.match(d)):
