@@ -354,13 +354,14 @@ class Client(object):
         with error_handler.ErrorHandler(self._rollback_and_restart, msg):
             # sites may have been enabled / final cleanup
             self.installer.restart()
-    def enhance_config(self, domains, config=None):
+    def enhance_config(self, domains, config):
         """Enhance the configuration.
 
         :param list domains: list of domains to configure
 
         :ivar config: Namespace typically produced by
             :meth:`argparse.ArgumentParser.parse_args`.
+            it must have the redirect, hsts and uir attributes.
         :type namespace: :class:`argparse.Namespace`
 
         :raises .errors.Error: if no installer is specified in the
@@ -374,23 +375,25 @@ class Client(object):
             raise errors.Error("No installer available")
 
         if config is None:
+            logger.warning("No config is specified.")
+            raise errors.Error("No config available")
+
+        redirect = config.redirect
+        hsts = config.hsts
+        uir = config.uir # Upgrade Insecure Requests
+
+        if redirect is None:
             redirect = enhancements.ask("redirect")
-            if redirect:
-                self.apply_enhancement(domains, "redirect")
-        else:
-            redirect = config.redirect
-            hsts = config.hsts
-            uir = config.uir # Upgrade Insecure Requests
 
-            if redirect:
-                self.apply_enhancement(domains, "redirect")
+        if redirect:
+            self.apply_enhancement(domains, "redirect")
 
-            if hsts:
-                self.apply_enhancement(domains, "http-header",
-                        "Strict-Transport-Security")
-            if uir:
-                self.apply_enhancement(domains, "http-header",
-                        "Upgrade-Insecure-Requests")
+        if hsts:
+            self.apply_enhancement(domains, "http-header",
+                    "Strict-Transport-Security")
+        if uir:
+            self.apply_enhancement(domains, "http-header",
+                    "Upgrade-Insecure-Requests")
 
         msg = ("We were unable to restart web server")
         if redirect or hsts or uir:

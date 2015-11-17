@@ -220,22 +220,24 @@ class ClientTest(unittest.TestCase):
 
     @mock.patch("letsencrypt.client.enhancements")
     def test_enhance_config(self, mock_enhancements):
+        config = ConfigHelper(redirect=True, hsts=False, uir=False)
         self.assertRaises(errors.Error,
-                          self.client.enhance_config, ["foo.bar"])
+                          self.client.enhance_config, ["foo.bar"], config)
 
         mock_enhancements.ask.return_value = True
         installer = mock.MagicMock()
         self.client.installer = installer
 
-        self.client.enhance_config(["foo.bar"])
+        self.client.enhance_config(["foo.bar"], config)
         installer.enhance.assert_called_once_with("foo.bar", "redirect", None)
         self.assertEqual(installer.save.call_count, 1)
         installer.restart.assert_called_once_with()
 
     @mock.patch("letsencrypt.client.enhancements")
     def test_enhance_config_no_ask(self, mock_enhancements):
+        config = ConfigHelper(redirect=True, hsts=False, uir=False)
         self.assertRaises(errors.Error,
-                          self.client.enhance_config, ["foo.bar"])
+                          self.client.enhance_config, ["foo.bar"], config)
 
         mock_enhancements.ask.return_value = True
         installer = mock.MagicMock()
@@ -259,8 +261,9 @@ class ClientTest(unittest.TestCase):
         self.assertEqual(installer.restart.call_count, 3)
 
     def test_enhance_config_no_installer(self):
+        config = ConfigHelper(redirect=True, hsts=False, uir=False)
         self.assertRaises(errors.Error,
-                          self.client.enhance_config, ["foo.bar"])
+                          self.client.enhance_config, ["foo.bar"], config)
 
     @mock.patch("letsencrypt.client.zope.component.getUtility")
     @mock.patch("letsencrypt.client.enhancements")
