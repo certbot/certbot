@@ -140,24 +140,17 @@ SSL certificates!
 Plugins
 =======
 
-========== = = ================================================================
-Plugin     A I Notes and status
-========== = = ================================================================
-standalone Y N Very stable. Uses port 80 (force by
-               ``--standalone-supported-challenges http-01``) or 443
-               (force by ``--standalone-supported-challenges tls-sni-01``).
-apache     Y Y Alpha. Automates Apache installation, works fairly well but on
-               Debian-based distributions only for now.
-webroot    Y N Works with already running webserver, by writing necessary files
-               to the disk (``--webroot-path`` should be pointed to your
-               ``public_html``). Currently, when multiple domains are specified
-               (`-d`), they must all use the same web root path.
-manual     Y N Hidden from standard UI, use with ``-a manual``. Requires to
-               copy and paste commands into a new terminal session. Allows to
-               run client on machine different than target webserver, e.g. your
-               laptop.
-nginx      Y Y Very experimental. Not included in letsencrypt-auto_.
-========== = = ================================================================
+=========== = = ===============================================================
+Plugin      A I Notes
+=========== = = ===============================================================
+apache_     Y Y Automates obtaining and installing a cert with Apache 2.4 on
+                Debian-based distributions with ``libaugeas0`` 1.0+.
+standalone_ Y N Uses a "standalone" webserver to obtain a cert.
+webroot_    Y N Obtains a cert using an already running webserver.
+manual_     Y N Helps you obtain a cert by giving you instructions to perform
+                domain validation yourself.
+nginx_      Y Y Very experimental and not included in letsencrypt-auto_.
+=========== = = ===============================================================
 
 Apache
 ------
@@ -190,6 +183,8 @@ line with the root directory of the files served by your webserver.
 For example, ``--webroot-path /var/www/html`` or
 ``--webroot-path /usr/share/nginx/html`` are two common webroot paths.
 If multiple domains are specified, they must all use the same path.
+Additionally, your server must be configured to serve files from
+hidden directories.
 
 Manual
 ------
