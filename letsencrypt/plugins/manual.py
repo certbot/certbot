@@ -90,6 +90,8 @@ s.serve_forever()" """
     def add_parser_arguments(cls, add):
         add("test-mode", action="store_true",
             help="Test mode. Executes the manual command in subprocess.")
+        add("public-ip-logging-ok", action="store_true",
+            help="Automatically allows public IP logging.")
 
     def prepare(self):  # pylint: disable=missing-docstring,no-self-use
         pass  # pragma: no cover
@@ -164,9 +166,10 @@ s.serve_forever()" """
             if self._httpd.poll() is not None:
                 raise errors.Error("Couldn't execute manual command")
         else:
-            if not zope.component.getUtility(interfaces.IDisplay).yesno(
-                    self.IP_DISCLAIMER, "Yes", "No"):
-                raise errors.PluginError("Must agree to IP logging to proceed")
+            if not self.conf("public-ip-logging-ok"):
+                if not zope.component.getUtility(interfaces.IDisplay).yesno(
+                        self.IP_DISCLAIMER, "Yes", "No"):
+                    raise errors.PluginError("Must agree to IP logging to proceed")
 
             self._notify_and_wait(self.MESSAGE_TEMPLATE.format(
                 validation=validation, response=response,
