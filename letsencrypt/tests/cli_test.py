@@ -527,6 +527,7 @@ class DetermineAccountTest(unittest.TestCase):
     @mock.patch('letsencrypt.client.display_ops.get_email')
     def test_no_accounts_no_email(self, mock_get_email):
         mock_get_email.return_value = 'foo@bar.baz'
+        self.args.register_unsafely_without_email = False
 
         with mock.patch('letsencrypt.cli.client') as client:
             client.register.return_value = (
@@ -540,12 +541,20 @@ class DetermineAccountTest(unittest.TestCase):
 
     def test_no_accounts_email(self):
         self.args.email = 'other email'
+        self.args.register_unsafely_without_email = False
         with mock.patch('letsencrypt.cli.client') as client:
             client.register.return_value = (self.accs[1], mock.sentinel.acme)
             self._call()
         self.assertEqual(self.accs[1].id, self.args.account)
         self.assertEqual('other email', self.args.email)
 
+    def test_no_accounts_no_email_unsafe(self):
+        self.args.register_unsafely_without_email = True
+        with mock.patch('letsencrypt.cli.client') as client:
+            client.register.return_value = (self.accs[1], mock.sentinel.acme)
+            self._call()
+        self.assertEqual(self.accs[1].id, self.args.account)
+        self.assertEqual(None, self.args.email)
 
 class DuplicativeCertsTest(renewer_test.BaseRenewableCertTest):
     """Test to avoid duplicate lineages."""

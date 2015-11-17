@@ -100,6 +100,11 @@ def register(config, account_storage, tos_cb=None):
     if account_storage.find_all():
         logger.info("There are already existing accounts for %s", config.server)
     if config.email is None:
+        if not config.register_unsafely_without_email:
+            msg = ("No email was provided and "
+                   "--register-unsafely-without-email was not present.")
+            logger.warn(msg)
+            raise errors.Error(msg)
         logger.warn("Registering without email!")
 
     # Each new registration shall use a fresh new key
