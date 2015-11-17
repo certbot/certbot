@@ -37,6 +37,11 @@ class NamespaceConfig(object):
 
     def __init__(self, namespace):
         self.namespace = namespace
+
+        self.namespace.config_dir = os.path.abspath(self.namespace.config_dir)
+        self.namespace.work_dir = os.path.abspath(self.namespace.work_dir)
+        self.namespace.logs_dir = os.path.abspath(self.namespace.logs_dir)
+
         # Check command line parameters sanity, and error out in case of problem.
         check_config_sanity(self)
 

@@ -5,10 +5,13 @@ import os
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
 import OpenSSL
+import zope.component
 
 from acme import client as acme_client
 from acme import jose
 from acme import messages
+
+import letsencrypt
 
 from letsencrypt import account
 from letsencrypt import auth_handler
@@ -18,6 +21,7 @@ from letsencrypt import continuity_auth
 from letsencrypt import crypto_util
 from letsencrypt import errors
 from letsencrypt import error_handler
+from letsencrypt import interfaces
 from letsencrypt import le_util
 from letsencrypt import reverter
 from letsencrypt import storage
@@ -29,10 +33,30 @@ from letsencrypt.display import enhancements
 logger = logging.getLogger(__name__)
 
 
-def _acme_from_config_key(config, key):
+def acme_from_config_key(config, key):
+    "Wrangle ACME client construction"
     # TODO: Allow for other alg types besides RS256
-    return acme_client.Client(directory=config.server, key=key,
-                              verify_ssl=(not config.no_verify_ssl))
+    net = acme_client.ClientNetwork(key, verify_ssl=(not config.no_verify_ssl),
+                                    user_agent=_determine_user_agent(config))
+    return acme_client.Client(config.server, key=key, net=net)
+
+
+def _determine_user_agent(config):
+    """
+    Set a user_agent string in the config based on the choice of plugins.
+    (this wasn't knowable at construction time)
+
+    :returns: the client's User-Agent string
+    :rtype: `str`
+    """
+
+    if config.user_agent is None:
+        ua = "LetsEncryptPythonClient/{0} ({1}) Authenticator/{2} Installer/{3}"
+        ua = ua.format(letsencrypt.__version__, " ".join(le_util.get_os_info()),
+                       config.authenticator, config.installer)
+    else:
+        ua = config.user_agent
+    return ua
 
 
 def register(config, account_storage, tos_cb=None):
@@ -84,7 +108,7 @@ def register(config, account_storage, tos_cb=None):
             public_exponent=65537,
             key_size=config.rsa_key_size,
             backend=default_backend())))
-    acme = _acme_from_config_key(config, key)
+    acme = acme_from_config_key(config, key)
     # TODO: add phone?
     regr = acme.register(messages.NewRegistration.from_data(email=config.email))
 
@@ -98,6 +122,7 @@ def register(config, account_storage, tos_cb=None):
     acc = account.Account(regr, key)
     account.report_new_account(acc, config)
     account_storage.save(acc)
+
     return acc, acme
 
 
@@ -126,7 +151,7 @@ class Client(object):
 
         # Initialize ACME if account is provided
         if acme is None and self.account is not None:
-            acme = _acme_from_config_key(config, self.account.key)
+            acme = acme_from_config_key(config, self.account.key)
         self.acme = acme
 
         # TODO: Check if self.config.enroll_autorenew is None. If
@@ -211,7 +236,7 @@ class Client(object):
 
         return self._obtain_certificate(domains, csr) + (key, csr)
 
-    def obtain_and_enroll_certificate(self, domains, plugins):
+    def obtain_and_enroll_certificate(self, domains):
         """Obtain and enroll certificate.
 
         Get a new certificate for the specified domains using the specified
@@ -227,13 +252,6 @@ class Client(object):
 
         """
         certr, chain, key, _ = self.obtain_certificate(domains)
-
-        # TODO: remove this dirty hack
-        self.config.namespace.authenticator = plugins.find_init(
-            self.dv_auth).name
-        if self.installer is not None:
-            self.config.namespace.installer = plugins.find_init(
-                self.installer).name
 
         # XXX: We clearly need a more general and correct way of getting
         # options into the configobj for the RenewableCert instance.
@@ -330,25 +348,12 @@ class Client(object):
 
             self.installer.save("Deployed Let's Encrypt Certificate")
 
-        # sites may have been enabled / final cleanup
-        with error_handler.ErrorHandler(self._rollback_and_restart):
+        msg = ("We were unable to install your certificate, "
+               "however, we successfully restored your "
+               "server to its prior configuration.")
+        with error_handler.ErrorHandler(self._rollback_and_restart, msg):
+            # sites may have been enabled / final cleanup
             self.installer.restart()
-
-    def _rollback_and_restart(self):
-        """Rollback the most recent checkpoint and restart the webserver"""
-        logger.critical("Rolling back to previous server configuration...")
-        try:
-            self.installer.rollback_checkpoints()
-            self.installer.restart()
-        except:
-            # TODO: suggest letshelp-letsencypt here
-            logger.critical("Failure to rollback config "
-                            "changes and restart your server")
-            logger.critical("Please submit a bug report to "
-                            "https://github.com/letsencrypt/letsencrypt")
-            raise
-        logger.critical("Rollback successful; your server has "
-                        "been restarted with your old configuration")
 
     def enhance_config(self, domains, redirect=None):
         """Enhance the configuration.
@@ -386,7 +391,9 @@ class Client(object):
         :type vhost: :class:`letsencrypt.interfaces.IInstaller`
 
         """
-        with error_handler.ErrorHandler(self.installer.recovery_routine):
+        msg = ("We were unable to set up a redirect for your server, "
+               "however, we successfully installed your certificate.")
+        with error_handler.ErrorHandler(self._recovery_routine_with_msg, msg):
             for dom in domains:
                 try:
                     self.installer.enhance(dom, "redirect")
@@ -395,7 +402,40 @@ class Client(object):
                     raise
 
             self.installer.save("Add Redirects")
+
+        with error_handler.ErrorHandler(self._rollback_and_restart, msg):
             self.installer.restart()
+
+    def _recovery_routine_with_msg(self, success_msg):
+        """Calls the installer's recovery routine and prints success_msg
+
+        :param str success_msg: message to show on successful recovery
+
+        """
+        self.installer.recovery_routine()
+        reporter = zope.component.getUtility(interfaces.IReporter)
+        reporter.add_message(success_msg, reporter.HIGH_PRIORITY)
+
+    def _rollback_and_restart(self, success_msg):
+        """Rollback the most recent checkpoint and restart the webserver
+
+        :param str success_msg: message to show on successful rollback
+
+        """
+        logger.critical("Rolling back to previous server configuration...")
+        reporter = zope.component.getUtility(interfaces.IReporter)
+        try:
+            self.installer.rollback_checkpoints()
+            self.installer.restart()
+        except:
+            # TODO: suggest letshelp-letsencypt here
+            reporter.add_message(
+                "An error occured and we failed to restore your config and "
+                "restart your server. Please submit a bug report to "
+                "https://github.com/letsencrypt/letsencrypt",
+                reporter.HIGH_PRIORITY)
+            raise
+        reporter.add_message(success_msg, reporter.HIGH_PRIORITY)
 
 
 def validate_key_csr(privkey, csr=None):

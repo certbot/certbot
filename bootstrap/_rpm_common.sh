@@ -1,8 +1,8 @@
 #!/bin/sh
 
 # Tested with:
-#   - Fedora 22 (x64)
-#   - Centos 7 (x64: on AWS EC2 t2.micro, DigitalOcean droplet)
+#   - Fedora 22, 23 (x64)
+#   - Centos 7 (x64: onD igitalOcean droplet)
 
 if type yum 2>/dev/null
 then
@@ -15,15 +15,33 @@ else
   exit 1
 fi
 
+# Some distros and older versions of current distros use a "python27"
+# instead of "python" naming convention. Try both conventions.
+if ! $tool install -y \
+       python \
+       python-devel \
+       python-virtualenv
+then
+  if ! $tool install -y \
+         python27 \
+         python27-devel \
+         python27-virtualenv
+  then
+    echo "Could not install Python dependencies. Aborting bootstrap!"
+    exit 1
+  fi
+fi
+
 # "git-core" seems to be an alias for "git" in CentOS 7 (yum search fails)
-$tool install -y \
-  git-core \
-  python \
-  python-devel \
-  python-virtualenv \
-  gcc \
-  dialog \
-  augeas-libs \
-  openssl-devel \
-  libffi-devel \
-  ca-certificates \
+if ! $tool install -y \
+       git-core \
+       gcc \
+       dialog \
+       augeas-libs \
+       openssl-devel \
+       libffi-devel \
+       ca-certificates
+then
+    echo "Could not install additional dependencies. Aborting bootstrap!"
+    exit 1
+fi

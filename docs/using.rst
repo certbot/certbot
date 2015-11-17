@@ -42,6 +42,11 @@ To install and run the client you just need to type:
 
    ./letsencrypt-auto
 
+.. note:: On RedHat/CentOS 6 you will need to enable the EPEL_
+   repository before install.
+
+.. _EPEL: http://fedoraproject.org/wiki/EPEL
+
 Throughout the documentation, whenever you see references to
 ``letsencrypt`` script/binary, you can substitute in
 ``letsencrypt-auto``. For example, to get the help you would type:
@@ -93,6 +98,13 @@ Operating System Packages
 
   * Port: ``cd /usr/ports/security/py-letsencrypt && make install clean``
   * Package: ``pkg install py27-letsencrypt``
+
+**Arch Linux**
+
+.. code-block:: shell
+
+   sudo pacman -S letsencrypt letsencrypt-nginx letsencrypt-apache \
+                  letshelp-letsencrypt
 
 **Other Operating Systems**
 
@@ -204,7 +216,7 @@ The following files are available:
 
   .. warning:: This **must be kept secret at all times**! Never share
      it with anyone, including Let's Encrypt developers. You cannot
-     put it into safe, however - your server still needs to access
+     put it into a safe, however - your server still needs to access
      this file in order for SSL/TLS to work.
 
   This is what Apache needs for `SSLCertificateKeyFile
