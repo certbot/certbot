@@ -40,6 +40,7 @@ if ! $tool install -y \
        augeas-libs \
        openssl-devel \
        libffi-devel \
+       redhat-rpm-config \
        ca-certificates
 then
     echo "Could not install additional dependencies. Aborting bootstrap!"
