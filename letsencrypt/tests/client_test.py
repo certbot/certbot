@@ -24,7 +24,7 @@ class RegisterTest(unittest.TestCase):
     """Tests for letsencrypt.client.register."""
 
     def setUp(self):
-        self.config = mock.MagicMock(rsa_key_size=1024)
+        self.config = mock.MagicMock(rsa_key_size=1024, register_unsafely_without_email=False)
         self.account_storage = account.AccountMemoryStorage()
         self.tos_cb = mock.MagicMock()
 
@@ -61,6 +61,9 @@ class RegisterTest(unittest.TestCase):
             self._call()
             self.assertEqual(mock_get_email.call_count, 1)
 
+    def test_needs_email(self):
+        self.config.email = None
+        self.assertRaises(errors.Error, self._call)
 
 class ClientTest(unittest.TestCase):
     """Tests for letsencrypt.client.Client."""
