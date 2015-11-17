@@ -47,9 +47,19 @@ class RegisterTest(unittest.TestCase):
 
     def test_it(self):
         with mock.patch("letsencrypt.client.acme_client.Client"):
-            with mock.patch("letsencrypt.account."
-                            "report_new_account"):
+            with mock.patch("letsencrypt.account.report_new_account"):
                 self._call()
+
+    @mock.patch("letsencrypt.account.report_new_account")
+    @mock.patch("letsencrypt.client.display_ops.get_email")
+    def test_email_retry(self, _rep, mock_get_email):
+        from acme import messages
+        msg = "No MX record for domain ofijfoisjfs.com"
+        mx_err = messages.Error(detail=msg, typ="malformed", title="title")
+        with mock.patch("letsencrypt.client.acme_client.Client") as mock_client:
+            mock_client.register.side_effect = mx_err
+            self._call()
+            self.assertEqual(mock_get_email.call_count, 1)
 
 
 class ClientTest(unittest.TestCase):
