@@ -126,8 +126,17 @@ then
     echo "Bootstrapping dependencies for openSUSE-based OSes..."
     $SUDO $BOOTSTRAP/_suse_common.sh
   elif [ -f /etc/arch-release ] ; then
-    echo "Bootstrapping dependencies for Archlinux..."
-    $SUDO $BOOTSTRAP/archlinux.sh
+    if [ "$DEBUG" = 1 ] ; then
+      echo "Bootstrapping dependencies for Archlinux..."
+      $SUDO $BOOTSTRAP/archlinux.sh
+    else
+      echo "Please use pacman to install letsencrypt packages:"
+      echo "# pacman -S letsencrypt letsencrypt-nginx letsencrypt-apache letshelp-letsencrypt"
+      echo
+      echo "If you would like to use the virtualenv way, please run the script again with the"
+      echo "--debug flag."
+      exit 1
+    fi
   elif [ -f /etc/manjaro-release ] ; then
     ExperimentalBootstrap "Manjaro Linux" manjaro.sh "$SUDO"
   elif [ -f /etc/gentoo-release ] ; then
