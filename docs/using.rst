@@ -165,7 +165,8 @@ Standalone
 ----------
 
 To obtain a cert using a "standalone" webserver, you can use the
-standalone plugin. This plugin needs to bind to port 80 or 443 in
+standalone plugin by including ``certonly`` and ``--standalone``
+on the command line. This plugin needs to bind to port 80 or 443 in
 order to perform domain validation, so you may need to stop your
 existing webserver. To control which port the plugin uses, include
 one of the options shown below on the command line.
@@ -177,10 +178,11 @@ Webroot
 -------
 
 If you're running a webserver that you don't want to stop to use
-standalone, you can use the webroot plugin to obtain a cert. To use
-this plugin, you need to specify ``--webroot-path`` on the command
-line with the root directory of the files served by your webserver.
-For example, ``--webroot-path /var/www/html`` or
+standalone, you can use the webroot plugin to obtain a cert by
+including ``certonly`` and ``--webroot`` on the command line. In
+addition, you'll need to specify ``--webroot-path`` with the root
+directory of the files served by your webserver. For example,
+``--webroot-path /var/www/html`` or
 ``--webroot-path /usr/share/nginx/html`` are two common webroot paths.
 If multiple domains are specified, they must all use the same path.
 Additionally, your server must be configured to serve files from
@@ -192,9 +194,9 @@ Manual
 If you'd like to obtain a cert running ``letsencrypt`` on a machine
 other than your target webserver or perform the steps for domain
 validation yourself, you can use the manual plugin. While hidden from
-the UI, you can use the  plugin to obtain a cert by specifying
-``-a manual`` or ``--authenticator manual`` on the command line. This
-requires you to copy and paste commands into another terminal session.
+the UI, you can use the plugin to obtain a cert by specifying
+``certonly`` and ``--manual`` on the command line. This requires you
+to copy and paste commands into another terminal session.
 
 Nginx
 -----
@@ -202,7 +204,8 @@ Nginx
 In the future, if you're running Nginx you can use this plugin to
 automatically obtain and install your certificate. The Nginx plugin
 is still experimental, however, and is not installed with
-letsencrypt-auto_.
+letsencrypt-auto_. If installed, you can select this plugin on the
+command line by including ``--nginx``.
 
 Third party plugins
 -------------------
