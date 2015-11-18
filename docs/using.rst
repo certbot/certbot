@@ -49,12 +49,17 @@ To install and run the client you just need to type:
 
 Throughout the documentation, whenever you see references to
 ``letsencrypt`` script/binary, you can substitute in
-``letsencrypt-auto``. For example, to get the help you would type:
+``letsencrypt-auto``. For example, to get basic help you would type:
 
 .. code-block:: shell
 
   ./letsencrypt-auto --help
 
+or for full help, type:
+
+.. code-block:: shell
+
+  ./letsencrypt-auto --help all
 
 Running with Docker
 -------------------
