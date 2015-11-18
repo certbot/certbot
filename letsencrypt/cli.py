@@ -411,6 +411,8 @@ def choose_configurator_plugins(args, config, plugins, verb): # pylint: disable=
         req_auth = set_configurator(req_auth, "standalone")
     if args.webroot:
         req_auth = set_configurator(req_auth, "webroot")
+    if args.manual:
+        req_auth = set_configurator(req_auth, "manual")
     logger.debug("Requested authenticator %s and installer %s", req_auth, req_inst)
 
     # Try to meet the user's request and/or ask them to pick plugins
@@ -1029,6 +1031,8 @@ def _plugins_parsing(helpful, plugins):
                 help="Obtain and install certs using Nginx")
     helpful.add("plugins", "--standalone", action="store_true",
                 help='Obtain certs using a "standalone" webserver.')
+    helpful.add("plugins", "--manual", action="store_true",
+                help='Provide laborious manual instructions for obtaining a cert')
     helpful.add("plugins", "--webroot", action="store_true",
                 help='Obtain certs by placing files in a webroot directory.')
 
