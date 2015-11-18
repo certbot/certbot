@@ -644,19 +644,19 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             os.symlink(os.path.join(relative_archive, kind + "1.pem"),
                        target[kind])
         with open(target["cert"], "w") as f:
-            logger.debug("Writing certificate.")
+            logger.debug("Writing certificate to %s.", target["cert"])
             f.write(cert)
         with open(target["privkey"], "w") as f:
-            logger.debug("Writing private key.")
+            logger.debug("Writing private key to %s.", target["privkey"])
             f.write(privkey)
             # XXX: Let's make sure to get the file permissions right here
         with open(target["chain"], "w") as f:
-            logger.debug("Writing chain.")
+            logger.debug("Writing chain to %s.", target["chain"])
             f.write(chain)
         with open(target["fullchain"], "w") as f:
             # assumes that OpenSSL.crypto.dump_certificate includes
             # ending newline character
-            logger.debug("Writing full chain.")
+            logger.debug("Writing full chain to %s.", target["fullchain"])
             f.write(cert + chain)
 
         # Document what we've done in a new renewal config file
@@ -722,20 +722,21 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
                 old_privkey = os.readlink(old_privkey)
             else:
                 old_privkey = "privkey{0}.pem".format(prior_version)
+            logger.debug("Writing symlink to old private key, %s.", old_privkey)
             os.symlink(old_privkey, target["privkey"])
         else:
             with open(target["privkey"], "w") as f:
-                logger.debug("Writing new private key.")
+                logger.debug("Writing new private key to %s.", target["privkey"])
                 f.write(new_privkey)
 
         # Save everything else
         with open(target["cert"], "w") as f:
-            logger.debug("Writing certificate.")
+            logger.debug("Writing certificate to %s.", target["cert"])
             f.write(new_cert)
         with open(target["chain"], "w") as f:
-            logger.debug("Writing chain.")
+            logger.debug("Writing chain to %s.", target["chain"])
             f.write(new_chain)
         with open(target["fullchain"], "w") as f:
-            logger.debug("Writing full chain.")
+            logger.debug("Writing full chain to %s.", target["fullchain"])
             f.write(new_cert + new_chain)
         return target_version
