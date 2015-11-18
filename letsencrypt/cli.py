@@ -69,6 +69,7 @@ USAGE = SHORT_USAGE + """Choice of server plugins for obtaining and installing c
   %s
   --standalone      Run a standalone webserver for authentication
   %s
+  --webroot         Place files in a server's webroot folder for authentication
 
 OR use different servers to obtain (authenticate) the cert and then install it:
 
@@ -80,7 +81,7 @@ More detailed help:
                         the available topics are:
 
    all, automation, paths, security, testing, or any of the subcommands or
-   plugins (certonly, install, nginx, apache, standalone, etc)
+   plugins (certonly, install, nginx, apache, standalone, webroot, etc)
 """
 
 
@@ -408,6 +409,8 @@ def choose_configurator_plugins(args, config, plugins, verb):
         req_auth = set_configurator(req_auth, "apache")
     if args.standalone:
         req_auth = set_configurator(req_auth, "standalone")
+    if args.webroot:
+        req_auth = set_configurator(req_auth, "webroot")
     logger.debug("Requested authenticator %s and installer %s", req_auth, req_inst)
 
     # Try to meet the user's request and/or ask them to pick plugins
@@ -1026,6 +1029,8 @@ def _plugins_parsing(helpful, plugins):
                 help="Obtain and install certs using Nginx")
     helpful.add("plugins", "--standalone", action="store_true",
                 help='Obtain certs using a "standalone" webserver.')
+    helpful.add("plugins", "--webroot", action="store_true",
+                help='Obtain certs by placing files in a webroot directory.')
 
     # things should not be reorder past/pre this comment:
     # plugins_group should be displayed in --help before plugin

@@ -201,6 +201,10 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             self.assertTrue("Could not find configuration root" in ret)
             self.assertTrue("NoInstallationError" in ret)
 
+        args = ["certonly", "--webroot"]
+        ret, _, _, _ = self._call(args)
+        self.assertTrue("--webroot-path must be set" in ret)
+
         with MockedVerb("certonly") as mock_certonly:
             self._call(["auth", "--standalone"])
             self.assertEqual(1, mock_certonly.call_count)
