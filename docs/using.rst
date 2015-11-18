@@ -145,32 +145,79 @@ SSL certificates!
 Plugins
 =======
 
-Officially supported plugins:
+=========== = = ===============================================================
+Plugin      A I Notes
+=========== = = ===============================================================
+apache_     Y Y Automates obtaining and installing a cert with Apache 2.4 on
+                Debian-based distributions with ``libaugeas0`` 1.0+.
+standalone_ Y N Uses a "standalone" webserver to obtain a cert.
+webroot_    Y N Obtains a cert using an already running webserver.
+manual_     Y N Helps you obtain a cert by giving you instructions to perform
+                domain validation yourself.
+nginx_      Y Y Very experimental and not included in letsencrypt-auto_.
+=========== = = ===============================================================
 
-========== = = ================================================================
-Plugin     A I Notes and status
-========== = = ================================================================
-standalone Y N Very stable. Uses port 80 (force by
-               ``--standalone-supported-challenges http-01``) or 443
-               (force by ``--standalone-supported-challenges tls-sni-01``).
-apache     Y Y Alpha. Automates Apache installation, works fairly well but on
-               Debian-based distributions only for now.
-webroot    Y N Works with already running webserver, by writing necessary files
-               to the disk (``--webroot-path`` should be pointed to your
-               ``public_html``). Currently, when multiple domains are specified
-               (`-d`), they must all use the same web root path.
-manual     Y N Hidden from standard UI, use with ``-a manual``. Requires to
-               copy and paste commands into a new terminal session. Allows to
-               run client on machine different than target webserver, e.g. your
-               laptop.
-nginx      Y Y Very experimental. Not included in letsencrypt-auto_.
-========== = = ================================================================
+Apache
+------
 
-Third party plugins are listed at
-https://github.com/letsencrypt/letsencrypt/wiki/Plugins. If
-that's not enough, you can always :ref:`write your own plugin
-<dev-plugin>`.
+If you're running Apache 2.4 on a Debian-based OS with version 1.0+ of
+the ``libaugeas0`` package available, you can use the Apache plugin.
+This automates both obtaining and installing certs on an Apache
+webserver. To specify this plugin on the command line, simply include
+``--apache``.
 
+Standalone
+----------
+
+To obtain a cert using a "standalone" webserver, you can use the
+standalone plugin by including ``certonly`` and ``--standalone``
+on the command line. This plugin needs to bind to port 80 or 443 in
+order to perform domain validation, so you may need to stop your
+existing webserver. To control which port the plugin uses, include
+one of the options shown below on the command line.
+
+    * ``--standalone-supported-challenges http-01`` to use port 80
+    * ``--standalone-supported-challenges tls-sni-01`` to use port 443
+
+Webroot
+-------
+
+If you're running a webserver that you don't want to stop to use
+standalone, you can use the webroot plugin to obtain a cert by
+including ``certonly`` and ``--webroot`` on the command line. In
+addition, you'll need to specify ``--webroot-path`` with the root
+directory of the files served by your webserver. For example,
+``--webroot-path /var/www/html`` or
+``--webroot-path /usr/share/nginx/html`` are two common webroot paths.
+If multiple domains are specified, they must all use the same path.
+Additionally, your server must be configured to serve files from
+hidden directories.
+
+Manual
+------
+
+If you'd like to obtain a cert running ``letsencrypt`` on a machine
+other than your target webserver or perform the steps for domain
+validation yourself, you can use the manual plugin. While hidden from
+the UI, you can use the plugin to obtain a cert by specifying
+``certonly`` and ``--manual`` on the command line. This requires you
+to copy and paste commands into another terminal session.
+
+Nginx
+-----
+
+In the future, if you're running Nginx you can use this plugin to
+automatically obtain and install your certificate. The Nginx plugin
+is still experimental, however, and is not installed with
+letsencrypt-auto_. If installed, you can select this plugin on the
+command line by including ``--nginx``.
+
+Third party plugins
+-------------------
+
+These plugins are listed at
+https://github.com/letsencrypt/letsencrypt/wiki/Plugins. If you're
+interested, you can also :ref:`write your own plugin <dev-plugin>`.
 
 Renewal
 =======
