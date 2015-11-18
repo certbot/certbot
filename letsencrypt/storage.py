@@ -143,13 +143,14 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         # Each element must be referenced with an absolute path
         if any(not os.path.isabs(x) for x in
                (self.cert, self.privkey, self.chain, self.fullchain)):
-            logger.debug("Element is not reference with an absolute file")
+            logger.debug("Element %s is not referenced with an "
+                         "absolute file.", x)
             return False
 
         # Each element must exist and be a symbolic link
         if any(not os.path.islink(x) for x in
                (self.cert, self.privkey, self.chain, self.fullchain)):
-            logger.debug("Element is not a symbolic link")
+            logger.debug("Element %s is not a symbolic link.", x)
             return False
         for kind in ALL_FOUR:
             link = getattr(self, kind)
@@ -164,22 +165,24 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
                 self.cli_config.archive_dir, self.lineagename)
             if not os.path.samefile(os.path.dirname(target),
                                     desired_directory):
-                logger.debug("Element does not point within the cert "
-                             "lineage's directory within the official "
-                             "archive directory")
+                logger.debug("Element's link does not point within the "
+                             "cert lineage's directory within the "
+                             "official archive directory. Link: %s, "
+                             "archive directory: %s.",
+                             os.path.dirname(target), desired_directory)
                 return False
 
             # The link must point to a file that exists
             if not os.path.exists(target):
-                logger.debug("File does not exist")
+                logger.debug("Link %s points to a file that does not exist.", target)
                 return False
 
             # The link must point to a file that follows the archive
             # naming convention
             pattern = re.compile(r"^{0}([0-9]+)\.pem$".format(kind))
             if not pattern.match(os.path.basename(target)):
-                logger.debug("Files does not follow the archive naming "
-                             "convention")
+                logger.debug("Link %s does not follow the archive naming "
+                             "convention.", os.path.basename(target))
                 return False
 
             # It is NOT required that the link's target be a regular
@@ -264,7 +267,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             raise errors.CertStorageError("unknown kind of item")
         link = getattr(self, kind)
         if not os.path.exists(link):
-            logger.debug("File does not exist")
+            logger.debug("Target %s of kind %s does not exist.", link, kind)
             return None
         target = os.readlink(link)
         if not os.path.isabs(target):
@@ -289,13 +292,14 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         pattern = re.compile(r"^{0}([0-9]+)\.pem$".format(kind))
         target = self.current_target(kind)
         if target is None or not os.path.exists(target):
-            logger.debug("File does not exist")
+            logger.debug("Current-version target for %s "
+                         "does not exist at %s.", kind, target)
             target = ""
         matches = pattern.match(os.path.basename(target))
         if matches:
             return int(matches.groups()[0])
         else:
-            logger.debug("No matches")
+            logger.debug("No matches for target %s.", kind)
             return None
 
     def version(self, kind, version):
@@ -545,7 +549,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
 
             # Renewals on the basis of revocation
             if self.ocsp_revoked(self.latest_common_version()):
-                logger.debug("Should renew, certificate is revoked")
+                logger.debug("Should renew, certificate is revoked.")
                 return True
 
             # Renewals on the basis of expiry time
@@ -554,7 +558,9 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
                 "cert", self.latest_common_version()))
             now = pytz.UTC.fromutc(datetime.datetime.utcnow())
             if expiry < add_time_interval(now, interval):
-                logger.debug("Should renew, certificate is expired")
+                logger.debug("Should renew, certificate "
+                             "has expired since %s.",
+                             expiry.strftime("%Y-%m-%d %H:%M:%S %Z"))
                 return True
         return False
 
@@ -606,7 +612,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
                   cli_config.live_dir):
             if not os.path.exists(i):
                 os.makedirs(i, 0700)
-                logger.debug("Creating CLI config directories")
+                logger.debug("Creating CLI config directory %s.", i)
         config_file, config_filename = le_util.unique_lineage_name(
             cli_config.renewal_configs_dir, lineagename)
         if not config_filename.endswith(".conf"):
@@ -627,7 +633,8 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
                 "live directory exists for " + lineagename)
         os.mkdir(archive)
         os.mkdir(live_dir)
-        logger.debug("Archive and live directories created")
+        logger.debug("Archive directory %s and live "
+                     "directory %s created.", archive, live_dir)
         relative_archive = os.path.join("..", "..", "archive", lineagename)
 
         # Put the data into the appropriate files on disk
@@ -637,19 +644,19 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             os.symlink(os.path.join(relative_archive, kind + "1.pem"),
                        target[kind])
         with open(target["cert"], "w") as f:
-            logger.debug("Writing certificate")
+            logger.debug("Writing certificate.")
             f.write(cert)
         with open(target["privkey"], "w") as f:
-            logger.debug("Writing private key")
+            logger.debug("Writing private key.")
             f.write(privkey)
             # XXX: Let's make sure to get the file permissions right here
         with open(target["chain"], "w") as f:
-            logger.debug("Writing chain")
+            logger.debug("Writing chain.")
             f.write(chain)
         with open(target["fullchain"], "w") as f:
             # assumes that OpenSSL.crypto.dump_certificate includes
             # ending newline character
-            logger.debug("Writing full chain")
+            logger.debug("Writing full chain.")
             f.write(cert + chain)
 
         # Document what we've done in a new renewal config file
@@ -664,7 +671,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
                                                     " in the renewal process"]
         # TODO: add human-readable comments explaining other available
         #       parameters
-        logger.debug("Writing new config")
+        logger.debug("Writing new config %s.", config_filename)
         new_config.write()
         return cls(new_config.filename, cli_config)
 
@@ -718,17 +725,17 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             os.symlink(old_privkey, target["privkey"])
         else:
             with open(target["privkey"], "w") as f:
-                logger.debug("Writing new private key")
+                logger.debug("Writing new private key.")
                 f.write(new_privkey)
 
         # Save everything else
         with open(target["cert"], "w") as f:
-            logger.debug("Writing certificate")
+            logger.debug("Writing certificate.")
             f.write(new_cert)
         with open(target["chain"], "w") as f:
-            logger.debug("Writing chain")
+            logger.debug("Writing chain.")
             f.write(new_chain)
         with open(target["fullchain"], "w") as f:
-            logger.debug("Writing full chain")
+            logger.debug("Writing full chain.")
             f.write(new_cert + new_chain)
         return target_version
