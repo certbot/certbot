@@ -49,7 +49,7 @@ done
 sed -i "s/^__version.*/__version__ = '$version'/" letsencrypt/__init__.py
 
 git add -p  # interactive user input
-git -c commit.gpgsign=true commit -m "Release $version"
+git commit --gpg-sign="$RELEASE_GPG_KEY" -m "Release $version"
 git tag --local-user "$RELEASE_GPG_KEY" \
     --sign --message "Release $version" "$tag"
 
