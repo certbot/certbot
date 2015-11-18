@@ -103,8 +103,7 @@ Operating System Packages
 
 .. code-block:: shell
 
-   sudo pacman -S letsencrypt letsencrypt-nginx letsencrypt-apache \
-                  letshelp-letsencrypt
+   sudo pacman -S letsencrypt
 
 **Other Operating Systems**
 
