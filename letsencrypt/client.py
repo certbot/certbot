@@ -135,7 +135,13 @@ def perform_registration(acme, config):
     Actually register new account, trying repeatedly if there are email
     problems
 
-    :returns: the same value as acme.register
+    :param .IConfig config: Client configuration.
+    :param acme.client.Client client: ACME client object.
+
+    :returns: Registration Resource.
+    :rtype: `acme.messages.RegistrationResource`
+
+    :raises .UnexpectedUpdate:
     """
     try:
         return acme.register(messages.NewRegistration.from_data(email=config.email))
