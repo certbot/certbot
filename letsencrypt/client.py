@@ -430,7 +430,7 @@ class Client(object):
         except:
             # TODO: suggest letshelp-letsencypt here
             reporter.add_message(
-                "An error occured and we failed to restore your config and "
+                "An error occurred and we failed to restore your config and "
                 "restart your server. Please submit a bug report to "
                 "https://github.com/letsencrypt/letsencrypt",
                 reporter.HIGH_PRIORITY)
