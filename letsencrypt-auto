@@ -33,7 +33,7 @@ done
 # this script *can* be run as root (not recommended), or fall back to using
 # `su`
 if test "`id -u`" -ne "0" ; then
-  if command -v sudo 1>/dev/null 2>&1; then
+  if command -v sudo 1>/dev/null 2>&1 && sudo -vn 1>/dev/null 2>&1 ; then
     SUDO=sudo
   else
     echo \"sudo\" is not available, will use \"su\" for installation steps...
