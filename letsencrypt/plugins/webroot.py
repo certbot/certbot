@@ -85,24 +85,27 @@ to serve all files under specified web root ({0})."""
         self.full_root = None
 
     def prepare(self):  # pylint: disable=missing-docstring
-        path = self.conf("path")
-        if path is None:
+        path_map = self.conf("map")
+        self.full_roots = {}
+
+        if not path_map:
             raise errors.PluginError("--{0} must be set".format(
                 self.option_name("path")))
-        if not os.path.isdir(path):
-            raise errors.PluginError(
-                path + " does not exist or is not a directory")
-        self.full_root = os.path.join(path, challenges.HTTP01.URI_ROOT_PATH)
-
-        logger.debug("Creating root challenges validation dir at %s",
-                     self.full_root)
-        try:
-            os.makedirs(self.full_root)
-        except OSError as exception:
-            if exception.errno != errno.EEXIST:
+        for name, path in path_map.items():
+            if not os.path.isdir(path):
                 raise errors.PluginError(
-                    "Couldn't create root for http-01 "
-                    "challenge responses: {0}", exception)
+                    path + " does not exist or is not a directory")
+            self.full_roots[name] = os.path.join(path, challenges.HTTP01.URI_ROOT_PATH)
+
+            logger.debug("Creating root challenges validation dir at %s",
+                         self.full_roots[name])
+            try:
+                os.makedirs(self.full_roots[name])
+            except OSError as exception:
+                if exception.errno != errno.EEXIST:
+                    raise errors.PluginError(
+                        "Couldn't create root for {0} http-01 "
+                        "challenge responses: {1}", name, exception)
 
     def perform(self, achalls):  # pylint: disable=missing-docstring
         assert self.full_root is not None
