@@ -110,7 +110,7 @@ class ApacheDvsni(common.TLSSNI01):
 
     def get_dvsni_addrs(self, achall):
         """Return the Apache addresses needed for DVSNI."""
-        vhost = self.configurator.choose_vhost(achall.domain)
+        vhost = self.configurator.choose_vhost(achall.domain, dvsni=True)
 
         # TODO: Checkout _default_ rules.
         dvsni_addrs = set()
