@@ -38,6 +38,7 @@ Use the following snippet in your ``server{...}`` stanza::
 and reload your daemon.
 
 """
+import argparse
 import errno
 import logging
 import os
@@ -53,6 +54,22 @@ from letsencrypt.plugins import common
 
 logger = logging.getLogger(__name__)
 
+class WebrootPathProcessor(argparse.Action):
+    def __call__(self, parser, config, webroot, option_string=None):
+        """
+        Keep a record of --webroot-path / -w flags during processing, so that
+        we know which apply to which -d flags
+        """
+        if not config.webroot_path:
+            config.webroot_path = []
+            # if any --domain flags preceded the first --webroot-path flag,
+            # apply that webroot path to those; subsequent entries in
+            # config.webroot_map are filled in by cli.DomainFlagProcessor
+            if config.domains:
+                config.webroot_map = dict([(d, webroot) for d in config.domains])
+            else:
+                config.webroot_map = {}
+        config.webroot_path.append(webroot)
 
 class Authenticator(common.Plugin):
     """Webroot Authenticator."""
@@ -72,7 +89,7 @@ to serve all files under specified web root ({0})."""
 
     @classmethod
     def add_parser_arguments(cls, add):
-        add("path", help="public_html / webroot path")
+        add("path", "-w", help="public_html / webroot path", action=WebrootPathAccumulator)
 
     def get_chall_pref(self, domain):  # pragma: no cover
         # pylint: disable=missing-docstring,no-self-use,unused-argument

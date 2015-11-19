@@ -683,31 +683,8 @@ class HelpfulArgumentParser(object):
         parsed_args = self.parser.parse_args(self.args)
         parsed_args.func = self.VERBS[self.verb]
 
-        parsed_args.domains = self._parse_domains(parsed_args.domains)
         return parsed_args
 
-    def _parse_domains(self, domains):
-        """Helper function for parse_args() that parses domains from a
-        (possibly) comma separated list and returns list of unique domains.
-
-        :param domains: List of domain flags
-        :type domains: `list` of `string`
-
-        :returns: List of unique domains
-        :rtype: `list` of `string`
-
-        """
-
-        uniqd = None
-
-        if domains:
-            dlist = []
-            for domain in domains:
-                dlist.extend([d.strip() for d in domain.split(",")])
-            # Make sure we don't have duplicates
-            uniqd = [d for i, d in enumerate(dlist) if d not in dlist[:i]]
-
-        return uniqd
 
     def determine_verb(self):
         """Determines the verb/subcommand provided by the user.
@@ -824,6 +801,7 @@ class HelpfulArgumentParser(object):
             return dict([(t, t == chosen_topic) for t in self.help_topics])
 
 
+
 def prepare_and_parse_args(plugins, args):
     """Returns parsed command line arguments.
 
@@ -861,7 +839,7 @@ def prepare_and_parse_args(plugins, args):
     #for subparser in parser_run, parser_auth, parser_install:
     #    subparser.add_argument("domains", nargs="*", metavar="domain")
     helpful.add(None, "-d", "--domains", dest="domains",
-                metavar="DOMAIN", action="append",
+                metavar="DOMAIN", action=DomainFlagProcessor,
                 help="Domain names to apply. For multiple domains you can use "
                 "multiple -d flags or enter a comma separated list of domains "
                 "as a parameter.")
@@ -1044,6 +1022,8 @@ def _plugins_parsing(helpful, plugins):
                 help='Provide laborious manual instructions for obtaining a cert')
     helpful.add("plugins", "--webroot", action="store_true",
                 help='Obtain certs by placing files in a webroot directory.')
+    #helpful.add("plugins", "-w", action=WebrootAction,
+    #            help='Obtain certs by placing files in a webroot directory.')
 
     # things should not be reorder past/pre this comment:
     # plugins_group should be displayed in --help before plugin
@@ -1051,6 +1031,21 @@ def _plugins_parsing(helpful, plugins):
 
     helpful.add_plugin_args(plugins)
 
+class DomainFlagProcessor(argparse.Action):
+    def __call__(self, parser, config, domain_arg, option_string=None):
+        """
+        Process a new -d flag, helping the webroot plugin construct a map of
+        {domain : webrootpath} if -w / --webroot-path is in use
+        """
+        if not config.domains: config.domains = []
+        new_domains = [d.strip() for d in domain_arg.split(",")
+                                  if d not in config.domains]
+        config.domains.extend(new_domains)
+
+        if config.webroot_path:
+            # Each domain has a webroot_path of the most recent -w flag
+            for d in new_domains:
+                config.webroot_map[d] = config.webroot_path[-1]
 
 def setup_log_file_handler(args, logfile, fmt):
     """Setup file debug logging."""
