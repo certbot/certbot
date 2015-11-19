@@ -38,7 +38,6 @@ Use the following snippet in your ``server{...}`` stanza::
 and reload your daemon.
 
 """
-import argparse
 import errno
 import logging
 import os
@@ -92,8 +91,7 @@ to serve all files under specified web root ({0})."""
                 self.option_name("path")))
         for name, path in path_map.items():
             if not os.path.isdir(path):
-                raise errors.PluginError(
-                    path + " does not exist or is not a directory")
+                raise errors.PluginError(path + " does not exist or is not a directory")
             self.full_roots[name] = os.path.join(path, challenges.HTTP01.URI_ROOT_PATH)
 
             logger.debug("Creating root challenges validation dir at %s",
@@ -107,7 +105,7 @@ to serve all files under specified web root ({0})."""
                         "challenge responses: {1}", name, exception)
 
     def perform(self, achalls):  # pylint: disable=missing-docstring
-        assert self.full_root, "Webroot plugin appears to be missing webroot map"
+        assert self.full_roots, "Webroot plugin appears to be missing webroot map"
         return [self._perform_single(achall) for achall in achalls]
 
     def _path_for_achall(self, achall):
