@@ -18,13 +18,11 @@ if [ "$1" = "--production" ] ; then
     if ! echo "$version" | grep -q -e '[0-9]\+.[0-9]\+.[0-9]\+' ; then
         echo "Version doesn't look like 1.2.3"
     fi
-    exit 0
 else
     # XXX replace 0.0.0 with the last-released-version
-    version="$version.dev$(date +%Y%m%d)"
+    version="$version.dev$(date +%Y%m%d)1"
     DEV_RELEASE_BRANCH="dev-release"
     echo Releasing developer version "$version"...
-    exit 0
 fi
 
 # TODO: create a real release key instead of using Kuba's personal one
