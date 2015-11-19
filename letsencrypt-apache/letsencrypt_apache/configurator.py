@@ -225,6 +225,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                                         "SSLCertificateChainFile", chain_path)
                 else:
                     self.aug.set(path["chain_path"][-1], chain_path)
+            else:
+                raise errors.PluginError("--chain-path is required for your version of Apache")
         else:
             if not fullchain_path:
                 raise errors.PluginError("Please provide the --fullchain-path\

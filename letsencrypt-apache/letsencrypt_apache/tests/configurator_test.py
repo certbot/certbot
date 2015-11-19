@@ -306,6 +306,19 @@ class TwoVhost80Test(util.ApacheTest):
                           lambda: self.config.deploy_cert(
                               "random.demo", "example/cert.pem", "example/key.pem"))
 
+    def test_deploy_cert_old_apache_no_chain(self):
+        self.config = util.get_apache_configurator(
+            self.config_path, self.config_dir, self.work_dir, version=(2, 4, 7))
+
+        self.config.parser.modules.add("ssl_module")
+        self.config.parser.modules.add("mod_ssl.c")
+
+        # Get the default 443 vhost
+        self.config.assoc["random.demo"] = self.vh_truth[1]
+        self.assertRaises(errors.PluginError,
+                          lambda: self.config.deploy_cert(
+                              "random.demo", "example/cert.pem", "example/key.pem"))
+
     def test_deploy_cert(self):
         self.config.parser.modules.add("ssl_module")
         self.config.parser.modules.add("mod_ssl.c")
