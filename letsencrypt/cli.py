@@ -381,7 +381,7 @@ def diagnose_configurator_problem(cfg_type, requested, plugins):
     raise errors.PluginSelectionError(msg)
 
 
-def choose_configurator_plugins(args, config, plugins, verb): # pylint: disable=too-many-branches
+def choose_configurator_plugins(args, config, plugins, verb):  # pylint: disable=too-many-branches
     """
     Figure out which configurator we're going to use
 

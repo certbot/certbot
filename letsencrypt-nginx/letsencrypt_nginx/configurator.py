@@ -379,11 +379,12 @@ class NginxConfigurator(common.Plugin):
         :param unused_options: Not currently used
         :type unused_options: Not Available
         """
-        redirect_block = [[['if', '($scheme != "https")'],
+        redirect_block = [[
+            ['if', '($scheme != "https")'],
             [['return', '301 https://$host$request_uri']]
         ]]
-        self.parser.add_server_directives(vhost.filep, vhost.names,
-            redirect_block)
+        self.parser.add_server_directives(
+            vhost.filep, vhost.names, redirect_block)
         logger.info("Redirecting all traffic to ssl in %s", vhost.filep)
 
     ######################################

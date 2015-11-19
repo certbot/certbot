@@ -40,8 +40,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.work_dir = os.path.join(self.tmp_dir, 'work')
         self.logs_dir = os.path.join(self.tmp_dir, 'logs')
         self.standard_args = ['--text', '--config-dir', self.config_dir,
-            '--work-dir', self.work_dir, '--logs-dir', self.logs_dir,
-            '--agree-dev-preview']
+                              '--work-dir', self.work_dir, '--logs-dir',
+                              self.logs_dir, '--agree-dev-preview']
 
     def tearDown(self):
         shutil.rmtree(self.tmp_dir)
@@ -57,7 +57,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         args = self.standard_args + args
         with mock.patch('letsencrypt.cli.sys.stdout') as stdout:
             with mock.patch('letsencrypt.cli.sys.stderr') as stderr:
-                ret = cli.main(args[:]) # NOTE: parser can alter its args!
+                ret = cli.main(args[:])  # NOTE: parser can alter its args!
         return ret, stdout, stderr
 
     def _call_stdout(self, args):

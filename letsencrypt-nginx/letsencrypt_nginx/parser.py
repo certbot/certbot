@@ -413,7 +413,7 @@ def _regex_match(target_name, name):
             return True
         else:
             return False
-    except re.error: # pragma: no cover
+    except re.error:  # pragma: no cover
         # perl-compatible regexes are sometimes not recognized by python
         return False
 

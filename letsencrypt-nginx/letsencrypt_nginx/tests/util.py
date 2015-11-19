@@ -50,7 +50,7 @@ def get_nginx_configurator(
     backups = os.path.join(work_dir, "backups")
 
     with mock.patch("letsencrypt_nginx.configurator.le_util."
-            "exe_exists") as mock_exe_exists:
+                    "exe_exists") as mock_exe_exists:
         mock_exe_exists.return_value = True
 
         config = configurator.NginxConfigurator(
