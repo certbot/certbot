@@ -131,11 +131,8 @@ class TwoVhost80Test(util.ApacheTest):
         self.config.save()
         mock_select.return_value = self.vh_truth[1]
 
-        vhost = self.config.choose_vhost("none.com")
+        self.config.choose_vhost("none.com")
         self.config.save()
-
-        with open(vhost.filep) as f:
-            print f.read()
 
         loc_cert = self.config.parser.find_dir(
             'SSLCertificateFile', None, self.vh_truth[1].path, False)
