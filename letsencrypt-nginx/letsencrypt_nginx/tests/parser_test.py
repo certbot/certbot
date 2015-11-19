@@ -133,11 +133,11 @@ class NginxParserTest(util.NginxTest):
         self.assertEqual(1, len(re.findall(ssl_re, dump)))
 
         server_conf = nparser.abs_path('server.conf')
-        nparser.add_server_directives(server_conf,
-                                      set(['alias', 'another.alias',
-                                           'somename']),
+        names = set(['alias', 'another.alias', 'somename'])
+        nparser.add_server_directives(server_conf, names,
                                       [['foo', 'bar'], ['ssl_certificate',
                                                         '/etc/ssl/cert2.pem']])
+        nparser.add_server_directives(server_conf, names, [['foo', 'bar']])
         self.assertEqual(nparser.parsed[server_conf],
                          [['ssl_certificate', '/etc/ssl/cert2.pem'],
                           ['foo', 'bar'],

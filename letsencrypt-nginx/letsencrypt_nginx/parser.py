@@ -246,7 +246,7 @@ class NginxParser(object):
                 # Can't be a server block
                 return False
 
-            if item[0] == 'server_name':
+            if len(item) > 0 and item[0] == 'server_name':
                 server_names.update(_get_servernames(item[1]))
 
         return server_names == names
@@ -257,6 +257,8 @@ class NginxParser(object):
 
         ..note :: If replace is True, this raises a misconfiguration error
         if the directive does not already exist.
+        ..note :: If replace is False nothing gets added if an identical
+        block exists already.
 
         ..todo :: Doesn't match server blocks whose server_name directives are
             split across multiple conf files.
@@ -411,7 +413,7 @@ def _regex_match(target_name, name):
             return True
         else:
             return False
-    except re.error:
+    except re.error: # pragma: no cover
         # perl-compatible regexes are sometimes not recognized by python
         return False
 
@@ -425,7 +427,7 @@ def _is_include_directive(entry):
 
     """
     return (isinstance(entry, list) and
-            entry[0] == 'include' and len(entry) == 2 and
+            len(entry) == 2 and entry[0] == 'include' and
             isinstance(entry[1], str))
 
 
@@ -480,7 +482,9 @@ def _add_directives(block, directives, replace=False):
         if not replace:
             # We insert new directives at the top of the block, mostly
             # to work around https://trac.nginx.org/nginx/ticket/810
-            block.insert(0, directive)
+            # Only add directive if its not already in the block
+            if directive not in block:
+                block.insert(0, directive)
         else:
             changed = False
             if len(directive) == 0:

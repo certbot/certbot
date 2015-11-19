@@ -13,15 +13,15 @@ from letsencrypt_apache.tests import util
 class DvsniPerformTest(util.ApacheTest):
     """Test the ApacheDVSNI challenge."""
 
-    auth_key = common_test.DvsniTest.auth_key
-    achalls = common_test.DvsniTest.achalls
+    auth_key = common_test.TLSSNI01Test.auth_key
+    achalls = common_test.TLSSNI01Test.achalls
 
     def setUp(self):  # pylint: disable=arguments-differ
         super(DvsniPerformTest, self).setUp()
 
         config = util.get_apache_configurator(
             self.config_path, self.config_dir, self.work_dir)
-        config.config.dvsni_port = 443
+        config.config.tls_sni_01_port = 443
 
         from letsencrypt_apache import dvsni
         self.sni = dvsni.ApacheDvsni(config)
@@ -46,7 +46,7 @@ class DvsniPerformTest(util.ApacheTest):
 
         achall = self.achalls[0]
         self.sni.add_chall(achall)
-        response = self.achalls[0].gen_response(self.auth_key)
+        response = self.achalls[0].response(self.auth_key)
         mock_setup_cert = mock.MagicMock(return_value=response)
         # pylint: disable=protected-access
         self.sni._setup_challenge_cert = mock_setup_cert
@@ -72,7 +72,7 @@ class DvsniPerformTest(util.ApacheTest):
         acme_responses = []
         for achall in self.achalls:
             self.sni.add_chall(achall)
-            acme_responses.append(achall.gen_response(self.auth_key))
+            acme_responses.append(achall.response(self.auth_key))
 
         mock_setup_cert = mock.MagicMock(side_effect=acme_responses)
         # pylint: disable=protected-access
@@ -100,7 +100,7 @@ class DvsniPerformTest(util.ApacheTest):
         z_domains = []
         for achall in self.achalls:
             self.sni.add_chall(achall)
-            z_domain = achall.gen_response(self.auth_key).z_domain
+            z_domain = achall.response(self.auth_key).z_domain
             z_domains.append(set([z_domain]))
 
         self.sni._mod_config()  # pylint: disable=protected-access

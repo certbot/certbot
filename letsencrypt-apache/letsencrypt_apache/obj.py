@@ -102,6 +102,7 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
 
     :ivar bool ssl: SSLEngine on in vhost
     :ivar bool enabled: Virtual host is enabled
+    :ivar bool modmacro: VirtualHost is using mod_macro
 
     https://httpd.apache.org/docs/2.4/vhosts/details.html
 
@@ -112,7 +113,9 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
     # ?: is used for not returning enclosed characters
     strip_name = re.compile(r"^(?:.+://)?([^ :$]*)")
 
-    def __init__(self, filep, path, addrs, ssl, enabled, name=None, aliases=None):
+    def __init__(self, filep, path, addrs, ssl, enabled, name=None,
+                 aliases=None, modmacro=False):
+
         # pylint: disable=too-many-arguments
         """Initialize a VH."""
         self.filep = filep
@@ -122,6 +125,7 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
         self.aliases = aliases if aliases is not None else set()
         self.ssl = ssl
         self.enabled = enabled
+        self.modmacro = modmacro
 
     def get_names(self):
         """Return a set of all names."""
@@ -141,21 +145,25 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
             "Name: {name}\n"
             "Aliases: {aliases}\n"
             "TLS Enabled: {tls}\n"
-            "Site Enabled: {active}".format(
+            "Site Enabled: {active}\n"
+            "mod_macro Vhost: {modmacro}".format(
                 filename=self.filep,
                 vhpath=self.path,
                 addrs=", ".join(str(addr) for addr in self.addrs),
                 name=self.name if self.name is not None else "",
                 aliases=", ".join(name for name in self.aliases),
                 tls="Yes" if self.ssl else "No",
-                active="Yes" if self.enabled else "No"))
+                active="Yes" if self.enabled else "No",
+                modmacro="Yes" if self.modmacro else "No"))
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
             return (self.filep == other.filep and self.path == other.path and
                     self.addrs == other.addrs and
                     self.get_names() == other.get_names() and
-                    self.ssl == other.ssl and self.enabled == other.enabled)
+                    self.ssl == other.ssl and
+                    self.enabled == other.enabled and
+                    self.modmacro == other.modmacro)
 
         return False
 

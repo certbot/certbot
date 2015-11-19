@@ -7,6 +7,8 @@ from letsencrypt import errors
 from letsencrypt import reverter
 from letsencrypt.plugins import common
 
+from letsencrypt_apache import constants
+
 logger = logging.getLogger(__name__)
 
 
@@ -27,10 +29,12 @@ class AugeasConfigurator(common.Plugin):
     def __init__(self, *args, **kwargs):
         super(AugeasConfigurator, self).__init__(*args, **kwargs)
 
-        # Set Augeas flags to not save backup (we do it ourselves)
-        # Set Augeas to not load anything by default
-        my_flags = augeas.Augeas.NONE | augeas.Augeas.NO_MODL_AUTOLOAD
-        self.aug = augeas.Augeas(flags=my_flags)
+        self.aug = augeas.Augeas(
+            # specify a directory to load our preferred lens from
+            loadpath=constants.AUGEAS_LENS_DIR,
+            # Do not save backup (we do it ourselves), do not load
+            # anything by default
+            flags=(augeas.Augeas.NONE | augeas.Augeas.NO_MODL_AUTOLOAD))
         self.save_notes = ""
 
         # See if any temporary changes need to be recovered
@@ -69,7 +73,8 @@ class AugeasConfigurator(common.Plugin):
 
         This function first checks for save errors, if none are found,
         all configuration changes made will be saved. According to the
-        function parameters.
+        function parameters. If an exception is raised, a new checkpoint
+        was not created.
 
         :param str title: The title of the save. If a title is given, the
             configuration will be saved as a new checkpoint and put in a
@@ -78,8 +83,9 @@ class AugeasConfigurator(common.Plugin):
         :param bool temporary: Indicates whether the changes made will
             be quickly reversed in the future (ie. challenges)
 
-        :raises .errors.PluginError: If there was an error in Augeas, in an
-            attempt to save the configuration, or an error creating a checkpoint
+        :raises .errors.PluginError: If there was an error in Augeas, in
+            an attempt to save the configuration, or an error creating a
+            checkpoint
 
         """
         save_state = self.aug.get("/augeas/save")
@@ -118,15 +124,15 @@ class AugeasConfigurator(common.Plugin):
             except errors.ReverterError as err:
                 raise errors.PluginError(str(err))
 
+        self.aug.set("/augeas/save", save_state)
+        self.save_notes = ""
+        self.aug.save()
+
         if title and not temporary:
             try:
                 self.reverter.finalize_checkpoint(title)
             except errors.ReverterError as err:
                 raise errors.PluginError(str(err))
-
-        self.aug.set("/augeas/save", save_state)
-        self.save_notes = ""
-        self.aug.save()
 
     def _log_save_errors(self, ex_errs):
         """Log errors due to bad Augeas save.

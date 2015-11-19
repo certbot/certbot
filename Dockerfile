@@ -21,7 +21,8 @@ WORKDIR /opt/letsencrypt
 # If <dest> doesn't exist, it is created along with all missing
 # directories in its path.
 
-COPY bootstrap/ubuntu.sh /opt/letsencrypt/src/
+
+COPY bootstrap/ubuntu.sh /opt/letsencrypt/src/ubuntu.sh
 RUN /opt/letsencrypt/src/ubuntu.sh && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* \
@@ -48,7 +49,7 @@ COPY letsencrypt-apache /opt/letsencrypt/src/letsencrypt-apache/
 COPY letsencrypt-nginx /opt/letsencrypt/src/letsencrypt-nginx/
 
 
-# requirements.txt not installed!
+# py26reqs.txt not installed!
 RUN virtualenv --no-site-packages -p python2 /opt/letsencrypt/venv && \
     /opt/letsencrypt/venv/bin/pip install \
     -e /opt/letsencrypt/src/acme \

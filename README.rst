@@ -35,11 +35,11 @@ It's all automated:
 
 All you need to do to sign a single domain is::
 
-  user@www:~$ sudo letsencrypt -d www.example.org auth
+  user@www:~$ sudo letsencrypt -d www.example.org certonly
 
 For multiple domains (SAN) use::
 
-  user@www:~$ sudo letsencrypt -d www.example.org -d example.org auth
+  user@www:~$ sudo letsencrypt -d www.example.org -d example.org certonly
 
 and if you have a compatible web server (Apache or Nginx), Let's Encrypt can
 not only get a new certificate, but also deploy it and configure your

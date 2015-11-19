@@ -60,7 +60,7 @@ def test_authenticator(plugin, config, temp_dir):
                 "Plugin failed to complete %s for %s in %s",
                 type(achalls[i]), achalls[i].domain, config)
             success = False
-        elif isinstance(responses[i], challenges.DVSNIResponse):
+        elif isinstance(responses[i], challenges.TLSSNI01):
             verify = functools.partial(responses[i].simple_verify, achalls[i],
                                        achalls[i].domain,
                                        util.JWK.public_key(),
@@ -68,10 +68,10 @@ def test_authenticator(plugin, config, temp_dir):
                                        port=plugin.https_port)
             if _try_until_true(verify):
                 logger.info(
-                    "DVSNI verification for %s succeeded", achalls[i].domain)
+                    "tls-sni-01 verification for %s succeeded", achalls[i].domain)
             else:
                 logger.error(
-                    "DVSNI verification for %s in %s failed",
+                    "tls-sni-01 verification for %s in %s failed",
                     achalls[i].domain, config)
                 success = False
 
@@ -99,12 +99,12 @@ def _create_achalls(plugin):
     for domain in names:
         prefs = plugin.get_chall_pref(domain)
         for chall_type in prefs:
-            if chall_type == challenges.DVSNI:
-                chall = challenges.DVSNI(
-                    token=os.urandom(challenges.DVSNI.TOKEN_SIZE))
+            if chall_type == challenges.TLSSNI01:
+                chall = challenges.TLSSNI01(
+                    token=os.urandom(challenges.TLSSNI01.TOKEN_SIZE))
                 challb = acme_util.chall_to_challb(
                     chall, messages.STATUS_PENDING)
-                achall = achallenges.DVSNI(
+                achall = achallenges.KeyAuthorizationAnnotatedChallenge(
                     challb=challb, domain=domain, account_key=util.JWK)
                 achalls.append(achall)
 

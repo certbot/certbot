@@ -14,7 +14,6 @@ import zope.interface
 from acme import challenges
 from acme import crypto_util as acme_crypto_util
 
-from letsencrypt import achallenges
 from letsencrypt import constants as core_constants
 from letsencrypt import crypto_util
 from letsencrypt import errors
@@ -94,7 +93,7 @@ class NginxConfigurator(common.Plugin):
         # These will be set in the prepare function
         self.parser = None
         self.version = version
-        self._enhance_func = {}  # TODO: Support at least redirects
+        self._enhance_func = {"redirect": self._enable_redirect}
 
         # Set up reverter
         self.reverter = reverter.Reverter(self.config)
@@ -108,6 +107,10 @@ class NginxConfigurator(common.Plugin):
     # This is called in determine_authenticator and determine_installer
     def prepare(self):
         """Prepare the authenticator/installer."""
+        # Verify Nginx is installed
+        if not le_util.exe_exists(self.conf('ctl')):
+            raise errors.NoInstallationError
+
         self.parser = parser.NginxParser(
             self.conf('server-root'), self.mod_ssl_conf)
 
@@ -297,7 +300,7 @@ class NginxConfigurator(common.Plugin):
         """Make a server SSL.
 
         Make a server SSL based on server_name and filename by adding a
-        ``listen IConfig.dvsni_port ssl`` directive to the server block.
+        ``listen IConfig.tls_sni_01_port ssl`` directive to the server block.
 
         .. todo:: Maybe this should create a new block instead of modifying
             the existing one?
@@ -307,7 +310,7 @@ class NginxConfigurator(common.Plugin):
 
         """
         snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
-        ssl_block = [['listen', '{0} ssl'.format(self.config.dvsni_port)],
+        ssl_block = [['listen', '{0} ssl'.format(self.config.tls_sni_01_port)],
                      # access and error logs necessary for integration
                      # testing (non-root)
                      ['access_log', os.path.join(
@@ -321,7 +324,8 @@ class NginxConfigurator(common.Plugin):
             vhost.filep, vhost.names, ssl_block)
         vhost.ssl = True
         vhost.raw.extend(ssl_block)
-        vhost.addrs.add(obj.Addr('', str(self.config.dvsni_port), True, False))
+        vhost.addrs.add(obj.Addr(
+            '', str(self.config.tls_sni_01_port), True, False))
 
     def get_all_certs_keys(self):
         """Find all existing keys, certs from configuration.
@@ -340,7 +344,7 @@ class NginxConfigurator(common.Plugin):
     ##################################
     def supported_enhancements(self):  # pylint: disable=no-self-use
         """Returns currently supported enhancements."""
-        return []
+        return ['redirect']
 
     def enhance(self, domain, enhancement, options=None):
         """Enhance configuration.
@@ -361,6 +365,26 @@ class NginxConfigurator(common.Plugin):
                 "Unsupported enhancement: {0}".format(enhancement))
         except errors.PluginError:
             logger.warn("Failed %s for %s", enhancement, domain)
+
+    def _enable_redirect(self, vhost, unused_options):
+        """Redirect all equivalent HTTP traffic to ssl_vhost.
+
+        Add rewrite directive to non https traffic
+
+        .. note:: This function saves the configuration
+
+        :param vhost: Destination of traffic, an ssl enabled vhost
+        :type vhost: :class:`~letsencrypt_nginx.obj.VirtualHost`
+
+        :param unused_options: Not currently used
+        :type unused_options: Not Available
+        """
+        redirect_block = [[['if', '($scheme != "https")'],
+            [['return', '301 https://$host$request_uri']]
+        ]]
+        self.parser.add_server_directives(vhost.filep, vhost.names,
+            redirect_block)
+        logger.info("Redirecting all traffic to ssl in %s", vhost.filep)
 
     ######################################
     # Nginx server management (IInstaller)
@@ -536,7 +560,7 @@ class NginxConfigurator(common.Plugin):
     ###########################################################################
     def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use
         """Return list of challenge preferences."""
-        return [challenges.DVSNI]
+        return [challenges.TLSSNI01]
 
     # Entry point in main.py for performing challenges
     def perform(self, achalls):
@@ -552,11 +576,10 @@ class NginxConfigurator(common.Plugin):
         nginx_dvsni = dvsni.NginxDvsni(self)
 
         for i, achall in enumerate(achalls):
-            if isinstance(achall, achallenges.DVSNI):
-                # Currently also have dvsni hold associated index
-                # of the challenge. This helps to put all of the responses back
-                # together when they are all complete.
-                nginx_dvsni.add_chall(achall, i)
+            # Currently also have dvsni hold associated index
+            # of the challenge. This helps to put all of the responses back
+            # together when they are all complete.
+            nginx_dvsni.add_chall(achall, i)
 
         sni_response = nginx_dvsni.perform()
         # Must restart in order to activate the challenges.

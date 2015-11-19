@@ -13,7 +13,7 @@ from letsencrypt_nginx import nginxparser
 logger = logging.getLogger(__name__)
 
 
-class NginxDvsni(common.Dvsni):
+class NginxDvsni(common.TLSSNI01):
     """Class performs DVSNI challenges within the Nginx configurator.
 
     :ivar configurator: NginxConfigurator object
@@ -48,7 +48,7 @@ class NginxDvsni(common.Dvsni):
 
         addresses = []
         default_addr = "{0} default_server ssl".format(
-            self.configurator.config.dvsni_port)
+            self.configurator.config.tls_sni_01_port)
 
         for achall in self.achalls:
             vhost = self.configurator.choose_vhost(achall.domain)
@@ -99,8 +99,8 @@ class NginxDvsni(common.Dvsni):
         for key, body in main:
             if key == ['http']:
                 found_bucket = False
-                for key, _ in body:
-                    if key == bucket_directive[0]:
+                for k, _ in body:
+                    if k == bucket_directive[0]:
                         found_bucket = True
                 if not found_bucket:
                     body.insert(0, bucket_directive)
@@ -141,7 +141,7 @@ class NginxDvsni(common.Dvsni):
         block = [['listen', str(addr)] for addr in addrs]
 
         block.extend([['server_name',
-                       achall.gen_response(achall.account_key).z_domain],
+                       achall.response(achall.account_key).z_domain],
                       ['include', self.configurator.parser.loc["ssl_options"]],
                       # access and error logs necessary for
                       # integration testing (non-root)
