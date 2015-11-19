@@ -304,8 +304,7 @@ class TwoVhost80Test(util.ApacheTest):
         self.config.assoc["random.demo"] = self.vh_truth[1]
         self.assertRaises(errors.PluginError,
                           lambda: self.config.deploy_cert(
-                              "random.demo", "example/cert.pem", "example/key.pem",
-                              "example/cert_chain.pem"))
+                              "random.demo", "example/cert.pem", "example/key.pem"))
 
     def test_deploy_cert(self):
         self.config.parser.modules.add("ssl_module")
