@@ -1022,6 +1022,12 @@ def _plugins_parsing(helpful, plugins):
                 help='Provide laborious manual instructions for obtaining a cert')
     helpful.add("plugins", "--webroot", action="store_true",
                 help='Obtain certs by placing files in a webroot directory.')
+
+    # This would normally be a flag within the webroot plugin,  the webroot
+    # plugin, but because it is parsed in conjunction with --domains, it lives
+    # here
+    helpful.add("webroot", "-w", "--webroot-path", action=WebrootPathProcessor,
+                help="public_html / webroot path")
     #helpful.add("plugins", "-w", action=WebrootAction,
     #            help='Obtain certs by placing files in a webroot directory.')
 
@@ -1030,6 +1036,25 @@ def _plugins_parsing(helpful, plugins):
     # specific groups (so that plugins_group.description makes sense)
 
     helpful.add_plugin_args(plugins)
+
+
+class WebrootPathProcessor(argparse.Action):
+    def __call__(self, parser, config, webroot, option_string=None):
+        """
+        Keep a record of --webroot-path / -w flags during processing, so that
+        we know which apply to which -d flags
+        """
+        if not config.webroot_path:
+            config.webroot_path = []
+            # if any --domain flags preceded the first --webroot-path flag,
+            # apply that webroot path to those; subsequent entries in
+            # config.webroot_map are filled in by cli.DomainFlagProcessor
+            if config.domains:
+                config.webroot_map = dict([(d, webroot) for d in config.domains])
+            else:
+                config.webroot_map = {}
+        config.webroot_path.append(webroot)
+
 
 class DomainFlagProcessor(argparse.Action):
     def __call__(self, parser, config, domain_arg, option_string=None):
@@ -1046,6 +1071,7 @@ class DomainFlagProcessor(argparse.Action):
             # Each domain has a webroot_path of the most recent -w flag
             for d in new_domains:
                 config.webroot_map[d] = config.webroot_path[-1]
+
 
 def setup_log_file_handler(args, logfile, fmt):
     """Setup file debug logging."""
