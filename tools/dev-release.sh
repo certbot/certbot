@@ -1,8 +1,32 @@
 #!/bin/sh -xe
 # Release dev packages to PyPI
 
-version="0.0.0.dev$(date +%Y%m%d)"
-DEV_RELEASE_BRANCH="dev-release"
+Usage() {
+    echo Usage:
+    echo "$0 [ --production ]"
+    exit 1
+}
+
+if [ "`dirname $0`" != "tools" ] ; then
+    echo Please run this script from the repo root
+    exit 1
+fi
+
+version=`grep "__version__" letsencrypt/__init__.py | cut -d\' -f2`
+if [ "$1" = "--production" ] ; then
+    echo Releasing production version "$version"...
+    if ! echo "$version" | grep -q -e '[0-9]\+.[0-9]\+.[0-9]\+' ; then
+        echo "Version doesn't look like 1.2.3"
+    fi
+    exit 0
+else
+    # XXX replace 0.0.0 with the last-released-version
+    version="$version.dev$(date +%Y%m%d)"
+    DEV_RELEASE_BRANCH="dev-release"
+    echo Releasing developer version "$version"...
+    exit 0
+fi
+
 # TODO: create a real release key instead of using Kuba's personal one
 RELEASE_GPG_KEY="${RELEASE_GPG_KEY:-148C30F6F7E429337A72D992B00B9CC82D7ADF2C}"
 
