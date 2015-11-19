@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# SLE12 dont have python-virtualenv
+# SLE12 don't have python-virtualenv
 
 zypper -nq in -l git-core \
   python \
