@@ -82,11 +82,10 @@ to serve all files under specified web root ({0})."""
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
-        self.full_root = None
+        self.full_roots = {}
 
     def prepare(self):  # pylint: disable=missing-docstring
         path_map = self.conf("map")
-        self.full_roots = {}
 
         if not path_map:
             raise errors.PluginError("--{0} must be set".format(
@@ -108,11 +107,15 @@ to serve all files under specified web root ({0})."""
                         "challenge responses: {1}", name, exception)
 
     def perform(self, achalls):  # pylint: disable=missing-docstring
-        assert self.full_root is not None
+        assert self.full_root, "Webroot plugin appears to be missing webroot map"
         return [self._perform_single(achall) for achall in achalls]
 
     def _path_for_achall(self, achall):
-        return os.path.join(self.full_root, achall.chall.encode("token"))
+        path = self.full_roots[achall.domain]
+        if not path:
+            raise errors.PluginError("Cannot find path {0} for domain: {1}"
+                        .format(path, achall.domain))
+        return os.path.join(path, achall.chall.encode("token"))
 
     def _perform_single(self, achall):
         response, validation = achall.response_and_validation()
