@@ -18,8 +18,9 @@ if [ "$1" = "--production" ] ; then
     if ! echo "$version" | grep -q -e '[0-9]\+.[0-9]\+.[0-9]\+' ; then
         echo "Version doesn't look like 1.2.3"
     fi
+    # XXX TODO rename to RELEASE_BRANCH once bmw isn't editing the same file
+    DEV_RELEASE_BRANCH="master"
 else
-    # XXX replace 0.0.0 with the last-released-version
     version="$version.dev$(date +%Y%m%d)1"
     DEV_RELEASE_BRANCH="dev-release"
     echo Releasing developer version "$version"...
@@ -130,3 +131,6 @@ echo "New root: $root"
 echo "KGS is at $root/kgs"
 echo "In order to upload packages run the following command:"
 echo twine upload "$root/dist.$version/*/*"
+
+echo "Edit and commit letsencrypt/__init__.py to contain the next anticipated"
+echo "release version"
