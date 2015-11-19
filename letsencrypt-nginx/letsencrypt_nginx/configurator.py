@@ -24,7 +24,7 @@ from letsencrypt import reverter
 from letsencrypt.plugins import common
 
 from letsencrypt_nginx import constants
-from letsencrypt_nginx import dvsni
+from letsencrypt_nginx import tls_sni_01
 from letsencrypt_nginx import obj
 from letsencrypt_nginx import parser
 
@@ -573,15 +573,15 @@ class NginxConfigurator(common.Plugin):
         """
         self._chall_out += len(achalls)
         responses = [None] * len(achalls)
-        nginx_dvsni = dvsni.NginxDvsni(self)
+        authenticator = tls_sni_01.NginxTlsSni01(self)
 
         for i, achall in enumerate(achalls):
-            # Currently also have dvsni hold associated index
+            # Currently also have authenticator hold associated index
             # of the challenge. This helps to put all of the responses back
             # together when they are all complete.
-            nginx_dvsni.add_chall(achall, i)
+            authenticator.add_chall(achall, i)
 
-        sni_response = nginx_dvsni.perform()
+        sni_response = authenticator.perform()
         # Must restart in order to activate the challenges.
         # Handled here because we may be able to load up other challenge types
         self.restart()
@@ -590,7 +590,7 @@ class NginxConfigurator(common.Plugin):
         # in the responses return value. All responses must be in the same order
         # as the original challenges.
         for i, resp in enumerate(sni_response):
-            responses[nginx_dvsni.indices[i]] = resp
+            responses[authenticator.indices[i]] = resp
 
         return responses
 

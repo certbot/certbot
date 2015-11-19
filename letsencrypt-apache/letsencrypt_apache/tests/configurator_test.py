@@ -380,23 +380,23 @@ class TwoVhost80Test(util.ApacheTest):
         self.config._add_name_vhost_if_necessary(self.vh_truth[0])
         self.assertTrue(self.config.save.called)
 
-    @mock.patch("letsencrypt_apache.configurator.dvsni.ApacheDvsni.perform")
+    @mock.patch("letsencrypt_apache.configurator.tls_sni_01.ApacheTlsSni01.perform")
     @mock.patch("letsencrypt_apache.configurator.ApacheConfigurator.restart")
-    def test_perform(self, mock_restart, mock_dvsni_perform):
+    def test_perform(self, mock_restart, mock_perform):
         # Only tests functionality specific to configurator.perform
         # Note: As more challenges are offered this will have to be expanded
         account_key, achall1, achall2 = self.get_achalls()
 
-        dvsni_ret_val = [
+        expected = [
             achall1.response(account_key),
             achall2.response(account_key),
         ]
 
-        mock_dvsni_perform.return_value = dvsni_ret_val
+        mock_perform.return_value = expected
         responses = self.config.perform([achall1, achall2])
 
-        self.assertEqual(mock_dvsni_perform.call_count, 1)
-        self.assertEqual(responses, dvsni_ret_val)
+        self.assertEqual(mock_perform.call_count, 1)
+        self.assertEqual(responses, expected)
 
         self.assertEqual(mock_restart.call_count, 1)
 

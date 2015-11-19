@@ -1,4 +1,4 @@
-"""Test for letsencrypt_nginx.dvsni."""
+"""Tests for letsencrypt_nginx.tls_sni_01"""
 import unittest
 import shutil
 
@@ -16,8 +16,8 @@ from letsencrypt_nginx import obj
 from letsencrypt_nginx.tests import util
 
 
-class DvsniPerformTest(util.NginxTest):
-    """Test the NginxDVSNI challenge."""
+class TlsSniPerformTest(util.NginxTest):
+    """Test the NginxTlsSni01 challenge."""
 
     account_key = common_test.TLSSNI01Test.auth_key
     achalls = [
@@ -42,13 +42,13 @@ class DvsniPerformTest(util.NginxTest):
     ]
 
     def setUp(self):
-        super(DvsniPerformTest, self).setUp()
+        super(TlsSniPerformTest, self).setUp()
 
         config = util.get_nginx_configurator(
             self.config_path, self.config_dir, self.work_dir)
 
-        from letsencrypt_nginx import dvsni
-        self.sni = dvsni.NginxDvsni(config)
+        from letsencrypt_nginx import tls_sni_01
+        self.sni = tls_sni_01.NginxTlsSni01(config)
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
