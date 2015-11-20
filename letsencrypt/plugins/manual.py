@@ -47,6 +47,7 @@ Make sure your web server displays the following content at
 {validation}
 
 Content-Type header MUST be set to {ct}.
+It is recommended to use the printf command provided below to make sure line endings are set correctly.
 
 If you don't have HTTP server configured, you can run the following
 command on the target server (as root):
