@@ -184,7 +184,7 @@ Webroot
 
 If you're running a webserver that you don't want to stop to use
 standalone, you can use the webroot plugin to obtain a cert by
-including ``certonly`` and ``--webroot`` on the command line. In
+including ``certonly`` and ``-a webroot`` on the command line. In
 addition, you'll need to specify ``--webroot-path`` with the root
 directory of the files served by your webserver. For example,
 ``--webroot-path /var/www/html`` or
@@ -200,7 +200,7 @@ If you'd like to obtain a cert running ``letsencrypt`` on a machine
 other than your target webserver or perform the steps for domain
 validation yourself, you can use the manual plugin. While hidden from
 the UI, you can use the plugin to obtain a cert by specifying
-``certonly`` and ``--manual`` on the command line. This requires you
+``certonly`` and ``-a manual`` on the command line. This requires you
 to copy and paste commands into another terminal session.
 
 Nginx
