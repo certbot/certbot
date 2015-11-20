@@ -34,7 +34,15 @@ def choose_plugin(prepared, question):
             question, opts, help_label="More Info")
 
         if code == display_util.OK:
-            return prepared[index]
+            plugin_ep = prepared[index]
+            if plugin_ep.misconfigured:
+                util(interfaces.IDisplay).notification(
+                    "The selected plugin encountered an error while parsing "
+                    "your server configuration and cannot be used. The error "
+                    "was:\n\n{0}".format(plugin_ep.prepare()),
+                    height=display_util.HEIGHT, pause=False)
+            else:
+                return plugin_ep
         elif code == display_util.HELP:
             if prepared[index].misconfigured:
                 msg = "Reported Error: %s" % prepared[index].prepare()
