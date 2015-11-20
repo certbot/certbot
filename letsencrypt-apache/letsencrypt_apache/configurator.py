@@ -183,6 +183,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         vhost = self.choose_vhost(domain)
+        self._clean_vhost(vhost)
 
         # This is done first so that ssl module is enabled and cert_path,
         # cert_key... can all be parsed appropriately
@@ -276,15 +277,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.assoc[target_name] = vhost
             return vhost
 
-        vhost = self._choose_vhost_from_list(target_name)
-        if vhost.ssl:
-            # remove duplicated or conflicting ssl directives
-            self._deduplicate_directives(vhost.path,
-                ["SSLCertificateFile", "SSLCertificateKeyFile"])
-            # remove all problematic directives
-            self._remove_directives(vhost.path, ["SSLCertificateChainFile"])
-
-        return vhost
+        return self._choose_vhost_from_list(target_name)
 
     def _choose_vhost_from_list(self, target_name):
         # Select a vhost from a list
@@ -664,6 +657,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             ssl_addrs.add(ssl_addr)
 
         return ssl_addrs
+
+    def _clean_vhost(self, vhost):
+        # remove duplicated or conflicting ssl directives
+        self._deduplicate_directives(vhost.path,
+            ["SSLCertificateFile", "SSLCertificateKeyFile"])
+        # remove all problematic directives
+        self._remove_directives(vhost.path, ["SSLCertificateChainFile"])
 
     def _deduplicate_directives(self, vh_path, directives):
         for directive in directives:

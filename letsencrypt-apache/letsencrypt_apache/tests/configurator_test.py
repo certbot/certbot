@@ -123,34 +123,6 @@ class TwoVhost80Test(util.ApacheTest):
             self.vh_truth[1], self.config.choose_vhost("none.com"))
 
     @mock.patch("letsencrypt_apache.display_ops.select_vhost")
-    def test_choose_vhost_cleans_vhost_ssl(self, mock_select):
-        for directive in ["SSLCertificateFile", "SSLCertificateKeyFile",
-                          "SSLCertificateChainFile", "SSLCACertificatePath"]:
-            for _ in range(10):
-                self.config.parser.add_dir(self.vh_truth[1].path, directive, ["bogus"])
-        self.config.save()
-        mock_select.return_value = self.vh_truth[1]
-
-        self.config.choose_vhost("none.com")
-        self.config.save()
-
-        loc_cert = self.config.parser.find_dir(
-            'SSLCertificateFile', None, self.vh_truth[1].path, False)
-        loc_key = self.config.parser.find_dir(
-            'SSLCertificateKeyFile', None, self.vh_truth[1].path, False)
-        loc_chain = self.config.parser.find_dir(
-            'SSLCertificateChainFile', None, self.vh_truth[1].path, False)
-        loc_cacert = self.config.parser.find_dir(
-            'SSLCACertificatePath', None, self.vh_truth[1].path, False)
-
-        self.assertEqual(len(loc_cert), 1)
-        self.assertEqual(len(loc_key), 1)
-
-        self.assertEqual(len(loc_chain), 0)
-
-        self.assertEqual(len(loc_cacert), 10)
-
-    @mock.patch("letsencrypt_apache.display_ops.select_vhost")
     def test_choose_vhost_select_vhost_non_ssl(self, mock_select):
         mock_select.return_value = self.vh_truth[0]
         chosen_vhost = self.config.choose_vhost("none.com")
@@ -432,6 +404,33 @@ class TwoVhost80Test(util.ApacheTest):
                          self.config.is_name_vhost(ssl_vhost))
 
         self.assertEqual(len(self.config.vhosts), 5)
+
+    def test_clean_vhost_ssl(self):
+        # pylint: disable=protected-access
+        for directive in ["SSLCertificateFile", "SSLCertificateKeyFile",
+                          "SSLCertificateChainFile", "SSLCACertificatePath"]:
+            for _ in range(10):
+                self.config.parser.add_dir(self.vh_truth[1].path, directive, ["bogus"])
+        self.config.save()
+
+        self.config._clean_vhost(self.vh_truth[1])
+        self.config.save()
+
+        loc_cert = self.config.parser.find_dir(
+            'SSLCertificateFile', None, self.vh_truth[1].path, False)
+        loc_key = self.config.parser.find_dir(
+            'SSLCertificateKeyFile', None, self.vh_truth[1].path, False)
+        loc_chain = self.config.parser.find_dir(
+            'SSLCertificateChainFile', None, self.vh_truth[1].path, False)
+        loc_cacert = self.config.parser.find_dir(
+            'SSLCACertificatePath', None, self.vh_truth[1].path, False)
+
+        self.assertEqual(len(loc_cert), 1)
+        self.assertEqual(len(loc_key), 1)
+
+        self.assertEqual(len(loc_chain), 0)
+
+        self.assertEqual(len(loc_cacert), 10)
 
     def test_deduplicate_directives(self):
         # pylint: disable=protected-access
