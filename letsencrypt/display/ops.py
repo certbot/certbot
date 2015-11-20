@@ -40,7 +40,7 @@ def choose_plugin(prepared, question):
                     "The selected plugin encountered an error while parsing "
                     "your server configuration and cannot be used. The error "
                     "was:\n\n{0}".format(plugin_ep.prepare()),
-                    height=display_util.HEIGHT)
+                    height=display_util.HEIGHT, pause=False)
             else:
                 return plugin_ep
         elif code == display_util.HELP:
