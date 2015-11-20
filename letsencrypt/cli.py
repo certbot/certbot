@@ -855,7 +855,7 @@ def prepare_and_parse_args(plugins, args):
     helpful.add(None, "-d", "--domains", dest="domains",
                 metavar="DOMAIN", action="append",
                 help="Domain names to apply. For multiple domains you can use "
-                "multiple -d flags or enter a comma separated list of domains"
+                "multiple -d flags or enter a comma separated list of domains "
                 "as a parameter.")
     helpful.add(
         None, "--duplicate", dest="duplicate", action="store_true",
