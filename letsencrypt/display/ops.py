@@ -38,7 +38,7 @@ def choose_plugin(prepared, question):
                 util(interfaces.IDisplay).notification(
                     "The selected plugin encountered an error while parsing "
                     "your server configuration and cannot be used. The error "
-                    "was: {0}".format(prepared[index].prepare())
+                    "was: {0}".format(prepared[index].prepare()),
                     height=display_util.HEIGHT)
             else:
                 return prepared[index]
