@@ -114,7 +114,11 @@ class NcursesDisplay(object):
             `string` - input entered by the user
 
         """
-        return self.dialog.inputbox(message, width=self.width)
+        sections = message.split("\n")
+        # each section takes at least one line, plus extras if it's longer than self.width
+        wordlines = [1+(len(section)/self.width) for section in sections]
+        height = 6+ sum(wordlines) + len(sections)
+        return self.dialog.inputbox(message, width=self.width, height=height)
 
     def yesno(self, message, yes_label="Yes", no_label="No"):
         """Display a Yes/No dialog box.
