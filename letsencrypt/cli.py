@@ -1062,8 +1062,7 @@ class DomainFlagProcessor(argparse.Action): # pylint: disable=missing-docstring
         Process a new -d flag, helping the webroot plugin construct a map of
         {domain : webrootpath} if -w / --webroot-path is in use
         """
-        if not config.domains:
-            config.domains = []
+        if not config.domains: config.domains = []
         new_domains = [d.strip() for d in domain_arg.split(",")
                                   if d not in config.domains]
         config.domains.extend(new_domains)
