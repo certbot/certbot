@@ -41,9 +41,11 @@ class ChoosePluginTest(unittest.TestCase):
         return choose_plugin(self.plugins, "Question?")
 
     @mock.patch("letsencrypt.display.ops.util")
-    def test_successful_choice(self, mock_util):
-        mock_util().menu.return_value = (display_util.OK, 0)
-        self.assertEqual(self.mock_apache, self._call())
+    def test_selection(self, mock_util):
+        mock_util().menu.side_effect = [(display_util.OK, 0),
+                                        (display_util.OK, 1)]
+        self.assertEqual(self.mock_stand, self._call())
+        self.assertEqual(mock_util().notification.call_count, 1)
 
     @mock.patch("letsencrypt.display.ops.util")
     def test_more_info(self, mock_util):
