@@ -130,6 +130,7 @@ def register(config, account_storage, tos_cb=None):
 
     return acc, acme
 
+
 def perform_registration(acme, config):
     """
     Actually register new account, trying repeatedly if there are email
@@ -152,6 +153,7 @@ def perform_registration(acme, config):
             return perform_registration(acme, config)
         else:
             raise
+
 
 class Client(object):
     """ACME protocol client.
