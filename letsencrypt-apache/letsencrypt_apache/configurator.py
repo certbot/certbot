@@ -237,6 +237,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         with all available choices.
 
         :param str target_name: domain name
+        :param bool temp: whether or not self.make_vhost_ssl shouldn't be called
 
         :returns: ssl vhost associated with name
         :rtype: :class:`~letsencrypt_apache.obj.VirtualHost`
