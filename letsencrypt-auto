@@ -131,7 +131,7 @@ then
       $SUDO $BOOTSTRAP/archlinux.sh
     else
       echo "Please use pacman to install letsencrypt packages:"
-      echo "# pacman -S letsencrypt letsencrypt-nginx letsencrypt-apache letshelp-letsencrypt"
+      echo "# pacman -S letsencrypt letsencrypt-apache"
       echo
       echo "If you would like to use the virtualenv way, please run the script again with the"
       echo "--debug flag."
