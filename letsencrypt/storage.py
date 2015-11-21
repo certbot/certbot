@@ -142,7 +142,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
         for x in (self.cert, self.privkey, self.chain, self.fullchain):
             if not os.path.isabs(x):
                 logger.debug("Element %s is not referenced with an "
-                             "absolute file.", x)
+                             "absolute path.", x)
                 return False
 
         # Each element must exist and be a symbolic link
@@ -166,21 +166,23 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
                 logger.debug("Element's link does not point within the "
                              "cert lineage's directory within the "
                              "official archive directory. Link: %s, "
+                             "target directory: %s, "
                              "archive directory: %s.",
-                             os.path.dirname(target), desired_directory)
+                             link, os.path.dirname(target), desired_directory)
                 return False
 
             # The link must point to a file that exists
             if not os.path.exists(target):
-                logger.debug("Link %s points to a file that does not exist.", target)
+                logger.debug("Link %s points to file %s that does not exist.",
+                             link, target)
                 return False
 
             # The link must point to a file that follows the archive
             # naming convention
             pattern = re.compile(r"^{0}([0-9]+)\.pem$".format(kind))
             if not pattern.match(os.path.basename(target)):
-                logger.debug("Link %s does not follow the archive naming "
-                             "convention.", os.path.basename(target))
+                logger.debug("%s does not follow the archive naming "
+                             "convention.", target)
                 return False
 
             # It is NOT required that the link's target be a regular
@@ -265,7 +267,8 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             raise errors.CertStorageError("unknown kind of item")
         link = getattr(self, kind)
         if not os.path.exists(link):
-            logger.debug("Target %s of kind %s does not exist.", link, kind)
+            logger.debug("Expected symlink %s for %s does not exist.",
+                         link, kind)
             return None
         target = os.readlink(link)
         if not os.path.isabs(target):
@@ -557,7 +560,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
             now = pytz.UTC.fromutc(datetime.datetime.utcnow())
             if expiry < add_time_interval(now, interval):
                 logger.debug("Should renew, certificate "
-                             "has expired since %s.",
+                             "has been expired since %s.",
                              expiry.strftime("%Y-%m-%d %H:%M:%S %Z"))
                 return True
         return False
@@ -610,7 +613,7 @@ class RenewableCert(object):  # pylint: disable=too-many-instance-attributes
                   cli_config.live_dir):
             if not os.path.exists(i):
                 os.makedirs(i, 0700)
-                logger.debug("Creating CLI config directory %s.", i)
+                logger.debug("Creating directory %s.", i)
         config_file, config_filename = le_util.unique_lineage_name(
             cli_config.renewal_configs_dir, lineagename)
         if not config_filename.endswith(".conf"):
