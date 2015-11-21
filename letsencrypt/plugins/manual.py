@@ -173,17 +173,12 @@ s.serve_forever()" """
                 uri=achall.chall.uri(achall.domain),
                 ct=achall.CONTENT_TYPE, command=command))
 
-        if response.simple_verify(
+        if not response.simple_verify(
                 achall.chall, achall.domain,
                 achall.account_key.public_key(), self.config.http01_port):
-            return response
-        else:
-            logger.error(
-                "Self-verify of challenge failed, authorization abandoned.")
-            if self.conf("test-mode") and self._httpd.poll() is not None:
-                # simply verify cause command failure...
-                return False
-            return None
+            logger.warning("Self-verify of challenge failed.")
+
+        return response
 
     def _notify_and_wait(self, message):  # pylint: disable=no-self-use
         # TODO: IDisplay wraps messages, breaking the command
