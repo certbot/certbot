@@ -898,8 +898,9 @@ def prepare_and_parse_args(plugins, args):
         "testing", "--tls-sni-01-port", type=int,
         default=flag_default("tls_sni_01_port"),
         help=config_help("tls_sni_01_port"))
-    helpful.add("testing", "--http-01-port", dest="http01_port", type=int,
-                help=config_help("http01_port"))
+    helpful.add(
+        "testing", "--http-01-port", type=int, dest="http01_port",
+        default=flag_default("http01_port"), help=config_help("http01_port"))
 
     helpful.add_group(
         "security", description="Security parameters & server settings")
