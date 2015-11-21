@@ -57,7 +57,7 @@ class RegisterTest(unittest.TestCase):
         msg = "Validation of contact mailto:sousaphone@improbablylongggstring.tld failed"
         mx_err = messages.Error(detail=msg, typ="malformed", title="title")
         with mock.patch("letsencrypt.client.acme_client.Client") as mock_client:
-            mock_client.register.side_effect = mx_err
+            mock_client().register.side_effect = [mx_err, mock.MagicMock()]
             self._call()
             self.assertEqual(mock_get_email.call_count, 1)
 
