@@ -348,15 +348,15 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             '/var/www/superfluous', '-d', 'superfluo.us', '-d', 'www.superfluo.us']
         namespace = cli.prepare_and_parse_args(plugins, webroot_args)
         self.assertEqual(namespace.webroot_map, {
-            'example.com' : '/var/www/example',
-            'stray.example.com' : '/var/www/example',
-            'www.example.com' : '/var/www/example',
-            'www.superfluo.us' : '/var/www/superfluous',
-            'superfluo.us' : '/var/www/superfluous'})
+            'example.com': '/var/www/example',
+            'stray.example.com': '/var/www/example',
+            'www.example.com': '/var/www/example',
+            'www.superfluo.us': '/var/www/superfluous',
+            'superfluo.us': '/var/www/superfluous'})
 
         webroot_map_args = ['--webroot-map', '{"eg.com" : "/tmp"}']
         namespace = cli.prepare_and_parse_args(plugins, webroot_map_args)
-        self.assertEqual(namespace.webroot_map, {u"eg.com" : u"/tmp"})
+        self.assertEqual(namespace.webroot_map, {u"eg.com": u"/tmp"})
 
     @mock.patch('letsencrypt.crypto_util.notAfter')
     @mock.patch('letsencrypt.cli.zope.component.getUtility')

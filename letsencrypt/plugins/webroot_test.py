@@ -32,7 +32,7 @@ class AuthenticatorTest(unittest.TestCase):
             self.path, ".well-known", "acme-challenge",
             "ZXZhR3hmQURzNnBTUmIyTEF2OUlaZjE3RHQzanV4R0orUEN0OTJ3citvQQ")
         self.config = mock.MagicMock(webroot_path=self.path,
-                                     webroot_map={"thing.com":self.path})
+                                     webroot_map={"thing.com": self.path})
         self.auth = Authenticator(self.config, "webroot")
         self.auth.prepare()
 

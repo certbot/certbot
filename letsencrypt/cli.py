@@ -1036,7 +1036,7 @@ def _plugins_parsing(helpful, plugins):
     # "webroot" topic
     helpful.add("webroot", "-w", "--webroot-path", action=WebrootPathProcessor,
                 help="public_html / webroot path")
-    parse_dict = lambda s : dict(json.loads(s))
+    parse_dict = lambda s: dict(json.loads(s))
     helpful.add("webroot", "--webroot-map", default={}, type=parse_dict,
                 help="Mapping from domains to webroot paths")
 
@@ -1068,7 +1068,7 @@ class DomainFlagProcessor(argparse.Action): # pylint: disable=missing-docstring
         if not config.domains:
             config.domains = []
 
-        for d in map(string.strip, domain_arg.split(",")):
+        for d in map(string.strip, domain_arg.split(",")): # pylint: disable=bad-builtin
             if d not in config.domains:
                 config.domains.append(d)
                 # Each domain has a webroot_path of the most recent -w flag
