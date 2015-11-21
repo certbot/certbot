@@ -32,10 +32,19 @@ if apt-cache show python-virtualenv > /dev/null ; then
   virtualenv="$virtualenv python-virtualenv"
 fi
 
+# This is likely to be unecessary in almost all cases,
+# but if python-dev actually depends some non-2.7 version,
+# but python2.7 is installed, we'll want this dev package
+# https://github.com/letsencrypt/letsencrypt/issues/1564
+pydev=python-dev
+if apt-cache show python2.7-dev > /dev/null ; then
+  pydev="$pydev python2.7-dev"
+fi
+
 apt-get install -y --no-install-recommends \
   git \
   python \
-  python-dev \
+  $pydev \
   $virtualenv \
   gcc \
   dialog \
