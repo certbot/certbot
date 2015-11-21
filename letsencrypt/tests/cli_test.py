@@ -236,7 +236,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             self._call(['plugins'] + list(args))
 
     @mock.patch('letsencrypt.cli.plugins_disco')
-    def test_plugins_no_args(self, mock_disco):
+    @mock.patch('letsencrypt.cli.HelpfulArgumentParser.determine_help_topics')
+    def test_plugins_no_args(self, _det, mock_disco):
         ifaces = []
         plugins = mock_disco.PluginsRegistry.find_all()
 
@@ -247,7 +248,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         stdout.write.called_once_with(str(filtered))
 
     @mock.patch('letsencrypt.cli.plugins_disco')
-    def test_plugins_init(self, mock_disco):
+    @mock.patch('letsencrypt.cli.HelpfulArgumentParser.determine_help_topics')
+    def test_plugins_init(self, _det, mock_disco):
         ifaces = []
         plugins = mock_disco.PluginsRegistry.find_all()
 
@@ -261,10 +263,10 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         stdout.write.called_once_with(str(verified))
 
     @mock.patch('letsencrypt.cli.plugins_disco')
-    def test_plugins_prepare(self, mock_disco):
+    @mock.patch('letsencrypt.cli.HelpfulArgumentParser.determine_help_topics')
+    def test_plugins_prepare(self, _det, mock_disco):
         ifaces = []
         plugins = mock_disco.PluginsRegistry.find_all()
-
         _, stdout, _, _ = self._call(['plugins', '--init', '--prepare'])
         plugins.visible.assert_called_once_with()
         plugins.visible().ifaces.assert_called_once_with(ifaces)

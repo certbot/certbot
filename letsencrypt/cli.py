@@ -3,10 +3,12 @@
 import argparse
 import atexit
 import functools
+import json
 import logging
 import logging.handlers
 import os
 import pkg_resources
+import string
 import sys
 import time
 import traceback
@@ -670,7 +672,6 @@ class HelpfulArgumentParser(object):
             print usage
             sys.exit(0)
         self.visible_topics = self.determine_help_topics(self.help_arg)
-        #print self.visible_topics
         self.groups = {}  # elements are added by .add_group()
 
     def parse_args(self):
@@ -1023,19 +1024,21 @@ def _plugins_parsing(helpful, plugins):
     helpful.add("plugins", "--webroot", action="store_true",
                 help='Obtain certs by placing files in a webroot directory.')
 
-    # This would normally be a flag within the webroot plugin,  the webroot
-    # plugin, but because it is parsed in conjunction with --domains, it lives
-    # here
-    helpful.add("webroot", "-w", "--webroot-path", action=WebrootPathProcessor,
-                help="public_html / webroot path")
-    #helpful.add("plugins", "-w", action=WebrootAction,
-    #            help='Obtain certs by placing files in a webroot directory.')
-
     # things should not be reorder past/pre this comment:
     # plugins_group should be displayed in --help before plugin
     # specific groups (so that plugins_group.description makes sense)
 
     helpful.add_plugin_args(plugins)
+
+    # These would normally be a flag within the webroot plugin, but because
+    # they are parsed in conjunction with --domains, they live here for
+    # legibiility. helpful.add_plugin_ags must be called first to add the
+    # "webroot" topic
+    helpful.add("webroot", "-w", "--webroot-path", action=WebrootPathProcessor,
+                help="public_html / webroot path")
+    parse_dict = lambda s : dict(json.loads(s))
+    helpful.add("webroot", "--webroot-map", default={}, type=parse_dict,
+                help="Mapping from domains to webroot paths")
 
 
 class WebrootPathProcessor(argparse.Action): # pylint: disable=missing-docstring
@@ -1062,15 +1065,15 @@ class DomainFlagProcessor(argparse.Action): # pylint: disable=missing-docstring
         Process a new -d flag, helping the webroot plugin construct a map of
         {domain : webrootpath} if -w / --webroot-path is in use
         """
-        if not config.domains: config.domains = []
-        new_domains = [d.strip() for d in domain_arg.split(",")
-                                  if d not in config.domains]
-        config.domains.extend(new_domains)
+        if not config.domains:
+            config.domains = []
 
-        if config.webroot_path:
-            # Each domain has a webroot_path of the most recent -w flag
-            for d in new_domains:
-                config.webroot_map[d] = config.webroot_path[-1]
+        for d in map(string.strip, domain_arg.split(",")):
+            if d not in config.domains:
+                config.domains.append(d)
+                # Each domain has a webroot_path of the most recent -w flag
+                if config.webroot_path:
+                    config.webroot_map[d] = config.webroot_path[-1]
 
 
 def setup_log_file_handler(args, logfile, fmt):
