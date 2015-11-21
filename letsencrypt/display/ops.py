@@ -117,9 +117,9 @@ def pick_configurator(
 def get_email(more=False, invalid=False):
     """Prompt for valid email address.
 
-    :param bool more: -- explain why the email is strongly advisable, but how to
+    :param bool more: explain why the email is strongly advisable, but how to
         skip it
-    "param bool invalid: -- true if the user just typed something, but it wasn't
+    :param bool invalid: true if the user just typed something, but it wasn't
         a valid-looking email
 
     :returns: Email or ``None`` if cancelled by user.
