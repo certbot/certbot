@@ -20,6 +20,7 @@ from letsencrypt import errors
 from letsencrypt import le_util
 
 from letsencrypt.plugins import disco
+from letsencrypt.plugins import manual
 
 from letsencrypt.tests import renewer_test
 from letsencrypt.tests import test_util
@@ -200,6 +201,16 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             self.assertTrue("The nginx plugin is not working" in ret)
             self.assertTrue("Could not find configuration root" in ret)
             self.assertTrue("NoInstallationError" in ret)
+
+        args = ["certonly", "--webroot"]
+        ret, _, _, _ = self._call(args)
+        self.assertTrue("--webroot-path must be set" in ret)
+
+        with mock.patch("letsencrypt.cli._init_le_client") as mock_init:
+            with mock.patch("letsencrypt.cli._auth_from_domains"):
+                self._call(["certonly", "--manual", "-d", "foo.bar"])
+                auth = mock_init.call_args[0][2]
+                self.assertTrue(isinstance(auth, manual.Authenticator))
 
         with MockedVerb("certonly") as mock_certonly:
             self._call(["auth", "--standalone"])
@@ -488,7 +499,8 @@ class DetermineAccountTest(unittest.TestCase):
     """Tests for letsencrypt.cli._determine_account."""
 
     def setUp(self):
-        self.args = mock.MagicMock(account=None, email=None)
+        self.args = mock.MagicMock(account=None, email=None,
+            register_unsafely_without_email=False)
         self.config = configuration.NamespaceConfig(self.args)
         self.accs = [mock.MagicMock(id='x'), mock.MagicMock(id='y')]
         self.account_storage = account.AccountMemoryStorage()

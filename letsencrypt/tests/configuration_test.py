@@ -54,11 +54,6 @@ class NamespaceConfigTest(unittest.TestCase):
         self.assertEqual(self.config.key_dir, '/tmp/config/keys')
         self.assertEqual(self.config.temp_checkpoint_dir, '/tmp/foo/t')
 
-    def test_http01_port(self):
-        self.assertEqual(4321, self.config.http01_port)
-        self.namespace.http01_port = None
-        self.assertEqual(80, self.config.http01_port)
-
     def test_absolute_paths(self):
         from letsencrypt.configuration import NamespaceConfig
 

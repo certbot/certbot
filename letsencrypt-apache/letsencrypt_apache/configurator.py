@@ -187,12 +187,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # cert_key... can all be parsed appropriately
         self.prepare_server_https("443")
 
-        path = {}
-
-        path["cert_path"] = self.parser.find_dir(
-            "SSLCertificateFile", None, vhost.path)
-        path["cert_key"] = self.parser.find_dir(
-            "SSLCertificateKeyFile", None, vhost.path)
+        path = {"cert_path": self.parser.find_dir("SSLCertificateFile", None, vhost.path),
+                "cert_key": self.parser.find_dir("SSLCertificateKeyFile", None, vhost.path)}
 
         # Only include if a certificate chain is specified
         if chain_path is not None:

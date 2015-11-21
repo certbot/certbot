@@ -100,6 +100,11 @@ def register(config, account_storage, tos_cb=None):
     if account_storage.find_all():
         logger.info("There are already existing accounts for %s", config.server)
     if config.email is None:
+        if not config.register_unsafely_without_email:
+            msg = ("No email was provided and "
+                   "--register-unsafely-without-email was not present.")
+            logger.warn(msg)
+            raise errors.Error(msg)
         logger.warn("Registering without email!")
 
     # Each new registration shall use a fresh new key
@@ -110,7 +115,7 @@ def register(config, account_storage, tos_cb=None):
             backend=default_backend())))
     acme = acme_from_config_key(config, key)
     # TODO: add phone?
-    regr = acme.register(messages.NewRegistration.from_data(email=config.email))
+    regr = perform_registration(acme, config)
 
     if regr.terms_of_service is not None:
         if tos_cb is not None and not tos_cb(regr):
@@ -124,6 +129,30 @@ def register(config, account_storage, tos_cb=None):
     account_storage.save(acc)
 
     return acc, acme
+
+
+def perform_registration(acme, config):
+    """
+    Actually register new account, trying repeatedly if there are email
+    problems
+
+    :param .IConfig config: Client configuration.
+    :param acme.client.Client client: ACME client object.
+
+    :returns: Registration Resource.
+    :rtype: `acme.messages.RegistrationResource`
+
+    :raises .UnexpectedUpdate:
+    """
+    try:
+        return acme.register(messages.NewRegistration.from_data(email=config.email))
+    except messages.Error, e:
+        err = repr(e)
+        if "MX record" in err or "Validation of contact mailto" in err:
+            config.namespace.email = display_ops.get_email(more=True, invalid=True)
+            return perform_registration(acme, config)
+        else:
+            raise
 
 
 class Client(object):
@@ -430,7 +459,7 @@ class Client(object):
         except:
             # TODO: suggest letshelp-letsencypt here
             reporter.add_message(
-                "An error occured and we failed to restore your config and "
+                "An error occurred and we failed to restore your config and "
                 "restart your server. Please submit a bug report to "
                 "https://github.com/letsencrypt/letsencrypt",
                 reporter.HIGH_PRIORITY)

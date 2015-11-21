@@ -23,7 +23,7 @@ mv "dist.$version" "dist.$version.$(date +%s).bak" || true
 git tag --delete "$tag" || true
 
 tmpvenv=$(mktemp -d)
-virtualenv --no-site-packages $tmpvenv
+virtualenv --no-site-packages -p python2 $tmpvenv
 . $tmpvenv/bin/activate
 # update setuptools/pip just like in other places in the repo
 pip install -U setuptools
@@ -49,7 +49,7 @@ done
 sed -i "s/^__version.*/__version__ = '$version'/" letsencrypt/__init__.py
 
 git add -p  # interactive user input
-git -c commit.gpgsign=true commit -m "Release $version"
+git commit --gpg-sign="$RELEASE_GPG_KEY" -m "Release $version"
 git tag --local-user "$RELEASE_GPG_KEY" \
     --sign --message "Release $version" "$tag"
 
