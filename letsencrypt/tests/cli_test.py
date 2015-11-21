@@ -339,6 +339,18 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         namespace = cli.prepare_and_parse_args(plugins, long_args)
         self.assertEqual(namespace.domains, ['example.com', 'another.net'])
 
+        webroot_args = ['--webroot', '-d', 'stray.example.com', '-w',
+            '/var/www/example', '-d', 'example.com,www.example.com', '-w',
+            '/var/www/superfluous', '-d', 'superfluo.us', '-d', 'www.superfluo.us']
+        namespace = cli.prepare_and_parse_args(plugins, webroot_args)
+        open("/tmp/frogs", "w").write("%r" % namespace)
+        self.assertEqual(namespace.webroot_map, {
+            'example.com' : '/var/www/example',
+            'stray.example.com' : '/var/www/example',
+            'www.example.com' : '/var/www/example',
+            'www.superfluo.us' : '/var/www/superfluous',
+            'superfluo.us' : '/var/www/superfluous'})
+
     @mock.patch('letsencrypt.crypto_util.notAfter')
     @mock.patch('letsencrypt.cli.zope.component.getUtility')
     def test_certonly_new_request_success(self, mock_get_utility, mock_notAfter):
