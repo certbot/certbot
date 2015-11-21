@@ -1,14 +1,12 @@
 """Renewable certificates storage."""
 import datetime
+import logging
 import os
 import re
 
 import configobj
 import parsedatetime
 import pytz
-
-import logging
-import logging.handlers
 
 from letsencrypt import constants
 from letsencrypt import crypto_util
