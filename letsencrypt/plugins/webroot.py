@@ -41,6 +41,7 @@ and reload your daemon.
 import errno
 import logging
 import os
+import stat
 
 import zope.interface
 
@@ -98,6 +99,16 @@ to serve all files under specified web root ({0})."""
                          self.full_roots[name])
             try:
                 os.makedirs(self.full_roots[name])
+                # Set permissions as parent directory (GH #1389)
+                filemode = stat.S_IMODE(os.stat(path).st_mode)
+                os.chmod(self.full_roots[name])
+
+                # Make permissions valid for files, too
+                for root, dirs, files in os.walk(self.full_roots[name]):
+                    for filename in files:
+                    # No need for exec permissions
+                        os.chmod(filename, filemode & ~stat.S_IEXEC)
+
             except OSError as exception:
                 if exception.errno != errno.EEXIST:
                     raise errors.PluginError(

@@ -127,6 +127,16 @@ class HTTP01ResponseTest(unittest.TestCase):
             self.chall, "local", KEY.public_key()))
 
     @mock.patch("acme.challenges.requests.get")
+    def test_simple_verify_whitespace_validation(self, mock_get):
+        from acme.challenges import HTTP01Response
+        mock_get.return_value = mock.MagicMock(
+            text=(self.chall.validation(KEY) +
+                  HTTP01Response.WHITESPACE_CUTSET), headers=self.good_headers)
+        self.assertTrue(self.response.simple_verify(
+            self.chall, "local", KEY.public_key()))
+        mock_get.assert_called_once_with(self.chall.uri("local"))
+
+    @mock.patch("acme.challenges.requests.get")
     def test_simple_verify_bad_content_type(self, mock_get):
         mock_get().text = self.chall.token
         self.assertFalse(self.response.simple_verify(
