@@ -341,6 +341,7 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         namespace = cli.prepare_and_parse_args(plugins, long_args)
         self.assertEqual(namespace.domains, ['example.com', 'another.net'])
 
+
     def test_parse_webroot(self):
         plugins = disco.PluginsRegistry.find_all()
         webroot_args = ['--webroot', '-d', 'stray.example.com', '-w',
@@ -356,7 +357,9 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
         webroot_map_args = ['--webroot-map', '{"eg.com" : "/tmp"}']
         namespace = cli.prepare_and_parse_args(plugins, webroot_map_args)
+        domains = cli._find_domains(namespace, mock.MagicMock())
         self.assertEqual(namespace.webroot_map, {u"eg.com": u"/tmp"})
+        self.assertEqual(domains, ["eg.com"])
 
     @mock.patch('letsencrypt.crypto_util.notAfter')
     @mock.patch('letsencrypt.cli.zope.component.getUtility')

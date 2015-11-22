@@ -101,7 +101,13 @@ def usage_strings(plugins):
 
 
 def _find_domains(args, installer):
-    if args.domains is None:
+    # we get domains from -d, but also from the webroot map...
+    if args.webroot_map:
+        for domain in args.webroot_map.keys():
+            if domain not in args.domains:
+                args.domains.append(domain)
+
+    if not args.domains:
         domains = display_ops.choose_names(installer)
     else:
         domains = args.domains
@@ -474,7 +480,7 @@ def run(args, config, plugins):  # pylint: disable=too-many-branches,too-many-lo
 
 
 def obtain_cert(args, config, plugins):
-    """Authenticate & obtain cert, but do not install it."""
+    """Implements "certonly": authenticate & obtain cert, but do not install it."""
 
     if args.domains is not None and args.csr is not None:
         # TODO: --csr could have a priority, when --domains is
@@ -839,7 +845,7 @@ def prepare_and_parse_args(plugins, args):
     # --domains is useful, because it can be stored in config
     #for subparser in parser_run, parser_auth, parser_install:
     #    subparser.add_argument("domains", nargs="*", metavar="domain")
-    helpful.add(None, "-d", "--domains", dest="domains",
+    helpful.add(None, "-d", "--domains", dest="domains", default=[],
                 metavar="DOMAIN", action=DomainFlagProcessor,
                 help="Domain names to apply. For multiple domains you can use "
                 "multiple -d flags or enter a comma separated list of domains "
@@ -1038,7 +1044,7 @@ def _plugins_parsing(helpful, plugins):
                 help="public_html / webroot path")
     parse_dict = lambda s: dict(json.loads(s))
     helpful.add("webroot", "--webroot-map", default={}, type=parse_dict,
-                help="Mapping from domains to webroot paths")
+        help="JSON dictionary mapping domains to webroot paths; this implies -d for each entry.")
 
 
 class WebrootPathProcessor(argparse.Action): # pylint: disable=missing-docstring
@@ -1047,15 +1053,15 @@ class WebrootPathProcessor(argparse.Action): # pylint: disable=missing-docstring
         Keep a record of --webroot-path / -w flags during processing, so that
         we know which apply to which -d flags
         """
-        if not config.webroot_path:
+        if config.webroot_path is None:          # first -w flag encountered
             config.webroot_path = []
             # if any --domain flags preceded the first --webroot-path flag,
             # apply that webroot path to those; subsequent entries in
             # config.webroot_map are filled in by cli.DomainFlagProcessor
             if config.domains:
-                config.webroot_map = dict([(d, webroot) for d in config.domains])
-            else:
-                config.webroot_map = {}
+                for d in config.domains:
+                    config.webroot_map.setdefault(d, webroot)
+
         config.webroot_path.append(webroot)
 
 
@@ -1065,15 +1071,13 @@ class DomainFlagProcessor(argparse.Action): # pylint: disable=missing-docstring
         Process a new -d flag, helping the webroot plugin construct a map of
         {domain : webrootpath} if -w / --webroot-path is in use
         """
-        if not config.domains:
-            config.domains = []
-
         for d in map(string.strip, domain_arg.split(",")): # pylint: disable=bad-builtin
             if d not in config.domains:
                 config.domains.append(d)
                 # Each domain has a webroot_path of the most recent -w flag
+                # unless it was explicitly included in webroot_map
                 if config.webroot_path:
-                    config.webroot_map[d] = config.webroot_path[-1]
+                    config.webroot_map.setdefault(d, config.webroot_path[-1])
 
 
 def setup_log_file_handler(args, logfile, fmt):
