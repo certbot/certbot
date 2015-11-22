@@ -772,8 +772,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         Checks to see if virtualhost already contains a header_name header
 
-        :param vhost: vhost to check
+        :param ssl_vhost: vhost to check
         :type vhost: :class:`~letsencrypt_apache.obj.VirtualHost`
+
+        :param header_name: a header name, e.g: Strict-Transport-Security
+        :type str
 
         :returns: boolean
         :rtype: (bool)
