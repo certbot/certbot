@@ -228,6 +228,9 @@ class HTTP01Response(KeyAuthorizationChallengeResponse):
 
     """
 
+    WHITESPACE_CUTSET = "\n\r\t "
+    """Whitespace characters which should be ignored at the end of the body."""
+
     def simple_verify(self, chall, domain, account_public_key, port=None):
         """Simple verify.
 
@@ -273,10 +276,11 @@ class HTTP01Response(KeyAuthorizationChallengeResponse):
                          found_ct, chall.CONTENT_TYPE)
             return False
 
-        if self.key_authorization != http_response.text:
+        challenge_response = http_response.text.rstrip(self.WHITESPACE_CUTSET)
+        if self.key_authorization != challenge_response:
             logger.debug("Key authorization from response (%r) doesn't match "
                          "HTTP response (%r)", self.key_authorization,
-                         http_response.text)
+                         challenge_response)
             return False
 
         return True

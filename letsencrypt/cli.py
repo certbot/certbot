@@ -69,6 +69,7 @@ USAGE = SHORT_USAGE + """Choice of server plugins for obtaining and installing c
   %s
   --standalone      Run a standalone webserver for authentication
   %s
+  --webroot         Place files in a server's webroot folder for authentication
 
 OR use different servers to obtain (authenticate) the cert and then install it:
 
@@ -80,7 +81,7 @@ More detailed help:
                         the available topics are:
 
    all, automation, paths, security, testing, or any of the subcommands or
-   plugins (certonly, install, nginx, apache, standalone, etc)
+   plugins (certonly, install, nginx, apache, standalone, webroot, etc)
 """
 
 
@@ -139,10 +140,8 @@ def _determine_account(args, config):
         elif len(accounts) == 1:
             acc = accounts[0]
         else:  # no account registered yet
-            if args.email is None:
+            if args.email is None and not args.register_unsafely_without_email:
                 args.email = display_ops.get_email()
-            if not args.email:  # get_email might return ""
-                args.email = None
 
             def _tos_cb(regr):
                 if args.tos:
@@ -380,7 +379,7 @@ def diagnose_configurator_problem(cfg_type, requested, plugins):
     raise errors.PluginSelectionError(msg)
 
 
-def choose_configurator_plugins(args, config, plugins, verb):
+def choose_configurator_plugins(args, config, plugins, verb): # pylint: disable=too-many-branches
     """
     Figure out which configurator we're going to use
 
@@ -408,6 +407,10 @@ def choose_configurator_plugins(args, config, plugins, verb):
         req_auth = set_configurator(req_auth, "apache")
     if args.standalone:
         req_auth = set_configurator(req_auth, "standalone")
+    if args.webroot:
+        req_auth = set_configurator(req_auth, "webroot")
+    if args.manual:
+        req_auth = set_configurator(req_auth, "manual")
     logger.debug("Requested authenticator %s and installer %s", req_auth, req_inst)
 
     # Try to meet the user's request and/or ask them to pick plugins
@@ -842,6 +845,16 @@ def prepare_and_parse_args(plugins, args):
     helpful.add(
         None, "-t", "--text", dest="text_mode", action="store_true",
         help="Use the text output instead of the curses UI.")
+    helpful.add(
+        None, "--register-unsafely-without-email", action="store_true",
+        help="Specifying this flag enables registering an account with no "
+             "email address. This is strongly discouraged, because in the "
+             "event of key loss or account compromise you will irrevocably "
+             "lose access to your account. You will also be unable to receive "
+             "notice about impending expiration of revocation of your "
+             "certificates. Updates to the Subscriber Agreement will still "
+             "affect you, and will be effective N days after posting an "
+             "update to the web site.")
     helpful.add(None, "-m", "--email", help=config_help("email"))
     # positional arg shadows --domains, instead of appending, and
     # --domains is useful, because it can be stored in config
@@ -850,7 +863,7 @@ def prepare_and_parse_args(plugins, args):
     helpful.add(None, "-d", "--domains", dest="domains",
                 metavar="DOMAIN", action="append",
                 help="Domain names to apply. For multiple domains you can use "
-                "multiple -d flags or enter a comma separated list of domains"
+                "multiple -d flags or enter a comma separated list of domains "
                 "as a parameter.")
     helpful.add(
         None, "--duplicate", dest="duplicate", action="store_true",
@@ -893,8 +906,9 @@ def prepare_and_parse_args(plugins, args):
         "testing", "--tls-sni-01-port", type=int,
         default=flag_default("tls_sni_01_port"),
         help=config_help("tls_sni_01_port"))
-    helpful.add("testing", "--http-01-port", dest="http01_port", type=int,
-                help=config_help("http01_port"))
+    helpful.add(
+        "testing", "--http-01-port", type=int, dest="http01_port",
+        default=flag_default("http01_port"), help=config_help("http01_port"))
 
     helpful.add_group(
         "security", description="Security parameters & server settings")
@@ -1045,6 +1059,10 @@ def _plugins_parsing(helpful, plugins):
                 help="Obtain and install certs using Nginx")
     helpful.add("plugins", "--standalone", action="store_true",
                 help='Obtain certs using a "standalone" webserver.')
+    helpful.add("plugins", "--manual", action="store_true",
+                help='Provide laborious manual instructions for obtaining a cert')
+    helpful.add("plugins", "--webroot", action="store_true",
+                help='Obtain certs by placing files in a webroot directory.')
 
     # things should not be reorder past/pre this comment:
     # plugins_group should be displayed in --help before plugin

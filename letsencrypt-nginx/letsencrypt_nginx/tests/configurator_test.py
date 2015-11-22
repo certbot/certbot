@@ -51,11 +51,11 @@ class NginxConfiguratorTest(util.NginxTest):
              "example.*", "www.example.org", "myhost"]))
 
     def test_supported_enhancements(self):
-        self.assertEqual([], self.config.supported_enhancements())
+        self.assertEqual(['redirect'], self.config.supported_enhancements())
 
     def test_enhance(self):
         self.assertRaises(
-            errors.PluginError, self.config.enhance, 'myhost', 'redirect')
+            errors.PluginError, self.config.enhance, 'myhost', 'unknown_enhancement')
 
     def test_get_chall_pref(self):
         self.assertEqual([challenges.TLSSNI01],

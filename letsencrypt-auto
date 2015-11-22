@@ -85,6 +85,8 @@ ExperimentalBootstrap() {
 DeterminePythonVersion() {
   if command -v python2.7 > /dev/null ; then
     export LE_PYTHON=${LE_PYTHON:-python2.7}
+  elif command -v python27 > /dev/null ; then
+    export LE_PYTHON=${LE_PYTHON:-python27}
   elif command -v python2 > /dev/null ; then
     export LE_PYTHON=${LE_PYTHON:-python2}
   elif command -v python > /dev/null ; then
@@ -135,7 +137,7 @@ then
   elif uname | grep -iq Darwin ; then
     ExperimentalBootstrap "Mac OS X" mac.sh
   elif grep -iq "Amazon Linux" /etc/issue ; then
-    ExperimentalBootstrap "Amazon Linux" amazon_linux.sh
+    ExperimentalBootstrap "Amazon Linux" _rpm_common.sh
   else
     echo "Sorry, I don't know how to bootstrap Let's Encrypt on your operating system!"
     echo

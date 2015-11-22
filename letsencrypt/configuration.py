@@ -5,8 +5,6 @@ import re
 
 import zope.interface
 
-from acme import challenges
-
 from letsencrypt import constants
 from letsencrypt import errors
 from letsencrypt import interfaces
@@ -80,13 +78,6 @@ class NamespaceConfig(object):
         return os.path.join(
             self.namespace.work_dir, constants.TEMP_CHECKPOINT_DIR)
 
-    @property
-    def http01_port(self):  # pylint: disable=missing-docstring
-        if self.namespace.http01_port is not None:
-            return self.namespace.http01_port
-        else:
-            return challenges.HTTP01Response.PORT
-
 
 class RenewerConfiguration(object):
     """Configuration wrapper for renewer."""
@@ -155,8 +146,8 @@ def _check_config_domain_sanity(domains):
             "Punycode domains are not supported")
     # FQDN checks from
     # http://www.mkyong.com/regular-expressions/domain-name-regular-expression-example/
-    #  Characters used, domain parts < 63 chars, tld > 1 < 7 chars
+    #  Characters used, domain parts < 63 chars, tld > 1 < 64 chars
     #  first and last char is not "-"
-    fqdn = re.compile("^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\\.)+[A-Za-z]{2,6}$")
+    fqdn = re.compile("^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\\.)+[A-Za-z]{2,63}$")
     if any(True for d in domains if not fqdn.match(d)):
         raise errors.ConfigurationError("Requested domain is not a FQDN")
