@@ -236,7 +236,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             self._call(['plugins'] + list(args))
 
     @mock.patch('letsencrypt.cli.plugins_disco')
-    def test_plugins_no_args(self, mock_disco):
+    @mock.patch('letsencrypt.cli.HelpfulArgumentParser.determine_help_topics')
+    def test_plugins_no_args(self, _det, mock_disco):
         ifaces = []
         plugins = mock_disco.PluginsRegistry.find_all()
 
@@ -247,7 +248,8 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         stdout.write.called_once_with(str(filtered))
 
     @mock.patch('letsencrypt.cli.plugins_disco')
-    def test_plugins_init(self, mock_disco):
+    @mock.patch('letsencrypt.cli.HelpfulArgumentParser.determine_help_topics')
+    def test_plugins_init(self, _det, mock_disco):
         ifaces = []
         plugins = mock_disco.PluginsRegistry.find_all()
 
@@ -261,10 +263,10 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         stdout.write.called_once_with(str(verified))
 
     @mock.patch('letsencrypt.cli.plugins_disco')
-    def test_plugins_prepare(self, mock_disco):
+    @mock.patch('letsencrypt.cli.HelpfulArgumentParser.determine_help_topics')
+    def test_plugins_prepare(self, _det, mock_disco):
         ifaces = []
         plugins = mock_disco.PluginsRegistry.find_all()
-
         _, stdout, _, _ = self._call(['plugins', '--init', '--prepare'])
         plugins.visible.assert_called_once_with()
         plugins.visible().ifaces.assert_called_once_with(ifaces)
@@ -338,6 +340,23 @@ class CLITest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         long_args = ['--domains', 'example.com,another.net,example.com']
         namespace = cli.prepare_and_parse_args(plugins, long_args)
         self.assertEqual(namespace.domains, ['example.com', 'another.net'])
+
+    def test_parse_webroot(self):
+        plugins = disco.PluginsRegistry.find_all()
+        webroot_args = ['--webroot', '-d', 'stray.example.com', '-w',
+            '/var/www/example', '-d', 'example.com,www.example.com', '-w',
+            '/var/www/superfluous', '-d', 'superfluo.us', '-d', 'www.superfluo.us']
+        namespace = cli.prepare_and_parse_args(plugins, webroot_args)
+        self.assertEqual(namespace.webroot_map, {
+            'example.com': '/var/www/example',
+            'stray.example.com': '/var/www/example',
+            'www.example.com': '/var/www/example',
+            'www.superfluo.us': '/var/www/superfluous',
+            'superfluo.us': '/var/www/superfluous'})
+
+        webroot_map_args = ['--webroot-map', '{"eg.com" : "/tmp"}']
+        namespace = cli.prepare_and_parse_args(plugins, webroot_map_args)
+        self.assertEqual(namespace.webroot_map, {u"eg.com": u"/tmp"})
 
     @mock.patch('letsencrypt.crypto_util.notAfter')
     @mock.patch('letsencrypt.cli.zope.component.getUtility')

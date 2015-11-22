@@ -3,10 +3,12 @@
 import argparse
 import atexit
 import functools
+import json
 import logging
 import logging.handlers
 import os
 import pkg_resources
+import string
 import sys
 import time
 import traceback
@@ -670,7 +672,6 @@ class HelpfulArgumentParser(object):
             print usage
             sys.exit(0)
         self.visible_topics = self.determine_help_topics(self.help_arg)
-        #print self.visible_topics
         self.groups = {}  # elements are added by .add_group()
 
     def parse_args(self):
@@ -683,31 +684,8 @@ class HelpfulArgumentParser(object):
         parsed_args = self.parser.parse_args(self.args)
         parsed_args.func = self.VERBS[self.verb]
 
-        parsed_args.domains = self._parse_domains(parsed_args.domains)
         return parsed_args
 
-    def _parse_domains(self, domains):
-        """Helper function for parse_args() that parses domains from a
-        (possibly) comma separated list and returns list of unique domains.
-
-        :param domains: List of domain flags
-        :type domains: `list` of `string`
-
-        :returns: List of unique domains
-        :rtype: `list` of `string`
-
-        """
-
-        uniqd = None
-
-        if domains:
-            dlist = []
-            for domain in domains:
-                dlist.extend([d.strip() for d in domain.split(",")])
-            # Make sure we don't have duplicates
-            uniqd = [d for i, d in enumerate(dlist) if d not in dlist[:i]]
-
-        return uniqd
 
     def determine_verb(self):
         """Determines the verb/subcommand provided by the user.
@@ -824,6 +802,7 @@ class HelpfulArgumentParser(object):
             return dict([(t, t == chosen_topic) for t in self.help_topics])
 
 
+
 def prepare_and_parse_args(plugins, args):
     """Returns parsed command line arguments.
 
@@ -861,7 +840,7 @@ def prepare_and_parse_args(plugins, args):
     #for subparser in parser_run, parser_auth, parser_install:
     #    subparser.add_argument("domains", nargs="*", metavar="domain")
     helpful.add(None, "-d", "--domains", dest="domains",
-                metavar="DOMAIN", action="append",
+                metavar="DOMAIN", action=DomainFlagProcessor,
                 help="Domain names to apply. For multiple domains you can use "
                 "multiple -d flags or enter a comma separated list of domains "
                 "as a parameter.")
@@ -1050,6 +1029,51 @@ def _plugins_parsing(helpful, plugins):
     # specific groups (so that plugins_group.description makes sense)
 
     helpful.add_plugin_args(plugins)
+
+    # These would normally be a flag within the webroot plugin, but because
+    # they are parsed in conjunction with --domains, they live here for
+    # legibiility. helpful.add_plugin_ags must be called first to add the
+    # "webroot" topic
+    helpful.add("webroot", "-w", "--webroot-path", action=WebrootPathProcessor,
+                help="public_html / webroot path")
+    parse_dict = lambda s: dict(json.loads(s))
+    helpful.add("webroot", "--webroot-map", default={}, type=parse_dict,
+                help="Mapping from domains to webroot paths")
+
+
+class WebrootPathProcessor(argparse.Action): # pylint: disable=missing-docstring
+    def __call__(self, parser, config, webroot, option_string=None):
+        """
+        Keep a record of --webroot-path / -w flags during processing, so that
+        we know which apply to which -d flags
+        """
+        if not config.webroot_path:
+            config.webroot_path = []
+            # if any --domain flags preceded the first --webroot-path flag,
+            # apply that webroot path to those; subsequent entries in
+            # config.webroot_map are filled in by cli.DomainFlagProcessor
+            if config.domains:
+                config.webroot_map = dict([(d, webroot) for d in config.domains])
+            else:
+                config.webroot_map = {}
+        config.webroot_path.append(webroot)
+
+
+class DomainFlagProcessor(argparse.Action): # pylint: disable=missing-docstring
+    def __call__(self, parser, config, domain_arg, option_string=None):
+        """
+        Process a new -d flag, helping the webroot plugin construct a map of
+        {domain : webrootpath} if -w / --webroot-path is in use
+        """
+        if not config.domains:
+            config.domains = []
+
+        for d in map(string.strip, domain_arg.split(",")): # pylint: disable=bad-builtin
+            if d not in config.domains:
+                config.domains.append(d)
+                # Each domain has a webroot_path of the most recent -w flag
+                if config.webroot_path:
+                    config.webroot_map[d] = config.webroot_path[-1]
 
 
 def setup_log_file_handler(args, logfile, fmt):
