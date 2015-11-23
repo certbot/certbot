@@ -728,69 +728,69 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             logger.warn("Failed %s for %s", enhancement, domain)
             raise
 
-    def _set_http_header(self, ssl_vhost, header_name):
-        """Enables header header_name on ssl_vhost.
+    def _set_http_header(self, ssl_vhost, header_substring):
+        """Enables header that is identified by header_substring on ssl_vhost.
 
-        If header_name is not already set, a new Header directive is placed in
-        ssl_vhost's configuration with arguments from:
-        constants.HTTP_HEADER[header_name]
+        If the header identified by header_substring is not already set,
+        a new Header directive is placed in ssl_vhost's configuration with
+        arguments from: constants.HTTP_HEADER[header_substring]
 
         .. note:: This function saves the configuration
 
         :param ssl_vhost: Destination of traffic, an ssl enabled vhost
         :type ssl_vhost: :class:`~letsencrypt_apache.obj.VirtualHost`
 
-        :param header_name: a header name, e.g: Strict-Transport-Security
+        :param header_substring: string that uniquely identifies a header.
+                e.g: Strict-Transport-Security, Upgrade-Insecure-Requests.
         :type str
 
         :returns: Success, general_vhost (HTTP vhost)
         :rtype: (bool, :class:`~letsencrypt_apache.obj.VirtualHost`)
 
         :raises .errors.PluginError: If no viable HTTP host can be created or
-            set with header header_name.
+            set with header header_substring.
 
         """
         if "headers_module" not in self.parser.modules:
             self.enable_mod("headers")
 
         # Check if selected header is already set
-        self._verify_no_http_header(ssl_vhost, header_name)
+        self._verify_no_http_header(ssl_vhost, header_substring)
 
         # Add directives to server
         self.parser.add_dir(ssl_vhost.path, "Header",
-                constants.HEADER_ARGS[header_name])
+                constants.HEADER_ARGS[header_substring])
 
         self.save_notes += ("Adding %s header to ssl vhost in %s\n" %
-                (header_name, ssl_vhost.filep))
+                (header_substring, ssl_vhost.filep))
 
         self.save()
-        logger.info("Adding %s header to ssl vhost in %s", header_name,
+        logger.info("Adding %s header to ssl vhost in %s", header_substring,
                 ssl_vhost.filep)
 
-    def _verify_no_http_header(self, ssl_vhost, header_name):
-        """Checks to see if existing header_name header is in place.
-
-        Checks to see if virtualhost already contains a header_name header
+    def _verify_no_http_header(self, ssl_vhost, header_substring):
+        """Checks to see if an there is an existing Header directive that
+        contains the string header_substring.
 
         :param ssl_vhost: vhost to check
         :type vhost: :class:`~letsencrypt_apache.obj.VirtualHost`
 
-        :param header_name: a header name, e.g: Strict-Transport-Security
+        :param header_substring: a header name, e.g: Strict-Transport-Security
         :type str
 
         :returns: boolean
         :rtype: (bool)
 
-        :raises errors.PluginError: When header header_name exists
+        :raises errors.PluginError: When header header_substring exists
 
         """
         header_path = self.parser.find_dir("Header", None, start=ssl_vhost.path)
         if header_path:
             # "Existing Header directive for virtualhost"
             for match in header_path:
-                if self.aug.get(match).lower() == header_name.lower():
+                if self.aug.get(match).lower() == header_substring.lower():
                     raise errors.PluginError("Existing %s header" %
-                            (header_name))
+                            (header_substring))
 
     def _enable_redirect(self, ssl_vhost, unused_options):
         """Redirect all equivalent HTTP traffic to ssl_vhost.
