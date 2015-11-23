@@ -221,11 +221,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.aug.set(path["cert_path"][-1], cert_path)
             self.aug.set(path["cert_key"][-1], key_path)
             if chain_path is not None:
-                if not path["chain_path"]:
-                    self.parser.add_dir(vhost.path,
-                                        "SSLCertificateChainFile", chain_path)
-                else:
-                    self.aug.set(path["chain_path"][-1], chain_path)
+                self.parser.add_dir(vhost.path,
+                                    "SSLCertificateChainFile", chain_path)
             else:
                 raise errors.PluginError("--chain-path is required for your version of Apache")
         else:
