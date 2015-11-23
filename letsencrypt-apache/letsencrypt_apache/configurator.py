@@ -8,6 +8,7 @@ import re
 import shutil
 import socket
 import subprocess
+import time
 
 import zope.interface
 
@@ -1162,6 +1163,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # Handled here because we may be able to load up other challenge
             # types
             self.restart()
+
+            # TODO: Remove this dirty hack. We need to determine a reliable way
+            # of identifying when the new configuration is being used.
+            time.sleep(3)
 
             # Go through all of the challenges and assign them to the proper
             # place in the responses return value. All responses must be in the
