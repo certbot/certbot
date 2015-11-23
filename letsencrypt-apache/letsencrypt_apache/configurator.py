@@ -755,7 +755,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.enable_mod("headers")
 
         # Check if selected header is already set
-        self._verify_no_http_header(ssl_vhost, header_substring)
+        self._verify_no_matching_http_header(ssl_vhost, header_substring)
 
         # Add directives to server
         self.parser.add_dir(ssl_vhost.path, "Header",
@@ -768,7 +768,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         logger.info("Adding %s header to ssl vhost in %s", header_substring,
                 ssl_vhost.filep)
 
-    def _verify_no_http_header(self, ssl_vhost, header_substring):
+    def _verify_no_matching_http_header(self, ssl_vhost, header_substring):
         """Checks to see if an there is an existing Header directive that
         contains the string header_substring.
 
