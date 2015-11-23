@@ -775,7 +775,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :param ssl_vhost: vhost to check
         :type vhost: :class:`~letsencrypt_apache.obj.VirtualHost`
 
-        :param header_substring: a header name, e.g: Strict-Transport-Security
+        :param header_substring: string that uniquely identifies a header.
+                e.g: Strict-Transport-Security, Upgrade-Insecure-Requests.
         :type str
 
         :returns: boolean
@@ -787,8 +788,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         header_path = self.parser.find_dir("Header", None, start=ssl_vhost.path)
         if header_path:
             # "Existing Header directive for virtualhost"
+            pat = '(?:[ "]|^)(%s)(?:[ "]|$)' % (header_substring.lower())
             for match in header_path:
-                if self.aug.get(match).lower() == header_substring.lower():
+                if re.search(pat, self.aug.get(match).lower()):
                     raise errors.PluginError("Existing %s header" %
                             (header_substring))
 
