@@ -442,8 +442,9 @@ class Client(object):
         :param options: options to enhancement, e.g. Strict-Transport-Security
         :type str
 
-        :raises .errors.Error: if no installer is specified in the
-            client.
+        :raises .errors.PluginError: If Enhancement is not supported, or if
+            there is any other problem with the enhancement.
+
 
         """
         msg = ("We were unable to set up enhancement %s for your server, "
