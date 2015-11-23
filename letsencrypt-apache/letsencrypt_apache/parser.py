@@ -101,8 +101,7 @@ class ApacheParser(object):
         try:
             matches.remove("DUMP_RUN_CFG")
         except ValueError:
-            return
-            #raise errors.PluginError("Unable to parse runtime variables")
+            raise errors.PluginError("Unable to parse runtime variables")
 
         for match in matches:
             if match.count("=") > 1:
